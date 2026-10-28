@@ -270,17 +270,55 @@ fn scissor_pixel_area(scissor: Option<[u32; 4]>, target: (u32, u32)) -> Option<u
     }
     u64::from(width).checked_mul(u64::from(height))
 }
-/// Build a temporary hardware scissor for one glyph run from the same prepared
-/// instances the frame encoder will upload. Coordinates outside this deliberately
-/// small integer domain use the parent's scissor unchanged.
-fn glyph_run_scissor(
+const GLYPH_SCISSOR_GUTTER_PX: i64 = 16;
+/// Exact integer destination bounds for the same instance the frame encoder uploads.
+/// Unsupported coordinates keep the existing conservative per-run fallback.
+fn glyph_instance_bounds_px(
+    glyph: &tekes_ui_scene::PositionedGlyph,
+    color: tekes_ui_tokens::Rgba,
+    scale: f32,
+) -> Option<[i64; 4]> {
+    const DOMAIN: f64 = 16_384.0;
+    let instance = crate::glyph_pass::GlyphInstance::new(glyph.origin, &glyph.glyph, color, scale)?;
+    let [x, y, width, height] = instance.dest;
+    if ![x, y, width, height]
+        .into_iter()
+        .all(|v| v.is_finite() && v.fract() == 0.0)
+        || f64::from(x).abs() > DOMAIN
+        || f64::from(y).abs() > DOMAIN
+        || !(0.0..=DOMAIN).contains(&f64::from(width))
+        || !(0.0..=DOMAIN).contains(&f64::from(height))
+    {
+        return None;
+    }
+    let right = f64::from(x) + f64::from(width);
+    let bottom = f64::from(y) + f64::from(height);
+    if !right.is_finite()
+        || !bottom.is_finite()
+        || right.fract() != 0.0
+        || bottom.fract() != 0.0
+        || right.abs() > DOMAIN
+        || bottom.abs() > DOMAIN
+    {
+        return None;
+    }
+    Some([x as i64, y as i64, right as i64, bottom as i64])
+}
+struct GlyphRunAnalysis {
+    scissor: [u32; 4],
+    shader_pixels: u64,
+}
+/// Build the existing temporary run scissor and a conservative per-instance
+/// shader-work bound from the same exact prepared destinations. The run union
+/// contains each padded instance rectangle; therefore intersecting each with
+/// the parent here is equivalent to intersecting it with the final run scissor.
+/// Unsupported coordinates retain the existing parent-scissor/full-run fallback.
+fn glyph_run_analysis(
     run: &tekes_ui_scene::GlyphRun,
     scale: f32,
     parent: [u32; 4],
     target: (u32, u32),
-) -> Option<[u32; 4]> {
-    const DOMAIN: f64 = 16_384.0;
-    const GUTTER: f64 = 16.0;
+) -> Option<GlyphRunAnalysis> {
     if run.glyphs.is_empty()
         || !(1..=16_384).contains(&target.0)
         || !(1..=16_384).contains(&target.1)
@@ -288,55 +326,56 @@ fn glyph_run_scissor(
         return None;
     }
 
-    let mut bounds: Option<[f64; 4]> = None;
-    for glyph in &run.glyphs {
-        let instance =
-            crate::glyph_pass::GlyphInstance::new(glyph.origin, &glyph.glyph, run.color, scale)?;
-        let [x, y, width, height] = instance.dest;
-        if ![x, y, width, height]
-            .into_iter()
-            .all(|v| v.is_finite() && v.fract() == 0.0)
-            || x.abs() as f64 > DOMAIN
-            || y.abs() as f64 > DOMAIN
-            || !(0.0..=DOMAIN).contains(&(width as f64))
-            || !(0.0..=DOMAIN).contains(&(height as f64))
-        {
-            return None;
-        }
-        let right = f64::from(x) + f64::from(width);
-        let bottom = f64::from(y) + f64::from(height);
-        if !right.is_finite()
-            || !bottom.is_finite()
-            || right.fract() != 0.0
-            || bottom.fract() != 0.0
-            || right.abs() > DOMAIN
-            || bottom.abs() > DOMAIN
-        {
-            return None;
-        }
-        bounds = Some(match bounds {
-            Some([left, top, old_right, old_bottom]) => [
-                left.min(f64::from(x)),
-                top.min(f64::from(y)),
-                old_right.max(right),
-                old_bottom.max(bottom),
-            ],
-            None => [f64::from(x), f64::from(y), right, bottom],
-        });
-    }
-
-    let [left, top, right, bottom] = bounds?;
     let parent_right = i64::from(parent[0]).checked_add(i64::from(parent[2]))?;
     let parent_bottom = i64::from(parent[1]).checked_add(i64::from(parent[3]))?;
     if parent_right > i64::from(target.0) || parent_bottom > i64::from(target.1) {
         return None;
     }
-    let left = (left - GUTTER).max(f64::from(parent[0])).max(0.0);
-    let top = (top - GUTTER).max(f64::from(parent[1])).max(0.0);
-    let right = (right + GUTTER)
+    let mut bounds: Option<[f64; 4]> = None;
+    let mut shader_pixels = 0_u64;
+    for glyph in &run.glyphs {
+        let [x, y, right, bottom] = glyph_instance_bounds_px(glyph, run.color, scale)?;
+        let pixel_left = x
+            .checked_sub(GLYPH_SCISSOR_GUTTER_PX)?
+            .max(i64::from(parent[0]))
+            .max(0);
+        let pixel_top = y
+            .checked_sub(GLYPH_SCISSOR_GUTTER_PX)?
+            .max(i64::from(parent[1]))
+            .max(0);
+        let pixel_right = right
+            .checked_add(GLYPH_SCISSOR_GUTTER_PX)?
+            .min(parent_right)
+            .min(i64::from(target.0));
+        let pixel_bottom = bottom
+            .checked_add(GLYPH_SCISSOR_GUTTER_PX)?
+            .min(parent_bottom)
+            .min(i64::from(target.1));
+        if pixel_right > pixel_left && pixel_bottom > pixel_top {
+            let area = u64::try_from(pixel_right - pixel_left)
+                .ok()?
+                .checked_mul(u64::try_from(pixel_bottom - pixel_top).ok()?)?;
+            shader_pixels = shader_pixels.checked_add(area)?;
+        }
+        bounds = Some(match bounds {
+            Some([left, top, old_right, old_bottom]) => [
+                left.min(x as f64),
+                top.min(y as f64),
+                old_right.max(right as f64),
+                old_bottom.max(bottom as f64),
+            ],
+            None => [x as f64, y as f64, right as f64, bottom as f64],
+        });
+    }
+
+    let [left, top, right, bottom] = bounds?;
+    let gutter = GLYPH_SCISSOR_GUTTER_PX as f64;
+    let left = (left - gutter).max(f64::from(parent[0])).max(0.0);
+    let top = (top - gutter).max(f64::from(parent[1])).max(0.0);
+    let right = (right + gutter)
         .min(parent_right as f64)
         .min(f64::from(target.0));
-    let bottom = (bottom + GUTTER)
+    let bottom = (bottom + gutter)
         .min(parent_bottom as f64)
         .min(f64::from(target.1));
     if !(left.is_finite() && top.is_finite() && right.is_finite() && bottom.is_finite())
@@ -349,7 +388,19 @@ fn glyph_run_scissor(
     let y = top as u32;
     let right = right as u32;
     let bottom = bottom as u32;
-    Some([x, y, right - x, bottom - y])
+    Some(GlyphRunAnalysis {
+        scissor: [x, y, right - x, bottom - y],
+        shader_pixels,
+    })
+}
+#[cfg(test)]
+fn glyph_run_scissor(
+    run: &tekes_ui_scene::GlyphRun,
+    scale: f32,
+    parent: [u32; 4],
+    target: (u32, u32),
+) -> Option<[u32; 4]> {
+    glyph_run_analysis(run, scale, parent, target).map(|analysis| analysis.scissor)
 }
 fn f32_gpu_scalar(v: f32, scale: f32) -> Result<(), RenderError> {
     let n = f64::from(v) * f64::from(scale);
@@ -1064,11 +1115,13 @@ impl ClipFrame {
             } else {
                 0
             };
+            let mut glyph_shader_pixels = None;
             if state.analytic
                 && let Primitive::Glyphs(run) = p
-                && let Some(scissor) = glyph_run_scissor(run, scale, state.scissor, size)
+                && let Some(analysis) = glyph_run_analysis(run, scale, state.scissor, size)
             {
-                state.scissor = scissor;
+                state.scissor = analysis.scissor;
+                glyph_shader_pixels = Some(analysis.shader_pixels);
             }
             if state.analytic
                 && !matches!(
@@ -1081,23 +1134,23 @@ impl ClipFrame {
                 } else {
                     result.records[state.head as usize - 1].meta[3] as u64
                 };
-                let count = if let Primitive::Glyphs(run) = p {
-                    run.glyphs.len() as u64
-                } else {
-                    1
-                };
                 let target_pixels =
                     checked_product(u64::from(size.0), u64::from(size.1), "shader work")?;
-                let pixels = if matches!(p, Primitive::Glyphs(_)) {
-                    scissor_pixel_area(Some(state.scissor), size).unwrap_or(target_pixels)
+                let work = if let Primitive::Glyphs(run) = p {
+                    if let Some(pixels) = glyph_shader_pixels {
+                        checked_product(pixels, depth, "shader work")?
+                    } else {
+                        let pixels =
+                            scissor_pixel_area(Some(state.scissor), size).unwrap_or(target_pixels);
+                        checked_product(
+                            checked_product(pixels, depth, "shader work")?,
+                            run.glyphs.len() as u64,
+                            "shader work",
+                        )?
+                    }
                 } else {
-                    target_pixels
+                    checked_product(target_pixels, depth, "shader work")?
                 };
-                let work = checked_product(
-                    checked_product(pixels, depth, "shader work")?,
-                    count,
-                    "shader work",
-                )?;
                 charge(
                     &mut result.shader_work,
                     work,
@@ -1317,6 +1370,116 @@ mod tests {
     }
 
     #[test]
+    fn glyph_shader_work_sums_each_bounded_raster_rect_inside_actual_run_scissor() {
+        let (atlas, glyph) = atlas_with_glyph();
+        let mut table = ShapeTable::new(7, 1);
+        let key = table
+            .intern(
+                ClipShape::normalize(
+                    Rect::new(0., 0., 500., 500.),
+                    CornerRadii::ZERO,
+                    Point::new(0., 0.),
+                )
+                .unwrap(),
+            )
+            .unwrap();
+        let mut scene = Scene::with_clip_shapes(&table);
+        scene.push_shape_clip(key);
+        let run = GlyphRun {
+            color: Rgba::new(0., 0., 0., 0.),
+            glyphs: [(50., 50.), (50., 50.), (200., 200.), (400., 400.)]
+                .into_iter()
+                .map(|(x, y)| PositionedGlyph {
+                    origin: Point::new(x, y),
+                    glyph,
+                })
+                .collect(),
+        };
+        scene.push_glyphs(run.clone());
+        scene.pop_clip();
+
+        let limits = wgpu::Limits::default();
+        let budget = ClipFrameBudget::for_device(&limits);
+        let before = atlas.stats();
+        let frame = prepare_with_atlas(&scene, &atlas, (512, 512), budget).unwrap();
+        let state = frame.states[1];
+        let actual_run_scissor = scissor_pixel_area(Some(state.scissor), (512, 512)).unwrap();
+        assert!(actual_run_scissor > 4 * 33 * 33);
+        let per_instance = glyph_run_analysis(&run, 1., state.scissor, (512, 512))
+            .unwrap()
+            .shader_pixels;
+        assert_eq!(per_instance, 4 * 33 * 33);
+        let depth = u64::from(frame.records[state.head as usize - 1].meta[3]);
+        assert_eq!(frame.shader_work, per_instance * depth);
+        assert_eq!(
+            atlas.stats(),
+            before,
+            "preflight does not mutate glyph resources"
+        );
+
+        assert!(matches!(
+            prepare_with_atlas(
+                &scene,
+                &atlas,
+                (512, 512),
+                ClipFrameBudget {
+                    max_shader_work: frame.shader_work - 1,
+                    ..budget
+                },
+            ),
+            Err(RenderError::ClipBudgetExceeded("shader work"))
+        ));
+        assert_eq!(
+            atlas.stats(),
+            before,
+            "budget rejection stays before atlas mutation"
+        );
+    }
+
+    #[test]
+    fn glyph_shader_work_falls_back_for_an_unbounded_instance() {
+        let (_atlas, glyph) = atlas_with_glyph();
+        let run = GlyphRun {
+            color: Rgba::gray(1.),
+            glyphs: vec![PositionedGlyph {
+                origin: Point::new(16_385., 1.),
+                glyph,
+            }],
+        };
+        assert!(glyph_run_analysis(&run, 1., [0, 0, 100, 100], (100, 100)).is_none());
+    }
+
+    #[test]
+    fn non_glyph_shader_work_overflow_keeps_the_original_checked_rejection() {
+        let mut table = ShapeTable::new(7, 2);
+        let first = table.intern(shape(0.)).unwrap();
+        let second = table.intern(shape(1.)).unwrap();
+        let mut scene = Scene::with_clip_shapes(&table);
+        scene.push_shape_clip(first);
+        scene.push_shape_clip(second);
+        scene.push_quad(Quad::new(Rect::new(1., 1., 2., 2.), Rgba::gray(1.)));
+        scene.pop_clip();
+        scene.pop_clip();
+        let limits = wgpu::Limits {
+            max_texture_dimension_2d: u32::MAX,
+            ..Default::default()
+        };
+        let mut budget = ClipFrameBudget::for_device(&limits);
+        budget.max_shader_work = u64::MAX;
+        assert!(matches!(
+            ClipFrame::prepare(
+                &scene,
+                &GlyphAtlas::default(),
+                (u32::MAX, u32::MAX),
+                1.,
+                budget,
+                &limits,
+            ),
+            Err(RenderError::ClipBudgetExceeded("shader work"))
+        ));
+    }
+
+    #[test]
     fn run_scissor_expands_clamps_and_falls_back_outside_the_bounded_domain() {
         let (_atlas, glyph) = atlas_with_glyph();
         let run = |origin: (f32, f32)| GlyphRun {
@@ -1395,6 +1558,13 @@ mod tests {
         assert_eq!(
             glyph_run_scissor(&zero_run, 1., parent, (100, 100)),
             Some([24, 34, 32, 32])
+        );
+        assert_eq!(
+            glyph_run_analysis(&zero_run, 1., parent, (100, 100))
+                .unwrap()
+                .shader_pixels,
+            32 * 32,
+            "zero-area instances still pay for the conservative outward gutter"
         );
         let mut too_wide = glyph;
         too_wide.width = 16_385;
@@ -1545,9 +1715,12 @@ mod tests {
         )
         .unwrap();
         let state = frame.states[1];
-        let pixels = scissor_pixel_area(Some(state.scissor), (32, 32)).unwrap();
         assert_eq!(state.scissor, [0, 0, 17, 17]);
-        assert_eq!(frame.shader_work, pixels * 260);
+        // The unchanged 1x1 instances round to (0,2) and (4,-2).
+        // Their existing 16px gutters intersect the unchanged 17x17 run
+        // scissor in 17x17 and 17x15 pixels, respectively. Count every
+        // overlapping instance; do not derive this oracle from the helper.
+        assert_eq!(frame.shader_work, 130 * (17 * 17 + 17 * 15));
         assert_eq!(atlas.stats(), before, "preflight must not mutate the atlas");
     }
 
