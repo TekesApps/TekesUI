@@ -18,7 +18,7 @@ Tab 按 leading 子树、trailing 子树、divider 遍历。pane 替换/重挂�
 
 ## 明确保留的后续范围
 
-#103 负责真实 Splitter 本地/适用 wire 投影、默认与外部 Theme、原 View 对照和实际 GPU；本 A 不声称完整 #87、本地 main 的 B 或全库原生验收完成。DataTable、Tree、KeyedList、Popover 等尚未进入本地 main 的具体业务接入仍归原 Issue，本批不提供 stub。真实窗口、物理 IME、VoiceOver、性能与公开交付分别记录，不从编译推导。
+#103 的 B 现已在下述精确 main 接收批次补齐；上方 A 和历史 Gallery Root 的证据保留各自身份，不推导全库原生验收完成。DataTable、Tree、KeyedList、Popover 等尚未进入本地 main 的具体业务接入仍归原 Issue，本批不提供 stub。真实窗口、物理 IME、VoiceOver、性能与公开交付分别记录，不从编译推导。
 
 ## 本地接收验证
 
@@ -27,3 +27,13 @@ Tab 按 leading 子树、trailing 子树、divider 遍历。pane 替换/重挂�
 各结果保留其实际轮次源码身份。round08 相对 round07 只删除无调用者的私有 `admit_focus` 转发方法并刷新生成库存，未改变任何运行分支、配置或测试；只补原未完成的 strict，不重签旧程序。最终文档不参与 Rust 构建。共享 schema/Theme/渲染输入未变，未重跑既有 GPU；B 的 GPU 仍未验。源码/程序/dep-info/失败及各轮输入身份位于 SSD `artifacts/issue-136/split87-main078735c-intake/`；原证据身份不变，不因提交自动成为新运行。
 
 Panel 接收批次（基线 `8511dad`，#81/#98/#136）进一步区分 Slot 自身的原 pane 边界与普通 custom descendant clip，仅在库内以真实 arranged/intact PaneSlot 查询还原 owner 裁剪；原布局和消费者断言不变。成功 typed update/replace 撤销既有几何 lease，Keep/失败不撤销。原 Split20、Host15、local-clip3 与 text-mount3 在该批 round12 实际通过；round11 的其余有效结果保留原身份，详见 SSD `artifacts/issue-136/panel81-main8511dad-intake/`。这不接收 #103 B 或原生完整发布链。
+
+## #103 B main 接收（2026-10-28）
+
+基线 `51380cc4c95148549f48ec5b6aa87cbaf7816bbf`。原唯一 divider 发布真实 Splitter、有限 ratio range，Increment/Decrement/SetValue 仍沿原 SplitView model 和 Host action 事务；不另建树或几何状态。Content wire、runtime sender/receiver 与 macOS 映射保留该角色和实际范围，缺失/非法范围原子拒绝；完整旧 peer 能读取 Image，但拒绝含 Splitter 的新 Reply。
+
+实际通过的有限验证：独立公共 SplitView、原文本/reading/API、runtime/platform 回归、受影响严格检查；默认62及真实外部 Theme118个原 GPU 场景，含七 Surface/四模式适用矩阵、1x/2x、窄/零/非整数、原 View、父 clip 和 ratio 更新。Quiet Button 背景可能等于原清屏色：原不透明 Scene、文字、clip、View 断言保留，背景覆盖改由同一完整 Scene 的透明底结果测量，未换控件、裁场景或放宽产品约束。
+
+原生对象18项断言使用真实隐藏 NSWindow dispatch owner，窗口不显示、不激活，不发送桌面输入；不能称为零窗口或真实用户窗口交互。初始缺失窗口依赖的失败与 lint、GPU入口/采样失败原样保留。原生可见交互、物理IME、VoiceOver和性能仍未验证，不追加为本有限 B 交付前提。
+
+分轮精确源码、失败和程序/GPU证据在 SSD `artifacts/issue-103/splitter-main277958f-candidate-20261028-01/`。完整旧证据不改签；最终测试辅助 clone 等价修正只补 strict，GPU辅助变化只重跑相应GPU入口。接收后的提交与远端身份以 #103 当前摘要为准。

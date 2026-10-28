@@ -196,7 +196,102 @@ struct OriginalDivider {
     axis: Axis,
     focused: bool,
 }
+#[derive(Clone, Debug, PartialEq)]
+struct PreparedSplitterAction {
+    expected_ratio: f32,
+    expected_model_ratio: f32,
+    minimum: f64,
+    maximum: f64,
+    next_ratio: f32,
+}
+impl action_preparation::OriginalActionDecision for PreparedSplitterAction {}
+impl OriginalDivider {
+    fn semantic_ratio_range(&self) -> Option<std::ops::RangeInclusive<f64>> {
+        let bounds = self.view.layout().frame.frame();
+        if self.model.is_constrained(bounds, self.axis) {
+            return None;
+        }
+        let available = match self.axis {
+            Axis::Horizontal => bounds.size.width,
+            Axis::Vertical => bounds.size.height,
+        }
+        .max(0.0);
+        let usable = (available - self.model.divider.max(0.0).min(available)).max(0.0);
+        if usable <= 0.0 {
+            return None;
+        }
+        let minimum = if usable >= 2.0 * self.model.min_pane && usable > 0.0 {
+            (self.model.min_pane / usable).clamp(0.0, 0.5)
+        } else {
+            0.5
+        };
+        // Publish the same decimal values used by `f32::to_string()` below.
+        // Parsing the exact f32 bit pattern as f64 would make the wire value
+        // "0.1" fall just outside a lower bound such as f32(0.1).
+        let maximum = 1.0 - minimum;
+        let wire_number = |value: f32| value.to_string().parse::<f64>().ok();
+        Some(wire_number(minimum)?..=wire_number(maximum)?)
+    }
+    fn decide_action(
+        &self,
+        request: &action_preparation::OwnedActionRequest,
+    ) -> Option<PreparedSplitterAction> {
+        let action_preparation::OwnedActionRequest::Accessibility(None, action) = request else {
+            return None;
+        };
+        if self.semantic_hidden() {
+            return None;
+        }
+        let range = self.semantic_ratio_range()?;
+        let bounds = self.view.layout().frame.frame();
+        let expected_model_ratio = self.model.ratio();
+        let expected_ratio = self.model.ratio_in(bounds, self.axis);
+        let next_ratio = match action {
+            AccessibilityAction::SetValue(value) => {
+                let value = value.parse::<f64>().ok()?;
+                if !value.is_finite() || !range.contains(&value) {
+                    return None;
+                }
+                value as f32
+            }
+            AccessibilityAction::Increment => {
+                (expected_ratio + 0.05).clamp(*range.start() as f32, *range.end() as f32)
+            }
+            AccessibilityAction::Decrement => {
+                (expected_ratio - 0.05).clamp(*range.start() as f32, *range.end() as f32)
+            }
+            _ => return None,
+        };
+        Some(PreparedSplitterAction {
+            expected_ratio,
+            expected_model_ratio,
+            minimum: *range.start(),
+            maximum: *range.end(),
+            next_ratio,
+        })
+    }
+    fn apply_action(&mut self, action: PreparedSplitterAction) {
+        let _ = self.model.set_ratio(action.next_ratio);
+    }
+}
 impl Component for OriginalDivider {
+    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
+        ActionTransactionCompatibility::StableHooks
+    }
+    fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
+        action_preparation::prepare_original(
+            self,
+            request,
+            Self::decide_action,
+            Self::apply_action,
+            |decision| {
+                (
+                    ContentResponse::consumed(decision.next_ratio != decision.expected_model_ratio),
+                    PreparedActionFocus::None,
+                )
+            },
+        )
+    }
     fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
         TableTransactionCompatibility::StableHooks
     }
@@ -233,8 +328,44 @@ impl Component for OriginalDivider {
         self.view.set_window_active(active, &mut self.model);
     }
     fn semantic_hidden(&self) -> bool {
-        true
-    } // final real Splitter projection belongs B
+        self.model
+            .is_constrained(self.view.layout().frame.frame(), self.axis)
+            || self
+                .view
+                .layout()
+                .divider
+                .visible_frame()
+                .is_none_or(|r| r.is_empty())
+    }
+    fn semantic_frame(&self, _: Rect) -> Rect {
+        self.view.layout().divider.frame()
+    }
+    fn semantics(&self) -> ContentSemantics {
+        let mut semantics = ContentSemantics::new(ContentRole::Splitter, "Split view divider");
+        semantics.value = Some(
+            self.model
+                .ratio_in(self.view.layout().frame.frame(), self.axis)
+                .to_string(),
+        );
+        semantics
+    }
+    fn value_range(&self) -> Option<std::ops::RangeInclusive<f64>> {
+        self.semantic_ratio_range()
+    }
+    fn accessibility_action(
+        &mut self,
+        part: Option<usize>,
+        action: &AccessibilityAction,
+    ) -> ContentResponse {
+        let request = action_preparation::OwnedActionRequest::Accessibility(part, action.clone());
+        let Some(decision) = Self::decide_action(self, &request) else {
+            return ContentResponse::default();
+        };
+        let response =
+            ContentResponse::consumed(decision.next_ratio != decision.expected_model_ratio);
+        Self::apply_action(self, decision);
+        response
+    }
     fn pointer_event(&mut self, p: &PointerEvent) -> ContentResponse {
         if !p.is_primary() {
             return ContentResponse::default();
@@ -529,6 +660,10 @@ impl Component for SplitViewContent {
     }
     fn active(&self) -> bool {
         self.intact()
+    }
+    fn semantic_subtree_hidden(&self) -> bool {
+        self.layout()
+            .is_none_or(|layout| layout.frame.visible_frame().is_none_or(|r| r.is_empty()))
     }
     fn fixed_slots(&self) -> bool {
         true

@@ -43,6 +43,8 @@ pub enum AccessibilitySortDirection {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum AccessibilityRole {
     Slider(AccessibilityRange),
+    /// The real independently adjustable split divider.
+    Splitter(AccessibilityRange),
     Group,
     StaticText,
     Image,
@@ -364,7 +366,7 @@ pub(crate) fn validate_accessibility_nodes_with_geometry(
             || !(frame.origin.x + frame.size.width).is_finite()
             || !(frame.origin.y + frame.size.height).is_finite()
             || parents.insert(node.key, node.parent).is_some()
-            || matches!(node.role, AccessibilityRole::Slider(domain)
+            || matches!(node.role, AccessibilityRole::Slider(domain) | AccessibilityRole::Splitter(domain)
                 if node.value.as_ref().and_then(|v|v.parse::<f64>().ok()).is_none_or(|v|!domain.contains(v)))
             || node.text_selection.as_ref().is_some_and(|range| {
                 !matches!(
@@ -464,6 +466,9 @@ pub(crate) mod native {
                         .unwrap_or(AccessibilityRole::Group)
                     {
                         AccessibilityRole::Slider(_) => objc2_app_kit::NSAccessibilitySliderRole,
+                        AccessibilityRole::Splitter(_) => {
+                            objc2_app_kit::NSAccessibilitySplitterRole
+                        }
                         AccessibilityRole::Group => objc2_app_kit::NSAccessibilityGroupRole,
                         AccessibilityRole::StaticText => {
                             objc2_app_kit::NSAccessibilityStaticTextRole
@@ -554,7 +559,12 @@ pub(crate) mod native {
                         )
                         .into()
                     }
-                    Some(node) if matches!(node.role, AccessibilityRole::Slider(_)) => {
+                    Some(node)
+                        if matches!(
+                            node.role,
+                            AccessibilityRole::Slider(_) | AccessibilityRole::Splitter(_)
+                        ) =>
+                    {
                         objc2_foundation::NSNumber::new_f64(
                             node.value.and_then(|v| v.parse::<f64>().ok()).unwrap_or(0.),
                         )
@@ -1046,7 +1056,7 @@ pub(crate) mod native {
             #[unsafe(method_id(accessibilityMinValue))]
             fn accessibilityMinValue(&self) -> Option<Retained<objc2_foundation::NSNumber>> {
                 match self.node().map(|n| n.role) {
-                    Some(AccessibilityRole::Slider(range)) => {
+                    Some(AccessibilityRole::Slider(range) | AccessibilityRole::Splitter(range)) => {
                         Some(objc2_foundation::NSNumber::new_f64(range.minimum()))
                     }
                     _ => None,
@@ -1055,7 +1065,7 @@ pub(crate) mod native {
             #[unsafe(method_id(accessibilityMaxValue))]
             fn accessibilityMaxValue(&self) -> Option<Retained<objc2_foundation::NSNumber>> {
                 match self.node().map(|n| n.role) {
-                    Some(AccessibilityRole::Slider(range)) => {
+                    Some(AccessibilityRole::Slider(range) | AccessibilityRole::Splitter(range)) => {
                         Some(objc2_foundation::NSNumber::new_f64(range.maximum()))
                     }
                     _ => None,
@@ -1063,15 +1073,21 @@ pub(crate) mod native {
             }
             #[unsafe(method(accessibilityPerformIncrement))]
             fn accessibilityPerformIncrement(&self) -> bool {
-                self.node()
-                    .is_some_and(|n| matches!(n.role, AccessibilityRole::Slider(_)) && !n.read_only)
-                    && self.dispatch(AccessibilityAction::Increment)
+                self.node().is_some_and(|n| {
+                    matches!(
+                        n.role,
+                        AccessibilityRole::Slider(_) | AccessibilityRole::Splitter(_)
+                    ) && !n.read_only
+                }) && self.dispatch(AccessibilityAction::Increment)
             }
             #[unsafe(method(accessibilityPerformDecrement))]
             fn accessibilityPerformDecrement(&self) -> bool {
-                self.node()
-                    .is_some_and(|n| matches!(n.role, AccessibilityRole::Slider(_)) && !n.read_only)
-                    && self.dispatch(AccessibilityAction::Decrement)
+                self.node().is_some_and(|n| {
+                    matches!(
+                        n.role,
+                        AccessibilityRole::Slider(_) | AccessibilityRole::Splitter(_)
+                    ) && !n.read_only
+                }) && self.dispatch(AccessibilityAction::Decrement)
             }
 
             #[unsafe(method(accessibilityPerformPress))]
@@ -1089,7 +1105,10 @@ pub(crate) mod native {
                 if !node.enabled || node.read_only {
                     return;
                 }
-                if matches!(node.role, AccessibilityRole::Slider(_)) {
+                if matches!(
+                    node.role,
+                    AccessibilityRole::Slider(_) | AccessibilityRole::Splitter(_)
+                ) {
                     if let Some(value) = value
                         .and_then(|v| v.downcast_ref::<objc2_foundation::NSNumber>())
                         .map(|v| v.as_f64())
@@ -1248,6 +1267,7 @@ pub(crate) mod native {
                                     AccessibilityRole::TextField
                                         | AccessibilityRole::TextArea
                                         | AccessibilityRole::Slider(_)
+                                        | AccessibilityRole::Splitter(_)
                                 )
                                 && !node.read_only)
                             || (selector == sel!(setAccessibilitySelectedText:)
@@ -1258,7 +1278,10 @@ pub(crate) mod native {
                                 && !node.read_only)
                             || ((selector == sel!(accessibilityPerformIncrement)
                                 || selector == sel!(accessibilityPerformDecrement))
-                                && matches!(node.role, AccessibilityRole::Slider(_))
+                                && matches!(
+                                    node.role,
+                                    AccessibilityRole::Slider(_) | AccessibilityRole::Splitter(_)
+                                )
                                 && !node.read_only)
                             || ((selector == sel!(setAccessibilitySelectedTextRange:)
                                 || selector == sel!(setAccessibilitySelectedTextRanges:))
@@ -1314,6 +1337,7 @@ pub(crate) mod native {
             matches!(
                 role,
                 AccessibilityRole::Slider(_)
+                    | AccessibilityRole::Splitter(_)
                     | AccessibilityRole::Button
                     | AccessibilityRole::Link
                     | AccessibilityRole::Switch
@@ -1573,6 +1597,16 @@ mod tests {
         n.value = None;
         assert!(!validate_accessibility_nodes(&[n]));
         assert!(AccessibilityRange::new(5., 5.).is_some());
+        let mut splitter = node(2, None, None);
+        splitter.role = AccessibilityRole::Splitter(domain);
+        for value in ["0", "50", "100"] {
+            splitter.value = Some(value.into());
+            assert!(validate_accessibility_nodes(&[splitter.clone()]));
+        }
+        for value in ["NaN", "inf", "-1", "101", "not numeric"] {
+            splitter.value = Some(value.into());
+            assert!(!validate_accessibility_nodes(&[splitter.clone()]));
+        }
     }
 
     #[test]

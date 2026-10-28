@@ -88,7 +88,11 @@ fn enrich(
         }
     }
     if let Some(layout) = host.semantic_text_layout_snapshot(id, part) {
-        if node.role != AccessibilityRole::Image && layout.multiline {
+        if !matches!(
+            node.role,
+            AccessibilityRole::Image | AccessibilityRole::Splitter(_)
+        ) && layout.multiline
+        {
             node.role = AccessibilityRole::TextArea;
         }
         node.value = Some(layout.input.text.clone());
@@ -121,6 +125,11 @@ fn project_content_nodes(host: &ContentHost) -> Option<Vec<AccessibilityNode>> {
             n.focused && !n.parts.iter().any(|p| p.focused),
             &n.semantics,
         );
+        if n.semantics.role == ContentRole::Splitter {
+            let range = host.semantic_value_range(n.id, None)?;
+            owner.role =
+                AccessibilityRole::Splitter(AccessibilityRange::new(*range.start(), *range.end())?);
+        }
         enrich(host, n.id, None, &n.semantics, &mut owner);
         nodes.push(owner);
         for part in n.parts {
@@ -133,14 +142,19 @@ fn project_content_nodes(host: &ContentHost) -> Option<Vec<AccessibilityNode>> {
             };
             let parent = content_key(host, n.id, host.semantic_part_parent(n.id, part.index));
             let mut node = project(key, parent, part.frame, part.focused, &part.semantics);
-            if part.semantics.role == ContentRole::Slider {
+            if matches!(
+                part.semantics.role,
+                ContentRole::Slider | ContentRole::Splitter
+            ) {
                 // A virtual adjustable part must retain its original real domain.
                 // Unlike the legacy local-owner branch, no Group fallback is valid.
                 let range = host.semantic_value_range(n.id, Some(part.index))?;
-                node.role = AccessibilityRole::Slider(AccessibilityRange::new(
-                    *range.start(),
-                    *range.end(),
-                )?);
+                let range = AccessibilityRange::new(*range.start(), *range.end())?;
+                node.role = if part.semantics.role == ContentRole::Splitter {
+                    AccessibilityRole::Splitter(range)
+                } else {
+                    AccessibilityRole::Slider(range)
+                };
             }
             enrich(host, n.id, Some(part.index), &part.semantics, &mut node);
             nodes.push(node);
@@ -212,6 +226,9 @@ fn project(
             Role::Link => NativeRole::Link,
             Role::TextInput => NativeRole::TextField,
             Role::Slider => NativeRole::Group,
+            Role::Splitter => {
+                NativeRole::Splitter(AccessibilityRange::new(0., 1.).expect("split ratio domain"))
+            }
             Role::Switch => NativeRole::Switch,
             Role::List => NativeRole::List,
             Role::ListItem => NativeRole::ListItem,
@@ -689,5 +706,231 @@ mod image_role_local_port_tests {
         assert_eq!(host.value_range(id), Some(-40.0..=160.0));
         assert_eq!(host.semantic_value_range(id, None), Some(-40.0..=160.0));
         assert!(content_nodes(&host).is_empty());
+    }
+}
+
+#[cfg(test)]
+mod splitter_projection_tests {
+    use super::*;
+
+    #[test]
+    fn splitter_role_projects_to_native_splitter_with_finite_range() {
+        let mut semantics = ContentSemantics::new(ContentRole::Splitter, "Split view divider");
+        semantics.value = Some("0.5".into());
+        let node = project(
+            AccessibilityKey {
+                component: 103,
+                part: None,
+            },
+            None,
+            tekes_ui_scene::Rect::new(20.0, 0.0, 1.0, 80.0),
+            true,
+            &semantics,
+        );
+        assert_eq!(
+            node.role,
+            AccessibilityRole::Splitter(AccessibilityRange::new(0.0, 1.0).unwrap())
+        );
+        assert_eq!(node.value.as_deref(), Some("0.5"));
+        assert!(node.focused);
+    }
+}
+
+#[cfg(test)]
+mod splitter_content_bridge_tests {
+    use super::*;
+    use crate::AccessibilityAction;
+    use tekes_ui_controls::{ButtonTextAlign, ButtonTextRenderer, composition::*};
+    use tekes_ui_scene::{Rect as SceneRect, Scene, Size as SceneSize};
+    use tekes_ui_tokens::{Rgba, Theme, proposal};
+
+    struct Text;
+    impl ButtonTextRenderer for Text {
+        fn measure(&mut self, text: &str, _: proposal::TextRole, width: f32) -> SceneSize {
+            SceneSize::new((text.len() as f32 * 7.0).min(width), 20.0)
+        }
+        fn draw(
+            &mut self,
+            _: &mut Scene,
+            _: &str,
+            _: proposal::TextRole,
+            _: SceneRect,
+            _: ButtonTextAlign,
+            _: Rgba,
+        ) {
+        }
+    }
+
+    fn split_host(min_pane: f32) -> ContentHost {
+        ContentHost::try_new_prepared(
+            Content::new(
+                ComponentId(1),
+                SplitViewContent::try_new(SplitViewConstruction {
+                    config: SplitViewConfig {
+                        min_pane,
+                        ..SplitViewConfig::default()
+                    },
+                    slots: SplitViewSlotIds {
+                        leading: ComponentId(2),
+                        trailing: ComponentId(3),
+                        divider: ComponentId(4),
+                    },
+                    leading: Content::new(ComponentId(5), Button::new("leading")),
+                    trailing: Content::new(ComponentId(6), Button::new("trailing")),
+                    budget: 64 * 1024 * 1024,
+                })
+                .unwrap(),
+            ),
+            64 * 1024 * 1024,
+        )
+        .unwrap()
+    }
+
+    fn paint(host: &mut ContentHost, width: f32) {
+        let frame = SceneRect::new(0.0, 0.0, width, 80.0);
+        host.render(
+            &mut Scene::new(),
+            &mut Text,
+            frame,
+            frame,
+            Theme::LIGHT.into(),
+        )
+        .unwrap();
+    }
+
+    #[derive(Debug)]
+    struct SplitterPart {
+        domain: Option<std::ops::RangeInclusive<f64>>,
+    }
+    impl Component for SplitterPart {
+        fn measure(
+            &mut self,
+            _: &mut dyn ButtonTextRenderer,
+            _: SceneSize,
+        ) -> tekes_ui_controls::layout::MeasuredChild {
+            tekes_ui_controls::layout::MeasuredChild::new(SceneSize::new(40., 80.))
+        }
+        fn semantic_parts(&self) -> Vec<SemanticPart> {
+            let mut semantics =
+                ContentSemantics::new(ContentRole::Splitter, "Remote split divider");
+            semantics.value = Some("0.5".into());
+            vec![SemanticPart {
+                index: 7,
+                frame: SceneRect::new(20., 0., 1., 80.),
+                focused: false,
+                semantics,
+            }]
+        }
+        fn semantic_part_value_range(&self, part: usize) -> Option<std::ops::RangeInclusive<f64>> {
+            (part == 7).then(|| self.domain.clone()).flatten()
+        }
+    }
+    #[test]
+    fn splitter_part_uses_original_range_and_missing_domain_withdraws_complete_snapshot() {
+        let id = ComponentId(91);
+        let mut host = ContentHost::new(Content::new(
+            id,
+            SplitterPart {
+                domain: Some(0.1..=0.9),
+            },
+        ))
+        .unwrap();
+        paint(&mut host, 101.);
+        let nodes = content_nodes(&host);
+        assert_eq!(nodes.len(), 2);
+        assert_eq!(nodes[1].key.part, Some(7));
+        assert_eq!(
+            nodes[1].role,
+            AccessibilityRole::Splitter(AccessibilityRange::new(0.1, 0.9).unwrap())
+        );
+        assert_eq!(nodes[1].value.as_deref(), Some("0.5"));
+        assert!(crate::accessibility::validate_accessibility_nodes(&nodes));
+        assert!(host.semantic_value_range(id, Some(8)).is_none());
+        host.get_mut(id)
+            .unwrap()
+            .component_mut::<SplitterPart>()
+            .unwrap()
+            .domain = None;
+        assert!(content_nodes(&host).is_empty());
+        for domain in [
+            std::ops::RangeInclusive::new(f64::NAN, 1.),
+            std::ops::RangeInclusive::new(0., f64::INFINITY),
+            std::ops::RangeInclusive::new(0.9, 0.1),
+        ] {
+            host.get_mut(id)
+                .unwrap()
+                .component_mut::<SplitterPart>()
+                .unwrap()
+                .domain = Some(domain);
+            assert!(content_nodes(&host).is_empty());
+        }
+    }
+
+    #[test]
+    fn non_binary_minimum_domain_survives_native_snapshot_validation_atomically() {
+        let mut host = split_host(10.0);
+        paint(&mut host, 101.0);
+        let nodes = content_nodes(&host);
+        let splitter = nodes
+            .iter()
+            .find(|node| matches!(node.role, AccessibilityRole::Splitter(_)))
+            .expect("visible splitter")
+            .clone();
+        let AccessibilityRole::Splitter(range) = splitter.role else {
+            unreachable!()
+        };
+        assert_eq!(range.minimum(), 0.1);
+        assert_eq!(range.maximum(), 0.9);
+        let published_value = splitter.value.as_deref().unwrap().parse::<f64>().unwrap();
+        assert!(range.minimum() <= published_value && published_value <= range.maximum());
+        assert!(crate::accessibility::validate_accessibility_nodes(&nodes));
+        assert_eq!(
+            crate::accessibility::accept_accessibility_nodes(nodes.clone()),
+            nodes
+        );
+
+        let root_key = content_key(&host, ComponentId(1), None).unwrap();
+        let prefix = content_nodes(&host)
+            .into_iter()
+            .find(|node| node.key == root_key)
+            .expect("valid prefix owner");
+        assert!(crate::accessibility::validate_accessibility_nodes(
+            std::slice::from_ref(&prefix)
+        ));
+        let mut invalid_splitter = splitter;
+        invalid_splitter.value = Some("0.05".into());
+        let invalid_packet = vec![prefix, invalid_splitter];
+        assert!(!crate::accessibility::validate_accessibility_nodes(
+            &invalid_packet
+        ));
+        assert!(crate::accessibility::accept_accessibility_nodes(invalid_packet).is_empty());
+    }
+
+    #[test]
+    fn constrained_divider_is_absent_and_its_old_action_is_rejected() {
+        let mut host = split_host(10.0);
+        paint(&mut host, 101.0);
+        let old_key = content_key(&host, ComponentId(4), None).unwrap();
+        assert!(
+            content_nodes(&host)
+                .iter()
+                .any(|node| node.key == old_key
+                    && matches!(node.role, AccessibilityRole::Splitter(_)))
+        );
+
+        paint(&mut host, 10.0);
+        assert!(
+            content_nodes(&host)
+                .iter()
+                .all(|node| !matches!(node.role, AccessibilityRole::Splitter(_)))
+        );
+        assert!(
+            !content_action(
+                &mut host,
+                old_key,
+                AccessibilityAction::SetValue("0.5".into())
+            )
+            .consumed
+        );
     }
 }

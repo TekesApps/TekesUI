@@ -206,6 +206,8 @@ pub enum ContentRole {
     MenuButton,
     Menu,
     MenuItem,
+    /// The original visible split divider, with its finite ratio domain.
+    Splitter,
 }
 impl ContentRole {
     fn is_action_owner(self) -> bool {
@@ -653,6 +655,7 @@ pub trait Component: Debug + Any {
                     | ContentRole::TextInput
                     | ContentRole::Slider
                     | ContentRole::Switch
+                    | ContentRole::Splitter
             )
     }
     /// Full metadata entry point. The default preserves existing primary-pointer

@@ -4,6 +4,11 @@ fn main() {
     assert_eq!(checks, 6);
     let image_checks = tekes_ui_platform_macos::selftest::image_role_contract();
     assert_eq!(image_checks, 3);
+    let splitter_checks = tekes_ui_platform_macos::selftest::splitter_role_contract();
+    assert_eq!(splitter_checks, 18);
+    println!(
+        "SPLITTER_NATIVE_OBJECT_CONTRACT_OK checks={splitter_checks} hidden_windows=1 shown_windows=0 desktop_actions=0"
+    );
     println!("IMAGE_NATIVE_OBJECT_CONTRACT_OK checks={image_checks} windows=0 desktop_actions=0");
     println!("LINK_NATIVE_OBJECT_CONTRACT_OK checks={checks} windows=0 desktop_actions=0");
 }

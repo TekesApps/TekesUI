@@ -1423,3 +1423,177 @@ pub fn image_role_contract() -> usize {
     shared.finish();
     3
 }
+
+/// Issue #103 actual AppKit object mapping for the original Splitter role.
+/// Queries a real NSObject subclass with a hidden real window dispatch owner.
+/// Never shows or activates the window or asks VoiceOver to speak.
+pub fn splitter_role_contract() -> usize {
+    use crate::accessibility::NativeAccessibilityElement;
+    use crate::shared::Shared;
+    use crate::{
+        AccessibilityAction, AccessibilityKey, AccessibilityNode, AccessibilityRange,
+        AccessibilityRole, Event, Window, WindowHandler,
+    };
+    use objc2::rc::Retained;
+    use objc2::{msg_send, sel};
+    use objc2_foundation::{NSNumber, NSString};
+
+    struct Recorder(std::rc::Rc<std::cell::RefCell<Vec<Event>>>);
+    impl WindowHandler for Recorder {
+        fn handle(&mut self, event: Event, _: &mut Window) {
+            self.0.borrow_mut().push(event);
+        }
+    }
+
+    let mtm = MainThreadMarker::new().expect("Splitter probe main thread");
+    let events = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
+    let shared = Shared::new(mtm, Box::new(Recorder(events.clone())));
+    // Enabled native actions use the production WindowHandler dispatch, which
+    // requires actual Window objects. Preserve that dependency without taking
+    // desktop focus; the old object-only fixture panicked before dispatch.
+    use objc2::MainThreadOnly;
+    use objc2_app_kit::{NSApplicationActivationPolicy, NSBackingStoreType, NSWindowStyleMask};
+    NSApplication::sharedApplication(mtm)
+        .setActivationPolicy(NSApplicationActivationPolicy::Prohibited);
+    let rect = objc2_foundation::NSRect::new(NSPoint::new(0., 0.), NSSize::new(160., 80.));
+    let window = unsafe {
+        NSWindow::initWithContentRect_styleMask_backing_defer(
+            NSWindow::alloc(mtm),
+            rect,
+            NSWindowStyleMask::empty(),
+            NSBackingStoreType::Buffered,
+            false,
+        )
+    };
+    unsafe { window.setReleasedWhenClosed(false) };
+    let view = crate::view::TekesView::new(mtm, shared.clone(), rect);
+    window.setContentView(Some(&view));
+    shared
+        .objects
+        .set(crate::shared::Objects {
+            window: window.clone(),
+            view,
+        })
+        .ok()
+        .unwrap();
+    shared.ready.set(true);
+    assert!(!window.isVisible());
+
+    let key = AccessibilityKey {
+        component: 103,
+        part: Some(4),
+    };
+    let element = NativeAccessibilityElement::new(mtm, &shared, key);
+    shared
+        .accessibility_elements
+        .borrow_mut()
+        .insert(key, element.clone());
+    let node = AccessibilityNode {
+        key,
+        parent: None,
+        role: AccessibilityRole::Splitter(AccessibilityRange::new(0.1, 0.9).unwrap()),
+        frame: crate::Rect {
+            origin: crate::Point { x: 80.0, y: 8.0 },
+            size: crate::Size {
+                width: 1.0,
+                height: 72.0,
+            },
+        },
+        label: "Split pane divider".into(),
+        value: Some("0.625".into()),
+        description: None,
+        enabled: true,
+        focused: false,
+        selected: false,
+        expanded: None,
+        invalid: false,
+        required: false,
+        text_selection: None,
+        read_only: false,
+    };
+    assert!(crate::accessibility::validate_accessibility_nodes(
+        std::slice::from_ref(&node)
+    ));
+    *shared.accessibility_nodes.borrow_mut() = vec![node];
+
+    let role: Retained<NSString> = unsafe { msg_send![&*element, accessibilityRole] };
+    assert_eq!(&*role, unsafe {
+        objc2_app_kit::NSAccessibilitySplitterRole
+    });
+    let label: Retained<NSString> = unsafe { msg_send![&*element, accessibilityLabel] };
+    assert_eq!(label.to_string(), "Split pane divider");
+    let value: Retained<NSNumber> = unsafe { msg_send![&*element, accessibilityValue] };
+    assert!((value.as_f64() - 0.625).abs() < f64::EPSILON);
+    let minimum: Option<Retained<NSNumber>> =
+        unsafe { msg_send![&*element, accessibilityMinValue] };
+    let maximum: Option<Retained<NSNumber>> =
+        unsafe { msg_send![&*element, accessibilityMaxValue] };
+    assert!((minimum.unwrap().as_f64() - 0.1).abs() < f64::EPSILON);
+    assert!((maximum.unwrap().as_f64() - 0.9).abs() < f64::EPSILON);
+    let is_element: bool = unsafe { msg_send![&*element, isAccessibilityElement] };
+    assert!(is_element);
+    let increment_allowed: bool = unsafe {
+        msg_send![&*element, isAccessibilitySelectorAllowed: sel!(accessibilityPerformIncrement)]
+    };
+    assert!(increment_allowed);
+    let decrement_allowed: bool = unsafe {
+        msg_send![&*element, isAccessibilitySelectorAllowed: sel!(accessibilityPerformDecrement)]
+    };
+    assert!(decrement_allowed);
+    let incremented: bool = unsafe { msg_send![&*element, accessibilityPerformIncrement] };
+    let decremented: bool = unsafe { msg_send![&*element, accessibilityPerformDecrement] };
+    assert!(incremented && decremented);
+    assert_eq!(
+        *events.borrow(),
+        vec![
+            Event::Accessibility {
+                target: key,
+                action: AccessibilityAction::Increment,
+            },
+            Event::Accessibility {
+                target: key,
+                action: AccessibilityAction::Decrement,
+            },
+        ],
+        "native actions must dispatch the exact splitter key in order"
+    );
+
+    let setter_allowed: bool = unsafe {
+        msg_send![&*element, isAccessibilitySelectorAllowed: sel!(setAccessibilityValue:)]
+    };
+    assert!(setter_allowed);
+    let next_value = NSNumber::new_f64(0.75);
+    let _: () = unsafe { msg_send![&*element, setAccessibilityValue: &*next_value] };
+    assert_eq!(
+        events.borrow().last(),
+        Some(&Event::Accessibility {
+            target: key,
+            action: AccessibilityAction::SetValue("0.75".into()),
+        })
+    );
+    assert_eq!(events.borrow().len(), 3);
+
+    let mut disabled = shared.accessibility_nodes.borrow()[0].clone();
+    disabled.enabled = false;
+    *shared.accessibility_nodes.borrow_mut() = vec![disabled];
+    let increment_allowed: bool = unsafe {
+        msg_send![&*element, isAccessibilitySelectorAllowed: sel!(accessibilityPerformIncrement)]
+    };
+    assert!(!increment_allowed);
+    let incremented: bool = unsafe { msg_send![&*element, accessibilityPerformIncrement] };
+    assert!(!incremented);
+
+    let mut read_only = shared.accessibility_nodes.borrow()[0].clone();
+    read_only.enabled = true;
+    read_only.read_only = true;
+    *shared.accessibility_nodes.borrow_mut() = vec![read_only];
+    let decrement_allowed: bool = unsafe {
+        msg_send![&*element, isAccessibilitySelectorAllowed: sel!(accessibilityPerformDecrement)]
+    };
+    assert!(!decrement_allowed);
+    let decremented: bool = unsafe { msg_send![&*element, accessibilityPerformDecrement] };
+    assert!(!decremented);
+    assert_eq!(events.borrow().len(), 3, "refused actions emit no events");
+    shared.finish();
+    18
+}

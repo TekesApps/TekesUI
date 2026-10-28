@@ -62,8 +62,11 @@ pub(crate) fn validate(nodes: &[wire::SemanticNode]) -> Result<()> {
             "blank child Image alternate text"
         );
         ensure!(
-            n.semantics.role != wire::SemanticRole::Slider || n.value_range.is_some(),
-            "missing child Slider range"
+            !matches!(
+                n.semantics.role,
+                wire::SemanticRole::Slider | wire::SemanticRole::Splitter
+            ) || n.value_range.is_some(),
+            "missing child adjustable range"
         );
         ensure!(
             n.value_range
@@ -85,8 +88,11 @@ pub(crate) fn validate(nodes: &[wire::SemanticNode]) -> Result<()> {
                 "blank child Image part alternate text"
             );
             ensure!(
-                p.semantics.role != wire::SemanticRole::Slider || p.value_range.is_some(),
-                "missing child Slider part range"
+                !matches!(
+                    p.semantics.role,
+                    wire::SemanticRole::Slider | wire::SemanticRole::Splitter
+                ) || p.value_range.is_some(),
+                "missing child adjustable part range"
             );
             ensure!(
                 p.text_layout
@@ -144,6 +150,7 @@ fn semantics(s: &wire::Semantics) -> ContentSemantics {
             W::Link => R::Link,
             W::TextInput => R::TextInput,
             W::Slider => R::Slider,
+            W::Splitter => R::Splitter,
             W::Switch => R::Switch,
             W::List => R::List,
             W::ListItem => R::ListItem,
@@ -477,5 +484,19 @@ mod tests {
         }
         slider.value_range = Some([-40., 160.]);
         assert!(validate(&[prefix, slider]).is_ok());
+    }
+    #[test]
+    fn splitter_receiver_preserves_role_and_rejects_missing_or_nonfinite_domain() {
+        let mut divider = node(2, None);
+        divider.semantics.role = wire::SemanticRole::Splitter;
+        divider.semantics.value = Some("0.5".into());
+        assert!(validate(&[node(1, None), divider.clone()]).is_err());
+        for domain in [[f64::NAN, 1.], [0., f64::INFINITY], [0.9, 0.1]] {
+            divider.value_range = Some(domain);
+            assert!(validate(&[node(1, None), divider.clone()]).is_err());
+        }
+        divider.value_range = Some([0.1, 0.9]);
+        assert!(validate(&[node(1, None), divider.clone()]).is_ok());
+        assert_eq!(semantics(&divider.semantics).role, ContentRole::Splitter);
     }
 }
