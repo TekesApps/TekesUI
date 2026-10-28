@@ -61,6 +61,8 @@ struct GpuImage {
     _texture: wgpu::Texture,
     bind_group: wgpu::BindGroup,
     cpu_upload: bool,
+    identity: std::sync::Arc<crate::gpu::RegistrationIdentity>,
+    size: (u32, u32),
 }
 
 pub(crate) struct ImagePass {
@@ -68,7 +70,8 @@ pub(crate) struct ImagePass {
     image_layout: wgpu::BindGroupLayout,
     sampler: wgpu::Sampler,
     images: HashMap<u32, GpuImage>,
-    next_id: u32,
+    next_id: Option<u32>,
+    next_incarnation: u64,
     pub staging: Vec<ImageInstance>,
     pub instances: GrowBuffer<ImageInstance>,
 }
@@ -130,7 +133,8 @@ impl ImagePass {
             image_layout,
             sampler,
             images: HashMap::new(),
-            next_id: 1,
+            next_id: Some(1),
+            next_incarnation: 1,
             staging: Vec::new(),
             instances: GrowBuffer::new(device, "tekes image instances", 16),
         }
@@ -143,6 +147,7 @@ impl ImagePass {
         rgba8_premul: &[u8],
         width: u32,
         height: u32,
+        owner: u64,
     ) -> Result<ImageId, RenderError> {
         if width == 0 || height == 0 {
             return Err(RenderError::InvalidArgument("图像尺寸不能为 0"));
@@ -151,7 +156,11 @@ impl ImagePass {
         if width > max || height > max {
             return Err(RenderError::InvalidArgument("图像超过纹理尺寸上限"));
         }
-        if rgba8_premul.len() as u64 != width as u64 * height as u64 * 4 {
+        let expected = u64::from(width)
+            .checked_mul(u64::from(height))
+            .and_then(|n| n.checked_mul(4))
+            .ok_or(RenderError::InvalidArgument("图像尺寸溢出"))?;
+        if rgba8_premul.len() as u64 != expected {
             return Err(RenderError::InvalidArgument(
                 "图像像素数据长度必须是 宽 * 高 * 4",
             ));
@@ -191,14 +200,15 @@ impl ImagePass {
                 },
             ],
         });
-        let id = self.next_id;
-        self.next_id += 1;
+        let (id, identity) = self.allocate(owner, (width, height))?;
         self.images.insert(
             id,
             GpuImage {
                 _texture: texture,
                 bind_group,
                 cpu_upload: true,
+                identity,
+                size: (width, height),
             },
         );
         Ok(ImageId(id))
@@ -215,11 +225,24 @@ impl ImagePass {
                 "GPU image does not accept CPU pixel uploads",
             ));
         }
-        if data.len() as u64 != u64::from(size.width) * u64::from(size.height) * 4 {
+        let expected = u64::from(size.width)
+            .checked_mul(u64::from(size.height))
+            .and_then(|n| n.checked_mul(4))
+            .ok_or(RenderError::InvalidArgument("图像尺寸溢出"))?;
+        if data.len() as u64 != expected {
             return Err(RenderError::InvalidArgument(
                 "图像更新尺寸必须与已登记纹理相同",
             ));
         }
+        image
+            .identity
+            .revision
+            .fetch_update(
+                std::sync::atomic::Ordering::AcqRel,
+                std::sync::atomic::Ordering::Acquire,
+                |r| r.checked_add(1),
+            )
+            .map_err(|_| RenderError::InvalidArgument("image revision exhausted"))?;
         queue.write_texture(
             wgpu::TexelCopyTextureInfo {
                 texture: &image._texture,
@@ -239,10 +262,23 @@ impl ImagePass {
     }
 
     pub fn unregister(&mut self, id: ImageId) -> bool {
-        self.images.remove(&id.0).is_some()
+        if let Some(image) = self.images.remove(&id.0) {
+            image
+                .identity
+                .active
+                .store(false, std::sync::atomic::Ordering::Release);
+            true
+        } else {
+            false
+        }
     }
 
-    fn gpu_binding(&self, device: &wgpu::Device, image: &crate::gpu::GpuImage) -> GpuImage {
+    fn gpu_binding(
+        &self,
+        device: &wgpu::Device,
+        image: &crate::gpu::GpuImage,
+        identity: std::sync::Arc<crate::gpu::RegistrationIdentity>,
+    ) -> GpuImage {
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("tekes direct GPU image"),
             layout: &self.image_layout,
@@ -261,15 +297,21 @@ impl ImagePass {
             _texture: image.texture.clone(),
             bind_group,
             cpu_upload: false,
+            identity,
+            size: image.size(),
         }
     }
 
-    pub fn register_gpu(&mut self, device: &wgpu::Device, image: &crate::gpu::GpuImage) -> ImageId {
-        let binding = self.gpu_binding(device, image);
-        let id = self.next_id;
-        self.next_id += 1;
+    pub fn register_gpu(
+        &mut self,
+        device: &wgpu::Device,
+        image: &crate::gpu::GpuImage,
+        owner: u64,
+    ) -> Result<ImageId, RenderError> {
+        let (id, identity) = self.allocate(owner, image.size())?;
+        let binding = self.gpu_binding(device, image, identity);
         self.images.insert(id, binding);
-        ImageId(id)
+        Ok(ImageId(id))
     }
 
     pub fn replace_gpu(
@@ -287,7 +329,17 @@ impl ImagePass {
                 "cannot replace a CPU image with GPU storage",
             ));
         }
-        let binding = self.gpu_binding(device, image);
+        let identity = old.identity.clone();
+        let binding = self.gpu_binding(device, image, identity.clone());
+        identity
+            .revision
+            .fetch_update(
+                std::sync::atomic::Ordering::AcqRel,
+                std::sync::atomic::Ordering::Acquire,
+                |r| r.checked_add(1),
+            )
+            .map_err(|_| RenderError::InvalidArgument("image revision exhausted"))?;
+        *identity.size.lock().unwrap() = image.size();
         self.images.insert(id.0, binding);
         Ok(())
     }
@@ -302,5 +354,45 @@ impl ImagePass {
 
     pub fn len(&self) -> usize {
         self.images.len()
+    }
+
+    pub fn identity(
+        &self,
+        id: ImageId,
+    ) -> Option<std::sync::Arc<crate::gpu::RegistrationIdentity>> {
+        self.images.get(&id.0).map(|image| image.identity.clone())
+    }
+
+    pub fn size(&self, id: ImageId) -> Option<(u32, u32)> {
+        self.images.get(&id.0).map(|image| image.size)
+    }
+
+    fn allocate(
+        &mut self,
+        owner: u64,
+        size: (u32, u32),
+    ) -> Result<(u32, std::sync::Arc<crate::gpu::RegistrationIdentity>), RenderError> {
+        let id = self
+            .next_id
+            .ok_or(RenderError::InvalidArgument("image id space exhausted"))?;
+        let incarnation = self.next_incarnation;
+        let next_incarnation = incarnation
+            .checked_add(1)
+            .ok_or(RenderError::InvalidArgument(
+                "image incarnation space exhausted",
+            ))?;
+        self.next_id = id.checked_add(1);
+        self.next_incarnation = next_incarnation;
+        Ok((
+            id,
+            std::sync::Arc::new(crate::gpu::RegistrationIdentity {
+                owner,
+                id: ImageId(id),
+                incarnation,
+                size: std::sync::Mutex::new(size),
+                revision: std::sync::atomic::AtomicU64::new(0),
+                active: std::sync::atomic::AtomicBool::new(true),
+            }),
+        ))
     }
 }

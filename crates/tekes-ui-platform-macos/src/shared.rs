@@ -682,11 +682,7 @@ impl Window {
         if self.shared.closed.get() {
             return;
         }
-        let nodes = if crate::accessibility::validate_accessibility_nodes(&nodes) {
-            nodes
-        } else {
-            Vec::new()
-        };
+        let nodes = crate::accessibility::accept_accessibility_nodes(nodes);
         if *self.shared.accessibility_nodes.borrow() == nodes {
             return;
         }

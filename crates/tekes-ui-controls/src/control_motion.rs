@@ -404,3 +404,125 @@ mod atomic_presence {
         assert_eq!(caller.composition_error(), Some(error));
     }
 }
+
+#[cfg(test)]
+mod bitmap_fragment_retention {
+    use super::*;
+    use std::sync::{
+        Arc,
+        atomic::{AtomicUsize, Ordering},
+    };
+    use tekes_ui_scene::*;
+    #[derive(Default)]
+    struct Text {
+        now: Duration,
+        frames: usize,
+    }
+    impl crate::ButtonTextRenderer for Text {
+        fn measure(&mut self, _: &str, _: proposal::TextRole, _: f32) -> Size {
+            Size::new(0., 0.)
+        }
+        fn draw(
+            &mut self,
+            _: &mut Scene,
+            _: &str,
+            _: proposal::TextRole,
+            _: Rect,
+            _: crate::ButtonTextAlign,
+            _: tekes_ui_tokens::Rgba,
+        ) {
+        }
+        fn motion_context(&self) -> Option<crate::ControlMotionContext> {
+            Some(crate::ControlMotionContext {
+                now: self.now,
+                reduced_motion: false,
+            })
+        }
+        fn request_animation_frame(&mut self) {
+            self.frames += 1;
+        }
+    }
+    #[test]
+    fn controlled_bitmap_lease_survives_overlay_exit_fragment_and_releases_on_clear() {
+        struct Owner(Arc<AtomicUsize>);
+        impl Drop for Owner {
+            fn drop(&mut self) {
+                self.0.fetch_add(1, Ordering::SeqCst);
+            }
+        }
+        let drops = Arc::new(AtomicUsize::new(0));
+        let owner = Arc::new(Owner(drops.clone()));
+        let token = OpaqueImageLease::from_owner(owner.clone());
+        let mut current = Scene::new();
+        current.push_controlled_image(
+            ImageQuad {
+                rect: Rect::new(0., 0., 2., 2.),
+                image: ImageId(9),
+                opacity: 1.,
+            },
+            token.clone(),
+        );
+        let mut presence = OverlayPresence::default();
+        let mut text = Text::default();
+        // The real host clock completes entrance before semantic dismissal.
+        presence.paint(
+            &mut Scene::new(),
+            &mut text,
+            true,
+            "dialog".into(),
+            Some(current.clone()),
+        );
+        assert!(text.frames > 0, "the host clock requests animation frames");
+        text.now = Duration::from_millis(200);
+        let mut caller = Scene::new();
+        presence.paint(
+            &mut caller,
+            &mut text,
+            true,
+            "dialog".into(),
+            Some(current.clone()),
+        );
+        assert!(
+            matches!(&caller.primitives()[0],Primitive::ControlledImage{lease,..} if lease.same_owner(&token))
+        );
+        drop(caller);
+        text.now = Duration::from_millis(200);
+        let mut exit = Scene::new();
+        presence.paint(
+            &mut exit,
+            &mut text,
+            false,
+            "dialog".into(),
+            Some(current.clone()),
+        );
+        text.now = Duration::from_millis(250);
+        exit.clear();
+        presence.paint(
+            &mut exit,
+            &mut text,
+            false,
+            "dialog".into(),
+            Some(current.clone()),
+        );
+        assert!(
+            matches!(&exit.primitives()[0],Primitive::ControlledImage{quad,lease} if lease.same_owner(&token) && quad.opacity > 0. && quad.opacity < 1.)
+        );
+        // Drop every external owner: OverlayPresence and the exit output keep the token alive.
+        drop(current);
+        drop(owner);
+        drop(token);
+        assert_eq!(drops.load(Ordering::SeqCst), 0);
+        presence.clear();
+        assert_eq!(
+            drops.load(Ordering::SeqCst),
+            0,
+            "exit output still retains the lease"
+        );
+        drop(exit);
+        assert_eq!(
+            drops.load(Ordering::SeqCst),
+            1,
+            "last exit fragment releases once"
+        );
+    }
+}

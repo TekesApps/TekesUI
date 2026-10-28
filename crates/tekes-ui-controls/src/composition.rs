@@ -5,6 +5,13 @@
 //! Keys identify owned instances, not positions. Reordering moves instances; it
 //! never reconstructs controls. Removed content is returned to its owner, which
 //! may retain it for virtualization. No implicit serialization or rehydration.
+#[cfg(feature = "bitmap-images")]
+mod bitmap;
+#[cfg(feature = "bitmap-images")]
+pub use bitmap::{
+    ImageAlignment, ImageContent, ImageContentError, ImageFit, ImageLoadOutcome, ImageLoadRequest,
+    ImageLoadStatus, ImageSemantics,
+};
 mod actions;
 mod panel;
 pub use panel::{
@@ -180,6 +187,8 @@ pub enum Lifecycle {
 pub enum ContentRole {
     Group,
     Text,
+    /// Noninteractive image; nonempty name is alternative text, empty is explicitly decorative.
+    Image,
     Button,
     /// A navigation action with one semantic owner; its children are decorative.
     Link,
@@ -212,6 +221,14 @@ pub struct ContentSemantics {
     pub description: Option<String>,
 }
 impl ContentSemantics {
+    /// Construct an informative image semantic; blank alternative text is invalid.
+    pub fn image_alt(name: impl Into<String>) -> Option<Self> {
+        let name = name.into();
+        (!name.trim().is_empty()).then(|| Self::new(ContentRole::Image, name))
+    }
+    pub fn decorative_image() -> Self {
+        Self::new(ContentRole::Image, "")
+    }
     pub fn new(role: ContentRole, name: impl Into<String>) -> Self {
         Self {
             role,
@@ -2774,6 +2791,17 @@ impl ContentHost {
             return ContentResponse::default();
         }
         if !self.window_active {
+            return ContentResponse::default();
+        }
+        if self.scope().find_active(id).is_some_and(|node| {
+            node.component.semantics().role == ContentRole::Image
+                || part.is_some_and(|part| {
+                    node.component
+                        .semantic_parts()
+                        .iter()
+                        .any(|p| p.index == part && p.semantics.role == ContentRole::Image)
+                })
+        }) {
             return ContentResponse::default();
         }
         if let Some(response) = self.try_prepared_ax(id, part, &action) {

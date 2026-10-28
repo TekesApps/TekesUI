@@ -216,7 +216,9 @@ impl Scene {
                     Primitive::Quad(_)
                     | Primitive::Shadow(_)
                     | Primitive::Image(_)
-                    | Primitive::TransformedImage(_) => {}
+                    | Primitive::TransformedImage(_)
+                    | Primitive::ControlledImage { .. }
+                    | Primitive::ControlledTransformedImage { .. } => {}
                 }
                 if complete
                     && depth
@@ -340,6 +342,21 @@ fn transform_primitive(
             image.opacity *= alpha;
         }
         Primitive::TransformedImage(image) => {
+            if translated {
+                if image.rotation != 0. {
+                    return Err(FragmentError::UnsupportedTransform);
+                }
+                image.quad.rect = translated_rect(image.quad.rect, delta)?;
+            }
+            image.quad.opacity *= alpha;
+        }
+        Primitive::ControlledImage { quad: image, .. } => {
+            if translated {
+                image.rect = translated_rect(image.rect, delta)?;
+            }
+            image.opacity *= alpha;
+        }
+        Primitive::ControlledTransformedImage { quad: image, .. } => {
             if translated {
                 if image.rotation != 0. {
                     return Err(FragmentError::UnsupportedTransform);

@@ -889,21 +889,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tekes-ui-issue82-panel-consumer"
-version = "0.0.0"
-dependencies = [
- "resvg",
- "serde_json",
- "tekes-ui-controls",
- "tekes-ui-icons",
- "tekes-ui-platform-macos",
- "tekes-ui-render",
- "tekes-ui-scene",
- "tekes-ui-text",
- "tekes-ui-tokens",
-]
-
-[[package]]
 name = "tekes-ui-controls"
 version = "0.1.0"
 dependencies = [
@@ -926,6 +911,21 @@ dependencies = [
 [[package]]
 name = "tekes-ui-icons"
 version = "0.1.0"
+
+[[package]]
+name = "tekes-ui-issue82-panel-consumer"
+version = "0.0.0"
+dependencies = [
+ "resvg",
+ "serde_json",
+ "tekes-ui-controls",
+ "tekes-ui-icons",
+ "tekes-ui-platform-macos",
+ "tekes-ui-render",
+ "tekes-ui-scene",
+ "tekes-ui-text",
+ "tekes-ui-tokens",
+]
 
 [[package]]
 name = "tekes-ui-motion"

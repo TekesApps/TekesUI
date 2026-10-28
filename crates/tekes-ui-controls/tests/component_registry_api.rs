@@ -1057,6 +1057,62 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         &mut actual,
         "tekes_ui_controls::composition::HostRevealPlan",
     );
+    #[cfg(feature = "bitmap-images")]
+    {
+        public_type::<tekes_ui_controls::composition::ImageAlignment>(
+            &mut actual,
+            "tekes_ui_controls::composition::ImageAlignment",
+        );
+    }
+    #[cfg(feature = "bitmap-images")]
+    {
+        public_type::<tekes_ui_controls::composition::ImageContent>(
+            &mut actual,
+            "tekes_ui_controls::composition::ImageContent",
+        );
+    }
+    #[cfg(feature = "bitmap-images")]
+    {
+        public_type::<tekes_ui_controls::composition::ImageContentError>(
+            &mut actual,
+            "tekes_ui_controls::composition::ImageContentError",
+        );
+    }
+    #[cfg(feature = "bitmap-images")]
+    {
+        public_type::<tekes_ui_controls::composition::ImageFit>(
+            &mut actual,
+            "tekes_ui_controls::composition::ImageFit",
+        );
+    }
+    #[cfg(feature = "bitmap-images")]
+    {
+        public_type::<tekes_ui_controls::composition::ImageLoadOutcome>(
+            &mut actual,
+            "tekes_ui_controls::composition::ImageLoadOutcome",
+        );
+    }
+    #[cfg(feature = "bitmap-images")]
+    {
+        public_type::<tekes_ui_controls::composition::ImageLoadRequest>(
+            &mut actual,
+            "tekes_ui_controls::composition::ImageLoadRequest",
+        );
+    }
+    #[cfg(feature = "bitmap-images")]
+    {
+        public_type::<tekes_ui_controls::composition::ImageLoadStatus>(
+            &mut actual,
+            "tekes_ui_controls::composition::ImageLoadStatus",
+        );
+    }
+    #[cfg(feature = "bitmap-images")]
+    {
+        public_type::<tekes_ui_controls::composition::ImageSemantics>(
+            &mut actual,
+            "tekes_ui_controls::composition::ImageSemantics",
+        );
+    }
     public_type::<tekes_ui_controls::composition::InputModifiers>(
         &mut actual,
         "tekes_ui_controls::composition::InputModifiers",
@@ -1102,7 +1158,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::composition::NumberFieldContent",
     );
     #[allow(dead_code)]
-    fn public_trait_160<T: tekes_ui_controls::composition::NumberFormat + ?Sized>() {}
+    fn public_trait_168<T: tekes_ui_controls::composition::NumberFormat + ?Sized>() {}
     actual.push("tekes_ui_controls::composition::NumberFormat");
     public_type::<tekes_ui_controls::composition::NumberParseError>(
         &mut actual,
@@ -1149,7 +1205,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::composition::PointerPhase",
     );
     #[allow(dead_code)]
-    fn public_trait_172<T: tekes_ui_controls::composition::PreparedActionEffect + ?Sized>() {}
+    fn public_trait_180<T: tekes_ui_controls::composition::PreparedActionEffect + ?Sized>() {}
     actual.push("tekes_ui_controls::composition::PreparedActionEffect");
     public_type::<tekes_ui_controls::composition::PreparedActionFocus>(
         &mut actual,
@@ -1660,7 +1716,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::layout_view::IconLayout",
     );
     #[allow(dead_code)]
-    fn public_trait_300<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
+    fn public_trait_308<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
     actual.push("tekes_ui_controls::layout_view::IconRenderer");
     public_type::<tekes_ui_controls::layout_view::IconView>(
         &mut actual,
@@ -1723,10 +1779,19 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "/../../design/gallery/public-api-surface.json"
     )))
     .unwrap();
+    let enabled_features: &[&str] = &[
+        #[cfg(feature = "bitmap-images")]
+        "bitmap-images",
+    ];
     let expected: Vec<_> = surface["types"]
         .as_array()
         .unwrap()
         .iter()
+        .filter(|entry| {
+            entry["feature"]
+                .as_str()
+                .is_none_or(|feature| enabled_features.contains(&feature))
+        })
         .map(|entry| entry["api"].as_str().unwrap())
         .collect();
     assert_eq!(

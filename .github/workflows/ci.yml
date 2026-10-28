@@ -61,6 +61,15 @@ jobs:
         if: ${{ !cancelled() && steps.workspace_clippy.outcome == 'success' }}
         run: cargo test --manifest-path examples/composition-consumer/Cargo.toml --locked --no-fail-fast
 
+      - name: Optional bitmap Content and local Image semantics (Issue 117)
+        if: ${{ !cancelled() && steps.workspace_clippy.outcome == 'success' }}
+        run: |
+          cargo clippy -p tekes-ui-controls --features bitmap-images --all-targets --locked -- -D warnings
+          cargo test -p tekes-ui-controls --features bitmap-images --lib --test component_registry_api --test bitmap_content_consumer --locked
+          cargo clippy -p tekes-ui-platform-macos --features content-accessibility --all-targets --locked -- -D warnings
+          cargo test -p tekes-ui-platform-macos --features content-accessibility --lib --locked
+          cargo test -p tekes-ui-platform-macos --features content-accessibility --test link_native --locked
+
       - name: Independent AppWindow and Settings delivery (Issue 70)
         if: ${{ !cancelled() && steps.workspace_clippy.outcome == 'success' }}
         run: |
