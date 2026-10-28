@@ -28,6 +28,28 @@ python3 scripts/component-context.py --component tui.button
 cargo run --locked -p tekes-ui-gallery
 ```
 
+## 可独立消费的本地核心阶段（macOS）
+
+已有公共能力可以从完整公开 commit [`52ed62b1468a332b208cf61f4da06dc45ac72764`](https://github.com/TekesApps/TekesUI/tree/52ed62b1468a332b208cf61f4da06dc45ac72764) 消费，对应 annotated `checkpoint-20261029-2`。这是阶段检查点，不是正式 Release，也不表示整个 Gallery 或全部原生验收完成。独立 checkout 保留 `crates/` 与 `examples/` 的相对位置；下面的消费者各有自己的 Cargo workspace 和锁文件，使用库的公共 API，不依赖 Gallery 类型或外部开发目录。注册表依赖仍按各自锁文件解析。
+
+| 已交付公共能力 | 现有独立消费者与已验行为 | 具体边界 |
+| --- | --- | --- |
+| `AppWindow`、`SettingsWindow`、Settings schema/draft/file provider、Row/List 与设置项输入 | [AppHost 消费者](examples/app-host-demo/README.md)：原 Main 打开 Settings，Exclusive/Independent 两种模式的显示、编辑自动保存、Undo、关闭及窗口/焦点恢复；最终独立 checkout 和同源 CI 已通过，#70 已关闭。 | 原生证据固定在 #70 的 `cd27d0b`／最终 `45f1cf1`、PR139／checkpoint-20261027-2；当前 pin 包含这些提交，不能将旧运行改签成新运行。物理 IME/VoiceOver 不在此处宣称通过。 |
+| `ContentHost`、`PanelContent`、`StackContent`、Button、`TextFieldContent`、`ScrollContent` | [Panel 消费者](examples/panel-content-consumer/README.md)：原树真实 CoreText 编辑几何、动作与 mount、marked/selection、阅读锚点及嵌套 Panel/Split；原 CPU3、Metal450组合与18完整 coverage oracle 各保持原收据身份。 | 450组合不等于450份完整像素 oracle。新原生入口的完整 reveal/Undo/Tab/close 补验及实体中文候选交互尚未完成，#82 保持开放；VoiceOver 未验。 |
+| 普通本地列表、文本输入及组合、Theme/Palette/Surface 语义消费 | [公共组合消费者](examples/composition-consumer/README.md)和上述已有设置/Panel路径；源码、锁、公共接口与本票适用行为证据沿用各原 Issue。 | 不因此宣布所有组合、物理输入、性能或平台均已验；具体未验项继续留原票。全52根实用 Theme 接入已由 #113/#114/#121–#125 完成，不重复开发，也不替代实际产品验收。 |
+
+当前独立原生窗口、CoreText 和 Metal 验收适用于 **macOS**；Windows/Linux 保持后续平台目标。普通本地组件的消费不等待 #81 B2 跨进程曲线链、#127 完整 Toolbar 有限支持或完整 Gallery。已有 AppHost 多进程样例使用其已交付的普通链路，不冒充新的 B2 能力。
+
+复用现有入口；本仓运行继续使用协调者的共享锁、SSD 输出和源码身份规则，不另建 target。Settings 原生验收使用隔离 HOME，避免把测试写入个人配置。
+
+```sh
+cargo run --manifest-path examples/app-host-demo/Cargo.toml --locked --offline -- --verify
+cargo test --manifest-path examples/panel-content-consumer/Cargo.toml --test panel_content --locked --offline
+cargo test --manifest-path examples/composition-consumer/Cargo.toml --test scenarios --locked --offline
+```
+
+这些命令分别运行已有入口，不代表本段文档更新时重新执行，也不包含原生窗口或真实 IME。窗口使用与各层证据见各消费者 README；#82 的未验原生候选不包含在上述公开 pin 中。
+
 ## 验收方式
 
 - 每个组件都有一个恒定的人工目测验收目标：Gallery（类似 Storybook 的 Rust 应用），固定夹具、固定布局、完整状态矩阵，有参照图就并排展示。
