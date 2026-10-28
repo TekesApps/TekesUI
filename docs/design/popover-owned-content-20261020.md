@@ -1,5 +1,15 @@
 # Popover 公共组合最小消费者
 
+## 当前 Main 接收（2026-10-29，基线391f4ba＋本批差量）
+
+当前库提供 `PopoverContent` 与原 ContentHost 的 show/close 公共入口，保留原文本编辑器、Switch、Cancel/Save 和真实下层动作。复用原 PopoverView、OverlayScope、motion、Palette/Surface 与原 mount；不增加第二个 host。配置 Dismiss 可隐藏且不再占据内容量度、绘制、命中或语义；默认旧 View 行为保持。共享 View 的 Surface 使用现有 canonical packet 与 popover elevation，未新增生成器或主题规则。
+
+原组件/public consumer 行为、主题映射及必要 strict 已通过。接收中发现的缺失实际 View 依赖、重复 overlay paint、Dialog 未退休外部 popup、Cancel 后残留 scope 均已在不删断言的条件下修正。真实 AppKit 窗口已观测原 owner 的 UTF16 preedit/query、Escape 优先取消组字而保持表单、选择/编辑/Undo、Tab、外点关闭、同 mount 重开、原 Save AX selector、失活关闭与恢复不重开。实体键盘/物理 IME、VoiceOver、全库原生和性能没有执行，不作完成声明，也不是本票之外追加的门禁。
+
+最终原生证据为 SSD `artifacts/issue-49/main6e8792c-popover-intake-candidate-20261029-01/root-intake01/native04/native-verified.json`，绑定 final-check07 的精确程序。native03 的通过保持其原身份；初始背景 token 与 AX 目标身份错误导致的 abort 保留在 native01/02。最后 consumer 入口将错误显式失败而非忽略，受影响 strict、公共行为/主题与最终原生程序已补验。独立公开40位 SHA／必要CI／远端 main 交付尚待，#49保持开放。
+
+## 历史：consumer 包装器阶段（原证据身份保留）
+
 本轮完成第六批的有界 Popover 场景，不代表第六批、整个组件或八批工作已经完成。没有增加内置 `PopoverContent`，也没有扩大组件迁移。
 
 根因是公共组合能力存在接入缺口：`PopoverView` 已有内容回调、放置、测量、事件和进入／退出过渡，但 `Content` 的子树绘制由宿主私有遍历接管；消费者无法把同一棵已挂载子树放入该回调，只能另做绘制或另建宿主。调用者的挂载身份校验也只在 Dialog 内部可用。
@@ -30,3 +40,11 @@
 原生证据来自工具驱动的实际 AppKit 键盘、菜单、AX 和窗口生命周期。未声称物理拼音或 VoiceOver 听读通过，VoiceOver 全程保持关闭。Reduced Motion 是宿主提供的上下文，未修改系统设置。性能没有测量。
 
 机器入口为 `design/reviews/popover-owned-content-20261020/acceptance.json`。小宿主关闭、进程退出并检查无使用后，已清理运行包、测试可执行文件及宿主包构建；代码、失败／通过证据、截图和公共库缓存保留。`source-final` 只是本轮所属文件快照，不是完整可移植依赖闭包。未提交、推送、打 tag 或关闭 Issue。
+
+### 2026-10-29：Main 6e8792c 初始私有候选（历史）
+
+本候选把原 Root `PopoverContent` adapter 接入 Main 原 `ContentHost`，复用 PopoverView、OverlayScope、文本/AX owner 和现有 focus/capture 清理路径；它不创建第二个 host。公开 `ContentHost::pointer_capture()` 继续返回 `(ComponentId, mount)`；内部只记录该次 capture 来自普通正文还是 overlay，以保持同一原入口分发 Move/Up。
+
+独立 consumer 保留 TextField 草稿、Switch、Cancel/Save 和真实下层 Action；Dismiss 可单独关闭，业务 completion 使用 opening `PopoverSession`，陈旧 session 不能关闭后续打开。关闭期间 shell 可退出绘制，原 body 不再进入 hit/focus/AX；anchor mount 失效与窗口失活会关闭 transient。Main consumer 原有手写 Card consumer 被公共 adapter 场景替换，测试源与历史证据身份保留；Root 收据不改签。
+
+本节保留最初交付时的候选状态，已由上方当前接收状态替代。当时只完成静态 source/API、逐文件 rustfmt、Cargo 元数据解析、patch/path/hash 与 apply-check；不表示 Main 构建、GPU、AppKit、IME、VoiceOver 或完整 Issue #49 验收通过。原验收中 GPU、原生窗口、物理输入法与 VoiceOver 仍按各自源码和实体身份逐层验证；Root source receipt 对应不同 checkout，不能替代 Main 的验证。

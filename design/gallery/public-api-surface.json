@@ -1356,6 +1356,38 @@
       "reason": "Lossless pointer input at the existing Component/ContentHost boundary, with legacy primary-pointer compatibility; data only, not a new component or selection engine."
     },
     {
+      "api": "tekes_ui_controls::composition::PopoverCloseReason",
+      "category": "component-support",
+      "components": [
+        "tui.popover"
+      ],
+      "reason": "Original Popover owner/mount opening identity and once-only semantic close notification; no independent component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::PopoverClosed",
+      "category": "component-support",
+      "components": [
+        "tui.popover"
+      ],
+      "reason": "Original Popover owner/mount opening identity and once-only semantic close notification; no independent component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::PopoverContent",
+      "category": "component",
+      "components": [
+        "tui.popover"
+      ],
+      "reason": "Original retained Content in the existing Popover shell."
+    },
+    {
+      "api": "tekes_ui_controls::composition::PopoverSession",
+      "category": "component-support",
+      "components": [
+        "tui.popover"
+      ],
+      "reason": "Original Popover owner/mount opening identity and once-only semantic close notification; no independent component."
+    },
+    {
       "api": "tekes_ui_controls::composition::PreparedActionEffect",
       "category": "composition",
       "components": [],

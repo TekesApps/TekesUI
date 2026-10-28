@@ -89,7 +89,8 @@ fn popover_shell_and_owned_subtree_have_separate_actual_token_observations() {
                         reduced: state == "reduced-open",
                     };
                     let frame = Rect::new(0., 0., width, 640.);
-                    let palette = tekes_ui_tokens::Palette::new(theme, brand).expect("registered Gallery brand");
+                    let palette = tekes_ui_tokens::Palette::new(theme, brand)
+                        .expect("registered Gallery brand");
                     fixture
                         .host
                         .render(&mut Scene::new(), &mut text, frame, frame, palette)
@@ -185,10 +186,31 @@ fn popover_shell_and_owned_subtree_have_separate_actual_token_observations() {
                         _ => {}
                     }
                     text.millis = 220;
+                    let mut registered_scene = Scene::new();
                     fixture
                         .host
-                        .render(&mut Scene::new(), &mut text, frame, frame, palette)
+                        .render(&mut registered_scene, &mut text, frame, frame, palette)
                         .unwrap();
+                    let popup = fixture.host.get(p::POPOVER).unwrap();
+                    let popup_frame = popup.component::<PopoverContent>().unwrap().layout().frame;
+                    assert!(
+                        registered_scene.primitives().iter().any(|p| matches!(p,
+                        tekes_ui_scene::Primitive::Quad(q) if q.rect == popup_frame)),
+                        "registered host must actually draw the current open or exiting shell"
+                    );
+                    // Direct scoped observation must use the same declared Surface
+                    // as the registered owner. Switching to canvas while closing
+                    // correctly invalidates retained paint; that is not an exit bug.
+                    let surface = popup
+                        .surface()
+                        .or_else(|| {
+                            popup
+                                .component::<PopoverContent>()
+                                .unwrap()
+                                .default_surface()
+                        })
+                        .unwrap();
+                    let overlay_theme = ContentTheme::from(palette).with_surface(surface).unwrap();
                     assert_eq!(fixture.is_open(), state != "exit");
                     if state == "exit" {
                         assert!(fixture.is_presented());
@@ -219,11 +241,16 @@ fn popover_shell_and_owned_subtree_have_separate_actual_token_observations() {
                     });
                     let (_, tree_reads) = tekes_ui_tokens::audit::capture(|| {
                         let mut scene = Scene::new();
-                        fixture.host.get_mut(p::POPOVER).unwrap().paint_overlays(
-                            &mut scene,
-                            &mut text,
-                            palette.into(),
-                        );
+                        // Audit this same registered shell/body only. ContentHost
+                        // normally invokes this original component in opening order.
+                        let frame = fixture.host.get(p::POPOVER).unwrap().frame();
+                        fixture
+                            .host
+                            .get_mut(p::POPOVER)
+                            .unwrap()
+                            .component_mut::<PopoverContent>()
+                            .unwrap()
+                            .paint_overlay(&mut scene, &mut text, frame, frame, overlay_theme);
                         assert!(!scene.is_empty());
                     });
                     assert!(!shell_reads.is_empty() && !tree_reads.is_empty());

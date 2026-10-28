@@ -72,6 +72,8 @@ pub use number::{
     NumberParseError, NumberValidation, NumberValueChange, NumberValueError,
 };
 mod overlay_scope;
+mod popover;
+pub use popover::{PopoverCloseReason, PopoverClosed, PopoverContent, PopoverSession};
 mod pointer;
 mod text_query;
 pub use overlay_scope::OverlayScope;
@@ -1138,6 +1140,10 @@ impl Content {
         text: &mut dyn ButtonTextRenderer,
         theme: ContentTheme,
     ) {
+        // Registered Popovers have one host-owned overlay pass in opening order.
+        if self.component::<PopoverContent>().is_some() {
+            return;
+        }
         let owned = self.component.paints_children();
         if !(self.active() || owned && self.component.overlay_presented()) {
             return;
@@ -1656,6 +1662,12 @@ pub enum CompositionError {
         target: ComponentId,
     },
     NotDialog(ComponentId),
+    NotPopover(ComponentId),
+    PopoverUnavailable(ComponentId),
+    InvalidPopoverAnchor {
+        owner: ComponentId,
+        anchor: ComponentId,
+    },
     ModalAlreadyOpen,
     NestedInteractive {
         action: ComponentId,
@@ -1717,7 +1729,9 @@ pub struct ContentHost {
     focused: Option<ComponentId>,
     focus_wrap: bool,
     overlay_scopes: Vec<overlay_scope::ScopedOverlay>,
+    popover_order: Vec<PopoverSession>,
     captured: Option<ComponentId>,
+    captured_overlay: bool,
     captured_mount: Option<u64>,
     capture_epoch: u64,
     dirty: bool,
@@ -1759,7 +1773,9 @@ impl ContentHost {
             focused: None,
             focus_wrap: true,
             overlay_scopes: Vec::new(),
+            popover_order: Vec::new(),
             captured: None,
+            captured_overlay: false,
             captured_mount: None,
             capture_epoch: 0,
             dirty: true,
@@ -1814,6 +1830,7 @@ impl ContentHost {
     pub fn needs_render(&self) -> bool {
         self.dirty
             || self.help.needs_frame()
+            || self.popover_animation_pending()
             || self
                 .presented_dialog
                 .and_then(|id| self.root.find(id))
@@ -2085,6 +2102,7 @@ impl ContentHost {
         if self.modal.is_none() {
             self.root.paint_overlays(scene, text, theme);
         }
+        self.paint_registered_popovers(scene, text, theme);
         if let Some(id) = paint_id {
             let dialog_theme = self.root.theme_for(id, theme);
             if let (Some(node), Some(dialog_theme)) = (self.root.find_mut(id), dialog_theme) {
@@ -2176,6 +2194,7 @@ impl ContentHost {
         ));
         self.root.arrange(text, frame, clip);
         self.finish_split_layout();
+        self.arrange_popovers(text, requested.0, requested.1);
         self.check_text_services(text)?;
         if let Some(id) = self.root.label_failure() {
             self.cancel();
@@ -2189,6 +2208,7 @@ impl ContentHost {
         Ok(frame)
     }
     fn reconcile_active_inputs(&mut self) {
+        self.reconcile_popovers();
         self.root.refresh_activity(self.window_active);
         self.root
             .reconcile_presentation_runnable(self.window_active);
@@ -2217,6 +2237,7 @@ impl ContentHost {
                 c.component.event(&ContentEvent::Cancel);
             }
             self.captured_mount = None;
+            self.captured_overlay = false;
             self.dirty = true;
         }
         if let Some(id) = self.focused.filter(|id| {
@@ -2508,11 +2529,20 @@ impl ContentHost {
         ) && event.is_primary_pointer()
             && let Some(id) = self.captured
         {
+            let captured_overlay = self.captured_overlay;
             if matches!(routed, ContentEvent::PointerUp(_)) {
                 self.captured = None;
                 self.captured_mount = None;
+                self.captured_overlay = false;
             }
-            let result = self.root.route_from(id, event, &mut self.actions);
+            let result = if captured_overlay {
+                {
+                    let (scope, actions) = self.scope_with_actions();
+                    scope.route_from(id, event, actions)
+                }
+            } else {
+                self.root.route_from(id, event, &mut self.actions)
+            };
             return result
                 .map(|(_, response, bubbles)| {
                     self.event_bubbled = Some(bubbles);
@@ -2647,7 +2677,12 @@ impl ContentHost {
                         .checked_add(1)
                         .expect("pointer capture identity exhausted");
                     self.captured = Some(id);
-                    self.captured_mount = self.root.find_active(id).map(|node| node.mount)
+                    self.captured_mount = self.root.find_active(id).map(|node| node.mount);
+                    self.captured_overlay = self.overlay_scope_id().is_some_and(|scope| {
+                        self.root
+                            .find_active(scope)
+                            .is_some_and(|owner| owner.find(id).is_some())
+                    });
                 }
                 if r.consumed
                     && self.root.find(id).is_some_and(|c| {
@@ -2846,11 +2881,22 @@ impl ContentHost {
         if self.window_active == active {
             return;
         }
-        // A window-authority change invalidates a prepared input/reveal plan.
-        // Keep the 078 cancellation order: blur/cancel while the old window
-        // authority is still live, then notify every retained descendant.
+        let deactivated = self.window_active && !active;
+        // Cancel while old input authority is still live, then update retained descendants.
         self.reveal_clock.invalidate_input();
-        if !active {
+        // Retire the transient session with its precise reason before generic cancellation.
+        let mut ids = Vec::new();
+        self.root.popover_ids(&mut ids);
+        for id in ids {
+            if let Some(popover) = self
+                .root
+                .find_mut(id)
+                .and_then(|node| node.component_mut::<PopoverContent>())
+            {
+                popover.host_window_active(active);
+            }
+        }
+        if deactivated {
             self.cancel();
         }
         self.window_active = active;
@@ -2884,6 +2930,7 @@ impl ContentHost {
         if capture {
             self.captured = None;
             self.captured_mount = None;
+            self.captured_overlay = false;
         }
         if focus {
             self.focus(None, false);
@@ -3085,6 +3132,7 @@ impl ContentHost {
             return false;
         };
         self.captured_mount = None;
+        self.captured_overlay = false;
         if let Some(owner) = self.root.find_mut(id) {
             owner.component.cancel_pointer();
         }
@@ -3105,6 +3153,9 @@ impl ContentHost {
         self.dirty = true;
         self.modal_focus_pending = false;
         fn cancel(c: &mut Content) {
+            if let Some(popover) = c.component_mut::<PopoverContent>() {
+                popover.close(PopoverCloseReason::Cancelled);
+            }
             c.component.event(&ContentEvent::Cancel);
             if let Some(children) = c.component.children_mut() {
                 for c in children {
@@ -3115,6 +3166,7 @@ impl ContentHost {
         cancel(&mut self.root);
         self.captured = None;
         self.captured_mount = None;
+        self.captured_overlay = false;
         self.focus(None, false);
     }
     /// Move the original mounted subtree, preserving its Content identities and
@@ -3265,6 +3317,7 @@ impl ContentHost {
         if self.captured.is_some_and(|id| child.find(id).is_some()) {
             self.captured = None;
             self.captured_mount = None;
+            self.captured_overlay = false;
         }
         child.lifecycle(Lifecycle::Unmounted);
         self.reveal_clock.invalidate_input();

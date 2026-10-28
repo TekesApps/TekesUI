@@ -415,6 +415,12 @@ fn every_registered_component_binding_is_public_and_matches_the_current_registry
         "component-popover",
         "tekes_ui_controls::feedback_view::PopoverView",
     );
+    bind::<tekes_ui_controls::composition::PopoverContent>(
+        &mut actual,
+        "tui.popover",
+        "component-popover",
+        "tekes_ui_controls::composition::PopoverContent",
+    );
     bind::<tekes_ui_controls::Dialog>(
         &mut actual,
         "tui.dialog",
@@ -1222,8 +1228,24 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         &mut actual,
         "tekes_ui_controls::composition::PointerPhase",
     );
+    public_type::<tekes_ui_controls::composition::PopoverCloseReason>(
+        &mut actual,
+        "tekes_ui_controls::composition::PopoverCloseReason",
+    );
+    public_type::<tekes_ui_controls::composition::PopoverClosed>(
+        &mut actual,
+        "tekes_ui_controls::composition::PopoverClosed",
+    );
+    public_type::<tekes_ui_controls::composition::PopoverContent>(
+        &mut actual,
+        "tekes_ui_controls::composition::PopoverContent",
+    );
+    public_type::<tekes_ui_controls::composition::PopoverSession>(
+        &mut actual,
+        "tekes_ui_controls::composition::PopoverSession",
+    );
     #[allow(dead_code)]
-    fn public_trait_183<T: tekes_ui_controls::composition::PreparedActionEffect + ?Sized>() {}
+    fn public_trait_187<T: tekes_ui_controls::composition::PreparedActionEffect + ?Sized>() {}
     actual.push("tekes_ui_controls::composition::PreparedActionEffect");
     public_type::<tekes_ui_controls::composition::PreparedActionFocus>(
         &mut actual,
@@ -1752,7 +1774,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::layout_view::IconLayout",
     );
     #[allow(dead_code)]
-    fn public_trait_314<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
+    fn public_trait_318<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
     actual.push("tekes_ui_controls::layout_view::IconRenderer");
     public_type::<tekes_ui_controls::layout_view::IconView>(
         &mut actual,

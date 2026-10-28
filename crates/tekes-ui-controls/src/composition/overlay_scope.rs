@@ -57,7 +57,10 @@ impl Content {
 
 impl ContentHost {
     fn current_overlay_path(&self) -> Vec<(ComponentId, u64, OverlayScope)> {
-        self.base_scope().overlay_scope_path()
+        self.standard_popover_scope()
+            .and_then(|id| self.base_scope().find_active(id))
+            .unwrap_or_else(|| self.base_scope())
+            .overlay_scope_path()
     }
     pub(super) fn overlay_scope_id(&self) -> Option<ComponentId> {
         self.current_overlay_path().last().map(|(id, _, _)| *id)
@@ -103,15 +106,22 @@ impl ContentHost {
             }
         }
         for (id, mount, _) in path.iter().skip(common) {
-            let restore = self.focused.and_then(|focused| {
-                self.base_scope()
-                    .find_active(focused)
-                    .filter(|node| {
-                        (node.component.focusable() || focused == *id)
-                            && !node.component.semantics().disabled
+            let restore = self
+                .root
+                .find(*id)
+                .and_then(|node| node.component::<PopoverContent>())
+                .and_then(PopoverContent::return_focus)
+                .or_else(|| {
+                    self.focused.and_then(|focused| {
+                        self.base_scope()
+                            .find_active(focused)
+                            .filter(|node| {
+                                (node.component.focusable() || focused == *id)
+                                    && !node.component.semantics().disabled
+                            })
+                            .map(|node| (focused, node.mount))
                     })
-                    .map(|node| (focused, node.mount))
-            });
+                });
             self.overlay_scopes.push(ScopedOverlay {
                 id: *id,
                 mount: *mount,

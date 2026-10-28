@@ -1025,6 +1025,8 @@ impl TooltipView {
 /// Non-modal popover owns viewport-aware placement, outside dismissal and Escape.
 #[derive(Clone, Debug)]
 pub struct PopoverView {
+    surface: Option<&'static str>,
+    dismiss_visible: bool,
     presence: OverlayPresence,
     layout: OverlayLayout,
     disabled: bool,
@@ -1037,6 +1039,8 @@ pub struct PopoverView {
 impl Default for PopoverView {
     fn default() -> Self {
         Self {
+            surface: None,
+            dismiss_visible: true,
             presence: OverlayPresence::default(),
             layout: OverlayLayout::default(),
             disabled: false,
@@ -1076,6 +1080,48 @@ fn popover_spacing() -> PopoverSpacing {
     }
 }
 impl PopoverView {
+    pub fn set_surface(
+        &mut self,
+        name: &str,
+    ) -> Result<(), tekes_ui_tokens::surface_palette::SurfaceError> {
+        let surface = tekes_ui_tokens::surface_palette::canonical_surface(name)?;
+        self.surface = Some(surface);
+        self.dismiss.set_surface(surface);
+        Ok(())
+    }
+    /// Forms with original Cancel/Save actions may omit the built-in Dismiss.
+    /// Default is true. Hiding it retires its focus/hit geometry and any arm;
+    /// outside dismissal, Escape and original content remain unchanged.
+    pub fn set_dismiss_visible(&mut self, visible: bool) {
+        if self.dismiss_visible != visible {
+            self.dismiss_visible = visible;
+            self.dismiss.blur();
+            self.dismiss_layout = None;
+            self.logical_dismiss_frame = None;
+        }
+    }
+    pub fn dismiss_visible(&self) -> bool {
+        self.dismiss_visible
+    }
+    /// Measure this configured shell around original content. The legacy static
+    /// `measure` retains its default built-in action for existing consumers.
+    pub fn measure_content(
+        &self,
+        text: &mut impl ButtonTextRenderer,
+        content: Size,
+        role: proposal::TextRole,
+    ) -> Size {
+        if self.dismiss_visible {
+            Self::measure(text, content, role)
+        } else {
+            let spacing = popover_spacing();
+            Size::new(
+                content.width + spacing.content_inset_x * 2.,
+                content.height + spacing.content_inset_y * 2.,
+            )
+        }
+    }
+
     /// Paint can outlive semantic open during dismissal.
     pub fn is_presented(&self) -> bool {
         self.presence.is_presented()
@@ -1151,9 +1197,13 @@ impl PopoverView {
         let dismiss_w = spacing
             .action_width
             .min((frame.size.width - spacing.action_inset_x * 2.).max(0.));
-        let dismiss_h = ButtonModel::measure(text, "Dismiss", dismiss_w, ButtonSize::Md, role)
-            .height
-            .min((frame.size.height - spacing.content_inset_y).max(0.));
+        let dismiss_h = if self.dismiss_visible {
+            ButtonModel::measure(text, "Dismiss", dismiss_w, ButtonSize::Md, role)
+                .height
+                .min((frame.size.height - spacing.content_inset_y).max(0.))
+        } else {
+            0.
+        };
         let dismiss_top = frame.max_y() - spacing.content_inset_y - dismiss_h;
         let dismiss_frame = Rect::new(
             frame.min_x() + spacing.action_inset_x,
@@ -1161,17 +1211,22 @@ impl PopoverView {
             dismiss_w,
             dismiss_h,
         );
-        self.logical_dismiss_frame = (model.open
+        self.logical_dismiss_frame = (self.dismiss_visible
+            && model.open
             && self.active
             && !self.disabled
             && valid_logical_target(dismiss_frame, clip))
         .then_some(dismiss_frame);
+        let content_bottom = if self.dismiss_visible {
+            dismiss_top - spacing.content_to_action_gap
+        } else {
+            frame.max_y() - spacing.content_inset_y
+        };
         let content = Rect::new(
             frame.min_x() + spacing.content_inset_x,
             frame.min_y() + spacing.content_inset_y,
             (frame.size.width - spacing.content_inset_x * 2.).max(0.),
-            (dismiss_top - spacing.content_to_action_gap - frame.min_y() - spacing.content_inset_y)
-                .max(0.),
+            (content_bottom - frame.min_y() - spacing.content_inset_y).max(0.),
         );
         self.layout = OverlayLayout {
             frame,
@@ -1350,8 +1405,10 @@ impl PopoverView {
             return Err(error);
         }
         let paint_context = format!(
-            "{anchor:?}{size:?}{viewport:?}{clip:?}{palette:?}{role:?}{content_identity}{}",
-            text.backing_scale()
+            "{anchor:?}{size:?}{viewport:?}{clip:?}{palette:?}{role:?}{content_identity}{}{}{:?}",
+            text.backing_scale(),
+            self.dismiss_visible,
+            self.surface
         );
         if !model.open && !self.presence.is_presented() {
             self.dismiss.blur();
@@ -1377,29 +1434,58 @@ impl PopoverView {
         let viewport = effective_viewport(viewport, clip);
         if (model.open || self.presence.is_presented()) && self.active && !self.disabled {
             if let Some(v) = visible {
-                paint_surface_background(
-                    scene,
-                    frame,
-                    Some(viewport),
-                    visible,
-                    palette,
-                    paint::SurfaceKind::Floating,
-                    text.backing_scale(),
-                );
+                if let Some(surface) = self.surface {
+                    let colors = tekes_ui_tokens::surface_palette::resolve_surface(
+                        palette,
+                        surface,
+                        "surface-frame",
+                        "rest",
+                    )
+                    .expect("validated Popover frame");
+                    let layout =
+                        ContainerLayout::new(frame, Insets::ZERO, Insets::ZERO, Some(viewport));
+                    if let Some(clip) = layout.background_paint_clip() {
+                        scene.push_clip(clip);
+                    }
+                    paint::surface_kind_with_elevation_colors_at_scale(
+                        scene,
+                        frame,
+                        palette,
+                        paint::SurfaceKind::Floating,
+                        text.backing_scale(),
+                        "popover",
+                        colors,
+                    );
+                    if layout.background_paint_clip().is_some() {
+                        scene.pop_clip();
+                    }
+                } else {
+                    paint_surface_background(
+                        scene,
+                        frame,
+                        Some(viewport),
+                        visible,
+                        palette,
+                        paint::SurfaceKind::Floating,
+                        text.backing_scale(),
+                    );
+                }
                 scene.push_clip(v);
                 draw_content(scene, text, content);
-                self.dismiss_layout = Some(self.dismiss.render(
-                    scene,
-                    text,
-                    "Dismiss",
-                    dismiss_frame,
-                    Some(v),
-                    palette,
-                    paint::ButtonVariant::Quiet,
-                    ButtonSize::Md,
-                    role,
-                    ButtonTextAlign::default(),
-                ));
+                if self.dismiss_visible {
+                    self.dismiss_layout = Some(self.dismiss.render(
+                        scene,
+                        text,
+                        "Dismiss",
+                        dismiss_frame,
+                        Some(v),
+                        palette,
+                        paint::ButtonVariant::Quiet,
+                        ButtonSize::Md,
+                        role,
+                        ButtonTextAlign::default(),
+                    ));
+                }
                 scene.pop_clip();
             } else {
                 self.dismiss.blur();
