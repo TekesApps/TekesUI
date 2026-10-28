@@ -87,3 +87,35 @@ new optional feature/owner negative cases. Actual source/program/depinfo/results
 are retained under SSD artifacts/issue-117/main-fc82-intake-20261028, including
 local-admission-fix01. Final-head CI and immutable delivery are still required
 before Issue117 AC6 is marked complete.
+
+## Minimal public consumer
+
+In the host's existing renderer/error-returning path, with decoded premultiplied
+RGBA bytes and caller-owned logical size/alternative text:
+
+```rust
+use tekes_ui_controls::composition::{
+    ComponentId, Content, ContentHost, ImageContent, ImageSemantics,
+};
+use tekes_ui_scene::Size;
+
+let lease = renderer.register_bitmap_image(rgba8_premul, pixel_width, pixel_height)?;
+let image = ImageContent::ready(
+    lease,
+    Size::new(logical_width, logical_height),
+    ImageSemantics::Alternative(alt.to_owned()),
+)?;
+let host = ContentHost::new(Content::new(ComponentId(1), image))?;
+```
+
+The executable independent example uses these actual public APIs:
+
+```sh
+cargo test -p tekes-ui-controls --features bitmap-images --test bitmap_content_consumer public_content_consumer_fits_clips_and_preserves_transparent_pixels --locked --offline
+```
+
+It renders the real content/transparent pixels and ancestor clip; the complete
+same target also exercises resource sharing and lifecycle. Repository work uses
+the coordinated build lane. Consumers enable the feature on the exact immutable
+revision recorded in Issue117's delivery summary. No Gallery or remote protocol
+adapter is required for this process-local sample.
