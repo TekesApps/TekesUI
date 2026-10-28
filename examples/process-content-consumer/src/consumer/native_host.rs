@@ -362,6 +362,44 @@ impl Host {
         let third = center(editors[2]);
         let foreign_auxiliary = auxiliary[1].key;
         use native::selftest::Action;
+        if std::env::var_os("TEKESUI_PROCESS_NATIVE_READING_SELFTEST").is_some() {
+            self.review_started = true;
+            native::selftest::run_script(vec![
+                (200, Action::MenuCommand(48_001)),
+                (
+                    400,
+                    Action::ScrollWheel {
+                        x: reader.0,
+                        y: reader.1,
+                        delta_x: 0,
+                        delta_y: 4,
+                    },
+                ),
+                (1_000, Action::MenuCommand(48_008)),
+                (
+                    1_200,
+                    Action::ScrollWheel {
+                        x: reader.0,
+                        y: reader.1,
+                        delta_x: 0,
+                        delta_y: -4,
+                    },
+                ),
+                (1_800, Action::MenuCommand(48_009)),
+                (
+                    2_000,
+                    Action::ScrollWheel {
+                        x: reader.0,
+                        y: reader.1,
+                        delta_x: 0,
+                        delta_y: -4,
+                    },
+                ),
+                (2_600, Action::MenuCommand(48_010)),
+                (3_000, Action::Close),
+            ]);
+            return Ok(());
+        }
         let marked = || Action::ExpectTextState {
             text: "Keep A😀B拼音".into(),
             selection: 11..11,
@@ -676,7 +714,7 @@ impl Host {
                 w.request_redraw();
             }
             native::Event::Command(native::CommandId(command))
-                if self.review_directory.is_some() && (48_001..=48_007).contains(&command) =>
+                if self.review_directory.is_some() && (48_001..=48_010).contains(&command) =>
             {
                 if command == 48_002 {
                     let tree = self.tree.as_ref().context("native mixed tree")?;
@@ -695,6 +733,9 @@ impl Host {
                         48_005 => "after_resize",
                         48_006 => "after_reactivate",
                         48_007 => "final",
+                        48_008 => "reading_inner",
+                        48_009 => "reading_restored",
+                        48_010 => "reading_boundary",
                         _ => unreachable!(),
                     };
                     self.native_review_snapshot(w, phase)?;
@@ -802,11 +843,16 @@ fn run_mode(
         review_directory.is_none() || module == scroll_consumer::NATIVE_MODULE,
         "native mixed selftest requires the real mixed-reader module"
     );
+    ensure!(
+        std::env::var_os("TEKESUI_PROCESS_NATIVE_READING_SELFTEST").is_none()
+            || review_directory.is_some(),
+        "native reading selftest requires its evidence directory"
+    );
     let menu = if review_directory.is_some() {
         native::MenuBar {
             menus: vec![native::Menu::new(
                 "Acceptance",
-                (48_001..=48_007)
+                (48_001..=48_010)
                     .map(|id| {
                         native::MenuItem::Command(native::MenuCommand::new(
                             format!("Acceptance {id}"),

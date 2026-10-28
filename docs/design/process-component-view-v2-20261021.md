@@ -70,4 +70,16 @@ strict checks passed in `artifacts/issue-48/mainf10df2b-child-focus-20261028-01/
 (`focus-fix01`, `native01`). This supersedes only the child-entry gap above; independent
 native nested-scroll/bubbling and the other unexecuted Issue 48 scopes remain open.
 
+The separate opt-in `TEKESUI_PROCESS_NATIVE_READING_SELFTEST=1` (with the existing
+evidence-directory variable and `--native-scroll`) retains that complete scene and
+checks original nested-wheel paths. Actual native `+4` nonprecise lines move only
+the first history by 128 logical points (four size-row-height steps); `-4` restores
+its prior offset, and another `-4` at the boundary returns unconsumed. Parent and
+neighbor offsets, editor values and focus stay unchanged; all three children are
+reaped on close. Exact event/disposition and snapshot assertions are retained with
+the actual program in SSD `artifacts/issue-48/main44cabb3-native-reading-20261028-01/`
+(`cpu02`, `native02/verify_native_reading.py`). The first script's reversed direction
+expectation remains a failed acceptance even though its process exited normally.
+This closes only that independent native wheel gap, not the remaining original AC.
+
 Rectangular parent Scroll admission uses the default-false `Component::rectangular_input_geometry` opt-in. ProcessContainer declares it only for ready, negotiated Content input; the original current focus/reveal checks still run. This does not grant prepared-action purity or curved Panel support, and Curve V1 remains reject-only. The public consumer retains its real outer Scroll and Grid, with a valid arranged translation contract for its fixed row.
