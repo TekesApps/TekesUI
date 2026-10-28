@@ -7,6 +7,7 @@ use tekes_ui_controls::{
 use tekes_ui_module_runtime::ProcessContainer;
 use tekes_ui_scene::Point;
 pub(super) const MODULE: &str = "original-content-scroll";
+pub(super) const NATIVE_MODULE: &str = "original-content-native-scroll";
 const PARENT: ComponentId = ComponentId(20);
 const INNER: ComponentId = ComponentId(21);
 const BODY: ComponentId = ComponentId(22);
@@ -17,12 +18,19 @@ const CAPS: ViewCapabilities = ViewCapabilities {
     ..super::CAPS
 };
 struct Reader {
+    native_accessibility: bool,
     module: Module,
     text: native_host::NativeText,
     version: ReadingDocumentVersion,
     items: Vec<ComponentId>,
 }
 pub(super) fn create() -> Box<dyn ProcessModule> {
+    create_with_accessibility(false)
+}
+pub(super) fn create_native() -> Box<dyn ProcessModule> {
+    create_with_accessibility(true)
+}
+fn create_with_accessibility(native_accessibility: bool) -> Box<dyn ProcessModule> {
     let mut module = original_module(false);
     let value = (0..60)
         .map(|n| format!("History line {n} 中文\n"))
@@ -89,6 +97,10 @@ pub(super) fn create() -> Box<dyn ProcessModule> {
     ))
     .unwrap();
     module.host.set_action_events(true);
+    if native_accessibility {
+        // Cross-container traversal belongs to the receiving native host.
+        module.host.set_focus_wrap(false);
+    }
     let items = vec![INNER, TAIL];
     let (version, ()) = module
         .host
@@ -102,6 +114,7 @@ pub(super) fn create() -> Box<dyn ProcessModule> {
         .unwrap()
         .follow_latest();
     Box::new(Reader {
+        native_accessibility,
         module,
         text: native_host::NativeText::new(),
         version,
@@ -121,7 +134,10 @@ impl ProcessModule for Reader {
         Some(self)
     }
     fn view_capabilities(&self) -> ViewCapabilities {
-        CAPS
+        ViewCapabilities {
+            accessibility: self.native_accessibility,
+            ..CAPS
+        }
     }
     fn started(&mut self, e: &ComponentEmitter) -> Result<()> {
         self.module.started(e)
@@ -992,4 +1008,62 @@ pub(super) fn roundtrip() -> Result<serde_json::Value> {
     Ok(
         serde_json::json!({"result":"REMOTE_ORIGINAL_SCROLL_OK","unnegotiated":negative,"unfocused_other_container_kept_composer":true,"stale_resize_callback_rejected":true,"invalid_packet_rejected_before_serialization":true,"geometry_barrier_did_not_pause_reader":true,"all_original_children_reaped":true,"real_glyph_gpu_frames":6,"public_reading_query_and_actual_item_reveal":true,"original_momentum_preserved":true,"producer_revision_acknowledged":true,"runs":results,"real_child_pids":pids,"scope":"original mixed Content, composer preedit and nested reader in three actual IPC workers and GPU imported images; not physical IME, native window, child AX, Gold7","outer_original_reading_intent":true,"outer_offset_not_redispatched":true,"native":false,"physical_ime":false,"voiceover":false,"gold7":false}),
     )
+}
+
+#[cfg(test)]
+mod native_fixture_tests {
+    use super::*;
+
+    #[test]
+    fn native_mixed_reader_uses_original_components_and_explicit_capabilities() {
+        let original = create();
+        assert!(original.view_capabilities().scroll);
+        assert!(!original.view_capabilities().accessibility);
+        let mut native = create_native();
+        let caps = native.view_capabilities();
+        assert!(
+            caps.keyboard
+                && caps.text_ime
+                && caps.content_pointer
+                && caps.scroll
+                && caps.accessibility
+        );
+        assert!(
+            !caps.primary_pointer,
+            "mixed native acceptance must not require an opaque pointer sink"
+        );
+        let (host, text) = native
+            .content()
+            .expect("original Content and native font backend");
+        let frame = Rect::new(0., 0., 320., 500.);
+        host.render(&mut Scene::new(), text, frame, frame, Theme::LIGHT.into())
+            .unwrap();
+        assert!(
+            host.get(PARENT)
+                .unwrap()
+                .component::<ScrollContent>()
+                .is_some()
+        );
+        let history = host
+            .get(INNER)
+            .unwrap()
+            .component::<TextFieldContent>()
+            .unwrap();
+        assert!(history.reading.is_some());
+        assert!(history.surface.input.text.contains("History line 59 中文"));
+        for id in [EDIT, OTHER] {
+            assert!(
+                host.get(id)
+                    .unwrap()
+                    .component::<TextFieldContent>()
+                    .is_some()
+            );
+        }
+        assert!(
+            host.get(ComponentId(3))
+                .unwrap()
+                .component::<Button>()
+                .is_some()
+        );
+    }
 }

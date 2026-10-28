@@ -2443,6 +2443,14 @@ mod consumer {
                 create: scroll_consumer::create,
             },
             ComponentDefinition {
+                id: scroll_consumer::NATIVE_MODULE,
+                capabilities: Capabilities {
+                    view: true,
+                    ..Capabilities::HEADLESS
+                },
+                create: scroll_consumer::create_native,
+            },
+            ComponentDefinition {
                 id: native_host::MODULE,
                 capabilities: Capabilities {
                     view: true,
@@ -2503,6 +2511,9 @@ mod consumer {
         }
         if args.iter().any(|v| v == "--native") {
             return native_host::run();
+        }
+        if args.iter().any(|v| v == "--native-scroll") {
+            return native_host::run_scroll();
         }
         if args.iter().any(|v| v == "--geometry-only") {
             println!("{}", mounted_container_roundtrip()?);

@@ -27,4 +27,25 @@ The Component defaults remain local: optional snapshot/ack, focus-boundary, dele
 
 The independent `examples/process-content-consumer` retains the original real-IPC and mounted-container scenarios. Finite acceptance uses its non-window modes and the protocol/runtime/platform tests; native-window, physical IME/VoiceOver, three-container visual/native matrices, AgentKit integration, final published pin and performance acceptance remain outside this foundation intake. The current local Image/AppHost and atomic platform snapshot contracts are retained, not relabeled as remote acceptance.
 
+## Bounded mixed native consumer intake (2026-10-28, Issue 48)
+
+`--native-scroll` mounts three actual IPC instances of the original Reader: nested
+ScrollContent/history, Message and Other editors, preserving-focus Button and Popup.
+The existing non-window Reader retains its original capabilities and focus policy.
+The window adapter publishes the existing ContentAccessibilitySnapshot and atomic
+Window publication, retaining the original geometry lease. Raw node publication is
+insufficient: legitimate clipped zero-sized nodes otherwise reject the entire AX tree.
+
+The opt-in `TEKESUI_PROCESS_NATIVE_SELFTEST_EVIDENCE` script exercises real AppKit
+events and native AX selectors; coordinate it under the original shared locks and an
+idle desktop. Actual bounded acceptance records auxiliary mouse/AX activation once,
+marked UTF-16 text through append/scroll/resize, two container-level Tab transitions,
+window deactivation revocation, explicit user re-entry and child-process cleanup.
+Deactivation deliberately cancels focus; the script does not require automatic restore.
+Container-level Tab is not evidence that the target child editor acquired focus.
+Independent native nested-scroll/bubbling, full child Tab entry, physical IME,
+VoiceOver and downstream adoption remain separate gaps. No full Issue 48 closure is
+claimed. Evidence: SSD `artifacts/issue-48/maind29f654-native-mixed-candidate-20261028-01/`
+(`main-cpu08`, `native-round06`); earlier failed runs retain their original identities.
+
 Rectangular parent Scroll admission uses the default-false `Component::rectangular_input_geometry` opt-in. ProcessContainer declares it only for ready, negotiated Content input; the original current focus/reveal checks still run. This does not grant prepared-action purity or curved Panel support, and Curve V1 remains reject-only. The public consumer retains its real outer Scroll and Grid, with a valid arranged translation contract for its fixed row.
