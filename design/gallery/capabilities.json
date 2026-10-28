@@ -67980,7 +67980,7 @@
     "crates/tekes-ui-platform-macos/tests/required_native.rs": "23fca934b0dbdd08950e8c11ab4123c4a8db3d70b95371692c1695474ef90000",
     "crates/tekes-ui-platform-macos/tests/titlebar_native.rs": "a1c1925ea2cf08a7d4d8a77b4069bef318dce3d8a9c6560d6a2bd2b89e268b39",
     "crates/tekes-ui-render/examples/dump_sample.rs": "da8a4b33ba1aeb25bd907a52983b0f28b14af4bd875e4d3284e167451368a692",
-    "crates/tekes-ui-render/src/clip.rs": "ad405beac32c81fd4826417cbd288e357023233a17c7078046c3be27a464ffbc",
+    "crates/tekes-ui-render/src/clip.rs": "ac07a1626e23a4737dfbe9af359cb85886cdc771e4ab7327b38c4303d78f81a1",
     "crates/tekes-ui-render/src/common.rs": "9c287dedd02bcc7e590369b51eb161284ebe2a90fdb5f07da94c70830cf0d7cf",
     "crates/tekes-ui-render/src/error.rs": "94ca359cdd79f9ff93a4b8b88e4a8ad6d1c25b0c6db1e353218304f9900683ad",
     "crates/tekes-ui-render/src/frame.rs": "5c306ac87aaf0bfa3b2f0bce3e7a2e8a5d1b62d0369c704f5dc1b46579ae734d",

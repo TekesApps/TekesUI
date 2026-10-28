@@ -26,6 +26,7 @@ jobs:
         run: |
           cargo fetch --locked
           cargo fetch --locked --manifest-path examples/composition-consumer/Cargo.toml
+          cargo fetch --locked --manifest-path examples/panel-content-consumer/Cargo.toml
           cargo fetch --locked --manifest-path examples/brand-consumer/Cargo.toml
           cargo fetch --locked --manifest-path examples/app-host-demo/Cargo.toml
           cargo fetch --locked --manifest-path examples/process-content-consumer/Cargo.toml
@@ -61,6 +62,13 @@ jobs:
       - name: Independent composition consumer (public API)
         if: ${{ !cancelled() && steps.workspace_clippy.outcome == 'success' }}
         run: cargo test --manifest-path examples/composition-consumer/Cargo.toml --locked --no-fail-fast
+
+      - name: Independent Panel consumer (Issue 82, no native windows)
+        if: ${{ !cancelled() && steps.workspace_clippy.outcome == 'success' }}
+        run: |
+          cargo clippy --manifest-path examples/panel-content-consumer/Cargo.toml --all-targets --locked --offline -- -D warnings
+          cargo test --manifest-path examples/panel-content-consumer/Cargo.toml --test panel_content --locked --offline
+          cargo build --manifest-path examples/panel-content-consumer/Cargo.toml --example native --locked --offline
 
       - name: Optional SVG IconContent (Issue 47)
         if: ${{ !cancelled() && steps.workspace_clippy.outcome == 'success' }}

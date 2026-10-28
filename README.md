@@ -35,7 +35,7 @@ cargo run --locked -p tekes-ui-gallery
 | 已交付公共能力 | 现有独立消费者与已验行为 | 具体边界 |
 | --- | --- | --- |
 | `AppWindow`、`SettingsWindow`、Settings schema/draft/file provider、Row/List 与设置项输入 | [AppHost 消费者](examples/app-host-demo/README.md)：原 Main 打开 Settings，Exclusive/Independent 两种模式的显示、编辑自动保存、Undo、关闭及窗口/焦点恢复；最终独立 checkout 和同源 CI 已通过，#70 已关闭。 | 原生证据固定在 #70 的 `cd27d0b`／最终 `45f1cf1`、PR139／checkpoint-20261027-2；当前 pin 包含这些提交，不能将旧运行改签成新运行。物理 IME/VoiceOver 不在此处宣称通过。 |
-| `ContentHost`、`PanelContent`、`StackContent`、Button、`TextFieldContent`、`ScrollContent` | [Panel 消费者](examples/panel-content-consumer/README.md)：原树真实 CoreText 编辑几何、动作与 mount、marked/selection、阅读锚点及嵌套 Panel/Split；原 CPU3、Metal450组合与18完整 coverage oracle 各保持原收据身份。 | 450组合不等于450份完整像素 oracle。新原生入口的完整 reveal/Undo/Tab/close 补验及实体中文候选交互尚未完成，#82 保持开放；VoiceOver 未验。 |
+| `ContentHost`、`PanelContent`、`StackContent`、Button、`TextFieldContent`、`ScrollContent` | [Panel 消费者](examples/panel-content-consumer/README.md)：原树真实 CoreText 编辑几何、动作与 mount、marked/selection、阅读锚点及嵌套 Panel/Split；原 CPU3、Metal450组合与18完整 coverage oracle 各保持原收据身份。 | 450组合不等于450份完整像素 oracle。后续本地原生批次已完成实际 wheel／曲线点击／UTF-16／80行 reveal／Undo／Tab／close；精确源码、程序及远端交付另见 #82。实体中文候选交互和 VoiceOver 未验，#82 保持开放。 |
 | 普通本地列表、文本输入及组合、Theme/Palette/Surface 语义消费 | [公共组合消费者](examples/composition-consumer/README.md)和上述已有设置/Panel路径；源码、锁、公共接口与本票适用行为证据沿用各原 Issue。 | 不因此宣布所有组合、物理输入、性能或平台均已验；具体未验项继续留原票。全52根实用 Theme 接入已由 #113/#114/#121–#125 完成，不重复开发，也不替代实际产品验收。 |
 
 当前独立原生窗口、CoreText 和 Metal 验收适用于 **macOS**；Windows/Linux 保持后续平台目标。普通本地组件的消费不等待 #81 B2 跨进程曲线链、#127 完整 Toolbar 有限支持或完整 Gallery。已有 AppHost 多进程样例使用其已交付的普通链路，不冒充新的 B2 能力。
@@ -48,7 +48,7 @@ cargo test --manifest-path examples/panel-content-consumer/Cargo.toml --test pan
 cargo test --manifest-path examples/composition-consumer/Cargo.toml --test scenarios --locked --offline
 ```
 
-这些命令分别运行已有入口，不代表本段文档更新时重新执行，也不包含原生窗口或真实 IME。窗口使用与各层证据见各消费者 README；#82 的未验原生候选不包含在上述公开 pin 中。
+这些命令分别运行已有入口，不代表本段文档更新时重新执行，也不包含原生窗口或真实 IME。窗口使用与各层证据见各消费者 README；上述公开 pin 是本地核心阶段起点，不包含后续 #82 原生入口；其新增交付身份由原 Issue 维护，不把旧 pin 改签为新运行。
 
 ## 验收方式
 
