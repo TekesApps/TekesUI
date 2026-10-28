@@ -1,3 +1,13 @@
+# Independent natural empty ToolbarHost B intake (2026-10-28)
+
+The already prepared separate public empty state is now actually verified on Main source: a `ToolbarHost` with its real Window region and no registered command groups paints one ordinary full-target flat background. No primitive is hand-pushed, deleted or cropped. The real zero-padding rounded parent Panel supplies the original geometry; its safe interior excludes the full target. Actual `VerifiedFrameOutput` records `class_b_background_primitive: Some(1)`.
+
+Strict checking passed with the original bitmap-enabled consumer configuration and with the default CI features. The exact archived program passed real Metal GPU proof/ordinary equality, single-parent direct mask/ImageQuad equality, parent before/after equality and whole child Scene immutability. The direct parent mask visibly changes the ordinary full-target corners. Current receive base `9e3481b9885ee040eda361122d6edb36295dd0dc` has exactly the same source tree as the observed `8bb73dc` base, and the complete source map including this owned file matches; the original execution evidence is reused without claiming a fresh run.
+
+This is one independent natural empty-state B positive. It does not replace, edit or certify the original Button/TextField Toolbar combination, which remains failed; it does not certify arbitrary child content, all B materials/edges/resources, B2 or native interaction. #127/#81 remain open. Evidence: `artifacts/issue-127/main8bb73dc-empty-toolbar-candidate-20261028-01/{acceptance-receipt.json,source-equivalence-receipt.json,main-cpu01,main-default-precheck,main-gpu01}`. Production predicate, libraries, shader and dependencies remain unchanged.
+
+---
+
 # Coordinate and bitmap-material intake (2026-10-28)
 
 On Main base `0783f81c4a9d4d80a2062895bacf2c112e2d581b`, the test-only AC3 batch retains the original complete parent/child Host, rounded Button, TextField/CoreText, registered bitmap, decorations and all ordinary/verified/single-parent reference assertions. The original child viewport remains 328×208 logical points and bitmap remains 16×12 logical points. Public asymmetric parent padding produces the measured fractional physical allocation without shrinking the child or changing the renderer predicate.
