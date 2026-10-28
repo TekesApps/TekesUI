@@ -1,3 +1,13 @@
+# Coordinate and bitmap-material intake (2026-10-28)
+
+On Main base `0783f81c4a9d4d80a2062895bacf2c112e2d581b`, the test-only AC3 batch retains the original complete parent/child Host, rounded Button, TextField/CoreText, registered bitmap, decorations and all ordinary/verified/single-parent reference assertions. The original child viewport remains 328×208 logical points and bitmap remains 16×12 logical points. Public asymmetric parent padding produces the measured fractional physical allocation without shrinking the child or changing the renderer predicate.
+
+Actual GPU cases passed: 0.25 backing with half-alpha bitmap; 0.5 and 1.0 backing with opaque bitmap; fractional allocation at 2.0 with half-alpha bitmap; fractional allocation at 4.0 with transparent bitmap. The original parent and richer 2.0 references were rerun because their shared test helpers now accept scale; strict checking and the exact new GPU program also passed. Production libraries, shader, configuration and dependencies did not change, so the prior shader regressions are retained at their original identities.
+
+These cases establish the full-child **Class A** coordinate/registered-bitmap-material path. They do not establish Class B edge-band material positives, the retained full Toolbar, every primitive/material/resource/budget combination, B2 or native acceptance. The target viewport is zero-origin; checked parent shapes are expressed in child-local coordinates and can have negative/fractional origins, as in these actual allocations. #127/#81 remain open. Evidence: `artifacts/issue-127/main-b696e4a-material-matrix-candidate-20261028-01/{acceptance-receipt.json,main-cpu03,main-gpu01}`; delivery identities are maintained in the linked Issue.
+
+---
+
 # Main finite intake status (2026-10-28)
 
 The existing finite A/B chain is now accepted locally on Main base `8e4811090cdee53d7ab00fb58f78c7db2eb5436a` plus this scoped batch. Scene owns `FullCoverageInnerRectPx`; the existing renderer preflight evaluates actual prepared draw state, enforces original budgets and bounded proof/readback capacity, and returns an opaque non-detachable `VerifiedFrameOutput`. The clip shader includes the previously accepted nonpositive-q branch. Existing composition-error/controlled-image preflight order is preserved. The Root-only `register_owned_image` change is excluded.
