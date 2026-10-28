@@ -3,6 +3,53 @@ use super::*;
 use crate::{ReadingDocumentVersion, ReadingUpdateError};
 use std::collections::BTreeMap;
 
+impl Content {
+    /// Observe a stopped original child route without delivering its wheel a
+    /// second time. This runs synchronously on each original ancestor: there
+    /// is no retained callback that can cross mount/document generations.
+    pub(super) fn observe_nested_reading(
+        &mut self,
+        event: &ContentEvent,
+        source: ComponentId,
+        response: &ContentResponse,
+    ) -> bool {
+        let ContentEvent::Scroll {
+            position,
+            delta,
+            begin,
+            momentum,
+            ..
+        } = event
+        else {
+            return false;
+        };
+        if !response.consumed
+            || !delta.y.is_finite()
+            || delta.y == 0.
+            || !self.active()
+            || self.component.semantics().disabled
+        {
+            return false;
+        }
+        let original_reader = self.find_active(source).is_some_and(|owner| {
+            !owner.component.semantics().disabled
+                && owner.visible().is_some_and(|r| r.contains(*position))
+                && owner.curve_contains(*position)
+                && owner.component.reading_scroll_source()
+        });
+        if !original_reader {
+            return false;
+        }
+        self.component_mut::<ScrollContent>()
+            .and_then(|scroll| scroll.reading.as_mut())
+            // A fresh downward gesture also retires an old momentum fence;
+            // only upward intent pauses following in this original method.
+            // Original user-input and momentum fences apply. This changes
+            // reading intent only; never parent ScrollArea geometry/offset.
+            .is_some_and(|reading| reading.observe_scroll(*delta, *begin, *momentum))
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ContentReadingAnchorUpdate {
     Preserved(ComponentId),

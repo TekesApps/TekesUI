@@ -1,7 +1,10 @@
 //! ProcessComponent service messages. No View/Panel/GPU identity is required.
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+pub mod content;
 pub mod curve;
+mod view_context;
+pub use view_context::ViewContext;
 pub const VERSION: u32 = 2;
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -34,6 +37,15 @@ pub struct Session {
 pub enum RequestBody {
     /// Curve V1 wire envelope. The current receiver is reject-only; it never grants capabilities.
     CurveV1(curve::Envelope),
+    /// Original Content callbacks. Requires a negotiated keyboard/text View;
+    /// legacy/headless workers must reject it rather than dispatch as Message.
+    Content(content::Request),
+    /// Window-owned environment for the original View/font backend. The actor
+    /// invalidates applied geometry until its next original Layout.
+    SetViewContext {
+        view: u64,
+        context: ViewContext,
+    },
     Message {
         topic: String,
         payload: Value,
@@ -150,15 +162,23 @@ pub struct ServerMessage {
 #[serde(deny_unknown_fields)]
 pub struct ViewCapabilities {
     pub primary_pointer: bool,
+    /// Original Content routing with per-event disposition and capture identity.
+    /// Distinct from the legacy opaque primary-pointer render stream.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub content_pointer: bool,
     pub keyboard: bool,
     pub scroll: bool,
     pub text_ime: bool,
     pub accessibility: bool,
     pub independent_toolbar: bool,
 }
+fn is_false(value: &bool) -> bool {
+    !*value
+}
 impl ViewCapabilities {
     pub const V1: Self = Self {
         primary_pointer: true,
+        content_pointer: false,
         keyboard: false,
         scroll: false,
         text_ime: false,
@@ -167,6 +187,7 @@ impl ViewCapabilities {
     };
     pub fn supports(self, required: Self) -> bool {
         (!required.primary_pointer || self.primary_pointer)
+            && (!required.content_pointer || self.content_pointer)
             && (!required.keyboard || self.keyboard)
             && (!required.scroll || self.scroll)
             && (!required.text_ime || self.text_ime)
@@ -188,6 +209,48 @@ pub struct ViewAttach {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn original_pointer_disposition_is_not_the_legacy_opaque_stream() {
+        let required = ViewCapabilities {
+            content_pointer: true,
+            ..Default::default()
+        };
+        assert!(!ViewCapabilities::V1.supports(required));
+        assert!(
+            !ViewCapabilities {
+                keyboard: true,
+                text_ime: true,
+                ..Default::default()
+            }
+            .supports(required)
+        );
+        assert!(required.supports(required));
+        #[derive(Debug, Deserialize, Serialize)]
+        #[serde(deny_unknown_fields)]
+        struct V1Capabilities {
+            primary_pointer: bool,
+            keyboard: bool,
+            scroll: bool,
+            text_ime: bool,
+            accessibility: bool,
+            independent_toolbar: bool,
+        }
+        let old = serde_json::json!({"primary_pointer":true,"keyboard":false,"scroll":false,"text_ime":false,"accessibility":false,"independent_toolbar":false});
+        let decoded: ViewCapabilities = serde_json::from_value(old.clone()).unwrap();
+        assert!(!decoded.content_pointer);
+        assert_eq!(serde_json::to_value(decoded).unwrap(), old);
+        let legacy: V1Capabilities =
+            serde_json::from_value(serde_json::to_value(decoded).unwrap()).unwrap();
+        assert_eq!(serde_json::to_value(legacy).unwrap(), old);
+        assert!(
+            serde_json::from_value::<V1Capabilities>(serde_json::to_value(required).unwrap())
+                .is_err()
+        );
+        assert_eq!(
+            serde_json::to_value(required).unwrap()["content_pointer"],
+            true
+        );
+    }
     #[test]
     fn legacy_start_wire_and_exhaustive_client_patterns_remain_unchanged() {
         fn version(message: ClientMessage) -> u32 {

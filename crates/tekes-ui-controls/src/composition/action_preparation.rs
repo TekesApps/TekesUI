@@ -352,9 +352,10 @@ impl ContentHost {
         self.help_focus(id, visible);
         FocusAdmission::Accepted { changed }
     }
-    /// CurveLocal qualifies only the original ordinary geometry consumer, not
-    /// prepared-effect purity. A real successful current reveal plan is required
-    /// for focus transfer; UnsupportedLayout is never a success on this path.
+    /// Ordinary geometry opt-ins do not promise prepared-effect purity. The
+    /// rectangular opt-in is unavailable whenever this Host needs curve geometry.
+    /// Focus transfer still needs a successful current reveal plan; unsupported
+    /// layout never counts as success.
     fn local_ordinary_action_admissible(
         &self,
         id: ComponentId,
@@ -366,7 +367,8 @@ impl ContentHost {
         };
         if !self.window_active
             || node.component.semantics().disabled
-            || node.component.curve_subtree_capability() != CurveSubtreeCapability::Local
+            || !(node.component.curve_subtree_capability() == CurveSubtreeCapability::Local
+                || !self.requires_curve_geometry() && node.component.rectangular_input_geometry())
             || !self
                 .reveal_clock
                 .stamp()
@@ -1391,6 +1393,193 @@ mod tests {
             assert_eq!(format!("{:?}", h.root), before);
             assert!(h.drain_actions().is_empty());
         }
+    }
+    #[derive(Debug)]
+    struct RectangularInput {
+        opt_in: bool,
+        arranged: bool,
+        insufficient: bool,
+        disabled: bool,
+        pointer_downs: usize,
+    }
+    impl Component for RectangularInput {
+        fn rectangular_input_geometry(&self) -> bool {
+            self.opt_in && self.arranged
+        }
+        fn measure(
+            &mut self,
+            _: &mut dyn ButtonTextRenderer,
+            available: tekes_ui_scene::Size,
+        ) -> crate::layout::MeasuredChild {
+            crate::layout::MeasuredChild::new(tekes_ui_scene::Size::new(available.width, 32.))
+        }
+        fn arrange(&mut self, _: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
+            self.arranged = [frame, clip].into_iter().all(|r| {
+                [
+                    r.min_x(),
+                    r.min_y(),
+                    r.max_x(),
+                    r.max_y(),
+                    r.size.width,
+                    r.size.height,
+                ]
+                .into_iter()
+                .all(f32::is_finite)
+                    && r.size.width > 0.
+                    && r.size.height > 0.
+            });
+        }
+        fn interactive(&self) -> bool {
+            true
+        }
+        fn focusable(&self) -> bool {
+            true
+        }
+        fn requires_focus_reveal(&self) -> bool {
+            self.insufficient
+        }
+        fn required_focus_space(&self) -> RequiredFocusSpace {
+            if self.insufficient {
+                RequiredFocusSpace::Insufficient
+            } else {
+                RequiredFocusSpace::NotRequired
+            }
+        }
+        fn semantics(&self) -> ContentSemantics {
+            let mut semantics = ContentSemantics::new(ContentRole::Group, "rectangular input");
+            semantics.disabled = self.disabled;
+            semantics
+        }
+        fn event(&mut self, event: &ContentEvent) -> ContentResponse {
+            if matches!(event, ContentEvent::PointerDown(_)) {
+                self.pointer_downs += 1;
+                ContentResponse::consumed(false)
+            } else {
+                ContentResponse::default()
+            }
+        }
+    }
+    fn rectangular_scroll(opt_in: bool, insufficient: bool, disabled: bool) -> ContentHost {
+        ContentHost::new(Content::new(
+            SCROLL,
+            ScrollContent::new(
+                ScrollArea::default(),
+                Content::new(
+                    TARGET,
+                    RectangularInput {
+                        opt_in,
+                        arranged: false,
+                        insufficient,
+                        disabled,
+                        pointer_downs: 0,
+                    },
+                ),
+            ),
+        ))
+        .unwrap()
+    }
+    #[test]
+    fn rectangular_input_geometry_opt_in_uses_scroll_focus_plan_and_unknown_still_refuses() {
+        for opt_in in [false, true] {
+            let mut h = rectangular_scroll(opt_in, false, false);
+            assert!(
+                !h.get(TARGET)
+                    .unwrap()
+                    .component::<RectangularInput>()
+                    .unwrap()
+                    .rectangular_input_geometry()
+            );
+            render(&mut h);
+            assert_eq!(
+                h.get(TARGET)
+                    .unwrap()
+                    .component::<RectangularInput>()
+                    .unwrap()
+                    .curve_subtree_capability(),
+                CurveSubtreeCapability::Unsupported
+            );
+            if opt_in {
+                assert!(
+                    h.prepare_focus(Some(TARGET), false, None, FocusOrigin::Pointer)
+                        .is_ok()
+                );
+            }
+            let response = h.event(&ContentEvent::PointerDown(Point::new(10., 10.)));
+            assert_eq!(response.consumed, opt_in);
+            assert_eq!(h.focused(), opt_in.then_some(TARGET));
+            assert_eq!(h.pointer_focus_requested(), opt_in);
+            assert_eq!(
+                h.get(TARGET)
+                    .unwrap()
+                    .component::<RectangularInput>()
+                    .unwrap()
+                    .pointer_downs,
+                usize::from(opt_in)
+            );
+        }
+    }
+    #[test]
+    fn rectangular_input_geometry_retains_space_inactive_and_disabled_refusals() {
+        for (insufficient, inactive, disabled) in [
+            (true, false, false),
+            (false, true, false),
+            (false, false, true),
+        ] {
+            let mut h = rectangular_scroll(true, insufficient, disabled);
+            render(&mut h);
+            assert!(
+                h.get(TARGET)
+                    .unwrap()
+                    .component::<RectangularInput>()
+                    .unwrap()
+                    .rectangular_input_geometry()
+            );
+            if inactive {
+                h.set_window_active(false);
+            }
+            assert!(
+                h.prepare_focus(Some(TARGET), false, None, FocusOrigin::Pointer)
+                    .is_err()
+            );
+            let response = h.event(&ContentEvent::PointerDown(Point::new(10., 10.)));
+            assert!(!response.consumed);
+            assert!(h.focused().is_none());
+            assert!(!h.pointer_focus_requested());
+            assert_eq!(
+                h.get(TARGET)
+                    .unwrap()
+                    .component::<RectangularInput>()
+                    .unwrap()
+                    .pointer_downs,
+                0
+            );
+        }
+    }
+    #[test]
+    fn rectangular_input_geometry_does_not_grant_curved_panel_admission() {
+        let mut original = Content::new(
+            TARGET,
+            RectangularInput {
+                opt_in: true,
+                arranged: false,
+                insufficient: false,
+                disabled: false,
+                pointer_downs: 0,
+            },
+        );
+        let frame = Rect::new(0., 0., 100., 32.);
+        original.measure(&mut Text, frame.size);
+        original.arrange(&mut Text, frame, frame);
+        assert!(
+            original
+                .component::<RectangularInput>()
+                .unwrap()
+                .rectangular_input_geometry()
+        );
+        assert!(matches!(
+            PanelContent::new(original),
+            Err(CompositionError::UnsupportedCurveChild(TARGET))
+        ));
     }
 }
 

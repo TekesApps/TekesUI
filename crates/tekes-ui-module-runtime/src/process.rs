@@ -25,6 +25,17 @@ impl FrameRenderer {
         state: crate::ModuleState,
         endpoint: &str,
     ) -> Result<Frame> {
+        self.render_with_clear(r, scene, atlas, state, endpoint, Rgba::gray(1.))
+    }
+    pub(crate) fn render_with_clear(
+        &mut self,
+        r: &Request,
+        scene: &Scene,
+        atlas: &mut GlyphAtlas,
+        state: crate::ModuleState,
+        endpoint: &str,
+        clear: Rgba,
+    ) -> Result<Frame> {
         validate_view_request(r)?;
         let context = self.renderer.gpu_context();
         let pixel_size = (
@@ -35,7 +46,7 @@ impl FrameRenderer {
         // another request, retire prior frames; storage is never overwritten.
         let (texture, surface) = gpu::create(&context, pixel_size)?;
         self.renderer
-            .render_to_texture(scene, atlas, &texture, r.scale, Rgba::gray(1.))?;
+            .render_to_texture(scene, atlas, &texture, r.scale, clear)?;
         context.device().poll(wgpu::PollType::wait_indefinitely())?;
         let frame = Frame {
             version: VERSION,

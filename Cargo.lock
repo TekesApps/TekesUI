@@ -1177,6 +1177,7 @@ dependencies = [
  "serde_json",
  "tekes-ui-app-protocol",
  "tekes-ui-controls",
+ "tekes-ui-platform-macos",
  "tekes-ui-render",
  "tekes-ui-scene",
  "tekes-ui-text",

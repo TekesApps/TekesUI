@@ -28,6 +28,7 @@ jobs:
           cargo fetch --locked --manifest-path examples/composition-consumer/Cargo.toml
           cargo fetch --locked --manifest-path examples/brand-consumer/Cargo.toml
           cargo fetch --locked --manifest-path examples/app-host-demo/Cargo.toml
+          cargo fetch --locked --manifest-path examples/process-content-consumer/Cargo.toml
       - name: Design package, brand generation and Rust boundaries
         run: |
           python3 -m pip install -r design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/requirements.txt
@@ -60,6 +61,19 @@ jobs:
       - name: Independent composition consumer (public API)
         if: ${{ !cancelled() && steps.workspace_clippy.outcome == 'success' }}
         run: cargo test --manifest-path examples/composition-consumer/Cargo.toml --locked --no-fail-fast
+
+      - name: Independent Process Content consumer (Issue 48, no native windows)
+        if: ${{ !cancelled() && steps.workspace_clippy.outcome == 'success' }}
+        run: |
+          cargo clippy --manifest-path examples/process-content-consumer/Cargo.toml --all-targets --locked --offline -- -D warnings
+          result=0
+          cargo run -p tekes-ui-module-runtime --example process_component_services --locked --offline || result=1
+          # Default already includes the three mounted-container geometry scenario.
+          cargo run --manifest-path examples/process-content-consumer/Cargo.toml --locked --offline || result=1
+          for mode in accessibility projection query-wake view-context three-surfaces overlay scroll; do
+            cargo run --manifest-path examples/process-content-consumer/Cargo.toml --locked --offline -- "--$mode-only" || result=1
+          done
+          exit "$result"
 
       - name: Optional bitmap Content and local Image semantics (Issue 117)
         if: ${{ !cancelled() && steps.workspace_clippy.outcome == 'success' }}

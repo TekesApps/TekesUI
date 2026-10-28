@@ -43,7 +43,10 @@ impl ProcessModule for Counter {
             RequestBody::CurveV1(_) => {
                 anyhow::bail!("Curve V1 is unsupported by this example module")
             }
-            RequestBody::Stop | RequestBody::Render { .. } => unreachable!(),
+            RequestBody::Stop
+            | RequestBody::Render { .. }
+            | RequestBody::Content(_)
+            | RequestBody::SetViewContext { .. } => unreachable!(),
         }
         Ok(json!(self.0))
     }
@@ -275,6 +278,101 @@ fn raw_headless_curve_rejection() -> Result<u32> {
     );
     Ok(pid)
 }
+/// Raw packets bypass the parent's admission so this checks the actual worker
+/// dispatcher, including the existing fatal rejection for unnegotiated Content.
+fn raw_headless_content_rejection(body: RequestBody, context: bool) -> Result<()> {
+    use std::io::Write;
+    use std::process::{Command, Stdio};
+    let mut child = Command::new(std::env::current_exe()?)
+        .args(["--tekesui-component", "counter"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()?;
+    let mut input = child.stdin.take().unwrap();
+    let session = Session {
+        module: "counter".into(),
+        instance: 1002,
+        host_epoch: 50,
+    };
+    let packets = [
+        ClientMessage::Start {
+            version: VERSION,
+            session: session.clone(),
+            required: Capabilities::HEADLESS,
+        },
+        ClientMessage::Request {
+            version: VERSION,
+            session: session.clone(),
+            id: 1,
+            body,
+        },
+        ClientMessage::Request {
+            version: VERSION,
+            session: session.clone(),
+            id: 2,
+            body: RequestBody::Message {
+                topic: "after-content-rejection".into(),
+                payload: Value::Null,
+            },
+        },
+        ClientMessage::Request {
+            version: VERSION,
+            session: session.clone(),
+            id: 3,
+            body: RequestBody::Stop,
+        },
+    ];
+    for packet in packets {
+        serde_json::to_writer(&mut input, &packet)?;
+        input.write_all(b"\n")?;
+    }
+    drop(input);
+    let output = child.wait_with_output()?;
+    let mut rejected = false;
+    let mut unchanged = false;
+    let mut stopped = false;
+    for line in std::str::from_utf8(&output.stdout)?.lines() {
+        let packet: ServerMessage = serde_json::from_str(line)?;
+        ensure!(packet.session == session);
+        match packet.output {
+            Output::Ready { capabilities, .. } => ensure!(capabilities == Capabilities::HEADLESS),
+            Output::Event(_) => (),
+            Output::Response {
+                request: 1,
+                result: Err(message),
+            } if context => {
+                ensure!(message == "View context requires a negotiated View");
+                rejected = true;
+            }
+            Output::Response {
+                request: 2,
+                result: Ok(value),
+            } if context => {
+                ensure!(
+                    value == json!(1),
+                    "forbidden request reached business handler"
+                );
+                unchanged = true;
+            }
+            Output::Response {
+                request: 3,
+                result: Ok(Value::Null),
+            } if context => stopped = true,
+            other => anyhow::bail!("unexpected unnegotiated Content output: {other:?}"),
+        }
+    }
+    if context {
+        ensure!(output.status.success() && rejected && unchanged && stopped);
+    } else {
+        ensure!(!output.status.success() && !unchanged && !stopped);
+        ensure!(
+            std::str::from_utf8(&output.stderr)?
+                .contains("Content input requires a negotiated View")
+        );
+    }
+    Ok(())
+}
 fn main() -> Result<()> {
     let arguments: Vec<String> = std::env::args().collect();
     if arguments.get(1).map(String::as_str) == Some("--tekesui-component")
@@ -294,6 +392,25 @@ fn main() -> Result<()> {
     }
     ensure!(!CREATED.load(Ordering::SeqCst), "factory ran in parent");
     let raw_curve_pid = raw_headless_curve_rejection()?;
+    raw_headless_content_rejection(
+        RequestBody::SetViewContext {
+            view: 77,
+            context: Default::default(),
+        },
+        true,
+    )?;
+    raw_headless_content_rejection(
+        RequestBody::Content(tekes_ui_module_runtime::component::content::Request {
+            view: 77,
+            viewport: 1,
+            owner: None,
+            focus_epoch: 0,
+            text_binding: None,
+            capture: None,
+            input: tekes_ui_module_runtime::component::content::Input::Snapshot,
+        }),
+        false,
+    )?;
     let first = ProcessComponent::spawn(ProcessComponentOptions::new("counter", 42), || {})?;
     let second = ProcessComponent::spawn(ProcessComponentOptions::new("counter", 42), || {})?;
     let a = ready(&first)?;
