@@ -160,6 +160,16 @@ fn geometry_report(
     safe: Option<[f32; 4]>,
     target: (u32, u32),
 ) -> serde_json::Value {
+    geometry_report_at_scale(geometry, shape, safe, target, BACKING)
+}
+
+fn geometry_report_at_scale(
+    geometry: &PanelGeometry,
+    shape: ClipShape,
+    safe: Option<[f32; 4]>,
+    target: (u32, u32),
+    backing: f32,
+) -> serde_json::Value {
     let outer = geometry.outer;
     let allocation = geometry.allocation;
     let translated = shape.rect();
@@ -169,7 +179,7 @@ fn geometry_report(
         "allocation_pt":[allocation.origin.x,allocation.origin.y,allocation.size.width,allocation.size.height],
         "translated_shape_pt":[translated.origin.x,translated.origin.y,translated.size.width,translated.size.height],
         "translated_radii_pt":[radii.top_left,radii.top_right,radii.bottom_right,radii.bottom_left],
-        "safe_rect_px":safe,"scale":BACKING,"target_px":[target.0,target.1]
+        "safe_rect_px":safe,"scale":backing,"target_px":[target.0,target.1]
     })
 }
 
@@ -230,6 +240,17 @@ fn draw_image_reference(
     size_px: (u32, u32),
     atlas: &mut tekes_ui_scene::GlyphAtlas,
 ) -> Vec<u8> {
+    draw_image_reference_at_scale(renderer, parent_shape, pixels, size_px, atlas, BACKING)
+}
+
+fn draw_image_reference_at_scale(
+    renderer: &mut Renderer,
+    parent_shape: ClipShape,
+    pixels: &[u8],
+    size_px: (u32, u32),
+    atlas: &mut tekes_ui_scene::GlyphAtlas,
+    backing: f32,
+) -> Vec<u8> {
     let mut table = ShapeTable::new(0x127_0001, 1);
     let key = table.intern(parent_shape).unwrap();
     let mut scene = Scene::with_clip_shapes(&table);
@@ -241,15 +262,15 @@ fn draw_image_reference(
         rect: Rect::new(
             0.0,
             0.0,
-            size_px.0 as f32 / BACKING,
-            size_px.1 as f32 / BACKING,
+            size_px.0 as f32 / backing,
+            size_px.1 as f32 / backing,
         ),
         image,
         opacity: 1.0,
     });
     scene.pop_clip();
     let rgba = renderer
-        .render_to_rgba8(&scene, atlas, size_px, BACKING, TRANSPARENT)
+        .render_to_rgba8(&scene, atlas, size_px, backing, TRANSPARENT)
         .unwrap();
     assert!(renderer.unregister_image(image));
     rgba
@@ -417,7 +438,8 @@ fn actual_parent_panel_allocation_contains_complete_child_host_proof_and_image_r
     );
     evidence.detail("parent_scene", parent_scene_counts);
     evidence.detail("child_scene_original_before_mutation", child_scene_counts);
-    evidence.detail("proof_debug", serde_json::json!(format!("VerifiedFrameOutput {{ dimensions_px: {:?}, rgba8_len: {}, alpha_covered_pixels: {} }}", proof.dimensions_px(), proof.rgba8().len(), alpha_covered(proof.rgba8()))));
+    evidence.detail("proof_debug", serde_json::json!(format!("{proof:?}")));
+    evidence.detail("coverage_boundary", serde_json::json!({"expected_path":"complete child viewport within Class A; does not establish Class B edge-band positives","material_scope":"registered bitmap alpha, not every primitive/material combination"}));
     evidence.detail("pixel_checks", serde_json::json!({
         "proof_equals_ordinary":proof.rgba8()==ordinary.as_slice(),
         "direct_equals_proof":direct_pixels==proof.rgba8(),
@@ -536,42 +558,80 @@ fn actual_child_host_scene_with_coincident_panel_parent_is_refused_without_cropp
 #[test]
 #[ignore = "explicit finite real GPU acceptance under the original build/GPU locks"]
 fn actual_host_stack_button_field_coretext_and_bitmap_image_parent_proof_evidence() {
-    let mut evidence = Evidence::new("root_actual_host_internal_bitmap");
+    complete_host_material_case(MaterialCase {
+        name: "root_actual_host_internal_bitmap",
+        backing: BACKING,
+        padding: None,
+        bitmap_alpha: 255,
+    });
+}
+
+struct MaterialCase {
+    name: &'static str,
+    backing: f32,
+    padding: Option<Insets>,
+    bitmap_alpha: u8,
+}
+
+fn complete_host_material_case(case: MaterialCase) {
+    let mut evidence = Evidence::new(case.name);
+    let backing = case.backing;
+    let bitmap_alpha = case.bitmap_alpha;
+    let fractional_allocation_expected = case.padding.is_some();
+    let extent = |logical: f32| {
+        let pixels = logical * backing;
+        assert!(pixels.is_finite() && pixels > 0.0 && pixels.fract() == 0.0);
+        pixels as u32
+    };
     let mut renderer = Renderer::new_headless().expect("actual Metal renderer required");
 
     let mut parent_text = Text::new(TEXT_SCALE);
     parent_text.services = true;
-    parent_text.backing = BACKING;
-    let mut parent_host = host("actual padded parent Panel", None, PARENT);
+    parent_text.backing = backing;
+    let mut parent_host = host("actual padded parent Panel", case.padding, PARENT);
     let parent_scene = layout(&mut parent_host, &mut parent_text, 360.0, 240.0);
     let parent_geometry = panel_geometry(&parent_host, PARENT);
-    let parent_size_px = (720, 480);
+    let parent_size_px = (extent(360.0), extent(240.0));
     let parent_before = renderer
         .render_to_rgba8(
             &parent_scene,
             &mut parent_text.atlas,
             parent_size_px,
-            BACKING,
+            backing,
             TRANSPARENT,
         )
         .unwrap();
     evidence.save_rgba("parent_before", &parent_before, parent_size_px);
 
     let child_size_px = (
-        scaled_extent(parent_geometry.allocation.size.width),
-        scaled_extent(parent_geometry.allocation.size.height),
+        extent(parent_geometry.allocation.size.width),
+        extent(parent_geometry.allocation.size.height),
     );
     let child_width = parent_geometry.allocation.size.width;
     let child_height = parent_geometry.allocation.size.height;
+    assert_eq!(
+        [child_width, child_height],
+        [328.0, 208.0],
+        "matrix never shrinks the original child viewport"
+    );
+    if fractional_allocation_expected {
+        assert!(
+            (parent_geometry.allocation.origin.x * backing).fract() != 0.0
+                || (parent_geometry.allocation.origin.y * backing).fract() != 0.0,
+            "actual public allocation must retain a physical fractional origin"
+        );
+    }
     let bitmap_size_px = (32, 24);
     let bitmap_pixels: Vec<u8> = (0..bitmap_size_px.1)
         .flat_map(|y| {
             (0..bitmap_size_px.0).flat_map(move |x| {
-                if (x / 4 + y / 4) % 2 == 0 {
-                    [240, 48, 32, 255]
+                let rgb = if (x / 4 + y / 4) % 2 == 0 {
+                    [240_u8, 48, 32]
                 } else {
-                    [24, 140, 224, 255]
-                }
+                    [24, 140, 224]
+                };
+                let premul = |c: u8| ((u16::from(c) * u16::from(bitmap_alpha)) / 255) as u8;
+                [premul(rgb[0]), premul(rgb[1]), premul(rgb[2]), bitmap_alpha]
             })
         })
         .collect();
@@ -615,14 +675,22 @@ fn actual_host_stack_button_field_coretext_and_bitmap_image_parent_proof_evidenc
     let mut child_host = ContentHost::new(Content::new(CHILD, child_panel)).unwrap();
     let mut child_text = Text::new(TEXT_SCALE);
     child_text.services = true;
-    child_text.backing = BACKING;
+    child_text.backing = backing;
     let mut child_scene = layout(&mut child_host, &mut child_text, child_width, child_height);
     let child_before = child_scene.clone();
     let parent_shape = parent_shape_in_child_coordinates(&parent_geometry);
     let safe = parent_shape
-        .full_coverage_inner_rect_px(BACKING, child_size_px)
+        .full_coverage_inner_rect_px(backing, child_size_px)
         .unwrap()
         .unwrap();
+    let domain = safe.bounds_px();
+    assert!(
+        domain[0] <= 0.0
+            && domain[1] <= 0.0
+            && domain[2] >= child_size_px.0 as f32
+            && domain[3] >= child_size_px.1 as f32,
+        "matrix uses the existing owner's admitted full-child domain; no new predicate or input clipping"
+    );
     let child_counts = counts(&child_scene);
     assert!(
         child_counts["glyph_instance_count"].as_u64().unwrap() > 0,
@@ -652,7 +720,7 @@ fn actual_host_stack_button_field_coretext_and_bitmap_image_parent_proof_evidenc
             &child_scene,
             &mut child_text.atlas,
             child_size_px,
-            BACKING,
+            backing,
             TRANSPARENT,
         )
         .unwrap();
@@ -670,7 +738,7 @@ fn actual_host_stack_button_field_coretext_and_bitmap_image_parent_proof_evidenc
             &child_scene,
             &mut child_text.atlas,
             child_size_px,
-            BACKING,
+            backing,
             TRANSPARENT,
             Arc::<[ClipShape]>::from(vec![parent_shape]),
             BoundaryProofLimits::default(),
@@ -696,18 +764,19 @@ fn actual_host_stack_button_field_coretext_and_bitmap_image_parent_proof_evidenc
             &direct,
             &mut child_text.atlas,
             child_size_px,
-            BACKING,
+            backing,
             TRANSPARENT,
         )
         .unwrap();
     assert_eq!(direct_pixels, proof.rgba8());
     evidence.save_rgba("parent_masked_direct", &direct_pixels, child_size_px);
-    let image_reference = draw_image_reference(
+    let image_reference = draw_image_reference_at_scale(
         &mut renderer,
         parent_shape,
         proof.rgba8(),
         child_size_px,
         &mut child_text.atlas,
+        backing,
     );
     assert_eq!(image_reference, direct_pixels);
     evidence.save_rgba("image_quad_reference", &image_reference, child_size_px);
@@ -722,7 +791,7 @@ fn actual_host_stack_button_field_coretext_and_bitmap_image_parent_proof_evidenc
             &parent_scene,
             &mut parent_text.atlas,
             parent_size_px,
-            BACKING,
+            backing,
             TRANSPARENT,
         )
         .unwrap();
@@ -738,13 +807,15 @@ fn actual_host_stack_button_field_coretext_and_bitmap_image_parent_proof_evidenc
 
     evidence.detail(
         "geometry",
-        geometry_report(
+        geometry_report_at_scale(
             &parent_geometry,
             parent_shape,
             Some(safe.bounds_px()),
             child_size_px,
+            backing,
         ),
     );
+    evidence.detail("material_case", serde_json::json!({"backing":backing,"bitmap_alpha":bitmap_alpha,"bitmap_rgba_premultiplied":true,"bitmap_logical_size_fixed":[16.0,12.0],"whole_host_and_all_original_assertions_retained":true}));
     evidence.detail("parent_scene", counts(&parent_scene));
     evidence.detail("child_scene_before_mutation", child_counts);
     evidence.detail("proof_debug", serde_json::json!(format!("VerifiedFrameOutput {{ dimensions_px: {:?}, rgba8_len: {}, alpha_covered_pixels: {} }}", proof.dimensions_px(), proof.rgba8().len(), alpha_covered(proof.rgba8()))));
@@ -767,6 +838,64 @@ fn actual_host_stack_button_field_coretext_and_bitmap_image_parent_proof_evidenc
     }));
     evidence.finish();
     drop(bitmap_lease);
+}
+
+// Independent named cases let the locked runner collect all failures without
+// changing the original Host, shrinking its viewport or touching Toolbar.
+
+#[test]
+#[ignore = "explicit original-domain coordinate/material GPU case under the original locks"]
+fn actual_complete_host_matrix_quarter_half_alpha() {
+    complete_host_material_case(MaterialCase {
+        name: "main_quarter_backing_half",
+        backing: 0.25,
+        padding: None,
+        bitmap_alpha: 128,
+    });
+}
+
+#[test]
+#[ignore = "explicit original-domain coordinate/material GPU case under the original locks"]
+fn actual_complete_host_matrix_half_backing_opaque() {
+    complete_host_material_case(MaterialCase {
+        name: "main_fractional_backing_half_opaque",
+        backing: 0.5,
+        padding: None,
+        bitmap_alpha: 255,
+    });
+}
+
+#[test]
+#[ignore = "explicit original-domain coordinate/material GPU case under the original locks"]
+fn actual_complete_host_matrix_integer_1x_opaque() {
+    complete_host_material_case(MaterialCase {
+        name: "main_integer_1x_opaque",
+        backing: 1.0,
+        padding: None,
+        bitmap_alpha: 255,
+    });
+}
+
+#[test]
+#[ignore = "explicit original-domain coordinate/material GPU case under the original locks"]
+fn actual_complete_host_matrix_fractional_2x_half_alpha() {
+    complete_host_material_case(MaterialCase {
+        name: "main_fractional_2x_half",
+        backing: 2.0,
+        padding: Some(Insets::new(16.5, 15.75, 15.5, 16.25)),
+        bitmap_alpha: 128,
+    });
+}
+
+#[test]
+#[ignore = "explicit original-domain coordinate/material GPU case under the original locks"]
+fn actual_complete_host_matrix_fractional_4x_transparent() {
+    complete_host_material_case(MaterialCase {
+        name: "main_fractional_4x_transparent",
+        backing: 4.0,
+        padding: Some(Insets::new(16.375, 15.875, 15.625, 16.125)),
+        bitmap_alpha: 0,
+    });
 }
 
 const TOOLBAR_ROOT: ComponentId = ComponentId(12710);
