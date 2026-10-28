@@ -70,7 +70,7 @@ jobs:
           cargo run -p tekes-ui-module-runtime --example process_component_services --locked --offline || result=1
           # Default already includes the three mounted-container geometry scenario.
           cargo run --manifest-path examples/process-content-consumer/Cargo.toml --locked --offline || result=1
-          for mode in accessibility projection query-wake view-context three-surfaces overlay scroll; do
+          for mode in accessibility projection query-wake view-context three-surfaces overlay scroll reading-anchor reading-lifecycle; do
             cargo run --manifest-path examples/process-content-consumer/Cargo.toml --locked --offline -- "--$mode-only" || result=1
           done
           exit "$result"

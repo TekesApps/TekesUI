@@ -2490,6 +2490,14 @@ mod consumer {
             println!("{}", scroll_consumer::roundtrip()?);
             return Ok(());
         }
+        if args.iter().any(|v| v == "--reading-anchor-only") {
+            println!("{}", scroll_consumer::anchor_roundtrip()?);
+            return Ok(());
+        }
+        if args.iter().any(|v| v == "--reading-lifecycle-only") {
+            println!("{}", scroll_consumer::lifecycle_roundtrip()?);
+            return Ok(());
+        }
         if args.iter().any(|v| v == "--query-wake-only") {
             println!("{}", read_only_query_wake()?);
             return Ok(());

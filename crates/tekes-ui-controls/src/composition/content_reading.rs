@@ -129,12 +129,28 @@ impl ContentReadingState {
         // Stored frames precede a new layout. Include input received since
         // those frames were arranged, so an arriving update cannot undo it.
         let top = self.viewport.min_y() + scroll.visual_offset().y - self.visual_offset.y;
-        let chosen = self
-            .frames
-            .iter()
-            .enumerate()
-            .filter(|(_, (_, f))| f.max_y() > top && f.min_y() < top + self.viewport.size.height)
-            .min_by(|(_, (_, a)), (_, (_, b))| a.min_y().total_cmp(&b.min_y()))
+        // An arrival can leave a sliver of a preceding item visible. Without
+        // new scrolling, keep the original item instead of re-anchoring to
+        // that sliver before a later width/font reflow.
+        let retained = if !self.user_input && scroll.visual_offset().y == self.visual_offset.y {
+            self.pending.as_ref().map(|a| a.item).or_else(|| {
+                self.result.as_ref().and_then(|r| match &r.anchor {
+                    ContentReadingAnchorUpdate::Preserved(id)
+                    | ContentReadingAnchorUpdate::Fallback(Some(id)) => Some(*id),
+                    _ => None,
+                })
+            })
+        } else {
+            None
+        };
+        let visible =
+            self.frames.iter().enumerate().filter(|(_, (_, f))| {
+                f.max_y() > top && f.min_y() < top + self.viewport.size.height
+            });
+        let chosen = visible
+            .clone()
+            .find(|(_, (id, _))| retained == Some(*id))
+            .or_else(|| visible.min_by(|(_, (_, a)), (_, (_, b))| a.min_y().total_cmp(&b.min_y())))
             .or_else(|| self.frames.iter().enumerate().next_back())?;
         let (index, (item, frame)) = chosen;
         let within = (top - frame.min_y()).clamp(0.0, frame.size.height);
@@ -425,6 +441,7 @@ impl ScrollContent {
             .as_mut()
             .ok_or(ReadingUpdateError::WrongDocument)?;
         let version = state.version.advanced(expected, revision)?;
+        state.pending = state.capture(&self.scroll);
         state.version = version.clone();
         state.items = items;
         state.item_mounts.clear();

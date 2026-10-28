@@ -161,9 +161,57 @@ impl ProcessModule for Reader {
                     .unwrap();
                 let frame = history.surface.inner;
                 let edit = self.module.host.get(EDIT).unwrap().frame();
+                let items: Vec<_> = self.items.iter().map(|id| {
+                    let frame = self.module.host.get(*id).unwrap().frame();
+                    serde_json::json!({"id":id.0,"frame":[frame.min_x(),frame.min_y(),frame.size.width,frame.size.height]})
+                }).collect();
                 Ok(
-                    serde_json::json!({"pid":std::process::id(),"history_frame":[frame.min_x(),frame.min_y(),frame.size.width,frame.size.height],"edit_frame":[edit.min_x(),edit.min_y(),edit.size.width,edit.size.height],"inner_offset":history.surface.scroll.offset.y,"parent_offset":parent.scroll.offset.y,"following":parent.is_following_latest(),"revision":self.module.revision,"text":self.module.host.get(EDIT).unwrap().component::<TextFieldContent>().unwrap().surface.input.text,"marked":self.module.host.get(EDIT).unwrap().component::<TextFieldContent>().unwrap().surface.input.marked.clone()}),
+                    serde_json::json!({"pid":std::process::id(),"history_frame":[frame.min_x(),frame.min_y(),frame.size.width,frame.size.height],"history_mount":self.module.host.semantic_mount(INNER),"history_family":proposal::text_family(history.surface.role.id()),"items":items,"parent_limit":parent.scroll.limit().y,"edit_frame":[edit.min_x(),edit.min_y(),edit.size.width,edit.size.height],"inner_offset":history.surface.scroll.offset.y,"parent_offset":parent.scroll.offset.y,"following":parent.is_following_latest(),"revision":self.module.revision,"text":self.module.host.get(EDIT).unwrap().component::<TextFieldContent>().unwrap().surface.input.text,"marked":self.module.host.get(EDIT).unwrap().component::<TextFieldContent>().unwrap().surface.input.marked.clone()}),
                 )
+            }
+            RequestBody::Message { topic, .. } if topic == "reading-monospace" => {
+                self.module
+                    .host
+                    .get_mut(INNER)
+                    .unwrap()
+                    .component_mut::<TextFieldContent>()
+                    .unwrap()
+                    .surface
+                    .set_role(proposal::TextRole::Code);
+                self.module.revision += 1;
+                e.invalidate_view(self.module.revision)?;
+                Ok(serde_json::json!({"revision":self.module.revision}))
+            }
+            RequestBody::Message { topic, .. } if topic == "reading-prepend" => {
+                let id = ComponentId(100 + self.version.revision());
+                let mut items = self.items.clone();
+                items.insert(0, id);
+                let (version, ()) = self.module.host.update_scroll_reading_document(
+                    PARENT, &self.version, self.version.revision()+1, items.clone(), |h| {
+                        h.insert(BODY, Content::new(id, TextContent {
+                            text: "Prepended page: one complete stable reading item with enough text to reflow at different widths.\n".repeat(24),
+                            role: proposal::TextRole::Code,
+                        })).unwrap();
+                        h.reorder(BODY, &items).unwrap();
+                    }
+                ).map_err(|error| anyhow::anyhow!("{error:?}"))?;
+                self.version = version;
+                self.items = items;
+                self.module.revision += 1;
+                e.invalidate_view(self.module.revision)?;
+                Ok(serde_json::json!({"revision":self.module.revision}))
+            }
+            RequestBody::Message { topic, .. } if topic == "reading-latest" => {
+                self.module
+                    .host
+                    .get_mut(PARENT)
+                    .unwrap()
+                    .component_mut::<ScrollContent>()
+                    .unwrap()
+                    .follow_latest();
+                self.module.revision += 1;
+                e.invalidate_view(self.module.revision)?;
+                Ok(serde_json::json!({"revision":self.module.revision}))
             }
             RequestBody::Message { topic, .. } if topic == "reading-append" => {
                 let id = ComponentId(100 + self.version.revision());
@@ -1007,6 +1055,539 @@ pub(super) fn roundtrip() -> Result<serde_json::Value> {
     })?;
     Ok(
         serde_json::json!({"result":"REMOTE_ORIGINAL_SCROLL_OK","unnegotiated":negative,"unfocused_other_container_kept_composer":true,"stale_resize_callback_rejected":true,"invalid_packet_rejected_before_serialization":true,"geometry_barrier_did_not_pause_reader":true,"all_original_children_reaped":true,"real_glyph_gpu_frames":6,"public_reading_query_and_actual_item_reveal":true,"original_momentum_preserved":true,"producer_revision_acknowledged":true,"runs":results,"real_child_pids":pids,"scope":"original mixed Content, composer preedit and nested reader in three actual IPC workers and GPU imported images; not physical IME, native window, child AX, Gold7","outer_original_reading_intent":true,"outer_offset_not_redispatched":true,"native":false,"physical_ime":false,"voiceover":false,"gold7":false}),
+    )
+}
+
+fn same_reading_anchor(before: &serde_json::Value, after: &serde_json::Value) -> Result<()> {
+    let error = (before["history_frame"][1].as_f64().unwrap()
+        - after["history_frame"][1].as_f64().unwrap())
+    .abs();
+    ensure!(
+        before["history_mount"] == after["history_mount"] && error <= 1.,
+        "original item anchor moved by {error}: before={before}, after={after}"
+    );
+    ensure!(
+        after["following"] == false
+            && before["text"] == after["text"]
+            && before["marked"] == after["marked"],
+        "reading update stole follow/focus/composition"
+    );
+    Ok(())
+}
+
+/// Original mixed Reader lifecycle, including an actual owned-child crash.
+/// This is IPC/GPU resource acceptance, not a native window or physical IME test.
+pub(super) fn lifecycle_roundtrip() -> Result<serde_json::Value> {
+    let caps = ViewCapabilities {
+        accessibility: true,
+        ..CAPS
+    };
+    let create = |i: usize| -> Result<Content> {
+        Ok(Content::new(
+            IDS[i],
+            ProcessContainer::new_view(
+                ProcessComponentOptions::new(NATIVE_MODULE, 85).with_view(85, 85 + i as u64, caps),
+                || {},
+            )?,
+        ))
+    };
+    let mut host = ContentHost::new(Content::new(
+        ComponentId(480),
+        ReviewRow {
+            arranged: None,
+            grid: GridContent {
+                model: tekes_ui_controls::extended::Grid::new(3),
+                children: (0..3).map(create).collect::<Result<_>>()?,
+            },
+        },
+    ))?;
+    let mut gpu = tekes_ui_render::Renderer::new_headless()?;
+    let baseline_images = gpu.image_count();
+    ready(&mut host, &mut gpu)?;
+    ensure!(
+        gpu.image_count() > baseline_images,
+        "original child images were not imported"
+    );
+    let id = IDS[0];
+    let old_session = container(&host, id).session().cloned().unwrap();
+    let old_mount = host.semantic_mount(id).unwrap();
+    let initial = container_message(container(&host, id), "reading-inspect")?;
+    let old_pid = initial["pid"].as_u64().unwrap();
+    let origin = host.get(id).unwrap().frame().origin;
+    let editor = point(&initial, "edit_frame", origin);
+    host.event(&ContentEvent::PointerDown(editor));
+    host.event(&ContentEvent::PointerUp(editor));
+    host.event(&ContentEvent::Commit {
+        text: " saved".into(),
+        replacement: None,
+    });
+    ready(&mut host, &mut gpu)?;
+    let before_hide = container_message(container(&host, id), "reading-inspect")?;
+    ensure!(
+        before_hide["text"] != initial["text"],
+        "lifecycle fixture did not edit original Content"
+    );
+    host.get_mut(id)
+        .unwrap()
+        .component_mut::<ProcessContainer>()
+        .unwrap()
+        .set_visible(false)?;
+    let frame = Rect::new(0., 0., 960., 420.);
+    host.render(
+        &mut Scene::new(),
+        &mut Text,
+        frame,
+        frame,
+        Theme::LIGHT.into(),
+    )?;
+    ensure!(!container(&host, id).input_ready());
+    ensure!(
+        container(&host, id)
+            .native_content_bridge(Duration::from_secs(1))
+            .is_err()
+    );
+    host.get_mut(id)
+        .unwrap()
+        .component_mut::<ProcessContainer>()
+        .unwrap()
+        .set_visible(true)?;
+    ready(&mut host, &mut gpu)?;
+    let shown = container_message(container(&host, id), "reading-inspect")?;
+    ensure!(shown["pid"] == initial["pid"] && shown["text"] == before_hide["text"]);
+    ensure!(container(&host, id).session() == Some(&old_session));
+    let old_semantics = container(&host, id)
+        .native_content_bridge(Duration::from_secs(1))?
+        .semantics()?;
+    let old_aux = old_semantics
+        .reply()
+        .semantics
+        .as_ref()
+        .unwrap()
+        .iter()
+        .find(|n| n.semantics.name == "Auxiliary")
+        .context("original Auxiliary semantics absent")?
+        .target;
+    let narrow = Rect::new(0., 0., 780., 420.);
+    ready_at(&mut host, &mut gpu, narrow)?;
+    ensure!(
+        container(&host, id)
+            .native_content_bridge(Duration::from_secs(1))?
+            .request(
+                &old_semantics,
+                wire::Input::Commit {
+                    text: "STALE".into(),
+                    replacement: None
+                }
+            )
+            .is_err(),
+        "old viewport snapshot was accepted"
+    );
+    // Also send the old viewport through real IPC; do not rely only on the bridge fence.
+    let stale_request = container(&host, id).request(RequestBody::Content(wire::Request {
+        view: old_semantics.reply().view,
+        viewport: old_semantics.reply().viewport,
+        owner: old_semantics.reply().focused,
+        focus_epoch: old_semantics.reply().focus_epoch,
+        text_binding: old_semantics.reply().text_binding.clone(),
+        capture: None,
+        input: wire::Input::Commit {
+            text: "STALE".into(),
+            replacement: None,
+        },
+    }))?;
+    let mut stale_result = None;
+    wait(|| {
+        for packet in container(&host, id).drain_events() {
+            if let Output::Response { request, result } = packet.output
+                && request == stale_request
+            {
+                stale_result = Some(result);
+            }
+        }
+        stale_result.is_some()
+    })?;
+    ensure!(
+        stale_result.unwrap().is_err(),
+        "worker accepted an old viewport over IPC"
+    );
+    ensure!(
+        container_message(container(&host, id), "reading-inspect")?["text"] == before_hide["text"]
+    );
+    let neighbors = IDS[1..]
+        .iter()
+        .map(|id| container_message(container(&host, *id), "reading-inspect"))
+        .collect::<Result<Vec<_>>>()?;
+    // Deliberately crash only the PID returned by our own original Reader.
+    ensure!(
+        std::process::Command::new("/bin/kill")
+            .args(["-KILL", &old_pid.to_string()])
+            .status()?
+            .success()
+    );
+    wait(|| {
+        matches!(
+            container(&host, id).status(),
+            Some(ProcessStatus::Failed { .. })
+        )
+    })?;
+    ensure!(
+        host.get_mut(id)
+            .unwrap()
+            .component_mut::<ProcessContainer>()
+            .unwrap()
+            .prepare(&mut gpu)
+            .is_err(),
+        "crashed worker was not surfaced as failure"
+    );
+    drop(host.remove(id)?);
+    host.insert(ComponentId(480), create(0)?)?;
+    ready_at(&mut host, &mut gpu, narrow)?;
+    let restarted = container_message(container(&host, id), "reading-inspect")?;
+    let new_pid = restarted["pid"].as_u64().unwrap();
+    ensure!(new_pid != old_pid && container(&host, id).session() != Some(&old_session));
+    ensure!(host.semantic_mount(id) != Some(old_mount));
+    ensure!(
+        container(&host, id)
+            .request_from(
+                &old_session,
+                RequestBody::Message {
+                    topic: "inspect".into(),
+                    payload: serde_json::Value::Null,
+                }
+            )
+            .is_err(),
+        "old session reached the restarted Reader"
+    );
+    let bridge = container(&host, id).native_content_bridge(Duration::from_secs(1))?;
+    ensure!(
+        bridge
+            .request(
+                &old_semantics,
+                wire::Input::Commit {
+                    text: "STALE".into(),
+                    replacement: None
+                }
+            )
+            .is_err()
+    );
+    ensure!(
+        bridge
+            .accessibility_action(
+                &old_semantics,
+                old_aux,
+                None,
+                wire::AccessibilityAction::Press
+            )
+            .is_err(),
+        "old AX callback activated the restarted Reader"
+    );
+    let fresh = bridge.semantics()?;
+    let aux = fresh
+        .reply()
+        .semantics
+        .as_ref()
+        .unwrap()
+        .iter()
+        .find(|n| n.semantics.name == "Auxiliary")
+        .context("restarted Auxiliary semantics absent")?
+        .target;
+    bridge.accessibility_action(&fresh, aux, None, wire::AccessibilityAction::Press)?;
+    let inspected = inspect_container(container(&host, id))?;
+    ensure!(
+        inspected["aux_activations"] == 1 && inspected["submits"] == 0,
+        "restart replayed or duplicated a business action"
+    );
+    ensure!(
+        restarted["text"] == initial["text"],
+        "new business instance did not start fresh"
+    );
+    let mut pids = vec![old_pid, new_pid];
+    for (i, previous) in neighbors.iter().enumerate() {
+        let current = container_message(container(&host, IDS[i + 1]), "reading-inspect")?;
+        ensure!(
+            current["pid"] == previous["pid"] && current["text"] == previous["text"],
+            "one Reader crash affected its independent neighbor"
+        );
+        pids.push(current["pid"].as_u64().unwrap());
+    }
+    drop(host);
+    wait(|| {
+        pids.iter().all(|pid| {
+            !std::process::Command::new("/bin/kill")
+                .args(["-0", &pid.to_string()])
+                .stderr(std::process::Stdio::null())
+                .status()
+                .is_ok_and(|s| s.success())
+        })
+    })?;
+    gpu.collect_retired_images();
+    ensure!(
+        gpu.image_count() == baseline_images,
+        "lifecycle retained imported GPU images"
+    );
+    // Retain an actual original Reader frame across closing its connection and
+    // starting a replacement. A delayed frame must not become a new GPU image.
+    let options = || ProcessComponentOptions::new(NATIVE_MODULE, 86).with_view(86, 86, caps);
+    let old_process = ProcessComponent::spawn(options(), || {})?;
+    wait(|| matches!(old_process.status(), ProcessStatus::Ready { .. }))?;
+    let old_frame_pid = match old_process.status() {
+        ProcessStatus::Ready { pid, .. } => pid,
+        _ => anyhow::bail!("late-frame Reader not ready"),
+    };
+    old_process.enqueue_view(Request {
+        version: VERSION,
+        seq: 1,
+        viewport: 1,
+        kind: InputKind::Layout,
+        command: None,
+        x: 0.,
+        y: 0.,
+        width: 300,
+        height: 300,
+        identity: 1,
+        scale: 1.,
+    })?;
+    let mut held = Vec::new();
+    wait(|| {
+        held.extend(old_process.drain_view_frames());
+        !held.is_empty()
+    })?;
+    ensure!(held.len() == 1 && held[0].metadata().viewport == 1);
+    let held_session = old_process.session().clone();
+    old_process.close();
+    wait(|| matches!(old_process.status(), ProcessStatus::Closed))?;
+    let replacement = ProcessComponent::spawn(options(), || {})?;
+    wait(|| matches!(replacement.status(), ProcessStatus::Ready { .. }))?;
+    let replacement_pid = match replacement.status() {
+        ProcessStatus::Ready { pid, .. } => pid,
+        _ => anyhow::bail!("late-frame replacement not ready"),
+    };
+    ensure!(replacement_pid != old_frame_pid && replacement.session() != &held_session);
+    layout(&replacement, 1, 2, 300)?;
+    ensure!(
+        held.pop().unwrap().import(&gpu.gpu_context()).is_err(),
+        "old actual frame imported after replacement session became ready"
+    );
+    replacement.close();
+    wait(|| matches!(replacement.status(), ProcessStatus::Closed))?;
+    pids.extend([u64::from(old_frame_pid), u64::from(replacement_pid)]);
+    wait(|| {
+        pids.iter().all(|pid| {
+            !std::process::Command::new("/bin/kill")
+                .args(["-0", &pid.to_string()])
+                .stderr(std::process::Stdio::null())
+                .status()
+                .is_ok_and(|s| s.success())
+        })
+    })?;
+    gpu.collect_retired_images();
+    ensure!(gpu.image_count() == baseline_images);
+    Ok(
+        serde_json::json!({"result":"ORIGINAL_MIXED_READER_LIFECYCLE_OK",
+        "old_pid":old_pid,"new_pid":new_pid,"all_owned_pids":pids,
+        "old_session":old_session,"initial":initial,"before_hide":before_hide,"shown":shown,"restarted":restarted,
+        "old_viewport_rejected_over_IPC":true,"old_session_input_and_AX_rejected":true,
+        "new_aux_activations":inspected["aux_activations"],"submits":inspected["submits"],
+        "neighbors_preserved":true,"all_children_reaped":true,"imported_images_released":true,
+        "held_original_frame_rejected_after_new_session_ready":true,
+        "native_window":false,"physical_IME":false}),
+    )
+}
+
+pub(super) fn anchor_roundtrip() -> Result<serde_json::Value> {
+    let children = IDS
+        .iter()
+        .enumerate()
+        .map(|(i, id)| {
+            let mut c = ProcessContainer::new_view(
+                ProcessComponentOptions::new(MODULE, 84).with_view(84, 84 + i as u64, CAPS),
+                || {},
+            )?;
+            c.set_view_context(ViewContext {
+                reduced_motion: true,
+                caret_visible: false,
+                ..Default::default()
+            })?;
+            Ok(Content::new(*id, c))
+        })
+        .collect::<Result<Vec<_>>>()?;
+    let row = Content::new(
+        ComponentId(480),
+        ReviewRow {
+            arranged: None,
+            grid: GridContent {
+                model: tekes_ui_controls::extended::Grid::new(3),
+                children,
+            },
+        },
+    );
+    let mut host = ContentHost::new(Content::new(
+        ComponentId(479),
+        ScrollContent::new(ScrollArea::default(), row),
+    ))?;
+    let mut gpu = tekes_ui_render::Renderer::new_headless()?;
+    let frame = Rect::new(0., 0., 960., 420.);
+    ready_at(&mut host, &mut gpu, frame)?;
+    let mut runs = Vec::new();
+    for id in IDS {
+        let mono = container_message(container(&host, id), "reading-monospace")?;
+        ready_revision(
+            &mut host,
+            &mut gpu,
+            frame,
+            Some((id, mono["revision"].as_u64().unwrap())),
+        )?;
+        let initial = container_message(container(&host, id), "reading-inspect")?;
+        ensure!(
+            initial["history_family"] == "mono",
+            "original CoreText target is not the Code/mono role"
+        );
+        let origin = host.get(id).unwrap().frame().origin;
+        let editor = point(&initial, "edit_frame", origin);
+        host.event(&ContentEvent::PointerDown(editor));
+        host.event(&ContentEvent::PointerUp(editor));
+        host.event(&ContentEvent::Preedit {
+            text: "ni".into(),
+            selection: 2..2,
+            clauses: std::iter::once(0..2).collect(),
+            replacement: None,
+        });
+        ready_at(&mut host, &mut gpu, frame)?;
+        let active = container_message(container(&host, id), "reading-inspect")?;
+        ensure!(
+            !active["marked"].is_null(),
+            "original composing editor missing"
+        );
+        let at = point(&active, "history_frame", origin);
+        ensure!(
+            host.event(&ContentEvent::Scroll {
+                position: at,
+                delta: Point::new(0., -16.),
+                precise: true,
+                begin: true,
+                end: false,
+                momentum: false,
+                time: 1.
+            })
+            .consumed
+        );
+        ready_at(&mut host, &mut gpu, frame)?;
+        let before = container_message(container(&host, id), "reading-inspect")?;
+        ensure!(
+            before["following"] == false
+                && before["inner_offset"].as_f64().unwrap()
+                    == active["inner_offset"].as_f64().unwrap() - 16.,
+            "user scroll did not establish original reading priority"
+        );
+        let append = container_message(container(&host, id), "reading-append")?;
+        ready_revision(
+            &mut host,
+            &mut gpu,
+            frame,
+            Some((id, append["revision"].as_u64().unwrap())),
+        )?;
+        let appended = container_message(container(&host, id), "reading-inspect")?;
+        same_reading_anchor(&before, &appended)?;
+        let prepend = container_message(container(&host, id), "reading-prepend")?;
+        ready_revision(
+            &mut host,
+            &mut gpu,
+            frame,
+            Some((id, prepend["revision"].as_u64().unwrap())),
+        )?;
+        let prepended = container_message(container(&host, id), "reading-inspect")?;
+        same_reading_anchor(&before, &prepended)?;
+        ensure!(
+            prepended["parent_offset"].as_f64().unwrap()
+                > appended["parent_offset"].as_f64().unwrap(),
+            "prepend did not actually displace original layout"
+        );
+        let narrow = Rect::new(0., 0., 600., 420.);
+        ready_at(&mut host, &mut gpu, narrow)?;
+        let resized = container_message(container(&host, id), "reading-inspect")?;
+        same_reading_anchor(&before, &resized)?;
+        ensure!(
+            resized["items"][0]["frame"][3].as_f64().unwrap()
+                > prepended["items"][0]["frame"][3].as_f64().unwrap(),
+            "page did not really reflow at the narrower width"
+        );
+        host.get_mut(id)
+            .unwrap()
+            .component_mut::<ProcessContainer>()
+            .unwrap()
+            .set_view_context(ViewContext {
+                type_scale: 1.5,
+                elapsed_nanos: 1,
+                reduced_motion: true,
+                caret_visible: false,
+                ..Default::default()
+            })?;
+        ready_at(&mut host, &mut gpu, narrow)?;
+        let scaled = container_message(container(&host, id), "reading-inspect")?;
+        same_reading_anchor(&before, &scaled)?;
+        ensure!(
+            scaled["items"][0]["frame"][3].as_f64().unwrap()
+                > resized["items"][0]["frame"][3].as_f64().unwrap(),
+            "original font backend did not change page geometry"
+        );
+        host.get_mut(id)
+            .unwrap()
+            .component_mut::<ProcessContainer>()
+            .unwrap()
+            .set_view_context(ViewContext {
+                elapsed_nanos: 2,
+                reduced_motion: true,
+                caret_visible: false,
+                ..Default::default()
+            })?;
+        ready_at(&mut host, &mut gpu, frame)?;
+        let restored = container_message(container(&host, id), "reading-inspect")?;
+        same_reading_anchor(&before, &restored)?;
+        let latest = container_message(container(&host, id), "reading-latest")?;
+        ready_revision(
+            &mut host,
+            &mut gpu,
+            frame,
+            Some((id, latest["revision"].as_u64().unwrap())),
+        )?;
+        let following = container_message(container(&host, id), "reading-inspect")?;
+        ensure!(
+            following["following"] == true
+                && following["parent_limit"].as_f64().unwrap() > 0.
+                && (following["parent_offset"].as_f64().unwrap()
+                    - following["parent_limit"].as_f64().unwrap())
+                .abs()
+                    <= 1.,
+            "explicit original latest did not resume following"
+        );
+        ensure!(
+            following["text"] == before["text"]
+                && following["marked"] == before["marked"]
+                && inspect_container(container(&host, id))?["submits"] == 0,
+            "reading navigation changed or submitted composing text"
+        );
+        runs.push(serde_json::json!({"container":id.0,"session":container(&host,id).session(),"before":before,"appended":appended,"prepended":prepended,"narrowed":resized,"scaled":scaled,"restored":restored,"latest":following}));
+        host.event(&ContentEvent::Unmark);
+    }
+    let pids: std::collections::BTreeSet<_> = runs
+        .iter()
+        .map(|r| r["before"]["pid"].as_u64().unwrap())
+        .collect();
+    ensure!(pids.len() == 3);
+    for id in IDS {
+        host.remove(id)?;
+    }
+    wait(|| {
+        pids.iter().all(|pid| {
+            !std::process::Command::new("/bin/kill")
+                .args(["-0", &pid.to_string()])
+                .stderr(std::process::Stdio::null())
+                .status()
+                .is_ok_and(|s| s.success())
+        })
+    })?;
+    Ok(
+        serde_json::json!({"result":"REMOTE_ORIGINAL_READING_ANCHOR_OK","runs":runs,"real_child_pids":pids,"font":"Code/mono via original CoreText Menlo backend","tolerance_logical_points":1,"native_window":false,"physical_ime":false}),
     )
 }
 
