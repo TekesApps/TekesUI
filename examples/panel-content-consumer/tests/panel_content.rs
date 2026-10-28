@@ -1,6 +1,6 @@
 //! Independent public consumer: original ContentHost owns all child measurement/layout.
 use tekes_ui_controls::{
-    Insets, ScrollArea, TextSurfacePresentation,
+    Insets, TextSurfacePresentation,
     composition::*,
     extended::{Axis, Stack},
 };
@@ -10,13 +10,12 @@ use tekes_ui_tokens::Theme;
 mod coretext;
 use coretext::Text;
 
-const ROOT: ComponentId = ComponentId(8200);
-const BODY: ComponentId = ComponentId(8201);
-const LABEL: ComponentId = ComponentId(8202);
-const ACTION: ComponentId = ComponentId(8203);
-const EDITOR: ComponentId = ComponentId(8204);
-const SCROLL: ComponentId = ComponentId(8205);
-const ROWS: ComponentId = ComponentId(8206);
+#[path = "support/panel_fixture.rs"]
+mod panel_fixture;
+use panel_fixture::{
+    ACTION, BODY, EDITOR, LABEL, ROOT, ROWS, SCROLL,
+};
+
 const NEXT_ROW: ComponentId = ComponentId(8208);
 const LATEST_ROW: ComponentId = ComponentId(8209);
 const AFTER_LATEST_ROW: ComponentId = ComponentId(8228);
@@ -130,48 +129,14 @@ fn layout_diagnostic(host: &ContentHost, ids: &[ComponentId]) -> String {
 
 #[test]
 fn original_panel_stack_preserves_real_editor_geometry_actions_and_reading_intent() {
-    let mut composer = TextFieldContent::new("Composer", "draft 0123456789");
-    composer.surface.input.multiline = true;
-    composer.viewport = TextViewport::Fill;
-    composer.show_metadata = false;
-    composer.submit_policy = TextSubmitPolicy::None;
+    let composer = panel_fixture::composer();
     assert_eq!(
         composer.surface.presentation,
         TextSurfacePresentation::Field
     );
 
-    let row_ids: Vec<_> = (0..18).map(|i| ComponentId(8210 + i)).collect();
-    let rows = Content::new(ROWS, StackContent {
-        model: Stack {
-            axis: Axis::Vertical,
-            gap: 2.,
-        },
-        children: row_ids
-            .iter()
-            .map(|id| {
-                Content::new(
-                    *id,
-                    TextContent::new(format!("阅读行 {id:?} — original text")),
-                )
-            })
-            .collect(),
-        flexible_child: None,
-    });
-    let mut scroll = ScrollContent::new(ScrollArea::default(), rows);
-    scroll.viewport_height = Some(68.);
-    let button = Content::new(ACTION, Button::new("原按钮")).preserving_focus();
-    let content = stack(
-        vec![
-            Content::new(
-                LABEL,
-                TextContent::new("原 Panel / Stack / Button / Composer / Scroll"),
-            ),
-            button,
-            Content::new(EDITOR, composer),
-            Content::new(SCROLL, scroll),
-        ],
-        Some(EDITOR),
-    );
+    let row_ids = panel_fixture::row_ids();
+    let content = panel_fixture::panel_body(composer, &row_ids);
     let mut host = ContentHost::new(Content::new(ROOT, panel(content, false))).unwrap();
     host.set_action_events(true);
     let (version1, ()) = host
