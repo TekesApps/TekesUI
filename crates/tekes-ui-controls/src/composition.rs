@@ -2342,6 +2342,17 @@ impl ContentHost {
         self.reveal_clock.invalidate_input();
         self.event_bubbled = None;
         let overlay_barrier = self.overlay_scope_id().is_some();
+        let reader_lease = self.focused.and_then(|id| {
+            let owner = self.scope().find_active(id)?;
+            let surface = owner.component.text_surface()?;
+            (surface.input.read_only && !surface.input.disabled).then_some((
+                id,
+                owner.mount,
+                self.focus_epoch,
+                surface.input.controlled_binding(),
+            ))
+        });
+        let completing_navigation = self.completing_reading_navigation(event);
         let previous_caret = self.focused.and_then(|id| {
             self.focused_text()
                 .filter(|surface| {
@@ -2352,6 +2363,68 @@ impl ContentHost {
         });
         let mut result = self.key_routed_event(event);
         self.reconcile_active_inputs();
+        let routed = event.routing_event();
+        let navigation = matches!(
+            &*routed,
+            ContentEvent::Key {
+                key: ControlKey::Left
+                    | ControlKey::Right
+                    | ControlKey::Up
+                    | ControlKey::Down
+                    | ControlKey::Home
+                    | ControlKey::End,
+                down: true,
+            }
+        ) || matches!(&*routed, ContentEvent::TextCommand(command)
+            if command.starts_with("move") || command == "selectAll:");
+        // A consumed key is a reading intent only if the original reader
+        // accepted navigation, not merely because an IME/host barrier consumed it.
+        let delivered_navigation = navigation && self.event_bubbled.is_some()
+            || completing_navigation
+                && result.text_key.is_some_and(|key| {
+                    key.disposition == TextKeyDisposition::EditHandled
+                        && key.target == reader_lease.map(|lease| lease.0)
+                });
+        let reading_source = match &*routed {
+            ContentEvent::PointerDown(_)
+                if event.is_primary_pointer() && result.capture_pointer =>
+            {
+                self.captured.and_then(|id| {
+                    let mount = self.captured_mount?;
+                    self.root
+                        .find_active(id)
+                        .filter(|owner| owner.mount == mount)
+                        .map(|_| (id, mount))
+                })
+            }
+            ContentEvent::PointerMove(_) if event.is_primary_pointer() && result.changed => {
+                self.captured.and_then(|id| {
+                    let mount = self.captured_mount?;
+                    self.root
+                        .find_active(id)
+                        .filter(|owner| owner.mount == mount)
+                        .map(|_| (id, mount))
+                })
+            }
+            _ if delivered_navigation && result.consumed => {
+                reader_lease.and_then(|(id, mount, epoch, binding)| {
+                    (self.focused == Some(id)
+                        && self.focus_epoch == epoch
+                        && self
+                            .focused_text()
+                            .is_some_and(|s| s.input.controlled_binding() == binding))
+                    .then_some((id, mount))
+                })
+            }
+            _ => None,
+        };
+        if let Some((source, mount)) = reading_source {
+            result.changed |= self
+                .scope_with_actions()
+                .0
+                .observe_manual_history(source, mount)
+                .unwrap_or(false);
+        }
         // Document text has no nested scroll owner. Explicit navigation/drag
         // reveals through the same ancestor path as ordinary focus. Pointer
         // down already called focus(), so must not reveal stale geometry twice.

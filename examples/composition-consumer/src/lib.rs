@@ -271,3 +271,6 @@ pub mod empty_state_content;
 pub mod toolbar_mount;
 
 pub mod icon_content;
+
+/// Original nested reader; the SDK owns routed history notifications.
+pub mod nested_reading;
