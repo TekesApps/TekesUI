@@ -109,12 +109,16 @@ and no submission. The other two Reader processes/values survive; all owned PIDs
 are reaped and imported images return to the renderer's original count.
 
 Actual strict, original consumer fixture tests and this complete finite lifecycle
-case passed on `958ed1a` plus the test-only delta. Evidence is in SSD
-`artifacts/issue-48/main958ed1a-reader-lifecycle-20261028-01/cpu01/`.
-This does not claim an out-of-order GPU-frame reply was delivered to the new
-session: old-viewport **input** rejection and late **frame/reply** rejection are
-different evidence. The latter still needs explicit coverage reconciliation with
-the existing queued transport tests. No native-window or physical IME acceptance
-is added by this headless IPC/GPU resource case, and no runtime API is changed.
+case passed on `958ed1a` plus the test-only delta (`cpu01`). A subsequent finite
+extension (`cpu02`) retains an actual original Reader frame at viewport1, closes
+that connection, starts the same original Reader under a new session at viewport2,
+then requires the old frame import to fail before GPU import. Both workers are
+also reaped and image counts remain at baseline. This exercises the original
+closed-owner frame fence, not a fabricated response or a frame rebound to the new
+session. Strict and the affected lifecycle mode passed again; unchanged fixture
+and native results retain their identities. Evidence is in SSD
+`artifacts/issue-48/main958ed1a-reader-lifecycle-20261028-01/{cpu01,cpu02}/`.
+No native-window or physical IME acceptance is added by this headless IPC/GPU
+resource case, and no runtime API is changed.
 
 Rectangular parent Scroll admission uses the default-false `Component::rectangular_input_geometry` opt-in. ProcessContainer declares it only for ready, negotiated Content input; the original current focus/reveal checks still run. This does not grant prepared-action purity or curved Panel support, and Curve V1 remains reject-only. The public consumer retains its real outer Scroll and Grid, with a valid arranged translation contract for its fixed row.

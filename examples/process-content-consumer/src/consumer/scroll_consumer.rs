@@ -1325,6 +1325,63 @@ pub(super) fn lifecycle_roundtrip() -> Result<serde_json::Value> {
         gpu.image_count() == baseline_images,
         "lifecycle retained imported GPU images"
     );
+    // Retain an actual original Reader frame across closing its connection and
+    // starting a replacement. A delayed frame must not become a new GPU image.
+    let options = || ProcessComponentOptions::new(NATIVE_MODULE, 86).with_view(86, 86, caps);
+    let old_process = ProcessComponent::spawn(options(), || {})?;
+    wait(|| matches!(old_process.status(), ProcessStatus::Ready { .. }))?;
+    let old_frame_pid = match old_process.status() {
+        ProcessStatus::Ready { pid, .. } => pid,
+        _ => anyhow::bail!("late-frame Reader not ready"),
+    };
+    old_process.enqueue_view(Request {
+        version: VERSION,
+        seq: 1,
+        viewport: 1,
+        kind: InputKind::Layout,
+        command: None,
+        x: 0.,
+        y: 0.,
+        width: 300,
+        height: 300,
+        identity: 1,
+        scale: 1.,
+    })?;
+    let mut held = Vec::new();
+    wait(|| {
+        held.extend(old_process.drain_view_frames());
+        !held.is_empty()
+    })?;
+    ensure!(held.len() == 1 && held[0].metadata().viewport == 1);
+    let held_session = old_process.session().clone();
+    old_process.close();
+    wait(|| matches!(old_process.status(), ProcessStatus::Closed))?;
+    let replacement = ProcessComponent::spawn(options(), || {})?;
+    wait(|| matches!(replacement.status(), ProcessStatus::Ready { .. }))?;
+    let replacement_pid = match replacement.status() {
+        ProcessStatus::Ready { pid, .. } => pid,
+        _ => anyhow::bail!("late-frame replacement not ready"),
+    };
+    ensure!(replacement_pid != old_frame_pid && replacement.session() != &held_session);
+    layout(&replacement, 1, 2, 300)?;
+    ensure!(
+        held.pop().unwrap().import(&gpu.gpu_context()).is_err(),
+        "old actual frame imported after replacement session became ready"
+    );
+    replacement.close();
+    wait(|| matches!(replacement.status(), ProcessStatus::Closed))?;
+    pids.extend([u64::from(old_frame_pid), u64::from(replacement_pid)]);
+    wait(|| {
+        pids.iter().all(|pid| {
+            !std::process::Command::new("/bin/kill")
+                .args(["-0", &pid.to_string()])
+                .stderr(std::process::Stdio::null())
+                .status()
+                .is_ok_and(|s| s.success())
+        })
+    })?;
+    gpu.collect_retired_images();
+    ensure!(gpu.image_count() == baseline_images);
     Ok(
         serde_json::json!({"result":"ORIGINAL_MIXED_READER_LIFECYCLE_OK",
         "old_pid":old_pid,"new_pid":new_pid,"all_owned_pids":pids,
@@ -1332,6 +1389,7 @@ pub(super) fn lifecycle_roundtrip() -> Result<serde_json::Value> {
         "old_viewport_rejected_over_IPC":true,"old_session_input_and_AX_rejected":true,
         "new_aux_activations":inspected["aux_activations"],"submits":inspected["submits"],
         "neighbors_preserved":true,"all_children_reaped":true,"imported_images_released":true,
+        "held_original_frame_rejected_after_new_session_ready":true,
         "native_window":false,"physical_IME":false}),
     )
 }
