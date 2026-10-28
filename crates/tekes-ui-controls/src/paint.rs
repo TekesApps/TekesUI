@@ -232,6 +232,37 @@ fn panel_surface_parts(
     Ok(())
 }
 
+/// Paint the existing Panel fill/elevation and decorative boundary on an
+/// explicit semantic Surface. This uses the same phases as PanelContent;
+/// callers with owned children can keep using its separate paint order.
+/// Invalid Surface resolution returns before the Scene is changed.
+pub fn panel_on_surface_at_scale(
+    scene: &mut Scene,
+    rect: Rect,
+    palette: Palette,
+    surface: &str,
+    backing_scale: f32,
+) -> Result<(), tekes_ui_tokens::surface_palette::SurfaceError> {
+    panel_surface_parts(
+        scene,
+        rect,
+        palette,
+        surface,
+        false,
+        backing_scale,
+        PanelSurfacePhase::Background,
+    )?;
+    panel_surface_parts(
+        scene,
+        rect,
+        palette,
+        surface,
+        false,
+        backing_scale,
+        PanelSurfacePhase::Boundary,
+    )
+}
+
 pub(crate) fn panel_background(
     scene: &mut Scene,
     rect: Rect,
@@ -743,6 +774,48 @@ pub(crate) fn button_variant_on_surface(
 mod boundary_tests {
     use super::*;
     use tekes_ui_tokens::{Contrast, Theme};
+    #[test]
+    fn panel_on_surface_facade_matches_original_phases_and_rejects_atomically() {
+        let frame = Rect::new(3.25, 7.5, 140., 80.);
+        for theme in [Theme::LIGHT, Theme::DARK] {
+            let palette = Palette::from(theme);
+            for surface in tekes_ui_tokens::surface_palette::surface_names() {
+                for scale in [1., 2.] {
+                    let mut actual = Scene::new();
+                    panel_on_surface_at_scale(&mut actual, frame, palette, surface, scale).unwrap();
+                    let mut original = Scene::new();
+                    panel_background(&mut original, frame, palette, surface, false, scale);
+                    panel_boundary(&mut original, frame, palette, surface, false, scale, false);
+                    assert_eq!(actual, original, "{theme:?}/{surface}/{scale}");
+                    let resolved = tekes_ui_tokens::surface_palette::resolve_surface(
+                        palette,
+                        surface,
+                        "surface-frame",
+                        "rest",
+                    )
+                    .unwrap();
+                    let fill = actual
+                        .primitives()
+                        .iter()
+                        .find_map(|primitive| match primitive {
+                            tekes_ui_scene::Primitive::Quad(quad) => Some(quad.fill),
+                            _ => None,
+                        })
+                        .unwrap();
+                    assert_eq!(fill, resolved.background);
+                }
+            }
+            let mut scene = Scene::new();
+            scene.push_quad(Quad::new(frame, Rgba::gray(0.25)));
+            let before = scene.clone();
+            assert_eq!(
+                panel_on_surface_at_scale(&mut scene, frame, palette, "not-a-surface", 2.),
+                Err(tekes_ui_tokens::surface_palette::SurfaceError::UnknownCombination)
+            );
+            assert_eq!(scene, before);
+        }
+    }
+
     #[test]
     fn decorative_frames_and_optional_actions_have_distinct_boundary_roles() {
         for theme in Theme::ALL {

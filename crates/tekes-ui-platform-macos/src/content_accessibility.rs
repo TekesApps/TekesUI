@@ -100,11 +100,11 @@ pub fn content_nodes(host: &ContentHost) -> Vec<AccessibilityNode> {
     if host.requires_curve_geometry() {
         return Vec::new();
     }
-    project_content_nodes(host)
+    project_content_nodes(host).unwrap_or_default()
 }
-fn project_content_nodes(host: &ContentHost) -> Vec<AccessibilityNode> {
+fn project_content_nodes(host: &ContentHost) -> Option<Vec<AccessibilityNode>> {
     if !host.is_window_active() {
-        return Vec::new();
+        return Some(Vec::new());
     }
     let mut nodes = Vec::new();
     for n in host.semantics() {
@@ -133,11 +133,20 @@ fn project_content_nodes(host: &ContentHost) -> Vec<AccessibilityNode> {
             };
             let parent = content_key(host, n.id, host.semantic_part_parent(n.id, part.index));
             let mut node = project(key, parent, part.frame, part.focused, &part.semantics);
+            if part.semantics.role == ContentRole::Slider {
+                // A virtual adjustable part must retain its original real domain.
+                // Unlike the legacy local-owner branch, no Group fallback is valid.
+                let range = host.semantic_value_range(n.id, Some(part.index))?;
+                node.role = AccessibilityRole::Slider(AccessibilityRange::new(
+                    *range.start(),
+                    *range.end(),
+                )?);
+            }
             enrich(host, n.id, Some(part.index), &part.semantics, &mut node);
             nodes.push(node);
         }
     }
-    nodes
+    Some(nodes)
 }
 /// Complete original shaped lines for every active text owner, including
 /// unfocused/readonly child editors. Invalid or absent geometry is not guessed.
@@ -145,7 +154,7 @@ pub fn content_text_layouts(
     host: &ContentHost,
 ) -> HashMap<AccessibilityKey, AccessibilityTextLayout> {
     let mut result = HashMap::new();
-    for node in project_content_nodes(host) {
+    for node in project_content_nodes(host).unwrap_or_default() {
         let Some(id) = host
             .semantics()
             .iter()
@@ -364,7 +373,7 @@ impl ContentAccessibilitySnapshot {
             return None;
         }
         let geometry = host.geometry_snapshot()?;
-        let mut nodes = project_content_nodes(host);
+        let mut nodes = project_content_nodes(host)?;
         let text_layouts = content_text_layouts(host);
         let semantics = host.semantics();
         let mut identities = HashMap::new();
@@ -601,5 +610,84 @@ mod image_role_local_port_tests {
             vec![prefix.clone()]
         );
         assert!(crate::accessibility::accept_accessibility_nodes(vec![prefix, image]).is_empty());
+    }
+    #[derive(Debug)]
+    struct AdjustablePart(std::ops::RangeInclusive<f64>);
+    impl Component for AdjustablePart {
+        fn measure(
+            &mut self,
+            _: &mut dyn ButtonTextRenderer,
+            _: tekes_ui_scene::Size,
+        ) -> MeasuredChild {
+            MeasuredChild::new(tekes_ui_scene::Size::new(40., 20.))
+        }
+        fn semantic_parts(&self) -> Vec<tekes_ui_controls::composition::SemanticPart> {
+            vec![tekes_ui_controls::composition::SemanticPart {
+                index: 7,
+                frame: tekes_ui_scene::Rect::new(0., 0., 40., 20.),
+                focused: false,
+                semantics: ContentSemantics::new(ContentRole::Slider, "remote slider"),
+            }]
+        }
+        fn semantic_part_value_range(&self, part: usize) -> Option<std::ops::RangeInclusive<f64>> {
+            (part == 7).then(|| self.0.clone())
+        }
+    }
+    #[test]
+    fn virtual_slider_retains_domain_and_invalid_part_withdraws_the_complete_projection() {
+        let id = ComponentId(91);
+        let mut host = ContentHost::new(Content::new(id, AdjustablePart(-40.0..=160.0))).unwrap();
+        assert_eq!(host.semantic_value_range(id, Some(7)), Some(-40.0..=160.0));
+        assert!(host.semantic_value_range(id, Some(8)).is_none());
+        let nodes = content_nodes(&host);
+        assert_eq!(nodes.len(), 2);
+        assert_eq!(nodes[1].key.part, Some(7));
+        assert_eq!(
+            nodes[1].role,
+            AccessibilityRole::Slider(AccessibilityRange::new(-40., 160.).unwrap())
+        );
+        for range in [
+            std::ops::RangeInclusive::new(f64::NAN, 1.0),
+            std::ops::RangeInclusive::new(0.0, f64::INFINITY),
+            std::ops::RangeInclusive::new(2.0, 1.0),
+        ] {
+            host.get_mut(id)
+                .unwrap()
+                .component_mut::<AdjustablePart>()
+                .unwrap()
+                .0 = range;
+            assert!(host.semantic_value_range(id, Some(7)).is_none());
+            assert!(
+                content_nodes(&host).is_empty(),
+                "no valid-prefix or Group downgrade"
+            );
+        }
+        host.get_mut(id)
+            .unwrap()
+            .component_mut::<AdjustablePart>()
+            .unwrap()
+            .0 = -40.0..=160.0;
+        host.set_window_active(false);
+        assert!(host.semantic_value_range(id, Some(7)).is_none());
+        assert!(content_nodes(&host).is_empty());
+    }
+    #[test]
+    fn ordinary_local_slider_domain_query_keeps_its_existing_inactive_contract() {
+        use tekes_ui_controls::{composition::SliderContent, extended::Slider};
+        let id = ComponentId(92);
+        let mut host = ContentHost::new(Content::new(
+            id,
+            SliderContent::new("local slider", Slider::new(20., -40., 160., 1.).unwrap()),
+        ))
+        .unwrap();
+        assert_eq!(host.value_range(id), Some(-40.0..=160.0));
+        assert_eq!(
+            content_nodes(&host)[0].role,
+            AccessibilityRole::Slider(AccessibilityRange::new(-40., 160.).unwrap())
+        );
+        host.set_window_active(false);
+        assert_eq!(host.value_range(id), Some(-40.0..=160.0));
+        assert_eq!(host.semantic_value_range(id, None), Some(-40.0..=160.0));
+        assert!(content_nodes(&host).is_empty());
     }
 }

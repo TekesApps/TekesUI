@@ -374,6 +374,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "objc2-app-kit"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d49e936b501e5c5bf01fda3a9452ff86dc3ea98ad5f283e1455153142d97518c"
+dependencies = [
+ "bitflags",
+ "objc2",
+ "objc2-core-foundation",
+ "objc2-foundation",
+ "objc2-quartz-core",
+]
+
+[[package]]
 name = "objc2-core-foundation"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -392,6 +405,7 @@ checksum = "e022c9d066895efa1345f8e33e584b9f958da2fd4cd116792e15e07e4720a807"
 dependencies = [
  "bitflags",
  "dispatch2",
+ "libc",
  "objc2",
  "objc2-core-foundation",
  "objc2-io-surface",
@@ -730,6 +744,7 @@ dependencies = [
  "serde_json",
  "tekes-ui-app-protocol",
  "tekes-ui-controls",
+ "tekes-ui-platform-macos",
  "tekes-ui-render",
  "tekes-ui-scene",
  "tekes-ui-tokens",
@@ -751,6 +766,22 @@ dependencies = [
  "tekes-ui-scene",
  "tekes-ui-text",
  "tekes-ui-tokens",
+]
+
+[[package]]
+name = "tekes-ui-platform-macos"
+version = "0.1.0"
+dependencies = [
+ "block2",
+ "objc2",
+ "objc2-app-kit",
+ "objc2-core-foundation",
+ "objc2-core-graphics",
+ "objc2-foundation",
+ "objc2-metal",
+ "objc2-quartz-core",
+ "tekes-ui-controls",
+ "tekes-ui-scene",
 ]
 
 [[package]]

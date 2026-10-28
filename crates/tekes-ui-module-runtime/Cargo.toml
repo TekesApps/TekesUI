@@ -14,6 +14,7 @@ tekes-ui-scene.workspace = true
 
 [target.'cfg(target_os = "macos")'.dependencies]
 tekes-ui-controls.workspace = true
+tekes-ui-platform-macos = { path = "../tekes-ui-platform-macos", features = ["content-accessibility"] }
 tekes-ui-render = { path = "../tekes-ui-render", features = ["macos-shared-surface"] }
 tekes-ui-tokens.workspace = true
 wgpu.workspace = true

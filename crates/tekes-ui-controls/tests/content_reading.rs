@@ -496,3 +496,129 @@ fn fully_clipped_viewport_suspends_and_restores_the_same_reading_anchor() {
     assert!((host.get(item).unwrap().frame().min_y() - y).abs() <= 1.);
     assert!(!scroll(&host).is_following_latest());
 }
+
+#[test]
+fn stopped_child_reader_pauses_ancestor_following_without_redispatching_its_wheel() {
+    const INNER: ComponentId = ComponentId(801);
+    const BODY: ComponentId = ComponentId(802);
+    let mut inner = ScrollContent::new(ScrollArea::default(), row(BODY, 1000.));
+    inner.viewport_height = Some(400.);
+    let mut host = ContentHost::new(Content::new(
+        SCROLL,
+        ScrollContent::new(ScrollArea::default(), Content::new(INNER, inner)),
+    ))
+    .unwrap();
+    host.set_scroll_reading_document(SCROLL, "outer-stopped-reader", 1, vec![INNER], |_| ())
+        .unwrap();
+    host.set_scroll_reading_document(INNER, "inner-stopped-reader", 1, vec![BODY], |_| ())
+        .unwrap();
+    scroll_mut(&mut host).follow_latest();
+    host.get_mut(INNER)
+        .unwrap()
+        .component_mut::<ScrollContent>()
+        .unwrap()
+        .follow_latest();
+    render(&mut host);
+    let outer_offset = scroll(&host).scroll.offset;
+    let inner_offset = host
+        .get(INNER)
+        .unwrap()
+        .component::<ScrollContent>()
+        .unwrap()
+        .scroll
+        .offset
+        .y;
+    assert!(scroll(&host).is_following_latest());
+    assert!(
+        host.get(INNER)
+            .unwrap()
+            .component::<ScrollContent>()
+            .unwrap()
+            .is_following_latest()
+    );
+    let visible = host.get(INNER).unwrap().visible().unwrap();
+    let response = host.event(&ContentEvent::Scroll {
+        position: Point::new(visible.min_x() + 10., visible.min_y() + 10.),
+        delta: Point::new(0., -16.),
+        precise: true,
+        begin: true,
+        end: false,
+        momentum: false,
+        time: 1.,
+    });
+    assert!(response.consumed && !host.event_bubbled());
+    assert!(!scroll(&host).is_following_latest());
+    assert_eq!(scroll(&host).scroll.offset, outer_offset);
+    let child = host
+        .get(INNER)
+        .unwrap()
+        .component::<ScrollContent>()
+        .unwrap();
+    assert!(!child.is_following_latest());
+    assert_eq!(inner_offset - child.scroll.offset.y, 16.);
+    assert!(
+        host.reading_scroll_source()
+            .is_some_and(|(source, _)| source == INNER)
+    );
+}
+
+#[derive(Debug)]
+struct NonReadingWheelSink {
+    wheels: usize,
+}
+impl Component for NonReadingWheelSink {
+    fn measure(&mut self, _: &mut dyn ButtonTextRenderer, size: Size) -> MeasuredChild {
+        MeasuredChild::new(Size::new(size.width, 400.))
+    }
+    fn interactive(&self) -> bool {
+        true
+    }
+    fn event(&mut self, event: &ContentEvent) -> ContentResponse {
+        if matches!(event, ContentEvent::Scroll { .. }) {
+            self.wheels += 1;
+            ContentResponse::consumed(false)
+        } else {
+            ContentResponse::default()
+        }
+    }
+}
+
+#[test]
+fn stopped_nonreading_child_does_not_pause_ancestor_following() {
+    const SINK: ComponentId = ComponentId(803);
+    let mut host = ContentHost::new(Content::new(
+        SCROLL,
+        ScrollContent::new(
+            ScrollArea::default(),
+            Content::new(SINK, NonReadingWheelSink { wheels: 0 }),
+        ),
+    ))
+    .unwrap();
+    host.set_scroll_reading_document(SCROLL, "outer-nonreader", 1, vec![SINK], |_| ())
+        .unwrap();
+    scroll_mut(&mut host).follow_latest();
+    render(&mut host);
+    let offset = scroll(&host).scroll.offset;
+    let visible = host.get(SINK).unwrap().visible().unwrap();
+    let response = host.event(&ContentEvent::Scroll {
+        position: Point::new(visible.min_x() + 10., visible.min_y() + 10.),
+        delta: Point::new(0., -16.),
+        precise: true,
+        begin: true,
+        end: false,
+        momentum: false,
+        time: 1.,
+    });
+    assert!(response.consumed && !host.event_bubbled());
+    assert_eq!(
+        host.get(SINK)
+            .unwrap()
+            .component::<NonReadingWheelSink>()
+            .unwrap()
+            .wheels,
+        1
+    );
+    assert!(scroll(&host).is_following_latest());
+    assert_eq!(scroll(&host).scroll.offset, offset);
+    assert!(host.reading_scroll_source().is_none());
+}

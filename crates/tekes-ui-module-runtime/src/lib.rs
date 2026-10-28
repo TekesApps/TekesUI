@@ -65,10 +65,31 @@ pub use view::{ViewFrame, ViewImage};
 #[cfg(target_os = "macos")]
 mod container;
 #[cfg(target_os = "macos")]
+mod container_semantics;
+#[cfg(target_os = "macos")]
 pub use container::ProcessContainer;
 
+#[cfg(target_os = "macos")]
+mod content_accessibility;
+#[cfg(target_os = "macos")]
+mod content_input;
+#[cfg(target_os = "macos")]
+mod content_reading;
 #[cfg(target_os = "macos")]
 mod process_view;
 
 #[cfg(target_os = "macos")]
 mod container_toolbar;
+
+#[cfg(target_os = "macos")]
+mod native_content;
+#[cfg(target_os = "macos")]
+pub use native_content::{
+    ProcessContentBridge, ProcessContentSnapshot, content_event, content_text_input_state,
+    dispatch_content_window_event,
+};
+
+#[cfg(target_os = "macos")]
+mod view_context;
+#[cfg(target_os = "macos")]
+pub use view_context::{view_context_background, view_context_palette, view_context_theme};

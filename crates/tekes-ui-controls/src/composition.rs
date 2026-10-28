@@ -94,7 +94,12 @@ pub use key::{
 pub(crate) use menu::MenuContentState;
 pub use menu::{MenuContent, MenuEntriesError, MenuEntry, MenuValuesError};
 pub use pointer::{InputModifiers, PointerButton, PointerEvent, PointerModifiers, PointerPhase};
-use std::{any::Any, collections::BTreeSet, fmt::Debug, ops::Range};
+use std::{
+    any::Any,
+    collections::BTreeSet,
+    fmt::Debug,
+    ops::{Range, RangeInclusive},
+};
 use tekes_ui_scene::{Point, Rect, Scene, Size};
 use tekes_ui_tokens::{Palette, Rgba, proposal};
 pub use text_query::{ContentTextInput, ContentTextLayout};
@@ -337,6 +342,12 @@ pub trait Component: Debug + Any {
     fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
         CurveSubtreeCapability::Unsupported
     }
+    /// Opt in to ordinary input using the current Host rectangular allocation
+    /// and clip. This grants no curved Panel, prepared-effect or IPC transaction
+    /// capability; unknown components remain unavailable on strict Scroll paths.
+    fn rectangular_input_geometry(&self) -> bool {
+        false
+    }
     /// Existing controls receive the same event; this adds exact clip-region
     /// membership to their original reducer without creating another owner.
     fn set_clip_region(&mut self, _region: Option<tekes_ui_scene::ClipRegion>) {}
@@ -529,6 +540,33 @@ pub trait Component: Debug + Any {
     fn semantic_part_text_layout(&self, _part: usize) -> Option<ContentTextLayout> {
         None
     }
+    /// Original remote owner query/ack delegation; local defaults remain unchanged.
+    fn text_input_snapshot(&self) -> Option<ContentTextInput> {
+        self.text_surface().map(ContentTextInput::from_surface)
+    }
+    fn take_text_key_result(
+        &mut self,
+        _id: u64,
+        _binding: Option<&[u8]>,
+    ) -> Option<ContentResponse> {
+        None
+    }
+    fn focus_boundary(&mut self, _reverse: bool) -> ContentResponse {
+        ContentResponse::default()
+    }
+    fn delegates_text_keys(&self) -> bool {
+        false
+    }
+    fn accessibility_focus_requested(&self) -> bool {
+        false
+    }
+    fn blocks_event_bubbling(&self, _event: &ContentEvent) -> bool {
+        false
+    }
+    fn semantic_part_value_range(&self, _part: usize) -> Option<std::ops::RangeInclusive<f64>> {
+        None
+    }
+
     /// Native key provenance from the retained original input owner, independent
     /// of arranged caret/clip geometry. Host key frames separately validate the
     /// original owner mount and focus epoch against blur/refocus and remount ABA.
@@ -914,10 +952,11 @@ impl Content {
         self
     }
     fn bubbles(&self, event: &ContentEvent, response: &ContentResponse) -> bool {
-        !response.consumed
-            || self
-                .bubble_handled_events
-                .unwrap_or_else(|| self.component.bubble_handled_event(event))
+        !self.component.blocks_event_bubbling(event)
+            && (!response.consumed
+                || self
+                    .bubble_handled_events
+                    .unwrap_or_else(|| self.component.bubble_handled_event(event)))
     }
     pub fn mount_identity(&self) -> u64 {
         self.mount
@@ -1336,8 +1375,9 @@ impl Content {
         } else {
             None
         };
-        if child.is_some_and(|(_, _, bubbles)| !bubbles) {
-            return child;
+        if let Some((id, mut response, false)) = child {
+            response.changed |= self.observe_nested_reading(event, id, &response);
+            return Some((id, response, false));
         }
         if child.is_some()
             || self.component.interactive() && self.visible().is_some_and(|r| r.contains(position))
@@ -1637,6 +1677,8 @@ pub struct ContentHost {
     // Paint-only owner after close. It is never used as the event/focus scope.
     presented_dialog: Option<ComponentId>,
     text_keys: Vec<key::KeyFrame>,
+    deferred_text_key: Option<key::KeyFrame>,
+    completed_text_key: Option<(ContentResponse, bool)>,
     last_text_key: u64,
     focus_epoch: u64,
     window_active: bool,
@@ -1649,6 +1691,7 @@ pub struct ContentHost {
     help: help::HelpState,
     help_overlay_deferred: bool,
     event_bubbled: Option<bool>,
+    pointer_focus_requested: bool,
 }
 impl ContentHost {
     pub fn new(mut root: Content) -> Result<Self, CompositionError> {
@@ -1675,6 +1718,8 @@ impl ContentHost {
             modal_focus_pending: false,
             presented_dialog: None,
             text_keys: Vec::new(),
+            deferred_text_key: None,
+            completed_text_key: None,
             last_text_key: 0,
             focus_epoch: 0,
             window_active: true,
@@ -1687,6 +1732,7 @@ impl ContentHost {
             help: Default::default(),
             help_overlay_deferred: false,
             event_bubbled: None,
+            pointer_focus_requested: false,
         }
     }
     pub fn set_inherited_surface(
@@ -2110,6 +2156,7 @@ impl ContentHost {
                 c.component.event(&ContentEvent::Cancel);
             }
         }
+        self.reconcile_deferred_text_key();
     }
     pub fn focus(&mut self, id: Option<ComponentId>, visible: bool) -> bool {
         matches!(
@@ -2148,6 +2195,11 @@ impl ContentHost {
     pub fn event_bubbled(&self) -> bool {
         self.event_bubbled.unwrap_or(false)
     }
+    /// Whether the last pointer delivery requested activation focus, including
+    /// a click on an already focused owner. Read-only original routing outcome.
+    pub fn pointer_focus_requested(&self) -> bool {
+        self.pointer_focus_requested
+    }
     /// Result of the most recent accepted reading wheel, not a queued callback.
     /// A replaced, inactive, disabled or out-of-scope source is no longer current.
     pub fn reading_scroll_source(&self) -> Option<(ComponentId, u64)> {
@@ -2183,6 +2235,7 @@ impl ContentHost {
     }
     pub fn event(&mut self, event: &ContentEvent) -> ContentResponse {
         self.reading_scroll_source = None;
+        self.pointer_focus_requested = false;
         if !self.window_active {
             return ContentResponse::default();
         }
@@ -2251,6 +2304,10 @@ impl ContentHost {
         text: &mut dyn ButtonTextRenderer,
     ) -> Result<ContentResponse, CompositionError> {
         self.reading_scroll_source = None;
+        if matches!(event, ContentEvent::Cancel) {
+            // Preserve original cancellation before any delegated ack reconciliation.
+            return Ok(self.event(event));
+        }
         if let Some(id) = self.root.needs_text()
             && text.text_surface_host().is_none()
         {
@@ -2445,46 +2502,18 @@ impl ContentHost {
             }
             // An editor may explicitly consume Tab (for indentation). Only
             // an unhandled key reaches the existing focus traversal fallback.
-            if let Some(response) = self
-                .focused
-                .and_then(|id| self.root.find_mut(id))
-                .map(|c| c.deliver_actions(event, false, &mut self.actions))
-                && response.consumed
+            if let Some((response, bubbles)) =
+                self.focused.and_then(|id| self.root.find_mut(id)).map(|c| {
+                    let response = c.deliver_actions(event, false, &mut self.actions);
+                    let bubbles = c.bubbles(event, &response);
+                    (response, bubbles)
+                })
+                && (response.consumed || !bubbles)
             {
+                self.event_bubbled = Some(bubbles);
                 return response;
             }
-            let mut ids = Vec::new();
-            self.scope().focus_ids(&mut ids);
-            if ids.is_empty() {
-                return ContentResponse::default();
-            }
-            let next = match self
-                .focused
-                .and_then(|id| ids.iter().position(|v| *v == id))
-            {
-                Some(i)
-                    if !self.focus_wrap
-                        && self.modal.is_none()
-                        && self.overlay_scope_id().is_none()
-                        && ((*reverse && i == 0) || (!*reverse && i + 1 == ids.len())) =>
-                {
-                    return ContentResponse::default();
-                }
-                Some(i) if *reverse => (i + ids.len() - 1) % ids.len(),
-                Some(i) => (i + 1) % ids.len(),
-                None if *reverse => ids.len() - 1,
-                None => 0,
-            };
-            let changed = matches!(
-                self.admit_ordinary_focus(
-                    Some(ids[next]),
-                    true,
-                    Some(*reverse),
-                    action_preparation::FocusOrigin::Traversal,
-                ),
-                action_preparation::FocusAdmission::Accepted { changed: true }
-            );
-            return ContentResponse::consumed(changed);
+            return self.advance_focus(*reverse);
         }
         if let ContentEvent::PointerMove(position) = routed {
             let (scope, actions) = self.scope_with_actions();
@@ -2499,7 +2528,22 @@ impl ContentHost {
             // Resolve before ordinary pointer dispatch. In particular there is
             // no blur/callback/refocus gap, and repeated padding clicks do not
             // re-run set_focus/reveal against a composing editor.
-            let changed = self.focused != Some(id) && self.focus(Some(id), false);
+            let changed = if self.focused == Some(id) {
+                self.pointer_focus_requested = true;
+                false
+            } else if let action_preparation::FocusAdmission::Accepted { changed } = self
+                .admit_ordinary_focus(
+                    Some(id),
+                    false,
+                    None,
+                    action_preparation::FocusOrigin::Direct,
+                )
+            {
+                self.pointer_focus_requested = true;
+                changed
+            } else {
+                false
+            };
             return ContentResponse::consumed(changed);
         }
         let result = match routed {
@@ -2527,12 +2571,21 @@ impl ContentHost {
                     self.captured_mount = self.root.find_active(id).map(|node| node.mount)
                 }
                 if r.consumed
-                    && self
-                        .root
-                        .find(id)
-                        .is_some_and(|c| c.component.focusable() && !c.preserve_activation_focus)
+                    && self.root.find(id).is_some_and(|c| {
+                        c.component.focusable()
+                            && !c.preserve_activation_focus
+                            && !c.component.preserves_activation_focus()
+                    })
                 {
-                    self.focus(Some(id), false);
+                    self.pointer_focus_requested = matches!(
+                        self.admit_ordinary_focus(
+                            Some(id),
+                            false,
+                            None,
+                            action_preparation::FocusOrigin::Direct
+                        ),
+                        action_preparation::FocusAdmission::Accepted { .. }
+                    );
                 }
             }
             r
@@ -2610,10 +2663,7 @@ impl ContentHost {
         if owner.component.semantics().disabled {
             return None;
         }
-        let mut input = owner
-            .component
-            .text_surface()
-            .map(ContentTextInput::from_surface)?;
+        let mut input = owner.component.text_input_snapshot()?;
         // Zero panes retain the original logical editor, selection and marked
         // state. They must not publish retained geometry from an earlier frame.
         if self.split_text_geometry_hidden(id) {
@@ -2692,6 +2742,12 @@ impl ContentHost {
                 })
                 .map(|node| (id, node.mount))
         })
+    }
+    /// Same validated original capture, with its existing acquisition epoch for
+    /// asynchronous Content callbacks. The legacy pair query stays unchanged.
+    pub fn pointer_capture_lease(&self) -> Option<(ComponentId, u64, u64)> {
+        self.pointer_capture()
+            .map(|(id, mount)| (id, mount, self.capture_epoch))
     }
     /// The existing focused editor/custom component composition barrier.
     pub fn is_composing(&self) -> bool {
@@ -2870,11 +2926,12 @@ impl ContentHost {
             // an activation, not a fresh request for delayed keyboard help.
             self.help.suppress();
         }
+        let delegated_focus = owner.component.accessibility_focus_requested();
         if result.consumed
-            && matches!(
+            && (matches!(
                 action,
                 AccessibilityAction::Focus | AccessibilityAction::SetSelection(_)
-            )
+            ) || delegated_focus)
         {
             // Original semantic part validation must precede keyboard ownership.
             result.changed |= self.focus(Some(id), true);
@@ -2957,6 +3014,9 @@ impl ContentHost {
         true
     }
     pub fn cancel(&mut self) {
+        self.text_keys.clear();
+        self.deferred_text_key = None;
+        self.completed_text_key = None;
         for scope in &mut self.overlay_scopes {
             scope.restore = None;
             scope.focus_pending = false;
@@ -3174,6 +3234,32 @@ impl ContentHost {
             .filter(|range| {
                 range.start().is_finite() && range.end().is_finite() && range.start() <= range.end()
             })
+    }
+    /// Query a published virtual part's original finite domain. The existing
+    /// local-owner branch retains value_range's window-activity behavior.
+    pub fn semantic_value_range(
+        &self,
+        id: ComponentId,
+        part: Option<usize>,
+    ) -> Option<RangeInclusive<f64>> {
+        let Some(part) = part else {
+            return self.value_range(id);
+        };
+        if !self.window_active {
+            return None;
+        }
+        let owner = self.scope().find_active(id)?;
+        if !owner
+            .component
+            .semantic_parts()
+            .iter()
+            .any(|p| p.index == part)
+        {
+            return None;
+        }
+        let range = owner.component.semantic_part_value_range(part)?;
+        (range.start().is_finite() && range.end().is_finite() && range.start() <= range.end())
+            .then_some(range)
     }
     /// Actual mounted tree projection; this is not a platform accessibility bridge.
     pub fn semantics(&self) -> Vec<SemanticNode> {

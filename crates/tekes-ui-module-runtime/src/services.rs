@@ -14,6 +14,23 @@ const CAPACITY: usize = 64;
 static INSTANCE: AtomicU64 = AtomicU64::new(1);
 
 pub trait ProcessModule {
+    /// Apply window environment to the SAME original font backend and View.
+    /// Unsupported modules fail explicitly; no silently ignored zoom/theme.
+    fn set_view_context(&mut self, _: &ViewContext) -> Result<()> {
+        bail!("View context is not supported by this module")
+    }
+    /// Original child tree and its existing text backend. Returning this opts
+    /// into the typed Content callback lane; the module retains both owners.
+    /// Render/layout still use this same tree through view(), never a replica.
+    #[cfg(target_os = "macos")]
+    fn content(
+        &mut self,
+    ) -> Option<(
+        &mut tekes_ui_controls::composition::ContentHost,
+        &mut dyn tekes_ui_controls::ButtonTextRenderer,
+    )> {
+        None
+    }
     #[cfg(target_os = "macos")]
     fn view(&mut self) -> Option<&mut dyn crate::PanelModule> {
         None
@@ -307,9 +324,20 @@ pub fn run_component_worker_from_args(
             ))?;
             continue;
         }
+        if matches!(body, RequestBody::SetViewContext { .. }) {
+            emitter.output(Output::Response {
+                request: id,
+                result: Err("View context requires a negotiated View".into()),
+            })?;
+            continue;
+        }
         ensure!(
             !matches!(body, RequestBody::Render { .. }),
             "View not negotiated"
+        );
+        ensure!(
+            !matches!(body, RequestBody::Content(_)),
+            "Content input requires a negotiated View"
         );
         ensure!(
             required.services || matches!(body, RequestBody::Invoke { .. }),
@@ -463,6 +491,8 @@ struct State {
     incoming: VecDeque<ServerMessage>,
     pending: HashSet<u64>,
     curve_pending: HashMap<u64, CurvePending>,
+    // Existing RPC reply routing: these callers wait on changed, not the UI.
+    synchronous_content: HashSet<u64>,
     toolbar: Vec<ToolbarAction>,
     toolbar_revision: u64,
     toolbar_window: u64,
@@ -500,6 +530,7 @@ impl Shared {
             s.incoming.clear();
             s.pending.clear();
             s.curve_pending.clear();
+            s.synchronous_content.clear();
             s.toolbar.clear();
             s.toolbar_declaration = None;
             #[cfg(target_os = "macos")]
@@ -586,6 +617,7 @@ impl ProcessComponent {
                 incoming: VecDeque::new(),
                 pending: HashSet::new(),
                 curve_pending: HashMap::new(),
+                synchronous_content: HashSet::new(),
                 toolbar: Vec::new(),
                 toolbar_revision: 0,
                 toolbar_window: 0,
@@ -642,6 +674,7 @@ impl ProcessComponent {
                     state.toolbar_declaration = None;
                     state.pending.clear();
                     state.curve_pending.clear();
+                    state.synchronous_content.clear();
                     #[cfg(target_os = "macos")]
                     state.renders.clear();
                 }
@@ -780,10 +813,108 @@ impl ProcessComponent {
     pub fn request(&self, body: RequestBody) -> Result<u64> {
         self.request_from(&self.session, body)
     }
+    /// Ordered native callback/query round trip. This consumes only its own
+    /// response, leaving business events and other replies in the public queue.
+    /// Timeout is a failed query, not process termination or permission to use
+    /// stale text geometry. The caller must not restart/replay the input.
+    #[cfg(target_os = "macos")]
+    pub fn content_request(
+        &self,
+        origin: &Session,
+        request: content::Request,
+        timeout: std::time::Duration,
+    ) -> Result<content::Reply> {
+        ensure!(
+            !timeout.is_zero() && timeout <= std::time::Duration::from_secs(10),
+            "invalid Content query timeout"
+        );
+        let expected = (request.view, request.viewport);
+        let id = self.enqueue_request(origin, RequestBody::Content(request), true)?;
+        let shared = self.service()?;
+        let deadline = std::time::Instant::now() + timeout;
+        let mut state = shared.state.lock().unwrap();
+        loop {
+            ensure!(!state.abort, "Content process unavailable");
+            if let Some(index) = state
+                .incoming
+                .iter()
+                .position(|p| matches!(p.output, Output::Response { request, .. } if request == id))
+            {
+                let packet = state.incoming.remove(index).unwrap();
+                let Output::Response { result, .. } = packet.output else {
+                    unreachable!()
+                };
+                let reply: content::Reply =
+                    serde_json::from_value(result.map_err(anyhow::Error::msg)?)?;
+                ensure!(
+                    (reply.view, reply.viewport) == expected,
+                    "mismatched Content reply geometry"
+                );
+                drop(state);
+                if reply.changed
+                    && let Some(view) = shared.view.get()
+                {
+                    view.invalidate();
+                }
+                return Ok(reply);
+            }
+            let Some(remaining) = deadline.checked_duration_since(std::time::Instant::now()) else {
+                // A later reply belongs to the ordinary public drain after this
+                // caller stops waiting. Never replay its original input.
+                state.synchronous_content.remove(&id);
+                anyhow::bail!("Content query timed out; input not replayed");
+            };
+            let (next, _) = shared.changed.wait_timeout(state, remaining).unwrap();
+            state = next;
+        }
+    }
     /// Keep the event-time owner when callbacks outlive a mount or a process.
     /// Latest-session convenience calls must not retarget a retained UI action.
     pub fn request_from(&self, origin: &Session, body: RequestBody) -> Result<u64> {
+        self.enqueue_request(origin, body, false)
+    }
+    fn enqueue_request(
+        &self,
+        origin: &Session,
+        body: RequestBody,
+        synchronous_content: bool,
+    ) -> Result<u64> {
+        ensure!(
+            !synchronous_content || matches!(body, RequestBody::Content(_)),
+            "wrong synchronous reply lane"
+        );
         ensure!(*origin == self.session, "stale component action owner");
+        if let RequestBody::Content(content::Request {
+            input: content::Input::Pointer(pointer),
+            ..
+        }) = &body
+        {
+            ensure!(
+                pointer.position.iter().all(|p| p.is_finite()),
+                "invalid Content pointer position"
+            );
+        }
+        if let RequestBody::Content(content::Request {
+            input: content::Input::Scroll(scroll),
+            ..
+        }) = &body
+        {
+            ensure!(scroll.is_valid(), "invalid Content scroll input");
+        }
+        if let RequestBody::Content(content::Request {
+            input: content::Input::RevealReadingItem { options, .. },
+            ..
+        }) = &body
+        {
+            ensure!(options.is_valid(), "invalid Content reveal options");
+        }
+        if let RequestBody::Content(content::Request {
+            input: content::Input::Accessibility { action, .. },
+            ..
+        }) = &body
+        {
+            ensure!(action.is_valid(), "invalid Content accessibility action");
+        }
         ensure!(
             !matches!(body, RequestBody::Render { .. }),
             "use the bounded enqueue_view lane"
@@ -791,6 +922,51 @@ impl ProcessComponent {
         let shared = self.service()?;
         let mut state = shared.state.lock().unwrap();
         ensure!(!state.abort && !state.stopping, "component closing");
+        if matches!(body, RequestBody::SetViewContext { .. }) {
+            // The configured original View lane exists before ReadyView, so
+            // initial context can be queued without racing the handshake.
+            #[cfg(target_os = "macos")]
+            let configured = shared.view.get().is_some();
+            #[cfg(not(target_os = "macos"))]
+            let configured = false;
+            ensure!(configured, "View context requires a configured V2 View");
+        }
+        if matches!(body, RequestBody::Content(_)) {
+            ensure!(
+                state.native.is_some_and(|n| n.keyboard
+                    || n.text_ime
+                    || n.content_pointer
+                    || n.scroll
+                    || n.accessibility),
+                "Content input not negotiated"
+            );
+        }
+        if matches!(
+            &body,
+            RequestBody::Content(content::Request {
+                input: content::Input::Scroll(_)
+                    | content::Input::ReadingState { .. }
+                    | content::Input::RevealReadingItem { .. },
+                ..
+            })
+        ) {
+            ensure!(
+                state.native.is_some_and(|n| n.scroll),
+                "Content scroll capability not negotiated"
+            );
+        }
+        if matches!(
+            &body,
+            RequestBody::Content(content::Request {
+                input: content::Input::Semantics | content::Input::Accessibility { .. },
+                ..
+            })
+        ) {
+            ensure!(
+                state.native.is_some_and(|n| n.accessibility),
+                "Content accessibility capability not negotiated"
+            );
+        }
         ensure!(
             state.pending.len() < CAPACITY,
             "component request queue full"
@@ -835,6 +1011,9 @@ impl ProcessComponent {
                 },
             );
         }
+        if synchronous_content {
+            state.synchronous_content.insert(id);
+        }
         state.outgoing.push_back((id, body));
         drop(state);
         shared.changed.notify_all();
@@ -872,6 +1051,7 @@ impl ProcessComponent {
             state.incoming.clear();
             state.pending.clear();
             state.curve_pending.clear();
+            state.synchronous_content.clear();
             state.toolbar.clear();
             state.toolbar_declaration = None;
         }
@@ -1062,6 +1242,7 @@ fn connection(
             return Ok(());
         }
         let mut invalidated = false;
+        let mut synchronous_content = false;
         match &packet.output {
             Output::Ready {
                 pid: actual,
@@ -1147,6 +1328,7 @@ fn connection(
                             ..
                         } = &mut *state;
                         consume_generic_response_pending(pending, curve_pending, *request)?;
+                        synchronous_content = state.synchronous_content.remove(request);
                         #[cfg(target_os = "macos")]
                         ensure!(
                             !state.renders.contains_key(request),
@@ -1190,12 +1372,15 @@ fn connection(
         if let Some(view) = shared.view.get() {
             if invalidated {
                 view.invalidate();
-            } else {
+            } else if !synchronous_content {
                 view.remote_status(status);
             }
         }
+        // Synchronous query/input replies wake their actual waiting caller.
+        // A changed result still uses view.invalidate() at that caller; a
+        // read-only native query must not schedule a new UI query in a loop.
         shared.changed.notify_all();
-        if !invalidated {
+        if !invalidated && !synchronous_content {
             shared.notify();
         }
     }
