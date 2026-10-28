@@ -62041,7 +62041,7 @@
     "crates/tekes-ui-render/src/timing.rs": "0c8ee0ef691b5a1f248044659f9157d5d1a3d0cc1c6e754d9eadb7fbd570b308",
     "crates/tekes-ui-render/tests/clip_gpu.rs": "c11c4e685cf7bbb4a2a6f8b75c20e6d1238c630cf52e4abb28542f127d43c29f",
     "crates/tekes-ui-render/tests/clip_legacy_fixture.rs": "a190ff122ec487da8bf42fd45e7367ade429c2d206fb54475806e9245d3d5087",
-    "crates/tekes-ui-render/tests/controlled_bitmap_lease.rs": "20ca172e8e8ee7348617e756987e0ada5b51fbad6fbaa245043d43da166344b4",
+    "crates/tekes-ui-render/tests/controlled_bitmap_lease.rs": "5c7c91e2b9f9fbc53ef938c9578b1c177c8ad8e30beeb34c3713abe2ca6debc3",
     "crates/tekes-ui-render/tests/external_target.rs": "1964394b613c818908c44ef91e06e6f609388346b9c4fb3683a89eadae3dcbac",
     "crates/tekes-ui-render/tests/fragment_gpu.rs": "75b4f486b9d9677ad096263524e895804af82d78392ea14cda582433cf22d703",
     "crates/tekes-ui-render/tests/frame_timing.rs": "d5e882daa238703bfb1012f7074df797c2630a922d751b0e8b9a9825eebe8edb",

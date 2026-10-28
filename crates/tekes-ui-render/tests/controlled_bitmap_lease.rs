@@ -238,3 +238,148 @@ fn raw_update_unregister_and_fabricated_lease_fail_before_gpu_callback() {
     assert_eq!(renderer.collect_retired_images(), 0);
     assert_eq!(renderer.image_count(), 1);
 }
+
+#[test]
+fn proof_entry_resource_and_work_refusals_preserve_atlas_retirement_and_output() {
+    use tekes_ui_render::BoundaryProofLimits;
+    use tekes_ui_scene::{
+        AtlasConfig, ClipShape, CornerRadii, FontKey, GlyphKey, RasterFormat, RasterGlyph,
+    };
+
+    let mut renderer = Renderer::new_headless().expect("actual headless GPU required");
+    let lease = renderer
+        .register_bitmap_image(&[255, 0, 0, 255].repeat(16), 4, 4)
+        .unwrap();
+    let scene = scene_for(&lease);
+    let scene_before = scene.clone();
+    let parents: Arc<[ClipShape]> = vec![
+        ClipShape::normalize(
+            Rect::new(-8., -8., 20., 20.),
+            CornerRadii::uniform(2.),
+            Point::new(0., 0.),
+        )
+        .unwrap(),
+    ]
+    .into();
+    let mut atlas = GlyphAtlas::new(AtlasConfig {
+        page_size: 64,
+        max_pages: 1,
+        padding: 1,
+    });
+    atlas
+        .get_or_insert_with(GlyphKey::new(FontKey(127), 1, 1000), || {
+            Some(RasterGlyph {
+                left: 0,
+                top: 0,
+                width: 1,
+                height: 1,
+                format: RasterFormat::Mask,
+                pixels: vec![0, 0, 0, 255],
+            })
+        })
+        .expect("real atlas bitmap entry");
+    let output = renderer
+        .render_to_rgba8_with_parent_boundary_proof(
+            &scene,
+            &mut atlas,
+            (4, 4),
+            1.,
+            Rgba::new(0., 0., 0., 0.),
+            parents.clone(),
+            BoundaryProofLimits::default(),
+        )
+        .unwrap();
+    let output_before = output.rgba8().to_vec();
+    assert_eq!(&output_before[..4], &[255, 0, 0, 255]);
+
+    // A pending real retirement and dirty atlas must survive a proof-work refusal.
+    let pending = renderer
+        .register_bitmap_image(&[0, 0, 255, 255], 1, 1)
+        .unwrap();
+    drop(pending);
+    assert_eq!(renderer.image_count(), 2);
+    atlas.mark_all_dirty();
+    let atlas_before = atlas.stats();
+    let page_before = atlas.page_pixels(0).unwrap().to_vec();
+    let refused = renderer
+        .render_to_rgba8_with_parent_boundary_proof(
+            &scene,
+            &mut atlas,
+            (4, 4),
+            1.,
+            Rgba::new(0., 0., 0., 0.),
+            parents.clone(),
+            BoundaryProofLimits { max_work: 0 },
+        )
+        .unwrap_err();
+    assert_eq!(
+        refused,
+        RenderError::ClipBudgetExceeded("boundary proof work")
+    );
+    assert_eq!(
+        renderer.image_count(),
+        2,
+        "refusal must precede retirement collection"
+    );
+    assert_eq!(
+        atlas.stats(),
+        atlas_before,
+        "refusal must not upload/drain the dirty atlas"
+    );
+    assert_eq!(atlas.page_pixels(0).unwrap(), page_before);
+    assert_eq!(scene, scene_before);
+    assert_eq!(output.rgba8(), output_before);
+    assert_eq!(renderer.collect_retired_images(), 1);
+
+    // Use invalid dimensions as a second independent error: the existing
+    // resource gate must still reject first at this new public proof entry.
+    let reject_resource = |renderer: &mut Renderer, atlas: &mut GlyphAtlas, expected| {
+        let images_before = renderer.image_count();
+        let atlas_before = atlas.stats();
+        let error = renderer
+            .render_to_rgba8_with_parent_boundary_proof(
+                &scene,
+                atlas,
+                (0, 4),
+                1.,
+                Rgba::new(0., 0., 0., 0.),
+                parents.clone(),
+                BoundaryProofLimits::default(),
+            )
+            .unwrap_err();
+        assert_eq!(error, RenderError::InvalidArgument(expected));
+        assert_eq!(renderer.image_count(), images_before);
+        assert_eq!(atlas.stats(), atlas_before);
+        assert_eq!(output.rgba8(), output_before);
+    };
+    let mut foreign_renderer = Renderer::new_headless().expect("actual foreign GPU namespace");
+    let foreign = foreign_renderer
+        .register_bitmap_image(&[0, 255, 0, 255].repeat(16), 4, 4)
+        .unwrap();
+    assert_eq!(
+        lease.id(),
+        foreign.id(),
+        "same numeric slot is not the same renderer resource"
+    );
+    reject_resource(
+        &mut foreign_renderer,
+        &mut atlas,
+        "stale or foreign controlled bitmap lease",
+    );
+    renderer
+        .update_image(lease.id(), &[0, 255, 0, 255].repeat(16))
+        .unwrap();
+    reject_resource(
+        &mut renderer,
+        &mut atlas,
+        "stale or foreign controlled bitmap lease",
+    );
+    assert!(renderer.unregister_image(lease.id()));
+    reject_resource(&mut renderer, &mut atlas, "stale controlled bitmap lease");
+    assert_eq!(scene, scene_before);
+    assert_eq!(
+        output.rgba8(),
+        output_before,
+        "old bound pixels remain immutable after registry replacement/removal"
+    );
+}
