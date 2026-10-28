@@ -93,6 +93,10 @@ pub enum Action {
         component: u64,
         range: std::ops::Range<usize>,
     },
+    /// Invoke the published element's actual accessibilityPerformPress selector.
+    AXPress {
+        component: u64,
+    },
     AXReplace {
         component: u64,
         text: String,
@@ -123,6 +127,13 @@ pub enum Action {
     /// 合成一次按键（按下加抬起），无修饰键。`key_code` 是虚拟键码（↑ 126、↓ 125）。
     Key {
         key_code: u16,
+    },
+    /// Send a line-based scroll-wheel NSEvent to this window at content coordinates.
+    ScrollWheel {
+        x: f64,
+        y: f64,
+        delta_x: i32,
+        delta_y: i32,
     },
     /// 只改这一个窗口的外观（深色或跟随系统），不碰系统设置；
     /// 内容视图的 `effectiveAppearance` 随之变化，平台层会投递 `SystemAppearanceChanged`。
@@ -200,6 +211,7 @@ extern "C" fn run_step(ctx: *mut c_void) {
     match action {
         Action::AXSelect { .. }
         | Action::AXReplace { .. }
+        | Action::AXPress { .. }
         | Action::ExpectAXText { .. }
         | Action::AuditAXText(_)
         | Action::ExpectAXMissing(_) => {
@@ -212,6 +224,7 @@ extern "C" fn run_step(ctx: *mut c_void) {
             let component = match &action {
                 Action::AXSelect { component, .. }
                 | Action::AXReplace { component, .. }
+                | Action::AXPress { component }
                 | Action::ExpectAXText { component, .. } => *component,
                 Action::AuditAXText(component) | Action::ExpectAXMissing(component) => *component,
                 _ => unreachable!(),
@@ -231,8 +244,22 @@ extern "C" fn run_step(ctx: *mut c_void) {
                 eprintln!("SELFTEST PASS AX closed owner removed");
                 return;
             }
-            let element = element.expect("native AX text element");
+            let element = element.expect("native accessibility element");
             match action {
+                Action::AXPress { component } => unsafe {
+                    use objc2::{runtime::Bool, sel};
+                    let allowed: Bool = msg_send![&*element, isAccessibilitySelectorAllowed:sel!(accessibilityPerformPress)];
+                    assert!(
+                        allowed.as_bool(),
+                        "AXPress is not allowed for component {component}"
+                    );
+                    let pressed: bool = msg_send![&*element, accessibilityPerformPress];
+                    assert!(
+                        pressed,
+                        "AXPress was not accepted for component {component}"
+                    );
+                    eprintln!("SELFTEST PASS AXPress component={component}");
+                },
                 Action::AuditAXText(_) => unsafe {
                     use objc2::{rc::Retained, sel};
                     use objc2_foundation::{NSArray, NSAttributedString, NSValue};
@@ -629,6 +656,51 @@ extern "C" fn run_step(ctx: *mut c_void) {
                     app.sendEvent(&e);
                 }
             }
+        }
+        Action::ScrollWheel {
+            x,
+            y,
+            delta_x,
+            delta_y,
+        } => {
+            use objc2_core_foundation::CGPoint;
+            use objc2_core_graphics::{CGEvent, CGScrollEventUnit};
+            let cg = CGEvent::new_scroll_wheel_event2(
+                None,
+                CGScrollEventUnit::Line,
+                2,
+                delta_y,
+                delta_x,
+                0,
+            )
+            .expect("create scroll-wheel event");
+            let point = win_point(&w, x, y);
+            let primary_height = objc2_app_kit::NSScreen::screens(mtm)
+                .firstObject()
+                .expect("primary display for scroll coordinate conversion")
+                .frame()
+                .size
+                .height;
+            // A synthesized NSEvent has no NSWindow, so sendEvent cannot hit-test
+            // it. Supply window coordinates and call the real content view's
+            // native scrollWheel: entry, which performs the original conversion
+            // and dispatches Event::Scroll. Do not call the Rust host directly.
+            CGEvent::set_location(Some(&cg), CGPoint::new(point.x, primary_height - point.y));
+            let event = NSEvent::eventWithCGEvent(&cg).expect("wrap native scroll event");
+            let actual = event.locationInWindow();
+            assert!(
+                (actual.x - point.x).abs() < 1e-6 && (actual.y - point.y).abs() < 1e-6,
+                "native synthesized scroll must carry the requested window coordinates"
+            );
+            eprintln!(
+                "SELFTEST native scroll window={} point={actual:?} delta=({}, {})",
+                w.windowNumber(),
+                event.scrollingDeltaX(),
+                event.scrollingDeltaY(),
+            );
+            w.contentView()
+                .expect("real native content view")
+                .scrollWheel(&event);
         }
         Action::KeyEquivalent {
             chars,

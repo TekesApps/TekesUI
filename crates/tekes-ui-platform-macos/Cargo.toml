@@ -25,13 +25,13 @@ objc2-foundation = { workspace = true, features = ["NSObject", "NSString", "NSGe
 objc2-app-kit = { workspace = true, features = [
     "NSCursor", "NSButton", "NSAttributedString", "NSTextInputClient", "NSTextInputContext", "NSPasteboard", "NSApplication", "NSResponder", "NSView", "NSWindow", "NSToolbar", "NSEvent", "NSMenu", "NSMenuItem",
     "NSTrackingArea", "NSWorkspace", "NSAppearance", "NSScreen", "NSAccessibility", "NSAccessibilityElement", "NSAccessibilityProtocols", "NSAccessibilityConstants", "NSControl",
-    "NSAnimationContext", "NSGraphics", "NSRunningApplication", "NSCell", "NSGraphicsContext", "objc2-quartz-core", "objc2-core-foundation",
+    "NSAnimationContext", "NSGraphics", "NSRunningApplication", "NSCell", "NSGraphicsContext", "objc2-quartz-core", "objc2-core-foundation", "objc2-core-graphics",
 ] }
 objc2-quartz-core = { workspace = true, features = ["CALayer", "CAMetalLayer", "CADisplayLink", "CAMetalDisplayLink", "CAFrameRateRange", "CABase", "objc2-core-foundation", "objc2-core-graphics", "objc2-metal"] }
 block2 = "0.6.2"
 objc2-metal = { version = "0.3.2", default-features = false, features = ["std", "MTLDrawable", "block2", "objc2-core-foundation"] }
 objc2-core-foundation = { workspace = true, features = ["CFCGTypes"] }
-objc2-core-graphics = { workspace = true, features = ["CGColorSpace", "CGDisplayConfiguration", "CGDirectDisplay", "libc"] }
+objc2-core-graphics = { workspace = true, features = ["CGColorSpace", "CGDisplayConfiguration", "CGDirectDisplay", "CGEvent", "CGEventSource", "CGEventTypes", "libc"] }
 
 # 示例 window.rs 的自测模式需要额外的特性（合成输入事件、改层背景色）。
 [target.'cfg(target_os = "macos")'.dev-dependencies]

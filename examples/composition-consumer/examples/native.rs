@@ -23,8 +23,8 @@ fn main() {
         TextSurfaceTextRenderer, composition::ContentHost,
     };
     use tekes_ui_platform_macos::{
-        App, AppConfig, Event, KeyEventKind, MenuBar, ScrollPhase, Size, Window, WindowConfig,
-        WindowHandler,
+        App, AppConfig, CommandId, Event, KeyEventKind, Menu, MenuBar, MenuCommand, MenuItem,
+        ScrollPhase, Size, Window, WindowConfig, WindowHandler,
     };
     use tekes_ui_render::Renderer;
     use tekes_ui_scene::{GlyphAtlas, Point, Rect, Scene, Size as SSize};
@@ -433,7 +433,7 @@ fn main() {
                         "first_activations": activations,
                         "scroll_offset_y": scroll,
                         "row_frames": visible_rows,
-                        "instructions": "Hover the first result and wait for help. Control-Option-1 rebinds/updates its long mixed-language query help; Control-Option-2 revokes help; Control-Option-3 removes/restores the original row (remount is unbound until Control-Option-1)."
+                        "instructions": "Hover the first result and wait for help. Use Help Fixture > Set help query B, Revoke help, or Remove or remount first row. Remount stays unbound until Set help query B."
                     });
                 }
                 if self.mode == "editable-number" {
@@ -600,9 +600,7 @@ fn main() {
                     });
                 }
                 if self.mode == "label" {
-                    use tekes_ui_controls::composition::{
-                        Button, ComponentId,
-                    };
+                    use tekes_ui_controls::composition::{Button, ComponentId};
                     snapshot["label_review"] = serde_json::json!({
                         "type_scale": self.text.type_scale, "width": w.size().width,
                         "buttons": ([9902,9903].into_iter().map(|id| {
@@ -648,6 +646,15 @@ fn main() {
                     serde_json::to_vec_pretty(&snapshot).unwrap(),
                 )
                 .expect("component snapshot");
+                if self.mode == "content-help" {
+                    use std::io::Write;
+                    let mut history = std::fs::OpenOptions::new()
+                        .create(true)
+                        .append(true)
+                        .open(directory.join("content-help-history.jsonl"))
+                        .expect("content-help native history");
+                    writeln!(history, "{}", snapshot).expect("content-help snapshot record");
+                }
             }
             w.set_accessibility_text_layouts(
                 self.tree
@@ -966,9 +973,7 @@ fn main() {
                 let count = |id| {
                     self.tree
                         .get(id)
-                        .and_then(|c| {
-                            c.component::<tekes_ui_controls::composition::Button>()
-                        })
+                        .and_then(|c| c.component::<tekes_ui_controls::composition::Button>())
                         .map_or(0, |b| b.activations)
                 };
                 let invoker = count(ids::DIALOG_INVOKER);
@@ -1164,17 +1169,12 @@ fn main() {
                 return;
             }
             if self.mode == "content-help"
-                && let Event::Key(key) = &e
-                && key.kind == KeyEventKind::Down
-                && key.modifiers.control
-                && key.modifiers.alt
-                && !key.modifiers.command
-                && !key.modifiers.shift
-                && matches!(key.key_code, 18..=20)
+                && let Event::Command(CommandId(command)) = &e
+                && matches!(*command, 35_001..=35_003)
             {
                 use tekes_ui_composition_consumer::help_list::{FIRST, LIST};
-                match key.key_code {
-                    18 => {
+                match *command {
+                    35_001 => {
                         if let Some(row) = self.tree.get_mut(FIRST) {
                             let help = Some("query B · 本次搜索摘要：组合输入、焦点与阅读位置应保持不变；结果覆盖 multilingual résumé, 東京, 搜索😀与/folder/1 中的原始条目。".to_owned());
                             row.set_help(help.clone());
@@ -1183,7 +1183,7 @@ fn main() {
                             eprintln!("content-help-query owner={} result=unmounted", FIRST.0);
                         }
                     }
-                    19 => {
+                    35_002 => {
                         if let Some(row) = self.tree.get_mut(FIRST) {
                             row.set_help(None);
                             eprintln!("content-help-revoke owner={}", FIRST.0);
@@ -1191,7 +1191,7 @@ fn main() {
                             eprintln!("content-help-revoke owner={} result=unmounted", FIRST.0);
                         }
                     }
-                    20 => {
+                    35_003 => {
                         if self.tree.get(FIRST).is_some() {
                             self.help_removed =
                                 Some(self.tree.remove(FIRST).expect("remove original help row"));
@@ -1360,9 +1360,7 @@ fn main() {
                         19 => self.text.type_scale = 1.5,
                         20 => self.text.type_scale = 2.,
                         code => {
-                            use tekes_ui_controls::composition::{
-                                Button, ComponentId,
-                            };
+                            use tekes_ui_controls::composition::{Button, ComponentId};
                             for id in [9902, 9903] {
                                 let node = self.tree.get_mut(ComponentId(id)).unwrap();
                                 if let Some(button) = node.component_mut::<Button>() {
@@ -1456,6 +1454,277 @@ fn main() {
                         let _ = self.tree.focus(Some(self.invoker), false);
                     }
                     self.redraw(w);
+                    if self.mode == "content-help"
+                        && std::env::var("TEKES_COMPOSITION_SELFTEST").as_deref()
+                            == Ok("content-help")
+                    {
+                        use tekes_ui_composition_consumer::help_list::{COMPOSER, FIRST};
+                        use tekes_ui_platform_macos::selftest::Action;
+                        let row = self.tree.get(FIRST).unwrap().visible().unwrap().center();
+                        let composer = self.tree.get(COMPOSER).unwrap().visible().unwrap().center();
+                        let text = "Keep A😀B拼音";
+                        self.selftest_script = Some(vec![
+                            (300, Action::WindowDark(false)),
+                            (
+                                400,
+                                Action::Click {
+                                    x: f64::from(composer.x),
+                                    y: f64::from(composer.y),
+                                },
+                            ),
+                            (
+                                520,
+                                Action::TextRange {
+                                    text: "Keep A😀B".into(),
+                                    replacement: Some(0..9),
+                                },
+                            ),
+                            (
+                                650,
+                                Action::PreeditRange {
+                                    text: "拼音".into(),
+                                    selection: 2..2,
+                                    replacement: None,
+                                },
+                            ),
+                            (
+                                780,
+                                Action::ExpectTextState {
+                                    text: text.into(),
+                                    selection: 11..11,
+                                    marked: Some(9..11),
+                                    query: 9..11,
+                                    actual: 9..11,
+                                },
+                            ),
+                            (
+                                900,
+                                Action::MouseMove {
+                                    x: f64::from(row.x),
+                                    y: f64::from(row.y),
+                                },
+                            ),
+                            (
+                                1_550,
+                                Action::ExpectTextState {
+                                    text: text.into(),
+                                    selection: 11..11,
+                                    marked: Some(9..11),
+                                    query: 9..11,
+                                    actual: 9..11,
+                                },
+                            ),
+                            (
+                                1_600,
+                                Action::Capture {
+                                    path: std::path::PathBuf::from(
+                                        std::env::var_os("TEKESUI_COMPONENT_EVIDENCE")
+                                            .expect("evidence directory"),
+                                    )
+                                    .join("help-A-light.png")
+                                    .to_string_lossy()
+                                    .into_owned(),
+                                },
+                            ),
+                            (1_800, Action::MenuCommand(35_001)),
+                            (1_900, Action::MouseExit),
+                            (
+                                2_000,
+                                Action::MouseMove {
+                                    x: f64::from(row.x),
+                                    y: f64::from(row.y),
+                                },
+                            ),
+                            (
+                                2_650,
+                                Action::ExpectTextState {
+                                    text: text.into(),
+                                    selection: 11..11,
+                                    marked: Some(9..11),
+                                    query: 9..11,
+                                    actual: 9..11,
+                                },
+                            ),
+                            (
+                                2_700,
+                                Action::Capture {
+                                    path: std::path::PathBuf::from(
+                                        std::env::var_os("TEKESUI_COMPONENT_EVIDENCE").unwrap(),
+                                    )
+                                    .join("help-B-light.png")
+                                    .to_string_lossy()
+                                    .into_owned(),
+                                },
+                            ),
+                            (2_900, Action::MenuCommand(35_002)),
+                            (
+                                3_000,
+                                Action::ExpectTextState {
+                                    text: text.into(),
+                                    selection: 11..11,
+                                    marked: Some(9..11),
+                                    query: 9..11,
+                                    actual: 9..11,
+                                },
+                            ),
+                            (3_100, Action::MenuCommand(35_001)),
+                            (3_200, Action::MouseExit),
+                            (
+                                3_300,
+                                Action::MouseMove {
+                                    x: f64::from(row.x),
+                                    y: f64::from(row.y),
+                                },
+                            ),
+                            (
+                                3_950,
+                                Action::Capture {
+                                    path: std::path::PathBuf::from(
+                                        std::env::var_os("TEKESUI_COMPONENT_EVIDENCE").unwrap(),
+                                    )
+                                    .join("help-long-light.png")
+                                    .to_string_lossy()
+                                    .into_owned(),
+                                },
+                            ),
+                            (
+                                4_100,
+                                Action::ScrollWheel {
+                                    x: f64::from(row.x),
+                                    y: f64::from(row.y),
+                                    delta_x: 0,
+                                    delta_y: -1,
+                                },
+                            ),
+                            (
+                                4_300,
+                                Action::ExpectTextState {
+                                    text: text.into(),
+                                    selection: 11..11,
+                                    marked: Some(9..11),
+                                    query: 9..11,
+                                    actual: 9..11,
+                                },
+                            ),
+                            (
+                                4_400,
+                                Action::Capture {
+                                    path: std::path::PathBuf::from(
+                                        std::env::var_os("TEKESUI_COMPONENT_EVIDENCE").unwrap(),
+                                    )
+                                    .join("help-scrolled.png")
+                                    .to_string_lossy()
+                                    .into_owned(),
+                                },
+                            ),
+                            (
+                                4_500,
+                                Action::ScrollWheel {
+                                    x: f64::from(row.x),
+                                    y: f64::from(row.y),
+                                    delta_x: 0,
+                                    delta_y: -20,
+                                },
+                            ),
+                            (
+                                4_700,
+                                Action::Capture {
+                                    path: std::path::PathBuf::from(
+                                        std::env::var_os("TEKESUI_COMPONENT_EVIDENCE").unwrap(),
+                                    )
+                                    .join("help-clipped.png")
+                                    .to_string_lossy()
+                                    .into_owned(),
+                                },
+                            ),
+                            (
+                                4_800,
+                                Action::ScrollWheel {
+                                    x: f64::from(row.x),
+                                    y: f64::from(row.y),
+                                    delta_x: 0,
+                                    delta_y: 21,
+                                },
+                            ),
+                            (5_000, Action::Unmark),
+                            (
+                                5_100,
+                                Action::ExpectText {
+                                    text: "Keep A😀B拼音".into(),
+                                    marked: false,
+                                },
+                            ),
+                            (
+                                5_200,
+                                Action::MouseMove {
+                                    x: f64::from(row.x),
+                                    y: f64::from(row.y),
+                                },
+                            ),
+                            (
+                                5_850,
+                                Action::Click {
+                                    x: f64::from(row.x),
+                                    y: f64::from(row.y),
+                                },
+                            ),
+                            (6_050, Action::Key { key_code: 36 }),
+                            (6_250, Action::AXPress { component: FIRST.0 }),
+                            (6_500, Action::MenuCommand(35_003)),
+                            (6_800, Action::MenuCommand(35_003)),
+                            (7_000, Action::MenuCommand(35_001)),
+                            (7_100, Action::MouseExit),
+                            (
+                                7_200,
+                                Action::MouseMove {
+                                    x: f64::from(row.x),
+                                    y: f64::from(row.y),
+                                },
+                            ),
+                            (7_850, Action::WindowDark(true)),
+                            (7_950, Action::MouseExit),
+                            (
+                                8_050,
+                                Action::MouseMove {
+                                    x: f64::from(row.x),
+                                    y: f64::from(row.y),
+                                },
+                            ),
+                            (
+                                8_700,
+                                Action::Capture {
+                                    path: std::path::PathBuf::from(
+                                        std::env::var_os("TEKESUI_COMPONENT_EVIDENCE").unwrap(),
+                                    )
+                                    .join("help-long-dark.png")
+                                    .to_string_lossy()
+                                    .into_owned(),
+                                },
+                            ),
+                            (9_000, Action::Miniaturize),
+                            (9_800, Action::Deminiaturize),
+                            (10_500, Action::MouseExit),
+                            (
+                                10_600,
+                                Action::MouseMove {
+                                    x: f64::from(row.x),
+                                    y: f64::from(row.y),
+                                },
+                            ),
+                            (
+                                11_250,
+                                Action::Capture {
+                                    path: std::path::PathBuf::from(
+                                        std::env::var_os("TEKESUI_COMPONENT_EVIDENCE").unwrap(),
+                                    )
+                                    .join("help-reactivated-dark.png")
+                                    .to_string_lossy()
+                                    .into_owned(),
+                                },
+                            ),
+                            (11_500, Action::Close),
+                        ]);
+                    }
                     if let Some(script) = self.selftest_script.take() {
                         tekes_ui_platform_macos::selftest::run_script(script);
                     }
@@ -2051,7 +2320,23 @@ fn main() {
             },
             ..Default::default()
         },
-        MenuBar::default(),
+        if mode == "content-help" {
+            MenuBar {
+                menus: vec![Menu::new(
+                    "Help Fixture",
+                    vec![
+                        MenuItem::Command(MenuCommand::new("Set help query B", CommandId(35_001))),
+                        MenuItem::Command(MenuCommand::new("Revoke help", CommandId(35_002))),
+                        MenuItem::Command(MenuCommand::new(
+                            "Remove or remount first row",
+                            CommandId(35_003),
+                        )),
+                    ],
+                )],
+            }
+        } else {
+            MenuBar::default()
+        },
         host,
     );
 }
