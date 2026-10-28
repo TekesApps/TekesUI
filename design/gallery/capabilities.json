@@ -60665,7 +60665,7 @@
     "crates/tekes-ui-controls/tests/selection_availability.rs": "c8e9b61598c97ae64c5d58a8545f7067148235f6bf4291f53ecea031219942da",
     "crates/tekes-ui-controls/tests/selection_contract.rs": "296b6dc0de73ebca44587e9fbfbac722823359d35c0651cbc63a26e09ddd998b",
     "crates/tekes-ui-controls/tests/separator_scale.rs": "8391916da3f98b9aa57d7c1960a3c9f3eb1d9c84008b7663acf47b5d92923117",
-    "crates/tekes-ui-controls/tests/text_input_ime_contract.rs": "8b23354c14a2c190298208f2e3670d04834ef03e86d6d2a3cc5df44d050f5c2e",
+    "crates/tekes-ui-controls/tests/text_input_ime_contract.rs": "c4b254f5f6255de482b9decbadfc025dd1e314cbb16e52b08a9152b456396870",
     "crates/tekes-ui-controls/tests/text_input_ime_regression.rs": "3a4f373a5f7cae7c10eb4e6933c0b29ec9995e136570b098dd6ee4a5b10279a8",
     "crates/tekes-ui-controls/tests/toolbar_contract.rs": "a5e3c521611586b4df5fb671c230768c9edb4d6b7e72573c485eb82a22dc6e8b",
     "crates/tekes-ui-controls/tests/tooltip_lifecycle.rs": "df505ecdebff9d5517158b4b999cf180dca661c9dcb6ab56de18e03076353b9a",
