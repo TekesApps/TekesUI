@@ -551,8 +551,10 @@ impl Host {
         )?;
         if phase == "after_tab" {
             ensure!(
-                tree.focused() == Some(self.ids[2]),
-                "two native Tabs did not traverse the next two original containers"
+                tree.focused() == Some(self.ids[1])
+                    && children[1]["actions"]["focused"] == EDIT.0
+                    && text.as_ref().is_some_and(|s| s["text"] == "draft"),
+                "native Tab did not enter the next Reader and advance from history to its editor"
             );
             ensure!(
                 children[0]["actions"]["edit_text"] == "Keep A😀B拼音"

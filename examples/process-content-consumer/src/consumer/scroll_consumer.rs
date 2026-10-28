@@ -1065,5 +1065,27 @@ mod native_fixture_tests {
                 .component::<Button>()
                 .is_some()
         );
+        let targets = host.focus_targets();
+        assert!(
+            !targets.is_empty(),
+            "mixed Reader has no eligible focus owner"
+        );
+        let reading_offset = history.surface.scroll.offset;
+        assert!(
+            host.enter_focus(false),
+            "mixed Reader refused original traversal entry: {targets:?}"
+        );
+        assert_eq!(host.focused(), Some(targets[0].0));
+        assert_eq!(
+            host.get(INNER)
+                .unwrap()
+                .component::<TextFieldContent>()
+                .unwrap()
+                .surface
+                .scroll
+                .offset,
+            reading_offset,
+            "focus entry changed the original internal reading position"
+        );
     }
 }

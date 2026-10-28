@@ -48,4 +48,14 @@ VoiceOver and downstream adoption remain separate gaps. No full Issue 48 closure
 claimed. Evidence: SSD `artifacts/issue-48/maind29f654-native-mixed-candidate-20261028-01/`
 (`main-cpu08`, `native-round06`); earlier failed runs retain their original identities.
 
+The subsequent Issue 48 child-entry fix retains the actual first history target:
+an internally scrolling readonly Content surface enters through its visible viewport
+without resetting its reading offset. The original factory red case now passes.
+Actual AppKit Tab now enters container 201's history and then its Message editor;
+the native text query reports `draft` and the original child focus is EDIT. The
+strengthened unchanged-scene script, affected Controls focus/reading regressions and
+strict checks passed in `artifacts/issue-48/mainf10df2b-child-focus-20261028-01/`
+(`focus-fix01`, `native01`). This supersedes only the child-entry gap above; independent
+native nested-scroll/bubbling and the other unexecuted Issue 48 scopes remain open.
+
 Rectangular parent Scroll admission uses the default-false `Component::rectangular_input_geometry` opt-in. ProcessContainer declares it only for ready, negotiated Content input; the original current focus/reveal checks still run. This does not grant prepared-action purity or curved Panel support, and Curve V1 remains reject-only. The public consumer retains its real outer Scroll and Grid, with a valid arranged translation contract for its fixed row.

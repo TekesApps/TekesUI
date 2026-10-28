@@ -4,6 +4,8 @@
 
 当前复用既有 TextFieldContent / TextSurface，新增 opt-in TextSurfacePresentation::Content 与 read_only_content(name, value, TextRole)。默认 Field 保留。内容模式使用同一行指标、测量/布局/选择/绘制几何，不输出表单装饰；父 Surface/ScrollContent 决定背景、padding 与唯一文档滚动。共享焦点/选区墨迹是合理保留，焦点并非输入背景。禁用双轴的所有 TextSurface 都把滚轮交回祖先；Content 焦点/只读插入点导航复用既有祖先 reveal，避免选中首行却显示整个长块，也不把手动滚动拉回旧插入点。
 
+若调用方显式为只读 Content 开启内部滚动并限制视口，初次进入焦点应揭示该视口，保持已有阅读偏移；此时不绘制插入光标，不能要求祖先揭示内部滚动后视口外的旧 caret。正文自身没有滚动时仍用原 caret 规则，编辑字段及后续显式选择/光标导航不变。#48 的原混合 Reader 曾因此拒绝首个合法 history 目标；实际 factory 回归与三 IPC 原生 Tab 已验证修正，未跳过该目标或裁剪组合。
+
 适用：用户显式选择的只读、多行、可选中文本块；不自动迁移普通表单、已限制视口的编辑器或整个组件族。没有新增组件/路由，registry 仍为45项。没有复制编辑、布局、焦点或滚动状态机，没有新 token。语义 name 和 TextRole 由调用者提供，既有受控值/版本拒绝、UTF-16、指针与 AX 继续复用。
 
 独立消费方以既有 SurfaceView + StackContent 包裹正文、按钮和 footnote，外层 ScrollContent 拥有滚动，并保留普通 TextField 作对照。调用者拥有 DraftRevision 并通过原事务追加。原生小宿主 plain 场景沿用原 CoreText/Metal/平台桥；复制只桥接既有 selected_text 与 Window clipboard。该测试入口使用平台已有的进程私有 pasteboard，不读取/覆盖用户总剪贴板。
