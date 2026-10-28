@@ -1945,7 +1945,7 @@
     "docs/design/menu-declarations-20261021.md": "00ac8b6905cf73ae8b2bcb1ff7498db15e0682691f6d48a7631962c7940ac2e1",
     "docs/roadmap.md": "1648c62ec9209c206b98c18da6a48cda8e9df306d635e294b5d0ad5dcf1bd331",
     "examples/composition-consumer/Cargo.toml": "92baa39b50aa5d5b64ff80e60b1af6bed7d3faaf9e3feaa8d2e7a625a0d793bf",
-    "examples/composition-consumer/examples/native.rs": "bd869f3da147976574ce221899a5dda4426770d2236c386fb6bbad528806f8d0",
+    "examples/composition-consumer/examples/native.rs": "f8f640e7791c3700936ad9fcad425a47fa116d15c0b3d9eb96053f5b52ee6dde",
     "examples/composition-consumer/examples/support/native_key.rs": "6932a589bce50e2f4365c780c67ab0c467a126c9a4677ad23eeda132f146adae",
     "examples/composition-consumer/src/choice_status.rs": "337878b760c8aa05fe0bdbb0dbce091604526acc082c5778645b6feb6199d678",
     "examples/composition-consumer/src/combo_status.rs": "1e36d6989f56ed61eb67f2ab1b56c751164f2e1726c486eb65dd5430f9f40166",
@@ -2090,7 +2090,7 @@
     },
     {
       "path": "examples/composition-consumer/examples/native.rs",
-      "line": 677,
+      "line": 747,
       "anchor": "w.set_accessibility_nodes(nodes);"
     },
     {

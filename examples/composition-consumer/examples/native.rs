@@ -196,9 +196,11 @@ fn main() {
     struct Host {
         selftest_script: Option<Vec<(u64, tekes_ui_platform_macos::selftest::Action)>>,
         tree: ContentHost,
+        nested_scroll_events: usize,
         help_removed: Option<tekes_ui_controls::composition::Content>,
         menu_actions: Vec<tekes_ui_controls::composition::ContentActionRecord>,
         reading: Option<tekes_ui_composition_consumer::reading_stream::StreamState>,
+        nested_reading: Option<tekes_ui_composition_consumer::nested_reading::State>,
         reading_width: bool,
         item_version: Option<tekes_ui_controls::ReadingDocumentVersion>,
         item_error: Option<String>,
@@ -435,6 +437,74 @@ fn main() {
                         "row_frames": visible_rows,
                         "instructions": "Hover the first result and wait for help. Use Help Fixture > Set help query B, Revoke help, or Remove or remount first row. Remount stays unbound until Set help query B."
                     });
+                }
+                if let Some(state) = &self.nested_reading {
+                    use tekes_ui_composition_consumer::nested_reading::TAIL;
+                    use tekes_ui_composition_consumer::nested_reading::{COMPOSER, INNER, PARENT};
+                    use tekes_ui_controls::composition::{ScrollContent, TextFieldContent};
+                    let parent_content = self
+                        .tree
+                        .get(PARENT)
+                        .unwrap()
+                        .component::<ScrollContent>()
+                        .unwrap();
+                    let inner_content = self
+                        .tree
+                        .get(INNER)
+                        .unwrap()
+                        .component::<TextFieldContent>()
+                        .unwrap();
+                    let composer_content = self.tree.get(COMPOSER).unwrap();
+                    let composer = &composer_content
+                        .component::<TextFieldContent>()
+                        .unwrap()
+                        .surface;
+                    let rect = |r: Rect| {
+                        serde_json::json!({
+                            "x": r.min_x(), "y": r.min_y(),
+                            "width": r.size.width, "height": r.size.height
+                        })
+                    };
+                    let detail = self.tree.get(INNER).unwrap();
+                    let tail = self.tree.get(TAIL).unwrap();
+                    snapshot["nested_reading"] = serde_json::json!({
+                        "rendered": rendered,
+                        "scroll_events": self.nested_scroll_events,
+                        "following": parent_content.is_following_latest(),
+                        "parent_offset": parent_content.scroll.offset.y,
+                        "inner_offset": inner_content.surface.scroll.offset.y,
+                        "inner_following": inner_content.reading.as_ref().map(|r| r.is_following_latest()),
+                        "inner_visible": detail.visible().is_some(),
+                        "inner_frame": rect(detail.frame()),
+                        "inner_visible_frame": detail.visible().map(rect),
+                        "inner_mount": detail.mount_identity(),
+                        "parent_frame": rect(self.tree.get(PARENT).unwrap().frame()),
+                        "parent_visible_frame": self.tree.get(PARENT).unwrap().visible().map(rect),
+                        "tail_visible_frame": tail.visible().map(rect),
+                        "tail_mount": tail.mount_identity(),
+                        "appended": state.appended,
+                        "version": state.version.revision(),
+                        "focus": self.tree.focused().map(|id| id.0),
+                        "composer_mount": composer_content.mount_identity(),
+                        "composer": composer.input.text,
+                        "marked": composer.input.marked,
+                        "selection": composer.input.selection(),
+                        "baseline": format!("{:?}", composer.input.external_baseline()),
+                    });
+                    if rendered
+                        && let Some(directory) = std::env::var_os("TEKESUI_COMPONENT_EVIDENCE")
+                    {
+                        use std::io::Write;
+                        let mut journal = std::fs::OpenOptions::new()
+                            .create(true)
+                            .append(true)
+                            .open(
+                                std::path::PathBuf::from(directory)
+                                    .join("nested-reading-journal.jsonl"),
+                            )
+                            .unwrap();
+                        writeln!(journal, "{}", snapshot).unwrap();
+                    }
                 }
                 if self.mode == "editable-number" {
                     use tekes_ui_composition_consumer::editable_number::PERCENT;
@@ -964,6 +1034,9 @@ fn main() {
             if let Some(value) = &mut self.plain_value {
                 tekes_ui_composition_consumer::plain_text::process_actions(&mut self.tree, value);
             }
+            if let Some(state) = &mut self.nested_reading {
+                state.process_actions(&mut self.tree);
+            }
             if let Some(reading) = &mut self.reading {
                 reading.process_actions(&mut self.tree, self.text.started.elapsed());
                 self.text.type_scale = if reading.large_text { 1.5 } else { 1. };
@@ -1050,6 +1123,19 @@ fn main() {
         }
         fn dispatch(&mut self, e: Event) -> bool {
             use tekes_ui_controls::composition::ContentEvent as C;
+            if let Event::Scroll(scroll) = &e
+                && self.mode == "nested-reading"
+            {
+                self.nested_scroll_events += 1;
+                eprintln!(
+                    "nested-reading-native-scroll count={} position={:?} delta={:?} phase={:?} momentum={:?}",
+                    self.nested_scroll_events,
+                    scroll.position,
+                    scroll.delta,
+                    scroll.phase,
+                    scroll.momentum_phase
+                );
+            }
             let ev = match e {
                 Event::Mouse(m) => crate::native_pointer::translate(m),
                 Event::TextKey(report) => crate::native_key::translate(report),
@@ -1095,6 +1181,32 @@ fn main() {
                 Event::Focus(false) => C::Cancel,
                 _ => return false,
             };
+            let nested_scroll_before =
+                (self.mode == "nested-reading" && matches!(&ev, C::Scroll { .. })).then(|| {
+                    use tekes_ui_composition_consumer::nested_reading::{INNER, PARENT};
+                    use tekes_ui_controls::composition::{ScrollContent, TextFieldContent};
+                    let parent = self
+                        .tree
+                        .get(PARENT)
+                        .unwrap()
+                        .component::<ScrollContent>()
+                        .unwrap();
+                    let inner = self
+                        .tree
+                        .get(INNER)
+                        .unwrap()
+                        .component::<TextFieldContent>()
+                        .unwrap();
+                    (
+                        parent.scroll.offset.y,
+                        inner.surface.scroll.offset.y,
+                        parent.is_following_latest(),
+                        inner
+                            .reading
+                            .as_ref()
+                            .is_some_and(|reading| reading.is_following_latest()),
+                    )
+                });
             if matches!(
                 &ev,
                 C::Commit { .. }
@@ -1108,6 +1220,39 @@ fn main() {
                 self.text.caret_on = true;
             }
             let response = self.tree.event(&ev);
+            if let Some((parent_before, inner_before, following_before, inner_following_before)) =
+                nested_scroll_before
+            {
+                use tekes_ui_composition_consumer::nested_reading::{INNER, PARENT};
+                use tekes_ui_controls::composition::{ScrollContent, TextFieldContent};
+                let parent = self
+                    .tree
+                    .get(PARENT)
+                    .unwrap()
+                    .component::<ScrollContent>()
+                    .unwrap();
+                let inner = self
+                    .tree
+                    .get(INNER)
+                    .unwrap()
+                    .component::<TextFieldContent>()
+                    .unwrap();
+                eprintln!(
+                    "nested-reading-after-scroll event={} parent_offset={}->{} inner_offset={}->{} following={}->{} inner_following={}->{}",
+                    self.nested_scroll_events,
+                    parent_before,
+                    parent.scroll.offset.y,
+                    inner_before,
+                    inner.surface.scroll.offset.y,
+                    following_before,
+                    parent.is_following_latest(),
+                    inner_following_before,
+                    inner
+                        .reading
+                        .as_ref()
+                        .is_some_and(|reading| reading.is_following_latest()),
+                );
+            }
             eprintln!(
                 "composition-event mode={} event={:?} focused={:?} text={:?}",
                 self.mode,
@@ -1725,6 +1870,120 @@ fn main() {
                             (11_500, Action::Close),
                         ]);
                     }
+                    if self.mode == "nested-reading"
+                        && std::env::var("TEKES_COMPOSITION_SELFTEST").as_deref()
+                            == Ok("nested-reading")
+                    {
+                        use tekes_ui_composition_consumer::nested_reading::{
+                            APPEND, COMPOSER, INNER, LATEST,
+                        };
+                        use tekes_ui_platform_macos::selftest::Action;
+                        let center = |id| {
+                            self.tree
+                                .get(id)
+                                .and_then(|content| content.visible())
+                                .expect("nested-reading rendered visible target")
+                                .center()
+                        };
+                        let composer = center(COMPOSER);
+                        let detail = center(INNER);
+                        let append = center(APPEND);
+                        let latest = center(LATEST);
+                        let expect_composer = || Action::ExpectTextState {
+                            text: "draft拼音".into(),
+                            selection: 7..7,
+                            marked: Some(5..7),
+                            query: 5..7,
+                            actual: 5..7,
+                        };
+                        self.selftest_script = Some(vec![
+                            (250, Action::Log("nested-reading-baseline-frame".into())),
+                            (
+                                300,
+                                Action::Click {
+                                    x: f64::from(composer.x),
+                                    y: f64::from(composer.y),
+                                },
+                            ),
+                            (
+                                550,
+                                Action::PreeditRange {
+                                    text: "拼音".into(),
+                                    selection: 2..2,
+                                    replacement: None,
+                                },
+                            ),
+                            (700, expect_composer()),
+                            (
+                                800,
+                                Action::Log("nested-reading-before-inner-scroll".into()),
+                            ),
+                            (
+                                850,
+                                Action::ScrollWheel {
+                                    x: f64::from(detail.x),
+                                    y: f64::from(detail.y),
+                                    delta_x: 0,
+                                    delta_y: -16,
+                                },
+                            ),
+                            (
+                                950,
+                                Action::ScrollWheel {
+                                    x: f64::from(detail.x),
+                                    y: f64::from(detail.y),
+                                    delta_x: 0,
+                                    delta_y: 6,
+                                },
+                            ),
+                            (1_050, expect_composer()),
+                            (
+                                1_100,
+                                Action::Log("nested-reading-after-inner-scroll".into()),
+                            ),
+                            (
+                                1_200,
+                                Action::Click {
+                                    x: f64::from(append.x),
+                                    y: f64::from(append.y),
+                                },
+                            ),
+                            (1_400, expect_composer()),
+                            (1_500, Action::Log("nested-reading-after-append".into())),
+                            (1_600, Action::Resize { w: 320., h: 640. }),
+                            (1_850, expect_composer()),
+                            (2_100, Action::Resize { w: 420., h: 640. }),
+                            (2_350, expect_composer()),
+                            (2_600, Action::Resize { w: 600., h: 640. }),
+                            (2_850, expect_composer()),
+                            (3_100, Action::Resize { w: 720., h: 640. }),
+                            (
+                                3_250,
+                                Action::Log("nested-reading-returned-to-initial-size".into()),
+                            ),
+                            (
+                                3_350,
+                                Action::Click {
+                                    x: f64::from(latest.x),
+                                    y: f64::from(latest.y),
+                                },
+                            ),
+                            (3_550, expect_composer()),
+                            (
+                                3_700,
+                                Action::Capture {
+                                    path: std::path::PathBuf::from(
+                                        std::env::var_os("TEKESUI_COMPONENT_EVIDENCE")
+                                            .expect("evidence directory"),
+                                    )
+                                    .join("nested-reading-final.png")
+                                    .to_string_lossy()
+                                    .into_owned(),
+                                },
+                            ),
+                            (3_900, Action::Close),
+                        ]);
+                    }
                     if let Some(script) = self.selftest_script.take() {
                         tekes_ui_platform_macos::selftest::run_script(script);
                     }
@@ -1803,7 +2062,12 @@ fn main() {
                 }
                 Event::AnimationFrame(_) => self.redraw(w),
                 Event::Redraw => self.redraw(w),
-                Event::CloseRequested => w.close(),
+                Event::CloseRequested => {
+                    if self.mode == "nested-reading" {
+                        eprintln!("nested-reading-close-requested->Window.close");
+                    }
+                    w.close();
+                }
                 e => {
                     if self.dispatch(e) {
                         self.redraw(w)
@@ -1825,6 +2089,7 @@ fn main() {
                 | "slider"
                 | "command"
                 | "reading"
+                | "nested-reading"
                 | "plain"
                 | "number"
                 | "editable-number"
@@ -1838,9 +2103,10 @@ fn main() {
                 | "toolbar-split"
                 | "content-help"
         ),
-        "usage: native [list|dialog|slider|command|reading|plain|number|field|label|layout|item|menu-tree|toolbar|toolbar-groups|toolbar-split|content-help]"
+        "usage: native [list|dialog|slider|command|reading|nested-reading|plain|number|field|label|layout|item|menu-tree|toolbar|toolbar-groups|toolbar-split|content-help]"
     );
     let mut reading = None;
+    let mut nested_reading = None;
     let mut plain_value = None;
     let mut item_version = None;
     let (tree, invoker, row_activations) = if mode == "toolbar" {
@@ -1922,6 +2188,14 @@ fn main() {
             tekes_ui_composition_consumer::reading_stream::APPEND,
             None,
         )
+    } else if mode == "nested-reading" {
+        let (tree, state) = tekes_ui_composition_consumer::nested_reading::build().unwrap();
+        nested_reading = Some(state);
+        (
+            tree,
+            tekes_ui_composition_consumer::nested_reading::APPEND,
+            None,
+        )
     } else if mode == "slider" {
         (
             tekes_ui_composition_consumer::slider_content::build().unwrap(),
@@ -1986,9 +2260,11 @@ fn main() {
     let mut host = Host {
         selftest_script: None,
         tree,
+        nested_scroll_events: 0,
         help_removed: None,
         menu_actions: Vec::new(),
         reading,
+        nested_reading,
         reading_width: false,
         item_version,
         item_error: None,
@@ -2305,7 +2581,7 @@ fn main() {
                 height: if mode == "toolbar-split" { 560. } else { 640. },
             },
             min_size: Some(Size {
-                width: 360.,
+                width: if mode == "nested-reading" { 320. } else { 360. },
                 height: 480.,
             }),
             placement: if mode == "toolbar-split" {
