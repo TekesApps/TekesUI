@@ -321,10 +321,12 @@ mod consumer {
             })
         }
     }
+    #[track_caller]
     fn wait(mut ready: impl FnMut() -> bool) -> Result<()> {
+        let caller = std::panic::Location::caller();
         let end = Instant::now() + Duration::from_secs(10);
         while !ready() {
-            ensure!(Instant::now() < end, "correctness deadline");
+            ensure!(Instant::now() < end, "correctness deadline at {caller}");
             std::thread::sleep(Duration::from_millis(5));
         }
         Ok(())
