@@ -149,6 +149,12 @@ impl TextInput {
             .last()
             .unwrap_or(0)
     }
+    fn boundary_after(&self, index: usize) -> usize {
+        self.boundaries()
+            .into_iter()
+            .find(|n| *n >= index)
+            .unwrap_or(self.len())
+    }
     fn byte(&self, index: usize) -> usize {
         let mut n = 0;
         for (b, c) in self.text.char_indices() {
@@ -225,17 +231,44 @@ impl TextInput {
         self.caret = end;
         range.start..end
     }
+    fn replace_raw_exact(&mut self, range: Range<usize>, value: &str) -> Range<usize> {
+        let start = range.start.min(self.len());
+        let end = range.end.max(start).min(self.len());
+        let value = self.normalize_value(value);
+        self.text
+            .replace_range(self.byte(start)..self.byte(end), &value);
+        let end = start + value.encode_utf16().count();
+        self.anchor = end;
+        self.caret = end;
+        start..end
+    }
     pub fn insert(&mut self, value: &str, replacement: Option<Range<usize>>) -> bool {
         if self.read_only || self.disabled {
             return false;
         }
         self.advance_edit_epoch();
         let before = self.snapshot();
+        let was_composing = self.composition.is_some();
+        let marked = self.marked.clone();
         let original = self.composition.take().unwrap_or_else(|| before.clone());
+        let exact_marked = replacement
+            .as_ref()
+            .zip(marked.as_ref())
+            .is_some_and(|(replacement, marked)| replacement == marked);
+        let use_exact_range =
+            (replacement.is_none() && was_composing && marked.is_some()) || exact_marked;
         let range = replacement
+            .or_else(|| was_composing.then_some(marked.clone()).flatten())
             .or_else(|| self.marked.take())
             .unwrap_or_else(|| self.selection());
-        self.replace_raw(range, value);
+        let inserted = if use_exact_range {
+            self.replace_raw_exact(range, value)
+        } else {
+            self.replace_raw(range, value)
+        };
+        let caret = self.boundary_after(inserted.end);
+        self.anchor = caret;
+        self.caret = caret;
         self.marked = None;
         let changed = self.text != before.text || self.caret != before.caret || before != original;
         if self.snapshot() != original {
@@ -262,15 +295,36 @@ impl TextInput {
             };
         }
         self.advance_edit_epoch();
-        if self.composition.is_none() {
+        let first_update = self.composition.is_none();
+        if first_update {
             self.composition = Some(self.snapshot());
         }
+        let marked = self.marked.clone();
+        let exact_marked = replacement
+            .as_ref()
+            .zip(marked.as_ref())
+            .is_some_and(|(replacement, marked)| replacement == marked);
+        let use_exact_range =
+            (!first_update && replacement.is_none() && marked.is_some()) || exact_marked;
         let range = replacement
+            .or_else(|| (!first_update).then_some(marked.clone()).flatten())
             .or_else(|| self.marked.take())
             .unwrap_or_else(|| self.selection());
-        let range = self.replace_raw(range, value);
-        self.anchor = self.boundary(range.start.saturating_add(selection.start).min(range.end));
-        self.caret = self.boundary(range.start.saturating_add(selection.end).min(range.end));
+        let range = if use_exact_range {
+            self.replace_raw_exact(range, value)
+        } else {
+            self.replace_raw(range, value)
+        };
+        let selection_start = range.start.saturating_add(selection.start).min(range.end);
+        let selection_end = range.start.saturating_add(selection.end).min(range.end);
+        if selection.is_empty() {
+            let caret = self.boundary_after(selection_end);
+            self.anchor = caret;
+            self.caret = caret;
+        } else {
+            self.anchor = self.boundary(selection_start);
+            self.caret = self.boundary_after(selection_end);
+        }
         self.marked = Some(range);
         true
     }
