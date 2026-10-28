@@ -1526,7 +1526,20 @@ impl ContentHost {
                 .component
                 .text_surface()
                 .filter(|s| s.presentation == crate::TextSurfacePresentation::Content)
-                .map_or(target.frame, |s| s.caret())
+                .map_or(target.frame, |s| {
+                    let (horizontal, vertical) = s.scroll.scroll_policy();
+                    if s.input.read_only
+                        && (horizontal != crate::ScrollPolicy::Disabled
+                            || vertical != crate::ScrollPolicy::Disabled)
+                    {
+                        // Internally scrolled readonly content paints its focus
+                        // indicator on the viewport, not an insertion caret.
+                        // Keep its reading position when entering that viewport.
+                        s.outer
+                    } else {
+                        s.caret()
+                    }
+                })
         });
         let rect = if let Some(scroll) = path
             .iter()

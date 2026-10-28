@@ -97,6 +97,10 @@ pub enum Action {
     AXPress {
         component: u64,
     },
+    /// Invoke the native selector for a full projected key, including remote parts.
+    AXPressKey {
+        key: crate::AccessibilityKey,
+    },
     AXReplace {
         component: u64,
         text: String,
@@ -127,6 +131,11 @@ pub enum Action {
     /// 合成一次按键（按下加抬起），无修饰键。`key_code` 是虚拟键码（↑ 126、↓ 125）。
     Key {
         key_code: u16,
+    },
+    /// Send a native key with its real character value through the input context.
+    KeyCharacters {
+        key_code: u16,
+        chars: &'static str,
     },
     /// Send a line-based scroll-wheel NSEvent to this window at content coordinates.
     ScrollWheel {
@@ -180,8 +189,13 @@ fn mouse_event(
     )
 }
 
-fn key_event(w: &NSWindow, ty: NSEventType, key_code: u16) -> Option<objc2::rc::Retained<NSEvent>> {
-    let s = NSString::from_str("");
+fn key_event(
+    w: &NSWindow,
+    ty: NSEventType,
+    key_code: u16,
+    chars: &str,
+) -> Option<objc2::rc::Retained<NSEvent>> {
+    let s = NSString::from_str(chars);
     NSEvent::keyEventWithType_location_modifierFlags_timestamp_windowNumber_context_characters_charactersIgnoringModifiers_isARepeat_keyCode(
         ty,
         NSPoint::new(0.0, 0.0),
@@ -212,6 +226,7 @@ extern "C" fn run_step(ctx: *mut c_void) {
         Action::AXSelect { .. }
         | Action::AXReplace { .. }
         | Action::AXPress { .. }
+        | Action::AXPressKey { .. }
         | Action::ExpectAXText { .. }
         | Action::AuditAXText(_)
         | Action::ExpectAXMissing(_) => {
@@ -221,32 +236,48 @@ extern "C" fn run_step(ctx: *mut c_void) {
             let view = content
                 .downcast_ref::<crate::view::TekesView>()
                 .expect("TekesView");
-            let component = match &action {
+            let key = match &action {
+                Action::AXPressKey { key } => *key,
                 Action::AXSelect { component, .. }
                 | Action::AXReplace { component, .. }
                 | Action::AXPress { component }
-                | Action::ExpectAXText { component, .. } => *component,
-                Action::AuditAXText(component) | Action::ExpectAXMissing(component) => *component,
+                | Action::ExpectAXText { component, .. }
+                | Action::AuditAXText(component)
+                | Action::ExpectAXMissing(component) => crate::AccessibilityKey {
+                    component: *component,
+                    part: None,
+                },
                 _ => unreachable!(),
             };
+            let component = key.component;
             let element = view
                 .ivars()
                 .shared
                 .accessibility_elements
                 .borrow()
-                .get(&crate::AccessibilityKey {
-                    component,
-                    part: None,
-                })
+                .get(&key)
                 .cloned();
             if matches!(action, Action::ExpectAXMissing(_)) {
                 assert!(element.is_none(), "closed AX element remains published");
                 eprintln!("SELFTEST PASS AX closed owner removed");
                 return;
             }
-            let element = element.expect("native accessibility element");
+            let element = element.unwrap_or_else(|| {
+                let published: Vec<_> = view
+                    .ivars()
+                    .shared
+                    .accessibility_nodes
+                    .borrow()
+                    .iter()
+                    .map(|n| (n.key, n.label.clone(), n.frame))
+                    .collect();
+                panic!("native accessibility element {key:?} missing; published={published:?}");
+            });
             match action {
-                Action::AXPress { component } => unsafe {
+                Action::AXPress { component }
+                | Action::AXPressKey {
+                    key: crate::AccessibilityKey { component, .. },
+                } => unsafe {
                     use objc2::{runtime::Bool, sel};
                     let allowed: Bool = msg_send![&*element, isAccessibilitySelectorAllowed:sel!(accessibilityPerformPress)];
                     assert!(
@@ -258,7 +289,10 @@ extern "C" fn run_step(ctx: *mut c_void) {
                         pressed,
                         "AXPress was not accepted for component {component}"
                     );
-                    eprintln!("SELFTEST PASS AXPress component={component}");
+                    eprintln!(
+                        "SELFTEST PASS AXPress component={component} part={:?}",
+                        key.part
+                    );
                 },
                 Action::AuditAXText(_) => unsafe {
                     use objc2::{rc::Retained, sel};
@@ -650,9 +684,13 @@ extern "C" fn run_step(ctx: *mut c_void) {
                 }
             }
         }
-        Action::Key { key_code } => {
+        Action::Key { key_code } | Action::KeyCharacters { key_code, .. } => {
+            let chars = match action {
+                Action::KeyCharacters { chars, .. } => chars,
+                _ => "",
+            };
             for ty in [NSEventType::KeyDown, NSEventType::KeyUp] {
-                if let Some(e) = key_event(&w, ty, key_code) {
+                if let Some(e) = key_event(&w, ty, key_code, chars) {
                     app.sendEvent(&e);
                 }
             }

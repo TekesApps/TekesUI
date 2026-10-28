@@ -183,6 +183,8 @@ impl PanelModule for NativeModule {
     }
 }
 struct Host {
+    module: &'static str,
+    capabilities: ViewCapabilities,
     tree: Option<ContentHost>,
     renderer: Option<Renderer>,
     text: NativeText,
@@ -192,6 +194,8 @@ struct Host {
     context: ViewContext,
     started: Instant,
     overlay_review: bool,
+    review_directory: Option<std::path::PathBuf>,
+    review_started: bool,
 }
 impl Host {
     fn created(&mut self, w: &native::Window) -> Result<()> {
@@ -210,7 +214,11 @@ impl Host {
                 self.ids.push(id);
                 let wake = wake.clone();
                 let mut container = tekes_ui_module_runtime::ProcessContainer::new_view(
-                    ProcessComponentOptions::new(MODULE, 81).with_view(window, 10 + index, CAPS),
+                    ProcessComponentOptions::new(self.module, 81).with_view(
+                        window,
+                        10 + index,
+                        self.capabilities,
+                    ),
                     move || {
                         wake.wake();
                     },
@@ -238,18 +246,22 @@ impl Host {
         self.redraw(w)
     }
     fn publish(&mut self, w: &native::Window) {
-        let layouts = self
-            .tree
-            .as_ref()
-            .map(native::content_accessibility::content_text_layouts)
-            .unwrap_or_default();
-        w.set_accessibility_text_layouts(layouts.into_iter().collect());
-        w.set_accessibility_nodes(
-            self.tree
-                .as_ref()
-                .map(native::content_accessibility::content_nodes)
-                .unwrap_or_default(),
-        );
+        // Keep the original Host geometry lease with its complete semantic tree.
+        // A clipped child may have zero visible bounds; raw node publication
+        // deliberately cannot authorize those nodes and rejects the whole batch.
+        let publication = self.tree.as_ref().and_then(|tree| {
+            use native::content_accessibility::{
+                ContentAccessibilityOwner, ContentAccessibilitySnapshot,
+                WindowAccessibilityPublication,
+            };
+            ContentAccessibilitySnapshot::from_host(tree).and_then(|snapshot| {
+                WindowAccessibilityPublication::prepare(vec![(
+                    ContentAccessibilityOwner(0),
+                    snapshot,
+                )])
+            })
+        });
+        w.set_content_accessibility_publication(publication);
         w.set_text_input_state(
             self.tree
                 .as_ref()
@@ -314,6 +326,254 @@ impl Host {
             eprintln!("PROCESS_NATIVE_READY {}", serde_json::to_string(&children)?);
         }
         self.publish(w);
+        self.start_native_review()?;
+        Ok(())
+    }
+    fn start_native_review(&mut self) -> Result<()> {
+        if self.review_started || self.review_directory.is_none() || !self.logged_ready {
+            return Ok(());
+        }
+        let nodes = native::content_accessibility::content_nodes(self.tree.as_ref().unwrap());
+        let named = |label: &str| {
+            let mut found: Vec<_> = nodes
+                .iter()
+                .filter(|n| n.label == label && n.frame.size.width > 0. && n.frame.size.height > 0.)
+                .collect();
+            found.sort_by(|a, b| a.frame.origin.x.total_cmp(&b.frame.origin.x));
+            found
+        };
+        let editors = named("Message");
+        let others = named("Other");
+        let auxiliary = named("Auxiliary");
+        let history = named("Original history");
+        if [editors.len(), others.len(), auxiliary.len(), history.len()] != [3, 3, 3, 3] {
+            return Ok(());
+        }
+        let center = |n: &native::accessibility::AccessibilityNode| {
+            (
+                n.frame.origin.x + n.frame.size.width * 0.5,
+                n.frame.origin.y + n.frame.size.height * 0.5,
+            )
+        };
+        let editor = center(editors[0]);
+        let other = center(others[0]);
+        let auxiliary_point = center(auxiliary[0]);
+        let reader = center(history[0]);
+        let third = center(editors[2]);
+        let foreign_auxiliary = auxiliary[1].key;
+        use native::selftest::Action;
+        let marked = || Action::ExpectTextState {
+            text: "Keep A😀B拼音".into(),
+            selection: 11..11,
+            marked: Some(9..11),
+            query: 9..11,
+            actual: 9..11,
+        };
+        let third_marked = || Action::ExpectTextState {
+            text: "draft拼音".into(),
+            selection: 7..7,
+            marked: Some(5..7),
+            query: 5..7,
+            actual: 5..7,
+        };
+        self.review_started = true;
+        native::selftest::run_script(vec![
+            (200, Action::MenuCommand(48_001)),
+            (
+                400,
+                Action::Click {
+                    x: editor.0,
+                    y: editor.1,
+                },
+            ),
+            (
+                800,
+                Action::TextRange {
+                    text: "Keep A😀B".into(),
+                    replacement: Some(0..5),
+                },
+            ),
+            (
+                1_200,
+                Action::PreeditRange {
+                    text: "拼音".into(),
+                    selection: 2..2,
+                    replacement: None,
+                },
+            ),
+            (1_700, marked()),
+            (
+                1_900,
+                Action::Click {
+                    x: auxiliary_point.0,
+                    y: auxiliary_point.1,
+                },
+            ),
+            (2_300, marked()),
+            (2_500, Action::MenuCommand(48_002)),
+            (3_000, marked()),
+            (
+                3_200,
+                Action::ScrollWheel {
+                    x: reader.0,
+                    y: reader.1,
+                    delta_x: 0,
+                    delta_y: 4,
+                },
+            ),
+            (3_600, marked()),
+            (
+                3_800,
+                Action::AXPressKey {
+                    key: foreign_auxiliary,
+                },
+            ),
+            (4_300, marked()),
+            (4_500, Action::MenuCommand(48_003)),
+            (4_700, Action::Unmark),
+            (
+                5_100,
+                Action::ExpectText {
+                    text: "Keep A😀B拼音".into(),
+                    marked: false,
+                },
+            ),
+            (
+                5_300,
+                Action::Click {
+                    x: other.0,
+                    y: other.1,
+                },
+            ),
+            (
+                5_650,
+                Action::KeyCharacters {
+                    key_code: 48,
+                    chars: "\t",
+                },
+            ),
+            (
+                5_950,
+                Action::KeyCharacters {
+                    key_code: 48,
+                    chars: "\t",
+                },
+            ),
+            (6_400, Action::MenuCommand(48_004)),
+            (
+                6_600,
+                Action::Click {
+                    x: third.0,
+                    y: third.1,
+                },
+            ),
+            (
+                7_000,
+                Action::PreeditRange {
+                    text: "拼音".into(),
+                    selection: 2..2,
+                    replacement: None,
+                },
+            ),
+            (7_500, third_marked()),
+            (7_700, Action::Resize { w: 1000., h: 360. }),
+            (8_400, third_marked()),
+            (8_600, Action::MenuCommand(48_005)),
+            (8_800, Action::Miniaturize),
+            (9_600, Action::Deminiaturize),
+            (10_400, Action::MenuCommand(48_006)),
+            // Window deactivation deliberately cancels focus. Re-enter with
+            // actual user input; do not invent automatic focus restoration.
+            (10_600, Action::Resize { w: 1000., h: 500. }),
+            (
+                11_000,
+                Action::Click {
+                    x: third.0,
+                    y: third.1,
+                },
+            ),
+            (11_400, Action::Unmark),
+            (
+                11_800,
+                Action::ExpectText {
+                    text: "draft拼音".into(),
+                    marked: false,
+                },
+            ),
+            (12_100, Action::MenuCommand(48_007)),
+            (12_400, Action::Close),
+        ]);
+        Ok(())
+    }
+    fn native_review_snapshot(&self, w: &native::Window, phase: &str) -> Result<()> {
+        use std::io::Write;
+        let directory = self
+            .review_directory
+            .as_ref()
+            .context("native review directory")?;
+        let tree = self.tree.as_ref().context("native mixed tree")?;
+        let mut children = Vec::new();
+        for id in &self.ids {
+            let c = tree
+                .get(*id)
+                .unwrap()
+                .component::<tekes_ui_module_runtime::ProcessContainer>()
+                .unwrap();
+            children.push(serde_json::json!({
+                "id": id.0, "session": c.session(), "status": format!("{:?}",c.status()),
+                "input_ready": c.input_ready(), "error":c.error(),
+                "reading": container_message(c, "reading-inspect")?,
+                "actions": container_message(c, "inspect")?
+            }));
+        }
+        let text = tekes_ui_module_runtime::content_text_input_state(tree).map(|s| {
+            serde_json::json!({
+                "text": s.text, "selection":[s.selection.start,s.selection.end],
+                "marked":s.marked.map(|r|[r.start,r.end]),
+                "caret_origin":[s.caret_origin.x,s.caret_origin.y],
+                "caret_size":[s.caret_size.width,s.caret_size.height],"read_only":s.read_only
+            })
+        });
+        let nodes = native::content_accessibility::content_nodes(tree);
+        let snapshot = serde_json::json!({"phase":phase,"parent_pid":std::process::id(),
+            "focused_container":tree.focused().map(|id|id.0),"window_active":w.is_active(),
+            "window_size":[w.size().width,w.size().height],"native_text":text,"children":children,
+            "nodes":nodes.iter().map(|n|serde_json::json!({"component":n.key.component,"part":n.key.part,
+                "role":format!("{:?}",n.role),"label":n.label,"focused":n.focused,"value":n.value,
+                "frame":[n.frame.origin.x,n.frame.origin.y,n.frame.size.width,n.frame.size.height]})).collect::<Vec<_>>()});
+        std::fs::create_dir_all(directory)?;
+        writeln!(
+            std::fs::OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(directory.join("native-mixed-history.jsonl"))?,
+            "{snapshot}"
+        )?;
+        if phase == "after_tab" {
+            ensure!(
+                tree.focused() == Some(self.ids[1])
+                    && children[1]["actions"]["focused"] == EDIT.0
+                    && text.as_ref().is_some_and(|s| s["text"] == "draft"),
+                "native Tab did not enter the next Reader and advance from history to its editor"
+            );
+            ensure!(
+                children[0]["actions"]["edit_text"] == "Keep A😀B拼音"
+                    && children[0]["actions"]["submits"] == 0,
+                "native Tab changed or submitted the old editor"
+            );
+        }
+        if phase == "after_reactivate" {
+            ensure!(
+                tree.focused().is_none() && text.is_none(),
+                "inactive focus was not revoked"
+            );
+            ensure!(
+                children[2]["actions"]["edit_text"] == "draft拼音"
+                    && children[2]["actions"]["submits"] == 0,
+                "window lifecycle lost or submitted the original text"
+            );
+        }
+        eprintln!("PROCESS_NATIVE_REVIEW phase={phase}");
         Ok(())
     }
     fn zoom(&mut self, w: &native::Window, delta: f32) -> Result<()> {
@@ -415,12 +675,39 @@ impl Host {
                 self.publish(w);
                 w.request_redraw();
             }
+            native::Event::Command(native::CommandId(command))
+                if self.review_directory.is_some() && (48_001..=48_007).contains(&command) =>
+            {
+                if command == 48_002 {
+                    let tree = self.tree.as_ref().context("native mixed tree")?;
+                    let c = tree
+                        .get(self.ids[0])
+                        .unwrap()
+                        .component::<tekes_ui_module_runtime::ProcessContainer>()
+                        .unwrap();
+                    let _ = container_message(c, "reading-append")?;
+                    w.request_redraw();
+                } else {
+                    let phase = match command {
+                        48_001 => "ready",
+                        48_003 => "after_aux_append_scroll",
+                        48_004 => "after_tab",
+                        48_005 => "after_resize",
+                        48_006 => "after_reactivate",
+                        48_007 => "final",
+                        _ => unreachable!(),
+                    };
+                    self.native_review_snapshot(w, phase)?;
+                }
+            }
             native::Event::CloseRequested => {
+                if self.review_started {
+                    self.native_review_snapshot(w, "before_close")?;
+                }
                 w.set_animating(false);
                 self.tree.take();
                 w.set_text_input_state(None);
-                w.set_accessibility_text_layouts(Vec::new());
-                w.set_accessibility_nodes(Vec::new());
+                w.set_content_accessibility_publication(None);
                 w.close();
             }
             native::Event::Key(ref key)
@@ -481,17 +768,57 @@ impl native::WindowHandler for Host {
     fn handle(&mut self, event: native::Event, w: &mut native::Window) {
         if let Err(error) = self.handle_event(event, w) {
             eprintln!("PROCESS_NATIVE_ERROR {error:#}");
+            if self.review_directory.is_some() {
+                panic!("native mixed acceptance failed: {error:#}");
+            }
             w.set_text_input_state(None);
         }
     }
 }
 pub(super) fn run() -> Result<()> {
-    run_mode(false)
+    run_mode(false, MODULE, CAPS)
 }
 pub(super) fn run_overlay() -> Result<()> {
-    run_mode(true)
+    run_mode(true, MODULE, CAPS)
 }
-fn run_mode(overlay_review: bool) -> Result<()> {
+pub(super) fn run_scroll() -> Result<()> {
+    run_mode(
+        false,
+        scroll_consumer::NATIVE_MODULE,
+        ViewCapabilities {
+            scroll: true,
+            ..CAPS
+        },
+    )
+}
+fn run_mode(
+    overlay_review: bool,
+    module: &'static str,
+    capabilities: ViewCapabilities,
+) -> Result<()> {
+    let review_directory =
+        std::env::var_os("TEKESUI_PROCESS_NATIVE_SELFTEST_EVIDENCE").map(std::path::PathBuf::from);
+    ensure!(
+        review_directory.is_none() || module == scroll_consumer::NATIVE_MODULE,
+        "native mixed selftest requires the real mixed-reader module"
+    );
+    let menu = if review_directory.is_some() {
+        native::MenuBar {
+            menus: vec![native::Menu::new(
+                "Acceptance",
+                (48_001..=48_007)
+                    .map(|id| {
+                        native::MenuItem::Command(native::MenuCommand::new(
+                            format!("Acceptance {id}"),
+                            native::CommandId(id),
+                        ))
+                    })
+                    .collect(),
+            )],
+        }
+    } else {
+        native::MenuBar::default()
+    };
     native::App::new(native::AppConfig {
         name: Some("TekesUI Process Content Review".into()),
         ..Default::default()
@@ -509,8 +836,10 @@ fn run_mode(overlay_review: bool) -> Result<()> {
             },
             ..Default::default()
         },
-        native::MenuBar::default(),
+        menu,
         Host {
+            module,
+            capabilities,
             tree: None,
             renderer: None,
             text: NativeText::new(),
@@ -520,6 +849,8 @@ fn run_mode(overlay_review: bool) -> Result<()> {
             context: ViewContext::default(),
             started: Instant::now(),
             overlay_review,
+            review_directory,
+            review_started: false,
         },
     );
     Ok(())

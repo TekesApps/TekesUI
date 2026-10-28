@@ -57,15 +57,18 @@ fn container_mut(h: &mut ContentHost, id: ComponentId) -> &mut ProcessContainer 
         .component_mut::<ProcessContainer>()
         .unwrap()
 }
+#[track_caller]
 fn ready(h: &mut ContentHost, gpu: &mut tekes_ui_render::Renderer, frame: Rect) -> Result<()> {
     ready_clipped(h, gpu, frame, frame)
 }
+#[track_caller]
 fn ready_clipped(
     h: &mut ContentHost,
     gpu: &mut tekes_ui_render::Renderer,
     frame: Rect,
     clip: Rect,
 ) -> Result<()> {
+    let caller = std::panic::Location::caller();
     let end = Instant::now() + Duration::from_secs(15);
     loop {
         for id in IDS {
@@ -85,14 +88,17 @@ fn ready_clipped(
         for id in IDS {
             ensure!(
                 container(h, id).error().is_none(),
-                "projection worker {id:?}: {:?}",
+                "projection worker {id:?} at {caller}: {:?}",
                 container(h, id).error()
             );
         }
         if done {
             return Ok(());
         }
-        ensure!(Instant::now() < end, "projection readiness deadline");
+        ensure!(
+            Instant::now() < end,
+            "projection readiness deadline at {caller}"
+        );
         std::thread::sleep(Duration::from_millis(5));
     }
 }

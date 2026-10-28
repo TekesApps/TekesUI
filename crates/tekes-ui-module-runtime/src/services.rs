@@ -513,6 +513,13 @@ struct Shared {
     wake: Arc<dyn Fn() + Send + Sync>,
 }
 impl Shared {
+    #[cfg(target_os = "macos")]
+    fn wake_view_writer(&self) {
+        // View work has its own queue lock. Serialize its notification with
+        // the service writer's predicate-check -> wait transition as well.
+        let _state = self.state.lock().unwrap();
+        self.changed.notify_all();
+    }
     fn notify(&self) {
         let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| (self.wake)()));
     }
@@ -520,6 +527,8 @@ impl Shared {
         self.child.cancel();
     }
     fn fail(&self, message: String) {
+        #[cfg(target_os = "macos")]
+        let renders;
         {
             let mut s = self.state.lock().unwrap();
             if !s.abort {
@@ -534,8 +543,13 @@ impl Shared {
             s.toolbar.clear();
             s.toolbar_declaration = None;
             #[cfg(target_os = "macos")]
-            s.renders.clear();
+            {
+                renders = std::mem::take(&mut s.renders);
+            }
         }
+        // Frame leases wake this writer; never drop them under its state lock.
+        #[cfg(target_os = "macos")]
+        drop(renders);
         self.changed.notify_all();
         self.kill();
         #[cfg(target_os = "macos")]
@@ -640,7 +654,7 @@ impl ProcessComponent {
             let weak = Arc::downgrade(&shared);
             let work = Arc::new(move || {
                 if let Some(shared) = weak.upgrade() {
-                    shared.changed.notify_all();
+                    shared.wake_view_writer();
                 }
             });
             shared
@@ -664,6 +678,8 @@ impl ProcessComponent {
                 }
                 // Take ownership before waiting: no caller-thread lock can cover wait().
                 worker.child.reap();
+                #[cfg(target_os = "macos")]
+                let renders;
                 {
                     let mut state = worker.state.lock().unwrap();
                     if !matches!(state.status, ProcessStatus::Failed { .. }) {
@@ -676,8 +692,12 @@ impl ProcessComponent {
                     state.curve_pending.clear();
                     state.synchronous_content.clear();
                     #[cfg(target_os = "macos")]
-                    state.renders.clear();
+                    {
+                        renders = std::mem::take(&mut state.renders);
+                    }
                 }
+                #[cfg(target_os = "macos")]
+                drop(renders);
                 #[cfg(target_os = "macos")]
                 if let Some(view) = worker.view.get() {
                     view.close();
@@ -1211,11 +1231,11 @@ fn connection(
                 ready && native.as_ref().is_some_and(|n| n.view == *view),
                 "wrong frame View"
             );
-            let (expected, lease) = state
+            let (expected, _) = state
                 .renders
-                .remove(request)
+                .get(request)
                 .ok_or_else(|| anyhow::anyhow!("unknown render response"))?;
-            ensure!(state.pending.remove(request), "duplicate render response");
+            ensure!(state.pending.contains(request), "duplicate render response");
             ensure!(
                 frame.pid == pid
                     && frame.version == tekes_ui_app_protocol::VERSION
@@ -1228,6 +1248,10 @@ fn connection(
                         == (expected.height as f32 * expected.scale).round() as u32,
                 "wrong render identity/geometry"
             );
+            // Validate before taking the lease so every error drops the lock
+            // before failure cleanup releases and notifies frame credit.
+            let (_, lease) = state.renders.remove(request).expect("validated render");
+            state.pending.remove(request);
             drop(state);
             shared
                 .view
@@ -1395,6 +1419,101 @@ fn connection(
 mod tests {
     use super::*;
     use crate::component::curve::{CurveErrorCode, CurveReply};
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn view_work_notification_cannot_pass_the_writer_predicate_lock() {
+        use std::{sync::mpsc, time::Duration};
+        let shared = Arc::new(Shared {
+            state: Mutex::new(State {
+                status: ProcessStatus::Starting,
+                abort: false,
+                stopping: false,
+                next: 1,
+                outgoing: VecDeque::new(),
+                incoming: VecDeque::new(),
+                pending: HashSet::new(),
+                curve_pending: HashMap::new(),
+                synchronous_content: HashSet::new(),
+                toolbar: Vec::new(),
+                toolbar_revision: 0,
+                toolbar_window: 0,
+                toolbar_declaration: None,
+                view_revision: 0,
+                native: None,
+                expected_view: Some(1),
+                stop_id: None,
+                renders: HashMap::new(),
+            }),
+            changed: Condvar::new(),
+            child: crate::ProcessControl::new(),
+            view: std::sync::OnceLock::new(),
+            wake: Arc::new(|| {}),
+        });
+        let (queued_tx, queued_rx) = mpsc::channel();
+        let (notified_tx, notified_rx) = mpsc::channel();
+        let weak = Arc::downgrade(&shared);
+        let view = Arc::new(crate::ViewConnection::remote(
+            shared.child.clone(),
+            Arc::new(|| {}),
+            Arc::new(move || {
+                queued_tx.send(()).unwrap();
+                weak.upgrade().unwrap().wake_view_writer();
+                notified_tx.send(()).unwrap();
+            }),
+        ));
+        // This is the real writer's predicate-check -> Condvar::wait window.
+        let guard = shared.state.lock().unwrap();
+        assert!(view.try_start().is_none());
+        let producer = view.clone();
+        let thread = std::thread::spawn(move || {
+            producer.enqueue(tekes_ui_app_protocol::Request {
+                version: tekes_ui_app_protocol::VERSION,
+                seq: 1,
+                viewport: 1,
+                kind: tekes_ui_app_protocol::InputKind::Layout,
+                command: None,
+                x: 0.,
+                y: 0.,
+                width: 1,
+                height: 1,
+                identity: 1,
+                scale: 1.,
+            })
+        });
+        queued_rx.recv_timeout(Duration::from_secs(2)).unwrap();
+        let notified_before_wait = notified_rx.recv_timeout(Duration::from_millis(100)).is_ok();
+        drop(guard);
+        thread.join().unwrap().unwrap();
+        assert!(
+            !notified_before_wait,
+            "View work can lose its wake before the writer waits"
+        );
+        let (request, lease) = view.try_start().unwrap();
+        assert_eq!(request.seq, 1);
+        drop(lease);
+        let mut next = request;
+        next.seq += 1;
+        view.enqueue(next).unwrap();
+        let (request, lease) = view.try_start().unwrap();
+        shared
+            .state
+            .lock()
+            .unwrap()
+            .renders
+            .insert(1, (request, lease));
+        let failed = shared.clone();
+        let (failed_tx, failed_rx) = mpsc::channel();
+        let cleanup = std::thread::spawn(move || {
+            failed.fail("controlled terminal cleanup".into());
+            failed_tx.send(()).unwrap();
+        });
+        failed_rx
+            .recv_timeout(Duration::from_secs(2))
+            .expect("cleanup held the writer lock while releasing View credit");
+        cleanup.join().unwrap();
+        assert_eq!(view.outstanding_frames(), 0);
+    }
 
     fn rejected(tx: u64) -> CurveReply {
         CurveReply::Rejected {

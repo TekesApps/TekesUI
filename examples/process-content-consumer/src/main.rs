@@ -321,10 +321,12 @@ mod consumer {
             })
         }
     }
+    #[track_caller]
     fn wait(mut ready: impl FnMut() -> bool) -> Result<()> {
+        let caller = std::panic::Location::caller();
         let end = Instant::now() + Duration::from_secs(10);
         while !ready() {
-            ensure!(Instant::now() < end, "correctness deadline");
+            ensure!(Instant::now() < end, "correctness deadline at {caller}");
             std::thread::sleep(Duration::from_millis(5));
         }
         Ok(())
@@ -2441,6 +2443,14 @@ mod consumer {
                 create: scroll_consumer::create,
             },
             ComponentDefinition {
+                id: scroll_consumer::NATIVE_MODULE,
+                capabilities: Capabilities {
+                    view: true,
+                    ..Capabilities::HEADLESS
+                },
+                create: scroll_consumer::create_native,
+            },
+            ComponentDefinition {
                 id: native_host::MODULE,
                 capabilities: Capabilities {
                     view: true,
@@ -2501,6 +2511,9 @@ mod consumer {
         }
         if args.iter().any(|v| v == "--native") {
             return native_host::run();
+        }
+        if args.iter().any(|v| v == "--native-scroll") {
+            return native_host::run_scroll();
         }
         if args.iter().any(|v| v == "--geometry-only") {
             println!("{}", mounted_container_roundtrip()?);
