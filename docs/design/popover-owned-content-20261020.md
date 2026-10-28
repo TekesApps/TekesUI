@@ -1,6 +1,14 @@
 # Popover 公共组合最小消费者
 
-## 当前 Main 接收（2026-10-29，基线391f4ba＋本批差量）
+## 当前 Main 修正验收（2026-10-29，基线4c9405b＋本批差量）
+
+首次接收提交4f5b314的完整本地验收判断已撤回：原公开 `scenarios` 的非模态外部新焦点断言仍失败。失败收据和此前有限通过保持原身份。本批沿既有 focus/IME/epoch/reveal 准入，先验证实际关闭后的作用域及当前 Popover session，再原子关闭实际 Popover并安装新焦点；不允许 Tab、AX、pointer 穿过背景隔离或模态边界。原 Scroll body 的纯布局资格沿既有 Dialog 方式声明已安排的内容框，不重建布局规划器。
+
+最终 main-cpu03 的 controls/consumer 严格检查、原 controls/IME/reveal 拒绝回归、完整原公开 scenarios 和 Popover/嵌套阅读场景均通过，原第822行断言保持。最终两份实际原生程序分别通过 Popover 的同 owner 编辑、组字/query、Escape、Undo、Tab、关闭/恢复，以及嵌套阅读的真实 Scroll、非零位移、Append、resize、原 Composer 状态保持。退出码不单独作为行为证据。实体 IME、VoiceOver、性能未执行；未作外部业务接入声明。
+
+证据：SSD `artifacts/issue-49/maine435eb8-outside-focus-candidate-20261029-01/root-intake01/{main-cpu03,native-popover01,native-nested01}`。当前仍待本批提交、必要 CI、公开不可变 SHA 和远端 main 交付；#49 保持开放。主题、Scene、Render、生成器及 cfg 输入未变化，旧主题/GPU证据不改签、不无理由重跑。
+
+## 历史：首次 Main 接收（2026-10-29，基线391f4ba＋差量）
 
 当前库提供 `PopoverContent` 与原 ContentHost 的 show/close 公共入口，保留原文本编辑器、Switch、Cancel/Save 和真实下层动作。复用原 PopoverView、OverlayScope、motion、Palette/Surface 与原 mount；不增加第二个 host。配置 Dismiss 可隐藏且不再占据内容量度、绘制、命中或语义；默认旧 View 行为保持。共享 View 的 Surface 使用现有 canonical packet 与 popover elevation，未新增生成器或主题规则。
 

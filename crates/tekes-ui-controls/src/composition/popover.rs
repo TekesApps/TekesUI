@@ -197,6 +197,16 @@ impl PopoverContent {
     }
 }
 impl Component for PopoverContent {
+    // The existing SDK shell has arranged the original body inside this frame.
+    // Like Dialog, the active input scope keeps those relative child bounds
+    // fixed while an inner Scroll body performs a pure focus reveal.
+    fn host_reveal_passthrough(&self) -> bool {
+        self.model.open && !self.view.layout().frame.is_empty()
+    }
+    fn host_reveal_local_clip(&self) -> Option<Rect> {
+        Some(self.view.layout().frame)
+    }
+
     fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
         ActionTransactionCompatibility::StableHooks
     }

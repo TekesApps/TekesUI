@@ -2015,7 +2015,7 @@
     "crates/tekes-ui-app-host/src/window.rs": "ab2f9ec93c9548b59206555c38c78593d6d80c025dbc2043248e061014a8bd90",
     "crates/tekes-ui-controls/src/composition/separator.rs": "4fed31d0eb17470dadd33b7a3644ba922e06fa005a3feddb0f88379eed7f3397",
     "crates/tekes-ui-controls/src/composition/icon.rs": "12bb7040fc42deaddc525c61bf8d5be96b54db859adefadbf9643079615b710b",
-    "crates/tekes-ui-controls/src/composition/popover.rs": "a6c12c4b263d208154c148bd6750728d2c55f4f4cb54e23d418f7d78835da416"
+    "crates/tekes-ui-controls/src/composition/popover.rs": "12f75beb385afd47695bece395ea4f96aaf46d0ec5508793ab68daab83a61263"
   },
   "remaining": [
     "minimal three scenarios: public/GPU and scoped native evidence exist; full physical IME/candidate/VoiceOver/current combined acceptance still unverified",

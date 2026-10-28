@@ -109,6 +109,8 @@ struct PreparedFocus {
     visible: bool,
     traversal: Option<bool>,
     origin: FocusOrigin,
+    focus_scope: Option<(ComponentId, u64)>,
+    dismiss_popovers: Vec<PopoverSession>,
     focused: Option<ComponentId>,
     epoch: u64,
     next_epoch: u64,
@@ -135,6 +137,18 @@ impl ContentHost {
     ) -> Result<PreparedFocus, HostRevealError> {
         self.prepare_focus_rect(id, visible, traversal, origin, None)
     }
+    fn requested_focus_scope(
+        &self,
+        id: ComponentId,
+        origin: FocusOrigin,
+    ) -> Option<(&Content, Vec<PopoverSession>)> {
+        if origin == FocusOrigin::Direct {
+            self.direct_focus_plan(id)
+        } else {
+            let scope = self.scope();
+            scope.find_active(id).map(|_| (scope, Vec::new()))
+        }
+    }
     fn prepare_focus_rect(
         &self,
         id: Option<ComponentId>,
@@ -146,14 +160,20 @@ impl ContentHost {
         if !self.window_active && id.is_some() {
             return Err(HostRevealError::UnavailableTarget);
         }
-        if let Some(id) = id
-            && self
-                .scope()
+        let focus_scope = if let Some(id) = id {
+            let (scope, dismiss_popovers) = self
+                .requested_focus_scope(id, origin)
+                .ok_or(HostRevealError::UnavailableTarget)?;
+            if scope
                 .find_active(id)
                 .is_none_or(|n| !n.component.focusable() || n.component.semantics().disabled)
-        {
-            return Err(HostRevealError::UnavailableTarget);
-        }
+            {
+                return Err(HostRevealError::UnavailableTarget);
+            }
+            Some((scope.id, scope.mount, dismiss_popovers))
+        } else {
+            None
+        };
         if id.is_some()
             && id != self.focused
             && self.is_composing()
@@ -175,12 +195,13 @@ impl ContentHost {
         } else {
             self.focus_epoch
         };
-        let plan = id
-            .map(|id| match rect {
-                Some(rect) => self.plan_focus_reveal_with_rect(id, Some(rect)),
-                None => self.plan_focus_reveal(id),
-            })
-            .transpose()?;
+        let plan = match (id, focus_scope.as_ref()) {
+            (Some(id), Some((scope_id, scope_mount, _))) => {
+                Some(self.plan_focus_reveal_in_focus_scope(id, *scope_id, *scope_mount, rect)?)
+            }
+            (None, None) => None,
+            _ => return Err(HostRevealError::UnavailableTarget),
+        };
         let new = plan.as_ref().map(HostRevealPlan::target_route);
         let old = if self.focused != id {
             self.focused
@@ -207,6 +228,10 @@ impl ContentHost {
             visible,
             traversal,
             origin,
+            focus_scope: focus_scope.as_ref().map(|(id, mount, _)| (*id, *mount)),
+            dismiss_popovers: focus_scope
+                .map(|(_, _, dismiss)| dismiss)
+                .unwrap_or_default(),
             focused: self.focused,
             epoch: self.focus_epoch,
             next_epoch,
@@ -218,15 +243,26 @@ impl ContentHost {
         })
     }
     fn validate_focus(&self, p: &PreparedFocus) -> bool {
+        let focus_scope = p.id.and_then(|id| self.requested_focus_scope(id, p.origin));
+        let scope_matches = match (p.id, focus_scope.as_ref()) {
+            (Some(_), Some((scope, dismiss))) => {
+                Some((scope.id, scope.mount)) == p.focus_scope && dismiss == &p.dismiss_popovers
+            }
+            (None, None) => p.focus_scope.is_none() && p.dismiss_popovers.is_empty(),
+            _ => false,
+        };
         self.focused == p.focused
             && self.focus_epoch == p.epoch
             && self.reveal_clock.stamp().ok() == Some(p.stamp)
             && EditorState::read(self) == p.editor
             && (p.id.is_none() || self.window_active)
+            && scope_matches
             && p.id.is_none_or(|id| {
-                self.scope()
-                    .find_active(id)
-                    .is_some_and(|n| n.component.focusable() && !n.component.semantics().disabled)
+                focus_scope.as_ref().is_some_and(|(scope, _)| {
+                    scope.find_active(id).is_some_and(|n| {
+                        n.component.focusable() && !n.component.semantics().disabled
+                    })
+                })
             })
             && (p.id == self.focused
                 || self
@@ -243,18 +279,38 @@ impl ContentHost {
                 .iter()
                 .chain(p.new.iter())
                 .all(|r| r.node(&self.root, r.depth()).is_some())
-            && p.plan
-                .as_ref()
-                .is_none_or(|p| self.validate_host_reveal(p).is_ok())
+            && p.plan.as_ref().is_none_or(|plan| {
+                p.focus_scope.is_some_and(|(scope, mount)| {
+                    self.validate_host_reveal_in_focus_scope(plan, scope, mount)
+                        .is_ok()
+                })
+            })
     }
     fn apply_focus(&mut self, p: PreparedFocus) -> FocusAdmission {
         if !self.validate_focus(&p) {
             return FocusAdmission::Rejected;
         }
-        if let Some(plan) = p.plan
-            && self.commit_host_reveal(plan).is_err()
-        {
-            return FocusAdmission::Rejected;
+        if let Some(plan) = p.plan {
+            let Some((scope, mount)) = p.focus_scope else {
+                return FocusAdmission::Rejected;
+            };
+            if self
+                .commit_host_reveal_in_focus_scope(plan, scope, mount)
+                .is_err()
+            {
+                return FocusAdmission::Rejected;
+            }
+        }
+        // All target, editor, scope, session, focus-epoch and reveal checks are
+        // complete before the first mutation. These sessions cannot change
+        // without re-entry, which the prepared path excludes.
+        for session in &p.dismiss_popovers {
+            self.root
+                .find_mut(session.owner())
+                .and_then(|node| node.component_mut::<PopoverContent>())
+                .filter(|popup| popup.current_session() == Some(*session) && popup.is_open())
+                .expect("validated Popover session before prepared focus commit")
+                .close(PopoverCloseReason::Dismiss);
         }
         let changed = self.focused != p.id;
         self.focus_epoch = p.next_epoch;
@@ -278,6 +334,11 @@ impl ContentHost {
         }
         self.dirty = true;
         self.help_focus(p.id, p.visible);
+        if !p.dismiss_popovers.is_empty() {
+            // A newer Direct focus is already installed, so overlay retirement
+            // cannot restore the old caller over the accepted target.
+            self.reconcile_overlay_scopes();
+        }
         FocusAdmission::Accepted { changed }
     }
     /// Used only at an ordinary Host entry after UnsupportedLayout or absence
@@ -1769,6 +1830,510 @@ mod overlay_focus_admission_tests {
         assert!(host.drain_actions().is_empty());
         // Restore the test-injected capacity after asserting refusal, so normal
         // host destruction can unmark the still-focused original editor.
+        host.root
+            .find_mut(editor)
+            .unwrap()
+            .component_mut::<TextFieldContent>()
+            .unwrap()
+            .surface
+            .input
+            .test_edit_epoch(0);
+    }
+
+    struct TestText;
+    impl ButtonTextRenderer for TestText {
+        fn measure(&mut self, _: &str, _: tekes_ui_tokens::proposal::TextRole, _: f32) -> Size {
+            Size::new(48., 20.)
+        }
+        fn draw(
+            &mut self,
+            _: &mut Scene,
+            _: &str,
+            _: tekes_ui_tokens::proposal::TextRole,
+            _: Rect,
+            _: ButtonTextAlign,
+            _: tekes_ui_tokens::Rgba,
+        ) {
+        }
+
+        fn text_surface_host(&mut self) -> Option<&mut dyn crate::TextSurfaceHost> {
+            Some(self)
+        }
+    }
+    impl crate::TextSurfaceTextRenderer for TestText {
+        fn push_visible(
+            &mut self,
+            _: &mut Scene,
+            _: &tekes_ui_text::Paragraph,
+            _: Point,
+            _: tekes_ui_tokens::Rgba,
+            _: Rect,
+        ) {
+        }
+    }
+    impl crate::TextSurfaceHost for TestText {
+        fn shape_surface(
+            &mut self,
+            text: &str,
+            role: proposal::TextRole,
+            _: Option<f32>,
+        ) -> std::rc::Rc<tekes_ui_text::Paragraph> {
+            // Deterministic paragraph service for pure focus-admission units.
+            // Actual font shaping remains covered by text_query's macOS CoreText tests.
+            let line_height = f64::from(role.style().line_height);
+            std::rc::Rc::new(tekes_ui_text::Paragraph {
+                lines: Vec::new(),
+                height: line_height,
+                width: 0.,
+                default_line_height: line_height,
+                fonts: Vec::new(),
+                utf16_len: text.encode_utf16().count(),
+            })
+        }
+    }
+    fn render_popover_host(host: &mut ContentHost) {
+        let frame = Rect::new(0., 0., 360., 280.);
+        host.render(
+            &mut Scene::new(),
+            &mut TestText,
+            frame,
+            frame,
+            tekes_ui_tokens::Theme::LIGHT.into(),
+        )
+        .unwrap();
+    }
+    fn escape(host: &mut ContentHost) {
+        host.event(&ContentEvent::Key {
+            key: ControlKey::Escape,
+            down: true,
+        });
+    }
+    #[test]
+    fn real_popover_direct_focus_dismisses_atomically_and_escape_keeps_new_focus() {
+        let root = ComponentId(80930);
+        let caller = ComponentId(80931);
+        let outside = ComponentId(80932);
+        let disabled_target = ComponentId(80933);
+        let popup = ComponentId(80934);
+        let inside = ComponentId(80935);
+        let mut host = ContentHost::new(Content::new(
+            root,
+            StackContent {
+                model: Stack {
+                    axis: Axis::Vertical,
+                    gap: 0.,
+                },
+                flexible_child: None,
+                children: vec![
+                    Content::new(caller, Button::new("Caller")),
+                    Content::new(outside, TextFieldContent::new("Outside", "")),
+                    Content::new(disabled_target, Button::new("Disabled target")),
+                    Content::new(
+                        popup,
+                        PopoverContent::new(
+                            "Transient",
+                            Content::new(inside, Button::new("Inside")),
+                        ),
+                    ),
+                ],
+            },
+        ))
+        .unwrap();
+        render_popover_host(&mut host);
+        assert!(host.focus(Some(caller), true));
+        let session = host.show_popover(popup, caller).unwrap();
+        render_popover_host(&mut host);
+        host.reconcile_active_inputs();
+        assert!(
+            host.get(popup)
+                .unwrap()
+                .component::<PopoverContent>()
+                .unwrap()
+                .is_open()
+        );
+        assert_eq!(host.overlay_scope_id(), Some(popup));
+
+        let focus = host.focused();
+        let root_before = format!("{:?}", host.root);
+        assert!(!host.focus(Some(ComponentId(80936)), true));
+        assert_eq!(host.focused(), focus);
+        assert_eq!(format!("{:?}", host.root), root_before);
+
+        host.get_mut(disabled_target)
+            .unwrap()
+            .component_mut::<Button>()
+            .unwrap()
+            .button
+            .state
+            .disabled = true;
+        let disabled_before = format!("{:?}", host.root);
+        assert!(!host.focus(Some(disabled_target), true));
+        assert_eq!(host.focused(), focus);
+        assert_eq!(format!("{:?}", host.root), disabled_before);
+        host.get_mut(disabled_target)
+            .unwrap()
+            .component_mut::<Button>()
+            .unwrap()
+            .button
+            .state
+            .disabled = false;
+
+        let epoch = host.focus_epoch();
+        host.focus_epoch = u64::MAX;
+        let exhausted_before = format!("{:?}", host.root);
+        assert!(!host.focus(Some(outside), true));
+        assert_eq!(host.focused(), focus);
+        assert_eq!(format!("{:?}", host.root), exhausted_before);
+        host.focus_epoch = epoch;
+
+        for origin in [
+            FocusOrigin::Pointer,
+            FocusOrigin::Traversal,
+            FocusOrigin::Accessibility,
+        ] {
+            assert!(matches!(
+                host.prepare_focus(Some(outside), true, None, origin),
+                Err(HostRevealError::UnavailableTarget)
+            ));
+        }
+        assert!(host.focus(Some(outside), true));
+        assert_eq!(host.focused(), Some(outside));
+        let closed = host
+            .get_mut(popup)
+            .unwrap()
+            .component_mut::<PopoverContent>()
+            .unwrap()
+            .take_closed();
+        assert_eq!(closed.len(), 1);
+        assert_eq!(closed[0].session, session);
+        assert_eq!(closed[0].reason, PopoverCloseReason::Dismiss);
+        let popup = host
+            .get(popup)
+            .unwrap()
+            .component::<PopoverContent>()
+            .unwrap();
+        assert!(!popup.is_open());
+        assert!(
+            popup.is_presented(),
+            "Dismiss retains its ordinary exit paint"
+        );
+        assert!(host.scope().find_active(outside).is_some());
+        assert!(
+            host.focused_text().is_some(),
+            "native text query follows the accepted scope"
+        );
+        escape(&mut host);
+        assert_eq!(host.focused(), Some(outside));
+        assert!(host.focused_text().is_some());
+    }
+
+    #[test]
+    fn nested_real_popover_focus_retires_only_the_inner_session() {
+        let root = ComponentId(80940);
+        let caller = ComponentId(80941);
+        let outer = ComponentId(80942);
+        let parent_target = ComponentId(80943);
+        let inner_anchor = ComponentId(80944);
+        let inner = ComponentId(80945);
+        let inner_target = ComponentId(80946);
+        let body = Content::new(
+            ComponentId(80947),
+            StackContent {
+                model: Stack {
+                    axis: Axis::Vertical,
+                    gap: 0.,
+                },
+                flexible_child: None,
+                children: vec![
+                    Content::new(parent_target, Button::new("Parent target")),
+                    Content::new(inner_anchor, Button::new("Inner anchor")),
+                    Content::new(
+                        inner,
+                        PopoverContent::new(
+                            "Inner",
+                            Content::new(inner_target, Button::new("Inner body")),
+                        ),
+                    ),
+                ],
+            },
+        );
+        let mut host = ContentHost::new(Content::new(
+            root,
+            StackContent {
+                model: Stack {
+                    axis: Axis::Vertical,
+                    gap: 0.,
+                },
+                flexible_child: None,
+                children: vec![
+                    Content::new(caller, Button::new("Caller")),
+                    Content::new(outer, PopoverContent::new("Outer", body)),
+                ],
+            },
+        ))
+        .unwrap();
+        render_popover_host(&mut host);
+        assert!(host.focus(Some(caller), true));
+        host.show_popover(outer, caller).unwrap();
+        render_popover_host(&mut host);
+        host.reconcile_active_inputs();
+        let outer_session = host
+            .get(outer)
+            .unwrap()
+            .component::<PopoverContent>()
+            .unwrap()
+            .current_session()
+            .unwrap();
+        host.show_popover(inner, inner_anchor).unwrap();
+        render_popover_host(&mut host);
+        host.reconcile_active_inputs();
+        let inner_session = host
+            .get(inner)
+            .unwrap()
+            .component::<PopoverContent>()
+            .unwrap()
+            .current_session()
+            .unwrap();
+        assert_eq!(host.overlay_scope_id(), Some(inner));
+
+        assert!(host.focus(Some(parent_target), true));
+        assert_eq!(host.focused(), Some(parent_target));
+        assert!(
+            host.get(outer)
+                .unwrap()
+                .component::<PopoverContent>()
+                .unwrap()
+                .is_open()
+        );
+        assert!(
+            !host
+                .get(inner)
+                .unwrap()
+                .component::<PopoverContent>()
+                .unwrap()
+                .is_open()
+        );
+        assert_eq!(
+            host.get_mut(inner)
+                .unwrap()
+                .component_mut::<PopoverContent>()
+                .unwrap()
+                .take_closed()[0]
+                .session,
+            inner_session
+        );
+        assert!(host.scope().find_active(parent_target).is_some());
+        assert_eq!(host.input_overlay_owner().map(|(id, _)| id), Some(outer));
+        escape(&mut host);
+        assert!(
+            !host
+                .get(outer)
+                .unwrap()
+                .component::<PopoverContent>()
+                .unwrap()
+                .is_open()
+        );
+        assert_eq!(
+            host.get_mut(outer)
+                .unwrap()
+                .component_mut::<PopoverContent>()
+                .unwrap()
+                .take_closed()[0]
+                .session,
+            outer_session
+        );
+        assert_eq!(host.focused(), Some(caller));
+    }
+
+    #[test]
+    fn real_popover_inside_dialog_cannot_direct_focus_through_modal_boundary() {
+        let root = ComponentId(80950);
+        let dialog = ComponentId(80951);
+        let background = ComponentId(80952);
+        let caller = ComponentId(80953);
+        let outside_popup = ComponentId(80954);
+        let popup = ComponentId(80955);
+        let inside = ComponentId(80956);
+        let body = Content::new(
+            ComponentId(80957),
+            StackContent {
+                model: Stack {
+                    axis: Axis::Vertical,
+                    gap: 0.,
+                },
+                flexible_child: None,
+                children: vec![
+                    Content::new(caller, Button::new("Dialog caller")),
+                    Content::new(outside_popup, TextFieldContent::new("Dialog target", "")),
+                    Content::new(
+                        popup,
+                        PopoverContent::new(
+                            "Dialog popup",
+                            Content::new(inside, Button::new("Inside")),
+                        ),
+                    ),
+                ],
+            },
+        );
+        let mut host = ContentHost::new(Content::new(
+            root,
+            StackContent {
+                model: Stack {
+                    axis: Axis::Vertical,
+                    gap: 0.,
+                },
+                flexible_child: None,
+                children: vec![
+                    Content::new(background, Button::new("Background")),
+                    Content::new(
+                        dialog,
+                        DialogContent::new(
+                            "Dialog",
+                            Content::new(ComponentId(80958), TextContent::new("Header")),
+                            body,
+                            Content::new(ComponentId(80959), TextContent::new("Footer")),
+                        ),
+                    ),
+                ],
+            },
+        ))
+        .unwrap();
+        host.show_dialog(dialog).unwrap();
+        render_popover_host(&mut host);
+        assert_eq!(host.modal.map(|(id, _)| id), Some(dialog));
+        // Dialog may already have selected its first eligible caller. The
+        // public bool reports a change; assert the actual owner instead.
+        host.focus(Some(caller), true);
+        assert_eq!(host.focused(), Some(caller));
+        host.show_popover(popup, caller).unwrap();
+        render_popover_host(&mut host);
+        host.reconcile_active_inputs();
+        assert!(
+            host.get(popup)
+                .unwrap()
+                .component::<PopoverContent>()
+                .unwrap()
+                .is_open()
+        );
+        let focus = host.focused();
+        let before = format!("{:?}", host.root);
+        assert!(!host.focus(Some(background), true));
+        assert_eq!(host.focused(), focus);
+        assert_eq!(format!("{:?}", host.root), before);
+        assert_eq!(host.modal.map(|(id, _)| id), Some(dialog));
+
+        assert!(host.focus(Some(outside_popup), true));
+        assert!(
+            !host
+                .get(popup)
+                .unwrap()
+                .component::<PopoverContent>()
+                .unwrap()
+                .is_open()
+        );
+        assert_eq!(host.modal.map(|(id, _)| id), Some(dialog));
+        assert!(host.scope().find_active(outside_popup).is_some());
+        assert!(host.focused_text().is_some());
+        assert!(!host.focus(Some(background), true));
+        assert_eq!(host.focused(), Some(outside_popup));
+        assert_eq!(host.modal.map(|(id, _)| id), Some(dialog));
+    }
+
+    #[test]
+    fn actual_popover_preserves_marked_editor_and_scroll_when_unmark_capacity_is_exhausted() {
+        let root = ComponentId(80960);
+        let caller = ComponentId(80961);
+        let popup = ComponentId(80962);
+        let editor = ComponentId(80963);
+        let outside = ComponentId(80964);
+        let mut scroll = ScrollContent::new(
+            ScrollArea::default(),
+            Content::new(editor, TextFieldContent::new("Composer", "draft")),
+        );
+        scroll.viewport_height = Some(80.);
+        let mut host = ContentHost::new(Content::new(
+            root,
+            StackContent {
+                model: Stack {
+                    axis: Axis::Vertical,
+                    gap: 0.,
+                },
+                flexible_child: None,
+                children: vec![
+                    Content::new(caller, Button::new("Caller")),
+                    Content::new(outside, Button::new("Outside")),
+                    Content::new(
+                        popup,
+                        PopoverContent::new(
+                            "Composer popup",
+                            Content::new(ComponentId(80965), scroll),
+                        ),
+                    ),
+                ],
+            },
+        ))
+        .unwrap();
+        render_popover_host(&mut host);
+        assert!(host.focus(Some(caller), true));
+        host.show_popover(popup, caller).unwrap();
+        render_popover_host(&mut host);
+        host.reconcile_active_inputs();
+        assert!(host.focus(Some(editor), true));
+        host.root
+            .find_mut(editor)
+            .unwrap()
+            .component_mut::<TextFieldContent>()
+            .unwrap()
+            .event(&ContentEvent::Preedit {
+                text: "中".into(),
+                selection: 1..1,
+                clauses: Vec::new(),
+                replacement: None,
+            });
+        host.root
+            .find_mut(editor)
+            .unwrap()
+            .component_mut::<TextFieldContent>()
+            .unwrap()
+            .surface
+            .input
+            .test_edit_epoch(u64::MAX);
+        let before_root = format!("{:?}", host.root);
+        let before_focus = host.focused();
+        let before_epoch = host.focus_epoch();
+        let before_scroll = format!(
+            "{:?}",
+            host.get(popup).unwrap().component.children()[0]
+                .component::<ScrollContent>()
+                .unwrap()
+                .scroll
+        );
+        assert!(!host.focus(Some(outside), true));
+        assert_eq!(host.focused(), before_focus);
+        assert_eq!(host.focus_epoch(), before_epoch);
+        assert_eq!(format!("{:?}", host.root), before_root);
+        assert!(
+            host.get(popup)
+                .unwrap()
+                .component::<PopoverContent>()
+                .unwrap()
+                .is_open()
+        );
+        assert!(
+            host.focus_admission_text_surface()
+                .unwrap()
+                .input
+                .marked
+                .is_some()
+        );
+        let after_scroll = format!(
+            "{:?}",
+            host.get(popup).unwrap().component.children()[0]
+                .component::<ScrollContent>()
+                .unwrap()
+                .scroll
+        );
+        assert_eq!(after_scroll, before_scroll);
         host.root
             .find_mut(editor)
             .unwrap()
