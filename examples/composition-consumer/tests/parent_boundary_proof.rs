@@ -904,7 +904,12 @@ const TOOLBAR_GROUP: ComponentId = ComponentId(12712);
 const TOOLBAR_BUTTON: ComponentId = ComponentId(12713);
 const TOOLBAR_FIELD: ComponentId = ComponentId(12714);
 
-fn actual_toolbar_scene(text: &mut Text, viewport: Rect, regions: Vec<ToolbarRegion>) -> Scene {
+fn paint_actual_toolbar_scene(
+    text: &mut Text,
+    viewport: Rect,
+    regions: Vec<ToolbarRegion>,
+    scene: &mut Scene,
+) {
     let mut toolbar = ToolbarHost::<()>::new(TOOLBAR_ROOT, 0x127, viewport)
         .expect("public ToolbarHost constructor");
     toolbar
@@ -934,10 +939,14 @@ fn actual_toolbar_scene(text: &mut Text, viewport: Rect, regions: Vec<ToolbarReg
             bindings: Vec::new(),
         })
         .expect("mount original toolbar group in original host");
-    let mut scene = Scene::new();
     toolbar
-        .render(&mut scene, text, Theme::LIGHT.into())
+        .render(scene, text, Theme::LIGHT.into())
         .expect("original public ToolbarHost renders normally");
+}
+
+fn actual_toolbar_scene(text: &mut Text, viewport: Rect, regions: Vec<ToolbarRegion>) -> Scene {
+    let mut scene = Scene::new();
+    paint_actual_toolbar_scene(text, viewport, regions, &mut scene);
     scene
 }
 
@@ -1596,4 +1605,144 @@ fn actual_toolbar_host_opaque_bitmap_image_does_not_inherit_class_b_exemption() 
     }));
     evidence.finish();
     drop(lease);
+}
+
+#[test]
+#[ignore = "explicit real GPU context comparison under the original build/GPU locks"]
+fn actual_toolbar_parent_context_direct_paint_matches_fragment_replay() {
+    let mut evidence = Evidence::new("actual_toolbar_parent_context");
+    let mut renderer = Renderer::new_headless().expect("actual Metal renderer required");
+    let target = Rect::new(0., 0., 320., 144.);
+    let target_px = (640, 288);
+    let mut parent_text = Text::new(TEXT_SCALE);
+    parent_text.services = true;
+    parent_text.backing = BACKING;
+    let mut parent = host(
+        "real zero-padding rounded Panel parent",
+        Some(Insets::default()),
+        PARENT,
+    );
+    let parent_scene = layout(
+        &mut parent,
+        &mut parent_text,
+        target.size.width,
+        target.size.height,
+    );
+    let geometry = panel_geometry(&parent, PARENT);
+    assert_eq!(geometry.allocation, geometry.outer);
+    let parent_shape = parent_shape_in_child_coordinates(&geometry);
+    let mut table = ShapeTable::new(0x127_0110, 1);
+    let key = table.intern(parent_shape).unwrap();
+    let regions = || {
+        vec![ToolbarRegion::window(
+            TOOLBAR_REGION,
+            target,
+            ToolbarWindowEdge::Leading,
+        )]
+    };
+
+    let mut standalone_text = Text::new(TEXT_SCALE);
+    standalone_text.services = true;
+    standalone_text.backing = BACKING;
+    let standalone = actual_toolbar_scene(&mut standalone_text, target, regions());
+    let before = standalone.clone();
+    assert!(
+        counts(&standalone)["glyph_instance_count"]
+            .as_u64()
+            .unwrap()
+            > 0
+    );
+    let ordinary = renderer
+        .render_to_rgba8(
+            &standalone,
+            &mut standalone_text.atlas,
+            target_px,
+            BACKING,
+            TRANSPARENT,
+        )
+        .unwrap();
+    evidence.save_rgba("standalone_original", &ordinary, target_px);
+
+    let mut replay = Scene::with_clip_shapes(&table);
+    replay.push_shape_clip(key.clone());
+    replay
+        .try_append_fragment(
+            &standalone,
+            FragmentBudget::default(),
+            FragmentTransform::default(),
+        )
+        .unwrap();
+    replay.pop_clip();
+    let replay_before = replay.clone();
+    let replay_pixels = renderer
+        .render_to_rgba8(
+            &replay,
+            &mut standalone_text.atlas,
+            target_px,
+            BACKING,
+            TRANSPARENT,
+        )
+        .unwrap();
+    evidence.save_rgba("parent_context_fragment_replay", &replay_pixels, target_px);
+
+    let mut direct_text = Text::new(TEXT_SCALE);
+    direct_text.services = true;
+    direct_text.backing = BACKING;
+    let mut direct = Scene::with_clip_shapes(&table);
+    direct.push_shape_clip(key);
+    paint_actual_toolbar_scene(&mut direct_text, target, regions(), &mut direct);
+    direct.pop_clip();
+    let direct_before = direct.clone();
+    let direct_pixels = renderer
+        .render_to_rgba8(
+            &direct,
+            &mut direct_text.atlas,
+            target_px,
+            BACKING,
+            TRANSPARENT,
+        )
+        .unwrap();
+    evidence.save_rgba("parent_context_direct_paint", &direct_pixels, target_px);
+    assert_eq!(
+        direct_pixels, replay_pixels,
+        "same inherited context must preserve the complete original Toolbar paint through Scene replay"
+    );
+    assert_eq!(standalone, before);
+    assert_eq!(replay, replay_before);
+    assert_eq!(direct, direct_before);
+
+    let image_pixels = draw_image_reference(
+        &mut renderer,
+        parent_shape,
+        &ordinary,
+        target_px,
+        &mut standalone_text.atlas,
+    );
+    evidence.save_rgba("parent_mask_of_standalone_image", &image_pixels, target_px);
+    let different_pixels = replay_pixels
+        .chunks_exact(4)
+        .zip(image_pixels.chunks_exact(4))
+        .filter(|(a, b)| a != b)
+        .count();
+    let max_channel_difference = replay_pixels
+        .iter()
+        .zip(&image_pixels)
+        .map(|(a, b)| a.abs_diff(*b))
+        .max()
+        .unwrap();
+    evidence.detail(
+        "actual_parent_geometry",
+        geometry_report(&geometry, parent_shape, None, target_px),
+    );
+    evidence.detail("actual_parent_scene", counts(&parent_scene));
+    evidence.detail("actual_toolbar_scene", counts(&standalone));
+    evidence.detail("context_comparison", serde_json::json!({
+        "same_parent_context_direct_equals_fragment": direct_pixels == replay_pixels,
+        "standalone_image_context_different_pixels": different_pixels,
+        "standalone_image_context_max_channel_difference": max_channel_difference,
+        "interpretation": "Scene replay inherits caller clip scopes; standalone pixels freeze their original raster context. This records the cross-context difference and does not pass the original boundary-proof test.",
+        "original_proof_case": "unchanged, still separately unaccepted",
+        "whole_original_scene_preserved": standalone == before
+    }));
+    evidence.finish();
 }

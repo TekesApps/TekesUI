@@ -1,3 +1,21 @@
+# Composition-context finding on accepted Main (2026-10-28)
+
+The original complete Toolbar context comparison now has an independent real Metal observation on accepted production Main `102504d` plus a test-only delta. The actual public ToolbarHost constructor, Window region, Button, TextField, CoreText strings, dimensions and original proof-test body are retained. No Class A extension, shader change or fragment-isolation policy is present in this run.
+
+| Path | Existing contract | Actual observation |
+| --- | --- | --- |
+| Normal Content tree | Layout freezes the ancestor curve chain; paint traverses the mounted children with that chain and inherited theme. | Source: `composition/panel.rs::freeze_curve`, `push_curve_scope` and `Content::paint_except`; existing matched CI Panel/tree regressions pass. This is not claimed as a new whole-tree native test. |
+| Direct full Toolbar paint and Scene replay, both under the same actual Panel shape | `Scene::try_append_fragment` appends commands inside the caller's open clip scopes. It does not create another layout/input owner or an isolated rendered layer. | New exact real GPU comparison passes: all RGBA bytes match, and both input Scenes remain unchanged. |
+| Standalone Toolbar pixels masked later by ImageQuad | Pixels retain the standalone raster context. Appending the original commands below an analytic parent instead promotes their raw Rect clip scope under the existing renderer policy. | The same six differing pixels remain, with maximum channel difference 134. This is recorded, not relabeled as an equivalent-context pass. |
+
+The three current raw buffers (standalone original, parent-context direct paint, and parent-masked standalone image) are individually byte-identical to the retained buffers from the failed private axis-extension attempt. Thus this difference already exists with accepted Main rendering and does not require the unaccepted new predicate to appear. The shared fixture extraction changes only the destination Scene parameter; the original proof-test function and all its assertions remain byte-identical.
+
+This finding does not establish that normal UI-tree inheritance is broken, does not demonstrate B2 transport/pointer/AX/text correctness, and does not approve preserving standalone raster semantics during command replay. The current Scene API explicitly inherits caller scope; silently adding isolation to make this reference equal would change that contract. The context-sensitive legacy Rect/analytic transition is the specific compatibility boundary to consider, rather than a Toolbar-specific patch or a new general framework.
+
+**Disposition:** retain all original AC, complete input, red proof/reference evidence and the private unaccepted implementation. Keep #127/#81 open. Before changing the reference or the clipping contract, state which comparison is required by the original boundary guarantee and show the effect on the existing cross-context requirement; no original assertion is removed or relaxed here. The existing public API's command replay and rendered-pixel boundaries must remain explicit. No production redesign is authorized by this diagnosis.
+
+Actual evidence: SSD `artifacts/issue-127/main102504d-parent-context-20261028-01/{preflight.json,main-cpu01,main-gpu01}`; `main-gpu01/cross-attempt-pixel-comparison.json` binds the retained buffers. Target strict/build and this one real GPU test passed under the original build/GPU locks and SSD cache. Unchanged Scene/Render/shader suites were not repeated. Historical failure and acceptance identities below remain unchanged.
+
 ## Authorized bounded extension: original complete ToolbarHost (2026-10-28)
 
 The original complete ToolbarHost remains an acceptance gap. Main `82fe2cb` has the finite foundation and its accepted regressions; the complete scene's last actual result remains exit 101. Its first B is background primitive 1. Primitive 9 is a rounded Quad with prepared scissor `[15,107,610,74]`, outside the current parent safe rectangle `[21,21,619,267]`; its physical left edge is also outside that rectangle. Tightening the scissor to the Quad bounds alone does not repair the contract. This is a conservative-domain refusal, not evidence of wrong ordinary rendering or two backgrounds. Later primitives have not been certified by this failed run.
