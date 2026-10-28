@@ -29,6 +29,18 @@ pub struct ClipShape {
     bits: [u32; 8],
 }
 
+/// Closed axis-aligned bounds in physical pixels for a finite full-coverage
+/// interior witness. Values are produced only by `ClipShape`'s checked helper.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct FullCoverageInnerRectPx {
+    bounds: [f32; 4],
+}
+impl FullCoverageInnerRectPx {
+    pub fn bounds_px(self) -> [f32; 4] {
+        self.bounds
+    }
+}
+
 impl ClipShape {
     /// Translation is rounded to f32 exactly once, before identity is formed. Zero-area
     /// inputs are empty domains. Negative sizes/nonfinite values/overflow are rejected.
@@ -115,6 +127,140 @@ impl ClipShape {
     pub fn is_empty(self) -> bool {
         self.bits[2] == 0 || self.bits[3] == 0
     }
+
+    /// Return a finite physical-pixel rectangle whose points are at least one
+    /// device pixel inside the flat center of the shader's rounded rectangle.
+    ///
+    /// This witness is intentionally limited to the renderer's first boundary
+    /// proof slice: origin zero, one sample, dimensions up to 4096, and one of
+    /// five dyadic scales. It mirrors the clip shader's f32 operation order.
+    /// `None` is unsupported input or a nonpositive safe rectangle; it never
+    /// snaps values onto the supported grid.
+    pub fn full_coverage_inner_rect_px(
+        self,
+        scale: f32,
+        target_px: (u32, u32),
+    ) -> Result<Option<FullCoverageInnerRectPx>> {
+        if !(1..=4096).contains(&target_px.0)
+            || !(1..=4096).contains(&target_px.1)
+            || !(scale == 0.25 || scale == 0.5 || scale == 1.0 || scale == 2.0 || scale == 4.0)
+        {
+            return Ok(None);
+        }
+
+        // Shape fields are canonical f32 values admitted by normalize(), which
+        // already enforces the original numeric range and aspect-ratio limits.
+        let rect = self.rect();
+        let radii = self.radii().to_array();
+        let origin_px = [rect.origin.x * scale, rect.origin.y * scale];
+        let width_px = rect.size.width * scale;
+        let height_px = rect.size.height * scale;
+        let half_px = [width_px * 0.5, height_px * 0.5];
+        let center_px = [
+            (rect.origin.x - 0.0) * scale + half_px[0],
+            (rect.origin.y - 0.0) * scale + half_px[1],
+        ];
+        let physical_rect = [
+            center_px[0] - half_px[0],
+            center_px[1] - half_px[1],
+            center_px[0] + half_px[0],
+            center_px[1] + half_px[1],
+        ];
+        let radii_px = radii.map(|r| r * scale);
+        let max_radius = radii_px.into_iter().fold(0.0_f32, f32::max);
+        let inset = max_radius;
+        let safe = [
+            physical_rect[0] + inset + 1.0,
+            physical_rect[1] + inset + 1.0,
+            physical_rect[2] - inset - 1.0,
+            physical_rect[3] - inset - 1.0,
+        ];
+
+        let exact_f32 = |expected: f64, actual: f32| {
+            expected.is_finite() && actual.is_finite() && expected == f64::from(actual)
+        };
+        let exact = exact_f32(f64::from(rect.origin.x) * f64::from(scale), origin_px[0])
+            && exact_f32(f64::from(rect.origin.y) * f64::from(scale), origin_px[1])
+            && exact_f32(f64::from(rect.size.width) * f64::from(scale), width_px)
+            && exact_f32(f64::from(rect.size.height) * f64::from(scale), height_px)
+            && exact_f32(
+                f64::from(rect.size.width) * f64::from(scale) * 0.5,
+                half_px[0],
+            )
+            && exact_f32(
+                f64::from(rect.size.height) * f64::from(scale) * 0.5,
+                half_px[1],
+            )
+            && exact_f32(
+                f64::from(rect.origin.x) * f64::from(scale) + f64::from(half_px[0]),
+                center_px[0],
+            )
+            && exact_f32(
+                f64::from(rect.origin.y) * f64::from(scale) + f64::from(half_px[1]),
+                center_px[1],
+            )
+            && exact_f32(
+                f64::from(center_px[0]) - f64::from(half_px[0]),
+                physical_rect[0],
+            )
+            && exact_f32(
+                f64::from(center_px[1]) - f64::from(half_px[1]),
+                physical_rect[1],
+            )
+            && exact_f32(
+                f64::from(center_px[0]) + f64::from(half_px[0]),
+                physical_rect[2],
+            )
+            && exact_f32(
+                f64::from(center_px[1]) + f64::from(half_px[1]),
+                physical_rect[3],
+            )
+            && radii
+                .iter()
+                .zip(radii_px)
+                .all(|(logical, actual)| exact_f32(f64::from(*logical) * f64::from(scale), actual))
+            && exact_f32(f64::from(max_radius), inset)
+            && exact_f32(
+                f64::from(physical_rect[0]) + f64::from(inset) + 1.0,
+                safe[0],
+            )
+            && exact_f32(
+                f64::from(physical_rect[1]) + f64::from(inset) + 1.0,
+                safe[1],
+            )
+            && exact_f32(
+                f64::from(physical_rect[2]) - f64::from(inset) - 1.0,
+                safe[2],
+            )
+            && exact_f32(
+                f64::from(physical_rect[3]) - f64::from(inset) - 1.0,
+                safe[3],
+            );
+        let all_grid = origin_px.into_iter().all(on_dyadic_pixel_grid)
+            && on_dyadic_pixel_grid(width_px)
+            && on_dyadic_pixel_grid(height_px)
+            && half_px.into_iter().all(on_dyadic_pixel_grid)
+            && center_px.into_iter().all(on_dyadic_pixel_grid)
+            && physical_rect.into_iter().all(on_dyadic_pixel_grid)
+            && radii_px.into_iter().all(on_dyadic_pixel_grid)
+            && on_dyadic_pixel_grid(inset)
+            && safe.into_iter().all(on_dyadic_pixel_grid);
+        if !exact
+            || !all_grid
+            || origin_px.iter().any(|v| v.abs() > 4096.0)
+            || physical_rect.iter().any(|v| v.abs() > 4096.0)
+            || width_px > 4096.0
+            || height_px > 4096.0
+            || radii_px.iter().any(|v| *v > 4096.0)
+        {
+            return Ok(None);
+        }
+        if !(safe[0] < safe[2] && safe[1] < safe[3]) {
+            return Ok(None);
+        }
+        Ok(Some(FullCoverageInnerRectPx { bounds: safe }))
+    }
+
     fn values(self) -> [f64; 8] {
         self.bits.map(|x| f64::from(f32::from_bits(x)))
     }
@@ -267,6 +413,12 @@ impl ClipShape {
         }
         Ok(Some([lo, hi]))
     }
+}
+
+/// Exact membership in the finite 1/256 physical-pixel domain.
+fn on_dyadic_pixel_grid(value: f32) -> bool {
+    let scaled = value * 256.0;
+    value.is_finite() && scaled.is_finite() && scaled.fract() == 0.0
 }
 
 /// Exact offset membership is equivalent to the closed Euclidean ball of radius
@@ -1083,5 +1235,62 @@ mod sequential_key_authority {
             0x49742401
         );
         assert_eq!(table.get(original), Ok(source));
+    }
+}
+
+#[cfg(test)]
+mod finite_full_coverage_witness {
+    use super::*;
+
+    #[test]
+    fn returns_shader_order_dyadic_inner_rectangle() {
+        let shape = ClipShape::normalize(
+            Rect::new(0.0, 0.0, 64.0, 64.0),
+            CornerRadii::uniform(4.0),
+            Point::new(0.0, 0.0),
+        )
+        .unwrap();
+        let rect = shape
+            .full_coverage_inner_rect_px(1.0, (64, 64))
+            .unwrap()
+            .unwrap();
+        assert_eq!(rect.bounds_px(), [5.0, 5.0, 59.0, 59.0]);
+    }
+
+    #[test]
+    fn unsupported_scale_target_and_nondyadic_physical_values_are_not_snapped() {
+        let shape = ClipShape::normalize(
+            Rect::new(0.0, 0.0, 64.0, 64.0),
+            CornerRadii::uniform(4.0),
+            Point::new(0.0, 0.0),
+        )
+        .unwrap();
+        assert_eq!(shape.full_coverage_inner_rect_px(0.3, (64, 64)), Ok(None));
+        assert_eq!(shape.full_coverage_inner_rect_px(1.0, (4097, 64)), Ok(None));
+
+        let fractional = ClipShape::normalize(
+            Rect::new(0.001, 0.0, 64.0, 64.0),
+            CornerRadii::ZERO,
+            Point::new(0.0, 0.0),
+        )
+        .unwrap();
+        assert_eq!(
+            fractional.full_coverage_inner_rect_px(1.0, (64, 64)),
+            Ok(None)
+        );
+
+        // Multiplying this origin is representable, but adding half the width
+        // to its center rounds away the low bit in f32. The origin itself must
+        // be checked so the later center cannot disguise that loss.
+        let swallowed_origin = ClipShape::normalize(
+            Rect::new(1.0 + 2.0_f32.powi(-23), 0.0, 64.0, 64.0),
+            CornerRadii::ZERO,
+            Point::new(0.0, 0.0),
+        )
+        .unwrap();
+        assert_eq!(
+            swallowed_origin.full_coverage_inner_rect_px(1.0, (64, 64)),
+            Ok(None)
+        );
     }
 }

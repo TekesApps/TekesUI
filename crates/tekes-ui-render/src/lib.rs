@@ -136,9 +136,9 @@ mod renderer;
 pub mod stats;
 mod timing;
 
-pub use clip::{CLIP_GEOMETRY_VERSION, ClipFrameBudget};
+pub use clip::{BoundaryProofLimits, CLIP_GEOMETRY_VERSION, ClipFrameBudget};
 pub use error::RenderError;
-pub use renderer::Renderer;
+pub use renderer::{Renderer, VerifiedFrameOutput};
 pub use stats::{DROP_THRESHOLD, Distribution, DropReport, FrameSample, FrameStats};
 pub use timing::FrameTiming;
 

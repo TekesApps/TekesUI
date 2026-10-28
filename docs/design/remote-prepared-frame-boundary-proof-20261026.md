@@ -1,0 +1,75 @@
+# Main finite intake status (2026-10-28)
+
+The existing finite A/B chain is now accepted locally on Main base `8e4811090cdee53d7ab00fb58f78c7db2eb5436a` plus this scoped batch. Scene owns `FullCoverageInnerRectPx`; the existing renderer preflight evaluates actual prepared draw state, enforces original budgets and bounded proof/readback capacity, and returns an opaque non-detachable `VerifiedFrameOutput`. The clip shader includes the previously accepted nonpositive-q branch. Existing composition-error/controlled-image preflight order is preserved. The Root-only `register_owned_image` change is excluded.
+
+Actual validation: original Scene/Render and finite tests, strict library/public bitmap consumer checks; six original complete Host/CoreText/controlled bitmap GPU positives/refusals; original CoreText scissor and 450/18 shader regressions. The original full Toolbar positive is still **not passed**: exit 101, `prepared scissor outside parent full-coverage witness`. Its complete input and assertions remain in the independently invocable ignored GPU target. A successful diagnostic of that refusal is not a product pass.
+
+#127 stays open for that original combination and the remaining fractional/material/resource/boundary/budget matrix. #81 still owns B2 image/transport/pointer/AX/text/generation integration. This finite batch is not B2 or native acceptance. Historical private and Gallery Root receipts retain their original identities; current Main evidence is `artifacts/issue-127/main8e48110-finite-candidate-20261028-01/`. The linked Issue records the eventual commit and remote delivery identities.
+
+Below is the original accepted design and its historical stage notes. The current state above supersedes their pending/Root-only wording, without deleting original requirements.
+
+---
+
+# Remote prepared-frame parent-boundary proof
+
+2026-10-26, main + numeric advisor accept this finite dependency direction for #81 B2/#82; exact API/budget contract must be reviewed before production implementation. #80 remains accepted and is not reopened. All-state dedup found no existing prepared-frame proof execution Issue; #81 owns transport/Host integration and #82 the independent consumer.
+
+## Problem and ownership
+
+A flat child image can already contain analytic coverage. Scanning only PushShapeClip/KeyedQuad misses ordinary rounded Quad, stroke, Shadow and analytic-scope PushClip behavior. A caller boolean, ImageId/lease, arbitrary pixel inference or copied consumer primitive rules cannot certify that parent curve AA will not multiply the same boundary again.
+
+The original tekes-ui-render FramePipeline/ClipFrame preflight owner must evaluate the actual Scene and prepared coverage states. Reuse Scene immutable shape provenance, shared normalization/ClipRegion geometry and original renderer budgets; do not implement a second renderer or input service. A new bounded geometry predicate is permitted only if the original geometry owner lacks it and main reviews that precise dependency.
+
+## Finite supported proof classes
+
+A. The complete actual influence footprint of a primitive is provably within the parent chain's full-coverage interior. Conservative shared inner rectangles may establish this; mapping, antialias and texture sampling margins must come from the renderer/geometry owners. This permits inset actual rounded controls, text and unknown-origin images without needing to guess their internal alpha.
+
+B. Known child coverage is exactly one throughout the parent AA band and has no unknown baked boundary or stroke/shadow/clip attenuation there. A real flat background can be clipped by the parent while inset controls remain supported. Material opacity is kept separate from geometric coverage.
+
+### Numeric review correction, 2026-10-26
+
+The R8 finite Class A source was integrated with exact six-file preimages; its private Scene/Render tests and GPU samples passed. This does not complete its mathematical acceptance. The actual shared `sd_round_rect` still calls `length(vec2(0))` when both components of `q` are nonpositive. The earlier statement that this region avoids the square-root operation was incorrect. The [WGSL accuracy rules](https://www.w3.org/TR/WGSL/#floating-point-accuracy) and [gpuweb CTS floating-point model](https://github.com/gpuweb/cts/blob/main/src/webgpu/util/floating_point.ts) do not establish the exact-zero premise used by that argument. A guard margin alone does not resolve that missing bound.
+
+Main authorized the renderer owner to prepare a private minimal shared-function correction: when `all(q <= vec2<f32>(0.0))`, return `max(q.x,q.y)-r` directly, preserving the existing expression elsewhere. Source review and affected production GPU regressions must pass before accepting the integrated proof. Historical R8 results keep their original source/program identity.
+
+For the next Class B slice, review a real ordinary Quad's final prepared instance with zero radii/border/shadow, no child clip, and full-target scissor. A target-aligned rectangle can have exact full coverage at every single-sample pixel center, including its outermost centers at distance `-0.5`, once the shared-function correction is established. This is separate from material alpha. Verify exact scaled geometry, shader operation order and the existing one-pixel vertex expansion's NDC/raster envelope. All other drawables must independently satisfy an accepted proof class; one background cannot authorize the rest of the Scene. This is an implementation direction, not an accepted Class B capability.
+
+A positive must use an original Host-produced actual Panel Scene with its real decorations retained. Unsupported or unprovable same/near/coincident boundaries remain explicit refusals, not partial acceptance or local-only fallback. Deferred/compositing protocols are outside this first shared Issue.
+
+## API and atomicity requirements
+
+The boundary check runs with the same actual Scene/atlas/image registry, output size/scale, validated coordinate mapping and parent chain as the original preparation. Its process-local receipt is private and bound to the prepared frame that is actually drawn; receipt/frame/scene/resource substitution and later mutation must not turn a rejected frame into certified output. It is not a cross-process signature. #81's original transport/output owner separately binds the resulting frame to Gp/Gc/proposal/allocation and the existing trust boundary.
+
+Refuse unknown primitive/transform/provenance, unprovable partial line/arc coincidence, unsafe stroke/shadow/glyph/image influence near the parent AA band, invalid geometry and exhausted proof budget. Reject before the original GPU/atlas submission side effects; keep the previously accepted output intact. Preserve all existing shader-work/CPU/instance/upload/device limits; define a separate real bounded proof-work charge, not an invented reuse of the shader-work number.
+
+## Acceptance and independent scope
+
+1. Freeze exact owner API, lifetime/receipt identity, geometry/coverage predicates, supported domain and executable proof-work/byte/depth limits with main/advisor; no consumer classifier or assertion minting.
+2. Implement through the original renderer prepare/draw seam, preserving pipeline behavior and old paths. The same checked prepared frame must produce the returned pixels.
+3. Real Host Panel positive with internal rounded controls/text/image; exact pixel evidence against an appropriate single-parent reference for integer/fractional origin/backing, opaque/transparent material as applicable. No shortened/replaced Scene to manufacture support.
+4. Explicit negatives for coincident/near outer AA, ordinary rounded Quad, analytic PushClip, inner stroke, Shadow, unknown baked Image touching the band, unknown transform/primitive, stale/substituted receipt/resources and all proof limits. Rejection retains original Scene/atlas/output identity and produces no partial frame.
+5. Main accepts source/diff/actual commands/program/depinfo/raw pictures/failures/not_run, synchronizes this design and related #81/#82/#45. No full DS/native/public-release prerequisite; local proof does not complete B2 transport or semantic authority.
+
+Implementation only in a private SSD candidate after precise API acceptance; main remains sole live writer. Original review-cache/build_lock/environment and GPU lock, cargo +1.95.0 --locked --offline. No new target/cache, clean/install, recursive snapshots, stopped-chat messages, #38 interruption, push/merge/release or worktree cleanup.
+
+## Current bounded acceptance, 2026-10-26
+
+Main integrated the six finite Class A Rust changes and the shared SDF early-return correction. The integrated Scene 33 / Render 46 tests and related strict checks passed. The corrected shader also passed the actual Root CoreText scissor and original 450/18 GPU suites, plus a separate 140-case Metal q-boundary matrix across the five proof scales and odd/even targets. These are scoped source/program receipts, not a universal backend theorem or complete Issue #127 acceptance.
+
+The actual Root Panel/TextField positive and coincident refusal preserve raw pixels and actual Host geometry. A richer Panel/Button/controlled Image/TextField/CoreText case exposed ImageContent's missing Local curve declaration before proof; that original composition seam belongs to #117 and has now passed its integrated Root test. The richer byte-equivalence case subsequently passed on the separately frozen Class B SDK; that SDK result is not relabeled as Root Class B acceptance.
+
+The private Class B R2 source has passed Scene 33 / Render 57 tests and strict checks. Its multiple-background, offset/narrow and opaque-image refusals passed actual GPU checks. A ToolbarHost containing controls remains refused: the error is emitted when a later Quad fails Class A after a B background already exists, before testing whether that later Quad itself qualifies for B. It therefore does not establish that two flat backgrounds exist. Preserve that complete input and refusal; inspect the same prepared state's index/scissor/instance before drawing conclusions. A distinct naturally empty ToolbarHost has compile/strict evidence only and is parked as an independent case; it cannot substitute for this original composition. No failed input is cropped, replaced or promoted to success.
+
+Finite Class B R3 is now integrated into Root as the reviewed three-file dependency batch, with only an additional rustdoc correction describing A or a single B. After the approved source-cache recovery, actual Root Render 58 tests, targeted strict checks and the Root-bound consumer compile/strict passed. The actual GPU richer Panel/Button/TextField/CoreText/Bitmap positive and true-double-B, offset/narrow and opaque-image negatives passed on that same Root source; the unchanged original Toolbar case remained a separately recorded support-domain refusal (exit 101), not a product pass. Evidence: `/Volumes/HP P900/DEV/TekesUI/artifacts/issue-127/main-class-b-r3-root-post-recovery-20261026-01/runs/post-recovery-{cpu,gpu}-01/result.json`. Root evidence is distinct from private R2/R3 and local main. The original acceptance ledger, remaining primitive/resource/budget negatives and fractional/material witnesses remain in #127; #81 still owns production transport, publication and semantic authority.
+
+
+### Original ToolbarHost diagnostic and supported domain
+
+Main ran the unchanged original failing ToolbarHost case on the separately frozen diagnostic SDK after compile/strict passed. Under the existing build lock followed by GPU lock, the same refusal produced exactly one prepared-state trace: primitive index 9 is an ordinary rounded Quad, while the first B background is index 1. The Quad has actual scissor `[15,107,610,74]`; its parent conservative safe rectangle is `[21,21,619,267]`, so the horizontal containment checks both fail. The final Quad's logical left edge is `7.2` at scale `2` (`14.4px`), also outside the safe rectangle's `21px` left edge. Merely replacing the scissor with the Quad bounds would not establish this proof. Source and runtime inputs remained unchanged.
+
+This is a limitation of the implemented finite Class A domain, which requires the complete prepared scissor inside each parent's conservative full-coverage safe rectangle. The abstract influence-footprint class above is a design objective; the current implementation does not prove every visually inset rounded control. The existing error is separately misleading: it tests whether a B already exists before establishing whether the current non-A Quad qualifies for B. The next private correction must distinguish a genuine second full-target flat background from a non-A/non-B rounded Quad, preserving proof-work charges, atomic refusal and the unchanged input. Neither case becomes accepted through that diagnostic correction.
+
+Actual receipts: `/Volumes/HP P900/DEV/TekesUI/artifacts/issue-127/toolbar-host-class-b-diagnostic-consumer-qa-20261026-r1/runs/main-diagnostic-{compile,gpu}-01/result.json`. This is diagnostic evidence, not product acceptance or a Root Class B pass. Original ToolbarHost combination remains not passed; a future finite proof extension would require the renderer's complete raster influence envelope and an accepted Scene-owner full-coverage predicate, with numeric/AA/budget evidence. It is not part of the error-classification fix.
+
+
+The private R3 error-classification correction subsequently passed exactly the two affected Render negative tests (one actual test each), Render lib strict and the original consumer target's compile/strict. Replaying the unchanged original ToolbarHost test from its newly archived R3 binary under both original locks still exited 101, now with the accurate `prepared scissor outside parent full-coverage witness` refusal. The diagnostic harness expected and recorded that rejection; it is not a product-pass result. Those private receipts do not establish Root acceptance; current Root acceptance is recorded in the Current bounded acceptance section above. Prior positive GPU receipts retain their original R2 identities. Evidence is in `.../issue-127/toolbar-host-class-b-support-classification-20261026-r3/runs/main-{focused-validation,original-case-diagnostic}-01/result.json` under the SSD artifacts root.
