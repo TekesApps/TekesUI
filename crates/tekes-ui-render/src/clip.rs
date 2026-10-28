@@ -3,11 +3,12 @@ use crate::error::RenderError;
 use bytemuck::{Pod, Zeroable};
 use std::collections::HashMap;
 use tekes_ui_scene::{
-    ClipBudget, ClipError, ClipRegion, ClipShape, CornerRadii, GlyphAtlas, Point, Primitive, Quad,
-    Rect, Scene,
+    ClipBudget, ClipError, ClipRegion, ClipShape, CornerRadii, FullCoverageInnerRectPx, GlyphAtlas,
+    Point, Primitive, Quad, Rect, Scene,
 };
 
 pub const CLIP_GEOMETRY_VERSION: u32 = 1;
+const MAX_BOUNDARY_PROOF_WORK: u64 = 262_144;
 /// Explicit renderer resource policy, applied cumulatively to the complete frame.
 /// Depth is limited by record capacity, not a separately guessed nesting constant.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -20,6 +21,158 @@ pub struct ClipFrameBudget {
     pub max_cpu_work: u64,
     pub max_shader_work: u64,
     pub max_queries: u64,
+}
+
+/// Explicit policy cap for the finite parent-boundary proof slice.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct BoundaryProofLimits {
+    pub max_work: u64,
+}
+impl Default for BoundaryProofLimits {
+    fn default() -> Self {
+        Self {
+            max_work: MAX_BOUNDARY_PROOF_WORK,
+        }
+    }
+}
+
+pub(crate) struct BoundaryProofSummary {
+    pub safe_rects_px: Vec<Option<FullCoverageInnerRectPx>>,
+    pub class_b_background_primitive: Option<u32>,
+    pub states_visited: u64,
+    pub containment_checks: u64,
+    pub zero_scissor_skips: u64,
+    pub work: u64,
+    pub proof_bytes: u64,
+}
+
+fn exact_f32(expected: f64, actual: f32) -> bool {
+    expected.is_finite() && actual.is_finite() && expected == f64::from(actual)
+}
+
+/// B covers only a target-aligned, flat final Quad instance. No pixel scan or
+/// caller-supplied provenance is used; the extrema are the first/last centers.
+fn is_target_aligned_flat_quad(
+    instance: &crate::instance::QuadInstance,
+    state: &ClipState,
+    size: (u32, u32),
+    scale: f32,
+) -> Result<bool, RenderError> {
+    if !(1..=4096).contains(&size.0)
+        || !(1..=4096).contains(&size.1)
+        || !(scale == 0.25 || scale == 0.5 || scale == 1.0 || scale == 2.0 || scale == 4.0)
+    {
+        return Ok(false);
+    }
+    validate_color(tekes_ui_tokens::Rgba::new(
+        instance.fill[0],
+        instance.fill[1],
+        instance.fill[2],
+        instance.fill[3],
+    ))?;
+    validate_color(tekes_ui_tokens::Rgba::new(
+        instance.border_color[0],
+        instance.border_color[1],
+        instance.border_color[2],
+        instance.border_color[3],
+    ))?;
+
+    if state.head != 0
+        || state.outer_id != 0
+        || state.inner_empty
+        || state.scissor != [0, 0, size.0, size.1]
+        || instance.radii != [0.0; 4]
+        || instance.params[0] != 0.0
+        || instance.shadow_color != [0.0; 4]
+        || instance.shadow_params != [0.0; 4]
+        || instance.clip_meta != [0; 4]
+    {
+        return Ok(false);
+    }
+
+    let [x, y, width, height] = instance.rect;
+    let origin_px = [x * scale, y * scale];
+    let size_px = [width * scale, height * scale];
+    // Keep the quad shader's exact vertex operation order.
+    let half_px = [size_px[0] * 0.5, size_px[1] * 0.5];
+    let center_px = [origin_px[0] + half_px[0], origin_px[1] + half_px[1]];
+    let endpoints_px = [
+        center_px[0] - half_px[0],
+        center_px[1] - half_px[1],
+        center_px[0] + half_px[0],
+        center_px[1] + half_px[1],
+    ];
+    let radius_px = instance.radii.map(|radius| radius * scale);
+
+    if !origin_px[0].is_finite()
+        || !origin_px[1].is_finite()
+        || origin_px != [0.0; 2]
+        || size_px != [size.0 as f32, size.1 as f32]
+        || endpoints_px != [0.0, 0.0, size.0 as f32, size.1 as f32]
+        || radius_px != [0.0; 4]
+    {
+        return Ok(false);
+    }
+
+    let exact_target = exact_f32(f64::from(width) * f64::from(scale), size_px[0])
+        && exact_f32(f64::from(height) * f64::from(scale), size_px[1])
+        && exact_f32(f64::from(x) * f64::from(scale), origin_px[0])
+        && exact_f32(f64::from(y) * f64::from(scale), origin_px[1])
+        && exact_f32(f64::from(size.0) * 0.5, half_px[0])
+        && exact_f32(f64::from(size.1) * 0.5, half_px[1])
+        && exact_f32(
+            f64::from(origin_px[0]) + f64::from(half_px[0]),
+            center_px[0],
+        )
+        && exact_f32(
+            f64::from(origin_px[1]) + f64::from(half_px[1]),
+            center_px[1],
+        )
+        && exact_f32(
+            f64::from(center_px[0]) - f64::from(half_px[0]),
+            endpoints_px[0],
+        )
+        && exact_f32(
+            f64::from(center_px[1]) - f64::from(half_px[1]),
+            endpoints_px[1],
+        )
+        && exact_f32(
+            f64::from(center_px[0]) + f64::from(half_px[0]),
+            endpoints_px[2],
+        )
+        && exact_f32(
+            f64::from(center_px[1]) + f64::from(half_px[1]),
+            endpoints_px[3],
+        );
+    if !exact_target {
+        return Ok(false);
+    }
+
+    // For N target pixels, centers range from 0.5 to N-0.5. With exact
+    // center=half=N/2 and zero radius, each extreme q is exactly -0.5.
+    let q_at = |sample: f32, center: f32, half: f32, radius: f32| {
+        let delta = sample - center;
+        let absolute = delta.abs();
+        let distance = absolute - half;
+        let q = distance + radius;
+        let exact = exact_f32(
+            (f64::from(sample) - f64::from(center)).abs() - f64::from(half) + f64::from(radius),
+            q,
+        );
+        (q, exact)
+    };
+    let q_x = [
+        q_at(0.5, center_px[0], half_px[0], radius_px[0]),
+        q_at(size.0 as f32 - 0.5, center_px[0], half_px[0], radius_px[0]),
+    ];
+    let q_y = [
+        q_at(0.5, center_px[1], half_px[1], radius_px[0]),
+        q_at(size.1 as f32 - 0.5, center_px[1], half_px[1], radius_px[0]),
+    ];
+    Ok(q_x
+        .into_iter()
+        .chain(q_y)
+        .all(|(q, exact)| exact && q == -0.5))
 }
 impl ClipFrameBudget {
     pub(crate) fn for_device(limits: &wgpu::Limits) -> Self {
@@ -88,6 +241,15 @@ fn charge(total: &mut u64, n: u64, limit: u64, name: &'static str) -> Result<(),
         .ok_or(RenderError::ClipBudgetExceeded(name))?;
     if *total > limit {
         return Err(RenderError::ClipBudgetExceeded(name));
+    }
+    Ok(())
+}
+fn charge_boundary_work(total: &mut u64, n: u64, limit: u64) -> Result<(), RenderError> {
+    *total = total
+        .checked_add(n)
+        .ok_or(RenderError::ClipBudgetExceeded("boundary proof work"))?;
+    if *total > limit {
+        return Err(RenderError::ClipBudgetExceeded("boundary proof work"));
     }
     Ok(())
 }
@@ -384,6 +546,201 @@ impl ClipFrame {
             1
         }
     }
+
+    /// Prove every actual prepared draw scissor against the finite Scene-owned
+    /// per-parent safe rectangles. No instance classifier or alternate scissor
+    /// is introduced by this operation.
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn prove_parent_scissors(
+        &self,
+        scene: &Scene,
+        parent_shapes: &[ClipShape],
+        size: (u32, u32),
+        scale: f32,
+        budget: ClipFrameBudget,
+        proof_limits: BoundaryProofLimits,
+        receipt_header_bytes: u64,
+    ) -> Result<BoundaryProofSummary, RenderError> {
+        if self.states.len() != scene.len() || parent_shapes.is_empty() {
+            return Err(RenderError::InvalidClipFrame(
+                "missing parent shapes or prepared state mismatch",
+            ));
+        }
+        let parent_count = u64::try_from(parent_shapes.len())
+            .map_err(|_| RenderError::ClipBudgetExceeded("boundary proof records"))?;
+        if parent_count > budget.max_shapes || parent_count > budget.max_records {
+            return Err(RenderError::ClipBudgetExceeded("boundary proof records"));
+        }
+        let remaining_cpu = budget
+            .max_cpu_work
+            .checked_sub(self.cpu_work)
+            .ok_or(RenderError::ClipBudgetExceeded("CPU work"))?;
+        let work_limit = proof_limits
+            .max_work
+            .min(MAX_BOUNDARY_PROOF_WORK)
+            .min(remaining_cpu);
+        let mut work = 0_u64;
+
+        // Charge every fixed per-shape witness, validation scalar, and receipt
+        // record before computing or allocating any of them.
+        for _ in parent_shapes {
+            charge_boundary_work(&mut work, 1, work_limit)?;
+        }
+        for _ in parent_shapes {
+            charge_boundary_work(&mut work, 8, work_limit)?;
+        }
+        for _ in parent_shapes {
+            charge_boundary_work(&mut work, 1, work_limit)?;
+        }
+        let receipt_bytes = parent_count
+            .checked_mul(std::mem::size_of::<Option<FullCoverageInnerRectPx>>() as u64)
+            .and_then(|bytes| bytes.checked_add(receipt_header_bytes))
+            .ok_or(RenderError::ClipBudgetExceeded("boundary proof bytes"))?;
+        if receipt_bytes > budget.max_upload_bytes {
+            return Err(RenderError::ClipBudgetExceeded("boundary proof bytes"));
+        }
+        let mut safe_rects_px = Vec::new();
+        safe_rects_px
+            .try_reserve_exact(parent_shapes.len())
+            .map_err(|_| RenderError::ClipBudgetExceeded("boundary proof allocation"))?;
+        let allocated_bytes = (safe_rects_px.capacity() as u64)
+            .checked_mul(std::mem::size_of::<Option<FullCoverageInnerRectPx>>() as u64)
+            .ok_or(RenderError::ClipBudgetExceeded("boundary proof bytes"))?;
+        let proof_bytes = allocated_bytes
+            .checked_add(receipt_header_bytes)
+            .ok_or(RenderError::ClipBudgetExceeded("boundary proof bytes"))?;
+        if proof_bytes > budget.max_upload_bytes {
+            return Err(RenderError::ClipBudgetExceeded("boundary proof bytes"));
+        }
+        for shape in parent_shapes {
+            // Parent validity is independent of its Class A inner safe area.
+            // This is the original renderer range/normalization owner.
+            if shape.is_empty() {
+                return Err(RenderError::InvalidClipFrame("empty parent shape"));
+            }
+            gpu_shape(*shape, scale)?;
+            let safe_rect = shape
+                .full_coverage_inner_rect_px(scale, size)
+                .map_err(RenderError::ClipGeometry)?;
+            safe_rects_px.push(safe_rect);
+        }
+
+        let mut states_visited = 0_u64;
+        let mut containment_checks = 0_u64;
+        let mut zero_scissor_skips = 0_u64;
+        let mut class_b_background_primitive = None;
+        for (primitive_index, (primitive, state)) in
+            scene.primitives().iter().zip(&self.states).enumerate()
+        {
+            charge_boundary_work(&mut work, 1, work_limit)?;
+            states_visited = states_visited
+                .checked_add(1)
+                .ok_or(RenderError::ClipBudgetExceeded("boundary proof work"))?;
+            match primitive {
+                Primitive::PushClip(_) | Primitive::PushShapeClip(_) | Primitive::PopClip => {
+                    continue;
+                }
+                Primitive::Quad(_)
+                | Primitive::KeyedQuad { .. }
+                | Primitive::Shadow(_)
+                | Primitive::Glyphs(_)
+                | Primitive::Image(_)
+                | Primitive::ControlledImage { .. }
+                | Primitive::TransformedImage(_)
+                | Primitive::ControlledTransformedImage { .. } => {}
+                _ => {
+                    return Err(RenderError::InvalidClipFrame(
+                        "unsupported primitive kind in parent-boundary proof",
+                    ));
+                }
+            }
+            let [x, y, width, height] = state.scissor;
+            let right = x
+                .checked_add(width)
+                .ok_or(RenderError::InvalidClipFrame("scissor overflow"))?;
+            let bottom = y
+                .checked_add(height)
+                .ok_or(RenderError::InvalidClipFrame("scissor overflow"))?;
+            if right > size.0 || bottom > size.1 {
+                return Err(RenderError::InvalidClipFrame(
+                    "prepared scissor outside target",
+                ));
+            }
+            if width == 0 || height == 0 {
+                // The frame encoder sets `visible = width > 0 && height > 0`
+                // on this exact prepared scissor and skips subsequent draw
+                // batches until another Clip batch makes them visible.
+                zero_scissor_skips = zero_scissor_skips
+                    .checked_add(1)
+                    .ok_or(RenderError::ClipBudgetExceeded("boundary proof work"))?;
+                continue;
+            }
+            let mut contained_by_all_parents = true;
+            for safe_rect in &safe_rects_px {
+                charge_boundary_work(&mut work, 1, work_limit)?;
+                containment_checks = containment_checks
+                    .checked_add(1)
+                    .ok_or(RenderError::ClipBudgetExceeded("boundary proof work"))?;
+                let Some(safe_rect) = safe_rect else {
+                    contained_by_all_parents = false;
+                    continue;
+                };
+                let [left, top, safe_right, safe_bottom] = safe_rect.bounds_px();
+                if (x as f32) < left
+                    || (y as f32) < top
+                    || (right as f32) > safe_right
+                    || (bottom as f32) > safe_bottom
+                {
+                    contained_by_all_parents = false;
+                }
+            }
+            if contained_by_all_parents {
+                continue;
+            }
+
+            let Primitive::Quad(quad) = primitive else {
+                return Err(RenderError::InvalidClipFrame(
+                    "prepared scissor outside parent full-coverage witness",
+                ));
+            };
+
+            // Every B predicate attempt is charged before even the first field
+            // inspection; failed attempts consume the same unit.
+            charge_boundary_work(&mut work, 1, work_limit)?;
+            let instance = crate::frame::final_quad_instance(quad, state);
+            if !is_target_aligned_flat_quad(&instance, state, size, scale)? {
+                return Err(RenderError::InvalidClipFrame(
+                    "prepared scissor outside parent full-coverage witness",
+                ));
+            }
+            if class_b_background_primitive.is_some() {
+                return Err(RenderError::InvalidClipFrame(
+                    "only one Class B flat background is supported",
+                ));
+            }
+            let primitive_index = u32::try_from(primitive_index)
+                .map_err(|_| RenderError::ClipBudgetExceeded("boundary proof records"))?;
+            let receipt_records = parent_count
+                .checked_add(1)
+                .ok_or(RenderError::ClipBudgetExceeded("boundary proof records"))?;
+            if receipt_records > budget.max_shapes || receipt_records > budget.max_records {
+                return Err(RenderError::ClipBudgetExceeded("boundary proof records"));
+            }
+            charge_boundary_work(&mut work, 1, work_limit)?;
+            class_b_background_primitive = Some(primitive_index);
+        }
+
+        Ok(BoundaryProofSummary {
+            safe_rects_px,
+            class_b_background_primitive,
+            states_visited,
+            containment_checks,
+            zero_scissor_skips,
+            work,
+            proof_bytes,
+        })
+    }
+
     pub(crate) fn prepare(
         scene: &Scene,
         atlas: &GlyphAtlas,
@@ -1505,6 +1862,618 @@ mod tests {
             ClipFrame::prepare(&s, &atlas, (32, 32), 1., budget, &target),
             Err(RenderError::InvalidArgument(
                 "target exceeds device dimensions"
+            ))
+        ));
+    }
+
+    fn proof_parent() -> ClipShape {
+        ClipShape::normalize(
+            Rect::new(0., 0., 64., 64.),
+            CornerRadii::uniform(4.),
+            Point::new(0., 0.),
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn parent_proof_uses_actual_prepared_tight_scissor() {
+        let mut s = Scene::new();
+        s.push_clip(Rect::new(20., 20., 10., 10.));
+        s.push_quad(Quad::new(Rect::new(20., 20., 10., 10.), Rgba::gray(1.)));
+        s.pop_clip();
+        let limits = wgpu::Limits::default();
+        let budget = ClipFrameBudget::for_device(&limits);
+        let frame =
+            ClipFrame::prepare(&s, &GlyphAtlas::default(), (64, 64), 1., budget, &limits).unwrap();
+        let proof = frame
+            .prove_parent_scissors(
+                &s,
+                &[proof_parent()],
+                (64, 64),
+                1.,
+                budget,
+                BoundaryProofLimits::default(),
+                std::mem::size_of::<u64>() as u64,
+            )
+            .unwrap();
+        assert_eq!(
+            proof.safe_rects_px[0].unwrap().bounds_px(),
+            [5., 5., 59., 59.]
+        );
+        assert_eq!(proof.states_visited, 3);
+        assert_eq!(proof.containment_checks, 1);
+        assert_eq!(proof.zero_scissor_skips, 0);
+        assert_eq!(proof.work, 10 + 3 + 1);
+        assert_eq!(proof.class_b_background_primitive, None);
+    }
+
+    #[test]
+    fn parent_proof_refuses_full_target_rounded_draw_and_only_skips_invisible_scissors() {
+        let limits = wgpu::Limits::default();
+        let budget = ClipFrameBudget::for_device(&limits);
+        let mut full_target = Scene::new();
+        full_target.push_quad(
+            Quad::new(Rect::new(0., 0., 64., 64.), Rgba::gray(1.)).with_corner_radius(4.0),
+        );
+        let frame = ClipFrame::prepare(
+            &full_target,
+            &GlyphAtlas::default(),
+            (64, 64),
+            1.,
+            budget,
+            &limits,
+        )
+        .unwrap();
+        assert!(matches!(
+            frame.prove_parent_scissors(
+                &full_target,
+                &[proof_parent()],
+                (64, 64),
+                1.,
+                budget,
+                BoundaryProofLimits::default(),
+                8,
+            ),
+            Err(RenderError::InvalidClipFrame(
+                "prepared scissor outside parent full-coverage witness"
+            ))
+        ));
+
+        let mut empty = Scene::new();
+        empty.push_clip(Rect::new(80., 80., 4., 4.));
+        empty.push_quad(Quad::new(Rect::new(80., 80., 4., 4.), Rgba::gray(1.)));
+        empty.pop_clip();
+        let frame = ClipFrame::prepare(
+            &empty,
+            &GlyphAtlas::default(),
+            (64, 64),
+            1.,
+            budget,
+            &limits,
+        )
+        .unwrap();
+        let proof = frame
+            .prove_parent_scissors(
+                &empty,
+                &[proof_parent()],
+                (64, 64),
+                1.,
+                budget,
+                BoundaryProofLimits::default(),
+                8,
+            )
+            .unwrap();
+        assert_eq!(proof.zero_scissor_skips, 1);
+        assert_eq!(proof.containment_checks, 0);
+    }
+
+    #[test]
+    fn parent_proof_work_is_precharged_against_cpu_headroom() {
+        let mut s = Scene::new();
+        s.push_quad(Quad::new(Rect::new(20., 20., 4., 4.), Rgba::gray(1.)));
+        let limits = wgpu::Limits::default();
+        let mut budget = ClipFrameBudget::for_device(&limits);
+        budget.max_cpu_work = 1;
+        let frame =
+            ClipFrame::prepare(&s, &GlyphAtlas::default(), (64, 64), 1., budget, &limits).unwrap();
+        assert!(matches!(
+            frame.prove_parent_scissors(
+                &s,
+                &[proof_parent()],
+                (64, 64),
+                1.,
+                budget,
+                BoundaryProofLimits { max_work: 262_144 },
+                8,
+            ),
+            Err(RenderError::ClipBudgetExceeded("boundary proof work"))
+        ));
+    }
+
+    #[test]
+    fn parent_proof_accepts_exact_safe_rectangle_edge_equality() {
+        let mut s = Scene::new();
+        s.push_clip(Rect::new(5., 5., 54., 54.));
+        s.push_quad(Quad::new(Rect::new(5., 5., 54., 54.), Rgba::gray(1.)));
+        s.pop_clip();
+        let limits = wgpu::Limits::default();
+        let budget = ClipFrameBudget::for_device(&limits);
+        let frame =
+            ClipFrame::prepare(&s, &GlyphAtlas::default(), (64, 64), 1., budget, &limits).unwrap();
+        let proof = frame
+            .prove_parent_scissors(
+                &s,
+                &[proof_parent()],
+                (64, 64),
+                1.,
+                budget,
+                BoundaryProofLimits::default(),
+                8,
+            )
+            .unwrap();
+        assert_eq!(
+            proof.safe_rects_px[0].unwrap().bounds_px(),
+            [5., 5., 59., 59.]
+        );
+        assert_eq!(frame.states[1].scissor, [5, 5, 54, 54]);
+    }
+
+    #[test]
+    fn every_parent_must_contain_the_actual_scissor() {
+        let mut s = Scene::new();
+        s.push_clip(Rect::new(10., 10., 5., 5.));
+        s.push_quad(Quad::new(Rect::new(10., 10., 5., 5.), Rgba::gray(1.)));
+        s.pop_clip();
+        let narrow_parent = ClipShape::normalize(
+            Rect::new(0., 0., 64., 64.),
+            CornerRadii::uniform(20.),
+            Point::new(0., 0.),
+        )
+        .unwrap();
+        let limits = wgpu::Limits::default();
+        let budget = ClipFrameBudget::for_device(&limits);
+        let frame =
+            ClipFrame::prepare(&s, &GlyphAtlas::default(), (64, 64), 1., budget, &limits).unwrap();
+        assert!(matches!(
+            frame.prove_parent_scissors(
+                &s,
+                &[proof_parent(), narrow_parent],
+                (64, 64),
+                1.,
+                budget,
+                BoundaryProofLimits::default(),
+                8,
+            ),
+            Err(RenderError::InvalidClipFrame(
+                "prepared scissor outside parent full-coverage witness"
+            ))
+        ));
+    }
+
+    #[test]
+    fn zero_scissor_skip_is_followed_by_a_proven_visible_state() {
+        let mut s = Scene::new();
+        s.push_clip(Rect::new(80., 80., 4., 4.));
+        s.push_quad(Quad::new(Rect::new(80., 80., 4., 4.), Rgba::gray(1.)));
+        s.pop_clip();
+        s.push_clip(Rect::new(20., 20., 10., 10.));
+        s.push_quad(Quad::new(Rect::new(20., 20., 10., 10.), Rgba::gray(1.)));
+        s.pop_clip();
+        let limits = wgpu::Limits::default();
+        let budget = ClipFrameBudget::for_device(&limits);
+        let frame =
+            ClipFrame::prepare(&s, &GlyphAtlas::default(), (64, 64), 1., budget, &limits).unwrap();
+        let proof = frame
+            .prove_parent_scissors(
+                &s,
+                &[proof_parent()],
+                (64, 64),
+                1.,
+                budget,
+                BoundaryProofLimits::default(),
+                8,
+            )
+            .unwrap();
+        assert_eq!(proof.zero_scissor_skips, 1);
+        assert_eq!(proof.containment_checks, 1);
+        assert_eq!(frame.states[1].scissor, [0, 0, 0, 0]);
+        assert_eq!(frame.states[4].scissor, [20, 20, 10, 10]);
+    }
+
+    #[test]
+    fn class_b_accepts_exact_target_flat_quad_with_material_alpha_separate() {
+        let limits = wgpu::Limits::default();
+        let budget = ClipFrameBudget::for_device(&limits);
+        let mut s = Scene::new();
+        s.push_quad(Quad::new(
+            Rect::new(0.0, 0.0, 64.0, 64.0),
+            Rgba::new(0.2, 0.4, 0.6, 0.35),
+        ));
+        let frame =
+            ClipFrame::prepare(&s, &GlyphAtlas::default(), (64, 64), 1.0, budget, &limits).unwrap();
+        let proof = frame
+            .prove_parent_scissors(
+                &s,
+                &[proof_parent()],
+                (64, 64),
+                1.0,
+                budget,
+                BoundaryProofLimits::default(),
+                std::mem::size_of::<u64>() as u64,
+            )
+            .unwrap();
+        assert_eq!(proof.class_b_background_primitive, Some(0));
+        assert_eq!(
+            proof.safe_rects_px[0].unwrap().bounds_px(),
+            [5., 5., 59., 59.]
+        );
+        assert_eq!(
+            proof.proof_bytes,
+            (proof.safe_rects_px.capacity()
+                * std::mem::size_of::<Option<FullCoverageInnerRectPx>>()) as u64
+                + std::mem::size_of::<u64>() as u64
+        );
+    }
+
+    #[test]
+    fn class_b_target_aligned_extrema_are_exact_for_odd_target_and_fractional_scale() {
+        let q = Quad::new(
+            Rect::new(0.0, 0.0, 130.0, 6.0),
+            Rgba::new(0.0, 0.0, 0.0, 0.0),
+        );
+        let state = ClipState {
+            head: 0,
+            binding_slot: 0,
+            analytic: false,
+            scissor: [0, 0, 65, 3],
+            outer_id: 0,
+            inner_empty: false,
+            quad_shape: None,
+        };
+        let instance = crate::frame::final_quad_instance(&q, &state);
+        assert!(is_target_aligned_flat_quad(&instance, &state, (65, 3), 0.5).unwrap());
+    }
+
+    #[test]
+    fn class_b_predicate_uses_final_instance_inputs_not_local_clip_flags() {
+        let quad = Quad::new(
+            Rect::new(0.0, 0.0, 64.0, 64.0),
+            Rgba::new(0.2, 0.4, 0.6, 0.35),
+        );
+        let plain = ClipState {
+            head: 0,
+            binding_slot: 0,
+            analytic: false,
+            scissor: [0, 0, 64, 64],
+            outer_id: 0,
+            inner_empty: false,
+            quad_shape: None,
+        };
+        let analytic_mode_without_chain = ClipState {
+            analytic: true,
+            quad_shape: Some(
+                ClipShape::normalize(
+                    Rect::new(0.0, 0.0, 64.0, 64.0),
+                    CornerRadii::ZERO,
+                    Point::new(0.0, 0.0),
+                )
+                .unwrap(),
+            ),
+            ..plain
+        };
+        let plain_instance = crate::frame::final_quad_instance(&quad, &plain);
+        let analytic_instance =
+            crate::frame::final_quad_instance(&quad, &analytic_mode_without_chain);
+        assert_eq!(plain_instance, analytic_instance);
+        assert!(is_target_aligned_flat_quad(&plain_instance, &plain, (64, 64), 1.0).unwrap());
+        assert!(
+            is_target_aligned_flat_quad(
+                &analytic_instance,
+                &analytic_mode_without_chain,
+                (64, 64),
+                1.0,
+            )
+            .unwrap()
+        );
+
+        let nonzero_chain = ClipState { head: 1, ..plain };
+        assert!(
+            !is_target_aligned_flat_quad(
+                &crate::frame::final_quad_instance(&quad, &nonzero_chain),
+                &nonzero_chain,
+                (64, 64),
+                1.0,
+            )
+            .unwrap()
+        );
+        let identity_exclusion = ClipState {
+            outer_id: 1,
+            ..plain
+        };
+        assert!(
+            !is_target_aligned_flat_quad(
+                &crate::frame::final_quad_instance(&quad, &identity_exclusion),
+                &identity_exclusion,
+                (64, 64),
+                1.0,
+            )
+            .unwrap()
+        );
+    }
+
+    #[test]
+    fn class_b_does_not_require_parent_class_a_safe_rect_to_be_nonempty() {
+        let parent = ClipShape::normalize(
+            Rect::new(0.0, 0.0, 64.0, 2.0),
+            CornerRadii::uniform(1.0),
+            Point::new(0.0, 0.0),
+        )
+        .unwrap();
+        assert_eq!(parent.full_coverage_inner_rect_px(1.0, (64, 2)), Ok(None));
+        let limits = wgpu::Limits::default();
+        let budget = ClipFrameBudget::for_device(&limits);
+        let mut s = Scene::new();
+        s.push_quad(Quad::new(Rect::new(0.0, 0.0, 64.0, 2.0), Rgba::gray(1.0)));
+        let frame =
+            ClipFrame::prepare(&s, &GlyphAtlas::default(), (64, 2), 1.0, budget, &limits).unwrap();
+        let proof = frame
+            .prove_parent_scissors(
+                &s,
+                &[parent],
+                (64, 2),
+                1.0,
+                budget,
+                BoundaryProofLimits::default(),
+                std::mem::size_of::<u64>() as u64,
+            )
+            .unwrap();
+        assert!(proof.safe_rects_px[0].is_none());
+        assert_eq!(proof.class_b_background_primitive, Some(0));
+    }
+
+    #[test]
+    fn class_b_allows_one_background_and_keeps_other_draws_on_class_a() {
+        let limits = wgpu::Limits::default();
+        let budget = ClipFrameBudget::for_device(&limits);
+        let mut s = Scene::new();
+        s.push_quad(Quad::new(Rect::new(0.0, 0.0, 64.0, 64.0), Rgba::gray(0.5)));
+        s.push_clip(Rect::new(20.0, 20.0, 10.0, 10.0));
+        s.push_quad(Quad::new(
+            Rect::new(20.0, 20.0, 10.0, 10.0),
+            Rgba::gray(1.0),
+        ));
+        s.pop_clip();
+        let frame =
+            ClipFrame::prepare(&s, &GlyphAtlas::default(), (64, 64), 1.0, budget, &limits).unwrap();
+        let proof = frame
+            .prove_parent_scissors(
+                &s,
+                &[proof_parent()],
+                (64, 64),
+                1.0,
+                budget,
+                BoundaryProofLimits::default(),
+                std::mem::size_of::<u64>() as u64,
+            )
+            .unwrap();
+        assert_eq!(proof.class_b_background_primitive, Some(0));
+        assert_eq!(proof.containment_checks, 2);
+    }
+
+    #[test]
+    fn class_b_after_valid_background_reports_non_b_support_domain_failure() {
+        let limits = wgpu::Limits::default();
+        let budget = ClipFrameBudget::for_device(&limits);
+        let mut s = Scene::new();
+        s.push_quad(Quad::new(Rect::new(0.0, 0.0, 64.0, 64.0), Rgba::gray(0.5)));
+        s.push_quad(
+            Quad::new(Rect::new(0.0, 0.0, 64.0, 64.0), Rgba::gray(0.5)).with_corner_radius(4.0),
+        );
+        let frame =
+            ClipFrame::prepare(&s, &GlyphAtlas::default(), (64, 64), 1.0, budget, &limits).unwrap();
+        assert!(matches!(
+            frame.prove_parent_scissors(
+                &s,
+                &[proof_parent()],
+                (64, 64),
+                1.0,
+                budget,
+                BoundaryProofLimits::default(),
+                std::mem::size_of::<u64>() as u64,
+            ),
+            Err(RenderError::InvalidClipFrame(
+                "prepared scissor outside parent full-coverage witness"
+            ))
+        ));
+    }
+
+    #[test]
+    fn class_b_rejects_second_flat_quad_instead_of_certifying_more_than_one() {
+        let limits = wgpu::Limits::default();
+        let budget = ClipFrameBudget::for_device(&limits);
+        let mut s = Scene::new();
+        s.push_quad(Quad::new(Rect::new(0.0, 0.0, 64.0, 64.0), Rgba::gray(0.5)));
+        s.push_quad(Quad::new(Rect::new(0.0, 0.0, 64.0, 64.0), Rgba::gray(0.5)));
+        let frame =
+            ClipFrame::prepare(&s, &GlyphAtlas::default(), (64, 64), 1.0, budget, &limits).unwrap();
+        assert!(matches!(
+            frame.prove_parent_scissors(
+                &s,
+                &[proof_parent()],
+                (64, 64),
+                1.0,
+                budget,
+                BoundaryProofLimits::default(),
+                std::mem::size_of::<u64>() as u64,
+            ),
+            Err(RenderError::InvalidClipFrame(
+                "only one Class B flat background is supported"
+            ))
+        ));
+    }
+
+    #[test]
+    fn class_b_rejects_rounded_stroked_and_analytic_clip_instances() {
+        let state = ClipState {
+            head: 0,
+            binding_slot: 0,
+            analytic: false,
+            scissor: [0, 0, 64, 64],
+            outer_id: 0,
+            inner_empty: false,
+            quad_shape: None,
+        };
+        let rounded =
+            Quad::new(Rect::new(0.0, 0.0, 64.0, 64.0), Rgba::gray(1.0)).with_corner_radius(4.0);
+        let rounded_instance = crate::frame::final_quad_instance(&rounded, &state);
+        assert!(!is_target_aligned_flat_quad(&rounded_instance, &state, (64, 64), 1.0).unwrap());
+
+        let stroked = Quad::new(Rect::new(0.0, 0.0, 64.0, 64.0), Rgba::gray(1.0))
+            .with_border(1.0, Rgba::gray(0.0));
+        let stroked_instance = crate::frame::final_quad_instance(&stroked, &state);
+        assert!(!is_target_aligned_flat_quad(&stroked_instance, &state, (64, 64), 1.0).unwrap());
+
+        let clipped = ClipState { head: 1, ..state };
+        let flat = Quad::new(Rect::new(0.0, 0.0, 64.0, 64.0), Rgba::gray(1.0));
+        let clipped_instance = crate::frame::final_quad_instance(&flat, &clipped);
+        assert!(!is_target_aligned_flat_quad(&clipped_instance, &clipped, (64, 64), 1.0).unwrap());
+    }
+
+    #[test]
+    fn class_b_rejects_non_target_scissor_and_invalid_material_colors() {
+        let flat = Quad::new(Rect::new(0.0, 0.0, 64.0, 64.0), Rgba::gray(1.0));
+        let partial = ClipState {
+            head: 0,
+            binding_slot: 0,
+            analytic: false,
+            scissor: [0, 0, 63, 64],
+            outer_id: 0,
+            inner_empty: false,
+            quad_shape: None,
+        };
+        let partial_instance = crate::frame::final_quad_instance(&flat, &partial);
+        assert!(!is_target_aligned_flat_quad(&partial_instance, &partial, (64, 64), 1.0).unwrap());
+
+        let invalid_fill = Quad::new(
+            Rect::new(0.0, 0.0, 64.0, 64.0),
+            Rgba::new(f32::NAN, 0.0, 0.0, 1.0),
+        );
+        let state = ClipState {
+            scissor: [0, 0, 64, 64],
+            ..partial
+        };
+        let invalid_instance = crate::frame::final_quad_instance(&invalid_fill, &state);
+        assert!(matches!(
+            is_target_aligned_flat_quad(&invalid_instance, &state, (64, 64), 1.0),
+            Err(RenderError::InvalidClipFrame(
+                "analytic path requires finite unit-range RGBA"
+            ))
+        ));
+
+        let invalid_border = Quad::new(Rect::new(0.0, 0.0, 64.0, 64.0), Rgba::gray(1.0))
+            .with_border(0.0, Rgba::new(f32::NAN, 0.0, 0.0, 0.0));
+        let invalid_border_instance = crate::frame::final_quad_instance(&invalid_border, &state);
+        assert!(matches!(
+            is_target_aligned_flat_quad(&invalid_border_instance, &state, (64, 64), 1.0),
+            Err(RenderError::InvalidClipFrame(
+                "analytic path requires finite unit-range RGBA"
+            ))
+        ));
+    }
+
+    #[test]
+    fn class_b_attempt_and_receipt_record_use_separate_proof_work_units() {
+        let limits = wgpu::Limits::default();
+        let mut budget = ClipFrameBudget::for_device(&limits);
+        let mut s = Scene::new();
+        s.push_quad(Quad::new(Rect::new(0.0, 0.0, 64.0, 64.0), Rgba::gray(1.0)));
+        let frame =
+            ClipFrame::prepare(&s, &GlyphAtlas::default(), (64, 64), 1.0, budget, &limits).unwrap();
+        assert!(matches!(
+            frame.prove_parent_scissors(
+                &s,
+                &[proof_parent()],
+                (64, 64),
+                1.0,
+                budget,
+                BoundaryProofLimits { max_work: 13 },
+                std::mem::size_of::<u64>() as u64,
+            ),
+            Err(RenderError::ClipBudgetExceeded("boundary proof work"))
+        ));
+
+        budget.max_records = 1;
+        assert!(matches!(
+            frame.prove_parent_scissors(
+                &s,
+                &[proof_parent()],
+                (64, 64),
+                1.0,
+                budget,
+                BoundaryProofLimits::default(),
+                std::mem::size_of::<u64>() as u64,
+            ),
+            Err(RenderError::ClipBudgetExceeded("boundary proof records"))
+        ));
+    }
+
+    #[test]
+    fn failed_class_b_attempt_is_charged_before_quad_predicate() {
+        let limits = wgpu::Limits::default();
+        let budget = ClipFrameBudget::for_device(&limits);
+        let mut s = Scene::new();
+        s.push_quad(
+            Quad::new(Rect::new(0.0, 0.0, 64.0, 64.0), Rgba::gray(1.0)).with_corner_radius(4.0),
+        );
+        let frame =
+            ClipFrame::prepare(&s, &GlyphAtlas::default(), (64, 64), 1.0, budget, &limits).unwrap();
+        let prove = |max_work| {
+            frame.prove_parent_scissors(
+                &s,
+                &[proof_parent()],
+                (64, 64),
+                1.0,
+                budget,
+                BoundaryProofLimits { max_work },
+                std::mem::size_of::<u64>() as u64,
+            )
+        };
+        assert!(matches!(
+            prove(12),
+            Err(RenderError::ClipBudgetExceeded("boundary proof work"))
+        ));
+        assert!(matches!(
+            prove(13),
+            Err(RenderError::InvalidClipFrame(
+                "prepared scissor outside parent full-coverage witness"
+            ))
+        ));
+    }
+
+    #[test]
+    fn class_b_never_treats_full_target_unknown_image_as_flat_background() {
+        let limits = wgpu::Limits::default();
+        let budget = ClipFrameBudget::for_device(&limits);
+        let mut s = Scene::new();
+        s.push_image(ImageQuad {
+            rect: Rect::new(0.0, 0.0, 64.0, 64.0),
+            image: ImageId(0),
+            opacity: 1.0,
+        });
+        let frame =
+            ClipFrame::prepare(&s, &GlyphAtlas::default(), (64, 64), 1.0, budget, &limits).unwrap();
+        assert!(matches!(
+            frame.prove_parent_scissors(
+                &s,
+                &[proof_parent()],
+                (64, 64),
+                1.0,
+                budget,
+                BoundaryProofLimits::default(),
+                std::mem::size_of::<u64>() as u64,
+            ),
+            Err(RenderError::InvalidClipFrame(
+                "prepared scissor outside parent full-coverage witness"
             ))
         ));
     }

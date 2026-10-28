@@ -5,6 +5,7 @@ edition = "2024"
 publish = false
 [workspace]
 [features]
+bitmap-images = ["tekes-ui-controls/bitmap-images"]
 token-audit = ["tekes-ui-controls/token-audit"]
 
 [dependencies]

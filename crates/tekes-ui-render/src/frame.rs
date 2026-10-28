@@ -7,7 +7,9 @@
 //! 所以 painter's order 跨种类成立（文字压在 quad 上、另一个 quad 又压在文字上）。
 //! 字形批里允许多个 `GlyphRun`（颜色在实例里）；图像批要求是同一张图。
 
-use crate::clip::{ClipFrame, ClipFrameBudget};
+use crate::clip::{
+    BoundaryProofLimits, BoundaryProofSummary, ClipFrame, ClipFrameBudget, ClipState,
+};
 use crate::common::GlobalsBinding;
 use crate::error::RenderError;
 use crate::glyph_pass::{GlyphInstance, GlyphPass};
@@ -15,7 +17,7 @@ use crate::image_pass::{ImageInstance, ImagePass};
 use crate::instance::QuadInstance;
 use crate::quad_pass::QuadPass;
 use std::ops::Range;
-use tekes_ui_scene::{GlyphAtlas, ImageId, Primitive, Scene};
+use tekes_ui_scene::{ClipShape, GlyphAtlas, ImageId, Primitive, Quad, Scene};
 use tekes_ui_tokens::Rgba;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -24,6 +26,26 @@ enum Batch {
     Quads(Range<u32>),
     Glyphs(Range<u32>),
     Image(ImageId, Range<u32>),
+}
+
+/// Construct the exact Quad instance shared by proof inspection and encoding.
+pub(crate) fn final_quad_instance(q: &Quad, clip: &ClipState) -> QuadInstance {
+    let mut instance = QuadInstance::from_quad(q);
+    if let Some(shape) = clip.quad_shape {
+        instance.radii = shape.radii().to_array();
+        if clip.inner_empty && q.border_width > 0.0 {
+            // Once the exact CPU inner domain is empty, coverage is independent
+            // of further border width. Encode an equivalent finite width.
+            instance.params[0] = shape.rect().size.width.min(shape.rect().size.height) * 0.5;
+        }
+    }
+    instance.clip_meta = [
+        clip.outer_id,
+        u32::from(clip.inner_empty),
+        u32::from(clip.quad_shape.is_some_and(|shape| shape.is_empty())),
+        0,
+    ];
+    instance
 }
 
 pub(crate) struct Pipelines {
@@ -72,6 +94,48 @@ impl Pipelines {
         scale: f32,
         clear: Rgba,
     ) -> Result<(), RenderError> {
+        self.prepare_frame_inner(device, scene, atlas, size, scale, clear, None)
+            .map(|_| ())
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn prepare_frame_with_parent_boundary_proof(
+        &mut self,
+        device: &wgpu::Device,
+        scene: &Scene,
+        atlas: &GlyphAtlas,
+        size: (u32, u32),
+        scale: f32,
+        clear: Rgba,
+        parent_shapes: &[ClipShape],
+        proof_limits: BoundaryProofLimits,
+        receipt_header_bytes: u64,
+    ) -> Result<BoundaryProofSummary, RenderError> {
+        self.prepare_frame_inner(
+            device,
+            scene,
+            atlas,
+            size,
+            scale,
+            clear,
+            Some((parent_shapes, proof_limits, receipt_header_bytes)),
+        )?
+        .ok_or(RenderError::InvalidClipFrame(
+            "missing boundary proof summary",
+        ))
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn prepare_frame_inner(
+        &mut self,
+        device: &wgpu::Device,
+        scene: &Scene,
+        atlas: &GlyphAtlas,
+        size: (u32, u32),
+        scale: f32,
+        clear: Rgba,
+        boundary: Option<(&[ClipShape], BoundaryProofLimits, u64)>,
+    ) -> Result<Option<BoundaryProofSummary>, RenderError> {
         self.prepared = None;
         let frame = ClipFrame::prepare(
             scene,
@@ -84,8 +148,21 @@ impl Pipelines {
         if frame.analytic {
             crate::clip::validate_color(clear)?;
         }
+        let summary = boundary
+            .map(|(parent_shapes, proof_limits, receipt_header_bytes)| {
+                frame.prove_parent_scissors(
+                    scene,
+                    parent_shapes,
+                    size,
+                    scale,
+                    self.clip_budget,
+                    proof_limits,
+                    receipt_header_bytes,
+                )
+            })
+            .transpose()?;
         self.prepared = Some(frame);
-        Ok(())
+        Ok(summary)
     }
 
     pub fn register_image(
@@ -147,24 +224,7 @@ impl Pipelines {
                 }
                 Primitive::Quad(q) | Primitive::KeyedQuad { quad: q, .. } => {
                     let start = self.quad.staging.len() as u32;
-                    let mut instance = QuadInstance::from_quad(q);
-                    if let Some(shape) = clip.quad_shape {
-                        instance.radii = shape.radii().to_array();
-                        if clip.inner_empty && q.border_width > 0. {
-                            // Once the exact CPU inner domain is empty, coverage
-                            // is independent of further border width. Encode an
-                            // equivalent finite width, keeping the explicit flag.
-                            instance.params[0] =
-                                shape.rect().size.width.min(shape.rect().size.height) * 0.5;
-                        }
-                    }
-                    instance.clip_meta = [
-                        clip.outer_id,
-                        u32::from(clip.inner_empty),
-                        u32::from(clip.quad_shape.is_some_and(|s| s.is_empty())),
-                        0,
-                    ];
-                    self.quad.staging.push(instance);
+                    self.quad.staging.push(final_quad_instance(q, &clip));
                     push_batch(&mut self.batches, Kind::Quads, start, start + 1);
                 }
                 Primitive::Shadow(shadow) => {

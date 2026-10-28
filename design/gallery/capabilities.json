@@ -2896,7 +2896,7 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -3193,7 +3193,7 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -3490,7 +3490,7 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -3787,7 +3787,7 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -4084,7 +4084,7 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -4381,7 +4381,7 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -4678,7 +4678,7 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -4975,7 +4975,7 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -5272,7 +5272,7 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -5557,7 +5557,7 @@
             "path": "crates/tekes-ui-tokens/src/palette.rs"
           },
           {
-            "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+            "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
             "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
             "path": "examples/composition-consumer/Cargo.toml"
           },
@@ -5878,7 +5878,7 @@
               "path": "crates/tekes-ui-tokens/src/palette.rs"
             },
             {
-              "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+              "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
               "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
               "path": "examples/composition-consumer/Cargo.toml"
             },
@@ -19310,7 +19310,7 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -19607,7 +19607,7 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -19904,7 +19904,7 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -20201,7 +20201,7 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -20498,7 +20498,7 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -20795,7 +20795,7 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -21092,7 +21092,7 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -21389,7 +21389,7 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -21686,7 +21686,7 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -21983,7 +21983,7 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -22268,7 +22268,7 @@
             "path": "crates/tekes-ui-tokens/src/palette.rs"
           },
           {
-            "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+            "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
             "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
             "path": "examples/composition-consumer/Cargo.toml"
           },
@@ -22577,7 +22577,7 @@
               "path": "crates/tekes-ui-tokens/src/palette.rs"
             },
             {
-              "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+              "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
               "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
               "path": "examples/composition-consumer/Cargo.toml"
             },
@@ -23141,7 +23141,7 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -23443,7 +23443,7 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -23745,7 +23745,7 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -24047,7 +24047,7 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -24349,7 +24349,7 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -24651,7 +24651,7 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -24941,7 +24941,7 @@
             "path": "crates/tekes-ui-tokens/src/palette.rs"
           },
           {
-            "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+            "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
             "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
             "path": "examples/composition-consumer/Cargo.toml"
           },
@@ -25255,7 +25255,7 @@
               "path": "crates/tekes-ui-tokens/src/palette.rs"
             },
             {
-              "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+              "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
               "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
               "path": "examples/composition-consumer/Cargo.toml"
             },
@@ -33987,7 +33987,7 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -34284,7 +34284,7 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -34581,7 +34581,7 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -34878,7 +34878,7 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -35175,7 +35175,7 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -35472,7 +35472,7 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -35769,7 +35769,7 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -36066,7 +36066,7 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -36363,7 +36363,7 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -36660,7 +36660,7 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -36945,7 +36945,7 @@
             "path": "crates/tekes-ui-tokens/src/palette.rs"
           },
           {
-            "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+            "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
             "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
             "path": "examples/composition-consumer/Cargo.toml"
           },
@@ -37254,7 +37254,7 @@
               "path": "crates/tekes-ui-tokens/src/palette.rs"
             },
             {
-              "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+              "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
               "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
               "path": "examples/composition-consumer/Cargo.toml"
             },
@@ -39290,7 +39290,7 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -39587,7 +39587,7 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -39884,7 +39884,7 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -40181,7 +40181,7 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -40478,7 +40478,7 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -40775,7 +40775,7 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -41072,7 +41072,7 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -41369,7 +41369,7 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -41666,7 +41666,7 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -41951,7 +41951,7 @@
             "path": "crates/tekes-ui-tokens/src/palette.rs"
           },
           {
-            "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+            "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
             "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
             "path": "examples/composition-consumer/Cargo.toml"
           },
@@ -42329,7 +42329,7 @@
               "path": "crates/tekes-ui-tokens/src/palette.rs"
             },
             {
-              "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+              "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
               "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
               "path": "examples/composition-consumer/Cargo.toml"
             },
@@ -42879,7 +42879,7 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -43176,7 +43176,7 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -43473,7 +43473,7 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -43770,7 +43770,7 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -44067,7 +44067,7 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -44352,7 +44352,7 @@
             "path": "crates/tekes-ui-tokens/src/palette.rs"
           },
           {
-            "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+            "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
             "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
             "path": "examples/composition-consumer/Cargo.toml"
           },
@@ -44662,7 +44662,7 @@
               "path": "crates/tekes-ui-tokens/src/palette.rs"
             },
             {
-              "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+              "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
               "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
               "path": "examples/composition-consumer/Cargo.toml"
             },
@@ -54378,12 +54378,12 @@
             "path": "crates/tekes-ui-tokens/src/palette.rs"
           },
           {
-            "actual_sha256": "68e1fcb2a47790106762cbf135222472f13b3a6bfb7f0bf75abfc0a58a90da26",
+            "actual_sha256": "b7038877c5878019eb62e37243f2bcdc4dff9b497c9107297dee921b4b8dc89d",
             "expected_sha256": "e9c265f2daf3476b3dbf05f8c2d2d34ff9ac515c5cfa9fbd40729ea78324f0f2",
             "path": "examples/composition-consumer/Cargo.lock"
           },
           {
-            "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+            "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
             "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
             "path": "examples/composition-consumer/Cargo.toml"
           },
@@ -54693,12 +54693,12 @@
               "path": "crates/tekes-ui-tokens/src/palette.rs"
             },
             {
-              "actual_sha256": "68e1fcb2a47790106762cbf135222472f13b3a6bfb7f0bf75abfc0a58a90da26",
+              "actual_sha256": "b7038877c5878019eb62e37243f2bcdc4dff9b497c9107297dee921b4b8dc89d",
               "expected_sha256": "e9c265f2daf3476b3dbf05f8c2d2d34ff9ac515c5cfa9fbd40729ea78324f0f2",
               "path": "examples/composition-consumer/Cargo.lock"
             },
             {
-              "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+              "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
               "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
               "path": "examples/composition-consumer/Cargo.toml"
             },
@@ -55246,12 +55246,12 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "68e1fcb2a47790106762cbf135222472f13b3a6bfb7f0bf75abfc0a58a90da26",
+                "actual_sha256": "b7038877c5878019eb62e37243f2bcdc4dff9b497c9107297dee921b4b8dc89d",
                 "expected_sha256": "e9c265f2daf3476b3dbf05f8c2d2d34ff9ac515c5cfa9fbd40729ea78324f0f2",
                 "path": "examples/composition-consumer/Cargo.lock"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -55427,12 +55427,12 @@
                 "path": "crates/tekes-ui-tokens/src/palette.rs"
               },
               {
-                "actual_sha256": "68e1fcb2a47790106762cbf135222472f13b3a6bfb7f0bf75abfc0a58a90da26",
+                "actual_sha256": "b7038877c5878019eb62e37243f2bcdc4dff9b497c9107297dee921b4b8dc89d",
                 "expected_sha256": "e9c265f2daf3476b3dbf05f8c2d2d34ff9ac515c5cfa9fbd40729ea78324f0f2",
                 "path": "examples/composition-consumer/Cargo.lock"
               },
               {
-                "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+                "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
                 "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
                 "path": "examples/composition-consumer/Cargo.toml"
               },
@@ -55602,12 +55602,12 @@
             "path": "crates/tekes-ui-tokens/src/palette.rs"
           },
           {
-            "actual_sha256": "68e1fcb2a47790106762cbf135222472f13b3a6bfb7f0bf75abfc0a58a90da26",
+            "actual_sha256": "b7038877c5878019eb62e37243f2bcdc4dff9b497c9107297dee921b4b8dc89d",
             "expected_sha256": "e9c265f2daf3476b3dbf05f8c2d2d34ff9ac515c5cfa9fbd40729ea78324f0f2",
             "path": "examples/composition-consumer/Cargo.lock"
           },
           {
-            "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+            "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
             "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
             "path": "examples/composition-consumer/Cargo.toml"
           },
@@ -55801,12 +55801,12 @@
               "path": "crates/tekes-ui-tokens/src/palette.rs"
             },
             {
-              "actual_sha256": "68e1fcb2a47790106762cbf135222472f13b3a6bfb7f0bf75abfc0a58a90da26",
+              "actual_sha256": "b7038877c5878019eb62e37243f2bcdc4dff9b497c9107297dee921b4b8dc89d",
               "expected_sha256": "e9c265f2daf3476b3dbf05f8c2d2d34ff9ac515c5cfa9fbd40729ea78324f0f2",
               "path": "examples/composition-consumer/Cargo.lock"
             },
             {
-              "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+              "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
               "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
               "path": "examples/composition-consumer/Cargo.toml"
             },
@@ -56195,12 +56195,12 @@
             "path": "crates/tekes-ui-tokens/src/palette.rs"
           },
           {
-            "actual_sha256": "68e1fcb2a47790106762cbf135222472f13b3a6bfb7f0bf75abfc0a58a90da26",
+            "actual_sha256": "b7038877c5878019eb62e37243f2bcdc4dff9b497c9107297dee921b4b8dc89d",
             "expected_sha256": "e9c265f2daf3476b3dbf05f8c2d2d34ff9ac515c5cfa9fbd40729ea78324f0f2",
             "path": "examples/composition-consumer/Cargo.lock"
           },
           {
-            "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+            "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
             "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
             "path": "examples/composition-consumer/Cargo.toml"
           },
@@ -56541,12 +56541,12 @@
               "path": "crates/tekes-ui-tokens/src/palette.rs"
             },
             {
-              "actual_sha256": "68e1fcb2a47790106762cbf135222472f13b3a6bfb7f0bf75abfc0a58a90da26",
+              "actual_sha256": "b7038877c5878019eb62e37243f2bcdc4dff9b497c9107297dee921b4b8dc89d",
               "expected_sha256": "e9c265f2daf3476b3dbf05f8c2d2d34ff9ac515c5cfa9fbd40729ea78324f0f2",
               "path": "examples/composition-consumer/Cargo.lock"
             },
             {
-              "actual_sha256": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+              "actual_sha256": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
               "expected_sha256": "5e121d03496c5ef864d49f65b0c0fa74e918e4278e54dc18529cc706ce0a96d7",
               "path": "examples/composition-consumer/Cargo.toml"
             },
@@ -62024,18 +62024,18 @@
     "crates/tekes-ui-platform-macos/tests/required_native.rs": "23fca934b0dbdd08950e8c11ab4123c4a8db3d70b95371692c1695474ef90000",
     "crates/tekes-ui-platform-macos/tests/titlebar_native.rs": "a1c1925ea2cf08a7d4d8a77b4069bef318dce3d8a9c6560d6a2bd2b89e268b39",
     "crates/tekes-ui-render/examples/dump_sample.rs": "da8a4b33ba1aeb25bd907a52983b0f28b14af4bd875e4d3284e167451368a692",
-    "crates/tekes-ui-render/src/clip.rs": "f64ecf09ca4f05f6ad4783164b3ae637a595db18a79dc84aaee0e5bf6ea57bc9",
+    "crates/tekes-ui-render/src/clip.rs": "d329e2b671f6497c04423e412f1b836c20e112d22e0ee5ff2b732311c5140ac2",
     "crates/tekes-ui-render/src/common.rs": "9c287dedd02bcc7e590369b51eb161284ebe2a90fdb5f07da94c70830cf0d7cf",
     "crates/tekes-ui-render/src/error.rs": "94ca359cdd79f9ff93a4b8b88e4a8ad6d1c25b0c6db1e353218304f9900683ad",
-    "crates/tekes-ui-render/src/frame.rs": "393746b8ec5039e2914880fa899bf51849eeb23053656edeada61d0c7d6621a9",
+    "crates/tekes-ui-render/src/frame.rs": "5c306ac87aaf0bfa3b2f0bce3e7a2e8a5d1b62d0369c704f5dc1b46579ae734d",
     "crates/tekes-ui-render/src/glyph_pass.rs": "4327b47d0cd5edaa1e95e70bc8e265e4bc6196f85bd59b1d04c44b3391094ffc",
     "crates/tekes-ui-render/src/gpu.rs": "be35967db672f500c76267a8822945a23be33ae2a03005230bc37dfad3a6ba58",
     "crates/tekes-ui-render/src/image_pass.rs": "9dadf46863eb75e7310ea68c68b391e52564605478e1aa3a76c3454c7e12ae90",
     "crates/tekes-ui-render/src/instance.rs": "b7c596a5f7e3ec41f3a5a9e78a6b3b76d6047dc68045aad6ff9d33db8da865bd",
-    "crates/tekes-ui-render/src/lib.rs": "4e1743824970601004a32ef3ac76a2761103f3fcfc2876d04bc901337731abe5",
+    "crates/tekes-ui-render/src/lib.rs": "33ec3d89c031e656644498b42b49e26541c3b34b5ce26d3b79fc1d202759be1e",
     "crates/tekes-ui-render/src/quad.wgsl": "f8a48768ec52fabb7fa3e8939425e20814557d9e4de0349a04461b8e40b03b61",
     "crates/tekes-ui-render/src/quad_pass.rs": "ff0be858d034ff9cf6afba8dae19e4f420fdd47a31e694e8d6b53accda0dd21f",
-    "crates/tekes-ui-render/src/renderer.rs": "a517a04e9c6391b63f9588902e186164e6430dee67074d2436d117e6b82dd554",
+    "crates/tekes-ui-render/src/renderer.rs": "367e8aa701f8e878cfc1b3a57fb74a29991edff6ce101b35bf150d6023b91595",
     "crates/tekes-ui-render/src/shared_surface_macos.rs": "5f0ebe2d0f92e9b5038b0c40277677a5d6bc3422c2a7d01d6b1ece08249b4002",
     "crates/tekes-ui-render/src/stats.rs": "328465d94d36e23d2f00764483fdf1a87fa01e4fee3aa4c5c5429eac9e46e262",
     "crates/tekes-ui-render/src/timing.rs": "0c8ee0ef691b5a1f248044659f9157d5d1a3d0cc1c6e754d9eadb7fbd570b308",
@@ -62052,10 +62052,10 @@
     "crates/tekes-ui-render/tests/offscreen.rs": "d6934163325bc87cae1dc80289c7673bf4d3a2994ddca4b434efba4c6a98ccf6",
     "crates/tekes-ui-render/tests/surface.rs": "2b0d50582c5328e861aa8e4c6dc3d3ec85480ca8616d95b7babc16c64dde5be7",
     "crates/tekes-ui-scene/src/atlas.rs": "7728a5c3727bc5070c6e30bc3985261aca009141b71d78f5afd6f160d426dee4",
-    "crates/tekes-ui-scene/src/clip.rs": "ae3baabe204990ab460710a9c102ecffd69b633f68798d6b43187d38a5f441d4",
+    "crates/tekes-ui-scene/src/clip.rs": "b1fc2e78d6a11d085f7bda905839911603fb5d70735a7fea4725d50b2458e284",
     "crates/tekes-ui-scene/src/geometry.rs": "44fe7c558d392d1f835bd2acad7307df652095a56056db865983ba4d9ec054f7",
     "crates/tekes-ui-scene/src/glyph.rs": "02714e2897fffa314366e6bb870750c8c23364122663bb5f9df0bd2df9ab3832",
-    "crates/tekes-ui-scene/src/lib.rs": "1a7233a47ed08249c0141eaa30b0970c8ae1ceb77aa9c2fa08859b49a3980d5e",
+    "crates/tekes-ui-scene/src/lib.rs": "e88d7704db7f1a54e10639fab32d1118aa69fc33820e56b88da0c3d23631dc1d",
     "crates/tekes-ui-scene/src/quad.rs": "0ce9073e506ff2ff1cc7f6b742a10648aaa973b14c540c1455508a8b37645786",
     "crates/tekes-ui-scene/src/scene.rs": "5cf30445508c0a8ed926a330d8787b332630b7750231b51527ac0c6f6a2712dc",
     "crates/tekes-ui-scene/src/scene/fragment.rs": "ee0c22364e694462e1d7db88119aba1b184a1b3c9ae0a212ed3bf950c9cad76b",

@@ -83,6 +83,10 @@ jobs:
           cargo clippy -p tekes-ui-platform-macos --features content-accessibility --all-targets --locked -- -D warnings
           cargo test -p tekes-ui-platform-macos --features content-accessibility --lib --locked
           cargo test -p tekes-ui-platform-macos --features content-accessibility --test link_native --locked
+          # Issue 127 AC5: compile the actual optional-bitmap proof consumer.
+          # GPU cases remain explicit local locked runs; the original Toolbar positive is still open.
+          cargo clippy --manifest-path examples/composition-consumer/Cargo.toml --features bitmap-images --test parent_boundary_proof --locked --offline -- -D warnings
+          cargo test --manifest-path examples/composition-consumer/Cargo.toml --features bitmap-images --test parent_boundary_proof --no-run --locked --offline
 
       - name: Independent AppWindow and Settings delivery (Issue 70)
         if: ${{ !cancelled() && steps.workspace_clippy.outcome == 'success' }}

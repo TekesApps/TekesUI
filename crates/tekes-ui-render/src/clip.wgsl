@@ -10,6 +10,7 @@ struct ClipRecord {rect:vec4<f32>,radii:vec4<f32>,links:vec4<u32>}
 @group(0) @binding(1) var<storage,read> clip_records:array<ClipRecord>;
 fn sd_round_rect(p:vec2<f32>,b:vec2<f32>,r:f32)->f32 {
     let q=abs(p)-b+vec2<f32>(r);
+    if all(q<=vec2<f32>(0.0)) {return max(q.x,q.y)-r;}
     return min(max(q.x,q.y),0.0)+length(max(q,vec2<f32>(0.0)))-r;
 }
 fn clip_shape_coverage(p_px:vec2<f32>,shape:ClipRecord)->f32 {

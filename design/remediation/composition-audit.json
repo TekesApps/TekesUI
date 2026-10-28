@@ -1930,7 +1930,7 @@
     "docs/design/menu-action-records-20261021.md": "27b925716d27757e750c7be222ebfe0844bbd618a0e5b5373d35c5820164fa88",
     "docs/design/menu-declarations-20261021.md": "00ac8b6905cf73ae8b2bcb1ff7498db15e0682691f6d48a7631962c7940ac2e1",
     "docs/roadmap.md": "1648c62ec9209c206b98c18da6a48cda8e9df306d635e294b5d0ad5dcf1bd331",
-    "examples/composition-consumer/Cargo.toml": "c590d5bed93705b7a8e55e6829fbe1f23210df4ceb84652f29207e801b551cab",
+    "examples/composition-consumer/Cargo.toml": "a2e8af1d34120108ac8f6dcad9f1cb8337fdadf5eaba7351461b6aadeb976bcf",
     "examples/composition-consumer/examples/native.rs": "4875cbbc48e68aeaf57ff3699b666b3f7fd660c4f3c27a754493cdcb17c5e64a",
     "examples/composition-consumer/examples/support/native_key.rs": "6932a589bce50e2f4365c780c67ab0c467a126c9a4677ad23eeda132f146adae",
     "examples/composition-consumer/src/choice_status.rs": "337878b760c8aa05fe0bdbb0dbce091604526acc082c5778645b6feb6199d678",

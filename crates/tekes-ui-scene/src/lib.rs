@@ -52,8 +52,8 @@ mod shadow;
 
 pub use atlas::{AtlasConfig, AtlasStats, DirtyRect, GlyphAtlas};
 pub use clip::{
-    ClipBudget, ClipError, ClipInterval, ClipRegion, ClipShape, InnerClipShape, ShapeKey,
-    ShapeTable, VisibleClipBounds,
+    ClipBudget, ClipError, ClipInterval, ClipRegion, ClipShape, FullCoverageInnerRectPx,
+    InnerClipShape, ShapeKey, ShapeTable, VisibleClipBounds,
 };
 pub use geometry::{Point, Rect, Size};
 pub use glyph::{

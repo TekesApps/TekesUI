@@ -1,5 +1,6 @@
 //! `Renderer`：持有 wgpu 设备与（可选的）surface，按调用驱动绘制。
 
+use crate::clip::BoundaryProofLimits;
 use crate::common::COLOR_FORMAT;
 use crate::error::RenderError;
 use crate::frame::{FrameCounts, Pipelines};
@@ -8,13 +9,61 @@ use std::ffi::c_void;
 use std::ptr::NonNull;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant};
-use tekes_ui_scene::{GlyphAtlas, ImageId, Primitive, Scene};
+use tekes_ui_scene::{ClipShape, FullCoverageInnerRectPx, GlyphAtlas, ImageId, Primitive, Scene};
 use tekes_ui_tokens::Rgba;
 
 /// Triple buffering leaves a drawable available while the compositor owns the
 /// previous frame. One render per display callback still limits producer pace;
 /// this does not add a free-running render-ahead loop.
 const FRAME_LATENCY: u32 = 2;
+
+/// An immutable RGBA result from a successful finite parent-boundary proof.
+/// The receipt stays private and cannot be detached, cloned or serialized.
+pub struct VerifiedFrameOutput {
+    pixels: Vec<u8>,
+    receipt: BoundaryProofReceipt,
+}
+
+impl std::fmt::Debug for VerifiedFrameOutput {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("VerifiedFrameOutput")
+            .field("dimensions_px", &self.receipt.size_px)
+            .field("pixel_len", &self.pixels.len())
+            .field("frame_sequence", &self.receipt.frame_sequence)
+            .field("states_visited", &self.receipt.states_visited)
+            .field("containment_checks", &self.receipt.containment_checks)
+            .field(
+                "class_b_background_primitive",
+                &self.receipt.class_b_background_primitive,
+            )
+            .finish()
+    }
+}
+
+#[allow(dead_code)] // Private evidence is intentionally opaque to API callers.
+struct BoundaryProofReceipt {
+    renderer_id: u64,
+    frame_sequence: u64,
+    size_px: (u32, u32),
+    scale: f32,
+    parent_shapes: std::sync::Arc<[ClipShape]>,
+    safe_rects_px: Vec<Option<FullCoverageInnerRectPx>>,
+    class_b_background_primitive: Option<u32>,
+    states_visited: u64,
+    containment_checks: u64,
+    zero_scissor_skips: u64,
+    proof_work: u64,
+}
+
+impl VerifiedFrameOutput {
+    pub fn rgba8(&self) -> &[u8] {
+        &self.pixels
+    }
+
+    pub fn dimensions_px(&self) -> (u32, u32) {
+        self.receipt.size_px
+    }
+}
 
 // Diagnostic A/B only. Normal applications retain the measured FIFO default.
 // wgpu Metal uses desired latency + 1 drawables; never disable display sync.
@@ -72,6 +121,7 @@ pub struct Renderer {
     gpu_timestamps: bool,
     /// 逐帧计时，`None` 表示关着（默认）。
     timing: Option<Timing>,
+    next_boundary_frame_sequence: u64,
 }
 
 impl std::fmt::Debug for Renderer {
@@ -130,6 +180,97 @@ fn check_size(size_px: (u32, u32), scale: f32) -> Result<(), RenderError> {
         return Err(RenderError::InvalidArgument("尺寸不能为 0"));
     }
     Ok(())
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct ReadbackLayout {
+    unpadded_bytes_per_row: u32,
+    padded_bytes_per_row: u32,
+    readback_bytes: u64,
+    output_bytes: usize,
+}
+
+struct OffscreenRenderParams {
+    size_px: (u32, u32),
+    scale: f32,
+    clear: Rgba,
+    prevalidated_layout: Option<ReadbackLayout>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct ReadbackCapacityRejection {
+    requested_bytes: u64,
+    max_buffer_size: u64,
+}
+
+fn readback_capacity_rejection(
+    requested_bytes: u64,
+    max_buffer_size: u64,
+) -> Option<ReadbackCapacityRejection> {
+    (requested_bytes > max_buffer_size).then_some(ReadbackCapacityRejection {
+        requested_bytes,
+        max_buffer_size,
+    })
+}
+
+fn checked_readback_layout(
+    size_px: (u32, u32),
+    max_buffer_size: u64,
+) -> Result<ReadbackLayout, RenderError> {
+    let align = usize::try_from(wgpu::COPY_BYTES_PER_ROW_ALIGNMENT)
+        .map_err(|_| RenderError::InvalidClipFrame("readback alignment exceeds usize"))?;
+    let unpadded_bytes_per_row_usize = usize::try_from(size_px.0)
+        .ok()
+        .and_then(|width| width.checked_mul(4))
+        .ok_or(RenderError::InvalidClipFrame("readback row bytes overflow"))?;
+    let padded_bytes_per_row_usize = unpadded_bytes_per_row_usize
+        .checked_add(align - 1)
+        .and_then(|n| n.checked_div(align))
+        .and_then(|rows| rows.checked_mul(align))
+        .ok_or(RenderError::InvalidClipFrame(
+            "readback row alignment overflow",
+        ))?;
+    let unpadded_bytes_per_row = u32::try_from(unpadded_bytes_per_row_usize)
+        .map_err(|_| RenderError::InvalidClipFrame("readback row bytes exceed u32"))?;
+    let padded_bytes_per_row = u32::try_from(padded_bytes_per_row_usize)
+        .map_err(|_| RenderError::InvalidClipFrame("readback row alignment exceeds u32"))?;
+    let readback_bytes_usize = padded_bytes_per_row_usize
+        .checked_mul(
+            usize::try_from(size_px.1)
+                .map_err(|_| RenderError::InvalidClipFrame("readback height exceeds usize"))?,
+        )
+        .ok_or(RenderError::InvalidClipFrame(
+            "readback buffer size overflow",
+        ))?;
+    let readback_bytes = u64::try_from(readback_bytes_usize)
+        .map_err(|_| RenderError::InvalidClipFrame("readback buffer exceeds u64"))?;
+    if readback_capacity_rejection(readback_bytes, max_buffer_size).is_some() {
+        return Err(RenderError::InvalidArgument(
+            "readback buffer exceeds device max buffer size",
+        ));
+    }
+    let output_bytes = usize::try_from(size_px.0)
+        .ok()
+        .and_then(|width| {
+            usize::try_from(size_px.1)
+                .ok()
+                .and_then(|height| width.checked_mul(height))
+        })
+        .and_then(|pixels| pixels.checked_mul(4))
+        .ok_or(RenderError::InvalidClipFrame(
+            "readback output size overflow",
+        ))?;
+    if output_bytes > isize::MAX as usize {
+        return Err(RenderError::InvalidClipFrame(
+            "readback output exceeds allocation range",
+        ));
+    }
+    Ok(ReadbackLayout {
+        unpadded_bytes_per_row,
+        padded_bytes_per_row,
+        readback_bytes,
+        output_bytes,
+    })
 }
 
 impl Renderer {
@@ -203,6 +344,7 @@ impl Renderer {
             }),
             gpu_timestamps,
             timing: None,
+            next_boundary_frame_sequence: 0,
         };
         r.configure_surface()?;
         Ok(r)
@@ -226,6 +368,7 @@ impl Renderer {
             surface: None,
             gpu_timestamps,
             timing: None,
+            next_boundary_frame_sequence: 0,
         })
     }
 
@@ -527,6 +670,102 @@ impl Renderer {
     ) -> Result<Vec<u8>, RenderError> {
         self.render_to_rgba8_with_gpu(scene, atlas, size_px, scale, clear, |_| Ok(()))
     }
+
+    /// Render only when each prepared drawable satisfies the finite interior
+    /// Class A or target-aligned single-background Class B contract. Every
+    /// other drawable must still satisfy Class A; this does not authorize a
+    /// whole Toolbar composition. Only the exact dyadic domain is supported.
+    #[allow(clippy::too_many_arguments)]
+    pub fn render_to_rgba8_with_parent_boundary_proof(
+        &mut self,
+        scene: &Scene,
+        atlas: &mut GlyphAtlas,
+        size_px: (u32, u32),
+        scale: f32,
+        clear: Rgba,
+        parent_shapes: std::sync::Arc<[ClipShape]>,
+        proof_limits: BoundaryProofLimits,
+    ) -> Result<VerifiedFrameOutput, RenderError> {
+        if let Some(error) = scene.composition_error() {
+            return Err(RenderError::SceneComposition(error));
+        }
+        self.validate_controlled_images(scene)?;
+        if !(1..=4096).contains(&size_px.0)
+            || !(1..=4096).contains(&size_px.1)
+            || !(scale == 0.25 || scale == 0.5 || scale == 1.0 || scale == 2.0 || scale == 4.0)
+        {
+            return Err(RenderError::InvalidClipFrame(
+                "outside finite parent-boundary proof domain",
+            ));
+        }
+        check_size(size_px, scale)?;
+        if !(clear.r == 0.0 && clear.g == 0.0 && clear.b == 0.0 && clear.a == 0.0) {
+            return Err(RenderError::InvalidClipFrame(
+                "boundary proof requires transparent black clear",
+            ));
+        }
+        let frame_sequence = self.next_boundary_frame_sequence.checked_add(1).ok_or(
+            RenderError::InvalidClipFrame("boundary frame sequence exhausted"),
+        )?;
+        let proof = self.gpu.prepare_frame_with_parent_boundary_proof(
+            &self.device,
+            scene,
+            atlas,
+            size_px,
+            scale,
+            clear,
+            &parent_shapes,
+            proof_limits,
+            std::mem::size_of::<VerifiedFrameOutput>() as u64,
+        )?;
+        let clip_budget = self.gpu.clip_budget;
+        let records = u64::try_from(proof.safe_rects_px.len())
+            .map_err(|_| RenderError::ClipBudgetExceeded("boundary proof records"))?
+            .checked_add(u64::from(proof.class_b_background_primitive.is_some()))
+            .ok_or(RenderError::ClipBudgetExceeded("boundary proof records"))?;
+        if records > clip_budget.max_shapes || records > clip_budget.max_records {
+            return Err(RenderError::ClipBudgetExceeded("boundary proof records"));
+        }
+        if proof.proof_bytes > clip_budget.max_upload_bytes {
+            return Err(RenderError::ClipBudgetExceeded("boundary proof bytes"));
+        }
+        let readback_layout =
+            checked_readback_layout(size_px, self.device.limits().max_buffer_size)?;
+
+        // All proof and receipt-budget refusals happen before retired-resource
+        // collection, atlas sync, any queue write, or output allocation. A later
+        // readback/poll failure can occur after submit and returns no receipt.
+        self.collect_retired_images();
+        let pixels = self.render_prepared_to_rgba8(
+            scene,
+            atlas,
+            OffscreenRenderParams {
+                size_px,
+                scale,
+                clear,
+                prevalidated_layout: Some(readback_layout),
+            },
+            |_| Ok(()),
+        )?;
+        self.next_boundary_frame_sequence = frame_sequence;
+        Ok(VerifiedFrameOutput {
+            pixels,
+            receipt: BoundaryProofReceipt {
+                renderer_id: self.id,
+                frame_sequence,
+                size_px,
+                scale,
+                parent_shapes,
+                safe_rects_px: proof.safe_rects_px,
+                class_b_background_primitive: proof.class_b_background_primitive,
+                states_visited: proof.states_visited,
+                containment_checks: proof.containment_checks,
+                zero_scissor_skips: proof.zero_scissor_skips,
+                proof_work: proof.work,
+            },
+        })
+    }
+
     /// Offscreen counterpart of render_with_gpu, for snapshots and GPU image
     /// regression tests. Only the final composed image is read back.
     #[allow(clippy::too_many_arguments)]
@@ -547,6 +786,32 @@ impl Renderer {
         check_size(size_px, scale)?;
         self.gpu
             .prepare_frame(&self.device, scene, atlas, size_px, scale, clear)?;
+        self.render_prepared_to_rgba8(
+            scene,
+            atlas,
+            OffscreenRenderParams {
+                size_px,
+                scale,
+                clear,
+                prevalidated_layout: None,
+            },
+            before_ui,
+        )
+    }
+
+    fn render_prepared_to_rgba8(
+        &mut self,
+        scene: &Scene,
+        atlas: &mut GlyphAtlas,
+        params: OffscreenRenderParams,
+        before_ui: impl FnOnce(&mut wgpu::CommandEncoder) -> Result<(), RenderError>,
+    ) -> Result<Vec<u8>, RenderError> {
+        let OffscreenRenderParams {
+            size_px,
+            scale,
+            clear,
+            prevalidated_layout,
+        } = params;
         let (w, h) = size_px;
         let texture = self.device.create_texture(&wgpu::TextureDescriptor {
             label: Some("tekes offscreen"),
@@ -565,12 +830,18 @@ impl Renderer {
         let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
 
         // 行字节数要对齐到 COPY_BYTES_PER_ROW_ALIGNMENT（256）。
-        let unpadded = w * 4;
+        let unpadded = prevalidated_layout
+            .map(|layout| layout.unpadded_bytes_per_row)
+            .unwrap_or_else(|| w * 4);
         let align = wgpu::COPY_BYTES_PER_ROW_ALIGNMENT;
-        let padded = unpadded.div_ceil(align) * align;
+        let padded = prevalidated_layout
+            .map(|layout| layout.padded_bytes_per_row)
+            .unwrap_or_else(|| unpadded.div_ceil(align) * align);
         let readback = self.device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("tekes readback"),
-            size: padded as u64 * h as u64,
+            size: prevalidated_layout
+                .map(|layout| layout.readback_bytes)
+                .unwrap_or_else(|| padded as u64 * h as u64),
             usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
             mapped_at_creation: false,
         });
@@ -638,7 +909,11 @@ impl Renderer {
             .slice(..)
             .get_mapped_range()
             .map_err(|e| RenderError::Readback(e.to_string()))?;
-        let mut out = Vec::with_capacity((unpadded * h) as usize);
+        let mut out = Vec::with_capacity(
+            prevalidated_layout
+                .map(|layout| layout.output_bytes)
+                .unwrap_or_else(|| (unpadded * h) as usize),
+        );
         for row in 0..h as usize {
             let start = row * padded as usize;
             let line = &mapped[start..start + unpadded as usize];
@@ -761,6 +1036,10 @@ impl Renderer {
             identity,
             std::sync::Arc::downgrade(&self.retired_images),
         ))
+    }
+    /// Opaque identity of this existing image namespace; not a pointer/address.
+    pub fn resource_identity(&self) -> u64 {
+        self.id
     }
 
     /// Update pixels in an existing image of the same dimensions, preserving its
@@ -967,5 +1246,54 @@ mod bitmap_retirement_tests {
         assert_eq!(renderer.collect_retired_images(), 0);
         assert_eq!(renderer.image_count(), 1);
         assert!(renderer.gpu.image.identity(id).is_some());
+    }
+}
+
+#[cfg(test)]
+mod boundary_readback_layout_tests {
+    use super::*;
+
+    #[test]
+    fn accepted_layout_reports_checked_row_and_output_sizes() {
+        let layout = checked_readback_layout((64, 64), 16_384).unwrap();
+        assert_eq!(layout.unpadded_bytes_per_row, 256);
+        assert_eq!(layout.padded_bytes_per_row, 256);
+        assert_eq!(layout.readback_bytes, 16_384);
+        assert_eq!(layout.output_bytes, 16_384);
+    }
+
+    #[test]
+    fn device_buffer_limit_rejection_contains_actual_capacity_metadata() {
+        assert_eq!(
+            readback_capacity_rejection(16_384, 16_383),
+            Some(ReadbackCapacityRejection {
+                requested_bytes: 16_384,
+                max_buffer_size: 16_383,
+            })
+        );
+        assert_eq!(
+            checked_readback_layout((64, 64), 16_383),
+            Err(RenderError::InvalidArgument(
+                "readback buffer exceeds device max buffer size"
+            ))
+        );
+    }
+
+    #[test]
+    fn row_alignment_overflow_is_rejected_before_buffer_creation() {
+        #[cfg(target_pointer_width = "32")]
+        assert_eq!(
+            checked_readback_layout((u32::MAX / 4, 1), u64::MAX),
+            Err(RenderError::InvalidClipFrame(
+                "readback row alignment overflow"
+            ))
+        );
+        #[cfg(target_pointer_width = "64")]
+        assert_eq!(
+            checked_readback_layout((u32::MAX / 4, 1), u64::MAX),
+            Err(RenderError::InvalidClipFrame(
+                "readback row alignment exceeds u32"
+            ))
+        );
     }
 }
