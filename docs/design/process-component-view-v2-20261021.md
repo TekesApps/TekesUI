@@ -6,6 +6,18 @@ Status: experimental public API and independent real-GPU consumer verified. Not 
 
 One module actor owns business state. The existing PanelModule prepares a local Scene, moved to a GPU worker inside that child process; Scene is never serialized across processes. GPU allocation begins on the first render job. Services, generation-bound toolbar Invoke and Stop are handled by the actor while the two-frame consumer budget is occupied. The existing owned IOSurface rights, queued View lane, GPU completion retirement and ProcessControl are reused. The actor recovers its atlas before publishing a finished frame, so returned parent credit cannot race actor ownership restoration. Exit wake callbacks run after releasing the state mutex.
 
+View queue/credit notifications also synchronize with the service writer's existing
+state mutex. The View queue has a different mutex: notifying without that handshake
+can slip between the writer's empty-queue check and its conditional wait, leaving a
+new layout pending without another service message to wake it. Render leases are
+released outside the service mutex on failure/exit; malformed frame metadata is
+validated before taking its lease. This keeps credit-return callbacks from reentering
+the writer lock. A controlled real-queue regression fails the old notification path
+and checks terminal lease cleanup. Actual original IPC/AX/projection/scroll and mixed
+native checks passed with this repair; CI's earlier clip-restore timeout remains a
+failed historical result. Evidence: SSD
+`artifacts/issue-48/main2bcfc17-view-wake-20261028-01/{red01,green01,native01}`.
+
 `ProcessContainer::new_view` adapts this negotiated path through the existing Component mount/unmount, arrange and prepare contracts. Module ViewInvalidated is coalesced and causes the next Content arrangement to request a fresh frame. Toolbar actions use the independent validated Invoke lane. `new_v1` remains an explicit compatibility entry. Pointer interception is still an explicit opaque opt-in: neither profile claims remote consumed/disposition or transparent hit testing.
 
 Independent replay: build the `process_component_view` example in the shared review cache and run it. It checks headless use of a View-capable definition, toolbar before any frame, Invoke while two surfaces are held, actual imported black pixels in 16 render/retirement cycles, invalidation take-once, Stop with an unretired frame, explicit unsupported IME rejection, and the real shared Component mount/arrange/prepare/command/invalidation/unmount path. This is public API and real GPU evidence, not desktop or Gold7 experience acceptance.
