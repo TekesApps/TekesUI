@@ -812,6 +812,29 @@ assert_eq!(Motion::Expansion.resolve(true).to_bits(),Motion::Instant.seconds().t
         assert!(validate_document(&invalid).is_err());
     }
     #[test]
+    fn continuous_icon_period_is_json_bound_and_rejects_invalid_inputs() {
+        let d = document();
+        let baseline = generate_rust(&d).unwrap();
+        assert!(baseline.contains("INDETERMINATE_ROTATION_PERIOD_SECONDS"));
+        let mut changed = d.clone();
+        changed["proposal"]["motion"]["continuous"]["indeterminate_rotation_period_seconds"] =
+            json!(3.);
+        assert_ne!(generate_rust(&changed).unwrap(), baseline);
+        for value in [
+            json!(null),
+            json!(0),
+            json!(-1),
+            json!("2"),
+            json!(1e100),
+            json!(1e-100),
+        ] {
+            let mut bad = d.clone();
+            bad["proposal"]["motion"]["continuous"]["indeterminate_rotation_period_seconds"] =
+                value;
+            assert!(validate_document(&bad).is_err());
+        }
+    }
+    #[test]
     fn proposal_text_ids_and_metrics_cannot_generate_invalid_rust() {
         let d = document();
         for names in [["self", "another"], ["ui-body2", "ui-body-2"]] {

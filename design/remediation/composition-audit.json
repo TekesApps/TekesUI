@@ -1892,7 +1892,7 @@
     "crates/tekes-ui-controls/tests/selection_availability.rs": "c8e9b61598c97ae64c5d58a8545f7067148235f6bf4291f53ecea031219942da",
     "crates/tekes-ui-controls/tests/separator_scale.rs": "8391916da3f98b9aa57d7c1960a3c9f3eb1d9c84008b7663acf47b5d92923117",
     "crates/tekes-ui-controls/tests/toolbar_contract.rs": "a5e3c521611586b4df5fb671c230768c9edb4d6b7e72573c485eb82a22dc6e8b",
-    "crates/tekes-ui-design-export/src/effects.rs": "187193a7959c24212f72a0931b953498ae6195283dd7b9940ef02168ea8039d3",
+    "crates/tekes-ui-design-export/src/effects.rs": "e0b75279195f9f04cc0cf91a178855f06aafd2e7420b5cdcc2daff50482e0bda",
     "crates/tekes-ui-gallery/Cargo.toml": "1e9d34258361fef3658daa88234c499709c001ab14a0ab53da62aea4bef24c9d",
     "crates/tekes-ui-gallery/src/actions_acceptance.rs": "9368c5240d3946a64348a7367b27dce55914bbcb5feb96846a4418ddc4d79794",
     "crates/tekes-ui-gallery/src/controlled_acceptance.rs": "ce1776aecc775f77ff5ed53bbf51f55fcfc93a7857a4d2395470fccf051fc15c",
@@ -2858,6 +2858,11 @@
       "batch": "issue48-stable-anchor-reflow-20261028",
       "conclusion": "Reviewed only the shared structured-reading implementation: keep the original visible item during automatic reflow, capture pending identity before document advancement, and retain fresh-user-input/explicit-latest authority. Public ContentReadingResult, clamp/fallback and protocol signatures unchanged. No component/native status promotion; original historical receipts unchanged. Also rebind the added public reading regression source and its unique unchanged existing API-test anchor after line shifts; no old assertion removed.",
       "evidence": "crates/tekes-ui-controls/tests/content_reading.rs::prepended_edge_sliver_does_not_replace_the_stable_anchor_on_reflow; SSD artifacts/issue-48/main33d35b3-reading-anchor-20261028-01/green01/lane-results.json"
+    },
+    {
+      "batch": "issue47-continuous-period-foundation-20261029",
+      "conclusion": "Reviewed additive JSON-bound period validation/emission only; existing generated layout/color/motion transition values unchanged. Component/native/AX classifications unchanged. IconContent consumption remains a separate pending candidate; no historical receipt re-signing.",
+      "evidence": "design/source/motion.json; crates/tekes-ui-design-export/src/lib.rs::continuous_icon_period_is_json_bound_and_rejects_invalid_inputs"
     }
   ],
   "text_key_review_20261018": {

@@ -21,6 +21,12 @@ pub(crate) fn validate(p: &Value) -> Vec<String> {
         errors.push("tooltip help: finite nonnegative hover delay required".into());
     }
 
+    let period = p["motion"]["continuous"]["indeterminate_rotation_period_seconds"].as_f64();
+    if !period.is_some_and(|n| n.is_finite() && n > 0. && (n as f32).is_finite() && (n as f32) > 0.)
+    {
+        errors.push("indeterminate rotation: finite positive representable period required".into());
+    }
+
     for role in ROLES {
         let binding = &p["motion"]["control_transitions"][role];
         let duration = binding["duration"]
@@ -133,6 +139,12 @@ pub(crate) fn validate(p: &Value) -> Vec<String> {
 }
 
 pub(crate) fn generate(p: &Value, out: &mut String) {
+    writeln!(
+        out,
+        "pub const INDETERMINATE_ROTATION_PERIOD_SECONDS:f32={};",
+        crate::bits(&p["motion"]["continuous"]["indeterminate_rotation_period_seconds"])
+    )
+    .unwrap();
     let delay = &p["interaction"]["tooltip"]["content_help"]["hover_delay_seconds"];
     if delay.is_number() {
         writeln!(
