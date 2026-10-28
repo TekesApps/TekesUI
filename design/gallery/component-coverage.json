@@ -230,11 +230,12 @@
       "practical_intake": {
         "status": "accepted-bounded-evidence",
         "baseline_commit": "2753d52ff5e344bec4492d9046b1c0933e56593b",
-        "scope": "Local A prepared SplitViewContent retained capture/ratio/layout/clip/leaf Theme through both axes and real Gallery drag/pane labels/cancel/keyboard, tests only",
+        "scope": "Local A prepared SplitViewContent retained capture/ratio/layout/clip/leaf Theme through both axes and real Gallery drag/pane labels/cancel/keyboard, tests only; #103 B exact main intake adds real Splitter semantics and default/external Theme GPU",
         "claims": [
           "Original prepared SplitViewContent retains capture/ratio/geometry/clip/focus/mount and actual pane leaf Theme during both axes; exact old public pass source reused, Cancel restores original ratio",
           "Actual Gallery original drag across Themes preserves pane/scale-aware divider paint and own label ink, then Escape/Right/Enter contract; corrected named Gallery and strict passed",
-          "Production/scene/assertions remain; initial whole-pane sampler included later helper/log roles and is preserved as failed identity, only own label paint interval corrected"
+          "Production/scene/assertions remain; initial whole-pane sampler included later helper/log roles and is preserved as failed identity, only own label paint interval corrected",
+          "B original divider remains sole model/action owner; finite wire/platform Splitter range and actual hidden Window native dispatcher passed. Default62/external118 actual GPU retain original complete scene, View/clip/glyph checks; equal quiet fill/clear background measured from identical scene transparent coverage."
         ],
         "source_identity": {
           "scope": "Selected actual local A split/pane/witness sources; public and corrected Gallery retain distinct observed source identities; not a B/full product certificate",
@@ -252,7 +253,6 @@
           "Ordinary ratio/constraints/hit widths remain geometry; unchanged leaf/clip/reveal/editor states reuse old identities"
         ],
         "gaps": [
-          "#103 B semantic Splitter/platform-wire/default-externalTheme/GPU main delivery",
           "new dedicated native-window/physicalIME/VoiceOver certification",
           "#12 tall pane/helper-log whole-page pixel/native readability",
           "other layout roots/full52"
@@ -265,6 +265,14 @@
             "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-121/split-view-main97bd424-candidate/main-intake/commit-receipt.json",
             "sha256": "e6004f228b87bef1e2ebfc0d80148df057b221d7c4284e049e1dec9ba67cda44",
             "scope": "Actual corrected Gallery/strict plus exact original public pass reuse; #103 B/#12/native gaps remain separate"
+          },
+          {
+            "issue": "#103",
+            "component": "tui.split-view",
+            "commit": "51380cc4c95148549f48ec5b6aa87cbaf7816bbf",
+            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-103/splitter-main277958f-candidate-20261028-01/acceptance-receipt.json",
+            "sha256": "f9e884dc046b8960fae3fe5fb310be385c8f86d87efa3fd697317706c8e910ce",
+            "scope": "Main B intake after this base; exact changed source receipt and separate round identities, not historical A evidence re-signing. Native hidden dispatcher only."
           }
         ]
       }

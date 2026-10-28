@@ -12,6 +12,8 @@ pub enum SemanticRole {
     Link,
     TextInput,
     Slider,
+    /// Original split divider; requires a matching receiver.
+    Splitter,
     Switch,
     List,
     ListItem,

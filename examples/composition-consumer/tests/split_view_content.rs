@@ -1068,17 +1068,27 @@ fn activity_preparation_counts_actual_notifications_not_noop_framework_updates()
     // invent a redundant true notification for a retained active owner.
     let active_calls = std::rc::Rc::new(std::cell::Cell::new(0));
     let mut active_original = ContentHost::new(row(vec![Content::new(
-        id(30), ActivityLimited(active_calls.clone()),
-    )])).unwrap();
+        id(30),
+        ActivityLimited(active_calls.clone()),
+    )]))
+    .unwrap();
     assert_eq!(active_calls.get(), 0);
     let active_retained = active_original.remove(id(30)).unwrap();
     let mut active_host = ContentHost::try_new_prepared(
-        split(Content::new(id(10), Button::new("A")),
-              Content::new(id(20), Button::new("B"))), BUDGET,
-    ).unwrap();
+        split(
+            Content::new(id(10), Button::new("A")),
+            Content::new(id(20), Button::new("B")),
+        ),
+        BUDGET,
+    )
+    .unwrap();
     let input = request(&active_host, Pane::Leading, active_retained);
     active_host.replace_split_view_pane(input).unwrap();
-    assert_eq!(active_calls.get(), 0, "active-to-active replacement adds no notification");
+    assert_eq!(
+        active_calls.get(),
+        0,
+        "active-to-active replacement adds no notification"
+    );
 }
 #[test]
 fn checked_render_refuses_a_broken_split_without_blurring_original_marked_owner() {
@@ -1451,4 +1461,254 @@ fn a_valid_return_target_inside_the_retiring_pane_is_refused_instead_of_silently
     assert_eq!(rejected.error, SplitViewError::UnsupportedRestoreReveal);
     assert_eq!(rejected.input.replacement.mount_identity(), mount);
     assert_eq!(format!("{host:?}"), before);
+}
+
+#[test]
+fn public_split_content_exposes_the_original_divider_as_a_splitter() {
+    let mut host = ContentHost::try_new_prepared(
+        split(
+            Content::new(id(10), Button::new("leading")),
+            Content::new(id(20), Button::new("trailing")),
+        ),
+        BUDGET,
+    )
+    .unwrap();
+    render(&mut host, 600.0, 300.0);
+    let node = host
+        .semantics()
+        .into_iter()
+        .find(|node| node.id == id(4))
+        .expect("visible original splitter");
+    assert_eq!(node.semantics.role, ContentRole::Splitter);
+    assert_eq!(host.semantic_value_range(id(4), None), Some(0.0..=1.0));
+    assert!(
+        host.accessibility_action(id(4), None, AccessibilityAction::SetValue("0.625".into()))
+            .consumed
+    );
+    assert_eq!(
+        host.get(id(1))
+            .unwrap()
+            .component::<SplitViewContent>()
+            .unwrap()
+            .config()
+            .unwrap()
+            .ratio,
+        0.625
+    );
+    render(&mut host, 0.0, 0.0);
+    assert!(host.semantics().iter().all(|node| node.id != id(4)));
+    assert!(host.split_view_expected(id(1)).is_some());
+}
+
+#[test]
+fn splitter_non_binary_minimum_domain_accepts_decimal_endpoint_through_strict_scroll_route() {
+    let split = Content::new(
+        id(2),
+        SplitViewContent::try_new(SplitViewConstruction {
+            config: SplitViewConfig {
+                min_pane: 10.0,
+                ..SplitViewConfig::default()
+            },
+            slots: SplitViewSlotIds {
+                leading: id(3),
+                trailing: id(4),
+                divider: id(5),
+            },
+            leading: Content::new(id(6), Button::new("leading")),
+            trailing: Content::new(id(7), Button::new("trailing")),
+            budget: BUDGET,
+        })
+        .unwrap(),
+    );
+    let root = Content::new(id(1), ScrollContent::new(ScrollArea::default(), split));
+    let mut host = ContentHost::try_new_prepared(root, BUDGET).unwrap();
+    render(&mut host, 111.0, 80.0);
+
+    assert_eq!(host.semantic_value_range(id(5), None), Some(0.1..=0.9));
+    assert!(
+        host.accessibility_action(id(5), None, AccessibilityAction::SetValue("0.1".into()))
+            .consumed
+    );
+    let lower = host
+        .semantics()
+        .into_iter()
+        .find(|node| node.id == id(5))
+        .unwrap();
+    assert_eq!(lower.semantics.value.as_deref(), Some("0.1"));
+    let lower_ratio = host
+        .get(id(1))
+        .unwrap()
+        .component::<ScrollContent>()
+        .unwrap()
+        .children()[0]
+        .component::<SplitViewContent>()
+        .unwrap()
+        .config()
+        .unwrap()
+        .ratio;
+    assert!((lower_ratio - 0.1).abs() < f32::EPSILON);
+    let lower_value = lower.semantics.value.unwrap().parse::<f64>().unwrap();
+    assert!(
+        host.semantic_value_range(id(5), None)
+            .unwrap()
+            .contains(&lower_value)
+    );
+
+    #[cfg(target_os = "macos")]
+    {
+        host.set_window_active(true);
+        let native = tekes_ui_platform_macos::content_accessibility::content_nodes(&host);
+        let node = native
+            .iter()
+            .find(|node| node.key.component == host.semantic_mount(id(5)).unwrap())
+            .unwrap();
+        assert_eq!(
+            node.role,
+            tekes_ui_platform_macos::AccessibilityRole::Splitter(
+                tekes_ui_platform_macos::AccessibilityRange::new(0.1, 0.9).unwrap()
+            )
+        );
+        assert_eq!(node.value.as_deref(), Some("0.1"));
+    }
+
+    let lower_endpoint = host.accessibility_action(id(5), None, AccessibilityAction::Decrement);
+    assert!(lower_endpoint.consumed);
+    assert!(!lower_endpoint.changed);
+    let before_invalid = host
+        .get(id(1))
+        .unwrap()
+        .component::<ScrollContent>()
+        .unwrap()
+        .scroll
+        .offset;
+    let before_ratio = host
+        .get(id(1))
+        .unwrap()
+        .component::<ScrollContent>()
+        .unwrap()
+        .children()[0]
+        .component::<SplitViewContent>()
+        .unwrap()
+        .config()
+        .unwrap()
+        .ratio;
+    let before_focus = host.focused();
+    for invalid in ["1.0", "NaN"] {
+        assert!(
+            !host
+                .accessibility_action(id(5), None, AccessibilityAction::SetValue(invalid.into()))
+                .consumed
+        );
+    }
+    assert!(
+        !host
+            .accessibility_action(id(5), Some(99), AccessibilityAction::Increment)
+            .consumed
+    );
+    assert_eq!(
+        host.get(id(1))
+            .unwrap()
+            .component::<ScrollContent>()
+            .unwrap()
+            .scroll
+            .offset,
+        before_invalid
+    );
+    assert_eq!(
+        host.get(id(1))
+            .unwrap()
+            .component::<ScrollContent>()
+            .unwrap()
+            .children()[0]
+            .component::<SplitViewContent>()
+            .unwrap()
+            .config()
+            .unwrap()
+            .ratio,
+        before_ratio
+    );
+    assert_eq!(host.focused(), before_focus);
+
+    let upper_response =
+        host.accessibility_action(id(5), None, AccessibilityAction::SetValue("0.9".into()));
+    assert!(upper_response.consumed);
+    let upper = host
+        .semantics()
+        .into_iter()
+        .find(|node| node.id == id(5))
+        .unwrap();
+    assert_eq!(upper.semantics.value.as_deref(), Some("0.9"));
+    let upper_ratio = host
+        .get(id(1))
+        .unwrap()
+        .component::<ScrollContent>()
+        .unwrap()
+        .children()[0]
+        .component::<SplitViewContent>()
+        .unwrap()
+        .config()
+        .unwrap()
+        .ratio;
+    assert!((upper_ratio - 0.9).abs() < f32::EPSILON);
+    assert!(
+        host.semantic_value_range(id(5), None)
+            .unwrap()
+            .contains(&upper.semantics.value.unwrap().parse::<f64>().unwrap())
+    );
+    let upper_endpoint = host.accessibility_action(id(5), None, AccessibilityAction::Increment);
+    assert!(upper_endpoint.consumed);
+    assert!(!upper_endpoint.changed);
+
+    let clamped = Content::new(
+        id(12),
+        SplitViewContent::try_new(SplitViewConstruction {
+            config: SplitViewConfig {
+                ratio: 0.01,
+                min_pane: 10.0,
+                ..SplitViewConfig::default()
+            },
+            slots: SplitViewSlotIds {
+                leading: id(13),
+                trailing: id(14),
+                divider: id(15),
+            },
+            leading: Content::new(id(16), Button::new("leading")),
+            trailing: Content::new(id(17), Button::new("trailing")),
+            budget: BUDGET,
+        })
+        .unwrap(),
+    );
+    let mut clamped_host = ContentHost::try_new_prepared(clamped, BUDGET).unwrap();
+    render(&mut clamped_host, 101.0, 80.0);
+    assert_eq!(
+        clamped_host
+            .semantics()
+            .into_iter()
+            .find(|node| node.id == id(15))
+            .unwrap()
+            .semantics
+            .value
+            .as_deref(),
+        Some("0.1")
+    );
+    let response = clamped_host.accessibility_action(
+        id(15),
+        None,
+        AccessibilityAction::SetValue("0.1".into()),
+    );
+    assert!(response.consumed);
+    assert!(response.changed);
+    assert!(
+        (clamped_host
+            .get(id(12))
+            .unwrap()
+            .component::<SplitViewContent>()
+            .unwrap()
+            .config()
+            .unwrap()
+            .ratio
+            - 0.1)
+            .abs()
+            < f32::EPSILON
+    );
 }

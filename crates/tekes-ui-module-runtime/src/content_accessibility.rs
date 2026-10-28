@@ -24,6 +24,7 @@ fn semantics(s: ContentSemantics) -> Result<wire::Semantics> {
         ContentRole::Link => W::Link,
         ContentRole::TextInput => W::TextInput,
         ContentRole::Slider => W::Slider,
+        ContentRole::Splitter => W::Splitter,
         ContentRole::Switch => W::Switch,
         ContentRole::List => W::List,
         ContentRole::ListItem => W::ListItem,
@@ -389,5 +390,116 @@ mod tests {
             );
         }
         assert!(semantics(ContentSemantics::new(ContentRole::Image, " \n")).is_err());
+    }
+    #[test]
+    fn original_splitter_snapshot_and_action_keep_the_real_finite_domain_on_wire() {
+        let mut host = ContentHost::try_new_prepared(
+            Content::new(
+                ComponentId(81),
+                SplitViewContent::try_new(SplitViewConstruction {
+                    config: SplitViewConfig {
+                        min_pane: 10.,
+                        ..Default::default()
+                    },
+                    slots: SplitViewSlotIds {
+                        leading: ComponentId(82),
+                        trailing: ComponentId(83),
+                        divider: ComponentId(84),
+                    },
+                    leading: Content::new(ComponentId(85), Button::new("leading")),
+                    trailing: Content::new(ComponentId(86), Button::new("trailing")),
+                    budget: 64 * 1024 * 1024,
+                })
+                .unwrap(),
+            ),
+            64 * 1024 * 1024,
+        )
+        .unwrap();
+        render(&mut host);
+        let nodes = snapshot(&host).unwrap();
+        let divider = nodes.iter().find(|node| node.target.id == 84).unwrap();
+        assert_eq!(divider.semantics.role, wire::SemanticRole::Splitter);
+        let domain = divider.value_range.unwrap();
+        assert!(domain.iter().all(|value| value.is_finite()));
+        assert!(0. < domain[0] && domain[0] <= 0.5 && 0.5 <= domain[1] && domain[1] < 1.);
+        let bytes = serde_json::to_vec(&nodes).unwrap();
+        let received: Vec<wire::SemanticNode> = serde_json::from_slice(&bytes).unwrap();
+        crate::container_semantics::validate(&received).unwrap();
+        assert_eq!(
+            received
+                .iter()
+                .find(|node| node.target.id == 84)
+                .unwrap()
+                .value_range,
+            Some(domain)
+        );
+        assert!(
+            action(
+                &mut host,
+                divider.target,
+                None,
+                None,
+                &wire::AccessibilityAction::Increment
+            )
+            .unwrap()
+            .consumed
+        );
+        assert!(
+            host.get(ComponentId(81))
+                .unwrap()
+                .component::<SplitViewContent>()
+                .unwrap()
+                .config()
+                .unwrap()
+                .ratio
+                > 0.5
+        );
+        assert!(
+            action(
+                &mut host,
+                divider.target,
+                None,
+                None,
+                &wire::AccessibilityAction::Decrement
+            )
+            .unwrap()
+            .consumed
+        );
+        assert!(
+            (host
+                .get(ComponentId(81))
+                .unwrap()
+                .component::<SplitViewContent>()
+                .unwrap()
+                .config()
+                .unwrap()
+                .ratio
+                - 0.5)
+                .abs()
+                <= f32::EPSILON
+        );
+        let minimum = domain[0].to_string();
+        assert!(
+            action(
+                &mut host,
+                divider.target,
+                None,
+                None,
+                &wire::AccessibilityAction::SetValue(minimum.clone())
+            )
+            .unwrap()
+            .consumed
+        );
+        assert_eq!(
+            snapshot(&host)
+                .unwrap()
+                .iter()
+                .find(|node| node.target.id == 84)
+                .unwrap()
+                .semantics
+                .value
+                .as_deref(),
+            Some(minimum.as_str())
+        );
     }
 }
