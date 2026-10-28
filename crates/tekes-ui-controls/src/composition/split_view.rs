@@ -940,7 +940,9 @@ impl ContentHost {
         let old_focus = host.focused.is_some_and(|id| oldpane.find(id).is_some());
         let old_capture = host.captured.is_some_and(|id| oldpane.find(id).is_some());
         let modal = host.modal.filter(|(id, _)| oldpane.find(*id).is_some());
-        if !host.replacement_keeps_overlay_scope(oldpane, Some(&input.replacement)) {
+        if !host.replacement_keeps_overlay_scope(oldpane, Some(&input.replacement))
+            || !host.replacement_keeps_popovers(oldpane, modal.is_some())
+        {
             return Err(SplitViewError::UnsupportedScope);
         }
         let restore = if let Some((_, Some((id, mount)))) = modal {
@@ -1154,6 +1156,7 @@ impl ContentHost {
         }
         if !prepared::at(&self.root, &plan.old).is_some_and(|retired| {
             self.replacement_keeps_overlay_scope(retired, Some(&input.replacement))
+                && self.replacement_keeps_popovers(retired, false)
         }) {
             return Err(Rejected {
                 error: SplitViewError::UnsupportedScope,
@@ -1378,7 +1381,9 @@ impl ContentHost {
             } else {
                 old_layout.trailing.frame()
             };
-            if old_bounds != bounds && !self.replacement_keeps_overlay_scope(split.pane(side), None)
+            if old_bounds != bounds
+                && (!self.replacement_keeps_overlay_scope(split.pane(side), None)
+                    || !self.replacement_keeps_popovers(split.pane(side), false))
             {
                 return Err(SplitViewError::UnsupportedScope);
             }

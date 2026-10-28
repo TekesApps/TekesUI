@@ -40,6 +40,35 @@ impl Content {
         path
     }
 
+    fn overlay_scope_path_excluding_popovers(
+        &self,
+        excluded: &[PopoverSession],
+    ) -> Vec<(ComponentId, u64, OverlayScope)> {
+        if !self.active()
+            || self.component.semantics().disabled
+            || self
+                .component::<PopoverContent>()
+                .and_then(PopoverContent::current_session)
+                .is_some_and(|session| excluded.contains(&session))
+        {
+            return Vec::new();
+        }
+        let mut path = self
+            .component
+            .children()
+            .iter()
+            .rev()
+            .map(|child| child.overlay_scope_path_excluding_popovers(excluded))
+            .find(|path| !path.is_empty())
+            .unwrap_or_default();
+        if self.component.overlay_open()
+            && let Some(scope) = self.component.overlay_scope()
+        {
+            path.insert(0, (self.id, self.mount, scope));
+        }
+        path
+    }
+
     fn clear_hover_outside(&mut self, scope: ComponentId, captured: Option<ComponentId>) {
         if self.id == scope || captured == Some(self.id) {
             return;
@@ -57,10 +86,85 @@ impl Content {
 
 impl ContentHost {
     fn current_overlay_path(&self) -> Vec<(ComponentId, u64, OverlayScope)> {
-        self.base_scope().overlay_scope_path()
+        self.standard_popover_scope()
+            .and_then(|id| self.base_scope().find_active(id))
+            .unwrap_or_else(|| self.base_scope())
+            .overlay_scope_path()
     }
     pub(super) fn overlay_scope_id(&self) -> Option<ComponentId> {
         self.current_overlay_path().last().map(|(id, _, _)| *id)
+    }
+
+    // Direct focus may retire the actual standard Popover chain, but must not
+    // turn a custom or modal overlay into a general escape hatch. The returned
+    // list is the exact active-session set that will be closed on commit.
+    pub(super) fn direct_focus_plan(
+        &self,
+        target: ComponentId,
+    ) -> Option<(&Content, Vec<PopoverSession>)> {
+        let current = self.scope();
+        if current.find_active(target).is_some() {
+            return Some((current, Vec::new()));
+        }
+        let (top_id, top_mount, _) = *self.current_overlay_path().last()?;
+        let top = self
+            .root
+            .find_active(top_id)
+            .filter(|node| node.mount == top_mount)?;
+        let top_popup = top.component::<PopoverContent>()?;
+        let top_session = top_popup.current_session()?;
+        if !top_popup.is_open() || top_session.owner() != top_id {
+            return None;
+        }
+
+        let active: Vec<_> = self
+            .popover_order
+            .iter()
+            .copied()
+            .filter(|session| {
+                self.base_scope()
+                    .find_active(session.owner())
+                    .and_then(|node| node.component::<PopoverContent>())
+                    .is_some_and(|popup| {
+                        popup.current_session() == Some(*session) && popup.is_open()
+                    })
+            })
+            .collect();
+        if !active.contains(&top_session) {
+            return None;
+        }
+        let retained: Vec<_> = active
+            .iter()
+            .copied()
+            .filter(|session| {
+                self.base_scope()
+                    .find_active(session.owner())
+                    .is_some_and(|popup| popup.find_active(target).is_some())
+            })
+            .collect();
+        let dismiss: Vec<_> = active
+            .iter()
+            .copied()
+            .filter(|session| !retained.contains(session))
+            .collect();
+        if !dismiss.contains(&top_session) {
+            return None;
+        }
+
+        let root = retained
+            .last()
+            .and_then(|session| self.base_scope().find_active(session.owner()))
+            .unwrap_or_else(|| self.base_scope());
+        let scope = root
+            .overlay_scope_path_excluding_popovers(&dismiss)
+            .last()
+            .and_then(|(id, mount, _)| {
+                self.root
+                    .find_active(*id)
+                    .filter(|node| node.mount == *mount)
+            })
+            .unwrap_or(root);
+        scope.find_active(target).map(|_| (scope, dismiss))
     }
 
     pub(super) fn reconcile_overlay_scopes(&mut self) {
@@ -103,15 +207,22 @@ impl ContentHost {
             }
         }
         for (id, mount, _) in path.iter().skip(common) {
-            let restore = self.focused.and_then(|focused| {
-                self.base_scope()
-                    .find_active(focused)
-                    .filter(|node| {
-                        (node.component.focusable() || focused == *id)
-                            && !node.component.semantics().disabled
+            let restore = self
+                .root
+                .find(*id)
+                .and_then(|node| node.component::<PopoverContent>())
+                .and_then(PopoverContent::return_focus)
+                .or_else(|| {
+                    self.focused.and_then(|focused| {
+                        self.base_scope()
+                            .find_active(focused)
+                            .filter(|node| {
+                                (node.component.focusable() || focused == *id)
+                                    && !node.component.semantics().disabled
+                            })
+                            .map(|node| (focused, node.mount))
                     })
-                    .map(|node| (focused, node.mount))
-            });
+                });
             self.overlay_scopes.push(ScopedOverlay {
                 id: *id,
                 mount: *mount,

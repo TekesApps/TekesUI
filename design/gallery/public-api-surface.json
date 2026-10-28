@@ -1101,6 +1101,30 @@
       "reason": "Current source-visible R1 immutable finite reveal preparation; API classification only, #98 execution acceptance remains pending."
     },
     {
+      "api": "tekes_ui_controls::composition::IconContent",
+      "category": "component",
+      "components": [
+        "tui.icon"
+      ],
+      "reason": "Original passive canonical icon and indeterminate attachment; same existing icon root, not a new Gallery component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::IconImage",
+      "category": "component-support",
+      "components": [
+        "tui.icon"
+      ],
+      "reason": "Lease retained by original IconContent on its image backend."
+    },
+    {
+      "api": "tekes_ui_controls::composition::IconRenderError",
+      "category": "component-support",
+      "components": [
+        "tui.icon"
+      ],
+      "reason": "Explicit resource, motion and capability failure of the original icon owner."
+    },
+    {
       "api": "tekes_ui_controls::composition::ImageAlignment",
       "category": "optional-component-support",
       "components": [],
@@ -1332,6 +1356,38 @@
       "reason": "Lossless pointer input at the existing Component/ContentHost boundary, with legacy primary-pointer compatibility; data only, not a new component or selection engine."
     },
     {
+      "api": "tekes_ui_controls::composition::PopoverCloseReason",
+      "category": "component-support",
+      "components": [
+        "tui.popover"
+      ],
+      "reason": "Original Popover owner/mount opening identity and once-only semantic close notification; no independent component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::PopoverClosed",
+      "category": "component-support",
+      "components": [
+        "tui.popover"
+      ],
+      "reason": "Original Popover owner/mount opening identity and once-only semantic close notification; no independent component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::PopoverContent",
+      "category": "component",
+      "components": [
+        "tui.popover"
+      ],
+      "reason": "Original retained Content in the existing Popover shell."
+    },
+    {
+      "api": "tekes_ui_controls::composition::PopoverSession",
+      "category": "component-support",
+      "components": [
+        "tui.popover"
+      ],
+      "reason": "Original Popover owner/mount opening identity and once-only semantic close notification; no independent component."
+    },
+    {
       "api": "tekes_ui_controls::composition::PreparedActionEffect",
       "category": "composition",
       "components": [],
@@ -1539,6 +1595,27 @@
       "reason": "Public passive Content adapter for the existing StatusBadge model and View; retains the same registered identity."
     },
     {
+      "api": "tekes_ui_controls::composition::SvgIconCache",
+      "category": "component-support",
+      "components": [
+        "tui.icon"
+      ],
+      "reason": "Optional SVG pixel-resource cache for the existing icon component.",
+      "feature": "svg-icons"
+    },
+    {
+      "api": "tekes_ui_controls::composition::SvgIconRenderer",
+      "category": "component-support",
+      "components": [
+        "tui.icon"
+      ],
+      "reason": "Optional SVG host service for existing IconView and IconContent.",
+      "type_arguments": [
+        "'_"
+      ],
+      "feature": "svg-icons"
+    },
+    {
       "api": "tekes_ui_controls::composition::SwitchContent",
       "category": "component-adapter",
       "components": [
@@ -1731,6 +1808,17 @@
         "tui.toolbar"
       ],
       "reason": "Window-owned Toolbar edge allocation, independent of a pane's lifecycle; positions stay local to the declared region."
+    },
+    {
+      "api": "tekes_ui_controls::composition::WithIconRenderer",
+      "category": "component-support",
+      "components": [
+        "tui.icon"
+      ],
+      "reason": "Borrowed text/icon capabilities for one original ContentHost frame.",
+      "type_arguments": [
+        "'_"
+      ]
     },
     {
       "api": "tekes_ui_controls::extended::Axis",

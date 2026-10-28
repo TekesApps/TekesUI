@@ -81,6 +81,10 @@ impl Default for ButtonTextAlign {
 /// Text shaping and glyph output are supplied by the host; layout and paint
 /// remain owned by the production ButtonModel component.
 pub trait ButtonTextRenderer {
+    /// Optional window resource service, shared by all original Content icons.
+    fn icon_renderer(&mut self) -> Option<&mut dyn crate::layout_view::IconRenderer> {
+        None
+    }
     fn measure(&mut self, text: &str, role: proposal::TextRole, max_width: f32) -> Size;
     /// Optional text capability. Existing label-only hosts remain compatible;
     /// composed text fields fail explicitly when the capability is absent.
@@ -99,6 +103,10 @@ pub trait ButtonTextRenderer {
     /// Optional host clock and motion preference for animated production controls.
     fn motion_context(&self) -> Option<ControlMotionContext> {
         None
+    }
+    /// Window-level permission for a descendant to request another frame.
+    fn animation_frames_allowed(&self) -> bool {
+        true
     }
     /// Ask the host for another frame while a component-owned transition is active.
     fn request_animation_frame(&mut self) {}
@@ -128,6 +136,9 @@ pub trait ButtonTextRenderer {
 /// APIs from a `Component` callback receiving `&mut dyn ButtonTextRenderer`.
 /// Forward every host capability, including text services and motion preferences.
 impl<T: ButtonTextRenderer + ?Sized> ButtonTextRenderer for &mut T {
+    fn icon_renderer(&mut self) -> Option<&mut dyn crate::layout_view::IconRenderer> {
+        (**self).icon_renderer()
+    }
     fn measure(&mut self, text: &str, role: proposal::TextRole, max_width: f32) -> Size {
         (**self).measure(text, role, max_width)
     }
@@ -139,6 +150,9 @@ impl<T: ButtonTextRenderer + ?Sized> ButtonTextRenderer for &mut T {
     }
     fn motion_context(&self) -> Option<ControlMotionContext> {
         (**self).motion_context()
+    }
+    fn animation_frames_allowed(&self) -> bool {
+        (**self).animation_frames_allowed()
     }
     fn request_animation_frame(&mut self) {
         (**self).request_animation_frame();

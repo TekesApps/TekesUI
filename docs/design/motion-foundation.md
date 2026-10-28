@@ -2,6 +2,15 @@
 
 > 集成状态：本文第 5、6 节保留研究阶段的配方与 motion.toml 提案。当前项目已采用 JSON Design System，Gallery 以 `design/source/motion.json` 为唯一 motion 参数来源，已合并 JSON 优先于这些旧提案。实际接线和验收边界见 [motion-preview 交接](../handoffs/motion-preview.md)。
 
+2026-10-29，#47 接收基础：沿用原 Root 图标候选的
+`continuous.indeterminate_rotation_period_seconds = 2.0`，由同一 motion JSON
+和原 design-export 编译为 `proposal::INDETERMINATE_ROTATION_PERIOD_SECONDS`。
+周期必须为有限正数，转换为 f32 后仍有限且大于零；缺失、错误类型、零、负数、
+溢出或下溢由正常生成校验拒绝。该周期独立于按钮/浮层的有限过渡时长，保留原
+LinearRotation motor，不新增 ticker 或主题引擎。现有 token 值除新增周期外保持
+一致；原旧证据不转签。本共享基础的接收不代表 IconContent、实际持续动画、
+失活/Reduced Motion 或原生窗口已经完成；组件消费与原 AC 继续归 #47。
+
 研究日期：2026-10-15。状态：设计草案；独立数值内核与属性通道已实现，参数实测和原生对照尚未完成。实际 API、边界和验证命令见 [tekes-ui-motion](../../crates/tekes-ui-motion/README.md)。
 
 本文为纯 Rust component 准备动画机制、组件动效配方和 Gallery 验收入口。Apple 事实只引用官方 HIG、API 文档和 WWDC；下文标注「TekesUI 提案」的结构、数值和规则，是本项目设计，不是 Apple 系统控件的内部实现或精确参数。

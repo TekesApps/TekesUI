@@ -64,6 +64,28 @@ pub(super) struct KeyFrame {
     candidate: bool,
 }
 impl ContentHost {
+    /// Check the pending host-key frame before its completion event removes it.
+    /// Notification still requires an accepted result and the same reader lease.
+    pub(super) fn completing_reading_navigation(&self, event: &ContentEvent) -> bool {
+        let ContentEvent::TextKeyEnd { id, .. } = event else {
+            return false;
+        };
+        self.text_keys.last().is_some_and(|frame| {
+            frame.id == *id
+                && matches!(
+                    frame.key.key,
+                    Some(
+                        ControlKey::Left
+                            | ControlKey::Right
+                            | ControlKey::Up
+                            | ControlKey::Down
+                            | ControlKey::Home
+                            | ControlKey::End
+                    )
+                )
+        })
+    }
+
     pub(super) fn advance_focus(&mut self, reverse: bool) -> ContentResponse {
         let mut ids = Vec::new();
         self.scope().focus_ids(&mut ids);

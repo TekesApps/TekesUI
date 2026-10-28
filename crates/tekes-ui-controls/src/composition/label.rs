@@ -72,6 +72,9 @@ impl<'a> LabelRenderer<'a> {
     }
 }
 impl ButtonTextRenderer for LabelRenderer<'_> {
+    fn icon_renderer(&mut self) -> Option<&mut dyn crate::layout_view::IconRenderer> {
+        self.host.icon_renderer()
+    }
     fn resolved_font_size(&mut self, role: proposal::TextRole) -> f32 {
         self.host.resolved_font_size(role)
     }
@@ -176,6 +179,9 @@ impl ButtonTextRenderer for LabelRenderer<'_> {
     }
     fn motion_context(&self) -> Option<ControlMotionContext> {
         self.host.motion_context()
+    }
+    fn animation_frames_allowed(&self) -> bool {
+        self.host.animation_frames_allowed()
     }
     fn request_animation_frame(&mut self) {
         self.host.request_animation_frame();

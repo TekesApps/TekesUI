@@ -62,6 +62,14 @@ jobs:
         if: ${{ !cancelled() && steps.workspace_clippy.outcome == 'success' }}
         run: cargo test --manifest-path examples/composition-consumer/Cargo.toml --locked --no-fail-fast
 
+      - name: Optional SVG IconContent (Issue 47)
+        if: ${{ !cancelled() && steps.workspace_clippy.outcome == 'success' }}
+        run: |
+          cargo clippy -p tekes-ui-controls --features svg-icons --all-targets --locked --offline -- -D warnings
+          cargo test -p tekes-ui-controls --features svg-icons --test component_registry_api --locked --offline
+          cargo clippy --manifest-path examples/composition-consumer/Cargo.toml --features svg-icons --all-targets --locked --offline -- -D warnings
+          cargo test --manifest-path examples/composition-consumer/Cargo.toml --features svg-icons --test icon_gpu --test icon_status_gpu --no-fail-fast --locked --offline
+
       - name: Independent Process Content consumer (Issue 48, no native windows)
         if: ${{ !cancelled() && steps.workspace_clippy.outcome == 'success' }}
         run: |

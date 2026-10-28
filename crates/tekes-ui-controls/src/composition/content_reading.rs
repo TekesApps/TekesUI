@@ -4,6 +4,37 @@ use crate::{ReadingDocumentVersion, ReadingUpdateError};
 use std::collections::BTreeMap;
 
 impl Content {
+    /// Notify only the original mounted source's ancestor path. The input event
+    /// has already been consumed by that source and is never replayed here.
+    pub(super) fn observe_manual_history(
+        &mut self,
+        source: ComponentId,
+        mount: u64,
+    ) -> Option<bool> {
+        if !self.active() || self.component.semantics().disabled {
+            return None;
+        }
+        if self.id == source {
+            return (self.mount == mount
+                && self.visible().is_some()
+                && self
+                    .component
+                    .text_surface()
+                    .is_some_and(|surface| surface.input.read_only && !surface.input.disabled))
+            .then_some(false);
+        }
+        let changed = self
+            .component
+            .children_mut()?
+            .iter_mut()
+            .find_map(|child| child.observe_manual_history(source, mount))?;
+        let observed = self
+            .component_mut::<ScrollContent>()
+            .and_then(|scroll| scroll.reading.as_mut())
+            .is_some_and(ContentReadingState::observe_manual_history);
+        Some(changed || observed)
+    }
+
     /// Observe a stopped original child route without delivering its wheel a
     /// second time. This runs synchronously on each original ancestor: there
     /// is no retained callback that can cross mount/document generations.
@@ -122,6 +153,20 @@ fn frames(children: &[Content], items: &[ComponentId]) -> Vec<(ComponentId, Rect
 }
 
 impl ContentReadingState {
+    fn observe_manual_history(&mut self) -> bool {
+        let changed = self.following
+            || !self.user_input
+            || self.pending.is_some()
+            || self.restore_offset.is_some();
+        self.following = false;
+        self.user_input = true;
+        self.pending = None;
+        self.restore_offset = None;
+        // A later continuation of an older wheel is not fresh user intent.
+        self.momentum_fenced = true;
+        changed
+    }
+
     pub(super) fn capture(&self, scroll: &ScrollArea) -> Option<Anchor> {
         if self.frames.is_empty() {
             return self.pending.clone();

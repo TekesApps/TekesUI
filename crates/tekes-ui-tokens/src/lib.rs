@@ -161,6 +161,12 @@ mod effect_binding_tests {
         let document: serde_json::Value =
             serde_json::from_str(include_str!(env!("TEKESUI_SELECTED_TOKEN_JSON"))).unwrap();
         let motion = &document["proposal"]["motion"];
+        assert_eq!(
+            proposal::INDETERMINATE_ROTATION_PERIOD_SECONDS,
+            motion["continuous"]["indeterminate_rotation_period_seconds"]
+                .as_f64()
+                .unwrap() as f32
+        );
         for role in [
             "button_hover",
             "button_press",

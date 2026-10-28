@@ -1167,6 +1167,19 @@ impl ContentHost {
     ) -> Result<(), HostRevealError> {
         self.validate_host_reveal_in_scope(plan, self.scope())
     }
+    pub(super) fn validate_host_reveal_in_focus_scope(
+        &self,
+        plan: &HostRevealPlan,
+        scope_id: ComponentId,
+        scope_mount: u64,
+    ) -> Result<(), HostRevealError> {
+        let scope = self
+            .root
+            .find_active(scope_id)
+            .filter(|node| node.mount == scope_mount)
+            .ok_or(HostRevealError::StalePlan)?;
+        self.validate_host_reveal_in_scope(plan, scope)
+    }
     pub(super) fn validate_host_reveal_in_scope(
         &self,
         plan: &HostRevealPlan,
@@ -1290,6 +1303,15 @@ impl ContentHost {
         plan: HostRevealPlan,
     ) -> Result<HostRevealOutcome, HostRevealError> {
         self.validate_host_reveal(&plan)?;
+        self.commit_host_reveal_validated(plan)
+    }
+    pub(super) fn commit_host_reveal_in_focus_scope(
+        &mut self,
+        plan: HostRevealPlan,
+        scope_id: ComponentId,
+        scope_mount: u64,
+    ) -> Result<HostRevealOutcome, HostRevealError> {
+        self.validate_host_reveal_in_focus_scope(&plan, scope_id, scope_mount)?;
         self.commit_host_reveal_validated(plan)
     }
     fn commit_host_reveal_validated(
@@ -1423,18 +1445,28 @@ impl HostRevealPlan {
     }
 }
 impl ContentHost {
+    // Existing chart unit verifies the default-scope query; production focus
+    // now plans against its explicitly authenticated post-dismiss scope.
+    #[cfg(test)]
     pub(super) fn plan_focus_reveal(
         &self,
         item: ComponentId,
     ) -> Result<HostRevealPlan, HostRevealError> {
-        self.plan_focus_reveal_with_rect(item, None)
+        self.plan_focus_reveal_in_scope(item, self.scope(), None)
     }
-    pub(super) fn plan_focus_reveal_with_rect(
+    pub(super) fn plan_focus_reveal_in_focus_scope(
         &self,
         item: ComponentId,
+        scope_id: ComponentId,
+        scope_mount: u64,
         prepared_rect: Option<Rect>,
     ) -> Result<HostRevealPlan, HostRevealError> {
-        self.plan_focus_reveal_in_scope(item, self.scope(), prepared_rect)
+        let scope = self
+            .root
+            .find_active(scope_id)
+            .filter(|node| node.mount == scope_mount)
+            .ok_or(HostRevealError::UnavailableTarget)?;
+        self.plan_focus_reveal_in_scope(item, scope, prepared_rect)
     }
     /// Only the checked modal transaction selects its already-prepared post-close root scope.
     pub(super) fn plan_focus_reveal_after_modal_close(

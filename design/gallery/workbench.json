@@ -272,7 +272,8 @@
       "status": "experimental",
       "api": "tekes_ui_controls::layout_view::IconView",
       "api_bindings": [
-        "tekes_ui_controls::layout_view::IconView"
+        "tekes_ui_controls::layout_view::IconView",
+        "tekes_ui_controls::composition::IconContent"
       ]
     },
     {
@@ -669,7 +670,8 @@
       "api": "tekes_ui_controls::extended::Popover",
       "api_bindings": [
         "tekes_ui_controls::extended::Popover",
-        "tekes_ui_controls::feedback_view::PopoverView"
+        "tekes_ui_controls::feedback_view::PopoverView",
+        "tekes_ui_controls::composition::PopoverContent"
       ]
     },
     {

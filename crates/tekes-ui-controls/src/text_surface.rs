@@ -132,6 +132,8 @@ pub struct TextSurface {
     pub clauses: Vec<Range<usize>>,
     ancestor_clip: Option<Rect>,
     pointer_dragging: bool,
+    scrollbar_pointer_active: bool,
+    scrollbar_reveal_suppressed: bool,
     pending_reveal: Option<Point>,
     navigation: Option<Navigation>,
 }
@@ -177,6 +179,8 @@ impl TextSurface {
             clauses: Vec::new(),
             ancestor_clip: None,
             pointer_dragging: false,
+            scrollbar_pointer_active: false,
+            scrollbar_reveal_suppressed: false,
             pending_reveal: None,
             navigation: None,
         }
@@ -863,6 +867,15 @@ impl TextSurface {
     }
 
     pub fn reveal(&mut self) {
+        // Scrollbar thumb drags and track paging take precedence over the
+        // stale insertion caret, including explicit reveals during the gesture.
+        if self.scrollbar_pointer_active || self.scroll.dragging_axis().is_some() {
+            return;
+        }
+        if self.scrollbar_reveal_suppressed {
+            self.scrollbar_reveal_suppressed = false;
+            return;
+        }
         self.scroll.reveal(self.caret_doc(self.input.caret));
         self.pending_reveal = (self.paragraph.is_none() || self.shaped != self.input.text)
             .then_some(self.scroll.offset);
@@ -898,6 +911,7 @@ impl TextSurface {
             return None;
         }
         self.input.unmark();
+        self.scrollbar_reveal_suppressed = false;
         for vertical in [true, false] {
             let track = self.track(vertical).inset(-Spacing::Micro.value());
             if self
@@ -905,9 +919,11 @@ impl TextSurface {
                 .pointer_down(point, vertical, track, minimum_thumb)
             {
                 self.pointer_dragging = true;
+                self.scrollbar_pointer_active = true;
                 return Some(true);
             }
         }
+        self.scrollbar_pointer_active = false;
         self.select_visual_point(point, shift);
         if click_count >= 3 {
             self.navigation = None;
@@ -964,6 +980,11 @@ impl TextSurface {
                 minimum_thumb,
             );
         }
+        if self.scrollbar_pointer_active {
+            // Track paging is a one-shot scroll action, not a text selection
+            // gesture after the pointer leaves the track.
+            return false;
+        }
         self.select_visual_point(point, true);
         self.reveal();
         true
@@ -971,6 +992,8 @@ impl TextSurface {
 
     pub fn pointer_up(&mut self) {
         self.pointer_dragging = false;
+        self.scrollbar_reveal_suppressed = self.scrollbar_pointer_active;
+        self.scrollbar_pointer_active = false;
         self.scroll.pointer_up();
     }
 
@@ -978,6 +1001,8 @@ impl TextSurface {
     /// deactivation, or disabling. Selection and text contents are preserved.
     pub fn cancel_interaction(&mut self) {
         self.pointer_dragging = false;
+        self.scrollbar_pointer_active = false;
+        self.scrollbar_reveal_suppressed = false;
         self.scroll.cancel();
     }
 

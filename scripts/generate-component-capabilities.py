@@ -264,8 +264,13 @@ def reverse_coverage(registry: dict) -> dict:
                 owner = optional_components.get(entry.get('owner_api'))
                 if owner is None or owner.get('feature') != feature:
                     raise ValueError(f'{api}: optional support needs its component owner and matching feature')
-        elif feature is not None or 'owner_api' in entry:
-            raise ValueError(f'{api}: feature/optional owner requires an explicit optional category')
+        elif feature is not None:
+            if category != 'component-support' or not isinstance(feature, str) or feature not in declared_features:
+                raise ValueError(f'{api}: feature-gated component support needs a declared Cargo feature')
+            if 'owner_api' in entry:
+                raise ValueError(f'{api}: owner_api requires an explicit optional component category')
+        elif 'owner_api' in entry:
+            raise ValueError(f'{api}: optional owner requires an explicit optional category')
         if category == 'component':
             if not ids or set(ids) != owners.get(api, set()):
                 raise ValueError(f'{api}: component binding/route coverage mismatch; classified={ids}, registered={sorted(owners.get(api, set()))}')

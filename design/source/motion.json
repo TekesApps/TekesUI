@@ -2,6 +2,9 @@
   "accessibility": {
     "reduce_motion": "all-durations-zero; bypass spring simulation; no spinner rotation, shimmer or typewriter"
   },
+  "continuous": {
+    "indeterminate_rotation_period_seconds": 2.0
+  },
   "duration": {
     "expansion": 0.5,
     "geometry": 0.12,

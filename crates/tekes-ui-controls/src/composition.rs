@@ -12,6 +12,10 @@ pub use bitmap::{
     ImageAlignment, ImageContent, ImageContentError, ImageFit, ImageLoadOutcome, ImageLoadRequest,
     ImageLoadStatus, ImageSemantics,
 };
+mod icon;
+pub use icon::{IconContent, IconImage, IconRenderError, WithIconRenderer};
+#[cfg(feature = "svg-icons")]
+pub use icon::{SvgIconCache, SvgIconRenderer};
 mod actions;
 mod panel;
 pub use panel::{
@@ -68,6 +72,8 @@ pub use number::{
     NumberParseError, NumberValidation, NumberValueChange, NumberValueError,
 };
 mod overlay_scope;
+mod popover;
+pub use popover::{PopoverCloseReason, PopoverClosed, PopoverContent, PopoverSession};
 mod pointer;
 mod text_query;
 pub use overlay_scope::OverlayScope;
@@ -520,6 +526,14 @@ pub trait Component: Debug + Any {
     /// Components owning child paint order retain that responsibility.
     fn focus_decoration_above_siblings(&self) -> bool {
         false
+    }
+    /// This owner paints canonical icon resources through the host service.
+    fn requires_icon_services(&self) -> bool {
+        false
+    }
+    /// Latest explicit icon resource/backend failure for this original owner.
+    fn icon_error(&self) -> Option<IconRenderError> {
+        None
     }
     fn requires_text_services(&self) -> bool {
         false
@@ -1126,6 +1140,10 @@ impl Content {
         text: &mut dyn ButtonTextRenderer,
         theme: ContentTheme,
     ) {
+        // Registered Popovers have one host-owned overlay pass in opening order.
+        if self.component::<PopoverContent>().is_some() {
+            return;
+        }
         let owned = self.component.paints_children();
         if !(self.active() || owned && self.component.overlay_presented()) {
             return;
@@ -1156,6 +1174,37 @@ impl Content {
             .rev()
             .find_map(Content::overlay_id)
             .or_else(|| self.component.overlay_open().then_some(self.id))
+    }
+    fn needs_icons(&self) -> Option<ComponentId> {
+        if !(self.active()
+            || self.component.paints_children() && self.component.overlay_presented())
+        {
+            return None;
+        }
+        if self.component.requires_icon_services() {
+            Some(self.id)
+        } else {
+            self.component
+                .children()
+                .iter()
+                .find_map(Content::needs_icons)
+        }
+    }
+    fn icon_failure(&self) -> Option<(ComponentId, IconRenderError)> {
+        if !(self.active()
+            || self.component.paints_children() && self.component.overlay_presented())
+        {
+            return None;
+        }
+        self.component
+            .icon_error()
+            .map(|error| (self.id, error))
+            .or_else(|| {
+                self.component
+                    .children()
+                    .iter()
+                    .find_map(Content::icon_failure)
+            })
     }
     fn needs_text(&self) -> Option<ComponentId> {
         if !(self.active()
@@ -1601,6 +1650,11 @@ pub enum CompositionError {
     EmptyAccessibleName,
     InvalidSlotCount,
     MissingTextServices(ComponentId),
+    MissingIconServices(ComponentId),
+    IconResource {
+        owner: ComponentId,
+        reason: IconRenderError,
+    },
     MissingLabelServices(ComponentId),
     UnsupportedLabelLayout(ComponentId),
     InvalidPaddingFocus {
@@ -1608,6 +1662,12 @@ pub enum CompositionError {
         target: ComponentId,
     },
     NotDialog(ComponentId),
+    NotPopover(ComponentId),
+    PopoverUnavailable(ComponentId),
+    InvalidPopoverAnchor {
+        owner: ComponentId,
+        anchor: ComponentId,
+    },
     ModalAlreadyOpen,
     NestedInteractive {
         action: ComponentId,
@@ -1669,7 +1729,9 @@ pub struct ContentHost {
     focused: Option<ComponentId>,
     focus_wrap: bool,
     overlay_scopes: Vec<overlay_scope::ScopedOverlay>,
+    popover_order: Vec<PopoverSession>,
     captured: Option<ComponentId>,
+    captured_overlay: bool,
     captured_mount: Option<u64>,
     capture_epoch: u64,
     dirty: bool,
@@ -1711,7 +1773,9 @@ impl ContentHost {
             focused: None,
             focus_wrap: true,
             overlay_scopes: Vec::new(),
+            popover_order: Vec::new(),
             captured: None,
+            captured_overlay: false,
             captured_mount: None,
             capture_epoch: 0,
             dirty: true,
@@ -1766,6 +1830,7 @@ impl ContentHost {
     pub fn needs_render(&self) -> bool {
         self.dirty
             || self.help.needs_frame()
+            || self.popover_animation_pending()
             || self
                 .presented_dialog
                 .and_then(|id| self.root.find(id))
@@ -1905,6 +1970,21 @@ impl ContentHost {
         &mut self,
         text: &mut dyn ButtonTextRenderer,
     ) -> Result<(), CompositionError> {
+        let paint_icons = self
+            .presented_dialog
+            .and_then(|id| self.root.find(id))
+            .and_then(|node| {
+                node.component
+                    .children()
+                    .iter()
+                    .find_map(Content::needs_icons)
+            });
+        if let Some(id) = self.root.needs_icons().or(paint_icons)
+            && text.icon_renderer().is_none()
+        {
+            self.cancel_pointer_capture();
+            return Err(CompositionError::MissingIconServices(id));
+        }
         let paint_text = self
             .presented_dialog
             .and_then(|id| self.root.find(id))
@@ -2022,6 +2102,7 @@ impl ContentHost {
         if self.modal.is_none() {
             self.root.paint_overlays(scene, text, theme);
         }
+        self.paint_registered_popovers(scene, text, theme);
         if let Some(id) = paint_id {
             let dialog_theme = self.root.theme_for(id, theme);
             if let (Some(node), Some(dialog_theme)) = (self.root.find_mut(id), dialog_theme) {
@@ -2053,6 +2134,19 @@ impl ContentHost {
             } else {
                 self.presented_dialog = None;
             }
+        }
+        if let Some((owner, reason)) = self.root.icon_failure().or_else(|| {
+            self.presented_dialog
+                .and_then(|id| self.root.find(id))
+                .and_then(|node| {
+                    node.component
+                        .children()
+                        .iter()
+                        .find_map(Content::icon_failure)
+                })
+        }) {
+            self.cancel_pointer_capture();
+            return Err(CompositionError::IconResource { owner, reason });
         }
         if let Some(id) = self.root.label_failure() {
             self.cancel();
@@ -2100,6 +2194,7 @@ impl ContentHost {
         ));
         self.root.arrange(text, frame, clip);
         self.finish_split_layout();
+        self.arrange_popovers(text, requested.0, requested.1);
         self.check_text_services(text)?;
         if let Some(id) = self.root.label_failure() {
             self.cancel();
@@ -2113,6 +2208,7 @@ impl ContentHost {
         Ok(frame)
     }
     fn reconcile_active_inputs(&mut self) {
+        self.reconcile_popovers();
         self.root.refresh_activity(self.window_active);
         self.root
             .reconcile_presentation_runnable(self.window_active);
@@ -2141,6 +2237,7 @@ impl ContentHost {
                 c.component.event(&ContentEvent::Cancel);
             }
             self.captured_mount = None;
+            self.captured_overlay = false;
             self.dirty = true;
         }
         if let Some(id) = self.focused.filter(|id| {
@@ -2245,6 +2342,17 @@ impl ContentHost {
         self.reveal_clock.invalidate_input();
         self.event_bubbled = None;
         let overlay_barrier = self.overlay_scope_id().is_some();
+        let reader_lease = self.focused.and_then(|id| {
+            let owner = self.scope().find_active(id)?;
+            let surface = owner.component.text_surface()?;
+            (surface.input.read_only && !surface.input.disabled).then_some((
+                id,
+                owner.mount,
+                self.focus_epoch,
+                surface.input.controlled_binding(),
+            ))
+        });
+        let completing_navigation = self.completing_reading_navigation(event);
         let previous_caret = self.focused.and_then(|id| {
             self.focused_text()
                 .filter(|surface| {
@@ -2255,6 +2363,68 @@ impl ContentHost {
         });
         let mut result = self.key_routed_event(event);
         self.reconcile_active_inputs();
+        let routed = event.routing_event();
+        let navigation = matches!(
+            &*routed,
+            ContentEvent::Key {
+                key: ControlKey::Left
+                    | ControlKey::Right
+                    | ControlKey::Up
+                    | ControlKey::Down
+                    | ControlKey::Home
+                    | ControlKey::End,
+                down: true,
+            }
+        ) || matches!(&*routed, ContentEvent::TextCommand(command)
+            if command.starts_with("move") || command == "selectAll:");
+        // A consumed key is a reading intent only if the original reader
+        // accepted navigation, not merely because an IME/host barrier consumed it.
+        let delivered_navigation = navigation && self.event_bubbled.is_some()
+            || completing_navigation
+                && result.text_key.is_some_and(|key| {
+                    key.disposition == TextKeyDisposition::EditHandled
+                        && key.target == reader_lease.map(|lease| lease.0)
+                });
+        let reading_source = match &*routed {
+            ContentEvent::PointerDown(_)
+                if event.is_primary_pointer() && result.capture_pointer =>
+            {
+                self.captured.and_then(|id| {
+                    let mount = self.captured_mount?;
+                    self.root
+                        .find_active(id)
+                        .filter(|owner| owner.mount == mount)
+                        .map(|_| (id, mount))
+                })
+            }
+            ContentEvent::PointerMove(_) if event.is_primary_pointer() && result.changed => {
+                self.captured.and_then(|id| {
+                    let mount = self.captured_mount?;
+                    self.root
+                        .find_active(id)
+                        .filter(|owner| owner.mount == mount)
+                        .map(|_| (id, mount))
+                })
+            }
+            _ if delivered_navigation && result.consumed => {
+                reader_lease.and_then(|(id, mount, epoch, binding)| {
+                    (self.focused == Some(id)
+                        && self.focus_epoch == epoch
+                        && self
+                            .focused_text()
+                            .is_some_and(|s| s.input.controlled_binding() == binding))
+                    .then_some((id, mount))
+                })
+            }
+            _ => None,
+        };
+        if let Some((source, mount)) = reading_source {
+            result.changed |= self
+                .scope_with_actions()
+                .0
+                .observe_manual_history(source, mount)
+                .unwrap_or(false);
+        }
         // Document text has no nested scroll owner. Explicit navigation/drag
         // reveals through the same ancestor path as ordinary focus. Pointer
         // down already called focus(), so must not reveal stale geometry twice.
@@ -2432,11 +2602,20 @@ impl ContentHost {
         ) && event.is_primary_pointer()
             && let Some(id) = self.captured
         {
+            let captured_overlay = self.captured_overlay;
             if matches!(routed, ContentEvent::PointerUp(_)) {
                 self.captured = None;
                 self.captured_mount = None;
+                self.captured_overlay = false;
             }
-            let result = self.root.route_from(id, event, &mut self.actions);
+            let result = if captured_overlay {
+                {
+                    let (scope, actions) = self.scope_with_actions();
+                    scope.route_from(id, event, actions)
+                }
+            } else {
+                self.root.route_from(id, event, &mut self.actions)
+            };
             return result
                 .map(|(_, response, bubbles)| {
                     self.event_bubbled = Some(bubbles);
@@ -2571,7 +2750,12 @@ impl ContentHost {
                         .checked_add(1)
                         .expect("pointer capture identity exhausted");
                     self.captured = Some(id);
-                    self.captured_mount = self.root.find_active(id).map(|node| node.mount)
+                    self.captured_mount = self.root.find_active(id).map(|node| node.mount);
+                    self.captured_overlay = self.overlay_scope_id().is_some_and(|scope| {
+                        self.root
+                            .find_active(scope)
+                            .is_some_and(|owner| owner.find(id).is_some())
+                    });
                 }
                 if r.consumed
                     && self.root.find(id).is_some_and(|c| {
@@ -2770,11 +2954,22 @@ impl ContentHost {
         if self.window_active == active {
             return;
         }
-        // A window-authority change invalidates a prepared input/reveal plan.
-        // Keep the 078 cancellation order: blur/cancel while the old window
-        // authority is still live, then notify every retained descendant.
+        let deactivated = self.window_active && !active;
+        // Cancel while old input authority is still live, then update retained descendants.
         self.reveal_clock.invalidate_input();
-        if !active {
+        // Retire the transient session with its precise reason before generic cancellation.
+        let mut ids = Vec::new();
+        self.root.popover_ids(&mut ids);
+        for id in ids {
+            if let Some(popover) = self
+                .root
+                .find_mut(id)
+                .and_then(|node| node.component_mut::<PopoverContent>())
+            {
+                popover.host_window_active(active);
+            }
+        }
+        if deactivated {
             self.cancel();
         }
         self.window_active = active;
@@ -2808,6 +3003,7 @@ impl ContentHost {
         if capture {
             self.captured = None;
             self.captured_mount = None;
+            self.captured_overlay = false;
         }
         if focus {
             self.focus(None, false);
@@ -3009,6 +3205,7 @@ impl ContentHost {
             return false;
         };
         self.captured_mount = None;
+        self.captured_overlay = false;
         if let Some(owner) = self.root.find_mut(id) {
             owner.component.cancel_pointer();
         }
@@ -3029,6 +3226,9 @@ impl ContentHost {
         self.dirty = true;
         self.modal_focus_pending = false;
         fn cancel(c: &mut Content) {
+            if let Some(popover) = c.component_mut::<PopoverContent>() {
+                popover.close(PopoverCloseReason::Cancelled);
+            }
             c.component.event(&ContentEvent::Cancel);
             if let Some(children) = c.component.children_mut() {
                 for c in children {
@@ -3039,6 +3239,7 @@ impl ContentHost {
         cancel(&mut self.root);
         self.captured = None;
         self.captured_mount = None;
+        self.captured_overlay = false;
         self.focus(None, false);
     }
     /// Move the original mounted subtree, preserving its Content identities and
@@ -3189,6 +3390,7 @@ impl ContentHost {
         if self.captured.is_some_and(|id| child.find(id).is_some()) {
             self.captured = None;
             self.captured_mount = None;
+            self.captured_overlay = false;
         }
         child.lifecycle(Lifecycle::Unmounted);
         self.reveal_clock.invalidate_input();
@@ -3733,6 +3935,9 @@ impl Component for ScrollContent {
 /// The forwarding value keeps existing sized renderer APIs source-compatible.
 struct FrameTextAdapter<'a>(&'a mut dyn ButtonTextRenderer, Option<&'a mut bool>, bool);
 impl ButtonTextRenderer for FrameTextAdapter<'_> {
+    fn icon_renderer(&mut self) -> Option<&mut dyn crate::layout_view::IconRenderer> {
+        self.0.icon_renderer()
+    }
     fn resolved_font_size(&mut self, role: proposal::TextRole) -> f32 {
         self.0.resolved_font_size(role)
     }
@@ -3756,8 +3961,11 @@ impl ButtonTextRenderer for FrameTextAdapter<'_> {
     fn motion_context(&self) -> Option<ControlMotionContext> {
         self.0.motion_context()
     }
+    fn animation_frames_allowed(&self) -> bool {
+        self.2 && self.0.animation_frames_allowed()
+    }
     fn request_animation_frame(&mut self) {
-        if !self.2 {
+        if !self.animation_frames_allowed() {
             return;
         }
         if let Some(requested) = &mut self.1 {
@@ -3775,6 +3983,9 @@ impl ButtonTextRenderer for FrameTextAdapter<'_> {
 
 struct TextAdapter<'a>(&'a mut dyn ButtonTextRenderer);
 impl ButtonTextRenderer for TextAdapter<'_> {
+    fn icon_renderer(&mut self) -> Option<&mut dyn crate::layout_view::IconRenderer> {
+        self.0.icon_renderer()
+    }
     fn resolved_font_size(&mut self, role: proposal::TextRole) -> f32 {
         self.0.resolved_font_size(role)
     }
@@ -3797,6 +4008,9 @@ impl ButtonTextRenderer for TextAdapter<'_> {
     }
     fn motion_context(&self) -> Option<ControlMotionContext> {
         self.0.motion_context()
+    }
+    fn animation_frames_allowed(&self) -> bool {
+        self.0.animation_frames_allowed()
     }
     fn request_animation_frame(&mut self) {
         self.0.request_animation_frame()
