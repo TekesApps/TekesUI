@@ -1985,7 +1985,7 @@
     "examples/composition-consumer/tests/slider_states.rs": "9ba39cb152181ee5ab65b94d83e5573417fc706582a67eb6dc7712db5a1fc184",
     "examples/composition-consumer/tests/surface_host_scale.rs": "152941bff9d9baa1e402f3d1c52d051a4aacc0e5702de774780aa951178419c7",
     "scripts/audit-menu-content-tokens.py": "c6c66ffd9939c61b2069cdafc9f798ea72b7aa58f1c7d8c0b3f55dc67765f867",
-    "crates/tekes-ui-controls/src/composition/number.rs": "d0c7c6cdb0b1eb94a56709213069ed8756b47b26917b7fd1ec5c63d4bcf4a91f",
+    "crates/tekes-ui-controls/src/composition/number.rs": "736ee3b0957c10800442cfd959a854bd4ea2cd67b43bdb8ffe762b296d779bbc",
     "examples/composition-consumer/tests/editable_number.rs": "637055472100f4df5fec209e74b1e92ef42fe94128f76c2153dcc07f054c1598",
     "crates/tekes-ui-controls/src/composition/split_view.rs": "379caa197a2e449045fb17e9f3ffc67eefe8f6f27e552f4ffd539920ee269eb3",
     "crates/tekes-ui-controls/src/composition/panel.rs": "a82c753e500b1f14da5e34c7c7eba3cb195579ee23ddfab97b750a3fdaa533fa",

@@ -236,12 +236,14 @@ impl NumberFieldContent {
     /// Apply consumer-owned state (including configuration Undo/Redo).
     /// Refuses to overwrite a dirty draft or marked text. Call cancel_edit first
     /// when discarding a non-IME draft is an explicit consumer decision.
-    /// This synchronization creates no numeric change notification.
+    /// Synchronizes disabled fields too, without a numeric change notification.
+    /// Changing values must retain their format through single-line text normalization.
     pub fn set_value(&mut self, value: f64) -> Result<bool, NumberValueError> {
         if !value.is_finite() || value < self.min || value > self.max {
             return Err(NumberValueError::InvalidValue);
         }
-        if self.format.parse(&self.format.format(value)) != Ok(value) {
+        let display = self.format.format(value);
+        if self.format.parse(&display) != Ok(value) {
             return Err(NumberValueError::FormatMismatch);
         }
         if value == self.value() {
@@ -250,8 +252,46 @@ impl NumberFieldContent {
         if self.composing() || self.edit_state().dirty {
             return Err(NumberValueError::Editing);
         }
+        // This private numeric editor is single-line. Its checked text update
+        // removes control characters; such a codec cannot preserve its display.
+        if display.chars().any(char::is_control) {
+            return Err(NumberValueError::FormatMismatch);
+        }
+        // Programmatic synchronization is not a disabled user edit. Keep the
+        // original editor/history and apply its checked controlled transaction
+        // before publishing the numeric model; a rejected update changes neither.
+        let surface = &mut self.editor.surface;
+        let baseline = surface.input.external_baseline();
+        // Only this component can mutate its private editor: this authority is
+        // not a caller-owned publication stream (text_surface exposes & only).
+        let current = surface.input.external_value();
+        let revision = crate::DraftRevision {
+            identity: current.map_or_else(
+                || "tekes-ui:NumberFieldContent".into(),
+                |current| current.identity.clone(),
+            ),
+            version: match current {
+                Some(current) => current
+                    .version
+                    .checked_add(1)
+                    .ok_or(NumberValueError::Editing)?,
+                None => 1,
+            },
+            payload: display,
+        };
+        let end = revision.payload.encode_utf16().count();
+        if !matches!(
+            surface.apply_external_value(
+                &baseline,
+                &revision,
+                crate::ExternalSelection::Set(end..end),
+                crate::ExternalUndo::Transaction,
+            ),
+            crate::ExternalValueResult::Applied { .. }
+        ) {
+            return Err(NumberValueError::Editing);
+        }
         let changed = self.number.set(value);
-        self.replace_display();
         self.sync_buttons();
         Ok(changed)
     }
