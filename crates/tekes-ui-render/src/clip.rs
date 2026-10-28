@@ -1148,6 +1148,16 @@ impl ClipFrame {
                             "shader work",
                         )?
                     }
+                } else if matches!(p, Primitive::Quad(_) | Primitive::KeyedQuad { .. })
+                    && (1..=16_384).contains(&size.0)
+                    && (1..=16_384).contains(&size.1)
+                {
+                    // Quad fragments use this same prepared hardware scissor.
+                    // Keep the full-target estimate for unknown/invalid bounds
+                    // and other pipelines; never change the encoded scissor.
+                    let pixels =
+                        scissor_pixel_area(Some(state.scissor), size).unwrap_or(target_pixels);
+                    checked_product(pixels, depth, "shader work")?
                 } else {
                     checked_product(target_pixels, depth, "shader work")?
                 };
@@ -1450,6 +1460,48 @@ mod tests {
     }
 
     #[test]
+    fn quad_shader_work_uses_unchanged_hardware_scissor_and_exact_cap() {
+        for keyed in [false, true] {
+            let (mut scene, _table, key) = scene();
+            scene.push_shape_clip(key.clone());
+            let quad = Quad::new(Rect::new(0., 0., 8., 8.), Rgba::gray(1.)).with_corner_radius(2.);
+            if keyed {
+                scene.push_keyed_quad(quad, key);
+            } else {
+                scene.push_quad(quad);
+            }
+            scene.pop_clip();
+            let before = scene.clone();
+            let limits = wgpu::Limits::default();
+            let base = ClipFrameBudget::for_device(&limits);
+            // Existing outward AA support makes the actual scissor 9x9.
+            // One parent record means exactly 81 charged clip-record visits,
+            // rather than the unrelated 32x32 target area.
+            let frame = prepare(
+                &scene,
+                Some(ClipFrameBudget {
+                    max_shader_work: 81,
+                    ..base
+                }),
+            )
+            .unwrap();
+            assert_eq!(frame.states[1].scissor, [0, 0, 9, 9]);
+            assert_eq!(frame.shader_work, 81);
+            assert!(matches!(
+                prepare(
+                    &scene,
+                    Some(ClipFrameBudget {
+                        max_shader_work: 80,
+                        ..base
+                    })
+                ),
+                Err(RenderError::ClipBudgetExceeded("shader work"))
+            ));
+            assert_eq!(scene, before);
+        }
+    }
+
+    #[test]
     fn non_glyph_shader_work_overflow_keeps_the_original_checked_rejection() {
         let mut table = ShapeTable::new(7, 2);
         let first = table.intern(shape(0.)).unwrap();
@@ -1669,7 +1721,9 @@ mod tests {
         assert_eq!(frame.states[8].scissor, [0, 0, 100, 100]);
         assert_eq!(frame.states[9].scissor, [0, 0, 100, 100]);
         assert_eq!(frame.states[10].scissor, [0, 0, 100, 100]);
-        let expected_work = u64::from(33_u32 * 33) + 2 * u64::from(81_u32 * 81) + 2 * 100 * 100;
+        // The original Quad and fallback Glyph run share the unchanged
+        // 81x81 parent scissor; the Image keeps its full-target charge.
+        let expected_work = u64::from(33_u32 * 33) + 3 * u64::from(81_u32 * 81) + 100 * 100;
         assert_eq!(frame.shader_work, expected_work);
 
         let before = atlas.stats();
@@ -1758,7 +1812,7 @@ mod tests {
     }
 
     #[test]
-    fn nested_glyph_work_accumulates_per_instance_and_keeps_other_pipeline_full_target() {
+    fn nested_glyph_and_quad_work_accumulates_actual_prepared_bounds() {
         let (atlas, glyph) = atlas_with_glyph();
         let origins = vec![(1., 1.); 3];
         let (scene, _table) = clipped_glyph_scene(glyph, &origins, 3, true);
@@ -1770,7 +1824,10 @@ mod tests {
         let glyph_depth = u64::from(frame.records[glyph_state.head as usize - 1].meta[3]);
         let quad_state = frame.states[3];
         let quad_depth = u64::from(frame.records[quad_state.head as usize - 1].meta[3]);
-        let expected = glyph_pixels * glyph_depth * 3 + 32 * 32 * quad_depth;
+        // The innermost Rect starts at (2,2), size 14x14; existing
+        // outward support is [1,17) on each axis, hence 16x16 pixels.
+        assert_eq!(quad_state.scissor, [1, 1, 16, 16]);
+        let expected = glyph_pixels * glyph_depth * 3 + 16 * 16 * quad_depth;
         assert_eq!(frame.shader_work, expected);
         assert!(matches!(
             prepare_with_atlas(
