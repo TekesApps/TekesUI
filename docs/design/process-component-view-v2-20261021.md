@@ -97,4 +97,24 @@ Receipts: SSD `artifacts/issue-48/main33d35b3-reading-anchor-20261028-01/`.
 This is the original item-local contract, not a new text/scroll/proof engine or a
 claim about physical Pinyin candidates, crash recovery or all Issue 48 acceptance.
 
+The finite AC5 `--reading-lifecycle-only` mode uses three original mixed Readers
+with negotiated semantics and actual imported child images. It edits the original
+editor, hides/shows without replacing its process/session or saved value, changes
+viewport and checks both the bridge fence and an old-viewport request sent through
+actual IPC. It then deliberately kills only its own first Reader PID, observes
+Failed and the expected prepare error, removes/remounts that original component,
+and verifies a new PID/session/parent mount. Retained old-session input and AX
+callbacks are rejected; one fresh Auxiliary press produces exactly one activation
+and no submission. The other two Reader processes/values survive; all owned PIDs
+are reaped and imported images return to the renderer's original count.
+
+Actual strict, original consumer fixture tests and this complete finite lifecycle
+case passed on `958ed1a` plus the test-only delta. Evidence is in SSD
+`artifacts/issue-48/main958ed1a-reader-lifecycle-20261028-01/cpu01/`.
+This does not claim an out-of-order GPU-frame reply was delivered to the new
+session: old-viewport **input** rejection and late **frame/reply** rejection are
+different evidence. The latter still needs explicit coverage reconciliation with
+the existing queued transport tests. No native-window or physical IME acceptance
+is added by this headless IPC/GPU resource case, and no runtime API is changed.
+
 Rectangular parent Scroll admission uses the default-false `Component::rectangular_input_geometry` opt-in. ProcessContainer declares it only for ready, negotiated Content input; the original current focus/reveal checks still run. This does not grant prepared-action purity or curved Panel support, and Curve V1 remains reject-only. The public consumer retains its real outer Scroll and Grid, with a valid arranged translation contract for its fixed row.

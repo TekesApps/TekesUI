@@ -1075,6 +1075,267 @@ fn same_reading_anchor(before: &serde_json::Value, after: &serde_json::Value) ->
     Ok(())
 }
 
+/// Original mixed Reader lifecycle, including an actual owned-child crash.
+/// This is IPC/GPU resource acceptance, not a native window or physical IME test.
+pub(super) fn lifecycle_roundtrip() -> Result<serde_json::Value> {
+    let caps = ViewCapabilities {
+        accessibility: true,
+        ..CAPS
+    };
+    let create = |i: usize| -> Result<Content> {
+        Ok(Content::new(
+            IDS[i],
+            ProcessContainer::new_view(
+                ProcessComponentOptions::new(NATIVE_MODULE, 85).with_view(85, 85 + i as u64, caps),
+                || {},
+            )?,
+        ))
+    };
+    let mut host = ContentHost::new(Content::new(
+        ComponentId(480),
+        ReviewRow {
+            arranged: None,
+            grid: GridContent {
+                model: tekes_ui_controls::extended::Grid::new(3),
+                children: (0..3).map(create).collect::<Result<_>>()?,
+            },
+        },
+    ))?;
+    let mut gpu = tekes_ui_render::Renderer::new_headless()?;
+    let baseline_images = gpu.image_count();
+    ready(&mut host, &mut gpu)?;
+    ensure!(
+        gpu.image_count() > baseline_images,
+        "original child images were not imported"
+    );
+    let id = IDS[0];
+    let old_session = container(&host, id).session().cloned().unwrap();
+    let old_mount = host.semantic_mount(id).unwrap();
+    let initial = container_message(container(&host, id), "reading-inspect")?;
+    let old_pid = initial["pid"].as_u64().unwrap();
+    let origin = host.get(id).unwrap().frame().origin;
+    let editor = point(&initial, "edit_frame", origin);
+    host.event(&ContentEvent::PointerDown(editor));
+    host.event(&ContentEvent::PointerUp(editor));
+    host.event(&ContentEvent::Commit {
+        text: " saved".into(),
+        replacement: None,
+    });
+    ready(&mut host, &mut gpu)?;
+    let before_hide = container_message(container(&host, id), "reading-inspect")?;
+    ensure!(
+        before_hide["text"] != initial["text"],
+        "lifecycle fixture did not edit original Content"
+    );
+    host.get_mut(id)
+        .unwrap()
+        .component_mut::<ProcessContainer>()
+        .unwrap()
+        .set_visible(false)?;
+    let frame = Rect::new(0., 0., 960., 420.);
+    host.render(
+        &mut Scene::new(),
+        &mut Text,
+        frame,
+        frame,
+        Theme::LIGHT.into(),
+    )?;
+    ensure!(!container(&host, id).input_ready());
+    ensure!(
+        container(&host, id)
+            .native_content_bridge(Duration::from_secs(1))
+            .is_err()
+    );
+    host.get_mut(id)
+        .unwrap()
+        .component_mut::<ProcessContainer>()
+        .unwrap()
+        .set_visible(true)?;
+    ready(&mut host, &mut gpu)?;
+    let shown = container_message(container(&host, id), "reading-inspect")?;
+    ensure!(shown["pid"] == initial["pid"] && shown["text"] == before_hide["text"]);
+    ensure!(container(&host, id).session() == Some(&old_session));
+    let old_semantics = container(&host, id)
+        .native_content_bridge(Duration::from_secs(1))?
+        .semantics()?;
+    let old_aux = old_semantics
+        .reply()
+        .semantics
+        .as_ref()
+        .unwrap()
+        .iter()
+        .find(|n| n.semantics.name == "Auxiliary")
+        .context("original Auxiliary semantics absent")?
+        .target;
+    let narrow = Rect::new(0., 0., 780., 420.);
+    ready_at(&mut host, &mut gpu, narrow)?;
+    ensure!(
+        container(&host, id)
+            .native_content_bridge(Duration::from_secs(1))?
+            .request(
+                &old_semantics,
+                wire::Input::Commit {
+                    text: "STALE".into(),
+                    replacement: None
+                }
+            )
+            .is_err(),
+        "old viewport snapshot was accepted"
+    );
+    // Also send the old viewport through real IPC; do not rely only on the bridge fence.
+    let stale_request = container(&host, id).request(RequestBody::Content(wire::Request {
+        view: old_semantics.reply().view,
+        viewport: old_semantics.reply().viewport,
+        owner: old_semantics.reply().focused,
+        focus_epoch: old_semantics.reply().focus_epoch,
+        text_binding: old_semantics.reply().text_binding.clone(),
+        capture: None,
+        input: wire::Input::Commit {
+            text: "STALE".into(),
+            replacement: None,
+        },
+    }))?;
+    let mut stale_result = None;
+    wait(|| {
+        for packet in container(&host, id).drain_events() {
+            if let Output::Response { request, result } = packet.output
+                && request == stale_request
+            {
+                stale_result = Some(result);
+            }
+        }
+        stale_result.is_some()
+    })?;
+    ensure!(
+        stale_result.unwrap().is_err(),
+        "worker accepted an old viewport over IPC"
+    );
+    ensure!(
+        container_message(container(&host, id), "reading-inspect")?["text"] == before_hide["text"]
+    );
+    let neighbors = IDS[1..]
+        .iter()
+        .map(|id| container_message(container(&host, *id), "reading-inspect"))
+        .collect::<Result<Vec<_>>>()?;
+    // Deliberately crash only the PID returned by our own original Reader.
+    ensure!(
+        std::process::Command::new("/bin/kill")
+            .args(["-KILL", &old_pid.to_string()])
+            .status()?
+            .success()
+    );
+    wait(|| {
+        matches!(
+            container(&host, id).status(),
+            Some(ProcessStatus::Failed { .. })
+        )
+    })?;
+    ensure!(
+        host.get_mut(id)
+            .unwrap()
+            .component_mut::<ProcessContainer>()
+            .unwrap()
+            .prepare(&mut gpu)
+            .is_err(),
+        "crashed worker was not surfaced as failure"
+    );
+    drop(host.remove(id)?);
+    host.insert(ComponentId(480), create(0)?)?;
+    ready_at(&mut host, &mut gpu, narrow)?;
+    let restarted = container_message(container(&host, id), "reading-inspect")?;
+    let new_pid = restarted["pid"].as_u64().unwrap();
+    ensure!(new_pid != old_pid && container(&host, id).session() != Some(&old_session));
+    ensure!(host.semantic_mount(id) != Some(old_mount));
+    ensure!(
+        container(&host, id)
+            .request_from(
+                &old_session,
+                RequestBody::Message {
+                    topic: "inspect".into(),
+                    payload: serde_json::Value::Null,
+                }
+            )
+            .is_err(),
+        "old session reached the restarted Reader"
+    );
+    let bridge = container(&host, id).native_content_bridge(Duration::from_secs(1))?;
+    ensure!(
+        bridge
+            .request(
+                &old_semantics,
+                wire::Input::Commit {
+                    text: "STALE".into(),
+                    replacement: None
+                }
+            )
+            .is_err()
+    );
+    ensure!(
+        bridge
+            .accessibility_action(
+                &old_semantics,
+                old_aux,
+                None,
+                wire::AccessibilityAction::Press
+            )
+            .is_err(),
+        "old AX callback activated the restarted Reader"
+    );
+    let fresh = bridge.semantics()?;
+    let aux = fresh
+        .reply()
+        .semantics
+        .as_ref()
+        .unwrap()
+        .iter()
+        .find(|n| n.semantics.name == "Auxiliary")
+        .context("restarted Auxiliary semantics absent")?
+        .target;
+    bridge.accessibility_action(&fresh, aux, None, wire::AccessibilityAction::Press)?;
+    let inspected = inspect_container(container(&host, id))?;
+    ensure!(
+        inspected["aux_activations"] == 1 && inspected["submits"] == 0,
+        "restart replayed or duplicated a business action"
+    );
+    ensure!(
+        restarted["text"] == initial["text"],
+        "new business instance did not start fresh"
+    );
+    let mut pids = vec![old_pid, new_pid];
+    for (i, previous) in neighbors.iter().enumerate() {
+        let current = container_message(container(&host, IDS[i + 1]), "reading-inspect")?;
+        ensure!(
+            current["pid"] == previous["pid"] && current["text"] == previous["text"],
+            "one Reader crash affected its independent neighbor"
+        );
+        pids.push(current["pid"].as_u64().unwrap());
+    }
+    drop(host);
+    wait(|| {
+        pids.iter().all(|pid| {
+            !std::process::Command::new("/bin/kill")
+                .args(["-0", &pid.to_string()])
+                .stderr(std::process::Stdio::null())
+                .status()
+                .is_ok_and(|s| s.success())
+        })
+    })?;
+    gpu.collect_retired_images();
+    ensure!(
+        gpu.image_count() == baseline_images,
+        "lifecycle retained imported GPU images"
+    );
+    Ok(
+        serde_json::json!({"result":"ORIGINAL_MIXED_READER_LIFECYCLE_OK",
+        "old_pid":old_pid,"new_pid":new_pid,"all_owned_pids":pids,
+        "old_session":old_session,"initial":initial,"before_hide":before_hide,"shown":shown,"restarted":restarted,
+        "old_viewport_rejected_over_IPC":true,"old_session_input_and_AX_rejected":true,
+        "new_aux_activations":inspected["aux_activations"],"submits":inspected["submits"],
+        "neighbors_preserved":true,"all_children_reaped":true,"imported_images_released":true,
+        "native_window":false,"physical_IME":false}),
+    )
+}
+
 pub(super) fn anchor_roundtrip() -> Result<serde_json::Value> {
     let children = IDS
         .iter()
