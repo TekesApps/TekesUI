@@ -1981,7 +1981,7 @@
     "examples/composition-consumer/tests/dialog_accessibility.rs": "154568d070669e1f388af1b84a4c48d50918f1dd902cc5db860071b76dffc7d2",
     "examples/composition-consumer/tests/editor_keys.rs": "76ed45394def28514e4abf9ee36e0484a91f74f9b23a17838751d1c30436fa7c",
     "examples/composition-consumer/tests/editor_navigation.rs": "791d2d4aba67fe610a084868b3f6fe6fbe7fb29445caf6ac059d164008e8bada",
-    "examples/composition-consumer/tests/forwarded_actions.rs": "06f38c4c984bc04d4e6d7e14832b338a30074f5a909e9634f6d0a4fa8970bc0e",
+    "examples/composition-consumer/tests/forwarded_actions.rs": "9e7d034242af5a9e5c1a8987d7b9d23f056be790630184d2c4af5dc89179bd9f",
     "examples/composition-consumer/tests/item_navigation.rs": "47d15b84bb40029b8421d0f8b287f9538f6a2dd1ecdcb0a42597b40186d6d43e",
     "examples/composition-consumer/tests/label_content.rs": "785621da0e70c34f31e398433e283b2ca3fe11b7157a630491e4ccb602bba5aa",
     "examples/composition-consumer/tests/layout_text_services.rs": "c44adec0e0bbd221867b89417c6ae167c0bd88d80a4fef8011f8f62a21729e65",
