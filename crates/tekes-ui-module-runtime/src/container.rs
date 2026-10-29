@@ -3,7 +3,7 @@
 use crate::{
     NativeViewOptions, ProcessComponent, ProcessComponentOptions, ProcessStatus, ViewImage,
 };
-use anyhow::{Result, ensure};
+use anyhow::{Context, Result, bail, ensure};
 use std::sync::Arc;
 use tekes_ui_app_protocol::{InputKind, Request, VERSION};
 use tekes_ui_controls::{
@@ -17,12 +17,24 @@ use tekes_ui_controls::{
 use tekes_ui_render::{Renderer, gpu::GpuImageRegistration};
 use tekes_ui_scene::{ImageQuad, Point, Rect, Scene, Size};
 
+fn trace_layer(args: std::fmt::Arguments<'_>) {
+    if std::env::var_os("TEKESUI_PROCESS_LAYER_TRACE").is_some() {
+        eprintln!(
+            "PROCESS_LAYER_TRACE pid={} at={:?} {args}",
+            std::process::id(),
+            std::time::Instant::now()
+        );
+    }
+}
+
 #[derive(Debug)]
 struct PendingContentInput {
     session: crate::component::Session,
+    view: u64,
     owner: Option<crate::component::content::Target>,
     focus_epoch: u64,
     text_binding: Option<Vec<u8>>,
+    capture: Option<crate::component::content::Capture>,
     input: crate::component::content::Input,
     original_key_binding: Option<Vec<u8>>,
     bytes: usize,
@@ -34,9 +46,8 @@ pub struct ProcessContainer {
     native: Option<NativeViewOptions>,
     view_context: Option<crate::component::ViewContext>,
     wake: Arc<dyn Fn() + Send + Sync>,
-    process: Option<ProcessComponent>,
-    registration: Option<GpuImageRegistration>,
-    image: Option<ViewImage>,
+    process: Option<Arc<ProcessComponent>>,
+    frame_resources: Arc<std::sync::Mutex<FrameResources>>,
     frame: Rect,
     view_frame: Rect,
     toolbar: crate::container_toolbar::ContainerToolbar,
@@ -46,6 +57,8 @@ pub struct ProcessContainer {
     scale: f32,
     viewport: u64,
     seq: u64,
+    allocation_seq: u64,
+    layout_seq: u64,
     geometry_dirty: bool,
     repaint_dirty: bool,
     visible: bool,
@@ -67,6 +80,401 @@ pub struct ProcessContainer {
     pending_content_bytes: usize,
     // One original latest native-finish receipt, not another input/focus model.
     deferred_key_result: Option<(ContentResponse, bool, Option<Vec<u8>>)>,
+    curve_preflight: CurvePreflight,
+    curve_request: Option<(u64, u64)>,
+    curve_transaction: u64,
+    curve_grant_request: Option<(u64, u64, crate::component::curve::GrantProposal)>,
+    curve_geometry: Option<tekes_ui_controls::composition::CurveGeometryContext>,
+}
+#[derive(Default)]
+struct FrameResources {
+    registration: Option<GpuImageRegistration>,
+    image: Option<ViewImage>,
+    expected_viewport: u64,
+    expected_seq: u64,
+    expected_size: (u32, u32),
+    expected_scale: f32,
+    layer_layout: Option<crate::layer_raster::LayerRasterLayout>,
+    visible: bool,
+    view: u64,
+    parent_generation: u64,
+    child_generation: u64,
+    grant_serial: u64,
+    allocation_seq: u64,
+    layout_seq: u64,
+    grant_acknowledged: bool,
+    deferred_curve_grant: bool,
+    pending_revokes: std::collections::VecDeque<(u64, u64, u64)>,
+    pending_responses: std::collections::VecDeque<u64>,
+    pending_curve_frame: Option<PendingCurveFrame>,
+    pending_curve_publication: Option<PendingCurvePublication>,
+    retired_curve_query: Option<u64>,
+    geometry_cancel_confirmed: bool,
+}
+struct PendingCurveFrame {
+    image: ViewImage,
+    stamp: crate::component::curve::FrameStamp,
+    query_stamp: crate::component::curve::QueryStamp,
+    query_request: u64,
+}
+struct PendingCurvePublication {
+    image: ViewImage,
+    registration: GpuImageRegistration,
+    stamp: crate::component::curve::FrameStamp,
+    query_stamp: crate::component::curve::QueryStamp,
+    snapshot: crate::ProcessContentSnapshot,
+}
+fn curve_query_stamp(
+    frame: &crate::component::curve::FrameStamp,
+) -> crate::component::curve::QueryStamp {
+    crate::component::curve::QueryStamp {
+        grant_serial: frame.grant_serial,
+        gp: frame.gp,
+        gc: frame.gc,
+        view: frame.view,
+        viewport: frame.viewport,
+        allocation_seq: frame.allocation_seq,
+        layout_seq: frame.layout_seq,
+        published_frame_seq: frame.frame_seq,
+    }
+}
+/// A non-owning route for the exact display resource only. It cannot outlive
+/// the ProcessContainer or retain its child process authority.
+pub struct ProcessContainerFrameHandle {
+    process: std::sync::Weak<ProcessComponent>,
+    resources: std::sync::Weak<std::sync::Mutex<FrameResources>>,
+    session: crate::component::Session,
+    view: u64,
+    request: u64,
+    transaction: u64,
+    proposal: crate::component::curve::GrantProposal,
+    layer: crate::layer_raster::LayerRasterLayout,
+    frame: Rect,
+    clip: Rect,
+}
+impl ProcessContainerFrameHandle {
+    /// Receive only a current immutable child frame. UI events, toolbar changes
+    /// and semantic scopes remain on the ordinary mutable Host path.
+    #[cfg(target_os = "macos")]
+    pub fn prepare_current_frame(&self, renderer: &mut Renderer) -> Result<bool> {
+        let Some(process) = self.process.upgrade() else {
+            return Ok(false);
+        };
+        ensure!(
+            process.session() == &self.session,
+            "stale frame handle session"
+        );
+        ensure!(
+            matches!(process.status(), ProcessStatus::Ready { .. }),
+            "frame owner unavailable"
+        );
+        let Some(resources) = self.resources.upgrade() else {
+            return Ok(false);
+        };
+        let mut resources = resources.lock().unwrap();
+        if let Some(request) = resources.retired_curve_query {
+            if process.take_curve_reply(request).is_some() {
+                resources.retired_curve_query = None;
+            } else {
+                return Ok(false);
+            }
+        }
+        if process.has_pending_curve_host_updates() {
+            if let Some(pending) = resources.pending_curve_frame.take() {
+                resources.retired_curve_query = Some(pending.query_request);
+            }
+            resources.pending_curve_publication = None;
+            return Ok(false);
+        }
+        while let Some(request) = resources.pending_responses.front().copied() {
+            let Some(result) = process.take_response(request) else {
+                return Ok(false);
+            };
+            result?;
+            resources.pending_responses.pop_front();
+        }
+        while let Some((request, transaction, grant_serial)) =
+            resources.pending_revokes.front().copied()
+        {
+            let Some(packet) = process.take_curve_reply(request) else {
+                break;
+            };
+            let (view, reply) = match packet.output {
+                crate::component::Output::CurveReplyV1 { view, reply, .. } => (view, reply),
+                _ => unreachable!("take_curve_reply filters response type"),
+            };
+            ensure!(
+                view == self.view,
+                "curve revoke acknowledgement View mismatch"
+            );
+            match reply {
+                crate::component::curve::CurveReply::GrantRevoked {
+                    transaction_id,
+                    grant_serial: actual,
+                } => ensure!(
+                    transaction_id == transaction && actual == grant_serial,
+                    "curve revoke acknowledgement changed its grant"
+                ),
+                crate::component::curve::CurveReply::Rejected { code, .. } => {
+                    bail!("curve revoke rejected: {code:?}")
+                }
+                _ => bail!("unexpected reply for curve revoke"),
+            }
+            resources.pending_revokes.pop_front();
+            resources.geometry_cancel_confirmed = true;
+            trace_layer(format_args!(
+                "event=revoke_ack view={} grant={} transaction={}",
+                self.view, grant_serial, transaction
+            ));
+        }
+        if resources.layer_layout.as_ref() != Some(&self.layer)
+            || resources.grant_serial != self.proposal.proposal_id
+            || resources.parent_generation != self.proposal.parent_geometry_generation
+            || resources.expected_viewport != self.proposal.viewport
+            || resources.allocation_seq != self.proposal.allocation_seq
+            || resources.layout_seq != self.proposal.layout_seq
+            || !resources.visible
+            || resources.expected_viewport == 0
+            || resources.expected_seq == 0
+        {
+            return Ok(false);
+        }
+        if !resources.grant_acknowledged {
+            let Some(packet) = process.take_curve_reply(self.request) else {
+                return Ok(false);
+            };
+            let (view, reply) = match packet.output {
+                crate::component::Output::CurveReplyV1 { view, reply, .. } => (view, reply),
+                _ => unreachable!("take_curve_reply filters response type"),
+            };
+            ensure!(
+                view == self.view,
+                "curve grant acknowledgement View mismatch"
+            );
+            let child_generation = match reply {
+                crate::component::curve::CurveReply::GrantPrepared {
+                    transaction_id,
+                    proposal_id,
+                    grant_serial,
+                    parent_geometry_generation,
+                    child_geometry_generation,
+                    viewport,
+                    allocation_seq,
+                    layout_seq,
+                } => {
+                    ensure!(
+                        transaction_id == self.transaction
+                            && proposal_id == self.proposal.proposal_id
+                            && grant_serial == self.proposal.proposal_id
+                            && parent_geometry_generation
+                                == self.proposal.parent_geometry_generation
+                            && child_geometry_generation != 0
+                            && viewport == self.proposal.viewport
+                            && allocation_seq == self.proposal.allocation_seq
+                            && layout_seq == self.proposal.layout_seq,
+                        "curve grant acknowledgement changed its source geometry"
+                    );
+                    child_geometry_generation
+                }
+                crate::component::curve::CurveReply::Rejected { code, .. } => {
+                    bail!("curve grant rejected: {code:?}")
+                }
+                crate::component::curve::CurveReply::Negotiated { .. }
+                | crate::component::curve::CurveReply::LayerNegotiated { .. } => {
+                    bail!("unexpected negotiation reply for curve grant")
+                }
+                crate::component::curve::CurveReply::GrantRevoked { .. } => {
+                    bail!("unexpected revoke acknowledgement for curve grant")
+                }
+                crate::component::curve::CurveReply::ContentProjection { .. } => {
+                    bail!("unexpected content projection for curve grant")
+                }
+                crate::component::curve::CurveReply::ContentInput { .. } => {
+                    bail!("unexpected Content input reply for curve grant")
+                }
+                crate::component::curve::CurveReply::FramePublished { .. }
+                | crate::component::curve::CurveReply::LayerFramePublished { .. } => {
+                    bail!("unexpected frame publication reply for curve grant")
+                }
+            };
+            resources.grant_acknowledged = true;
+            resources.child_generation = child_generation;
+            trace_layer(format_args!(
+                "event=grant_ack view={} request={} proposal={} gp={} gc={} deferred={} expected_seq={}",
+                self.view,
+                self.request,
+                self.proposal.proposal_id,
+                self.proposal.parent_geometry_generation,
+                child_generation,
+                resources.deferred_curve_grant,
+                resources.expected_seq
+            ));
+        }
+        if resources.deferred_curve_grant {
+            // GrantPrepared follows this job's frame output. Retire its frame
+            // credit, but never publish pixels/queries for a superseded intent.
+            drop(process.drain_view_frames());
+            return Ok(false);
+        }
+        if resources.pending_curve_publication.is_some() {
+            return Ok(true);
+        }
+        if let Some(pending) = resources.pending_curve_frame.take() {
+            let Some(packet) = process.take_curve_reply(pending.query_request) else {
+                resources.pending_curve_frame = Some(pending);
+                return Ok(false);
+            };
+            let (view, reply) = match packet.output {
+                crate::component::Output::CurveReplyV1 { view, reply, .. } => (view, reply),
+                _ => unreachable!("take_curve_reply filters response type"),
+            };
+            ensure!(view == self.view, "curve projection View mismatch");
+            let reply = match reply {
+                crate::component::curve::CurveReply::ContentProjection {
+                    transaction_id,
+                    stamp,
+                    reply,
+                } => {
+                    ensure!(
+                        transaction_id == 0 && stamp == pending.query_stamp,
+                        "curve projection changed its frame identity"
+                    );
+                    *reply
+                }
+                crate::component::curve::CurveReply::Rejected { code, .. } => {
+                    bail!("curve read-only projection rejected: {code:?}")
+                }
+                _ => bail!("unexpected reply for curve read-only projection"),
+            };
+            let snapshot = crate::ProcessContentSnapshot::from_curve(
+                &process,
+                self.view,
+                pending.stamp.viewport,
+                self.frame,
+                self.clip,
+                pending.query_stamp.clone(),
+                reply,
+            )?;
+            let semantics = snapshot
+                .reply()
+                .semantics
+                .as_deref()
+                .context("curve projection omitted original semantics")?;
+            crate::container_semantics::validate(semantics)?;
+            let registration = renderer.register_owned_gpu_image(pending.image.image())?;
+            resources.pending_curve_publication = Some(PendingCurvePublication {
+                image: pending.image,
+                registration,
+                stamp: pending.stamp,
+                query_stamp: pending.query_stamp,
+                snapshot,
+            });
+            return Ok(true);
+        }
+        if !resources.visible || resources.expected_viewport == 0 || resources.expected_seq == 0 {
+            return Ok(false);
+        }
+        let old = resources
+            .image
+            .as_ref()
+            .map(|image| (image.metadata().viewport, image.metadata().seq))
+            .unwrap_or((0, 0));
+        let mut selected = None;
+        for frame in process.drain_view_frames() {
+            let metadata = frame.metadata();
+            let Some(stamp) = frame.curve_stamp() else {
+                continue;
+            };
+            if metadata.viewport != resources.expected_viewport
+                || metadata.seq < resources.expected_seq
+                || metadata.viewport < old.0
+                || metadata.seq <= old.1
+                || (metadata.pixel_width, metadata.pixel_height) != resources.expected_size
+                || frame.layer_layout() != Some(&self.layer)
+                || self.layer.logical_size() != [metadata.width, metadata.height]
+                || self.layer.scale() != resources.expected_scale
+                || stamp.view != self.view
+                || stamp.viewport != resources.expected_viewport
+                || stamp.gp != resources.parent_generation
+                || stamp.grant_serial != resources.grant_serial
+                || stamp.allocation_seq != resources.allocation_seq
+                || stamp.layout_seq != resources.layout_seq
+                || stamp.frame_seq != metadata.seq
+                || stamp.gc == 0
+                || stamp.gc != resources.child_generation
+            {
+                continue;
+            }
+            selected = Some(frame);
+        }
+        let Some(frame) = selected else {
+            return Ok(false);
+        };
+        let stamp = frame.curve_stamp().cloned().expect("validated Curve frame");
+        let query_stamp = curve_query_stamp(&stamp);
+        let envelope = crate::component::curve::Envelope {
+            protocol_major: 1,
+            wire_revision: 1,
+            view: self.view,
+            transaction_id: 0,
+            ttl_ms: 0,
+            body: crate::component::curve::RequestBodyV1::ContentQuery {
+                query: crate::component::curve::ReadOnlyQueryWire::SemanticTree {
+                    stamp: query_stamp.clone(),
+                },
+            },
+        };
+        let query_request = process.request(crate::component::RequestBody::CurveV1(envelope))?;
+        let image = frame.import(&renderer.gpu_context())?;
+        resources.pending_curve_frame = Some(PendingCurveFrame {
+            image,
+            stamp,
+            query_stamp,
+            query_request,
+        });
+        Ok(false)
+    }
+}
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum CurvePreflight {
+    Unrequested,
+    Starting,
+    Negotiating,
+    Negotiated {
+        session: crate::component::Session,
+        view: u64,
+    },
+    Rejected(crate::component::curve::CurveErrorCode),
+    Failed(String),
+}
+fn curve_negotiation_envelope(view: u64) -> crate::component::curve::Envelope {
+    use crate::component::curve::{
+        CapabilityWire, Envelope, LimitsWire, REQUIRED_FEATURES, RequestBodyV1,
+    };
+    Envelope {
+        protocol_major: 1,
+        wire_revision: 1,
+        view,
+        transaction_id: 0,
+        ttl_ms: 0,
+        body: RequestBodyV1::NegotiateLayer {
+            offer: CapabilityWire {
+                protocol_major: 1,
+                wire_revision: 1,
+                clip_geometry_revision: 1,
+                coverage_aa_revision: 1,
+                features: REQUIRED_FEATURES,
+                limits: LimitsWire {
+                    packet_bytes_exclusive: 1_048_575,
+                    records: 4096,
+                    depth: 256,
+                    validation_steps: 12_288,
+                    target_axis_px: 4096,
+                    ttl_ms: 1000,
+                },
+            },
+        },
+    }
 }
 impl std::fmt::Debug for ProcessContainer {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -78,6 +486,97 @@ impl std::fmt::Debug for ProcessContainer {
     }
 }
 impl ProcessContainer {
+    fn next_curve_transaction(&mut self) -> Result<u64> {
+        self.curve_transaction = self
+            .curve_transaction
+            .checked_add(1)
+            .context("curve transaction identity exhausted")?;
+        Ok(self.curve_transaction)
+    }
+    fn grant_proposal(
+        &self,
+        proposal_id: u64,
+        context: &tekes_ui_controls::composition::CurveGeometryContext,
+    ) -> Result<(
+        crate::component::curve::GrantProposal,
+        crate::layer_raster::LayerRasterLayout,
+    )> {
+        use crate::component::curve::{BoundedRecords, GrantProposal, ShapeRecord};
+        ensure!(proposal_id != 0, "invalid curve proposal identity");
+        ensure!(
+            !context.shapes().is_empty() && context.shapes().len() <= 256,
+            "curve chain outside supported depth"
+        );
+        ensure!(
+            self.scale.is_finite() && self.scale > 0.,
+            "invalid curve backing scale"
+        );
+        let width = self.view_frame.size.width as u32;
+        let height = self.view_frame.size.height as u32;
+        let layer = crate::layer_raster::LayerRasterLayout::new(
+            [width, height],
+            self.scale,
+            [
+                self.view_frame.origin.x * self.scale,
+                self.view_frame.origin.y * self.scale,
+            ],
+        )?;
+        let target_px = layer.pixel_size();
+        ensure!(
+            target_px.0 > 0 && target_px.1 > 0 && target_px.0 <= 4096 && target_px.1 <= 4096,
+            "curve target outside supported pixel dimensions"
+        );
+        let scale = self.scale;
+        let records = context
+            .shapes()
+            .iter()
+            .copied()
+            .enumerate()
+            .map(|(index, shape)| {
+                let rect = shape.rect();
+                let radii = shape.radii();
+                let index = u16::try_from(index).context("curve shape index overflow")?;
+                Ok(ShapeRecord {
+                    index,
+                    parent_index: index.checked_sub(1),
+                    depth: index.checked_add(1).context("curve depth overflow")?,
+                    rect_px: [
+                        rect.origin.x * scale,
+                        rect.origin.y * scale,
+                        rect.size.width * scale,
+                        rect.size.height * scale,
+                    ],
+                    radii_px: [
+                        radii.top_left * scale,
+                        radii.top_right * scale,
+                        radii.bottom_right * scale,
+                        radii.bottom_left * scale,
+                    ],
+                })
+            })
+            .collect::<Result<Vec<_>>>()?;
+        let chain_depth = u16::try_from(records.len()).context("curve chain depth overflow")?;
+        let proposal = GrantProposal {
+            proposal_id,
+            viewport: self.viewport,
+            allocation_seq: self.allocation_seq,
+            layout_seq: self.layout_seq.saturating_add(1),
+            parent_geometry_generation: context.generation(),
+            target_px: [target_px.0, target_px.1],
+            physical_origin_px: [
+                self.view_frame.origin.x * scale,
+                self.view_frame.origin.y * scale,
+            ],
+            backing_scale: scale,
+            clear_rgba: [0., 0., 0., 0.],
+            sample_count: 1,
+            coordinate_mapping: "IndependentRasterLayerV1".into(),
+            chain_head: chain_depth - 1,
+            chain_depth,
+            records: BoundedRecords(records),
+        };
+        Ok((proposal, layer))
+    }
     /// Adapt a compiled V1 PanelModule. V1 has no per-event disposition reply;
     /// primary input is disabled until explicitly opting into an opaque sink.
     /// This profile does not support remote keyboard, scroll, editing/IME or AX.
@@ -98,8 +597,10 @@ impl ProcessContainer {
             view_context: None,
             wake: Arc::new(wake),
             process: None,
-            registration: None,
-            image: None,
+            frame_resources: Arc::new(std::sync::Mutex::new(FrameResources {
+                visible: true,
+                ..FrameResources::default()
+            })),
             frame: Rect::default(),
             view_frame: Rect::default(),
             toolbar: Default::default(),
@@ -109,6 +610,8 @@ impl ProcessContainer {
             scale: 1.,
             viewport: 0,
             seq: 0,
+            allocation_seq: 0,
+            layout_seq: 0,
             geometry_dirty: true,
             repaint_dirty: false,
             visible: true,
@@ -128,6 +631,11 @@ impl ProcessContainer {
             pending_content: Default::default(),
             pending_content_bytes: 0,
             deferred_key_result: None,
+            curve_preflight: CurvePreflight::Unrequested,
+            curve_request: None,
+            curve_transaction: 0,
+            curve_grant_request: None,
+            curve_geometry: None,
         })
     }
     /// Mount a negotiated View through the original Content lifecycle. Typed
@@ -156,7 +664,191 @@ impl ProcessContainer {
         );
         let mut container = Self::new_v1(options.module, options.host_epoch, wake)?;
         container.native = Some(native);
+        container.frame_resources.lock().unwrap().view = container.native.as_ref().unwrap().view;
         Ok(container)
+    }
+    /// Start this container's single process owner and begin curve negotiation
+    /// without waiting. Call `curve_preflight_ready` from the existing wake
+    /// loop until it returns `Negotiated`, then compose it under PanelContent.
+    pub fn begin_curve_preflight(&mut self) -> Result<()> {
+        ensure!(self.native.is_some(), "curve preflight requires a V2 View");
+        ensure!(
+            self.curve_preflight == CurvePreflight::Unrequested
+                || matches!(
+                    &self.curve_preflight,
+                    CurvePreflight::Starting
+                        | CurvePreflight::Negotiating
+                        | CurvePreflight::Negotiated { .. }
+                ),
+            "curve preflight is terminal"
+        );
+        if self.curve_preflight == CurvePreflight::Unrequested {
+            self.ensure_process_started()?;
+            self.curve_preflight = CurvePreflight::Starting;
+            (self.wake)();
+        }
+        Ok(())
+    }
+    /// Nonblocking progress query for the explicit pre-mount curve handshake.
+    pub fn curve_preflight_ready(&mut self) -> Result<bool> {
+        let Some(status) = self.process.as_ref().map(|process| process.status()) else {
+            ensure!(
+                !matches!(self.curve_preflight, CurvePreflight::Unrequested),
+                "begin_curve_preflight must be called first"
+            );
+            bail!("curve preflight process is unavailable");
+        };
+        match status {
+            ProcessStatus::Starting => return Ok(false),
+            ProcessStatus::Failed { message } => {
+                self.curve_preflight = CurvePreflight::Failed(message.clone());
+                bail!("curve preflight failed: {message}");
+            }
+            ProcessStatus::Closed | ProcessStatus::Closing => {
+                let message = "curve preflight owner closed".to_owned();
+                self.curve_preflight = CurvePreflight::Failed(message.clone());
+                bail!("{message}");
+            }
+            ProcessStatus::Ready { .. } => (),
+        }
+        match self.curve_preflight.clone() {
+            CurvePreflight::Unrequested => bail!("begin_curve_preflight must be called first"),
+            CurvePreflight::Starting => {
+                let view = self.native.as_ref().expect("preflight requires View").view;
+                let process = self.process.as_ref().expect("ready process exists").clone();
+                ensure!(
+                    process.view_capabilities().is_some(),
+                    "View handshake missing"
+                );
+                let envelope = curve_negotiation_envelope(view);
+                let request = process.request(crate::component::RequestBody::CurveV1(envelope))?;
+                self.curve_request = Some((request, 0));
+                self.curve_preflight = CurvePreflight::Negotiating;
+                Ok(false)
+            }
+            CurvePreflight::Negotiating => {
+                let (request, transaction) = self.curve_request.context("curve request missing")?;
+                let Some(packet) = self
+                    .process
+                    .as_ref()
+                    .and_then(|p| p.take_curve_reply(request))
+                else {
+                    return Ok(false);
+                };
+                let (view, reply) = match packet.output {
+                    crate::component::Output::CurveReplyV1 { view, reply, .. } => (view, reply),
+                    _ => unreachable!("take_curve_reply filters response type"),
+                };
+                let native_view = self.native.as_ref().context("curve View disappeared")?.view;
+                ensure!(view == native_view, "curve negotiation View mismatch");
+                match reply {
+                    crate::component::curve::CurveReply::LayerNegotiated { capability } => {
+                        ensure!(
+                            capability.features == crate::component::curve::REQUIRED_FEATURES,
+                            "peer omitted a required curve feature"
+                        );
+                        let session = self.process.as_ref().unwrap().session().clone();
+                        self.curve_preflight = CurvePreflight::Negotiated { session, view };
+                        Ok(true)
+                    }
+                    crate::component::curve::CurveReply::Negotiated { .. } => {
+                        self.curve_preflight = CurvePreflight::Failed(
+                            "peer acknowledged a different Curve composition contract".into(),
+                        );
+                        bail!("peer did not acknowledge independent layer composition");
+                    }
+                    crate::component::curve::CurveReply::GrantPrepared { .. } => {
+                        self.curve_preflight = CurvePreflight::Failed(
+                            "grant acknowledgement arrived during capability negotiation".into(),
+                        );
+                        bail!("unexpected grant acknowledgement during negotiation");
+                    }
+                    crate::component::curve::CurveReply::GrantRevoked { .. } => {
+                        self.curve_preflight = CurvePreflight::Failed(
+                            "revoke acknowledgement arrived during negotiation".into(),
+                        );
+                        bail!("unexpected revoke acknowledgement during negotiation");
+                    }
+                    crate::component::curve::CurveReply::ContentProjection { .. } => {
+                        self.curve_preflight = CurvePreflight::Failed(
+                            "content projection arrived during negotiation".into(),
+                        );
+                        bail!("unexpected content projection during negotiation");
+                    }
+                    crate::component::curve::CurveReply::ContentInput { .. } => {
+                        self.curve_preflight = CurvePreflight::Failed(
+                            "Content input arrived during negotiation".into(),
+                        );
+                        bail!("unexpected Content input during negotiation");
+                    }
+                    crate::component::curve::CurveReply::FramePublished { .. }
+                    | crate::component::curve::CurveReply::LayerFramePublished { .. } => {
+                        self.curve_preflight = CurvePreflight::Failed(
+                            "frame publication arrived during negotiation".into(),
+                        );
+                        bail!("unexpected frame publication during negotiation");
+                    }
+                    crate::component::curve::CurveReply::Rejected {
+                        transaction_id,
+                        code,
+                    } => {
+                        ensure!(transaction_id == transaction, "curve transaction mismatch");
+                        self.curve_preflight = CurvePreflight::Rejected(code);
+                        bail!("curve capability rejected: {code:?}");
+                    }
+                }
+            }
+            CurvePreflight::Negotiated { session, view } => {
+                ensure!(
+                    self.process.as_ref().is_some_and(|process| {
+                        process.session() == &session
+                            && matches!(process.status(), ProcessStatus::Ready { .. })
+                    }) && self
+                        .native
+                        .as_ref()
+                        .is_some_and(|native| native.view == view),
+                    "curve negotiation owner changed"
+                );
+                Ok(true)
+            }
+            CurvePreflight::Rejected(code) => bail!("curve capability rejected: {code:?}"),
+            CurvePreflight::Failed(message) => bail!("{message}"),
+        }
+    }
+    fn ensure_process_started(&mut self) -> Result<()> {
+        if self.process.is_some() {
+            return Ok(());
+        }
+        let wake = self.wake.clone();
+        let process = if let Some(native) = &self.native {
+            ProcessComponent::spawn(
+                ProcessComponentOptions::new(self.module.clone(), self.host_epoch).with_view(
+                    native.window,
+                    native.view,
+                    native.required,
+                ),
+                move || wake(),
+            )?
+        } else {
+            ProcessComponent::spawn_v1_view(self.module.clone(), self.host_epoch, move || wake())?
+        };
+        if let (Some(native), Some(context)) = (&self.native, self.view_context.as_ref()) {
+            match process.request(crate::component::RequestBody::SetViewContext {
+                view: native.view,
+                context: context.clone(),
+            }) {
+                Ok(request) => self
+                    .frame_resources
+                    .lock()
+                    .unwrap()
+                    .pending_responses
+                    .push_back(request),
+                Err(error) => self.error = Some(error.to_string()),
+            }
+        }
+        self.process = Some(Arc::new(process));
+        self.geometry_dirty = true;
+        Ok(())
     }
     /// Host-owned icon images, as for IconButtonView. Names resolve the module's
     /// declarations; the container never unregisters these borrowed resources.
@@ -192,10 +884,15 @@ impl ProcessContainer {
             self.cancel_geometry_input();
         }
         if let Some(process) = &self.process {
-            process.request(crate::component::RequestBody::SetViewContext {
+            let request = process.request(crate::component::RequestBody::SetViewContext {
                 view,
                 context: context.clone(),
             })?;
+            self.frame_resources
+                .lock()
+                .unwrap()
+                .pending_responses
+                .push_back(request);
         }
         self.view_context = Some(context);
         if geometry_changed {
@@ -209,10 +906,52 @@ impl ProcessContainer {
         self.toolbar.active.then_some(self.toolbar.frame)
     }
     pub fn status(&self) -> Option<ProcessStatus> {
-        self.process.as_ref().map(ProcessComponent::status)
+        self.process.as_ref().map(|process| process.status())
+    }
+    /// Return a weak, resource-only receiver for the pre-negotiated same
+    /// process owner. It can import current frames but cannot keep the owner alive.
+    #[cfg(target_os = "macos")]
+    pub fn frame_resource_handle(&self) -> Result<ProcessContainerFrameHandle> {
+        let process = self
+            .process
+            .as_ref()
+            .context("ProcessContainer must be prestarted before taking a frame handle")?;
+        let native = self
+            .native
+            .as_ref()
+            .context("frame handle requires a V2 View")?;
+        ensure!(
+            matches!(process.status(), ProcessStatus::Ready { .. })
+                && self.frame_resources.lock().unwrap().view == native.view
+                && self.curve_subtree_capability()
+                    == tekes_ui_controls::composition::CurveSubtreeCapability::Recursive,
+            "frame handle requires current curve negotiation"
+        );
+        let (request, transaction, proposal) = self
+            .curve_grant_request
+            .clone()
+            .context("current external curve grant is unavailable")?;
+        Ok(ProcessContainerFrameHandle {
+            process: Arc::downgrade(process),
+            resources: Arc::downgrade(&self.frame_resources),
+            session: process.session().clone(),
+            view: native.view,
+            request,
+            transaction,
+            proposal,
+            layer: self
+                .frame_resources
+                .lock()
+                .unwrap()
+                .layer_layout
+                .clone()
+                .context("current layer raster layout unavailable")?,
+            frame: self.view_frame,
+            clip: self.clip,
+        })
     }
     pub fn session(&self) -> Option<&crate::component::Session> {
-        self.process.as_ref().map(ProcessComponent::session)
+        self.process.as_ref().map(|process| process.session())
     }
     pub fn error(&self) -> Option<&str> {
         self.error.as_deref()
@@ -222,7 +961,20 @@ impl ProcessContainer {
     pub fn drain_events(&self) -> Vec<crate::component::ServerMessage> {
         self.process
             .as_ref()
-            .map_or_else(Vec::new, ProcessComponent::drain_events)
+            .map_or_else(Vec::new, |process| process.drain_events())
+    }
+    /// Consume only the generic response to this owner's exact service request,
+    /// leaving Curve publication replies and unrelated events queued.
+    pub fn take_response(&self, request: u64) -> Option<Result<serde_json::Value>> {
+        self.process.as_ref()?.take_response(request)
+    }
+    /// Drain ordinary Curve-host events while keeping protocol replies in the
+    /// shared queue for their exact request owner.
+    #[cfg(target_os = "macos")]
+    pub fn drain_curve_host_events(&self) -> Vec<crate::component::ServerMessage> {
+        self.process
+            .as_ref()
+            .map_or_else(Vec::new, |process| process.drain_curve_host_events())
     }
     pub fn toolbar_registration(&self) -> Option<crate::component::ServerMessage> {
         self.process.as_ref()?.toolbar_registration()
@@ -258,7 +1010,12 @@ impl ProcessContainer {
             .request_from(origin, body)
     }
     pub fn revision(&self) -> Option<u64> {
-        self.image.as_ref().map(|i| i.metadata().revision)
+        self.frame_resources
+            .lock()
+            .unwrap()
+            .image
+            .as_ref()
+            .map(|image| image.metadata().revision)
     }
     pub fn set_scale(&mut self, scale: f32) -> Result<()> {
         ensure!(
@@ -308,8 +1065,12 @@ impl ProcessContainer {
         self.visible = visible;
         self.geometry_dirty = true;
         if !visible {
-            self.registration = None;
-            self.image = None;
+            let mut resources = self.frame_resources.lock().unwrap();
+            resources.registration = None;
+            resources.image = None;
+            resources.visible = false;
+        } else {
+            self.frame_resources.lock().unwrap().visible = true;
         }
         (self.wake)();
         Ok(())
@@ -329,7 +1090,7 @@ impl ProcessContainer {
                 let bridge = self.native_content_bridge(std::time::Duration::from_secs(1))?;
                 // Cancellation revokes the current lifecycle, not a retained
                 // input callback. Query its current authority; never replay input.
-                let current = bridge.snapshot()?;
+                let current = self.fresh_content_snapshot(&bridge)?;
                 bridge.request(&current, crate::component::content::Input::Cancel)
             })();
             match result {
@@ -375,6 +1136,25 @@ impl ProcessContainer {
             .seq
             .checked_add(1)
             .ok_or_else(|| anyhow::anyhow!("request exhausted"))?;
+        if kind == InputKind::Layout {
+            self.layout_seq = self.layout_seq.saturating_add(1);
+            let mut resources = self.frame_resources.lock().unwrap();
+            resources.expected_viewport = self.viewport;
+            resources.expected_seq = self.seq;
+            resources.expected_size = resources.layer_layout.as_ref().map_or_else(
+                || {
+                    (
+                        ((self.view_frame.size.width as u32 as f32) * self.scale).round() as u32,
+                        ((self.view_frame.size.height as u32 as f32) * self.scale).round() as u32,
+                    )
+                },
+                |layer| layer.pixel_size(),
+            );
+            resources.expected_scale = self.scale;
+            resources.visible = self.visible;
+            resources.allocation_seq = self.allocation_seq;
+            resources.layout_seq = self.layout_seq;
+        }
         process.enqueue_view(Request {
             version: VERSION,
             seq: self.seq,
@@ -393,7 +1173,37 @@ impl ProcessContainer {
         self.geometry_ready() && !self.geometry_input_pending
     }
     fn geometry_ready(&self) -> bool {
+        let resources = self.frame_resources.lock().unwrap();
+        let frame_current = resources.image.as_ref().is_some_and(|image| {
+            if self.curve_geometry.is_none() {
+                image.metadata().viewport == self.viewport
+            } else {
+                resources.grant_acknowledged
+                    && !resources.deferred_curve_grant
+                    && image.curve_stamp().is_some_and(|stamp| {
+                        stamp.grant_serial == resources.grant_serial
+                            && stamp.gp == resources.parent_generation
+                            && stamp.gc == resources.child_generation
+                            && stamp.view == resources.view
+                            && stamp.viewport == resources.expected_viewport
+                            && stamp.allocation_seq == resources.allocation_seq
+                            && stamp.layout_seq == resources.layout_seq
+                            && stamp.frame_seq == image.metadata().seq
+                    })
+                    && image.curve_stamp().is_some_and(|stamp| {
+                        self.content_snapshot
+                            .as_ref()
+                            .and_then(crate::ProcessContentSnapshot::curve_stamp)
+                            == Some(&curve_query_stamp(stamp))
+                    })
+            }
+        });
         !self.geometry_dirty
+            && !self.repaint_dirty
+            && !self
+                .process
+                .as_ref()
+                .is_some_and(|process| process.has_pending_curve_host_updates())
             && self.visible
             && self.enabled
             && self.window_active
@@ -401,10 +1211,7 @@ impl ProcessContainer {
                 .process
                 .as_ref()
                 .is_some_and(|p| matches!(p.status(), ProcessStatus::Ready { .. }))
-            && self
-                .image
-                .as_ref()
-                .is_some_and(|i| i.metadata().viewport == self.viewport)
+            && frame_current
     }
     /// Original child text/query adapter for this exact acknowledged allocation.
     /// Old snapshots cannot be used after resize, move, hide or restart. This
@@ -421,7 +1228,7 @@ impl ProcessContainer {
         timeout: std::time::Duration,
     ) -> Result<crate::ProcessContentBridge<'_>> {
         ensure!(self.geometry_ready(), "container geometry not acknowledged");
-        crate::ProcessContentBridge::new(
+        crate::ProcessContentBridge::new_with_curve(
             self.process
                 .as_ref()
                 .ok_or_else(|| anyhow::anyhow!("container unmounted"))?,
@@ -431,12 +1238,20 @@ impl ProcessContainer {
             self.viewport,
             self.view_frame,
             self.clip,
+            self.content_snapshot
+                .as_ref()
+                .and_then(crate::ProcessContentSnapshot::curve_stamp)
+                .cloned(),
             timeout,
         )
     }
     /// Attach received GPU resources to the host Renderer before Content paint.
     /// This handles all selection/import/replacement/retirement, not the consumer.
     pub fn prepare(&mut self, renderer: &mut Renderer) -> Result<bool> {
+        ensure!(
+            self.curve_preflight == CurvePreflight::Unrequested,
+            "preflighted curve frames require the restricted frame-resource handle"
+        );
         let was_local = self.toolbar.active;
         let change = if let Some(process) = &self.process {
             self.toolbar
@@ -475,6 +1290,9 @@ impl ProcessContainer {
             (self.wake)();
         }
         let old = self
+            .frame_resources
+            .lock()
+            .unwrap()
             .image
             .as_ref()
             .map(|i| (i.metadata().viewport, i.metadata().seq))
@@ -501,12 +1319,14 @@ impl ProcessContainer {
             return Ok(false);
         };
         let image = frame.import(&renderer.gpu_context())?;
-        if let Some(registration) = &self.registration {
+        let mut resources = self.frame_resources.lock().unwrap();
+        if let Some(registration) = &resources.registration {
             renderer.replace_owned_gpu_image(registration, image.image())?;
         } else {
-            self.registration = Some(renderer.register_owned_gpu_image(image.image())?);
+            resources.registration = Some(renderer.register_owned_gpu_image(image.image())?);
         }
-        self.image = Some(image);
+        resources.image = Some(image);
+        drop(resources);
         if self.geometry_input_pending && self.geometry_ready() {
             self.acknowledge_geometry_cancel()?;
         }
@@ -516,6 +1336,127 @@ impl ProcessContainer {
         }
         (self.wake)();
         Ok(true)
+    }
+    /// Apply only the original non-frame service updates for a preflighted
+    /// curve child. The Host must then perform its ordinary render/layout; this
+    /// method never imports a frame or mutates the current display resource.
+    #[cfg(target_os = "macos")]
+    pub fn prepare_curve_host_update(&mut self) -> Result<bool> {
+        ensure!(
+            self.curve_preflight != CurvePreflight::Unrequested,
+            "curve update requires preflight"
+        );
+        let was_local = self.toolbar.active;
+        let changed = if let Some(process) = &self.process {
+            self.toolbar
+                .sync(process, self.enabled && self.window_active)?
+        } else {
+            false
+        };
+        if changed {
+            if was_local != self.toolbar.active {
+                self.cancel_geometry_input();
+                self.geometry_dirty = true;
+            }
+            self.error = None;
+        }
+        let invalidated = self
+            .process
+            .as_ref()
+            .is_some_and(|process| process.take_view_invalidated());
+        if invalidated {
+            self.repaint_dirty = true;
+            (self.wake)();
+        }
+        Ok(changed || invalidated)
+    }
+    #[cfg(target_os = "macos")]
+    pub fn curve_requires_host_update(&self) -> bool {
+        self.process
+            .as_ref()
+            .is_some_and(|process| process.has_pending_curve_host_updates())
+    }
+    /// Commit one fully prepared frame and original Host projection together
+    /// at the existing paint point. A rejected projection leaves the currently
+    /// displayed resource and semantic publication untouched.
+    fn commit_pending_curve_publication(&mut self) {
+        let shared = self.frame_resources.clone();
+        let publication = shared.lock().unwrap().pending_curve_publication.take();
+        let Some(publication) = publication else {
+            return;
+        };
+        let Some(process) = self.process.as_ref() else {
+            self.error = Some("curve publication owner disappeared".into());
+            self.geometry_dirty = true;
+            return;
+        };
+        let current = {
+            let resources = shared.lock().unwrap();
+            matches!(process.status(), ProcessStatus::Ready { .. })
+                && resources.visible
+                && resources.grant_acknowledged
+                && resources.grant_serial == publication.stamp.grant_serial
+                && resources.parent_generation == publication.stamp.gp
+                && resources.child_generation == publication.stamp.gc
+                && resources.expected_viewport == publication.stamp.viewport
+                && resources.allocation_seq == publication.stamp.allocation_seq
+                && resources.layout_seq == publication.stamp.layout_seq
+                && resources.expected_seq <= publication.stamp.frame_seq
+                && resources.pending_revokes.is_empty()
+                && self
+                    .curve_geometry
+                    .as_ref()
+                    .is_some_and(|context| context.generation() == publication.stamp.gp)
+                && publication.image.layer_layout() == resources.layer_layout.as_ref()
+                && publication.image.curve_stamp() == Some(&publication.stamp)
+                && publication.query_stamp == curve_query_stamp(&publication.stamp)
+                && publication.snapshot.curve_stamp() == Some(&publication.query_stamp)
+                && publication
+                    .snapshot
+                    .belongs_to(process.session(), publication.stamp.view)
+                && !process.has_pending_curve_host_updates()
+                && (!self.geometry_input_pending || resources.geometry_cancel_confirmed)
+        };
+        if !current {
+            trace_layer(format_args!(
+                "event=publication_rejected stamp={:?} geometry_dirty={} repaint_dirty={} cancel_pending={}",
+                publication.stamp,
+                self.geometry_dirty,
+                self.repaint_dirty,
+                self.geometry_input_pending
+            ));
+            self.error = Some("stale or incomplete curve publication".into());
+            self.geometry_dirty = true;
+            return;
+        }
+        let mut semantics = self.semantic_projection.clone();
+        if let Err(error) = semantics.update(publication.snapshot.clone()) {
+            self.error = Some(error.to_string());
+            self.geometry_dirty = true;
+            return;
+        }
+        trace_layer(format_args!(
+            "event=publication_commit stamp={:?} capture={:?} queued_callbacks={}",
+            publication.stamp,
+            publication.snapshot.reply().captured,
+            self.pending_content.len()
+        ));
+        self.semantic_projection = semantics;
+        self.content_snapshot = Some(publication.snapshot);
+        self.geometry_input_pending = false;
+        self.geometry_dirty = false;
+        self.repaint_dirty = false;
+        self.error = None;
+        let mut resources = shared.lock().unwrap();
+        resources.registration = Some(publication.registration);
+        resources.image = Some(publication.image);
+        resources.geometry_cancel_confirmed = false;
+        drop(resources);
+        if !self.pending_content.is_empty()
+            && let Err(error) = self.flush_pending_content()
+        {
+            self.error = Some(error.to_string());
+        }
     }
     pub fn command(&mut self, command: u64) -> Result<bool> {
         if !self.visible || !self.enabled || !self.window_active {
@@ -530,7 +1471,9 @@ impl ProcessContainer {
             process.invoke(command)?;
             return Ok(true);
         }
-        let Some(image) = &self.image else {
+        let input_ready = self.input_ready();
+        let resources = self.frame_resources.lock().unwrap();
+        let Some(image) = &resources.image else {
             return Ok(false);
         };
         let Some(item) = image
@@ -541,9 +1484,10 @@ impl ProcessContainer {
         else {
             return Ok(false);
         };
-        if item.geometry_dependent && !self.input_ready() {
+        if item.geometry_dependent && !input_ready {
             return Ok(false);
         }
+        drop(resources);
         self.enqueue(
             InputKind::Command,
             Point::new(self.frame.min_x(), self.frame.min_y()),
@@ -606,6 +1550,15 @@ impl ProcessContainer {
             })
     }
     fn refresh_content_scope(&mut self) -> Result<()> {
+        if self.curve_geometry.is_some() {
+            ensure!(
+                self.content_snapshot
+                    .as_ref()
+                    .is_some_and(|snapshot| snapshot.curve_stamp().is_some()),
+                "current verified Curve projection unavailable"
+            );
+            return Ok(());
+        }
         if !self.content_pointer_enabled()
             && !self.content_keyboard_enabled()
             && !self.content_scroll_enabled()
@@ -635,11 +1588,33 @@ impl ProcessContainer {
         }
         Ok(())
     }
+    fn fresh_content_snapshot(
+        &self,
+        bridge: &crate::ProcessContentBridge<'_>,
+    ) -> Result<crate::ProcessContentSnapshot> {
+        if self.curve_geometry.is_some() {
+            ensure!(
+                self.input_ready(),
+                "verified Curve input projection unavailable"
+            );
+            self.content_snapshot
+                .clone()
+                .context("verified Curve content projection missing")
+        } else {
+            bridge.snapshot()
+        }
+    }
     fn query_content(&self) -> Option<crate::ProcessContentSnapshot> {
         if !(self.content_focused || self.remote_overlay()) || !self.available() {
             return None;
         }
-        let current = if self.input_ready() {
+        let current = if self.curve_geometry.is_some() {
+            // Read-only logical text and binding outlive a frame regrant.
+            // text_input_snapshot separately withdraws stale caret geometry;
+            // mutable callbacks still use exact current admission or the
+            // existing same-owner/binding deferred-input validation.
+            self.content_snapshot.clone()?
+        } else if self.input_ready() {
             self.native_content_bridge(std::time::Duration::from_secs(1))
                 .ok()?
                 .snapshot()
@@ -729,7 +1704,29 @@ impl ProcessContainer {
         } else {
             self.semantic_projection.dirty();
         }
+        if response.changed
+            || self
+                .content_snapshot
+                .as_ref()
+                .and_then(|old| old.reply().captured)
+                != reply.captured
+        {
+            trace_layer(format_args!(
+                "event=content_reply stamp={:?} changed={} activated={} capture={:?} owner={:?} focus_epoch={}",
+                next.curve_stamp(),
+                reply.changed,
+                reply.activated,
+                reply.captured,
+                reply.focused,
+                reply.focus_epoch
+            ));
+        }
         self.content_snapshot = Some(next);
+        if response.changed && self.curve_geometry.is_some() {
+            // Withdraw input immediately, before the asynchronous invalidation
+            // packet arrives. Established capture continuations may queue once.
+            self.repaint_dirty = true;
+        }
         if response.changed {
             (self.wake)();
         }
@@ -740,7 +1737,7 @@ impl ProcessContainer {
             let bridge = self.native_content_bridge(std::time::Duration::from_secs(1))?;
             let previous = match &self.content_snapshot {
                 Some(snapshot) => bridge.refresh_allocation(snapshot)?,
-                None => bridge.snapshot()?,
+                None => self.fresh_content_snapshot(&bridge)?,
             };
             bridge.pointer(&previous, pointer)
         })();
@@ -782,7 +1779,7 @@ impl ProcessContainer {
     fn acknowledge_geometry_cancel(&mut self) -> Result<()> {
         let next = {
             let bridge = self.geometry_content_bridge(std::time::Duration::from_secs(1))?;
-            let current = bridge.snapshot()?;
+            let current = self.fresh_content_snapshot(&bridge)?;
             bridge.request(
                 &current,
                 crate::component::content::Input::CancelPointerCapture,
@@ -845,11 +1842,24 @@ impl ProcessContainer {
                 return response;
             }
         };
+        trace_layer(format_args!(
+            "event=input_queue view={} pointer_phase={:?} capture={:?} stamp={:?} queue_len={}",
+            snapshot.reply().view,
+            match &input {
+                crate::component::content::Input::Pointer(pointer) => Some(pointer.phase),
+                _ => None,
+            },
+            snapshot.reply().captured,
+            snapshot.curve_stamp(),
+            self.pending_content.len()
+        ));
         self.pending_content.push_back(PendingContentInput {
             session: process.session().clone(),
+            view: snapshot.reply().view,
             owner: snapshot.reply().focused,
             focus_epoch: snapshot.reply().focus_epoch,
             text_binding: snapshot.reply().text_binding.clone(),
+            capture: snapshot.reply().captured,
             original_key_binding,
             input,
             bytes,
@@ -890,21 +1900,39 @@ impl ProcessContainer {
                     crate::component::content::Input::TextKeyEnd { .. }
                 );
                 let current = if finishing {
-                    bridge.snapshot()?
+                    self.fresh_content_snapshot(&bridge)?
                 } else {
                     match &self.content_snapshot {
                         Some(snapshot) => bridge.refresh_allocation(snapshot)?,
-                        None => bridge.snapshot()?,
+                        None => self.fresh_content_snapshot(&bridge)?,
                     }
                 };
+                trace_layer(format_args!(
+                    "event=deferred_delivery view={} old_capture={:?} current_capture={:?} old_owner={:?} current_owner={:?} stamp={:?}",
+                    pending.view,
+                    pending.capture,
+                    current.reply().captured,
+                    pending.owner,
+                    current.reply().focused,
+                    current.curve_stamp()
+                ));
                 ensure!(
                     self.process
                         .as_ref()
                         .is_some_and(|p| p.session() == &pending.session)
+                        && current.reply().view == pending.view
                         && (finishing
-                            || current.reply().focused == pending.owner
-                                && current.reply().focus_epoch == pending.focus_epoch
-                                && current.reply().text_binding == pending.text_binding),
+                            || if matches!(
+                                pending.input,
+                                crate::component::content::Input::Pointer(_)
+                            ) {
+                                pending.capture.is_some()
+                                    && current.reply().captured == pending.capture
+                            } else {
+                                current.reply().focused == pending.owner
+                                    && current.reply().focus_epoch == pending.focus_epoch
+                                    && current.reply().text_binding == pending.text_binding
+                            }),
                     "stale deferred Content callback"
                 );
                 bridge.request(&current, pending.input)
@@ -912,6 +1940,7 @@ impl ProcessContainer {
             match result {
                 Ok(next) => {
                     let mut response = self.accept_content(next);
+                    let needs_publication = self.curve_geometry.is_some() && response.changed;
                     if let Some(id) = finishing_id {
                         response.text_key.get_or_insert(
                             tekes_ui_controls::composition::TextKeyOutcome {
@@ -927,13 +1956,20 @@ impl ProcessContainer {
                             pending.original_key_binding,
                         ));
                     }
+                    if needs_publication {
+                        break;
+                    }
                 }
                 Err(error) => {
+                    trace_layer(format_args!(
+                        "event=deferred_error view={} capture={:?} error={error:#}",
+                        pending.view, pending.capture
+                    ));
                     // Observe the current owner for future fresh intent, without
                     // applying any of the rejected old callbacks to that owner.
                     if let Ok(bridge) =
                         self.native_content_bridge(std::time::Duration::from_secs(1))
-                        && let Ok(current) = bridge.snapshot()
+                        && let Ok(current) = self.fresh_content_snapshot(&bridge)
                     {
                         self.accept_content(current);
                     }
@@ -990,11 +2026,11 @@ impl ProcessContainer {
                 crate::component::content::Input::TextKeyEnd { .. }
                     | crate::component::content::Input::TextKeyStart { .. }
             ) {
-                bridge.snapshot()?
+                self.fresh_content_snapshot(&bridge)?
             } else {
                 match &self.content_snapshot {
                     Some(snapshot) => bridge.refresh_allocation(snapshot)?,
-                    None => bridge.snapshot()?,
+                    None => self.fresh_content_snapshot(&bridge)?,
                 }
             };
             match input {
@@ -1022,7 +2058,7 @@ impl ProcessContainer {
             // This is a new explicit focus/blur intent, not a retained native
             // callback. Layout may have applied the original overlay's pending
             // focus since the cached reply; capture its current authority once.
-            let previous = bridge.snapshot()?;
+            let previous = self.fresh_content_snapshot(&bridge)?;
             let target = focused
                 .then(|| {
                     previous
@@ -1102,7 +2138,258 @@ impl ProcessContainer {
         }
     }
 }
+impl ProcessContainer {
+    fn begin_curve_grant(
+        &mut self,
+        context: tekes_ui_controls::composition::CurveGeometryContext,
+    ) -> Result<()> {
+        let (session, view) = match &self.curve_preflight {
+            CurvePreflight::Negotiated { session, view } => (session.clone(), *view),
+            _ => bail!("curve geometry arrived before current negotiation"),
+        };
+        ensure!(
+            self.process.as_ref().is_some_and(|process| {
+                process.session() == &session
+                    && matches!(process.status(), ProcessStatus::Ready { .. })
+            }) && self
+                .native
+                .as_ref()
+                .is_some_and(|native| native.view == view),
+            "curve grant owner changed"
+        );
+        let transaction = self.next_curve_transaction()?;
+        let (proposal, layer) = self.grant_proposal(transaction, &context)?;
+        let envelope = crate::component::curve::Envelope {
+            protocol_major: 1,
+            wire_revision: 1,
+            view,
+            transaction_id: transaction,
+            ttl_ms: 1000,
+            body: crate::component::curve::RequestBodyV1::PrepareLayerGrant {
+                proposal: Box::new(crate::component::curve::LayerGrantProposal {
+                    geometry: Box::new(proposal.clone()),
+                    logical_size: layer.logical_size(),
+                }),
+            },
+        };
+        let request = self
+            .process
+            .as_ref()
+            .expect("negotiated process exists")
+            .request(crate::component::RequestBody::CurveV1(envelope))?;
+        trace_layer(format_args!(
+            "event=grant_send view={} request={} proposal={} gp={} viewport={} allocation={} layout={} capture={:?}",
+            view,
+            request,
+            proposal.proposal_id,
+            proposal.parent_geometry_generation,
+            proposal.viewport,
+            proposal.allocation_seq,
+            proposal.layout_seq,
+            self.content_snapshot
+                .as_ref()
+                .and_then(|snapshot| snapshot.reply().captured)
+        ));
+        self.curve_grant_request = Some((request, transaction, proposal.clone()));
+        {
+            let mut resources = self.frame_resources.lock().unwrap();
+            resources.parent_generation = proposal.parent_geometry_generation;
+            resources.grant_serial = proposal.proposal_id;
+            resources.child_generation = 0;
+            resources.allocation_seq = proposal.allocation_seq;
+            resources.layout_seq = proposal.layout_seq;
+            resources.grant_acknowledged = false;
+            resources.deferred_curve_grant = false;
+            resources.layer_layout = Some(layer);
+        }
+        self.geometry_dirty = false;
+        self.repaint_dirty = false;
+        self.enqueue(InputKind::Layout, self.view_frame.origin, None)
+    }
+}
 impl Component for ProcessContainer {
+    fn curve_subtree_capability(&self) -> tekes_ui_controls::composition::CurveSubtreeCapability {
+        use tekes_ui_controls::composition::CurveSubtreeCapability;
+        let negotiated = match &self.curve_preflight {
+            CurvePreflight::Negotiated { session, view } => {
+                self.process.as_ref().is_some_and(|process| {
+                    process.session() == session
+                        && matches!(process.status(), ProcessStatus::Ready { .. })
+                }) && self
+                    .native
+                    .as_ref()
+                    .is_some_and(|native| native.view == *view)
+            }
+            _ => false,
+        };
+        if negotiated {
+            CurveSubtreeCapability::Recursive
+        } else {
+            CurveSubtreeCapability::Unsupported
+        }
+    }
+    fn set_curve_geometry_context(
+        &mut self,
+        context: Option<tekes_ui_controls::composition::CurveGeometryContext>,
+    ) {
+        let (old_grant, independent_layer, awaiting_grant, deferred_ready) = {
+            let resources = self.frame_resources.lock().unwrap();
+            (
+                resources.grant_serial,
+                resources.layer_layout.is_some(),
+                self.curve_grant_request.is_some() && !resources.grant_acknowledged,
+                resources.deferred_curve_grant && resources.grant_acknowledged,
+            )
+        };
+        if deferred_ready
+            || self
+                .curve_geometry
+                .as_ref()
+                .map(|v| (v.generation(), v.shapes()))
+                != context.as_ref().map(|v| (v.generation(), v.shapes()))
+        {
+            trace_layer(format_args!(
+                "event=context view={} grant={} old_gp={:?} next_gp={:?} same_shapes={} awaiting={} deferred_ready={} geometry_dirty={} repaint_dirty={} cancel_pending={} capture={:?}",
+                self.native.as_ref().map_or(0, |native| native.view),
+                old_grant,
+                self.curve_geometry.as_ref().map(|value| value.generation()),
+                context.as_ref().map(|value| value.generation()),
+                self.curve_geometry
+                    .as_ref()
+                    .zip(context.as_ref())
+                    .is_some_and(|(old, new)| old.shapes() == new.shapes()),
+                awaiting_grant,
+                deferred_ready,
+                self.geometry_dirty,
+                self.repaint_dirty,
+                self.geometry_input_pending,
+                self.content_snapshot
+                    .as_ref()
+                    .and_then(|snapshot| snapshot.reply().captured)
+            ));
+            if independent_layer && awaiting_grant && context.is_some() {
+                // One Prepare/Layout remains outstanding until its exact
+                // GrantPrepared is consumed. Coalesce only unsent geometry
+                // intent, without reserving an outer request identity.
+                // Waiting for cancellation is an admission fence, not another
+                // spatial change. Keep that fence until the current frame commits.
+                let same_space = !self.geometry_dirty
+                    && self
+                        .curve_geometry
+                        .as_ref()
+                        .zip(context.as_ref())
+                        .is_some_and(|(old, new)| old.shapes() == new.shapes());
+                self.curve_geometry = context;
+                self.repaint_dirty = true;
+                if !same_space {
+                    self.geometry_dirty = true;
+                    self.geometry_input_pending = true;
+                }
+                let mut resources = self.frame_resources.lock().unwrap();
+                resources.deferred_curve_grant = true;
+                if let Some(pending) = resources.pending_curve_frame.take() {
+                    resources.retired_curve_query = Some(pending.query_request);
+                }
+                resources.pending_curve_publication = None;
+                drop(resources);
+                (self.wake)();
+                return;
+            }
+            // A sibling update can also advance the parent Host clock. An
+            // unchanged typed spatial layer still withdraws old frame authority,
+            // but must retain its original gesture regardless of which child
+            // requested repaint. Real geometry/cancellation changes still revoke.
+            let same_spatial_layer = independent_layer
+                && !self.geometry_dirty
+                && self
+                    .curve_geometry
+                    .as_ref()
+                    .zip(context.as_ref())
+                    .is_some_and(|(old, new)| old.shapes() == new.shapes());
+            let parent_generation = context.as_ref().map_or(0, |value| value.generation());
+            // Regrant is not cancellation acknowledgement. Only a current
+            // frame/query commit may clear an outstanding admission fence.
+            self.geometry_input_pending =
+                old_grant != 0 && (self.geometry_input_pending || !same_spatial_layer);
+            self.geometry_dirty = true;
+            self.curve_geometry = context;
+            let mut resources = self.frame_resources.lock().unwrap();
+            if let Some(pending) = resources.pending_curve_frame.take() {
+                resources.retired_curve_query = Some(pending.query_request);
+            }
+            resources.pending_curve_publication = None;
+            if !same_spatial_layer {
+                resources.geometry_cancel_confirmed = false;
+            }
+            resources.parent_generation = parent_generation;
+            resources.grant_serial = 0;
+            resources.child_generation = 0;
+            resources.expected_viewport = 0;
+            resources.expected_seq = 0;
+            resources.allocation_seq = 0;
+            resources.layout_seq = 0;
+            resources.grant_acknowledged = false;
+            resources.deferred_curve_grant = false;
+            resources.layer_layout = None;
+            drop(resources);
+            if old_grant != 0 && !same_spatial_layer {
+                trace_layer(format_args!(
+                    "event=revoke_send view={} grant={} next_gp={} capture={:?}",
+                    self.native.as_ref().map_or(0, |native| native.view),
+                    old_grant,
+                    parent_generation,
+                    self.content_snapshot
+                        .as_ref()
+                        .and_then(|snapshot| snapshot.reply().captured)
+                ));
+                let revoke = crate::component::curve::Envelope {
+                    protocol_major: 1,
+                    wire_revision: 1,
+                    view: self.native.as_ref().map_or(0, |native| native.view),
+                    transaction_id: 0,
+                    ttl_ms: 0,
+                    body: crate::component::curve::RequestBodyV1::RevokeAdmission {
+                        grant_serial: old_grant,
+                        reason: crate::component::curve::RevokeReasonWire::ParentGeometryChanged,
+                    },
+                };
+                match self
+                    .process
+                    .as_ref()
+                    .map(|process| process.request(crate::component::RequestBody::CurveV1(revoke)))
+                {
+                    Some(Ok(request)) => self
+                        .frame_resources
+                        .lock()
+                        .unwrap()
+                        .pending_revokes
+                        .push_back((request, 0, old_grant)),
+                    Some(Err(error)) => self.error = Some(error.to_string()),
+                    None => self.error = Some("curve owner unavailable for revoke".into()),
+                }
+            }
+            if let Some(context) = self.curve_geometry.clone()
+                && let Err(error) = self.begin_curve_grant(context)
+            {
+                self.error = Some(error.to_string());
+                self.geometry_input_pending = true;
+            }
+            (self.wake)();
+        }
+    }
+    fn delegates_curve_focus(&self) -> bool {
+        if self.curve_geometry.is_none()
+            || !self.available()
+            || self.geometry_dirty
+            || self.geometry_input_pending
+        {
+            return false;
+        }
+        let resources = self.frame_resources.lock().unwrap();
+        resources.layer_layout.is_some()
+            && resources.image.as_ref().and_then(ViewImage::layer_layout)
+                == resources.layer_layout.as_ref()
+    }
     fn rectangular_input_geometry(&self) -> bool {
         self.input_ready()
             && self.content_capabilities().is_some_and(|c| {
@@ -1133,14 +2420,19 @@ impl Component for ProcessContainer {
             && self.window_active
             && ((self.toolbar.active && self.toolbar.control.focusable())
                 || (self.content_keyboard_enabled() || self.content_accessibility_enabled())
-                    && (self.input_ready() || self.content_focused && self.available()))
+                    && (self.input_ready()
+                        || self.content_focused && self.available()
+                        || self.pointer_focus == Some(false) && self.delegates_curve_focus()))
     }
     fn set_focus(&mut self, focused: bool, visible: bool) {
+        let pointer_focus = self.pointer_focus.take();
+        let acknowledged_child_focus = pointer_focus == Some(false)
+            && self.content_snapshot.as_ref().is_some_and(|snapshot| {
+                snapshot.reply().pointer_focus_requested
+                    || snapshot.reply().accessibility_focus_requested
+            });
         let toolbar = !self.remote_overlay()
-            && self
-                .pointer_focus
-                .take()
-                .unwrap_or(self.toolbar.active && !self.content_focused);
+            && pointer_focus.unwrap_or(self.toolbar.active && !self.content_focused);
         self.toolbar_focused = focused && toolbar;
         self.toolbar
             .control
@@ -1153,6 +2445,7 @@ impl Component for ProcessContainer {
         if self.available()
             && (self.content_keyboard_enabled() || self.content_accessibility_enabled())
             && (self.content_focused || was_content)
+            && !(self.content_focused && acknowledged_child_focus)
         {
             self.focus_content(self.content_focused, visible);
         }
@@ -1192,7 +2485,7 @@ impl Component for ProcessContainer {
         {
             let result = (|| -> Result<_> {
                 let bridge = self.native_content_bridge(std::time::Duration::from_secs(1))?;
-                let current = bridge.snapshot()?;
+                let current = self.fresh_content_snapshot(&bridge)?;
                 bridge.request(
                     &current,
                     crate::component::content::Input::TextKeyResult { id },
@@ -1416,6 +2709,7 @@ impl Component for ProcessContainer {
         if allocation_changed {
             self.cancel_geometry_input();
             self.geometry_dirty = true;
+            self.allocation_seq = self.allocation_seq.saturating_add(1);
         }
         self.frame = frame;
         self.view_frame = view;
@@ -1429,10 +2723,22 @@ impl Component for ProcessContainer {
             if self.geometry_dirty || changed {
                 self.viewport += 1;
             }
-            self.geometry_dirty = false;
-            self.repaint_dirty = false;
-            if let Err(error) = self.enqueue(InputKind::Layout, view.origin, None) {
-                self.error = Some(error.to_string());
+            // begin_curve_preflight is an explicit promise that this same owner
+            // will be admitted under a curved Panel. Its first and subsequent
+            // layout input must follow the Host's current external-chain grant.
+            // The freeze callback below queues grant then Layout in that order.
+            let curve_preflight = matches!(
+                self.curve_preflight,
+                CurvePreflight::Starting
+                    | CurvePreflight::Negotiating
+                    | CurvePreflight::Negotiated { .. }
+            );
+            if !curve_preflight {
+                self.geometry_dirty = false;
+                self.repaint_dirty = false;
+                if let Err(error) = self.enqueue(InputKind::Layout, view.origin, None) {
+                    self.error = Some(error.to_string());
+                }
             }
         }
     }
@@ -1444,6 +2750,17 @@ impl Component for ProcessContainer {
         clip: Rect,
         theme: ContentTheme,
     ) {
+        let deferred_ready = {
+            let resources = self.frame_resources.lock().unwrap();
+            resources.deferred_curve_grant && resources.grant_acknowledged
+        };
+        if deferred_ready {
+            // Resource completion resumes the latest already-frozen parent
+            // context. It must not invalidate the Host geometry clock again.
+            // The original setter retains exact revoke/cancel/owner checks.
+            self.set_curve_geometry_context(self.curve_geometry.clone());
+        }
+        self.commit_pending_curve_publication();
         let (palette, surface) = if let Some(context) = &self.view_context {
             (
                 crate::view_context_palette(context).expect("validated original View context"),
@@ -1466,15 +2783,21 @@ impl Component for ProcessContainer {
         {
             text.request_animation_frame();
         }
-        if let (Some(registration), Some(image)) = (&self.registration, &self.image)
+        let resources = self.frame_resources.lock().unwrap();
+        if let (Some(registration), Some(image)) = (&resources.registration, &resources.image)
             && let Some(clip) = self.view_frame.intersection(&clip)
         {
             scene.push_clip(clip);
             scene.push_image(ImageQuad {
-                rect: crate::panel_image_rect(
-                    self.view_frame.origin,
-                    (image.metadata().pixel_width, image.metadata().pixel_height),
-                    self.scale,
+                rect: image.layer_layout().map_or_else(
+                    || {
+                        crate::panel_image_rect(
+                            self.view_frame.origin,
+                            (image.metadata().pixel_width, image.metadata().pixel_height),
+                            self.scale,
+                        )
+                    },
+                    |layer| layer.image_rect(),
                 ),
                 image: registration.id(),
                 opacity: 1.,
@@ -1577,6 +2900,24 @@ impl Component for ProcessContainer {
             return self.finish_toolbar(local);
         }
         if self.content_pointer_enabled() && !self.input_ready() {
+            if self.content_captured()
+                && pointer.is_primary()
+                && self.delegates_curve_focus()
+                && matches!(
+                    pointer.phase,
+                    PointerPhase::Up | PointerPhase::Move | PointerPhase::Drag
+                )
+            {
+                let input = match crate::native_content::pointer_input(pointer, self.view_frame) {
+                    Ok(input) => input,
+                    Err(error) => {
+                        self.error = Some(error.to_string());
+                        self.content_bubbles = Some(false);
+                        return ContentResponse::default();
+                    }
+                };
+                return self.queue_content(input);
+            }
             self.content_bubbles = Some(false);
             return ContentResponse::default();
         }
@@ -1617,38 +2958,8 @@ impl Component for ProcessContainer {
     fn lifecycle(&mut self, event: Lifecycle) {
         match event {
             Lifecycle::Mounted => {
-                if self.process.is_none() {
-                    let wake = self.wake.clone();
-                    let process = if let Some(native) = &self.native {
-                        ProcessComponent::spawn(
-                            ProcessComponentOptions::new(self.module.clone(), self.host_epoch)
-                                .with_view(native.window, native.view, native.required),
-                            move || wake(),
-                        )
-                    } else {
-                        ProcessComponent::spawn_v1_view(
-                            self.module.clone(),
-                            self.host_epoch,
-                            move || wake(),
-                        )
-                    };
-                    match process {
-                        Ok(process) => {
-                            if let (Some(native), Some(context)) =
-                                (&self.native, self.view_context.as_ref())
-                                && let Err(error) =
-                                    process.request(crate::component::RequestBody::SetViewContext {
-                                        view: native.view,
-                                        context: context.clone(),
-                                    })
-                            {
-                                self.error = Some(error.to_string());
-                            }
-                            self.process = Some(process);
-                        }
-                        Err(error) => self.error = Some(error.to_string()),
-                    };
-                    self.geometry_dirty = true;
+                if let Err(error) = self.ensure_process_started() {
+                    self.error = Some(error.to_string());
                 }
             }
             Lifecycle::Unmounted => {
@@ -1658,9 +2969,16 @@ impl Component for ProcessContainer {
                 self.toolbar.reset();
                 self.toolbar_focused = false;
                 self.pointer_focus = None;
-                self.registration = None;
-                self.image = None;
+                let mut resources = self.frame_resources.lock().unwrap();
+                resources.registration = None;
+                resources.image = None;
+                resources.expected_viewport = 0;
+                resources.expected_seq = 0;
+                resources.visible = false;
                 self.process = None;
+                self.curve_preflight = CurvePreflight::Unrequested;
+                self.curve_request = None;
+                self.curve_geometry = None;
                 self.content_snapshot = None;
                 self.content_focused = false;
                 self.content_bubbles = None;
@@ -1765,5 +3083,17 @@ impl Component for ProcessContainer {
         let mut semantics = ContentSemantics::new(ContentRole::Group, &self.module);
         semantics.disabled = !self.enabled;
         semantics
+    }
+}
+
+#[cfg(test)]
+mod curve_packet_contract_tests {
+    #[test]
+    fn host_negotiation_matches_existing_receiver_operation_contract() {
+        let packet = super::curve_negotiation_envelope(23);
+        assert_eq!(
+            crate::component::curve::validate_for_attached_view(&packet, Some(23)),
+            Ok(())
+        );
     }
 }

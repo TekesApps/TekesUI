@@ -12,7 +12,7 @@ struct Key {
     target: wire::Target,
     part: Option<usize>,
 }
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 struct Entry {
     key: Key,
     index: usize,
@@ -26,7 +26,7 @@ struct Entry {
     text_layout: Option<wire::TextLayout>,
     value_range: Option<[f64; 2]>,
 }
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub(crate) struct RemoteSemantics {
     attachment: Option<(Session, u64)>,
     snapshot: Option<ProcessContentSnapshot>,

@@ -817,6 +817,128 @@ pub fn run_script(steps: Vec<(u64, Action)>) {
     });
 }
 
+// Only the explicitly opted-in script can leave one publication step waiting. This is
+// selftest state, not a product action queue or a replacement accessibility tree.
+struct PublishedStep {
+    window: isize,
+    action: Action,
+    complete: std::sync::mpsc::Sender<()>,
+}
+thread_local! {
+    static PUBLISHED_STEP: std::cell::RefCell<Option<PublishedStep>> = const { std::cell::RefCell::new(None) };
+}
+extern "C" fn await_published_step(ctx: *mut c_void) {
+    use objc2::DefinedClass;
+    // SAFETY: the opted-in script allocates one tuple for this main-queue call.
+    let (action, complete) =
+        *unsafe { Box::from_raw(ctx.cast::<(Action, std::sync::mpsc::Sender<()>)>()) };
+    match &action {
+        Action::AXPressKey { key } => eprintln!("SELFTEST AX_WAIT key={key:?}"),
+        Action::ExpectText { .. } => eprintln!("SELFTEST TEXT_GEOMETRY_WAIT"),
+        _ => unreachable!("only native AX or text-query steps use the publication gate"),
+    }
+    let app = NSApplication::sharedApplication(MainThreadMarker::new().expect("main queue"));
+    let window = app
+        .windows()
+        .firstObject()
+        .expect("published AX script window");
+    let content = window.contentView().expect("published AX content view");
+    let view = content
+        .downcast_ref::<crate::view::TekesView>()
+        .expect("TekesView");
+    PUBLISHED_STEP.with(|pending| {
+        let mut pending = pending.borrow_mut();
+        assert!(pending.is_none(), "two selftest publication steps overlap");
+        *pending = Some(PublishedStep {
+            window: window.windowNumber(),
+            action,
+            complete,
+        });
+    });
+    run_published_step(&view.ivars().shared);
+}
+// Run after the real handler is restored and its queued events finish. Looking
+// up the element and calling its original selector cannot then straddle another
+// Host animation/layout callback. No borrow survives the native selector.
+pub(crate) fn run_published_step(shared: &crate::shared::Shared) {
+    let Some(objects) = shared.objects.get() else {
+        return;
+    };
+    if shared.closed.get() {
+        return;
+    }
+    let step = PUBLISHED_STEP.with(|pending| {
+        let ready = pending.borrow().as_ref().is_some_and(|step| {
+            step.window == objects.window.windowNumber()
+                && match &step.action {
+                    Action::AXPressKey { key } => shared
+                        .accessibility_nodes
+                        .borrow()
+                        .iter()
+                        .any(|node| node.key == *key),
+                    // This observes the actual Window state. Keep the original
+                    // text/marked/firstRect assertions in run_step unchanged;
+                    // a wrong text value must still fail there immediately.
+                    Action::ExpectText { .. } => {
+                        shared.text_input.borrow().as_ref().is_some_and(|state| {
+                            state.caret_origin.x.is_finite()
+                                && state.caret_origin.y.is_finite()
+                                && state.caret_size.height.is_finite()
+                                && state.caret_size.height > 0.
+                        })
+                    }
+                    _ => unreachable!(),
+                }
+        });
+        if ready {
+            pending.borrow_mut().take()
+        } else {
+            None
+        }
+    });
+    if let Some(step) = step {
+        match &step.action {
+            Action::AXPressKey { key } => eprintln!("SELFTEST AX_PUBLISHED key={key:?}"),
+            Action::ExpectText { .. } => eprintln!("SELFTEST TEXT_GEOMETRY_PUBLISHED"),
+            _ => unreachable!(),
+        }
+        run_step(Box::into_raw(Box::new(step.action)).cast::<c_void>());
+        step.complete
+            .send(())
+            .expect("publication script waiter must retain its completion");
+    }
+}
+/// Opt-in B2 script: retain the original actions, full AX key and delay deltas,
+/// but await the actual native AX publication before invoking that selector and
+/// a positive current native caret before the original ExpectText queries.
+/// Later steps start only after the original native action executes. The ordinary
+/// run_script contract is unchanged; no timer, polling loop or deadline is added.
+pub fn run_script_published_state(steps: Vec<(u64, Action)>) {
+    std::thread::spawn(move || {
+        let mut last = 0;
+        for (t, action) in steps {
+            std::thread::sleep(Duration::from_millis(t.saturating_sub(last)));
+            last = t;
+            if matches!(
+                action,
+                Action::AXPressKey { .. } | Action::ExpectText { .. }
+            ) {
+                let (complete, completed) = std::sync::mpsc::channel::<()>();
+                let ctx = Box::into_raw(Box::new((action, complete))).cast::<c_void>();
+                // SAFETY: the main callback consumes this exact boxed tuple.
+                unsafe { dispatch_async_f(&raw const _dispatch_main_q, ctx, await_published_step) };
+                completed
+                    .recv()
+                    .expect("publication step abandoned before original action execution");
+            } else {
+                let ctx = Box::into_raw(Box::new(action)).cast::<c_void>();
+                // SAFETY: unchanged original main-queue Action ownership.
+                unsafe { dispatch_async_f(&raw const _dispatch_main_q, ctx, run_step) };
+            }
+        }
+    });
+}
+
 /// Main-thread native-object contract only; creates no application or window.
 /// Uses the actual cached AX element class and its existing stale-object fence.
 #[doc(hidden)]

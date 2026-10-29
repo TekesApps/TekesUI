@@ -1106,19 +1106,12 @@ mod consumer {
         })?;
         let mut result = None;
         wait(|| {
-            for packet in c.drain_events() {
-                if let Output::Response {
-                    request,
-                    result: value,
-                } = packet.output
-                    && request == id
-                {
-                    result = Some(value);
-                }
+            if let Some(value) = c.take_response(id) {
+                result = Some(value);
             }
             result.is_some()
         })?;
-        result.unwrap().map_err(anyhow::Error::msg)
+        result.unwrap()
     }
     fn mounted_container_roundtrip() -> Result<serde_json::Value> {
         use tekes_ui_module_runtime::ProcessContainer;
@@ -2476,6 +2469,10 @@ mod consumer {
             },
         ];
         if run_component_worker_from_args(&definitions, &args)? {
+            return Ok(());
+        }
+        if args.iter().any(|v| v == "--independent-layer-only") {
+            println!("{}", native_host::independent_layer_roundtrip()?);
             return Ok(());
         }
         if args.iter().any(|v| v == "--projection-only") {

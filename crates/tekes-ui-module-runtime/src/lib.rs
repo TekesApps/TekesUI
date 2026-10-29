@@ -8,6 +8,8 @@ mod worker_entry;
 pub use panel_image::panel_image_rect;
 pub use worker_entry::run_worker_from_args;
 #[cfg(target_os = "macos")]
+mod layer_raster;
+#[cfg(target_os = "macos")]
 mod parent;
 #[cfg(target_os = "macos")]
 mod process;
@@ -67,7 +69,7 @@ mod container;
 #[cfg(target_os = "macos")]
 mod container_semantics;
 #[cfg(target_os = "macos")]
-pub use container::ProcessContainer;
+pub use container::{ProcessContainer, ProcessContainerFrameHandle};
 
 #[cfg(target_os = "macos")]
 mod content_accessibility;

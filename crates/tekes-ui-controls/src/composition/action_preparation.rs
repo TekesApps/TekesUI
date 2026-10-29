@@ -128,6 +128,14 @@ impl ContentHost {
             .and_then(|id| self.root.find(id))
             .and_then(|node| node.component.text_surface())
     }
+    fn delegated_composition_needs_owner(&self) -> bool {
+        self.requires_curve_geometry()
+            && self.focus_admission_text_surface().is_none()
+            && self
+                .focused
+                .and_then(|id| self.root.find_active(id))
+                .is_some_and(|node| node.component.delegates_text_keys())
+    }
     fn prepare_focus(
         &self,
         id: Option<ComponentId>,
@@ -177,7 +185,8 @@ impl ContentHost {
         if id.is_some()
             && id != self.focused
             && self.is_composing()
-            && matches!(origin, FocusOrigin::Traversal | FocusOrigin::Accessibility)
+            && (matches!(origin, FocusOrigin::Traversal | FocusOrigin::Accessibility)
+                || self.delegated_composition_needs_owner())
         {
             return Err(HostRevealError::CompositionBarrier);
         }
@@ -271,10 +280,10 @@ impl ContentHost {
             && !(p.id.is_some()
                 && p.id != self.focused
                 && self.is_composing()
-                && matches!(
+                && (matches!(
                     p.origin,
                     FocusOrigin::Traversal | FocusOrigin::Accessibility
-                ))
+                ) || self.delegated_composition_needs_owner()))
             && p.old
                 .iter()
                 .chain(p.new.iter())
@@ -429,6 +438,8 @@ impl ContentHost {
         if !self.window_active
             || node.component.semantics().disabled
             || !(node.component.curve_subtree_capability() == CurveSubtreeCapability::Local
+                || node.component.delegates_curve_focus()
+                    && node.component.rectangular_input_geometry()
                 || !self.requires_curve_geometry() && node.component.rectangular_input_geometry())
             || !self
                 .reveal_clock

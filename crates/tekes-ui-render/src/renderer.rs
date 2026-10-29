@@ -17,6 +17,44 @@ use tekes_ui_tokens::Rgba;
 /// this does not add a free-running render-ahead loop.
 const FRAME_LATENCY: u32 = 2;
 
+/// Immutable pixels of an independently rasterized child layer.
+///
+/// The target has physical origin (0, 0). Its exact pixel extent and backing
+/// scale travel with the pixels. The host places this layer without changing
+/// its texel scale and applies its external parent boundary once. Child-local
+/// clips and decorations remain baked in these pixels. This is not a
+/// `VerifiedFrameOutput` and makes no parent-coverage or cross-context repaint
+/// equivalence claim; no proof failure is retried through this API.
+pub struct LayerFrameOutput {
+    pixels: Vec<u8>,
+    size_px: (u32, u32),
+    scale: f32,
+}
+
+impl std::fmt::Debug for LayerFrameOutput {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("LayerFrameOutput")
+            .field("dimensions_px", &self.size_px)
+            .field("backing_scale", &self.scale)
+            .field("pixel_len", &self.pixels.len())
+            .finish()
+    }
+}
+
+impl LayerFrameOutput {
+    pub fn rgba8(&self) -> &[u8] {
+        &self.pixels
+    }
+
+    pub fn dimensions_px(&self) -> (u32, u32) {
+        self.size_px
+    }
+
+    pub fn backing_scale(&self) -> f32 {
+        self.scale
+    }
+}
+
 /// An immutable RGBA result from a successful finite parent-boundary proof.
 /// The receipt stays private and cannot be detached, cloned or serialized.
 pub struct VerifiedFrameOutput {
@@ -479,11 +517,52 @@ impl Renderer {
 
         // 计时关着时 `t_start` 是 `None`，整条路径只多这几次 `Option` 判断。
         let t_start = self.timing.is_some().then(Instant::now);
-        for _attempt in 0..3 {
+        // Opt-in native-r5 diagnosis only. These are CPU handoff timestamps,
+        // never GPU completion/presentation acceptance. No timing mode or poll
+        // is enabled, and the ordinary surface path below is unchanged.
+        static SURFACE_DIAGNOSTIC_SEQUENCE: AtomicU64 = AtomicU64::new(1);
+        let diagnostic = (std::env::var("TEKESUI_PROCESS_NATIVE_B2_TIMING").as_deref() == Ok("1"))
+            .then(|| {
+                (
+                    Instant::now(),
+                    SURFACE_DIAGNOSTIC_SEQUENCE.fetch_add(1, Ordering::Relaxed),
+                )
+            });
+        let renderer_id = self.id;
+        let trace = |stage: &str, attempt: usize| {
+            if let Some((start, call)) = diagnostic {
+                let now = Instant::now();
+                eprintln!(
+                    "TEKES_SURFACE_DIAGNOSTIC pid={} renderer={} call={} attempt={} stage={} monotonic={:?} elapsed_ns={}",
+                    std::process::id(),
+                    renderer_id,
+                    call,
+                    attempt,
+                    stage,
+                    now,
+                    now.duration_since(start).as_nanos(),
+                );
+            }
+        };
+        for attempt in 0..3 {
             let s = self.surface.as_ref().expect("surface 存在");
             let (size_px, scale) = (s.size_px, s.scale);
             let t_acquire = t_start.map(|_| Instant::now());
-            let (frame, suboptimal) = match s.surface.get_current_texture() {
+            trace("acquire_begin", attempt);
+            let acquired = s.surface.get_current_texture();
+            trace(
+                match &acquired {
+                    wgpu::CurrentSurfaceTexture::Success(_) => "acquire_success",
+                    wgpu::CurrentSurfaceTexture::Suboptimal(_) => "acquire_suboptimal",
+                    wgpu::CurrentSurfaceTexture::Timeout => "acquire_timeout",
+                    wgpu::CurrentSurfaceTexture::Occluded => "acquire_occluded",
+                    wgpu::CurrentSurfaceTexture::Outdated => "acquire_outdated",
+                    wgpu::CurrentSurfaceTexture::Lost => "acquire_lost",
+                    wgpu::CurrentSurfaceTexture::Validation => "acquire_validation_error",
+                },
+                attempt,
+            );
+            let (frame, suboptimal) = match acquired {
                 wgpu::CurrentSurfaceTexture::Success(t) => (t, false),
                 wgpu::CurrentSurfaceTexture::Suboptimal(t) => (t, true),
                 wgpu::CurrentSurfaceTexture::Timeout | wgpu::CurrentSurfaceTexture::Occluded => {
@@ -514,8 +593,12 @@ impl Renderer {
             let ticket =
                 self.encode_scene(&mut encoder, &view, size_px, scale, scene, atlas, clear);
             let t_encoded = t_start.map(|_| Instant::now());
+            trace("submit_begin", attempt);
             self.queue.submit([encoder.finish()]);
+            trace("submit_return", attempt);
+            trace("present_handoff_begin", attempt);
             self.queue.present(frame);
+            trace("present_handoff_return", attempt);
             if let (Some(t), Some(t0), Some(ta), Some(tb), Some(tc)) =
                 (&mut self.timing, t_start, t_acquire, t_acquired, t_encoded)
             {
@@ -671,6 +754,47 @@ impl Renderer {
         clear: Rgba,
     ) -> Result<Vec<u8>, RenderError> {
         self.render_to_rgba8_with_gpu(scene, atlas, size_px, scale, clear, |_| Ok(()))
+    }
+
+    /// Rasterize a child-local Scene for explicit independent-layer composition.
+    ///
+    /// The caller retains the real child layout and child-local clips, and does
+    /// not bake the external parent's boundary into this Scene. The parent later
+    /// masks the immutable layer once. All original input/resource/frame limits
+    /// are checked before atlas upload or image retirement. No parent proof is
+    /// requested or minted, and the shader/AA/scissor policy is unchanged.
+    pub fn render_layer_to_rgba8(
+        &mut self,
+        scene: &Scene,
+        atlas: &mut GlyphAtlas,
+        size_px: (u32, u32),
+        scale: f32,
+    ) -> Result<LayerFrameOutput, RenderError> {
+        if let Some(error) = scene.composition_error() {
+            return Err(RenderError::SceneComposition(error));
+        }
+        self.validate_controlled_images(scene)?;
+        check_size(size_px, scale)?;
+        let layout = checked_readback_layout(size_px, self.device.limits().max_buffer_size)?;
+        self.gpu
+            .prepare_layer_frame(&self.device, scene, atlas, size_px, scale)?;
+        self.collect_retired_images();
+        let pixels = self.render_prepared_to_rgba8(
+            scene,
+            atlas,
+            OffscreenRenderParams {
+                size_px,
+                scale,
+                clear: Rgba::new(0., 0., 0., 0.),
+                prevalidated_layout: Some(layout),
+            },
+            |_| Ok(()),
+        )?;
+        Ok(LayerFrameOutput {
+            pixels,
+            size_px,
+            scale,
+        })
     }
 
     /// Render only when each prepared drawable satisfies the finite interior

@@ -4,7 +4,7 @@ use crate::{
     NativeViewOptions, ProcessComponent,
     component::{Session, content as wire},
 };
-use anyhow::{Result, ensure};
+use anyhow::{Context, Result, ensure};
 use std::time::Duration;
 use tekes_ui_platform_macos as native;
 use tekes_ui_scene::Rect;
@@ -16,6 +16,7 @@ struct Stamp {
     viewport: u64,
     frame: Rect,
     clip: Rect,
+    curve: Option<crate::component::curve::QueryStamp>,
 }
 
 /// A read-only result from one original child, not a locally editable replica.
@@ -36,6 +37,39 @@ impl ProcessContentSnapshot {
     }
     pub(crate) fn belongs_to(&self, session: &Session, view: u64) -> bool {
         self.stamp.session == *session && self.stamp.view == view
+    }
+    /// The immutable projection's Curve identity, when it was produced from an
+    /// exact verified frame. This is diagnostic identity only; mutable calls
+    /// still require the live `ProcessContentBridge` and child admission.
+    pub fn curve_stamp(&self) -> Option<&crate::component::curve::QueryStamp> {
+        self.stamp.curve.as_ref()
+    }
+    pub(crate) fn from_curve(
+        process: &ProcessComponent,
+        view: u64,
+        viewport: u64,
+        frame: Rect,
+        clip: Rect,
+        curve: crate::component::curve::QueryStamp,
+        reply: wire::Reply,
+    ) -> Result<Self> {
+        ensure!(
+            curve.view == view
+                && curve.viewport == viewport
+                && reply.view == view
+                && reply.viewport == viewport,
+            "stale Curve Content projection"
+        );
+        let stamp = Stamp {
+            session: process.session().clone(),
+            view,
+            viewport,
+            frame,
+            clip,
+            curve: Some(curve),
+        };
+        let text = project(&stamp, &reply)?;
+        Ok(Self { stamp, reply, text })
     }
     pub(crate) fn native_binding(&self) -> Option<Vec<u8>> {
         self.reply.focused?;
@@ -72,12 +106,25 @@ pub struct ProcessContentBridge<'a> {
     timeout: Duration,
 }
 impl<'a> ProcessContentBridge<'a> {
+    /// Preserve the original ordinary-consumer constructor. Curve identity is
+    /// supplied only by the existing ProcessContainer owner below.
     pub fn new(
         process: &'a ProcessComponent,
         view: &NativeViewOptions,
         viewport: u64,
         frame: Rect,
         clip: Rect,
+        timeout: Duration,
+    ) -> Result<Self> {
+        Self::new_with_curve(process, view, viewport, frame, clip, None, timeout)
+    }
+    pub(crate) fn new_with_curve(
+        process: &'a ProcessComponent,
+        view: &NativeViewOptions,
+        viewport: u64,
+        frame: Rect,
+        clip: Rect,
+        curve: Option<crate::component::curve::QueryStamp>,
         timeout: Duration,
     ) -> Result<Self> {
         ensure!(
@@ -116,15 +163,26 @@ impl<'a> ProcessContentBridge<'a> {
                 viewport,
                 frame,
                 clip,
+                curve,
             },
             timeout,
         })
     }
     pub fn snapshot(&self) -> Result<ProcessContentSnapshot> {
+        if let Some(stamp) = &self.stamp.curve {
+            return self.curve_query(crate::component::curve::ReadOnlyQueryWire::SemanticTree {
+                stamp: stamp.clone(),
+            });
+        }
         self.send(None, None, 0, None, wire::Input::Snapshot)
     }
     /// Query original semantic owners without acquiring focus or dirtying paint.
     pub fn semantics(&self) -> Result<ProcessContentSnapshot> {
+        if let Some(stamp) = &self.stamp.curve {
+            return self.curve_query(crate::component::curve::ReadOnlyQueryWire::SemanticTree {
+                stamp: stamp.clone(),
+            });
+        }
         self.send(None, None, 0, None, wire::Input::Semantics)
     }
     /// The target must come from this exact stamped semantic query. The child
@@ -196,6 +254,26 @@ impl<'a> ProcessContentBridge<'a> {
         previous: &ProcessContentSnapshot,
         reader: u64,
     ) -> Result<ProcessContentSnapshot> {
+        if let Some(stamp) = &self.stamp.curve {
+            ensure!(
+                previous.stamp == self.stamp,
+                "stale native Content snapshot"
+            );
+            let reader_mount = previous
+                .reply
+                .semantics
+                .as_deref()
+                .and_then(|nodes| nodes.iter().find(|node| node.target.id == reader))
+                .map(|node| node.target.mount)
+                .ok_or_else(|| {
+                    anyhow::anyhow!("reader is absent from original semantic snapshot")
+                })?;
+            return self.curve_query(crate::component::curve::ReadOnlyQueryWire::ReadingState {
+                stamp: stamp.clone(),
+                reader_id: reader,
+                reader_mount,
+            });
+        }
         self.request(previous, wire::Input::ReadingState { reader })
     }
     /// Retain the exact returned document/item identities with asynchronous work.
@@ -242,6 +320,16 @@ impl<'a> ProcessContentBridge<'a> {
             previous.stamp == self.stamp,
             "stale native Content snapshot"
         );
+        ensure!(
+            self.stamp.curve.is_none()
+                || !matches!(
+                    &input,
+                    wire::Input::Snapshot
+                        | wire::Input::Semantics
+                        | wire::Input::ReadingState { .. }
+                ),
+            "Curve read-only queries use the stamped query lane"
+        );
         let owner = if matches!(input, wire::Input::Pointer(_)) {
             previous
                 .reply
@@ -269,44 +357,9 @@ impl<'a> ProcessContentBridge<'a> {
         previous: &ProcessContentSnapshot,
         event: &tekes_ui_controls::composition::PointerEvent,
     ) -> Result<ProcessContentSnapshot> {
-        use tekes_ui_controls::composition::{PointerButton as B, PointerPhase as P};
-        ensure!(
-            event.position.x.is_finite() && event.position.y.is_finite(),
-            "invalid native pointer position"
-        );
-        self.request(
-            previous,
-            wire::Input::Pointer(wire::PointerEvent {
-                position: [
-                    event.position.x - self.stamp.frame.min_x(),
-                    event.position.y - self.stamp.frame.min_y(),
-                ],
-                phase: match event.phase {
-                    P::Down => wire::PointerPhase::Down,
-                    P::Up => wire::PointerPhase::Up,
-                    P::Move => wire::PointerPhase::Move,
-                    P::Drag => wire::PointerPhase::Drag,
-                    P::Enter => wire::PointerPhase::Enter,
-                    P::Exit => wire::PointerPhase::Exit,
-                },
-                button: event.button.map(|b| match b {
-                    B::Primary => wire::PointerButton::Primary,
-                    B::Secondary => wire::PointerButton::Secondary,
-                    B::Middle => wire::PointerButton::Middle,
-                    B::Other(n) => wire::PointerButton::Other(n),
-                }),
-                modifiers: wire::Modifiers {
-                    shift: event.modifiers.shift,
-                    control: event.modifiers.control,
-                    alt: event.modifiers.alt,
-                    command: event.modifiers.command,
-                    caps_lock: event.modifiers.caps_lock,
-                    function: event.modifiers.function,
-                },
-                click_count: event.click_count,
-            }),
-        )
+        self.request(previous, pointer_input(event, self.stamp.frame)?)
     }
+
     /// Project one original parent-space wheel into this acknowledged child.
     /// Delta/phase/time remain unchanged; no focus, capture or scroll model lives here.
     pub fn scroll(
@@ -346,25 +399,58 @@ impl<'a> ProcessContentBridge<'a> {
         text_binding: Option<Vec<u8>>,
         input: wire::Input,
     ) -> Result<ProcessContentSnapshot> {
-        let reply = self.process.content_request(
-            &self.stamp.session,
-            wire::Request {
-                view: self.stamp.view,
-                viewport: self.stamp.viewport,
-                owner,
-                focus_epoch,
-                text_binding,
-                capture,
-                input,
-            },
-            self.timeout,
-        )?;
+        let request = wire::Request {
+            view: self.stamp.view,
+            viewport: self.stamp.viewport,
+            owner,
+            focus_epoch,
+            text_binding,
+            capture,
+            input,
+        };
+        let reply = if let Some(stamp) = &self.stamp.curve {
+            self.process.curve_content_request(
+                &self.stamp.session,
+                stamp.clone(),
+                request,
+                self.timeout,
+            )?
+        } else {
+            self.process
+                .content_request(&self.stamp.session, request, self.timeout)?
+        };
         let text = project(&self.stamp, &reply)?;
         Ok(ProcessContentSnapshot {
             stamp: self.stamp.clone(),
             reply,
             text,
         })
+    }
+    fn curve_query(
+        &self,
+        query: crate::component::curve::ReadOnlyQueryWire,
+    ) -> Result<ProcessContentSnapshot> {
+        let stamp = self
+            .stamp
+            .curve
+            .as_ref()
+            .context("Curve query requires a frame stamp")?
+            .clone();
+        let reply = self.process.curve_content_query(
+            &self.stamp.session,
+            stamp.clone(),
+            query,
+            self.timeout,
+        )?;
+        ProcessContentSnapshot::from_curve(
+            self.process,
+            self.stamp.view,
+            self.stamp.viewport,
+            self.stamp.frame,
+            self.stamp.clip,
+            stamp,
+            reply,
+        )
     }
 }
 
@@ -757,6 +843,45 @@ pub(crate) fn content_key(k: &tekes_ui_controls::composition::ContentKeyEvent) -
         characters: k.characters.clone(),
         characters_ignoring_modifiers: k.characters_ignoring_modifiers.clone(),
     }
+}
+pub(crate) fn pointer_input(
+    event: &tekes_ui_controls::composition::PointerEvent,
+    frame: Rect,
+) -> Result<wire::Input> {
+    use tekes_ui_controls::composition::{PointerButton as B, PointerPhase as P};
+    ensure!(
+        event.position.x.is_finite() && event.position.y.is_finite(),
+        "invalid native pointer position"
+    );
+    Ok(wire::Input::Pointer(wire::PointerEvent {
+        position: [
+            event.position.x - frame.min_x(),
+            event.position.y - frame.min_y(),
+        ],
+        phase: match event.phase {
+            P::Down => wire::PointerPhase::Down,
+            P::Up => wire::PointerPhase::Up,
+            P::Move => wire::PointerPhase::Move,
+            P::Drag => wire::PointerPhase::Drag,
+            P::Enter => wire::PointerPhase::Enter,
+            P::Exit => wire::PointerPhase::Exit,
+        },
+        button: event.button.map(|b| match b {
+            B::Primary => wire::PointerButton::Primary,
+            B::Secondary => wire::PointerButton::Secondary,
+            B::Middle => wire::PointerButton::Middle,
+            B::Other(n) => wire::PointerButton::Other(n),
+        }),
+        modifiers: wire::Modifiers {
+            shift: event.modifiers.shift,
+            control: event.modifiers.control,
+            alt: event.modifiers.alt,
+            command: event.modifiers.command,
+            caps_lock: event.modifiers.caps_lock,
+            function: event.modifiers.function,
+        },
+        click_count: event.click_count,
+    }))
 }
 pub(crate) fn content_input(
     event: &tekes_ui_controls::composition::ContentEvent,
@@ -1171,6 +1296,7 @@ mod tests {
                 viewport: 3,
                 frame: Rect::new(100., 60., 200., 100.),
                 clip: Rect::new(110., 65., 180., 80.),
+                curve: None,
             },
             wire::Reply {
                 view: 7,

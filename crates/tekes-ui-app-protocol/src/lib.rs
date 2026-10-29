@@ -27,14 +27,14 @@ pub struct Request {
     pub identity: u32,
     pub scale: f32,
 }
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ToolbarItem {
     pub id: u64,
     pub title: String,
     pub enabled: bool,
     pub geometry_dependent: bool,
 }
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Frame {
     pub version: u32,
     pub seq: u64,

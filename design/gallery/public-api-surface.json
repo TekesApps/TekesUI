@@ -1033,6 +1033,12 @@
       "reason": "Existing experimental composition protocol/runtime, stable identity, routed events, semantics and lifecycle; not an additional Gallery component."
     },
     {
+      "api": "tekes_ui_controls::composition::CurveGeometryContext",
+      "category": "composition",
+      "components": [],
+      "reason": "Read-only current Host curve generation and inherited shapes for an explicitly negotiated ProcessContainer. Carries geometry context only, not permission or a B2 acceptance certificate."
+    },
+    {
       "api": "tekes_ui_controls::composition::CurveSubtreeCapability",
       "category": "composition",
       "components": [],

@@ -98,6 +98,30 @@ impl Pipelines {
             .map(|_| ())
     }
 
+    /// Independent-layer preflight reuses the original geometry validator,
+    /// without changing analytic clip activation or minting a parent proof.
+    pub fn prepare_layer_frame(
+        &mut self,
+        device: &wgpu::Device,
+        scene: &Scene,
+        atlas: &GlyphAtlas,
+        size: (u32, u32),
+        scale: f32,
+    ) -> Result<(), RenderError> {
+        self.prepared = None;
+        let frame = ClipFrame::prepare_with_validation(
+            scene,
+            atlas,
+            size,
+            scale,
+            self.clip_budget,
+            &device.limits(),
+            true,
+        )?;
+        self.prepared = Some(frame);
+        Ok(())
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub fn prepare_frame_with_parent_boundary_proof(
         &mut self,
