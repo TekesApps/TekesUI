@@ -971,6 +971,38 @@
       "reason": "Opt-in structured reading result over the existing ScrollContent and shared ReadingDocumentVersion; no standalone component, Agent state, or new route."
     },
     {
+      "api": "tekes_ui_controls::composition::ContentReadingCheckpoint",
+      "category": "component-support",
+      "components": [
+        "tui.scroll-area"
+      ],
+      "reason": "Format-versioned persistent business-key/item-local reading values for existing ScrollContent; no attachment or component identity is persisted."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ContentReadingCheckpointError",
+      "category": "component-support",
+      "components": [
+        "tui.scroll-area"
+      ],
+      "reason": "Distinct validation, unavailable layout/item and stale request errors for the existing ScrollContent checkpoint boundary."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ContentReadingPosition",
+      "category": "component-support",
+      "components": [
+        "tui.scroll-area"
+      ],
+      "reason": "Following-latest or business-key history point in the existing structured reading engine; no separate control lifecycle."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ContentReadingRestoreRequest",
+      "category": "component-support",
+      "components": [
+        "tui.scroll-area"
+      ],
+      "reason": "Opaque one-use current attachment/input-intent authority for restoring persistent values into existing ScrollContent; not serializable."
+    },
+    {
       "api": "tekes_ui_controls::composition::ContentReadingResult",
       "category": "component-support",
       "components": [

@@ -92,7 +92,10 @@ pub use actions::{
 pub use adapters::{
     DialogContent, ListContent, SliderContent, SwitchContent, TextFieldContent, TextViewport,
 };
-pub use content_reading::{ContentReadingAnchorUpdate, ContentReadingResult};
+pub use content_reading::{
+    ContentReadingAnchorUpdate, ContentReadingCheckpoint, ContentReadingCheckpointError,
+    ContentReadingPosition, ContentReadingRestoreRequest, ContentReadingResult,
+};
 pub use content_reveal::{ContentRevealError, ContentRevealResult, ContentRevealStatus};
 pub use key::{
     ContentKeyEvent, TextKeyDisposition, TextKeyOutcome, TextSubmitPolicy, TextTabPolicy,
