@@ -76,3 +76,26 @@ Theme ink and visible glyph pixels. Independent native CTLine truncation and
 Unicode cluster oracles remain in the text package's existing label tests.
 See [the label contract and evidence](../../docs/design/label-content-integration-20261021.md)
 for the exact verification identity and boundaries.
+
+
+## Controlled original Menu (#36)
+
+The fixed public SDK/consumer base is
+[`7ba2da34ed9846a7726899d612a7136787dd77e0`](https://github.com/TekesApps/TekesUI/tree/7ba2da34ed9846a7726899d612a7136787dd77e0).
+[`src/declared_menu.rs`](src/declared_menu.rs) declares the original compact
+Menu trigger, Sort/Group submenus, checked/disabled items, separator and editor.
+`MenuContent::set_entries` owns no business preference state. Consume
+`ContentHost::drain_action_records()` and each owned
+`ContentActionPayload::MenuSelection` value path, source, model revision and
+mount; do not reconstruct an earlier choice from mutable `selected`.
+
+The normal native entry is `native menu-tree`. In the coordinated acceptance
+lane, `TEKES_COMPOSITION_SELFTEST=menu-tree` enables fixture-only phase commands
+and `TEKESUI_COMPONENT_EVIDENCE` selects its assigned SSD output directory.
+The existing AppKit selftest bridge sends pointer/key/scroll and real native AX
+selectors; MenuContent still owns placement, hit testing, capture and painting.
+The phase journal distinguishes original public semantic old-token rejection,
+programmatic MenuView opening, actual native AX Press, and synthetic marked-text
+input. These do not certify physical IME or VoiceOver speech. The coordinator
+schedules native execution using the existing desktop occupancy/idle guards.
+See [the Menu contract and evidence](../../docs/design/menu-declarations-20261021.md).

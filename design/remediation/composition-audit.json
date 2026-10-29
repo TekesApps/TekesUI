@@ -1942,10 +1942,10 @@
     "design/gallery/public-api-surface.json": "1bcd887e68a5679faf5dbc6ae519f1392dc5bfbea19a8d404ff1c2dff15e3724",
     "docs/charter.md": "3d4f7d5cc0f25682b1595a900c5059c170b98661e4c33b4f978489c2002be12c",
     "docs/design/menu-action-records-20261021.md": "27b925716d27757e750c7be222ebfe0844bbd618a0e5b5373d35c5820164fa88",
-    "docs/design/menu-declarations-20261021.md": "00ac8b6905cf73ae8b2bcb1ff7498db15e0682691f6d48a7631962c7940ac2e1",
+    "docs/design/menu-declarations-20261021.md": "e1494ee1d9a9de6f5fb7bedc40d0c19a8e90dfefca0d0f983316ae8794976ee8",
     "docs/roadmap.md": "1648c62ec9209c206b98c18da6a48cda8e9df306d635e294b5d0ad5dcf1bd331",
     "examples/composition-consumer/Cargo.toml": "92baa39b50aa5d5b64ff80e60b1af6bed7d3faaf9e3feaa8d2e7a625a0d793bf",
-    "examples/composition-consumer/examples/native.rs": "f8f640e7791c3700936ad9fcad425a47fa116d15c0b3d9eb96053f5b52ee6dde",
+    "examples/composition-consumer/examples/native.rs": "5a66b421e945223bc78ba2e5a9299c9e28f2e0287529f4c750634a943bc739de",
     "examples/composition-consumer/examples/support/native_key.rs": "6932a589bce50e2f4365c780c67ab0c467a126c9a4677ad23eeda132f146adae",
     "examples/composition-consumer/src/choice_status.rs": "337878b760c8aa05fe0bdbb0dbce091604526acc082c5778645b6feb6199d678",
     "examples/composition-consumer/src/combo_status.rs": "1e36d6989f56ed61eb67f2ab1b56c751164f2e1726c486eb65dd5430f9f40166",
@@ -2090,7 +2090,7 @@
     },
     {
       "path": "examples/composition-consumer/examples/native.rs",
-      "line": 747,
+      "line": 752,
       "anchor": "w.set_accessibility_nodes(nodes);"
     },
     {
