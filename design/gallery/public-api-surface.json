@@ -1065,6 +1065,30 @@
       "reason": "Existing experimental composition protocol/runtime, stable identity, routed events, semantics and lifecycle; not an additional Gallery component."
     },
     {
+      "api": "tekes_ui_controls::composition::ContextMenuBinding",
+      "category": "component-support",
+      "components": [
+        "tui.menu"
+      ],
+      "reason": "Original owner/menu mount attachment for MenuContent context requests; not a trigger component or another host."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ContextMenuError",
+      "category": "component-support",
+      "components": [
+        "tui.menu"
+      ],
+      "reason": "Explicit original MenuContent context refusal for unavailable/stale/IME/capture/overlay/layout boundaries."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ContextMenuRequest",
+      "category": "component-support",
+      "components": [
+        "tui.menu"
+      ],
+      "reason": "Immutable original context owner/mount/source and opaque SDK anchor identity retained with MenuSelection."
+    },
+    {
       "api": "tekes_ui_controls::composition::CurveGeometryContext",
       "category": "composition",
       "components": [],

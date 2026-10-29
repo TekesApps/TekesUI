@@ -69,6 +69,7 @@ fn enrich(
     node: &mut AccessibilityNode,
 ) {
     if part.is_none() {
+        node.can_show_menu = host.can_show_context_menu(id);
         add_slider_range(host, id, semantics, node);
         // Preserve the existing value/selection contract before shaping. Complete
         // geometry is still published only from the original shaped layout below.
@@ -259,6 +260,7 @@ fn project(
         required: semantics.required,
         text_selection: None,
         read_only: false,
+        can_show_menu: false,
     }
 }
 
@@ -277,6 +279,7 @@ pub fn content_action(
         AccessibilityAction::Decrement => ContentAction::Decrement,
         AccessibilityAction::Focus => ContentAction::Focus,
         AccessibilityAction::Press => ContentAction::Press,
+        AccessibilityAction::ShowMenu => ContentAction::ShowMenu,
         AccessibilityAction::SetValue(value) => ContentAction::SetValue(value),
         AccessibilityAction::SetSelection(range) => ContentAction::SetSelection(range),
         AccessibilityAction::ReplaceSelectedText(text) => ContentAction::ReplaceSelectedText(text),
@@ -932,5 +935,167 @@ mod splitter_content_bridge_tests {
             )
             .consumed
         );
+    }
+}
+
+#[cfg(test)]
+mod context_menu_bridge_tests {
+    use super::*;
+    use tekes_ui_controls::{
+        ButtonTextAlign, ButtonTextRenderer, ControlKey,
+        composition::{
+            Button, Content, ContentActionPayload, ContentActionSource, ContentEvent, MenuContent,
+            MenuEntry, StackContent,
+        },
+        extended::{Axis, Stack},
+    };
+    use tekes_ui_scene::{Rect as SceneRect, Scene, Size as SceneSize};
+    use tekes_ui_tokens::{Rgba, Theme, proposal};
+    struct Text;
+    impl ButtonTextRenderer for Text {
+        fn measure(&mut self, s: &str, _: proposal::TextRole, max: f32) -> SceneSize {
+            SceneSize::new((s.len() as f32 * 8.).min(max), 24.)
+        }
+        fn draw(
+            &mut self,
+            _: &mut Scene,
+            _: &str,
+            _: proposal::TextRole,
+            _: SceneRect,
+            _: ButtonTextAlign,
+            _: Rgba,
+        ) {
+        }
+    }
+    const ROOT: ComponentId = ComponentId(4400);
+    const A: ComponentId = ComponentId(4401);
+    const B: ComponentId = ComponentId(4402);
+    const MENU: ComponentId = ComponentId(4403);
+    fn fixture() -> ContentHost {
+        let mut host = ContentHost::new(Content::new(
+            ROOT,
+            StackContent {
+                model: Stack {
+                    axis: Axis::Vertical,
+                    gap: 8.,
+                },
+                flexible_child: None,
+                children: vec![
+                    Content::new(A, Button::new("A")),
+                    Content::new(B, Button::new("B")),
+                    Content::new(
+                        MENU,
+                        MenuContent::context_menu("Actions", vec![MenuEntry::item("pin", "Pin")])
+                            .unwrap(),
+                    ),
+                ],
+            },
+        ))
+        .unwrap();
+        host.set_action_events(true);
+        host.bind_context_menu(B, MENU).unwrap();
+        host
+    }
+    fn render(host: &mut ContentHost) {
+        host.render(
+            &mut Scene::new(),
+            &mut Text,
+            SceneRect::new(0., 0., 300., 200.),
+            SceneRect::new(0., 0., 300., 200.),
+            Theme::LIGHT.into(),
+        )
+        .unwrap();
+    }
+    #[test]
+    fn native_context_projection_advertises_only_original_bound_owner_and_routes_same_mount() {
+        let mut host = fixture();
+        let b = content_key(&host, B, None).unwrap();
+        assert!(
+            !content_nodes(&host)
+                .iter()
+                .find(|node| node.key == b)
+                .unwrap()
+                .can_show_menu
+        );
+        render(&mut host);
+        host.focus(Some(A), true);
+        let nodes = content_nodes(&host);
+        assert!(
+            nodes
+                .iter()
+                .find(|node| node.key == b)
+                .unwrap()
+                .can_show_menu
+        );
+        assert!(
+            nodes
+                .iter()
+                .filter(|node| node.key != b)
+                .all(|node| !node.can_show_menu)
+        );
+        let response = content_action(&mut host, b, AccessibilityAction::ShowMenu);
+        assert!(response.consumed && !response.activated);
+        assert_eq!(host.focused(), Some(A));
+        assert!(host.drain_actions().is_empty());
+        render(&mut host);
+        host.event(&ContentEvent::Key {
+            key: ControlKey::Enter,
+            down: true,
+        });
+        let record = host.drain_action_records().remove(0);
+        let Some(ContentActionPayload::MenuSelection(selection)) = record.payload else {
+            panic!("missing menu selection")
+        };
+        assert_eq!(selection.context_request().unwrap().owner(), B);
+        assert_eq!(
+            selection.context_request().unwrap().source(),
+            ContentActionSource::Accessibility
+        );
+        assert!(content_action(&mut host, b, AccessibilityAction::Press).activated);
+    }
+    #[test]
+    fn native_context_projection_and_action_reject_disabled_stale_and_inactive_owner() {
+        let mut host = fixture();
+        render(&mut host);
+        let old = content_key(&host, B, None).unwrap();
+        host.get_mut(B)
+            .unwrap()
+            .component_mut::<Button>()
+            .unwrap()
+            .button
+            .state
+            .disabled = true;
+        assert!(
+            !content_nodes(&host)
+                .iter()
+                .find(|node| node.key == old)
+                .unwrap()
+                .can_show_menu
+        );
+        assert!(!content_action(&mut host, old, AccessibilityAction::ShowMenu).consumed);
+        host.get_mut(B)
+            .unwrap()
+            .component_mut::<Button>()
+            .unwrap()
+            .button
+            .state
+            .disabled = false;
+        let row = host.remove(B).unwrap();
+        host.insert(ROOT, row).unwrap();
+        render(&mut host);
+        assert!(!content_action(&mut host, old, AccessibilityAction::ShowMenu).consumed);
+        let current = content_key(&host, B, None).unwrap();
+        assert!(
+            !content_nodes(&host)
+                .iter()
+                .find(|node| node.key == current)
+                .unwrap()
+                .can_show_menu
+        );
+        host.bind_context_menu(B, MENU).unwrap();
+        render(&mut host);
+        host.set_window_active(false);
+        assert!(content_nodes(&host).is_empty());
+        assert!(!content_action(&mut host, current, AccessibilityAction::ShowMenu).consumed);
     }
 }

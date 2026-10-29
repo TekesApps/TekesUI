@@ -94,6 +94,7 @@ fn main() {
                     required: s.required,
                     text_selection: None,
                     read_only: false,
+                    can_show_menu: false,
                 };
             let mut nodes = Vec::new();
             for node in snapshot {

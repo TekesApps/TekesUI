@@ -101,7 +101,10 @@ pub use key::{
     ContentKeyEvent, TextKeyDisposition, TextKeyOutcome, TextSubmitPolicy, TextTabPolicy,
 };
 pub(crate) use menu::MenuContentState;
-pub use menu::{MenuContent, MenuEntriesError, MenuEntry, MenuValuesError};
+pub use menu::{
+    ContextMenuBinding, ContextMenuError, ContextMenuRequest, MenuContent, MenuEntriesError,
+    MenuEntry, MenuValuesError,
+};
 pub use pointer::{InputModifiers, PointerButton, PointerEvent, PointerModifiers, PointerPhase};
 use std::{
     any::Any,
@@ -265,6 +268,8 @@ pub enum AccessibilityAction {
     Decrement,
     Focus,
     Press,
+    /// Show the original owner's bound context menu without a primary action.
+    ShowMenu,
     SetValue(String),
     SetSelection(std::ops::Range<usize>),
     ReplaceSelectedText(String),
@@ -776,7 +781,7 @@ pub struct Content {
     mount: u64,
     preserve_activation_focus: bool,
     bubble_handled_events: Option<bool>,
-    padding_focus: Option<(ComponentId, u64)>,
+    padding_focus: Option<PaddingFocusBinding>,
     label: Option<label::LabelState>,
     help: Option<String>,
     help_revision: u64,
@@ -1528,37 +1533,38 @@ impl Content {
         if self.component.interactive() || self.component.semantics().disabled {
             return PaddingFocusHit::Blocked;
         }
-        if let Some((id, mount)) = self.padding_focus {
+        if let Some(binding) = self.padding_focus {
             return self
-                .padding_editor(id)
+                .padding_text(binding.target, binding.allow_read_only)
                 .filter(|target| {
-                    target.mount == mount
+                    target.mount == binding.mount
                         && target
                             .component
                             .semantic_frame(target.frame)
                             .intersection(&target.clip)
                             .is_some()
                 })
-                .map_or(PaddingFocusHit::Blocked, |_| PaddingFocusHit::Focus(id));
+                .map_or(PaddingFocusHit::Blocked, |_| {
+                    PaddingFocusHit::Focus(binding.target)
+                });
         }
         PaddingFocusHit::None
     }
-    fn padding_editor(&self, id: ComponentId) -> Option<&Content> {
+    fn padding_text(&self, id: ComponentId, allow_read_only: bool) -> Option<&Content> {
         if !self.active() || self.component.semantics().disabled {
             return None;
         }
         if self.id == id {
             return (self.component.focusable()
-                && self
-                    .component
-                    .text_surface()
-                    .is_some_and(|s| !s.input.disabled && !s.input.read_only))
+                && self.component.text_surface().is_some_and(|s| {
+                    !s.input.disabled && (allow_read_only || !s.input.read_only)
+                }))
             .then_some(self);
         }
         self.component
             .children()
             .iter()
-            .find_map(|c| c.padding_editor(id))
+            .find_map(|c| c.padding_text(id, allow_read_only))
     }
     fn move_pointer(
         &mut self,
@@ -1731,6 +1737,13 @@ pub enum RequiredFocusResult {
     Clipped { witness: Rect },
     Visible { witness: Rect },
 }
+#[derive(Clone, Copy, Debug)]
+struct PaddingFocusBinding {
+    target: ComponentId,
+    mount: u64,
+    allow_read_only: bool,
+}
+
 enum PaddingFocusHit {
     None,
     Blocked,
@@ -1980,6 +1993,31 @@ impl ContentHost {
         owner: ComponentId,
         target: Option<ComponentId>,
     ) -> Result<(), CompositionError> {
+        self.bind_padding_focus(owner, target, false)
+    }
+    /// Opt in to decorative padding focus for an original selectable text
+    /// descendant, including read-only text. This uses the same mount, subtree,
+    /// active/disabled, clipping, real-child, capture and IME/focus barriers as
+    /// `set_padding_focus`; that older API remains editable-only.
+    ///
+    /// Padding changes only focus. It does not forward pointer coordinates,
+    /// move the caret, select a whole row, acquire capture or make text editable.
+    /// Direct text input/selection stays with the original text component.
+    /// Repeated same-owner padding preserves selection, undo and marked text.
+    /// `padding_focus_target` exposes this declaration's same-turn host intent.
+    pub fn set_padding_text_focus(
+        &mut self,
+        owner: ComponentId,
+        target: Option<ComponentId>,
+    ) -> Result<(), CompositionError> {
+        self.bind_padding_focus(owner, target, true)
+    }
+    fn bind_padding_focus(
+        &mut self,
+        owner: ComponentId,
+        target: Option<ComponentId>,
+        allow_read_only: bool,
+    ) -> Result<(), CompositionError> {
         let node = self
             .scope()
             .find_active(owner)
@@ -1989,15 +2027,19 @@ impl ContentHost {
             if id == owner || node.component.interactive() {
                 return Err(invalid);
             }
-            let editor = node.padding_editor(id).ok_or(invalid)?;
-            Some((id, editor.mount))
+            let editor = node.padding_text(id, allow_read_only).ok_or(invalid)?;
+            Some(PaddingFocusBinding {
+                target: id,
+                mount: editor.mount,
+                allow_read_only,
+            })
         } else {
             None
         };
         self.root.find_mut(owner).unwrap().padding_focus = binding;
         Ok(())
     }
-    /// Read the original editable owner selected by registered decorative
+    /// Read the original text owner selected by registered decorative
     /// padding for this primary pointer-down. This is not a general hit test:
     /// real controls (including unavailable ones), open overlays, capture and
     /// content outside the current modal scope do not report a padding target.
@@ -2347,6 +2389,7 @@ impl ContentHost {
         self.root.arrange(text, frame, clip);
         self.finish_split_layout();
         self.arrange_popovers(text, requested.0, requested.1);
+        self.arrange_context_menus(requested.0, requested.1);
         self.check_text_services(text)?;
         if let Some(id) = self.root.label_failure() {
             self.cancel();
@@ -2361,6 +2404,7 @@ impl ContentHost {
     }
     fn reconcile_active_inputs(&mut self) {
         self.reconcile_popovers();
+        self.reconcile_context_menus();
         self.root.refresh_activity(self.window_active);
         self.root
             .reconcile_presentation_runnable(self.window_active);
@@ -2705,6 +2749,9 @@ impl ContentHost {
         {
             self.event_bubbled = Some(false);
             return ContentResponse::default();
+        }
+        if let Some(response) = self.context_menu_event(event) {
+            return response;
         }
         if self.help_event(event) {
             return ContentResponse::consumed(true);
@@ -3199,6 +3246,9 @@ impl ContentHost {
         }
         if !self.window_active {
             return ContentResponse::default();
+        }
+        if matches!(action, AccessibilityAction::ShowMenu) {
+            return self.context_menu_accessibility_action(id, part);
         }
         if self.scope().find_active(id).is_some_and(|node| {
             node.component.semantics().role == ContentRole::Image

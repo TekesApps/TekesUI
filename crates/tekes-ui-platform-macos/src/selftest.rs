@@ -97,6 +97,11 @@ pub enum Action {
     AXPress {
         component: u64,
     },
+    /// Invoke the original owner's actual accessibilityPerformShowMenu selector.
+    /// This is native AX dispatch evidence, not VoiceOver listening evidence.
+    AXShowMenu {
+        component: u64,
+    },
     /// Invoke the native selector for a full projected key, including remote parts.
     AXPressKey {
         key: crate::AccessibilityKey,
@@ -117,6 +122,10 @@ pub enum Action {
     /// This audits protocol reachability, not VoiceOver speech or interaction.
     AuditAXText(u64),
     ExpectAXMissing(u64),
+    /// Compare actual native menu roles/frames/state to the published SDK nodes.
+    AuditAXMenu {
+        component: u64,
+    },
     TextCommand(&'static str),
     ExpectText {
         text: String,
@@ -127,6 +136,18 @@ pub enum Action {
     Click {
         x: f64,
         y: f64,
+    },
+    /// A real local mouse down/up at the current published node's frame center.
+    /// Labels must be unique in this fixed review window; no hidden trigger.
+    ClickPublished {
+        label: &'static str,
+        secondary: bool,
+    },
+    /// Native window key input with retained modifier metadata, not a menu equivalent.
+    KeyCharactersModified {
+        key_code: u16,
+        chars: &'static str,
+        modifiers: crate::Modifiers,
     },
     /// 合成一次按键（按下加抬起），无修饰键。`key_code` 是虚拟键码（↑ 126、↓ 125）。
     Key {
@@ -226,9 +247,11 @@ extern "C" fn run_step(ctx: *mut c_void) {
         Action::AXSelect { .. }
         | Action::AXReplace { .. }
         | Action::AXPress { .. }
+        | Action::AXShowMenu { .. }
         | Action::AXPressKey { .. }
         | Action::ExpectAXText { .. }
         | Action::AuditAXText(_)
+        | Action::AuditAXMenu { .. }
         | Action::ExpectAXMissing(_) => {
             use objc2::{DefinedClass, msg_send};
             use objc2_foundation::NSRange;
@@ -241,8 +264,10 @@ extern "C" fn run_step(ctx: *mut c_void) {
                 Action::AXSelect { component, .. }
                 | Action::AXReplace { component, .. }
                 | Action::AXPress { component }
+                | Action::AXShowMenu { component }
                 | Action::ExpectAXText { component, .. }
                 | Action::AuditAXText(component)
+                | Action::AuditAXMenu { component }
                 | Action::ExpectAXMissing(component) => crate::AccessibilityKey {
                     component: *component,
                     part: None,
@@ -292,6 +317,84 @@ extern "C" fn run_step(ctx: *mut c_void) {
                     eprintln!(
                         "SELFTEST PASS AXPress component={component} part={:?}",
                         key.part
+                    );
+                },
+                Action::AXShowMenu { component } => unsafe {
+                    use objc2::{runtime::Bool, sel};
+                    let allowed: Bool = msg_send![&*element, isAccessibilitySelectorAllowed:sel!(accessibilityPerformShowMenu)];
+                    assert!(
+                        allowed.as_bool(),
+                        "AXShowMenu is not allowed for component {component}"
+                    );
+                    let shown: bool = msg_send![&*element, accessibilityPerformShowMenu];
+                    assert!(
+                        shown,
+                        "AXShowMenu was not accepted for component {component}"
+                    );
+                    eprintln!(
+                        "SELFTEST PASS AXShowMenu component={component}; not VoiceOver evidence"
+                    );
+                },
+                Action::AuditAXMenu { component } => unsafe {
+                    use objc2::{rc::Retained, sel};
+                    use objc2_foundation::NSRect;
+                    let nodes: Vec<_> = view
+                        .ivars()
+                        .shared
+                        .accessibility_nodes
+                        .borrow()
+                        .iter()
+                        .filter(|node| node.key.component == component)
+                        .cloned()
+                        .collect();
+                    assert!(!nodes.is_empty(), "published original menu nodes missing");
+                    let mut checked = 0;
+                    for node in nodes {
+                        let native = view
+                            .ivars()
+                            .shared
+                            .accessibility_elements
+                            .borrow()
+                            .get(&node.key)
+                            .cloned()
+                            .expect("published original menu element");
+                        let role: Retained<NSString> = msg_send![&*native, accessibilityRole];
+                        let name: Retained<NSString> = msg_send![&*native, accessibilityLabel];
+                        let enabled: bool = msg_send![&*native, isAccessibilityEnabled];
+                        let selected: bool = msg_send![&*native, isAccessibilitySelected];
+                        let frame: NSRect = msg_send![&*native, accessibilityFrame];
+                        let local = NSRect::new(
+                            NSPoint::new(node.frame.origin.x, node.frame.origin.y),
+                            NSSize::new(node.frame.size.width, node.frame.size.height),
+                        );
+                        let expected = w.convertRectToScreen(view.convertRect_toView(local, None));
+                        let expected_role = match node.role {
+                            crate::AccessibilityRole::Menu => "AXMenu",
+                            crate::AccessibilityRole::MenuItem => "AXMenuItem",
+                            other => panic!("unexpected menu native role {other:?}"),
+                        };
+                        eprintln!(
+                            "AX_MENU_NODE key={:?} role={} name={} enabled={} selected={} frame={:?} expected={:?}",
+                            node.key, role, name, enabled, selected, frame, expected
+                        );
+                        assert_eq!(role.to_string(), expected_role);
+                        assert_eq!(name.to_string(), node.label);
+                        assert_eq!(enabled, node.enabled);
+                        assert_eq!(selected, node.selected);
+                        assert_eq!(frame, expected);
+                        assert!(frame.size.width > 0. && frame.size.height > 0.);
+                        if !node.enabled {
+                            let allowed: objc2::runtime::Bool = msg_send![&*native,isAccessibilitySelectorAllowed:sel!(accessibilityPerformPress)];
+                            let pressed: bool = msg_send![&*native, accessibilityPerformPress];
+                            assert!(
+                                !allowed.as_bool() && !pressed,
+                                "disabled menu native Press must refuse"
+                            );
+                        }
+                        checked += 1;
+                    }
+                    eprintln!(
+                        "SELFTEST PASS AXMenu frame/role/state component={component} nodes={checked}; not VoiceOver evidence"
                     );
                 },
                 Action::AuditAXText(_) => unsafe {
@@ -684,6 +787,117 @@ extern "C" fn run_step(ctx: *mut c_void) {
                 }
             }
         }
+        Action::ClickPublished { label, secondary } => {
+            use objc2::DefinedClass;
+            let content = w.contentView().expect("review content view");
+            let view = content
+                .downcast_ref::<crate::view::TekesView>()
+                .expect("review TekesView");
+            let nodes: Vec<_> = view
+                .ivars()
+                .shared
+                .accessibility_nodes
+                .borrow()
+                .iter()
+                .filter(|node| node.label == label)
+                .cloned()
+                .collect();
+            assert_eq!(
+                nodes.len(),
+                1,
+                "published click label must identify one current original node: {label}"
+            );
+            let node = &nodes[0];
+            assert!(node.frame.size.width > 0. && node.frame.size.height > 0.);
+            let x = node.frame.origin.x + node.frame.size.width / 2.;
+            let y = node.frame.origin.y + node.frame.size.height / 2.;
+            eprintln!(
+                "SELFTEST native pointer label={label} key={:?} secondary={secondary} x={x} y={y}",
+                node.key
+            );
+            let phases = if secondary {
+                [NSEventType::RightMouseDown, NSEventType::RightMouseUp]
+            } else {
+                [NSEventType::LeftMouseDown, NSEventType::LeftMouseUp]
+            };
+            for ty in phases {
+                let factory = mouse_event(&w, ty, x, y, 1).expect("native review mouse event");
+                eprintln!(
+                    "SELFTEST pointer factory type={:?} button={} window={} expected_secondary={secondary}",
+                    factory.r#type(),
+                    factory.buttonNumber(),
+                    factory.windowNumber()
+                );
+                if secondary {
+                    use objc2_core_foundation::CGPoint;
+                    use objc2_core_graphics::{CGEvent, CGEventField, CGEventType, CGMouseButton};
+                    let point = win_point(&w, x, y);
+                    let primary_height = objc2_app_kit::NSScreen::screens(mtm)
+                        .firstObject()
+                        .expect("primary display")
+                        .frame()
+                        .size
+                        .height;
+                    let kind = if ty == NSEventType::RightMouseDown {
+                        CGEventType::RightMouseDown
+                    } else {
+                        CGEventType::RightMouseUp
+                    };
+                    let cg = CGEvent::new_mouse_event(
+                        None,
+                        kind,
+                        CGPoint::new(point.x, primary_height - point.y),
+                        CGMouseButton::Right,
+                    )
+                    .expect("coherent native secondary event");
+                    CGEvent::set_integer_value_field(
+                        Some(&cg),
+                        CGEventField::MouseEventClickState,
+                        1,
+                    );
+                    let event =
+                        NSEvent::eventWithCGEvent(&cg).expect("wrap native secondary event");
+                    assert_eq!(event.r#type(), ty);
+                    assert_eq!(event.buttonNumber(), 1);
+                    assert_eq!(event.clickCount(), 1);
+                    assert_eq!(event.locationInWindow(), point);
+                    eprintln!(
+                        "SELFTEST coherent secondary type={:?} button={} window={} point={:?}; real NSView selector, not Rust dispatch",
+                        event.r#type(),
+                        event.buttonNumber(),
+                        event.windowNumber(),
+                        point
+                    );
+                    // As with the existing native scroll helper, a CG-backed
+                    // event has no NSWindow. Use the actual NSView native entry
+                    // with verified window coordinates; never the Rust host.
+                    if ty == NSEventType::RightMouseDown {
+                        view.rightMouseDown(&event);
+                    } else {
+                        view.rightMouseUp(&event);
+                    }
+                } else {
+                    assert_eq!(factory.r#type(), ty);
+                    assert_eq!(factory.buttonNumber(), 0);
+                    app.sendEvent(&factory);
+                }
+            }
+        }
+        Action::KeyCharactersModified {
+            key_code,
+            chars,
+            modifiers,
+        } => {
+            let flags = NSEventModifierFlags::from_bits_retain(modifiers.to_ns_flags());
+            let text = NSString::from_str(chars);
+            eprintln!(
+                "SELFTEST native modified key code={key_code} chars={chars:?} modifiers={modifiers:?}"
+            );
+            for ty in [NSEventType::KeyDown, NSEventType::KeyUp] {
+                let event=NSEvent::keyEventWithType_location_modifierFlags_timestamp_windowNumber_context_characters_charactersIgnoringModifiers_isARepeat_keyCode(ty,NSPoint::ZERO,flags,0.,w.windowNumber(),None,&text,&text,false,key_code).expect("native review modified key");
+                app.sendEvent(&event);
+            }
+        }
         Action::Key { key_code } | Action::KeyCharacters { key_code, .. } => {
             let chars = match action {
                 Action::KeyCharacters { chars, .. } => chars,
@@ -1014,6 +1228,7 @@ pub fn required_metadata_contract() -> usize {
         required: false,
         text_selection: None,
         read_only: false,
+        can_show_menu: false,
     };
     let element = NativeAccessibilityElement::new(mtm, &shared, key);
     shared
@@ -1118,6 +1333,7 @@ pub fn link_role_contract() -> usize {
         required: false,
         text_selection: None,
         read_only: false,
+        can_show_menu: false,
     };
 
     let element = NativeAccessibilityElement::new(mtm, &shared, key);
@@ -1673,6 +1889,7 @@ pub fn image_role_contract() -> usize {
         required: false,
         text_selection: None,
         read_only: false,
+        can_show_menu: false,
     };
     assert!(crate::accessibility::validate_accessibility_nodes(
         std::slice::from_ref(&node)
@@ -1775,6 +1992,7 @@ pub fn splitter_role_contract() -> usize {
         required: false,
         text_selection: None,
         read_only: false,
+        can_show_menu: false,
     };
     assert!(crate::accessibility::validate_accessibility_nodes(
         std::slice::from_ref(&node)

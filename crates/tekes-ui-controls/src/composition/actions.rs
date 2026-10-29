@@ -38,8 +38,12 @@ pub struct MenuSelection {
     pub(super) label: String,
     pub(super) model_revision: u64,
     pub(super) value_path: Option<Vec<String>>,
+    pub(super) context_request: Option<ContextMenuRequest>,
 }
 impl MenuSelection {
+    pub fn context_request(&self) -> Option<ContextMenuRequest> {
+        self.context_request
+    }
     pub fn index(&self) -> usize {
         self.index
     }
@@ -234,6 +238,10 @@ impl ContentHost {
                             && pending
                                 .payload
                                 .as_ref()
+                                .is_none_or(|payload| self.context_menu_action_current(payload))
+                            && pending
+                                .payload
+                                .as_ref()
                                 .is_none_or(|p| content.component.action_payload_current(p))
                     })
                     .map(|_| ContentActionRecord {
@@ -278,6 +286,7 @@ mod freshness_tests {
                 label: "item".into(),
                 model_revision: self.revision.get(),
                 value_path: None,
+                context_request: None,
             }))
         }
         fn action_payload_current(&self, payload: &ContentActionPayload) -> bool {
@@ -315,6 +324,7 @@ mod freshness_tests {
             label: "item".into(),
             model_revision: 1,
             value_path: None,
+            context_request: None,
         });
         assert!(owner.action_payload_current(&payload));
     }
