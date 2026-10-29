@@ -824,6 +824,22 @@ impl ClipFrame {
         budget: ClipFrameBudget,
         limits: &wgpu::Limits,
     ) -> Result<Self, RenderError> {
+        Self::prepare_with_validation(scene, atlas, size, scale, budget, limits, false)
+    }
+
+    /// Proof inputs must pass the original geometry validator even when their
+    /// legacy clip policy does not enable analytic drawing. This flag changes
+    /// validation only; prepared scissors and analytic state stay unchanged.
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn prepare_with_validation(
+        scene: &Scene,
+        atlas: &GlyphAtlas,
+        size: (u32, u32),
+        scale: f32,
+        budget: ClipFrameBudget,
+        limits: &wgpu::Limits,
+        validate_legacy_geometry: bool,
+    ) -> Result<Self, RenderError> {
         if let Some(error) = scene.composition_error() {
             return Err(RenderError::SceneComposition(error));
         }
@@ -840,6 +856,7 @@ impl ClipFrame {
                 .primitives()
                 .iter()
                 .any(|p| matches!(p, Primitive::PushShapeClip(_) | Primitive::KeyedQuad { .. }));
+        let validate_geometry = analytic || validate_legacy_geometry;
         if analytic && scene.required_clip_geometry() != CLIP_GEOMETRY_VERSION {
             return Err(RenderError::UnsupportedClipGeometry(
                 scene.required_clip_geometry(),
@@ -852,7 +869,7 @@ impl ClipFrame {
             return Err(RenderError::ClipBudgetExceeded("shapes"));
         }
         let full = Rect::new(0., 0., size.0 as f32 / scale, size.1 as f32 / scale);
-        if analytic && (!full.size.width.is_finite() || !full.size.height.is_finite()) {
+        if validate_geometry && (!full.size.width.is_finite() || !full.size.height.is_finite()) {
             return Err(RenderError::ClipGeometry(
                 ClipError::UnsupportedNumericRange,
             ));
@@ -899,6 +916,9 @@ impl ClipFrame {
             };
             match p {
                 Primitive::PushClip(rect) if !analytic => {
+                    if validate_legacy_geometry {
+                        normalize(*rect, CornerRadii::ZERO, scale)?;
+                    }
                     let clip = current
                         .legacy
                         .intersection(rect)
@@ -1012,7 +1032,7 @@ impl ClipFrame {
                 Primitive::PopClip => {
                     if scope.len() > 1 {
                         scope.pop();
-                    } else if analytic {
+                    } else if validate_geometry {
                         return Err(RenderError::InvalidClipFrame("unmatched clip pop"));
                     }
                 }
@@ -1020,7 +1040,7 @@ impl ClipFrame {
                     quads = quads
                         .checked_add(1)
                         .ok_or(RenderError::ClipBudgetExceeded("instances"))?;
-                    if analytic {
+                    if validate_geometry {
                         let (shape, empty) = quad_shape(q, scale)?;
                         if let Primitive::KeyedQuad { outer, .. } = p {
                             state.analytic = true;
@@ -1044,7 +1064,7 @@ impl ClipFrame {
                     quads = quads
                         .checked_add(1)
                         .ok_or(RenderError::ClipBudgetExceeded("instances"))?;
-                    if analytic {
+                    if validate_geometry {
                         validate_color(s.color)?;
                         normalize(s.rect, s.corner_radii, scale)?;
                         for v in [s.offset.x, s.offset.y, s.blur_radius, s.outset] {
@@ -1056,7 +1076,7 @@ impl ClipFrame {
                     glyphs = glyphs
                         .checked_add(run.glyphs.len() as u64)
                         .ok_or(RenderError::ClipBudgetExceeded("instances"))?;
-                    if analytic {
+                    if validate_geometry {
                         validate_color(run.color)?;
                         charge(
                             &mut result.cpu_work,
@@ -1082,7 +1102,7 @@ impl ClipFrame {
                 }
                 Primitive::Image(q) | Primitive::ControlledImage { quad: q, .. } => {
                     images += 1;
-                    if analytic {
+                    if validate_geometry {
                         validate_opacity(q.opacity)?;
                         normalize(q.rect, CornerRadii::ZERO, scale)?;
                     }
@@ -1090,7 +1110,7 @@ impl ClipFrame {
                 Primitive::TransformedImage(q)
                 | Primitive::ControlledTransformedImage { quad: q, .. } => {
                     images += 1;
-                    if analytic {
+                    if validate_geometry {
                         validate_opacity(q.quad.opacity)?;
                         normalize(q.quad.rect, CornerRadii::ZERO, scale)?;
                         if ![
@@ -1201,7 +1221,7 @@ impl ClipFrame {
             }
             result.states.push(state);
         }
-        if analytic && scope.len() != 1 {
+        if validate_geometry && scope.len() != 1 {
             return Err(RenderError::InvalidClipFrame("unclosed clip scope"));
         }
         let count = result.records.len() as u64;
@@ -2786,5 +2806,269 @@ mod tests {
             ),
             Err(RenderError::ClipBudgetExceeded("boundary proof work"))
         ));
+    }
+
+    #[test]
+    fn parent_proof_refuses_near_partial_stroke_shadow_and_analytic_clip_band() {
+        let full = Rect::new(0., 0., 64., 64.);
+        let mut cases = Vec::new();
+        for (name, rect) in [
+            ("same rounded boundary", full),
+            ("near rounded boundary", Rect::new(0.25, 0.25, 63.5, 63.5)),
+            (
+                "partial coincident left edge and arc",
+                Rect::new(0., 0., 32., 64.),
+            ),
+        ] {
+            let mut s = Scene::new();
+            s.push_quad(Quad::new(rect, Rgba::gray(1.)).with_corner_radius(4.));
+            cases.push((name, s));
+        }
+        let mut stroke = Scene::new();
+        stroke.push_quad(Quad::new(full, Rgba::gray(1.)).with_border(1., Rgba::gray(0.)));
+        cases.push(("inner stroke", stroke));
+        let mut shadow = Scene::new();
+        shadow.push_shadow(
+            tekes_ui_scene::ShadowQuad::new(full, Rgba::gray(0.5))
+                .with_corner_radius(4.)
+                .with_blur_radius(4.),
+        );
+        cases.push(("shadow", shadow));
+        let mut table = ShapeTable::new(127, 1);
+        let key = table.intern(proof_parent()).unwrap();
+        let mut analytic = Scene::with_clip_shapes(&table);
+        analytic.push_shape_clip(key);
+        analytic.push_clip(full);
+        analytic.push_quad(Quad::new(full, Rgba::gray(1.)));
+        analytic.pop_clip();
+        analytic.pop_clip();
+        cases.push(("raw PushClip inside analytic scope", analytic));
+
+        let limits = wgpu::Limits::default();
+        let budget = ClipFrameBudget::for_device(&limits);
+        let atlas = GlyphAtlas::default();
+        for (name, s) in cases {
+            let before = s.clone();
+            let frame = ClipFrame::prepare(&s, &atlas, (64, 64), 1., budget, &limits).unwrap();
+            let draw = s
+                .primitives()
+                .iter()
+                .position(|p| matches!(p, Primitive::Quad(_) | Primitive::Shadow(_)))
+                .unwrap();
+            assert_eq!(frame.states[draw].scissor, [0, 0, 64, 64], "{name}");
+            if name == "raw PushClip inside analytic scope" {
+                assert_ne!(frame.states[draw].head, 0);
+            }
+            assert!(
+                matches!(
+                    frame.prove_parent_scissors(
+                        &s,
+                        &[proof_parent()],
+                        (64, 64),
+                        1.,
+                        budget,
+                        BoundaryProofLimits::default(),
+                        8,
+                    ),
+                    Err(RenderError::InvalidClipFrame(
+                        "prepared scissor outside parent full-coverage witness"
+                    ))
+                ),
+                "{name}"
+            );
+            assert_eq!(s, before, "{name}");
+        }
+    }
+
+    #[test]
+    fn parent_proof_limits_cover_parent_records_bytes_and_global_work_cap() {
+        let mut s = Scene::new();
+        s.push_clip(Rect::new(20., 20., 4., 4.));
+        s.push_quad(Quad::new(Rect::new(20., 20., 4., 4.), Rgba::gray(1.)));
+        s.pop_clip();
+        let limits = wgpu::Limits::default();
+        let budget = ClipFrameBudget::for_device(&limits);
+        let frame =
+            ClipFrame::prepare(&s, &GlyphAtlas::default(), (64, 64), 1., budget, &limits).unwrap();
+        let prove = |parents: &[ClipShape], budget, max_work| {
+            frame.prove_parent_scissors(
+                &s,
+                parents,
+                (64, 64),
+                1.,
+                budget,
+                BoundaryProofLimits { max_work },
+                8,
+            )
+        };
+        let proof = prove(&[proof_parent()], budget, u64::MAX).unwrap();
+        for reduced in [
+            ClipFrameBudget {
+                max_shapes: 0,
+                ..budget
+            },
+            ClipFrameBudget {
+                max_records: 0,
+                ..budget
+            },
+        ] {
+            assert!(matches!(
+                prove(&[proof_parent()], reduced, u64::MAX),
+                Err(RenderError::ClipBudgetExceeded("boundary proof records"))
+            ));
+        }
+        assert!(matches!(
+            prove(
+                &[proof_parent()],
+                ClipFrameBudget {
+                    max_upload_bytes: proof.proof_bytes - 1,
+                    ..budget
+                },
+                u64::MAX
+            ),
+            Err(RenderError::ClipBudgetExceeded("boundary proof bytes"))
+        ));
+        assert!(
+            prove(
+                &[proof_parent()],
+                ClipFrameBudget {
+                    max_upload_bytes: proof.proof_bytes,
+                    ..budget
+                },
+                proof.work
+            )
+            .is_ok()
+        );
+        assert!(matches!(
+            prove(&[proof_parent()], budget, proof.work - 1),
+            Err(RenderError::ClipBudgetExceeded("boundary proof work"))
+        ));
+        // Each parent costs ten precharged units, before witness allocation.
+        // A caller may lower max_work but cannot raise the policy ceiling.
+        let parents = vec![proof_parent(); (MAX_BOUNDARY_PROOF_WORK / 10 + 1) as usize];
+        assert!(matches!(
+            prove(&parents, budget, u64::MAX),
+            Err(RenderError::ClipBudgetExceeded("boundary proof work"))
+        ));
+        assert!(matches!(
+            prove(&[], budget, u64::MAX),
+            Err(RenderError::InvalidClipFrame(
+                "missing parent shapes or prepared state mismatch"
+            ))
+        ));
+        let empty = ClipShape::normalize(
+            Rect::new(0., 0., 0., 0.),
+            CornerRadii::ZERO,
+            Point::new(0., 0.),
+        )
+        .unwrap();
+        assert!(matches!(
+            prove(&[empty], budget, u64::MAX),
+            Err(RenderError::InvalidClipFrame("empty parent shape"))
+        ));
+    }
+
+    #[test]
+    fn parent_proof_refuses_legacy_nonfinite_transform_and_invalid_uv() {
+        let image = ImageQuad {
+            rect: Rect::new(20., 20., 4., 4.),
+            image: ImageId(0),
+            opacity: 1.,
+        };
+        // The public proof API accepts legacy Scenes too. A parent whose safe
+        // interior contains the whole target must not bypass input validation.
+        let parent = ClipShape::normalize(
+            Rect::new(-8., -8., 80., 80.),
+            CornerRadii::uniform(4.),
+            Point::new(0., 0.),
+        )
+        .unwrap();
+        let budget = ClipFrameBudget::for_device(&wgpu::Limits::default());
+        let mut valid = Scene::new();
+        valid.push_transformed_image(tekes_ui_scene::TransformedImageQuad::new(image, 0.));
+        let original_frame = ClipFrame::prepare(
+            &valid,
+            &GlyphAtlas::default(),
+            (64, 64),
+            1.,
+            budget,
+            &wgpu::Limits::default(),
+        )
+        .unwrap();
+        let validated_frame = ClipFrame::prepare_with_validation(
+            &valid,
+            &GlyphAtlas::default(),
+            (64, 64),
+            1.,
+            budget,
+            &wgpu::Limits::default(),
+            true,
+        )
+        .unwrap();
+        assert!(!validated_frame.analytic);
+        assert_eq!(
+            validated_frame.states[0].scissor,
+            original_frame.states[0].scissor
+        );
+        assert_eq!(
+            validated_frame.states[0].head,
+            original_frame.states[0].head
+        );
+        assert_eq!(validated_frame.records.len(), original_frame.records.len());
+        assert!(
+            validated_frame
+                .prove_parent_scissors(
+                    &valid,
+                    &[parent],
+                    (64, 64),
+                    1.,
+                    budget,
+                    BoundaryProofLimits::default(),
+                    8,
+                )
+                .is_ok()
+        );
+        let mut failures = Vec::new();
+        for (rotation, uv, expected) in [
+            (
+                f32::INFINITY,
+                Rect::new(0., 0., 1., 1.),
+                "nonfinite image transform",
+            ),
+            (0., Rect::new(0., 0., -1., 1.), "invalid image UV geometry"),
+        ] {
+            let mut s = Scene::new();
+            let mut transformed = tekes_ui_scene::TransformedImageQuad::new(image, rotation);
+            transformed.uv = uv;
+            s.push_transformed_image(transformed);
+            let result = ClipFrame::prepare_with_validation(
+                &s,
+                &GlyphAtlas::default(),
+                (64, 64),
+                1.,
+                budget,
+                &wgpu::Limits::default(),
+                true,
+            )
+            .and_then(|frame| {
+                frame.prove_parent_scissors(
+                    &s,
+                    &[parent],
+                    (64, 64),
+                    1.,
+                    budget,
+                    BoundaryProofLimits::default(),
+                    8,
+                )
+            });
+            if !matches!(result, Err(RenderError::InvalidClipFrame(message)) if message == expected)
+            {
+                failures.push(expected);
+            }
+        }
+        assert!(
+            failures.is_empty(),
+            "invalid legacy proof inputs were not refused: {failures:?}"
+        );
     }
 }
