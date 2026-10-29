@@ -926,3 +926,22 @@ admission, Window text/selection/candidate rect height16, resize stale rejection
 and final close all passed. Prior CI and native-r17 failures retain their identities.
 No unrelated notice formatting was changed. Physical IME/VoiceOver remain not_run;
 final remote CI and delivery identities are maintained in Issue81.
+
+
+## #81 owned child exit while awaiting a surface
+
+Final CI40885681009/source5d97014 passes the other lanes and reaches the original reading-lifecycle owned Reader SIGKILL, then fails its unchanged10-second Failed-status wait. One local execution of the exact current program passes; this is retained as a local pass, not a CI reproduction. A concrete compatible interleaving exists: the service thread reads frame metadata and waits for its Mach surface, but external SIGKILL does not set the parent's local cancellation flag. The receive and original test both have10-second deadlines, so status failure may be published only at the receive deadline. The CI log lacks the transport stage/status detail; this explanation is source-backed and is not mislabeled as an observed CI stage.
+
+The existing cancellable Mach loop now supports a fallible guard. Both owned V2 and V1 process paths use one process-owned receive entry that checks the already-existing nonblocking Child::try_wait after a real50ms receive timeout. It propagates peer exit immediately through the original failure path. The first receive still accepts an already queued final right from a completed peer, preserving ordinary final-frame/Stop ordering; caller cancellation remains checked first. No surface/frame identity, permission, deadline or fallback changes. Owned child polling stays on the existing background transport thread.
+
+Two directed real-Mach/owned-child tests cover no-surface SIGKILL without caller cancellation and queued final-right delivery after peer exit; the original cancellation/descriptor tests remain. The unchanged original reading-lifecycle Failed predicate and timeout gain only PID/session/observed-status error context. All old failures and passes remain separate; actual targeted post-fix checks are required.
+
+
+The owned-child transport follow-up passed Runtime62 (including both new real-Mach
+regressions), strict/build, original reading-lifecycle, normal services Stop and B2
+default-both. Root also accepted native-r19 on exact program
+`6b871d4faa44f3c49fcea671f3eca84dca748c647a26ef807351d65a7cac5e48`: all
+original pixel/pointer/AX/editor/text/candidate-rect/resize-stale/close assertions
+passed, exit0 without timeout. Evidence remains in verified-owned-child-exit-r37,
+verification-r37 and native-r19. The old CI trace did not expose its internal receive
+stage, so the fixed source-backed interleaving is not claimed as its uniquely proven cause.

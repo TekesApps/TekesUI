@@ -1235,7 +1235,10 @@ pub(super) fn lifecycle_roundtrip() -> Result<serde_json::Value> {
             container(&host, id).status(),
             Some(ProcessStatus::Failed { .. })
         )
-    })?;
+    }).with_context(|| format!(
+        "owned Reader crash status propagation: pid={old_pid} session={old_session:?} observed={:?}",
+        container(&host, id).status()
+    ))?;
     ensure!(
         host.get_mut(id)
             .unwrap()

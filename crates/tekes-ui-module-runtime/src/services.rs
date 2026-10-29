@@ -1709,7 +1709,7 @@ fn connection(
                 .as_ref()
                 .ok_or_else(|| anyhow::anyhow!("unnegotiated frame"))?;
             // Mach IO never holds the public status/request mutex.
-            let right = receiver.receive_owned_cancellable(|| shared.child.is_cancelled())?;
+            let right = receiver.receive_owned_for_process(&shared.child)?;
             let mut state = shared.state.lock().unwrap();
             if state.abort || stopped {
                 drop(state);

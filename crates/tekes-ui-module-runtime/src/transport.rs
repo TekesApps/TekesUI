@@ -79,11 +79,28 @@ impl Receiver {
     }
     #[cfg(test)]
     pub(crate) fn receive_owned(&self) -> Result<OwnedSendRight> {
-        self.receive_owned_cancellable(|| false)
+        self.receive_owned_cancellable(|| Ok(false))
+    }
+    /// Background process transport only. A peer can die after its frame header
+    /// but before sending the surface. Check its owned Child on the existing
+    /// receive timeout polls, without discarding an already queued final right.
+    pub(crate) fn receive_owned_for_process(
+        &self,
+        control: &crate::ProcessControl,
+    ) -> Result<OwnedSendRight> {
+        let mut waited = false;
+        self.receive_owned_cancellable(|| {
+            let cancelled = control.is_cancelled();
+            if waited && !cancelled {
+                ensure!(!control.exited()?, "worker exited before surface transfer");
+            }
+            waited = true;
+            Ok(cancelled)
+        })
     }
     pub(crate) fn receive_owned_cancellable(
         &self,
-        mut cancelled: impl FnMut() -> bool,
+        mut cancelled: impl FnMut() -> Result<bool>,
     ) -> Result<OwnedSendRight> {
         // Extra aligned space includes the kernel trailer. The descriptor is
         // read only after a successful receive and header/type validation.
@@ -91,7 +108,7 @@ impl Receiver {
         let ptr = words.as_mut_ptr().cast::<mach_msg_header_t>();
         let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
         loop {
-            ensure!(!cancelled(), "surface receive cancelled");
+            ensure!(!cancelled()?, "surface receive cancelled");
             unsafe {
                 let result = mach_msg(
                     ptr,
@@ -257,7 +274,7 @@ pub(crate) mod tests {
                 if attempts == 2 {
                     entered.send(()).unwrap();
                 }
-                worker_flag.load(Ordering::Acquire)
+                Ok(worker_flag.load(Ordering::Acquire))
             });
             done.send(result.map(|_| ())).unwrap();
         });
@@ -272,6 +289,68 @@ pub(crate) mod tests {
                 .is_err()
         );
         thread.join().unwrap();
+    }
+    #[test]
+    fn exited_owned_child_interrupts_surface_receive_without_caller_cancel() {
+        use std::sync::mpsc;
+        let endpoint = Receiver::new().unwrap();
+        let control = crate::ProcessControl::new();
+        let child = std::process::Command::new("/bin/sleep")
+            .arg("30")
+            .spawn()
+            .unwrap();
+        let pid = child.id();
+        control.install(child).unwrap();
+        let worker_control = control.clone();
+        let (entered, started) = mpsc::channel();
+        let (done, finished) = mpsc::channel();
+        let thread = std::thread::spawn(move || {
+            entered.send(()).unwrap();
+            let result = endpoint.receive_owned_for_process(&worker_control);
+            worker_control.reap();
+            done.send(result.map(|_| ()).map_err(|error| error.to_string()))
+                .unwrap();
+        });
+        started
+            .recv_timeout(std::time::Duration::from_secs(2))
+            .unwrap();
+        assert!(!control.is_cancelled());
+        assert!(
+            std::process::Command::new("/bin/kill")
+                .args(["-KILL", &pid.to_string()])
+                .status()
+                .unwrap()
+                .success()
+        );
+        let completed = finished.recv_timeout(std::time::Duration::from_secs(2));
+        if completed.is_err() {
+            control.cancel();
+        }
+        thread.join().unwrap();
+        let failure = completed
+            .expect("owned peer exit waited for the ten-second surface deadline")
+            .expect_err("dead peer without a surface was accepted");
+        assert!(
+            failure.contains("worker exited before surface transfer"),
+            "{failure}"
+        );
+    }
+    #[test]
+    fn exited_peer_keeps_an_already_queued_final_surface_right() {
+        let endpoint = Receiver::new().unwrap();
+        let right = endpoint.test_right();
+        let raw = right.name();
+        std::mem::forget(right);
+        send(&endpoint.name, raw).unwrap();
+        let control = crate::ProcessControl::new();
+        let mut child = std::process::Command::new("/usr/bin/true").spawn().unwrap();
+        child.wait().unwrap();
+        control.install(child).unwrap();
+        assert!(control.exited().unwrap());
+        let received = endpoint.receive_owned_for_process(&control).unwrap();
+        assert_eq!(received.name(), endpoint.port);
+        drop(received);
+        control.reap();
     }
     #[test]
     fn rejected_received_descriptor_is_destroyed_with_its_message() {
