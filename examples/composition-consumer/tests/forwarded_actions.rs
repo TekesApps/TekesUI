@@ -229,3 +229,67 @@ fn keyboard_ax_names_and_semantic_order_are_original_single_actions() {
         assert_eq!(a[0].source, ContentActionSource::Accessibility);
     }
 }
+
+#[test]
+fn held_pointer_cancel_availability_and_unmount_preserve_original_phase() {
+    for (id, on_down) in [(WRAPPED_RELEASE, false), (WRAPPED_PRESS, true)] {
+        for interruption in 0..4 {
+            let mut h = setup();
+            let p = h.get(id).unwrap().frame().center();
+            let down = event(&mut h, ContentEvent::PointerDown(p));
+            assert_eq!(down.len(), usize::from(on_down));
+            assert!(action(&h, id).button.state.pressed);
+            assert_eq!(
+                h.get(id)
+                    .unwrap()
+                    .component::<ForwardedAction>()
+                    .unwrap()
+                    .captures,
+                usize::from(on_down)
+            );
+            match interruption {
+                0 => {
+                    assert!(event(&mut h, ContentEvent::Cancel).is_empty());
+                }
+                1 => action_mut(&mut h, id).button.state.disabled = true,
+                2 => action_mut(&mut h, id).button.state.loading = true,
+                _ => {
+                    h.remove(id).unwrap();
+                }
+            }
+            // A Press action already happened on down; interruption must not undo
+            // that action or synthesize another activation on release.
+            assert!(event(&mut h, ContentEvent::PointerUp(p)).is_empty());
+            if interruption != 3 {
+                assert!(!action(&h, id).button.state.pressed);
+                assert_eq!(
+                    h.get(id)
+                        .unwrap()
+                        .component::<ForwardedAction>()
+                        .unwrap()
+                        .captures,
+                    usize::from(on_down)
+                );
+                action_mut(&mut h, id).button.state.disabled = false;
+                action_mut(&mut h, id).button.state.loading = false;
+                assert!(event(&mut h, ContentEvent::PointerUp(p)).is_empty());
+                let next_down = event(&mut h, ContentEvent::PointerDown(p));
+                let next_up = event(&mut h, ContentEvent::PointerUp(p));
+                assert_eq!(next_down.len(), usize::from(on_down));
+                assert_eq!(next_up.len(), usize::from(!on_down));
+                assert_eq!(
+                    h.get(id)
+                        .unwrap()
+                        .component::<ForwardedAction>()
+                        .unwrap()
+                        .captures,
+                    usize::from(on_down) + 1
+                );
+            } else {
+                assert!(h.get(id).is_none());
+                assert!(h.focus_targets().iter().all(|(target, _)| *target != id));
+                assert!(h.semantics().iter().all(|node| node.id != id));
+            }
+        }
+    }
+}
