@@ -822,6 +822,7 @@ pub fn run_script(steps: Vec<(u64, Action)>) {
 struct PublishedStep {
     window: isize,
     action: Action,
+    click_key: Option<crate::AccessibilityKey>,
     complete: std::sync::mpsc::Sender<()>,
 }
 thread_local! {
@@ -830,11 +831,23 @@ thread_local! {
 extern "C" fn await_published_step(ctx: *mut c_void) {
     use objc2::DefinedClass;
     // SAFETY: the opted-in script allocates one tuple for this main-queue call.
-    let (action, complete) =
-        *unsafe { Box::from_raw(ctx.cast::<(Action, std::sync::mpsc::Sender<()>)>()) };
+    let (action, click_key, complete) = *unsafe {
+        Box::from_raw(ctx.cast::<(
+            Action,
+            Option<crate::AccessibilityKey>,
+            std::sync::mpsc::Sender<()>,
+        )>())
+    };
     match &action {
         Action::AXPressKey { key } => eprintln!("SELFTEST AX_WAIT key={key:?}"),
         Action::ExpectText { .. } => eprintln!("SELFTEST TEXT_GEOMETRY_WAIT"),
+        Action::Click { .. } => {
+            assert!(
+                click_key.is_some(),
+                "published click must name its original key"
+            );
+            eprintln!("SELFTEST CLICK_WAIT key={click_key:?}");
+        }
         _ => unreachable!("only native AX or text-query steps use the publication gate"),
     }
     let app = NSApplication::sharedApplication(MainThreadMarker::new().expect("main queue"));
@@ -852,6 +865,7 @@ extern "C" fn await_published_step(ctx: *mut c_void) {
         *pending = Some(PublishedStep {
             window: window.windowNumber(),
             action,
+            click_key,
             complete,
         });
     });
@@ -876,6 +890,13 @@ pub(crate) fn run_published_step(shared: &crate::shared::Shared) {
                         .borrow()
                         .iter()
                         .any(|node| node.key == *key),
+                    Action::Click { .. } => {
+                        shared.accessibility_nodes.borrow().iter().any(|node| {
+                            Some(node.key) == step.click_key
+                                && node.frame.size.width > 0.
+                                && node.frame.size.height > 0.
+                        })
+                    }
                     // This observes the actual Window state. Keep the original
                     // text/marked/firstRect assertions in run_step unchanged;
                     // a wrong text value must still fail there immediately.
@@ -900,6 +921,7 @@ pub(crate) fn run_published_step(shared: &crate::shared::Shared) {
         match &step.action {
             Action::AXPressKey { key } => eprintln!("SELFTEST AX_PUBLISHED key={key:?}"),
             Action::ExpectText { .. } => eprintln!("SELFTEST TEXT_GEOMETRY_PUBLISHED"),
+            Action::Click { .. } => eprintln!("SELFTEST CLICK_PUBLISHED key={:?}", step.click_key),
             _ => unreachable!(),
         }
         run_step(Box::into_raw(Box::new(step.action)).cast::<c_void>());
@@ -911,20 +933,31 @@ pub(crate) fn run_published_step(shared: &crate::shared::Shared) {
 /// Opt-in B2 script: retain the original actions, full AX key and delay deltas,
 /// but await the actual native AX publication before invoking that selector and
 /// a positive current native caret before the original ExpectText queries.
+/// The one explicitly named click awaits its same published native key; the
+/// original mouse events and authoritative Host hit checks are unchanged.
 /// Later steps start only after the original native action executes. The ordinary
 /// run_script contract is unchanged; no timer, polling loop or deadline is added.
-pub fn run_script_published_state(steps: Vec<(u64, Action)>) {
+pub fn run_script_published_state(
+    steps: Vec<(u64, Action)>,
+    published_click: Option<(u64, crate::AccessibilityKey)>,
+) {
     std::thread::spawn(move || {
         let mut last = 0;
         for (t, action) in steps {
             std::thread::sleep(Duration::from_millis(t.saturating_sub(last)));
             last = t;
-            if matches!(
-                action,
-                Action::AXPressKey { .. } | Action::ExpectText { .. }
-            ) {
+            let click_key = published_click
+                .filter(|(at, _)| *at == t)
+                .map(|(_, key)| key);
+            assert!(click_key.is_none() || matches!(action, Action::Click { .. }));
+            if click_key.is_some()
+                || matches!(
+                    action,
+                    Action::AXPressKey { .. } | Action::ExpectText { .. }
+                )
+            {
                 let (complete, completed) = std::sync::mpsc::channel::<()>();
-                let ctx = Box::into_raw(Box::new((action, complete))).cast::<c_void>();
+                let ctx = Box::into_raw(Box::new((action, click_key, complete))).cast::<c_void>();
                 // SAFETY: the main callback consumes this exact boxed tuple.
                 unsafe { dispatch_async_f(&raw const _dispatch_main_q, ctx, await_published_step) };
                 completed

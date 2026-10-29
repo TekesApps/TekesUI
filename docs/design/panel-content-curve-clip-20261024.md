@@ -870,3 +870,59 @@ pixel, pointer count1, native AX/count2, rounded refusal, Window text/selection/
 candidate rect, resize stale input/query rejection and final close all passed.
 This supplements the actual default-both lifecycle integration and retained B1 evidence;
 physical IME and VoiceOver remain not_run. Final remote CI and merge are recorded in #81.
+
+
+## #81 CI compatibility: failed-clock render and ordinary Process Content
+
+The complete CI on source602d444 exposed the original notice consumer assertion that a rejected clock clears samples and schedules no automatic render, plus ordinary Process Content geometry deadlines. These are checked again against current source0c92994 before fixing, rather than relabeling old-head CI as current. The notice regression comes from comparing a current stamp with `last_render_stamp=None` after a failed render. `needs_render` now detects unacknowledged input only relative to an actual successful render stamp; the original clock-error no-retry assertion remains, and a directed check still requires frozen repaint to reject that failed geometry. The rounded-refusal repaint regression remains required.
+
+The ordinary ProcessContainer path imported an acknowledged image but shared the Curve-only `has_pending_curve_host_updates` gate. Legacy frame preparation intentionally retains unrelated business/service events, including the original module's startup notification, so that gate could never become clear without the caller consuming unrelated events. Only explicitly preflighted Curve containers now wait for the separate Curve Host service phase; ordinary geometry still requires its original current viewport/frame, dirty/cancel, visibility/activity, Ready process and input admission checks. The original three-mounted-container consumer must settle before draining/asserting its preserved startup business notifications, proving events are not swallowed to make geometry ready. Existing default/projection/context/surface/overlay/scroll/reading modes and deadlines remain unchanged. All affected original composition, legacy and independent-layer lifecycle checks remain necessary before receiving this compatibility follow-up.
+
+
+### Legacy current-layout frame readiness
+
+The first compatibility batch passes the complete composition consumer and restores ordinary geometry progress. Its original projection test then reaches overlay publication but observes the previous semantic scope; the view-context lane also progresses past its former layout deadline and reports the original Content-process-unavailable error. All remaining original legacy lanes and B2 default-both pass in that batch. These later failures are retained separately from the original current-head deadline failures.
+
+Legacy frame readiness previously compared viewport only. A repaint can enqueue another Layout in the same viewport; immediately clearing repaint_dirty then made the old image count as acknowledged before that new layout completed. The existing FrameResources.expected_seq already records the Layout that must be acknowledged. Ordinary frame admission now also requires image.seq >= expected_seq, preserving the actual current image/viewport contract rather than delaying a test or consuming queued events. The original projection overlay and view-context assertions remain unchanged; their results must determine whether this closes both failures. Content-process boundary errors also retain their original Failed/Closing status as necessary diagnostic context, without fallback or recovery.
+
+
+### Legacy captured repaint and owned context-response progress
+
+Requiring the current Layout frame makes the original projection overlay assertion pass. The same batch reaches the existing mounted-container captured-repaint assertion and finds that Move loses outer capture while the same spatial viewport awaits its new image; the prior deferred-pointer path admitted Curve only. It now admits an already captured legacy owner during that stable viewport/unchanged geometry/no cancellation phase, reusing the exact original session/view/target-mount/capture-serial queue and its delivery validation. Move/Drag retain outer capture only while the original child capture remains; Up and queue cancellation release it. New hit admission still waits for the current frame, and real geometry changes cannot enter this continuation path.
+
+The view-context lane's retained failure status identifies `component output queue full`. Legacy prepare never consumed its own queued SetViewContext responses; the restricted Curve frame receiver did. Both now use one exact-request consumer of those owned context replies. Business/startup notifications remain caller-owned, and errors propagate. This is normal existing response ownership, not a drain-all fallback. Original default, view-context, projection and other legacy assertions/timeouts are unchanged, and the full B2/default-both current-input regression remains required.
+
+
+### Original stable input owner versus new semantic publication
+
+The original mounted-container contract continues from captured Move/Up directly to Commit and an immediate native bridge query, with no asynchronous settle inserted. Source review before compiling r34 therefore rejects extending that stable legacy path into the Curve-only queue: it would preserve a capture flag but still violate the subsequent original synchronous query assertion. That working candidate is superseded without a runtime pass claim.
+
+The current Layout sequence check belongs to the existing legacy semantic-publication gate, not the original same-viewport input-owner geometry gate. Legacy geometry readiness returns to its original current-viewport contract; semantic_ready additionally requires the actual expected Layout image before exposing a changed semantic scope. Existing Curve geometry/admission/queued pointer behavior is restored byte-for-byte. The exact owned SetViewContext response consumer remains in both original prepare paths, resolving the observed response-queue accumulation without swallowing business events. Original tests/deadlines remain unchanged; actual projection/default/view-context and full affected lanes decide acceptance.
+
+
+## #81 original editor-click publication readiness
+
+Native-r17 on exact895bd689 reaches the real button count1 and AX count2, but the later editor Down and Up are both explicitly refused with parent focusedNone; TextCommit is also unconsumed. Subsequent exact frame13 publication completes while Window remains focusNone/textNone. The thread sample shows AppKit event waiting, not evidence of a blocked rendering handler. The later positive-caret test step therefore waits for an editor intent that was never admitted; this is not an observed loss of an already acquired parent editor. The45-second timeout and all raw failure/sample evidence are retained.
+
+Only B2's existing opt-in script now names its original editor-click timestamp and original native key as a publication prerequisite. It waits for that key in the actual Window publication, then sends the unchanged original native Click at the unchanged coordinates through the original Host hit/lease path. The published bounding frame is not permission and does not replace either Host's hit test. The rounded-corner negative remains an ungated refused click. Additional B2 checks require the real editor Down to capture/acquire parent200 and the real TextCommit to be consumed by that parent, so a refusal fails at its source rather than silently waiting for text. No timer, retry, synthetic editor, focus setter, deadline change or production input-policy change is added.
+
+The original no-window shared driver now starts a real clock grant at the editor point, requires Down/Up refusal with no parent focus/native text, settles the actual pipeline, requires the same original Message key to return, and executes its original admitted click/focus/text/IME path. Actual native full text/resize/stale/close remains required. The unrelated pre-existing notice formatting candidate is withdrawn from this batch; only relevant evidence prose is to be synchronized.
+
+
+## Final compatibility and native acceptance
+
+The complete original composition consumer passed 610 tests (19 ignored, not passes),
+with Controls344/Panel22, Runtime60, affected strict/build, services and all ten
+legacy Process Content modes passing. The B2 default-both actual GPU/IPC sequence
+retains its main-chain and both lifecycle assertions. These results are recorded
+in verified-ci-compatibility-r35 and verified-editor-readiness-r36 with exact inputs.
+
+The coordinator ran native-r18 on program
+`3ce04175d0eb4fccfce5e0891f59ee4fea7d86a054e3ccfeb5efcd8540604148`
+against manifest `f062752516e95eb9f4f4f2985b743c70ef8d7fab793d0e07224a63d999fdbe40`.
+It exited0 without timeout: original clipped pixels, pointer count1, real AX count2,
+rounded refusal, same-key editor publication followed by real Down and TextCommit
+admission, Window text/selection/candidate rect height16, resize stale rejection
+and final close all passed. Prior CI and native-r17 failures retain their identities.
+No unrelated notice formatting was changed. Physical IME/VoiceOver remain not_run;
+final remote CI and delivery identities are maintained in Issue81.

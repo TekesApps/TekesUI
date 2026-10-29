@@ -111,6 +111,20 @@ struct FrameResources {
     retired_curve_query: Option<u64>,
     geometry_cancel_confirmed: bool,
 }
+impl FrameResources {
+    // Consume only this owner's SetViewContext replies. Caller-owned business
+    // events stay queued; errors propagate through the original prepare path.
+    fn consume_context_responses(&mut self, process: &ProcessComponent) -> Result<bool> {
+        while let Some(request) = self.pending_responses.front().copied() {
+            let Some(result) = process.take_response(request) else {
+                return Ok(false);
+            };
+            result?;
+            self.pending_responses.pop_front();
+        }
+        Ok(true)
+    }
+}
 struct PendingCurveFrame {
     image: ViewImage,
     stamp: crate::component::curve::FrameStamp,
@@ -186,12 +200,8 @@ impl ProcessContainerFrameHandle {
             resources.pending_curve_publication = None;
             return Ok(false);
         }
-        while let Some(request) = resources.pending_responses.front().copied() {
-            let Some(result) = process.take_response(request) else {
-                return Ok(false);
-            };
-            result?;
-            resources.pending_responses.pop_front();
+        if !resources.consume_context_responses(&process)? {
+            return Ok(false);
         }
         while let Some((request, transaction, grant_serial)) =
             resources.pending_revokes.front().copied()
@@ -1208,10 +1218,14 @@ impl ProcessContainer {
         });
         !self.geometry_dirty
             && !self.repaint_dirty
-            && !self
-                .process
-                .as_ref()
-                .is_some_and(|process| process.has_pending_curve_host_updates())
+            // Curve publication waits for its separate Host service phase.
+            // Legacy prepare does not consume unrelated service notifications,
+            // so those must not prevent its acknowledged frame from admission.
+            && (self.curve_preflight == CurvePreflight::Unrequested
+                || !self
+                    .process
+                    .as_ref()
+                    .is_some_and(|process| process.has_pending_curve_host_updates()))
             && self.visible
             && self.enabled
             && self.window_active
@@ -1291,6 +1305,14 @@ impl ProcessContainer {
             self.semantic_projection.revoke();
             self.error = Some(message.clone());
             anyhow::bail!("{message}");
+        }
+        if !self
+            .frame_resources
+            .lock()
+            .unwrap()
+            .consume_context_responses(process)?
+        {
+            return Ok(false);
         }
         let invalidated = process.take_view_invalidated();
         if invalidated {
@@ -1653,6 +1675,14 @@ impl ProcessContainer {
         self.input_ready()
             && self.content_accessibility_enabled()
             && !self.semantic_projection.needs_refresh()
+            // Same-viewport legacy repaint preserves the original input owner,
+            // but a changed semantic scope must wait for its actual Layout frame.
+            && (self.curve_preflight != CurvePreflight::Unrequested || {
+                let resources = self.frame_resources.lock().unwrap();
+                resources.image.as_ref().is_some_and(|image| {
+                    image.metadata().seq >= resources.expected_seq
+                })
+            })
     }
     fn content_scroll_enabled(&self) -> bool {
         self.content_capabilities().is_some_and(|c| c.scroll)

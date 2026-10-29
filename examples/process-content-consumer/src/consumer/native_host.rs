@@ -522,6 +522,7 @@ struct B2SelfTest {
     started: bool,
     editor_setup: B2EditorSetup,
     button_center: Option<(f64, f64)>,
+    editor_center: Option<(f64, f64)>,
     button_key: Option<native::AccessibilityKey>,
     rounded_corner: Option<(f64, f64)>,
     old_stamp: Option<tekes_ui_module_runtime::component::curve::QueryStamp>,
@@ -989,50 +990,57 @@ impl Host {
         use native::selftest::Action;
         let (button_x, button_y) = center(button);
         let (editor_x, editor_y) = center(editor);
+        self.b2.editor_center = Some((editor_x, editor_y));
         eprintln!("PROCESS_NATIVE_B2_ASSERTIONS_STARTED frame_stamp={stamp:?} corner={corner:?}");
-        native::selftest::run_script_published_state(vec![
-            (200, Action::Click {
-                x: button_x,
-                y: button_y,
-            }),
-            (700, Action::AXPressKey { key: button.key }),
-            (
-                1_100,
-                Action::Click {
-                    x: corner.0,
-                    y: corner.1,
-                },
-            ),
-            (
-                1_500,
-                Action::Click {
-                    x: editor_x,
-                    y: editor_y,
-                },
-            ),
-            (
-                1_900,
-                Action::TextRange {
-                    text: "B2 text".into(),
-                    replacement: Some(0..original_text_len),
-                },
-            ),
-            (
-                2_300,
-                Action::ExpectText {
-                    text: "B2 text".into(),
-                    marked: false,
-                },
-            ),
-            (
-                2_800,
-                Action::Resize {
-                    w: 1000. + f64::from(2. * self.curve_outside_inset),
-                    h: 530. + f64::from(2. * self.curve_outside_inset),
-                },
-            ),
-            (10_000, Action::Close),
-        ]);
+        native::selftest::run_script_published_state(
+            vec![
+                (
+                    200,
+                    Action::Click {
+                        x: button_x,
+                        y: button_y,
+                    },
+                ),
+                (700, Action::AXPressKey { key: button.key }),
+                (
+                    1_100,
+                    Action::Click {
+                        x: corner.0,
+                        y: corner.1,
+                    },
+                ),
+                (
+                    1_500,
+                    Action::Click {
+                        x: editor_x,
+                        y: editor_y,
+                    },
+                ),
+                (
+                    1_900,
+                    Action::TextRange {
+                        text: "B2 text".into(),
+                        replacement: Some(0..original_text_len),
+                    },
+                ),
+                (
+                    2_300,
+                    Action::ExpectText {
+                        text: "B2 text".into(),
+                        marked: false,
+                    },
+                ),
+                (
+                    2_800,
+                    Action::Resize {
+                        w: 1000. + f64::from(2. * self.curve_outside_inset),
+                        h: 530. + f64::from(2. * self.curve_outside_inset),
+                    },
+                ),
+                (10_000, Action::Close),
+            ],
+            Some((1_500, editor.key)),
+        );
         Ok(())
     }
     fn progress_b2(
@@ -1751,6 +1759,37 @@ impl Host {
                     }) = &other
                         && self
                             .b2
+                            .editor_center
+                            .is_some_and(|p| near(p, position.x, position.y))
+                    {
+                        ensure!(
+                            response
+                                .as_ref()
+                                .is_some_and(|r| r.consumed && r.capture_pointer)
+                                && self.tree.as_ref().unwrap().focused() == Some(ComponentId(200)),
+                            "original B2 editor Down did not acquire its actual parent owner"
+                        );
+                        eprintln!("PROCESS_NATIVE_B2_EDITOR_DOWN_ASSERT passed");
+                    }
+                    if matches!(&other, native::Event::TextCommit { .. }) {
+                        ensure!(
+                            response.as_ref().is_some_and(|r| r.consumed)
+                                && self.tree.as_ref().unwrap().focused() == Some(ComponentId(200)),
+                            "original B2 TextCommit was not admitted to its editor owner"
+                        );
+                        eprintln!("PROCESS_NATIVE_B2_TEXT_COMMIT_ASSERT passed");
+                    }
+                    if let native::Event::Mouse(native::MouseEvent {
+                        kind:
+                            native::MouseEventKind::Down {
+                                button: native::MouseButton::Left,
+                                ..
+                            },
+                        position,
+                        ..
+                    }) = &other
+                        && self
+                            .b2
                             .button_center
                             .is_some_and(|p| near(p, position.x, position.y))
                     {
@@ -2284,6 +2323,41 @@ pub(super) fn independent_layer_roundtrip() -> Result<serde_json::Value> {
     let editor_point = Point::new(
         (editor_node.frame.origin.x + editor_node.frame.size.width / 2.) as f32,
         (editor_node.frame.origin.y + editor_node.frame.size.height / 2.) as f32,
+    );
+    let editor_key = editor_node.key;
+    context.elapsed_nanos += 33_333_333;
+    text.context = context.clone();
+    ensure!(
+        sync_process_contexts(&mut host, &ids, &context, true)? == 3,
+        "editor click witness did not start the current clock publication"
+    );
+    host.render(
+        &mut Scene::new(),
+        &mut text,
+        frame,
+        frame,
+        tekes_ui_module_runtime::view_context_palette(&context)?,
+    )?;
+    let unready_down = host.event(&ContentEvent::PointerDown(editor_point));
+    let unready_up = host.event(&ContentEvent::PointerUp(editor_point));
+    ensure!(
+        !unready_down.consumed
+            && !unready_down.capture_pointer
+            && !unready_up.consumed
+            && host.focused().is_none()
+            && tekes_ui_module_runtime::content_text_input_state(&host).is_none(),
+        "unpublished editor point acquired parent focus or native text authority"
+    );
+    let _ = settled_scene(&mut host, &mut renderer, &mut text, &ids, frame, &context)?;
+    let recovered_editor =
+        native::content_accessibility::ContentAccessibilitySnapshot::from_host(&host)
+            .context("current editor target publication missing")?;
+    ensure!(
+        recovered_editor
+            .nodes()
+            .iter()
+            .any(|node| node.key == editor_key && node.label == "Message"),
+        "original editor native key did not recover before its click"
     );
     let down = host.event(&ContentEvent::PointerDown(editor_point));
     ensure!(
@@ -3123,7 +3197,7 @@ pub(super) fn independent_layer_roundtrip() -> Result<serde_json::Value> {
         "settled_parent_host_original_targets_and_coordinates":true,
         "actual_parent_fast_pointer_and_ax_exact_activation":true,"no_duplicate_parent_business_action":true,
         "actual_parent_text_and_cross_owner_ime_barrier":true,"queued_up_revoked_on_real_resize":true,
-        "up_after_reraster_grant_before_publication":true,"same_spatial_capture_survives_sibling_context_update":true,"clock_ticks_respect_frame_backpressure_and_catch_up":true,"same_native_ax_key_withdraws_then_recovers_before_press":true,"refused_corner_then_shared_redraw_preserves_freshness":true,"native_logical_text_and_ime_binding_survive_clock_publication":true,"queued_native_text_commit_preserves_original_editor":true,"current_native_caret_recovers_after_commit_and_caret_blink":true,"lifecycle_checks":lifecycle_checks,
+        "up_after_reraster_grant_before_publication":true,"same_spatial_capture_survives_sibling_context_update":true,"clock_ticks_respect_frame_backpressure_and_catch_up":true,"same_native_ax_key_withdraws_then_recovers_before_press":true,"refused_corner_then_shared_redraw_preserves_freshness":true,"native_logical_text_and_ime_binding_survive_clock_publication":true,"queued_native_text_commit_preserves_original_editor":true,"current_native_caret_recovers_after_commit_and_caret_blink":true,"unpublished_editor_click_refused_then_same_key_focus_admitted":true,"lifecycle_checks":lifecycle_checks,
         "native_window":"not_opened","physical_ime":"not_run","voiceover":"not_run"}),
     )
 }

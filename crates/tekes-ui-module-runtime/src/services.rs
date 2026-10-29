@@ -1134,7 +1134,11 @@ impl ProcessComponent {
         let deadline = std::time::Instant::now() + timeout;
         let mut state = shared.state.lock().unwrap();
         loop {
-            ensure!(!state.abort, "Content process unavailable");
+            ensure!(
+                !state.abort,
+                "Content process unavailable: {:?}",
+                state.status
+            );
             if let Some(index) = state.incoming.iter().position(|packet| {
                 matches!(packet.output, Output::CurveReplyV1 { request, .. } if request == id)
             }) {
@@ -1211,7 +1215,11 @@ impl ProcessComponent {
         let deadline = std::time::Instant::now() + timeout;
         let mut state = shared.state.lock().unwrap();
         loop {
-            ensure!(!state.abort, "Content process unavailable");
+            ensure!(
+                !state.abort,
+                "Content process unavailable: {:?}",
+                state.status
+            );
             if let Some(index) = state.incoming.iter().position(|p| match &p.output {
                 Output::Response { request, .. } => *request == id,
                 Output::CurveReplyV1 { request, .. } => *request == id,

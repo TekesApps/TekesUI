@@ -138,6 +138,15 @@ fn clock_error_all_owners_zero_advance_and_next_valid_baseline() {
     assert_eq!(remaining(&h, T2), 991);
     assert!(!h.animation_frame_requested());
     assert!(!h.needs_render());
+    // No automatic retry after a bad clock does not authorize frozen geometry.
+    let mut stale = Scene::new();
+    assert_eq!(
+        h.repaint_current(&mut stale, &mut text, frame(), frame(), Theme::LIGHT.into()),
+        Err(CompositionError::CurveGeometry(
+            tekes_ui_scene::ClipError::StaleShapeKey
+        ))
+    );
+    assert!(stale.primitives().is_empty());
     paint(&mut h, &mut text, 30_000).unwrap();
     assert_eq!(remaining(&h, T), 1000);
     assert_eq!(remaining(&h, T2), 991);

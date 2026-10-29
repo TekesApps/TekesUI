@@ -1184,6 +1184,22 @@ mod consumer {
             );
             std::thread::sleep(Duration::from_millis(5));
         }
+        // Original startup business events must remain caller-visible without
+        // blocking legacy frame/layout admission. Do not drain them to make the
+        // wait above pass; observe the same queued event only after it succeeds.
+        for id in ids {
+            let events = host
+                .get(id)
+                .unwrap()
+                .component::<ProcessContainer>()
+                .unwrap()
+                .drain_events();
+            ensure!(
+                events.iter().any(|packet| matches!(&packet.output,
+                Output::Event(ComponentEvent::Message { topic, .. }) if topic == "started")),
+                "legacy frame preparation consumed the startup business event"
+            );
+        }
         host.set_action_events(true);
         let mut result = Vec::new();
         for (i, id) in ids.iter().enumerate() {
@@ -2045,7 +2061,7 @@ mod consumer {
         }
         renderer.collect_retired_images();
         Ok(
-            serde_json::json!({"result":"THREE_MOUNTED_CONTAINERS_OK","runs":result,"hidden_bridge_rejected":true,"hide_show_text_preserved":true,"unmounted":true,"geometry_composition_preserved":true,"ancestor_clip_preserved":true,"backing_scale_logical_geometry":true,"native_parent_query":true,"native_no_owner_entry_parent_and_child":true,"native_submit_once":true,"candidate_enter_no_submit":true,"native_tab_outer_boundary":true,"deferred_native_tab_inner_and_outer":true,"deferred_result_once":true,"transport_exhaustion_cancels_original_key":true,"pending_query_owner_retained":true,"rejected_edit_finishes_old_key":true,"queued_text_order_preserved":true,"stale_queued_lease_rejected":true,"scope":"original parent ContentHost automatically routes pointer/capture, focus, control keys and text callbacks across three ProcessContainers; no native window/glyph/AX/scroll or physical IME acceptance"}),
+            serde_json::json!({"result":"THREE_MOUNTED_CONTAINERS_OK","runs":result,"pending_service_event_kept_without_blocking_legacy_geometry":true,"hidden_bridge_rejected":true,"hide_show_text_preserved":true,"unmounted":true,"geometry_composition_preserved":true,"ancestor_clip_preserved":true,"backing_scale_logical_geometry":true,"native_parent_query":true,"native_no_owner_entry_parent_and_child":true,"native_submit_once":true,"candidate_enter_no_submit":true,"native_tab_outer_boundary":true,"deferred_native_tab_inner_and_outer":true,"deferred_result_once":true,"transport_exhaustion_cancels_original_key":true,"pending_query_owner_retained":true,"rejected_edit_finishes_old_key":true,"queued_text_order_preserved":true,"stale_queued_lease_rejected":true,"scope":"original parent ContentHost automatically routes pointer/capture, focus, control keys and text callbacks across three ProcessContainers; no native window/glyph/AX/scroll or physical IME acceptance"}),
         )
     }
     fn toolbar_focus_roundtrip() -> Result<serde_json::Value> {

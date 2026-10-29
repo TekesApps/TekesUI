@@ -1911,7 +1911,9 @@ impl ContentHost {
             // Even refused input retires the frozen geometry's input lease.
             // The next frame must acknowledge that generation before repaint.
             || self.reveal_clock.pending
-            || self.reveal_clock.stamp().ok() != self.last_render_stamp
+            || self
+                .last_render_stamp
+                .is_some_and(|last| self.reveal_clock.stamp().ok() != Some(last))
             || self.help.needs_frame()
             || self.popover_animation_pending()
             || self
