@@ -54,3 +54,25 @@ retirement. The explicitly ignored `separator_content_gpu` target is the origina
 `TEKESUI_SEPARATOR_GPU_OUT` evidence directory and the repository's coordinated
 build lane. It opens no window. Source tests do not claim physical IME or
 VoiceOver acceptance. AgentKit pin adoption remains #54's separate delivery step.
+
+
+## Single-line readonly labels (#31)
+
+The public API and the minimal mixed-language fixture are available at immutable
+revision [`b6e4755b6cbd90c94e896c1f93f9afc96116202f`](https://github.com/TekesApps/TekesUI/tree/b6e4755b6cbd90c94e896c1f93f9afc96116202f).
+See [`src/label_content.rs`](src/label_content.rs): original `TextContent`, a text
+`Button`, and a `Button` holding a decorative original TextContent slot share
+`Content::with_label_layout(LabelOptions::single_line(LabelOverflow::TailEllipsis))`.
+The custom action supplies its complete accessible name. Source text stays intact.
+This opt-in does not alter the default natural multiline path or editable text.
+
+The existing native example selects this fixture with `native label`. Public API
+checks are `label_content` and `label_layout_baseline`; the current real Metal
+consumer check is `label_content_gpu`. Use the repository's coordinated build
+lane, Rust 1.95.0 and locked/offline dependencies. The GPU check opens no window;
+`TEKESUI_LABEL_CONTENT_GPU_OUT` selects the coordinated SSD evidence directory.
+It records actual mixed-font runs, measured-layout identity, retained reflow,
+Theme ink and visible glyph pixels. Independent native CTLine truncation and
+Unicode cluster oracles remain in the text package's existing label tests.
+See [the label contract and evidence](../../docs/design/label-content-integration-20261021.md)
+for the exact verification identity and boundaries.
