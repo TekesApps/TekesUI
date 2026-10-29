@@ -37,3 +37,65 @@ Before copies, failed checks, regression logs, pictures, scoped source snapshots
 Final root native receipt:26 actual active external U2790B@2 checkpoints on identity22caa4f3b5a3a52ac7d9c5e18db575abf70950ca05c28ea52f914293dc39ebf0. Two original actions end with4activations each after keyboard, coordinate pointer and AX paths; disabled/loading/outside-hit attempts do not increment.6width/type-scale contexts preserve full names and one action owner per Button. A separate public-API replay matches104actual node frames exactly, including native fallback-font rounding (1.5x row is25pt, not a forced25.5pt). Source-replay logs and native-acceptance.json remain separate from the independent CoreText/GPU pixel oracles. Tool-provided native screenshots are JPEG, renamed to .jpg without re-encoding; GPU screenshots remain lossless PNG. The native focus ring was visually reviewed as continuous at narrow width. Gold7 scoped results are in gold7-label-delta.json; full-page and matched ClientKit visuals remain pending. VoiceOver was confirmed off; no hearing claim is made. The app exited and its23MB owned bundle and4.8MiB replay package outputs were cleaned; source/evidence/shared libraries and older pending native rounds remain.
 
 The isolated545 candidate has now passed exact-archive sender clean-extract replay:50text/388controls/176consumer tests,432coreGPU cases/864frames,strictClippy and native example build. All476source files and locks remained unchanged,all local dependencies resolved inside the extract,and owned outputs were cleaned. Its21path delta and explicit scope/identity boundaries are documented in design/reviews/label-portable-candidate-20261021-attempt2/HANDOFF.md. This candidate and evidence were sent to the authorized Rust AgentKit thread for independent actual integration/native review without changing its current freeze.
+
+
+## Current unified Button public-consumer acceptance — 2026-10-29
+
+The original opt-in API and minimal consumer are publicly available at immutable
+revision [`b6e4755b6cbd90c94e896c1f93f9afc96116202f`](https://github.com/TekesApps/TekesUI/tree/b6e4755b6cbd90c94e896c1f93f9afc96116202f).
+The current original control is `composition::Button`. Apply
+`Content::with_label_layout(LabelOptions::single_line(LabelOverflow::TailEllipsis))`
+to TextContent or a text Button. For a custom Button (the former CompoundButton
+use case), apply the policy to its original decorative TextContent slot and give
+the Button the complete accessible name. The existing
+[`label_content::build`](https://github.com/TekesApps/TekesUI/blob/b6e4755b6cbd90c94e896c1f93f9afc96116202f/examples/composition-consumer/src/label_content.rs)
+is a minimal public consumer with all three forms and the full mixed-language
+source. The original native example selects it with `native label`.
+
+This finite batch adds no production API, font engine, label algorithm, token,
+host adapter or product component. Existing font runs mean CoreText's real
+font-fallback/ShapedRun output for the original string and design role. It does
+not add attributed-string authoring or rich-text editing. The historical
+producer/portable/native identities above remain unchanged. Their former
+receiver scheduling does not add downstream product adoption to the five
+original public-library acceptance criteria below.
+
+| Original #31 acceptance | Current evidence |
+| --- | --- |
+| Independent public consumer, narrow/wide, long mixed-language/grapheme source, three text scales, max-lines1 | Existing public fixture and 144 component combinations; new real-Metal consumer retains the same mounts across four Themes, three type scales, two backing scales and narrow/wide/narrow/wide reflow:96 frame contexts,288 original label presentations |
+| Tail preserves clusters, deterministic tiny fallback, same measured/painted geometry | Four original text `label_layout` tests passed, including2880 combinations, hard-line ellipsis and empty-token tiny fallback; real component paint borrows the exact measured Paragraph. The unchanged core's independent native CTLine/GPU oracle retains its original identity |
+| Original Button hit/AX frame, focus ring, disabled/hover/press and full names | Eight current component tests passed. The added direct/custom Button case checks original pointer hover/down/up, one activation, original frame/mount, original focus-ring primitive and disabled/loading rejection. GPU checks exact Group/Text/Button/Button identities and parents, two focus owners, full leaf names and no extra decorative AX node |
+| Default multiline/auto-height and Content/custom Button compatibility | Both `label_layout_baseline` tests passed: untouched default labels grow at narrow width and keep source/AX; the opt-in fixture covers direct and original custom-slot composition |
+| Fixed public revision, documentation and minimal consumer | Public immutable base and fixture links above; composition-consumer README documents API/test/native entries; source remains complete, with no consumer truncation or character-width guessing |
+
+Actual validation used main `c04225712127ab16cfe3a324e1742cb65054f642` plus
+the two received test paths and the coordinator's single source-digest refresh
+in `design/remediation/composition-audit.json`. Eight label component tests, two
+default/public-core consumer tests, four original text contracts,96 actual Metal
+contexts and final scoped strict Clippy passed. The GPU produced192 original
+PNG captures (component and glyph-only) and288 actual frames including blank
+background comparisons. Each actual label used3–13 font runs; glyph-only images
+contained2389–82542 non-background pixels. These are observed data, not API or
+performance thresholds. It verifies original source/AX, one visible line,
+measured-object identity, actual Theme ink and visible text independently of
+Button chrome; it is not a new independent native-truncation oracle.
+
+The first GPU attempt failed before completing a rendered context because its
+test counted three leaf nodes but omitted the original Stack's empty-name Group.
+The correction asserts the exact four IDs, roles, parents and names; it changes
+no production semantics. That failure and the first strict result are preserved
+in `main-rust01`; only affected GPU/strict checks were rerun in `main-rust02`.
+All executed commands preserved their source manifests. The prior passing CPU
+inputs are byte-identical after this GPU-test-only correction.
+
+Exact programs, source manifests, raw command logs, images, receipt and repair
+are on SSD under
+`artifacts/issue-31/mainb6e0d16-label-consumer-20261029-01/`.
+The existing main-only runner, build lock/environment, registered review cache,
+GPU occupancy lock and Rust1.95.0 locked/offline commands were used. The
+coordinator refreshes only the existing label_content test's source digest in
+composition-audit; the original audit claims and anchors stay unchanged.
+No fresh native window, physical IME, VoiceOver, product-page comparison or
+performance run occurred. Historical native evidence keeps its original program
+identity. Necessary CI, remote delivery and final Issue acceptance belong to the
+coordinator; this document does not claim those later actions completed.

@@ -371,3 +371,81 @@ fn toolbar_defaults_to_single_line_for_original_text_and_button_at_narrow_widths
         }
     }
 }
+
+#[test]
+fn opt_in_label_keeps_original_pointer_chrome_frame_and_focus_ring() {
+    for kind in [1, 2] {
+        let id = ComponentId(1);
+        let mut host = ContentHost::new(node(kind)).unwrap();
+        let mut text = Text::new(1.5);
+        render(&mut host, &mut text, 140., Theme::LIGHT).unwrap();
+        let frame = host.get(id).unwrap().frame();
+        let mount = host.semantic_mount(id).unwrap();
+        let point = frame.center();
+        host.event(&ContentEvent::PointerMove(point));
+        assert!(
+            host.get(id)
+                .unwrap()
+                .component::<Button>()
+                .unwrap()
+                .button
+                .state
+                .hovered
+        );
+        assert!(!host.event(&ContentEvent::PointerDown(point)).activated);
+        assert!(
+            host.get(id)
+                .unwrap()
+                .component::<Button>()
+                .unwrap()
+                .button
+                .state
+                .pressed
+        );
+        assert!(host.event(&ContentEvent::PointerUp(point)).activated);
+        assert_eq!(
+            host.get(id)
+                .unwrap()
+                .component::<Button>()
+                .unwrap()
+                .activations,
+            1
+        );
+        host.focus(Some(id), true);
+        let mut scene = Scene::new();
+        let bounds = Rect::new(10., 20., 140., 1.);
+        host.render(
+            &mut scene,
+            &mut text,
+            bounds,
+            Rect::new(0., 0., 1000., 1000.),
+            Theme::LIGHT.into(),
+        )
+        .unwrap();
+        let bleed = proposal::metric("stroke", "c-focus-width").unwrap()
+            + proposal::metric("spacing", "c-focus-offset").unwrap();
+        assert!(scene.primitives().iter().any(|p| matches!(p,
+            tekes_ui_scene::Primitive::Quad(q) if q.rect == frame.inset(-bleed)
+                && q.fill.a == 0. && q.border_width > 0.)));
+        let semantics = host.semantics();
+        assert_eq!(semantics.len(), 1);
+        assert_eq!(semantics[0].frame, frame);
+        assert_eq!(semantics[0].semantics.name, ORIGINAL);
+        assert_eq!(host.semantic_mount(id).unwrap(), mount);
+        for loading in [false, true] {
+            let button = host.get_mut(id).unwrap().component_mut::<Button>().unwrap();
+            button.button.state.disabled = !loading;
+            button.button.state.loading = loading;
+            assert!(!host.event(&ContentEvent::PointerDown(point)).activated);
+            assert!(!host.event(&ContentEvent::PointerUp(point)).activated);
+            assert_eq!(
+                host.get(id)
+                    .unwrap()
+                    .component::<Button>()
+                    .unwrap()
+                    .activations,
+                1
+            );
+        }
+    }
+}

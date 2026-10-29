@@ -1983,7 +1983,7 @@
     "examples/composition-consumer/tests/editor_navigation.rs": "791d2d4aba67fe610a084868b3f6fe6fbe7fb29445caf6ac059d164008e8bada",
     "examples/composition-consumer/tests/forwarded_actions.rs": "9e7d034242af5a9e5c1a8987d7b9d23f056be790630184d2c4af5dc89179bd9f",
     "examples/composition-consumer/tests/item_navigation.rs": "47d15b84bb40029b8421d0f8b287f9538f6a2dd1ecdcb0a42597b40186d6d43e",
-    "examples/composition-consumer/tests/label_content.rs": "785621da0e70c34f31e398433e283b2ca3fe11b7157a630491e4ccb602bba5aa",
+    "examples/composition-consumer/tests/label_content.rs": "51028aa25aeaf31c4c82cf15a1d73ffe1634ee726f290c791f57255b4a86c304",
     "examples/composition-consumer/tests/layout_text_services.rs": "c44adec0e0bbd221867b89417c6ae167c0bd88d80a4fef8011f8f62a21729e65",
     "examples/composition-consumer/tests/menu_action_records.rs": "488eb575f225f8042e8ae0d42468d877f6b469ef4f9ba23bda10ae97f5acd70f",
     "examples/composition-consumer/tests/menu_content_tokens.rs": "13eaa02789da81e72b13c08323e2f4af5b295f76d632e663054fd07926583f89",
