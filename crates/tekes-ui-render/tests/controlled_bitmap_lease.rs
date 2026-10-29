@@ -301,6 +301,46 @@ fn proof_entry_resource_and_work_refusals_preserve_atlas_retirement_and_output()
     atlas.mark_all_dirty();
     let atlas_before = atlas.stats();
     let page_before = atlas.page_pixels(0).unwrap().to_vec();
+    // Legacy Scenes reach the public proof API without analytic clip scopes.
+    // Invalid transform/UV inputs must fail before atlas sync or retirement,
+    // even though this parent's safe interior contains the complete target.
+    for (rotation, uv, expected) in [
+        (
+            f32::INFINITY,
+            Rect::new(0., 0., 1., 1.),
+            "nonfinite image transform",
+        ),
+        (0., Rect::new(0., 0., -1., 1.), "invalid image UV geometry"),
+    ] {
+        let mut invalid = Scene::new();
+        let mut transformed = tekes_ui_scene::TransformedImageQuad::new(
+            ImageQuad {
+                rect: Rect::new(0., 0., 4., 4.),
+                image: lease.id(),
+                opacity: 1.,
+            },
+            rotation,
+        );
+        transformed.uv = uv;
+        invalid.push_transformed_image(transformed);
+        let error = renderer
+            .render_to_rgba8_with_parent_boundary_proof(
+                &invalid,
+                &mut atlas,
+                (4, 4),
+                1.,
+                Rgba::new(0., 0., 0., 0.),
+                parents.clone(),
+                BoundaryProofLimits::default(),
+            )
+            .unwrap_err();
+        assert_eq!(error, RenderError::InvalidClipFrame(expected));
+        assert_eq!(renderer.image_count(), 2);
+        assert_eq!(atlas.stats(), atlas_before);
+        assert_eq!(atlas.page_pixels(0).unwrap(), page_before);
+        assert_eq!(output.rgba8(), output_before);
+        assert_eq!(scene, scene_before);
+    }
     let refused = renderer
         .render_to_rgba8_with_parent_boundary_proof(
             &scene,

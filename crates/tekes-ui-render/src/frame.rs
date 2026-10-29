@@ -137,14 +137,26 @@ impl Pipelines {
         boundary: Option<(&[ClipShape], BoundaryProofLimits, u64)>,
     ) -> Result<Option<BoundaryProofSummary>, RenderError> {
         self.prepared = None;
-        let frame = ClipFrame::prepare(
-            scene,
-            atlas,
-            size,
-            scale,
-            self.clip_budget,
-            &device.limits(),
-        )?;
+        let frame = if boundary.is_some() {
+            ClipFrame::prepare_with_validation(
+                scene,
+                atlas,
+                size,
+                scale,
+                self.clip_budget,
+                &device.limits(),
+                true,
+            )?
+        } else {
+            ClipFrame::prepare(
+                scene,
+                atlas,
+                size,
+                scale,
+                self.clip_budget,
+                &device.limits(),
+            )?
+        };
         if frame.analytic {
             crate::clip::validate_color(clear)?;
         }

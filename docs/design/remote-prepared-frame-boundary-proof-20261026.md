@@ -1,3 +1,54 @@
+# Remaining original finite AC validation (2026-10-29)
+
+The remaining original renderer AC2/3/4 evidence is now matched to the finite
+implementation. A real input-validation gap was reproduced: legacy Scenes without
+analytic clip scopes could pass the prepared-frame proof with a nonfinite image
+rotation or negative UV width. The proof prepare seam now enables the original
+geometry validator for those inputs. Ordinary preparation keeps its existing
+policy; validation does not turn on analytic drawing, alter prepared scissors or
+change shaders. A valid legacy image test compares the unchanged state and still
+passes its proof. No support domain, transport or protocol was added.
+
+Actual CPU evidence comprises 38 distinct clip tests passing across the recorded
+runs: the first complete invocation passed 37 and failed one new test's mismatched
+32/64 target-size assertion; after the fixture alone was corrected, that exact
+test passed. The original red input test, fixture failure, programs and raw logs
+remain preserved. Final Render library/tests strict checking passed. New focused
+tests cover near/partial coincident rounded edges, inner stroke, Shadow and raw
+PushClip under an analytic scope, parent-record/receipt-byte exact limits, CPU
+headroom and the global proof-work ceiling. Existing tests retain the original
+primitive, shader-work, query, upload, device and record/depth limits.
+
+The actual public GPU resource/atomicity test passes with registered image input:
+nonfinite rotation and invalid UV refuse before dirty-atlas sync or pending image
+retirement, preserving the old verified pixels and original Scene. The original
+foreign-slot/revision/unregister/work-budget checks pass in that same test. The
+complete original Toolbar GPU positive was rebuilt against this Render source and
+passes ordinary/proof equality, byte-exact same-parent direct paint/replay, the
+independent image's retained interior and parent corner clipping, and parent/Scene
+immutability. The six old cross-context differing pixels remain recorded under
+the authorized reference adjustment. No shader matrix was repeated.
+
+The previous actual Host/Button/TextField/CoreText/bitmap coordinate and material
+runs remain reusable at their original identities: five supported backing scales,
+fractional child-local parent geometry, and opaque/half-alpha/transparent bitmap
+materials. The natural empty Toolbar B positive and unknown-image/double-B/offset
+refusals retain their separate complete inputs. No all-combinations matrix is
+implied. Private receipt fields, owned immutable output and absence of a receipt
+input prevent caller substitution; actual resource substitution is tested. Future
+unknown primitive variants are fail-closed but not safely constructible in this
+API, so no fake enum or runtime receipt-substitution test is claimed.
+
+The complete source/test diff, original-AC crosswalk, source/program identities,
+raw pixel equality and retained failures are in SSD
+`artifacts/issue-127/remaining-finite-ac-20261029-01/`. `actual-run-index.json` lists
+new runs; `reused-run-index.json` and `reused-pixel-evidence.json` keep historical
+identities. The two GPU results predate only the final test-size correction;
+production and GPU inputs are identical and were not rerun for that test-only edit.
+This is a complete finite renderer acceptance batch for coordinator source review
+and delivery. #81 still separately owns B2 publication/transport, input, AX, text
+and generation. No native-window, physical IME or VoiceOver acceptance is claimed.
+
 # Finite Toolbar axis-region intake (2026-10-29)
 
 The original complete Toolbar now passes the authorized finite extension on Main
