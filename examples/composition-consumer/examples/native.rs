@@ -8,6 +8,10 @@ mod native_pointer;
 #[path = "support/native_key.rs"]
 mod native_key;
 
+#[cfg(target_os = "macos")]
+#[path = "support/menu_review.rs"]
+mod menu_review;
+
 #[cfg(not(target_os = "macos"))]
 fn main() {
     eprintln!("the native composition consumer requires macOS");
@@ -194,6 +198,7 @@ fn main() {
         }
     }
     struct Host {
+        menu_review: Option<menu_review::Review>,
         selftest_script: Option<Vec<(u64, tekes_ui_platform_macos::selftest::Action)>>,
         tree: ContentHost,
         nested_scroll_events: usize,
@@ -1313,6 +1318,19 @@ fn main() {
                 self.publish(w, false);
                 return;
             }
+            if let Some(review) = &mut self.menu_review {
+                if matches!(&e, Event::Scroll(_)) {
+                    review.scroll_events += 1;
+                }
+                if let Event::Command(CommandId(command)) = &e
+                    && (36_001..=36_017).contains(command)
+                {
+                    let script = review.advance(*command, &mut self.tree, &self.menu_actions, w);
+                    self.redraw(w);
+                    tekes_ui_platform_macos::selftest::run_script(script);
+                    return;
+                }
+            }
             if self.mode == "content-help"
                 && let Event::Command(CommandId(command)) = &e
                 && matches!(*command, 35_001..=35_003)
@@ -2257,7 +2275,10 @@ fn main() {
             .input
             .external_baseline()
     });
+    let menu_review = mode == "menu-tree"
+        && std::env::var("TEKES_COMPOSITION_SELFTEST").as_deref() == Ok("menu-tree");
     let mut host = Host {
+        menu_review: menu_review.then(menu_review::Review::default),
         selftest_script: None,
         tree,
         nested_scroll_events: 0,
@@ -2291,6 +2312,12 @@ fn main() {
         name: Some("TekesUI Composition Consumer".into()),
         ..Default::default()
     });
+    if menu_review {
+        host.selftest_script = Some(vec![(
+            300,
+            tekes_ui_platform_macos::selftest::Action::MenuCommand(36_001),
+        )]);
+    }
     if std::env::var("TEKES_COMPOSITION_SELFTEST").as_deref() == Ok("ime") {
         use tekes_ui_platform_macos::selftest::Action;
         host.selftest_script = Some(vec![
@@ -2596,7 +2623,21 @@ fn main() {
             },
             ..Default::default()
         },
-        if mode == "content-help" {
+        if menu_review {
+            MenuBar {
+                menus: vec![Menu::new(
+                    "Menu consumer acceptance",
+                    (36_001..=36_017)
+                        .map(|phase| {
+                            MenuItem::Command(MenuCommand::new(
+                                format!("Verify phase {phase}"),
+                                CommandId(phase),
+                            ))
+                        })
+                        .collect(),
+                )],
+            }
+        } else if mode == "content-help" {
             MenuBar {
                 menus: vec![Menu::new(
                     "Help Fixture",
