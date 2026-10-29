@@ -1101,6 +1101,18 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         &mut actual,
         "tekes_ui_controls::composition::HostRevealPlan",
     );
+    public_type::<tekes_ui_controls::composition::HoverPreviewContent>(
+        &mut actual,
+        "tekes_ui_controls::composition::HoverPreviewContent",
+    );
+    public_type::<tekes_ui_controls::composition::HoverPreviewError>(
+        &mut actual,
+        "tekes_ui_controls::composition::HoverPreviewError",
+    );
+    public_type::<tekes_ui_controls::composition::HoverPreviewVersion>(
+        &mut actual,
+        "tekes_ui_controls::composition::HoverPreviewVersion",
+    );
     public_type::<tekes_ui_controls::composition::IconContent>(
         &mut actual,
         "tekes_ui_controls::composition::IconContent",
@@ -1214,7 +1226,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::composition::NumberFieldContent",
     );
     #[allow(dead_code)]
-    fn public_trait_179<T: tekes_ui_controls::composition::NumberFormat + ?Sized>() {}
+    fn public_trait_182<T: tekes_ui_controls::composition::NumberFormat + ?Sized>() {}
     actual.push("tekes_ui_controls::composition::NumberFormat");
     public_type::<tekes_ui_controls::composition::NumberParseError>(
         &mut actual,
@@ -1277,7 +1289,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::composition::PopoverSession",
     );
     #[allow(dead_code)]
-    fn public_trait_195<T: tekes_ui_controls::composition::PreparedActionEffect + ?Sized>() {}
+    fn public_trait_198<T: tekes_ui_controls::composition::PreparedActionEffect + ?Sized>() {}
     actual.push("tekes_ui_controls::composition::PreparedActionEffect");
     public_type::<tekes_ui_controls::composition::PreparedActionFocus>(
         &mut actual,
@@ -1697,6 +1709,10 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         &mut actual,
         "tekes_ui_controls::feedback_view::OverlayLayout",
     );
+    public_type::<tekes_ui_controls::feedback_view::PopoverPlacement>(
+        &mut actual,
+        "tekes_ui_controls::feedback_view::PopoverPlacement",
+    );
     public_type::<tekes_ui_controls::feedback_view::PopoverView>(
         &mut actual,
         "tekes_ui_controls::feedback_view::PopoverView",
@@ -1806,7 +1822,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::layout_view::IconLayout",
     );
     #[allow(dead_code)]
-    fn public_trait_326<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
+    fn public_trait_330<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
     actual.push("tekes_ui_controls::layout_view::IconRenderer");
     public_type::<tekes_ui_controls::layout_view::IconView>(
         &mut actual,

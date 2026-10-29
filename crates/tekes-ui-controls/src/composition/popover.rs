@@ -759,3 +759,419 @@ impl ContentHost {
         true
     }
 }
+
+/// One original anchor and one passive Content slot, in this same ContentHost.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct HoverPreviewVersion {
+    owner: ComponentId,
+    owner_mount: u64,
+    preview: ComponentId,
+    preview_mount: u64,
+    generation: u64,
+}
+impl HoverPreviewVersion {
+    pub fn owner(self) -> ComponentId {
+        self.owner
+    }
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum HoverPreviewError {
+    NotPreview,
+    OwnerUnavailable,
+    StaleVersion,
+    Composition(CompositionError),
+}
+/// Noninteractive original Content in the existing Popover shell. No overlay
+/// input scope, focus target, synthetic trigger or second ContentHost is created.
+#[derive(Debug)]
+pub struct HoverPreviewContent {
+    popup: PopoverContent,
+    version: Option<HoverPreviewVersion>,
+    hovered: bool,
+    blocked: bool,
+    owner_frame: Option<Rect>,
+}
+impl HoverPreviewContent {
+    pub fn new(name: impl Into<String>, body: Content) -> Result<Self, CompositionError> {
+        validate_passive_preview(&body)?;
+        let mut popup = PopoverContent::new(name, body);
+        popup.set_dismiss_visible(false);
+        popup
+            .view
+            .set_placement(crate::feedback_view::PopoverPlacement::RightStart);
+        popup.validate()?;
+        Ok(Self {
+            popup,
+            version: None,
+            hovered: false,
+            blocked: false,
+            owner_frame: None,
+        })
+    }
+    pub fn set_placement(&mut self, placement: crate::feedback_view::PopoverPlacement) {
+        self.popup.view.set_placement(placement);
+    }
+    pub fn set_max_content_width(&mut self, width: Option<f32>) {
+        self.popup.max_content_width = width;
+    }
+    pub fn is_open(&self) -> bool {
+        self.popup.is_open()
+    }
+    pub fn layout(&self) -> OverlayLayout {
+        self.popup.layout()
+    }
+    pub fn version(&self) -> Option<HoverPreviewVersion> {
+        self.version
+    }
+    fn retire(&mut self, blocked: bool) {
+        self.popup.view.close(&mut self.popup.model);
+        self.popup.view.clear_presentation();
+        self.blocked |= blocked;
+        self.owner_frame = None;
+    }
+}
+fn validate_passive_preview(body: &Content) -> Result<(), CompositionError> {
+    if let Some(child) = body.interactive_id() {
+        return Err(CompositionError::NestedInteractive {
+            action: body.id,
+            child,
+        });
+    }
+    Ok(())
+}
+impl Component for HoverPreviewContent {
+    fn validate(&self) -> Result<(), CompositionError> {
+        self.popup.validate()?;
+        validate_passive_preview(&self.popup.body[0])
+    }
+    fn default_surface(&self) -> Option<&'static str> {
+        Some("popover")
+    }
+    fn children(&self) -> &[Content] {
+        &self.popup.body
+    }
+    fn children_mut(&mut self) -> Option<&mut Vec<Content>> {
+        Some(&mut self.popup.body)
+    }
+    fn fixed_slots(&self) -> bool {
+        true
+    }
+    fn paints_children(&self) -> bool {
+        true
+    }
+    fn active(&self) -> bool {
+        self.popup.is_open()
+    }
+    fn overlay_presented(&self) -> bool {
+        self.popup.is_open()
+    }
+    fn measure(&mut self, _: &mut dyn ButtonTextRenderer, _: Size) -> MeasuredChild {
+        MeasuredChild::new(Size::default())
+    }
+    fn paint_overlay(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut dyn ButtonTextRenderer,
+        frame: Rect,
+        clip: Rect,
+        theme: ContentTheme,
+    ) {
+        self.popup.paint_overlay(scene, text, frame, clip, theme);
+    }
+    fn semantic_frame(&self, _: Rect) -> Rect {
+        self.popup.layout().frame
+    }
+    fn semantics(&self) -> ContentSemantics {
+        ContentSemantics::new(ContentRole::Group, &self.popup.name)
+    }
+    fn event(&mut self, event: &ContentEvent) -> ContentResponse {
+        if matches!(event, ContentEvent::Cancel) {
+            self.retire(true);
+        }
+        ContentResponse::default()
+    }
+    fn lifecycle(&mut self, event: Lifecycle) {
+        if event == Lifecycle::Unmounted {
+            self.retire(true);
+            self.version = None;
+            self.hovered = false;
+        }
+    }
+}
+impl Content {
+    fn hover_preview_ids(&self, ids: &mut Vec<ComponentId>) {
+        if self.component::<HoverPreviewContent>().is_some() {
+            ids.push(self.id);
+        }
+        for child in self.component.children() {
+            child.hover_preview_ids(ids);
+        }
+    }
+    fn preview_body_ids(&self, ids: &mut BTreeSet<ComponentId>) {
+        ids.insert(self.id);
+        for child in self.component.children() {
+            child.preview_body_ids(ids);
+        }
+    }
+}
+impl ContentHost {
+    /// Bind current original mounts. Removal/reinsertion requires a fresh bind.
+    pub fn bind_hover_preview(
+        &mut self,
+        owner: ComponentId,
+        preview: ComponentId,
+    ) -> Result<HoverPreviewVersion, HoverPreviewError> {
+        let anchor = self
+            .scope()
+            .find_active(owner)
+            .filter(|node| !node.component.semantics().disabled)
+            .ok_or(HoverPreviewError::OwnerUnavailable)?;
+        let owner_mount = anchor.mount;
+        let node = self
+            .scope()
+            .find_in_active_ancestors(preview)
+            .ok_or(HoverPreviewError::OwnerUnavailable)?;
+        let popup = node
+            .component::<HoverPreviewContent>()
+            .ok_or(HoverPreviewError::NotPreview)?;
+        if owner == preview || popup.popup.body[0].find(owner).is_some() {
+            return Err(HoverPreviewError::OwnerUnavailable);
+        }
+        let version = HoverPreviewVersion {
+            owner,
+            owner_mount,
+            preview,
+            preview_mount: node.mount,
+            generation: actions::next_mount(),
+        };
+        let popup = self
+            .root
+            .find_mut(preview)
+            .unwrap()
+            .component_mut::<HoverPreviewContent>()
+            .unwrap();
+        popup.retire(false);
+        popup.version = Some(version);
+        popup.hovered = false;
+        popup.blocked = false;
+        self.dirty = true;
+        Ok(version)
+    }
+    fn preview_anchor(&self, version: HoverPreviewVersion) -> Option<Rect> {
+        let owner = self.scope().find_active(version.owner)?;
+        let preview = self.scope().find_in_active_ancestors(version.preview)?;
+        if owner.mount != version.owner_mount
+            || preview.mount != version.preview_mount
+            || owner.component.semantics().disabled
+        {
+            return None;
+        }
+        owner
+            .component
+            .semantic_frame(owner.frame)
+            .intersection(&owner.clip)
+            .filter(|frame| !frame.is_empty())
+    }
+    fn preview_versions(&self) -> Vec<HoverPreviewVersion> {
+        let mut ids = Vec::new();
+        self.root.hover_preview_ids(&mut ids);
+        ids.into_iter()
+            .filter_map(|id| {
+                self.root
+                    .find(id)?
+                    .component::<HoverPreviewContent>()?
+                    .version
+            })
+            .collect()
+    }
+    /// Replace the passive original subtree only if this exact owner/mount/data
+    /// version is current. Failed validation leaves the existing subtree intact.
+    /// A static pointer may keep showing a newly accepted streaming version.
+    pub fn update_hover_preview(
+        &mut self,
+        version: HoverPreviewVersion,
+        mut body: Content,
+    ) -> Result<HoverPreviewVersion, HoverPreviewError> {
+        let popup = self
+            .root
+            .find(version.preview)
+            .filter(|node| node.mount == version.preview_mount)
+            .and_then(|node| node.component::<HoverPreviewContent>())
+            .filter(|popup| popup.version == Some(version))
+            .ok_or(HoverPreviewError::StaleVersion)?;
+        if self.preview_anchor(version).is_none() {
+            return Err(HoverPreviewError::OwnerUnavailable);
+        }
+        validate_passive_preview(&body).map_err(HoverPreviewError::Composition)?;
+        let mut existing = BTreeSet::new();
+        self.root
+            .ids(&mut existing)
+            .map_err(HoverPreviewError::Composition)?;
+        let mut retired = BTreeSet::new();
+        popup.popup.body[0].preview_body_ids(&mut retired);
+        existing.retain(|id| !retired.contains(id));
+        body.ids(&mut existing)
+            .map_err(HoverPreviewError::Composition)?;
+        let next = HoverPreviewVersion {
+            generation: actions::next_mount(),
+            ..version
+        };
+        let popup = self
+            .root
+            .find_mut(version.preview)
+            .unwrap()
+            .component_mut::<HoverPreviewContent>()
+            .unwrap();
+        popup.popup.body[0].lifecycle(Lifecycle::Unmounted);
+        body.lifecycle(Lifecycle::Mounted);
+        popup.popup.body[0] = body;
+        let anchor = popup.owner_frame;
+        popup.retire(false);
+        popup.owner_frame = anchor;
+        popup.version = Some(next);
+        self.last_layout = None;
+        self.dirty = true;
+        Ok(next)
+    }
+    pub(super) fn reconcile_hover_previews(&mut self) {
+        for version in self.preview_versions() {
+            let anchor = self.preview_anchor(version);
+            let available = self.window_active
+                && self.captured.is_none()
+                && self.scope().overlay_id().is_none();
+            let popup = self
+                .root
+                .find_mut(version.preview)
+                .unwrap()
+                .component_mut::<HoverPreviewContent>()
+                .unwrap();
+            if !available
+                || anchor.is_none()
+                || popup.owner_frame.is_some_and(|frame| Some(frame) != anchor)
+            {
+                popup.retire(true);
+            }
+        }
+    }
+    pub(super) fn hover_preview_event(&mut self, event: &ContentEvent) -> bool {
+        let versions = self.preview_versions();
+        let routing = event.routing_event();
+        match routing.as_ref() {
+            ContentEvent::PointerMove(point) if event.is_primary_pointer() => {
+                let owners = versions
+                    .iter()
+                    .map(|version| version.owner)
+                    .collect::<Vec<_>>();
+                let hit = self.scope().anchor_path_at(*point, &owners);
+                let active = hit.and_then(|path| {
+                    path.into_iter()
+                        .find(|id| versions.iter().any(|version| version.owner == *id))
+                });
+                let available = self.window_active
+                    && self.captured.is_none()
+                    && self.scope().overlay_id().is_none()
+                    && self.last_layout.is_some();
+                for version in versions {
+                    let frame = self.preview_anchor(version);
+                    let popup = self
+                        .root
+                        .find_mut(version.preview)
+                        .unwrap()
+                        .component_mut::<HoverPreviewContent>()
+                        .unwrap();
+                    let hovered = active == Some(version.owner) && frame.is_some();
+                    if !hovered {
+                        popup.retire(false);
+                        popup.hovered = false;
+                        popup.blocked = false;
+                    } else {
+                        if !popup.hovered {
+                            popup.blocked = false;
+                        }
+                        popup.hovered = true;
+                        if available && !popup.blocked {
+                            popup.owner_frame = frame;
+                            popup.popup.anchor_frame = frame.unwrap();
+                            popup.popup.view.show(
+                                &mut popup.popup.model,
+                                usize::try_from(version.owner.0).unwrap_or(0),
+                            );
+                        }
+                    }
+                }
+                self.dirty = true;
+            }
+            ContentEvent::Key {
+                key: ControlKey::Escape,
+                down: true,
+            } => {
+                let visible = versions.iter().any(|version| {
+                    self.root
+                        .find(version.preview)
+                        .unwrap()
+                        .component::<HoverPreviewContent>()
+                        .unwrap()
+                        .is_open()
+                });
+                for version in versions {
+                    self.root
+                        .find_mut(version.preview)
+                        .unwrap()
+                        .component_mut::<HoverPreviewContent>()
+                        .unwrap()
+                        .retire(true);
+                }
+                let composing = self
+                    .focused_text()
+                    .is_some_and(|surface| surface.input.marked.is_some())
+                    || self
+                        .focused
+                        .and_then(|id| self.root.find(id))
+                        .is_some_and(|node| node.component.composing());
+                self.dirty |= visible;
+                return visible && !composing;
+            }
+            ContentEvent::Scroll { .. }
+            | ContentEvent::PointerDown(_)
+            | ContentEvent::PointerUp(_)
+            | ContentEvent::Cancel => {
+                for version in versions {
+                    self.root
+                        .find_mut(version.preview)
+                        .unwrap()
+                        .component_mut::<HoverPreviewContent>()
+                        .unwrap()
+                        .retire(true);
+                }
+            }
+            _ => {}
+        }
+        false
+    }
+    pub(super) fn arrange_hover_previews(
+        &mut self,
+        text: &mut dyn ButtonTextRenderer,
+        viewport: Rect,
+        clip: Rect,
+    ) {
+        self.reconcile_hover_previews();
+        for version in self.preview_versions() {
+            let anchor = self.preview_anchor(version);
+            let popup = self
+                .root
+                .find_mut(version.preview)
+                .unwrap()
+                .component_mut::<HoverPreviewContent>()
+                .unwrap();
+            if let Some(anchor) = anchor.filter(|_| popup.hovered && !popup.blocked) {
+                popup.owner_frame = Some(anchor);
+                popup.popup.view.show(
+                    &mut popup.popup.model,
+                    usize::try_from(version.owner.0).unwrap_or(0),
+                );
+                popup.popup.anchor_frame = anchor;
+                popup.popup.place(text, viewport, clip);
+            }
+        }
+    }
+}
