@@ -85,9 +85,7 @@ impl ModuleProcess {
         crate::pipes::write_packet(&mut self.input, &serde_json::to_vec(r)?)?;
         let bytes = crate::pipes::read_packet(&mut self.output)?.context("worker exited")?;
         // Receive into RAII before parsing or rejecting the matching metadata.
-        let right = self
-            .ports
-            .receive_owned_cancellable(|| self.control.is_cancelled())?;
+        let right = self.ports.receive_owned_for_process(&self.control)?;
         ensure!(!self.control.is_cancelled(), "worker cancelled");
         let frame: Frame = serde_json::from_slice(&bytes).context("bad worker frame")?;
         ensure!(

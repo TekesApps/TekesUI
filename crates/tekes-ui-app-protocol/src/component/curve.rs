@@ -224,17 +224,37 @@ pub enum RequestBodyV1 {
     Negotiate {
         offer: CapabilityWire,
     },
+    /// Explicit independent child raster; no parent-boundary proof is claimed.
+    NegotiateLayer {
+        offer: CapabilityWire,
+    },
     PrepareGrant {
-        proposal: GrantProposal,
+        proposal: Box<GrantProposal>,
+    },
+    PrepareLayerGrant {
+        proposal: Box<LayerGrantProposal>,
     },
     ContentQuery {
         query: ReadOnlyQueryWire,
+    },
+    /// Mutable original Content input bound to the exact current verified frame.
+    /// Read-only semantic/reading queries use the separate ContentQuery lane.
+    ContentInput {
+        stamp: QueryStamp,
+        request: Box<super::content::Request>,
     },
     TransactionStatus,
     RevokeAdmission {
         grant_serial: u64,
         reason: RevokeReasonWire,
     },
+}
+/// Integer child layout remains distinct from the fractional parent allocation.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct LayerGrantProposal {
+    pub geometry: Box<GrantProposal>,
+    pub logical_size: [u32; 2],
 }
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -271,10 +291,55 @@ pub enum CurveReply {
     Negotiated {
         capability: CapabilityWire,
     },
+    LayerNegotiated {
+        capability: CapabilityWire,
+    },
+    /// Original immutable frame metadata published on the opt-in Curve lane.
+    /// The Mach right remains the adjacent out-of-band transport payload.
+    FramePublished {
+        stamp: FrameStamp,
+        frame: Box<crate::Frame>,
+    },
+    /// Ordinary independent pixels plus a geometry lease, never VerifiedFrameOutput.
+    LayerFramePublished {
+        stamp: FrameStamp,
+        frame: Box<crate::Frame>,
+        physical_origin_px: [f32; 2],
+    },
+    GrantPrepared {
+        transaction_id: u64,
+        proposal_id: u64,
+        grant_serial: u64,
+        parent_geometry_generation: u64,
+        child_geometry_generation: u64,
+        viewport: u64,
+        allocation_seq: u64,
+        layout_seq: u64,
+    },
+    GrantRevoked {
+        transaction_id: u64,
+        grant_serial: u64,
+    },
+    ContentProjection {
+        transaction_id: u64,
+        stamp: QueryStamp,
+        reply: Box<super::content::Reply>,
+    },
+    ContentInput {
+        transaction_id: u64,
+        stamp: QueryStamp,
+        outcome: ContentInputOutcome,
+    },
     Rejected {
         transaction_id: u64,
         code: CurveErrorCode,
     },
+}
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "kind", content = "data", deny_unknown_fields)]
+pub enum ContentInputOutcome {
+    Applied { reply: Box<super::content::Reply> },
+    Failed { message: String },
 }
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", content = "data", deny_unknown_fields)]
@@ -299,6 +364,20 @@ pub struct QueryStamp {
     pub allocation_seq: u64,
     pub layout_seq: u64,
     pub published_frame_seq: u64,
+}
+/// Exact curve authority attached to the immutable frame produced from the
+/// original child Host and verified Scene.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct FrameStamp {
+    pub grant_serial: u64,
+    pub gp: u64,
+    pub gc: u64,
+    pub view: u64,
+    pub viewport: u64,
+    pub allocation_seq: u64,
+    pub layout_seq: u64,
+    pub frame_seq: u64,
 }
 
 /// First production routing slice is reject-only. It validates protocol and owner
@@ -332,10 +411,168 @@ fn proposal_within_hard_limits(proposal: &GrantProposal) -> bool {
             .all(|axis| *axis > 0 && *axis <= HARD_TARGET_AXIS)
         && (records as u32).saturating_mul(3) <= HARD_STEPS
 }
+fn validate_grant_geometry(
+    proposal: &GrantProposal,
+    independent_layer: bool,
+) -> Result<(), CurveErrorCode> {
+    if !proposal_within_hard_limits(proposal) {
+        return Err(CurveErrorCode::LimitExceeded);
+    }
+    let records = &proposal.records.0;
+    if proposal.proposal_id == 0
+        || proposal.viewport == 0
+        || proposal.allocation_seq == 0
+        || proposal.layout_seq == 0
+        || proposal.parent_geometry_generation == 0
+        || proposal.chain_depth as usize != records.len()
+        || usize::from(proposal.chain_head) + 1 != records.len()
+        || proposal.sample_count != 1
+        || proposal.coordinate_mapping
+            != if independent_layer {
+                "IndependentRasterLayerV1"
+            } else {
+                "SamePhysicalCoordinates"
+            }
+        || !proposal.backing_scale.is_finite()
+        || if independent_layer {
+            !(0.5..=4.).contains(&proposal.backing_scale)
+        } else {
+            ![0.25, 0.5, 1.0, 2.0, 4.0].contains(&proposal.backing_scale)
+        }
+        || proposal
+            .physical_origin_px
+            .iter()
+            .chain(proposal.clear_rgba.iter())
+            .any(|value| !value.is_finite())
+        || proposal.clear_rgba != [0.0, 0.0, 0.0, 0.0]
+        || records.iter().enumerate().any(|(index, record)| {
+            let expected = u16::try_from(index).ok();
+            let dimensions_valid = record.rect_px[2] > 0.0 && record.rect_px[3] > 0.0;
+            let radius_limit = record.rect_px[2].min(record.rect_px[3]) * 0.5;
+            record.index != expected.unwrap_or(u16::MAX)
+                || record.parent_index != index.checked_sub(1).and_then(|v| u16::try_from(v).ok())
+                || record.depth != u16::try_from(index + 1).unwrap_or(u16::MAX)
+                || !dimensions_valid
+                || record
+                    .rect_px
+                    .iter()
+                    .chain(record.radii_px.iter())
+                    .any(|value| !value.is_finite())
+                || record
+                    .radii_px
+                    .iter()
+                    .any(|radius| *radius < 0.0 || *radius > radius_limit)
+        })
+    {
+        return Err(CurveErrorCode::MalformedMessage);
+    }
+    Ok(())
+}
+/// Validate one Curve envelope at the attached View trust boundary. The caller
+/// still applies the operation only after checking its negotiated state.
+pub fn validate_for_attached_view(
+    envelope: &Envelope,
+    attached_view: Option<u64>,
+) -> Result<(), CurveErrorCode> {
+    if (envelope.protocol_major, envelope.wire_revision) != (1, 1) {
+        return Err(CurveErrorCode::UnsupportedVersion);
+    }
+    if envelope.view == 0 {
+        return Err(CurveErrorCode::MalformedMessage);
+    }
+    operation_contract(envelope)?;
+    let Some(attached_view) = attached_view else {
+        return Err(CurveErrorCode::NotReady);
+    };
+    if attached_view != envelope.view {
+        return Err(CurveErrorCode::OwnerMismatch);
+    }
+    match &envelope.body {
+        RequestBodyV1::Negotiate { offer } | RequestBodyV1::NegotiateLayer { offer } => {
+            if (
+                offer.protocol_major,
+                offer.wire_revision,
+                offer.clip_geometry_revision,
+                offer.coverage_aa_revision,
+            ) != (1, 1, 1, 1)
+            {
+                return Err(CurveErrorCode::UnsupportedVersion);
+            }
+            if !wire_limits_valid(&offer.limits) {
+                return Err(CurveErrorCode::LimitExceeded);
+            }
+            if offer.features != REQUIRED_FEATURES {
+                return Err(CurveErrorCode::UnsupportedFeature);
+            }
+        }
+        RequestBodyV1::PrepareLayerGrant { proposal } => {
+            if !proposal
+                .logical_size
+                .iter()
+                .all(|axis| (1..=HARD_TARGET_AXIS).contains(axis))
+            {
+                return Err(CurveErrorCode::LimitExceeded);
+            }
+            validate_grant_geometry(&proposal.geometry, true)?;
+        }
+        RequestBodyV1::PrepareGrant { proposal } => validate_grant_geometry(proposal, false)?,
+        RequestBodyV1::ContentQuery { query } => {
+            let stamp = match query {
+                ReadOnlyQueryWire::SemanticTree { stamp }
+                | ReadOnlyQueryWire::ReadingState { stamp, .. } => stamp,
+            };
+            if stamp.grant_serial == 0
+                || stamp.gp == 0
+                || stamp.gc == 0
+                || stamp.view != envelope.view
+                || stamp.viewport == 0
+                || stamp.allocation_seq == 0
+                || stamp.layout_seq == 0
+                || stamp.published_frame_seq == 0
+            {
+                return Err(CurveErrorCode::MalformedMessage);
+            }
+            if let ReadOnlyQueryWire::ReadingState {
+                reader_id,
+                reader_mount,
+                ..
+            } = query
+                && (*reader_id == 0 || *reader_mount == 0)
+            {
+                return Err(CurveErrorCode::MalformedMessage);
+            }
+        }
+        RequestBodyV1::ContentInput { stamp, request } => {
+            if stamp.grant_serial == 0
+                || stamp.gp == 0
+                || stamp.gc == 0
+                || stamp.view != envelope.view
+                || stamp.viewport == 0
+                || stamp.allocation_seq == 0
+                || stamp.layout_seq == 0
+                || stamp.published_frame_seq == 0
+                || request.view != stamp.view
+                || request.viewport != stamp.viewport
+                || matches!(
+                    &request.input,
+                    super::content::Input::Snapshot
+                        | super::content::Input::Semantics
+                        | super::content::Input::ReadingState { .. }
+                )
+            {
+                return Err(CurveErrorCode::MalformedMessage);
+            }
+        }
+        RequestBodyV1::TransactionStatus | RequestBodyV1::RevokeAdmission { .. } => {}
+    }
+    Ok(())
+}
 fn operation_contract(envelope: &Envelope) -> Result<(), CurveErrorCode> {
     match &envelope.body {
         RequestBodyV1::Negotiate { .. }
+        | RequestBodyV1::NegotiateLayer { .. }
         | RequestBodyV1::ContentQuery { .. }
+        | RequestBodyV1::ContentInput { .. }
         | RequestBodyV1::RevokeAdmission { .. } => {
             if envelope.transaction_id != 0 || envelope.ttl_ms != 0 {
                 return Err(CurveErrorCode::MalformedMessage);
@@ -346,7 +583,7 @@ fn operation_contract(envelope: &Envelope) -> Result<(), CurveErrorCode> {
                 return Err(CurveErrorCode::MalformedMessage);
             }
         }
-        RequestBodyV1::PrepareGrant { .. } => {
+        RequestBodyV1::PrepareGrant { .. } | RequestBodyV1::PrepareLayerGrant { .. } => {
             if envelope.transaction_id == 0 || envelope.ttl_ms == 0 {
                 return Err(CurveErrorCode::MalformedMessage);
             }
@@ -374,7 +611,7 @@ pub fn reject_for_attached_view(envelope: &Envelope, attached_view: Option<u64>)
         return CurveErrorCode::OwnerMismatch;
     }
     match &envelope.body {
-        RequestBodyV1::Negotiate { offer } => {
+        RequestBodyV1::Negotiate { offer } | RequestBodyV1::NegotiateLayer { offer } => {
             if (
                 offer.protocol_major,
                 offer.wire_revision,
@@ -392,6 +629,7 @@ pub fn reject_for_attached_view(envelope: &Envelope, attached_view: Option<u64>)
             }
             CurveErrorCode::UnsupportedFeature
         }
+        RequestBodyV1::PrepareLayerGrant { .. } => CurveErrorCode::CapabilityNotNegotiated,
         RequestBodyV1::PrepareGrant { proposal } => {
             if !proposal_within_hard_limits(proposal) {
                 return CurveErrorCode::LimitExceeded;
@@ -399,6 +637,7 @@ pub fn reject_for_attached_view(envelope: &Envelope, attached_view: Option<u64>)
             CurveErrorCode::CapabilityNotNegotiated
         }
         RequestBodyV1::ContentQuery { .. }
+        | RequestBodyV1::ContentInput { .. }
         | RequestBodyV1::TransactionStatus
         | RequestBodyV1::RevokeAdmission { .. } => CurveErrorCode::CapabilityNotNegotiated,
     }
@@ -576,7 +815,7 @@ mod tests {
         );
 
         let valid_grant = RequestBodyV1::PrepareGrant {
-            proposal: proposal(vec![root_record()]),
+            proposal: Box::new(proposal(vec![root_record()])),
         };
         assert_eq!(
             reject_for_attached_view(&envelope(29, 50, valid_grant.clone()), attached),
@@ -603,13 +842,193 @@ mod tests {
                     29,
                     1,
                     RequestBodyV1::PrepareGrant {
-                        proposal: oversized
+                        proposal: Box::new(oversized)
                     }
                 ),
                 attached
             ),
             CurveErrorCode::LimitExceeded
         );
+    }
+    #[test]
+    fn independent_layer_contract_is_explicit_and_keeps_old_proof_scale_domain() {
+        let mut geometry = proposal(vec![root_record()]);
+        geometry.backing_scale = 3.;
+        geometry.target_px = [192, 144];
+        let old = envelope(
+            29,
+            50,
+            RequestBodyV1::PrepareGrant {
+                proposal: Box::new(geometry.clone()),
+            },
+        );
+        assert_eq!(
+            validate_for_attached_view(&old, Some(23)),
+            Err(CurveErrorCode::MalformedMessage)
+        );
+        geometry.coordinate_mapping = "IndependentRasterLayerV1".into();
+        let layer = envelope(
+            29,
+            50,
+            RequestBodyV1::PrepareLayerGrant {
+                proposal: Box::new(LayerGrantProposal {
+                    geometry: Box::new(geometry),
+                    logical_size: [64, 48],
+                }),
+            },
+        );
+        assert_eq!(validate_for_attached_view(&layer, Some(23)), Ok(()));
+        let bytes = serde_json::to_vec(&layer).unwrap();
+        let decoded: Envelope = serde_json::from_slice(&bytes).unwrap();
+        assert!(matches!(
+            decoded.body,
+            RequestBodyV1::PrepareLayerGrant { .. }
+        ));
+        let negotiation = envelope(0, 0, RequestBodyV1::NegotiateLayer { offer: offer() });
+        assert_eq!(validate_for_attached_view(&negotiation, Some(23)), Ok(()));
+        assert_eq!(
+            reject_for_attached_view(&negotiation, Some(23)),
+            CurveErrorCode::UnsupportedFeature
+        );
+    }
+    #[test]
+    fn attached_view_validator_rejects_malformed_chain_before_grant_use() {
+        let mut child = root_record();
+        child.index = 1;
+        child.parent_index = Some(0);
+        child.depth = 2;
+        let mut valid = proposal(vec![root_record(), child]);
+        valid.chain_head = 1;
+        valid.chain_depth = 2;
+        let validate = |proposal| {
+            validate_for_attached_view(
+                &envelope(
+                    29,
+                    50,
+                    RequestBodyV1::PrepareGrant {
+                        proposal: Box::new(proposal),
+                    },
+                ),
+                Some(23),
+            )
+        };
+        assert_eq!(validate(valid.clone()), Ok(()));
+        let mut cases = Vec::new();
+        for (label, index, parent, depth) in [
+            ("duplicate index", 0, Some(0), 2),
+            ("out of bounds index", 2, Some(0), 2),
+            ("self parent", 1, Some(1), 2),
+            ("forward parent", 1, Some(2), 2),
+            ("disconnected child", 1, None, 2),
+            ("incorrect depth", 1, Some(0), 1),
+        ] {
+            let mut malformed = valid.clone();
+            malformed.records.0[1].index = index;
+            malformed.records.0[1].parent_index = parent;
+            malformed.records.0[1].depth = depth;
+            cases.push((label, malformed));
+        }
+        let mut root_cycle = valid.clone();
+        root_cycle.records.0[0].parent_index = Some(1);
+        cases.push(("root cycle", root_cycle));
+        let mut wrong_head = valid.clone();
+        wrong_head.chain_head = 0;
+        cases.push(("head does not name full chain", wrong_head));
+        let mut wrong_depth = valid.clone();
+        wrong_depth.chain_depth = 1;
+        cases.push(("declared chain depth mismatch", wrong_depth));
+        for (label, malformed) in cases {
+            assert_eq!(
+                validate(malformed),
+                Err(CurveErrorCode::MalformedMessage),
+                "{label}"
+            );
+        }
+        for (label, coordinate, value) in [
+            ("nonfinite origin", 0, f32::INFINITY),
+            ("negative width", 2, -1.),
+            ("zero height", 3, 0.),
+        ] {
+            let mut malformed = valid.clone();
+            malformed.records.0[1].rect_px[coordinate] = value;
+            assert_eq!(
+                validate(malformed),
+                Err(CurveErrorCode::MalformedMessage),
+                "{label}"
+            );
+        }
+        let mut invalid_radius = valid.clone();
+        invalid_radius.records.0[1].radii_px[0] = 25.;
+        assert_eq!(
+            validate(invalid_radius),
+            Err(CurveErrorCode::MalformedMessage)
+        );
+        let mut empty = valid;
+        empty.records.0.clear();
+        assert_eq!(validate(empty), Err(CurveErrorCode::LimitExceeded));
+    }
+    #[test]
+    fn mutable_content_input_is_stamped_and_read_only_inputs_stay_on_query_lane() {
+        let stamp = QueryStamp {
+            grant_serial: 1,
+            gp: 2,
+            gc: 3,
+            view: 23,
+            viewport: 4,
+            allocation_seq: 5,
+            layout_seq: 6,
+            published_frame_seq: 7,
+        };
+        let request = |input| super::super::content::Request {
+            view: 23,
+            viewport: 4,
+            owner: None,
+            focus_epoch: 0,
+            text_binding: None,
+            capture: None,
+            input,
+        };
+        let envelope = |stamp: QueryStamp, input| Envelope {
+            protocol_major: 1,
+            wire_revision: 1,
+            view: 23,
+            transaction_id: 0,
+            ttl_ms: 0,
+            body: RequestBodyV1::ContentInput {
+                stamp,
+                request: Box::new(request(input)),
+            },
+        };
+        assert_eq!(
+            validate_for_attached_view(
+                &envelope(stamp.clone(), super::super::content::Input::Cancel),
+                Some(23),
+            ),
+            Ok(())
+        );
+        assert_eq!(
+            validate_for_attached_view(
+                &envelope(
+                    QueryStamp {
+                        published_frame_seq: 0,
+                        ..stamp.clone()
+                    },
+                    super::super::content::Input::Cancel,
+                ),
+                Some(23),
+            ),
+            Err(CurveErrorCode::MalformedMessage)
+        );
+        for input in [
+            super::super::content::Input::Snapshot,
+            super::super::content::Input::Semantics,
+            super::super::content::Input::ReadingState { reader: 1 },
+        ] {
+            assert_eq!(
+                validate_for_attached_view(&envelope(stamp.clone(), input), Some(23)),
+                Err(CurveErrorCode::MalformedMessage)
+            );
+        }
     }
     #[test]
     fn owner_and_protocol_failures_are_separate_from_op_contract_errors() {
@@ -699,9 +1118,17 @@ mod tests {
             "fixture must remain within the independent packet cap"
         );
         let decoded: ClientMessage = serde_json::from_slice(&within).unwrap();
-        assert!(
-            matches!(decoded, ClientMessage::Request { body: RequestBody::CurveV1(Envelope { body: RequestBodyV1::PrepareGrant { proposal: GrantProposal { records: BoundedRecords(ref records), .. } }, .. }), .. } if records.len() == HARD_RECORDS)
-        );
+        let ClientMessage::Request {
+            body: RequestBody::CurveV1(envelope),
+            ..
+        } = decoded
+        else {
+            panic!("decoded request did not contain Curve V1")
+        };
+        let RequestBodyV1::PrepareGrant { proposal } = envelope.body else {
+            panic!("decoded Curve V1 request was not a grant")
+        };
+        assert_eq!(proposal.records.0.len(), HARD_RECORDS);
         let over = client_wire_with_record_count(HARD_RECORDS + 1);
         assert!(
             over.len() < HARD_PACKET_EXCLUSIVE,

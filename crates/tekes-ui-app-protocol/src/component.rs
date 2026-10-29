@@ -277,4 +277,51 @@ mod tests {
         );
         assert_eq!(version(legacy), VERSION);
     }
+
+    #[test]
+    fn legacy_frame_output_keeps_its_original_struct_variant_and_wire_shape() {
+        let frame = crate::Frame {
+            version: VERSION,
+            seq: 3,
+            viewport: 4,
+            pid: 5,
+            registry: 6,
+            width: 10,
+            height: 11,
+            pixel_width: 20,
+            pixel_height: 22,
+            port: 23,
+            revision: 7,
+            toolbar: Vec::new(),
+        };
+        let output = Output::Frame {
+            request: 8,
+            view: 9,
+            frame,
+        };
+        let value = serde_json::to_value(output).unwrap();
+        assert_eq!(
+            value,
+            serde_json::json!({
+                "kind":"Frame",
+                "data":{
+                    "request":8,
+                    "view":9,
+                    "frame":{
+                        "version":VERSION,
+                        "seq":3,
+                        "viewport":4,
+                        "pid":5,
+                        "registry":6,
+                        "width":10,
+                        "height":11,
+                        "pixel_width":20,
+                        "pixel_height":22,
+                        "revision":7,
+                        "toolbar":[]
+                    }
+                }
+            })
+        );
+    }
 }

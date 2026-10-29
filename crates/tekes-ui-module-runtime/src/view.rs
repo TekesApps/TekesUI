@@ -111,13 +111,26 @@ impl Drop for Lease {
 pub struct ViewFrame {
     frame: ReceivedFrame,
     lease: Lease,
+    curve: Option<crate::component::curve::FrameStamp>,
+    layer: Option<crate::layer_raster::LayerRasterLayout>,
 }
 impl ViewFrame {
     pub fn metadata(&self) -> &Frame {
         &self.frame
     }
+    pub fn curve_stamp(&self) -> Option<&crate::component::curve::FrameStamp> {
+        self.curve.as_ref()
+    }
+    pub(crate) fn layer_layout(&self) -> Option<&crate::layer_raster::LayerRasterLayout> {
+        self.layer.as_ref()
+    }
     pub fn import(self, context: &GpuContext) -> Result<ViewImage> {
-        let Self { mut frame, lease } = self;
+        let Self {
+            mut frame,
+            lease,
+            curve,
+            layer,
+        } = self;
         let owner = lease
             .0
             .upgrade()
@@ -133,6 +146,8 @@ impl ViewFrame {
             image: Some(image),
             context: context.clone(),
             lease: Some(lease),
+            curve,
+            layer,
         })
     }
 }
@@ -144,10 +159,18 @@ pub struct ViewImage {
     image: Option<GpuImage>,
     context: GpuContext,
     lease: Option<Lease>,
+    curve: Option<crate::component::curve::FrameStamp>,
+    layer: Option<crate::layer_raster::LayerRasterLayout>,
 }
 impl ViewImage {
     pub fn metadata(&self) -> &Frame {
         &self.metadata
+    }
+    pub fn curve_stamp(&self) -> Option<&crate::component::curve::FrameStamp> {
+        self.curve.as_ref()
+    }
+    pub(crate) fn layer_layout(&self) -> Option<&crate::layer_raster::LayerRasterLayout> {
+        self.layer.as_ref()
     }
     pub fn image(&self) -> &GpuImage {
         self.image.as_ref().unwrap()
@@ -262,7 +285,13 @@ impl ViewConnection {
         state.outstanding += 1;
         Some((request, Lease(Arc::downgrade(&self.core))))
     }
-    pub(crate) fn complete(&self, frame: ReceivedFrame, lease: Lease) {
+    pub(crate) fn complete(
+        &self,
+        frame: ReceivedFrame,
+        lease: Lease,
+        curve: Option<crate::component::curve::FrameStamp>,
+        layer: Option<crate::layer_raster::LayerRasterLayout>,
+    ) {
         let mut state = self.core.state.lock().unwrap();
         if state.closed || state.suspended {
             drop(state);
@@ -270,7 +299,12 @@ impl ViewConnection {
             drop(lease);
             return;
         }
-        state.frames.push_back(ViewFrame { frame, lease });
+        state.frames.push_back(ViewFrame {
+            frame,
+            lease,
+            curve,
+            layer,
+        });
         drop(state);
         self.core.notify();
     }
@@ -294,6 +328,9 @@ impl ViewConnection {
     }
     pub(crate) fn take_invalidated(&self) -> bool {
         std::mem::take(&mut self.core.state.lock().unwrap().invalidated)
+    }
+    pub(crate) fn has_pending_invalidation(&self) -> bool {
+        self.core.state.lock().unwrap().invalidated
     }
     pub fn spawn(
         module: impl Into<String>,
@@ -483,7 +520,12 @@ fn view_loop(core: &Arc<Core>, module: &str) -> Result<()> {
                 continue;
             }
         }
-        state.frames.push_back(ViewFrame { frame, lease });
+        state.frames.push_back(ViewFrame {
+            frame,
+            lease,
+            curve: None,
+            layer: None,
+        });
         drop(state);
         core.notify();
     }

@@ -19,8 +19,8 @@ pub use icon::{SvgIconCache, SvgIconRenderer};
 mod actions;
 mod panel;
 pub use panel::{
-    ContentGeometrySnapshot, CurveSubtreeCapability, HostRevealGeometry, PanelContent,
-    PanelGeometry,
+    ContentGeometrySnapshot, CurveGeometryContext, CurveSubtreeCapability, HostRevealGeometry,
+    PanelContent, PanelGeometry,
 };
 mod split_view;
 pub use split_view::{
@@ -359,6 +359,17 @@ pub trait Component: Debug + Any {
     /// Existing controls receive the same event; this adds exact clip-region
     /// membership to their original reducer without creating another owner.
     fn set_clip_region(&mut self, _region: Option<tekes_ui_scene::ClipRegion>) {}
+    /// Current immutable geometry projected by the actual owning Host. This
+    /// conveys no permission by itself and expires with its generation.
+    fn set_curve_geometry_context(&mut self, _context: Option<CurveGeometryContext>) {}
+    /// The original delegated Content owner admits its own focus under this
+    /// Host's exact external curve chain. This is logical keyboard ownership,
+    /// not permission to translate an ancestor Scroll or bypass current input.
+    /// Ordinary dispatch additionally requires current geometry and the
+    /// component's input-ready opt-in; unknown owners retain the default.
+    fn delegates_curve_focus(&self) -> bool {
+        false
+    }
     fn pointer_event_in_region(&mut self, event: &ContentEvent, _inside: bool) -> ContentResponse {
         match event {
             ContentEvent::Pointer(pointer) => self.pointer_event(pointer),
@@ -1321,6 +1332,7 @@ impl Content {
     fn lifecycle_start(&mut self, event: Lifecycle, mount: u64) {
         self.curve_geometry = None;
         self.component.set_clip_region(None);
+        self.component.set_curve_geometry_context(None);
         self.mount = mount;
         if event == Lifecycle::Unmounted {
             self.set_help(None);
@@ -1725,6 +1737,9 @@ enum PaddingFocusHit {
 pub struct ContentHost {
     root: Content,
     curve_shapes: Option<tekes_ui_scene::ShapeTable>,
+    /// Parent-authorized external geometry constrains this original Host's
+    /// input/AX/reveal tree. Its AA clip is deferred to the parent composite.
+    external_curve_chain: Option<(u64, std::sync::Arc<[tekes_ui_scene::ClipShape]>)>,
     reveal_clock: content_reveal_plan::RevealClock,
     focused: Option<ComponentId>,
     focus_wrap: bool,
@@ -1751,6 +1766,9 @@ pub struct ContentHost {
     actions: Option<Vec<actions::PendingAction>>,
     reading_transaction: bool,
     last_layout: Option<(Rect, Rect)>,
+    last_render_stamp: Option<(u64, u64)>,
+    last_palette: Option<Palette>,
+    last_surface: Option<(&'static str, bool)>,
     item_reveal: Option<content_reveal::ItemReveal>,
     reading_scroll_source: Option<(ComponentId, u64)>,
     help: help::HelpState,
@@ -1769,6 +1787,7 @@ impl ContentHost {
         Self {
             root,
             curve_shapes: None,
+            external_curve_chain: None,
             reveal_clock: Default::default(),
             focused: None,
             focus_wrap: true,
@@ -1794,6 +1813,9 @@ impl ContentHost {
             actions: None,
             reading_transaction: false,
             last_layout: None,
+            last_render_stamp: None,
+            last_palette: None,
+            last_surface: None,
             item_reveal: None,
             reading_scroll_source: None,
             help: Default::default(),
@@ -1816,6 +1838,63 @@ impl ContentHost {
     pub fn inherited_surface(&self) -> &'static str {
         self.inherited_surface
     }
+    /// Install the validated external ancestor chain received for the current
+    /// remote View grant. These shapes constrain original Host geometry while
+    /// their antialias coverage remains deferred to the parent's final image
+    /// composite, preventing the child from baking the same edge twice.
+    pub fn set_external_curve_chain(
+        &mut self,
+        parent_generation: Option<u64>,
+        shapes: std::sync::Arc<[tekes_ui_scene::ClipShape]>,
+    ) -> Result<(), CompositionError> {
+        let next = if let Some(generation) = parent_generation {
+            if generation == 0 || shapes.is_empty() || shapes.len() > 256 {
+                return Err(CompositionError::CurveGeometry(
+                    tekes_ui_scene::ClipError::InvalidInput,
+                ));
+            }
+            Some((generation, shapes))
+        } else {
+            if !shapes.is_empty() {
+                return Err(CompositionError::CurveGeometry(
+                    tekes_ui_scene::ClipError::InvalidInput,
+                ));
+            }
+            None
+        };
+        if self
+            .external_curve_chain
+            .as_ref()
+            .map(|(generation, current)| (*generation, current.as_ref()))
+            == next
+                .as_ref()
+                .map(|(generation, current)| (*generation, current.as_ref()))
+        {
+            return Ok(());
+        }
+        self.reveal_clock.invalidate_geometry();
+        self.root.clear_curve_geometry_context();
+        self.external_curve_chain = next;
+        self.curve_shapes = None;
+        self.dirty = true;
+        Ok(())
+    }
+    /// Current child geometry generation after a successful original Host
+    /// render under the installed external chain.
+    pub fn external_curve_ack(&self) -> Option<(u64, u64)> {
+        let (parent_generation, _) = self.external_curve_chain.as_ref()?;
+        let current = self.reveal_clock.stamp().ok()?;
+        if self.reveal_clock.pending
+            || self.last_render_stamp != Some(current)
+            || self.last_layout.is_none()
+        {
+            return None;
+        }
+        let snapshot = self.geometry_snapshot()?;
+        snapshot
+            .is_current()
+            .then_some((*parent_generation, snapshot.generation))
+    }
     pub fn get(&self, id: ComponentId) -> Option<&Content> {
         self.root.find(id)
     }
@@ -1829,6 +1908,12 @@ impl ContentHost {
     /// existing text adapter. A successful render acknowledges this flag.
     pub fn needs_render(&self) -> bool {
         self.dirty
+            // Even refused input retires the frozen geometry's input lease.
+            // The next frame must acknowledge that generation before repaint.
+            || self.reveal_clock.pending
+            || self
+                .last_render_stamp
+                .is_some_and(|last| self.reveal_clock.stamp().ok() != Some(last))
             || self.help.needs_frame()
             || self.popover_animation_pending()
             || self
@@ -2041,11 +2126,61 @@ impl ContentHost {
         );
         self.animation_frame_requested = result.is_ok() && requested;
         self.last_layout = result.is_ok().then_some((frame, clip));
+        self.last_render_stamp = result
+            .is_ok()
+            .then(|| self.reveal_clock.stamp().ok())
+            .flatten();
+        self.last_palette = result.is_ok().then_some(palette);
+        self.last_surface = result
+            .is_ok()
+            .then_some((self.inherited_surface, self.inherited_surface_declared));
         if let Err(error) = &result {
             notice::clear_samples(&mut self.root);
             self.fail_item_reveal(ContentRevealError::Layout(*error));
         }
         result
+    }
+    /// Repaint the exact last-arranged tree for a display-only refresh. This
+    /// reuses its frozen curve geometry and painter without layout or a new
+    /// geometry generation; stale geometry/input/theme is rejected.
+    pub fn repaint_current(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut dyn ButtonTextRenderer,
+        frame: Rect,
+        clip: Rect,
+        palette: Palette,
+    ) -> Result<(), CompositionError> {
+        if let Some(error) = scene.composition_error() {
+            return Err(CompositionError::SceneFragment(error));
+        }
+        if self.reading_transaction {
+            return Err(CompositionError::ReadingTransactionInProgress);
+        }
+        let current_stamp = self.reveal_clock.stamp().map_err(|_| {
+            CompositionError::CurveGeometry(tekes_ui_scene::ClipError::StaleShapeKey)
+        })?;
+        let snapshot_current = self
+            .geometry_snapshot()
+            .is_some_and(|snapshot| snapshot.is_current());
+        if self.reveal_clock.pending
+            || self.last_layout != Some((frame, clip))
+            || self.last_render_stamp != Some(current_stamp)
+            || self.last_palette != Some(palette)
+            || self.last_surface != Some((self.inherited_surface, self.inherited_surface_declared))
+            || !snapshot_current
+            || !self.active_curve_geometry_is_current()
+        {
+            return Err(CompositionError::CurveGeometry(
+                tekes_ui_scene::ClipError::StaleShapeKey,
+            ));
+        }
+        if let Some(table) = &self.curve_shapes {
+            scene
+                .try_import_clip_shapes(table, Default::default())
+                .map_err(CompositionError::SceneFragment)?;
+        }
+        self.paint_current_frame(scene, text, frame, clip, palette)
     }
     fn render_frame(
         &mut self,
@@ -2074,6 +2209,10 @@ impl ContentHost {
         // Reject a changed attachment/mount before ticking any old navigation.
         self.observe_item_reveal();
         self.reveal_clock.invalidate_geometry();
+        // The Host clock withdraws geometry during layout. Publish the final
+        // replacement context after arrange instead of reporting an intermediate
+        // removal, which would cancel a remote gesture even on an unchanged
+        // parent mask. Lifecycle and actual removal still publish None.
         self.layout_preflighted(text, frame, clip)?;
         self.freeze_curve_geometry()?;
         if let Some(table) = &self.curve_shapes {
@@ -2091,6 +2230,16 @@ impl ContentHost {
             self.scope().focus_ids(&mut ids);
             self.focus(ids.first().copied(), true);
         }
+        self.paint_current_frame(scene, text, frame, clip, palette)
+    }
+    fn paint_current_frame(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut dyn ButtonTextRenderer,
+        frame: Rect,
+        clip: Rect,
+        palette: Palette,
+    ) -> Result<(), CompositionError> {
         let paint_id = self.presented_dialog;
         let mut theme = ContentTheme::from(palette);
         if self.inherited_surface_declared {

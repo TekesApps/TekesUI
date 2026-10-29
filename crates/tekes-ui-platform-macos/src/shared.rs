@@ -330,6 +330,8 @@ impl Shared {
             }
         }
         self.dispatching.set(false);
+        // Explicit selftest AX readiness runs only outside the mutable handler.
+        crate::selftest::run_published_step(self);
         // AppKit can synchronously resize through its whole zoom animation.
         // Starting it inside handle would queue every Resized/Redraw until the
         // animation returned. The handler is now restored, so each geometry

@@ -96,6 +96,40 @@ impl ComponentEmitter {
         self.emit(ComponentEvent::ViewInvalidated { view, revision })?;
         Ok(true)
     }
+    /// Allocate the next revision from the original event sink and emit one
+    /// ordinary ViewInvalidated event. Used when a stamped Content input
+    /// changes the child Host geometry after the input has already completed.
+    pub(crate) fn invalidate_view_next(&self) -> Result<u64> {
+        let (_, view) = self
+            .view_identity()
+            .ok_or_else(|| anyhow::anyhow!("View invalidation requires an attached View"))?;
+        let mut sink = self.sink.lock().unwrap();
+        let revision = sink
+            .view_revision
+            .checked_add(1)
+            .ok_or_else(|| anyhow::anyhow!("View invalidation revision exhausted"))?;
+        let event = ComponentEvent::ViewInvalidated { view, revision };
+        validate_event(&event, self.capabilities)?;
+        ensure!(
+            self.view
+                .as_ref()
+                .is_some_and(|attached| attached.view == view),
+            "invalidation does not belong to the attached View"
+        );
+        sink.view_revision = revision;
+        sink.serial = sink
+            .serial
+            .checked_add(1)
+            .ok_or_else(|| anyhow::anyhow!("serial exhausted"))?;
+        let packet = ServerMessage {
+            version: VERSION,
+            session: self.session.clone(),
+            serial: sink.serial,
+            output: Output::Event(event),
+        };
+        pipes::write_packet(&mut sink.writer, &serde_json::to_vec(&packet)?)?;
+        Ok(revision)
+    }
     pub fn emit(&self, event: ComponentEvent) -> Result<()> {
         validate_event(&event, self.capabilities)?;
         if let ComponentEvent::ViewInvalidated { view, .. } = &event {
@@ -423,10 +457,17 @@ pub enum ProcessStatus {
         message: String,
     },
 }
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 struct CurvePending {
+    layer_contract: bool,
     attached_view: u64,
     transaction_id: u64,
+    offer: Option<curve::CapabilityWire>,
+    proposal: Option<curve::GrantProposal>,
+    revoke_serial: Option<u64>,
+    query: Option<curve::QueryStamp>,
+    content_input: bool,
+    discard_reply: bool,
 }
 fn validate_server_identity(
     packet: &ServerMessage,
@@ -457,10 +498,10 @@ fn consume_curve_rejection(
     request: u64,
     view: u64,
     reply: &crate::component::curve::CurveReply,
-) -> Result<()> {
+) -> Result<bool> {
     let expected = curve_pending
         .get(&request)
-        .copied()
+        .cloned()
         .ok_or_else(|| anyhow::anyhow!("Curve reply for non-Curve request"))?;
     ensure!(expected.attached_view == view, "Curve reply View mismatch");
     match reply {
@@ -470,8 +511,120 @@ fn consume_curve_rejection(
                 "Curve reply transaction mismatch"
             );
         }
-        crate::component::curve::CurveReply::Negotiated { .. } => {
-            bail!("Curve negotiation acknowledgement is not implemented");
+        crate::component::curve::CurveReply::Negotiated { capability }
+        | crate::component::curve::CurveReply::LayerNegotiated { capability } => {
+            ensure!(
+                matches!(reply, curve::CurveReply::LayerNegotiated { .. })
+                    == expected.layer_contract,
+                "Curve acknowledgement changed the composition contract"
+            );
+            let offered = expected
+                .offer
+                .as_ref()
+                .ok_or_else(|| anyhow::anyhow!("unexpected Curve negotiation acknowledgement"))?;
+            ensure!(
+                capability.protocol_major == offered.protocol_major
+                    && capability.wire_revision == offered.wire_revision
+                    && capability.clip_geometry_revision == offered.clip_geometry_revision
+                    && capability.coverage_aa_revision == offered.coverage_aa_revision
+                    && capability.features == offered.features,
+                "Curve acknowledgement changed the offered contract"
+            );
+            let limits = |value: &curve::LimitsWire| curve::Limits {
+                packet_bytes_exclusive: value.packet_bytes_exclusive as usize,
+                records: value.records as usize,
+                depth: value.depth,
+                validation_steps: value.validation_steps,
+                target_axis_px: value.target_axis_px,
+                ttl_ms: value.ttl_ms,
+            };
+            limits(&capability.limits).validate_ack(limits(&offered.limits))?;
+        }
+        crate::component::curve::CurveReply::FramePublished { .. }
+        | crate::component::curve::CurveReply::LayerFramePublished { .. } => {
+            bail!("Curve frame publication must be consumed by the View transport")
+        }
+        crate::component::curve::CurveReply::GrantPrepared {
+            transaction_id,
+            proposal_id,
+            grant_serial,
+            parent_geometry_generation,
+            child_geometry_generation,
+            viewport,
+            allocation_seq,
+            layout_seq,
+        } => {
+            let proposal = expected
+                .proposal
+                .as_ref()
+                .ok_or_else(|| anyhow::anyhow!("unexpected Curve grant acknowledgement"))?;
+            ensure!(
+                expected.transaction_id == *transaction_id
+                    && proposal.proposal_id == *proposal_id
+                    && *grant_serial == proposal.proposal_id
+                    && proposal.parent_geometry_generation == *parent_geometry_generation
+                    && proposal.viewport == *viewport
+                    && proposal.allocation_seq == *allocation_seq
+                    && proposal.layout_seq == *layout_seq
+                    && *child_geometry_generation != 0,
+                "Curve grant acknowledgement changed its geometry lease"
+            );
+        }
+        crate::component::curve::CurveReply::GrantRevoked {
+            transaction_id,
+            grant_serial,
+        } => {
+            ensure!(
+                expected.transaction_id == *transaction_id
+                    && expected.revoke_serial == Some(*grant_serial),
+                "Curve revoke acknowledgement changed its grant"
+            );
+        }
+        crate::component::curve::CurveReply::ContentProjection {
+            transaction_id,
+            stamp,
+            reply,
+        } => {
+            let query = expected
+                .query
+                .as_ref()
+                .ok_or_else(|| anyhow::anyhow!("unexpected Curve content projection"))?;
+            ensure!(
+                !expected.content_input
+                    && expected.transaction_id == *transaction_id
+                    && query == stamp,
+                "Curve content projection changed its query identity"
+            );
+            ensure!(
+                reply.view == stamp.view && reply.viewport == stamp.viewport,
+                "Curve content projection changed its View allocation"
+            );
+        }
+        crate::component::curve::CurveReply::ContentInput {
+            transaction_id,
+            stamp,
+            outcome,
+        } => {
+            let query = expected
+                .query
+                .as_ref()
+                .ok_or_else(|| anyhow::anyhow!("unexpected Curve content input reply"))?;
+            ensure!(
+                expected.content_input
+                    && expected.transaction_id == *transaction_id
+                    && query == stamp,
+                "Curve content input changed its frame identity"
+            );
+            match outcome {
+                crate::component::curve::ContentInputOutcome::Applied { reply } => ensure!(
+                    reply.view == stamp.view && reply.viewport == stamp.viewport,
+                    "Curve content input changed its View allocation"
+                ),
+                crate::component::curve::ContentInputOutcome::Failed { message } => ensure!(
+                    !message.trim().is_empty(),
+                    "Curve content input failure omitted its diagnostic"
+                ),
+            }
         }
     }
     ensure!(
@@ -480,7 +633,7 @@ fn consume_curve_rejection(
     );
     pending.remove(&request);
     curve_pending.remove(&request);
-    Ok(())
+    Ok(expected.discard_reply)
 }
 struct State {
     status: ProcessStatus,
@@ -500,6 +653,7 @@ struct State {
     view_revision: u64,
     native: Option<ViewCapabilities>,
     expected_view: Option<u64>,
+    layer_view: Option<u64>,
     stop_id: Option<u64>,
     #[cfg(target_os = "macos")]
     renders: HashMap<u64, (tekes_ui_app_protocol::Request, crate::view::Lease)>,
@@ -639,6 +793,7 @@ impl ProcessComponent {
                 view_revision: 0,
                 native: None,
                 expected_view,
+                layer_view: None,
                 stop_id: None,
                 #[cfg(target_os = "macos")]
                 renders: HashMap::new(),
@@ -782,6 +937,34 @@ impl ProcessComponent {
         self.view().is_ok_and(|view| view.take_invalidated())
     }
     #[cfg(target_os = "macos")]
+    pub fn has_pending_view_updates(&self) -> bool {
+        let incoming = self
+            .service()
+            .is_ok_and(|shared| !shared.state.lock().unwrap().incoming.is_empty());
+        incoming
+            || self
+                .view()
+                .is_ok_and(|view| view.has_pending_invalidation())
+    }
+    /// Curve frame receipt may proceed only when no host-visible service or
+    /// View invalidation is waiting. Exact Curve and generic responses remain
+    /// consumable by their owners and do not force a Host relayout by themselves.
+    #[cfg(target_os = "macos")]
+    pub fn has_pending_curve_host_updates(&self) -> bool {
+        let incoming = self.service().is_ok_and(|shared| {
+            shared.state.lock().unwrap().incoming.iter().any(|packet| {
+                !matches!(
+                    packet.output,
+                    Output::CurveReplyV1 { .. } | Output::Response { .. }
+                )
+            })
+        });
+        incoming
+            || self
+                .view()
+                .is_ok_and(|view| view.has_pending_invalidation())
+    }
+    #[cfg(target_os = "macos")]
     pub fn outstanding_view_frames(&self) -> usize {
         self.view().map_or(0, |v| v.outstanding_frames())
     }
@@ -830,6 +1013,57 @@ impl ProcessComponent {
         };
         shared.state.lock().unwrap().incoming.drain(..).collect()
     }
+    /// Remove only one already identity-validated Curve response, leaving
+    /// unrelated service and toolbar events in their original queue order.
+    #[cfg(target_os = "macos")]
+    pub fn take_curve_reply(&self, request: u64) -> Option<ServerMessage> {
+        let shared = self.service().ok()?;
+        let mut state = shared.state.lock().unwrap();
+        let index = state.incoming.iter().position(|packet| {
+            matches!(packet.output, Output::CurveReplyV1 { request: actual, .. } if actual == request)
+        })?;
+        state.incoming.remove(index)
+    }
+    /// Consume only one identity-validated generic response owned by the
+    /// caller, leaving Curve and business events in their original queue.
+    #[cfg(target_os = "macos")]
+    pub fn take_response(&self, request: u64) -> Option<Result<serde_json::Value>> {
+        let shared = self.service().ok()?;
+        let mut state = shared.state.lock().unwrap();
+        let index = state.incoming.iter().position(|packet| {
+            matches!(packet.output, Output::Response { request: actual, .. } if actual == request)
+        })?;
+        let packet = state.incoming.remove(index)?;
+        let Output::Response { result, .. } = packet.output else {
+            unreachable!("response queue search filters response type")
+        };
+        Some(result.map_err(anyhow::Error::msg))
+    }
+    /// Drain ordinary host events while preserving request/reply packets for
+    /// their exact pending owners.
+    #[cfg(target_os = "macos")]
+    pub fn drain_curve_host_events(&self) -> Vec<ServerMessage> {
+        let Ok(shared) = self.service() else {
+            return Vec::new();
+        };
+        let mut state = shared.state.lock().unwrap();
+        let mut events = Vec::new();
+        let count = state.incoming.len();
+        for _ in 0..count {
+            let Some(packet) = state.incoming.pop_front() else {
+                break;
+            };
+            if matches!(
+                packet.output,
+                Output::CurveReplyV1 { .. } | Output::Response { .. }
+            ) {
+                state.incoming.push_back(packet);
+            } else {
+                events.push(packet);
+            }
+        }
+        events
+    }
     pub fn request(&self, body: RequestBody) -> Result<u64> {
         self.request_from(&self.session, body)
     }
@@ -844,34 +1078,198 @@ impl ProcessComponent {
         request: content::Request,
         timeout: std::time::Duration,
     ) -> Result<content::Reply> {
+        self.content_request_with_curve(origin, request, None, timeout)
+    }
+    /// Ordered mutable callback on the explicit Curve lane. The original
+    /// Content request type remains source-compatible; its frame stamp lives
+    /// only in the Curve envelope.
+    #[cfg(target_os = "macos")]
+    pub fn curve_content_request(
+        &self,
+        origin: &Session,
+        stamp: curve::QueryStamp,
+        request: content::Request,
+        timeout: std::time::Duration,
+    ) -> Result<content::Reply> {
+        ensure!(
+            (request.view, request.viewport) == (stamp.view, stamp.viewport),
+            "Curve Content input does not match its frame stamp"
+        );
+        self.content_request_with_curve(origin, request, Some(stamp), timeout)
+    }
+    /// Read-only semantic or reading query on its own exact-frame lane.
+    #[cfg(target_os = "macos")]
+    pub fn curve_content_query(
+        &self,
+        origin: &Session,
+        stamp: curve::QueryStamp,
+        query: curve::ReadOnlyQueryWire,
+        timeout: std::time::Duration,
+    ) -> Result<content::Reply> {
+        ensure!(
+            !timeout.is_zero() && timeout <= std::time::Duration::from_secs(10),
+            "invalid Curve Content query timeout"
+        );
+        let query_stamp = match &query {
+            curve::ReadOnlyQueryWire::SemanticTree { stamp }
+            | curve::ReadOnlyQueryWire::ReadingState { stamp, .. } => stamp,
+        };
+        ensure!(
+            query_stamp == &stamp,
+            "Curve Content query changed its frame stamp"
+        );
+        let id = self.enqueue_request(
+            origin,
+            RequestBody::CurveV1(curve::Envelope {
+                protocol_major: 1,
+                wire_revision: 1,
+                view: stamp.view,
+                transaction_id: 0,
+                ttl_ms: 0,
+                body: curve::RequestBodyV1::ContentQuery { query },
+            }),
+            true,
+        )?;
+        let shared = self.service()?;
+        let deadline = std::time::Instant::now() + timeout;
+        let mut state = shared.state.lock().unwrap();
+        loop {
+            ensure!(
+                !state.abort,
+                "Content process unavailable: {:?}",
+                state.status
+            );
+            if let Some(index) = state.incoming.iter().position(|packet| {
+                matches!(packet.output, Output::CurveReplyV1 { request, .. } if request == id)
+            }) {
+                let packet = state.incoming.remove(index).unwrap();
+                let Output::CurveReplyV1 { view, reply, .. } = packet.output else {
+                    unreachable!("query reply search filters Curve responses")
+                };
+                ensure!(view == stamp.view, "mismatched Curve Content query View");
+                let reply = match reply {
+                    curve::CurveReply::ContentProjection {
+                        transaction_id,
+                        stamp: actual,
+                        reply,
+                    } => {
+                        ensure!(
+                            transaction_id == 0 && actual == stamp,
+                            "mismatched Curve Content query identity"
+                        );
+                        *reply
+                    }
+                    curve::CurveReply::Rejected { code, .. } => {
+                        anyhow::bail!("Curve Content query rejected: {code:?}")
+                    }
+                    _ => anyhow::bail!("unexpected Curve Content query reply"),
+                };
+                ensure!(
+                    (reply.view, reply.viewport) == (stamp.view, stamp.viewport),
+                    "mismatched Curve Content query geometry"
+                );
+                return Ok(reply);
+            }
+            let Some(remaining) = deadline.checked_duration_since(std::time::Instant::now()) else {
+                if let Some(pending) = state.curve_pending.get_mut(&id) {
+                    pending.discard_reply = true;
+                }
+                state.synchronous_content.remove(&id);
+                anyhow::bail!("Curve Content query timed out");
+            };
+            let (next, _) = shared.changed.wait_timeout(state, remaining).unwrap();
+            state = next;
+        }
+    }
+    #[cfg(target_os = "macos")]
+    fn content_request_with_curve(
+        &self,
+        origin: &Session,
+        request: content::Request,
+        curve_stamp: Option<curve::QueryStamp>,
+        timeout: std::time::Duration,
+    ) -> Result<content::Reply> {
         ensure!(
             !timeout.is_zero() && timeout <= std::time::Duration::from_secs(10),
             "invalid Content query timeout"
         );
         let expected = (request.view, request.viewport);
-        let id = self.enqueue_request(origin, RequestBody::Content(request), true)?;
+        let expected_curve = curve_stamp.clone();
+        let body = if let Some(stamp) = curve_stamp {
+            RequestBody::CurveV1(curve::Envelope {
+                protocol_major: 1,
+                wire_revision: 1,
+                view: stamp.view,
+                transaction_id: 0,
+                ttl_ms: 0,
+                body: curve::RequestBodyV1::ContentInput {
+                    stamp,
+                    request: Box::new(request),
+                },
+            })
+        } else {
+            RequestBody::Content(request)
+        };
+        let id = self.enqueue_request(origin, body, true)?;
         let shared = self.service()?;
         let deadline = std::time::Instant::now() + timeout;
         let mut state = shared.state.lock().unwrap();
         loop {
-            ensure!(!state.abort, "Content process unavailable");
-            if let Some(index) = state
-                .incoming
-                .iter()
-                .position(|p| matches!(p.output, Output::Response { request, .. } if request == id))
-            {
+            ensure!(
+                !state.abort,
+                "Content process unavailable: {:?}",
+                state.status
+            );
+            if let Some(index) = state.incoming.iter().position(|p| match &p.output {
+                Output::Response { request, .. } => *request == id,
+                Output::CurveReplyV1 { request, .. } => *request == id,
+                _ => false,
+            }) {
                 let packet = state.incoming.remove(index).unwrap();
-                let Output::Response { result, .. } = packet.output else {
-                    unreachable!()
+                let reply = match packet.output {
+                    Output::Response { result, .. } if expected_curve.is_none() => {
+                        let reply: content::Reply =
+                            serde_json::from_value(result.map_err(anyhow::Error::msg)?)?;
+                        reply
+                    }
+                    Output::CurveReplyV1 { view, reply, .. }
+                        if let Some(stamp) = &expected_curve =>
+                    {
+                        ensure!(view == stamp.view, "mismatched Curve Content View");
+                        match reply {
+                            curve::CurveReply::ContentInput {
+                                transaction_id,
+                                stamp: actual,
+                                outcome,
+                            } => {
+                                ensure!(
+                                    transaction_id == 0 && &actual == stamp,
+                                    "mismatched Curve Content input identity"
+                                );
+                                match outcome {
+                                    curve::ContentInputOutcome::Applied { reply } => *reply,
+                                    curve::ContentInputOutcome::Failed { message } => {
+                                        anyhow::bail!(
+                                            "Curve Content input failed after dispatch: {message}"
+                                        )
+                                    }
+                                }
+                            }
+                            curve::CurveReply::Rejected { code, .. } => {
+                                anyhow::bail!("Curve Content input rejected: {code:?}")
+                            }
+                            _ => anyhow::bail!("unexpected Curve Content input reply"),
+                        }
+                    }
+                    _ => anyhow::bail!("wrong Content reply lane"),
                 };
-                let reply: content::Reply =
-                    serde_json::from_value(result.map_err(anyhow::Error::msg)?)?;
                 ensure!(
                     (reply.view, reply.viewport) == expected,
                     "mismatched Content reply geometry"
                 );
                 drop(state);
-                if reply.changed
+                if expected_curve.is_none()
+                    && reply.changed
                     && let Some(view) = shared.view.get()
                 {
                     view.invalidate();
@@ -881,6 +1279,11 @@ impl ProcessComponent {
             let Some(remaining) = deadline.checked_duration_since(std::time::Instant::now()) else {
                 // A later reply belongs to the ordinary public drain after this
                 // caller stops waiting. Never replay its original input.
+                if expected_curve.is_some()
+                    && let Some(pending) = state.curve_pending.get_mut(&id)
+                {
+                    pending.discard_reply = true;
+                }
                 state.synchronous_content.remove(&id);
                 anyhow::bail!("Content query timed out; input not replayed");
             };
@@ -899,41 +1302,45 @@ impl ProcessComponent {
         body: RequestBody,
         synchronous_content: bool,
     ) -> Result<u64> {
+        let content_input = match &body {
+            RequestBody::Content(request) => Some(&request.input),
+            RequestBody::CurveV1(curve::Envelope {
+                body: curve::RequestBodyV1::ContentInput { request, .. },
+                ..
+            }) => Some(&request.input),
+            _ => None,
+        };
         ensure!(
-            !synchronous_content || matches!(body, RequestBody::Content(_)),
+            !synchronous_content
+                || matches!(body, RequestBody::Content(_))
+                || matches!(
+                    body,
+                    RequestBody::CurveV1(curve::Envelope {
+                        body: curve::RequestBodyV1::ContentInput { .. }
+                            | curve::RequestBodyV1::ContentQuery { .. },
+                        ..
+                    })
+                ),
             "wrong synchronous reply lane"
         );
         ensure!(*origin == self.session, "stale component action owner");
-        if let RequestBody::Content(content::Request {
-            input: content::Input::Pointer(pointer),
-            ..
-        }) = &body
-        {
-            ensure!(
-                pointer.position.iter().all(|p| p.is_finite()),
-                "invalid Content pointer position"
-            );
-        }
-        if let RequestBody::Content(content::Request {
-            input: content::Input::Scroll(scroll),
-            ..
-        }) = &body
-        {
-            ensure!(scroll.is_valid(), "invalid Content scroll input");
-        }
-        if let RequestBody::Content(content::Request {
-            input: content::Input::RevealReadingItem { options, .. },
-            ..
-        }) = &body
-        {
-            ensure!(options.is_valid(), "invalid Content reveal options");
-        }
-        if let RequestBody::Content(content::Request {
-            input: content::Input::Accessibility { action, .. },
-            ..
-        }) = &body
-        {
-            ensure!(action.is_valid(), "invalid Content accessibility action");
+        if let Some(input) = content_input {
+            match input {
+                content::Input::Pointer(pointer) => ensure!(
+                    pointer.position.iter().all(|p| p.is_finite()),
+                    "invalid Content pointer position"
+                ),
+                content::Input::Scroll(scroll) => {
+                    ensure!(scroll.is_valid(), "invalid Content scroll input");
+                }
+                content::Input::RevealReadingItem { options, .. } => {
+                    ensure!(options.is_valid(), "invalid Content reveal options");
+                }
+                content::Input::Accessibility { action, .. } => {
+                    ensure!(action.is_valid(), "invalid Content accessibility action");
+                }
+                _ => (),
+            }
         }
         ensure!(
             !matches!(body, RequestBody::Render { .. }),
@@ -941,7 +1348,28 @@ impl ProcessComponent {
         );
         let shared = self.service()?;
         let mut state = shared.state.lock().unwrap();
-        ensure!(!state.abort && !state.stopping, "component closing");
+        ensure!(
+            !state.abort && !state.stopping,
+            "component closing: {:?}",
+            state.status
+        );
+        if let RequestBody::CurveV1(curve::Envelope {
+            body: curve::RequestBodyV1::ContentQuery { query, .. },
+            ..
+        }) = &body
+        {
+            ensure!(
+                match query {
+                    curve::ReadOnlyQueryWire::SemanticTree { .. } => {
+                        state.native.is_some_and(|caps| caps.accessibility)
+                    }
+                    curve::ReadOnlyQueryWire::ReadingState { .. } => {
+                        state.native.is_some_and(|caps| caps.scroll)
+                    }
+                },
+                "Curve Content query capability not negotiated"
+            );
+        }
         if matches!(body, RequestBody::SetViewContext { .. }) {
             // The configured original View lane exists before ReadyView, so
             // initial context can be queued without racing the handshake.
@@ -951,7 +1379,7 @@ impl ProcessComponent {
             let configured = false;
             ensure!(configured, "View context requires a configured V2 View");
         }
-        if matches!(body, RequestBody::Content(_)) {
+        if content_input.is_some() {
             ensure!(
                 state.native.is_some_and(|n| n.keyboard
                     || n.text_ime
@@ -961,27 +1389,25 @@ impl ProcessComponent {
                 "Content input not negotiated"
             );
         }
-        if matches!(
-            &body,
-            RequestBody::Content(content::Request {
-                input: content::Input::Scroll(_)
+        if content_input.is_some_and(|input| {
+            matches!(
+                input,
+                content::Input::Scroll(_)
                     | content::Input::ReadingState { .. }
-                    | content::Input::RevealReadingItem { .. },
-                ..
-            })
-        ) {
+                    | content::Input::RevealReadingItem { .. }
+            )
+        }) {
             ensure!(
                 state.native.is_some_and(|n| n.scroll),
                 "Content scroll capability not negotiated"
             );
         }
-        if matches!(
-            &body,
-            RequestBody::Content(content::Request {
-                input: content::Input::Semantics | content::Input::Accessibility { .. },
-                ..
-            })
-        ) {
+        if content_input.is_some_and(|input| {
+            matches!(
+                input,
+                content::Input::Semantics | content::Input::Accessibility { .. }
+            )
+        }) {
             ensure!(
                 state.native.is_some_and(|n| n.accessibility),
                 "Content accessibility capability not negotiated"
@@ -1026,8 +1452,46 @@ impl ProcessComponent {
             state.curve_pending.insert(
                 id,
                 CurvePending {
+                    layer_contract: matches!(
+                        &envelope.body,
+                        curve::RequestBodyV1::NegotiateLayer { .. }
+                            | curve::RequestBodyV1::PrepareLayerGrant { .. }
+                    ),
                     attached_view,
                     transaction_id: envelope.transaction_id,
+                    offer: match &envelope.body {
+                        curve::RequestBodyV1::Negotiate { offer }
+                        | curve::RequestBodyV1::NegotiateLayer { offer } => Some(offer.clone()),
+                        _ => None,
+                    },
+                    proposal: match &envelope.body {
+                        curve::RequestBodyV1::PrepareGrant { proposal } => {
+                            Some((**proposal).clone())
+                        }
+                        curve::RequestBodyV1::PrepareLayerGrant { proposal } => {
+                            Some((*proposal.geometry).clone())
+                        }
+                        _ => None,
+                    },
+                    revoke_serial: match &envelope.body {
+                        curve::RequestBodyV1::RevokeAdmission { grant_serial, .. } => {
+                            Some(*grant_serial)
+                        }
+                        _ => None,
+                    },
+                    query: match &envelope.body {
+                        curve::RequestBodyV1::ContentQuery { query } => Some(match query {
+                            curve::ReadOnlyQueryWire::SemanticTree { stamp }
+                            | curve::ReadOnlyQueryWire::ReadingState { stamp, .. } => stamp.clone(),
+                        }),
+                        curve::RequestBodyV1::ContentInput { stamp, .. } => Some(stamp.clone()),
+                        _ => None,
+                    },
+                    content_input: matches!(
+                        &envelope.body,
+                        curve::RequestBodyV1::ContentInput { .. }
+                    ),
+                    discard_reply: false,
                 },
             );
         }
@@ -1210,17 +1674,42 @@ fn connection(
         validate_server_identity(&packet, session, serial)?;
         serial = packet.serial;
         #[cfg(target_os = "macos")]
-        if let Output::Frame {
-            request,
-            view,
-            frame,
-        } = &packet.output
-        {
+        let frame_publication = match &packet.output {
+            Output::Frame {
+                request,
+                view,
+                frame,
+            } => Some((*request, *view, frame, None, None)),
+            Output::CurveReplyV1 {
+                request,
+                view,
+                reply: crate::component::curve::CurveReply::FramePublished { stamp, frame },
+            } => Some((*request, *view, frame.as_ref(), Some(stamp), None)),
+            Output::CurveReplyV1 {
+                request,
+                view,
+                reply:
+                    crate::component::curve::CurveReply::LayerFramePublished {
+                        stamp,
+                        frame,
+                        physical_origin_px,
+                    },
+            } => Some((
+                *request,
+                *view,
+                frame.as_ref(),
+                Some(stamp),
+                Some(*physical_origin_px),
+            )),
+            _ => None,
+        };
+        #[cfg(target_os = "macos")]
+        if let Some((request, view, frame, curve, layer_origin)) = frame_publication {
             let receiver = receiver
                 .as_ref()
                 .ok_or_else(|| anyhow::anyhow!("unnegotiated frame"))?;
             // Mach IO never holds the public status/request mutex.
-            let right = receiver.receive_owned_cancellable(|| shared.child.is_cancelled())?;
+            let right = receiver.receive_owned_for_process(&shared.child)?;
             let mut state = shared.state.lock().unwrap();
             if state.abort || stopped {
                 drop(state);
@@ -1228,36 +1717,76 @@ fn connection(
                 continue;
             }
             ensure!(
-                ready && native.as_ref().is_some_and(|n| n.view == *view),
+                ready && native.as_ref().is_some_and(|n| n.view == view),
                 "wrong frame View"
             );
             let (expected, _) = state
                 .renders
-                .get(request)
+                .get(&request)
                 .ok_or_else(|| anyhow::anyhow!("unknown render response"))?;
-            ensure!(state.pending.contains(request), "duplicate render response");
+            ensure!(
+                state.pending.contains(&request),
+                "duplicate render response"
+            );
             ensure!(
                 frame.pid == pid
                     && frame.version == tekes_ui_app_protocol::VERSION
                     && frame.seq == expected.seq
                     && frame.viewport == expected.viewport
                     && frame.width == expected.width
-                    && frame.height == expected.height
-                    && frame.pixel_width == (expected.width as f32 * expected.scale).round() as u32
-                    && frame.pixel_height
-                        == (expected.height as f32 * expected.scale).round() as u32,
+                    && frame.height == expected.height,
                 "wrong render identity/geometry"
             );
+            let layer = if let Some(origin) = layer_origin {
+                ensure!(
+                    state.layer_view == Some(view),
+                    "independent layer was not negotiated"
+                );
+                let layout = crate::layer_raster::LayerRasterLayout::new(
+                    [expected.width, expected.height],
+                    expected.scale,
+                    origin,
+                )?;
+                ensure!(
+                    layout.pixel_size() == (frame.pixel_width, frame.pixel_height),
+                    "wrong layer raster extent/phase"
+                );
+                Some(layout)
+            } else {
+                ensure!(
+                    state.layer_view != Some(view),
+                    "layer View published an untyped raster"
+                );
+                ensure!(
+                    frame.pixel_width == (expected.width as f32 * expected.scale).round() as u32
+                        && frame.pixel_height
+                            == (expected.height as f32 * expected.scale).round() as u32,
+                    "wrong legacy render extent"
+                );
+                None
+            };
+            if let Some(stamp) = curve {
+                ensure!(
+                    stamp.view == view
+                        && stamp.viewport == frame.viewport
+                        && stamp.frame_seq == frame.seq
+                        && stamp.grant_serial != 0
+                        && stamp.gp != 0
+                        && stamp.gc != 0,
+                    "wrong Curve frame publication identity"
+                );
+            }
             // Validate before taking the lease so every error drops the lock
             // before failure cleanup releases and notifies frame credit.
-            let (_, lease) = state.renders.remove(request).expect("validated render");
-            state.pending.remove(request);
+            let (_, lease) = state.renders.remove(&request).expect("validated render");
+            state.pending.remove(&request);
             drop(state);
-            shared
-                .view
-                .get()
-                .unwrap()
-                .complete(crate::ReceivedFrame::received(frame.clone(), right), lease);
+            shared.view.get().unwrap().complete(
+                crate::ReceivedFrame::received(frame.clone(), right),
+                lease,
+                curve.cloned(),
+                layer,
+            );
             shared.changed.notify_all();
             continue;
         }
@@ -1267,6 +1796,8 @@ fn connection(
         }
         let mut invalidated = false;
         let mut synchronous_content = false;
+        let mut content_changed = false;
+        let mut discard_curve_reply = false;
         match &packet.output {
             Output::Ready {
                 pid: actual,
@@ -1373,7 +1904,35 @@ fn connection(
                             curve_pending,
                             ..
                         } = &mut *state;
-                        consume_curve_rejection(pending, curve_pending, *request, *view, reply)?;
+                        discard_curve_reply = consume_curve_rejection(
+                            pending,
+                            curve_pending,
+                            *request,
+                            *view,
+                            reply,
+                        )?;
+                        if matches!(
+                            reply,
+                            crate::component::curve::CurveReply::LayerNegotiated { .. }
+                        ) {
+                            state.layer_view = Some(*view);
+                        } else if matches!(
+                            reply,
+                            crate::component::curve::CurveReply::Negotiated { .. }
+                        ) {
+                            state.layer_view = None;
+                        }
+                        content_changed = matches!(
+                            reply,
+                            crate::component::curve::CurveReply::ContentInput {
+                                outcome:
+                                    crate::component::curve::ContentInputOutcome::Applied {
+                                        reply,
+                                    },
+                                ..
+                            } if reply.changed
+                        );
+                        synchronous_content = state.synchronous_content.remove(request);
                     }
                     Output::Fatal { message } => bail!("worker fatal: {message}"),
                     _ => bail!("unnegotiated output"),
@@ -1382,7 +1941,7 @@ fn connection(
         }
         // View invalidation is a coalesced redraw signal, not business output.
         // It must not fill the service-event queue while the View is hidden.
-        if !invalidated {
+        if !invalidated && !discard_curve_reply {
             ensure!(
                 state.incoming.len() < CAPACITY,
                 "component output queue full"
@@ -1394,7 +1953,7 @@ fn connection(
         drop(state);
         #[cfg(target_os = "macos")]
         if let Some(view) = shared.view.get() {
-            if invalidated {
+            if invalidated || content_changed {
                 view.invalidate();
             } else if !synchronous_content {
                 view.remote_status(status);
@@ -1442,6 +2001,7 @@ mod tests {
                 view_revision: 0,
                 native: None,
                 expected_view: Some(1),
+                layer_view: None,
                 stop_id: None,
                 renders: HashMap::new(),
             }),
@@ -1600,8 +2160,15 @@ mod tests {
         let mut curve_pending = HashMap::from([(
             7,
             CurvePending {
+                layer_contract: false,
                 attached_view: 23,
                 transaction_id: 29,
+                offer: None,
+                proposal: None,
+                revoke_serial: None,
+                query: None,
+                content_input: false,
+                discard_reply: false,
             },
         )]);
         assert!(
@@ -1615,6 +2182,91 @@ mod tests {
                 .is_err()
         );
         assert!(pending.contains(&8));
+    }
+    #[test]
+    fn curve_content_input_reply_preserves_the_exact_frame_stamp() {
+        let stamp = crate::component::curve::QueryStamp {
+            grant_serial: 1,
+            gp: 2,
+            gc: 3,
+            view: 23,
+            viewport: 4,
+            allocation_seq: 5,
+            layout_seq: 6,
+            published_frame_seq: 7,
+        };
+        let pending_for = || {
+            (
+                HashSet::from([7]),
+                HashMap::from([(
+                    7,
+                    CurvePending {
+                        layer_contract: false,
+                        attached_view: 23,
+                        transaction_id: 0,
+                        offer: None,
+                        proposal: None,
+                        revoke_serial: None,
+                        query: Some(stamp.clone()),
+                        content_input: true,
+                        discard_reply: false,
+                    },
+                )]),
+            )
+        };
+        let reply = |stamp| CurveReply::ContentInput {
+            transaction_id: 0,
+            stamp,
+            outcome: crate::component::curve::ContentInputOutcome::Applied {
+                reply: Box::new(crate::component::content::Reply {
+                    view: 23,
+                    viewport: 4,
+                    consumed: false,
+                    changed: false,
+                    animation_frame_requested: false,
+                    capture_pointer: false,
+                    activated: false,
+                    bubbles: false,
+                    pointer_focus_requested: false,
+                    accessibility_focus_requested: false,
+                    key: None,
+                    overlay: None,
+                    reading_scroll_source: None,
+                    reading: None,
+                    semantics: None,
+                    focused: None,
+                    focus_epoch: 0,
+                    text_binding: None,
+                    captured: None,
+                    focus_targets: Vec::new(),
+                    composing: false,
+                    text: None,
+                }),
+            },
+        };
+        let (mut pending, mut curve_pending) = pending_for();
+        assert!(
+            consume_curve_rejection(
+                &mut pending,
+                &mut curve_pending,
+                7,
+                23,
+                &reply(stamp.clone())
+            )
+            .is_ok()
+        );
+        assert!(!pending.contains(&7) && !curve_pending.contains_key(&7));
+
+        let (mut pending, mut curve_pending) = pending_for();
+        let stale = crate::component::curve::QueryStamp {
+            published_frame_seq: 8,
+            ..stamp
+        };
+        assert!(
+            consume_curve_rejection(&mut pending, &mut curve_pending, 7, 23, &reply(stale))
+                .is_err()
+        );
+        assert!(pending.contains(&7) && curve_pending.contains_key(&7));
     }
     #[test]
     fn curve_mismatches_and_negotiated_reply_fail_without_consuming_an_unrelated_pending() {
@@ -1637,8 +2289,15 @@ mod tests {
         let generic_curve_pending = HashMap::from([(
             7,
             CurvePending {
+                layer_contract: false,
                 attached_view: 23,
                 transaction_id: 29,
+                offer: None,
+                proposal: None,
+                revoke_serial: None,
+                query: None,
+                content_input: false,
+                discard_reply: false,
             },
         )]);
         assert!(
@@ -1668,8 +2327,15 @@ mod tests {
             let mut curve_pending = HashMap::from([(
                 7,
                 CurvePending {
+                    layer_contract: false,
                     attached_view: 23,
                     transaction_id: 29,
+                    offer: None,
+                    proposal: None,
+                    revoke_serial: None,
+                    query: None,
+                    content_input: false,
+                    discard_reply: false,
                 },
             )]);
             assert!(
@@ -1753,7 +2419,10 @@ mod tests {
         assert!(emitter.clone().emit(toolbar(1, 4, vec![])).is_err());
         assert!(emitter.emit(toolbar(2, 4, vec![])).is_err());
         emitter.emit(toolbar(3, 4, vec![])).unwrap();
+        // Two accepted registry events, as required by the original test.
+        // A headless toolbar has no View to invalidate.
         assert_eq!(emitter.sink.lock().unwrap().serial, 2);
+        assert_eq!(emitter.sink.lock().unwrap().view_revision, 0);
     }
     #[test]
     fn view_context_rejects_foreign_or_stale_invalidation_and_headless_stays_empty() {
@@ -1796,12 +2465,13 @@ mod tests {
         assert!(emitter.invalidate_view(1).unwrap());
         assert!(emitter.clone().invalidate_view(1).is_err());
         assert!(emitter.invalidate_view(2).unwrap());
-        assert_eq!(emitter.sink.lock().unwrap().serial, 2);
+        assert_eq!(emitter.invalidate_view_next().unwrap(), 3);
+        assert_eq!(emitter.sink.lock().unwrap().serial, 3);
         emitter.view = None;
         emitter.capabilities = Capabilities::HEADLESS;
         assert!(!emitter.invalidate_view(3).unwrap());
         assert_eq!(emitter.view_identity(), None);
-        assert_eq!(emitter.sink.lock().unwrap().serial, 2);
+        assert_eq!(emitter.sink.lock().unwrap().serial, 3);
     }
     #[test]
     fn toolbar_scope_binding_preserves_prior_registration_after_foreign_clear() {
@@ -1934,5 +2604,521 @@ mod tests {
             )
             .is_err()
         );
+    }
+
+    #[cfg(target_os = "macos")]
+    mod curve_actor_regressions {
+        use super::*;
+        use crate::component::curve::*;
+        use tekes_ui_controls::{
+            Button, ButtonTextAlign, ButtonTextRenderer,
+            composition::{ComponentId, Content, ContentHost},
+        };
+        use tekes_ui_scene::{GlyphAtlas, Rect, Scene, Size};
+        use tekes_ui_tokens::{Rgba, Theme, proposal};
+
+        struct Text;
+        impl ButtonTextRenderer for Text {
+            fn measure(&mut self, _: &str, _: proposal::TextRole, _: f32) -> Size {
+                Size::new(32., 16.)
+            }
+            fn draw(
+                &mut self,
+                _: &mut Scene,
+                _: &str,
+                _: proposal::TextRole,
+                _: Rect,
+                _: ButtonTextAlign,
+                _: Rgba,
+            ) {
+            }
+        }
+        struct CapturedBytes(Arc<Mutex<Vec<u8>>>);
+        impl Write for CapturedBytes {
+            fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+                self.0.lock().unwrap().extend_from_slice(bytes);
+                Ok(bytes.len())
+            }
+            fn flush(&mut self) -> std::io::Result<()> {
+                Ok(())
+            }
+        }
+        struct OriginalHost {
+            host: ContentHost,
+            text: Text,
+            snapshots: Arc<Mutex<Vec<Value>>>,
+        }
+        impl OriginalHost {
+            fn snapshot(&self) -> Value {
+                serde_json::json!({
+                    "geometry": self.host.geometry_snapshot().map(|s| (s.generation, s.is_current())),
+                    "mount": self.host.semantic_mount(ComponentId(1)),
+                    "focused": self.host.focused().map(|id| id.0),
+                    "focus_epoch": self.host.focus_epoch(),
+                    "requires_curve": self.host.requires_curve_geometry(),
+                    "external_ack": self.host.external_curve_ack(),
+                    "needs_render": self.host.needs_render(),
+                })
+            }
+        }
+        impl Drop for OriginalHost {
+            fn drop(&mut self) {
+                self.snapshots.lock().unwrap().push(self.snapshot());
+            }
+        }
+        impl crate::PanelModule for OriginalHost {
+            fn update(
+                &mut self,
+                _: &tekes_ui_app_protocol::Request,
+                _: &mut Scene,
+                _: &mut GlyphAtlas,
+            ) -> Result<crate::ModuleState> {
+                anyhow::bail!("refusal-only actor regression must not request a GPU frame")
+            }
+        }
+        impl ProcessModule for OriginalHost {
+            fn content(&mut self) -> Option<(&mut ContentHost, &mut dyn ButtonTextRenderer)> {
+                Some((&mut self.host, &mut self.text))
+            }
+            fn view(&mut self) -> Option<&mut dyn crate::PanelModule> {
+                Some(self)
+            }
+            fn view_capabilities(&self) -> ViewCapabilities {
+                ViewCapabilities::default()
+            }
+            fn handle(&mut self, body: RequestBody, _: &ComponentEmitter) -> Result<Value> {
+                ensure!(
+                    matches!(body, RequestBody::Message { .. }),
+                    "unexpected service request"
+                );
+                Ok(self.snapshot())
+            }
+        }
+        fn capability() -> CapabilityWire {
+            CapabilityWire {
+                protocol_major: 1,
+                wire_revision: 1,
+                clip_geometry_revision: 1,
+                coverage_aa_revision: 1,
+                features: REQUIRED_FEATURES,
+                limits: LimitsWire {
+                    packet_bytes_exclusive: 65536,
+                    records: 8,
+                    depth: 8,
+                    validation_steps: 24,
+                    target_axis_px: 64,
+                    ttl_ms: 100,
+                },
+            }
+        }
+        fn grant(serial: u64) -> Envelope {
+            Envelope {
+                protocol_major: 1,
+                wire_revision: 1,
+                view: 23,
+                transaction_id: serial,
+                ttl_ms: 50,
+                body: RequestBodyV1::PrepareGrant {
+                    proposal: Box::new(GrantProposal {
+                        proposal_id: serial,
+                        viewport: 1,
+                        allocation_seq: 1,
+                        layout_seq: 1,
+                        parent_geometry_generation: 5,
+                        target_px: [64, 48],
+                        physical_origin_px: [0., 0.],
+                        backing_scale: 1.,
+                        clear_rgba: [0.; 4],
+                        sample_count: 1,
+                        coordinate_mapping: "SamePhysicalCoordinates".into(),
+                        chain_head: 0,
+                        chain_depth: 1,
+                        records: BoundedRecords(vec![ShapeRecord {
+                            index: 0,
+                            parent_index: None,
+                            depth: 1,
+                            rect_px: [0., 0., 64., 48.],
+                            radii_px: [0.; 4],
+                        }]),
+                    }),
+                },
+            }
+        }
+        fn negotiate() -> RequestBody {
+            RequestBody::CurveV1(Envelope {
+                protocol_major: 1,
+                wire_revision: 1,
+                view: 23,
+                transaction_id: 0,
+                ttl_ms: 0,
+                body: RequestBodyV1::Negotiate {
+                    offer: capability(),
+                },
+            })
+        }
+        fn snapshot_request() -> RequestBody {
+            RequestBody::Message {
+                topic: "observe-original-host".into(),
+                payload: Value::Null,
+            }
+        }
+        struct ActorResult {
+            result: Result<bool>,
+            output: Vec<ServerMessage>,
+            lifetime_snapshots: Vec<Value>,
+        }
+        fn run_actor(bodies: Vec<RequestBody>) -> ActorResult {
+            let session = Session {
+                module: "actual-curve-actor".into(),
+                instance: 1,
+                host_epoch: 81,
+            };
+            let caps = Capabilities {
+                view: true,
+                ..Capabilities::HEADLESS
+            };
+            let attach = ViewAttach {
+                window: 7,
+                view: 23,
+                endpoint: "refusal-only-no-render".into(),
+                required: ViewCapabilities::default(),
+            };
+            let captured = Arc::new(Mutex::new(Vec::new()));
+            let snapshots = Arc::new(Mutex::new(Vec::new()));
+            let mut host =
+                ContentHost::new(Content::new(ComponentId(1), Button::new("Original"))).unwrap();
+            let frame = Rect::new(0., 0., 64., 48.);
+            host.render(
+                &mut Scene::new(),
+                &mut Text,
+                frame,
+                frame,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
+            let module = OriginalHost {
+                host,
+                text: Text,
+                snapshots: snapshots.clone(),
+            };
+            snapshots.lock().unwrap().push(module.snapshot());
+            let emitter = ComponentEmitter {
+                session: session.clone(),
+                capabilities: caps,
+                view: Some(NativeViewOptions {
+                    window: attach.window,
+                    view: attach.view,
+                    required: attach.required,
+                }),
+                window: Some(attach.window),
+                sink: Arc::new(Mutex::new(Sink {
+                    writer: Box::new(CapturedBytes(captured.clone())),
+                    serial: 0,
+                    toolbar: None,
+                    view_revision: 0,
+                })),
+            };
+            let mut bytes = Vec::new();
+            for (index, body) in bodies.into_iter().enumerate() {
+                let packet = ClientMessage::Request {
+                    version: VERSION,
+                    session: session.clone(),
+                    id: index as u64 + 1,
+                    body,
+                };
+                pipes::write_packet(&mut bytes, &serde_json::to_vec(&packet).unwrap()).unwrap();
+            }
+            let result = crate::process_view::run(
+                Box::new(module),
+                emitter,
+                std::io::Cursor::new(bytes),
+                attach,
+                caps,
+            );
+            let output = captured
+                .lock()
+                .unwrap()
+                .split(|b| *b == b'\n')
+                .filter(|line| !line.is_empty())
+                .map(|line| serde_json::from_slice::<ServerMessage>(line).unwrap())
+                .collect();
+            let lifetime_snapshots = snapshots.lock().unwrap().clone();
+            ActorResult {
+                result,
+                output,
+                lifetime_snapshots,
+            }
+        }
+        fn response(run: &ActorResult, id: u64) -> &Value {
+            run.output
+                .iter()
+                .find_map(|packet| match &packet.output {
+                    Output::Response {
+                        request,
+                        result: Ok(value),
+                    } if *request == id => Some(value),
+                    _ => None,
+                })
+                .expect("actor did not answer its original service lane")
+        }
+        #[test]
+        fn malformed_grants_preserve_original_host_and_pending_grant_in_actual_actor() {
+            let mut malformed = grant(101);
+            let RequestBodyV1::PrepareGrant { proposal } = &mut malformed.body else {
+                unreachable!()
+            };
+            proposal.records.0[0].parent_index = Some(0);
+            let revoke = RequestBody::CurveV1(Envelope {
+                protocol_major: 1,
+                wire_revision: 1,
+                view: 23,
+                transaction_id: 0,
+                ttl_ms: 0,
+                body: RequestBodyV1::RevokeAdmission {
+                    grant_serial: 100,
+                    reason: RevokeReasonWire::ProtocolFailure,
+                },
+            });
+            let run = run_actor(vec![
+                snapshot_request(),
+                negotiate(),
+                RequestBody::CurveV1(malformed.clone()),
+                snapshot_request(),
+                RequestBody::CurveV1(grant(100)),
+                snapshot_request(),
+                RequestBody::CurveV1(malformed),
+                snapshot_request(),
+                revoke,
+                RequestBody::Stop,
+            ]);
+            assert!(matches!(run.result, Ok(true)), "{:?}", run.result);
+            assert!(response(&run, 1)["geometry"].is_array());
+            assert_eq!(
+                response(&run, 1),
+                response(&run, 4),
+                "malformed grant mutated original Host"
+            );
+            assert_eq!(
+                response(&run, 6),
+                response(&run, 8),
+                "malformed replacement mutated pending Host"
+            );
+            assert_eq!(response(&run, 6)["requires_curve"], true);
+            for request_id in [3, 7] {
+                assert!(run.output.iter().any(|packet| matches!(packet.output,
+                    Output::CurveReplyV1 { request, reply: CurveReply::Rejected { code: CurveErrorCode::MalformedMessage, .. }, .. }
+                    if request == request_id)));
+            }
+            assert!(run.output.iter().any(|packet| matches!(
+                packet.output,
+                Output::CurveReplyV1 {
+                    request: 9,
+                    reply: CurveReply::GrantRevoked {
+                        grant_serial: 100,
+                        ..
+                    },
+                    ..
+                }
+            )));
+            assert!(!run.output.iter().any(|packet| matches!(
+                packet.output,
+                Output::Frame { .. }
+                    | Output::CurveReplyV1 {
+                        reply: CurveReply::FramePublished { .. } | CurveReply::GrantPrepared { .. },
+                        ..
+                    }
+            )));
+        }
+        #[test]
+        fn independent_layer_target_mismatch_refuses_atomically_and_fractional_grant_survives() {
+            let layer_grant = |serial, pixel_width| {
+                let mut original = grant(serial);
+                let RequestBodyV1::PrepareGrant { mut proposal } = original.body else {
+                    unreachable!()
+                };
+                proposal.physical_origin_px = [666.6667, 0.];
+                proposal.backing_scale = 2.;
+                proposal.target_px = [pixel_width, 1000];
+                proposal.coordinate_mapping = "IndependentRasterLayerV1".into();
+                proposal.records.0[0].rect_px = [666.6667, 0., 666.6667, 1000.];
+                original.body = RequestBodyV1::PrepareLayerGrant {
+                    proposal: Box::new(LayerGrantProposal {
+                        geometry: proposal,
+                        logical_size: [333, 500],
+                    }),
+                };
+                RequestBody::CurveV1(original)
+            };
+            let negotiate_layer = RequestBody::CurveV1(Envelope {
+                protocol_major: 1,
+                wire_revision: 1,
+                view: 23,
+                transaction_id: 0,
+                ttl_ms: 0,
+                body: RequestBodyV1::NegotiateLayer {
+                    offer: CapabilityWire {
+                        limits: LimitsWire {
+                            target_axis_px: 4096,
+                            ..capability().limits
+                        },
+                        ..capability()
+                    },
+                },
+            });
+            let revoke = RequestBody::CurveV1(Envelope {
+                protocol_major: 1,
+                wire_revision: 1,
+                view: 23,
+                transaction_id: 0,
+                ttl_ms: 0,
+                body: RequestBodyV1::RevokeAdmission {
+                    grant_serial: 100,
+                    reason: RevokeReasonWire::ProtocolFailure,
+                },
+            });
+            let run = run_actor(vec![
+                snapshot_request(),
+                negotiate_layer,
+                layer_grant(101, 666),
+                snapshot_request(),
+                layer_grant(100, 667),
+                snapshot_request(),
+                layer_grant(102, 666),
+                snapshot_request(),
+                revoke,
+                RequestBody::Stop,
+            ]);
+            assert!(matches!(run.result, Ok(true)), "{:?}", run.result);
+            assert_eq!(response(&run, 1), response(&run, 4));
+            assert_eq!(response(&run, 6), response(&run, 8));
+            for request_id in [3, 7] {
+                assert!(run.output.iter().any(|packet| matches!(packet.output,
+                    Output::CurveReplyV1 { request, reply: CurveReply::Rejected { code: CurveErrorCode::MalformedMessage, .. }, .. }
+                    if request == request_id)));
+            }
+            assert!(run.output.iter().any(|packet| matches!(
+                packet.output,
+                Output::CurveReplyV1 {
+                    request: 2,
+                    reply: CurveReply::LayerNegotiated { .. },
+                    ..
+                }
+            )));
+            assert!(run.output.iter().any(|packet| matches!(
+                packet.output,
+                Output::CurveReplyV1 {
+                    request: 9,
+                    reply: CurveReply::GrantRevoked {
+                        grant_serial: 100,
+                        ..
+                    },
+                    ..
+                }
+            )));
+            assert!(!run.output.iter().any(|packet| matches!(
+                packet.output,
+                Output::Frame { .. }
+                    | Output::CurveReplyV1 {
+                        reply: CurveReply::FramePublished { .. }
+                            | CurveReply::LayerFramePublished { .. }
+                            | CurveReply::GrantPrepared { .. },
+                        ..
+                    }
+            )));
+        }
+        #[test]
+        fn layer_negotiation_does_not_accept_a_legacy_proof_acknowledgement() {
+            let make = |layer_contract| {
+                (
+                    HashSet::from([7]),
+                    HashMap::from([(
+                        7,
+                        CurvePending {
+                            layer_contract,
+                            attached_view: 23,
+                            transaction_id: 0,
+                            offer: Some(capability()),
+                            proposal: None,
+                            revoke_serial: None,
+                            query: None,
+                            content_input: false,
+                            discard_reply: false,
+                        },
+                    )]),
+                )
+            };
+            let (mut pending, mut requests) = make(true);
+            assert!(
+                consume_curve_rejection(
+                    &mut pending,
+                    &mut requests,
+                    7,
+                    23,
+                    &CurveReply::Negotiated {
+                        capability: capability()
+                    }
+                )
+                .is_err()
+            );
+            assert!(pending.contains(&7) && requests.contains_key(&7));
+            assert!(
+                consume_curve_rejection(
+                    &mut pending,
+                    &mut requests,
+                    7,
+                    23,
+                    &CurveReply::LayerNegotiated {
+                        capability: capability()
+                    }
+                )
+                .is_ok()
+            );
+            assert!(pending.is_empty() && requests.is_empty());
+            let (mut pending, mut requests) = make(false);
+            assert!(
+                consume_curve_rejection(
+                    &mut pending,
+                    &mut requests,
+                    7,
+                    23,
+                    &CurveReply::LayerNegotiated {
+                        capability: capability()
+                    }
+                )
+                .is_err()
+            );
+            assert!(pending.contains(&7) && requests.contains_key(&7));
+        }
+        #[test]
+        fn failed_child_shape_conversion_preserves_original_host_without_publication() {
+            let mut invalid_shape = grant(100);
+            let RequestBodyV1::PrepareGrant { proposal } = &mut invalid_shape.body else {
+                unreachable!()
+            };
+            proposal.records.0[0].rect_px = [f32::MAX, 0., f32::MAX, 48.];
+            assert_eq!(validate_for_attached_view(&invalid_shape, Some(23)), Ok(()));
+            let run = run_actor(vec![negotiate(), RequestBody::CurveV1(invalid_shape)]);
+            let error = run.result.as_ref().unwrap_err().to_string();
+            assert!(error.contains("invalid Curve clip shape"), "{error}");
+            assert_eq!(run.lifetime_snapshots.len(), 2);
+            assert!(run.lifetime_snapshots[0]["geometry"].is_array());
+            assert_eq!(
+                run.lifetime_snapshots[0], run.lifetime_snapshots[1],
+                "failed conversion mutated Host before returning failure"
+            );
+            assert_eq!(
+                run.output.len(),
+                2,
+                "failure published more than ReadyView and Negotiated"
+            );
+            assert!(matches!(run.output[0].output, Output::ReadyView { .. }));
+            assert!(matches!(
+                run.output[1].output,
+                Output::CurveReplyV1 {
+                    reply: CurveReply::Negotiated { .. },
+                    ..
+                }
+            ));
+        }
     }
 }

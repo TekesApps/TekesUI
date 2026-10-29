@@ -16,6 +16,22 @@ pub struct PanelGeometry {
     pub allocation: Rect,
     pub shape: ClipShape,
 }
+/// Immutable geometry from the actual owning ContentHost, scoped to the
+/// component receiving the callback. This projection carries identity and
+/// normalized shapes; it is not a cross-process grant or proof receipt.
+#[derive(Clone, Debug)]
+pub struct CurveGeometryContext {
+    generation: u64,
+    shapes: std::sync::Arc<[ClipShape]>,
+}
+impl CurveGeometryContext {
+    pub fn generation(&self) -> u64 {
+        self.generation
+    }
+    pub fn shapes(&self) -> &[ClipShape] {
+        &self.shapes
+    }
+}
 /// An exact current local constraint exposed to the existing Host reveal planner.
 /// This is an ancestor boundary, never a target RequiredFocus witness.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -297,6 +313,15 @@ impl GeometryWork {
     }
 }
 impl Content {
+    pub(super) fn clear_curve_geometry_context(&mut self) {
+        self.component.set_curve_geometry_context(None);
+        if let Some(children) = self.component.children_mut() {
+            for child in children {
+                child.clear_curve_geometry_context();
+            }
+        }
+    }
+
     pub(super) fn has_curve_panel(&self) -> bool {
         self.component::<PanelContent>().is_some()
             || self
@@ -373,6 +398,7 @@ impl Content {
         ancestors: &[ClipShape],
         keys: &[ShapeKey],
         in_curve: bool,
+        external_key_count: usize,
         work: &mut GeometryWork,
     ) -> Result<(), CompositionError> {
         let is_panel = self.component::<PanelContent>().is_some();
@@ -392,7 +418,14 @@ impl Content {
                 child_keys.push(rect_key);
             }
         }
-        let inherited_keys = child_keys.clone();
+        // External ancestor shapes constrain the child's original geometry and
+        // input, but their AA coverage is deferred to the parent image
+        // composite. Only child-owned curve scopes are baked into its frame.
+        let inherited_keys = child_keys
+            .iter()
+            .skip(external_key_count.min(child_keys.len()))
+            .cloned()
+            .collect();
         if is_panel {
             let radius = tekes_ui_tokens::proposal::metric("radius", "radius-panel")
                 .expect("Surface radius");
@@ -432,6 +465,11 @@ impl Content {
             work.reserve(region.reserved_work().saturating_add(shapes.len()))?;
         }
         self.component.set_clip_region(region);
+        self.component
+            .set_curve_geometry_context(enabled.then(|| CurveGeometryContext {
+                generation,
+                shapes: std::sync::Arc::from(shapes.clone()),
+            }));
         // Precompute the query now: a numeric failure cannot become a published bbox.
         if enabled {
             let mut query_shapes = shapes.clone();
@@ -448,7 +486,15 @@ impl Content {
         }
         if let Some(children) = self.component.children_mut() {
             for child in children {
-                child.freeze_curve(table, generation, &shapes, &child_keys, enabled, work)?;
+                child.freeze_curve(
+                    table,
+                    generation,
+                    &shapes,
+                    &child_keys,
+                    enabled,
+                    external_key_count,
+                    work,
+                )?;
             }
         }
         Ok(())
@@ -524,7 +570,7 @@ impl ContentHost {
 
     /// Structural requirement, including before layout and after cache invalidation.
     pub fn requires_curve_geometry(&self) -> bool {
-        self.root.has_curve_panel()
+        self.root.has_curve_panel() || self.external_curve_chain.is_some()
     }
 
     pub(super) fn freeze_curve_geometry(&mut self) -> Result<(), CompositionError> {
@@ -542,17 +588,31 @@ impl ContentHost {
             return Ok(());
         }
         let mut table = ShapeTable::new(generation, 4096);
+        let external_shapes = self
+            .external_curve_chain
+            .as_ref()
+            .map(|(_, shapes)| shapes.as_ref())
+            .unwrap_or(&[]);
+        let mut external_keys = Vec::with_capacity(external_shapes.len());
+        for shape in external_shapes {
+            external_keys.push(
+                table
+                    .intern(*shape)
+                    .map_err(CompositionError::CurveGeometry)?,
+            );
+        }
         self.root.freeze_curve(
             &mut table,
             generation,
-            &[],
-            &[],
-            false,
+            external_shapes,
+            &external_keys,
+            !external_shapes.is_empty(),
+            external_keys.len(),
             &mut GeometryWork {
                 remaining: HostRevealBudget::default().max_geometry_work,
             },
         )?;
-        self.curve_shapes = has_panel.then_some(table);
+        self.curve_shapes = (has_panel || !external_shapes.is_empty()).then_some(table);
         Ok(())
     }
     pub fn geometry_snapshot(&self) -> Option<ContentGeometrySnapshot> {

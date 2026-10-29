@@ -1,3 +1,72 @@
+# Authorized B2 independent raster composition (2026-10-29)
+
+The user selected independent child layers: preserve the child's own raster,
+apply the external parent's boundary once, and validate clipping, image quality
+and input coordinates. Equality to repainting all commands in one context is not
+required. The finite #127 proof below remains unchanged and separately accepted;
+this decision neither widens its numeric/primitive domain nor reopens it.
+
+`Renderer::render_layer_to_rgba8` explicitly produces `LayerFrameOutput`, an owned,
+immutable RGBA buffer with its integer physical extent and backing scale. It uses
+the original Scene/resource/geometry/frame-limit validation and prepares/draws the
+same frame before returning pixels. It accepts no parent shapes and mints no
+parent-boundary receipt. The host chooses this negotiated layer path before
+rendering; a failed finite proof is never retried as a successful layer fallback.
+Child-local clip scopes, original controls, text and decorations remain intact.
+The external parent clip must not already be baked into the child Scene.
+
+The surface adapter `create_from_layer_frame` consumes the output's own extent
+and pixels. Its RGBA-to-BGRA copy preserves alpha and performs no Scene redraw.
+`LayerFrameOutput` is distinct from `VerifiedFrameOutput`; transporting ordinary
+pixels does not confer the latter's parent-coverage authority. The runtime owns
+negotiation, original Scene translation, exact placement metadata, frame stamp,
+current grant and stale-frame admission, as specified by the Panel design.
+
+For the real Grid, the existing integer Request `333x500` describes the child
+content layout; its actual parent allocation remains `333.33334x500`. Neither is
+silently substituted for the other. Let `T = actual_origin * backing_scale`,
+`P = floor(T)`, and `phase = T-P`. Keep the original Scene and translate it through
+the existing fallible fragment API by `phase/backing_scale`. Raster extent is
+`ceil(Request_extent * backing_scale + phase)`. Place the image at
+`P/backing_scale` with size `raster_extent/backing_scale`, retaining a 1:1 texel
+footprint. The parent's original allocation/curve clips its padding once. Do not
+stretch the raster to fill the fractional allocation. Any remaining allocation
+area is transparent child space revealing the correct parent background, without
+an invented fill or layout change. Pointer, AX and text coordinates continue to
+use the original `T`; Scene phase plus image `P` restores that same origin.
+
+The quality reference is this same independent child raster under one parent
+mask, not a single-pass repaint. The directed Render checks retain raw RGBA/PNG
+at 1x/2x/3x, actual fractional Grid origins and the unchanged integer content versus
+fractional allocation distinction. They compare the shared surface to an
+independently registered copy of the same raster, and separately check transparent
+corners/outside, fractional allocation remainder over a known parent background,
+edge AA and exact preservation of source one-pixel contrast bars. These checks do
+not excuse blur, seams or clipping leaks as permitted cross-context differences.
+The original full Reader/CoreText native scene and pointer/AX/text/resize/stale
+acceptance remain with the B2 integration; Render fixtures alone do not certify
+them.
+
+The directed Render test target passed strict checking and both actual GPU tests
+in the integrated B2 source window. At 1x/2x/3x the same-raster parent-mask raw
+buffers are byte-identical, and the maximum transport delta on the contrast bars
+is zero. Their measured source/output contrast ranges are respectively 11..177,
+11..177 and 0..255; the phase raster's contrast is preserved without extra texture
+filtering. Rounded-corner/outside leakage, allocation-remainder transparency and
+its known parent background, edge AA and refusal atomicity assertions passed.
+Raw RGBA/PNG, geometry and quality records remain in
+`artifacts/issue-81/b2-domain-20261029-01/independent-layer-r1/verification-r1/`.
+Strict receipt `run-20261029T052534.147412Z` and actual two-test GPU receipt
+`run-20261029T052558.914515Z` retain unchanged source/manifests. These are the
+Render fixtures' results, not the still-separate original Reader IPC/native or
+input-coordinate acceptance.
+
+Original R6 failure and prior finite proof evidence remain preserved. Scope is
+only the explicit independent-raster output/transport contract; no shader, AA,
+Scene predicate, proof budget or ordinary rendering policy changes are authorized
+by this decision. The corresponding host contract remains in
+`panel-content-curve-clip-20261024.md`, section 9.5.
+
 # Remaining original finite AC validation (2026-10-29)
 
 The remaining original renderer AC2/3/4 evidence is now matched to the finite

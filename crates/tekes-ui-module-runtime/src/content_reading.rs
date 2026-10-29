@@ -13,7 +13,7 @@ fn version(value: &ReadingDocumentVersion) -> wire::ReadingVersion {
         attachment: value.attachment(),
     }
 }
-fn state(host: &ContentHost, reader: u64) -> Result<wire::ReadingState> {
+pub(crate) fn read_only_state(host: &ContentHost, reader: u64) -> Result<wire::ReadingState> {
     let id = ComponentId(reader);
     let mount = host
         .semantic_mount(id)
@@ -62,7 +62,7 @@ pub(crate) fn dispatch(
     input: &wire::Input,
 ) -> Result<Option<wire::ReadingState>> {
     match input {
-        wire::Input::ReadingState { reader } => state(host, *reader).map(Some),
+        wire::Input::ReadingState { reader } => read_only_state(host, *reader).map(Some),
         wire::Input::RevealReadingItem {
             reader,
             document,
@@ -70,7 +70,7 @@ pub(crate) fn dispatch(
             options,
         } => {
             ensure!(options.is_valid(), "invalid Content reveal options");
-            let current = state(host, reader.id)?;
+            let current = read_only_state(host, reader.id)?;
             ensure!(current.reader == *reader, "stale Content reading mount");
             ensure!(
                 current.document == *document,
@@ -109,7 +109,7 @@ pub(crate) fn dispatch(
                 text,
             )
             .map_err(|error| anyhow::anyhow!("Content reveal rejected: {error:?}"))?;
-            state(host, reader.id).map(Some)
+            read_only_state(host, reader.id).map(Some)
         }
         _ => Ok(None),
     }
@@ -284,7 +284,7 @@ mod tests {
     #[test]
     fn inactive_window_cannot_execute_retained_reveal() {
         let mut host = setup();
-        let state = state(&host, 1).unwrap();
+        let state = read_only_state(&host, 1).unwrap();
         host.set_window_active(false);
         let req = request(
             &host,
@@ -310,7 +310,7 @@ mod tests {
     #[test]
     fn invalid_document_mount_and_margins_never_move_original_reader() {
         let mut host = setup();
-        let state = state(&host, 1).unwrap();
+        let state = read_only_state(&host, 1).unwrap();
         let base = wire::Input::RevealReadingItem {
             reader: state.reader,
             document: state.document.clone(),
@@ -371,7 +371,10 @@ mod tests {
         render(&mut host);
         assert_ne!(
             state.document.attachment,
-            super::state(&host, 1).unwrap().document.attachment
+            super::read_only_state(&host, 1)
+                .unwrap()
+                .document
+                .attachment
         );
         let req = request(&host, base);
         assert!(crate::content_input::dispatch(&mut host, &mut Text, req).is_err());

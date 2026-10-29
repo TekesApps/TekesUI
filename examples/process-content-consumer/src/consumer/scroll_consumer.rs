@@ -257,6 +257,12 @@ impl PanelModule for Reader {
         self.text.scale = input.scale;
         std::mem::swap(atlas, &mut self.text.atlas);
         let frame = Rect::new(0., 0., input.width as f32, input.height as f32);
+        if std::env::var_os("TEKESUI_PROCESS_NATIVE_B2_SELFTEST").is_some() {
+            // Keep one opaque B ground beneath the real original Content tree.
+            // The parent pixel witness then fails visibly if its rounded clip
+            // is omitted, while every original control and decoration remains.
+            scene.push_quad(tekes_ui_scene::Quad::new(frame, Rgba::rgb8(17, 93, 161)));
+        }
         let palette = tekes_ui_module_runtime::view_context_palette(&self.text.context)?;
         let rendered = self
             .module
@@ -1229,7 +1235,10 @@ pub(super) fn lifecycle_roundtrip() -> Result<serde_json::Value> {
             container(&host, id).status(),
             Some(ProcessStatus::Failed { .. })
         )
-    })?;
+    }).with_context(|| format!(
+        "owned Reader crash status propagation: pid={old_pid} session={old_session:?} observed={:?}",
+        container(&host, id).status()
+    ))?;
     ensure!(
         host.get_mut(id)
             .unwrap()

@@ -1114,3 +1114,298 @@ fn changed_target_focus_evidence_rejects_plan_before_focus_or_scroll_mutation() 
     assert!(!focused.get());
     assert_eq!(host.focused(), None);
 }
+
+#[test]
+fn repaint_current_binds_frozen_shapes_without_renewing_geometry() {
+    let mut host = ContentHost::new(Content::new(
+        ROOT,
+        panel(
+            Content::new(FIELD, TextFieldContent::new("Editor", "same owner")),
+            false,
+        ),
+    ))
+    .unwrap();
+    host.set_window_active(true);
+    let mut text = Text::new(true);
+    let bounds = Rect::new(0., 0., 100., 100.);
+    let first = render(&mut host, &mut text, bounds);
+    let original = host.geometry_snapshot().unwrap();
+    let owner = original.identity(FIELD, None);
+    assert!(owner.is_some());
+    let mount = host.semantic_mount(FIELD);
+    let mut refreshed = Scene::new();
+    host.repaint_current(
+        &mut refreshed,
+        &mut text,
+        bounds,
+        bounds,
+        Theme::LIGHT.into(),
+    )
+    .unwrap();
+    assert_eq!(
+        refreshed.required_clip_geometry(),
+        first.required_clip_geometry()
+    );
+    assert_eq!(refreshed.required_clip_geometry(), 1);
+    assert_eq!(refreshed.clip_shape_count(), first.clip_shape_count());
+    assert!(refreshed.clip_shape_count() > 0);
+    for primitive in refreshed.primitives() {
+        match primitive {
+            tekes_ui_scene::Primitive::PushShapeClip(key)
+            | tekes_ui_scene::Primitive::KeyedQuad { outer: key, .. } => {
+                assert!(refreshed.clip_shape(key).is_ok());
+            }
+            _ => {}
+        }
+    }
+    assert!(original.is_current());
+    assert_eq!(
+        host.geometry_snapshot().unwrap().identity(FIELD, None),
+        owner
+    );
+    assert_eq!(host.semantic_mount(FIELD), mount);
+    let _ = host.get_mut(FIELD).unwrap();
+    assert!(!original.is_current());
+    let mut stale = Scene::new();
+    assert!(
+        host.repaint_current(&mut stale, &mut text, bounds, bounds, Theme::LIGHT.into())
+            .is_err()
+    );
+    assert!(stale.primitives().is_empty());
+}
+
+#[test]
+fn refused_corner_input_requires_render_before_frozen_repaint() {
+    let mut host = ContentHost::new(Content::new(
+        ROOT,
+        panel(
+            Content::new(FIELD, TextFieldContent::new("Editor", "unchanged")),
+            false,
+        ),
+    ))
+    .unwrap();
+    host.set_window_active(true);
+    let mut text = Text::new(true);
+    let bounds = Rect::new(0., 0., 100., 100.);
+    render(&mut host, &mut text, bounds);
+    assert!(!host.needs_render());
+    let mount = host.semantic_mount(FIELD);
+    let corner = Point::new(0.25, 0.25);
+    for event in [
+        ContentEvent::PointerDown(corner),
+        ContentEvent::PointerUp(corner),
+    ] {
+        let old = host.geometry_snapshot().unwrap();
+        let response = host.event(&event);
+        assert!(
+            !response.consumed
+                && !response.changed
+                && !response.capture_pointer
+                && !response.activated
+        );
+        assert!(!old.is_current());
+        assert!(host.needs_render());
+        let mut stale = Scene::new();
+        assert_eq!(
+            host.repaint_current(&mut stale, &mut text, bounds, bounds, Theme::LIGHT.into()),
+            Err(CompositionError::CurveGeometry(
+                tekes_ui_scene::ClipError::StaleShapeKey
+            ))
+        );
+        assert!(stale.primitives().is_empty());
+        render(&mut host, &mut text, bounds);
+        assert!(!host.needs_render());
+        host.repaint_current(
+            &mut Scene::new(),
+            &mut text,
+            bounds,
+            bounds,
+            Theme::LIGHT.into(),
+        )
+        .unwrap();
+        assert_eq!(host.semantic_mount(FIELD), mount);
+        assert_eq!(host.focused(), None);
+        assert!(host.drain_actions().is_empty());
+    }
+}
+
+#[test]
+fn arranged_context_replacement_keeps_stale_input_closed_without_false_removal() {
+    use std::cell::RefCell;
+    #[derive(Debug)]
+    struct ContextProbe(Rc<RefCell<Vec<Option<u64>>>>);
+    impl Component for ContextProbe {
+        fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
+            CurveSubtreeCapability::Recursive
+        }
+        fn requires_text_services(&self) -> bool {
+            true
+        }
+        fn set_curve_geometry_context(&mut self, context: Option<CurveGeometryContext>) {
+            self.0
+                .borrow_mut()
+                .push(context.map(|context| context.generation()));
+        }
+        fn measure(&mut self, _: &mut dyn ButtonTextRenderer, _: Size) -> MeasuredChild {
+            MeasuredChild::new(Size::new(8., 8.))
+        }
+    }
+    let contexts = Rc::new(RefCell::new(Vec::new()));
+    let mut host = ContentHost::new(Content::new(
+        ROOT,
+        panel(Content::new(CHILD, ContextProbe(contexts.clone())), true),
+    ))
+    .unwrap();
+    let mut text = Text::new(true);
+    let frame = Rect::new(0., 0., 100., 100.);
+    render(&mut host, &mut text, frame);
+    let old = host.geometry_snapshot().unwrap();
+    let old_generation = *contexts.borrow().last().unwrap();
+    contexts.borrow_mut().clear();
+    let _ = host.get_mut(CHILD);
+    assert!(!old.is_current());
+    assert!(host.geometry_snapshot().is_none());
+    assert!(host.pointer_hit_test(Point::new(50., 50.)).is_none());
+    render(&mut host, &mut text, frame);
+    let replacements = contexts.borrow().clone();
+    assert_eq!(replacements.len(), 1);
+    assert!(replacements[0].is_some());
+    assert_ne!(replacements[0], old_generation);
+    assert!(!old.is_current());
+    assert!(host.geometry_snapshot().is_some());
+    let before_failure = host.geometry_snapshot().unwrap();
+    let mut rejected = Scene::new();
+    text.enabled = false;
+    assert_eq!(
+        host.render(&mut rejected, &mut text, frame, frame, Theme::LIGHT.into()),
+        Err(CompositionError::MissingTextServices(CHILD))
+    );
+    assert!(!before_failure.is_current());
+    assert!(host.geometry_snapshot().is_none());
+    assert!(host.pointer_hit_test(Point::new(50., 50.)).is_none());
+    let mut stale = Scene::new();
+    assert!(
+        host.repaint_current(&mut stale, &mut text, frame, frame, Theme::LIGHT.into())
+            .is_err()
+    );
+    assert!(stale.primitives().is_empty());
+    text.enabled = true;
+    render(&mut host, &mut text, frame);
+    assert!(host.geometry_snapshot().is_some());
+    contexts.borrow_mut().clear();
+    drop(host);
+    assert_eq!(*contexts.borrow(), vec![None]);
+}
+
+#[test]
+fn delegated_curve_ordinary_input_requires_current_owner_and_does_not_move_ancestor_scroll() {
+    use std::cell::Cell;
+    #[derive(Debug)]
+    struct Peer {
+        delegated: bool,
+        ready: Rc<Cell<bool>>,
+        deliveries: Rc<Cell<usize>>,
+    }
+    impl Component for Peer {
+        fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
+            CurveSubtreeCapability::Recursive
+        }
+        fn delegates_curve_focus(&self) -> bool {
+            self.delegated
+        }
+        fn rectangular_input_geometry(&self) -> bool {
+            self.ready.get()
+        }
+        fn focusable(&self) -> bool {
+            self.ready.get()
+        }
+        fn measure(&mut self, _: &mut dyn ButtonTextRenderer, _: Size) -> MeasuredChild {
+            MeasuredChild::new(Size::new(100., 100.))
+        }
+        fn event(&mut self, event: &ContentEvent) -> ContentResponse {
+            if matches!(event, ContentEvent::PointerDown(_)) {
+                self.deliveries.set(self.deliveries.get() + 1);
+                ContentResponse::consumed(false)
+            } else {
+                ContentResponse::default()
+            }
+        }
+    }
+    for delegated in [false, true] {
+        let ready = Rc::new(Cell::new(true));
+        let deliveries = Rc::new(Cell::new(0));
+        let peer = Content::new(
+            CHILD,
+            Peer {
+                delegated,
+                ready: ready.clone(),
+                deliveries: deliveries.clone(),
+            },
+        );
+        let mut host = ContentHost::new(Content::new(ROOT, panel(peer, true))).unwrap();
+        let mut text = Text::new(true);
+        let frame = Rect::new(0., 0., 100., 100.);
+        render(&mut host, &mut text, frame);
+        let response = host.event(&ContentEvent::PointerDown(Point::new(50., 50.)));
+        assert_eq!(response.consumed, delegated);
+        assert_eq!(deliveries.get(), usize::from(delegated));
+        if delegated {
+            assert_eq!(host.focused(), Some(CHILD));
+        }
+        ready.set(false);
+        host.event(&ContentEvent::PointerDown(Point::new(50., 50.)));
+        assert_eq!(deliveries.get(), usize::from(delegated));
+        ready.set(true);
+        render(&mut host, &mut text, frame);
+        let _ = host.get_mut(CHILD);
+        host.event(&ContentEvent::PointerDown(Point::new(50., 50.)));
+        assert_eq!(deliveries.get(), usize::from(delegated));
+    }
+    let ready = Rc::new(Cell::new(true));
+    let deliveries = Rc::new(Cell::new(0));
+    let mut scroll = ScrollContent::new(
+        tekes_ui_controls::ScrollArea::default(),
+        Content::new(
+            ROOT,
+            panel(
+                Content::new(
+                    CHILD,
+                    Peer {
+                        delegated: true,
+                        ready,
+                        deliveries: deliveries.clone(),
+                    },
+                ),
+                true,
+            ),
+        ),
+    );
+    scroll.viewport_height = Some(100.);
+    let scroll_id = ComponentId(8199);
+    let mut host = ContentHost::new(Content::new(scroll_id, scroll)).unwrap();
+    let mut text = Text::new(true);
+    render(&mut host, &mut text, Rect::new(0., 0., 100., 100.));
+    let before = host
+        .get(scroll_id)
+        .unwrap()
+        .component::<ScrollContent>()
+        .unwrap()
+        .scroll
+        .offset;
+    assert!(
+        !host
+            .event(&ContentEvent::PointerDown(Point::new(50., 50.)))
+            .consumed
+    );
+    assert_eq!(deliveries.get(), 0);
+    assert_eq!(host.focused(), None);
+    assert_eq!(
+        host.get(scroll_id)
+            .unwrap()
+            .component::<ScrollContent>()
+            .unwrap()
+            .scroll
+            .offset,
+        before
+    );
+}

@@ -1,3 +1,365 @@
+# Authorized independent-layer composition — 2026-10-29
+
+The user selected an AppKit-style independent child raster followed by the parent
+container's mask once. Correct clipping, image quality and pointer/AX/text mapping
+remain required; equality with rerendering all commands in one different context
+is not an acceptance condition. This is an explicit new composition contract,
+not a proof failure fallback. The original finite `VerifiedFrameOutput` contract
+and closed #127 keep their original semantics. Render API and same-raster quality
+references are described in
+[the existing boundary design](remote-prepared-frame-boundary-proof-20261026.md).
+
+## Current B2 domain acceptance — 2026-10-29
+
+The original three-Reader native sequence now passes on exact program
+`b52ef50d31c2690b7c150a7370ca52f0f1b27f88a0db9b65087ac4f9fe7949df`.
+The coordinator reviewed `native-r15`: normal exit0, no timeout, original
+reveal/capture/release, parent clipped pixels, pointer count1, same native AX
+key/selector count2, rounded outside refusal, B2 text/unmarked, actual Window
+substring/selection and candidate rect height16, real resize old-frame input/query
+NotReady with no replay, and final close assertions. Its source manifest is
+`verification-r29/main-source-manifest.json` (SHA256
+`9fa600df73e1c58bde95973c7c9cabfb2cbeae9517ffa64a6ca4f80e4e0246f9`).
+Artifacts are under the retained `independent-layer-r1/` evidence root. This is
+the B2 domain result; final combined CI, public revision and Issue acceptance
+remain coordinator-owned. Earlier candidate and failure records below retain
+their original epochs and do not supersede this result.
+
+The actual no-window main selector also passes same-key AX publication,
+65-clock backpressure/latest catch-up, exact captured Up, sibling repaint,
+original IME/owner binding, queued native commit plus CaretBlink and current
+positive-caret recovery, refused-corner redraw, and true resize/stale negatives.
+Platform default45/feature55 (overlapping), affected strict/build, Runtime60
+and Controls344/Panel22 evidence is retained with its source identities.
+
+The main/native milestone was committed as `602d444` and PR184 opened; that
+records submitted source, not a merge or public checkpoint claim. The existing
+`none` and `remount` scripts subsequently ran against the exact r29 program:
+None passed, while same-instance pending remount reached its begin marker and
+failed new-session publication. The retained old-session pending response/revoke
+queues motivated the finite session-resource reset. A subsequent default-both
+run reached None and exposed a pending Prepare/Layout ordering failure; None
+now shares the existing one-outstanding-grant coalescing path. Both real failures
+remain recorded, distinct from earlier pre-begin r16 failures.
+
+The complete lifecycle follow-up now passes on exact program
+`421dcbdc516a5e7029a53443e306838b5baf1d30a8b7c8205ae2cedb1e45b4bc`,
+manifest `verification-r31/main-source-manifest.json` (SHA256
+`90200f291f58d84c10d946a499b9d931b8e69dce6df1caf2dbc1f1313004bc88`).
+The original isolated None, isolated remount, and unchanged default-both each
+reach their actual begin/pass markers. Default-both records both lifecycle checks:
+same-session context removal/recovery with stale callback refusal, and a fresh
+process session after same-instance remount with old weak frame handle/snapshot
+refusal and reset Button/capture state. The original full main prefix also
+passes in these runs; the entire consumer test source is byte-identical to r29.
+Runtime60, Runtime/consumer strict, complete build and normal generation/composition
+pass. Raw evidence and immutable failed/successful programs are under
+`lifecycle-r1-602d444-exact/`, `verification-r30/`, and `verified-lifecycle-r31/`.
+
+This resolves the two requested existing design9.5 lifecycle interleavings for
+coordinator acceptance; it does not add new lifecycle cases or claim all possible
+interleavings. The new lifecycle program did not run a native Window. Original
+Window/AX/text/resize/close evidence remains attached to exact r29/native-r15,
+without re-signing it to the new program. Physical IME and VoiceOver remain
+not_run. Final common CI, commit/merge, public revision and Issue closure remain
+coordinator-owned; no whole-library or immutable public delivery is inferred.
+
+## Parent ordinary input and delegated focus — current candidate
+
+Native R3 reached the real parent pixels, but ordinary parent Down was refused
+before reaching the child: `ProcessContainer` has an original delegated tree,
+not a local prepared-action contract. The Panel's required reveal boundary also
+correctly prevents treating its entire rounded allocation as a focus witness.
+The new default-false `Component::delegates_curve_focus` hook explicitly bridges
+this seam. It does not change `Recursive` into `Local`, fabricate a target
+witness, or grant prepared effects. Ordinary input still requires current parent
+curve geometry and the component's current input-ready gate. The runtime opts in
+only for an available, acknowledged independent layer at the same spatial
+placement with no geometry/cancellation transition.
+
+An explicit private delegated-focus plan preserves the original window, scope,
+disabled, mount, focus-epoch, editor and IME checks, revalidates the exact parent
+geometry and delegation, and adopts only logical keyboard ownership. The child
+original Host admits its actual target against the exact external chain. This
+plan has no target witness and never calls `root.reveal` or writes a Scroll
+offset. It applies only when there is no ancestor Scroll; an ancestor Scroll
+continues through the original pure reveal planner and its existing explicit
+refusal when a sufficient plan cannot be formed. This does not claim all remote
+focus/reveal or parent scrolling configurations are accepted. Existing explicit
+minimum-focus requirements remain on the original strict path.
+
+The actual accepted child pointer/AX focus handoff suppresses just that duplicate
+focus delivery when the parent adopts it. Later explicit focus, blur and
+traversal retain their original delegation. A composing delegated keyboard owner
+without a local `can_unmark` representation must commit/unmark in its original
+Host before cross-owner focus can transfer; pointer and AX refusal preserve the
+original marked text and the other child. `key.rs` session/mount/focus-epoch and
+binding fences are unchanged.
+
+A changed stamped child reply withdraws `input_ready` immediately. An already
+established captured gesture may retain a primary Up/Move/Drag in the existing
+queue while the same spatial layer republishes. This keeps the original
+session, View and capture target/mount/serial; it never re-hit-tests old Up at a
+new owner. Commit drains each changed callback once, waiting for its replacement
+publication before later callbacks. Real geometry revocation cancels capture,
+so an old queued Up is explicitly refused without activation. New Down never
+receives this continuation permission. Service inspection consumes only its own
+response, preserving Curve frame/query replies in the shared queue.
+
+The r14 actual failure identified two Prepare requests (proposal12 then13) before
+any corresponding Layout reached the child: `rendering=false`, no queued Layout.
+Direct service Prepare and the coalesced View Layout lane are therefore not an
+atomic pair. The bounded repair keeps one sent Prepare/Layout per container until
+its exact existing `GrantPrepared` is consumed. While it is outstanding, the
+container keeps only its latest unsent parent context, withdraws input readiness,
+and issues no new outer request ID. Same-space captured continuation retains its
+original spatial identity; actual allocation changes keep geometry/cancel fences.
+The old request/proposal reply is validated and its frame credit retired without
+publishing old pixels or queries. The next ordinary Host freeze submits the then
+current context; an actual geometry revoke precedes that next grant. No new View
+scheduler, wire operation or Render contract is introduced. The real regression
+adds a second Host render before importing the first grant's frame, then requires
+the same original Button action exactly once. The r15 affected runtime60,
+runtime/consumer strict/build and actual three-Reader chain passed under their
+exact receipts. Subsequent r16 test-only runs failed before either new lifecycle
+case, so they are not lifecycle reproduction evidence.
+
+The r19 identity trace observes the earlier main-chain defect directly. Both
+actual cases show a child with unchanged shapes, no dirty geometry, no pending
+cancellation and no own repaint immediately sending Revoke on another parent
+clock generation. One trace retains the original capture `(target3,mount29,serial4)`
+through that erroneous Revoke. Later geometry/cancel flags and viewport revisions
+churn although all three processes remain Ready and allocation sequence stays1;
+neither case reaches its lifecycle begin marker. The narrow candidate removes
+only the own-`repaint_dirty` requirement from same-space typed-layer regrant.
+Actual geometry/cancellation flags and exact full shape equality continue to
+control the original revoke path; frame/input/query authority still withdraws.
+This preserves a gesture regardless of which sibling caused the parent clock to
+advance. The original repeated-render/Up exact-count and resize/stale negatives
+remain required. Candidate verification is pending; pending-cancel and global
+publication convergence must still be assessed from actual results, without
+weakening any assertion. The directed original regression now first settles a
+captured Button's own repaint, updates only a sibling's original View context,
+then refreshes the real parent Host. The exact capture target/mount/serial and
+pressed state must survive before its one Up activates exactly once. The two
+prior fast/interleaved clicks stay intact; the extra actual click raises only the
+later cumulative AX/corner/resize count oracles by one. The scoped runner selects
+`TEKESUI_PROCESS_LAYER_LIFECYCLE_CASE=main` to run the complete main chain while
+skipping the frozen lifecycle cases. The original default still runs both
+lifecycle cases; `none`, `remount` and `both` remain selectable. They are not a
+prerequisite for this scoped main-chain batch. Native-r5 has only pixel/Down-Up consumption evidence;
+its business-count/AX/text/resize sequence remains incomplete. No native timing
+sample alone establishes a continuous acquire wait or missing present.
+
+The actual r21 main-only run passes all three original clicks (including the
+directed sibling-context capture) and AX with exact counts1,2,3,4. It reaches the
+true resize negative, then fails settle: allocation sequence remains2 while
+viewport revisions rise, and same-shape contexts have geometry not dirty but
+`cancel_pending=true` before repeated revoke/geometry-dirty promotion. The cancel
+wait is an input-admission fence, not evidence of another spatial change.
+The next bounded candidate keeps that fence active across an unchanged typed
+spatial regrant, carries its exact already-validated revoke acknowledgement,
+and does not promote it to dirty geometry. A real allocation/shape/dirty change
+still issues a fresh exact revoke and clears confirmation. Input becomes ready
+only after the current exact frame/query publication checks the pending revoke
+queue is empty and cancellation was confirmed; that commit alone clears the
+pending fence. Initial grant with no old lease retains the original no-revoke
+behavior. The unchanged true-resize regression must still reject its original
+queued Up, preserve exact business count4, leave no capture/pressed state, and
+refuse old mutating input and read-only query. Candidate results are pending;
+lifecycle candidates remain frozen and excluded by the explicit main selector.
+
+The actual r22 main-only no-window chain passes all original checks, including
+count4, sibling capture, true resize and old Up/input/query refusal. Native-r9
+retains a different failure identity: the parent continuously acquires/submits/
+presents, and the queued original Up replies `activated=true` with capture
+released, but its replacement frame/count is not confirmed. After clock updates
+begin, 64 AnimationFrames precede `component closing`; this alone is not count1
+acceptance or a proof of which bounded queue failed. The native driver forwards
+each clock through `get_mut`, marks Host dirty, and skips its frame/reply handler
+when dirty. This can prevent both current publication and draining the original
+SetViewContext replies; the service queue is bounded at64.
+
+The related consumer repair shares one original native/headless phase order:
+apply all original Host updates, freeze current geometry, progress every exact
+frame/reply handle, then commit with a geometry-preserving repaint. Clock-only
+updates use the existing whole child batch's frame readiness as backpressure
+because they share one parent geometry clock. The parent clock continues
+advancing; the next ready tick forwards the latest time. Font/theme,
+caret and other non-clock context changes retain their original immediate path.
+No new scheduler, timer, capacity, sleep, VSync or drawable latency is introduced.
+The original fast-Up regression now sends65 clock ticks while publication is
+pending, then requires latest-clock catch-up and the same exact business count.
+An explicit `TEKESUI_PROCESS_LAYER_LEGACY_CLOCK_PROBE=1` diagnostic uses the old
+non-coalesced forwarding call pattern against real children, to distinguish a
+bounded transport failure from a platform wait. It is not an acceptance pass.
+Closing errors now retain the original component status for diagnosis. These
+new candidate results and original native business/AX/text/resize are pending.
+Lifecycle candidates remain frozen outside the explicit main-only chain.
+
+The actual r24 no-window shared driver passes Runtime60/strict and consumer
+strict/build, then exposes a remaining main-chain publication loop after the
+first exact click: all children stay Ready, unchanged-space grant replies retire,
+and parent geometry generations advance without current publication. A deferred
+grant acknowledgement was still classified as a Host/model update, so each
+completion invalidated the same parent clock needed by its siblings. This is a
+resource-progress defect, not a lifecycle red example or evidence of a platform
+wait. The next bounded repair resumes the latest already-frozen context in the
+original ProcessContainer paint owner after exact acknowledgement. It calls the
+existing setter, retaining all real geometry/revoke/cancel checks; it does not
+mark the Host dirty solely for resource completion. The shared driver always
+performs a geometry-preserving repaint after polling all receipts, including
+when an old grant was retired rather than a new image prepared. Real Host/model
+updates still perform the original layout/freeze. No new state/API/scheduler is
+added; the clock/Up/catch-up/sibling/true-resize assertions remain unchanged.
+These candidate checks and native business completion remain pending.
+
+The actual r25 shared-driver main chain passes normal Runtime60/strict,
+consumer strict/build and the complete real three-Reader check, including65
+pending clock ticks and latest-time catch-up. Its single old producer-pattern
+probe fails at tick63 with `component request queue full`; that is an actual
+bounded request failure, not proof of native-r9's hidden specific queue.
+Native-r11 then passes real pointer count1/unpressed and the parent pixels,
+but the fixed-time AX step sees only groups while a clock grant is unpublished.
+It does not reach the original native selector. This is distinct from the old
+closing failure and is not evidence of a changed key or a platform-render defect.
+
+The related headless regression now checks the same saved native AX key across a
+real clock grant: absent while input is withdrawn, denied without business effect,
+then restored with exactly the same key after current publication before the
+original accepted Press/count4. The B2 native script opts into a selftest-only AX
+publication gate: it waits for that exact key, runs the unchanged original
+AXPressKey/native selector after the real handler has returned, and continues
+with the original remaining action delay deltas. Default run_script remains
+unchanged. No retry timer, polling loop, new deadline or change to key/action,
+selector assertions, original business counters, scene or45second guard is added.
+Only the explicit selftest has a pending step; ordinary windows have none.
+This preserves missing/stale-element and disabled-action failures in the original
+selector path. The new regression and original native completion are pending;
+lifecycle candidates stay frozen outside the main selector.
+
+The original child remains the business-action owner. `ContentResponse.activated`
+is intentionally not forwarded as a second parent action. Native Up and AX each
+must increment the actual original Button count by exactly one and leave the
+actual parent action queue empty; Down must acquire capture without activation.
+The no-window original three-Reader regression now covers that fast parent
+Down/Up path and the explicit Down → Host render starts a same-position grant
+→ Up → frame publication ordering. The latter asserts withdrawn input readiness,
+unchanged published revision and the original spatial delegation before delivering
+Up; it uses no timing delay. Real parent AX, text ownership and callbacks,
+cross-owner marked text refusal and rounded-corner rejection remain required.
+A second grant-in-flight sequence inserts real geometry revocation before the
+queued Up is published (zero extra activations/no residual capture). The existing
+production clear/dirty transition remains unchanged: a successful synchronous
+`begin_curve_grant` restores the typed layer and geometry state before returning.
+These regressions test the observable phase rather than assigning authority to an
+unobservable intermediate state. The text replacement
+range is the original current UTF-16 length, rather than the old four-unit
+`A😀B` fixture's range applied to Reader's five-unit `draft`; the required final
+`B2 text` assertion remains. These new candidate checks and the next original
+native run are still pending; earlier receipts retain their exact old scope.
+
+The wire opts in with `NegotiateLayer`/`LayerNegotiated` and
+`PrepareLayerGrant`. A `LayerFramePublished` is ordinary independent pixel data
+bound to the current original geometry lease; it never claims parent-AA proof.
+The old negotiation/grant/frame variants retain their old proof path. A wrong
+composition acknowledgement, untyped layer frame, extent/phase mismatch or stale
+lease rejects before new image/input publication. There is no implicit fallback.
+
+Retain the actual original Grid, Reader and controls. The child Request's integer
+logical layout (333x500 in the original case) and the parent's fractional
+allocation (333.33334 points wide) have different meanings. With scale `s` and
+original allocation translation `T_px`, choose `P=floor(T_px)` and
+`phase_px=T_px-P`. The backing extent is
+`ceil(Request.logical_size*s+phase_px)`. Paint the SAME original child Scene
+translated only by `phase_px/s` into that zero-origin independent raster. The
+parent places its bitmap at `P/s` with size `pixel_extent/s`, preserving one texel
+per device pixel. It does not stretch the old 666-pixel bitmap to 333.33334 points.
+The original parent allocation clips raster padding and its ancestor curve is
+applied once. Unused fractional allocation retains transparency/parent background.
+
+Pointer inverse translation and AX/text projection continue to use original T;
+the raster's P plus its internal phase reconstructs exactly that T. The explicit
+layer grant carries original geometry and integer content layout separately.
+Both producer and receiver validate scale, layout, phase-derived extent and lease
+identity. The scene fragment transform uses the existing bounded fallible bridge;
+no new Host/editor, child rebuild, shader, AA policy or mutable state replica is
+introduced. Existing reader capture/reveal/owner continuity and resize/stale
+refusals remain required.
+
+The original B2 native fixture selects Reader. Its previously intended opaque
+background witness is now inserted on that selected B2-only path, retaining all
+68 original primitives, controls and decorations. It makes a missing parent mask
+observable at the rounded corner; it does not certify other drawing or bypass
+Renderer validation. The independent-layer candidate passed protocol lib16,
+runtime lib60, protocol/runtime and consumer strict checks, a full consumer build,
+the two Render GPU/IOSurface quality fixtures, and the real original three-Reader
+IPC/GPU integration without a desktop Window. Panel's 20 public Host tests and
+its directed strict target also passed, including stale geometry, actual layout
+failure, recovery and explicit unmount context removal.
+
+The actual integration retained Request333x500/Panel333.33334 at scale2 and
+imported 1,667,884 opaque witness pixels. Initial read-only publication has no
+focused editor/text. Explicit focus produces the original draft projection;
+focus/capture/reading reveal/release each run once and wait for their actual
+replacement frame/projection. Original owner, focus epoch, text binding, capture
+and full text/caret continuity pass. An unchanged-placement repaint preserves
+capture, while a real resize cancels it and refuses both old mutating AX input
+and old semantic query. The native and no-window entry share this original
+setup; readiness never substitutes for focus or publication.
+
+Actual evidence remains under
+`artifacts/issue-81/b2-domain-20261029-01/independent-layer-r1/`:
+Render quality in `verification-r1/`, final runtime/consumer/real IPC in
+`verification-r8/`, and Panel20/strict in `verification-r9/`. Earlier native
+`native-r1/` text-projection failure, premature-query/false-removal/capture failures,
+compile errors and the invalid NaN negative-fixture premise retain their own
+unmodified receipts. NaN layout is normalized by the existing public layout
+boundary; the final failed-layout test withdraws required text services and
+asserts the actual `MissingTextServices` error instead. No predicate in the
+original native text/capture/reveal/release assertions was weakened.
+
+This is bounded domain evidence. The original desktop-native pointer/AX/text,
+reading/capture and resize/stale script, and final combined CI, still require
+coordinator acceptance. Physical IME and VoiceOver remain unverified.
+
+## Public consumer entry (macOS with Metal)
+
+After the coordinator publishes a checkpoint containing this batch, clone TekesUI
+and check out that exact published checkpoint. The independent Cargo workspace
+uses public path dependencies and needs no private worktree, artifact directory
+or local source override. With Rust 1.95.0 installed, run from that clone:
+
+```sh
+TEKESUI_PROCESS_NATIVE_B2_SELFTEST=1 cargo +1.95.0 run --locked \
+  --manifest-path examples/process-content-consumer/Cargo.toml \
+  -- --independent-layer-only
+```
+
+This launches three original Reader child processes and uses real Metal and
+IOSurface transport. It opens no desktop window and prints its actual integration
+result. With no lifecycle selector, this runs the verified original `both`
+suite after the main chain. `TEKESUI_PROCESS_LAYER_LIFECYCLE_CASE=main` selects
+only the main chain; `none` and `remount` select the two existing independently
+verified lifecycle cases. The default and each case keep their original checks.
+A first build downloads the locked dependencies; the validation runner's
+`--offline` setting is not required for a fresh consumer clone.
+
+The original desktop B2 entry uses the same package and opt-in fixture:
+
+```sh
+TEKESUI_PROCESS_NATIVE_B2_SELFTEST=1 cargo +1.95.0 run --locked \
+  --manifest-path examples/process-content-consumer/Cargo.toml \
+  -- --native
+```
+
+This opens one native window and runs the original scripted pointer, AX, text,
+reading/capture and resize/stale acceptance. Run it alone on an idle desktop;
+repository validation reserves the window/input resource before launch. These
+programmatic checks do not establish physical IME or VoiceOver acceptance.
+
+---
+
 # Local main delivery boundary — 2026-10-27
 
 This is the existing Panel/curve design. Historical Gallery Root evidence below retains its original source identity; it is not a remote release or a current-main acceptance result.
@@ -466,3 +828,120 @@ The retained native08 run uses the unchanged original 80-line editor input. Enab
 For ordinary Quad and KeyedQuad only, inside the already-used 1..16384 target-axis domain, charge the checked area of the **existing final prepared hardware scissor** times the existing chain depth. The same scissor is stored in the prepared state and applied by the existing draw path; fragments outside it cannot evaluate the clip chain. This deliberately retains a conservative whole-scissor charge rather than analyzing Quad geometry. Invalid/unavailable scissor or out-of-domain targets keep the original full-target fallback. Other pipelines retain their existing estimates, including Glyph's accepted per-instance bound and fallback. The 100,000,000 cap, checked accumulation, CPU/instance/upload/device limits, rejection ordering, shaders, actual scissor and rasterization are unchanged. This is not a new geometry/AA/transport support domain or a wall-clock bound.
 
 The old neighbor and nested unit inputs/scissors stay unchanged. Their explicit Quad work expectations change from full target area to the existing 81x81 or 16x16 scissor; the Image still pays full-target work. A directed ordinary/Keyed Quad regression checks the unchanged 9x9 scissor, exact 81-unit acceptance and 80-unit refusal. The existing out-of-domain overflow refusal remains required. Historical failures and prior GPU evidence retain their identities. Actual local acceptance: the retained 33 passing clip contracts plus the corrected affected nested contract, Render all-target strict, and the final native program build pass. The first new nested test used an incorrect 14x14 oracle; the original Rect(2,2,14,14) has existing outward support [1,17), hence 16x16. That failure remains in main-rust01 and the affected correction passes in main-rust02. No production change followed the strict check. The actual original full AppKit sequence in native01 now passes wheel offset6, rounded outside rejection/inside original action once, three exact UTF-16 queries, all80 lines with caret offset876, Undo, Tab and CloseRequested/close; root reviewed all six stage journals, exact program hash and normal exit. Source/program/raw failures remain under SSD artifacts/issue-82/main131f9ef-quad-work-20261029-01/. No shader/scissor/draw input changed, so the prior actual pixel regressions retain their identities without another broad GPU run. Physical Pinyin and VoiceOver remain unverified; this does not close #82 or #45.
+
+
+## #81 refused input and frozen repaint — 2026-10-29
+
+The original native-r12 sequence passes the same cached AX key/selector and actual child count2, then refuses both rounded-corner pointer events. The next Redraw fails `StaleShapeKey`: `ContentHost::event` retires the input lease for every active input, but `needs_render` previously considered only the response's business dirty flag. The shared driver therefore attempted frozen repaint after a refused event without first acknowledging its new input generation. `needs_render` now includes pending geometry and the current Host/input stamp versus the last successful render. The original render/publish path renews geometry before repaint; the stale-shape guard and rounded input refusal are unchanged. A public Host regression requires stale repaint refusal before render and successful repaint after render, and the original three-process driver adds corner Down/Up directly followed by shared Redraw with unchanged original count4 and no capture/action. Actual native text/resize and final close remain required; no lifecycle or physical IME/VoiceOver acceptance is inferred.
+
+
+## #81 native logical text during layer publication — 2026-10-29
+
+Original native-r13 confirms pointer count1, original cached AX selector/count2, rounded-corner refusal and subsequent redraw. The editor click and TextCommit are admitted; the commit queues and delivers to the same original child owner. The subsequent Window ExpectText sees None while another same-spatial grant is pending: the Curve branch of ProcessContainer's read-only text/binding query required input_ready, so every new frame withdrew the logical editor as well as stale geometry. The query now retains its original snapshot under the existing active/available and exact session/view checks; text_input_snapshot still withholds caret/clip/carets unless input_ready. Mutable input and queued delivery retain the original owner/focus epoch/text-binding checks. The actual parent native text adapter is exercised through marked-state clock publication, native TextCommit conversion while pending, and another clock publication after B2 text acknowledgement. No platform text-state, TextCommit, Window assertion, permission or renderer implementation changes; native full text/resize/close remains required.
+
+
+## #81 native text geometry publication readiness — 2026-10-29
+
+Original native-r14 retains B2 text/unmarked in Window and passes attributedSubstring, then the unchanged firstRect assertion sees height0. The trace has a prior actual draft caret with height16 at grant13. TextCommit retires that spatial authority and starts grant14; the next real CaretBlink arrives before its completion and immediately supersedes it with deferred grant15. Fixed-time ExpectText executes before grant15's current publication. This supports a publication-timing hypothesis, not a claim that the new B2 caret has already passed native acceptance. The shared real-three-process regression now injects the same CaretBlink while the original native commit is queued, and requires positive finite current native caret geometry after acknowledgement and after the next clock publication, retaining zero geometry while pending.
+
+B2's existing opted-in publication script also fences ExpectText on a positive finite caret in the actual Window text state, after the original handler/queue drain. It does not match or repair the expected text/marked value; the unchanged original attributedSubstring, hasMarkedText, selectedRange and firstRect assertions run together and still fail wrong values. The default script, original B2 actions/delay deltas, 45-second external guard, logical text fix and all production spatial admission remain unchanged. No polling/timer/retry or stale-caret reuse is added. Actual complete native text/resize/stale/close is still required; physical IME/VoiceOver and frozen lifecycle cases remain unverified.
+
+
+## #81 pending remount session-resource boundary — 2026-10-29
+
+After the main/native batch was committed as source602d444 and PR184 opened (not yet merged), the two existing lifecycle cases were run using the exact r29 program and a separately audited formatting/prose-only source equivalence. `none` reached begin and passed. `remount` reached begin, started a fresh instance4 process, acknowledged grant30 and returned a frame, but refused its publication and failed the original settle deadline. The old session's pending Revoke queue survived Unmounted inside the same FrameResources; the new process cannot acknowledge that old transport request, so the unchanged no-pending-revokes publication guard remains closed. This is a newly executed lifecycle failure, not an inference from the old r16 pre-begin failures.
+
+Unmount now clears the complete old FrameResources and the old grant/native-finish receipts. Starting a new process session creates a new resource Arc with the original configured view/visibility before queuing its context. Old weak handles cannot bind to that new resource identity. Host sequence/viewport and grant transaction counters retain their monotonic behavior; all publication, cancellation and input identity guards are unchanged. The existing same-instance remount and None scripts and assertions are unchanged; they supply the regression. No r16 None coalescing candidate is applied, since the current exact None case already passes. Actual post-fix remount, default both, affected unit/strict/build and final integration remain required before receiving this follow-up.
+
+
+## #81 pending None intent — follow-up observed interleaving
+
+The session-resource fix makes the original isolated remount case pass, including fresh session/grant, old weak handle/snapshot rejection and reset Button state. The first post-fix default-both run then reaches the original None begin marker but fails its existing settle deadline: None clears the sent pending grant29's resource metadata and immediately sends revoke29 plus grant30 before consuming GrantPrepared29. The actor keeps the original Prepare/Layout ordering, so the replacement is not acknowledged; no new frame/input authority is published. The baseline isolated None pass is retained and does not erase this actual interleaving failure.
+
+The existing single-outstanding-grant branch now also coalesces None. It immediately withdraws parent geometry/input, retains the sent Prepare/Layout identity until its original acknowledgement, retires that old frame credit, and only then applies the latest frozen None/replacement context through the existing setter. Actual unmount still resets the full old-session resources. The original None/remount/default-both scripts, stale/owner/cancel guards and timeouts are unchanged; no previous frozen patch is mechanically applied. Post-fix original cases and affected checks remain required.
+
+
+## Final native composition after lifecycle repair
+
+The coordinator also ran the complete unchanged native sequence on the r31 program
+`421dcbdc516a5e7029a53443e306838b5baf1d30a8b7c8205ae2cedb1e45b4bc`.
+`native-r16` matched its exact source manifest and exited0 without timeout: original
+pixel, pointer count1, native AX/count2, rounded refusal, Window text/selection/positive
+candidate rect, resize stale input/query rejection and final close all passed.
+This supplements the actual default-both lifecycle integration and retained B1 evidence;
+physical IME and VoiceOver remain not_run. Final remote CI and merge are recorded in #81.
+
+
+## #81 CI compatibility: failed-clock render and ordinary Process Content
+
+The complete CI on source602d444 exposed the original notice consumer assertion that a rejected clock clears samples and schedules no automatic render, plus ordinary Process Content geometry deadlines. These are checked again against current source0c92994 before fixing, rather than relabeling old-head CI as current. The notice regression comes from comparing a current stamp with `last_render_stamp=None` after a failed render. `needs_render` now detects unacknowledged input only relative to an actual successful render stamp; the original clock-error no-retry assertion remains, and a directed check still requires frozen repaint to reject that failed geometry. The rounded-refusal repaint regression remains required.
+
+The ordinary ProcessContainer path imported an acknowledged image but shared the Curve-only `has_pending_curve_host_updates` gate. Legacy frame preparation intentionally retains unrelated business/service events, including the original module's startup notification, so that gate could never become clear without the caller consuming unrelated events. Only explicitly preflighted Curve containers now wait for the separate Curve Host service phase; ordinary geometry still requires its original current viewport/frame, dirty/cancel, visibility/activity, Ready process and input admission checks. The original three-mounted-container consumer must settle before draining/asserting its preserved startup business notifications, proving events are not swallowed to make geometry ready. Existing default/projection/context/surface/overlay/scroll/reading modes and deadlines remain unchanged. All affected original composition, legacy and independent-layer lifecycle checks remain necessary before receiving this compatibility follow-up.
+
+
+### Legacy current-layout frame readiness
+
+The first compatibility batch passes the complete composition consumer and restores ordinary geometry progress. Its original projection test then reaches overlay publication but observes the previous semantic scope; the view-context lane also progresses past its former layout deadline and reports the original Content-process-unavailable error. All remaining original legacy lanes and B2 default-both pass in that batch. These later failures are retained separately from the original current-head deadline failures.
+
+Legacy frame readiness previously compared viewport only. A repaint can enqueue another Layout in the same viewport; immediately clearing repaint_dirty then made the old image count as acknowledged before that new layout completed. The existing FrameResources.expected_seq already records the Layout that must be acknowledged. Ordinary frame admission now also requires image.seq >= expected_seq, preserving the actual current image/viewport contract rather than delaying a test or consuming queued events. The original projection overlay and view-context assertions remain unchanged; their results must determine whether this closes both failures. Content-process boundary errors also retain their original Failed/Closing status as necessary diagnostic context, without fallback or recovery.
+
+
+### Legacy captured repaint and owned context-response progress
+
+Requiring the current Layout frame makes the original projection overlay assertion pass. The same batch reaches the existing mounted-container captured-repaint assertion and finds that Move loses outer capture while the same spatial viewport awaits its new image; the prior deferred-pointer path admitted Curve only. It now admits an already captured legacy owner during that stable viewport/unchanged geometry/no cancellation phase, reusing the exact original session/view/target-mount/capture-serial queue and its delivery validation. Move/Drag retain outer capture only while the original child capture remains; Up and queue cancellation release it. New hit admission still waits for the current frame, and real geometry changes cannot enter this continuation path.
+
+The view-context lane's retained failure status identifies `component output queue full`. Legacy prepare never consumed its own queued SetViewContext responses; the restricted Curve frame receiver did. Both now use one exact-request consumer of those owned context replies. Business/startup notifications remain caller-owned, and errors propagate. This is normal existing response ownership, not a drain-all fallback. Original default, view-context, projection and other legacy assertions/timeouts are unchanged, and the full B2/default-both current-input regression remains required.
+
+
+### Original stable input owner versus new semantic publication
+
+The original mounted-container contract continues from captured Move/Up directly to Commit and an immediate native bridge query, with no asynchronous settle inserted. Source review before compiling r34 therefore rejects extending that stable legacy path into the Curve-only queue: it would preserve a capture flag but still violate the subsequent original synchronous query assertion. That working candidate is superseded without a runtime pass claim.
+
+The current Layout sequence check belongs to the existing legacy semantic-publication gate, not the original same-viewport input-owner geometry gate. Legacy geometry readiness returns to its original current-viewport contract; semantic_ready additionally requires the actual expected Layout image before exposing a changed semantic scope. Existing Curve geometry/admission/queued pointer behavior is restored byte-for-byte. The exact owned SetViewContext response consumer remains in both original prepare paths, resolving the observed response-queue accumulation without swallowing business events. Original tests/deadlines remain unchanged; actual projection/default/view-context and full affected lanes decide acceptance.
+
+
+## #81 original editor-click publication readiness
+
+Native-r17 on exact895bd689 reaches the real button count1 and AX count2, but the later editor Down and Up are both explicitly refused with parent focusedNone; TextCommit is also unconsumed. Subsequent exact frame13 publication completes while Window remains focusNone/textNone. The thread sample shows AppKit event waiting, not evidence of a blocked rendering handler. The later positive-caret test step therefore waits for an editor intent that was never admitted; this is not an observed loss of an already acquired parent editor. The45-second timeout and all raw failure/sample evidence are retained.
+
+Only B2's existing opt-in script now names its original editor-click timestamp and original native key as a publication prerequisite. It waits for that key in the actual Window publication, then sends the unchanged original native Click at the unchanged coordinates through the original Host hit/lease path. The published bounding frame is not permission and does not replace either Host's hit test. The rounded-corner negative remains an ungated refused click. Additional B2 checks require the real editor Down to capture/acquire parent200 and the real TextCommit to be consumed by that parent, so a refusal fails at its source rather than silently waiting for text. No timer, retry, synthetic editor, focus setter, deadline change or production input-policy change is added.
+
+The original no-window shared driver now starts a real clock grant at the editor point, requires Down/Up refusal with no parent focus/native text, settles the actual pipeline, requires the same original Message key to return, and executes its original admitted click/focus/text/IME path. Actual native full text/resize/stale/close remains required. The unrelated pre-existing notice formatting candidate is withdrawn from this batch; only relevant evidence prose is to be synchronized.
+
+
+## Final compatibility and native acceptance
+
+The complete original composition consumer passed 610 tests (19 ignored, not passes),
+with Controls344/Panel22, Runtime60, affected strict/build, services and all ten
+legacy Process Content modes passing. The B2 default-both actual GPU/IPC sequence
+retains its main-chain and both lifecycle assertions. These results are recorded
+in verified-ci-compatibility-r35 and verified-editor-readiness-r36 with exact inputs.
+
+The coordinator ran native-r18 on program
+`3ce04175d0eb4fccfce5e0891f59ee4fea7d86a054e3ccfeb5efcd8540604148`
+against manifest `f062752516e95eb9f4f4f2985b743c70ef8d7fab793d0e07224a63d999fdbe40`.
+It exited0 without timeout: original clipped pixels, pointer count1, real AX count2,
+rounded refusal, same-key editor publication followed by real Down and TextCommit
+admission, Window text/selection/candidate rect height16, resize stale rejection
+and final close all passed. Prior CI and native-r17 failures retain their identities.
+No unrelated notice formatting was changed. Physical IME/VoiceOver remain not_run;
+final remote CI and delivery identities are maintained in Issue81.
+
+
+## #81 owned child exit while awaiting a surface
+
+Final CI40885681009/source5d97014 passes the other lanes and reaches the original reading-lifecycle owned Reader SIGKILL, then fails its unchanged10-second Failed-status wait. One local execution of the exact current program passes; this is retained as a local pass, not a CI reproduction. A concrete compatible interleaving exists: the service thread reads frame metadata and waits for its Mach surface, but external SIGKILL does not set the parent's local cancellation flag. The receive and original test both have10-second deadlines, so status failure may be published only at the receive deadline. The CI log lacks the transport stage/status detail; this explanation is source-backed and is not mislabeled as an observed CI stage.
+
+The existing cancellable Mach loop now supports a fallible guard. Both owned V2 and V1 process paths use one process-owned receive entry that checks the already-existing nonblocking Child::try_wait after a real50ms receive timeout. It propagates peer exit immediately through the original failure path. The first receive still accepts an already queued final right from a completed peer, preserving ordinary final-frame/Stop ordering; caller cancellation remains checked first. No surface/frame identity, permission, deadline or fallback changes. Owned child polling stays on the existing background transport thread.
+
+Two directed real-Mach/owned-child tests cover no-surface SIGKILL without caller cancellation and queued final-right delivery after peer exit; the original cancellation/descriptor tests remain. The unchanged original reading-lifecycle Failed predicate and timeout gain only PID/session/observed-status error context. All old failures and passes remain separate; actual targeted post-fix checks are required.
+
+
+The owned-child transport follow-up passed Runtime62 (including both new real-Mach
+regressions), strict/build, original reading-lifecycle, normal services Stop and B2
+default-both. Root also accepted native-r19 on exact program
+`6b871d4faa44f3c49fcea671f3eca84dca748c647a26ef807351d65a7cac5e48`: all
+original pixel/pointer/AX/editor/text/candidate-rect/resize-stale/close assertions
+passed, exit0 without timeout. Evidence remains in verified-owned-child-exit-r37,
+verification-r37 and native-r19. The old CI trace did not expose its internal receive
+stage, so the fixed source-backed interleaving is not claimed as its uniquely proven cause.

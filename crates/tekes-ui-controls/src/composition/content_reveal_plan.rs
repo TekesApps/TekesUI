@@ -189,6 +189,7 @@ fn read_reveal_nodes(
 enum PlanPurpose {
     Reveal,
     LogicalFocus,
+    DelegatedFocus,
 }
 /// A readonly-resolved original tree route. Mutable access follows only the
 /// recorded child indices; it never probes siblings with children_mut.
@@ -1187,7 +1188,7 @@ impl ContentHost {
     ) -> Result<(), HostRevealError> {
         if !Arc::ptr_eq(&plan.owner, &self.reveal_clock.owner)
             || self.reveal_clock.stamp()? != plan.stamp
-            || (plan.purpose == PlanPurpose::Reveal && self.reveal_clock.pending)
+            || (plan.purpose != PlanPurpose::LogicalFocus && self.reveal_clock.pending)
             || !self.window_active
             || self.reading_transaction
             || self.focused != plan.focus
@@ -1255,6 +1256,29 @@ impl ContentHost {
             plan.stamp.0,
         )
         .map_err(|_| HostRevealError::StalePlan)?;
+        if plan.purpose == PlanPurpose::DelegatedFocus {
+            if !self.active_curve_geometry_is_current()
+                || path
+                    .iter()
+                    .any(|node| node.component::<ScrollContent>().is_some())
+                || path.last().is_none_or(|node| {
+                    !node.component.delegates_curve_focus()
+                        || !matches!(
+                            node.component.required_focus_space(),
+                            RequiredFocusSpace::Legacy | RequiredFocusSpace::NotRequired
+                        )
+                        || !node.component.focusable()
+                        || node.component.semantics().disabled
+                })
+                || plan.required_witness.is_some()
+                || plan.required_evidence.is_some()
+            {
+                return Err(HostRevealError::StalePlan);
+            }
+            // The original child owns focus/reveal under its exact external
+            // chain; no ancestor offset or target witness is authorized here.
+            return Ok(());
+        }
         let (frames, clips, _) = projected(&plan.nodes, &plan.targets);
         if requires_complete_curve_landing(&plan.nodes) {
             let landing = expanded_rect(
@@ -1507,7 +1531,15 @@ impl ContentHost {
             .iter()
             .take(path.len().saturating_sub(1))
             .any(|n| n.component::<ScrollContent>().is_some());
-        if !has_scroll && !requires_reveal {
+        let delegated_focus = target.component.delegates_curve_focus()
+            && matches!(
+                target_requirement,
+                RequiredFocusSpace::Legacy | RequiredFocusSpace::NotRequired
+            );
+        if !has_scroll && (!requires_reveal || delegated_focus) {
+            // A delegated original child validates its own focus inside the
+            // current external curve chain. Parent logical ownership neither
+            // invents a full-container witness nor moves an ancestor Scroll.
             // Explicit legacy policy chosen before any reveal attempt. Current
             // mount/scope/availability/IME still authorize logical focus, but
             // stale or offscreen Rect geometry grants no reveal guarantee.
@@ -1536,7 +1568,11 @@ impl ContentHost {
                 outcome: HostRevealOutcome::default(),
                 explicit: false,
                 path_limit: budget.max_path_nodes,
-                purpose: PlanPurpose::LogicalFocus,
+                purpose: if delegated_focus {
+                    PlanPurpose::DelegatedFocus
+                } else {
+                    PlanPurpose::LogicalFocus
+                },
             });
         }
         // Target focus-space remains independent of any certified ancestor clip.

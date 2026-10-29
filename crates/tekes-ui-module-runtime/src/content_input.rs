@@ -48,6 +48,70 @@ fn target(host: &ContentHost, id: ComponentId) -> Option<wire::Target> {
         mount: host.semantic_mount(id)?,
     })
 }
+/// Build a read-only projection directly from the original arranged Host.
+/// This deliberately avoids `dispatch`, whose legacy query lane reconciles
+/// input policy and may mutate focus-wrap state.
+pub(crate) fn read_only_projection(
+    host: &ContentHost,
+    view: u64,
+    viewport: u64,
+    reading: Option<wire::ReadingState>,
+) -> Result<wire::Reply> {
+    let focused = host.focused().and_then(|id| target(host, id));
+    let text = focused
+        .zip(host.text_input_snapshot())
+        .map(|(owner, state)| wire::TextState {
+            owner,
+            text: state.text,
+            caret_index: state.caret_index,
+            selection: state.selection,
+            marked: state.marked,
+            read_only: state.read_only,
+            caret: rect(state.caret.unwrap_or_default()),
+            clip: rect(state.clip.unwrap_or_default()),
+            carets: state
+                .carets
+                .into_iter()
+                .map(|(index, bounds)| (index, rect(bounds)))
+                .collect(),
+        });
+    let semantics = crate::content_accessibility::snapshot(host)?;
+    Ok(wire::Reply {
+        view,
+        viewport,
+        consumed: false,
+        changed: false,
+        animation_frame_requested: host.animation_frame_requested(),
+        capture_pointer: false,
+        activated: false,
+        bubbles: false,
+        pointer_focus_requested: false,
+        accessibility_focus_requested: false,
+        key: None,
+        overlay: host
+            .input_overlay_owner()
+            .map(|(id, mount)| wire::Target { id: id.0, mount }),
+        reading_scroll_source: None,
+        reading,
+        semantics: Some(semantics),
+        focused,
+        focus_epoch: host.focus_epoch(),
+        text_binding: host.native_key_binding(),
+        captured: host
+            .pointer_capture_lease()
+            .map(|(id, mount, serial)| wire::Capture {
+                target: wire::Target { id: id.0, mount },
+                serial,
+            }),
+        focus_targets: host
+            .focus_targets()
+            .into_iter()
+            .filter_map(|(id, _)| target(host, id))
+            .collect(),
+        composing: host.is_composing(),
+        text,
+    })
+}
 pub(crate) fn event(input: &wire::Input) -> Option<ContentEvent> {
     match input {
         wire::Input::Snapshot
