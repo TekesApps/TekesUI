@@ -32,16 +32,37 @@ positive-caret recovery, refused-corner redraw, and true resize/stale negatives.
 Platform default45/feature55 (overlapping), affected strict/build, Runtime60
 and Controls344/Panel22 evidence is retained with its source identities.
 
-The late-added `none` and `remount` scripts remain unverified at this milestone. They
-exercise pending-grant external-context removal/recovery and same-instance
-unmount/remount/recovery; the main/native milestone is independently deliverable, but #81 remains open
-until these existing cases resolve the original session/mount safety contract.
-The original design9.5 session/mount invalidation rule still applies: this
-main/native result does not prove those two end-to-end interleavings. The
-main selector has `lifecycle_checks=[]`; the unchanged default `both` suite
-has not passed and must not be advertised as verified. Physical IME and
-VoiceOver remain not_run. No whole-library or immutable public delivery is
-inferred from this domain acceptance.
+The main/native milestone was committed as `602d444` and PR184 opened; that
+records submitted source, not a merge or public checkpoint claim. The existing
+`none` and `remount` scripts subsequently ran against the exact r29 program:
+None passed, while same-instance pending remount reached its begin marker and
+failed new-session publication. The retained old-session pending response/revoke
+queues motivated the finite session-resource reset. A subsequent default-both
+run reached None and exposed a pending Prepare/Layout ordering failure; None
+now shares the existing one-outstanding-grant coalescing path. Both real failures
+remain recorded, distinct from earlier pre-begin r16 failures.
+
+The complete lifecycle follow-up now passes on exact program
+`421dcbdc516a5e7029a53443e306838b5baf1d30a8b7c8205ae2cedb1e45b4bc`,
+manifest `verification-r31/main-source-manifest.json` (SHA256
+`90200f291f58d84c10d946a499b9d931b8e69dce6df1caf2dbc1f1313004bc88`).
+The original isolated None, isolated remount, and unchanged default-both each
+reach their actual begin/pass markers. Default-both records both lifecycle checks:
+same-session context removal/recovery with stale callback refusal, and a fresh
+process session after same-instance remount with old weak frame handle/snapshot
+refusal and reset Button/capture state. The original full main prefix also
+passes in these runs; the entire consumer test source is byte-identical to r29.
+Runtime60, Runtime/consumer strict, complete build and normal generation/composition
+pass. Raw evidence and immutable failed/successful programs are under
+`lifecycle-r1-602d444-exact/`, `verification-r30/`, and `verified-lifecycle-r31/`.
+
+This resolves the two requested existing design9.5 lifecycle interleavings for
+coordinator acceptance; it does not add new lifecycle cases or claim all possible
+interleavings. The new lifecycle program did not run a native Window. Original
+Window/AX/text/resize/close evidence remains attached to exact r29/native-r15,
+without re-signing it to the new program. Physical IME and VoiceOver remain
+not_run. Final common CI, commit/merge, public revision and Issue closure remain
+coordinator-owned; no whole-library or immutable public delivery is inferred.
 
 ## Parent ordinary input and delegated focus — current candidate
 
@@ -310,17 +331,17 @@ uses public path dependencies and needs no private worktree, artifact directory
 or local source override. With Rust 1.95.0 installed, run from that clone:
 
 ```sh
-TEKESUI_PROCESS_NATIVE_B2_SELFTEST=1 TEKESUI_PROCESS_LAYER_LIFECYCLE_CASE=main \
-  cargo +1.95.0 run --locked \
+TEKESUI_PROCESS_NATIVE_B2_SELFTEST=1 cargo +1.95.0 run --locked \
   --manifest-path examples/process-content-consumer/Cargo.toml \
   -- --independent-layer-only
 ```
 
 This launches three original Reader child processes and uses real Metal and
 IOSurface transport. It opens no desktop window and prints its actual integration
-result. The explicit `main` selector is the verified scope. Omitting it retains
-the original `both` lifecycle suite; `none`, `remount` and `both` are preserved
-but unverified, rather than additional successful main-chain checks.
+result. With no lifecycle selector, this runs the verified original `both`
+suite after the main chain. `TEKESUI_PROCESS_LAYER_LIFECYCLE_CASE=main` selects
+only the main chain; `none` and `remount` select the two existing independently
+verified lifecycle cases. The default and each case keep their original checks.
 A first build downloads the locked dependencies; the validation runner's
 `--offline` setting is not required for a fresh consumer clone.
 
@@ -824,3 +845,28 @@ Original native-r13 confirms pointer count1, original cached AX selector/count2,
 Original native-r14 retains B2 text/unmarked in Window and passes attributedSubstring, then the unchanged firstRect assertion sees height0. The trace has a prior actual draft caret with height16 at grant13. TextCommit retires that spatial authority and starts grant14; the next real CaretBlink arrives before its completion and immediately supersedes it with deferred grant15. Fixed-time ExpectText executes before grant15's current publication. This supports a publication-timing hypothesis, not a claim that the new B2 caret has already passed native acceptance. The shared real-three-process regression now injects the same CaretBlink while the original native commit is queued, and requires positive finite current native caret geometry after acknowledgement and after the next clock publication, retaining zero geometry while pending.
 
 B2's existing opted-in publication script also fences ExpectText on a positive finite caret in the actual Window text state, after the original handler/queue drain. It does not match or repair the expected text/marked value; the unchanged original attributedSubstring, hasMarkedText, selectedRange and firstRect assertions run together and still fail wrong values. The default script, original B2 actions/delay deltas, 45-second external guard, logical text fix and all production spatial admission remain unchanged. No polling/timer/retry or stale-caret reuse is added. Actual complete native text/resize/stale/close is still required; physical IME/VoiceOver and frozen lifecycle cases remain unverified.
+
+
+## #81 pending remount session-resource boundary — 2026-10-29
+
+After the main/native batch was committed as source602d444 and PR184 opened (not yet merged), the two existing lifecycle cases were run using the exact r29 program and a separately audited formatting/prose-only source equivalence. `none` reached begin and passed. `remount` reached begin, started a fresh instance4 process, acknowledged grant30 and returned a frame, but refused its publication and failed the original settle deadline. The old session's pending Revoke queue survived Unmounted inside the same FrameResources; the new process cannot acknowledge that old transport request, so the unchanged no-pending-revokes publication guard remains closed. This is a newly executed lifecycle failure, not an inference from the old r16 pre-begin failures.
+
+Unmount now clears the complete old FrameResources and the old grant/native-finish receipts. Starting a new process session creates a new resource Arc with the original configured view/visibility before queuing its context. Old weak handles cannot bind to that new resource identity. Host sequence/viewport and grant transaction counters retain their monotonic behavior; all publication, cancellation and input identity guards are unchanged. The existing same-instance remount and None scripts and assertions are unchanged; they supply the regression. No r16 None coalescing candidate is applied, since the current exact None case already passes. Actual post-fix remount, default both, affected unit/strict/build and final integration remain required before receiving this follow-up.
+
+
+## #81 pending None intent — follow-up observed interleaving
+
+The session-resource fix makes the original isolated remount case pass, including fresh session/grant, old weak handle/snapshot rejection and reset Button state. The first post-fix default-both run then reaches the original None begin marker but fails its existing settle deadline: None clears the sent pending grant29's resource metadata and immediately sends revoke29 plus grant30 before consuming GrantPrepared29. The actor keeps the original Prepare/Layout ordering, so the replacement is not acknowledged; no new frame/input authority is published. The baseline isolated None pass is retained and does not erase this actual interleaving failure.
+
+The existing single-outstanding-grant branch now also coalesces None. It immediately withdraws parent geometry/input, retains the sent Prepare/Layout identity until its original acknowledgement, retires that old frame credit, and only then applies the latest frozen None/replacement context through the existing setter. Actual unmount still resets the full old-session resources. The original None/remount/default-both scripts, stale/owner/cancel guards and timeouts are unchanged; no previous frozen patch is mechanically applied. Post-fix original cases and affected checks remain required.
+
+
+## Final native composition after lifecycle repair
+
+The coordinator also ran the complete unchanged native sequence on the r31 program
+`421dcbdc516a5e7029a53443e306838b5baf1d30a8b7c8205ae2cedb1e45b4bc`.
+`native-r16` matched its exact source manifest and exited0 without timeout: original
+pixel, pointer count1, native AX/count2, rounded refusal, Window text/selection/positive
+candidate rect, resize stale input/query rejection and final close all passed.
+This supplements the actual default-both lifecycle integration and retained B1 evidence;
+physical IME and VoiceOver remain not_run. Final remote CI and merge are recorded in #81.

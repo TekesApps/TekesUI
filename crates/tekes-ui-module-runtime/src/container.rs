@@ -832,6 +832,14 @@ impl ProcessContainer {
         } else {
             ProcessComponent::spawn_v1_view(self.module.clone(), self.host_epoch, move || wake())?
         };
+        // Each process session owns its frame/response queues. A retained
+        // component may remount, but old weak handles must keep the retired
+        // resource identity rather than attach to this new process owner.
+        self.frame_resources = Arc::new(std::sync::Mutex::new(FrameResources {
+            view: self.native.as_ref().map_or(0, |native| native.view),
+            visible: self.visible,
+            ..FrameResources::default()
+        }));
         if let (Some(native), Some(context)) = (&self.native, self.view_context.as_ref()) {
             match process.request(crate::component::RequestBody::SetViewContext {
                 view: native.view,
@@ -1419,11 +1427,12 @@ impl ProcessContainer {
         };
         if !current {
             trace_layer(format_args!(
-                "event=publication_rejected stamp={:?} geometry_dirty={} repaint_dirty={} cancel_pending={}",
+                "event=publication_rejected stamp={:?} geometry_dirty={} repaint_dirty={} cancel_pending={} pending_revokes={}",
                 publication.stamp,
                 self.geometry_dirty,
                 self.repaint_dirty,
-                self.geometry_input_pending
+                self.geometry_input_pending,
+                shared.lock().unwrap().pending_revokes.len()
             ));
             self.error = Some("stale or incomplete curve publication".into());
             self.geometry_dirty = true;
@@ -2267,10 +2276,11 @@ impl Component for ProcessContainer {
                     .as_ref()
                     .and_then(|snapshot| snapshot.reply().captured)
             ));
-            if independent_layer && awaiting_grant && context.is_some() {
+            if independent_layer && awaiting_grant {
                 // One Prepare/Layout remains outstanding until its exact
-                // GrantPrepared is consumed. Coalesce only unsent geometry
-                // intent, without reserving an outer request identity.
+                // GrantPrepared is consumed. None also withdraws parent input
+                // immediately, but must retain that sent request until its ack.
+                // Coalesce only unsent intent, without reserving request IDs.
                 // Waiting for cancellation is an admission fence, not another
                 // spatial change. Keep that fence until the current frame commits.
                 let same_space = !self.geometry_dirty
@@ -2970,15 +2980,16 @@ impl Component for ProcessContainer {
                 self.toolbar_focused = false;
                 self.pointer_focus = None;
                 let mut resources = self.frame_resources.lock().unwrap();
-                resources.registration = None;
-                resources.image = None;
-                resources.expected_viewport = 0;
-                resources.expected_seq = 0;
-                resources.visible = false;
+                // Revoke every old-session frame and pending acknowledgement,
+                // including a Revoke sent by the Host's preceding context None.
+                *resources = FrameResources::default();
+                drop(resources);
                 self.process = None;
                 self.curve_preflight = CurvePreflight::Unrequested;
                 self.curve_request = None;
+                self.curve_grant_request = None;
                 self.curve_geometry = None;
+                self.deferred_key_result = None;
                 self.content_snapshot = None;
                 self.content_focused = false;
                 self.content_bubbles = None;
