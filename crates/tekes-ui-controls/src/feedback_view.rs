@@ -1027,6 +1027,7 @@ impl TooltipView {
 pub struct PopoverView {
     surface: Option<&'static str>,
     dismiss_visible: bool,
+    placement: PopoverPlacement,
     presence: OverlayPresence,
     layout: OverlayLayout,
     disabled: bool,
@@ -1041,6 +1042,7 @@ impl Default for PopoverView {
         Self {
             surface: None,
             dismiss_visible: true,
+            placement: PopoverPlacement::Below,
             presence: OverlayPresence::default(),
             layout: OverlayLayout::default(),
             disabled: false,
@@ -1079,7 +1081,20 @@ fn popover_spacing() -> PopoverSpacing {
         action_width: 120.,
     }
 }
+/// Preferred placement in the existing viewport-clamped Popover shell. Right
+/// placements flip to the left when it fits, then clamp to the actual viewport.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum PopoverPlacement {
+    #[default]
+    Below,
+    RightStart,
+    RightCenter,
+    RightEnd,
+}
 impl PopoverView {
+    pub fn set_placement(&mut self, placement: PopoverPlacement) {
+        self.placement = placement;
+    }
     pub fn set_surface(
         &mut self,
         name: &str,
@@ -1191,7 +1206,7 @@ impl PopoverView {
         } else {
             effective
         };
-        let frame = place_overlay(anchor, size, viewport, 6.);
+        let frame = place_popover(anchor, size, viewport, 6., self.placement);
         let visible = clipped(frame, clip);
         let spacing = popover_spacing();
         let dismiss_w = spacing
@@ -1408,7 +1423,7 @@ impl PopoverView {
             "{anchor:?}{size:?}{viewport:?}{clip:?}{palette:?}{role:?}{content_identity}{}{}{:?}",
             text.backing_scale(),
             self.dismiss_visible,
-            self.surface
+            (self.surface, self.placement)
         );
         if !model.open && !self.presence.is_presented() {
             self.dismiss.blur();
@@ -1613,6 +1628,48 @@ pub(crate) fn place_overlay(anchor: Rect, size: Size, viewport: Rect, gap: f32) 
         (viewport.max_y() - h).max(viewport.min_y()),
     );
     Rect::new(x, y, w, h)
+}
+
+fn place_popover(
+    anchor: Rect,
+    size: Size,
+    viewport: Rect,
+    gap: f32,
+    placement: PopoverPlacement,
+) -> Rect {
+    let below = place_overlay(anchor, size, viewport, gap);
+    if placement == PopoverPlacement::Below || below.is_empty() {
+        return below;
+    }
+    let right = anchor.max_x() + gap;
+    let left = anchor.min_x() - gap - below.size.width;
+    let x = if right + below.size.width <= viewport.max_x() {
+        right
+    } else if left >= viewport.min_x() {
+        left
+    } else {
+        right
+    };
+    let y = match placement {
+        PopoverPlacement::RightStart => anchor.min_y(),
+        PopoverPlacement::RightCenter => {
+            anchor.min_y() + (anchor.size.height - below.size.height) / 2.
+        }
+        PopoverPlacement::RightEnd => anchor.max_y() - below.size.height,
+        PopoverPlacement::Below => unreachable!(),
+    };
+    Rect::new(
+        x.clamp(
+            viewport.min_x(),
+            (viewport.max_x() - below.size.width).max(viewport.min_x()),
+        ),
+        y.clamp(
+            viewport.min_y(),
+            (viewport.max_y() - below.size.height).max(viewport.min_y()),
+        ),
+        below.size.width,
+        below.size.height,
+    )
 }
 
 /// Toast rendering keeps duration progression deterministic in its model.

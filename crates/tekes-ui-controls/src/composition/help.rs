@@ -283,6 +283,9 @@ impl ContentHost {
         Some((n.id, text, layout))
     }
     pub(super) fn help_event(&mut self, event: &ContentEvent) -> bool {
+        if self.hover_preview_event(event) {
+            return true;
+        }
         let routing = event.routing_event();
         match routing.as_ref() {
             ContentEvent::PointerMove(p) => {
@@ -487,5 +490,31 @@ impl ContentHost {
                 role,
             );
         }
+    }
+}
+
+impl Content {
+    // Same original clipped/curved allocation as normal pointer routing. An
+    // interactive front sibling blocks a context binding behind that sibling.
+    pub(super) fn anchor_path_at(
+        &self,
+        point: Point,
+        owners: &[ComponentId],
+    ) -> Option<Vec<ComponentId>> {
+        if !self.active() || !self.curve_contains(point) {
+            return None;
+        }
+        if self.routes_pointer_children() {
+            for child in self.component.children().iter().rev() {
+                if let Some(mut path) = child.anchor_path_at(point, owners) {
+                    path.push(self.id);
+                    return Some(path);
+                }
+            }
+        }
+        (self.pointer_target_at(point)
+            || owners.contains(&self.id)
+                && self.visible().is_some_and(|frame| frame.contains(point)))
+        .then(|| vec![self.id])
     }
 }

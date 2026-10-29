@@ -1163,6 +1163,30 @@
       "reason": "Current source-visible R1 immutable finite reveal preparation; API classification only, #98 execution acceptance remains pending."
     },
     {
+      "api": "tekes_ui_controls::composition::HoverPreviewContent",
+      "category": "component-adapter",
+      "components": [
+        "tui.popover"
+      ],
+      "reason": "Passive original Content in the existing Popover shell, without input scope, trigger, editor or Dismiss."
+    },
+    {
+      "api": "tekes_ui_controls::composition::HoverPreviewError",
+      "category": "component-support",
+      "components": [
+        "tui.popover"
+      ],
+      "reason": "Explicit passive-preview version/owner/content admission refusal, not another component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::HoverPreviewVersion",
+      "category": "component-support",
+      "components": [
+        "tui.popover"
+      ],
+      "reason": "Opaque original anchor/preview mount and data version for passive Content replacement and stale completion refusal."
+    },
+    {
       "api": "tekes_ui_controls::composition::IconContent",
       "category": "component",
       "components": [
@@ -2253,6 +2277,14 @@
       "category": "shared-support",
       "components": [],
       "reason": "Shared overlay lifecycle and measured View geometry; not independent overlay controls."
+    },
+    {
+      "api": "tekes_ui_controls::feedback_view::PopoverPlacement",
+      "category": "component-support",
+      "components": [
+        "tui.popover"
+      ],
+      "reason": "Preferred Below or right-edge alignment in the existing viewport-clamped Popover shell; default behavior retained."
     },
     {
       "api": "tekes_ui_controls::feedback_view::PopoverView",

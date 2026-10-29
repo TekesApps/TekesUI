@@ -1564,29 +1564,6 @@ impl Content {
             child.context_menu_ids(ids);
         }
     }
-    // Same original clipped/curved allocation as normal pointer routing. An
-    // interactive front sibling blocks a context binding behind that sibling.
-    fn context_path_at(
-        &self,
-        point: Point,
-        bindings: &[ContextMenuBinding],
-    ) -> Option<Vec<ComponentId>> {
-        if !self.active() || !self.curve_contains(point) {
-            return None;
-        }
-        if self.routes_pointer_children() {
-            for child in self.component.children().iter().rev() {
-                if let Some(mut path) = child.context_path_at(point, bindings) {
-                    path.push(self.id);
-                    return Some(path);
-                }
-            }
-        }
-        (self.pointer_target_at(point)
-            || bindings.iter().any(|binding| binding.owner == self.id)
-                && self.visible().is_some_and(|frame| frame.contains(point)))
-        .then(|| vec![self.id])
-    }
 }
 impl ContentHost {
     /// Attach to current mounts. A removed/reinserted owner must explicitly bind
@@ -1907,7 +1884,13 @@ impl ContentHost {
                 {
                     return None;
                 }
-                let path = self.scope().context_path_at(pointer.position, &bindings)?;
+                let path = self.scope().anchor_path_at(
+                    pointer.position,
+                    &bindings
+                        .iter()
+                        .map(|binding| binding.owner)
+                        .collect::<Vec<_>>(),
+                )?;
                 let binding = path
                     .into_iter()
                     .find_map(|id| bindings.iter().find(|binding| binding.owner == id).copied())?;

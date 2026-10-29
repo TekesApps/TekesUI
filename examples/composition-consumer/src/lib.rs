@@ -197,7 +197,6 @@ mod tests {
                     .unwrap()
                     .component::<Button>()
                     .unwrap()
-
                     .activations,
                 1
             );
@@ -276,3 +275,5 @@ pub mod icon_content;
 pub mod nested_reading;
 
 pub mod context_menu;
+
+pub mod hover_preview;

@@ -73,7 +73,10 @@ pub use number::{
 };
 mod overlay_scope;
 mod popover;
-pub use popover::{PopoverCloseReason, PopoverClosed, PopoverContent, PopoverSession};
+pub use popover::{
+    HoverPreviewContent, HoverPreviewError, HoverPreviewVersion, PopoverCloseReason, PopoverClosed,
+    PopoverContent, PopoverSession,
+};
 mod pointer;
 mod text_query;
 pub use overlay_scope::OverlayScope;
@@ -2390,6 +2393,7 @@ impl ContentHost {
         self.finish_split_layout();
         self.arrange_popovers(text, requested.0, requested.1);
         self.arrange_context_menus(requested.0, requested.1);
+        self.arrange_hover_previews(text, requested.0, requested.1);
         self.check_text_services(text)?;
         if let Some(id) = self.root.label_failure() {
             self.cancel();
@@ -2405,6 +2409,7 @@ impl ContentHost {
     fn reconcile_active_inputs(&mut self) {
         self.reconcile_popovers();
         self.reconcile_context_menus();
+        self.reconcile_hover_previews();
         self.root.refresh_activity(self.window_active);
         self.root
             .reconcile_presentation_runnable(self.window_active);
