@@ -103,6 +103,8 @@ pub struct AccessibilityNode {
     /// UTF-16 selection for text fields; absent for non-text semantic owners.
     pub text_selection: Option<std::ops::Range<usize>>,
     pub read_only: bool,
+    /// Original Content owner has a currently eligible context-menu attachment.
+    pub can_show_menu: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -111,6 +113,7 @@ pub enum AccessibilityAction {
     Decrement,
     Focus,
     Press,
+    ShowMenu,
     SetValue(String),
     SetSelection(std::ops::Range<usize>),
     ReplaceSelectedText(String),
@@ -1097,6 +1100,12 @@ pub(crate) mod native {
                     && self.dispatch(AccessibilityAction::Press)
             }
 
+            #[unsafe(method(accessibilityPerformShowMenu))]
+            fn accessibilityPerformShowMenu(&self) -> bool {
+                self.node().is_some_and(|node| node.can_show_menu)
+                    && self.dispatch(AccessibilityAction::ShowMenu)
+            }
+
             #[unsafe(method(setAccessibilityValue:))]
             unsafe fn accessibilitySetValue(&self, value: Option<&objc2::runtime::AnyObject>) {
                 let Some((_, node)) = self.shared_and_node() else {
@@ -1241,6 +1250,7 @@ pub(crate) mod native {
                 let mutation = selector == sel!(setAccessibilityExpanded:)
                     || selector == sel!(setAccessibilityDisclosed:)
                     || selector == sel!(accessibilityPerformPress)
+                    || selector == sel!(accessibilityPerformShowMenu)
                     || selector == sel!(setAccessibilityValue:)
                     || selector == sel!(setAccessibilitySelectedText:)
                     || selector == sel!(setAccessibilitySelectedTextRange:)
@@ -1261,6 +1271,8 @@ pub(crate) mod native {
                             && node.expanded.is_some())
                             || (selector == sel!(accessibilityPerformPress)
                                 && Self::is_pressable(node.role))
+                            || (selector == sel!(accessibilityPerformShowMenu)
+                                && node.can_show_menu)
                             || (selector == sel!(setAccessibilityValue:)
                                 && matches!(
                                     node.role,
@@ -1670,6 +1682,7 @@ mod tests {
             required: false,
             text_selection: None,
             read_only: false,
+            can_show_menu: false,
         }
     }
 

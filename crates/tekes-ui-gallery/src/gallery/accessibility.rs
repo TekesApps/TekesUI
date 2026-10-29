@@ -35,6 +35,7 @@ pub(super) fn node(key: K, role: R, label: &str, frame: Rect) -> N {
         required: false,
         text_selection: None,
         read_only: false,
+        can_show_menu: false,
     }
 }
 impl Gallery {

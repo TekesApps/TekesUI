@@ -3088,6 +3088,9 @@ impl Component for ProcessContainer {
             A::Decrement => W::Decrement,
             A::Focus => W::Focus,
             A::Press => W::Press,
+            // The current remote protocol has no context-menu attachment or
+            // ShowMenu intent. Do not advertise/serialize it as a primary Press.
+            A::ShowMenu => return ContentResponse::default(),
             A::SetValue(v) => W::SetValue(v.clone()),
             A::SetSelection(v) => W::SetSelection(v.clone()),
             A::ReplaceSelectedText(v) => W::ReplaceSelectedText(v.clone()),

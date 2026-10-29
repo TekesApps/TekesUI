@@ -140,6 +140,7 @@ pub(crate) struct MenuContentState {
     trigger_content: Vec<Content>,
     trigger_measured: Size,
     last_frame: Option<std::time::Duration>,
+    context: Option<ContextMenuState>,
 }
 impl MenuContentState {
     fn new(labels: &[String]) -> Self {
@@ -157,12 +158,18 @@ impl MenuContentState {
             trigger_content: Vec::new(),
             trigger_measured: Size::default(),
             last_frame: None,
+            context: None,
         }
     }
     fn reset(&mut self, labels: &[String]) {
+        let mut context = self.context.take();
+        if let Some(context) = &mut context {
+            context.request = None;
+        }
         let content = std::mem::take(&mut self.trigger_content);
         let measured = self.trigger_measured;
         *self = Self::new(labels);
+        self.context = context;
         self.trigger_content = content;
         self.trigger_measured = measured;
     }
@@ -187,6 +194,51 @@ pub enum MenuValuesError {
     Duplicate,
 }
 impl MenuContent {
+    /// A menu in the original ContentHost overlay pass, with no trigger control,
+    /// layout allocation or primary-selection action. Bind its original owner
+    /// with ContentHost::bind_context_menu after mounting both Content nodes.
+    pub fn context_menu(
+        name: impl Into<String>,
+        entries: Vec<MenuEntry>,
+    ) -> Result<Self, MenuEntriesError> {
+        let mut menu = Self::new(name, Vec::new());
+        menu.set_entries(entries)?;
+        menu.menu.content_state.as_mut().unwrap().context = Some(ContextMenuState::default());
+        Ok(menu)
+    }
+    fn context(&self) -> Option<&ContextMenuState> {
+        self.menu.content_state.as_ref()?.context.as_ref()
+    }
+    fn context_contains_popup(&self, point: Point) -> bool {
+        self.popup
+            .as_ref()
+            .is_some_and(|layout| layout.popup.contains(point))
+            || self.menu.content_state.as_ref().is_some_and(|state| {
+                state.panels.iter().any(|panel| {
+                    panel
+                        .layout
+                        .as_ref()
+                        .is_some_and(|layout| layout.popup.contains(point))
+                })
+            })
+    }
+    fn context_mut(&mut self) -> Option<&mut ContextMenuState> {
+        self.menu.content_state.as_mut()?.context.as_mut()
+    }
+    fn retire_context(&mut self) {
+        self.menu.deactivate();
+        self.menu.clear_presentation();
+        self.close_panels();
+        self.popup = None;
+        if let Some(state) = &mut self.menu.content_state {
+            state.selection_event = None;
+            state.panels.clear();
+            state.retiring.clear();
+            if let Some(context) = &mut state.context {
+                context.request = None;
+            }
+        }
+    }
     pub fn new(label: impl Into<String>, labels: Vec<String>) -> Self {
         let mut menu = MenuView::new(labels.len());
         menu.content_state = Some(MenuContentState::new(&labels));
@@ -407,6 +459,7 @@ impl MenuContent {
             .expect("reconciled declaration");
         state.selection_event = self.labels.get(index).map(|label| MenuSelection {
             index,
+            context_request: state.context.as_ref().and_then(|context| context.request),
             label: label.clone(),
             model_revision: state.model_revision,
             value_path: state
@@ -565,11 +618,13 @@ impl MenuContent {
             }
         }
         let revision = state.model_revision;
+        let context_request = state.context.as_ref().and_then(|context| context.request);
         self.selected = indices.first().copied();
         self.menu.content_state.as_mut().unwrap().selection_event = Some(MenuSelection {
             index,
             label,
             model_revision: revision,
+            context_request,
             value_path: Some(values),
         });
         self.menu.deactivate();
@@ -1120,6 +1175,13 @@ impl Component for MenuContent {
             })
             .flatten()
     }
+    fn action_payload_current(&self, payload: &ContentActionPayload) -> bool {
+        let ContentActionPayload::MenuSelection(selection) = payload else {
+            return true;
+        };
+        selection.context_request.is_none()
+            || self.model_revision() == Some(selection.model_revision)
+    }
     fn lifecycle(&mut self, event: Lifecycle) {
         if event == Lifecycle::Unmounted {
             self.menu.deactivate();
@@ -1127,6 +1189,9 @@ impl Component for MenuContent {
             self.popup = None;
             if let Some(state) = &mut self.menu.content_state {
                 state.selection_event = None;
+                if let Some(context) = &mut state.context {
+                    *context = ContextMenuState::default();
+                }
                 state.last_frame = None;
                 for panel in state.panels.iter_mut().chain(&mut state.retiring) {
                     panel.view.deactivate();
@@ -1185,7 +1250,7 @@ impl Component for MenuContent {
         part: Option<usize>,
         action: &AccessibilityAction,
     ) -> ContentResponse {
-        if !self.reconcile_trigger() {
+        if !self.reconcile_trigger() || self.context().is_some() && part.is_none() {
             return ContentResponse::default();
         }
         if self.declared() {
@@ -1221,6 +1286,9 @@ impl Component for MenuContent {
     }
 
     fn measure(&mut self, t: &mut dyn ButtonTextRenderer, a: Size) -> MeasuredChild {
+        if self.context().is_some() {
+            return MeasuredChild::new(Size::default());
+        }
         if let Some(state) = &mut self.menu.content_state
             && let Some(content) = state.trigger_content.first_mut()
         {
@@ -1250,6 +1318,9 @@ impl Component for MenuContent {
         theme: ContentTheme,
     ) {
         self.reconcile_trigger();
+        if self.context().is_some() {
+            return;
+        }
         if let Some(state) = &self.menu.content_state
             && !state.trigger_content.is_empty()
         {
@@ -1299,6 +1370,9 @@ impl Component for MenuContent {
                 }
             }
         }
+        let (f, c) = self
+            .context()
+            .map_or((f, c), |context| (context.anchor, context.viewport));
         let labels = self.labels.iter().map(String::as_str).collect::<Vec<_>>();
         self.popup = self.menu.render(
             s,
@@ -1336,7 +1410,7 @@ impl Component for MenuContent {
         self.handle_menu(e)
     }
     fn focusable(&self) -> bool {
-        self.trigger.focusable()
+        self.context().is_none() && self.trigger.focusable()
     }
     fn set_focus(&mut self, f: bool, v: bool) {
         self.trigger.set_focus(f, v);
@@ -1346,6 +1420,12 @@ impl Component for MenuContent {
         }
     }
     fn event(&mut self, e: &ContentEvent) -> ContentResponse {
+        if self.context().is_some() {
+            if matches!(e, ContentEvent::Cancel) {
+                self.retire_context();
+            }
+            return ContentResponse::default();
+        }
         let was_open = self.menu.is_open();
         if !self.reconcile_trigger() {
             return ContentResponse {
@@ -1365,9 +1445,23 @@ impl Component for MenuContent {
         }
         r
     }
+    fn semantic_hidden(&self) -> bool {
+        self.context().is_some() && !self.menu.is_open()
+    }
+    fn semantic_frame(&self, frame: Rect) -> Rect {
+        if self.context().is_some() {
+            self.popup.as_ref().map_or(frame, |layout| layout.popup)
+        } else {
+            frame
+        }
+    }
     fn semantics(&self) -> ContentSemantics {
         let mut s = self.trigger.semantics();
-        s.role = ContentRole::MenuButton;
+        s.role = if self.context().is_some() {
+            ContentRole::Menu
+        } else {
+            ContentRole::MenuButton
+        };
         s.expanded = Some(self.overlay_open());
         s.value = if self.declared() {
             self.menu
@@ -1402,3 +1496,458 @@ impl std::fmt::Display for MenuValuesError {
     }
 }
 impl std::error::Error for MenuValuesError {}
+
+/// Mount-bound attachment between an original row/content and its menu node.
+/// Neither identifier is a business destination; capture business data by owner.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ContextMenuBinding {
+    owner: ComponentId,
+    owner_mount: u64,
+    menu: ComponentId,
+    menu_mount: u64,
+}
+impl ContextMenuBinding {
+    pub fn owner(self) -> ComponentId {
+        self.owner
+    }
+}
+/// Immutable provenance of one accepted context request. The SDK retains the
+/// corresponding anchor geometry; clients do not pass popup coordinates.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ContextMenuRequest {
+    binding: ContextMenuBinding,
+    source: ContentActionSource,
+    anchor_identity: u64,
+}
+impl ContextMenuRequest {
+    pub fn owner(self) -> ComponentId {
+        self.binding.owner
+    }
+    pub fn owner_mount(self) -> u64 {
+        self.binding.owner_mount
+    }
+    pub fn source(self) -> ContentActionSource {
+        self.source
+    }
+    pub fn anchor_identity(self) -> u64 {
+        self.anchor_identity
+    }
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ContextMenuError {
+    NotContextMenu,
+    OwnerUnavailable,
+    MenuUnavailable,
+    StaleBinding,
+    MissingLayout,
+    Composing,
+    InputCaptured,
+    OverlayActive,
+}
+#[derive(Debug, Default)]
+struct ContextMenuState {
+    binding: Option<ContextMenuBinding>,
+    request: Option<ContextMenuRequest>,
+    owner_frame: Rect,
+    anchor: Rect,
+    viewport: Rect,
+}
+impl Content {
+    fn context_menu_ids(&self, ids: &mut Vec<ComponentId>) {
+        if self
+            .component::<MenuContent>()
+            .is_some_and(|menu| menu.context().is_some())
+        {
+            ids.push(self.id);
+        }
+        for child in self.component.children() {
+            child.context_menu_ids(ids);
+        }
+    }
+    // Same original clipped/curved allocation as normal pointer routing. An
+    // interactive front sibling blocks a context binding behind that sibling.
+    fn context_path_at(
+        &self,
+        point: Point,
+        bindings: &[ContextMenuBinding],
+    ) -> Option<Vec<ComponentId>> {
+        if !self.active() || !self.curve_contains(point) {
+            return None;
+        }
+        if self.routes_pointer_children() {
+            for child in self.component.children().iter().rev() {
+                if let Some(mut path) = child.context_path_at(point, bindings) {
+                    path.push(self.id);
+                    return Some(path);
+                }
+            }
+        }
+        (self.pointer_target_at(point)
+            || bindings.iter().any(|binding| binding.owner == self.id)
+                && self.visible().is_some_and(|frame| frame.contains(point)))
+        .then(|| vec![self.id])
+    }
+}
+impl ContentHost {
+    /// Attach to current mounts. A removed/reinserted owner must explicitly bind
+    /// again; an old attachment can never open a replacement with the same ID.
+    pub fn bind_context_menu(
+        &mut self,
+        owner: ComponentId,
+        menu: ComponentId,
+    ) -> Result<ContextMenuBinding, ContextMenuError> {
+        let source = self
+            .scope()
+            .find_active(owner)
+            .filter(|node| !node.component.semantics().disabled)
+            .ok_or(ContextMenuError::OwnerUnavailable)?;
+        let owner_mount = source.mount;
+        let node = self
+            .scope()
+            .find_active(menu)
+            .ok_or(ContextMenuError::MenuUnavailable)?;
+        if owner == menu
+            || node
+                .component::<MenuContent>()
+                .and_then(MenuContent::context)
+                .is_none()
+        {
+            return Err(ContextMenuError::NotContextMenu);
+        }
+        let binding = ContextMenuBinding {
+            owner,
+            owner_mount,
+            menu,
+            menu_mount: node.mount,
+        };
+        let popup = self
+            .root
+            .find_mut(menu)
+            .unwrap()
+            .component_mut::<MenuContent>()
+            .unwrap();
+        popup.retire_context();
+        popup.context_mut().unwrap().binding = Some(binding);
+        self.dirty = true;
+        Ok(binding)
+    }
+    /// Native auxiliary action discovery for this original, currently laid-out
+    /// owner. It never turns an ordinary Press into a menu request.
+    pub fn can_show_context_menu(&self, owner: ComponentId) -> bool {
+        self.last_layout.is_some()
+            && self.context_input_barrier().is_ok()
+            && self.context_binding_for(owner).is_some()
+    }
+    fn context_binding_for(&self, owner: ComponentId) -> Option<ContextMenuBinding> {
+        self.context_bindings().into_iter().find(|binding| {
+            binding.owner == owner
+                && self.context_owner_frame(*binding).is_ok()
+                && self
+                    .root
+                    .find(binding.menu)
+                    .and_then(|node| node.component::<MenuContent>())
+                    .is_some_and(|menu| {
+                        menu.trigger.focusable()
+                            && !menu.labels.is_empty()
+                            && menu.context().and_then(|context| context.binding) == Some(*binding)
+                    })
+        })
+    }
+    pub(super) fn context_menu_accessibility_action(
+        &mut self,
+        owner: ComponentId,
+        part: Option<usize>,
+    ) -> ContentResponse {
+        if part.is_some() {
+            return ContentResponse::default();
+        }
+        let Some(binding) = self.context_binding_for(owner) else {
+            return ContentResponse::default();
+        };
+        if self
+            .open_context_menu(binding, ContentActionSource::Accessibility, None)
+            .is_ok()
+        {
+            ContentResponse::consumed(true)
+        } else {
+            ContentResponse::default()
+        }
+    }
+    fn context_bindings(&self) -> Vec<ContextMenuBinding> {
+        let mut ids = Vec::new();
+        self.scope().context_menu_ids(&mut ids);
+        ids.into_iter()
+            .filter_map(|id| {
+                self.scope()
+                    .find_active(id)?
+                    .component::<MenuContent>()?
+                    .context()?
+                    .binding
+            })
+            .collect()
+    }
+    fn context_owner_frame(&self, binding: ContextMenuBinding) -> Result<Rect, ContextMenuError> {
+        let owner = self
+            .scope()
+            .find_active(binding.owner)
+            .ok_or(ContextMenuError::OwnerUnavailable)?;
+        let menu = self
+            .scope()
+            .find_active(binding.menu)
+            .ok_or(ContextMenuError::MenuUnavailable)?;
+        if owner.mount != binding.owner_mount || menu.mount != binding.menu_mount {
+            return Err(ContextMenuError::StaleBinding);
+        }
+        if owner.component.semantics().disabled {
+            return Err(ContextMenuError::OwnerUnavailable);
+        }
+        owner
+            .component
+            .semantic_frame(owner.frame)
+            .intersection(&owner.clip)
+            .filter(|frame| !frame.is_empty())
+            .ok_or(ContextMenuError::OwnerUnavailable)
+    }
+    fn context_input_barrier(&self) -> Result<(), ContextMenuError> {
+        if !self.window_active || self.reading_transaction {
+            return Err(ContextMenuError::OwnerUnavailable);
+        }
+        if self.captured.is_some() || !self.text_keys.is_empty() {
+            return Err(ContextMenuError::InputCaptured);
+        }
+        if self
+            .focused_text()
+            .is_some_and(|surface| surface.input.marked.is_some())
+            || self
+                .focused
+                .and_then(|id| self.root.find(id))
+                .is_some_and(|node| node.component.composing())
+        {
+            return Err(ContextMenuError::Composing);
+        }
+        if self.scope().overlay_id().is_some_and(|id| {
+            self.root
+                .find(id)
+                .and_then(|node| node.component::<MenuContent>())
+                .and_then(MenuContent::context)
+                .is_none()
+        }) {
+            return Err(ContextMenuError::OverlayActive);
+        }
+        Ok(())
+    }
+    /// Keyboard/assistive intent for the original owner. This uses its SDK rect,
+    /// keeps the editor focus and never commits or cancels marked text. Physical
+    /// Shift+F10/Menu input reaches the same path through ContentEvent::KeyInput.
+    pub fn request_context_menu(
+        &mut self,
+        binding: ContextMenuBinding,
+        source: ContentActionSource,
+    ) -> Result<ContextMenuRequest, ContextMenuError> {
+        self.open_context_menu(binding, source, None)
+    }
+    fn open_context_menu(
+        &mut self,
+        binding: ContextMenuBinding,
+        source: ContentActionSource,
+        pointer: Option<Point>,
+    ) -> Result<ContextMenuRequest, ContextMenuError> {
+        self.reconcile_context_menus();
+        self.context_input_barrier()?;
+        if self.last_layout.is_none() {
+            return Err(ContextMenuError::MissingLayout);
+        }
+        let frame = self.context_owner_frame(binding)?;
+        let node = self
+            .root
+            .find(binding.menu)
+            .ok_or(ContextMenuError::MenuUnavailable)?;
+        let popup = node
+            .component::<MenuContent>()
+            .ok_or(ContextMenuError::NotContextMenu)?;
+        if popup.context().and_then(|context| context.binding) != Some(binding) {
+            return Err(ContextMenuError::StaleBinding);
+        }
+        if !popup.trigger.focusable() || popup.labels.is_empty() {
+            return Err(ContextMenuError::MenuUnavailable);
+        }
+        for previous in self.context_bindings() {
+            self.root
+                .find_mut(previous.menu)
+                .unwrap()
+                .component_mut::<MenuContent>()
+                .unwrap()
+                .retire_context();
+        }
+        let request = ContextMenuRequest {
+            binding,
+            source,
+            anchor_identity: actions::next_mount(),
+        };
+        let (_, viewport) = self.last_layout.unwrap();
+        let popup = self
+            .root
+            .find_mut(binding.menu)
+            .unwrap()
+            .component_mut::<MenuContent>()
+            .unwrap();
+        let context = popup.context_mut().unwrap();
+        context.request = Some(request);
+        context.owner_frame = frame;
+        context.anchor = pointer.map_or(frame, |point| Rect::new(point.x, point.y, 0., 0.));
+        context.viewport = viewport;
+        popup.show_menu();
+        self.help.suppress();
+        self.dirty = true;
+        Ok(request)
+    }
+    pub(super) fn reconcile_context_menus(&mut self) {
+        let mut ids = Vec::new();
+        self.root.context_menu_ids(&mut ids);
+        for id in ids {
+            let popup = self
+                .root
+                .find(id)
+                .unwrap()
+                .component::<MenuContent>()
+                .unwrap();
+            let context = popup.context().unwrap();
+            let invalid = context.request.is_some()
+                && (!self.window_active
+                    || context
+                        .binding
+                        .and_then(|binding| self.context_owner_frame(binding).ok())
+                        != Some(context.owner_frame));
+            if invalid {
+                self.root
+                    .find_mut(id)
+                    .unwrap()
+                    .component_mut::<MenuContent>()
+                    .unwrap()
+                    .retire_context();
+            }
+        }
+    }
+    pub(super) fn arrange_context_menus(&mut self, viewport: Rect, clip: Rect) {
+        self.reconcile_context_menus();
+        for binding in self.context_bindings() {
+            if let Some(context) = self
+                .root
+                .find_mut(binding.menu)
+                .unwrap()
+                .component_mut::<MenuContent>()
+                .unwrap()
+                .context_mut()
+            {
+                context.viewport = viewport.intersection(&clip).unwrap_or_default();
+            }
+        }
+    }
+    pub(super) fn context_menu_event(&mut self, event: &ContentEvent) -> Option<ContentResponse> {
+        let bindings = self.context_bindings();
+        let outside_down = match event {
+            ContentEvent::PointerDown(point) => Some(*point),
+            ContentEvent::Pointer(pointer)
+                if pointer.phase == PointerPhase::Down
+                    && pointer.is_primary()
+                    && !pointer.modifiers.control =>
+            {
+                Some(pointer.position)
+            }
+            _ => None,
+        };
+        if let Some(point) = outside_down {
+            let mut retired = false;
+            for binding in &bindings {
+                let menu = self
+                    .root
+                    .find_mut(binding.menu)
+                    .unwrap()
+                    .component_mut::<MenuContent>()
+                    .unwrap();
+                if menu.menu.is_open() && !menu.context_contains_popup(point) {
+                    // The host receives window-margin clicks too. MenuRuntime
+                    // ignores points beyond its own visible bounds, so retire
+                    // the original context here before ordinary row routing.
+                    menu.retire_context();
+                    retired = true;
+                }
+            }
+            if retired {
+                return Some(ContentResponse::consumed(true));
+            }
+        }
+        if let ContentEvent::Scroll { position, .. } = event {
+            for binding in &bindings {
+                let menu = self
+                    .root
+                    .find_mut(binding.menu)
+                    .unwrap()
+                    .component_mut::<MenuContent>()
+                    .unwrap();
+                if !menu.context_contains_popup(*position) {
+                    menu.retire_context();
+                }
+            }
+        }
+        let (binding, point) = match event {
+            ContentEvent::Pointer(pointer)
+                if pointer.phase == PointerPhase::Down
+                    && (pointer.button == Some(PointerButton::Secondary)
+                        || pointer.button == Some(PointerButton::Primary)
+                            && pointer.modifiers.control) =>
+            {
+                // Menu rows/child menus retain their existing overlay hit policy.
+                if self
+                    .scope()
+                    .overlay_id()
+                    .and_then(|id| self.root.find(id))
+                    .and_then(|node| node.component::<MenuContent>())
+                    .is_some_and(|menu| menu.context_contains_popup(pointer.position))
+                {
+                    return None;
+                }
+                let path = self.scope().context_path_at(pointer.position, &bindings)?;
+                let binding = path
+                    .into_iter()
+                    .find_map(|id| bindings.iter().find(|binding| binding.owner == id).copied())?;
+                (binding, Some(pointer.position))
+            }
+            ContentEvent::KeyInput(key)
+                if key.down
+                    && !key.repeat
+                    && !key.modifiers.command
+                    && !key.modifiers.control
+                    && !key.modifiers.alt
+                    && (key.characters_ignoring_modifiers == "\u{f735}"
+                        || key.modifiers.shift
+                            && key.characters_ignoring_modifiers == "\u{f70d}") =>
+            {
+                let owner = self.focused?;
+                let binding = bindings
+                    .into_iter()
+                    .find(|binding| binding.owner == owner)?;
+                (binding, None)
+            }
+            _ => return None,
+        };
+        let source = if point.is_some() {
+            ContentActionSource::Pointer
+        } else {
+            ContentActionSource::Keyboard
+        };
+        let changed = self.open_context_menu(binding, source, point).is_ok();
+        // Rejected composing/captured requests never fall through to row selection.
+        Some(ContentResponse::consumed(changed))
+    }
+    pub(super) fn context_menu_action_current(&self, payload: &ContentActionPayload) -> bool {
+        let ContentActionPayload::MenuSelection(selection) = payload else {
+            return true;
+        };
+        selection.context_request.is_none_or(|request| {
+            self.root
+                .find_active(request.binding.owner)
+                .is_some_and(|owner| owner.mount == request.binding.owner_mount)
+        })
+    }
+}

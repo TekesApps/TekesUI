@@ -1,7 +1,13 @@
 //! Opt-in structural reading over the existing Content tree and ScrollArea.
 use super::*;
 use crate::{ReadingDocumentVersion, ReadingUpdateError};
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, rc::Rc};
+
+mod checkpoint;
+pub use checkpoint::{
+    ContentReadingCheckpoint, ContentReadingCheckpointError, ContentReadingPosition,
+    ContentReadingRestoreRequest,
+};
 
 impl Content {
     /// Notify only the original mounted source's ancestor path. The input event
@@ -108,6 +114,7 @@ pub(super) struct Anchor {
     within: f32,
     screen_y: f32,
     fallback: Vec<ComponentId>,
+    fallback_used: bool,
 }
 #[derive(Clone, Debug)]
 struct SavedDocument {
@@ -120,6 +127,7 @@ struct SavedDocument {
 #[derive(Clone, Debug)]
 pub(super) struct ContentReadingState {
     version: ReadingDocumentVersion,
+    intent: Rc<()>,
     pub(super) items: Vec<ComponentId>,
     pub(super) item_mounts: BTreeMap<ComponentId, u64>,
     following: bool,
@@ -154,6 +162,7 @@ fn frames(children: &[Content], items: &[ComponentId]) -> Vec<(ComponentId, Rect
 
 impl ContentReadingState {
     fn observe_manual_history(&mut self) -> bool {
+        self.intent = Rc::new(());
         let changed = self.following
             || !self.user_input
             || self.pending.is_some()
@@ -209,6 +218,7 @@ impl ContentReadingState {
             within,
             screen_y: frame.min_y() + within - top,
             fallback,
+            fallback_used: false,
         })
     }
     pub(super) fn prepare(&mut self, scroll: &mut ScrollArea) {
@@ -281,7 +291,7 @@ impl ContentReadingState {
                 let target = (f64::from(scroll.offset.y) + displacement) as f32;
                 (
                     target,
-                    if original.is_some() {
+                    if original.is_some() && !anchor.fallback_used {
                         ContentReadingAnchorUpdate::Preserved(*id)
                     } else {
                         ContentReadingAnchorUpdate::Fallback(Some(*id))
@@ -338,7 +348,10 @@ impl ContentReadingState {
             self.momentum_fenced = false;
         }
         if delta.y != 0.0 {
-            if delta.y < 0.0 {
+            self.intent = Rc::new(());
+            // Before an imported/new attachment has its first layout, any
+            // fresh input owns the position, including downward input.
+            if delta.y < 0.0 || (self.frames.is_empty() && self.result.is_none()) {
                 self.following = false;
             }
             self.user_input = true;
@@ -456,6 +469,7 @@ impl ScrollContent {
             .scroll_by(-self.scroll.offset.x, -self.scroll.offset.y);
         self.reading = Some(ContentReadingState {
             version: version.clone(),
+            intent: Rc::new(()),
             items,
             item_mounts: BTreeMap::new(),
             following,
@@ -511,6 +525,7 @@ impl ScrollContent {
     }
     pub fn stop_following(&mut self) {
         if let Some(state) = &mut self.reading {
+            state.intent = Rc::new(());
             state.following = false;
             state.pending = None;
             state.restore_offset = None;
@@ -522,6 +537,7 @@ impl ScrollContent {
         let Some(state) = &mut self.reading else {
             return false;
         };
+        state.intent = Rc::new(());
         let changed = !state.following;
         state.following = true;
         state.explicit_reveal = None;

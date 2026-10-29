@@ -340,6 +340,7 @@ fn main() {
                     required: semantics.required,
                     text_selection: None,
                     read_only: false,
+                    can_show_menu: false,
                 };
             let mut nodes = Vec::new();
             for node in self.tree.semantics().into_iter().filter(|_| valid) {
@@ -1567,6 +1568,7 @@ fn main() {
                         tekes_ui_platform_macos::AccessibilityAction::Decrement => A::Decrement,
                         tekes_ui_platform_macos::AccessibilityAction::Focus => A::Focus,
                         tekes_ui_platform_macos::AccessibilityAction::Press => A::Press,
+                        tekes_ui_platform_macos::AccessibilityAction::ShowMenu => A::ShowMenu,
                         tekes_ui_platform_macos::AccessibilityAction::SetValue(v) => A::SetValue(v),
                         tekes_ui_platform_macos::AccessibilityAction::SetSelection(v) => {
                             A::SetSelection(v)

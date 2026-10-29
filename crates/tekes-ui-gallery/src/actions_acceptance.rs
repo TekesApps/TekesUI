@@ -148,6 +148,7 @@ impl Host {
                 required: semantics.required,
                 text_selection: None,
                 read_only: false,
+                can_show_menu: false,
             };
         let mut nodes = Vec::new();
         for node in self.fixture.host.semantics() {
@@ -310,10 +311,12 @@ impl WindowHandler for Host {
             Event::Accessibility { target, action } => {
                 use tekes_ui_controls::composition::{AccessibilityAction as A, ComponentId};
                 let action = match action {
+                    tekes_ui_platform_macos::AccessibilityAction::SetExpanded(_) => return,
                     tekes_ui_platform_macos::AccessibilityAction::Increment => A::Increment,
                     tekes_ui_platform_macos::AccessibilityAction::Decrement => A::Decrement,
                     tekes_ui_platform_macos::AccessibilityAction::Focus => A::Focus,
                     tekes_ui_platform_macos::AccessibilityAction::Press => A::Press,
+                    tekes_ui_platform_macos::AccessibilityAction::ShowMenu => A::ShowMenu,
                     tekes_ui_platform_macos::AccessibilityAction::SetValue(v) => A::SetValue(v),
                     tekes_ui_platform_macos::AccessibilityAction::SetSelection(v) => {
                         A::SetSelection(v)

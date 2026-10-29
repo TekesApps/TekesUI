@@ -74,6 +74,7 @@ impl Host {
         let action = match action {
             AccessibilityAction::Focus => Action::Focus,
             AccessibilityAction::Press => Action::Press,
+            AccessibilityAction::ShowMenu => Action::ShowMenu,
             AccessibilityAction::Increment => Action::Increment,
             AccessibilityAction::Decrement => Action::Decrement,
             AccessibilityAction::SetValue(value) => Action::SetValue(value),
