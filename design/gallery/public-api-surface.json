@@ -1565,6 +1565,96 @@
       "reason": "Host-visible required-focus space contract used by ContentHost and focus/reveal runtime; not a component API."
     },
     {
+      "api": "tekes_ui_controls::composition::RichBlock",
+      "category": "component-support",
+      "components": [
+        "tui.markdown",
+        "tui.code-block",
+        "tui.diff-view"
+      ],
+      "reason": "Immutable rich-document projection, identity, geometry or action support; not an independent component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::RichBlockGeometry",
+      "category": "component-support",
+      "components": [
+        "tui.markdown",
+        "tui.code-block",
+        "tui.diff-view"
+      ],
+      "reason": "Immutable rich-document projection, identity, geometry or action support; not an independent component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::RichBlockKind",
+      "category": "component-support",
+      "components": [
+        "tui.markdown",
+        "tui.code-block",
+        "tui.diff-view"
+      ],
+      "reason": "Immutable rich-document projection, identity, geometry or action support; not an independent component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::RichContent",
+      "category": "component-adapter",
+      "components": [
+        "tui.markdown",
+        "tui.code-block",
+        "tui.diff-view"
+      ],
+      "reason": "Selectable original Content adapter for existing Markdown/code/diff models."
+    },
+    {
+      "api": "tekes_ui_controls::composition::RichContentError",
+      "category": "component-support",
+      "components": [
+        "tui.markdown",
+        "tui.code-block",
+        "tui.diff-view"
+      ],
+      "reason": "Immutable rich-document projection, identity, geometry or action support; not an independent component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::RichContentVersion",
+      "category": "component-support",
+      "components": [
+        "tui.markdown",
+        "tui.code-block",
+        "tui.diff-view"
+      ],
+      "reason": "Immutable rich-document projection, identity, geometry or action support; not an independent component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::RichDocument",
+      "category": "component-support",
+      "components": [
+        "tui.markdown",
+        "tui.code-block",
+        "tui.diff-view"
+      ],
+      "reason": "Immutable rich-document projection, identity, geometry or action support; not an independent component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::RichLink",
+      "category": "component-support",
+      "components": [
+        "tui.markdown",
+        "tui.code-block",
+        "tui.diff-view"
+      ],
+      "reason": "Immutable rich-document projection, identity, geometry or action support; not an independent component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::RichLinkAction",
+      "category": "component-support",
+      "components": [
+        "tui.markdown",
+        "tui.code-block",
+        "tui.diff-view"
+      ],
+      "reason": "Immutable rich-document projection, identity, geometry or action support; not an independent component."
+    },
+    {
       "api": "tekes_ui_controls::composition::ScrollContent",
       "category": "component-adapter",
       "components": [

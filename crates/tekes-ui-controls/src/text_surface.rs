@@ -252,6 +252,16 @@ impl TextSurface {
         }
         result
     }
+    /// Invalidate derived shaping after a readonly document changes block styles
+    /// without changing its display text. Input/selection, focus and history stay
+    /// with this surface; the next normal measure/arrange rebuilds its paragraph.
+    pub fn invalidate_text_layout(&mut self) {
+        self.paragraph = None;
+        *self.measured.get_mut() = None;
+        self.navigation = None;
+        self.reflow_anchor = None;
+    }
+
     pub fn set_role(&mut self, role: proposal::TextRole) {
         self.role = role;
     }

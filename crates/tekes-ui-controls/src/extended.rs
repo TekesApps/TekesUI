@@ -1339,66 +1339,15 @@ pub struct Markdown {
     pub blocks: Vec<MarkdownBlock>,
 }
 impl Markdown {
+    /// Parse the repository's bounded Markdown subset. RichDocument uses this
+    /// same parser to retain source/display UTF-16 mappings for selection.
     pub fn parse(source: &str) -> Self {
-        let mut blocks = Vec::new();
-        let mut paragraph = Vec::new();
-        let mut code: Option<(String, Vec<String>)> = None;
-        for line in source.lines() {
-            if let Some((lang, lines)) = &mut code {
-                if line.trim_start().starts_with("```") {
-                    blocks.push(MarkdownBlock::Code {
-                        language: lang.clone(),
-                        source: lines.join("\n"),
-                    });
-                    code = None
-                } else {
-                    lines.push(line.to_owned())
-                }
-                continue;
-            }
-            if let Some(fence) = line.trim().strip_prefix("```") {
-                flush_paragraph(&mut blocks, &mut paragraph);
-                code = Some((fence.trim().to_owned(), Vec::new()));
-                continue;
-            }
-            let trimmed = line.trim();
-            if trimmed.is_empty() {
-                flush_paragraph(&mut blocks, &mut paragraph);
-                continue;
-            }
-            let hashes = trimmed.chars().take_while(|c| *c == '#').count();
-            if (1..=6).contains(&hashes) && trimmed.as_bytes().get(hashes) == Some(&b' ') {
-                flush_paragraph(&mut blocks, &mut paragraph);
-                blocks.push(MarkdownBlock::Heading {
-                    level: hashes as u8,
-                    text: trimmed[hashes..].trim().to_owned(),
-                })
-            } else if let Some(text) = trimmed
-                .strip_prefix("- ")
-                .or_else(|| trimmed.strip_prefix("* "))
-            {
-                flush_paragraph(&mut blocks, &mut paragraph);
-                blocks.push(MarkdownBlock::Bullet(text.to_owned()))
-            } else {
-                paragraph.push(trimmed.to_owned())
-            }
+        Self {
+            blocks: crate::composition::RichDocument::markdown_blocks(source),
         }
-        if let Some((language, lines)) = code {
-            blocks.push(MarkdownBlock::Code {
-                language,
-                source: lines.join("\n"),
-            })
-        }
-        flush_paragraph(&mut blocks, &mut paragraph);
-        Self { blocks }
     }
 }
-fn flush_paragraph(blocks: &mut Vec<MarkdownBlock>, lines: &mut Vec<String>) {
-    if !lines.is_empty() {
-        blocks.push(MarkdownBlock::Paragraph(lines.join(" ")));
-        lines.clear()
-    }
-}
+
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct CodeBlock {
     pub language: String,
