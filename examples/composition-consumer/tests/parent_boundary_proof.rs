@@ -1063,7 +1063,7 @@ fn actual_toolbar_host_full_target_background_uses_single_class_b_and_pixels_mat
     let mut shape_table = ShapeTable::new(0x127_0010, 1);
     let key = shape_table.intern(parent_shape).unwrap();
     let mut direct = Scene::with_clip_shapes(&shape_table);
-    direct.push_shape_clip(key);
+    direct.push_shape_clip(key.clone());
     direct
         .try_append_fragment(
             &scene,
@@ -1088,7 +1088,66 @@ fn actual_toolbar_host_full_target_background_uses_single_class_b_and_pixels_mat
         &image_reference,
         target_px,
     );
-    assert_eq!(image_reference, direct_pixels);
+    // User-approved #127 reference: replay and actual paint share the same
+    // parent context. Baked images retain their standalone raster context.
+    let mut direct_text = Text::new(TEXT_SCALE);
+    direct_text.services = true;
+    direct_text.backing = BACKING;
+    let mut same_parent_paint = Scene::with_clip_shapes(&shape_table);
+    same_parent_paint.push_shape_clip(key);
+    paint_actual_toolbar_scene(
+        &mut direct_text,
+        target,
+        vec![ToolbarRegion::window(
+            TOOLBAR_REGION,
+            target,
+            ToolbarWindowEdge::Leading,
+        )],
+        &mut same_parent_paint,
+    );
+    same_parent_paint.pop_clip();
+    let same_parent_before = same_parent_paint.clone();
+    let same_parent_pixels = renderer
+        .render_to_rgba8(
+            &same_parent_paint,
+            &mut direct_text.atlas,
+            target_px,
+            BACKING,
+            TRANSPARENT,
+        )
+        .unwrap();
+    assert_eq!(same_parent_pixels, direct_pixels);
+    assert_eq!(same_parent_paint, same_parent_before);
+    evidence.save_rgba(
+        "toolbar_same_parent_actual_paint",
+        &same_parent_pixels,
+        target_px,
+    );
+
+    // The unchanged image payload must survive throughout the established
+    // full-coverage interior, while the real parent removes its outer corners.
+    for y in sy0.ceil() as u32..sy1.floor() as u32 {
+        for x in sx0.ceil() as u32..sx1.floor() as u32 {
+            let i = ((y * target_px.0 + x) * 4) as usize;
+            assert_eq!(&image_reference[i..i + 4], &ordinary[i..i + 4]);
+        }
+    }
+    for (x, y) in [
+        (0, 0),
+        (target_px.0 - 1, 0),
+        (0, target_px.1 - 1),
+        (target_px.0 - 1, target_px.1 - 1),
+    ] {
+        let i = ((y * target_px.0 + x) * 4) as usize;
+        assert_eq!(&image_reference[i..i + 4], &[0; 4]);
+    }
+    assert!(
+        ordinary
+            .chunks_exact(4)
+            .zip(image_reference.chunks_exact(4))
+            .any(|(before, after)| before[3] > after[3]),
+        "the parent really attenuates the standalone image"
+    );
 
     // Re-render the same actual parent Scene with its existing Text/atlas after
     // child proof and reference work; compare the returned RGBA buffers exactly.
@@ -1123,7 +1182,10 @@ fn actual_toolbar_host_full_target_background_uses_single_class_b_and_pixels_mat
         "pixel_checks",
         serde_json::json!({
             "proof_equals_ordinary":proof.rgba8()==ordinary.as_slice(),
-            "direct_parent_mask_equals_image_quad_reference":direct_pixels==image_reference,
+            "same_parent_direct_paint_equals_replay":same_parent_pixels==direct_pixels,
+            "standalone_image_vs_repaint_is_cross_context_not_equality_gate":true,
+            "standalone_image_different_pixels":image_reference.chunks_exact(4).zip(direct_pixels.chunks_exact(4)).filter(|(a,b)|a!=b).count(),
+            "standalone_image_interior_preserved_and_outer_corners_clipped":true,
             "parent_after_equals_before":parent_pixels_after==parent_pixels_before,
             "whole_scene_unchanged_by_proof":scene==scene_before,
             "ordinary_alpha_covered_pixels":alpha_covered(&ordinary),

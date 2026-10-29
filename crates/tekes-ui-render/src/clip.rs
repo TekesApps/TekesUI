@@ -41,6 +41,7 @@ pub(crate) struct BoundaryProofSummary {
     pub class_b_background_primitive: Option<u32>,
     pub states_visited: u64,
     pub containment_checks: u64,
+    pub axis_witness_attempts: u64,
     pub zero_scissor_skips: u64,
     pub work: u64,
     pub proof_bytes: u64,
@@ -678,6 +679,7 @@ impl ClipFrame {
 
         let mut states_visited = 0_u64;
         let mut containment_checks = 0_u64;
+        let mut axis_witness_attempts = 0_u64;
         let mut zero_scissor_skips = 0_u64;
         let mut class_b_background_primitive = None;
         for (primitive_index, (primitive, state)) in
@@ -727,21 +729,42 @@ impl ClipFrame {
                 continue;
             }
             let mut contained_by_all_parents = true;
-            for safe_rect in &safe_rects_px {
+            for (shape, safe_rect) in parent_shapes.iter().zip(&safe_rects_px) {
                 charge_boundary_work(&mut work, 1, work_limit)?;
                 containment_checks = containment_checks
                     .checked_add(1)
                     .ok_or(RenderError::ClipBudgetExceeded("boundary proof work"))?;
-                let Some(safe_rect) = safe_rect else {
+                let contains = |safe: FullCoverageInnerRectPx| {
+                    let [left, top, safe_right, safe_bottom] = safe.bounds_px();
+                    (x as f32) >= left
+                        && (y as f32) >= top
+                        && (right as f32) <= safe_right
+                        && (bottom as f32) <= safe_bottom
+                };
+                if safe_rect.is_some_and(contains) {
+                    continue;
+                }
+                // This extension only covers the original Toolbar's command
+                // paths. Images, shadows and transformed inputs retain their
+                // previous conservative domain and refusal behavior.
+                if !matches!(
+                    primitive,
+                    Primitive::Quad(_) | Primitive::KeyedQuad { .. } | Primitive::Glyphs(_)
+                ) {
                     contained_by_all_parents = false;
                     continue;
-                };
-                let [left, top, safe_right, safe_bottom] = safe_rect.bounds_px();
-                if (x as f32) < left
-                    || (y as f32) < top
-                    || (right as f32) > safe_right
-                    || (bottom as f32) > safe_bottom
-                {
+                }
+                // Precharge one finite witness attempt, eight input scalars,
+                // eight output bounds and two slab containment checks. The
+                // witness is stack-only; original center paths incur no work.
+                charge_boundary_work(&mut work, 19, work_limit)?;
+                axis_witness_attempts = axis_witness_attempts
+                    .checked_add(1)
+                    .ok_or(RenderError::ClipBudgetExceeded("boundary proof work"))?;
+                let axes = shape
+                    .full_coverage_axis_rects_px(scale, size)
+                    .map_err(RenderError::ClipGeometry)?;
+                if !axes.is_some_and(|axes| axes.into_iter().any(contains)) {
                     contained_by_all_parents = false;
                 }
             }
@@ -786,6 +809,7 @@ impl ClipFrame {
             class_b_background_primitive,
             states_visited,
             containment_checks,
+            axis_witness_attempts,
             zero_scissor_skips,
             work,
             proof_bytes,
@@ -2626,7 +2650,7 @@ mod tests {
                 (64, 64),
                 1.0,
                 budget,
-                BoundaryProofLimits { max_work: 13 },
+                BoundaryProofLimits { max_work: 13 + 19 },
                 std::mem::size_of::<u64>() as u64,
             ),
             Err(RenderError::ClipBudgetExceeded("boundary proof work"))
@@ -2672,8 +2696,15 @@ mod tests {
             prove(12),
             Err(RenderError::ClipBudgetExceeded("boundary proof work"))
         ));
+        // The new slab attempt is precharged before the existing B attempt.
+        for limit in [13, 12 + 19] {
+            assert!(matches!(
+                prove(limit),
+                Err(RenderError::ClipBudgetExceeded("boundary proof work"))
+            ));
+        }
         assert!(matches!(
-            prove(13),
+            prove(13 + 19),
             Err(RenderError::InvalidClipFrame(
                 "prepared scissor outside parent full-coverage witness"
             ))
@@ -2705,6 +2736,55 @@ mod tests {
             Err(RenderError::InvalidClipFrame(
                 "prepared scissor outside parent full-coverage witness"
             ))
+        ));
+    }
+    #[test]
+    fn parent_axis_witness_accepts_original_toolbar_scissor_without_changing_scene() {
+        let parent = ClipShape::normalize(
+            Rect::new(0., 0., 320., 144.),
+            CornerRadii::uniform(10.),
+            Point::new(0., 0.),
+        )
+        .unwrap();
+        let mut s = Scene::new();
+        s.push_clip(Rect::new(7.5, 53.5, 305., 37.));
+        s.push_quad(
+            Quad::new(Rect::new(7.2, 53.5, 305., 37.), Rgba::gray(1.)).with_corner_radius(3.),
+        );
+        s.pop_clip();
+        let original = s.clone();
+        let limits = wgpu::Limits::default();
+        let budget = ClipFrameBudget::for_device(&limits);
+        let frame = ClipFrame::prepare(&s, &GlyphAtlas::default(), (640, 288), 2., budget, &limits)
+            .unwrap();
+        let proof = frame
+            .prove_parent_scissors(
+                &s,
+                &[parent],
+                (640, 288),
+                2.,
+                budget,
+                BoundaryProofLimits::default(),
+                8,
+            )
+            .unwrap();
+        assert_eq!(s, original);
+        assert_eq!(proof.class_b_background_primitive, None);
+        assert_eq!(proof.axis_witness_attempts, 1);
+        assert_eq!(proof.work, 10 + 3 + 1 + 19);
+        assert!(matches!(
+            frame.prove_parent_scissors(
+                &s,
+                &[parent],
+                (640, 288),
+                2.,
+                budget,
+                BoundaryProofLimits {
+                    max_work: proof.work - 1
+                },
+                8
+            ),
+            Err(RenderError::ClipBudgetExceeded("boundary proof work"))
         ));
     }
 }
