@@ -10,6 +10,9 @@ mod native_key;
 #[path = "support/native_pointer.rs"]
 mod native_pointer;
 #[cfg(target_os = "macos")]
+#[path = "support/hover_preview_placement_review.rs"]
+mod placement_review;
+#[cfg(target_os = "macos")]
 #[path = "support/hover_preview_review.rs"]
 mod review;
 #[cfg(not(target_os = "macos"))]
@@ -32,6 +35,7 @@ fn main() {
         clock: std::time::Instant,
         review_started: bool,
         review: Option<review::Review>,
+        placement: Option<placement_review::Review>,
     }
     impl Host {
         fn draw(&mut self, window: &mut Window) {
@@ -78,7 +82,12 @@ fn main() {
                 && std::env::var_os("TEKESUI_HOVER_PREVIEW_NATIVE_SELFTEST").is_some()
             {
                 self.review_started = true;
-                p::selftest::run_script(self.review.as_ref().unwrap().script(&self.transcript));
+                let script = if let Some(placement) = &self.placement {
+                    placement.script(&self.transcript)
+                } else {
+                    self.review.as_ref().unwrap().script(&self.transcript)
+                };
+                p::selftest::run_script(script);
             }
             if let Some(path) = std::env::var_os("TEKESUI_HOVER_PREVIEW_EVIDENCE") {
                 use std::io::Write;
@@ -105,6 +114,15 @@ fn main() {
                     .map(std::path::PathBuf::from);
                 review.verify(&self.transcript, viewport, evidence.as_deref());
             }
+            if let Some(placement) = &mut self.placement {
+                let evidence = std::env::var_os("TEKESUI_HOVER_PREVIEW_EVIDENCE")
+                    .map(std::path::PathBuf::from);
+                placement.verify(
+                    &self.transcript,
+                    frame.intersection(&viewport).unwrap(),
+                    evidence.as_deref(),
+                );
+            }
         }
     }
     impl WindowHandler for Host {
@@ -125,6 +143,11 @@ fn main() {
                 .unwrap();
             }
             match event {
+                Event::Command(p::CommandId(id))
+                    if self
+                        .placement
+                        .as_mut()
+                        .is_some_and(|placement| placement.command(id, &mut self.transcript)) => {}
                 Event::Command(p::CommandId(id))
                     if self
                         .review
@@ -255,6 +278,9 @@ fn main() {
             if let Some(review) = &mut self.review {
                 review.collect(&mut self.transcript);
             }
+            if let Some(placement) = &mut self.placement {
+                placement.collect(&mut self.transcript);
+            }
             self.transcript.host.set_window_active(window.is_active());
             self.draw(window);
         }
@@ -262,13 +288,22 @@ fn main() {
     let mut text = coretext::Text::new(1.);
     text.services = true;
     let mut transcript = Transcript::new();
-    let review = std::env::var_os("TEKESUI_HOVER_PREVIEW_NATIVE_SELFTEST")
+    let mode = std::env::var("TEKESUI_HOVER_PREVIEW_NATIVE_SELFTEST").ok();
+    let placement = (mode.as_deref() == Some("placement"))
+        .then(|| placement_review::Review::prepare(&mut transcript));
+    let review = mode
+        .filter(|_| placement.is_none())
         .map(|_| review::Review::prepare(&mut transcript));
-    let menu = if review.is_some() {
+    let checkpoints = if placement.is_some() {
+        placement_review::FIRST..=placement_review::LAST
+    } else {
+        review::FIRST..=review::LAST
+    };
+    let menu = if review.is_some() || placement.is_some() {
         MenuBar {
             menus: vec![p::Menu::new(
                 "Acceptance",
-                (review::FIRST..=review::LAST)
+                checkpoints
                     .map(|id| {
                         p::MenuItem::Command(p::MenuCommand::new(
                             format!("Preview checkpoint {id}"),
@@ -306,6 +341,7 @@ fn main() {
             clock: std::time::Instant::now(),
             review_started: false,
             review,
+            placement,
         },
     );
 }
