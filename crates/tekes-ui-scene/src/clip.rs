@@ -261,6 +261,65 @@ impl ClipShape {
         Ok(Some(FullCoverageInnerRectPx { bounds: safe }))
     }
 
+    /// Two conservative straight-side interior slabs of the same finite parent.
+    /// The original center witness remains unchanged. Every slab is two physical
+    /// pixels inside the outer edges and outside every corner quadrant, so at
+    /// most one SDF q component is positive. On the inherited 1/256 grid and
+    /// <=4096-pixel domain the nonzero length input is normal; WGSL's inherited
+    /// sqrt/inverseSqrt/division error is below 1/16 pixel, leaving more than
+    /// the 0.5-pixel clamp threshold. This does not certify curved AA-band input.
+    pub fn full_coverage_axis_rects_px(
+        self,
+        scale: f32,
+        target_px: (u32, u32),
+    ) -> Result<Option<[FullCoverageInnerRectPx; 2]>> {
+        if self
+            .full_coverage_inner_rect_px(scale, target_px)?
+            .is_none()
+        {
+            return Ok(None);
+        }
+        let r = self.rect();
+        let half = [r.size.width * scale * 0.5, r.size.height * scale * 0.5];
+        let center = [r.origin.x * scale + half[0], r.origin.y * scale + half[1]];
+        let edge = [
+            center[0] - half[0],
+            center[1] - half[1],
+            center[0] + half[0],
+            center[1] + half[1],
+        ];
+        let radius = self
+            .radii()
+            .to_array()
+            .into_iter()
+            .map(|v| v * scale)
+            .fold(0.0_f32, f32::max);
+        let horizontal = [
+            edge[0] + 2.0,
+            edge[1] + radius + 2.0,
+            edge[2] - 2.0,
+            edge[3] - radius - 2.0,
+        ];
+        let vertical = [
+            edge[0] + radius + 2.0,
+            edge[1] + 2.0,
+            edge[2] - radius - 2.0,
+            edge[3] - 2.0,
+        ];
+        // All operands retain the previously checked physical dyadic grid;
+        // bounded additions/subtractions stay exactly representable here.
+        if [horizontal, vertical]
+            .iter()
+            .any(|b| b[0] >= b[2] || b[1] >= b[3])
+        {
+            return Ok(None);
+        }
+        Ok(Some([
+            FullCoverageInnerRectPx { bounds: horizontal },
+            FullCoverageInnerRectPx { bounds: vertical },
+        ]))
+    }
+
     fn values(self) -> [f64; 8] {
         self.bits.map(|x| f64::from(f32::from_bits(x)))
     }
@@ -1290,6 +1349,44 @@ mod finite_full_coverage_witness {
         .unwrap();
         assert_eq!(
             swallowed_origin.full_coverage_inner_rect_px(1.0, (64, 64)),
+            Ok(None)
+        );
+    }
+    #[test]
+    fn axis_witness_covers_original_toolbar_scissor_but_not_outer_aa_band() {
+        let shape = ClipShape::normalize(
+            Rect::new(0., 0., 320., 144.),
+            CornerRadii::uniform(10.),
+            Point::new(0., 0.),
+        )
+        .unwrap();
+        let [h, v] = shape
+            .full_coverage_axis_rects_px(2., (640, 288))
+            .unwrap()
+            .unwrap();
+        assert_eq!(h.bounds_px(), [2., 22., 638., 266.]);
+        assert_eq!(v.bounds_px(), [22., 2., 618., 286.]);
+        let old = shape
+            .full_coverage_inner_rect_px(2., (640, 288))
+            .unwrap()
+            .unwrap()
+            .bounds_px();
+        assert_eq!(old, [21., 21., 619., 267.]);
+        assert!(h.bounds_px()[0] <= 15. && h.bounds_px()[2] >= 625.);
+        assert!(h.bounds_px()[1] <= 107. && h.bounds_px()[3] >= 181.);
+        for b in [h.bounds_px(), v.bounds_px()] {
+            assert!(b[0] >= 2. && b[1] >= 2. && b[2] <= 638. && b[3] <= 286.);
+        }
+        assert_eq!(shape.full_coverage_axis_rects_px(0.3, (640, 288)), Ok(None));
+        assert_eq!(shape.full_coverage_axis_rects_px(2., (4097, 288)), Ok(None));
+        let off_grid = ClipShape::normalize(
+            Rect::new(0.001, 0., 320., 144.),
+            CornerRadii::uniform(10.),
+            Point::new(0., 0.),
+        )
+        .unwrap();
+        assert_eq!(
+            off_grid.full_coverage_axis_rects_px(2., (640, 288)),
             Ok(None)
         );
     }

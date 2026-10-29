@@ -32,6 +32,7 @@ impl std::fmt::Debug for VerifiedFrameOutput {
             .field("frame_sequence", &self.receipt.frame_sequence)
             .field("states_visited", &self.receipt.states_visited)
             .field("containment_checks", &self.receipt.containment_checks)
+            .field("axis_witness_attempts", &self.receipt.axis_witness_attempts)
             .field(
                 "class_b_background_primitive",
                 &self.receipt.class_b_background_primitive,
@@ -51,6 +52,7 @@ struct BoundaryProofReceipt {
     class_b_background_primitive: Option<u32>,
     states_visited: u64,
     containment_checks: u64,
+    axis_witness_attempts: u64,
     zero_scissor_skips: u64,
     proof_work: u64,
 }
@@ -760,6 +762,7 @@ impl Renderer {
                 class_b_background_primitive: proof.class_b_background_primitive,
                 states_visited: proof.states_visited,
                 containment_checks: proof.containment_checks,
+                axis_witness_attempts: proof.axis_witness_attempts,
                 zero_scissor_skips: proof.zero_scissor_skips,
                 proof_work: proof.work,
             },

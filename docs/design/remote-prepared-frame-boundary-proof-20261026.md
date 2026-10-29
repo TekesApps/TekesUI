@@ -1,3 +1,35 @@
+# Finite Toolbar axis-region intake (2026-10-29)
+
+The original complete Toolbar now passes the authorized finite extension on Main
+base `b6e4755` plus the accepted Scene/Render/consumer delta. The Scene predicate
+returns two straight-side interior slabs within the existing finite dyadic domain,
+two physical pixels inside the outer edges and outside corner quadrants. Render
+only tries these witnesses for Quad, KeyedQuad, and Glyphs after the original
+center witness fails. Each attempt is precharged 19 proof-work units and recorded
+in the private receipt; images and shadows keep their previous conservative domain.
+The existing shader, AA policy, prepared scissors, and all prior limits are unchanged.
+
+The complete public Toolbar/Button/TextField/CoreText GPU case passes ordinary versus
+verified equality and byte-exact same-parent direct paint versus command replay.
+The standalone image retains its interior pixels and receives the parent's corner
+clip. Its six-pixel cross-context difference remains recorded under the authorized
+reference adjustment below. Two backgrounds, offset/narrow regions, unknown images,
+coincident boundaries, and resource/work-limit atomicity retain their actual refusals.
+
+Scene clip and finite-witness tests, Render clip tests, affected library/bitmap
+consumer strict checks, and these real GPU tests pass. The first GPU invocation
+omitted the existing evidence-directory parameter and failed before behavior ran;
+the same archived binary then passed with that parameter supplied. A subsequent
+intake review mistakenly repeated three finite-witness tests already included in
+the original `clip::` run; that duplicate result and correction are retained.
+Raw results and failures remain in SSD
+`artifacts/issue-127/main-b6e4755-finite-axis-intake-20261029-01/`.
+
+This completes the original Toolbar support gap, not all of #127 or #81. Remaining
+original boundary/material coverage must be matched to its existing evidence before
+closing #127; B2 transport, input, AX, text, and generation remain owned by #81.
+No unrelated shader matrix, native suite, or Theme migration was repeated.
+
 # Composition-context finding on accepted Main (2026-10-28)
 
 The original complete Toolbar context comparison now has an independent real Metal observation on accepted production Main `102504d` plus a test-only delta. The actual public ToolbarHost constructor, Window region, Button, TextField, CoreText strings, dimensions and original proof-test body are retained. No Class A extension, shader change or fragment-isolation policy is present in this run.
