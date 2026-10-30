@@ -10723,10 +10723,25 @@ mod interaction_tests {
                             proposal::TextRole::UiBody,
                             Some(layout.content.size.width),
                         );
+                        // The text model includes soft-wrap trailing spaces in raw width.
+                        // Check its existing trimmed width, with no extra tolerance.
+                        let line_widths: Vec<_> = paragraph
+                            .lines
+                            .iter()
+                            .map(|line| {
+                                (
+                                    line.width,
+                                    line.width_trimmed,
+                                    line.width - line.width_trimmed,
+                                )
+                            })
+                            .collect();
                         assert!(
-                            paragraph.width as f32 <= layout.content.size.width,
-                            "row {id} paragraph fits its ButtonLayout content width at {width}: {} > {}",
-                            paragraph.width,
+                            paragraph
+                                .lines
+                                .iter()
+                                .all(|line| line.width_trimmed as f32 <= layout.content.size.width),
+                            "row {id} line raw / trimmed / trailing-space widths at {width}: {line_widths:?}; content width: {}",
                             layout.content.size.width
                         );
                         assert!(
