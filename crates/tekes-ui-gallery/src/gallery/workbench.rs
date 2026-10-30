@@ -15371,7 +15371,7 @@ mod interaction_tests {
             theme::{AppearanceChoice, ContrastChoice},
         };
         use tekes_ui_scene::Primitive;
-        use tekes_ui_tokens::{Palette, Theme};
+        use tekes_ui_tokens::{Palette, Theme, surface_palette::resolve_surface};
         let mut gallery = Gallery::new();
         let i = index("breadcrumb");
         assert!(gallery.open_route(&format!("{}/playground", entry(i).slug())));
@@ -15419,8 +15419,20 @@ mod interaction_tests {
                     _ => None,
                 })
                 .collect();
-            assert_eq!(fills, vec![palette.color("surface-2").unwrap(); 2]);
-            for (frame, role) in [(ancestor, "primary-text"), (current, "tertiary-text")] {
+            // Original BreadcrumbView paints quiet actions on its canvas Surface;
+            // the last item is selected-disabled, rather than another rest action.
+            let ancestor_colors =
+                resolve_surface(palette, "canvas", "action-quiet", "rest").unwrap();
+            let current_colors =
+                resolve_surface(palette, "canvas", "action-quiet", "selected-disabled").unwrap();
+            assert_eq!(
+                fills,
+                vec![ancestor_colors.background, current_colors.background]
+            );
+            for (frame, role, colors) in [
+                (ancestor, "ancestor", ancestor_colors),
+                (current, "current", current_colors),
+            ] {
                 let inks: Vec<_> = scene
                     .primitives()
                     .iter()
@@ -15434,7 +15446,7 @@ mod interaction_tests {
                     })
                     .collect();
                 assert!(!inks.is_empty(), "real Gallery Breadcrumb {role} glyphs");
-                assert!(inks.iter().all(|ink| *ink == palette.color(role).unwrap()));
+                assert!(inks.iter().all(|ink| *ink == colors.text));
             }
             observed.push(fills[0]);
             let before = gallery.workbench.state(i).log.len();
@@ -16440,9 +16452,15 @@ mod interaction_tests {
         use super::super::commands::Command;
         use super::super::theme::{AppearanceChoice, ContrastChoice};
         use tekes_ui_scene::Primitive;
-        use tekes_ui_tokens::{Palette, Theme};
+        use tekes_ui_tokens::{Palette, Rgba, Theme, surface_palette::resolve_surface};
 
-        fn assert_text(scene: &Scene, frame: Rect, scale: f32, palette: Palette, ground: &str) {
+        fn assert_text(
+            scene: &Scene,
+            frame: Rect,
+            scale: f32,
+            palette: Palette,
+            expected: (Rgba, Rgba),
+        ) {
             let (background_index, fill) = scene
                 .primitives()
                 .iter()
@@ -16452,7 +16470,7 @@ mod interaction_tests {
                     _ => None,
                 })
                 .expect("actual Gallery command component background");
-            assert_eq!(fill, palette.color(ground).unwrap());
+            assert_eq!(fill, expected.0);
             assert_eq!(fill.a, 1.);
             let inks: Vec<_> = scene.primitives()[background_index + 1..]
                 .iter()
@@ -16477,7 +16495,7 @@ mod interaction_tests {
                 .collect();
             assert!(!inks.is_empty(), "actual Gallery query/candidate glyphs");
             for ink in inks {
-                assert_eq!(ink, palette.color("primary-text").unwrap());
+                assert_eq!(ink, expected.1);
                 let luminance = |c: tekes_ui_tokens::Rgba| {
                     let c = c.to_linear();
                     0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
@@ -16558,7 +16576,10 @@ mod interaction_tests {
                 initial_query,
                 gallery.text.scale(),
                 palette,
-                "transcript-input",
+                (
+                    palette.color("transcript-input").unwrap(),
+                    palette.color("primary-text").unwrap(),
+                ),
             );
             assert!(
                 scene
@@ -16578,16 +16599,25 @@ mod interaction_tests {
                     proposal::metric("radius", "radius-floating").unwrap())))
             );
             for (row, item) in popup.items.iter().enumerate() {
+                // Original MenuView rows use the popover quiet-action roles;
+                // the active row is selected, while other rows remain at rest.
+                let colors = resolve_surface(
+                    palette,
+                    "popover",
+                    "action-quiet",
+                    if row == popup.active_item {
+                        "selected"
+                    } else {
+                        "rest"
+                    },
+                )
+                .unwrap();
                 assert_text(
                     &scene,
                     item.frame,
                     gallery.text.scale(),
                     palette,
-                    if row == 1 {
-                        "row-selection"
-                    } else {
-                        "surface-2"
-                    },
+                    (colors.background, colors.text),
                 );
             }
             selected_fills.push(palette.color("row-selection").unwrap());
