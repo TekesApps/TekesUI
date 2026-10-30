@@ -1,0 +1,45 @@
+{
+  "issue": 12,
+  "parent_issues": [
+    1,
+    55
+  ],
+  "base": "13e9c3c6aaa6d58d3090ac71f02ccc72269edab4",
+  "scope": "Settings validation Invalid plus real submit Pending/Failed/Retry/Saved screenshots at the real example-settings/playground route",
+  "baseline_evidence": {
+    "settings_ready_execution": "design/reviews/settings-whole-page-20261030/execution.json",
+    "settings_ready_visual": "design/reviews/settings-whole-page-20261030/visual-review.json",
+    "current_parent_matrix_source": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-55/parent-ac-matrix-20261030-01/candidate.patch",
+    "current_parent_matrix_sha256": "001b099d75802cf521005859dbf5c2a74f72b5821856dc1b2e46e9244b96846c"
+  },
+  "existing_reusable_evidence": {
+    "settings_failure_retry_input": "crates/tekes-ui-gallery/src/gallery/workbench.rs::settings_full_failure_retry_and_danger_cancel_recovery",
+    "settings_theme_failed_frame": "crates/tekes-ui-gallery/src/gallery/workbench.rs::settings_gallery_retained_themes_keep_fixture_values_and_actual_palette",
+    "form_phase_gpu": "crates/tekes-ui-gallery/src/gallery/workbench/draft_capture.rs::draft_protocol_form_scenes_use_current_journal_and_real_gpu",
+    "limitation": "settings_gallery_retained_themes_keep_fixture_values_and_actual_palette exercises Failed across Theme::ALL and real input but only asserts glyph/palette primitives, no whole-page PNG; draft_capture targets renderer=form, not settings; do not repeat unchanged input tests as visual evidence."
+  },
+  "source_identity_before": {
+    "crates/tekes-ui-gallery/src/gallery/workbench.rs": "ce706a7d28833c0e3d4b23abcf27e3d8aca3837a24b1bbbd7ce767d494aea033",
+    "crates/tekes-ui-gallery/src/gallery/workbench/draft_capture.rs": "bfd6a9cfe267f7841ad00e62729dbddad12da9e4958fc392aa699de692047a3e",
+    "crates/tekes-ui-gallery/src/gallery/workbench/settings_phase_capture.rs": "276b8f1b82c9538ff33d724e83b50e21add62b5d73ee9e746534139ea82beb75"
+  },
+  "candidate": null,
+  "capture_matrix": "4 real phases Invalid/Pending/Failed/Saved x four Theme x 1x/2x x top/bottom = 64 actual Gallery page frames at 720x512/type150; default registered brand only",
+  "unverified": [
+    "Cargo compile",
+    "strict Clippy",
+    "GPU captures",
+    "per-image review",
+    "native input",
+    "physical display",
+    "IME",
+    "AX/VoiceOver",
+    "performance",
+    "all non-Ready states beyond the captured four and other routes"
+  ],
+  "checks": {
+    "rustfmt_scoped": "pass",
+    "git_diff_check": "pass",
+    "module_wired_and_existing_settings_retry_test_retained": "pass (source-level)"
+  }
+}
