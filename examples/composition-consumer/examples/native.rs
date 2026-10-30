@@ -421,9 +421,15 @@ fn main() {
                 let directory = std::path::PathBuf::from(directory);
                 std::fs::create_dir_all(&directory).expect("component evidence directory");
                 let screen = w.screen_info();
+                let native_frame = w.native_window_frame();
                 let mut snapshot = serde_json::json!({
                     "pid": std::process::id(), "mode": self.mode, "window_active": w.is_active(),
                     "window_size": {"width":w.size().width,"height":w.size().height},
+                    "window_number": w.native_window_number(),
+                    "window_frame": {"x":native_frame.origin.x,"y":native_frame.origin.y,"width":native_frame.size.width,"height":native_frame.size.height},
+                    "screen_id": w.native_screen_id(),
+                    "window_backing_scale": w.scale(),
+                    "appearance": format!("{:?}", self.system_theme.appearance),
                     "screen": screen.map(|s| serde_json::json!({"name":s.name,"builtin":s.builtin,"scale":s.scale,"visible_frame":{"x":s.visible_frame.origin.x,"y":s.visible_frame.origin.y,"width":s.visible_frame.size.width,"height":s.visible_frame.size.height}})),
                     "nodes": nodes.iter().map(|n| serde_json::json!({
                         "component":n.key.component,"part":n.key.part,"role":format!("{:?}",n.role),
@@ -1415,6 +1421,15 @@ fn main() {
                 && let Event::Command(CommandId(command)) = &e
                 && (38_001..=38_015).contains(command)
             {
+                assert_eq!(
+                    self.system_theme.appearance,
+                    if *command >= 38_013 {
+                        tekes_ui_tokens::Appearance::Dark
+                    } else {
+                        tekes_ui_tokens::Appearance::Light
+                    },
+                    "Disclosure checkpoint uses the actual requested window appearance"
+                );
                 let script = review.advance(
                     *command,
                     &mut self.tree,
@@ -1423,6 +1438,14 @@ fn main() {
                     w.size().width,
                 );
                 self.redraw(w);
+                if let Some(directory) = std::env::var_os("TEKESUI_COMPONENT_EVIDENCE") {
+                    let directory = std::path::PathBuf::from(directory);
+                    std::fs::copy(
+                        directory.join("current.json"),
+                        directory.join(format!("disclosure38-window-{command}.json")),
+                    )
+                    .expect("Disclosure checkpoint window evidence");
+                }
                 tekes_ui_platform_macos::selftest::run_script(script);
                 return;
             }
@@ -2584,10 +2607,13 @@ fn main() {
         ..Default::default()
     });
     if disclosure_review {
-        host.selftest_script = Some(vec![(
-            300,
-            tekes_ui_platform_macos::selftest::Action::MenuCommand(38_001),
-        )]);
+        host.selftest_script = Some(vec![
+            (0, tekes_ui_platform_macos::selftest::Action::WindowLight),
+            (
+                300,
+                tekes_ui_platform_macos::selftest::Action::MenuCommand(38_001),
+            ),
+        ]);
     }
     if menu_review {
         host.selftest_script = Some(vec![(

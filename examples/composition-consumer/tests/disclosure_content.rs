@@ -756,3 +756,41 @@ fn host_window_loss_snaps_original_closing_reveal_and_requests_no_frame() {
     render(&mut h, &mut t, &mut icons, 260.);
     assert_eq!(d(&h).body_layout().progress, 1.);
 }
+
+#[test]
+fn body_reveal_uses_ancestor_horizontal_paint_room_without_widening_hit_geometry() {
+    let mut h = host(Content::new(BODY, Button::new("Original body")), true);
+    let mut t = text();
+    let mut icons = Icons::default();
+    let frame = Rect::new(8., 8., 344., 240.);
+    for viewport in [
+        Rect::new(0., 0., 360., 260.),
+        Rect::new(10., 0., 330., 260.),
+    ] {
+        let mut scene = Scene::new();
+        t.atlas.begin_frame();
+        h.render(
+            &mut scene,
+            &mut WithIconRenderer::new(&mut t, &mut icons),
+            frame,
+            viewport,
+            Theme::LIGHT.into(),
+        )
+        .unwrap();
+        let body = h.get(BODY).unwrap().frame();
+        let reveal = d(&h).body_layout().visible_clip.unwrap();
+        assert_eq!(reveal.min_x(), viewport.min_x());
+        assert_eq!(reveal.max_x(), viewport.max_x());
+        assert_eq!(body.min_x(), frame.min_x());
+        assert_eq!(body.size.width, frame.size.width);
+        assert!(reveal.max_y() <= frame.max_y());
+        let mount = h.get(BODY).unwrap().mount_identity();
+        let semantic_frame = h.semantics().iter().find(|n| n.id == BODY).unwrap().frame;
+        assert_eq!(semantic_frame, body);
+        let outside = tekes_ui_scene::Point::new(frame.min_x() - 1., body.center().y);
+        assert!(!h.event(&ContentEvent::PointerDown(outside)).capture_pointer);
+        assert!(!h.event(&ContentEvent::PointerUp(outside)).activated);
+        assert!(h.drain_action_records().is_empty());
+        assert_eq!(h.get(BODY).unwrap().mount_identity(), mount);
+    }
+}

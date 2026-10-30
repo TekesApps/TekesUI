@@ -459,8 +459,9 @@ impl DisclosureContent {
         }
     }
     /// Original reveal block, including fixed header-focus clearance. The body
-    /// Content's frame starts after that inset. Occupied height/clip never exceed
-    /// the allocated reveal portion; a fully closed block occupies zero height.
+    /// Content's frame starts after that inset. The reveal clip retains the
+    /// actual ancestor's horizontal paint room; its vertical extent never exceeds
+    /// the allocated reveal portion. A fully closed block occupies zero height.
     pub fn body_layout(&self) -> crate::layout_view::DisclosureBodyLayout {
         self.body_layout
     }
@@ -479,6 +480,7 @@ impl DisclosureContent {
         allocated: f32,
     ) {
         let allocated = allocated.max(0.);
+        let ancestor_clip = clip;
         let viewport = Rect::new(block.min_x(), block.min_y(), block.size.width, allocated);
         let clip = viewport.intersection(&clip).unwrap_or_default();
         let t = self.trigger_mut();
@@ -486,6 +488,17 @@ impl DisclosureContent {
         self.body_layout = t
             .view
             .layout_body(&mut TextAdapter(text), &model, block, Some(clip));
+        // Reveal limits the vertical axis. Preserve the actual ancestor's
+        // horizontal paint room for original descendant focus decoration;
+        // child frames, hit targets and accessibility geometry stay unchanged.
+        self.body_layout.visible_clip = self.body_layout.visible_clip.map(|visible| {
+            Rect::new(
+                ancestor_clip.min_x(),
+                visible.min_y(),
+                ancestor_clip.size.width,
+                visible.size.height,
+            )
+        });
         self.body_layout.occupied_height = self.body_layout.occupied_height.min(allocated);
         self.sync_body();
         let retained = !self.expanded() && self.body_layout.visible_clip.is_some();

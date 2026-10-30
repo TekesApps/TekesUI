@@ -8,7 +8,7 @@ use objc2_foundation::{MainThreadMarker, NSNumber, NSPoint, NSRect, NSString};
 use crate::event::{Point, Size};
 use crate::placement::{self, PlacementReport, Rect, ScreenInfo, WindowPlacement};
 
-fn rect(r: NSRect) -> Rect {
+pub(crate) fn rect(r: NSRect) -> Rect {
     Rect {
         origin: Point {
             x: r.origin.x,
@@ -21,16 +21,16 @@ fn rect(r: NSRect) -> Rect {
     }
 }
 
-fn is_builtin(screen: &NSScreen) -> bool {
+pub(crate) fn display_id(screen: &NSScreen) -> Option<u32> {
     let key = NSString::from_str("NSScreenNumber");
     let desc = screen.deviceDescription();
-    let Some(obj) = desc.objectForKey(&key) else {
-        return false;
-    };
-    let Ok(number) = obj.downcast::<NSNumber>() else {
-        return false;
-    };
-    CGDisplayIsBuiltin(number.unsignedIntValue())
+    let obj = desc.objectForKey(&key)?;
+    let number = obj.downcast::<NSNumber>().ok()?;
+    Some(number.unsignedIntValue())
+}
+
+fn is_builtin(screen: &NSScreen) -> bool {
+    display_id(screen).is_some_and(|id| CGDisplayIsBuiltin(id))
 }
 
 pub(crate) fn info(screen: &NSScreen) -> ScreenInfo {

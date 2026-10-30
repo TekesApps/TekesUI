@@ -8,8 +8,8 @@ use std::ffi::c_void;
 use std::time::Duration;
 
 use objc2_app_kit::{
-    NSAppearance, NSAppearanceCustomization, NSAppearanceNameDarkAqua, NSApplication, NSEvent,
-    NSEventModifierFlags, NSEventType, NSWindow,
+    NSAppearance, NSAppearanceCustomization, NSAppearanceNameAqua, NSAppearanceNameDarkAqua,
+    NSApplication, NSEvent, NSEventModifierFlags, NSEventType, NSWindow,
 };
 use objc2_foundation::{MainThreadMarker, NSPoint, NSSize, NSString};
 
@@ -168,6 +168,8 @@ pub enum Action {
     /// 只改这一个窗口的外观（深色或跟随系统），不碰系统设置；
     /// 内容视图的 `effectiveAppearance` 随之变化，平台层会投递 `SystemAppearanceChanged`。
     WindowDark(bool),
+    /// Force Aqua on this selftest window only, independent of system appearance.
+    WindowLight,
     /// 合成一个本地 keyDown（不是全局 CGEvent），交给 `NSApp.mainMenu.performKeyEquivalent:`，
     /// 走菜单快捷键匹配；日志里打印是否被菜单接住。这条路径不经过系统全局热键，
     /// 所以只能证明菜单项配置正确，不能证明系统没有拦截。
@@ -995,6 +997,11 @@ extern "C" fn run_step(ctx: *mut c_void) {
             eprintln!(
                 "selftest: 菜单快捷键 {chars:?} 修饰 C={control} O={alt} S={shift} D={command} -> handled={handled}"
             );
+        }
+        Action::WindowLight => {
+            let appearance = NSAppearance::appearanceNamed(unsafe { NSAppearanceNameAqua })
+                .expect("AppKit Aqua appearance");
+            w.setAppearance(Some(&appearance));
         }
         Action::WindowDark(on) => {
             let a = if on {

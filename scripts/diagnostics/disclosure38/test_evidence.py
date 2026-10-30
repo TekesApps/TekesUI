@@ -35,8 +35,8 @@ class EvidenceTests(unittest.TestCase):
             # Synthetic signature only. These tests do not produce screenshot evidence.
             (self.evidence / name).write_bytes(b"\x89PNG\r\n\x1a\n")
         (self.attempt / "stderr.log").write_text("\n".join([
-            "composition-event mode=disclosure event=PointerDown",
-            "composition-event mode=disclosure event=PointerUp",
+            "composition-event mode=disclosure event=Pointer(PointerEvent { position: Point { x: 360.0, y: 34.0 }, phase: Down, button: Some(Primary) })",
+            "composition-event mode=disclosure event=Pointer(PointerEvent { position: Point { x: 360.0, y: 34.0 }, phase: Up, button: Some(Primary) })",
             "composition-event mode=disclosure event=Preedit",
             "SELFTEST PASS AXPress component=38002"]))
 
@@ -49,6 +49,23 @@ class EvidenceTests(unittest.TestCase):
 
     def test_complete_reader_contract(self):
         self.assertTrue(self.check()["passed"])
+
+    def test_each_current_pointer_phase_is_required(self):
+        path = self.attempt / "stderr.log"
+        original = path.read_text()
+        for phase in ("Down", "Up"):
+            path.write_text("\n".join(line for line in original.splitlines() if "phase: " + phase not in line))
+            self.assertFalse(self.check()["passed"])
+        path.write_text(original)
+        self.assertTrue(self.check()["passed"])
+
+    def test_other_mode_or_nonpointer_phase_cannot_supply_pointer_evidence(self):
+        path = self.attempt / "stderr.log"
+        original = path.read_text()
+        for replacement in (original.replace("mode=disclosure event=Pointer(", "mode=menu-tree event=Pointer("),
+                            original.replace("event=Pointer(PointerEvent", "event=Other(PointerEvent")):
+            path.write_text(replacement)
+            self.assertFalse(self.check()["passed"])
 
     def test_late_abort_still_checks_reached_marked_setup(self):
         self.reports = self.reports[:10]
