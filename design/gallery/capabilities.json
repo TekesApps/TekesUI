@@ -66834,6 +66834,10 @@
                 "actual": "bc355766aeddabe1ae2d511de0c6512988e86f6821860c9638e44e0aa6306636",
                 "expected": "52f26c9fbafd3946dc8d43328028684c433840857152ddc4c5298680f5780c47"
               },
+              "crates/tekes-ui-gallery/src/gallery/mod.rs": {
+                "actual": "2d0a9a4a0730a2bd679d0c13401b942dd01dc7b65e91f2b2fd965b532420e1fa",
+                "expected": "18cec888b4b7fc85a239ed065a32140d78ef281e8a9aa4834765b6ca4afde2ca"
+              },
               "crates/tekes-ui-gallery/src/gallery/workbench/extended/collections_adapter.rs": {
                 "actual": "90216f944b5224905e8658bc90d2a9457db2f4fe89dce215b6034b7f8e10edea",
                 "expected": "d71b574c3f31e2cecf2d1dba4266c7719af736075a1f395cdfa1cf274fb9af2a"
@@ -67259,6 +67263,10 @@
               "crates/tekes-ui-controls/src/extended.rs": {
                 "actual": "bc355766aeddabe1ae2d511de0c6512988e86f6821860c9638e44e0aa6306636",
                 "expected": "52f26c9fbafd3946dc8d43328028684c433840857152ddc4c5298680f5780c47"
+              },
+              "crates/tekes-ui-gallery/src/gallery/mod.rs": {
+                "actual": "2d0a9a4a0730a2bd679d0c13401b942dd01dc7b65e91f2b2fd965b532420e1fa",
+                "expected": "18cec888b4b7fc85a239ed065a32140d78ef281e8a9aa4834765b6ca4afde2ca"
               }
             },
             "scope": "Selected actual diff/View/adapter/clear-source witnesses, not recursive closure/pixel/native certificate",
@@ -67976,7 +67984,7 @@
     "crates/tekes-ui-gallery/src/gallery/icon_catalog.rs": "0ee9cc558be94d9c666aaca67fd62ccf8f5a5b2c71550c9fb61aa0c2b9e4ed5f",
     "crates/tekes-ui-gallery/src/gallery/layout.rs": "ac347805f4a687ef6e3bbced72fa2d274d905ae159bde01b2c51c296aa6ddea2",
     "crates/tekes-ui-gallery/src/gallery/locale.rs": "b8c429ecdad2c265cd61ccd4f7b5e4e69e17cc2f1618492fb23246dcf426a285",
-    "crates/tekes-ui-gallery/src/gallery/mod.rs": "18cec888b4b7fc85a239ed065a32140d78ef281e8a9aa4834765b6ca4afde2ca",
+    "crates/tekes-ui-gallery/src/gallery/mod.rs": "2d0a9a4a0730a2bd679d0c13401b942dd01dc7b65e91f2b2fd965b532420e1fa",
     "crates/tekes-ui-gallery/src/gallery/motion_preview.rs": "dd35eebb7edc40a9ef805445981693ac644275a833491709da7b562250084c55",
     "crates/tekes-ui-gallery/src/gallery/navigation.rs": "164ac5f639e4028e7947003d2c936c780bec14e99308ea93b55b7f10ccf7b9d1",
     "crates/tekes-ui-gallery/src/gallery/pages/icons.rs": "7ee1e0fa8960c6c769b2ba5ff62eab7192a37a37430519f961a44139724e34ca",
