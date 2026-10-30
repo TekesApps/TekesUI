@@ -46,6 +46,12 @@ mod content_reveal_plan;
 pub use content_reveal_plan::{
     HostRevealBudget, HostRevealError, HostRevealOutcome, HostRevealPlan,
 };
+mod rich_content;
+mod rich_document;
+pub use rich_content::{
+    RichBlockGeometry, RichContent, RichContentError, RichContentVersion, RichLinkAction,
+};
+pub use rich_document::{RichBlock, RichBlockKind, RichDocument, RichLink};
 mod adapters;
 mod chart_content;
 pub use chart_content::{ChartContent, ChartContentError};

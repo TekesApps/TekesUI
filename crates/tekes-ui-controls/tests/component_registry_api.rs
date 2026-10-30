@@ -1343,6 +1343,42 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         &mut actual,
         "tekes_ui_controls::composition::RequiredFocusSpace",
     );
+    public_type::<tekes_ui_controls::composition::RichBlock>(
+        &mut actual,
+        "tekes_ui_controls::composition::RichBlock",
+    );
+    public_type::<tekes_ui_controls::composition::RichBlockGeometry>(
+        &mut actual,
+        "tekes_ui_controls::composition::RichBlockGeometry",
+    );
+    public_type::<tekes_ui_controls::composition::RichBlockKind>(
+        &mut actual,
+        "tekes_ui_controls::composition::RichBlockKind",
+    );
+    public_type::<tekes_ui_controls::composition::RichContent>(
+        &mut actual,
+        "tekes_ui_controls::composition::RichContent",
+    );
+    public_type::<tekes_ui_controls::composition::RichContentError>(
+        &mut actual,
+        "tekes_ui_controls::composition::RichContentError",
+    );
+    public_type::<tekes_ui_controls::composition::RichContentVersion>(
+        &mut actual,
+        "tekes_ui_controls::composition::RichContentVersion",
+    );
+    public_type::<tekes_ui_controls::composition::RichDocument>(
+        &mut actual,
+        "tekes_ui_controls::composition::RichDocument",
+    );
+    public_type::<tekes_ui_controls::composition::RichLink>(
+        &mut actual,
+        "tekes_ui_controls::composition::RichLink",
+    );
+    public_type::<tekes_ui_controls::composition::RichLinkAction>(
+        &mut actual,
+        "tekes_ui_controls::composition::RichLinkAction",
+    );
     public_type::<tekes_ui_controls::composition::ScrollContent>(
         &mut actual,
         "tekes_ui_controls::composition::ScrollContent",
@@ -1822,7 +1858,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::layout_view::IconLayout",
     );
     #[allow(dead_code)]
-    fn public_trait_330<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
+    fn public_trait_339<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
     actual.push("tekes_ui_controls::layout_view::IconRenderer");
     public_type::<tekes_ui_controls::layout_view::IconView>(
         &mut actual,
