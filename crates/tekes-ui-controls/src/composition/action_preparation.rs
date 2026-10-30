@@ -1059,7 +1059,17 @@ mod tests {
             }
             let before_focus = h.focused();
             h.get_mut(TARGET).unwrap().preserve_activation_focus = preserve;
-            let point = h.get(TARGET).unwrap().frame().center();
+            let point = h
+                .get(TARGET)
+                .unwrap()
+                .component::<Button>()
+                .unwrap()
+                .button
+                .layout()
+                .unwrap()
+                .frame
+                .center();
+            assert!(h.get(TARGET).unwrap().visible().unwrap().contains(point));
             let response = h.event(&ContentEvent::PointerDown(point));
             assert!(response.consumed);
             assert_eq!(h.pointer_focus_requested(), !preserve);
@@ -1106,7 +1116,17 @@ mod tests {
                 render(&mut h);
             }
             let epoch = h.focus_epoch;
-            let point = h.get(TARGET).unwrap().frame.center();
+            let point = h
+                .get(TARGET)
+                .unwrap()
+                .component::<Button>()
+                .unwrap()
+                .button
+                .layout()
+                .unwrap()
+                .frame
+                .center();
+            assert!(h.get(TARGET).unwrap().visible().unwrap().contains(point));
             let r = if capture {
                 h.event(&ContentEvent::PointerDown(point))
             } else {
