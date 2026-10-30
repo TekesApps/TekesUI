@@ -1257,7 +1257,7 @@ impl Content {
         theme: ContentTheme,
     ) {
         // Registered Popovers have one host-owned overlay pass in opening order.
-        if self.component::<PopoverContent>().is_some() {
+        if !self.composition_active || self.component::<PopoverContent>().is_some() {
             return;
         }
         let owned = self.component.paints_children();
@@ -2954,15 +2954,11 @@ impl ContentHost {
                     .unwrap()
                     .deliver_actions(event, true, &mut self.actions);
             if response.consumed {
-                // The original Combo popup owns both this down and its release,
-                // including outside dismissal after the logical overlay closes.
+                // The original overlay owner owns this down and its release.
+                // Existing Combo-specific capture validation and dispatch remain below.
                 if response.capture_pointer
                     && matches!(routed, ContentEvent::PointerDown(_))
                     && event.is_primary_pointer()
-                    && self
-                        .root
-                        .find_active(id)
-                        .is_some_and(|node| node.component::<ComboBoxContent>().is_some())
                 {
                     self.capture_epoch = self
                         .capture_epoch
@@ -3035,6 +3031,14 @@ impl ContentHost {
                 && (response.consumed || !bubbles)
             {
                 self.event_bubbled = Some(bubbles);
+                return response;
+            }
+            if let Some(response) = self
+                .focused
+                .and_then(|id| self.root.find_mut(id))
+                .map(|node| node.component.focus_boundary(*reverse))
+                .filter(|response| response.consumed)
+            {
                 return response;
             }
             return self.advance_focus(*reverse);

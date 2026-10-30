@@ -433,7 +433,7 @@ fn tabs_keep_inactive_panel_state_and_reject_selection_while_its_editor_composes
     host.event(&ContentEvent::Preedit {
         text: "draft".into(),
         selection: 0..5,
-        clauses: vec![0..5],
+        clauses: std::iter::once(0..5).collect(),
         replacement: None,
     });
     render(&mut host, 460.0);
@@ -710,7 +710,7 @@ fn command_palette_keeps_original_query_mounted_and_uses_filtered_menu_semantics
         host.event(&ContentEvent::Preedit {
             text: "pref".into(),
             selection: 0..4,
-            clauses: vec![0..4],
+            clauses: std::iter::once(0..4).collect(),
             replacement: None,
         })
         .changed
@@ -1014,7 +1014,7 @@ fn command_geometry_capture_cancel_retains_query_and_window_loss_retires_it() {
         host.event(&ContentEvent::Preedit {
             text: "Open".into(),
             selection: 1..3,
-            clauses: vec![0..4],
+            clauses: std::iter::once(0..4).collect(),
             replacement: None,
         })
         .changed

@@ -186,7 +186,7 @@ fn header_only_empty_query_keeps_original_editor_and_clamps_to_viewport() {
         host.event(&ContentEvent::Preedit {
             text: "no matching command".into(),
             selection: 1..3,
-            clauses: vec![0..19],
+            clauses: std::iter::once(0..19).collect(),
             replacement: None,
         })
         .changed

@@ -4435,19 +4435,29 @@ mod tests {
                     palette,
                     proposal::TextRole::UiBody,
                 );
+                let stroke = proposal::metric(
+                    "stroke",
+                    if focused { "stroke-emphasis" } else { "stroke-rule" },
+                )
+                .expect("original Link underline stroke");
                 let underline = scene
                     .primitives()
                     .iter()
+                    .rev()
                     .find_map(|primitive| match primitive {
                         tekes_ui_scene::Primitive::Quad(quad)
-                            if quad.rect.size.height <= 2.
-                                && quad.rect.size.width == frame.size.width =>
+                            if quad.border_width == 0.
+                                && quad.rect.size.height == stroke
+                                && quad.rect.min_x() > frame.min_x()
+                                && quad.rect.max_x() < frame.max_x()
+                                && quad.rect.min_y() >= frame.min_y()
+                                && quad.rect.max_y() < frame.max_y() =>
                         {
                             Some(quad.fill)
                         }
                         _ => None,
                     })
-                    .expect("Link render emits its semantic underline");
+                    .expect("Link render emits its inset semantic underline");
                 assert_eq!(
                     underline,
                     palette.color(role).expect("generated Link semantic color"),
