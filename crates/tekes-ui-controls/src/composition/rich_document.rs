@@ -1023,7 +1023,7 @@ mod tests {
         let bullet_source = "- a".encode_utf16().count();
         assert_eq!(rich.source_to_display(2..2), Some(2..2));
         assert_eq!(rich.display_to_source(1..1), Some(2..2));
-        assert_eq!(rich.source_to_display(3..1), None);
+        assert_eq!(rich.source_to_display(Range { start: 3, end: 1 }), None);
         assert_eq!(rich.display_to_source(0..2), Some(0..2));
         assert!(bullet_source > 0);
     }

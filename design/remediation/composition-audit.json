@@ -2048,7 +2048,7 @@
     "crates/tekes-ui-controls/src/composition/separator.rs": "4fed31d0eb17470dadd33b7a3644ba922e06fa005a3feddb0f88379eed7f3397",
     "crates/tekes-ui-controls/src/composition/icon.rs": "12bb7040fc42deaddc525c61bf8d5be96b54db859adefadbf9643079615b710b",
     "crates/tekes-ui-controls/src/composition/popover.rs": "60adbd8a89c8c990e93314938db5fe0bb1860f1f32b2e5b2ee280602379eaeb5",
-    "crates/tekes-ui-controls/src/composition/rich_document.rs": "2488b1bb232f4a19ead4ba541b2562f445b697757899c5b8a4d7ccce1bf5c435",
+    "crates/tekes-ui-controls/src/composition/rich_document.rs": "0b826474f713e197953e8c9737cb8c462db97ba1ba50a4cd2b13b4ddc6eb9ce0",
     "crates/tekes-ui-controls/src/composition/rich_content.rs": "b5e46ce2d697f152d03129032fd9c1754fd17dc2e9c9627ccea6b2367745ca67"
   },
   "remaining": [
