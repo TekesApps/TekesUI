@@ -2879,11 +2879,19 @@ impl ContentHost {
                 self.captured_mount = None;
                 self.captured_overlay = false;
             }
-            let result = if captured_overlay {
-                {
-                    let (scope, actions) = self.scope_with_actions();
-                    scope.route_from(id, event, actions)
-                }
+            let combo_overlay = captured_overlay
+                && self
+                    .root
+                    .find_active(id)
+                    .is_some_and(|node| node.component::<ComboBoxContent>().is_some());
+            let result = if combo_overlay {
+                self.root.find_mut(id).map(|node| {
+                    let response = node.deliver_actions(event, true, &mut self.actions);
+                    (id, response, false)
+                })
+            } else if captured_overlay {
+                let (scope, actions) = self.scope_with_actions();
+                scope.route_from(id, event, actions)
             } else {
                 self.root.route_from(id, event, &mut self.actions)
             };
@@ -2901,6 +2909,24 @@ impl ContentHost {
                     .unwrap()
                     .deliver_actions(event, true, &mut self.actions);
             if response.consumed {
+                // The original Combo popup owns both this down and its release,
+                // including outside dismissal after the logical overlay closes.
+                if response.capture_pointer
+                    && matches!(routed, ContentEvent::PointerDown(_))
+                    && event.is_primary_pointer()
+                    && self
+                        .root
+                        .find_active(id)
+                        .is_some_and(|node| node.component::<ComboBoxContent>().is_some())
+                {
+                    self.capture_epoch = self
+                        .capture_epoch
+                        .checked_add(1)
+                        .expect("pointer capture identity exhausted");
+                    self.captured = Some(id);
+                    self.captured_mount = self.root.find_active(id).map(|node| node.mount);
+                    self.captured_overlay = true;
+                }
                 self.record_reading_scroll(event, id, &response);
                 return response;
             }
