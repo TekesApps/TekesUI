@@ -1543,7 +1543,6 @@ impl MenuRuntime {
         }
         heights.resize(model.items.count, 36.0);
         self.row_heights = heights;
-        let width = natural_size.width;
         let popup_inset = self.focus_outset;
         let row_gap = popup_inset.max(4.0);
         let role_size = size_role(compact);

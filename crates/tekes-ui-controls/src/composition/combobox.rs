@@ -679,12 +679,16 @@ impl Component for ComboBoxContent {
             AccessibilityAction::Press | AccessibilityAction::SetExpanded(_)
         ) || part.is_some()
         {
-            let ActionPreparation::Ready(action) =
-                self.prepare_action(ComponentActionRequest::Accessibility { part, action })
+            let Some((response, _, effect)) =
+                self.decide_combo_action(ComponentActionRequest::Accessibility { part, action })
             else {
                 return ContentResponse::default();
             };
-            return action_preparation::apply_local_prepared(action, self);
+            if !effect.validate(self) {
+                return ContentResponse::default();
+            }
+            Box::new(effect).apply(self);
+            return response;
         }
         let r = self.editor.accessibility_action(part, action);
         self.sync_real_edit();
@@ -830,14 +834,27 @@ impl PreparedActionEffect for ComboEffect {
 }
 impl ComboBoxContent {
     fn prepare_combo_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
-        if !self.available() {
+        let Some((response, focus, effect)) = self.decide_combo_action(request) else {
             return ActionPreparation::Unsupported;
+        };
+        ActionPreparation::Ready(PreparedComponentAction::new(
+            response,
+            focus,
+            Box::new(effect),
+        ))
+    }
+    fn decide_combo_action(
+        &self,
+        request: ComponentActionRequest<'_>,
+    ) -> Option<(ContentResponse, PreparedActionFocus, ComboEffect)> {
+        if !self.available() {
+            return None;
         }
         let (operation, response, focus) = match request {
             ComponentActionRequest::PointerDown(event) => {
                 let request = action_preparation::OwnedActionRequest::Pointer(event.clone());
                 let Some(decision) = self.editor.decide_action(&request) else {
-                    return ActionPreparation::Unsupported;
+                    return None;
                 };
                 let response = decision.response;
                 let plan = if response.consumed {
@@ -845,7 +862,7 @@ impl ComboBoxContent {
                         self.model.items.len(),
                         !self.model.open || self.candidates.is_none(),
                     ) else {
-                        return ActionPreparation::Unsupported;
+                        return None;
                     };
                     Some(plan)
                 } else {
@@ -874,7 +891,7 @@ impl ComboBoxContent {
                     AccessibilityAction::SetSelection(range.clone()),
                 );
                 let Some(decision) = self.editor.decide_action(&request) else {
-                    return ActionPreparation::Unsupported;
+                    return None;
                 };
                 let response = decision.response;
                 (
@@ -900,13 +917,13 @@ impl ComboBoxContent {
                 action: AccessibilityAction::SetExpanded(true) | AccessibilityAction::Press,
             } => {
                 if self.editor.composing() {
-                    return ActionPreparation::Unsupported;
+                    return None;
                 }
                 let Ok(plan) = self.prepare_candidates(
                     self.model.items.len(),
                     !self.model.open || self.candidates.is_none(),
                 ) else {
-                    return ActionPreparation::Unsupported;
+                    return None;
                 };
                 (
                     ComboOperation::Open(plan),
@@ -922,19 +939,19 @@ impl ComboBoxContent {
                     || !self.overlay_open()
                     || !self.view.options.is_current(&self.model)
                 {
-                    return ActionPreparation::Unsupported;
+                    return None;
                 }
                 let Some(index) = self
                     .candidates
                     .as_ref()
                     .and_then(|p| p.parts.iter().position(|id| *id == token))
                 else {
-                    return ActionPreparation::Unsupported;
+                    return None;
                 };
                 match action {
                     AccessibilityAction::Press => {
                         if self.payload_authority.is_none() {
-                            return ActionPreparation::Unsupported;
+                            return None;
                         }
                         let Some(prepared) = self.view.prepare_confirmation(
                             &self.model,
@@ -942,7 +959,7 @@ impl ComboBoxContent {
                             index,
                             true,
                         ) else {
-                            return ActionPreparation::Unsupported;
+                            return None;
                         };
                         (
                             ComboOperation::Confirm {
@@ -962,15 +979,15 @@ impl ComboBoxContent {
                         ContentResponse::consumed(self.model.active != Some(index)),
                         PreparedActionFocus::Preserve,
                     ),
-                    _ => return ActionPreparation::Unsupported,
+                    _ => return None,
                 }
             }
-            _ => return ActionPreparation::Unsupported,
+            _ => return None,
         };
-        ActionPreparation::Ready(PreparedComponentAction::new(
+        Some((
             response,
             focus,
-            Box::new(ComboEffect {
+            ComboEffect {
                 model: self.model.clone(),
                 input: self.editor.surface.input.action_snapshot(),
                 declaration: self.declaration,
@@ -980,7 +997,7 @@ impl ComboBoxContent {
                 window_active: self.window_active,
                 runnable: self.runnable,
                 operation,
-            }),
+            },
         ))
     }
     pub(super) fn capture_current(&self, overlay: bool) -> bool {

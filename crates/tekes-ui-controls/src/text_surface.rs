@@ -1181,6 +1181,13 @@ impl TextSurface {
         true
     }
 
+    /// Whether the original text or scrollbar gesture still owns capture.
+    pub(crate) fn pointer_active(&self) -> bool {
+        self.pointer_dragging
+            || self.scrollbar_pointer_active
+            || self.scroll.dragging_axis().is_some()
+    }
+
     pub fn pointer_up(&mut self) {
         self.pointer_dragging = false;
         self.scrollbar_reveal_suppressed = self.scrollbar_pointer_active;
@@ -1566,6 +1573,45 @@ mod tests {
                 "selection does not grant edit authority"
             );
         }
+    }
+
+    #[test]
+    fn pointer_active_queries_original_capture_without_mutation_and_clears_on_release() {
+        let mut surface = TextSurface::new("body", true, false);
+        surface
+            .scroll
+            .layout(Size::new(100., 100.), Size::new(100., 400.));
+        for (selection, scrollbar, expected) in [
+            (false, false, false),
+            (true, false, true),
+            (false, true, true),
+            (true, true, true),
+        ] {
+            surface.pointer_dragging = selection;
+            surface.scrollbar_pointer_active = scrollbar;
+            let input = surface.input.action_snapshot();
+            let scroll = format!("{:?}", surface.scroll);
+            assert_eq!(surface.pointer_active(), expected);
+            assert_eq!(surface.pointer_active(), expected);
+            assert_eq!(surface.input.action_snapshot(), input);
+            assert_eq!(format!("{:?}", surface.scroll), scroll);
+            assert_eq!(surface.pointer_dragging, selection);
+            assert_eq!(surface.scrollbar_pointer_active, scrollbar);
+        }
+        surface.pointer_up();
+        assert!(!surface.pointer_active());
+        assert!(surface.scrollbar_reveal_suppressed);
+        let track = Rect::new(90., 0., 10., 100.);
+        assert!(
+            surface
+                .scroll
+                .pointer_down(Point::new(95., 10.), true, track, 24.)
+        );
+        assert!(surface.scroll.dragging_axis().is_some());
+        assert!(surface.pointer_active());
+        surface.cancel_interaction();
+        assert!(!surface.pointer_active());
+        assert!(surface.scroll.dragging_axis().is_none());
     }
 
     #[test]
