@@ -853,9 +853,7 @@ impl ComboBoxContent {
         let (operation, response, focus) = match request {
             ComponentActionRequest::PointerDown(event) => {
                 let request = action_preparation::OwnedActionRequest::Pointer(event.clone());
-                let Some(decision) = self.editor.decide_action(&request) else {
-                    return None;
-                };
+                let decision = self.editor.decide_action(&request)?;
                 let response = decision.response;
                 let plan = if response.consumed {
                     let Ok(plan) = self.prepare_candidates(
@@ -890,9 +888,7 @@ impl ComboBoxContent {
                     None,
                     AccessibilityAction::SetSelection(range.clone()),
                 );
-                let Some(decision) = self.editor.decide_action(&request) else {
-                    return None;
-                };
+                let decision = self.editor.decide_action(&request)?;
                 let response = decision.response;
                 (
                     ComboOperation::Editor {
@@ -941,26 +937,19 @@ impl ComboBoxContent {
                 {
                     return None;
                 }
-                let Some(index) = self
+                let index = self
                     .candidates
                     .as_ref()
-                    .and_then(|p| p.parts.iter().position(|id| *id == token))
-                else {
-                    return None;
-                };
+                    .and_then(|p| p.parts.iter().position(|id| *id == token))?;
                 match action {
                     AccessibilityAction::Press => {
-                        if self.payload_authority.is_none() {
-                            return None;
-                        }
-                        let Some(prepared) = self.view.prepare_confirmation(
+                        self.payload_authority?;
+                        let prepared = self.view.prepare_confirmation(
                             &self.model,
                             &self.editor.surface.input,
                             index,
                             true,
-                        ) else {
-                            return None;
-                        };
+                        )?;
                         (
                             ComboOperation::Confirm {
                                 prepared: Box::new(prepared),
