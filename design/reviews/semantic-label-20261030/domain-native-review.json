@@ -1,0 +1,39 @@
+{
+  "status": "passed scoped native cross-run ellipsis supplement",
+  "program_sha256": "f1a8b872197b7eb0eda513a63ed309e4fc98ac1a7ee35b1c635abc44ec915707",
+  "frames": 10,
+  "screen_names": [
+    "U2790B"
+  ],
+  "all_frames_external": true,
+  "source_utf16_length": 177,
+  "observed_native_cut_positions": [
+    24,
+    29,
+    41,
+    44,
+    129,
+    133
+  ],
+  "all_recorded_layouts_actually_truncated": true,
+  "omission_crosses_at_least_two_semantic_roles": true,
+  "one_synthetic_glyph_at_cut_no_hidden_glyph_residue_or_cross_role_cluster": true,
+  "full_AX_names_for_three_original_owners": true,
+  "decorative_slot_not_AX_owner": true,
+  "button_actions": [
+    2,
+    1
+  ],
+  "native_UTF16_state_checks": 3,
+  "marked_selection_focus_preserved_across_revision_narrow_dark_scale": true,
+  "images": {
+    "semantic-dark-narrow.png": "f5e4f747ad3d721942b0c84ea0f3409368f70f414965edaa05bfce28c553464f",
+    "semantic-light.png": "c9153f18396225c992f4d08e3c73b7035b68065e58cd80fd43e60f12790808ec"
+  },
+  "visual_review": "Both actual PNGs inspected: all three original label presentations visibly end in ellipsis in light/wide and dark/narrow frames, retained secondary/positive/negative ink visible and ellipsis inherits original foreground; Composer ni remains visibly selected/marked. No extra owner visible.",
+  "physical_IME": "not_run",
+  "real_VoiceOver": "not_run",
+  "120Hz": "not_run and not requested",
+  "performance": "not_run",
+  "resources": "owned PID absent; all build/GPU contexts returned; desktop explicitly released now"
+}

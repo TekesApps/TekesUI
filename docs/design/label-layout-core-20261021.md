@@ -143,3 +143,9 @@ the earlier missing software-native ellipsis coverage. Physical IME, real
 VoiceOver,120Hz and performance remain not_run; their separate user-participating
 steps are not replaced by programmatic AppKit/AX evidence. Public delivery and the
 whole Issue25 acceptance remain parent-owned.
+
+
+Versioned bounded native evidence: [review](../../design/reviews/semantic-label-20261030/domain-native-review.json),
+[light/wide window](../../design/reviews/semantic-label-20261030/semantic-light.png),
+and [dark/narrow window](../../design/reviews/semantic-label-20261030/semantic-dark-narrow.png).
+The raw source/program receipts and phase history remain in the scoped artifact package referenced above.
