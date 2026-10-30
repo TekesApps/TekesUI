@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the Rust Gallery and package its macOS app icon. Does not launch or publish."""
+"""Package Gallery with its app icon and embedded-catalog identity manifest; never launch or publish."""
 import argparse
 import os
 from pathlib import Path
@@ -45,6 +45,11 @@ def main():
         (contents / 'MacOS').mkdir(parents=True)
         (contents / 'Resources').mkdir()
         shutil.copy2(binary, contents / 'MacOS' / info['CFBundleExecutable'])
+        # Glyph::ALL embeds the complete SVG catalog in the executable. Keep the
+        # public identity manifest beside it so the package-outside-checkout
+        # probe can reject stale binaries against these exact canonical inputs.
+        shutil.copy2(ROOT / 'crates/tekes-ui-icons/catalog.json',
+                     contents / 'Resources/IconCatalog.json')
         compiled = Path(tmp) / 'compiled-icons'
         compiled.mkdir()
         subprocess.run(['xcrun', 'actool', str(ASSETS / 'Gallery.icon'),

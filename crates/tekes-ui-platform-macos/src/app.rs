@@ -115,6 +115,7 @@ define_class!(
             let shared = &self.ivars().shared;
             crate::wake::native::unregister(&shared.wake_state);
             shared.closed.set(true);
+            shared.revoke_accessibility();
             restore_windows(shared);
             shared.titlebar_drag_origin.borrow_mut().take();
             shared.animating.set(false);

@@ -445,14 +445,20 @@ impl Shared {
             .as_ref()
             .is_some_and(|h| h.allows_app_quit())
     }
+    pub(crate) fn revoke_accessibility(&self) {
+        #[cfg(feature = "content-accessibility")]
+        if let Some(publication) = self.content_geometry.borrow_mut().take() {
+            publication.revoke();
+        }
+        self.accessibility_nodes.borrow_mut().clear();
+        self.accessibility_text_layouts.borrow_mut().clear();
+        self.accessibility_elements.borrow_mut().clear();
+    }
     pub fn finish(&self) {
         crate::app::restore_windows(self);
         crate::wake::native::unregister(&self.wake_state);
         self.closed.set(true);
-        #[cfg(feature = "content-accessibility")]
-        if let Some(p) = self.content_geometry.borrow().as_ref() {
-            p.revoke();
-        }
+        self.revoke_accessibility();
         self.titlebar_drag_origin.borrow_mut().take();
         self.animating.set(false);
         self.discard_metal_frames();

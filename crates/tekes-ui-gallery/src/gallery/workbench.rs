@@ -11,6 +11,8 @@ mod durable_draft;
 mod extended;
 mod focus;
 #[cfg(test)]
+mod settings_phase_capture;
+#[cfg(test)]
 mod state_capture;
 use super::{Page, PageCtx, text_demo::TextDemo};
 use brand_preview::BrandPreview;

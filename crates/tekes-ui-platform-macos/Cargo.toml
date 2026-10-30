@@ -63,3 +63,7 @@ harness = false
 [[test]]
 name = "exclusive_native"
 harness = false
+
+[[example]]
+name = "ax_modal_lifecycle"
+required-features = ["content-accessibility"]

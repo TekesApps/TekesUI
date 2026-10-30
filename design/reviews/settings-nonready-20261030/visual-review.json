@@ -1,0 +1,660 @@
+{
+  "review_method": "Individually opened and visually inspected each of the 64 generated PNG files with view_image.",
+  "candidate_head": "13c0ef1911ccb7db0ebc78c593b68863b60f4828",
+  "frame_count": 64,
+  "reviewed_count": 64,
+  "result": "pass",
+  "scope": "Visual readability and screenshot assertions only; no native app launch, native input, IME, VoiceOver, or performance acceptance.",
+  "criteria_checked": [
+    "all 4 phase/status states present and visible in top/bottom frame pairs",
+    "pending Save action appears disabled while pending message and Resolve fixture action are visible",
+    "failed state preserves Studio input and exposes Retry save",
+    "saved confirmation is readable",
+    "invalid required-name error is readable",
+    "light/dark and standard/increased type scale retain legibility",
+    "scrollbars indicate top and bottom positions; bottom content is reachable",
+    "no inspected screenshot showed clipping or occlusion of checked text/actions"
+  ],
+  "frames": [
+    {
+      "file": "example-settings__playground__light-standard__invalid__720x512__type-150__top@1x.png",
+      "sha256": "1ae750b993ee896c76c17e4da09553eb3168c1e2deef520868f6895591c95cc6",
+      "phase": "invalid",
+      "theme": "light-standard",
+      "position": "top",
+      "backing_scale": 1.0,
+      "visible_observation": "Top frame shows the required-name error and red field outline; bottom frame shows the validation message, Save action, and validation event. Form label, input, and helper text are visible without clipping.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__light-standard__invalid__720x512__type-150__bottom@1x.png",
+      "sha256": "ebc1a0e728abf1040b7783de22f5e7cbb4a11886efccfaaba962d176f796b299",
+      "phase": "invalid",
+      "theme": "light-standard",
+      "position": "bottom",
+      "backing_scale": 1.0,
+      "visible_observation": "Top frame shows the required-name error and red field outline; bottom frame shows the validation message, Save action, and validation event. Scrollbar is visible and relevant text/actions fit in the viewport.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__light-standard__invalid__720x512__type-150__top@2x.png",
+      "sha256": "341156ea823f672defd5fa779d7e838938de401d940050bed29a1616daff3607",
+      "phase": "invalid",
+      "theme": "light-standard",
+      "position": "top",
+      "backing_scale": 2.0,
+      "visible_observation": "Top frame shows the required-name error and red field outline; bottom frame shows the validation message, Save action, and validation event. Form label, input, and helper text are visible without clipping.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__light-standard__invalid__720x512__type-150__bottom@2x.png",
+      "sha256": "a21ce598a9f258fcf2cef119539695d59055e5c000550987c518549eeb28bf9a",
+      "phase": "invalid",
+      "theme": "light-standard",
+      "position": "bottom",
+      "backing_scale": 2.0,
+      "visible_observation": "Top frame shows the required-name error and red field outline; bottom frame shows the validation message, Save action, and validation event. Scrollbar is visible and relevant text/actions fit in the viewport.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__dark-standard__invalid__720x512__type-150__top@1x.png",
+      "sha256": "c27ba57bc9fb7642984a0016b3cd2b952d4c6090fcdfd30d0ae4e7f6572a2796",
+      "phase": "invalid",
+      "theme": "dark-standard",
+      "position": "top",
+      "backing_scale": 1.0,
+      "visible_observation": "Top frame shows the required-name error and red field outline; bottom frame shows the validation message, Save action, and validation event. Form label, input, and helper text are visible without clipping.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__dark-standard__invalid__720x512__type-150__bottom@1x.png",
+      "sha256": "50f189e954885954d7323a9638c7684cbd5624799c53f0b24e7543905e109ab3",
+      "phase": "invalid",
+      "theme": "dark-standard",
+      "position": "bottom",
+      "backing_scale": 1.0,
+      "visible_observation": "Top frame shows the required-name error and red field outline; bottom frame shows the validation message, Save action, and validation event. Scrollbar is visible and relevant text/actions fit in the viewport.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__dark-standard__invalid__720x512__type-150__top@2x.png",
+      "sha256": "2e895bc6b9161b039198adcaada71e4961a67b7c0c78e7ecff4ec76174d3ef7d",
+      "phase": "invalid",
+      "theme": "dark-standard",
+      "position": "top",
+      "backing_scale": 2.0,
+      "visible_observation": "Top frame shows the required-name error and red field outline; bottom frame shows the validation message, Save action, and validation event. Form label, input, and helper text are visible without clipping.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__dark-standard__invalid__720x512__type-150__bottom@2x.png",
+      "sha256": "72efc3b27d1ba9feb3e72da5f305f545f3fa82576570593c3976e0eb4c55b85c",
+      "phase": "invalid",
+      "theme": "dark-standard",
+      "position": "bottom",
+      "backing_scale": 2.0,
+      "visible_observation": "Top frame shows the required-name error and red field outline; bottom frame shows the validation message, Save action, and validation event. Scrollbar is visible and relevant text/actions fit in the viewport.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__light-increased__invalid__720x512__type-150__top@1x.png",
+      "sha256": "8eaac7551b361522b74fc286dcbdf6eece91cdb8079a49cc6b47128fd028c08a",
+      "phase": "invalid",
+      "theme": "light-increased",
+      "position": "top",
+      "backing_scale": 1.0,
+      "visible_observation": "Top frame shows the required-name error and red field outline; bottom frame shows the validation message, Save action, and validation event. Form label, input, and helper text are visible without clipping.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__light-increased__invalid__720x512__type-150__bottom@1x.png",
+      "sha256": "b4fca7c8a780cf23f9a14a17f4f9cdb40fe5579a188ea6785dfcb6211ebea8de",
+      "phase": "invalid",
+      "theme": "light-increased",
+      "position": "bottom",
+      "backing_scale": 1.0,
+      "visible_observation": "Top frame shows the required-name error and red field outline; bottom frame shows the validation message, Save action, and validation event. Scrollbar is visible and relevant text/actions fit in the viewport.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__light-increased__invalid__720x512__type-150__top@2x.png",
+      "sha256": "241584a2d450be453c5ee4c8498d16ebb589db8f7fbe97eea8aaa1d4a4c23b33",
+      "phase": "invalid",
+      "theme": "light-increased",
+      "position": "top",
+      "backing_scale": 2.0,
+      "visible_observation": "Top frame shows the required-name error and red field outline; bottom frame shows the validation message, Save action, and validation event. Form label, input, and helper text are visible without clipping.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__light-increased__invalid__720x512__type-150__bottom@2x.png",
+      "sha256": "a6982a824e67d2ae30fa6d28cc2cf55f34def074f6c56e4e2df6ab13d94b36db",
+      "phase": "invalid",
+      "theme": "light-increased",
+      "position": "bottom",
+      "backing_scale": 2.0,
+      "visible_observation": "Top frame shows the required-name error and red field outline; bottom frame shows the validation message, Save action, and validation event. Scrollbar is visible and relevant text/actions fit in the viewport.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__dark-increased__invalid__720x512__type-150__top@1x.png",
+      "sha256": "edcc5fbe4a8a5b814613e4b6fc3fbd5933a6dcdd758fb6567453c997ea22fda3",
+      "phase": "invalid",
+      "theme": "dark-increased",
+      "position": "top",
+      "backing_scale": 1.0,
+      "visible_observation": "Top frame shows the required-name error and red field outline; bottom frame shows the validation message, Save action, and validation event. Form label, input, and helper text are visible without clipping.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__dark-increased__invalid__720x512__type-150__bottom@1x.png",
+      "sha256": "35d546221a2841761aeaeb3b94309a5975089591fa8f3d399f8aee9f14a0974e",
+      "phase": "invalid",
+      "theme": "dark-increased",
+      "position": "bottom",
+      "backing_scale": 1.0,
+      "visible_observation": "Top frame shows the required-name error and red field outline; bottom frame shows the validation message, Save action, and validation event. Scrollbar is visible and relevant text/actions fit in the viewport.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__dark-increased__invalid__720x512__type-150__top@2x.png",
+      "sha256": "5d55e63eefd69e850481148198fa4ba04f576eacc0653d2e398d130a2d2ef246",
+      "phase": "invalid",
+      "theme": "dark-increased",
+      "position": "top",
+      "backing_scale": 2.0,
+      "visible_observation": "Top frame shows the required-name error and red field outline; bottom frame shows the validation message, Save action, and validation event. Form label, input, and helper text are visible without clipping.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__dark-increased__invalid__720x512__type-150__bottom@2x.png",
+      "sha256": "d6cab59884912c57fc2821d02540db988400a891a4a60d01209fadc2abe093bc",
+      "phase": "invalid",
+      "theme": "dark-increased",
+      "position": "bottom",
+      "backing_scale": 2.0,
+      "visible_observation": "Top frame shows the required-name error and red field outline; bottom frame shows the validation message, Save action, and validation event. Scrollbar is visible and relevant text/actions fit in the viewport.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__light-standard__pending__720x512__type-150__top@1x.png",
+      "sha256": "01f255d5b8539bf541d9f874e3f7b96754ebaf8465a7450d2f8bc89f46d1a7ce",
+      "phase": "pending",
+      "theme": "light-standard",
+      "position": "top",
+      "backing_scale": 1.0,
+      "visible_observation": "Top frame retains the Studio input and helper text; bottom frame shows the pending submission text, Resolve fixture action, and dimmed/disabled Save action. Form label, input, and helper text are visible without clipping.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__light-standard__pending__720x512__type-150__bottom@1x.png",
+      "sha256": "45b2360d1a2145584a4838a04d82ea933e408c347869a2be132001d32737a149",
+      "phase": "pending",
+      "theme": "light-standard",
+      "position": "bottom",
+      "backing_scale": 1.0,
+      "visible_observation": "Top frame retains the Studio input and helper text; bottom frame shows the pending submission text, Resolve fixture action, and dimmed/disabled Save action. Scrollbar is visible and relevant text/actions fit in the viewport.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__light-standard__pending__720x512__type-150__top@2x.png",
+      "sha256": "b65e5a8ac7a86609373e59cd4ceab662ad3d691905bb85fe964835004423a157",
+      "phase": "pending",
+      "theme": "light-standard",
+      "position": "top",
+      "backing_scale": 2.0,
+      "visible_observation": "Top frame retains the Studio input and helper text; bottom frame shows the pending submission text, Resolve fixture action, and dimmed/disabled Save action. Form label, input, and helper text are visible without clipping.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__light-standard__pending__720x512__type-150__bottom@2x.png",
+      "sha256": "ed959962501907e5904d460dfc9fd24a3a54c3e25e1677a070f11ba28603e688",
+      "phase": "pending",
+      "theme": "light-standard",
+      "position": "bottom",
+      "backing_scale": 2.0,
+      "visible_observation": "Top frame retains the Studio input and helper text; bottom frame shows the pending submission text, Resolve fixture action, and dimmed/disabled Save action. Scrollbar is visible and relevant text/actions fit in the viewport.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__dark-standard__pending__720x512__type-150__top@1x.png",
+      "sha256": "fc6bc1ccc06d76a2ba07cb9b8bb06a995fe90aef232ac3dff7989bddb68cd3bd",
+      "phase": "pending",
+      "theme": "dark-standard",
+      "position": "top",
+      "backing_scale": 1.0,
+      "visible_observation": "Top frame retains the Studio input and helper text; bottom frame shows the pending submission text, Resolve fixture action, and dimmed/disabled Save action. Form label, input, and helper text are visible without clipping.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__dark-standard__pending__720x512__type-150__bottom@1x.png",
+      "sha256": "d244da94283ee10c8617c21682980a5073d6a986891ccd325bf48986a4ab4e6d",
+      "phase": "pending",
+      "theme": "dark-standard",
+      "position": "bottom",
+      "backing_scale": 1.0,
+      "visible_observation": "Top frame retains the Studio input and helper text; bottom frame shows the pending submission text, Resolve fixture action, and dimmed/disabled Save action. Scrollbar is visible and relevant text/actions fit in the viewport.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__dark-standard__pending__720x512__type-150__top@2x.png",
+      "sha256": "e6492ee188374205de0cca6c38da4bd8a450f3875d3826f1b0f49a7202108187",
+      "phase": "pending",
+      "theme": "dark-standard",
+      "position": "top",
+      "backing_scale": 2.0,
+      "visible_observation": "Top frame retains the Studio input and helper text; bottom frame shows the pending submission text, Resolve fixture action, and dimmed/disabled Save action. Form label, input, and helper text are visible without clipping.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__dark-standard__pending__720x512__type-150__bottom@2x.png",
+      "sha256": "506deeb725b6f762b6d9022ba75e1583e2d608104ecaad1d5ddce67756ba9aef",
+      "phase": "pending",
+      "theme": "dark-standard",
+      "position": "bottom",
+      "backing_scale": 2.0,
+      "visible_observation": "Top frame retains the Studio input and helper text; bottom frame shows the pending submission text, Resolve fixture action, and dimmed/disabled Save action. Scrollbar is visible and relevant text/actions fit in the viewport.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__light-increased__pending__720x512__type-150__top@1x.png",
+      "sha256": "06b8822e8237b5ad5dfb386d8cd1d3efe9fa3cbf2ebf524686344348f07d3cc6",
+      "phase": "pending",
+      "theme": "light-increased",
+      "position": "top",
+      "backing_scale": 1.0,
+      "visible_observation": "Top frame retains the Studio input and helper text; bottom frame shows the pending submission text, Resolve fixture action, and dimmed/disabled Save action. Form label, input, and helper text are visible without clipping.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__light-increased__pending__720x512__type-150__bottom@1x.png",
+      "sha256": "e2b39876d8a9a2ca227fe25bde7e05a47cb6452d955645ed53ac82e8b6e35a62",
+      "phase": "pending",
+      "theme": "light-increased",
+      "position": "bottom",
+      "backing_scale": 1.0,
+      "visible_observation": "Top frame retains the Studio input and helper text; bottom frame shows the pending submission text, Resolve fixture action, and dimmed/disabled Save action. Scrollbar is visible and relevant text/actions fit in the viewport.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__light-increased__pending__720x512__type-150__top@2x.png",
+      "sha256": "73d97d68c73a6f3bd37963d72082eee7c0d78ef90c4f7968fac4148e8ec4938c",
+      "phase": "pending",
+      "theme": "light-increased",
+      "position": "top",
+      "backing_scale": 2.0,
+      "visible_observation": "Top frame retains the Studio input and helper text; bottom frame shows the pending submission text, Resolve fixture action, and dimmed/disabled Save action. Form label, input, and helper text are visible without clipping.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__light-increased__pending__720x512__type-150__bottom@2x.png",
+      "sha256": "63b59b4705105cc8497b0f57350e15593f88ad339c9e27b54ad201162fe69df0",
+      "phase": "pending",
+      "theme": "light-increased",
+      "position": "bottom",
+      "backing_scale": 2.0,
+      "visible_observation": "Top frame retains the Studio input and helper text; bottom frame shows the pending submission text, Resolve fixture action, and dimmed/disabled Save action. Scrollbar is visible and relevant text/actions fit in the viewport.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__dark-increased__pending__720x512__type-150__top@1x.png",
+      "sha256": "3b629f1329e70aa9ed88293ad79d6b79ccec15c88abfd0f45afb02146631d37e",
+      "phase": "pending",
+      "theme": "dark-increased",
+      "position": "top",
+      "backing_scale": 1.0,
+      "visible_observation": "Top frame retains the Studio input and helper text; bottom frame shows the pending submission text, Resolve fixture action, and dimmed/disabled Save action. Form label, input, and helper text are visible without clipping.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__dark-increased__pending__720x512__type-150__bottom@1x.png",
+      "sha256": "2a2689a741078c2d0e31a5ab6f4533d293f67958bd99dd8fb2f6f33d6c712223",
+      "phase": "pending",
+      "theme": "dark-increased",
+      "position": "bottom",
+      "backing_scale": 1.0,
+      "visible_observation": "Top frame retains the Studio input and helper text; bottom frame shows the pending submission text, Resolve fixture action, and dimmed/disabled Save action. Scrollbar is visible and relevant text/actions fit in the viewport.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__dark-increased__pending__720x512__type-150__top@2x.png",
+      "sha256": "2f8c53678469d30b91ad94d84ae0033dd96b6592c0a4b2c44dfd609797201afd",
+      "phase": "pending",
+      "theme": "dark-increased",
+      "position": "top",
+      "backing_scale": 2.0,
+      "visible_observation": "Top frame retains the Studio input and helper text; bottom frame shows the pending submission text, Resolve fixture action, and dimmed/disabled Save action. Form label, input, and helper text are visible without clipping.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__dark-increased__pending__720x512__type-150__bottom@2x.png",
+      "sha256": "4415ca0da480d4badb9032307b569186f4bd51cb0e445f0e0081249ddf07b398",
+      "phase": "pending",
+      "theme": "dark-increased",
+      "position": "bottom",
+      "backing_scale": 2.0,
+      "visible_observation": "Top frame retains the Studio input and helper text; bottom frame shows the pending submission text, Resolve fixture action, and dimmed/disabled Save action. Scrollbar is visible and relevant text/actions fit in the viewport.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__light-standard__failed__720x512__type-150__top@1x.png",
+      "sha256": "01f255d5b8539bf541d9f874e3f7b96754ebaf8465a7450d2f8bc89f46d1a7ce",
+      "phase": "failed",
+      "theme": "light-standard",
+      "position": "top",
+      "backing_scale": 1.0,
+      "visible_observation": "Top frame retains the Studio input and helper text; bottom frame shows “Save failed. Your input is preserved. Retry is available.” and enabled Retry save action. Form label, input, and helper text are visible without clipping.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__light-standard__failed__720x512__type-150__bottom@1x.png",
+      "sha256": "1d4f572c8205734cb22b74dd5371d8774f05aaa35087074792ee6884ece7c4ac",
+      "phase": "failed",
+      "theme": "light-standard",
+      "position": "bottom",
+      "backing_scale": 1.0,
+      "visible_observation": "Top frame retains the Studio input and helper text; bottom frame shows “Save failed. Your input is preserved. Retry is available.” and enabled Retry save action. Scrollbar is visible and relevant text/actions fit in the viewport.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__light-standard__failed__720x512__type-150__top@2x.png",
+      "sha256": "b65e5a8ac7a86609373e59cd4ceab662ad3d691905bb85fe964835004423a157",
+      "phase": "failed",
+      "theme": "light-standard",
+      "position": "top",
+      "backing_scale": 2.0,
+      "visible_observation": "Top frame retains the Studio input and helper text; bottom frame shows “Save failed. Your input is preserved. Retry is available.” and enabled Retry save action. Form label, input, and helper text are visible without clipping.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__light-standard__failed__720x512__type-150__bottom@2x.png",
+      "sha256": "36ce750f9e25b5378033f13f27c85736b5f96cd3343db671e53fbf9ca6885ce1",
+      "phase": "failed",
+      "theme": "light-standard",
+      "position": "bottom",
+      "backing_scale": 2.0,
+      "visible_observation": "Top frame retains the Studio input and helper text; bottom frame shows “Save failed. Your input is preserved. Retry is available.” and enabled Retry save action. Scrollbar is visible and relevant text/actions fit in the viewport.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__dark-standard__failed__720x512__type-150__top@1x.png",
+      "sha256": "fc6bc1ccc06d76a2ba07cb9b8bb06a995fe90aef232ac3dff7989bddb68cd3bd",
+      "phase": "failed",
+      "theme": "dark-standard",
+      "position": "top",
+      "backing_scale": 1.0,
+      "visible_observation": "Top frame retains the Studio input and helper text; bottom frame shows “Save failed. Your input is preserved. Retry is available.” and enabled Retry save action. Form label, input, and helper text are visible without clipping.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__dark-standard__failed__720x512__type-150__bottom@1x.png",
+      "sha256": "fc69bffb4c45bbcf8d9c2b9dc10bc44166e932405404d8573bdc96500d3b88bf",
+      "phase": "failed",
+      "theme": "dark-standard",
+      "position": "bottom",
+      "backing_scale": 1.0,
+      "visible_observation": "Top frame retains the Studio input and helper text; bottom frame shows “Save failed. Your input is preserved. Retry is available.” and enabled Retry save action. Scrollbar is visible and relevant text/actions fit in the viewport.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__dark-standard__failed__720x512__type-150__top@2x.png",
+      "sha256": "e6492ee188374205de0cca6c38da4bd8a450f3875d3826f1b0f49a7202108187",
+      "phase": "failed",
+      "theme": "dark-standard",
+      "position": "top",
+      "backing_scale": 2.0,
+      "visible_observation": "Top frame retains the Studio input and helper text; bottom frame shows “Save failed. Your input is preserved. Retry is available.” and enabled Retry save action. Form label, input, and helper text are visible without clipping.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__dark-standard__failed__720x512__type-150__bottom@2x.png",
+      "sha256": "5d8044a76047ae92acde32ee22260b9b5e28cc480068426308f7541545e6b6e3",
+      "phase": "failed",
+      "theme": "dark-standard",
+      "position": "bottom",
+      "backing_scale": 2.0,
+      "visible_observation": "Top frame retains the Studio input and helper text; bottom frame shows “Save failed. Your input is preserved. Retry is available.” and enabled Retry save action. Scrollbar is visible and relevant text/actions fit in the viewport.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__light-increased__failed__720x512__type-150__top@1x.png",
+      "sha256": "06b8822e8237b5ad5dfb386d8cd1d3efe9fa3cbf2ebf524686344348f07d3cc6",
+      "phase": "failed",
+      "theme": "light-increased",
+      "position": "top",
+      "backing_scale": 1.0,
+      "visible_observation": "Top frame retains the Studio input and helper text; bottom frame shows “Save failed. Your input is preserved. Retry is available.” and enabled Retry save action. Form label, input, and helper text are visible without clipping.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__light-increased__failed__720x512__type-150__bottom@1x.png",
+      "sha256": "2cb8fc49bca3dc145dd85a728e179dd2955e93def7a9ad40d5ae6a549a4b20ff",
+      "phase": "failed",
+      "theme": "light-increased",
+      "position": "bottom",
+      "backing_scale": 1.0,
+      "visible_observation": "Top frame retains the Studio input and helper text; bottom frame shows “Save failed. Your input is preserved. Retry is available.” and enabled Retry save action. Scrollbar is visible and relevant text/actions fit in the viewport.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__light-increased__failed__720x512__type-150__top@2x.png",
+      "sha256": "73d97d68c73a6f3bd37963d72082eee7c0d78ef90c4f7968fac4148e8ec4938c",
+      "phase": "failed",
+      "theme": "light-increased",
+      "position": "top",
+      "backing_scale": 2.0,
+      "visible_observation": "Top frame retains the Studio input and helper text; bottom frame shows “Save failed. Your input is preserved. Retry is available.” and enabled Retry save action. Form label, input, and helper text are visible without clipping.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__light-increased__failed__720x512__type-150__bottom@2x.png",
+      "sha256": "19cc1ad416ba5d9b58b735b0512d313dfa14cadc74975dc68f9ce22f7733c451",
+      "phase": "failed",
+      "theme": "light-increased",
+      "position": "bottom",
+      "backing_scale": 2.0,
+      "visible_observation": "Top frame retains the Studio input and helper text; bottom frame shows “Save failed. Your input is preserved. Retry is available.” and enabled Retry save action. Scrollbar is visible and relevant text/actions fit in the viewport.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__dark-increased__failed__720x512__type-150__top@1x.png",
+      "sha256": "3b629f1329e70aa9ed88293ad79d6b79ccec15c88abfd0f45afb02146631d37e",
+      "phase": "failed",
+      "theme": "dark-increased",
+      "position": "top",
+      "backing_scale": 1.0,
+      "visible_observation": "Top frame retains the Studio input and helper text; bottom frame shows “Save failed. Your input is preserved. Retry is available.” and enabled Retry save action. Form label, input, and helper text are visible without clipping.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__dark-increased__failed__720x512__type-150__bottom@1x.png",
+      "sha256": "e3b171cd6e50726bfda892cae62354ac789e3b25a3477d940d798b1c9affdb76",
+      "phase": "failed",
+      "theme": "dark-increased",
+      "position": "bottom",
+      "backing_scale": 1.0,
+      "visible_observation": "Top frame retains the Studio input and helper text; bottom frame shows “Save failed. Your input is preserved. Retry is available.” and enabled Retry save action. Scrollbar is visible and relevant text/actions fit in the viewport.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__dark-increased__failed__720x512__type-150__top@2x.png",
+      "sha256": "2f8c53678469d30b91ad94d84ae0033dd96b6592c0a4b2c44dfd609797201afd",
+      "phase": "failed",
+      "theme": "dark-increased",
+      "position": "top",
+      "backing_scale": 2.0,
+      "visible_observation": "Top frame retains the Studio input and helper text; bottom frame shows “Save failed. Your input is preserved. Retry is available.” and enabled Retry save action. Form label, input, and helper text are visible without clipping.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__dark-increased__failed__720x512__type-150__bottom@2x.png",
+      "sha256": "c3552136523c0e0d15b890301ecf36abc2de564703f84ff88b4fd23789f82254",
+      "phase": "failed",
+      "theme": "dark-increased",
+      "position": "bottom",
+      "backing_scale": 2.0,
+      "visible_observation": "Top frame retains the Studio input and helper text; bottom frame shows “Save failed. Your input is preserved. Retry is available.” and enabled Retry save action. Scrollbar is visible and relevant text/actions fit in the viewport.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__light-standard__saved__720x512__type-150__top@1x.png",
+      "sha256": "01f255d5b8539bf541d9f874e3f7b96754ebaf8465a7450d2f8bc89f46d1a7ce",
+      "phase": "saved",
+      "theme": "light-standard",
+      "position": "top",
+      "backing_scale": 1.0,
+      "visible_observation": "Top frame retains the Studio input and helper text; bottom frame shows “Saved successfully. Preferences remain in this story only.” and the saved event. Form label, input, and helper text are visible without clipping.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__light-standard__saved__720x512__type-150__bottom@1x.png",
+      "sha256": "d33e3ff13b823e1863a6d3f11f2d4c2bf6df33d3ce369423e91a500927dd293d",
+      "phase": "saved",
+      "theme": "light-standard",
+      "position": "bottom",
+      "backing_scale": 1.0,
+      "visible_observation": "Top frame retains the Studio input and helper text; bottom frame shows “Saved successfully. Preferences remain in this story only.” and the saved event. Scrollbar is visible and relevant text/actions fit in the viewport.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__light-standard__saved__720x512__type-150__top@2x.png",
+      "sha256": "b65e5a8ac7a86609373e59cd4ceab662ad3d691905bb85fe964835004423a157",
+      "phase": "saved",
+      "theme": "light-standard",
+      "position": "top",
+      "backing_scale": 2.0,
+      "visible_observation": "Top frame retains the Studio input and helper text; bottom frame shows “Saved successfully. Preferences remain in this story only.” and the saved event. Form label, input, and helper text are visible without clipping.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__light-standard__saved__720x512__type-150__bottom@2x.png",
+      "sha256": "41d54d23b099140ee055abe225bbeea39f23423d4895c7b1333123d648b6f1ea",
+      "phase": "saved",
+      "theme": "light-standard",
+      "position": "bottom",
+      "backing_scale": 2.0,
+      "visible_observation": "Top frame retains the Studio input and helper text; bottom frame shows “Saved successfully. Preferences remain in this story only.” and the saved event. Scrollbar is visible and relevant text/actions fit in the viewport.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__dark-standard__saved__720x512__type-150__top@1x.png",
+      "sha256": "fc6bc1ccc06d76a2ba07cb9b8bb06a995fe90aef232ac3dff7989bddb68cd3bd",
+      "phase": "saved",
+      "theme": "dark-standard",
+      "position": "top",
+      "backing_scale": 1.0,
+      "visible_observation": "Top frame retains the Studio input and helper text; bottom frame shows “Saved successfully. Preferences remain in this story only.” and the saved event. Form label, input, and helper text are visible without clipping.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__dark-standard__saved__720x512__type-150__bottom@1x.png",
+      "sha256": "95b1ddea3893f06a7b22b5db2acfca17f4f40820d2fd81328c1cb36d10ab4979",
+      "phase": "saved",
+      "theme": "dark-standard",
+      "position": "bottom",
+      "backing_scale": 1.0,
+      "visible_observation": "Top frame retains the Studio input and helper text; bottom frame shows “Saved successfully. Preferences remain in this story only.” and the saved event. Scrollbar is visible and relevant text/actions fit in the viewport.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__dark-standard__saved__720x512__type-150__top@2x.png",
+      "sha256": "e6492ee188374205de0cca6c38da4bd8a450f3875d3826f1b0f49a7202108187",
+      "phase": "saved",
+      "theme": "dark-standard",
+      "position": "top",
+      "backing_scale": 2.0,
+      "visible_observation": "Top frame retains the Studio input and helper text; bottom frame shows “Saved successfully. Preferences remain in this story only.” and the saved event. Form label, input, and helper text are visible without clipping.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__dark-standard__saved__720x512__type-150__bottom@2x.png",
+      "sha256": "9958407de13a288c3b17988f27417fd2b0f166b6d77f2c13c5112e8378a50255",
+      "phase": "saved",
+      "theme": "dark-standard",
+      "position": "bottom",
+      "backing_scale": 2.0,
+      "visible_observation": "Top frame retains the Studio input and helper text; bottom frame shows “Saved successfully. Preferences remain in this story only.” and the saved event. Scrollbar is visible and relevant text/actions fit in the viewport.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__light-increased__saved__720x512__type-150__top@1x.png",
+      "sha256": "06b8822e8237b5ad5dfb386d8cd1d3efe9fa3cbf2ebf524686344348f07d3cc6",
+      "phase": "saved",
+      "theme": "light-increased",
+      "position": "top",
+      "backing_scale": 1.0,
+      "visible_observation": "Top frame retains the Studio input and helper text; bottom frame shows “Saved successfully. Preferences remain in this story only.” and the saved event. Form label, input, and helper text are visible without clipping.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__light-increased__saved__720x512__type-150__bottom@1x.png",
+      "sha256": "94b25183e8b510620b764b3e67cb8e3f2fa6dd316598fc3572ebc7c7b9cd36cd",
+      "phase": "saved",
+      "theme": "light-increased",
+      "position": "bottom",
+      "backing_scale": 1.0,
+      "visible_observation": "Top frame retains the Studio input and helper text; bottom frame shows “Saved successfully. Preferences remain in this story only.” and the saved event. Scrollbar is visible and relevant text/actions fit in the viewport.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__light-increased__saved__720x512__type-150__top@2x.png",
+      "sha256": "73d97d68c73a6f3bd37963d72082eee7c0d78ef90c4f7968fac4148e8ec4938c",
+      "phase": "saved",
+      "theme": "light-increased",
+      "position": "top",
+      "backing_scale": 2.0,
+      "visible_observation": "Top frame retains the Studio input and helper text; bottom frame shows “Saved successfully. Preferences remain in this story only.” and the saved event. Form label, input, and helper text are visible without clipping.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__light-increased__saved__720x512__type-150__bottom@2x.png",
+      "sha256": "0ca05934a1fda300e1409c609b8746b2848e8f4e6481de177d0b744ffa56dd76",
+      "phase": "saved",
+      "theme": "light-increased",
+      "position": "bottom",
+      "backing_scale": 2.0,
+      "visible_observation": "Top frame retains the Studio input and helper text; bottom frame shows “Saved successfully. Preferences remain in this story only.” and the saved event. Scrollbar is visible and relevant text/actions fit in the viewport.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__dark-increased__saved__720x512__type-150__top@1x.png",
+      "sha256": "3b629f1329e70aa9ed88293ad79d6b79ccec15c88abfd0f45afb02146631d37e",
+      "phase": "saved",
+      "theme": "dark-increased",
+      "position": "top",
+      "backing_scale": 1.0,
+      "visible_observation": "Top frame retains the Studio input and helper text; bottom frame shows “Saved successfully. Preferences remain in this story only.” and the saved event. Form label, input, and helper text are visible without clipping.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__dark-increased__saved__720x512__type-150__bottom@1x.png",
+      "sha256": "4aff1e9f0e6f3345ff3f8a4a306c579e3b68c014fe227f2035797986f58e2380",
+      "phase": "saved",
+      "theme": "dark-increased",
+      "position": "bottom",
+      "backing_scale": 1.0,
+      "visible_observation": "Top frame retains the Studio input and helper text; bottom frame shows “Saved successfully. Preferences remain in this story only.” and the saved event. Scrollbar is visible and relevant text/actions fit in the viewport.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__dark-increased__saved__720x512__type-150__top@2x.png",
+      "sha256": "2f8c53678469d30b91ad94d84ae0033dd96b6592c0a4b2c44dfd609797201afd",
+      "phase": "saved",
+      "theme": "dark-increased",
+      "position": "top",
+      "backing_scale": 2.0,
+      "visible_observation": "Top frame retains the Studio input and helper text; bottom frame shows “Saved successfully. Preferences remain in this story only.” and the saved event. Form label, input, and helper text are visible without clipping.",
+      "review": "pass"
+    },
+    {
+      "file": "example-settings__playground__dark-increased__saved__720x512__type-150__bottom@2x.png",
+      "sha256": "baa353a348892ab35e894a33475fcf6e853fcb6f76d32cb3e89296c42aa3490a",
+      "phase": "saved",
+      "theme": "dark-increased",
+      "position": "bottom",
+      "backing_scale": 2.0,
+      "visible_observation": "Top frame retains the Studio input and helper text; bottom frame shows “Saved successfully. Preferences remain in this story only.” and the saved event. Scrollbar is visible and relevant text/actions fit in the viewport.",
+      "review": "pass"
+    }
+  ]
+}
