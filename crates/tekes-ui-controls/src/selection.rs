@@ -434,11 +434,7 @@ impl RadioGroupView {
                     scene.push_clip(clip);
                 }
                 let focused = self.focused == Some(index) && self.window_active && !self.disabled;
-                radio_on_surface(
-                    scene,
-                    indicator,
-                    palette,
-                    ControlState {
+                let state = ControlState {
                         error: self.error,
                         selected: model.selected == Some(index),
                         disabled: self.disabled || !model.is_enabled(index),
@@ -447,9 +443,8 @@ impl RadioGroupView {
                         focused,
                         focus_visible: focused && self.focus_visible,
                         ..Default::default()
-                    },
-                    self.surface,
-                );
+                    };
+                radio_on_surface(scene, indicator, palette, state, self.surface);
                 let label_visible = ControlFrame::new(label, row.visible_frame()).visible_frame();
                 if let Some(label_clip) = label_visible {
                     scene.push_clip(label_clip);
@@ -459,10 +454,11 @@ impl RadioGroupView {
                         proposal::TextRole::UiBody,
                         label,
                         ButtonTextAlign::Leading,
-                        crate::paint::choice_label_color(palette, self.surface, ControlState {
-                            selected: model.selected == Some(index), disabled: self.disabled || !model.is_enabled(index),
-                            hovered: self.hovered == Some(index), pressed: self.pressed == Some(index), ..Default::default()
-                        }),
+                        if state.disabled {
+                            palette.color("disabled-text").expect("Radio disabled label role")
+                        } else {
+                            crate::paint::choice_label_color(palette, self.surface, state)
+                        },
                     );
                     scene.pop_clip();
                 }
@@ -1389,6 +1385,48 @@ mod tests {
         );
         assert_eq!(model.selected, Some(1));
         assert_eq!(view.focused(), Some(1));
+    }
+
+    #[test]
+    fn radio_disabled_surface_view_retains_original_boundary_marker_and_label() {
+        for theme in Theme::ALL {
+            for brand in [0, 1, 2] {
+                let palette = Palette::new(theme, brand).expect("registered Gallery brand");
+                for surface in ["canvas", "sidebar", "toolbar"] {
+                    for error in [false, true] {
+                        let model = RadioGroup::new(1);
+                        let mut view = RadioGroupView::new();
+                        view.set_surface(surface).unwrap();
+                        view.set_disabled(true);
+                        view.set_error(error);
+                        let mut actual = Scene::new();
+                        let mut text = TestText::default();
+                        let layout = view.render(
+                            &mut actual, &mut text, &model,
+                            Rect::new(0., 0., 240., 48.), None, palette, &["Choice"],
+                        );
+                        // The existing public primitive is an unchanged independent
+                        // oracle for Radio's disabled channel roles, not Checkbox's.
+                        let mut original = Scene::new();
+                        crate::extended::radio_with_state(
+                            &mut original, layout.indicators[0], palette,
+                            ControlState { selected: true, disabled: true, error, ..Default::default() },
+                        );
+                        let actual: Vec<_> = actual.primitives().iter().filter_map(|p| {
+                            if let tekes_ui_scene::Primitive::Quad(q) = p { Some(q) } else { None }
+                        }).collect();
+                        let original: Vec<_> = original.primitives().iter().filter_map(|p| {
+                            if let tekes_ui_scene::Primitive::Quad(q) = p { Some(q) } else { None }
+                        }).collect();
+                        assert_eq!(actual.len(), 2);
+                        assert_eq!(original.len(), 2);
+                        assert_eq!(actual[0].border_color, original[0].border_color, "{theme:?} {brand} {surface} {error}");
+                        assert_eq!(actual[1].fill, original[1].fill, "{theme:?} {brand} {surface} {error}");
+                        assert_eq!(text.inks, vec![original[1].fill]);
+                    }
+                }
+            }
+        }
     }
 
     #[test]

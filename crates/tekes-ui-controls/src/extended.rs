@@ -1752,11 +1752,19 @@ pub(crate) fn radio_on_surface(
         size,
     );
     let mut quad = Quad::new(frame, colors.background).with_corner_radius(size * 0.5);
-    if let Some(boundary) = colors.boundary {
+    // Radio's established disabled boundary/mark role differs from Checkbox.
+    // Keep that component contract while the Surface packet owns other channels.
+    let disabled_ink = state.disabled.then(|| paint_color(palette, "disabled-text"));
+    let boundary = if state.error {
+        colors.boundary
+    } else {
+        disabled_ink.or(colors.boundary)
+    };
+    if let Some(boundary) = boundary {
         quad = quad.with_border(proposal::metric("stroke", "stroke-rule").expect("control stroke"), boundary);
     }
     scene.push_quad(quad);
-    if checked && let Some(marker) = colors.marker {
+    if checked && let Some(marker) = disabled_ink.or(colors.marker) {
         scene.push_quad(Quad::new(frame.inset(size * 0.28), marker).with_corner_radius(size * 0.5));
     }
     if state.focused && state.focus_visible && !state.disabled && let Some(focus) = colors.focus {
