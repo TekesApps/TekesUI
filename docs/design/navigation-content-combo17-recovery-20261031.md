@@ -1,7 +1,8 @@
 # Navigation Content recovery on the Combo17 prefix
 
-Refs #195, original #63/#61/#14/#123. This is a source-only incremental recovery
-against fe4851cc269d517e3b60387ebef4c45d646205ad, not a new component design.
+Refs #195, original #63/#61/#14/#123. The original source-only recovery targeted
+fe4851cc269d517e3b60387ebef4c45d646205ad; finite acceptance is recorded below.
+This is not a new component design.
 Original Tabs labels/real retained panels, Breadcrumb string paths, Command's
 original TextField/TextSurface query and ordinary Link string/action policy
 remain. No destination or automatic browser action is added.
@@ -27,7 +28,8 @@ marked-text selection barrier and immutable action identities remain.
 Prepared verification reuses the original seven consumer targets (51 ordinary
 cases), two original Tabs wire tests, additive protocol/native data tests and
 strict checks. Necessary header GPU/image checks follow calibration. This
-candidate has not run Rust, GPU, IPC child, native, physical IME or VoiceOver.
+source-only candidate had not yet run Rust, GPU, IPC child, native, physical IME
+or VoiceOver. The later finite acceptance below records what actually ran.
 Historical receipts retain their input identities. The original build helper,
 serial shared cache and an explicit frozen-source allocation remain required.
 
