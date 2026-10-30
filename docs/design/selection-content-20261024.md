@@ -459,3 +459,14 @@ Receipt: design/reviews/selection91-parent-main-intake-20261025/root-acceptance.
 ## 2026-10-31 实际 Combo17 前置独立接纳（#196 r6）
 
 本次来源固定 ce69f8e92b5c0dc48e7b2cd0704bd8a4042f4b4d。增量恢复 Selection 专属五角色、is_selection、三个module/export/payload与原r5三adapter/Host修正；新Content/wire各22role，仅比实际Combo17多五role。保留Combo、SetExpanded、native0aec修复、当前Text getter/准备路径及Menu当前使用者。不依赖Role32、Search/Collections/Navigation主体。remote staged ID和cfgtest快照helper已在Combo来源，不重复添加。旧完整decoder原字节捕获实际Combo17，保留Combo和SetExpanded，测试旧完整Reply拒新五role/无前缀与17个原role兼容；manifest不冒称已运行。三adapter源码hash与r4/r5相同，原固定label/唯一owner/once/退休合同保持。当前仅精确隔离回放/语法与身份检查；未Cargo/行为/GPU/native/Clippy。集成合并widgets当前Menu精确hunks后再冻结验证，不覆盖全文件、不等待未来Menu alias/Select/header。
+
+
+## #196 recovered Selection finite CPU/GPU revalidation — 2026-10-31
+
+The integration owner froze `5924f3ecfd88b1eeaf1aa9536f4af3154d2ce926` (actual Nav24-role source, 3544 files). Selection05 completed its remaining scoped CPU lanes: 102 actual passing test verdicts and six strict commands. Unchanged historical model/consumer evidence retains its original source/program identity; current Host transactions, retirement, schema/runtime/platform/AppHost and Combo/Menu guardrails were actually rerun. The old decoder still means actual Combo17; old Selection22 results were not relabelled as Nav24.
+
+Selection GPU01 separately executed all six original actual Metal/CoreText default/external fixtures: Checkbox324+324, Radio60+60, Segmented108+216, totaling1092 cases and2064 PNGs. Current formal compile-consumer-brand regenerated the exact registered BrandConfig/Theme definitions into independent SSD artifacts/ThemeLocks. Each lane's executable, dep-info and generated token were copied and hashed immediately under the original guard before the next compilation. Cargo-selected token paths, generated Theme IDs and instances are recorded per actual program. Original View/Content RGBA equality, non-background pixels and full-resolution ancestor clip checks passed; all PNGs were visually reviewed through indexed contact sheets.
+
+The finite result preserves a visible-text limitation: 36 Segmented width150/type_scale2 cases have labels wholly clipped in both original View and Content; these prove equal original paint/chrome/clip behavior, not visible glyph coverage. External/default pixel differences and equal original/reference comparisons are reported separately in gpu-summary.json.
+
+Receipt roots are `artifacts/delivery/integration-executor-20261030-09/selection-minimal-window05/` and `selection-gpu-window01/`. All3544 source hashes stayed equal, owned PIDs exited and original guards released. No source/global metadata writes, cache creation/rebinding/clean or historical GPU re-signing. Native-object/window lifecycle, physical IME, VoiceOver, performance and release remain unverified or separately scoped. Public delivery, inventory/Gallery refresh and batch PR/CI remain with integration.
