@@ -83,7 +83,8 @@ fn original_coretext_surface_cannot_turn_selection_roles_into_text_owners_in_pub
         assert!(h.semantic_text_input_snapshot(id).is_none());
         assert!(h.semantic_text_layout_snapshot(id, None).is_none());
 
-        let app_nodes = platform::ContentAccessibilitySnapshot::from_host(&h).unwrap().nodes().to_vec();
+        let app_snapshot = platform::ContentAccessibilitySnapshot::from_host(&h).unwrap();
+        let app_nodes = app_snapshot.nodes().to_vec();
         let native_nodes = platform::content_nodes(&h);
         assert_eq!(app_nodes, native_nodes);
         let key = platform::content_key(&h, id, None).unwrap();
@@ -91,6 +92,9 @@ fn original_coretext_surface_cannot_turn_selection_roles_into_text_owners_in_pub
         assert_eq!(node.role, expected);
         assert!(node.text_selection.is_none());
         assert!(platform::content_text_layouts(&h).is_empty());
-        assert_eq!(tekes_ui_platform_macos::accept_accessibility_nodes(app_nodes.clone()), app_nodes);
+        // AppHost's current public snapshot validates the same node boundary,
+        // plus the original geometry lease and its text-layout identities.
+        assert!(app_snapshot.is_valid());
+        assert!(app_snapshot.text_layouts().is_empty());
     }
 }
