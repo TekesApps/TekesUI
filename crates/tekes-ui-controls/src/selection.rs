@@ -1491,14 +1491,16 @@ mod tests {
                         };
                         let mut actual = Scene::new();
                         crate::extended::radio_on_surface(
-                            &mut actual, frame, palette, state, surface,
+                            &mut actual,
+                            frame,
+                            palette,
+                            state,
+                            surface,
                         );
                         // The unchanged public Radio primitive is independent of
                         // the recovered Surface painter and Checkbox's packet.
                         let mut original = Scene::new();
-                        crate::extended::radio_with_state(
-                            &mut original, frame, palette, state,
-                        );
+                        crate::extended::radio_with_state(&mut original, frame, palette, state);
                         assert_eq!(actual.primitives().len(), 1);
                         assert_eq!(original.primitives().len(), 1);
                         assert_eq!(
