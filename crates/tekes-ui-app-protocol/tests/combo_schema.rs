@@ -1,6 +1,5 @@
 //! The decoder below is a capture of the actual current pre-ComboBox schema (source hashes in handoff).
 //! Its content/geometry/input structs are compiled, not a hand-written role imitation.
-#[allow(dead_code)]
 #[path = "old_combo_schema/content.rs"]
 mod old_content;
 use tekes_ui_app_protocol::component::{VERSION, content as wire};

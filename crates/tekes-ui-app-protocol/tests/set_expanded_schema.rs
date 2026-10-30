@@ -1,5 +1,4 @@
 //! Complete request compatibility for the original disclosure action.
-#[allow(dead_code)]
 #[path = "old_combo_schema/content.rs"]
 mod old_content;
 use tekes_ui_app_protocol::component::{VERSION, content as wire};
