@@ -129,3 +129,11 @@ stays open until the effective incremental AC are actually verified.
 Physical IME, VoiceOver and performance remain untested and are not added as
 gates to this finite icon batch. No Theme, C assets, main checkout, other owner
 candidates or other Issues are changed.
+
+## Integration validation — 2026-10-30
+
+The isolated commit `92372453` was applied as `f7229e6` without its unrelated parent candidates. The first scoped formatting failure was retained; only `icon_catalog.rs` was formatted, then all five named behavioral tests each ran once and passed, Gallery strict Clippy passed, and the normal binary was rebuilt. The actual compiler inputs were `f7229e6` plus the recorded one-file format change (the same Rust bytes later committed as `168b57f`), not a relabelled later checkout. Raw programs, hashes and failures are in SSD `artifacts/delivery/integration-executor-20261030-08/rust01/format-rerun/`.
+
+Real actool/ad-hoc signing and strict codesign verification passed using that archived binary and MAIN's actual package assets/catalog. MAIN's default app destination had no registered SSD route; the executor instead explicitly selected the existing registered Gallery app output under the original Gallery helper/guards. No target/cache/storage binding was created or changed; the previous app was fully archived first. Signing changes the Mach-O: the compiler binary and signed executable have separately recorded hashes. `IconCatalog.json` contains 177 entries and is byte-identical to the source catalog. The immutable signed bundle and route/program identities are in SSD `artifacts/delivery/integration-executor-20261030-08/package-final/identity.json`; it has not been launched.
+
+The outside-checkout/source-denial native run, visible icon-page observation, physical input, VoiceOver and performance remain unverified. These checks and the original Issue acceptance criteria are not replaced by the five unit tests or package construction.

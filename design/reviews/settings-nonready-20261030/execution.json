@@ -1,0 +1,25 @@
+{
+  "actual_test_head": "13c0ef1911ccb7db0ebc78c593b68863b60f4828",
+  "scope": "Settings Invalid/Pending/Failed/Saved finite offscreen visual matrix",
+  "raw_evidence": "/Volumes/HP P900/DEV/TekesUI/artifacts/delivery/integration-executor-20261030-08/settings-c01",
+  "checks": [
+    "no-run pass",
+    "64-image actual GPU capture pass",
+    "one actual Settings failure/retry/danger behavior test pass",
+    "Gallery binary/tests Clippy -D warnings pass"
+  ],
+  "worker_reviewed": 64,
+  "integrator_independently_reviewed": 8,
+  "all_64_png_hashes_verified": true,
+  "integrator_review": "/Volumes/HP P900/DEV/TekesUI/artifacts/delivery/integration-executor-20261030-08/settings-c01/integrator-review.json",
+  "unverified": [
+    "native input",
+    "physical display",
+    "IME",
+    "VoiceOver",
+    "performance",
+    "other viewport/type/page states and full Gold7"
+  ],
+  "prior_batches": "A preserved; B visual failure preserved and excluded",
+  "resources": "original build/GPU contexts released; no new target/cache/rebind"
+}

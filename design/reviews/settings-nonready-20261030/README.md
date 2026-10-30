@@ -62,9 +62,17 @@ Initial uncompiled C commit `d9ccec4184247ee96f0b83bda7987d2db734c6ac` is retain
 Source review found `Workbench.text_scale: usize` assigned `1.5`; 150% is the existing
 index `2`. This is a confirmed preparation type error, not a claimed executed compiler failure.
 The revised candidate corrects it before any shared compilation, reuses the existing
-stabilized page scrolling helpers, keeps PNG encoding local because the A/B PNG helper is private,, and adds phase/value/action/layout assertions.
+stabilized page scrolling helpers, keeps PNG encoding local because the A/B PNG helper is private, and adds phase/value/action/layout assertions.
 This revision changes only the new C fixture and its documentation; A/B test source and
 historical results stay unchanged. The current source hashes and static results are in
 `preparation.json`; runtime compile, Clippy, regression, all64 GPU frames and visual review
 remain unverified until the execution packet is run. No product defect is established by
 an unexecuted fixture and no production repair is included.
+
+## Integration execution — 2026-10-30
+
+The two candidate commits were applied in order as `c29b395` and `13c0ef1`, independently of the unaccepted Master-detail B files. Actual test inputs were HEAD `13c0ef1911ccb7db0ebc78c593b68863b60f4828` plus the preserved Unicode WIP, through the original registered SSD/MAIN cache and build/GPU guards. Compilation, the ignored 64-frame GPU test, the existing Settings failure/retry/danger regression (one actual test) and Gallery strict Clippy all passed. The source, executable and raw command identities remain bound to that actual input, not the final documentation commit.
+
+All 64 original PNGs were individually reviewed by the scoped Worker. The integration executor independently opened eight top/bottom images covering Invalid/light-standard/1x, Pending/dark-increased/2x, Failed/light-increased/2x and Saved/dark-standard/1x and verified all 64 hashes. Required-name validation, pending Save/Resolve, retained Studio input/Retry, saved confirmation and event tails are readable in these finite scrolled views. No inspected whole-word split or overlap was found. Exact per-image results and execution references are in `visual-review.json` and `execution.json`; originals remain on the SSD.
+
+This accepts only the requested 720×512/type150, four-theme, 1x/2x top/bottom phase matrix. A's original Ready images and B's actual visual failures remain unchanged. Native input, physical display, IME, VoiceOver, performance and the rest of Gold7 remain unverified. All build/GPU contexts exited; no native app or desktop input was used.
