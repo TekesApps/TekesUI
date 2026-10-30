@@ -1478,6 +1478,41 @@ mod tests {
     }
 
     #[test]
+    fn radio_unchecked_rest_surface_retains_original_indicator_packet() {
+        for theme in Theme::ALL {
+            for brand in [0, 1, 2] {
+                let palette = Palette::new(theme, brand).expect("registered Gallery brand");
+                for surface in ["canvas", "sidebar", "toolbar"] {
+                    for error in [false, true] {
+                        let frame = Rect::new(8., 12., 16., 16.);
+                        let state = ControlState {
+                            error,
+                            ..Default::default()
+                        };
+                        let mut actual = Scene::new();
+                        crate::extended::radio_on_surface(
+                            &mut actual, frame, palette, state, surface,
+                        );
+                        // The unchanged public Radio primitive is independent of
+                        // the recovered Surface painter and Checkbox's packet.
+                        let mut original = Scene::new();
+                        crate::extended::radio_with_state(
+                            &mut original, frame, palette, state,
+                        );
+                        assert_eq!(actual.primitives().len(), 1);
+                        assert_eq!(original.primitives().len(), 1);
+                        assert_eq!(
+                            format!("{actual:?}"),
+                            format!("{original:?}"),
+                            "{theme:?} {brand} {surface} {error}"
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
     fn radio_disabled_surface_view_retains_original_boundary_marker_and_label() {
         for theme in Theme::ALL {
             for brand in [0, 1, 2] {

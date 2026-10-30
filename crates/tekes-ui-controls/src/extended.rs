@@ -1785,7 +1785,14 @@ pub(crate) fn radio_on_surface(
         size,
         size,
     );
-    let mut quad = Quad::new(frame, colors.background).with_corner_radius(size * 0.5);
+    // The original Radio indicator uses surface-0 while unchecked at rest.
+    // Checkbox's check-unchecked packet uses surface-2 for that channel.
+    let background = if !checked && !state.disabled && !state.hovered && !state.pressed {
+        paint_color(palette, "surface-0")
+    } else {
+        colors.background
+    };
+    let mut quad = Quad::new(frame, background).with_corner_radius(size * 0.5);
     // Radio's established disabled boundary/mark role differs from Checkbox.
     // Keep that component contract while the Surface packet owns other channels.
     let disabled_ink = state
