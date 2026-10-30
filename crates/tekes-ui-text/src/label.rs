@@ -1,6 +1,11 @@
 //! Opt-in, read-only label layout. The original source remains separate from
 //! visible glyphs; this result is not an editable caret/selection document.
+mod semantic;
 use crate::Paragraph;
+pub use semantic::{
+    LabelForeground, LabelForegroundRun, LabelSourceVersion, MAX_SEMANTIC_LABEL_RUNS,
+    MAX_SEMANTIC_LABEL_UTF16, SemanticLabel, SemanticLabelError,
+};
 use std::{num::NonZeroUsize, ops::Range};
 /// Behaviour at the last visible line, or an indivisible glyph wider than its slot.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]

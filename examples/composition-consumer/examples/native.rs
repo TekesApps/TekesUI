@@ -12,6 +12,10 @@ mod native_key;
 #[path = "support/menu_review.rs"]
 mod menu_review;
 
+#[cfg(target_os = "macos")]
+#[path = "support/disclosure_review.rs"]
+mod disclosure_review;
+
 #[cfg(not(target_os = "macos"))]
 fn main() {
     eprintln!("the native composition consumer requires macOS");
@@ -53,6 +57,7 @@ fn main() {
         window_active: bool,
         caret_on: bool,
         services_enabled: bool,
+        semantic_layouts: Vec<(tekes_ui_text::SemanticLabel, Rc<tekes_ui_text::LabelLayout>)>,
     }
     impl TextBackend {
         fn shape(
@@ -135,6 +140,33 @@ fn main() {
                     .with_min_line_height(f64::from(metrics.line_height * self.type_scale)),
             ))
         }
+        fn shape_semantic_label(
+            &mut self,
+            text: &tekes_ui_text::SemanticLabel,
+            role: proposal::TextRole,
+            width: f32,
+            options: tekes_ui_text::LabelOptions,
+        ) -> Option<Rc<tekes_ui_text::LabelLayout>> {
+            let metrics = role.style();
+            let style = if proposal::text_family(role.id()) == Some("mono") {
+                TextStyle::named("Menlo", metrics.size * self.type_scale)
+            } else {
+                TextStyle::system(metrics.size * self.type_scale)
+            }
+            .with_weight(metrics.weight);
+            let layout = Rc::new(
+                self.shaper
+                    .shape_semantic_label(
+                        text,
+                        &style,
+                        &ShapeOptions::with_width(f64::from(width)),
+                        options,
+                    )
+                    .with_min_line_height(f64::from(metrics.line_height * self.type_scale)),
+            );
+            self.semantic_layouts.push((text.clone(), layout.clone()));
+            Some(layout)
+        }
 
         fn shape_surface(
             &mut self,
@@ -199,6 +231,9 @@ fn main() {
     }
     struct Host {
         menu_review: Option<menu_review::Review>,
+        disclosure_review: Option<disclosure_review::Review>,
+        #[cfg(feature = "svg-icons")]
+        disclosure_icons: tekes_ui_controls::composition::SvgIconCache,
         selftest_script: Option<Vec<(u64, tekes_ui_platform_macos::selftest::Action)>>,
         tree: ContentHost,
         nested_scroll_events: usize,
@@ -546,7 +581,7 @@ fn main() {
                         let (selection, toolbar_command) = match record.payload.as_ref() {
                             Some(tekes_ui_controls::composition::ContentActionPayload::MenuSelection(value)) => (Some(serde_json::json!({"index":value.index(),"label":value.label(),"model_revision":value.model_revision(),"value_path":value.value_path()})), None),
                             Some(tekes_ui_controls::composition::ContentActionPayload::ToolbarCommand(command)) => (None, Some(*command)),
-                            None => (None, None),
+                            Some(tekes_ui_controls::composition::ContentActionPayload::DisclosureExpansion(_)) | None => (None, None),
                         };
                         serde_json::json!({"target":record.action.target.0,"source":format!("{:?}",record.action.source),"kind":format!("{:?}",record.action.kind),"mount":record.mount,"selection":selection,"toolbar_command":toolbar_command})
                     }).collect::<Vec<_>>());
@@ -673,6 +708,28 @@ fn main() {
                         "original_value": field.surface.input.text,
                         "paragraph_present": field.surface.paragraph.is_some(),
                         "type_scale": self.text.type_scale,
+                    });
+                }
+                if matches!(self.mode.as_str(), "semantic-label" | "semantic-ellipsis") {
+                    use tekes_ui_composition_consumer::semantic_label as f;
+                    use tekes_ui_controls::composition::Button;
+                    let input = &self.tree.text_surface(f::COMPOSER).unwrap().input;
+                    snapshot["semantic_label_review"] = serde_json::json!({
+                        "source": self.tree.get(f::LABEL).unwrap().semantic_label().unwrap().text(),
+                        "layouts": self.text.semantic_layouts.iter().map(|(label, layout)| serde_json::json!({
+                            "source": label.text(), "constraint": layout.width(), "is_truncated": layout.is_truncated(),
+                            "elided_utf16": layout.elided_utf16(),
+                            "runs": layout.paragraph().lines.iter().map(|l| l.runs.len()).sum::<usize>(),
+                            "glyphs": layout.paragraph().lines.iter().flat_map(|l| &l.runs).flat_map(|r| &r.glyphs).map(|g| serde_json::json!({
+                                "id": g.id, "x": g.x, "y": g.y, "utf16": g.utf16_index, "cluster": g.cluster_utf16,
+                            })).collect::<Vec<_>>(),
+                        })).collect::<Vec<_>>(),
+                        "revision": self.tree.get(f::LABEL).unwrap().semantic_label().unwrap().version().revision,
+                        "focus": self.tree.focused().map(|id| id.0),
+                        "composer_text": input.text, "composer_selection": input.selection(),
+                        "composer_marked": input.marked, "type_scale": self.text.type_scale,
+                        "button_actions": ([f::ACTION, f::CUSTOM].map(|id| self.tree.get(id).unwrap().component::<Button>().unwrap().activations)),
+                        "names": self.tree.semantics().iter().map(|n| (n.id.0, n.semantics.name.clone())).collect::<Vec<_>>(),
                     });
                 }
                 if self.mode == "label" {
@@ -886,8 +943,27 @@ fn main() {
             self.text.window_active = w.is_active();
             self.text.scale = w.scale() as f32;
             self.text.frame_requested = false;
+            self.text.semantic_layouts.clear();
             self.text.atlas.begin_frame();
             self.scene.clear();
+            #[cfg(feature = "svg-icons")]
+            let result = if self.mode == "disclosure" {
+                use tekes_ui_controls::composition::WithIconRenderer;
+                let mut icons = self
+                    .disclosure_icons
+                    .renderer(self.gpu.as_mut().unwrap(), self.text.scale);
+                self.tree.render(
+                    &mut self.scene,
+                    &mut WithIconRenderer::new(&mut self.text, &mut icons),
+                    frame,
+                    clip,
+                    self.palette,
+                )
+            } else {
+                self.tree
+                    .render(&mut self.scene, &mut self.text, frame, clip, self.palette)
+            };
+            #[cfg(not(feature = "svg-icons"))]
             let result =
                 self.tree
                     .render(&mut self.scene, &mut self.text, frame, clip, self.palette);
@@ -899,6 +975,22 @@ fn main() {
             } else {
                 result.expect("valid consumer scene");
             }
+            if self.mode == "semantic-ellipsis" {
+                let mut truncated = 0;
+                for (label, layout) in &self.text.semantic_layouts {
+                    if layout.is_truncated() {
+                        tekes_ui_composition_consumer::semantic_label::assert_cross_run_ellipsis(
+                            label, layout,
+                        );
+                        truncated += 1;
+                    }
+                }
+                assert!(
+                    truncated >= 3,
+                    "all three original label presentations must actually elide"
+                );
+            }
+
             if self.mode == "toolbar-split" {
                 use tekes_ui_composition_consumer::split_toolbar::{ROOT, SplitToolbar};
                 let fixture = self
@@ -999,7 +1091,7 @@ fn main() {
             }
             if matches!(
                 self.mode.as_str(),
-                "menu-tree" | "toolbar-groups" | "toolbar-split"
+                "menu-tree" | "toolbar-groups" | "toolbar-split" | "disclosure"
             ) {
                 self.menu_actions.extend(self.tree.drain_action_records());
             }
@@ -1319,6 +1411,21 @@ fn main() {
                 self.publish(w, false);
                 return;
             }
+            if let Some(review) = &mut self.disclosure_review
+                && let Event::Command(CommandId(command)) = &e
+                && (38_001..=38_015).contains(command)
+            {
+                let script = review.advance(
+                    *command,
+                    &mut self.tree,
+                    &self.menu_actions,
+                    w.is_active(),
+                    w.size().width,
+                );
+                self.redraw(w);
+                tekes_ui_platform_macos::selftest::run_script(script);
+                return;
+            }
             if let Some(review) = &mut self.menu_review {
                 if matches!(&e, Event::Scroll(_)) {
                     review.scroll_events += 1;
@@ -1514,6 +1621,32 @@ fn main() {
                     self.redraw(w);
                 }
                 Event::Key(key)
+                    if matches!(self.mode.as_str(), "semantic-label" | "semantic-ellipsis")
+                        && key.kind == KeyEventKind::Down
+                        && key.modifiers.command
+                        && matches!(key.key_code, 18 | 19 | 32) =>
+                {
+                    if key.key_code == 32 {
+                        use tekes_ui_composition_consumer::semantic_label as f;
+                        for id in [f::LABEL, f::ACTION, f::DECORATION] {
+                            let node = self.tree.get_mut(id).unwrap();
+                            let old = node.semantic_label().unwrap().version();
+                            node.update_semantic_label(
+                                old,
+                                if self.mode == "semantic-ellipsis" {
+                                    f::ellipsis_model(old.revision + 1)
+                                } else {
+                                    f::model(old.revision + 1)
+                                },
+                            )
+                            .unwrap();
+                        }
+                    } else {
+                        self.text.type_scale = if key.key_code == 18 { 1. } else { 1.5 };
+                    }
+                    self.redraw(w);
+                }
+                Event::Key(key)
                     if self.mode == "label"
                         && key.kind == KeyEventKind::Down
                         && key.modifiers.command
@@ -1606,6 +1739,18 @@ fn main() {
                     w.request_redraw();
                 }
                 Event::Created => {
+                    if self.mode == "disclosure" {
+                        assert!(
+                            w.screen_info().is_some_and(|screen| !screen.builtin),
+                            "Disclosure review requires an external display"
+                        );
+                    }
+                    if self.mode == "semantic-ellipsis" {
+                        assert!(
+                            w.screen_info().is_some_and(|screen| !screen.builtin),
+                            "semantic ellipsis review requires an external display"
+                        );
+                    }
                     assert!(w.set_text_key_events(true));
                     self.gpu = Some(unsafe {
                         Renderer::new_for_metal_layer(
@@ -1619,6 +1764,93 @@ fn main() {
                         let _ = self.tree.focus(Some(self.invoker), false);
                     }
                     self.redraw(w);
+                    if matches!(self.mode.as_str(), "semantic-label" | "semantic-ellipsis")
+                        && std::env::var("TEKES_COMPOSITION_SELFTEST").as_deref()
+                            == Ok(self.mode.as_str())
+                    {
+                        use tekes_ui_composition_consumer::semantic_label as f;
+                        use tekes_ui_platform_macos::selftest::Action;
+                        let center = |id| self.tree.get(id).unwrap().visible().unwrap().center();
+                        let button = center(f::ACTION);
+                        let composer = center(f::COMPOSER);
+                        let dir = std::path::PathBuf::from(
+                            std::env::var_os("TEKESUI_COMPONENT_EVIDENCE")
+                                .expect("owned evidence directory"),
+                        );
+                        let modified = |code, chars| Action::KeyCharactersModified {
+                            key_code: code,
+                            chars,
+                            modifiers: tekes_ui_platform_macos::Modifiers {
+                                command: true,
+                                ..Default::default()
+                            },
+                        };
+                        let expected = || Action::ExpectTextState {
+                            text: "Composer draft 中文ni".into(),
+                            selection: 17..19,
+                            marked: Some(17..19),
+                            query: 17..19,
+                            actual: 17..19,
+                        };
+                        self.selftest_script = Some(vec![
+                            (200, Action::WindowDark(false)),
+                            (
+                                400,
+                                Action::Click {
+                                    x: button.x as f64,
+                                    y: button.y as f64,
+                                },
+                            ),
+                            (600, Action::Key { key_code: 36 }),
+                            (
+                                800,
+                                Action::AXPress {
+                                    component: f::CUSTOM.0,
+                                },
+                            ),
+                            (
+                                1100,
+                                Action::Click {
+                                    x: composer.x as f64,
+                                    y: composer.y as f64,
+                                },
+                            ),
+                            (
+                                1300,
+                                Action::PreeditRange {
+                                    text: "ni".into(),
+                                    selection: 0..2,
+                                    replacement: Some(17..17),
+                                },
+                            ),
+                            (1500, expected()),
+                            (
+                                1700,
+                                Action::Capture {
+                                    path: dir
+                                        .join("semantic-light.png")
+                                        .to_string_lossy()
+                                        .into_owned(),
+                                },
+                            ),
+                            (2000, modified(32, "u")),
+                            (2300, expected()),
+                            (2600, Action::Resize { w: 260., h: 640. }),
+                            (2900, Action::WindowDark(true)),
+                            (3200, modified(19, "2")),
+                            (3500, expected()),
+                            (
+                                3800,
+                                Action::Capture {
+                                    path: dir
+                                        .join("semantic-dark-narrow.png")
+                                        .to_string_lossy()
+                                        .into_owned(),
+                                },
+                            ),
+                            (4200, Action::Close),
+                        ]);
+                    }
                     if self.mode == "content-help"
                         && std::env::var("TEKES_COMPOSITION_SELFTEST").as_deref()
                             == Ok("content-help")
@@ -2115,15 +2347,22 @@ fn main() {
                 | "editable-number"
                 | "field"
                 | "label"
+                | "semantic-label"
+                | "semantic-ellipsis"
                 | "layout"
                 | "item"
                 | "menu-tree"
+                | "disclosure"
                 | "toolbar"
                 | "toolbar-groups"
                 | "toolbar-split"
                 | "content-help"
         ),
-        "usage: native [list|dialog|slider|command|reading|nested-reading|plain|number|field|label|layout|item|menu-tree|toolbar|toolbar-groups|toolbar-split|content-help]"
+        "usage: native [list|dialog|slider|command|reading|nested-reading|plain|number|field|label|layout|item|menu-tree|disclosure|toolbar|toolbar-groups|toolbar-split|content-help]"
+    );
+    assert!(
+        mode != "disclosure" || cfg!(feature = "svg-icons"),
+        "Disclosure native mode requires --features svg-icons"
     );
     let mut reading = None;
     let mut nested_reading = None;
@@ -2147,6 +2386,12 @@ fn main() {
             tekes_ui_composition_consumer::toolbar_groups::SAVE,
             None,
         )
+    } else if mode == "disclosure" {
+        (
+            tekes_ui_composition_consumer::disclosure_review::build().unwrap(),
+            tekes_ui_composition_consumer::disclosure_review::TRIGGER,
+            None,
+        )
     } else if mode == "menu-tree" {
         (
             tekes_ui_composition_consumer::declared_menu::build().unwrap(),
@@ -2166,6 +2411,16 @@ fn main() {
         (
             tree,
             tekes_ui_composition_consumer::layout_activation::FIELD,
+            None,
+        )
+    } else if matches!(mode.as_str(), "semantic-label" | "semantic-ellipsis") {
+        (
+            if mode == "semantic-ellipsis" {
+                tekes_ui_composition_consumer::semantic_label::build_ellipsis().unwrap()
+            } else {
+                tekes_ui_composition_consumer::semantic_label::build().unwrap()
+            },
+            tekes_ui_composition_consumer::semantic_label::ACTION,
             None,
         )
     } else if mode == "label" {
@@ -2263,10 +2518,11 @@ fn main() {
         atlas: GlyphAtlas::default(),
         started: std::time::Instant::now(),
         frame_requested: false,
-        reduced_motion: false,
+        reduced_motion: std::env::var("TEKES_COMPOSITION_REDUCED_MOTION").as_deref() == Ok("1"),
         window_active: true,
         caret_on: true,
         services_enabled: mode != "layout",
+        semantic_layouts: Vec::new(),
     };
     let layout_baseline = (mode == "layout").then(|| {
         tree.get(tekes_ui_composition_consumer::layout_activation::FIELD)
@@ -2279,7 +2535,20 @@ fn main() {
     });
     let menu_review = mode == "menu-tree"
         && std::env::var("TEKES_COMPOSITION_SELFTEST").as_deref() == Ok("menu-tree");
+    let disclosure_review = mode == "disclosure"
+        && std::env::var("TEKES_COMPOSITION_SELFTEST").as_deref() == Ok("disclosure");
     let mut host = Host {
+        disclosure_review: disclosure_review.then(|| {
+            disclosure_review::Review::new(
+                std::path::PathBuf::from(
+                    std::env::var_os("TEKESUI_COMPONENT_EVIDENCE")
+                        .expect("Disclosure evidence directory"),
+                ),
+                true,
+            )
+        }),
+        #[cfg(feature = "svg-icons")]
+        disclosure_icons: Default::default(),
         menu_review: menu_review.then(menu_review::Review::default),
         selftest_script: None,
         tree,
@@ -2314,6 +2583,12 @@ fn main() {
         name: Some("TekesUI Composition Consumer".into()),
         ..Default::default()
     });
+    if disclosure_review {
+        host.selftest_script = Some(vec![(
+            300,
+            tekes_ui_platform_macos::selftest::Action::MenuCommand(38_001),
+        )]);
+    }
     if menu_review {
         host.selftest_script = Some(vec![(
             300,
@@ -2613,7 +2888,11 @@ fn main() {
                 width: if mode == "nested-reading" { 320. } else { 360. },
                 height: 480.,
             }),
-            placement: if mode == "toolbar-split" {
+            placement: if matches!(mode.as_str(), "semantic-ellipsis" | "disclosure") {
+                tekes_ui_platform_macos::WindowPlacement::Screen(
+                    tekes_ui_platform_macos::ScreenChoice::External,
+                )
+            } else if mode == "toolbar-split" {
                 tekes_ui_platform_macos::WindowPlacement::Screen(
                     tekes_ui_platform_macos::ScreenChoice::Builtin,
                 )
@@ -2625,7 +2904,21 @@ fn main() {
             },
             ..Default::default()
         },
-        if menu_review {
+        if disclosure_review {
+            MenuBar {
+                menus: vec![Menu::new(
+                    "Disclosure acceptance",
+                    (38_001..=38_015)
+                        .map(|phase| {
+                            MenuItem::Command(MenuCommand::new(
+                                format!("Verify phase {phase}"),
+                                CommandId(phase),
+                            ))
+                        })
+                        .collect(),
+                )],
+            }
+        } else if menu_review {
             MenuBar {
                 menus: vec![Menu::new(
                     "Menu consumer acceptance",

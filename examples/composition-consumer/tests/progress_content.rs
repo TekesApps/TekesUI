@@ -218,7 +218,7 @@ fn surface_inheritance_override_clear_and_unknown_rejection_keep_mount_and_conte
     );
 }
 #[test]
-fn visible_group_reports_known_unknown_without_range_focus_or_actions() {
+fn visible_progress_reports_readonly_range_known_unknown_without_focus_or_actions() {
     let (mut s, _) = fixture::build().unwrap();
     let mut t = coretext::Text::new(1.);
     paint(&mut s.host, &mut t, Theme::LIGHT.into());
@@ -228,12 +228,12 @@ fn visible_group_reports_known_unknown_without_range_focus_or_actions() {
         .into_iter()
         .find(|n| n.id == BAR)
         .unwrap();
-    assert_eq!(node.semantics.role, ContentRole::Group);
+    assert_eq!(node.semantics.role, ContentRole::ProgressIndicator);
     assert_eq!(node.semantics.name, "Transfer progress");
     assert_eq!(node.semantics.value.as_deref(), Some("45%"));
     assert!(node.semantics.description.is_some());
     assert!(node.visible.is_some());
-    assert_eq!(s.host.value_range(BAR), None);
+    assert_eq!(s.host.value_range(BAR), Some(0.0..=100.0));
     assert!(!s.host.focus(Some(BAR), true));
     for action in [
         AccessibilityAction::Press,
@@ -490,14 +490,15 @@ fn all_host_states_preserve_composer_marked_binding_focus_and_original_reading_a
 
 #[cfg(target_os = "macos")]
 #[test]
-fn original_platform_projection_remains_group_and_rejects_all_progress_actions() {
+fn platform_progress_projection_is_readonly_known_unknown_and_rejects_all_actions() {
     use tekes_ui_platform_macos::{
-        AccessibilityAction as A, AccessibilityRole,
+        AccessibilityAction as A, AccessibilityRange, AccessibilityRole,
         content_accessibility::{content_action, content_key, content_nodes},
     };
     let (mut s, _) = fixture::build().unwrap();
     let mut t = coretext::Text::new(1.);
-    for (unknown, want) in [(false, "45%"), (true, "进度未知")] {
+    let mount = s.host.semantic_mount(BAR);
+    for unknown in [false, true, false] {
         fixture::publish(&mut s.host, 0.45, unknown, "Loading");
         paint(&mut s.host, &mut t, Theme::LIGHT.into());
         let key = content_key(&s.host, BAR, None).unwrap();
@@ -505,13 +506,17 @@ fn original_platform_projection_remains_group_and_rejects_all_progress_actions()
             .into_iter()
             .find(|n| n.key == key)
             .unwrap();
-        assert_eq!(n.role, AccessibilityRole::Group);
-        assert_eq!(n.value.as_deref(), Some(want));
-        assert!(!n.focused);
-        assert!(
-            !n.read_only,
-            "original Group field is not a Progress readonly role"
+        assert_eq!(s.host.semantic_mount(BAR), mount);
+        assert_eq!(n.label, "Transfer progress");
+        assert_eq!(
+            n.role,
+            AccessibilityRole::ProgressIndicator(
+                (!unknown).then(|| AccessibilityRange::new(0., 100.).unwrap())
+            )
         );
+        assert_eq!(n.value.as_deref(), (!unknown).then_some("45"));
+        assert!(!n.focused);
+        assert!(n.read_only);
         for action in [
             A::Press,
             A::Focus,

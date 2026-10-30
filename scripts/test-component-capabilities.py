@@ -22,6 +22,27 @@ class CapabilityTests(unittest.TestCase):
     def setUpClass(cls):
         cls.data = capabilities.generate()
 
+    def test_label_text_crate_reexports_bind_the_original_public_types(self):
+        for name, kind in [('LabelForeground', 'enum'), ('LabelForegroundRun', 'struct'),
+                           ('LabelSourceVersion', 'struct'), ('SemanticLabel', 'struct'),
+                           ('SemanticLabelError', 'enum')]:
+            with self.subTest(name=name):
+                self.assertEqual(capabilities.resolve_public_item('tekes_ui_controls::composition::' + name),
+                                 ('crates/tekes-ui-text/src/label/semantic.rs', name, kind))
+
+    def test_text_crate_reexport_does_not_invent_paths_or_expose_private_modules(self):
+        with self.assertRaises(ValueError):
+            capabilities.resolve_public_item('tekes_ui_controls::composition::tekes_ui_text::SemanticLabel')
+        original = capabilities.module_items
+        def with_private_alias(path):
+            items = original(path)
+            if path == Path('crates/tekes-ui-controls/src/composition.rs'):
+                items = dict(items, uses=dict(items['uses'], HiddenLabel=['tekes_ui_text', 'label', 'semantic', 'SemanticLabel']))
+            return items
+        with patch.object(capabilities, 'module_items', side_effect=with_private_alias):
+            with self.assertRaises(ValueError):
+                capabilities.resolve_public_item('tekes_ui_controls::composition::HiddenLabel')
+
     @contextmanager
     def context_fixture(self):
         # Exercise the real CLI against pinned source bytes, without changing
@@ -255,6 +276,7 @@ class CapabilityTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
             shutil.copytree(ROOT / 'crates/tekes-ui-controls/src', root / 'crates/tekes-ui-controls/src')
+            shutil.copytree(ROOT / 'crates/tekes-ui-text/src', root / 'crates/tekes-ui-text/src')
             shutil.copy2(ROOT / 'crates/tekes-ui-controls/build.rs', root / 'crates/tekes-ui-controls/build.rs')
             shutil.copy2(ROOT / capabilities.CONTROLS_MANIFEST, root / capabilities.CONTROLS_MANIFEST)
             for path in [capabilities.REGISTRY, capabilities.PUBLIC_SURFACE]:

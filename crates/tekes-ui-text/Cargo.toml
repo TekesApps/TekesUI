@@ -12,10 +12,11 @@ tekes-ui-tokens.workspace = true
 tekes-ui-scene.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+unicode-segmentation = "1.13.3"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2-core-foundation = { workspace = true, features = ["CFString", "CFAttributedString", "CFDictionary", "CFNumber", "CFArray", "CFCGTypes", "CFBase", "CFCharacterSet", "CFData"] }
-objc2-core-graphics = { workspace = true, features = ["CGColorSpace", "CGBitmapContext", "CGContext", "CGAffineTransform", "CGGeometry", "CGImage", "CGPath"] }
+objc2-core-graphics = { workspace = true, features = ["CGColor", "CGColorSpace", "CGBitmapContext", "CGContext", "CGAffineTransform", "CGGeometry", "CGImage", "CGPath"] }
 objc2-core-text = { workspace = true, features = ["CTFont", "CTFontDescriptor", "CTLine", "CTRun", "CTTypesetter", "CTStringAttributes", "CTFontTraits", "CTFrame", "CTFramesetter", "objc2-core-graphics"] }
 
 [dev-dependencies]

@@ -1436,6 +1436,99 @@ mod tests {
         assert!(native_input(&native::Event::Redraw).is_none());
     }
     #[test]
+    fn progress_producer_wire_receiver_keeps_domain_identity_and_revokes_invalid_range() {
+        use tekes_ui_controls::composition::{
+            ComponentId, Content, ContentHost, ContentRole, ProgressContent,
+        };
+        use tekes_ui_controls::{ButtonTextAlign, ButtonTextRenderer};
+        use tekes_ui_scene::{Scene, Size};
+        use tekes_ui_tokens::{Rgba, Theme, proposal};
+        struct Text;
+        impl ButtonTextRenderer for Text {
+            fn measure(&mut self, s: &str, _: proposal::TextRole, width: f32) -> Size {
+                Size::new((s.len() as f32 * 8.).min(width), 20.)
+            }
+            fn draw(
+                &mut self,
+                _: &mut Scene,
+                _: &str,
+                _: proposal::TextRole,
+                _: Rect,
+                _: ButtonTextAlign,
+                _: Rgba,
+            ) {
+            }
+        }
+        let (stamp, mut reply) = fixture();
+        let frame = Rect::new(0., 0., 100., 12.);
+        let mut text = Text;
+        let mut host = ContentHost::new(Content::new(
+            ComponentId(71),
+            ProgressContent::new("Transfer progress", 0.45),
+        ))
+        .unwrap();
+        let mut remote = crate::container_semantics::RemoteSemantics::default();
+        let mut previous_index = None;
+        for unknown in [false, true, false] {
+            host.get_mut(ComponentId(71))
+                .unwrap()
+                .component_mut::<ProgressContent>()
+                .unwrap()
+                .model
+                .indeterminate = unknown;
+            host.render(
+                &mut Scene::new(),
+                &mut text,
+                frame,
+                frame,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
+            reply.semantics = Some(crate::content_accessibility::snapshot(&host).unwrap());
+            // Serialize the complete producer reply before entering the real receiver.
+            let encoded = serde_json::to_vec(&reply).unwrap();
+            let received = serde_json::from_slice(&encoded).unwrap();
+            remote
+                .update(ProcessContentSnapshot {
+                    stamp: stamp.clone(),
+                    reply: received,
+                    text: None,
+                })
+                .unwrap();
+            let parts = remote.parts(frame, frame, false);
+            assert_eq!(parts.len(), 1);
+            let part = &parts[0];
+            assert_eq!(part.semantics.role, ContentRole::ProgressIndicator);
+            assert_eq!(part.semantics.name, "Transfer progress");
+            assert_eq!(
+                part.semantics.value.as_deref(),
+                Some(if unknown { "进度未知" } else { "45%" })
+            );
+            assert_eq!(
+                remote.value_range(part.index),
+                (!unknown).then_some(0.0..=100.0)
+            );
+            if let Some(index) = previous_index {
+                assert_eq!(part.index, index);
+            }
+            previous_index = Some(part.index);
+            assert!(!part.focused);
+        }
+        reply.semantics.as_mut().unwrap()[0].value_range = Some([0., f64::INFINITY]);
+        assert!(
+            remote
+                .update(ProcessContentSnapshot {
+                    stamp,
+                    reply,
+                    text: None
+                })
+                .is_err()
+        );
+        assert!(remote.parts(frame, frame, false).is_empty());
+        assert!(remote.value_range(previous_index.unwrap()).is_none());
+    }
+
+    #[test]
     fn matched_image_snapshot_reaches_remote_parts_and_invalid_alt_withdraws_prior_projection() {
         let (stamp, mut reply) = fixture();
         reply.focused = None;

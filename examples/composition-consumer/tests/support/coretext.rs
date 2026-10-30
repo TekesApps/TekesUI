@@ -134,6 +134,25 @@ impl tekes_ui_controls::TextSurfaceHost for Text {
                 .with_min_line_height((m.line_height * self.scale) as f64),
         ))
     }
+    fn shape_semantic_label(
+        &mut self,
+        s: &tekes_ui_text::SemanticLabel,
+        r: proposal::TextRole,
+        w: f32,
+        options: tekes_ui_text::LabelOptions,
+    ) -> Option<std::rc::Rc<tekes_ui_text::LabelLayout>> {
+        let m = r.style();
+        Some(std::rc::Rc::new(
+            self.shaper
+                .shape_semantic_label(
+                    s,
+                    &TextStyle::system(m.size * self.scale).with_weight(m.weight),
+                    &ShapeOptions::with_width(w as f64),
+                    options,
+                )
+                .with_min_line_height((m.line_height * self.scale) as f64),
+        ))
+    }
 }
 impl tekes_ui_controls::TextSurfaceTextRenderer for Text {
     fn push_visible(

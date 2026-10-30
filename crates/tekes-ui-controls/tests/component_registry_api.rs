@@ -658,6 +658,14 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
     public_type::<tekes_ui_controls::DialogEvent>(&mut actual, "tekes_ui_controls::DialogEvent");
     public_type::<tekes_ui_controls::DialogLayout>(&mut actual, "tekes_ui_controls::DialogLayout");
     public_type::<tekes_ui_controls::DialogView>(&mut actual, "tekes_ui_controls::DialogView");
+    public_type::<tekes_ui_controls::DisclosureContent>(
+        &mut actual,
+        "tekes_ui_controls::DisclosureContent",
+    );
+    public_type::<tekes_ui_controls::DisclosureIntent>(
+        &mut actual,
+        "tekes_ui_controls::DisclosureIntent",
+    );
     public_type::<tekes_ui_controls::DraftJournal>(&mut actual, "tekes_ui_controls::DraftJournal");
     public_type::<tekes_ui_controls::DraftRevision>(
         &mut actual,
@@ -789,14 +797,14 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::TextSurfaceAlignment",
     );
     #[allow(dead_code)]
-    fn public_trait_77<T: tekes_ui_controls::TextSurfaceHost + ?Sized>() {}
+    fn public_trait_79<T: tekes_ui_controls::TextSurfaceHost + ?Sized>() {}
     actual.push("tekes_ui_controls::TextSurfaceHost");
     public_type::<tekes_ui_controls::TextSurfacePresentation>(
         &mut actual,
         "tekes_ui_controls::TextSurfacePresentation",
     );
     #[allow(dead_code)]
-    fn public_trait_79<T: tekes_ui_controls::TextSurfaceTextRenderer + ?Sized>() {}
+    fn public_trait_81<T: tekes_ui_controls::TextSurfaceTextRenderer + ?Sized>() {}
     actual.push("tekes_ui_controls::TextSurfaceTextRenderer");
     public_type::<tekes_ui_controls::TickingNumber>(
         &mut actual,
@@ -884,7 +892,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::collections_view::MarkdownView",
     );
     #[allow(dead_code)]
-    fn public_trait_102<T: tekes_ui_controls::collections_view::PassiveCollectionView + ?Sized>() {}
+    fn public_trait_104<T: tekes_ui_controls::collections_view::PassiveCollectionView + ?Sized>() {}
     actual.push("tekes_ui_controls::collections_view::PassiveCollectionView");
     public_type::<tekes_ui_controls::collections_view::TreeView>(
         &mut actual,
@@ -931,7 +939,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::composition::ChartContentError",
     );
     #[allow(dead_code)]
-    fn public_trait_114<T: tekes_ui_controls::composition::Component + ?Sized>() {}
+    fn public_trait_116<T: tekes_ui_controls::composition::Component + ?Sized>() {}
     actual.push("tekes_ui_controls::composition::Component");
     public_type::<tekes_ui_controls::composition::ComponentActionRequest<'_>>(
         &mut actual,
@@ -1073,6 +1081,14 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         &mut actual,
         "tekes_ui_controls::composition::DialogContent",
     );
+    public_type::<tekes_ui_controls::composition::DisclosureContent>(
+        &mut actual,
+        "tekes_ui_controls::composition::DisclosureContent",
+    );
+    public_type::<tekes_ui_controls::composition::DisclosureIntent>(
+        &mut actual,
+        "tekes_ui_controls::composition::DisclosureIntent",
+    );
     public_type::<tekes_ui_controls::composition::EmptyStateContent>(
         &mut actual,
         "tekes_ui_controls::composition::EmptyStateContent",
@@ -1185,6 +1201,18 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         &mut actual,
         "tekes_ui_controls::composition::InputModifiers",
     );
+    public_type::<tekes_ui_controls::composition::LabelForeground>(
+        &mut actual,
+        "tekes_ui_controls::composition::LabelForeground",
+    );
+    public_type::<tekes_ui_controls::composition::LabelForegroundRun>(
+        &mut actual,
+        "tekes_ui_controls::composition::LabelForegroundRun",
+    );
+    public_type::<tekes_ui_controls::composition::LabelSourceVersion>(
+        &mut actual,
+        "tekes_ui_controls::composition::LabelSourceVersion",
+    );
     public_type::<tekes_ui_controls::composition::Lifecycle>(
         &mut actual,
         "tekes_ui_controls::composition::Lifecycle",
@@ -1226,7 +1254,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::composition::NumberFieldContent",
     );
     #[allow(dead_code)]
-    fn public_trait_182<T: tekes_ui_controls::composition::NumberFormat + ?Sized>() {}
+    fn public_trait_189<T: tekes_ui_controls::composition::NumberFormat + ?Sized>() {}
     actual.push("tekes_ui_controls::composition::NumberFormat");
     public_type::<tekes_ui_controls::composition::NumberParseError>(
         &mut actual,
@@ -1289,7 +1317,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::composition::PopoverSession",
     );
     #[allow(dead_code)]
-    fn public_trait_198<T: tekes_ui_controls::composition::PreparedActionEffect + ?Sized>() {}
+    fn public_trait_205<T: tekes_ui_controls::composition::PreparedActionEffect + ?Sized>() {}
     actual.push("tekes_ui_controls::composition::PreparedActionEffect");
     public_type::<tekes_ui_controls::composition::PreparedActionFocus>(
         &mut actual,
@@ -1382,6 +1410,14 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
     public_type::<tekes_ui_controls::composition::ScrollContent>(
         &mut actual,
         "tekes_ui_controls::composition::ScrollContent",
+    );
+    public_type::<tekes_ui_controls::composition::SemanticLabel>(
+        &mut actual,
+        "tekes_ui_controls::composition::SemanticLabel",
+    );
+    public_type::<tekes_ui_controls::composition::SemanticLabelError>(
+        &mut actual,
+        "tekes_ui_controls::composition::SemanticLabelError",
     );
     public_type::<tekes_ui_controls::composition::SemanticNode>(
         &mut actual,
@@ -1858,7 +1894,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::layout_view::IconLayout",
     );
     #[allow(dead_code)]
-    fn public_trait_339<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
+    fn public_trait_348<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
     actual.push("tekes_ui_controls::layout_view::IconRenderer");
     public_type::<tekes_ui_controls::layout_view::IconView>(
         &mut actual,

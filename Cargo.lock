@@ -1277,6 +1277,7 @@ dependencies = [
  "tekes-ui-render",
  "tekes-ui-scene",
  "tekes-ui-tokens",
+ "unicode-segmentation",
 ]
 
 [[package]]

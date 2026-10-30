@@ -214,6 +214,22 @@
       "reason": "Registered component model or production View; identity and route are owned by workbench.json."
     },
     {
+      "api": "tekes_ui_controls::DisclosureContent",
+      "category": "component-adapter",
+      "components": [
+        "tui.disclosure"
+      ],
+      "reason": "Controlled title/body Content adapter over the existing Disclosure model, ButtonRuntime and reveal; one trigger action/focus/semantic owner."
+    },
+    {
+      "api": "tekes_ui_controls::DisclosureIntent",
+      "category": "component-support",
+      "components": [
+        "tui.disclosure"
+      ],
+      "reason": "Owned event-time expansion request and generation/revision for the existing Disclosure owner; contains no business persistence identity."
+    },
+    {
       "api": "tekes_ui_controls::DraftJournal",
       "category": "shared-support",
       "components": [],
@@ -1117,6 +1133,22 @@
       "reason": "Experimental composition adapter for the existing component family, exercised by the independent composition consumer; does not imply every family has migrated or native acceptance passed."
     },
     {
+      "api": "tekes_ui_controls::composition::DisclosureContent",
+      "category": "component-adapter",
+      "components": [
+        "tui.disclosure"
+      ],
+      "reason": "Controlled title/body Content adapter over the existing Disclosure model, ButtonRuntime and reveal; one trigger action/focus/semantic owner."
+    },
+    {
+      "api": "tekes_ui_controls::composition::DisclosureIntent",
+      "category": "component-support",
+      "components": [
+        "tui.disclosure"
+      ],
+      "reason": "Owned event-time expansion request and generation/revision for the existing Disclosure owner; contains no business persistence identity."
+    },
+    {
       "api": "tekes_ui_controls::composition::EmptyStateContent",
       "category": "component",
       "components": [
@@ -1278,6 +1310,24 @@
       "category": "composition",
       "components": [],
       "reason": "Shared input metadata, editor policy and once-only text-key acknowledgement at existing Component/ContentHost boundary; no editor state machine or additional component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::LabelForeground",
+      "category": "composition",
+      "components": [],
+      "reason": "Bounded immutable readonly label foreground/source/version support on original TextContent and Button owners; no new component, editor, focus or AX owner."
+    },
+    {
+      "api": "tekes_ui_controls::composition::LabelForegroundRun",
+      "category": "composition",
+      "components": [],
+      "reason": "Bounded immutable readonly label foreground/source/version support on original TextContent and Button owners; no new component, editor, focus or AX owner."
+    },
+    {
+      "api": "tekes_ui_controls::composition::LabelSourceVersion",
+      "category": "composition",
+      "components": [],
+      "reason": "Bounded immutable readonly label foreground/source/version support on original TextContent and Button owners; no new component, editor, focus or AX owner."
     },
     {
       "api": "tekes_ui_controls::composition::Lifecycle",
@@ -1661,6 +1711,18 @@
         "tui.scroll-area"
       ],
       "reason": "Experimental composition adapter for the existing component family, exercised by the independent composition consumer; does not imply every family has migrated or native acceptance passed."
+    },
+    {
+      "api": "tekes_ui_controls::composition::SemanticLabel",
+      "category": "composition",
+      "components": [],
+      "reason": "Bounded immutable readonly label foreground/source/version support on original TextContent and Button owners; no new component, editor, focus or AX owner."
+    },
+    {
+      "api": "tekes_ui_controls::composition::SemanticLabelError",
+      "category": "composition",
+      "components": [],
+      "reason": "Bounded immutable readonly label foreground/source/version support on original TextContent and Button owners; no new component, editor, focus or AX owner."
     },
     {
       "api": "tekes_ui_controls::composition::SemanticNode",

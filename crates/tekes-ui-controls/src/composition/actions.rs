@@ -29,6 +29,8 @@ pub enum ContentActionPayload {
     /// Original toolbar command captured before menu-close focus cleanup.
     ToolbarCommand(u64),
     MenuSelection(MenuSelection),
+    /// Owned controlled Disclosure request captured at original delivery.
+    DisclosureExpansion(DisclosureIntent),
 }
 /// Item identity in one immutable model revision. Explicit values provide a
 /// stable path; legacy positional menus retain index, label and model revision.

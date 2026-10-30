@@ -1,0 +1,55 @@
+{
+  "issue": 12,
+  "scope": "Settings whole-page reading fixture; not a second Gold7 matrix",
+  "baseline": "d51a7ffd5693388fb82ae3c7575eec63ece18ff0",
+  "observations": [
+    {
+      "path": "design/reviews/icon-gold7-57/native-settings-narrow-150.jpg",
+      "sha256": "825e12b4f9da0b00ee6fea99e4e9f307834418daa8a7f6c72d52e30edbc1bc99",
+      "review": "Viewed original: visible page title Icon; settings is an icon identity. Filename does not establish Settings example coverage. Historical root-level v2 evidence per icon-gold7-57/README.md; not final C."
+    },
+    {
+      "path": "design/reviews/remaining-components-20261017/snapshot-final/example-settings-dark-ic@2x.png",
+      "sha256": "c69f4d270fa792bcb9704806fc9f12e5c9ef7dab2e1fa483a0f152f79279c2f1",
+      "review": "Viewed original: Settings form, wide dark increased contrast, initial ready state. Historical; source differences below prohibit treating it as this candidate."
+    }
+  ],
+  "historical_source_comparison": [
+    {
+      "path": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+      "historical_final_source_sha256": "ad119612e6064af18347a2c53516002db6688463ceb52b7ceedf6591efa6109e",
+      "candidate_baseline_sha256": "b0e41628349242c3b91ae8c3c125fda3fbee2d462d1c4c19daad0b214104b37e",
+      "main_observed_sha256": "b0e41628349242c3b91ae8c3c125fda3fbee2d462d1c4c19daad0b214104b37e"
+    },
+    {
+      "path": "crates/tekes-ui-gallery/src/gallery/text.rs",
+      "historical_final_source_sha256": "c2ae67df848a4600af129f2b841ba107c2458053bae01f2a7c11e26ad681fc63",
+      "candidate_baseline_sha256": "7d32a99059494d8e5dbee04522dcfd5132d41e4b1d189323a19d3ea2f3d493f4",
+      "main_observed_sha256": "273804ade4352756e0498d0a360ad33c0a0b90470c29d00658e23ef366e03905"
+    },
+    {
+      "path": "crates/tekes-ui-gallery/src/gallery/mod.rs",
+      "historical_final_source_sha256": "5924461ddd525977e84f145c79ce1a18d760d01c0df40d74d5976cab3982f745",
+      "candidate_baseline_sha256": "18cec888b4b7fc85a239ed065a32140d78ef281e8a9aa4834765b6ca4afde2ca",
+      "main_observed_sha256": "18cec888b4b7fc85a239ed065a32140d78ef281e8a9aa4834765b6ca4afde2ca"
+    }
+  ],
+  "capture_gap": {
+    "existing_entrypoint": "implemented_component_state_and_variant_stories_render_at_each_viewport_position",
+    "filter": "is_implemented_component requires kind=component, then states/variants stories",
+    "settings_registry_kind": "example",
+    "replacement_test": "settings_whole_page_reading_matrix_uses_actual_route_and_scroll_positions",
+    "matrix": "4 themes x 2 backing scales x 2 viewport/type pairs x top/mid/bottom = 48 images",
+    "rust_compile": "unverified; shared cache allocated to coordinator MAIN",
+    "gpu": "unverified; no GPU window allocated",
+    "native_display": "unverified",
+    "ime_voiceover_performance": "outside this batch; unchanged"
+  },
+  "checks": {
+    "rustfmt_initial": "failed formatting, corrected locally",
+    "rustfmt_final": "passed",
+    "git_diff_check": "passed"
+  },
+  "preserved": "No original image, registry, Gold7 worksheet, generator, token or production code changed.",
+  "phase": "Initial preparation inspection, before allocated MAIN build/GPU execution; current results are execution.json and visual-review.json"
+}

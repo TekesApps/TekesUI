@@ -222,3 +222,99 @@ fn write_png(path: std::path::PathBuf, width: u32, height: u32, rgba: &[u8]) {
         .write_image_data(rgba)
         .expect("write PNG pixels");
 }
+
+/// Settings is an example route, so the component-only state/variant matrix
+/// above deliberately excludes it. Capture this representative reading page
+/// separately without changing that matrix's meaning or its historical files.
+#[test]
+#[ignore = "requires an allocated GPU window and a fresh TEKESUI_READING_PAGE_OUT directory"]
+fn settings_whole_page_reading_matrix_uses_actual_route_and_scroll_positions() {
+    let output = std::path::PathBuf::from(
+        std::env::var_os("TEKESUI_READING_PAGE_OUT").expect("fresh reading-page output directory"),
+    );
+    // Never replace historical images or merge a partial earlier run into this one.
+    std::fs::create_dir(&output).expect("reading-page output must not already exist");
+    let mut renderer =
+        Renderer::new_headless().expect("actual GPU required for reading-page capture");
+    let entry_index = entries()
+        .iter()
+        .position(|entry| entry.slug() == "example-settings")
+        .expect("registered Settings example");
+    let entry = &entries()[entry_index];
+    assert_eq!(entry.get("kind"), "example");
+    assert_eq!(entry.renderer(), "settings");
+    let route = "example-settings/playground";
+    let mut cases = Vec::new();
+    for theme in Theme::ALL {
+        for scale in [1.0_f32, 2.0] {
+            for (width, height, text_scale, type_scale) in VIEWPORTS {
+                let mut gallery = Gallery::with_static_text(StaticText::new(None));
+                gallery.set_system_theme(theme);
+                gallery.set_reduced_motion(true);
+                gallery.text.set_scale(scale);
+                gallery.workbench.text_scale = text_scale;
+                assert!(gallery.open_route(route));
+                assert_eq!(gallery.page, crate::gallery::Page::Workbench(entry_index));
+                gallery.set_view_size(width as f32, height as f32);
+                stabilize_document(&mut gallery);
+                let range = gallery.page_scroll_range().max(0.);
+                for (position, fraction) in POSITIONS {
+                    let (offset, actual_range) =
+                        settle_scroll(&mut gallery, fraction, range * fraction);
+                    assert!((offset - actual_range * fraction).abs() < 0.5);
+                    let mut scene = Scene::new();
+                    gallery.build_scene(&mut scene);
+                    assert_eq!(gallery.page, crate::gallery::Page::Workbench(entry_index));
+                    assert!(!scene.is_empty());
+                    let pixel_width = (width as f32 * scale) as u32;
+                    let pixel_height = (height as f32 * scale) as u32;
+                    let rgba = renderer
+                        .render_to_rgba8(
+                            &scene,
+                            gallery.atlas_mut(),
+                            (pixel_width, pixel_height),
+                            scale,
+                            Gallery::background(theme),
+                        )
+                        .expect("Settings whole-page GPU render");
+                    assert!(rgba.chunks_exact(4).any(|pixel| pixel != &rgba[0..4]));
+                    let file_name = format!(
+                        "example-settings__playground__{}__{}x{}__type-{}__{}@{}x.png",
+                        theme_slug(theme),
+                        width,
+                        height,
+                        (type_scale * 100.).round() as u32,
+                        position,
+                        scale as u32
+                    );
+                    write_png(output.join(&file_name), pixel_width, pixel_height, &rgba);
+                    cases.push(serde_json::json!({
+                        "file": file_name,
+                        "route": route,
+                        "entry_index": entry_index,
+                        "renderer": entry.renderer(),
+                        "title": entry.title(),
+                        "theme": theme_slug(theme),
+                        "brand": 0,
+                        "window": {"width": width, "height": height},
+                        "type_scale": type_scale,
+                        "backing_scale": scale,
+                        "pixels": {"width": pixel_width, "height": pixel_height},
+                        "position": position,
+                        "actual_offset": offset,
+                        "actual_scroll_range": actual_range,
+                        "document_height": gallery.page_document_height(),
+                        "visual_review": "unverified",
+                        "evidence": "real Gallery scene on headless GPU; not native input, physical display, IME, AX or performance acceptance"
+                    }));
+                }
+            }
+        }
+    }
+    assert_eq!(cases.len(), 48);
+    std::fs::write(
+        output.join("manifest.json"),
+        serde_json::to_vec_pretty(&cases).expect("serialize Settings capture manifest"),
+    )
+    .expect("write Settings capture manifest");
+}

@@ -12,6 +12,7 @@ fn semantics(s: ContentSemantics) -> Result<wire::Semantics> {
     use wire::SemanticRole as W;
     let role = match s.role {
         ContentRole::Group => W::Group,
+        ContentRole::ProgressIndicator => W::ProgressIndicator,
         ContentRole::Text => W::Text,
         ContentRole::Image => {
             ensure!(
@@ -391,6 +392,49 @@ mod tests {
         }
         assert!(semantics(ContentSemantics::new(ContentRole::Image, " \n")).is_err());
     }
+    #[test]
+    fn progress_snapshot_roundtrip_preserves_known_unknown_and_passivity() {
+        let mut host = ContentHost::new(Content::new(
+            ComponentId(71),
+            ProgressContent::new("Transfer progress", 0.45),
+        ))
+        .unwrap();
+        render(&mut host);
+        let target = snapshot(&host).unwrap()[0].target;
+        for unknown in [false, true, false] {
+            host.get_mut(ComponentId(71))
+                .unwrap()
+                .component_mut::<ProgressContent>()
+                .unwrap()
+                .model
+                .indeterminate = unknown;
+            render(&mut host);
+            let nodes = snapshot(&host).unwrap();
+            let bytes = serde_json::to_vec(&nodes).unwrap();
+            let received: Vec<wire::SemanticNode> = serde_json::from_slice(&bytes).unwrap();
+            crate::container_semantics::validate(&received).unwrap();
+            let node = &received[0];
+            assert_eq!(node.target, target);
+            assert_eq!(node.semantics.role, wire::SemanticRole::ProgressIndicator);
+            assert_eq!(node.value_range, (!unknown).then_some([0., 100.]));
+            assert_eq!(
+                node.semantics.value.as_deref(),
+                Some(if unknown { "进度未知" } else { "45%" })
+            );
+            assert!(!node.focused);
+            for request in [
+                wire::AccessibilityAction::Press,
+                wire::AccessibilityAction::Focus,
+                wire::AccessibilityAction::SetValue("0.5".into()),
+                wire::AccessibilityAction::Increment,
+                wire::AccessibilityAction::Decrement,
+            ] {
+                let response = action(&mut host, target, None, None, &request).unwrap();
+                assert!(!response.consumed && !response.changed && !response.activated);
+            }
+        }
+    }
+
     #[test]
     fn original_splitter_snapshot_and_action_keep_the_real_finite_domain_on_wire() {
         let mut host = ContentHost::try_new_prepared(

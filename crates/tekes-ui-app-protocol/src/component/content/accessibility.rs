@@ -5,6 +5,8 @@ use std::ops::Range;
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SemanticRole {
     Group,
+    /// Read-only progress metadata; unknown progress has no numeric range.
+    ProgressIndicator,
     Text,
     /// Matched-schema informative/decorative image semantics; no resource IDs.
     Image,

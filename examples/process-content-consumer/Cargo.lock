@@ -830,6 +830,7 @@ dependencies = [
  "serde_json",
  "tekes-ui-scene",
  "tekes-ui-tokens",
+ "unicode-segmentation",
 ]
 
 [[package]]
