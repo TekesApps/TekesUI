@@ -152,3 +152,80 @@ Gallery 的所有组件 API 引用改为读取同一登记；移除组件 render
 本次补录后，#114按2026-10-26明确简化的四项AC完成：复用52根登记及原API/route/state/maturity；八个有界接收入口保留scope/claims/exceptions/gaps和证据；历史观察与当前源码不符有定位诊断；实际生成/context/公开编译绑定检查通过。新补录运行五个context查询、receipt字节核对及三项受影响Python检查，未重跑未变化的Rust/GPU。隔离检查曾发现examples源码未列入生成输入，现将既有source_identity路径纳入原输入清单并验证修复。完整组件主题接入、#8其余原AC、native/视觉成熟度均未因此完成；后续每批接收继续更新同一记录。
 
 </details>
+
+## #1 / #55 当前剩余验收矩阵（2026-10-30）
+
+本节是上述唯一52根表的父票验收说明，Refs #1 / #55；不新增组件登记、机器状态或成熟度。
+文档候选基线 `b4b1f92f472353a24febe3e968b7b47214922422`，只读核对，不是新一轮产品验收。
+#113/#114/#121–#125已完成原实用Theme范围，不重新实施Theme，不恢复owned闭包门禁。
+#55历史S2/S4/S5中的“其余52根待迁移”、本表旧行中的“全族未完成”不能覆盖后来的实际收口；S6和原产品体验仍开放。
+依赖落实到下表的场景或接口，不使用 #55→#1→#12→#55 的整票等待。
+
+### 有效证据与身份边界
+
+下列SSD相对路径均位于 `/Volumes/HP P900/DEV/TekesUI/`。复用条件是相关源码、配置、依赖、输入和契约未变；新提交号本身不使证据失效。发生差异时只补受影响项，历史结果及失败不改签。
+
+- **T（52根实用Theme）**：`artifacts/issue-113/practical-all52-close-20261028/closure-receipt.json` 实列52根：Button1＋#121布局8＋#122文本输入13＋#123动作导航10＋#124数据内容7＋#125反馈组合13。收据 `accepted_head=4b574f2f114d46b44198bec17c842991a8f07017`，PR154／CI40582809137／公开交付 `5879fe88d98cc2038eec5bc83baf5498ddd7f0bc`／checkpoint-20261028-14。上文 `fc2f81a` 是另一阶段身份，不能冒充该收据的 accepted_head。每根具体源/程序/状态仍沿原行收据，不以汇总证明全部原生或Gold7体验。 #55历史details中CodeBlock/Markdown/Icon前景绕过和Chart用途待迁移，不能覆盖本表后续接收：Icon `aec642f`、Markdown `781f2ab`、CodeBlock `e5369fc` 的原public/Gallery/strict收据均exit0（路径见各原行），Chart沿#104/#92接收；这不扩展到整页或物理体验。
+- **P（准确投影）**：#114闭合范围为45组件机器投影＋5patterns／2examples原route和maturity。`artifacts/issue-114/main3f13-intake/receipt-reference-check.json` 仅列Button／Chart／Progress的五份引用哈希，不是52份重跑证明。历史stale是来源差异，不是功能失败；不得从 `accepted-bounded-evidence` 自动晋级。
+- **S（Settings初始Ready）**：[现有说明](../../design/reviews/settings-whole-page-20261030/README.md)、同目录 `execution.json` / `visual-review.json`；SSD `artifacts/issue-12/settings-main77860b5-20261030/run01/`。实际MAIN `77860b59df6eb8dc3432a96dd4bfd1730c1b215c` 加明确WIP，3469输入清单SHA `27ff7ba1cc1ff42f569c3314b35f89ba0279512f2e74d9d10e7e946005380e9a`，程序SHA `aea0f5944f6af79c3cd235402dcb0852771a339283de0bbd643577253867a5c7`。4主题×双倍率×两viewport/type×三位置=48 PNG均有逐图有限审查；窄窗offset 0/201/402，宽窗range=0。只限brand0、720×512/type150与1440×960/type100、初始Ready；不含其他状态、宽大字/窄正常字号、真实输入、焦点reveal、物理显示/IME/VO/性能。#12已记录PR191集成交接；本节不判定其后续CI/merge状态。
+- **B（#12已有局部修复）**：Banner PR155／`ba78773` 保留320pt/type150 CoreText红绿及4个布局样本，不称新原生GPU整页。Split PR156／`2770493` 的 `artifacts/issue-12/split-page-capture-main4b574f2-candidate/repair/main-intake/green-repair01/` 保留四主题完整GPU页及逐图审查。Progress PR158／`5fdab2c` 的 `artifacts/issue-12/progress-navigation-main679db39-candidate/green-repair01/` 保留24生成图，其中实际审查8张；其余16张不改成已目测。均复用其原有效范围。
+- **H（Gold7历史分层）**：[原Gold7规则](gold7.md)、`design/behavior/gold7.json`、`gold7-alignment.json` 的23要求及历史receipts保持原样。其旧 `missing/partial` 不能直接当当前实现缺失清单；T、后续#81 B2、#103 A+B等实际交付优先于旧实现摘要。后两票保留物理IME/VO/可见原生/性能边界，不能借它们宣布全Gold7完成。#57图标由其独立owner核对，本节不重验；Settings文件名不是Settings页面证明。
+
+### #1 原八项AC与 #55 阶段对应
+
+AC序号按 #1 原文顺序，原checkbox不更改。唯一owner表示接收该行结果的领域职责，不授予MAIN写权或构建/桌面窗口；主协调负责分配执行者和最终接收。
+
+| 原AC / #55关联 | 已有效的证据 | 剩余缺口与最小补验场景 / 现有入口 | 唯一owner / 资源 |
+|---|---|---|---|
+| AC1 统一视觉强调、边界、状态、例外规则 / S1–S2 | T及现行Theme foundation契约、每根例外、Gold7原规则 | 设计规则已交付；体验发现具体偏离才回原组件票修复，不新开Theme迁移 | #1/#55父票覆盖领域 / 文档 |
+| AC2 共享token/样式/API默认受益 / S3–S4 | T的真实公共消费；P保留准确来源 | 实用接入已完成；后续受影响组件仅补其公共默认入口，不要求52根重跑 | #1/#55父票覆盖领域 / 文档；变更验证归原组件owner |
+| AC3 全组件、pattern/example映射、状态与证据 / S5 | T完整52根与本表，P准确45＋5＋2 | 覆盖组织已完成；不把旧族“未完成”作为新迁移任务，不把本节当成熟度通过 | #1/#55父票覆盖领域 / 文档 |
+| AC4 Quiet/工具动作/Search权重与边界职责 / S6 | T动作/搜索消费、原Button接收；S仅Settings初始页 | 整页注意力顺序仍需实际体验：pattern-filter/playground输入/清除、工具动作、导航Search与主要Save同屏对照；复用旧有效局部图 | #12整页视觉领域 / 离屏GPU＋逐图审查；物理阅读另分窗口 |
+| AC5 必要边界、文字/图标、错误/选中/focus普通与IC可辨 / S6 | T必要对比/状态、B、S有限阅读 | pattern-form/playground错误/disabled及真实Tab焦点reveal；component-menu/dialog和选择组件的普通/IC选中与焦点；图标消费引用#57原结论 | #12整页视觉领域 / GPU＋原生键鼠；#57保持独立 |
+| AC6 自动语义/主题/状态约束与绕过防护 / S3 | T原正负例、P来源/投影约束；现行生成器及原实用AC | 已交付项复用；只有新/变更路径才跑对应自动检查，不因本文触发Rust/CI | #1/#55父票覆盖领域 / 文档核对 |
+| AC7 四主题、代表品牌/尺寸、1x2x、Light/Dark整页前后与注意力 / S6 | T代表组件，B局部页，S两代表组合初始页 | 补下表视觉批次及适用物理显示；S没有非默认brand、失败/保存状态、宽大字/窄常规或全页族结论；旧golden保留并标源差异 | #12整页视觉领域 / GPU＋人工视觉＋物理屏幕 |
+| AC8 当前候选设计决定、证据、历史图与使用指南 / S6 | 现行规则、原registry及T/P/B/S的身份边界 | 每次补验回填原收据/本表对应行；未验保持未验，原图不覆盖，原AC未全满足不关#1/#55 | #1/#55父票覆盖领域 / 文档 |
+
+#55 S1/S3及S2/S4/S5的实用Theme交付复用T/P；S4中的原生/产品体验残余与S6按具体Gold7场景推进。父票不等待子票整票关闭才接收已完成项。
+
+### Gold7 原23要求的剩余场景
+
+ID沿 `gold7-alignment.json`，不改变其历史assessment。下表“缺口”是仍需取得的体验结果或明确能力核对，不是宣称所有现行实现缺失。契约、代码、GPU、程序化原生、物理输入、VO和性能分别记录；不将本次文档审计算作验收。
+
+| 原要求ID | 可复用证据 | 缺口 / 最小补验场景、现有入口 | 唯一owner / 资源 |
+|---|---|---|---|
+| G1/warm-neutral-reading-foundation | T、S、H | 长正文普通/disabled在Light/Dark/IC的持续阅读与主次顺序；example-settings、pattern-master/playground | #12整页视觉 / 物理屏幕 |
+| G1/consumer-brand-derivation | T共享品牌与隔离正负例；S仅brand0 | 在已有品牌预设中选代表非默认品牌，检查真实Menu/Dialog叠层及页面强调比例，记录选择理由；不重跑无变化品牌编译链 | #12整页视觉 / GPU＋逐图审查 |
+| G1/whole-page-reading-composition | S、B、H几何检查 | Settings Pending/Failed/Saved，复杂表单/搜索/主从组合，窄常规/宽大字补代表对照；非空或动作不重叠不足以判阅读通过 | #12整页视觉 / GPU＋逐图审查 |
+| G2/four-semantic-surface-roles | T Surface消费、H映射 | 同页canvas/region/panel/overlay层级，使用Settings与component-dialog/playground；核对实际语义映射后审图 | #12整页视觉 / GPU＋逐图审查 |
+| G2/same-color-geometric-distinction | H原四主题1x2x浮层GPU、T | 相邻同色层级的真实边缘/阴影，component-menu/popover/dialog；物理屏幕观察不由旧栅格结果替代 | #12整页视觉 / 物理屏幕 |
+| G3/hairline-and-required-boundary-roles | T必要边界/状态对比、B/S | form错误/required/focus与装饰线同屏，普通及IC；保留必要对比，不机械换separator | #12整页视觉 / GPU＋物理屏幕 |
+| G3/component-role-radius-map | T各根角色/例外、H | 真实控件/面板/浮层/代码表面角色复核及物理阅读；只检查适用角色，不强行统一圆角 | #12整页视觉 / 物理屏幕 |
+| G3/nested-radius-geometry | H公式及既有接入、T | 只对已声明同心的真实嵌套实例记录outer/inset/inner并看实际像素；普通相邻控件不当同心fixture | #12整页视觉 / GPU＋逐图审查 |
+| G3/real-scale-rendering | H焦点/阴影1x2x、B/S | 实际1x/2x屏幕与代表尺寸的边界、焦点边缘；窄窗Tab到离屏项，检查祖先clip与reveal | #12整页视觉 / 物理显示＋原生键盘 |
+| G4/named-press-expansion-snap-presets | H命名预设、#9有限交付 | component-button/switch/disclosure实际按压/展开/反向时序；保留原预设，不未经决定调参 | #12真实交互 / 原生键鼠 |
+| G4/real-component-motion-integration | H原生产接线、原浮层帧 | 上述控件与Menu/Dialog/Popover进入/退出、中间帧和页面卸载；按适用通道，非要求每个被动组件动画 | #12真实交互 / 原生＋GPU帧 |
+| G4/direct-manipulation-and-interruption | H、B Split、#103 A+B已交付 | component-split-view/playground拖动跨侧栏、丢捕获/失活/取消；可见窗口实测，hidden Window断言不代签 | #12真实交互 / 原生指针＋窗口 |
+| G4/reduced-motion-path | H系统/renderer降级接线 | 系统Reduced Motion开/关下Button/Switch/Disclosure与浮层重开/取消，动作结果一致且无补播 | #12真实交互 / 系统设置＋原生 |
+| G5/ime-and-suggestion-priority | T输入功能、H composition guards | pattern-form/search、component-combo-box/dialog内中日文marked/候选确认/取消、Enter及Escape优先级，指针提交不误发 | #12物理输入 / 物理中日IME窗口 |
+| G5/durable-draft-recovery | T pattern-form、H真实本地journal/outbox | pattern-form/playground显式TEKESUI_GALLERY_DRAFT_FIXTURE临时路径，编辑→提交→中断/重启→旧ack后新编辑保留；仅本地fixture，不冒充真实服务/断电 | #12真实交互 / 原生＋隔离fixture存储 |
+| G5/manual-scroll-reading-anchor | H append-only anchor | 现有scroll路由/Page::ScrollArea阅读历史后append/resize/选区/嵌套滚动；不外推prepend/任意替换 | #12真实交互 / 原生滚动＋键鼠 |
+| G5/explicit-return-to-latest | H真实Button回最新 | 同scroll入口手动到底不自动repin；点击/键盘显式返回后检查body焦点与后续append | #12真实交互 / 原生键鼠 |
+| G6/zoom-preserves-reading-anchor | H仅历史specified-not-implemented | 现有52根未提供媒体viewer原缩放入口；仍为能力缺口待主协调核对现行媒体交付，不能用Scene3D相机或HoverPreview替代；未获范围恢复不新建实现 | #55产品范围协调 / 产品范围决定，非build阻塞 |
+| G6/bounded-split-and-pan-geometry | B、#103已完成Split；H媒体pan历史缺口 | Split键盘/双击/窄窗口恢复用component-split-view/playground补真实输入；媒体pan仍沿上一行独立能力缺口 | #12真实交互 / 原生键鼠（媒体由#55范围协调接收） |
+| G6/cancel-and-non-gesture-alternatives | H、#103捕获及语义投影 | Split失活/丢release/Enter/Space/reset真实体验；媒体zoom/reset/close无入口部分不虚记不适用或通过 | #12真实交互 / 原生键鼠（媒体缺口沿上一行） |
+| G7/reusable-real-component-contract | T/P、各公共consumer；#81/#103限定交付 | 每个拟晋级组件只补其原适用native/键盘/输入/AX结果；public编译和截图不等于原生体验 | #12成熟度验收 / 文档＋对应原生窗口 |
+| G7/component-documentation-and-runnable-preview | 原registry route/API、T/P、H状态story | 对变更或拟晋级入口对照原公开API及可运行预览；程序化AX与VO分开；不自动将旧“bridge missing”作为新实现任务 | #12成熟度验收 / 文档＋对应原生窗口 |
+| G7/business-combinations-are-real | T五pattern及Settings真实流程、S | 完整窄/大字form/filter/master/async/danger及Settings状态链的实际交互与阅读；Danger仅模拟失败不删文件，Async不冒充远端服务 | #12真实交互 / 原生键鼠；视觉交给#12整页视觉 |
+
+### 可直接排期的最小批次与边界
+
+执行领域按行唯一接收；主协调分配具体聊天/时间段，不由本矩阵争抢资源。#12视觉owner负责图像生成与判断，本父票领域只组织覆盖。
+
+1. **离屏视觉续批 → #12整页视觉**：先Settings Pending→Failed→Saved，再pattern-form错误/disabled、pattern-filter非空/空/clear、pattern-master滚动选行详情、pattern-async重试、pattern-danger确认/取消。入口均为各slug的 `/playground`；原 `settings_full_failure_retry_and_danger_cancel_recovery`、`pattern_async_gallery_keeps_nonstore_draft_through_themes_and_real_retry_reset` 和 `pattern_filter_retained_themes_keep_real_query_results_and_clear_action` 提供状态/action参照。当前Settings专用GPU fixture只采Ready，component-only state fixture不含pattern/example，需该owner准备最小场景增量，不能直接声称已有采图覆盖状态。复用VIEWPORTS/POSITIONS和旧有效B/S；四主题、1x2x，明确代表品牌/尺寸与比较理由，新增结果逐图审查。完成该批无需等待物理IME/VO/性能。
+2. **真实键鼠与TextCommand → #12真实交互**：上列页面加component-menu/dialog/select/combo-box及导航Search；实际Tab/Shift-Tab、方向、Escape、提交/失败/重试、剪贴板/选择的原生TextCommand，离屏焦点reveal、Split捕获和Reduced Motion。现有合成 `Event::TextCommand` 测试只作参照；不等于真实AppKit输入。需要明确原生/桌面窗口。
+3. **物理IME → #12物理输入**：在第2批输入入口执行中/日候选窗、marked提交/取消和祖先Escape优先；单独记录输入法、系统、程序、操作和结果。需要物理输入窗口，程序化AX/Key/TextCommit不能代签。
+4. **持续阅读/物理倍率 → #12整页视觉**：复用通过GPU页，补实际显示器倍率、注意力、边缘与焦点；不重生成无变化图。性能另由#12性能验收记录帧节奏/空闲CPU/持续滚动/适用120Hz硬件，截图或平均帧时间不能抵消未测。当前无获分配窗口，不执行。
+5. **保持后置/外部边界**：VoiceOver按已确认延期保留未验，恢复需原协调决定，不能由本表自动启动；AccessKit、#131–#135、跨repo迁移不恢复。媒体能力缺口交#55产品范围协调，#54外部消费不占本仓实施线；#57由图标独立owner处理。它们均不阻塞前四批中已经具备接口的独立交付。
+
+本轮实际执行仅原文/源码入口/收据核对和文档差量检查，无Cargo/GPU/native/桌面/CI；未判断新图、未晋级registry、未关闭父票。后续补验结果写回原Issue与原收据，本节同步具体行，不建立另一份动态台账。

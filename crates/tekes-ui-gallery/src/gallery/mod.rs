@@ -1362,32 +1362,42 @@ impl Gallery {
             key.key_code = 36;
             return self.handle_input(&Event::Key(key));
         }
+        let tab_selector = matches!(event, Event::TextCommand(command)
+            if matches!(command.as_str(), "insertTab:" | "insertBacktab:"));
+        let tab_key = matches!(event, Event::Key(key)
+            if key.kind == KeyEventKind::Down && key.key_code == 48);
+        if (tab_selector || tab_key)
+            && self
+                .text_input_state()
+                .is_some_and(|state| state.marked.is_some())
+        {
+            // Native interpretation already had its chance to handle this key.
+            // A remaining composition still owns Tab; do not let the fallback
+            // TextDemo command unmark it or move a Gallery focus scope.
+            return Change::NONE;
+        }
         if let Event::TextCommand(command) = event
-            && matches!(command.as_str(), "insertTab:" | "insertBacktab:")
+            && tab_selector
         {
             // AppKit sends Tab through NSTextInputClient as a command while an
             // editor owns key interpretation. Normalize it here so the same
             // Gallery scope transitions run whether the host emitted KeyDown
             // or only insertTab:/insertBacktab:. Composition remains owned by
             // the active text service.
-            if self
-                .text_input_state()
-                .is_none_or(|state| state.marked.is_none())
-            {
-                let reverse = command == "insertBacktab:";
-                return self.handle_input(&Event::Key(tekes_ui_platform_macos::KeyEvent {
-                    kind: KeyEventKind::Down,
-                    key_code: 48,
-                    characters: String::new(),
-                    characters_ignoring_modifiers: String::new(),
-                    modifiers: tekes_ui_platform_macos::Modifiers {
-                        shift: reverse,
-                        ..tekes_ui_platform_macos::Modifiers::NONE
-                    },
-                    is_repeat: false,
-                }));
-            }
+            let reverse = command == "insertBacktab:";
+            return self.handle_input(&Event::Key(tekes_ui_platform_macos::KeyEvent {
+                kind: KeyEventKind::Down,
+                key_code: 48,
+                characters: String::new(),
+                characters_ignoring_modifiers: String::new(),
+                modifiers: tekes_ui_platform_macos::Modifiers {
+                    shift: reverse,
+                    ..tekes_ui_platform_macos::Modifiers::NONE
+                },
+                is_repeat: false,
+            }));
         }
+
         if let Event::Focus(active) = event {
             self.workbench
                 .set_window_active_with_time(*active, self.motion_now);
@@ -2445,6 +2455,109 @@ mod tests {
                 && first_frame.max_y() <= visible.max_y() + 1.0,
             "reverse Tab returns without accumulated offset drift: {first_frame:?} vs {visible:?}"
         );
+    }
+
+    #[test]
+    fn tab_selectors_preserve_marked_text_before_resuming_the_same_focus_route() {
+        for in_story in [false, true] {
+            for reverse in [false, true] {
+                let mut gallery = Gallery::new();
+                if in_story {
+                    let i = workbench::entries()
+                        .iter()
+                        .position(|entry| entry.renderer() == "internal-text")
+                        .unwrap();
+                    assert!(
+                        gallery.open_route(&format!("{}/playground", workbench::entry(i).slug()))
+                    );
+                } else {
+                    gallery.apply(Command::Page(Page::TextEditing));
+                }
+                gallery.build_scene(&mut Scene::new());
+                gallery.leaf_focus_edge(Page::TextEditing, reverse).unwrap();
+                gallery.handle_input(&Event::TextPreedit {
+                    text: "ni".into(),
+                    clauses: Vec::new(),
+                    selection: 2..2,
+                    replacement: None,
+                });
+                let before = gallery.text_input_state().unwrap();
+                assert!(before.marked.is_some());
+                let focus = gallery.leaf_focused_frame(Page::TextEditing);
+                let offset = gallery.viewport.offset;
+                let selector = if reverse {
+                    "insertBacktab:"
+                } else {
+                    "insertTab:"
+                };
+                let modifiers = Modifiers {
+                    shift: reverse,
+                    ..Modifiers::NONE
+                };
+                // The native selector path is the regression. Raw Tab must
+                // observe the same composition boundary, not create another owner.
+                for event in [Event::TextCommand(selector.into()), key(48, modifiers)] {
+                    assert_eq!(gallery.handle_input(&event), Change::NONE);
+                    let after = gallery.text_input_state().unwrap();
+                    assert_eq!(after.text, before.text);
+                    assert_eq!(after.selection, before.selection);
+                    assert_eq!(after.marked, before.marked);
+                    assert_eq!(gallery.leaf_focused_frame(Page::TextEditing), focus);
+                    assert_eq!(gallery.viewport.offset, offset);
+                    assert!(gallery.navigation_focus.is_none());
+                }
+                gallery.handle_input(&Event::TextUnmark);
+                gallery.handle_input(&Event::TextCommand(selector.into()));
+                assert_ne!(gallery.leaf_focused_frame(Page::TextEditing), focus);
+                assert!(gallery.text_input_state().unwrap().marked.is_none());
+            }
+        }
+    }
+
+    #[test]
+    fn multiline_story_tab_selectors_navigate_without_inserting_a_tab() {
+        for reverse in [false, true] {
+            let mut gallery = Gallery::new();
+            let i = workbench::entries()
+                .iter()
+                .position(|entry| entry.renderer() == "area")
+                .unwrap();
+            assert!(gallery.open_route(&format!("{}/playground", workbench::entry(i).slug())));
+            gallery.set_view_size(720., 240.);
+            gallery.build_scene(&mut Scene::new());
+            gallery.navigation_search.focus_field();
+            // Enter through the same native selectors used by an editor.
+            for _ in 0..gallery.workbench.tab_stop_ids(i).len() + 3 {
+                if gallery.workbench.focused_control_id(i) == Some(1000) {
+                    break;
+                }
+                gallery.handle_input(&Event::TextCommand("insertTab:".into()));
+                gallery.build_scene(&mut Scene::new());
+            }
+            assert_eq!(gallery.workbench.focused_control_id(i), Some(1000));
+            let before = gallery.text_input_state().unwrap();
+            let selector = if reverse {
+                "insertBacktab:"
+            } else {
+                "insertTab:"
+            };
+            let return_selector = if reverse {
+                "insertTab:"
+            } else {
+                "insertBacktab:"
+            };
+            gallery.handle_input(&Event::TextCommand(selector.into()));
+            assert_ne!(gallery.workbench.focused_control_id(i), Some(1000));
+            gallery.handle_input(&Event::TextCommand(return_selector.into()));
+            assert_eq!(gallery.workbench.focused_control_id(i), Some(1000));
+            let after = gallery.text_input_state().unwrap();
+            assert_eq!(
+                after.text, before.text,
+                "Gallery TextArea uses navigation, not tab insertion"
+            );
+            assert_eq!(after.selection, before.selection);
+            assert_eq!(after.marked, before.marked);
+        }
     }
 
     #[test]

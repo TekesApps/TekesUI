@@ -196,6 +196,10 @@ struct Host {
     overlay_review: bool,
     review_directory: Option<std::path::PathBuf>,
     review_started: bool,
+    manual_review: bool,
+    manual_snapshot_due: bool,
+    manual_mutations_armed: bool,
+    manual_mutations_pending: bool,
     curve_mode: bool,
     curve_outside_inset: f32,
     pending_curve: Vec<(ComponentId, tekes_ui_module_runtime::ProcessContainer)>,
@@ -779,6 +783,44 @@ impl Host {
             self.renderer = Some(renderer);
             progress?;
         }
+        if self.manual_review && self.manual_mutations_pending {
+            let tree = self.tree.as_ref().unwrap();
+            let first = tree
+                .get(self.ids[0])
+                .unwrap()
+                .component::<tekes_ui_module_runtime::ProcessContainer>()
+                .unwrap();
+            if first.input_ready()
+                && tree.focused() == Some(self.ids[0])
+                && tekes_ui_module_runtime::content_text_input_state(tree)
+                    .is_some_and(|state| state.marked.is_some())
+            {
+                self.native_review_snapshot(w, "manual_before_update")?;
+                scroll_consumer::manual_reveal_tail(first)?;
+                let update = container_message(first, "reading-append")?;
+                eprintln!("PROCESS_MANUAL_UPDATE append={update}");
+                self.manual_mutations_pending = false;
+                self.manual_snapshot_due = true;
+                w.request_redraw();
+            }
+        }
+        if self.manual_review
+            && self.manual_snapshot_due
+            && self.logged_ready
+            && self.ids.iter().all(|id| {
+                self.tree
+                    .as_ref()
+                    .unwrap()
+                    .get(*id)
+                    .unwrap()
+                    .component::<tekes_ui_module_runtime::ProcessContainer>()
+                    .unwrap()
+                    .input_ready()
+            })
+        {
+            self.native_review_snapshot(w, "manual_frame")?;
+            self.manual_snapshot_due = false;
+        }
         self.start_native_review()?;
         if self.curve_mode && self.logged_ready && !self.b2.started {
             // Drive setup after its once-only input without replaying it while
@@ -1239,7 +1281,7 @@ impl Host {
         Ok(())
     }
     fn start_native_review(&mut self) -> Result<()> {
-        if self.review_started || !self.logged_ready {
+        if self.manual_review || self.review_started || !self.logged_ready {
             return Ok(());
         }
         if self.curve_mode {
@@ -1475,6 +1517,7 @@ impl Host {
             children.push(serde_json::json!({
                 "id": id.0, "session": c.session(), "status": format!("{:?}",c.status()),
                 "input_ready": c.input_ready(), "error":c.error(),
+                "mount": tree.semantic_mount(*id),
                 "reading": container_message(c, "reading-inspect")?,
                 "actions": container_message(c, "inspect")?
             }));
@@ -1490,7 +1533,9 @@ impl Host {
         let nodes = native::content_accessibility::content_nodes(tree);
         let snapshot = serde_json::json!({"phase":phase,"parent_pid":std::process::id(),
             "focused_container":tree.focused().map(|id|id.0),"window_active":w.is_active(),
-            "window_size":[w.size().width,w.size().height],"native_text":text,"children":children,
+            "window_size":[w.size().width,w.size().height],"placement":format!("{:?}",w.placement_report()),
+            "physical_ime":"operator_evidence_required","manual_mutations_pending":self.manual_mutations_pending,
+            "native_text":text,"children":children,
             "nodes":nodes.iter().map(|n|serde_json::json!({"component":n.key.component,"part":n.key.part,
                 "role":format!("{:?}",n.role),"label":n.label,"focused":n.focused,"value":n.value,
                 "frame":[n.frame.origin.x,n.frame.origin.y,n.frame.size.width,n.frame.size.height]})).collect::<Vec<_>>()});
@@ -1553,6 +1598,25 @@ impl Host {
         Ok(())
     }
     fn handle_event(&mut self, event: native::Event, w: &mut native::Window) -> Result<()> {
+        let manual_preedit =
+            self.manual_review && matches!(&event, native::Event::TextPreedit { .. });
+        if self.manual_review
+            && matches!(
+                &event,
+                native::Event::TextPreedit { .. }
+                    | native::Event::TextCommit { .. }
+                    | native::Event::TextUnmark
+                    | native::Event::Resized { .. }
+                    | native::Event::Focus(_)
+                    | native::Event::Mouse(_)
+                    | native::Event::Scroll(_)
+                    | native::Event::Key(_)
+                    | native::Event::TextKey(_)
+                    | native::Event::Accessibility { .. }
+            )
+        {
+            self.manual_snapshot_due = true;
+        }
         if self.curve_mode
             && matches!(
                 &event,
@@ -1642,9 +1706,30 @@ impl Host {
                 w.request_redraw();
             }
             native::Event::Command(native::CommandId(command))
-                if self.review_directory.is_some() && (48_001..=48_010).contains(&command) =>
+                if self.review_directory.is_some()
+                    && ((48_001..=48_010).contains(&command)
+                        || self.manual_review && (48_011..=48_013).contains(&command)) =>
             {
-                if command == 48_002 {
+                if self.manual_review && command == 48_013 {
+                    self.manual_mutations_armed = true;
+                    eprintln!(
+                        "PROCESS_MANUAL_ARMED reveal+append on next real Preedit; no injected text"
+                    );
+                } else if self.manual_review && command == 48_011 {
+                    self.native_review_snapshot(w, "manual_checkpoint")?;
+                } else if self.manual_review && command == 48_012 {
+                    let c = self
+                        .tree
+                        .as_ref()
+                        .unwrap()
+                        .get(self.ids[0])
+                        .unwrap()
+                        .component::<tekes_ui_module_runtime::ProcessContainer>()
+                        .unwrap();
+                    scroll_consumer::manual_reveal_tail(c)?;
+                    self.manual_snapshot_due = true;
+                    w.request_redraw();
+                } else if command == 48_002 {
                     let tree = self.tree.as_ref().context("native mixed tree")?;
                     let c = tree
                         .get(self.ids[0])
@@ -1652,6 +1737,7 @@ impl Host {
                         .component::<tekes_ui_module_runtime::ProcessContainer>()
                         .unwrap();
                     let _ = container_message(c, "reading-append")?;
+                    self.manual_snapshot_due |= self.manual_review;
                     w.request_redraw();
                 } else {
                     let phase = match command {
@@ -1670,6 +1756,11 @@ impl Host {
                 }
             }
             native::Event::CloseRequested => {
+                if self.manual_review && self.manual_mutations_pending {
+                    eprintln!(
+                        "PROCESS_MANUAL_INCOMPLETE real marked input was not admitted; no mutation replay"
+                    );
+                }
                 if self.curve_mode {
                     ensure!(
                         self.b2.pixels_verified
@@ -1685,7 +1776,7 @@ impl Host {
                     );
                     eprintln!("PROCESS_NATIVE_B2_SELFTEST_PASSED");
                 }
-                if self.review_started && self.review_directory.is_some() {
+                if (self.review_started || self.manual_review) && self.review_directory.is_some() {
                     self.native_review_snapshot(w, "before_close")?;
                 }
                 w.set_animating(false);
@@ -1862,6 +1953,10 @@ impl Host {
                         self.tree.as_ref().and_then(ContentHost::focused)
                     );
                     self.publish(w);
+                    if manual_preedit && self.manual_mutations_armed {
+                        self.manual_mutations_armed = false;
+                        self.manual_mutations_pending = true;
+                    }
                     w.request_redraw();
                 }
             }
@@ -1935,8 +2030,19 @@ fn run_mode(
     module: &'static str,
     capabilities: ViewCapabilities,
 ) -> Result<()> {
-    let review_directory =
-        std::env::var_os("TEKESUI_PROCESS_NATIVE_SELFTEST_EVIDENCE").map(std::path::PathBuf::from);
+    let manual_directory = std::env::var_os("TEKESUI_PROCESS_NATIVE_MANUAL_EVIDENCE");
+    let selftest_directory = std::env::var_os("TEKESUI_PROCESS_NATIVE_SELFTEST_EVIDENCE");
+    ensure!(
+        manual_directory.is_none()
+            || (selftest_directory.is_none()
+                && std::env::var_os("TEKESUI_PROCESS_NATIVE_B2_SELFTEST").is_none()
+                && std::env::var_os("TEKESUI_PROCESS_NATIVE_READING_SELFTEST").is_none()),
+        "manual evidence cannot be combined with programmatic selftests"
+    );
+    let manual_review = manual_directory.is_some();
+    let review_directory = manual_directory
+        .or(selftest_directory)
+        .map(std::path::PathBuf::from);
     let curve_mode = std::env::var_os("TEKESUI_PROCESS_NATIVE_B2_SELFTEST").is_some();
     let curve_outside_inset = if curve_mode {
         proposal::metric("spacing", "space-loose").context("B2 outside inset token missing")?
@@ -1968,10 +2074,15 @@ fn run_mode(
         native::MenuBar {
             menus: vec![native::Menu::new(
                 "Acceptance",
-                (48_001..=48_010)
+                (48_001..=if manual_review { 48_013 } else { 48_010 })
                     .map(|id| {
                         native::MenuItem::Command(native::MenuCommand::new(
-                            format!("Acceptance {id}"),
+                            match id {
+                                48_011 => "Manual checkpoint".to_owned(),
+                                48_012 => "Manual reveal original tail".to_owned(),
+                                48_013 => "Arm reveal + append on next real preedit".to_owned(),
+                                _ => format!("Acceptance {id}"),
+                            },
                             native::CommandId(id),
                         ))
                     })
@@ -2013,6 +2124,10 @@ fn run_mode(
             overlay_review,
             review_directory,
             review_started: false,
+            manual_review,
+            manual_snapshot_due: manual_review,
+            manual_mutations_armed: false,
+            manual_mutations_pending: false,
             curve_mode,
             curve_outside_inset,
             pending_curve: Vec::new(),
