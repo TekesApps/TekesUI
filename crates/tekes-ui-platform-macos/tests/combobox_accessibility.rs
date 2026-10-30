@@ -94,7 +94,7 @@ fn original_combo_owner_publishes_and_routes_its_single_editable_text_state() {
         host.event(&ContentEvent::Preedit {
             text: "漢".into(),
             selection: 0..1,
-            clauses: vec![0..1],
+            clauses: std::iter::once(0..1).collect(),
             replacement: Some(1..3),
         })
         .changed
