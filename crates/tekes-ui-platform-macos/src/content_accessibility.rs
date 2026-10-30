@@ -68,6 +68,22 @@ fn enrich(
     semantics: &ContentSemantics,
     node: &mut AccessibilityNode,
 ) {
+    if semantics.role == ContentRole::ProgressIndicator {
+        let range = host
+            .semantic_value_range(id, part)
+            .and_then(|range| AccessibilityRange::new(*range.start(), *range.end()));
+        node.role = AccessibilityRole::ProgressIndicator(range);
+        node.read_only = true;
+        // Preserve the Content's display string. Native numeric value is the
+        // existing percent representation without its suffix; the publication
+        // boundary validates it against the original supplied numeric domain.
+        node.value = range.and_then(|_| {
+            semantics
+                .value
+                .as_deref()
+                .map(|value| value.strip_suffix('%').unwrap_or(value).to_owned())
+        });
+    }
     if part.is_none() {
         node.can_show_menu = host.can_show_context_menu(id);
         add_slider_range(host, id, semantics, node);
@@ -221,6 +237,7 @@ fn project(
         parent,
         role: match semantics.role {
             Role::Group => NativeRole::Group,
+            Role::ProgressIndicator => NativeRole::ProgressIndicator(None),
             Role::Text => NativeRole::StaticText,
             Role::Image => NativeRole::Image,
             Role::Button => NativeRole::Button,

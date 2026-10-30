@@ -979,6 +979,164 @@ pub struct DisclosureView {
     motion_now: Duration,
 }
 impl DisclosureView {
+    /// Request-only delivery uses the original ButtonRuntime, without changing
+    /// the confirmed model. `changed` reports an activation intent, not a toggle.
+    pub fn request_pointer_down(&mut self, p: Point, model: &Disclosure) -> bool {
+        self.sync_model(model);
+        self.runtime.pointer_down(p)
+    }
+    pub fn request_pointer_up(&mut self, p: Point, model: &Disclosure) -> bool {
+        self.sync_model(model);
+        self.runtime.pointer_up(p)
+    }
+    pub fn request_key_event(
+        &mut self,
+        k: ControlKey,
+        down: bool,
+        model: &Disclosure,
+    ) -> ComponentEvent {
+        self.sync_model(model);
+        let consumed = matches!(k, ControlKey::Enter | ControlKey::Space)
+            && self.runtime.window_active
+            && self.runtime.focused
+            && !model.disabled;
+        let changed = self.runtime.key(k, down);
+        ComponentEvent { consumed, changed }
+    }
+    /// Retire a controlled gesture using the original runtime and suspend the
+    /// original reveal until its next layout; no second motion state is created.
+    pub fn request_cancel(&mut self) -> bool {
+        self.reveal_suspended = true;
+        self.runtime.cancel()
+    }
+    pub fn request_activate(&mut self, model: &Disclosure) -> bool {
+        self.sync_model(model);
+        self.runtime.window_active && !model.disabled
+    }
+    pub fn set_surface(
+        &mut self,
+        surface: &str,
+    ) -> Result<(), tekes_ui_tokens::surface_palette::SurfaceError> {
+        let surface = tekes_ui_tokens::surface_palette::canonical_surface(surface)?;
+        self.runtime.button.set_surface(surface);
+        Ok(())
+    }
+    pub(crate) fn focus_decoration_above_siblings(&self, model: &Disclosure) -> bool {
+        // Disclosure's original row always emits an outsetting ring, including
+        // its default Minimum geometry. Do not apply compact Button Exact-only.
+        self.runtime.window_active
+            && self.runtime.button.state.focused
+            && self.runtime.button.state.focus_visible
+            && !model.disabled
+            && !self.runtime.button.state.loading
+    }
+    pub(crate) fn content_inks(
+        &self,
+        palette: Palette,
+        surface: &str,
+    ) -> (tekes_ui_tokens::Rgba, tekes_ui_tokens::Rgba) {
+        let colors = self
+            .runtime
+            .button
+            .surface_colors(palette, ButtonVariant::Quiet, surface);
+        (colors.text, colors.icon)
+    }
+    pub(crate) fn content_insets(text: &mut impl ButtonTextRenderer) -> (f32, f32, f32) {
+        let role = proposal::TextRole::UiBody;
+        let scale = text.resolved_font_size(role) / role.style().size;
+        let scale = if scale.is_finite() && scale > 0. {
+            scale
+        } else {
+            1.
+        };
+        (
+            proposal::metric("spacing", "space-relaxed").expect("Disclosure inset") * scale,
+            proposal::metric("size", "size-icon-standard").expect("Disclosure icon") * scale,
+            proposal::metric("size", "size-action-button").expect("Disclosure row") * scale,
+        )
+    }
+    /// Original row chrome/runtime with a passive Content slot. Direction is
+    /// local to this component; it is not a global text/layout RTL policy.
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn render_content(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        model: &Disclosure,
+        size: Size,
+        frame: Rect,
+        clip: Rect,
+        palette: Palette,
+        rtl: bool,
+    ) -> ButtonComponentLayout {
+        self.sync_model(model);
+        let (inset, side, _) = Self::content_insets(text);
+        self.runtime.button.state.focused = self.runtime.focused && self.runtime.window_active;
+        let l = self.runtime.button.render_with_radius(
+            scene,
+            text,
+            "",
+            frame,
+            Some(clip),
+            palette,
+            ButtonVariant::Quiet,
+            ButtonSize::Body,
+            proposal::TextRole::UiBody,
+            ButtonTextAlign::Leading,
+            Some(proposal::metric("radius", "radius-row").expect("Disclosure radius token")),
+        );
+        let width = (frame.size.width - inset * 2.).max(0.);
+        let side = side.min(width).min(frame.size.height);
+        let slot = (side + inset).min(width);
+        let icon_x = if rtl {
+            frame.max_x() - inset - side
+        } else {
+            frame.min_x() + inset
+        };
+        self.icon_frame = Rect::new(icon_x, frame.center().y - side * 0.5, side, side);
+        let title_x = frame.min_x() + inset + if rtl { 0. } else { slot };
+        self.runtime.layout = ButtonComponentLayout {
+            frame: l.frame,
+            visible: l.visible,
+            content: Rect::new(
+                title_x,
+                frame.center().y - size.height.min(frame.size.height) * 0.5,
+                (width - slot).max(0.),
+                size.height.min(frame.size.height),
+            ),
+        };
+        if self.runtime.layout.visible.is_none() {
+            self.runtime.cancel();
+        }
+        self.runtime.layout
+    }
+    pub(crate) fn render_content_indicator(
+        &mut self,
+        scene: &mut Scene,
+        renderer: &mut impl IconRenderer,
+        model: &Disclosure,
+        rtl: bool,
+        clip: Rect,
+        colors: (Palette, tekes_ui_tokens::Rgba),
+    ) {
+        self.icon.render_tinted(
+            scene,
+            renderer,
+            if model.open {
+                "tekes-expand"
+            } else if rtl {
+                "tekes-back"
+            } else {
+                "tekes-forward"
+            },
+            self.icon_frame,
+            self.icon_frame.size.width,
+            Some(clip),
+            colors.0,
+            colors.1,
+        );
+    }
+
     fn sync_model(&mut self, model: &Disclosure) {
         self.runtime.button.state.disabled = model.disabled;
         if model.disabled {
@@ -1028,9 +1186,9 @@ impl DisclosureView {
             scene,
             renderer,
             if model.open {
-                "chevron-down"
+                "tekes-expand"
             } else {
-                "chevron-right"
+                "tekes-forward"
             },
             self.icon_frame,
             icon_size,
@@ -3304,7 +3462,7 @@ mod tests {
                 Palette::from(Theme::LIGHT),
                 16.,
             );
-            assert_eq!(icon.name, "chevron-right");
+            assert_eq!(icon.name, "tekes-forward");
             assert_eq!(icon.frame.center(), closed_icon_frame.center());
             assert_eq!(icon.frame.center().y, closed.frame.center().y);
             assert_eq!(icon.tint, Palette::from(Theme::LIGHT).color("primary-text"));
@@ -3329,7 +3487,7 @@ mod tests {
                 Palette::from(Theme::LIGHT),
                 16.,
             );
-            assert_eq!(icon.name, "chevron-down");
+            assert_eq!(icon.name, "tekes-expand");
             assert_eq!(opened.content.min_x(), closed.content.min_x());
             assert_eq!(opened_icon_frame, closed_icon_frame);
             assert_eq!(icon.frame.center(), opened_icon_frame.center());

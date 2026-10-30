@@ -144,6 +144,7 @@ fn semantics(s: &wire::Semantics) -> ContentSemantics {
     ContentSemantics {
         role: match s.role {
             W::Group => R::Group,
+            W::ProgressIndicator => R::ProgressIndicator,
             W::Text => R::Text,
             W::Image => R::Image,
             W::Button => R::Button,
@@ -430,6 +431,22 @@ mod tests {
             text: None,
         }
     }
+    #[test]
+    fn progress_receiver_retains_role_and_explicit_optional_domain() {
+        let mut progress = node(1, None);
+        progress.semantics.role = wire::SemanticRole::ProgressIndicator;
+        for (value, range) in [("45%", Some([0., 100.])), ("进度未知", None)] {
+            progress.semantics.value = Some(value.into());
+            progress.value_range = range;
+            validate(&[progress.clone()]).unwrap();
+            let projected = semantics(&progress.semantics);
+            assert_eq!(projected.role, ContentRole::ProgressIndicator);
+            assert_eq!(projected.value.as_deref(), Some(value));
+        }
+        progress.value_range = Some([0., f64::INFINITY]);
+        assert!(validate(&[progress]).is_err());
+    }
+
     #[test]
     fn semantic_hierarchy_rejects_missing_cyclic_or_duplicate_identity() {
         assert!(validate(&[node(1, None), node(2, Some(1))]).is_ok());

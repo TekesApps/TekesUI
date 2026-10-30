@@ -5,7 +5,7 @@ use crate::{
     feedback_view::{ProgressView, ViewLayout},
 };
 
-/// A visible, noninteractive Group. The parent must allocate a finite bar
+/// A visible, noninteractive progress indicator. The parent must allocate a finite bar
 /// extent; label and host loading/error/success text remain ordinary siblings.
 /// Unknown progress is explicit and never reports the retained scalar as 0%.
 #[derive(Clone, Debug)]
@@ -53,7 +53,7 @@ impl Component for ProgressContent {
             .render(scene, self.model, frame, Some(clip), theme.palette);
     }
     fn semantics(&self) -> ContentSemantics {
-        let mut semantics = ContentSemantics::new(ContentRole::Group, &self.name);
+        let mut semantics = ContentSemantics::new(ContentRole::ProgressIndicator, &self.name);
         semantics.value = Some(if self.model.indeterminate {
             "进度未知".into()
         } else {
@@ -62,5 +62,47 @@ impl Component for ProgressContent {
         semantics.description = self.description.clone();
         semantics
     }
-    // Default routing, focus, text services and value_range remain passive.
+    fn value_range(&self) -> Option<std::ops::RangeInclusive<f64>> {
+        (!self.model.indeterminate).then_some(0.0..=100.0)
+    }
+    // Numeric metadata is read-only. Routing, focus and text services stay passive.
+}
+
+#[cfg(test)]
+mod accessibility_tests {
+    use super::*;
+
+    #[test]
+    fn progress_metadata_is_passive_across_known_unknown_known() {
+        let mut progress = ProgressContent::new("Transfer progress", 0.45);
+        progress.description = Some("Download".into());
+        for unknown in [false, true, false] {
+            progress.model.indeterminate = unknown;
+            let semantics = progress.semantics();
+            assert_eq!(semantics.role, ContentRole::ProgressIndicator);
+            assert_eq!(semantics.name, "Transfer progress");
+            assert_eq!(semantics.description.as_deref(), Some("Download"));
+            assert_eq!(
+                semantics.value.as_deref(),
+                Some(if unknown { "进度未知" } else { "45%" })
+            );
+            assert_eq!(progress.value_range(), (!unknown).then_some(0.0..=100.0));
+            assert!(!progress.focusable());
+            assert!(!progress.interactive());
+            assert!(!progress.requires_text_services());
+            assert!(progress.text_surface().is_none());
+            for action in [
+                AccessibilityAction::Press,
+                AccessibilityAction::Focus,
+                AccessibilityAction::SetValue("50".into()),
+                AccessibilityAction::Increment,
+                AccessibilityAction::Decrement,
+            ] {
+                assert_eq!(
+                    progress.accessibility_action(None, &action),
+                    ContentResponse::default()
+                );
+            }
+        }
+    }
 }

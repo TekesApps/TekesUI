@@ -47,7 +47,9 @@ fn trigger(tree: &ContentHost) -> Action {
 fn selection(record: &ContentActionRecord) -> &MenuSelection {
     match record.payload.as_ref().unwrap() {
         ContentActionPayload::MenuSelection(value) => value,
-        ContentActionPayload::ToolbarCommand(_) => panic!("expected original Menu selection"),
+        ContentActionPayload::ToolbarCommand(_) | ContentActionPayload::DisclosureExpansion(_) => {
+            panic!("expected original Menu selection")
+        }
     }
 }
 fn menu(tree: &mut ContentHost) -> &mut MenuContent {

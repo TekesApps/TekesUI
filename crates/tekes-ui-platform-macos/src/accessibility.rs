@@ -9,7 +9,7 @@ pub struct AccessibilityKey {
     pub part: Option<usize>,
 }
 
-/// Finite slider domain. Stored in the role-specific descriptor so existing
+/// Finite numeric domain. Stored in the role-specific descriptor so existing
 /// AccessibilityNode struct literals do not gain a required field.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct AccessibilityRange {
@@ -43,6 +43,8 @@ pub enum AccessibilitySortDirection {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum AccessibilityRole {
     Slider(AccessibilityRange),
+    /// Passive progress; None is indeterminate and exposes no numeric value/domain.
+    ProgressIndicator(Option<AccessibilityRange>),
     /// The real independently adjustable split divider.
     Splitter(AccessibilityRange),
     Group,
@@ -369,8 +371,12 @@ pub(crate) fn validate_accessibility_nodes_with_geometry(
             || !(frame.origin.x + frame.size.width).is_finite()
             || !(frame.origin.y + frame.size.height).is_finite()
             || parents.insert(node.key, node.parent).is_some()
-            || matches!(node.role, AccessibilityRole::Slider(domain) | AccessibilityRole::Splitter(domain)
+            || matches!(node.role, AccessibilityRole::Slider(domain) | AccessibilityRole::Splitter(domain) | AccessibilityRole::ProgressIndicator(Some(domain))
                 if node.value.as_ref().and_then(|v|v.parse::<f64>().ok()).is_none_or(|v|!domain.contains(v)))
+            || matches!(node.role, AccessibilityRole::ProgressIndicator(_))
+                && (!node.read_only || node.focused)
+            || matches!(node.role, AccessibilityRole::ProgressIndicator(None))
+                && node.value.is_some()
             || node.text_selection.as_ref().is_some_and(|range| {
                 !matches!(
                     node.role,
@@ -469,6 +475,9 @@ pub(crate) mod native {
                         .unwrap_or(AccessibilityRole::Group)
                     {
                         AccessibilityRole::Slider(_) => objc2_app_kit::NSAccessibilitySliderRole,
+                        AccessibilityRole::ProgressIndicator(_) => {
+                            objc2_app_kit::NSAccessibilityProgressIndicatorRole
+                        }
                         AccessibilityRole::Splitter(_) => {
                             objc2_app_kit::NSAccessibilitySplitterRole
                         }
@@ -541,40 +550,61 @@ pub(crate) mod native {
             }
 
             #[unsafe(method_id(accessibilityValue))]
-            fn accessibilityValue(&self) -> Retained<objc2::runtime::AnyObject> {
-                match self.node() {
-                    Some(node)
-                        if matches!(
-                            node.role,
-                            AccessibilityRole::Switch
-                                | AccessibilityRole::Checkbox
-                                | AccessibilityRole::RadioButton
-                        ) =>
-                    {
-                        objc2_foundation::NSNumber::new_i32(
-                            if node.role == AccessibilityRole::Checkbox
-                                && node.value.as_deref() == Some("mixed")
-                            {
-                                -1
-                            } else {
-                                i32::from(node.selected)
-                            },
-                        )
-                        .into()
-                    }
-                    Some(node)
-                        if matches!(
-                            node.role,
-                            AccessibilityRole::Slider(_) | AccessibilityRole::Splitter(_)
-                        ) =>
-                    {
-                        objc2_foundation::NSNumber::new_f64(
-                            node.value.and_then(|v| v.parse::<f64>().ok()).unwrap_or(0.),
-                        )
-                        .into()
-                    }
-                    Some(node) => NSString::from_str(&node.value.unwrap_or_default()).into(),
-                    None => NSString::from_str("").into(),
+            fn accessibilityValue(&self) -> Option<Retained<objc2::runtime::AnyObject>> {
+                let node = self.node();
+                if node.as_ref().is_some_and(|node| {
+                    matches!(node.role, AccessibilityRole::ProgressIndicator(None))
+                }) {
+                    None
+                } else {
+                    Some(match node {
+                        Some(node)
+                            if matches!(
+                                node.role,
+                                AccessibilityRole::Switch
+                                    | AccessibilityRole::Checkbox
+                                    | AccessibilityRole::RadioButton
+                            ) =>
+                        {
+                            objc2_foundation::NSNumber::new_i32(
+                                if node.role == AccessibilityRole::Checkbox
+                                    && node.value.as_deref() == Some("mixed")
+                                {
+                                    -1
+                                } else {
+                                    i32::from(node.selected)
+                                },
+                            )
+                            .into()
+                        }
+                        Some(node)
+                            if matches!(
+                                node.role,
+                                AccessibilityRole::Slider(_) | AccessibilityRole::Splitter(_)
+                            ) =>
+                        {
+                            objc2_foundation::NSNumber::new_f64(
+                                node.value.and_then(|v| v.parse::<f64>().ok()).unwrap_or(0.),
+                            )
+                            .into()
+                        }
+                        Some(node)
+                            if matches!(
+                                node.role,
+                                AccessibilityRole::ProgressIndicator(Some(_))
+                            ) =>
+                        {
+                            objc2_foundation::NSNumber::new_f64(
+                                node.value
+                                    .expect("validated known progress value")
+                                    .parse::<f64>()
+                                    .expect("validated numeric progress"),
+                            )
+                            .into()
+                        }
+                        Some(node) => NSString::from_str(&node.value.unwrap_or_default()).into(),
+                        None => NSString::from_str("").into(),
+                    })
                 }
             }
 
@@ -1059,18 +1089,22 @@ pub(crate) mod native {
             #[unsafe(method_id(accessibilityMinValue))]
             fn accessibilityMinValue(&self) -> Option<Retained<objc2_foundation::NSNumber>> {
                 match self.node().map(|n| n.role) {
-                    Some(AccessibilityRole::Slider(range) | AccessibilityRole::Splitter(range)) => {
-                        Some(objc2_foundation::NSNumber::new_f64(range.minimum()))
-                    }
+                    Some(
+                        AccessibilityRole::Slider(range)
+                        | AccessibilityRole::Splitter(range)
+                        | AccessibilityRole::ProgressIndicator(Some(range)),
+                    ) => Some(objc2_foundation::NSNumber::new_f64(range.minimum())),
                     _ => None,
                 }
             }
             #[unsafe(method_id(accessibilityMaxValue))]
             fn accessibilityMaxValue(&self) -> Option<Retained<objc2_foundation::NSNumber>> {
                 match self.node().map(|n| n.role) {
-                    Some(AccessibilityRole::Slider(range) | AccessibilityRole::Splitter(range)) => {
-                        Some(objc2_foundation::NSNumber::new_f64(range.maximum()))
-                    }
+                    Some(
+                        AccessibilityRole::Slider(range)
+                        | AccessibilityRole::Splitter(range)
+                        | AccessibilityRole::ProgressIndicator(Some(range)),
+                    ) => Some(objc2_foundation::NSNumber::new_f64(range.maximum())),
                     _ => None,
                 }
             }
@@ -1619,6 +1653,39 @@ mod tests {
             splitter.value = Some(value.into());
             assert!(!validate_accessibility_nodes(&[splitter.clone()]));
         }
+    }
+
+    #[test]
+    fn progress_snapshots_distinguish_readonly_known_and_indeterminate_values() {
+        let mut n = node(1, None, None);
+        n.role = AccessibilityRole::ProgressIndicator(AccessibilityRange::new(0., 100.));
+        n.read_only = true;
+        for value in ["0", "45", "100"] {
+            n.value = Some(value.into());
+            assert!(validate_accessibility_nodes(&[n.clone()]));
+        }
+        for value in [
+            None,
+            Some("NaN"),
+            Some("inf"),
+            Some("-1"),
+            Some("101"),
+            Some("45%"),
+        ] {
+            n.value = value.map(str::to_owned);
+            assert!(!validate_accessibility_nodes(&[n.clone()]));
+        }
+        n.value = Some("45".into());
+        n.read_only = false;
+        assert!(!validate_accessibility_nodes(&[n.clone()]));
+        n.read_only = true;
+        n.focused = true;
+        assert!(!validate_accessibility_nodes(&[n.clone()]));
+        n.focused = false;
+        n.role = AccessibilityRole::ProgressIndicator(None);
+        assert!(!validate_accessibility_nodes(&[n.clone()]));
+        n.value = None;
+        assert!(validate_accessibility_nodes(&[n]));
     }
 
     #[test]

@@ -64,9 +64,18 @@ impl IconRenderer for GalleryIconRenderer<'_, '_> {
             }),
             GalleryIconArtwork::Legacy(None) => {}
             GalleryIconArtwork::Native => {
-                if let Some((icon, _)) = Icon::ALL.iter().find(|(_, name)| *name == canonical_name)
-                {
-                    draw_icon_tinted(self.ctx, scene, frame, *icon, tint);
+                // The SDK uses canonical SVG names. This native Gallery
+                // backend keeps its existing chevron artwork for those inputs.
+                let icon = match canonical_name {
+                    "tekes-forward" => Some(Icon::Chevron),
+                    "tekes-expand" => Some(Icon::Down),
+                    _ => Icon::ALL
+                        .iter()
+                        .find(|(_, name)| *name == canonical_name)
+                        .map(|(icon, _)| *icon),
+                };
+                if let Some(icon) = icon {
+                    draw_icon_tinted(self.ctx, scene, frame, icon, tint);
                 }
             }
         }

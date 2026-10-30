@@ -12,6 +12,10 @@ mod native_key;
 #[path = "support/menu_review.rs"]
 mod menu_review;
 
+#[cfg(target_os = "macos")]
+#[path = "support/disclosure_review.rs"]
+mod disclosure_review;
+
 #[cfg(not(target_os = "macos"))]
 fn main() {
     eprintln!("the native composition consumer requires macOS");
@@ -227,6 +231,9 @@ fn main() {
     }
     struct Host {
         menu_review: Option<menu_review::Review>,
+        disclosure_review: Option<disclosure_review::Review>,
+        #[cfg(feature = "svg-icons")]
+        disclosure_icons: tekes_ui_controls::composition::SvgIconCache,
         selftest_script: Option<Vec<(u64, tekes_ui_platform_macos::selftest::Action)>>,
         tree: ContentHost,
         nested_scroll_events: usize,
@@ -574,7 +581,7 @@ fn main() {
                         let (selection, toolbar_command) = match record.payload.as_ref() {
                             Some(tekes_ui_controls::composition::ContentActionPayload::MenuSelection(value)) => (Some(serde_json::json!({"index":value.index(),"label":value.label(),"model_revision":value.model_revision(),"value_path":value.value_path()})), None),
                             Some(tekes_ui_controls::composition::ContentActionPayload::ToolbarCommand(command)) => (None, Some(*command)),
-                            None => (None, None),
+                            Some(tekes_ui_controls::composition::ContentActionPayload::DisclosureExpansion(_)) | None => (None, None),
                         };
                         serde_json::json!({"target":record.action.target.0,"source":format!("{:?}",record.action.source),"kind":format!("{:?}",record.action.kind),"mount":record.mount,"selection":selection,"toolbar_command":toolbar_command})
                     }).collect::<Vec<_>>());
@@ -939,6 +946,24 @@ fn main() {
             self.text.semantic_layouts.clear();
             self.text.atlas.begin_frame();
             self.scene.clear();
+            #[cfg(feature = "svg-icons")]
+            let result = if self.mode == "disclosure" {
+                use tekes_ui_controls::composition::WithIconRenderer;
+                let mut icons = self
+                    .disclosure_icons
+                    .renderer(self.gpu.as_mut().unwrap(), self.text.scale);
+                self.tree.render(
+                    &mut self.scene,
+                    &mut WithIconRenderer::new(&mut self.text, &mut icons),
+                    frame,
+                    clip,
+                    self.palette,
+                )
+            } else {
+                self.tree
+                    .render(&mut self.scene, &mut self.text, frame, clip, self.palette)
+            };
+            #[cfg(not(feature = "svg-icons"))]
             let result =
                 self.tree
                     .render(&mut self.scene, &mut self.text, frame, clip, self.palette);
@@ -1066,7 +1091,7 @@ fn main() {
             }
             if matches!(
                 self.mode.as_str(),
-                "menu-tree" | "toolbar-groups" | "toolbar-split"
+                "menu-tree" | "toolbar-groups" | "toolbar-split" | "disclosure"
             ) {
                 self.menu_actions.extend(self.tree.drain_action_records());
             }
@@ -1386,6 +1411,21 @@ fn main() {
                 self.publish(w, false);
                 return;
             }
+            if let Some(review) = &mut self.disclosure_review
+                && let Event::Command(CommandId(command)) = &e
+                && (38_001..=38_015).contains(command)
+            {
+                let script = review.advance(
+                    *command,
+                    &mut self.tree,
+                    &self.menu_actions,
+                    w.is_active(),
+                    w.size().width,
+                );
+                self.redraw(w);
+                tekes_ui_platform_macos::selftest::run_script(script);
+                return;
+            }
             if let Some(review) = &mut self.menu_review {
                 if matches!(&e, Event::Scroll(_)) {
                     review.scroll_events += 1;
@@ -1699,6 +1739,12 @@ fn main() {
                     w.request_redraw();
                 }
                 Event::Created => {
+                    if self.mode == "disclosure" {
+                        assert!(
+                            w.screen_info().is_some_and(|screen| !screen.builtin),
+                            "Disclosure review requires an external display"
+                        );
+                    }
                     if self.mode == "semantic-ellipsis" {
                         assert!(
                             w.screen_info().is_some_and(|screen| !screen.builtin),
@@ -2306,12 +2352,17 @@ fn main() {
                 | "layout"
                 | "item"
                 | "menu-tree"
+                | "disclosure"
                 | "toolbar"
                 | "toolbar-groups"
                 | "toolbar-split"
                 | "content-help"
         ),
-        "usage: native [list|dialog|slider|command|reading|nested-reading|plain|number|field|label|layout|item|menu-tree|toolbar|toolbar-groups|toolbar-split|content-help]"
+        "usage: native [list|dialog|slider|command|reading|nested-reading|plain|number|field|label|layout|item|menu-tree|disclosure|toolbar|toolbar-groups|toolbar-split|content-help]"
+    );
+    assert!(
+        mode != "disclosure" || cfg!(feature = "svg-icons"),
+        "Disclosure native mode requires --features svg-icons"
     );
     let mut reading = None;
     let mut nested_reading = None;
@@ -2333,6 +2384,12 @@ fn main() {
         (
             tekes_ui_composition_consumer::toolbar_groups::build().unwrap(),
             tekes_ui_composition_consumer::toolbar_groups::SAVE,
+            None,
+        )
+    } else if mode == "disclosure" {
+        (
+            tekes_ui_composition_consumer::disclosure_review::build().unwrap(),
+            tekes_ui_composition_consumer::disclosure_review::TRIGGER,
             None,
         )
     } else if mode == "menu-tree" {
@@ -2461,7 +2518,7 @@ fn main() {
         atlas: GlyphAtlas::default(),
         started: std::time::Instant::now(),
         frame_requested: false,
-        reduced_motion: false,
+        reduced_motion: std::env::var("TEKES_COMPOSITION_REDUCED_MOTION").as_deref() == Ok("1"),
         window_active: true,
         caret_on: true,
         services_enabled: mode != "layout",
@@ -2478,7 +2535,20 @@ fn main() {
     });
     let menu_review = mode == "menu-tree"
         && std::env::var("TEKES_COMPOSITION_SELFTEST").as_deref() == Ok("menu-tree");
+    let disclosure_review = mode == "disclosure"
+        && std::env::var("TEKES_COMPOSITION_SELFTEST").as_deref() == Ok("disclosure");
     let mut host = Host {
+        disclosure_review: disclosure_review.then(|| {
+            disclosure_review::Review::new(
+                std::path::PathBuf::from(
+                    std::env::var_os("TEKESUI_COMPONENT_EVIDENCE")
+                        .expect("Disclosure evidence directory"),
+                ),
+                true,
+            )
+        }),
+        #[cfg(feature = "svg-icons")]
+        disclosure_icons: Default::default(),
         menu_review: menu_review.then(menu_review::Review::default),
         selftest_script: None,
         tree,
@@ -2513,6 +2583,12 @@ fn main() {
         name: Some("TekesUI Composition Consumer".into()),
         ..Default::default()
     });
+    if disclosure_review {
+        host.selftest_script = Some(vec![(
+            300,
+            tekes_ui_platform_macos::selftest::Action::MenuCommand(38_001),
+        )]);
+    }
     if menu_review {
         host.selftest_script = Some(vec![(
             300,
@@ -2812,7 +2888,7 @@ fn main() {
                 width: if mode == "nested-reading" { 320. } else { 360. },
                 height: 480.,
             }),
-            placement: if mode == "semantic-ellipsis" {
+            placement: if matches!(mode.as_str(), "semantic-ellipsis" | "disclosure") {
                 tekes_ui_platform_macos::WindowPlacement::Screen(
                     tekes_ui_platform_macos::ScreenChoice::External,
                 )
@@ -2828,7 +2904,21 @@ fn main() {
             },
             ..Default::default()
         },
-        if menu_review {
+        if disclosure_review {
+            MenuBar {
+                menus: vec![Menu::new(
+                    "Disclosure acceptance",
+                    (38_001..=38_015)
+                        .map(|phase| {
+                            MenuItem::Command(MenuCommand::new(
+                                format!("Verify phase {phase}"),
+                                CommandId(phase),
+                            ))
+                        })
+                        .collect(),
+                )],
+            }
+        } else if menu_review {
             MenuBar {
                 menus: vec![Menu::new(
                     "Menu consumer acceptance",
