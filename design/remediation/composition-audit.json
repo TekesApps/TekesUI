@@ -1,7 +1,7 @@
 {
   "format": "tekesui-composition-audit/1",
-  "head": "96804afb96b450125f1065a16bd06712ba0af49d",
-  "source": "Reviewed complete accepted first-three-domain source cohort at 96804afb96b450125f1065a16bd06712ba0af49d plus necessary formatting and explicit metadata. Exact current source hashes and context-reviewed API anchors are freshness authority; historical program observations retain original identities.",
+  "head": "15ecb2ad86e7d77c39ff3f9ad368629d5352445b",
+  "source": "Reviewed first-three-domain source cohort plus scoped CI200 compatibility repairs. Exact current source hashes/API anchors bind implementation facts; new Radio/focus/Gallery targeted runtime verification and full compatible-batch CI are still pending. Original finite program evidence retains its original source identities.",
   "audited_at": "2026-10-31",
   "issue14_updated_at": "2026-10-17T08:15:16Z",
   "status_values": [
@@ -1985,7 +1985,7 @@
     "crates/tekes-ui-controls/src/composite.rs": "894168089bd41657cd675b9cdfacdceeee8279b9fa206c93c6b58246b4365cb7",
     "crates/tekes-ui-controls/src/composition.rs": "131329da858c1e8d575e819209d63c14f80631caa383ed26dcb6d2048c7823d8",
     "crates/tekes-ui-controls/src/composition/actions.rs": "f8c970655bddd724007f9d650a400e11c5d0a8c8b1588d3c8b90b8fe97cbf0ef",
-    "crates/tekes-ui-controls/src/composition/adapters.rs": "8b66668ff91e3b0f7eef21d020f529361cbd6589277e27c62050f55dd402e6f7",
+    "crates/tekes-ui-controls/src/composition/adapters.rs": "178c423bf773e69d6301f620ec4247ea68b2fe1e945a2887e0e9fdc17f1e3b18",
     "crates/tekes-ui-controls/src/composition/button.rs": "0a168f44280df2c4f615c243a32e4c8987fb526c8708e2b571d7f88b96f96f0e",
     "crates/tekes-ui-controls/src/composition/chart_content.rs": "dc3b686d0b7c84e9e44cc3e0ee54c2e040204b141ee10b6970f2f6c88ea8cff4",
     "crates/tekes-ui-controls/src/composition/checkbox.rs": "1529f88b17492441c19430de0761e4452b6cc283e3bc9cc0a2cbd637a20d6914",
@@ -2019,14 +2019,14 @@
     "crates/tekes-ui-controls/src/composition/status_badge.rs": "55160ac8e5f901e644b09dcedb11f5b227e36a6aec7ff91706e6d3b422007f41",
     "crates/tekes-ui-controls/src/composition/toolbar_content.rs": "4c2ec24e1c5fa3a653c21fc5914268f0c72998111886078d25eff775087ec87f",
     "crates/tekes-ui-controls/src/control_motion.rs": "0301717c307ba6bdc2b91085c9e1995e6ca74391c7bbda9168af2c042a52a788",
-    "crates/tekes-ui-controls/src/extended.rs": "b1e443e0bd3b1f4b64c4a7df50b941c5437408405ba9701c5f878a4ab880b516",
+    "crates/tekes-ui-controls/src/extended.rs": "c1fab1d736d93a861fab20d6b213eea6f887939b4dbc34675e6a9c8de65331d7",
     "crates/tekes-ui-controls/src/feedback_view.rs": "7156351e836a178a98ceeff412fbf500c9624b48bf6cf2e96da728b14b8ced22",
     "crates/tekes-ui-controls/src/layout_view.rs": "d0dfc6f8feeaf7214e511c335b83607be3c906ffe91b6067b9edc2a64bd533ee",
     "crates/tekes-ui-controls/src/lib.rs": "7c02ead867e15b5149dd5216b04b021d0ef4205ff2b6603835f3ada967074698",
     "crates/tekes-ui-controls/src/reading.rs": "65fae5533cfe23601197b33fcf8521b5e68999138dad658d6de67c00bad14d82",
     "crates/tekes-ui-controls/src/scroll_view.rs": "a5e590208cceabe72ff62cf61b6b070b16f44338235329622787e50541d9b65f",
     "crates/tekes-ui-controls/src/scroll_view/reveal.rs": "5882571d8dccd3cf0e4894292f473ac54023047f9025473f7fbae51c5de83e8e",
-    "crates/tekes-ui-controls/src/selection.rs": "21e5b33e1e14bd49934dbc8808435f04a653950d6eeae2244c09569705b1def1",
+    "crates/tekes-ui-controls/src/selection.rs": "127b4c36c58d68ffd37a3c2f27c5f75a7cce94da30ceb27085d68f0019347b66",
     "crates/tekes-ui-controls/src/text_input.rs": "fb413cea76491b4a7cc11383dd2426ea6740860c4d660517dc50df4904f8639b",
     "crates/tekes-ui-controls/src/text_input/external.rs": "872c6a58fc112c17f7711ce3fe88c868a6ecb0e2ee32fc394ed8877fa30626ca",
     "crates/tekes-ui-controls/src/text_surface.rs": "078abcc5369d73020b974ff3f6374386cd586e4308984841735792d336a7538c",
@@ -2063,7 +2063,7 @@
     "crates/tekes-ui-gallery/src/gallery/quality_effects.rs": "b99730312721bf8eec15f3b10255c977ba444c4ea064fdb8537186f3271e7d85",
     "crates/tekes-ui-gallery/src/gallery/text.rs": "273804ade4352756e0498d0a360ad33c0a0b90470c29d00658e23ef366e03905",
     "crates/tekes-ui-gallery/src/gallery/text_demo.rs": "fb8612fca83c4a4fab7d2b6f8247389ad320bc935b7ca1b8c3209976ff1b76b1",
-    "crates/tekes-ui-gallery/src/gallery/workbench.rs": "5669665902d72a45ae529e6ae37cc64e3f92bf15305d1f6ca27911b630edfff0",
+    "crates/tekes-ui-gallery/src/gallery/workbench.rs": "09210d68ca204e911def5a59ab43f29ddbef5f522d28cff8541e714394fe4e48",
     "crates/tekes-ui-gallery/src/gallery/workbench/accessibility.rs": "78618232299c5a7f994e159d5b6f80a90d2cbcb22fa817c8ea1c3e691d4fa231",
     "crates/tekes-ui-gallery/src/gallery/workbench/content_status.rs": "2b3262d539c063b91493ee29db9aa13c8cdefacb3259c2efb6cdded337120588",
     "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs": "45cce35619761cebba57d7f7aa65ae637087d1f3a9a2dff4469f3f61bfde0ba4",
@@ -2134,7 +2134,7 @@
     "examples/composition-consumer/tests/item_navigation.rs": "47d15b84bb40029b8421d0f8b287f9538f6a2dd1ecdcb0a42597b40186d6d43e",
     "examples/composition-consumer/tests/label_content.rs": "51028aa25aeaf31c4c82cf15a1d73ffe1634ee726f290c791f57255b4a86c304",
     "examples/composition-consumer/tests/layout_text_services.rs": "c44adec0e0bbd221867b89417c6ae167c0bd88d80a4fef8011f8f62a21729e65",
-    "examples/composition-consumer/tests/menu_action_records.rs": "2af5a4b8440fef32626c4d53f8cc7160c23949f75aea3432a7fbc31d1312d4e5",
+    "examples/composition-consumer/tests/menu_action_records.rs": "fe19c5377928177979b80f0f081b9d273dc4e2ab56fd86800fc5e1bcfa1136c6",
     "examples/composition-consumer/tests/menu_content_tokens.rs": "13eaa02789da81e72b13c08323e2f4af5b295f76d632e663054fd07926583f89",
     "examples/composition-consumer/tests/menu_declarations.rs": "18526f81bf996a1ee52fae30b26cc049fca47aad918938e257e6accc2bca01fa",
     "examples/composition-consumer/tests/menu_item_states.rs": "a689e8e07bb84d36c63682ebcf63e03771f29d5eb70e08711266a583f1c7c179",
@@ -3594,5 +3594,14 @@
       "performance excluded by user; not an acceptance blocker for this authorized run"
     ],
     "native": "未验证"
+  },
+  "ci200_repair_review": {
+    "source": "15ecb2ad86e7d77c39ff3f9ad368629d5352445b",
+    "Menu": "c92 actualdefault8/svg8/twostrict pass; unrelatedpayloadstrictpanic only",
+    "Navigation": "Two testreferences corrected against frozen declared Surface rules; allglyph/quad/contrast/stateasserts preserved; newtargetsNOT_RUN",
+    "Radio": "Privateuncheckedrest fillmatchesunchangedpublicprimitive; new72tupleCPUcase+affectedRadioGPU notyetexecuted; oldCheckbox/Segment evidenceunchanged",
+    "Core_focus": "Onlyacceptedpreparedfocus publishesparentpointerintent; preserve/rejected/once matrices added; CPU/HostIPCstillNOT_RUN; notuniqueprovenCIcause",
+    "native": "未验证",
+    "historical_receipts": "notre-signed"
   }
 }
