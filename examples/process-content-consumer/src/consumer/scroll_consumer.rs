@@ -17,6 +17,64 @@ const CAPS: ViewCapabilities = ViewCapabilities {
     scroll: true,
     ..super::CAPS
 };
+/// Acceptance-only hook: original reading transaction, no child offset or input synthesis.
+pub(super) fn manual_reveal_tail(container: &ProcessContainer) -> Result<()> {
+    let before = container_message(container, "reading-inspect")?;
+    let bridge = container.native_content_bridge(Duration::from_secs(1))?;
+    let snapshot = bridge.snapshot()?;
+    let query = bridge.reading_state(&snapshot, PARENT.0)?;
+    let target = *query
+        .reply()
+        .reading
+        .as_ref()
+        .context("manual original reading identity missing")?
+        .items
+        .iter()
+        .find(|item| item.id == TAIL.0)
+        .context("manual declared tail missing")?;
+    let revealed = bridge.reveal_reading_item(
+        &query,
+        target,
+        wire::RevealOptions {
+            placement: wire::RevealPlacement::StartVertical,
+            margins: [0.; 4],
+            animated: false,
+        },
+    )?;
+    ensure!(
+        revealed.reply().text == query.reply().text
+            && revealed.reply().focused == query.reply().focused
+            && revealed.reply().focus_epoch == query.reply().focus_epoch,
+        "manual real IME reveal changed editor continuation"
+    );
+    ensure!(
+        matches!(
+            revealed
+                .reply()
+                .reading
+                .as_ref()
+                .and_then(|r| r.navigation.as_ref())
+                .map(|n| &n.status),
+            Some(wire::RevealStatus::Completed)
+        ),
+        "manual original reveal did not complete"
+    );
+    let after = container_message(container, "reading-inspect")?;
+    ensure!(
+        before["parent_offset"] != after["parent_offset"],
+        "manual reveal had no actual displacement; prepare original append overflow before arming"
+    );
+    eprintln!(
+        "PROCESS_MANUAL_REVEAL_OFFSET before={} after={}",
+        before["parent_offset"], after["parent_offset"]
+    );
+    eprintln!(
+        "PROCESS_MANUAL_REVEAL completed original_tail={} focus={:?}",
+        TAIL.0,
+        revealed.reply().focused
+    );
+    Ok(())
+}
 struct Reader {
     native_accessibility: bool,
     module: Module,
