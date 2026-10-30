@@ -87,6 +87,7 @@ pub fn combo_text_role_contract() -> usize {
                     required: false,
                     text_selection: Some(1..3),
                     read_only,
+                    can_show_menu: false,
                 };
                 assert!(crate::accessibility::validate_accessibility_nodes(
                     std::slice::from_ref(&node)
