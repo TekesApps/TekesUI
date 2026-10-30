@@ -109,3 +109,77 @@ fn combo_wire_uses_actual_marked_draft_and_original_action_binding() {
     );
     assert_eq!(host.text_surface(id).unwrap().input.text, "A终😀B");
 }
+
+#[test]
+fn set_expanded_wire_roundtrip_reaches_original_combo_without_toggling() {
+    let id = ComponentId(117);
+    let mut host = ContentHost::new(Content::new(
+        id,
+        ComboBoxContent::new("Options", vec!["A".into(), "B".into()]),
+    ))
+    .unwrap();
+    let mut text = super::combo_coretext::Text::new(1.);
+    text.services = true;
+    let frame = Rect::new(0., 0., 320., 240.);
+    // Repeating an explicit state must not become a second unqualified Press.
+    for expanded in [true, true, false, false] {
+        host.render(
+            &mut Scene::new(),
+            &mut text,
+            frame,
+            frame,
+            Theme::LIGHT.into(),
+        )
+        .unwrap();
+        let nodes = snapshot(&host).unwrap();
+        let owner = nodes.iter().find(|n| n.target.id == id.0).unwrap();
+        let request = wire::Input::Accessibility {
+            target: owner.target,
+            part: None,
+            binding: owner.text_binding.clone(),
+            action: wire::AccessibilityAction::SetExpanded(expanded),
+        };
+        let decoded: wire::Input =
+            serde_json::from_slice(&serde_json::to_vec(&request).unwrap()).unwrap();
+        let wire::Input::Accessibility {
+            target,
+            part,
+            binding,
+            action: verb,
+        } = decoded
+        else {
+            panic!("expected original accessibility request");
+        };
+        let open_before = host
+            .get(id)
+            .unwrap()
+            .component::<ComboBoxContent>()
+            .unwrap()
+            .model()
+            .open;
+        assert!(action(&mut host, target, part, Some(&[]), &verb).is_err());
+        assert_eq!(
+            host.get(id)
+                .unwrap()
+                .component::<ComboBoxContent>()
+                .unwrap()
+                .model()
+                .open,
+            open_before
+        );
+        assert!(
+            action(&mut host, target, part, binding.as_deref(), &verb)
+                .unwrap()
+                .consumed
+        );
+        assert_eq!(
+            host.get(id)
+                .unwrap()
+                .component::<ComboBoxContent>()
+                .unwrap()
+                .model()
+                .open,
+            expanded
+        );
+    }
+}

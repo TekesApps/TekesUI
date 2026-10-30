@@ -139,3 +139,24 @@ fn multiline_original_editor_is_rejected_without_relabeling_the_combo_role() {
         ContentHost::new(Content::new(COMBO, combo_fixture::ComboOwner::new(field))).unwrap();
     assert!(content_nodes(&host).is_empty());
 }
+
+#[test]
+fn set_expanded_native_adapter_reaches_original_combo_without_toggling() {
+    let mut host = setup();
+    for expanded in [true, true, false, false] {
+        render(&mut host);
+        let key = content_key(&host, COMBO, None).unwrap();
+        assert!(
+            content_action(&mut host, key, AccessibilityAction::SetExpanded(expanded)).consumed
+        );
+        assert_eq!(
+            host.get(COMBO)
+                .unwrap()
+                .component::<ComboBoxContent>()
+                .unwrap()
+                .model()
+                .open,
+            expanded
+        );
+    }
+}

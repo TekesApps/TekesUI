@@ -288,6 +288,8 @@ pub enum AccessibilityAction {
     Decrement,
     Focus,
     Press,
+    /// Set the original owner disclosure state; never toggle via Press.
+    SetExpanded(bool),
     /// Show the original owner's bound context menu without a primary action.
     ShowMenu,
     SetValue(String),

@@ -184,6 +184,7 @@ pub(crate) fn action(
         wire::AccessibilityAction::Decrement => AccessibilityAction::Decrement,
         wire::AccessibilityAction::Focus => AccessibilityAction::Focus,
         wire::AccessibilityAction::Press => AccessibilityAction::Press,
+        wire::AccessibilityAction::SetExpanded(value) => AccessibilityAction::SetExpanded(*value),
         wire::AccessibilityAction::SetValue(v) => AccessibilityAction::SetValue(v.clone()),
         wire::AccessibilityAction::SetSelection(v) => AccessibilityAction::SetSelection(v.clone()),
         wire::AccessibilityAction::ReplaceSelectedText(v) => {

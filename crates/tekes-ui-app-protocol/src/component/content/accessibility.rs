@@ -130,6 +130,8 @@ pub enum AccessibilityAction {
     Decrement,
     Focus,
     Press,
+    /// Set the original owner disclosure state; never toggle via Press.
+    SetExpanded(bool),
     SetValue(String),
     SetSelection(Range<usize>),
     ReplaceSelectedText(String),

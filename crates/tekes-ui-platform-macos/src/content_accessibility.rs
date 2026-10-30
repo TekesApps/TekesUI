@@ -320,7 +320,7 @@ pub fn content_action(
         AccessibilityAction::SetValue(value) => ContentAction::SetValue(value),
         AccessibilityAction::SetSelection(range) => ContentAction::SetSelection(range),
         AccessibilityAction::ReplaceSelectedText(text) => ContentAction::ReplaceSelectedText(text),
-        AccessibilityAction::SetExpanded(_) => return ContentResponse::default(),
+        AccessibilityAction::SetExpanded(value) => ContentAction::SetExpanded(value),
     };
     host.accessibility_action(id, target.part, action)
 }
