@@ -37,3 +37,39 @@ The original `311ceb4d…` eight-file patch and original assertions were retaine
 Actual repair inputs were MAIN HEAD `29b62511d2797e0389cc4ed6aae7f76904093a31` plus those exact source patches. Feature strict Clippy (lib/test/example), default lib strict Clippy, and the content-accessibility example build all passed. The earlier two actual passing data tests were reused after byte comparisons confirmed unchanged test/fixture/production/dependency inputs; the example-only repair does not affect those tests. Original failure logs remain at SSD `artifacts/delivery/integration-executor-20261030-07/ax05/`, and repaired input comparisons/commands/executable copies are at `artifacts/delivery/integration-executor-20261030-08/ax-repair01/`.
 
 The compiled native example has not been executed. External AX notifications/selectors, VoiceOver, physical IME, native window behavior and performance remain unverified; no native acceptance or maturity value was promoted. The existing composition audit only updates the three changed platform source hashes and three real shared.rs line anchors.
+
+
+## Allocated native verification — 2026-10-30 round04
+
+The fixture-only timing repair was admitted as MAIN
+`8c5c3bab5b17c5ddc1a04a5226216a27d28e3f1a`; example SHA256
+`78eb9073ff133838c538b0b14a3bcbca85eb804addd0b889c1b4ba56532cf7cf`.
+Scoped example Clippy with `-D warnings` and Cargo JSON build passed in the
+allocated original helper/cache environment. The actual Cargo program was
+archived with SHA256
+`afe01421d17a30b94ed1c11b5ff01959cc16264b69a0fea615e4efb44c8188d5`.
+Earlier data/production/default-library passes are reused only for unchanged
+inputs; this new fixture was independently compiled and run.
+
+One separately allocated native attempt exited 0 without timeout or detected
+user-input interruption. All four fixture screen queries reported actual
+external display ID2; the named probe CG frame was X2072/Y239/800x632. Original
+modal role/value/focus, three native Press selectors, close revocation/cache/
+focus/stale-client assertions and after-App.run retained-client assertions all
+completed. `AX_MODAL_CLOSE_COMPLETED` appeared once before the original final
+success marker. This is finite same-process native selector/lifecycle evidence.
+
+Raw result, independent final build binding, stdout/stderr, actual window/display
+observations and immediate release receipt are preserved under
+`/Volumes/HP P900/DEV/TekesUI/artifacts/issue-5/native-round04-once/`.
+`result.json` SHA256 is
+`b782d920d61ed09fa603788e69ebaf52e926b29f9eed95f75447e588c9b46d4e`.
+Owned PID83764 was reaped. Both original guards released, and their existing
+advisory locks could be acquired and immediately released after context exit.
+No retry, Cargo, settings, MAIN/Git or metadata write occurred in the native
+window. Earlier role/subrole abort and round03 timeout evidence are unchanged.
+The resource/source lease ended before offline evidence analysis.
+
+External AX notifications, physical IME, VoiceOver, GPU pixel acceptance,
+performance and other Issue #5 acceptance criteria remain unverified. Keep the
+Issue open; this result does not replace those acceptance categories.
