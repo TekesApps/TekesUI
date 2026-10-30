@@ -1,0 +1,557 @@
+{
+  "scope": "Initial Ready example-settings/playground only; offscreen GPU visual review",
+  "status": "pass",
+  "reviewed_images": 48,
+  "main_reviewed_narrow": 24,
+  "scout_reviewed_wide": 24,
+  "main_independent_wide_samples": 4,
+  "capture_manifest_sha256": "edff78076e241b2ba81aea945e8e9def2ddf7982c701617deadd42139315598d",
+  "all_png_dimensions_match_manifest": true,
+  "narrow_scroll_offsets": [
+    0,
+    201,
+    402
+  ],
+  "wide_scroll_range": 0,
+  "source_receipt_sha256": "c1348883098f691a58e50dd1be5b49d0bcddcce537b2ba5ea185f5710fc06383",
+  "image_reviews": [
+    {
+      "file": "example-settings__playground__light-standard__720x512__type-150__top@1x.png",
+      "sha256": "01f255d5b8539bf541d9f874e3f7b96754ebaf8465a7450d2f8bc89f46d1a7ce",
+      "pixels": [
+        720,
+        512
+      ],
+      "status": "pass",
+      "reviewer": "domain lead: viewed original",
+      "observation": "Settings title and description readable; Docs/Playground/Behaviors then Edge cases/Reset wrap at whole words; Disabled/Error do not overlap Workspace name, Studio field or helper."
+    },
+    {
+      "file": "example-settings__playground__light-standard__720x512__type-150__mid@1x.png",
+      "sha256": "49c6ab09c5310d82cf0ef00c7cf69db6ea72547ae41c882a017be590f0421344",
+      "pixels": [
+        720,
+        512
+      ],
+      "status": "pass",
+      "reviewer": "domain lead: viewed original",
+      "observation": "Workspace name, Studio, helper, Enable notifications, Save/settings and Ready status are distinct and readable. Edge cases/Reset are partly above the ordinary scroll clip; no intrinsic text truncation. Save/settings wraps between whole words."
+    },
+    {
+      "file": "example-settings__playground__light-standard__720x512__type-150__bottom@1x.png",
+      "sha256": "c9dad5bfe8d1cf6046a5b303c2eb0042e45ddec6669407d6756bce57bb0fcc46",
+      "pixels": [
+        720,
+        512
+      ],
+      "status": "pass",
+      "reviewer": "domain lead: viewed original",
+      "observation": "Helper, Enable notifications, Save/settings and full Ready message precede the empty Event log heading with clear separation; footer fully reachable at actual offset 402. Empty event log is expected initial state."
+    },
+    {
+      "file": "example-settings__playground__light-standard__1440x960__type-100__top@1x.png",
+      "sha256": "3bae96d949ccb96724f055c057ce12f79ef78e40cbce240d71ba40b478ea9f95",
+      "pixels": [
+        1440,
+        960
+      ],
+      "status": "pass",
+      "reviewer": "Scout: viewed original; domain lead independently sampled this image",
+      "observation": "Initial Settings page fits in wide viewport; single-line description and actions, label/input/helper/notification/Save/Ready/Event log have clear order and spacing. Actual scroll range is zero, so top/mid/bottom are the same layout; no scroll-reachability claim."
+    },
+    {
+      "file": "example-settings__playground__light-standard__1440x960__type-100__mid@1x.png",
+      "sha256": "3bae96d949ccb96724f055c057ce12f79ef78e40cbce240d71ba40b478ea9f95",
+      "pixels": [
+        1440,
+        960
+      ],
+      "status": "pass",
+      "reviewer": "Scout: viewed original",
+      "observation": "Initial Settings page fits in wide viewport; single-line description and actions, label/input/helper/notification/Save/Ready/Event log have clear order and spacing. Actual scroll range is zero, so top/mid/bottom are the same layout; no scroll-reachability claim."
+    },
+    {
+      "file": "example-settings__playground__light-standard__1440x960__type-100__bottom@1x.png",
+      "sha256": "3bae96d949ccb96724f055c057ce12f79ef78e40cbce240d71ba40b478ea9f95",
+      "pixels": [
+        1440,
+        960
+      ],
+      "status": "pass",
+      "reviewer": "Scout: viewed original",
+      "observation": "Initial Settings page fits in wide viewport; single-line description and actions, label/input/helper/notification/Save/Ready/Event log have clear order and spacing. Actual scroll range is zero, so top/mid/bottom are the same layout; no scroll-reachability claim."
+    },
+    {
+      "file": "example-settings__playground__light-standard__720x512__type-150__top@2x.png",
+      "sha256": "b65e5a8ac7a86609373e59cd4ceab662ad3d691905bb85fe964835004423a157",
+      "pixels": [
+        1440,
+        1024
+      ],
+      "status": "pass",
+      "reviewer": "domain lead: viewed original",
+      "observation": "Settings title and description readable; Docs/Playground/Behaviors then Edge cases/Reset wrap at whole words; Disabled/Error do not overlap Workspace name, Studio field or helper."
+    },
+    {
+      "file": "example-settings__playground__light-standard__720x512__type-150__mid@2x.png",
+      "sha256": "53109ac50b7f665980f44b1a0b51cad23d2eea661ec3e6bf8cc877f88bfc9040",
+      "pixels": [
+        1440,
+        1024
+      ],
+      "status": "pass",
+      "reviewer": "domain lead: viewed original",
+      "observation": "Workspace name, Studio, helper, Enable notifications, Save/settings and Ready status are distinct and readable. Edge cases/Reset are partly above the ordinary scroll clip; no intrinsic text truncation. Save/settings wraps between whole words."
+    },
+    {
+      "file": "example-settings__playground__light-standard__720x512__type-150__bottom@2x.png",
+      "sha256": "27e125cd9045b6341061c888ae0dfb340cc5947521dc05f1fe2f2e6dbf037889",
+      "pixels": [
+        1440,
+        1024
+      ],
+      "status": "pass",
+      "reviewer": "domain lead: viewed original",
+      "observation": "Helper, Enable notifications, Save/settings and full Ready message precede the empty Event log heading with clear separation; footer fully reachable at actual offset 402. Empty event log is expected initial state."
+    },
+    {
+      "file": "example-settings__playground__light-standard__1440x960__type-100__top@2x.png",
+      "sha256": "04757d192249402ce0c947644ecd9cab8f93f702a079112608cfc6e03d51850c",
+      "pixels": [
+        2880,
+        1920
+      ],
+      "status": "pass",
+      "reviewer": "Scout: viewed original",
+      "observation": "Initial Settings page fits in wide viewport; single-line description and actions, label/input/helper/notification/Save/Ready/Event log have clear order and spacing. Actual scroll range is zero, so top/mid/bottom are the same layout; no scroll-reachability claim."
+    },
+    {
+      "file": "example-settings__playground__light-standard__1440x960__type-100__mid@2x.png",
+      "sha256": "04757d192249402ce0c947644ecd9cab8f93f702a079112608cfc6e03d51850c",
+      "pixels": [
+        2880,
+        1920
+      ],
+      "status": "pass",
+      "reviewer": "Scout: viewed original",
+      "observation": "Initial Settings page fits in wide viewport; single-line description and actions, label/input/helper/notification/Save/Ready/Event log have clear order and spacing. Actual scroll range is zero, so top/mid/bottom are the same layout; no scroll-reachability claim."
+    },
+    {
+      "file": "example-settings__playground__light-standard__1440x960__type-100__bottom@2x.png",
+      "sha256": "04757d192249402ce0c947644ecd9cab8f93f702a079112608cfc6e03d51850c",
+      "pixels": [
+        2880,
+        1920
+      ],
+      "status": "pass",
+      "reviewer": "Scout: viewed original",
+      "observation": "Initial Settings page fits in wide viewport; single-line description and actions, label/input/helper/notification/Save/Ready/Event log have clear order and spacing. Actual scroll range is zero, so top/mid/bottom are the same layout; no scroll-reachability claim."
+    },
+    {
+      "file": "example-settings__playground__dark-standard__720x512__type-150__top@1x.png",
+      "sha256": "fc6bc1ccc06d76a2ba07cb9b8bb06a995fe90aef232ac3dff7989bddb68cd3bd",
+      "pixels": [
+        720,
+        512
+      ],
+      "status": "pass",
+      "reviewer": "domain lead: viewed original",
+      "observation": "Settings title and description readable; Docs/Playground/Behaviors then Edge cases/Reset wrap at whole words; Disabled/Error do not overlap Workspace name, Studio field or helper."
+    },
+    {
+      "file": "example-settings__playground__dark-standard__720x512__type-150__mid@1x.png",
+      "sha256": "8fa2b9de444fe79c6f4c1ef81c7111bba9c98d45770693a0ed9bf9c0372d3d6a",
+      "pixels": [
+        720,
+        512
+      ],
+      "status": "pass",
+      "reviewer": "domain lead: viewed original",
+      "observation": "Workspace name, Studio, helper, Enable notifications, Save/settings and Ready status are distinct and readable. Edge cases/Reset are partly above the ordinary scroll clip; no intrinsic text truncation. Save/settings wraps between whole words."
+    },
+    {
+      "file": "example-settings__playground__dark-standard__720x512__type-150__bottom@1x.png",
+      "sha256": "24b7ad612beba15c83cb287126528d6dea7fb513777d58ff9c794f190114f0eb",
+      "pixels": [
+        720,
+        512
+      ],
+      "status": "pass",
+      "reviewer": "domain lead: viewed original",
+      "observation": "Helper, Enable notifications, Save/settings and full Ready message precede the empty Event log heading with clear separation; footer fully reachable at actual offset 402. Empty event log is expected initial state."
+    },
+    {
+      "file": "example-settings__playground__dark-standard__1440x960__type-100__top@1x.png",
+      "sha256": "62e0f3e44073a220b36e7ec1d8b6a2414984c6c148073b6a95d63a9dbf277df5",
+      "pixels": [
+        1440,
+        960
+      ],
+      "status": "pass",
+      "reviewer": "Scout: viewed original",
+      "observation": "Initial Settings page fits in wide viewport; single-line description and actions, label/input/helper/notification/Save/Ready/Event log have clear order and spacing. Actual scroll range is zero, so top/mid/bottom are the same layout; no scroll-reachability claim."
+    },
+    {
+      "file": "example-settings__playground__dark-standard__1440x960__type-100__mid@1x.png",
+      "sha256": "62e0f3e44073a220b36e7ec1d8b6a2414984c6c148073b6a95d63a9dbf277df5",
+      "pixels": [
+        1440,
+        960
+      ],
+      "status": "pass",
+      "reviewer": "Scout: viewed original",
+      "observation": "Initial Settings page fits in wide viewport; single-line description and actions, label/input/helper/notification/Save/Ready/Event log have clear order and spacing. Actual scroll range is zero, so top/mid/bottom are the same layout; no scroll-reachability claim."
+    },
+    {
+      "file": "example-settings__playground__dark-standard__1440x960__type-100__bottom@1x.png",
+      "sha256": "62e0f3e44073a220b36e7ec1d8b6a2414984c6c148073b6a95d63a9dbf277df5",
+      "pixels": [
+        1440,
+        960
+      ],
+      "status": "pass",
+      "reviewer": "Scout: viewed original",
+      "observation": "Initial Settings page fits in wide viewport; single-line description and actions, label/input/helper/notification/Save/Ready/Event log have clear order and spacing. Actual scroll range is zero, so top/mid/bottom are the same layout; no scroll-reachability claim."
+    },
+    {
+      "file": "example-settings__playground__dark-standard__720x512__type-150__top@2x.png",
+      "sha256": "e6492ee188374205de0cca6c38da4bd8a450f3875d3826f1b0f49a7202108187",
+      "pixels": [
+        1440,
+        1024
+      ],
+      "status": "pass",
+      "reviewer": "domain lead: viewed original",
+      "observation": "Settings title and description readable; Docs/Playground/Behaviors then Edge cases/Reset wrap at whole words; Disabled/Error do not overlap Workspace name, Studio field or helper."
+    },
+    {
+      "file": "example-settings__playground__dark-standard__720x512__type-150__mid@2x.png",
+      "sha256": "40f7acb936a447413baa246ddb5730c1e08a35a8d8800e7ea80378e3c625fe54",
+      "pixels": [
+        1440,
+        1024
+      ],
+      "status": "pass",
+      "reviewer": "domain lead: viewed original",
+      "observation": "Workspace name, Studio, helper, Enable notifications, Save/settings and Ready status are distinct and readable. Edge cases/Reset are partly above the ordinary scroll clip; no intrinsic text truncation. Save/settings wraps between whole words."
+    },
+    {
+      "file": "example-settings__playground__dark-standard__720x512__type-150__bottom@2x.png",
+      "sha256": "7a2d4cdcab6a5c60fa1ad3193fc45608fae2a43c606aadc9b9ef7697d452d9c4",
+      "pixels": [
+        1440,
+        1024
+      ],
+      "status": "pass",
+      "reviewer": "domain lead: viewed original",
+      "observation": "Helper, Enable notifications, Save/settings and full Ready message precede the empty Event log heading with clear separation; footer fully reachable at actual offset 402. Empty event log is expected initial state."
+    },
+    {
+      "file": "example-settings__playground__dark-standard__1440x960__type-100__top@2x.png",
+      "sha256": "79f0aa729125506dc6f9df5ea0344eb759c71fd4d4d865b5e9e055e224267f1b",
+      "pixels": [
+        2880,
+        1920
+      ],
+      "status": "pass",
+      "reviewer": "Scout: viewed original",
+      "observation": "Initial Settings page fits in wide viewport; single-line description and actions, label/input/helper/notification/Save/Ready/Event log have clear order and spacing. Actual scroll range is zero, so top/mid/bottom are the same layout; no scroll-reachability claim."
+    },
+    {
+      "file": "example-settings__playground__dark-standard__1440x960__type-100__mid@2x.png",
+      "sha256": "79f0aa729125506dc6f9df5ea0344eb759c71fd4d4d865b5e9e055e224267f1b",
+      "pixels": [
+        2880,
+        1920
+      ],
+      "status": "pass",
+      "reviewer": "Scout: viewed original; domain lead independently sampled this image",
+      "observation": "Initial Settings page fits in wide viewport; single-line description and actions, label/input/helper/notification/Save/Ready/Event log have clear order and spacing. Actual scroll range is zero, so top/mid/bottom are the same layout; no scroll-reachability claim."
+    },
+    {
+      "file": "example-settings__playground__dark-standard__1440x960__type-100__bottom@2x.png",
+      "sha256": "79f0aa729125506dc6f9df5ea0344eb759c71fd4d4d865b5e9e055e224267f1b",
+      "pixels": [
+        2880,
+        1920
+      ],
+      "status": "pass",
+      "reviewer": "Scout: viewed original",
+      "observation": "Initial Settings page fits in wide viewport; single-line description and actions, label/input/helper/notification/Save/Ready/Event log have clear order and spacing. Actual scroll range is zero, so top/mid/bottom are the same layout; no scroll-reachability claim."
+    },
+    {
+      "file": "example-settings__playground__light-increased__720x512__type-150__top@1x.png",
+      "sha256": "06b8822e8237b5ad5dfb386d8cd1d3efe9fa3cbf2ebf524686344348f07d3cc6",
+      "pixels": [
+        720,
+        512
+      ],
+      "status": "pass",
+      "reviewer": "domain lead: viewed original",
+      "observation": "Settings title and description readable; Docs/Playground/Behaviors then Edge cases/Reset wrap at whole words; Disabled/Error do not overlap Workspace name, Studio field or helper."
+    },
+    {
+      "file": "example-settings__playground__light-increased__720x512__type-150__mid@1x.png",
+      "sha256": "c21f4eedd4f784a9fc8c656176f76c7e21a536c79e3fc7fcdbcfd101c3196c8a",
+      "pixels": [
+        720,
+        512
+      ],
+      "status": "pass",
+      "reviewer": "domain lead: viewed original",
+      "observation": "Workspace name, Studio, helper, Enable notifications, Save/settings and Ready status are distinct and readable. Edge cases/Reset are partly above the ordinary scroll clip; no intrinsic text truncation. Save/settings wraps between whole words."
+    },
+    {
+      "file": "example-settings__playground__light-increased__720x512__type-150__bottom@1x.png",
+      "sha256": "c73dd8b917f1ed78c1b0cc40458121cea67aba2d2b1341194c9dea8e2f3cacd1",
+      "pixels": [
+        720,
+        512
+      ],
+      "status": "pass",
+      "reviewer": "domain lead: viewed original",
+      "observation": "Helper, Enable notifications, Save/settings and full Ready message precede the empty Event log heading with clear separation; footer fully reachable at actual offset 402. Empty event log is expected initial state."
+    },
+    {
+      "file": "example-settings__playground__light-increased__1440x960__type-100__top@1x.png",
+      "sha256": "af0f5ead4713215757f1075de5da682b082d1f4dad42dfa61bdf386db250f929",
+      "pixels": [
+        1440,
+        960
+      ],
+      "status": "pass",
+      "reviewer": "Scout: viewed original",
+      "observation": "Initial Settings page fits in wide viewport; single-line description and actions, label/input/helper/notification/Save/Ready/Event log have clear order and spacing. Actual scroll range is zero, so top/mid/bottom are the same layout; no scroll-reachability claim."
+    },
+    {
+      "file": "example-settings__playground__light-increased__1440x960__type-100__mid@1x.png",
+      "sha256": "af0f5ead4713215757f1075de5da682b082d1f4dad42dfa61bdf386db250f929",
+      "pixels": [
+        1440,
+        960
+      ],
+      "status": "pass",
+      "reviewer": "Scout: viewed original",
+      "observation": "Initial Settings page fits in wide viewport; single-line description and actions, label/input/helper/notification/Save/Ready/Event log have clear order and spacing. Actual scroll range is zero, so top/mid/bottom are the same layout; no scroll-reachability claim."
+    },
+    {
+      "file": "example-settings__playground__light-increased__1440x960__type-100__bottom@1x.png",
+      "sha256": "af0f5ead4713215757f1075de5da682b082d1f4dad42dfa61bdf386db250f929",
+      "pixels": [
+        1440,
+        960
+      ],
+      "status": "pass",
+      "reviewer": "Scout: viewed original",
+      "observation": "Initial Settings page fits in wide viewport; single-line description and actions, label/input/helper/notification/Save/Ready/Event log have clear order and spacing. Actual scroll range is zero, so top/mid/bottom are the same layout; no scroll-reachability claim."
+    },
+    {
+      "file": "example-settings__playground__light-increased__720x512__type-150__top@2x.png",
+      "sha256": "73d97d68c73a6f3bd37963d72082eee7c0d78ef90c4f7968fac4148e8ec4938c",
+      "pixels": [
+        1440,
+        1024
+      ],
+      "status": "pass",
+      "reviewer": "domain lead: viewed original",
+      "observation": "Settings title and description readable; Docs/Playground/Behaviors then Edge cases/Reset wrap at whole words; Disabled/Error do not overlap Workspace name, Studio field or helper."
+    },
+    {
+      "file": "example-settings__playground__light-increased__720x512__type-150__mid@2x.png",
+      "sha256": "b620b07de56177d7d7b8fdfb178d1468d0630e60b7ebf9d541d004602e286a4d",
+      "pixels": [
+        1440,
+        1024
+      ],
+      "status": "pass",
+      "reviewer": "domain lead: viewed original",
+      "observation": "Workspace name, Studio, helper, Enable notifications, Save/settings and Ready status are distinct and readable. Edge cases/Reset are partly above the ordinary scroll clip; no intrinsic text truncation. Save/settings wraps between whole words."
+    },
+    {
+      "file": "example-settings__playground__light-increased__720x512__type-150__bottom@2x.png",
+      "sha256": "0a5fefaeba19070ad582c75a34a64043376a0c7cdc35d3eabe658291ffd1b9fb",
+      "pixels": [
+        1440,
+        1024
+      ],
+      "status": "pass",
+      "reviewer": "domain lead: viewed original",
+      "observation": "Helper, Enable notifications, Save/settings and full Ready message precede the empty Event log heading with clear separation; footer fully reachable at actual offset 402. Empty event log is expected initial state."
+    },
+    {
+      "file": "example-settings__playground__light-increased__1440x960__type-100__top@2x.png",
+      "sha256": "dfbf9aa9d0e0f57400abcec743afa99eb28a73e26e5b99ae8761a37a44e90b3f",
+      "pixels": [
+        2880,
+        1920
+      ],
+      "status": "pass",
+      "reviewer": "Scout: viewed original",
+      "observation": "Initial Settings page fits in wide viewport; single-line description and actions, label/input/helper/notification/Save/Ready/Event log have clear order and spacing. Actual scroll range is zero, so top/mid/bottom are the same layout; no scroll-reachability claim."
+    },
+    {
+      "file": "example-settings__playground__light-increased__1440x960__type-100__mid@2x.png",
+      "sha256": "dfbf9aa9d0e0f57400abcec743afa99eb28a73e26e5b99ae8761a37a44e90b3f",
+      "pixels": [
+        2880,
+        1920
+      ],
+      "status": "pass",
+      "reviewer": "Scout: viewed original",
+      "observation": "Initial Settings page fits in wide viewport; single-line description and actions, label/input/helper/notification/Save/Ready/Event log have clear order and spacing. Actual scroll range is zero, so top/mid/bottom are the same layout; no scroll-reachability claim."
+    },
+    {
+      "file": "example-settings__playground__light-increased__1440x960__type-100__bottom@2x.png",
+      "sha256": "dfbf9aa9d0e0f57400abcec743afa99eb28a73e26e5b99ae8761a37a44e90b3f",
+      "pixels": [
+        2880,
+        1920
+      ],
+      "status": "pass",
+      "reviewer": "Scout: viewed original; domain lead independently sampled this image",
+      "observation": "Initial Settings page fits in wide viewport; single-line description and actions, label/input/helper/notification/Save/Ready/Event log have clear order and spacing. Actual scroll range is zero, so top/mid/bottom are the same layout; no scroll-reachability claim."
+    },
+    {
+      "file": "example-settings__playground__dark-increased__720x512__type-150__top@1x.png",
+      "sha256": "3b629f1329e70aa9ed88293ad79d6b79ccec15c88abfd0f45afb02146631d37e",
+      "pixels": [
+        720,
+        512
+      ],
+      "status": "pass",
+      "reviewer": "domain lead: viewed original",
+      "observation": "Settings title and description readable; Docs/Playground/Behaviors then Edge cases/Reset wrap at whole words; Disabled/Error do not overlap Workspace name, Studio field or helper."
+    },
+    {
+      "file": "example-settings__playground__dark-increased__720x512__type-150__mid@1x.png",
+      "sha256": "3d0c219dca739f14330c29bb4c494e913cdf9d8d953bfc7f727f3657f9e47d2a",
+      "pixels": [
+        720,
+        512
+      ],
+      "status": "pass",
+      "reviewer": "domain lead: viewed original",
+      "observation": "Workspace name, Studio, helper, Enable notifications, Save/settings and Ready status are distinct and readable. Edge cases/Reset are partly above the ordinary scroll clip; no intrinsic text truncation. Save/settings wraps between whole words."
+    },
+    {
+      "file": "example-settings__playground__dark-increased__720x512__type-150__bottom@1x.png",
+      "sha256": "d781992d8de292a166c70defb0188cd21879b72dcb1bf803b0d1fccc799da8f4",
+      "pixels": [
+        720,
+        512
+      ],
+      "status": "pass",
+      "reviewer": "domain lead: viewed original",
+      "observation": "Helper, Enable notifications, Save/settings and full Ready message precede the empty Event log heading with clear separation; footer fully reachable at actual offset 402. Empty event log is expected initial state."
+    },
+    {
+      "file": "example-settings__playground__dark-increased__1440x960__type-100__top@1x.png",
+      "sha256": "c7e4877a62c699b676a043a7ffec41ef51a322803c8d1c6ca3b30bd71a0ea2a8",
+      "pixels": [
+        1440,
+        960
+      ],
+      "status": "pass",
+      "reviewer": "Scout: viewed original",
+      "observation": "Initial Settings page fits in wide viewport; single-line description and actions, label/input/helper/notification/Save/Ready/Event log have clear order and spacing. Actual scroll range is zero, so top/mid/bottom are the same layout; no scroll-reachability claim."
+    },
+    {
+      "file": "example-settings__playground__dark-increased__1440x960__type-100__mid@1x.png",
+      "sha256": "c7e4877a62c699b676a043a7ffec41ef51a322803c8d1c6ca3b30bd71a0ea2a8",
+      "pixels": [
+        1440,
+        960
+      ],
+      "status": "pass",
+      "reviewer": "Scout: viewed original",
+      "observation": "Initial Settings page fits in wide viewport; single-line description and actions, label/input/helper/notification/Save/Ready/Event log have clear order and spacing. Actual scroll range is zero, so top/mid/bottom are the same layout; no scroll-reachability claim."
+    },
+    {
+      "file": "example-settings__playground__dark-increased__1440x960__type-100__bottom@1x.png",
+      "sha256": "c7e4877a62c699b676a043a7ffec41ef51a322803c8d1c6ca3b30bd71a0ea2a8",
+      "pixels": [
+        1440,
+        960
+      ],
+      "status": "pass",
+      "reviewer": "Scout: viewed original; domain lead independently sampled this image",
+      "observation": "Initial Settings page fits in wide viewport; single-line description and actions, label/input/helper/notification/Save/Ready/Event log have clear order and spacing. Actual scroll range is zero, so top/mid/bottom are the same layout; no scroll-reachability claim."
+    },
+    {
+      "file": "example-settings__playground__dark-increased__720x512__type-150__top@2x.png",
+      "sha256": "2f8c53678469d30b91ad94d84ae0033dd96b6592c0a4b2c44dfd609797201afd",
+      "pixels": [
+        1440,
+        1024
+      ],
+      "status": "pass",
+      "reviewer": "domain lead: viewed original",
+      "observation": "Settings title and description readable; Docs/Playground/Behaviors then Edge cases/Reset wrap at whole words; Disabled/Error do not overlap Workspace name, Studio field or helper."
+    },
+    {
+      "file": "example-settings__playground__dark-increased__720x512__type-150__mid@2x.png",
+      "sha256": "d09bbf960745fe02c136c81a7de829a5f5f351c50dd4784b6b8d7abcb257c115",
+      "pixels": [
+        1440,
+        1024
+      ],
+      "status": "pass",
+      "reviewer": "domain lead: viewed original",
+      "observation": "Workspace name, Studio, helper, Enable notifications, Save/settings and Ready status are distinct and readable. Edge cases/Reset are partly above the ordinary scroll clip; no intrinsic text truncation. Save/settings wraps between whole words."
+    },
+    {
+      "file": "example-settings__playground__dark-increased__720x512__type-150__bottom@2x.png",
+      "sha256": "62167cb8951381ee2af964b3fc3b73c827d6400912d25b1342e2a94644123981",
+      "pixels": [
+        1440,
+        1024
+      ],
+      "status": "pass",
+      "reviewer": "domain lead: viewed original",
+      "observation": "Helper, Enable notifications, Save/settings and full Ready message precede the empty Event log heading with clear separation; footer fully reachable at actual offset 402. Empty event log is expected initial state."
+    },
+    {
+      "file": "example-settings__playground__dark-increased__1440x960__type-100__top@2x.png",
+      "sha256": "686d278c8e4996b6cc6ebbbf30c7fa3d8e724738ea4faacfaded875aa67e6883",
+      "pixels": [
+        2880,
+        1920
+      ],
+      "status": "pass",
+      "reviewer": "Scout: viewed original",
+      "observation": "Initial Settings page fits in wide viewport; single-line description and actions, label/input/helper/notification/Save/Ready/Event log have clear order and spacing. Actual scroll range is zero, so top/mid/bottom are the same layout; no scroll-reachability claim."
+    },
+    {
+      "file": "example-settings__playground__dark-increased__1440x960__type-100__mid@2x.png",
+      "sha256": "686d278c8e4996b6cc6ebbbf30c7fa3d8e724738ea4faacfaded875aa67e6883",
+      "pixels": [
+        2880,
+        1920
+      ],
+      "status": "pass",
+      "reviewer": "Scout: viewed original",
+      "observation": "Initial Settings page fits in wide viewport; single-line description and actions, label/input/helper/notification/Save/Ready/Event log have clear order and spacing. Actual scroll range is zero, so top/mid/bottom are the same layout; no scroll-reachability claim."
+    },
+    {
+      "file": "example-settings__playground__dark-increased__1440x960__type-100__bottom@2x.png",
+      "sha256": "686d278c8e4996b6cc6ebbbf30c7fa3d8e724738ea4faacfaded875aa67e6883",
+      "pixels": [
+        2880,
+        1920
+      ],
+      "status": "pass",
+      "reviewer": "Scout: viewed original",
+      "observation": "Initial Settings page fits in wide viewport; single-line description and actions, label/input/helper/notification/Save/Ready/Event log have clear order and spacing. Actual scroll range is zero, so top/mid/bottom are the same layout; no scroll-reachability claim."
+    }
+  ],
+  "not_verified": [
+    "physical display",
+    "native keyboard/mouse and TextCommand",
+    "focus reveal",
+    "Pending/Failed/Saved phases",
+    "physical IME",
+    "AX/VoiceOver",
+    "performance",
+    "other pages or complete Gold7"
+  ]
+}

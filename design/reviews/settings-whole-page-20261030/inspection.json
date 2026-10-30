@@ -50,5 +50,6 @@
     "rustfmt_final": "passed",
     "git_diff_check": "passed"
   },
-  "preserved": "No original image, registry, Gold7 worksheet, generator, token or production code changed."
+  "preserved": "No original image, registry, Gold7 worksheet, generator, token or production code changed.",
+  "phase": "Initial preparation inspection, before allocated MAIN build/GPU execution; current results are execution.json and visual-review.json"
 }

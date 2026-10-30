@@ -1,0 +1,194 @@
+{
+  "status": "READY - bounded Settings Ready visual batch, not all #12 AC",
+  "source_candidate": "aa50a24c37cf022cbd0f90448e53ec28b2b99323",
+  "actual_main_head": "77860b59df6eb8dc3432a96dd4bfd1730c1b215c",
+  "actual_source_scope": "MAIN plus AX/Disclosure/Settings and preserved WIP; exact files/hashes in inputs-before.json, not candidate commit alone",
+  "input_count": 3469,
+  "inputs_stable": true,
+  "inputs_manifest_sha256": "27ff7ba1cc1ff42f569c3314b35f89ba0279512f2e74d9d10e7e946005380e9a",
+  "artifact_root": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-12/settings-main77860b5-20261030/run01",
+  "files": {
+    "run.py": "c6c319ba19dffecc57fc54b68ebd5971df4b95f237cc4b0c15f599c194e3d208",
+    "receipt.json": "c1348883098f691a58e50dd1be5b49d0bcddcce537b2ba5ea185f5710fc06383",
+    "inputs-before.json": "27ff7ba1cc1ff42f569c3314b35f89ba0279512f2e74d9d10e7e946005380e9a",
+    "inputs-after.json": "27ff7ba1cc1ff42f569c3314b35f89ba0279512f2e74d9d10e7e946005380e9a",
+    "platform.json": "38a1f8312710d685c2d2462b711d11c9363c14ac85dd5d996257150b3b60da90",
+    "matrix/manifest.json": "edff78076e241b2ba81aea945e8e9def2ddf7982c701617deadd42139315598d",
+    "visual-review.json": "47eb50c96bcba41e9d1d5d3f274d04c0f10b23b712f1f8b6f9c17d8d8a6aef8c"
+  },
+  "jobs": [
+    {
+      "name": "compile",
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "test",
+        "--locked",
+        "--offline",
+        "--message-format=json",
+        "-p",
+        "tekes-ui-gallery",
+        "--bin",
+        "tekes-ui-gallery",
+        "settings_whole_page_reading_matrix_uses_actual_route_and_scroll_positions",
+        "--no-run"
+      ],
+      "cwd": "/Users/frankqin/.codex/worktrees/tekesui-main-audit-20261026/TekesUI",
+      "exit_code": 0,
+      "stdout_sha256": "1cf2e9fe59cc5a581dcf275db923b0286239b55cfb441de497b753102a0e2881",
+      "stderr_sha256": "fdd4185365e60a837e369b2d9c7ad3806520a007d68671ecdd80e90c29b41139",
+      "executables": [
+        {
+          "source": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-cache/debug/deps/tekes_ui_gallery-9e9d366bd3867cf3",
+          "sha256": "aea0f5944f6af79c3cd235402dcb0852771a339283de0bbd643577253867a5c7",
+          "target": {
+            "kind": [
+              "bin"
+            ],
+            "crate_types": [
+              "bin"
+            ],
+            "name": "tekes-ui-gallery",
+            "src_path": "/Users/frankqin/.codex/worktrees/tekesui-main-audit-20261026/TekesUI/crates/tekes-ui-gallery/src/main.rs",
+            "edition": "2024",
+            "doc": true,
+            "doctest": false,
+            "test": true
+          },
+          "features": [],
+          "retained": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-12/settings-main77860b5-20261030/run01/retained-tekes_ui_gallery-9e9d366bd3867cf3"
+        }
+      ]
+    },
+    {
+      "name": "gpu",
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "test",
+        "--locked",
+        "--offline",
+        "--message-format=json",
+        "-p",
+        "tekes-ui-gallery",
+        "--bin",
+        "tekes-ui-gallery",
+        "settings_whole_page_reading_matrix_uses_actual_route_and_scroll_positions",
+        "--",
+        "--ignored",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "cwd": "/Users/frankqin/.codex/worktrees/tekesui-main-audit-20261026/TekesUI",
+      "exit_code": 0,
+      "stdout_sha256": "9728b39095f9026ed5e4cdb7053ac016d4c0aa917840b522db169b96cd27a3fd",
+      "stderr_sha256": "222dad0824a0b9556f98a2e714efa0ae7686cd74330a71b8782eabc10360c1a2",
+      "executables": [
+        {
+          "source": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-cache/debug/deps/tekes_ui_gallery-9e9d366bd3867cf3",
+          "sha256": "aea0f5944f6af79c3cd235402dcb0852771a339283de0bbd643577253867a5c7",
+          "target": {
+            "kind": [
+              "bin"
+            ],
+            "crate_types": [
+              "bin"
+            ],
+            "name": "tekes-ui-gallery",
+            "src_path": "/Users/frankqin/.codex/worktrees/tekesui-main-audit-20261026/TekesUI/crates/tekes-ui-gallery/src/main.rs",
+            "edition": "2024",
+            "doc": true,
+            "doctest": false,
+            "test": true
+          },
+          "features": []
+        }
+      ]
+    },
+    {
+      "name": "strict",
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "clippy",
+        "--locked",
+        "--offline",
+        "--message-format=json",
+        "-p",
+        "tekes-ui-gallery",
+        "--bin",
+        "tekes-ui-gallery",
+        "--tests",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "cwd": "/Users/frankqin/.codex/worktrees/tekesui-main-audit-20261026/TekesUI",
+      "exit_code": 0,
+      "stdout_sha256": "6460bf1773b07831d5b01ee8d314279fd6fb53ef93ab36b7705a89776243807e",
+      "stderr_sha256": "5965ddf809c59aa80335d2ba8cad667f575337f86e8ab9c9276d797d2c34cac9",
+      "executables": []
+    }
+  ],
+  "cache": "/Volumes/HP P900/DEV/TekesUI/worktrees/gallery-design-baseline/target/review-cache",
+  "lock_events": [
+    {
+      "event": "build_lock_acquired"
+    },
+    {
+      "event": "gpu_acceptance_lock_acquired",
+      "logical": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/theme-surface-gpu-cache-20261023/.theme-acceptance.lock",
+      "physical": "/Volumes/HP P900/DEV/TekesUI/worktrees/gallery-design-baseline/target/theme-surface-gpu-cache-20261023/.theme-acceptance.lock",
+      "time_ns": 1793354467863185000
+    },
+    {
+      "event": "gpu_acceptance_lock_released",
+      "logical": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/theme-surface-gpu-cache-20261023/.theme-acceptance.lock",
+      "physical": "/Volumes/HP P900/DEV/TekesUI/worktrees/gallery-design-baseline/target/theme-surface-gpu-cache-20261023/.theme-acceptance.lock",
+      "time_ns": 1793354542823400000
+    },
+    {
+      "event": "build_lock_released"
+    }
+  ],
+  "platform": {
+    "rustc": {
+      "argv": [
+        "rustc",
+        "+1.95.0",
+        "-vV"
+      ],
+      "exit_code": 0,
+      "stdout": "rustc 1.95.0 (59807616e 2026-04-14)\nbinary: rustc\ncommit-hash: 59807616e1fa2540724bfbac14d7976d7e4a3860\ncommit-date: 2026-04-14\nhost: aarch64-apple-darwin\nrelease: 1.95.0\nLLVM version: 22.1.2\n",
+      "stderr": ""
+    },
+    "cargo": {
+      "argv": [
+        "cargo",
+        "+1.95.0",
+        "-V"
+      ],
+      "exit_code": 0,
+      "stdout": "cargo 1.95.0 (f2d3ce0bd 2026-03-21)\n",
+      "stderr": ""
+    },
+    "macos": {
+      "argv": [
+        "sw_vers"
+      ],
+      "exit_code": 0,
+      "stdout": "ProductName:\t\tmacOS\nProductVersion:\t\t26.6.2\nBuildVersion:\t\t25G83\n",
+      "stderr": ""
+    }
+  },
+  "scope_limitations": [
+    "physical display",
+    "native keyboard/mouse and TextCommand",
+    "focus reveal",
+    "Pending/Failed/Saved phases",
+    "physical IME",
+    "AX/VoiceOver",
+    "performance",
+    "other pages or complete Gold7"
+  ]
+}
