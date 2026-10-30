@@ -305,7 +305,9 @@ impl IconCatalog {
         for name in names {
             let svg = r#"<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><rect x="4" y="4" width="16" height="16"/></svg>"#;
             catalog.entries.push(Entry {
-                label: String::new(), kind: String::new(), before: None,
+                label: String::new(),
+                kind: String::new(),
+                before: None,
                 name: (*name).into(),
                 svg: svg.into(),
                 tree: usvg::Tree::from_str(svg, &usvg::Options::default()).unwrap(),
@@ -433,15 +435,13 @@ mod tests {
                     "proposal before: {name}"
                 );
                 assert_eq!(entry.label, label);
-                assert!(entry
-                    .before
-                    .as_ref()
-                    .unwrap()
-                    .label
-                    .starts_with("历史提案"));
+                assert!(entry.before.as_ref().unwrap().label.starts_with("历史提案"));
                 different_artwork_count += 1;
             } else {
-                assert!(entry.before.is_none(), "identical reference is not an old draft: {name}");
+                assert!(
+                    entry.before.is_none(),
+                    "identical reference is not an old draft: {name}"
+                );
             }
         }
         assert_eq!(different_artwork_count, 29);
@@ -451,19 +451,20 @@ mod tests {
             .find(|entry| entry.name == "tekes-zoom-in")
             .unwrap();
         assert!(zoom_in.svg.contains("stroke-width=\"1.25\""));
-        assert!(zoom_in
-            .before
-            .as_ref()
-            .unwrap()
-            .svg
-            .contains("stroke-width=\"1.5\""));
+        assert!(
+            zoom_in
+                .before
+                .as_ref()
+                .unwrap()
+                .svg
+                .contains("stroke-width=\"1.5\"")
+        );
         assert_eq!(catalog.entries.len(), 177);
     }
 
     #[test]
     fn external_catalogue_stays_the_comparison_side_of_canonical_current_artwork() {
-        let dir = std::env::temp_dir()
-            .join(format!("tekesui-icon-compare-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("tekesui-icon-compare-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         std::fs::write(dir.join("tekes-settings.svg"), SVG).unwrap();
         std::fs::write(dir.join("legacy-only.svg"), SVG).unwrap();
