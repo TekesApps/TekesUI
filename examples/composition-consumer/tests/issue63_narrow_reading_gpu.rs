@@ -550,10 +550,21 @@ fn render_case(
                 .unwrap()
                 .component::<TextFieldContent>()
                 .unwrap();
-            let colors = field
-                .surface
-                .surface_colors(palette, case.surface)
-                .expect("original TextField surface colors");
+            let colors = tekes_ui_tokens::surface_palette::resolve_surface_with_options(
+                palette,
+                case.surface,
+                "input",
+                if field.surface.input.disabled {
+                    "disabled"
+                } else {
+                    "rest"
+                },
+                tekes_ui_tokens::surface_palette::SurfaceOptions {
+                    error: field.surface.error,
+                    read_only: field.surface.input.read_only,
+                },
+            )
+            .expect("original TextField surface colors");
             assert!(scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q) if q.rect==field.surface.outer&&q.fill==colors.background)),"TextField panel missing generated input background");
             assert!(
                 text.surface_draws
@@ -624,10 +635,21 @@ fn render_case(
                 .unwrap()
                 .component::<TextFieldContent>()
                 .unwrap();
-            let qcolors = query
-                .surface
-                .surface_colors(palette, "popover")
-                .expect("default query popover input roles");
+            let qcolors = tekes_ui_tokens::surface_palette::resolve_surface_with_options(
+                palette,
+                "popover",
+                "input",
+                if query.surface.input.disabled {
+                    "disabled"
+                } else {
+                    "rest"
+                },
+                tekes_ui_tokens::surface_palette::SurfaceOptions {
+                    error: query.surface.error,
+                    read_only: query.surface.input.read_only,
+                },
+            )
+            .expect("default query popover input roles");
             assert!(scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q) if q.rect==query.surface.outer&&q.fill==qcolors.background)),"query input background must be generated popover role");
             let popup_colors =
                 resolve_surface(palette, "popover", "surface-frame", "rest").unwrap();
