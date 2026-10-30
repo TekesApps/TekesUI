@@ -59,3 +59,25 @@ current allocator's thread-local failure seam; all original assertions remain.
 No Select/Search/selection/navigation business implementation is imported.
 The source package is uncompiled: static assembly/parsing and patch replay do
 not establish behavior, strict, GPU, physical IME, VoiceOver or performance.
+
+### Strict-driven Menu dependency boundary — 2026-10-31 / #194
+
+The Combo-only integration retains the original Menu generation preflight/apply,
+pointer arm/release/cancel predicates and the current ClipRegion-aware Button hit
+test. It does not admit unused Select prepared transactions or navigation header
+entry points before their actual production callers. The original b159 shared
+superset and all 11 tests remain frozen in their original artifact. Select-only
+interfaces/five tests and optional header/rows clipping are retained as an exact
+separate reapply delta for #199/#195, not removed from their contracts. Ordinary
+Menu paint/layout uses the pre-header path; existing Menu replacement effects and
+Combo's six shared seam tests remain. No warning allowance, fake call, public API
+visibility expansion or selection/navigation business implementation is added.
+
+When the real header caller is admitted, its deferred render_with_header uses the
+existing MenuRenderContext for scene/text/anchor/viewport/clip/theme/typography;
+the deferred caller hunk constructs this same context. The former 13-argument
+entry point is not reinstated or suppressed. The future delta must be admitted
+with its real #195/#199 callers and its preserved tests, then separately receive
+the required scoped compilation/behavior/GPU checks. The current strict repair
+has only static validation until the integration executor allocates a new frozen
+build window. It does not relabel window02 strict failure as success.

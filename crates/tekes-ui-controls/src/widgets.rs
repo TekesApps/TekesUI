@@ -1075,11 +1075,6 @@ impl ButtonModel {
         }
     }
 
-    /// Select and Menu snapshots use the exact existing Button press decision.
-    pub(crate) fn prepare_content_press(&self) -> ButtonActionDecision {
-        self.prepare_accessibility_press()
-    }
-
     pub(crate) fn prepare_accessibility_press(&self) -> ButtonActionDecision {
         let (mut state, mut arm) = self.decided_pointer_arm(self.state);
         let activated = arm == ButtonArm::Pointer && !state.disabled && !state.loading;
@@ -2647,41 +2642,6 @@ mod tests {
         button.state.loading = true;
         assert!(!button.pointer_up(true));
         assert!(!button.state.pressed);
-    }
-
-    #[test]
-    fn prepared_content_press_delegates_current_accessibility_decision_without_effects() {
-        let mut button = ButtonModel::default();
-        for (disabled, loading, suspended) in [
-            (false, false, false),
-            (true, false, false),
-            (false, true, false),
-            (false, false, true),
-        ] {
-            button.state.disabled = disabled;
-            button.state.loading = loading;
-            button.motion_suspended = suspended;
-            let state = button.state;
-            let arm = button.arm;
-            assert_eq!(
-                button.prepare_content_press(),
-                button.prepare_accessibility_press()
-            );
-            assert_eq!(button.state, state);
-            assert_eq!(button.arm, arm);
-            assert_eq!(
-                button.prepare_content_press().activated,
-                !disabled && !loading && !suspended
-            );
-        }
-        button.motion_suspended = false;
-        button.state.focused = true;
-        button.key(ControlKey::Space, true);
-        let decision = button.prepare_content_press();
-        assert!(!decision.activated);
-        assert_eq!(button.arm, ButtonArm::Space);
-        button.apply_content_action(decision);
-        assert!(button.key(ControlKey::Space, false));
     }
 
     #[test]
