@@ -1059,6 +1059,9 @@ mod tests {
             }
             let before_focus = h.focused();
             h.get_mut(TARGET).unwrap().preserve_activation_focus = preserve;
+            // get_mut withdraws the geometry lease. Restore the normal render
+            // lifecycle before testing accepted focus through the Scroll owner.
+            render(&mut h);
             let point = h
                 .get(TARGET)
                 .unwrap()
@@ -1071,7 +1074,10 @@ mod tests {
                 .center();
             assert!(h.get(TARGET).unwrap().visible().unwrap().contains(point));
             let response = h.event(&ContentEvent::PointerDown(point));
-            assert!(response.consumed);
+            assert!(
+                response.consumed,
+                "preserve={preserve}, same_owner={same_owner}"
+            );
             assert_eq!(h.pointer_focus_requested(), !preserve);
             assert_eq!(
                 h.focused(),
