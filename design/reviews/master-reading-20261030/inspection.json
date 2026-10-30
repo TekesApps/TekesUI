@@ -1,0 +1,24 @@
+{
+  "issue": 12,
+  "batch": "B - master-detail narrow initial reading",
+  "base": "3a711f17dd641fd62069e25ec5513ee247a9adb6",
+  "frozen_settings_source_preserved": true,
+  "historical_image": {
+    "path": "design/reviews/workbench/13-master-narrow.png",
+    "sha256": "f613ace02dcd8a038e4c117cfcc9a168210d653f3f634a6237a62501c819e7f1",
+    "base_commit": "6ca8295dc398f68ba4d5d1fc333346f40fafee2b",
+    "observation": "Viewed original: master-detail page with Document rows and read-only detail. Historical native viewport is not the target 720x512/type150 current four-theme double-scale matrix; no new visual pass inferred."
+  },
+  "source_observations": [
+    "Existing state/variant GPU entrypoint excludes kind=pattern.",
+    "Existing draft_capture.rs is a form protocol/state fixture, not master-detail.",
+    "Master docs registry describes Resolve/retry, but current master renderer has document rows and a read-only detail, with no Resolve control; story_docs only overrides filter. Shared Gallery production copy ownership required before changing this known mismatch."
+  ],
+  "actual_checks": {
+    "rustfmt": "passed after scoped formatting",
+    "git_diff_check": "passed",
+    "rust_compile": "not run; new window not allocated",
+    "gpu": "not run; new window not allocated"
+  },
+  "prior_settings_batch": "unchanged and already verified; execution.json in settings-whole-page-20261030 retains its original input/program identity"
+}

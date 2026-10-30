@@ -1,0 +1,730 @@
+{
+  "review_method": "Every original PNG was opened and inspected individually with view_image at original resolution; no montage or replacement image used.",
+  "source_result": "/Volumes/HP P900/DEV/TekesUI/artifacts/delivery/integration-executor-20261030-09/visual-domain-window01/result.json",
+  "test_program_sha256": "94d37626a9ff0285e8f5c0c5adbeec6ab3c7a46c556ee6aaf6c7c4560d33da93",
+  "manifest_sha256": "7a8ee4a88a9c0155986a58fb3e87223252220b25232bc545650f0d8a2fb0af67",
+  "reviewed_count": 24,
+  "all_reviewed_images_pass": true,
+  "images": [
+    {
+      "file": "pattern-master__playground__light-standard__720x512__type-150__top@1x.png",
+      "sha256": "2a579f592e881feaabfde4c0ba5e5d962faee3ebab14f691b853908c7bacc0c4",
+      "theme": "light-standard",
+      "window": {
+        "height": 512,
+        "width": 720
+      },
+      "type_scale": 1.5,
+      "backing_scale": 1.0,
+      "route": "pattern-master/playground",
+      "renderer": "master",
+      "position": "top",
+      "actual_offset": 0.0,
+      "actual_scroll_range": 402.0,
+      "visible_list": [
+        317.0,
+        343.0,
+        143.47564697265625,
+        145.0
+      ],
+      "detail_frame": [
+        472.47564697265625,
+        343.0,
+        218.52435302734375,
+        145.0
+      ],
+      "status": "pass",
+      "observation": "The word “Document” is intact on one line in the visible document buttons; the number suffix wraps onto the following line, which is normal wrapping. The list and read-only detail are distinct, separated by a gutter/scrollbar, and do not overlap. The heading, experimental route label, explanatory copy, Docs/Playground/Behaviors tabs, Reset, document title, and reading passage match the master playground story. Top viewport shows the first selected document and following row; lower rows are outside the list viewport. Light palette retains clear text/background contrast and visible outlines. Output is 1x; no broken word or collision observed in this image."
+    },
+    {
+      "file": "pattern-master__playground__light-standard__720x512__type-150__mid@1x.png",
+      "sha256": "d610ac2fcd6e94abc7ef1bf420fa1468d32f166858811b1b26a24a932d4d0e9f",
+      "theme": "light-standard",
+      "window": {
+        "height": 512,
+        "width": 720
+      },
+      "type_scale": 1.5,
+      "backing_scale": 1.0,
+      "route": "pattern-master/playground",
+      "renderer": "master",
+      "position": "mid",
+      "actual_offset": 201.0,
+      "actual_scroll_range": 402.0,
+      "visible_list": [
+        317.0,
+        142.0,
+        143.47564697265625,
+        346.0
+      ],
+      "detail_frame": [
+        472.47564697265625,
+        142.0,
+        218.52435302734375,
+        346.0
+      ],
+      "status": "pass",
+      "observation": "The word “Document” is intact on one line in the visible document buttons; the number suffix wraps onto the following line, which is normal wrapping. The list and read-only detail are distinct, separated by a gutter/scrollbar, and do not overlap. The heading, experimental route label, explanatory copy, Docs/Playground/Behaviors tabs, Reset, document title, and reading passage match the master playground story. Mid viewport shows the first through fifth document rows; the passage continues below the detail viewport and is clipped at its bottom edge as expected for scrolling. Light palette retains clear text/background contrast and visible outlines. Output is 1x; no broken word or collision observed in this image."
+    },
+    {
+      "file": "pattern-master__playground__light-standard__720x512__type-150__bottom@1x.png",
+      "sha256": "647d52d98bab3229669672464e7e562896b0c5c5abffdc821993273ddce66f3c",
+      "theme": "light-standard",
+      "window": {
+        "height": 512,
+        "width": 720
+      },
+      "type_scale": 1.5,
+      "backing_scale": 1.0,
+      "route": "pattern-master/playground",
+      "renderer": "master",
+      "position": "bottom",
+      "actual_offset": 402.0,
+      "actual_scroll_range": 402.0,
+      "visible_list": [
+        317.0,
+        70.0,
+        143.47564697265625,
+        223.0
+      ],
+      "detail_frame": [
+        472.47564697265625,
+        -59.0,
+        218.52435302734375,
+        352.0
+      ],
+      "status": "pass",
+      "observation": "The word “Document” is intact on one line in the visible document buttons; the number suffix wraps onto the following line, which is normal wrapping. The list and read-only detail are distinct, separated by a gutter/scrollbar, and do not overlap. The heading, experimental route label, explanatory copy, Docs/Playground/Behaviors tabs, Reset, document title, and reading passage match the master playground story. Bottom viewport shows later rows with the next row partially clipped at the list viewport edge; the detail passage is independently clipped at its viewport edge. The Event log heading is visible and its body is empty, consistent with this initial capture having no pointer/keyboard actions. Light palette retains clear text/background contrast and visible outlines. Output is 1x; no broken word or collision observed in this image."
+    },
+    {
+      "file": "pattern-master__playground__light-standard__720x512__type-150__top@2x.png",
+      "sha256": "7350d5a011f3f79bfdaee21ae552c54bca50c8d3e3392498370f78f60f0f9347",
+      "theme": "light-standard",
+      "window": {
+        "height": 512,
+        "width": 720
+      },
+      "type_scale": 1.5,
+      "backing_scale": 2.0,
+      "route": "pattern-master/playground",
+      "renderer": "master",
+      "position": "top",
+      "actual_offset": 0.0,
+      "actual_scroll_range": 402.0,
+      "visible_list": [
+        317.0,
+        343.0,
+        143.47564697265625,
+        145.0
+      ],
+      "detail_frame": [
+        472.47564697265625,
+        343.0,
+        218.52435302734375,
+        145.0
+      ],
+      "status": "pass",
+      "observation": "The word “Document” is intact on one line in the visible document buttons; the number suffix wraps onto the following line, which is normal wrapping. The list and read-only detail are distinct, separated by a gutter/scrollbar, and do not overlap. The heading, experimental route label, explanatory copy, Docs/Playground/Behaviors tabs, Reset, document title, and reading passage match the master playground story. Top viewport shows the first selected document and following row; lower rows are outside the list viewport. Light palette retains clear text/background contrast and visible outlines. Output is 2x; no broken word or collision observed in this image."
+    },
+    {
+      "file": "pattern-master__playground__light-standard__720x512__type-150__mid@2x.png",
+      "sha256": "7d179793ddc9602886a43ec919a019965ebfb7dbee59bf1a01fc6b7415134946",
+      "theme": "light-standard",
+      "window": {
+        "height": 512,
+        "width": 720
+      },
+      "type_scale": 1.5,
+      "backing_scale": 2.0,
+      "route": "pattern-master/playground",
+      "renderer": "master",
+      "position": "mid",
+      "actual_offset": 201.0,
+      "actual_scroll_range": 402.0,
+      "visible_list": [
+        317.0,
+        142.0,
+        143.47564697265625,
+        346.0
+      ],
+      "detail_frame": [
+        472.47564697265625,
+        142.0,
+        218.52435302734375,
+        346.0
+      ],
+      "status": "pass",
+      "observation": "The word “Document” is intact on one line in the visible document buttons; the number suffix wraps onto the following line, which is normal wrapping. The list and read-only detail are distinct, separated by a gutter/scrollbar, and do not overlap. The heading, experimental route label, explanatory copy, Docs/Playground/Behaviors tabs, Reset, document title, and reading passage match the master playground story. Mid viewport shows the first through fifth document rows; the passage continues below the detail viewport and is clipped at its bottom edge as expected for scrolling. Light palette retains clear text/background contrast and visible outlines. Output is 2x; no broken word or collision observed in this image."
+    },
+    {
+      "file": "pattern-master__playground__light-standard__720x512__type-150__bottom@2x.png",
+      "sha256": "ab023c558703a2dc6f77075a069875cb83073335a45f770d284d6a6fa2c96bb6",
+      "theme": "light-standard",
+      "window": {
+        "height": 512,
+        "width": 720
+      },
+      "type_scale": 1.5,
+      "backing_scale": 2.0,
+      "route": "pattern-master/playground",
+      "renderer": "master",
+      "position": "bottom",
+      "actual_offset": 402.0,
+      "actual_scroll_range": 402.0,
+      "visible_list": [
+        317.0,
+        70.0,
+        143.47564697265625,
+        223.0
+      ],
+      "detail_frame": [
+        472.47564697265625,
+        -59.0,
+        218.52435302734375,
+        352.0
+      ],
+      "status": "pass",
+      "observation": "The word “Document” is intact on one line in the visible document buttons; the number suffix wraps onto the following line, which is normal wrapping. The list and read-only detail are distinct, separated by a gutter/scrollbar, and do not overlap. The heading, experimental route label, explanatory copy, Docs/Playground/Behaviors tabs, Reset, document title, and reading passage match the master playground story. Bottom viewport shows later rows with the next row partially clipped at the list viewport edge; the detail passage is independently clipped at its viewport edge. The Event log heading is visible and its body is empty, consistent with this initial capture having no pointer/keyboard actions. Light palette retains clear text/background contrast and visible outlines. Output is 2x; no broken word or collision observed in this image."
+    },
+    {
+      "file": "pattern-master__playground__dark-standard__720x512__type-150__top@1x.png",
+      "sha256": "749412dd149a3fb54ff4992871e73d5d861d5f7a7d612f4e600657cd170c09cc",
+      "theme": "dark-standard",
+      "window": {
+        "height": 512,
+        "width": 720
+      },
+      "type_scale": 1.5,
+      "backing_scale": 1.0,
+      "route": "pattern-master/playground",
+      "renderer": "master",
+      "position": "top",
+      "actual_offset": 0.0,
+      "actual_scroll_range": 402.0,
+      "visible_list": [
+        317.0,
+        343.0,
+        143.47564697265625,
+        145.0
+      ],
+      "detail_frame": [
+        472.47564697265625,
+        343.0,
+        218.52435302734375,
+        145.0
+      ],
+      "status": "pass",
+      "observation": "The word “Document” is intact on one line in the visible document buttons; the number suffix wraps onto the following line, which is normal wrapping. The list and read-only detail are distinct, separated by a gutter/scrollbar, and do not overlap. The heading, experimental route label, explanatory copy, Docs/Playground/Behaviors tabs, Reset, document title, and reading passage match the master playground story. Top viewport shows the first selected document and following row; lower rows are outside the list viewport. Dark palette retains clear text/background contrast and visible outlines. Output is 1x; no broken word or collision observed in this image."
+    },
+    {
+      "file": "pattern-master__playground__dark-standard__720x512__type-150__mid@1x.png",
+      "sha256": "72f17ef96e4402cebb31d6d22e67a3e7c3066d16d95b73ced24061fae8e5f2eb",
+      "theme": "dark-standard",
+      "window": {
+        "height": 512,
+        "width": 720
+      },
+      "type_scale": 1.5,
+      "backing_scale": 1.0,
+      "route": "pattern-master/playground",
+      "renderer": "master",
+      "position": "mid",
+      "actual_offset": 201.0,
+      "actual_scroll_range": 402.0,
+      "visible_list": [
+        317.0,
+        142.0,
+        143.47564697265625,
+        346.0
+      ],
+      "detail_frame": [
+        472.47564697265625,
+        142.0,
+        218.52435302734375,
+        346.0
+      ],
+      "status": "pass",
+      "observation": "The word “Document” is intact on one line in the visible document buttons; the number suffix wraps onto the following line, which is normal wrapping. The list and read-only detail are distinct, separated by a gutter/scrollbar, and do not overlap. The heading, experimental route label, explanatory copy, Docs/Playground/Behaviors tabs, Reset, document title, and reading passage match the master playground story. Mid viewport shows the first through fifth document rows; the passage continues below the detail viewport and is clipped at its bottom edge as expected for scrolling. Dark palette retains clear text/background contrast and visible outlines. Output is 1x; no broken word or collision observed in this image."
+    },
+    {
+      "file": "pattern-master__playground__dark-standard__720x512__type-150__bottom@1x.png",
+      "sha256": "e5a2a21cf87e70e17adb8b2a7401232e2d8ddc0d3368b49d253e55aa0603e17a",
+      "theme": "dark-standard",
+      "window": {
+        "height": 512,
+        "width": 720
+      },
+      "type_scale": 1.5,
+      "backing_scale": 1.0,
+      "route": "pattern-master/playground",
+      "renderer": "master",
+      "position": "bottom",
+      "actual_offset": 402.0,
+      "actual_scroll_range": 402.0,
+      "visible_list": [
+        317.0,
+        70.0,
+        143.47564697265625,
+        223.0
+      ],
+      "detail_frame": [
+        472.47564697265625,
+        -59.0,
+        218.52435302734375,
+        352.0
+      ],
+      "status": "pass",
+      "observation": "The word “Document” is intact on one line in the visible document buttons; the number suffix wraps onto the following line, which is normal wrapping. The list and read-only detail are distinct, separated by a gutter/scrollbar, and do not overlap. The heading, experimental route label, explanatory copy, Docs/Playground/Behaviors tabs, Reset, document title, and reading passage match the master playground story. Bottom viewport shows later rows with the next row partially clipped at the list viewport edge; the detail passage is independently clipped at its viewport edge. The Event log heading is visible and its body is empty, consistent with this initial capture having no pointer/keyboard actions. Dark palette retains clear text/background contrast and visible outlines. Output is 1x; no broken word or collision observed in this image."
+    },
+    {
+      "file": "pattern-master__playground__dark-standard__720x512__type-150__top@2x.png",
+      "sha256": "e2e81fac9e76d20062d42dab6883df7d9d6efbf350c3076e84a602c2c25426c7",
+      "theme": "dark-standard",
+      "window": {
+        "height": 512,
+        "width": 720
+      },
+      "type_scale": 1.5,
+      "backing_scale": 2.0,
+      "route": "pattern-master/playground",
+      "renderer": "master",
+      "position": "top",
+      "actual_offset": 0.0,
+      "actual_scroll_range": 402.0,
+      "visible_list": [
+        317.0,
+        343.0,
+        143.47564697265625,
+        145.0
+      ],
+      "detail_frame": [
+        472.47564697265625,
+        343.0,
+        218.52435302734375,
+        145.0
+      ],
+      "status": "pass",
+      "observation": "The word “Document” is intact on one line in the visible document buttons; the number suffix wraps onto the following line, which is normal wrapping. The list and read-only detail are distinct, separated by a gutter/scrollbar, and do not overlap. The heading, experimental route label, explanatory copy, Docs/Playground/Behaviors tabs, Reset, document title, and reading passage match the master playground story. Top viewport shows the first selected document and following row; lower rows are outside the list viewport. Dark palette retains clear text/background contrast and visible outlines. Output is 2x; no broken word or collision observed in this image."
+    },
+    {
+      "file": "pattern-master__playground__dark-standard__720x512__type-150__mid@2x.png",
+      "sha256": "310fb6ca1a6b105aeeb854093791f5897dd64266d0044f2e9e2f9812982a9139",
+      "theme": "dark-standard",
+      "window": {
+        "height": 512,
+        "width": 720
+      },
+      "type_scale": 1.5,
+      "backing_scale": 2.0,
+      "route": "pattern-master/playground",
+      "renderer": "master",
+      "position": "mid",
+      "actual_offset": 201.0,
+      "actual_scroll_range": 402.0,
+      "visible_list": [
+        317.0,
+        142.0,
+        143.47564697265625,
+        346.0
+      ],
+      "detail_frame": [
+        472.47564697265625,
+        142.0,
+        218.52435302734375,
+        346.0
+      ],
+      "status": "pass",
+      "observation": "The word “Document” is intact on one line in the visible document buttons; the number suffix wraps onto the following line, which is normal wrapping. The list and read-only detail are distinct, separated by a gutter/scrollbar, and do not overlap. The heading, experimental route label, explanatory copy, Docs/Playground/Behaviors tabs, Reset, document title, and reading passage match the master playground story. Mid viewport shows the first through fifth document rows; the passage continues below the detail viewport and is clipped at its bottom edge as expected for scrolling. Dark palette retains clear text/background contrast and visible outlines. Output is 2x; no broken word or collision observed in this image."
+    },
+    {
+      "file": "pattern-master__playground__dark-standard__720x512__type-150__bottom@2x.png",
+      "sha256": "bec2814b626832890b7917703b3cf611620c53366c1e901528648c2b44065914",
+      "theme": "dark-standard",
+      "window": {
+        "height": 512,
+        "width": 720
+      },
+      "type_scale": 1.5,
+      "backing_scale": 2.0,
+      "route": "pattern-master/playground",
+      "renderer": "master",
+      "position": "bottom",
+      "actual_offset": 402.0,
+      "actual_scroll_range": 402.0,
+      "visible_list": [
+        317.0,
+        70.0,
+        143.47564697265625,
+        223.0
+      ],
+      "detail_frame": [
+        472.47564697265625,
+        -59.0,
+        218.52435302734375,
+        352.0
+      ],
+      "status": "pass",
+      "observation": "The word “Document” is intact on one line in the visible document buttons; the number suffix wraps onto the following line, which is normal wrapping. The list and read-only detail are distinct, separated by a gutter/scrollbar, and do not overlap. The heading, experimental route label, explanatory copy, Docs/Playground/Behaviors tabs, Reset, document title, and reading passage match the master playground story. Bottom viewport shows later rows with the next row partially clipped at the list viewport edge; the detail passage is independently clipped at its viewport edge. The Event log heading is visible and its body is empty, consistent with this initial capture having no pointer/keyboard actions. Dark palette retains clear text/background contrast and visible outlines. Output is 2x; no broken word or collision observed in this image."
+    },
+    {
+      "file": "pattern-master__playground__light-increased__720x512__type-150__top@1x.png",
+      "sha256": "b8f697b1afe052ad088f04df94e42a7ebae5c2a25d1b51226b22b8735a61346e",
+      "theme": "light-increased",
+      "window": {
+        "height": 512,
+        "width": 720
+      },
+      "type_scale": 1.5,
+      "backing_scale": 1.0,
+      "route": "pattern-master/playground",
+      "renderer": "master",
+      "position": "top",
+      "actual_offset": 0.0,
+      "actual_scroll_range": 402.0,
+      "visible_list": [
+        317.0,
+        343.0,
+        143.47564697265625,
+        145.0
+      ],
+      "detail_frame": [
+        472.47564697265625,
+        343.0,
+        218.52435302734375,
+        145.0
+      ],
+      "status": "pass",
+      "observation": "The word “Document” is intact on one line in the visible document buttons; the number suffix wraps onto the following line, which is normal wrapping. The list and read-only detail are distinct, separated by a gutter/scrollbar, and do not overlap. The heading, experimental route label, explanatory copy, Docs/Playground/Behaviors tabs, Reset, document title, and reading passage match the master playground story. Top viewport shows the first selected document and following row; lower rows are outside the list viewport. Light palette retains clear text/background contrast and visible outlines. Output is 1x; no broken word or collision observed in this image."
+    },
+    {
+      "file": "pattern-master__playground__light-increased__720x512__type-150__mid@1x.png",
+      "sha256": "fd0c7a20e192aa03067bdfabe6c1276a93fc9780bd2991f8ae3a7b2cb97a4b0c",
+      "theme": "light-increased",
+      "window": {
+        "height": 512,
+        "width": 720
+      },
+      "type_scale": 1.5,
+      "backing_scale": 1.0,
+      "route": "pattern-master/playground",
+      "renderer": "master",
+      "position": "mid",
+      "actual_offset": 201.0,
+      "actual_scroll_range": 402.0,
+      "visible_list": [
+        317.0,
+        142.0,
+        143.47564697265625,
+        346.0
+      ],
+      "detail_frame": [
+        472.47564697265625,
+        142.0,
+        218.52435302734375,
+        346.0
+      ],
+      "status": "pass",
+      "observation": "The word “Document” is intact on one line in the visible document buttons; the number suffix wraps onto the following line, which is normal wrapping. The list and read-only detail are distinct, separated by a gutter/scrollbar, and do not overlap. The heading, experimental route label, explanatory copy, Docs/Playground/Behaviors tabs, Reset, document title, and reading passage match the master playground story. Mid viewport shows the first through fifth document rows; the passage continues below the detail viewport and is clipped at its bottom edge as expected for scrolling. Light palette retains clear text/background contrast and visible outlines. Output is 1x; no broken word or collision observed in this image."
+    },
+    {
+      "file": "pattern-master__playground__light-increased__720x512__type-150__bottom@1x.png",
+      "sha256": "178e429cc0a57fc64c0659d64e1b1597647d111c08a41a6b5f1501925857c842",
+      "theme": "light-increased",
+      "window": {
+        "height": 512,
+        "width": 720
+      },
+      "type_scale": 1.5,
+      "backing_scale": 1.0,
+      "route": "pattern-master/playground",
+      "renderer": "master",
+      "position": "bottom",
+      "actual_offset": 402.0,
+      "actual_scroll_range": 402.0,
+      "visible_list": [
+        317.0,
+        70.0,
+        143.47564697265625,
+        223.0
+      ],
+      "detail_frame": [
+        472.47564697265625,
+        -59.0,
+        218.52435302734375,
+        352.0
+      ],
+      "status": "pass",
+      "observation": "The word “Document” is intact on one line in the visible document buttons; the number suffix wraps onto the following line, which is normal wrapping. The list and read-only detail are distinct, separated by a gutter/scrollbar, and do not overlap. The heading, experimental route label, explanatory copy, Docs/Playground/Behaviors tabs, Reset, document title, and reading passage match the master playground story. Bottom viewport shows later rows with the next row partially clipped at the list viewport edge; the detail passage is independently clipped at its viewport edge. The Event log heading is visible and its body is empty, consistent with this initial capture having no pointer/keyboard actions. Light palette retains clear text/background contrast and visible outlines. Output is 1x; no broken word or collision observed in this image."
+    },
+    {
+      "file": "pattern-master__playground__light-increased__720x512__type-150__top@2x.png",
+      "sha256": "7393f596761696e2887f2ca5ca81f496bc8ac5d81b2e25af3f5f1323e7b799c5",
+      "theme": "light-increased",
+      "window": {
+        "height": 512,
+        "width": 720
+      },
+      "type_scale": 1.5,
+      "backing_scale": 2.0,
+      "route": "pattern-master/playground",
+      "renderer": "master",
+      "position": "top",
+      "actual_offset": 0.0,
+      "actual_scroll_range": 402.0,
+      "visible_list": [
+        317.0,
+        343.0,
+        143.47564697265625,
+        145.0
+      ],
+      "detail_frame": [
+        472.47564697265625,
+        343.0,
+        218.52435302734375,
+        145.0
+      ],
+      "status": "pass",
+      "observation": "The word “Document” is intact on one line in the visible document buttons; the number suffix wraps onto the following line, which is normal wrapping. The list and read-only detail are distinct, separated by a gutter/scrollbar, and do not overlap. The heading, experimental route label, explanatory copy, Docs/Playground/Behaviors tabs, Reset, document title, and reading passage match the master playground story. Top viewport shows the first selected document and following row; lower rows are outside the list viewport. Light palette retains clear text/background contrast and visible outlines. Output is 2x; no broken word or collision observed in this image."
+    },
+    {
+      "file": "pattern-master__playground__light-increased__720x512__type-150__mid@2x.png",
+      "sha256": "47cbfe9d1fe974ef90e25c8caf5667dabb4ef2fc24a3073d2dd66768bdc1f2d5",
+      "theme": "light-increased",
+      "window": {
+        "height": 512,
+        "width": 720
+      },
+      "type_scale": 1.5,
+      "backing_scale": 2.0,
+      "route": "pattern-master/playground",
+      "renderer": "master",
+      "position": "mid",
+      "actual_offset": 201.0,
+      "actual_scroll_range": 402.0,
+      "visible_list": [
+        317.0,
+        142.0,
+        143.47564697265625,
+        346.0
+      ],
+      "detail_frame": [
+        472.47564697265625,
+        142.0,
+        218.52435302734375,
+        346.0
+      ],
+      "status": "pass",
+      "observation": "The word “Document” is intact on one line in the visible document buttons; the number suffix wraps onto the following line, which is normal wrapping. The list and read-only detail are distinct, separated by a gutter/scrollbar, and do not overlap. The heading, experimental route label, explanatory copy, Docs/Playground/Behaviors tabs, Reset, document title, and reading passage match the master playground story. Mid viewport shows the first through fifth document rows; the passage continues below the detail viewport and is clipped at its bottom edge as expected for scrolling. Light palette retains clear text/background contrast and visible outlines. Output is 2x; no broken word or collision observed in this image."
+    },
+    {
+      "file": "pattern-master__playground__light-increased__720x512__type-150__bottom@2x.png",
+      "sha256": "36b934a4a05e4a7505c3b186525936a742e173d87e6567a11837ad55b46b6091",
+      "theme": "light-increased",
+      "window": {
+        "height": 512,
+        "width": 720
+      },
+      "type_scale": 1.5,
+      "backing_scale": 2.0,
+      "route": "pattern-master/playground",
+      "renderer": "master",
+      "position": "bottom",
+      "actual_offset": 402.0,
+      "actual_scroll_range": 402.0,
+      "visible_list": [
+        317.0,
+        70.0,
+        143.47564697265625,
+        223.0
+      ],
+      "detail_frame": [
+        472.47564697265625,
+        -59.0,
+        218.52435302734375,
+        352.0
+      ],
+      "status": "pass",
+      "observation": "The word “Document” is intact on one line in the visible document buttons; the number suffix wraps onto the following line, which is normal wrapping. The list and read-only detail are distinct, separated by a gutter/scrollbar, and do not overlap. The heading, experimental route label, explanatory copy, Docs/Playground/Behaviors tabs, Reset, document title, and reading passage match the master playground story. Bottom viewport shows later rows with the next row partially clipped at the list viewport edge; the detail passage is independently clipped at its viewport edge. The Event log heading is visible and its body is empty, consistent with this initial capture having no pointer/keyboard actions. Light palette retains clear text/background contrast and visible outlines. Output is 2x; no broken word or collision observed in this image."
+    },
+    {
+      "file": "pattern-master__playground__dark-increased__720x512__type-150__top@1x.png",
+      "sha256": "01f3436d7159c5ef0e97893084992b08b7b6f3a98875e7d520925a8c757a29af",
+      "theme": "dark-increased",
+      "window": {
+        "height": 512,
+        "width": 720
+      },
+      "type_scale": 1.5,
+      "backing_scale": 1.0,
+      "route": "pattern-master/playground",
+      "renderer": "master",
+      "position": "top",
+      "actual_offset": 0.0,
+      "actual_scroll_range": 402.0,
+      "visible_list": [
+        317.0,
+        343.0,
+        143.47564697265625,
+        145.0
+      ],
+      "detail_frame": [
+        472.47564697265625,
+        343.0,
+        218.52435302734375,
+        145.0
+      ],
+      "status": "pass",
+      "observation": "The word “Document” is intact on one line in the visible document buttons; the number suffix wraps onto the following line, which is normal wrapping. The list and read-only detail are distinct, separated by a gutter/scrollbar, and do not overlap. The heading, experimental route label, explanatory copy, Docs/Playground/Behaviors tabs, Reset, document title, and reading passage match the master playground story. Top viewport shows the first selected document and following row; lower rows are outside the list viewport. Dark palette retains clear text/background contrast and visible outlines. Output is 1x; no broken word or collision observed in this image."
+    },
+    {
+      "file": "pattern-master__playground__dark-increased__720x512__type-150__mid@1x.png",
+      "sha256": "34338ac8f20e621683a41aacff20b5bdb040e16d38782ef3a759f5549aafc468",
+      "theme": "dark-increased",
+      "window": {
+        "height": 512,
+        "width": 720
+      },
+      "type_scale": 1.5,
+      "backing_scale": 1.0,
+      "route": "pattern-master/playground",
+      "renderer": "master",
+      "position": "mid",
+      "actual_offset": 201.0,
+      "actual_scroll_range": 402.0,
+      "visible_list": [
+        317.0,
+        142.0,
+        143.47564697265625,
+        346.0
+      ],
+      "detail_frame": [
+        472.47564697265625,
+        142.0,
+        218.52435302734375,
+        346.0
+      ],
+      "status": "pass",
+      "observation": "The word “Document” is intact on one line in the visible document buttons; the number suffix wraps onto the following line, which is normal wrapping. The list and read-only detail are distinct, separated by a gutter/scrollbar, and do not overlap. The heading, experimental route label, explanatory copy, Docs/Playground/Behaviors tabs, Reset, document title, and reading passage match the master playground story. Mid viewport shows the first through fifth document rows; the passage continues below the detail viewport and is clipped at its bottom edge as expected for scrolling. Dark palette retains clear text/background contrast and visible outlines. Output is 1x; no broken word or collision observed in this image."
+    },
+    {
+      "file": "pattern-master__playground__dark-increased__720x512__type-150__bottom@1x.png",
+      "sha256": "9f097d6879ef1cce414466ce8dda433bf9909da2585bf98f00b2ae72978db555",
+      "theme": "dark-increased",
+      "window": {
+        "height": 512,
+        "width": 720
+      },
+      "type_scale": 1.5,
+      "backing_scale": 1.0,
+      "route": "pattern-master/playground",
+      "renderer": "master",
+      "position": "bottom",
+      "actual_offset": 402.0,
+      "actual_scroll_range": 402.0,
+      "visible_list": [
+        317.0,
+        70.0,
+        143.47564697265625,
+        223.0
+      ],
+      "detail_frame": [
+        472.47564697265625,
+        -59.0,
+        218.52435302734375,
+        352.0
+      ],
+      "status": "pass",
+      "observation": "The word “Document” is intact on one line in the visible document buttons; the number suffix wraps onto the following line, which is normal wrapping. The list and read-only detail are distinct, separated by a gutter/scrollbar, and do not overlap. The heading, experimental route label, explanatory copy, Docs/Playground/Behaviors tabs, Reset, document title, and reading passage match the master playground story. Bottom viewport shows later rows with the next row partially clipped at the list viewport edge; the detail passage is independently clipped at its viewport edge. The Event log heading is visible and its body is empty, consistent with this initial capture having no pointer/keyboard actions. Dark palette retains clear text/background contrast and visible outlines. Output is 1x; no broken word or collision observed in this image."
+    },
+    {
+      "file": "pattern-master__playground__dark-increased__720x512__type-150__top@2x.png",
+      "sha256": "32f62add11bd1df0551018e877e2dee2c1224ac25ef23f3225addfd7088bf8ac",
+      "theme": "dark-increased",
+      "window": {
+        "height": 512,
+        "width": 720
+      },
+      "type_scale": 1.5,
+      "backing_scale": 2.0,
+      "route": "pattern-master/playground",
+      "renderer": "master",
+      "position": "top",
+      "actual_offset": 0.0,
+      "actual_scroll_range": 402.0,
+      "visible_list": [
+        317.0,
+        343.0,
+        143.47564697265625,
+        145.0
+      ],
+      "detail_frame": [
+        472.47564697265625,
+        343.0,
+        218.52435302734375,
+        145.0
+      ],
+      "status": "pass",
+      "observation": "The word “Document” is intact on one line in the visible document buttons; the number suffix wraps onto the following line, which is normal wrapping. The list and read-only detail are distinct, separated by a gutter/scrollbar, and do not overlap. The heading, experimental route label, explanatory copy, Docs/Playground/Behaviors tabs, Reset, document title, and reading passage match the master playground story. Top viewport shows the first selected document and following row; lower rows are outside the list viewport. Dark palette retains clear text/background contrast and visible outlines. Output is 2x; no broken word or collision observed in this image."
+    },
+    {
+      "file": "pattern-master__playground__dark-increased__720x512__type-150__mid@2x.png",
+      "sha256": "338afc8d4bb7640bb57e259814532de06f4b2fb3eade49e08f5cf2c38df80e11",
+      "theme": "dark-increased",
+      "window": {
+        "height": 512,
+        "width": 720
+      },
+      "type_scale": 1.5,
+      "backing_scale": 2.0,
+      "route": "pattern-master/playground",
+      "renderer": "master",
+      "position": "mid",
+      "actual_offset": 201.0,
+      "actual_scroll_range": 402.0,
+      "visible_list": [
+        317.0,
+        142.0,
+        143.47564697265625,
+        346.0
+      ],
+      "detail_frame": [
+        472.47564697265625,
+        142.0,
+        218.52435302734375,
+        346.0
+      ],
+      "status": "pass",
+      "observation": "The word “Document” is intact on one line in the visible document buttons; the number suffix wraps onto the following line, which is normal wrapping. The list and read-only detail are distinct, separated by a gutter/scrollbar, and do not overlap. The heading, experimental route label, explanatory copy, Docs/Playground/Behaviors tabs, Reset, document title, and reading passage match the master playground story. Mid viewport shows the first through fifth document rows; the passage continues below the detail viewport and is clipped at its bottom edge as expected for scrolling. Dark palette retains clear text/background contrast and visible outlines. Output is 2x; no broken word or collision observed in this image."
+    },
+    {
+      "file": "pattern-master__playground__dark-increased__720x512__type-150__bottom@2x.png",
+      "sha256": "264c52b192ac6285b1f329f44ec0a937201f6ff4197f7469061c40245efa6740",
+      "theme": "dark-increased",
+      "window": {
+        "height": 512,
+        "width": 720
+      },
+      "type_scale": 1.5,
+      "backing_scale": 2.0,
+      "route": "pattern-master/playground",
+      "renderer": "master",
+      "position": "bottom",
+      "actual_offset": 402.0,
+      "actual_scroll_range": 402.0,
+      "visible_list": [
+        317.0,
+        70.0,
+        143.47564697265625,
+        223.0
+      ],
+      "detail_frame": [
+        472.47564697265625,
+        -59.0,
+        218.52435302734375,
+        352.0
+      ],
+      "status": "pass",
+      "observation": "The word “Document” is intact on one line in the visible document buttons; the number suffix wraps onto the following line, which is normal wrapping. The list and read-only detail are distinct, separated by a gutter/scrollbar, and do not overlap. The heading, experimental route label, explanatory copy, Docs/Playground/Behaviors tabs, Reset, document title, and reading passage match the master playground story. Bottom viewport shows later rows with the next row partially clipped at the list viewport edge; the detail passage is independently clipped at its viewport edge. The Event log heading is visible and its body is empty, consistent with this initial capture having no pointer/keyboard actions. Dark palette retains clear text/background contrast and visible outlines. Output is 2x; no broken word or collision observed in this image."
+    }
+  ]
+}

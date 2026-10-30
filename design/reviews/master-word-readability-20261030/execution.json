@@ -1,0 +1,63 @@
+{
+  "actual_MAIN": {
+    "head": "2af0290dad4bf4bf3d345c221a3261282ceed595",
+    "branch": "codex/master-visible-width-validation-20261030",
+    "index_sha256": "7f78fe1918f3f0135280b2f11bcef2829069383b32d59817f60e75b1d08d7513",
+    "working_diff_sha256": "cea043ed43280a07315d8150ba856a1f0fd05958cea61bb828cf9377a06bc904"
+  },
+  "actual_workbench_sha256": "5669665902d72a45ae529e6ae37cc64e3f92bf15305d1f6ca27911b630edfff0",
+  "program_sha256": "94d37626a9ff0285e8f5c0c5adbeec6ab3c7a46c556ee6aaf6c7c4560d33da93",
+  "raw_receipts": "/Volumes/HP P900/DEV/TekesUI/artifacts/delivery/integration-executor-20261030-09/visual-domain-window01",
+  "checks": [
+    {
+      "name": "no-run",
+      "exit_code": 0
+    },
+    {
+      "name": "master-regressions",
+      "exit_code": 0,
+      "executed_tests": 3,
+      "ignored_tests": 1,
+      "new_regression_passed": true
+    },
+    {
+      "name": "gpu-capture",
+      "exit_code": 0,
+      "executed_tests": 1,
+      "ignored_tests": 0
+    },
+    {
+      "name": "gallery-strict",
+      "exit_code": 0
+    }
+  ],
+  "input_count": 3494,
+  "inputs_before_sha256": "46a08e6adcf4317604d230fa7332d89bf09949a968f3c454720b38c2d69316c5",
+  "inputs_after_sha256": "46a08e6adcf4317604d230fa7332d89bf09949a968f3c454720b38c2d69316c5",
+  "all24_reviewed": true,
+  "original_domain_lead_samples": 4,
+  "integrator_additional_unique_samples": 4,
+  "integrator_all24_hash_crosscheck": true,
+  "resource_release_proof": {
+    "both_original_lock_paths_nonblocking_reacquire_and_release_succeeded": true,
+    "all_own_subprocesses_terminated": true,
+    "gpu_release_event_present": true
+  },
+  "scope": "default brand0;720x512/type150;four themes;1x/2x;top/mid/bottom;initial Document1 only;not complete Gold7",
+  "prior_failures_preserved": [
+    "07/master12 original24 badPNG",
+    "08/master-b02/red01 compile failure",
+    "08/master-b02/red02 actual whole-word behavioral failure",
+    "08/master-b02/green01 raw paragraph-width metric failure"
+  ],
+  "unverified": [
+    "C64 repeat",
+    "AX/57 repeat",
+    "native keyboard/pointer or nested list actions",
+    "physical display",
+    "IME",
+    "VO",
+    "performance",
+    "new CI"
+  ]
+}

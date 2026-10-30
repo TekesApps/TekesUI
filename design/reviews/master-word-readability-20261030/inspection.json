@@ -1,0 +1,159 @@
+{
+  "issue": 12,
+  "scope": "B actual Document word-break repair; C frozen",
+  "candidate_base": "0749059c5e493a903a98653ab3336b156a5f709a",
+  "actual_red": {
+    "head": "aecd20e3254afff77895ecc7cbe73ac68b9887bd",
+    "source_hashes": {
+      "crates/tekes-ui-gallery/src/gallery/mod.rs": "2d0a9a4a0730a2bd679d0c13401b942dd01dc7b65e91f2b2fd965b532420e1fa",
+      "crates/tekes-ui-gallery/src/gallery/workbench.rs": "e8f12e714dd7e93a3930dcd6ebd2f99cfde449dd1509f75078a8deb410df34a4",
+      "crates/tekes-ui-gallery/src/gallery/workbench/state_capture.rs": "2998f8163053a5970c6f213c600fb05c90cc68b973ee38f5bf0c50b9a7529cdd",
+      "crates/tekes-ui-gallery/src/gallery/workbench/master_reading_capture.rs": "6a546c9a8b0fbd5ff8c93c848c3ef880433365b018ff49a1d9aa18d94eed7940",
+      "design/reviews/master-reading-20261030/README.md": "0280fdbab670f6838faf19f5d6f78edc3fe75afecf8e17d930cd55d22f32b74a",
+      "design/reviews/master-reading-20261030/inspection.json": "2d7b6d013ac5f63e05e2e788b68babefa07a22ea089f80ec046819598202f82d",
+      "Cargo.toml": "8bf3aac48349a5ae8a65fbccd97bd3daf061e650d52386a7ab07920f40a28614",
+      "Cargo.lock": "5b284458eb85e272b5eebcfbfd920a0f9b0d97d2512ebdb1910790d06cbac6bc",
+      "crates/tekes-ui-gallery/Cargo.toml": "1e9d34258361fef3658daa88234c499709c001ab14a0ab53da62aea4bef24c9d",
+      "rust-toolchain.toml": "12dc5d64dbd96c1b07be2943241d52d9f6127a79ba47a820455ba7b873fc896a"
+    },
+    "program": {
+      "source": "/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/review-cache/debug/deps/tekes_ui_gallery-9e9d366bd3867cf3",
+      "copy": "/Volumes/HP P900/DEV/TekesUI/artifacts/delivery/integration-executor-20261030-07/master12/gallery-test-program",
+      "sha256": "88eaca10980096b15efd2bfc10f2b8f6d9807054490ca3991df671a3050826a5",
+      "executed": true
+    },
+    "checks": [
+      {
+        "name": "no-run",
+        "argv": [
+          "cargo",
+          "+1.95.0",
+          "test",
+          "--locked",
+          "--offline",
+          "-p",
+          "tekes-ui-gallery",
+          "--bin",
+          "tekes-ui-gallery",
+          "master_detail_narrow_reading_captures_real_page_and_nested_viewports",
+          "--no-run"
+        ],
+        "exit_code": 0,
+        "seconds": 15.154201745986938
+      },
+      {
+        "name": "gpu-capture",
+        "argv": [
+          "cargo",
+          "+1.95.0",
+          "test",
+          "--locked",
+          "--offline",
+          "-p",
+          "tekes-ui-gallery",
+          "--bin",
+          "tekes-ui-gallery",
+          "master_detail_narrow_reading_captures_real_page_and_nested_viewports",
+          "--",
+          "--ignored",
+          "--nocapture",
+          "--test-threads=1"
+        ],
+        "exit_code": 0,
+        "seconds": 7.644443035125732
+      },
+      {
+        "name": "master-regressions",
+        "argv": [
+          "cargo",
+          "+1.95.0",
+          "test",
+          "--locked",
+          "--offline",
+          "-p",
+          "tekes-ui-gallery",
+          "--bin",
+          "tekes-ui-gallery",
+          "master_detail_",
+          "--",
+          "--nocapture",
+          "--test-threads=1"
+        ],
+        "exit_code": 0,
+        "seconds": 0.4543609619140625
+      },
+      {
+        "name": "gallery-strict",
+        "argv": [
+          "cargo",
+          "+1.95.0",
+          "clippy",
+          "--locked",
+          "--offline",
+          "-p",
+          "tekes-ui-gallery",
+          "--bin",
+          "tekes-ui-gallery",
+          "--tests",
+          "--",
+          "-D",
+          "warnings"
+        ],
+        "exit_code": 0,
+        "seconds": 14.264454126358032
+      }
+    ],
+    "visual_result": "FAIL - all original 24 frames retained",
+    "result_path": "/Volumes/HP P900/DEV/TekesUI/artifacts/delivery/integration-executor-20261030-07/master12/result.json",
+    "result_sha256": "9e53b5ac828d1d2ffb2231a7e05d0b720527cd025f6e123aad730d85b319e8f9",
+    "visual_review_sha256": "6f98777c7fb2d5f17723851da28a555cd02c20f54bd4bfdc7ebe743c61e17068",
+    "manifest_sha256": "7799879093b8c6f5b0a6a5c8c1f64fa109afdd5dfb247d637a33b56e10448fac",
+    "lead_viewed_originals": [
+      {
+        "file": "pattern-master__playground__light-standard__720x512__type-150__top@1x.png",
+        "sha256": "5a5911da6a647f99b5efa22b01333d05f4e475d22c4d41669002a3484dd26957"
+      },
+      {
+        "file": "pattern-master__playground__dark-increased__720x512__type-150__bottom@2x.png",
+        "sha256": "e70990d1ae7fcdb771f80aa003788da4958e419dee9fd125c902f0b835edaf33"
+      }
+    ],
+    "observed_layout": {
+      "window": {
+        "height": 512,
+        "width": 720
+      },
+      "type_scale": 1.5,
+      "visible_list": [
+        317.0,
+        343.0,
+        107.67999267578125,
+        145.0
+      ],
+      "detail_frame": [
+        436.67999267578125,
+        343.0,
+        254.32000732421875,
+        145.0
+      ],
+      "actual_offset": 0.0,
+      "actual_scroll_range": 402.0
+    }
+  },
+  "root_cause": "Master list fixed 32%/240pt allocation ignores the natural width of Document plus original Button insets/focus/row budget; row-height measurement renders three lines but cannot repair word fragmentation. No shared text algorithm change needed.",
+  "repair": "Keep preferred ratio/cap when sufficient; raise only this page minimum list allocation using actual Button::measure(Document) plus existing row/focus budget, bounded by remaining width. Original 12pt spacing also bounds minimal detail remainder. All 80 rows, font/labels/text backend unchanged.",
+  "regression": "master_detail_document_word_fits_measured_button_and_preserves_layout: 360/384/1000pt host content, 100/150 percent, 1x/2x, real CoreText paragraph within rendered ButtonLayout; full Document must occur on one line, 80 logical IDs preserved, detail positive and disjoint. Prior allocation shortfall derived from actual body bounds at 384pt/150 percent; not claimed executed yet.",
+  "static_checks": {
+    "rustfmt": "pass",
+    "git_diff_check": "pass",
+    "C_and_original_B_capture_and_docs_unchanged": "pass"
+  },
+  "runtime_checks": {
+    "compile": "not_run",
+    "new_regression_red_green": "not_run",
+    "strict": "not_run",
+    "new_GPU_24_images": "not_run",
+    "new_visual_review": "not_run"
+  },
+  "affected_source_sha256": "62ce90032ef9af880ba37d26632e5e5950a3e4cd5cce90cd8ba18086e9f827aa"
+}
