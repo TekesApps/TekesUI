@@ -1476,7 +1476,9 @@ fn behavior_copy(renderer: &str) -> &'static str {
 }
 
 fn story_docs(entry: &Entry) -> &str {
-    if entry.renderer() == "filter" {
+    if entry.renderer() == "master" {
+        behavior_copy("master")
+    } else if entry.renderer() == "filter" {
         "Type to filter the local file fixture. Clear filter resets the query; an empty query shows all three items. Filtering is deterministic and does not resolve a network request."
     } else {
         entry.get("docs")
