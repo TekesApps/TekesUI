@@ -1,6 +1,6 @@
 #[path = "proposal_assets.rs"]
 mod proposal_assets;
-// Read-only legacy catalogue plus embedded design proposals.
+// Canonical published catalogue with explicitly selected historical comparisons.
 use resvg::{tiny_skia, usvg};
 use std::collections::HashSet;
 use std::io::Read;
@@ -31,6 +31,7 @@ pub struct Entry {
     pub kind: String,
     pub before: Option<Box<Entry>>,
     pub name: String,
+    svg: String,
     tree: usvg::Tree,
     pub images: [Option<ImageId>; 3],
 }
@@ -43,16 +44,38 @@ pub struct IconCatalog {
 }
 impl IconCatalog {
     pub fn from_env() -> Self {
-        let mut catalog = Self::load_local();
-        catalog.add_proposals();
+        let mut catalog = Self::canonical();
+        let mode = if let Some(path) = std::env::var_os("TEKESUI_ICON_DIR") {
+            let previous = Self::load(Path::new(&path));
+            catalog.attach_previous(previous);
+            "external"
+        } else if std::env::var("TEKESUI_ICON_COMPARE").as_deref() == Ok("historical") {
+            catalog.add_historical_proposals();
+            "historical"
+        } else {
+            "canonical"
+        };
+        catalog.write_report_if_requested(mode);
         catalog
     }
-    fn load_local() -> Self {
-        if let Some(path) = std::env::var_os("TEKESUI_ICON_DIR") {
-            return Self::load(Path::new(&path));
+    fn canonical() -> Self {
+        let mut catalog = Self::default();
+        for glyph in tekes_ui_icons::Glyph::ALL {
+            let tree = usvg::Tree::from_str(glyph.svg, &usvg::Options::default())
+                .expect("canonical icon SVG is validated by tekes-ui-icons");
+            catalog.entries.push(Entry {
+                label: String::new(),
+                kind: String::new(),
+                before: None,
+                name: glyph.name.into(),
+                svg: glyph.svg.into(),
+                tree,
+                images: [None; 3],
+            });
         }
-        Self::load(&Self::shared_assets_dir())
+        catalog
     }
+    #[cfg(test)]
     fn shared_assets_dir() -> PathBuf {
         Path::new(env!("CARGO_MANIFEST_DIR")).join("../tekes-ui-icons/assets")
     }
@@ -126,16 +149,19 @@ impl IconCatalog {
                         },
                         ..usvg::Options::default()
                     };
-                    usvg::Tree::from_str(&svg, &options).map_err(|e| e.to_string())
+                    usvg::Tree::from_str(&svg, &options)
+                        .map(|tree| (svg, tree))
+                        .map_err(|e| e.to_string())
                 });
             match result {
-                Ok(tree) => {
+                Ok((svg, tree)) => {
                     seen.insert(name.to_owned());
                     catalog.entries.push(Entry {
                         label: String::new(),
                         kind: String::new(),
                         before: None,
                         name: name.into(),
+                        svg,
                         tree,
                         images: [None; 3],
                     });
@@ -146,6 +172,7 @@ impl IconCatalog {
         catalog
     }
     /// Published artwork is self-contained; an explicit external directory is only for comparisons.
+    #[cfg(test)]
     pub fn add_proposals(&mut self) {
         if self.entries.iter().any(|e| !e.kind.is_empty()) {
             return;
@@ -169,6 +196,7 @@ impl IconCatalog {
                 label: label.into(),
                 kind: kind.into(),
                 before,
+                svg: svg.into(),
                 tree,
                 images: [None; 3],
             });
@@ -186,14 +214,101 @@ impl IconCatalog {
             rank(a).cmp(&rank(b)).then(a.name.cmp(&b.name))
         });
     }
+
+    /// Add an explicitly selected external catalogue as the comparison side.
+    fn attach_previous(&mut self, mut previous: Self) {
+        for old in previous.entries.drain(..) {
+            if let Some(current) = self.entries.iter_mut().find(|entry| entry.name == old.name) {
+                current.before = Some(Box::new(old));
+            } else {
+                self.entries.push(Entry {
+                    label: "外部目录".into(),
+                    kind: "external".into(),
+                    before: None,
+                    ..old
+                });
+            }
+        }
+        self.source = previous.source;
+        self.notices.extend(previous.notices);
+    }
+
+    /// Historical proposal artwork is always displayed against the canonical published SVG.
+    fn add_historical_proposals(&mut self) {
+        for &(name, label, kind, svg) in proposal_assets::ASSETS {
+            let proposal = Entry {
+                label: format!("历史提案 · {label}"),
+                kind: kind.into(),
+                before: None,
+                name: name.into(),
+                svg: svg.into(),
+                tree: usvg::Tree::from_str(svg, &usvg::Options::default())
+                    .expect("validated embedded proposal SVG"),
+                images: [None; 3],
+            };
+            let current = self
+                .entries
+                .iter_mut()
+                .find(|entry| entry.name == name)
+                .expect("historical proposal identity must exist in canonical Glyph::ALL");
+            // Some proposal references already point at today's shared artwork.
+            // Do not misrepresent those identical SVGs as a historical old draft.
+            if current.svg == svg {
+                continue;
+            }
+            current.label = label.into();
+            current.kind = proposal.kind.clone();
+            current.before = Some(Box::new(proposal));
+        }
+    }
+
+    fn write_report_if_requested(&self, mode: &str) {
+        let Some(path) = std::env::var_os("TEKESUI_ICON_CATALOG_REPORT") else {
+            return;
+        };
+        let report = self.catalog_report(mode);
+        std::fs::write(
+            path,
+            serde_json::to_vec_pretty(&report).expect("icon catalogue report serializes"),
+        )
+        .expect("write requested icon catalogue report");
+    }
+
+    fn catalog_report(&self, mode: &str) -> serde_json::Value {
+        let entries: Vec<_> = self
+            .entries
+            .iter()
+            .map(|entry| {
+                let canonical_match = tekes_ui_icons::Glyph::ALL
+                    .iter()
+                    .find(|glyph| glyph.name == entry.name)
+                    .is_some_and(|glyph| glyph.svg == entry.svg);
+                serde_json::json!({
+                    "name": entry.name,
+                    "svg": entry.svg,
+                    "canonical_match": canonical_match,
+                    "before": entry.before.is_some(),
+                })
+            })
+            .collect();
+        serde_json::json!({
+            "schema": "tekesui-icon-catalog/1",
+            "mode": mode,
+            "count": self.entries.len(),
+            "notices": self.notices,
+            "entries": entries,
+        })
+    }
     #[cfg(test)]
     pub(crate) fn fixture(names: &[&str]) -> Self {
         let mut catalog = Self::default();
         for name in names {
+            let svg = r#"<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><rect x="4" y="4" width="16" height="16"/></svg>"#;
             catalog.entries.push(Entry {
                 label: String::new(), kind: String::new(), before: None,
                 name: (*name).into(),
-                tree: usvg::Tree::from_str(r#"<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><rect x="4" y="4" width="16" height="16"/></svg>"#, &usvg::Options::default()).unwrap(),
+                svg: svg.into(),
+                tree: usvg::Tree::from_str(svg, &usvg::Options::default()).unwrap(),
                 images: [None; 3],
             });
         }
@@ -277,6 +392,145 @@ impl IconCatalog {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn canonical_catalog_uses_every_published_svg_byte_without_a_source_directory() {
+        let catalog = IconCatalog::canonical();
+        assert_eq!(catalog.entries.len(), tekes_ui_icons::Glyph::ALL.len());
+        assert_eq!(catalog.entries.len(), 177);
+        assert!(catalog.notices.is_empty());
+        for (entry, glyph) in catalog.entries.iter().zip(tekes_ui_icons::Glyph::ALL) {
+            assert_eq!(entry.name, glyph.name);
+            assert_eq!(entry.svg, glyph.svg);
+            assert!(entry.before.is_none());
+        }
+        assert!(catalog.entries.iter().any(|entry| {
+            entry.name == "tekes-settings" && entry.svg.contains("stroke-width=\"1.25\"")
+        }));
+    }
+
+    #[test]
+    fn historical_mode_pairs_proposals_beneath_canonical_current_artwork() {
+        let mut catalog = IconCatalog::canonical();
+        catalog.add_historical_proposals();
+        assert_eq!(proposal_assets::ASSETS.len(), 51);
+        let mut different_artwork_count = 0;
+        for &(name, label, _, proposal_svg) in proposal_assets::ASSETS {
+            let entry = catalog
+                .entries
+                .iter()
+                .find(|entry| entry.name == name)
+                .unwrap();
+            let glyph = tekes_ui_icons::Glyph::ALL
+                .iter()
+                .find(|glyph| glyph.name == name)
+                .unwrap_or_else(|| panic!("proposal must resolve to a canonical identity: {name}"));
+            assert_eq!(entry.svg, glyph.svg, "canonical current: {name}");
+            if glyph.svg != proposal_svg {
+                assert_eq!(
+                    entry.before.as_ref().unwrap().svg,
+                    proposal_svg,
+                    "proposal before: {name}"
+                );
+                assert_eq!(entry.label, label);
+                assert!(entry
+                    .before
+                    .as_ref()
+                    .unwrap()
+                    .label
+                    .starts_with("历史提案"));
+                different_artwork_count += 1;
+            } else {
+                assert!(entry.before.is_none(), "identical reference is not an old draft: {name}");
+            }
+        }
+        assert_eq!(different_artwork_count, 29);
+        let zoom_in = catalog
+            .entries
+            .iter()
+            .find(|entry| entry.name == "tekes-zoom-in")
+            .unwrap();
+        assert!(zoom_in.svg.contains("stroke-width=\"1.25\""));
+        assert!(zoom_in
+            .before
+            .as_ref()
+            .unwrap()
+            .svg
+            .contains("stroke-width=\"1.5\""));
+        assert_eq!(catalog.entries.len(), 177);
+    }
+
+    #[test]
+    fn external_catalogue_stays_the_comparison_side_of_canonical_current_artwork() {
+        let dir = std::env::temp_dir()
+            .join(format!("tekesui-icon-compare-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(dir.join("tekes-settings.svg"), SVG).unwrap();
+        std::fs::write(dir.join("legacy-only.svg"), SVG).unwrap();
+        let mut catalog = IconCatalog::canonical();
+        let external = IconCatalog::load(&dir);
+        catalog.attach_previous(external);
+        assert_eq!(catalog.entries.len(), tekes_ui_icons::Glyph::ALL.len() + 1);
+        let entry = catalog
+            .entries
+            .iter()
+            .find(|entry| entry.name == "tekes-settings")
+            .unwrap();
+        assert_eq!(
+            entry.svg,
+            tekes_ui_icons::Glyph::ALL
+                .iter()
+                .find(|glyph| glyph.name == entry.name)
+                .unwrap()
+                .svg
+        );
+        assert_eq!(entry.before.as_ref().unwrap().svg, SVG);
+        let extra = catalog
+            .entries
+            .iter()
+            .find(|entry| entry.name == "legacy-only")
+            .unwrap();
+        assert_eq!(extra.svg, SVG);
+        assert_eq!(extra.kind, "external");
+        assert_eq!(catalog.source.as_deref(), Some(dir.as_path()));
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn missing_external_directory_keeps_canonical_entries_and_reports_the_load_error() {
+        let missing = std::env::temp_dir()
+            .join(format!("tekesui-icon-missing-{}", std::process::id()))
+            .join("icons");
+        let external = IconCatalog::load(&missing);
+        let mut catalog = IconCatalog::canonical();
+        catalog.attach_previous(external);
+        assert_eq!(catalog.entries.len(), tekes_ui_icons::Glyph::ALL.len());
+        assert_eq!(catalog.source.as_deref(), Some(missing.as_path()));
+        assert_eq!(catalog.notices.len(), 1);
+        assert!(catalog.notices[0].starts_with("图标目录无法读取："));
+    }
+
+    #[test]
+    fn catalogue_report_serializes_the_resolved_svg_and_comparison_side() {
+        let canonical = IconCatalog::canonical();
+        let report = canonical.catalog_report("canonical");
+        assert_eq!(report["schema"], "tekesui-icon-catalog/1");
+        assert_eq!(report["mode"], "canonical");
+        assert_eq!(report["count"], 177);
+        assert_eq!(report["entries"].as_array().unwrap().len(), 177);
+        for (entry, glyph) in report["entries"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .zip(tekes_ui_icons::Glyph::ALL)
+        {
+            assert_eq!(entry["name"], glyph.name);
+            assert_eq!(entry["svg"], glyph.svg);
+            assert_eq!(entry["canonical_match"], true);
+            assert_eq!(entry["before"], false);
+        }
+    }
+
     #[test]
     fn shared_catalog_is_complete_without_an_application_directory() {
         let mut catalog = IconCatalog::load(&IconCatalog::shared_assets_dir());
@@ -400,6 +654,7 @@ mod tests {
             kind: String::new(),
             before: None,
             name: "fixture".into(),
+            svg: SVG.into(),
             tree: usvg::Tree::from_str(SVG, &usvg::Options::default()).unwrap(),
             images: [None; 3],
         });
@@ -430,6 +685,7 @@ mod color_review {
             kind: String::new(),
             before: None,
             name: "opaque-fixture".into(),
+            svg: svg.into(),
             tree: usvg::Tree::from_str(svg, &usvg::Options::default()).unwrap(),
             images: [None; 3],
         });
