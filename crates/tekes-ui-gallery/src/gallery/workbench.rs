@@ -10708,7 +10708,7 @@ mod interaction_tests {
                     let rendered_labels: Vec<_> = state
                         .button_labels
                         .iter()
-                        .filter(|(id, _)| (10000..10080).contains(id))
+                        .filter(|(id, _)| (10000..10080).contains(*id))
                         .map(|(id, label)| {
                             let layout = state.buttons[id]
                                 .layout()
