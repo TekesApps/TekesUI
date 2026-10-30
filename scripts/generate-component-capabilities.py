@@ -151,16 +151,22 @@ def resolve_public_item(api: str) -> tuple[str, str, str]:
         raise ValueError(f'unsupported public component API: {api!r}')
     root = Path('crates/tekes-ui-controls/src/lib.rs')
 
-    def locate(path, parts, internal, seen):
-        key = (path, tuple(parts), internal)
+    def locate(path, parts, internal, seen, crate_root):
+        key = (crate_root, path, tuple(parts), internal)
         if not parts or key in seen:
             raise ValueError(f'{api}: empty path or cyclic re-export')
         seen = seen | {key}
         items = module_items(path)
         if parts[0] == 'crate':
-            return locate(root, parts[1:], internal, seen)
+            return locate(crate_root, parts[1:], internal, seen, crate_root)
         if parts[0] == 'self':
-            return locate(path, parts[1:], internal, seen)
+            return locate(path, parts[1:], internal, seen, crate_root)
+        # Follow only the existing workspace text dependency of an explicit
+        # public re-export. Reset visibility at its crate root; consumers cannot
+        # invent a foreign-crate segment or traverse that crate's private module.
+        if internal and parts[0] == 'tekes_ui_text':
+            foreign = Path('crates/tekes-ui-text/src/lib.rs')
+            return locate(foreign, parts[1:], False, seen, foreign)
         if len(parts) == 1:
             if parts[0] in items['types']:
                 return path.as_posix(), parts[0], items['types'][parts[0]]
@@ -171,12 +177,12 @@ def resolve_public_item(api: str) -> tuple[str, str, str]:
             if public or internal:
                 if len(parts) == 1:
                     return child.as_posix(), parts[0], 'module'
-                return locate(child, parts[1:], internal, seen)
+                return locate(child, parts[1:], internal, seen, crate_root)
         if parts[0] in items['uses']:
-            return locate(path, items['uses'][parts[0]] + parts[1:], True, seen)
+            return locate(path, items['uses'][parts[0]] + parts[1:], True, seen, crate_root)
         raise ValueError(f'{api}: no public path/re-export at {path} for {"::".join(parts)}')
 
-    return locate(root, api.split('::')[1:], False, set())
+    return locate(root, api.split('::')[1:], False, set(), root)
 
 
 def resolve_api(api: str) -> tuple[str, str]:

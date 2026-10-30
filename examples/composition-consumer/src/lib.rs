@@ -279,3 +279,5 @@ pub mod context_menu;
 pub mod hover_preview;
 
 pub mod rich_content;
+
+pub mod semantic_label;

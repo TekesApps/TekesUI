@@ -1,5 +1,8 @@
 //! Reuse native CoreText shaping/truncation, font registration and glyph output.
-use super::shaper::{CoreTextShaper, grapheme_len_at, line_height, line_metrics, runs_of, typeset};
+use super::shaper::{
+    CoreTextShaper, apply_label_foregrounds, grapheme_len_at, line_height, line_metrics, runs_of,
+    typeset,
+};
 use crate::{
     LabelLayout, LabelOptions, LabelOverflow, Line, ShapeOptions, Shaper, TextStyle,
     utf16::Utf16Map,
@@ -72,7 +75,33 @@ impl CoreTextShaper {
         shape: &ShapeOptions,
         options: LabelOptions,
     ) -> LabelLayout {
-        let mut paragraph = self.shape(text, style, shape);
+        self.shape_label_inner(text, style, shape, options, None)
+    }
+
+    /// One native attributed paragraph; semantic boundaries participate in the
+    /// original shaper and truncation, never a consumer's split-label layout.
+    pub fn shape_semantic_label(
+        &mut self,
+        label: &crate::SemanticLabel,
+        style: &TextStyle,
+        shape: &ShapeOptions,
+        options: LabelOptions,
+    ) -> LabelLayout {
+        self.shape_label_inner(label.text(), style, shape, options, Some(label))
+    }
+
+    fn shape_label_inner(
+        &mut self,
+        text: &str,
+        style: &TextStyle,
+        shape: &ShapeOptions,
+        options: LabelOptions,
+        semantic: Option<&crate::SemanticLabel>,
+    ) -> LabelLayout {
+        let mut paragraph = match semantic {
+            Some(label) => self.shape_prepared(&self.prepare_semantic_label(label, style), shape),
+            None => self.shape(text, style, shape),
+        };
         if options == LabelOptions::default() {
             let width = paragraph.width;
             return LabelLayout {
@@ -163,6 +192,9 @@ impl CoreTextShaper {
                 let prefix = &text[map.byte_of(start)..map.byte_of(end)];
                 let count = end - start;
                 let candidate = typeset(&format!("{prefix}…"), &base);
+                if let Some(label) = semantic {
+                    apply_label_foregrounds(&candidate.attributed, label, start..end);
+                }
                 mark(&candidate.attributed, CFRange::new(count as isize, 1));
                 // SAFETY: complete immutable candidate after marker publication; a typesetter
                 // constructed before the attribute edit would hold an older snapshot.

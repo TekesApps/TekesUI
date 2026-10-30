@@ -45,4 +45,7 @@ pub use push::{push_paragraph, push_paragraph_visible};
 pub use style::{FontFamily, TextStyle};
 pub use traits::{FontFallback, Rasterizer, Shaper};
 
-pub use label::{LabelLayout, LabelOptions, LabelOverflow};
+pub use label::{
+    LabelForeground, LabelForegroundRun, LabelLayout, LabelOptions, LabelOverflow,
+    LabelSourceVersion, SemanticLabel, SemanticLabelError,
+};
