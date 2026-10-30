@@ -214,6 +214,22 @@
       "reason": "Registered component model or production View; identity and route are owned by workbench.json."
     },
     {
+      "api": "tekes_ui_controls::DisclosureContent",
+      "category": "component-adapter",
+      "components": [
+        "tui.disclosure"
+      ],
+      "reason": "Controlled title/body Content adapter over the existing Disclosure model, ButtonRuntime and reveal; one trigger action/focus/semantic owner."
+    },
+    {
+      "api": "tekes_ui_controls::DisclosureIntent",
+      "category": "component-support",
+      "components": [
+        "tui.disclosure"
+      ],
+      "reason": "Owned event-time expansion request and generation/revision for the existing Disclosure owner; contains no business persistence identity."
+    },
+    {
       "api": "tekes_ui_controls::DraftJournal",
       "category": "shared-support",
       "components": [],
@@ -1115,6 +1131,22 @@
         "tui.dialog"
       ],
       "reason": "Experimental composition adapter for the existing component family, exercised by the independent composition consumer; does not imply every family has migrated or native acceptance passed."
+    },
+    {
+      "api": "tekes_ui_controls::composition::DisclosureContent",
+      "category": "component-adapter",
+      "components": [
+        "tui.disclosure"
+      ],
+      "reason": "Controlled title/body Content adapter over the existing Disclosure model, ButtonRuntime and reveal; one trigger action/focus/semantic owner."
+    },
+    {
+      "api": "tekes_ui_controls::composition::DisclosureIntent",
+      "category": "component-support",
+      "components": [
+        "tui.disclosure"
+      ],
+      "reason": "Owned event-time expansion request and generation/revision for the existing Disclosure owner; contains no business persistence identity."
     },
     {
       "api": "tekes_ui_controls::composition::EmptyStateContent",

@@ -16,6 +16,8 @@ mod icon;
 pub use icon::{IconContent, IconImage, IconRenderError, WithIconRenderer};
 #[cfg(feature = "svg-icons")]
 pub use icon::{SvgIconCache, SvgIconRenderer};
+mod disclosure;
+pub use disclosure::{DisclosureContent, DisclosureIntent};
 mod actions;
 mod panel;
 pub use panel::{
@@ -802,10 +804,13 @@ pub struct Content {
     // notification semantics differ. This is not a generic activity fact.
     activity_effective: bool,
     activity_parent: bool,
+    composition_active: bool,
+    retained_body_paint: bool,
 }
 impl Content {
     fn active(&self) -> bool {
-        self.component.active()
+        self.composition_active
+            && self.component.active()
             && (self.component.overlay_scope().is_none()
                 || self.component.overlay_open() && !self.component.semantics().disabled)
     }
@@ -829,7 +834,36 @@ impl Content {
             surface: None,
             activity_effective: true,
             activity_parent: true,
+            composition_active: true,
+            retained_body_paint: false,
         }
+    }
+    // The retained body stays mounted. Only ordinary paint may outlive activity.
+    fn set_composition_active(&mut self, active: bool) {
+        if self.composition_active == active {
+            return;
+        }
+        if !active {
+            empty_state::hide_subtree(self);
+            notice::hide_subtree(self);
+        }
+        self.composition_active = active;
+        if !active {
+            self.notify_presentation_runnable(false);
+        }
+        self.refresh_activity(self.activity_parent);
+    }
+    fn retain_body_paint(&mut self, retained: bool) {
+        self.retained_body_paint = retained;
+    }
+    fn paint_available(&self) -> bool {
+        self.active() || self.retained_body_paint && self.component.active()
+    }
+    fn paint_services_available(&self) -> bool {
+        self.paint_available()
+            || self.composition_active
+                && self.component.paints_children()
+                && self.component.overlay_presented()
     }
     pub fn with_surface(
         mut self,
@@ -952,9 +986,7 @@ impl Content {
         }
     }
     fn label_failure(&self) -> Option<ComponentId> {
-        if !(self.active()
-            || self.component.paints_children() && self.component.overlay_presented())
-        {
+        if !self.paint_services_available() {
             return None;
         }
         if self.label.as_ref().is_some_and(|label| label.failed) {
@@ -1082,7 +1114,7 @@ impl Content {
         if skip == Some(self.id) {
             return;
         }
-        if !self.active() {
+        if !self.paint_available() {
             return;
         }
         let curve_scope = self.push_curve_scope(scene);
@@ -1208,9 +1240,7 @@ impl Content {
             .or_else(|| self.component.overlay_open().then_some(self.id))
     }
     fn needs_icons(&self) -> Option<ComponentId> {
-        if !(self.active()
-            || self.component.paints_children() && self.component.overlay_presented())
-        {
+        if !self.paint_services_available() {
             return None;
         }
         if self.component.requires_icon_services() {
@@ -1223,9 +1253,7 @@ impl Content {
         }
     }
     fn icon_failure(&self) -> Option<(ComponentId, IconRenderError)> {
-        if !(self.active()
-            || self.component.paints_children() && self.component.overlay_presented())
-        {
+        if !self.paint_services_available() {
             return None;
         }
         self.component
@@ -1239,9 +1267,7 @@ impl Content {
             })
     }
     fn needs_text(&self) -> Option<ComponentId> {
-        if !(self.active()
-            || self.component.paints_children() && self.component.overlay_presented())
-        {
+        if !self.paint_services_available() {
             return None;
         }
         if self.component.requires_text_services() {
