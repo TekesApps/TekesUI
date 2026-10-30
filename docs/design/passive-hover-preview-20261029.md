@@ -207,3 +207,35 @@ VoiceOver must discover/invoke the original owner's ShowMenu action and navigate
 real menu roles/states/items; Press/AXShowMenu programmatic selectors alone are
 not VoiceOver operation. These are executable manual prerequisites/checks for
 that later window, not results of the placement7 or synthetic26 runs.
+
+
+## Offline regression for reached-setup interpretation
+
+`scripts/diagnostics/hover-preview46/test_guard_evidence.py` replays existing
+archived evidence without calling the native launcher or loading build helpers.
+It imports the trusted original26 runner after checking its archived binding,
+and authenticates only the raw checkpoint/event/journal files it consumes.
+No Cargo command, shared cache, desktop input, new dependency or toolchain is used.
+This is an explicit artifact-backed diagnostic; it is not a default CI gate that
+requires a private SSD, and it is not standalone-public-consumer acceptance.
+
+The three assertions cover the actual earlier failure: a later aborted run
+reported46005 as passed despite the wrong inserted plain text; the current reached
+setup checker must still reject it. Its actually reached marked prefix must not
+invent an unexecuted plain-setup failure. The accepted26 run is a positive control
+through the original full guard assertion function. These close only the offline
+regression coverage for checkpoint interpretation, not the launcher/resource
+refusal paths, physical IME, VoiceOver or the remaining original product AC.
+
+Reproduce with the retained real artifacts (no native execution):
+
+```sh
+python3 -B scripts/diagnostics/hover-preview46/test_guard_evidence.py \
+  --runner-dir "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-46/placement-20261030/original26-r2-runner" \
+  --failed-attempt "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-46/domain-20261030/hover-native-01-runner/attempts/run-20261029T180555.751210Z-7538e717" \
+  --accepted-attempt "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-46/placement-20261030/original26-r2-runner/attempts/run-20261029T190552.017397Z-19aaf965"
+```
+
+All3 offline tests passed in the isolated candidate. This does not re-sign the
+archived native programs as the current WIP or rerun142/26/placement7. All original
+failure files remain untouched; runtime resource/desktop guards are unchanged.
