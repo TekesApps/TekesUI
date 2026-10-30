@@ -318,3 +318,6 @@ fn settings_whole_page_reading_matrix_uses_actual_route_and_scroll_positions() {
     )
     .expect("write Settings capture manifest");
 }
+
+#[path = "master_reading_capture.rs"]
+mod master_reading_capture;

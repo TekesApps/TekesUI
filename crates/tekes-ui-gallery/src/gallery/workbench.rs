@@ -3823,7 +3823,20 @@ impl Workbench {
                 }
             }
             "master" => {
-                let lw = (w * 0.32).min(240.);
+                let preferred_list_width = (w * 0.32).min(240.);
+                // Keep the fixture's repeated word intact before giving the detail
+                // its remaining width; the original ratio alone can split it.
+                let focus_padding = -ControlFrame::new(Rect::new(0.0, 0.0, 1.0, 1.0), None)
+                    .focus_bounds(1.0)
+                    .min_x();
+                let document_button_width = ctx
+                    .text
+                    .measure_button("Document", w, ButtonSize::Body, proposal::TextRole::UiBody)
+                    .width;
+                let minimum_list_width = document_button_width + 20.0 + focus_padding * 2.0;
+                let lw = preferred_list_width
+                    .max(minimum_list_width)
+                    .min((w - 12.0).max(0.0));
                 let bottom = c.max_y().min(s.preview.max_y());
                 let bottom = s
                     .button_clip
@@ -3838,9 +3851,6 @@ impl Workbench {
                     tekes_ui_controls::ScrollPolicy::Disabled,
                     tekes_ui_controls::ScrollPolicy::Auto,
                 );
-                let focus_padding = -ControlFrame::new(Rect::new(0.0, 0.0, 1.0, 1.0), None)
-                    .focus_bounds(1.0)
-                    .min_x();
                 let row_width = (lw - 20.0 - focus_padding * 2.0).max(0.0);
                 let row_height = (0..80)
                     .map(|n| {
@@ -10639,6 +10649,97 @@ mod interaction_tests {
         );
         let stale = row_two.center();
         assert_ne!(w.state(i).hit_at(stale), Some(10002));
+    }
+
+    #[test]
+    fn master_detail_document_word_fits_measured_button_and_preserves_layout() {
+        let i = index("master");
+        for width in [360.0, 384.0, 1000.0] {
+            for type_scale in [1.0, 1.5] {
+                for backing_scale in [1.0, 2.0] {
+                    let mut text = super::super::text::TextEngine::new();
+                    text.set_type_scale(type_scale);
+                    text.set_scale(backing_scale);
+                    let mut workbench = Workbench::default();
+                    let content = Rect::new(312.0, 70.0, width, 600.0);
+                    build_in(&mut workbench, i, &mut text, content);
+
+                    let state = workbench.state(i);
+                    let detail = state.detail.frame_at(0).expect("master detail frame");
+                    assert!(
+                        detail.size.width > 0.0,
+                        "detail remains available at width {width}"
+                    );
+                    assert!(
+                        state.list_frame.max_x() <= detail.min_x(),
+                        "list and detail do not overlap at width {width}: {:?} / {detail:?}",
+                        state.list_frame
+                    );
+                    let focused_rows: Vec<_> = state
+                        .logical_focus
+                        .iter()
+                        .filter(|target| (10000..10080).contains(&target.id))
+                        .map(|target| target.id)
+                        .collect();
+                    assert_eq!(focused_rows, (10000..10080).collect::<Vec<_>>());
+
+                    let focus_padding =
+                        -super::ControlFrame::new(Rect::new(0.0, 0.0, 1.0, 1.0), None)
+                            .focus_bounds(1.0)
+                            .min_x();
+                    let body_width = detail.max_x() - state.list_frame.min_x();
+                    let document_width = text
+                        .measure_button(
+                            "Document",
+                            body_width,
+                            ButtonSize::Body,
+                            proposal::TextRole::UiBody,
+                        )
+                        .width;
+                    let preferred_list_width = (body_width * 0.32).min(240.0);
+                    let previous_row_width = preferred_list_width - 20.0 - focus_padding * 2.0;
+                    if width == 384.0 && type_scale == 1.5 {
+                        assert!(
+                            previous_row_width < document_width,
+                            "the prior allocation ({previous_row_width}) cannot fit the measured Document button ({document_width})"
+                        );
+                    }
+
+                    let rendered_labels: Vec<_> = state
+                        .button_labels
+                        .iter()
+                        .filter(|(id, _)| (10000..10080).contains(*id))
+                        .map(|(id, label)| {
+                            let layout = state.buttons[id]
+                                .layout()
+                                .expect("visible master row has a production ButtonLayout");
+                            (*id, label.clone(), layout)
+                        })
+                        .collect();
+                    assert!(!rendered_labels.is_empty(), "visible document rows render");
+                    for (id, label, layout) in rendered_labels {
+                        let paragraph = text.proposal_label(
+                            &label,
+                            proposal::TextRole::UiBody,
+                            Some(layout.content.size.width),
+                        );
+                        assert!(
+                            paragraph.width as f32 <= layout.content.size.width,
+                            "row {id} paragraph fits its ButtonLayout content width at {width}: {} > {}",
+                            paragraph.width,
+                            layout.content.size.width
+                        );
+                        assert!(
+                            paragraph
+                                .lines
+                                .iter()
+                                .any(|line| { label[line.bytes.clone()].contains("Document") }),
+                            "row {id} keeps the complete Document word on one rendered line at {width}"
+                        );
+                    }
+                }
+            }
+        }
     }
 
     #[test]
