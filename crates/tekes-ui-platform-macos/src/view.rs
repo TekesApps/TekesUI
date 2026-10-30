@@ -179,7 +179,7 @@ define_class!(
                 .accessibility_nodes
                 .borrow()
                 .iter()
-                .find(|node| authorized && node.focused)
+                .find(|node| !shared.closed.get() && authorized && node.focused)
                 .map(|node| node.key);
             focused_key
                 .and_then(|key| shared.accessibility_elements.borrow().get(&key).cloned())

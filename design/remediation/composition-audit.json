@@ -1976,12 +1976,12 @@
     "crates/tekes-ui-gallery/src/reading_key.rs": "6932a589bce50e2f4365c780c67ab0c467a126c9a4677ad23eeda132f146adae",
     "crates/tekes-ui-gallery/src/viewport_acceptance.rs": "4087d2370154069e4b5dd4864425ef620327a6782a848643922f5be303abffad",
     "crates/tekes-ui-platform-macos/src/accessibility.rs": "1620248d2a9ab1fc4d5a1e61e4d8af2c57af1ced4b21bade06dd063085ad1fd0",
-    "crates/tekes-ui-platform-macos/src/app.rs": "3bc96867eb5ec11f9093764dcf03189f0d76f6ead6f0088a9fb21b6766ee3538",
+    "crates/tekes-ui-platform-macos/src/app.rs": "6cdf97dd199495130c3ae331b658906435043dd929da128145c908003815ac6b",
     "crates/tekes-ui-platform-macos/src/event.rs": "8cadbed800cf8b917371dec3cf534ec2fced49a7620b2b2745bb22b152ad3fef",
     "crates/tekes-ui-platform-macos/src/lib.rs": "616d171c95539a0352e7f8b4163282e846d11a032142c0fb7ecf122db3fe5a37",
-    "crates/tekes-ui-platform-macos/src/shared.rs": "6a0974388a0a17072c792748a328870e9649c1822d1380ec0346efaa9e881a2a",
+    "crates/tekes-ui-platform-macos/src/shared.rs": "4c222917ba644388d3c0f8c2a14867a076e3605d351185187843f2b4eb1c52ee",
     "crates/tekes-ui-platform-macos/src/text_key.rs": "9546715dcec3acd93f938866702f0f3c7653a5e2c776db88ccbd2907fb6e4773",
-    "crates/tekes-ui-platform-macos/src/view.rs": "42c5dee8ac3c7f0ba824cb403b1d1ce301dc9c40fd3a61d0a262865436f51f85",
+    "crates/tekes-ui-platform-macos/src/view.rs": "56fde068bc1da484e6c2025e81c9f39d196d5ca46bb7a09de438a59cafccc901",
     "crates/tekes-ui-text/src/coretext/label.rs": "bc00cc86263847284b1b95ed4f2117faf6f2ec33316ad893e3b2d51b4d1b92f5",
     "crates/tekes-ui-text/src/coretext/mod.rs": "8313d43943f7b9718a792eec04234c30d53025fdfd724bba4fa052e128dd1d38",
     "crates/tekes-ui-text/src/coretext/shaper.rs": "a0ef69c825a3f82b8ebda7787c006b53605b50c5306139103a7c3d05447b4490",
@@ -2139,7 +2139,7 @@
     },
     {
       "path": "crates/tekes-ui-platform-macos/src/shared.rs",
-      "line": 679,
+      "line": 685,
       "anchor": "pub fn set_accessibility_nodes(&self, nodes: Vec<crate::accessibility::AccessibilityNode>) {"
     },
     {
@@ -2264,7 +2264,7 @@
     },
     {
       "path": "crates/tekes-ui-platform-macos/src/shared.rs",
-      "line": 698,
+      "line": 704,
       "anchor": "pub fn set_accessibility_text_layouts("
     },
     {
@@ -2487,7 +2487,7 @@
     },
     {
       "path": "crates/tekes-ui-platform-macos/src/shared.rs",
-      "line": 982,
+      "line": 988,
       "anchor": "pub fn try_begin_titlebar_drag(&self) -> bool {"
     },
     {
