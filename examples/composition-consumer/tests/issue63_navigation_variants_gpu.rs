@@ -502,7 +502,9 @@ fn render_case(
                 resolve_surface(palette, case.surface, "action-quiet", "selected").unwrap();
             let rest = resolve_surface(palette, case.surface, "action-quiet", "rest").unwrap();
             for (part, colors) in [(&node.parts[0], selected), (&node.parts[1], rest)] {
-                assert!(scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q) if q.rect==part.frame && q.fill==colors.background)),"tab Button missing actual generated role background");
+                // Semantic parts publish ButtonLayout::visible, while Scene keeps
+                // the original quad. Compare the same ancestor-clipped geometry.
+                assert!(scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q) if q.rect.intersection(&clip)==Some(part.frame) && q.fill==colors.background)),"tab Button missing actual generated role background");
             }
             for (label, ink) in [
                 ("Overview", selected.text),
