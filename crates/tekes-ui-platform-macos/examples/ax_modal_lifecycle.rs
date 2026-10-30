@@ -95,7 +95,12 @@ mod native {
                     assert!(self.host.focus(Some(INVOKER), true));
                     let view = self.publish(window);
                     assert!(named(&view, "Modal scope").is_none());
-                    press(&named(&view, "Open modal").unwrap());
+                    let _invoker = named(&view, "Open modal").expect("initial native invoker");
+                    let key = content_key(&self.host, INVOKER, None).expect("initial invoker key");
+                    tekes_ui_platform_macos::selftest::run_script(vec![(
+                        0,
+                        tekes_ui_platform_macos::selftest::Action::AXPressKey { key },
+                    )]);
                 }
                 Event::Accessibility { target, action } => {
                     assert!(matches!(action, AccessibilityAction::Press));
@@ -165,6 +170,7 @@ mod native {
                             unsafe { msg_send![&*invoker, accessibilityPerformPress] };
                         assert!(!live && !accepted);
                         self.saved.borrow_mut().completed = true;
+                        println!("AX_MODAL_CLOSE_COMPLETED");
                     }
                 }
                 _ => {}
