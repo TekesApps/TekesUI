@@ -2087,3 +2087,8 @@ pub fn splitter_role_contract() -> usize {
     shared.finish();
     18
 }
+
+#[path = "combo_native_contract.rs"]
+mod combo_native_contract;
+#[doc(hidden)]
+pub use combo_native_contract::combo_text_role_contract;

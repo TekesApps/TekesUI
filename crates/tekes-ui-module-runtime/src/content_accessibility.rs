@@ -24,6 +24,7 @@ fn semantics(s: ContentSemantics) -> Result<wire::Semantics> {
         ContentRole::Button => W::Button,
         ContentRole::Link => W::Link,
         ContentRole::TextInput => W::TextInput,
+        ContentRole::ComboBox => W::ComboBox,
         ContentRole::Slider => W::Slider,
         ContentRole::Splitter => W::Splitter,
         ContentRole::Switch => W::Switch,
@@ -547,3 +548,13 @@ mod tests {
         );
     }
 }
+
+#[cfg(test)]
+#[path = "../../../examples/composition-consumer/tests/support/coretext.rs"]
+pub(crate) mod combo_coretext;
+#[cfg(test)]
+#[path = "combo_bridge_fixture.rs"]
+mod combo_fixture;
+#[cfg(test)]
+#[path = "combo_snapshot_tests.rs"]
+mod combo_snapshot_tests;

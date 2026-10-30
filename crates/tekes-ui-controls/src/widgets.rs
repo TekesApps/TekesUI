@@ -1075,6 +1075,11 @@ impl ButtonModel {
         }
     }
 
+    /// Select and Menu snapshots use the exact existing Button press decision.
+    pub(crate) fn prepare_content_press(&self) -> ButtonActionDecision {
+        self.prepare_accessibility_press()
+    }
+
     pub(crate) fn prepare_accessibility_press(&self) -> ButtonActionDecision {
         let (mut state, mut arm) = self.decided_pointer_arm(self.state);
         let activated = arm == ButtonArm::Pointer && !state.disabled && !state.loading;
@@ -1124,6 +1129,18 @@ impl ButtonModel {
         self.pointer_move_at(point);
         self.pointer_down();
         self.arm == ButtonArm::Pointer
+    }
+
+    /// Read the original release decision without consuming its pointer arm.
+    pub(crate) fn pointer_release_would_activate(&self, point: Point) -> bool {
+        self.arm == ButtonArm::Pointer
+            && !self.state.disabled
+            && !self.state.loading
+            && self.hit_test(point)
+    }
+
+    pub(crate) fn pointer_armed(&self) -> bool {
+        matches!(self.arm, ButtonArm::Pointer | ButtonArm::PointerActivated)
     }
 
     pub fn pointer_up_at(&mut self, point: Point) -> bool {
@@ -2630,6 +2647,106 @@ mod tests {
         button.state.loading = true;
         assert!(!button.pointer_up(true));
         assert!(!button.state.pressed);
+    }
+
+    #[test]
+    fn prepared_content_press_delegates_current_accessibility_decision_without_effects() {
+        let mut button = ButtonModel::default();
+        for (disabled, loading, suspended) in [
+            (false, false, false),
+            (true, false, false),
+            (false, true, false),
+            (false, false, true),
+        ] {
+            button.state.disabled = disabled;
+            button.state.loading = loading;
+            button.motion_suspended = suspended;
+            let state = button.state;
+            let arm = button.arm;
+            assert_eq!(
+                button.prepare_content_press(),
+                button.prepare_accessibility_press()
+            );
+            assert_eq!(button.state, state);
+            assert_eq!(button.arm, arm);
+            assert_eq!(
+                button.prepare_content_press().activated,
+                !disabled && !loading && !suspended
+            );
+        }
+        button.motion_suspended = false;
+        button.state.focused = true;
+        button.key(ControlKey::Space, true);
+        let decision = button.prepare_content_press();
+        assert!(!decision.activated);
+        assert_eq!(button.arm, ButtonArm::Space);
+        button.apply_content_action(decision);
+        assert!(button.key(ControlKey::Space, false));
+    }
+
+    #[test]
+    fn checked_button_release_matches_original_clip_and_once_predicate() {
+        let mut button = ButtonModel::default();
+        let mut text = FixedText {
+            measured: Size::new(40., 16.),
+            drawn: None,
+        };
+        button.render(
+            &mut Scene::new(),
+            &mut text,
+            "Action",
+            Rect::new(0., 0., 120., 36.),
+            None,
+            Theme::LIGHT,
+            crate::paint::ButtonVariant::Quiet,
+            ButtonSize::Xs,
+            proposal::TextRole::ButtonXs,
+            ButtonTextAlign::Center,
+        );
+        let point = Point::new(20., 20.);
+        assert!(!button.pointer_release_would_activate(point));
+        assert!(button.pointer_down_at(point));
+        let state = button.state;
+        assert!(button.pointer_armed());
+        assert!(button.pointer_release_would_activate(point));
+        assert!(button.pointer_release_would_activate(point));
+        assert_eq!(button.state, state);
+        button.state.disabled = true;
+        assert!(!button.pointer_release_would_activate(point));
+        button.state.disabled = false;
+        button.state.loading = true;
+        assert!(!button.pointer_release_would_activate(point));
+        button.state.loading = false;
+        let shape = tekes_ui_scene::ClipShape::normalize(
+            Rect::new(0., 0., 10., 36.),
+            Default::default(),
+            Point::new(0., 0.),
+        )
+        .unwrap();
+        button.set_clip_region(Some(
+            tekes_ui_scene::ClipRegion::new(
+                &[shape],
+                tekes_ui_scene::ClipBudget {
+                    max_shapes: 1,
+                    max_work: 4096,
+                },
+            )
+            .unwrap(),
+        ));
+        assert!(!button.pointer_release_would_activate(point));
+        assert!(!button.pointer_up_at(point));
+        assert!(!button.pointer_armed());
+        button.set_clip_region(None);
+        assert!(button.pointer_down_at(point));
+        assert!(button.pointer_release_would_activate(point));
+        assert!(button.pointer_up_at(point));
+        assert!(!button.pointer_release_would_activate(point));
+        assert!(!button.pointer_up_at(point));
+        button.state.focused = true;
+        button.key(ControlKey::Space, true);
+        assert!(!button.pointer_armed());
+        assert!(!button.pointer_release_would_activate(point));
+        assert!(button.key(ControlKey::Space, false));
     }
 
     #[test]

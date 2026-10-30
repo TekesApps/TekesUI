@@ -25,6 +25,27 @@ pub enum ScrollPolicy {
     Auto,
 }
 
+type ScrollPointerInputs = (
+    Point,
+    Point,
+    Size,
+    Size,
+    (ScrollPolicy, ScrollPolicy),
+    (bool, bool),
+    u64,
+);
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct ScrollPointerDecision {
+    expected: ScrollPointerInputs,
+    drag: Option<(bool, f32, f32)>,
+    offset: Point,
+}
+impl ScrollPointerDecision {
+    pub(crate) fn visual_offset(&self) -> Point {
+        self.offset
+    }
+}
+
 /// Two-axis document viewport. Momentum deltas come from the operating system;
 /// elastic boundary return and explicit reveal navigation animate locally using
 /// the host clock. No synthetic in-bounds momentum is introduced.
@@ -597,23 +618,33 @@ impl ScrollView {
             Rect::new(track.min_x() + pos, track.min_y(), size, track.size.height)
         }
     }
-    pub fn pointer_down(&mut self, p: Point, vertical: bool, track: Rect, minimum: f32) -> bool {
+    pub(crate) fn prepare_pointer_down(
+        &self,
+        p: Point,
+        vertical: bool,
+        track: Rect,
+        minimum: f32,
+    ) -> Option<ScrollPointerDecision> {
         if !self.scrollbar_visible(vertical) || !track.contains(p) {
-            return false;
+            return None;
         }
-        self.cancel();
-        let thumb = self.thumb(vertical, track, minimum);
+        // `pointer_down` cancels elastic return before measuring the thumb.
+        // Compute that same decision on a clone so preparation stays pure.
+        let mut after_cancel = self.clone();
+        after_cancel.cancel();
+        let thumb = after_cancel.thumb(vertical, track, minimum);
         let coordinate = if vertical { p.y } else { p.x };
-        if thumb.contains(p) {
-            self.drag = Some((
+        let mut offset = after_cancel.offset;
+        let drag = if thumb.contains(p) {
+            Some((
                 vertical,
                 coordinate,
                 if vertical {
-                    self.offset.y
+                    after_cancel.offset.y
                 } else {
-                    self.offset.x
+                    after_cancel.offset.x
                 },
-            ));
+            ))
         } else {
             let forward = coordinate
                 > if vertical {
@@ -623,11 +654,49 @@ impl ScrollView {
                 };
             let delta = if forward { 0.9 } else { -0.9 };
             if vertical {
-                self.scroll_by(0.0, self.viewport.height * delta);
+                after_cancel.scroll_by(0.0, after_cancel.viewport.height * delta);
             } else {
-                self.scroll_by(self.viewport.width * delta, 0.0);
+                after_cancel.scroll_by(after_cancel.viewport.width * delta, 0.0);
             }
-        }
+            offset = after_cancel.offset;
+            None
+        };
+        Some(ScrollPointerDecision {
+            expected: (
+                self.offset,
+                self.overscroll,
+                self.viewport,
+                self.document,
+                self.scroll_policy(),
+                self.hidden_scrollbars,
+                self.reveal_generation,
+            ),
+            drag,
+            offset,
+        })
+    }
+    pub(crate) fn apply_pointer_down(&mut self, decision: ScrollPointerDecision) {
+        debug_assert_eq!(
+            decision.expected,
+            (
+                self.offset,
+                self.overscroll,
+                self.viewport,
+                self.document,
+                self.scroll_policy(),
+                self.hidden_scrollbars,
+                self.reveal_generation,
+            )
+        );
+        self.cancel();
+        self.drag = decision.drag;
+        self.offset = decision.offset;
+    }
+    pub fn pointer_down(&mut self, p: Point, vertical: bool, track: Rect, minimum: f32) -> bool {
+        let Some(decision) = self.prepare_pointer_down(p, vertical, track, minimum) else {
+            return false;
+        };
+        self.apply_pointer_down(decision);
         true
     }
     pub fn pointer_drag(&mut self, p: Point, track: Rect, minimum: f32) -> bool {
@@ -692,6 +761,52 @@ mod tests {
         ));
         view.set_scrollbar_visibility(false, false);
         assert_eq!(view.dragging_axis(), None);
+    }
+
+    #[test]
+    fn prepared_scrollbar_pointer_decision_is_pure_fenced_and_matches_thumb_and_page_actions() {
+        let track = Rect::new(95.0, 0.0, 5.0, 100.0);
+        for (point, expected_drag, expected_offset_y) in [
+            (Point::new(97.0, 40.0), true, 120.0),
+            (Point::new(97.0, 80.0), false, 210.0),
+        ] {
+            let mut prepared_view = ScrollView::default();
+            prepared_view.layout(Size::new(100.0, 100.0), Size::new(400.0, 400.0));
+            prepared_view.scroll_by(0.0, 120.0);
+            prepared_view.overscroll.y = -8.0;
+            let original_offset = prepared_view.offset;
+            let original_stretch = prepared_view.overscroll;
+            let decision = prepared_view
+                .prepare_pointer_down(point, true, track, 20.0)
+                .unwrap();
+            assert_eq!(prepared_view.offset, original_offset);
+            assert_eq!(prepared_view.overscroll, original_stretch);
+            assert_eq!(decision.drag.is_some(), expected_drag);
+            assert_eq!(decision.visual_offset(), Point::new(0.0, expected_offset_y));
+
+            let mut immediate_view = prepared_view.clone();
+            assert!(immediate_view.pointer_down(point, true, track, 20.0));
+            let mut applied_view = prepared_view.clone();
+            applied_view.apply_pointer_down(decision);
+            assert_eq!(applied_view.offset, immediate_view.offset);
+            assert_eq!(applied_view.offset, Point::new(0.0, expected_offset_y));
+            assert_eq!(applied_view.overscroll, immediate_view.overscroll);
+            assert_eq!(applied_view.overscroll, Point::default());
+            assert_eq!(applied_view.dragging_axis(), immediate_view.dragging_axis());
+            assert_eq!(applied_view.dragging_axis(), expected_drag.then_some(true));
+            assert!(!applied_view.needs_animation());
+        }
+
+        let mut view = ScrollView::default();
+        view.layout(Size::new(100.0, 100.0), Size::new(400.0, 400.0));
+        let decision = view
+            .prepare_pointer_down(Point::new(97.0, 10.0), true, track, 20.0)
+            .unwrap();
+        view.scroll_by(0.0, 1.0);
+        let current = view
+            .prepare_pointer_down(Point::new(97.0, 10.0), true, track, 20.0)
+            .unwrap();
+        assert_ne!(decision, current);
     }
 
     #[test]

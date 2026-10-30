@@ -623,8 +623,11 @@ impl ContentHost {
         // Its pointer-down may extend the original selection, so leave that
         // same-owner reducer untouched; cross-owner transfers use preparation.
         if self.focused.is_some_and(|focused| {
-            path.iter()
-                .any(|node| node.id == focused && node.component.text_surface().is_some())
+            path.iter().any(|node| {
+                node.id == focused
+                    && node.component.text_surface().is_some()
+                    && node.component::<ComboBoxContent>().is_none()
+            })
         }) {
             return None;
         }
@@ -768,6 +771,11 @@ impl ContentHost {
         {
             return None;
         }
+        let combo_expansion = matches!(action, AccessibilityAction::SetExpanded(_))
+            && self
+                .scope()
+                .find_active(id)
+                .is_some_and(|node| node.component::<ComboBoxContent>().is_some());
         if !self.strict_focus_requirement(id) {
             // Other ordinary AX verbs keep their original non-transfer policy.
             // Strict cross-owner verbs below always need an original decision.
@@ -776,13 +784,14 @@ impl ContentHost {
                 AccessibilityAction::Focus
                     | AccessibilityAction::Press
                     | AccessibilityAction::SetSelection(_)
-            ) {
+            ) && !combo_expansion
+            {
                 return None;
             }
             // Stable original Press owners use the same preflight/commit path
             // even on ordinary rectangles; this prevents an overflow or failed
             // focus admission from falling through to a partially mutating AX reducer.
-            let stable_press = matches!(action, AccessibilityAction::Press)
+            let stable_press = (matches!(action, AccessibilityAction::Press) || combo_expansion)
                 && self.scope().find_active(id).is_some_and(|n| {
                     n.component.action_transaction_compatibility()
                         == ActionTransactionCompatibility::StableHooks

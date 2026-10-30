@@ -29,6 +29,7 @@ pub enum ContentActionPayload {
     /// Original toolbar command captured before menu-close focus cleanup.
     ToolbarCommand(u64),
     MenuSelection(MenuSelection),
+    ComboBoxSelection(ComboBoxSelection),
     /// Owned controlled Disclosure request captured at original delivery.
     DisclosureExpansion(DisclosureIntent),
 }
@@ -93,6 +94,20 @@ mod mount_capacity_test {
 }
 #[cfg(test)]
 pub(super) use mount_capacity_test::FAIL_MOUNT;
+/// Use the current allocator's scoped failure seam for the original Combo
+/// controlled-setter versus real-editor capacity regression.
+#[cfg(test)]
+pub(super) fn with_exhausted_mounts<T>(f: impl FnOnce() -> T) -> T {
+    struct Restore(bool);
+    impl Drop for Restore {
+        fn drop(&mut self) {
+            FAIL_MOUNT.with(|flag| flag.set(self.0));
+        }
+    }
+    let _restore = Restore(FAIL_MOUNT.with(|flag| flag.replace(true)));
+    f()
+}
+
 /// Finite tickets from the original allocator. No ambient identity fallback.
 pub(super) struct MountRange {
     next: u64,
@@ -113,6 +128,10 @@ impl MountRange {
     }
 }
 pub(super) fn reserve_mounts(count: usize) -> Option<MountRange> {
+    #[cfg(test)]
+    if FAIL_MOUNT.with(|flag| flag.get()) {
+        return None;
+    }
     let count = u64::try_from(count).ok()?;
     {
         let counter = &NEXT_MOUNT;

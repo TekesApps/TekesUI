@@ -1251,7 +1251,34 @@ pub struct ComboBox {
     pub active: Option<usize>,
     pub disabled: bool,
 }
+#[derive(Debug, PartialEq)]
+pub(crate) struct ComboSelectionDecision {
+    expected: ComboBox,
+    pub(crate) index: usize,
+    pub(crate) label: String,
+}
 impl ComboBox {
+    pub(crate) fn prepare_selection(&self, index: usize) -> Option<ComboSelectionDecision> {
+        if self.disabled || !self.open || !self.filtered().contains(&index) {
+            return None;
+        }
+        Some(ComboSelectionDecision {
+            expected: self.clone(),
+            index,
+            label: self.items.get(index)?.clone(),
+        })
+    }
+    pub(crate) fn selection_current(&self, decision: &ComboSelectionDecision) -> bool {
+        *self == decision.expected
+    }
+    pub(crate) fn apply_selection(&mut self, decision: ComboSelectionDecision) -> usize {
+        debug_assert!(self.selection_current(&decision));
+        self.active = Some(decision.index);
+        self.selected = Some(decision.index);
+        self.query = decision.label;
+        self.open = false;
+        decision.index
+    }
     pub fn filtered(&self) -> Vec<usize> {
         let q = self.query.to_lowercase();
         self.items
@@ -1295,13 +1322,8 @@ impl ComboBox {
                 self.active = Some(filtered[next]);
             }
             ControlKey::Enter => {
-                let i = self.active?;
-                if filtered.contains(&i) {
-                    self.selected = Some(i);
-                    self.query = self.items[i].clone();
-                    self.open = false;
-                    return Some(i);
-                }
+                let decision = self.prepare_selection(self.active?)?;
+                return Some(self.apply_selection(decision));
             }
             _ => {}
         }

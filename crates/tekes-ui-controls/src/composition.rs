@@ -55,6 +55,8 @@ pub use rich_content::{
 };
 pub use rich_document::{RichBlock, RichBlockKind, RichDocument, RichLink};
 mod adapters;
+mod combobox;
+pub use combobox::{ComboBoxContent, ComboBoxSelection, ComboBoxUpdateError};
 mod chart_content;
 pub use chart_content::{ChartContent, ChartContentError};
 mod button;
@@ -226,6 +228,8 @@ pub enum ContentRole {
     /// A navigation action with one semantic owner; its children are decorative.
     Link,
     TextInput,
+    /// Single-line editable original ComboBox owner.
+    ComboBox,
     Slider,
     Switch,
     List,
@@ -1804,6 +1808,7 @@ pub struct ContentHost {
     popover_order: Vec<PopoverSession>,
     captured: Option<ComponentId>,
     captured_overlay: bool,
+    retired_combo_release: bool,
     captured_mount: Option<u64>,
     capture_epoch: u64,
     dirty: bool,
@@ -1852,6 +1857,7 @@ impl ContentHost {
             popover_order: Vec::new(),
             captured: None,
             captured_overlay: false,
+            retired_combo_release: false,
             captured_mount: None,
             capture_epoch: 0,
             dirty: true,
@@ -2470,10 +2476,21 @@ impl ContentHost {
                 self.captured_mount != Some(c.mount)
                     || c.visible().is_none()
                     || c.component.semantics().disabled
+                    || c.component::<ComboBoxContent>()
+                        .is_some_and(|combo| !combo.capture_current(self.captured_overlay))
             })
         }) {
             if let Some(c) = self.captured.take().and_then(|id| self.root.find_mut(id)) {
-                c.component.event(&ContentEvent::Cancel);
+                if c.component::<ComboBoxContent>().is_some()
+                    && self.captured_mount == Some(c.mount)
+                {
+                    self.retired_combo_release = true;
+                    c.component.cancel_pointer();
+                    c.component
+                        .event(&ContentEvent::PointerMove(Point::new(f32::MIN, f32::MIN)));
+                } else {
+                    c.component.event(&ContentEvent::Cancel);
+                }
             }
             self.captured_mount = None;
             self.captured_overlay = false;
@@ -2786,6 +2803,16 @@ impl ContentHost {
         }
         let routing = event.routing_event();
         let routed = routing.as_ref();
+        if event.is_primary_pointer() && matches!(routed, ContentEvent::PointerDown(_)) {
+            self.retired_combo_release = false;
+        }
+        if event.is_primary_pointer()
+            && matches!(routed, ContentEvent::PointerUp(_))
+            && self.retired_combo_release
+        {
+            self.retired_combo_release = false;
+            return ContentResponse::consumed(false);
+        }
         if matches!(routed, ContentEvent::PointerDown(_))
             && event.is_primary_pointer()
             && self.capture_epoch == u64::MAX
@@ -3168,6 +3195,9 @@ impl ContentHost {
                     self.captured_mount == Some(node.mount)
                         && node.visible().is_some()
                         && !node.component.semantics().disabled
+                        && node
+                            .component::<ComboBoxContent>()
+                            .is_none_or(|combo| combo.capture_current(self.captured_overlay))
                 })
                 .map(|node| (id, node.mount))
         })

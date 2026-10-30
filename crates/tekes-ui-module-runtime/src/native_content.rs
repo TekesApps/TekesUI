@@ -1008,6 +1008,35 @@ fn native_input(event: &native::Event) -> Option<wire::Input> {
     })
 }
 
+// Test replies enter the actual receiver/container publication and failure paths.
+#[cfg(test)]
+pub(crate) fn semantic_test_snapshot(nodes: Vec<wire::SemanticNode>) -> ProcessContentSnapshot {
+    let reply = serde_json::from_value(serde_json::json!({
+        "view":1,"viewport":1,"consumed":true,"changed":true,
+        "capture_pointer":false,"activated":false,"bubbles":true,
+        "pointer_focus_requested":false,"key":null,"focused":null,
+        "focus_epoch":0,"text_binding":null,"captured":null,"focus_targets":[],
+        "composing":false,"text":null,"semantics":nodes
+    }))
+    .unwrap();
+    ProcessContentSnapshot {
+        stamp: Stamp {
+            session: Session {
+                module: "combo-contract".into(),
+                instance: 1,
+                host_epoch: 1,
+            },
+            view: 1,
+            viewport: 1,
+            curve: None,
+            frame: Rect::new(0., 0., 200., 80.),
+            clip: Rect::new(0., 0., 200., 80.),
+        },
+        reply,
+        text: None,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

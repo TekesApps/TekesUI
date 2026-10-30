@@ -3141,3 +3141,8 @@ mod curve_packet_contract_tests {
         );
     }
 }
+
+#[cfg(test)]
+#[allow(dead_code)]
+#[path = "../../tekes-ui-app-protocol/tests/old_combo_schema/content.rs"]
+mod old_combo_schema;

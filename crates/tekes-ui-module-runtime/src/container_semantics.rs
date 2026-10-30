@@ -79,6 +79,13 @@ pub(crate) fn validate(nodes: &[wire::SemanticNode]) -> Result<()> {
                 && Some(&t.binding) == n.text_binding.as_ref()),
             "invalid child shaped text layout"
         );
+        ensure!(
+            n.semantics.role != wire::SemanticRole::ComboBox
+                || n.text_layout
+                    .as_ref()
+                    .is_none_or(|layout| !layout.multiline),
+            "multiline ComboBox"
+        );
         let mut parts = std::collections::HashSet::new();
         for p in &n.parts {
             ensure!(
@@ -93,6 +100,13 @@ pub(crate) fn validate(nodes: &[wire::SemanticNode]) -> Result<()> {
                     wire::SemanticRole::Slider | wire::SemanticRole::Splitter
                 ) || p.value_range.is_some(),
                 "missing child adjustable part range"
+            );
+            ensure!(
+                p.semantics.role != wire::SemanticRole::ComboBox
+                    || p.text_layout
+                        .as_ref()
+                        .is_none_or(|layout| !layout.multiline),
+                "multiline ComboBox part"
             );
             ensure!(
                 p.text_layout
@@ -150,6 +164,7 @@ fn semantics(s: &wire::Semantics) -> ContentSemantics {
             W::Button => R::Button,
             W::Link => R::Link,
             W::TextInput => R::TextInput,
+            W::ComboBox => R::ComboBox,
             W::Slider => R::Slider,
             W::Splitter => R::Splitter,
             W::Switch => R::Switch,
@@ -199,6 +214,7 @@ impl RemoteSemantics {
         let same = self.attachment.as_ref() == Some(&attachment);
         let mut entries = Vec::new();
         let mut parents = Vec::new();
+        let mut next = self.next;
         for node in nodes {
             let key = Key {
                 target: node.target,
@@ -257,11 +273,10 @@ impl RemoteSemantics {
                 {
                     old.index
                 } else {
-                    self.next = self
-                        .next
+                    next = next
                         .checked_add(1)
                         .ok_or_else(|| anyhow::anyhow!("child semantic ID exhausted"))?;
-                    self.next
+                    next
                 };
                 entries.push(Entry {
                     key,
@@ -286,6 +301,7 @@ impl RemoteSemantics {
         for (e, p) in entries.iter_mut().zip(parent_indices) {
             e.parent = p;
         }
+        self.next = next;
         self.entries = entries;
         self.attachment = Some(attachment);
         self.snapshot = Some(snapshot);
@@ -517,3 +533,7 @@ mod tests {
         assert_eq!(semantics(&divider.semantics).role, ContentRole::Splitter);
     }
 }
+
+#[cfg(test)]
+#[path = "combo_publication_tests.rs"]
+mod combo_publication_tests;

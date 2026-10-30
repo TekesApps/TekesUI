@@ -2271,6 +2271,9 @@ impl FilteredMenuView {
             .as_ref()
             .is_some_and(|layout| layout.visible.is_some_and(has_area))
     }
+    pub(crate) fn cancel_pointer_arm(&mut self) {
+        self.menu_view.cancel_pointer_arm();
+    }
     pub fn dismiss(&mut self) {
         let _ = self.menu_view.deactivate_with_model(&mut self.menu);
         self.layout = None;
@@ -2674,11 +2677,130 @@ impl Default for SelectView {
     }
 }
 
+#[derive(Debug, PartialEq)]
+pub(crate) struct PreparedComboConfirmation {
+    selection: crate::extended::ComboSelectionDecision,
+    editor: crate::text_input::PreparedTextInsert,
+    generation: u64,
+    presented: bool,
+    pointer: Option<Point>,
+}
 #[derive(Debug, Default)]
 pub struct ComboBoxView {
     pub options: FilteredMenuView,
 }
+impl PreparedComboConfirmation {
+    pub(crate) fn index(&self) -> usize {
+        self.selection.index
+    }
+}
 impl ComboBoxView {
+    /// No effects: original reducer + editor + presented candidate identity.
+    pub(crate) fn prepare_confirmation(
+        &self,
+        model: &ComboBox,
+        input: &crate::TextInput,
+        index: usize,
+        presented: bool,
+    ) -> Option<PreparedComboConfirmation> {
+        if input.marked.is_some() || presented && !self.options.is_current(model) {
+            return None;
+        }
+        let selection = model.prepare_selection(index)?;
+        let editor = input.prepare_insert(&selection.label, Some(0..input.len()))?;
+        Some(PreparedComboConfirmation {
+            selection,
+            editor,
+            generation: self.options.menu_view.open_generation(),
+            presented,
+            pointer: None,
+        })
+    }
+    pub(crate) fn confirmation_current(
+        &self,
+        model: &ComboBox,
+        input: &crate::TextInput,
+        prepared: &PreparedComboConfirmation,
+    ) -> bool {
+        input.marked.is_none()
+            && input.insert_current(&prepared.editor)
+            && model.selection_current(&prepared.selection)
+            && prepared.generation == self.options.menu_view.open_generation()
+            && (!prepared.presented || self.options.is_current(model))
+            && prepared.pointer.is_none_or(|p| {
+                self.options
+                    .menu_view
+                    .pointer_release_index(&self.options.menu, p)
+                    .and_then(|i| self.options.original_index(i))
+                    == Some(prepared.selection.index)
+            })
+    }
+    /// All checks precede effects. No replay of Enter and no fallible write after the first effect.
+    pub(crate) fn apply_confirmation(
+        &mut self,
+        model: &mut ComboBox,
+        input: &mut crate::TextInput,
+        prepared: PreparedComboConfirmation,
+    ) -> Option<usize> {
+        if !self.confirmation_current(model, input, &prepared) {
+            return None;
+        }
+        Some(self.commit_confirmation(model, input, prepared))
+    }
+    pub(crate) fn commit_confirmation(
+        &mut self,
+        model: &mut ComboBox,
+        input: &mut crate::TextInput,
+        prepared: PreparedComboConfirmation,
+    ) -> usize {
+        if let Some(point) = prepared.pointer {
+            let _ = self.options.pointer_up(point);
+        } else if prepared.presented {
+            let filtered = self
+                .options
+                .mapping
+                .iter()
+                .position(|i| *i == prepared.selection.index)
+                .expect("validated original candidate");
+            let _ = self
+                .options
+                .menu_view
+                .activate_item_with_model(&mut self.options.menu, filtered);
+        }
+        input.apply_insert(prepared.editor);
+        let index = model.apply_selection(prepared.selection);
+        self.options.dismiss();
+        index
+    }
+    pub(crate) fn prepare_pointer_confirmation(
+        &self,
+        model: &ComboBox,
+        input: &crate::TextInput,
+        point: Point,
+    ) -> Option<PreparedComboConfirmation> {
+        let filtered = self
+            .options
+            .menu_view
+            .pointer_release_index(&self.options.menu, point)?;
+        let mut decision =
+            self.prepare_confirmation(model, input, self.options.original_index(filtered)?, true)?;
+        decision.pointer = Some(point);
+        Some(decision)
+    }
+    pub(crate) fn candidate_pointer_armed(&self) -> bool {
+        self.options.menu_view.pointer_armed()
+    }
+    pub(crate) fn next_open_generation(&self) -> Option<u64> {
+        self.options.menu_view.next_open_generation()
+    }
+    pub(crate) fn apply_open_generation(&mut self, generation: u64) {
+        self.options
+            .menu_view
+            .apply_open_generation(&mut self.options.menu, 0, generation);
+    }
+    pub(crate) fn revoke_candidates(&mut self) {
+        self.options.cancel();
+    }
     #[allow(clippy::too_many_arguments)]
     pub fn render(
         &mut self,

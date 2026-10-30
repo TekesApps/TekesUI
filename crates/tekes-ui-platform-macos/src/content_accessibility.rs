@@ -89,10 +89,12 @@ fn enrich(
         add_slider_range(host, id, semantics, node);
         // Preserve the existing value/selection contract before shaping. Complete
         // geometry is still published only from the original shaped layout below.
-        if matches!(semantics.role, ContentRole::TextInput | ContentRole::Image)
-            && let Some(input) = host.semantic_text_input_snapshot(id)
+        if matches!(
+            semantics.role,
+            ContentRole::TextInput | ContentRole::ComboBox | ContentRole::Image
+        ) && let Some(input) = host.semantic_text_input_snapshot(id)
         {
-            if semantics.role != ContentRole::Image
+            if !matches!(semantics.role, ContentRole::Image | ContentRole::ComboBox)
                 && host
                     .text_surface(id)
                     .is_some_and(|surface| surface.input.multiline)
@@ -107,7 +109,7 @@ fn enrich(
     if let Some(layout) = host.semantic_text_layout_snapshot(id, part) {
         if !matches!(
             node.role,
-            AccessibilityRole::Image | AccessibilityRole::Splitter(_)
+            AccessibilityRole::Image | AccessibilityRole::Splitter(_) | AccessibilityRole::ComboBox
         ) && layout.multiline
         {
             node.role = AccessibilityRole::TextArea;
@@ -135,6 +137,16 @@ fn project_content_nodes(host: &ContentHost) -> Option<Vec<AccessibilityNode>> {
         let Some(key) = content_key(host, n.id, None) else {
             continue;
         };
+        if n.semantics.role == ContentRole::ComboBox
+            && (host
+                .text_surface(n.id)
+                .is_some_and(|surface| surface.input.multiline)
+                || host
+                    .semantic_text_layout_snapshot(n.id, None)
+                    .is_some_and(|layout| layout.multiline))
+        {
+            return None;
+        }
         let mut owner = project(
             key,
             n.parent.and_then(|p| content_key(host, p, None)),
@@ -152,6 +164,13 @@ fn project_content_nodes(host: &ContentHost) -> Option<Vec<AccessibilityNode>> {
         for part in n.parts {
             if part.semantics.role == ContentRole::Image && part.semantics.name.is_empty() {
                 continue;
+            }
+            if part.semantics.role == ContentRole::ComboBox
+                && host
+                    .semantic_text_layout_snapshot(n.id, Some(part.index))
+                    .is_some_and(|layout| layout.multiline)
+            {
+                return None;
             }
             let key = AccessibilityKey {
                 part: Some(part.index),
@@ -243,6 +262,7 @@ fn project(
             Role::Button => NativeRole::Button,
             Role::Link => NativeRole::Link,
             Role::TextInput => NativeRole::TextField,
+            Role::ComboBox => NativeRole::ComboBox,
             Role::Slider => NativeRole::Group,
             Role::Splitter => {
                 NativeRole::Splitter(AccessibilityRange::new(0., 1.).expect("split ratio domain"))

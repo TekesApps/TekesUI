@@ -24,6 +24,23 @@ pub(crate) struct TextActionInputSnapshot {
     read_only: bool,
     multiline: bool,
 }
+/// A text insertion computed without mutating its original editor.
+#[derive(Debug, PartialEq)]
+pub(crate) struct PreparedTextInsert {
+    expected_revision: (u64, u64),
+    expected_binding: (u64, u64),
+    before: Snapshot,
+    marked: Option<Range<usize>>,
+    composition: Option<Snapshot>,
+    multiline: bool,
+    read_only: bool,
+    disabled: bool,
+    original: Snapshot,
+    text: String,
+    caret: usize,
+    epoch: u64,
+    changed: bool,
+}
 /// Selection and replacement ranges use UTF-16, matching native text services.
 /// Edits and arrow/delete movement preserve extended grapheme clusters.
 #[derive(Debug)]
@@ -246,11 +263,24 @@ impl TextInput {
         if self.read_only || self.disabled {
             return false;
         }
-        self.advance_edit_epoch();
+        let prepared = self
+            .prepare_insert(value, replacement)
+            .expect("editor mutation epoch exhausted");
+        self.apply_insert(prepared)
+    }
+    pub(crate) fn prepare_insert(
+        &self,
+        value: &str,
+        replacement: Option<Range<usize>>,
+    ) -> Option<PreparedTextInsert> {
+        if self.read_only || self.disabled {
+            return None;
+        }
+        let epoch = self.edit_epoch.checked_add(1)?;
         let before = self.snapshot();
+        let original = self.composition.clone().unwrap_or_else(|| before.clone());
         let was_composing = self.composition.is_some();
         let marked = self.marked.clone();
-        let original = self.composition.take().unwrap_or_else(|| before.clone());
         let exact_marked = replacement
             .as_ref()
             .zip(marked.as_ref())
@@ -259,22 +289,64 @@ impl TextInput {
             (replacement.is_none() && was_composing && marked.is_some()) || exact_marked;
         let range = replacement
             .or_else(|| was_composing.then_some(marked.clone()).flatten())
-            .or_else(|| self.marked.take())
+            .or(marked)
             .unwrap_or_else(|| self.selection());
-        let inserted = if use_exact_range {
-            self.replace_raw_exact(range, value)
+        let range = if use_exact_range {
+            let start = range.start.min(self.len());
+            let end = range.end.max(start).min(self.len());
+            start..end
         } else {
-            self.replace_raw(range, value)
+            self.normalized(range)
         };
-        let caret = self.boundary_after(inserted.end);
-        self.anchor = caret;
-        self.caret = caret;
+        let value = self.normalize_value(value);
+        let mut text = self.text.clone();
+        text.replace_range(self.byte(range.start)..self.byte(range.end), &value);
+        let inserted_end = range.start + value.encode_utf16().count();
+        let caret = Self::boundaries_for(&text)
+            .into_iter()
+            .find(|boundary| *boundary >= inserted_end)
+            .unwrap_or_else(|| text.encode_utf16().count());
+        let changed = text != before.text || caret != before.caret || before != original;
+        Some(PreparedTextInsert {
+            expected_revision: self.edit_revision(),
+            expected_binding: self.controlled_binding(),
+            before,
+            marked: self.marked.clone(),
+            composition: self.composition.clone(),
+            multiline: self.multiline,
+            read_only: self.read_only,
+            disabled: self.disabled,
+            original,
+            text,
+            caret,
+            epoch,
+            changed,
+        })
+    }
+    pub(crate) fn insert_current(&self, prepared: &PreparedTextInsert) -> bool {
+        !self.disabled
+            && !self.read_only
+            && self.edit_revision() == prepared.expected_revision
+            && self.controlled_binding() == prepared.expected_binding
+            && self.snapshot() == prepared.before
+            && self.marked == prepared.marked
+            && self.composition == prepared.composition
+            && self.multiline == prepared.multiline
+            && self.read_only == prepared.read_only
+            && self.disabled == prepared.disabled
+    }
+    pub(crate) fn apply_insert(&mut self, prepared: PreparedTextInsert) -> bool {
+        debug_assert!(self.insert_current(&prepared));
+        self.edit_epoch = prepared.epoch;
+        self.text = prepared.text;
+        self.anchor = prepared.caret;
+        self.caret = prepared.caret;
         self.marked = None;
-        let changed = self.text != before.text || self.caret != before.caret || before != original;
-        if self.snapshot() != original {
-            self.remember(original);
+        self.composition = None;
+        if self.snapshot() != prepared.original {
+            self.remember(prepared.original);
         }
-        changed
+        prepared.changed
     }
     pub fn preedit(
         &mut self,
@@ -361,35 +433,57 @@ impl TextInput {
     }
     /// Same Unicode word segmentation as keyboard word movement, selecting the
     /// segment containing the visual grapheme rather than the word before a caret.
-    pub(crate) fn select_word_at(&mut self, index: usize) {
-        if let Some(pair) = self
-            .word_boundaries()
+    pub(crate) fn word_range_at(&self, index: usize) -> Range<usize> {
+        self.word_boundaries()
             .windows(2)
             .find(|pair| pair[0] <= index && index < pair[1])
-        {
-            self.select_range(pair[0]..pair[1]);
-        } else {
-            self.select(index, false);
-        }
+            .map_or_else(
+                || {
+                    let index = self.boundary(index.min(self.len()));
+                    index..index
+                },
+                |pair| pair[0]..pair[1],
+            )
     }
     /// Logical paragraph, including its terminating break. CRLF is one grapheme;
     /// wrapped visual lines do not create paragraphs. A trailing empty paragraph
     /// has an empty selection, rather than selecting the preceding paragraph.
-    pub(crate) fn select_paragraph_at(&mut self, index: usize) {
+    pub(crate) fn paragraph_range_at(&self, index: usize) -> Range<usize> {
         let mut start = 0;
         let mut end = 0;
-        let mut selected = None;
         for grapheme in self.text.graphemes(true) {
             end += grapheme.encode_utf16().count();
             if matches!(grapheme, "\r\n" | "\r" | "\n" | "\u{2028}" | "\u{2029}") {
                 if index < end {
-                    selected = Some(start..end);
-                    break;
+                    return start..end;
                 }
                 start = end;
             }
         }
-        self.select_range(selected.unwrap_or(start..self.len()));
+        start..self.len()
+    }
+    pub(crate) fn point_selection(&self, index: usize, extend: bool) -> (usize, usize) {
+        let caret = self.boundary(index.min(self.len()));
+        (if extend { self.anchor } else { caret }, caret)
+    }
+    pub(crate) fn normalized_selection(&self, range: Range<usize>) -> Range<usize> {
+        self.normalized(range)
+    }
+    pub(crate) fn apply_decided_selection(
+        &mut self,
+        anchor: usize,
+        caret: usize,
+        steps: u64,
+        unmark: bool,
+    ) {
+        if unmark {
+            self.unmark();
+        }
+        for _ in 0..steps {
+            self.advance_edit_epoch();
+        }
+        self.anchor = anchor;
+        self.caret = caret;
     }
     pub fn move_by(&mut self, direction: isize, extend: bool, word: bool) {
         self.advance_edit_epoch();
@@ -581,5 +675,84 @@ mod tests {
         let mut m = TextInput::new("", true);
         m.insert("a\r\nb", None);
         assert_eq!(m.text, "a\nb");
+    }
+
+    #[test]
+    fn prepared_insert_is_pure_fenced_by_editor_and_binding_and_keeps_undo_history() {
+        let mut input = TextInput::new("A😀e\u{301}B", false);
+        input.select_range(1..3);
+        let epoch = input.edit_revision();
+        let prepared = input.prepare_insert("X", None).unwrap();
+        assert_eq!(input.text, "A😀e\u{301}B");
+        assert_eq!(input.selection(), 1..3);
+        assert_eq!(input.edit_revision(), epoch);
+        assert!(input.undo.is_empty());
+        assert!(input.insert_current(&prepared));
+        assert!(input.apply_insert(prepared));
+        assert_eq!(input.text, "AXe\u{301}B");
+        assert_eq!(input.selection(), 2..2);
+        assert!(input.undo());
+        assert_eq!(input.text, "A😀e\u{301}B");
+        assert_eq!(input.selection(), 1..3);
+        assert!(input.redo());
+        assert_eq!(input.text, "AXe\u{301}B");
+
+        let mut stale = TextInput::new("abc", false);
+        let prepared = stale.prepare_insert("x", None).unwrap();
+        stale.select(1, false);
+        assert!(!stale.insert_current(&prepared));
+
+        let mut rebound = TextInput::new("before", false);
+        let prepared = rebound.prepare_insert("x", None).unwrap();
+        let baseline = rebound.external_baseline();
+        assert!(matches!(
+            rebound.apply_external_value(
+                &baseline,
+                &crate::DraftRevision {
+                    identity: "prepared-insert-test".into(),
+                    version: 1,
+                    payload: "after".into(),
+                },
+                crate::ExternalSelection::Reset,
+                crate::ExternalUndo::Preserve,
+            ),
+            crate::ExternalValueResult::Applied { .. }
+        ));
+        assert!(!rebound.insert_current(&prepared));
+        assert_eq!(rebound.text, "after");
+    }
+
+    #[test]
+    fn prepared_insert_commits_marked_text_as_one_undo_step_and_selection_helpers_are_pure() {
+        let mut input = TextInput::new("你好世界", false);
+        input.select_range(1..2);
+        assert!(input.preedit("😀", 2..2, None));
+        let before = input.action_snapshot();
+        let prepared = input.prepare_insert("文", None).unwrap();
+        assert_eq!(input.action_snapshot(), before);
+        assert!(input.apply_insert(prepared));
+        assert_eq!(input.text, "你文世界");
+        assert!(input.marked.is_none());
+        assert!(input.undo());
+        assert_eq!(input.text, "你好世界");
+        assert_eq!(input.selection(), 1..2);
+
+        let input = TextInput::new("one two\r\n三", false);
+        assert_eq!(input.point_selection(2, false), (2, 2));
+        assert_eq!(input.point_selection(2, true), (0, 2));
+        assert_eq!(input.word_range_at(5), 4..7);
+        assert_eq!(input.paragraph_range_at(9), 9..10);
+        assert_eq!(input.normalized_selection(1..2), 1..2);
+        assert_eq!(input.selection(), 0..0);
+    }
+
+    #[test]
+    fn prepared_insert_reports_same_length_replacement_as_changed() {
+        let mut input = TextInput::new("ab", false);
+        input.select_range(0..1);
+        let prepared = input.prepare_insert("x", None).unwrap();
+        assert!(input.apply_insert(prepared));
+        assert_eq!(input.text, "xb");
+        assert_eq!(input.selection(), 1..1);
     }
 }

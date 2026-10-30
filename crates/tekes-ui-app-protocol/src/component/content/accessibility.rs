@@ -13,6 +13,8 @@ pub enum SemanticRole {
     Button,
     Link,
     TextInput,
+    /// Matched-schema editable single-line owner; no extra popup editor.
+    ComboBox,
     Slider,
     /// Original split divider; requires a matching receiver.
     Splitter,

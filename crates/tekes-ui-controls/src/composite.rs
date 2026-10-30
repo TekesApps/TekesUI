@@ -586,6 +586,123 @@ fn menu_surface_height(content: f32, inset: f32) -> f32 {
     (content + inset * 2.0).max(132.0)
 }
 
+// Optional header geometry belongs to the existing popup and shares its inset,
+// placement, clipping, and scrolling viewport.
+pub(crate) type MenuHeader<'a> = (
+    Size,
+    &'a mut dyn FnMut(&mut Scene, &mut dyn ButtonTextRenderer, Rect),
+);
+
+pub(crate) struct MenuRenderContext<'a, T: ButtonTextRenderer> {
+    pub scene: &'a mut Scene,
+    pub text: &'a mut T,
+    pub anchor: Rect,
+    pub visible: Rect,
+    pub clip: Option<Rect>,
+    pub palette: Palette,
+    pub role: proposal::TextRole,
+    pub compact: bool,
+}
+
+pub(crate) fn menu_popup_geometry(
+    anchor: Rect,
+    natural: Size,
+    viewport: Rect,
+    inset: f32,
+    row_heights: &[f32],
+    beside: bool,
+    header: Option<Size>,
+) -> (Rect, Rect, Rect) {
+    let gap = proposal::metric("spacing", "space-micro").expect("canonical popup spacing");
+    let header_height = header.map_or(0.0, |size| size.height.max(0.0));
+    let header_gap = if header.is_some() && !row_heights.is_empty() {
+        inset.max(4.0)
+    } else {
+        0.0
+    };
+    let rows_height = if header.is_some() && row_heights.is_empty() {
+        inset * 2.0
+    } else {
+        natural.height
+    };
+    let size = Size::new(
+        natural.width,
+        (rows_height + header_height + header_gap).max(0.0),
+    );
+    let below = (viewport.max_y() - anchor.max_y() - gap).clamp(0.0, viewport.size.height);
+    let above = (anchor.min_y() - gap - viewport.min_y()).clamp(0.0, viewport.size.height);
+    let available = below.max(above);
+    let first = row_heights.first().copied().unwrap_or(0.0);
+    let minimum = first + inset * 2.0 + header_height + header_gap;
+    let limit = if beside || available < minimum {
+        viewport.size.height
+    } else {
+        available
+    };
+    let size = Size::new(size.width, size.height.min(limit));
+    let popup = if beside {
+        let transpose = |r: Rect| Rect::new(r.min_y(), r.min_x(), r.size.height, r.size.width);
+        transpose(crate::feedback_view::place_overlay(
+            transpose(anchor),
+            Size::new(size.height, size.width),
+            transpose(viewport),
+            gap,
+        ))
+    } else {
+        crate::feedback_view::place_overlay(anchor, size, viewport, gap)
+    };
+    let inner = Rect::new(
+        popup.min_x() + inset,
+        popup.min_y() + inset,
+        (popup.size.width - inset * 2.0).max(0.0),
+        (popup.size.height - inset * 2.0).max(0.0),
+    );
+    let header_frame = Rect::new(
+        inner.min_x(),
+        inner.min_y(),
+        inner.size.width,
+        header_height.min(inner.size.height),
+    );
+    let rows_top = (header_frame.max_y() + header_gap).min(inner.max_y());
+    let rows = Rect::new(
+        inner.min_x(),
+        rows_top,
+        inner.size.width,
+        (inner.max_y() - rows_top).max(0.0),
+    );
+    (popup, header_frame, rows)
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) enum MenuPreparedKind {
+    Open { generation: u64, selected: usize },
+    Focus { index: usize, offset: f32 },
+    Activate { index: usize },
+    Close,
+    Noop,
+}
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct MenuPreparedAction {
+    expected: MenuPreparedState,
+    kind: MenuPreparedKind,
+    pub event: MenuEvent,
+}
+#[derive(Clone, Debug, PartialEq)]
+struct MenuPreparedState {
+    model: (bool, usize, usize, Option<usize>),
+    generation: u64,
+    availability: (bool, bool, bool),
+    return_focus: Option<usize>,
+    layout: MenuLayout,
+    row_styles: Vec<MenuRowStyle>,
+    row_heights: Vec<f32>,
+    viewport: Rect,
+    offset: Point,
+    limit: Point,
+    focus_outset: f32,
+    gesture: bool,
+    buttons: Vec<crate::widgets::ButtonActionDecision>,
+}
 impl MenuView {
     /// Legacy flat-label popup size before viewport placement/scroll clamping.
     /// Controlled declaration metadata is measured by this same runtime.
@@ -629,6 +746,74 @@ impl MenuView {
             heights,
         )
     }
+    pub(crate) fn header_content_width(text: &mut impl ButtonTextRenderer, width: f32) -> f32 {
+        (Self::measure(text, &[], width, proposal::TextRole::UiBody, false).width
+            - focus_reveal_outset(text.backing_scale()) * 2.0)
+            .max(0.0)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn header_frame(
+        text: &mut impl ButtonTextRenderer,
+        labels: &[&str],
+        header: Size,
+        anchor: Rect,
+        viewport: Rect,
+        role: proposal::TextRole,
+        compact: bool,
+    ) -> Rect {
+        let (natural, rows) = Self::measured_rows(text, labels, viewport.size.width, role, compact);
+        menu_popup_geometry(
+            anchor,
+            natural,
+            viewport,
+            focus_reveal_outset(text.backing_scale()),
+            &rows,
+            false,
+            Some(header),
+        )
+        .1
+    }
+
+    pub(crate) fn render_with_header(
+        &mut self,
+        model: &mut Menu,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        labels: &[&str],
+        anchor: Rect,
+        visible: Rect,
+        clip: Option<Rect>,
+        palette: Palette,
+        role: proposal::TextRole,
+        compact: bool,
+        header: Size,
+        paint_header: &mut dyn FnMut(&mut Scene, &mut dyn ButtonTextRenderer, Rect),
+    ) -> Option<MenuLayout> {
+        self.bound_external = true;
+        self.runtime.render_model(
+            model,
+            scene,
+            text,
+            labels,
+            anchor,
+            visible,
+            clip,
+            palette,
+            role,
+            compact,
+            Some((header, paint_header)),
+        )
+    }
+
+    pub(crate) fn cancel_pointer_arm(&mut self) {
+        for button in &mut self.runtime.buttons {
+            button.cancel_pointer();
+        }
+        self.runtime.scroll.cancel();
+        self.runtime.scroll_gesture_captured = false;
+    }
+
     pub fn new(count: usize) -> Self {
         let mut scroll = ScrollArea::default();
         scroll.set_scroll_policy(ScrollPolicy::Disabled, ScrollPolicy::Auto);
@@ -718,13 +903,112 @@ impl MenuView {
             !self.bound_external,
             "MenuView is bound to an external Menu model"
         );
-        self.runtime.deactivate_model(&mut self.model);
-        self.runtime.presence.clear();
-        self.runtime.clear_layout();
-        self.model = Menu::new(count);
-        self.runtime.row_styles.clear();
+        self.runtime.replace_items_model(&mut self.model, count);
     }
 
+    #[cfg(test)]
+    pub(crate) fn select_test_generation(&mut self, generation: u64) {
+        self.runtime.open_generation = generation;
+    }
+    pub(crate) fn prepare_select_action(
+        &self,
+        model: &Menu,
+        kind: MenuPreparedKind,
+    ) -> Option<MenuPreparedAction> {
+        let kind = match kind {
+            MenuPreparedKind::Open { selected, .. } => {
+                if !self.runtime.window_active || self.runtime.disabled || model.items.count == 0 {
+                    return None;
+                }
+                if model.open {
+                    MenuPreparedKind::Noop
+                } else {
+                    MenuPreparedKind::Open {
+                        generation: self.next_open_generation()?,
+                        selected: selected.min(model.items.count - 1),
+                    }
+                }
+            }
+            MenuPreparedKind::Focus { index, .. } => {
+                if !self.runtime.semantic_item_mounted(model, index) {
+                    return None;
+                }
+                MenuPreparedKind::Focus {
+                    index,
+                    offset: self.runtime.reveal_offset(index),
+                }
+            }
+            MenuPreparedKind::Activate { index } => {
+                if !self.runtime.semantic_item_mounted(model, index)
+                    || self.runtime.row_style(index).submenu
+                {
+                    return None;
+                }
+                MenuPreparedKind::Activate { index }
+            }
+            MenuPreparedKind::Close => MenuPreparedKind::Close,
+            MenuPreparedKind::Noop => MenuPreparedKind::Noop,
+        };
+        let event = match kind {
+            MenuPreparedKind::Activate { index } => MenuEvent::Activated {
+                index,
+                restore_focus: self.runtime.return_focus,
+            },
+            MenuPreparedKind::Close if model.open => MenuEvent::Dismissed {
+                restore_focus: self.runtime.return_focus,
+            },
+            _ => MenuEvent::None,
+        };
+        Some(MenuPreparedAction {
+            expected: self.runtime.select_prepared_state(model),
+            kind,
+            event,
+        })
+    }
+    pub(crate) fn apply_select_action(&mut self, model: &mut Menu, action: MenuPreparedAction) {
+        self.bound_external = true;
+        match action.kind {
+            MenuPreparedKind::Open {
+                generation,
+                selected,
+            } => {
+                self.runtime.window_active = true;
+                self.runtime.open_generation = generation;
+                model.open = true;
+                model.items.selected = selected;
+                self.runtime.return_focus = Some(0);
+                self.runtime.focus_visible = false;
+                self.runtime.scroll.offset.y = 0.;
+                self.runtime.clear_layout();
+                self.runtime.sync_focus(selected);
+            }
+            MenuPreparedKind::Focus { index, offset } => {
+                model.items.selected = index;
+                self.runtime.focus_visible = true;
+                self.runtime.scroll.offset.y = offset;
+                self.runtime.sync_focus(index);
+            }
+            MenuPreparedKind::Activate { index } => {
+                model.items.selected = index;
+                model.last_action = Some(index);
+                model.open = false;
+                self.runtime.clear_layout();
+                self.runtime.clear_button_pointer_positions();
+                self.runtime.return_focus = None;
+            }
+            MenuPreparedKind::Close => {
+                model.open = false;
+                self.runtime.clear_layout();
+                self.runtime.clear_button_pointer_positions();
+                self.runtime.return_focus = None;
+            }
+            MenuPreparedKind::Noop => {}
+        }
+    }
+    pub(crate) fn replace_items_with_model(&mut self, model: &mut Menu, count: usize) {
+        self.bound_external = true;
+        self.runtime.replace_items_model(model, count);
+    }
     pub(crate) fn set_row_styles(&mut self, styles: Vec<MenuRowStyle>) {
         if self.runtime.row_styles != styles {
             self.runtime.cancel_buttons();
@@ -749,6 +1033,43 @@ impl MenuView {
     }
     pub(crate) fn set_submenu_placement(&mut self) {
         self.runtime.beside_anchor = true;
+    }
+    pub(crate) fn next_open_generation(&self) -> Option<u64> {
+        self.runtime.open_generation.checked_add(1)
+    }
+    pub(crate) fn apply_open_generation(
+        &mut self,
+        model: &mut Menu,
+        invoker: usize,
+        generation: u64,
+    ) {
+        debug_assert_eq!(self.next_open_generation(), Some(generation));
+        self.bound_external = true;
+        self.runtime.open_generation = generation;
+        model.show();
+        self.runtime.return_focus = Some(invoker);
+        self.runtime.focus_visible = false;
+        self.runtime
+            .scroll
+            .scroll_by(0.0, -self.runtime.scroll.offset.y);
+        self.runtime.clear_layout();
+        self.runtime.sync_focus(model.items.selected);
+    }
+    pub(crate) fn pointer_armed(&self) -> bool {
+        self.runtime.buttons.iter().any(ButtonModel::pointer_armed)
+    }
+    pub(crate) fn pointer_release_index(&self, model: &Menu, point: Point) -> Option<usize> {
+        if !model.open || !self.runtime.window_active {
+            return None;
+        }
+        self.runtime
+            .buttons
+            .iter()
+            .enumerate()
+            .find_map(|(index, button)| {
+                (button.pointer_release_would_activate(point) && self.runtime.item_enabled(index))
+                    .then_some(index)
+            })
     }
     pub(crate) fn open_generation(&self) -> u64 {
         self.runtime.open_generation
@@ -775,9 +1096,7 @@ impl MenuView {
             "MenuView is bound to an external Menu model"
         );
         self.runtime.open_generation = self
-            .runtime
-            .open_generation
-            .checked_add(1)
+            .next_open_generation()
             .expect("menu popup generation exhausted");
         self.model.show();
         self.model.items.selected = self
@@ -794,20 +1113,10 @@ impl MenuView {
     }
 
     pub fn show_with_model(&mut self, model: &mut Menu, invoker: usize) {
-        self.bound_external = true;
-        self.runtime.open_generation = self
-            .runtime
-            .open_generation
-            .checked_add(1)
+        let generation = self
+            .next_open_generation()
             .expect("menu popup generation exhausted");
-        model.show();
-        self.runtime.return_focus = Some(invoker);
-        self.runtime.focus_visible = false;
-        self.runtime
-            .scroll
-            .scroll_by(0.0, -self.runtime.scroll.offset.y);
-        self.runtime.clear_layout();
-        self.runtime.sync_focus(model.items.selected);
+        self.apply_open_generation(model, invoker, generation);
     }
 
     pub fn set_window_active(&mut self, active: bool) -> MenuEvent {
@@ -874,6 +1183,7 @@ impl MenuView {
             palette,
             role,
             compact,
+            None,
         )
     }
 
@@ -903,6 +1213,7 @@ impl MenuView {
             palette,
             role,
             compact,
+            None,
         )
     }
 
@@ -1016,6 +1327,65 @@ impl MenuView {
 }
 
 impl MenuRuntime {
+    fn replace_items_model(&mut self, model: &mut Menu, count: usize) {
+        self.deactivate_model(model);
+        self.scroll.cancel();
+        self.scroll_gesture_captured = false;
+        self.presence.clear();
+        self.clear_layout();
+        self.row_styles.clear();
+        *model = Menu::new(count);
+    }
+    fn select_prepared_state(&self, model: &Menu) -> MenuPreparedState {
+        MenuPreparedState {
+            model: (
+                model.open,
+                model.items.count,
+                model.items.selected,
+                model.last_action,
+            ),
+            generation: self.open_generation,
+            availability: (self.window_active, self.disabled, self.focus_visible),
+            return_focus: self.return_focus,
+            layout: self.placement.clone(),
+            row_styles: self.row_styles.clone(),
+            row_heights: self.row_heights.clone(),
+            viewport: self.scroll_viewport,
+            offset: self.scroll.offset,
+            limit: self.scroll.limit(),
+            focus_outset: self.focus_outset,
+            gesture: self.scroll_gesture_captured,
+            buttons: self
+                .buttons
+                .iter()
+                .map(ButtonModel::prepare_content_press)
+                .collect(),
+        }
+    }
+    fn reveal_offset(&self, index: usize) -> f32 {
+        if self.row_heights.is_empty() {
+            return self.scroll.offset.y;
+        }
+        let index = index.min(self.row_heights.len() - 1);
+        let top = self
+            .row_heights
+            .iter()
+            .take(index)
+            .map(|h| h + self.focus_outset.max(4.))
+            .sum::<f32>()
+            - self.focus_outset;
+        let bottom = top + self.row_heights[index] + self.focus_outset * 2.;
+        let offset = self.scroll.offset.y;
+        let height = self.scroll_viewport.size.height.max(0.);
+        let target = if top < offset {
+            top
+        } else if bottom > offset + height {
+            bottom - height
+        } else {
+            offset
+        };
+        target.clamp(0., self.scroll.limit().y)
+    }
     fn row_style(&self, index: usize) -> MenuRowStyle {
         self.row_styles.get(index).copied().unwrap_or_default()
     }
@@ -1083,6 +1453,7 @@ impl MenuRuntime {
         palette: Palette,
         role: proposal::TextRole,
         compact: bool,
+        mut header: Option<MenuHeader<'_>>,
     ) -> Option<MenuLayout> {
         if safe_rect(anchor) != anchor
             || safe_rect(visible_bounds) != visible_bounds
@@ -1094,8 +1465,9 @@ impl MenuRuntime {
             self.clear_layout();
             return None;
         }
+        let header_size = header.as_ref().map(|(size, _)| *size);
         let paint_context = format!(
-            "{anchor:?}{visible_bounds:?}{ancestor_clip:?}{palette:?}{role:?}{compact:?}{}{labels:?}{:?}",
+            "{header_size:?}{anchor:?}{visible_bounds:?}{ancestor_clip:?}{palette:?}{role:?}{compact:?}{}{labels:?}{:?}",
             text.backing_scale(),
             self.row_styles
         );
@@ -1177,47 +1549,18 @@ impl MenuRuntime {
         let role_size = size_role(compact);
         let natural_content = self.row_heights.iter().take(count).sum::<f32>()
             + count.saturating_sub(1) as f32 * row_gap;
-        let gap =
-            proposal::metric("spacing", "space-micro").expect("canonical popup-to-anchor spacing");
-        let below =
-            (visible_bounds.max_y() - anchor.max_y() - gap).clamp(0.0, visible_bounds.size.height);
-        let above =
-            (anchor.min_y() - gap - visible_bounds.min_y()).clamp(0.0, visible_bounds.size.height);
-        let available = below.max(above);
-        let minimum_row = self.row_heights.first().copied().unwrap_or(0.0) + popup_inset * 2.0;
-        // Scroll inside an available side rather than covering a measured
-        // anchor. If neither side can show one full row, retain the existing
-        // viewport-bounded overlay fallback instead of an unusable thin strip.
-        let height_limit = if self.beside_anchor {
-            visible_bounds.size.height
-        } else if available >= minimum_row {
-            available
-        } else {
-            visible_bounds.size.height
-        };
-        let size = Size::new(width, natural_size.height.min(height_limit));
-        let popup = if self.beside_anchor {
-            // The same original placement rule, with axes transposed: right,
-            // then left, clamped to the real viewport. No host screen math.
-            let transpose = |r: Rect| Rect::new(r.min_y(), r.min_x(), r.size.height, r.size.width);
-            transpose(crate::feedback_view::place_overlay(
-                transpose(anchor),
-                Size::new(size.height, size.width),
-                transpose(visible_bounds),
-                gap,
-            ))
-        } else {
-            crate::feedback_view::place_overlay(anchor, size, visible_bounds, gap)
-        };
+        let (popup, header_frame, inner_viewport) = menu_popup_geometry(
+            anchor,
+            natural_size,
+            visible_bounds,
+            popup_inset,
+            &self.row_heights[..count],
+            self.beside_anchor,
+            header_size,
+        );
         let popup_container =
             ContainerLayout::new(popup, Insets::ZERO, Insets::ZERO, ancestor_clip);
         let visible = popup_container.visible_clip();
-        let inner_viewport = Rect::new(
-            popup.min_x() + popup_inset,
-            popup.min_y() + popup_inset,
-            (popup.size.width - popup_inset * 2.0).max(0.0),
-            (popup.size.height - popup_inset * 2.0).max(0.0),
-        );
         let document_height = natural_content.max(inner_viewport.size.height);
         self.scroll.layout(
             inner_viewport.size,
@@ -1253,15 +1596,32 @@ impl MenuRuntime {
             }
             scene.push_clip(visible);
         }
+        if let Some((_, paint_header)) = &mut header
+            && visible.is_some()
+        {
+            paint_header(scene, text, header_frame);
+        }
+        let rows_visible = if header_size.is_some() {
+            let top = (inner_viewport.min_y() - popup_inset).max(header_frame.max_y());
+            let gutter = Rect::new(
+                popup.min_x(),
+                top,
+                popup.size.width,
+                (popup.max_y() - top).max(0.0),
+            );
+            visible.and_then(|clip| gutter.intersection(&clip))
+        } else {
+            visible
+        };
         let mut items = Vec::with_capacity(model.items.count);
         let mut y = inner_viewport.min_y() - offset;
         for index in 0..model.items.count {
             let height = self.row_heights[index];
             let item = Rect::new(inner_viewport.min_x(), y, inner_viewport.size.width, height);
-            let row_clip = explicit_visible_clip(visible);
+            let row_clip = explicit_visible_clip(rows_visible);
             let style = self.row_style(index);
             if style.separator {
-                if let Some(clip) = visible {
+                if let Some(clip) = rows_visible {
                     scene.push_clip(clip);
                 }
                 crate::extended::separator_at_scale(
@@ -1271,19 +1631,20 @@ impl MenuRuntime {
                     crate::extended::Axis::Horizontal,
                     text.backing_scale(),
                 );
-                if visible.is_some() {
+                if rows_visible.is_some() {
                     scene.pop_clip();
                 }
                 items.push(ButtonLayout {
                     frame: item,
                     content: item,
-                    visible: clip_rect(item, visible),
+                    visible: clip_rect(item, rows_visible),
                     label_size: Size::default(),
                 });
                 y += height + row_gap;
                 continue;
             }
             let button = &mut self.buttons[index];
+            button.set_surface("popover");
             set_button_state(
                 button,
                 self.window_active && model.open && model.items.selected == index,
@@ -2445,6 +2806,338 @@ mod tests {
             false,
         )
         .expect("open menu layout")
+    }
+
+    #[test]
+    fn select_prepared_open_is_pure_and_generation_exhaustion_is_checked() {
+        let mut view = MenuView::new_external();
+        let mut model = Menu::new(3);
+        let kind = MenuPreparedKind::Open {
+            generation: 0,
+            selected: 99,
+        };
+        let prepared = view.prepare_select_action(&model, kind.clone()).unwrap();
+        assert_eq!(
+            view.prepare_select_action(&model, kind),
+            Some(prepared.clone())
+        );
+        assert!(!model.open);
+        assert_eq!(view.open_generation(), 0);
+        assert_eq!(prepared.event, MenuEvent::None);
+        view.apply_select_action(&mut model, prepared);
+        assert!(model.open);
+        assert_eq!(model.items.selected, 2);
+        assert_eq!(view.open_generation(), 1);
+        assert_eq!(view.runtime.return_focus, Some(0));
+        let noop = view
+            .prepare_select_action(
+                &model,
+                MenuPreparedKind::Open {
+                    generation: 0,
+                    selected: 0,
+                },
+            )
+            .unwrap();
+        view.apply_select_action(&mut model, noop);
+        assert_eq!(model.items.selected, 2);
+        assert_eq!(view.open_generation(), 1);
+        model.open = false;
+        view.select_test_generation(u64::MAX);
+        assert!(
+            view.prepare_select_action(
+                &model,
+                MenuPreparedKind::Open {
+                    generation: 0,
+                    selected: 0
+                }
+            )
+            .is_none()
+        );
+        assert!(!model.open);
+        view.select_test_generation(0);
+        view.set_window_active_with_model(&mut model, false);
+        assert!(
+            view.prepare_select_action(
+                &model,
+                MenuPreparedKind::Open {
+                    generation: 0,
+                    selected: 0
+                }
+            )
+            .is_none()
+        );
+    }
+
+    #[test]
+    fn select_prepared_focus_uses_original_scroll_and_snapshot_staleness() {
+        let mut view = MenuView::new_external();
+        let mut model = Menu::new(20);
+        view.show_with_model(&mut model, 42);
+        view.render_with_model(
+            &mut model,
+            &mut Scene::new(),
+            &mut FixedText,
+            &["Choice"; 20],
+            Rect::new(12., 12., 120., 34.),
+            Rect::new(0., 0., 320., 260.),
+            None,
+            palette(),
+            proposal::TextRole::UiBody,
+            false,
+        )
+        .unwrap();
+        let prepared = view
+            .prepare_select_action(
+                &model,
+                MenuPreparedKind::Focus {
+                    index: 19,
+                    offset: 0.,
+                },
+            )
+            .unwrap();
+        assert_eq!(model.items.selected, 0);
+        assert_eq!(view.runtime.scroll.offset.y, 0.);
+        assert_eq!(prepared.event, MenuEvent::None);
+        // A changed original arm must invalidate the outer caller's equality check.
+        view.runtime.buttons[0].pointer_down();
+        assert_ne!(
+            view.prepare_select_action(
+                &model,
+                MenuPreparedKind::Focus {
+                    index: 19,
+                    offset: 0.
+                }
+            ),
+            Some(prepared.clone())
+        );
+        view.runtime.buttons[0].cancel();
+        let current = view
+            .prepare_select_action(
+                &model,
+                MenuPreparedKind::Focus {
+                    index: 19,
+                    offset: 0.,
+                },
+            )
+            .unwrap();
+        let expected_offset = view.runtime.reveal_offset(19);
+        view.apply_select_action(&mut model, current);
+        assert_eq!(model.items.selected, 19);
+        assert!(view.runtime.focus_visible);
+        assert!(view.runtime.scroll.offset.y > 0.);
+        assert_eq!(view.runtime.scroll.offset.y, expected_offset);
+    }
+
+    #[test]
+    fn select_prepared_activation_rejects_disabled_submenu_and_preserves_original_event() {
+        let mut view = MenuView::new_external();
+        let mut model = Menu::new(3);
+        view.set_row_styles(vec![
+            MenuRowStyle::default(),
+            MenuRowStyle {
+                submenu: true,
+                ..Default::default()
+            },
+            MenuRowStyle {
+                disabled: true,
+                ..Default::default()
+            },
+        ]);
+        view.show_with_model(&mut model, 42);
+        view.render_with_model(
+            &mut model,
+            &mut Scene::new(),
+            &mut FixedText,
+            &["One", "Submenu", "Disabled"],
+            Rect::new(12., 12., 120., 34.),
+            Rect::new(0., 0., 320., 260.),
+            None,
+            palette(),
+            proposal::TextRole::UiBody,
+            false,
+        )
+        .unwrap();
+        assert!(
+            view.prepare_select_action(&model, MenuPreparedKind::Activate { index: 1 })
+                .is_none()
+        );
+        assert!(
+            view.prepare_select_action(&model, MenuPreparedKind::Activate { index: 2 })
+                .is_none()
+        );
+        let action = view
+            .prepare_select_action(&model, MenuPreparedKind::Activate { index: 0 })
+            .unwrap();
+        assert_eq!(
+            action.event,
+            MenuEvent::Activated {
+                index: 0,
+                restore_focus: Some(42)
+            }
+        );
+        assert!(model.open);
+        assert_eq!(model.last_action, None);
+        view.apply_select_action(&mut model, action);
+        assert!(!model.open);
+        assert_eq!(model.last_action, Some(0));
+        assert_eq!(view.runtime.return_focus, None);
+        assert!(
+            view.prepare_select_action(&model, MenuPreparedKind::Activate { index: 0 })
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn select_replacement_and_prepared_close_retire_original_arms_and_geometry() {
+        let mut view = MenuView::new_external();
+        let mut model = Menu::new(2);
+        view.show_with_model(&mut model, 42);
+        let close = view
+            .prepare_select_action(&model, MenuPreparedKind::Close)
+            .unwrap();
+        assert_eq!(
+            close.event,
+            MenuEvent::Dismissed {
+                restore_focus: Some(42)
+            }
+        );
+        view.apply_select_action(&mut model, close);
+        assert!(!model.open);
+        assert!(view.runtime.placement.items.is_empty());
+        view.runtime.buttons.resize_with(2, ButtonModel::default);
+        view.runtime.buttons[0].pointer_down();
+        assert!(view.pointer_armed());
+        view.runtime.scroll_gesture_captured = true;
+        view.replace_items_with_model(&mut model, 1);
+        assert_eq!(model.items.count, 1);
+        assert!(!model.open);
+        assert_eq!(model.last_action, None);
+        assert!(!view.pointer_armed());
+        assert!(!view.scroll_gesture_captured());
+        assert!(!view.is_presented());
+        assert!(view.runtime.placement.items.is_empty());
+        assert_eq!(view.open_generation(), 1);
+    }
+
+    #[test]
+    fn checked_menu_open_generation_is_pure_and_reuses_original_external_open() {
+        let mut view = MenuView::new_external();
+        let mut model = Menu::new(2);
+        assert_eq!(view.next_open_generation(), Some(1));
+        assert_eq!(view.next_open_generation(), Some(1));
+        assert!(!model.open);
+        assert_eq!(view.open_generation(), 0);
+        assert_eq!(view.runtime.return_focus, None);
+        view.apply_open_generation(&mut model, 42, 1);
+        assert!(model.open);
+        assert_eq!(view.open_generation(), 1);
+        assert_eq!(view.runtime.return_focus, Some(42));
+        assert!(!view.runtime.focus_visible);
+        assert!(view.runtime.placement.items.is_empty());
+        model.open = false;
+        view.show_with_model(&mut model, 43);
+        assert!(model.open);
+        assert_eq!(view.open_generation(), 2);
+        assert_eq!(view.runtime.return_focus, Some(43));
+        assert_eq!(view.next_open_generation(), Some(3));
+    }
+
+    #[test]
+    fn checked_menu_generation_exhaustion_has_no_open_or_focus_effects() {
+        let mut view = MenuView::new_external();
+        let mut model = Menu::new(2);
+        view.runtime.open_generation = u64::MAX;
+        assert_eq!(view.next_open_generation(), None);
+        assert!(!model.open);
+        assert_eq!(view.runtime.return_focus, None);
+        assert!(
+            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                view.show_with_model(&mut model, 42);
+            }))
+            .is_err()
+        );
+        assert!(!model.open);
+        assert_eq!(view.open_generation(), u64::MAX);
+        assert_eq!(view.runtime.return_focus, None);
+    }
+
+    #[test]
+    fn checked_menu_release_is_read_only_and_commits_original_action_once() {
+        let mut view = MenuView::new(2);
+        view.show(42);
+        let layout = render_menu(&mut view, &["One", "Two"]);
+        let point = layout.items[1].frame.center();
+        assert_eq!(view.pointer_release_index(&view.model, point), None);
+        assert_eq!(view.pointer_down_at(point), MenuEvent::None);
+        assert!(view.pointer_armed());
+        let generation = view.open_generation();
+        assert_eq!(view.pointer_release_index(&view.model, point), Some(1));
+        assert_eq!(view.pointer_release_index(&view.model, point), Some(1));
+        assert!(view.pointer_armed());
+        assert!(view.is_open());
+        assert_eq!(view.open_generation(), generation);
+        assert_eq!(view.menu().last_action, None);
+        assert_eq!(
+            view.pointer_up_at(point),
+            MenuEvent::Activated {
+                index: 1,
+                restore_focus: Some(42)
+            }
+        );
+        assert_eq!(view.pointer_release_index(&view.model, point), None);
+        assert_eq!(view.pointer_up_at(point), MenuEvent::None);
+        assert_eq!(view.menu().last_action, Some(1));
+        view.show(43);
+        assert!(!view.pointer_armed());
+        assert_eq!(view.pointer_release_index(&view.model, point), None);
+    }
+
+    #[test]
+    fn checked_menu_cancel_retires_pointer_and_scroll_but_preserves_space_arm() {
+        let mut view = MenuView::new(2);
+        view.show(42);
+        let layout = render_menu(&mut view, &["One", "Two"]);
+        let point = layout.items[0].frame.center();
+        view.pointer_down_at(point);
+        assert!(view.pointer_armed());
+        view.runtime.scroll_gesture_captured = true;
+        view.cancel_pointer_arm();
+        assert!(!view.pointer_armed());
+        assert!(!view.scroll_gesture_captured());
+        assert_eq!(view.pointer_release_index(&view.model, point), None);
+        assert_eq!(view.pointer_up_at(point), MenuEvent::None);
+        assert!(view.is_open());
+        assert_eq!(view.key(ControlKey::Space, true), MenuEvent::None);
+        view.cancel_pointer_arm();
+        assert_eq!(
+            view.key(ControlKey::Space, false),
+            MenuEvent::Activated {
+                index: 0,
+                restore_focus: Some(42)
+            }
+        );
+    }
+
+    #[test]
+    fn checked_menu_release_rejects_disabled_and_inactive_original_rows() {
+        let mut view = MenuView::new(2);
+        view.show(42);
+        let layout = render_menu(&mut view, &["One", "Two"]);
+        let point = layout.items[0].frame.center();
+        view.pointer_down_at(point);
+        view.set_row_styles(vec![MenuRowStyle {
+            disabled: true,
+            ..Default::default()
+        }]);
+        assert_eq!(view.pointer_release_index(&view.model, point), None);
+        assert_eq!(view.pointer_up_at(point), MenuEvent::None);
+        view.set_row_styles(Vec::new());
+        view.pointer_down_at(point);
+        assert_eq!(view.pointer_release_index(&view.model, point), Some(0));
+        view.set_window_active(false);
+        assert!(!view.pointer_armed());
+        assert_eq!(view.pointer_release_index(&view.model, point), None);
+        assert_eq!(view.pointer_up_at(point), MenuEvent::None);
     }
 
     #[test]
