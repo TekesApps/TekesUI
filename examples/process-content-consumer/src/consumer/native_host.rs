@@ -692,7 +692,9 @@ impl Host {
                     .unwrap()
                     .component::<tekes_ui_module_runtime::ProcessContainer>()
                     .unwrap()
-                    .drain_events()
+                    // Leave exact request replies to their SDK owners, notably
+                    // FrameResources' pending SetViewContext acknowledgements.
+                    .drain_curve_host_events()
                 {
                     eprintln!("PROCESS_NATIVE_SERVICE component={} {event:?}", id.0);
                 }
