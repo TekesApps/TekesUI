@@ -219,14 +219,14 @@ fn content_frame(host: &ContentHost, id: tekes_ui_controls::composition::Compone
 
 fn save_gpu(
     renderer: &mut tekes_ui_render::Renderer,
-    output: &std::path::Path,
-    filename: &str,
+    destination: (&std::path::Path, &str),
     scene: &Scene,
     text: &mut RecordingText,
     canvas: Rect,
     backing: f32,
     palette: Palette,
 ) {
+    let (output, filename) = destination;
     assert!(
         !output.join(filename).exists(),
         "refusing to overwrite {filename}"
@@ -374,8 +374,7 @@ fn public_breadcrumb_tabs_and_open_command_palette_use_generated_surfaces() {
         let filename = "issue63-light-canvas-breadcrumb-w320-text1_5-b2.png";
         save_gpu(
             &mut renderer,
-            &output,
-            filename,
+            (&output, filename),
             &scene,
             &mut text,
             canvas,
@@ -489,8 +488,7 @@ fn public_breadcrumb_tabs_and_open_command_palette_use_generated_surfaces() {
         let filename = "issue63-light-canvas-tabs-w320-text1_5-b2.png";
         save_gpu(
             &mut renderer,
-            &output,
-            filename,
+            (&output, filename),
             &scene,
             &mut text,
             canvas,
@@ -647,8 +645,7 @@ fn public_breadcrumb_tabs_and_open_command_palette_use_generated_surfaces() {
         let filename = "issue63-light-sidebar-command-palette-open-w520-text1-b2.png";
         save_gpu(
             &mut renderer,
-            &output,
-            filename,
+            (&output, filename),
             &scene,
             &mut text,
             canvas,

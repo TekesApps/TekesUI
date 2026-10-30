@@ -220,14 +220,14 @@ fn content_frame(host: &ContentHost, id: tekes_ui_controls::composition::Compone
 
 fn save_gpu(
     renderer: &mut tekes_ui_render::Renderer,
-    output: &std::path::Path,
-    filename: &str,
+    destination: (&std::path::Path, &str),
     scene: &Scene,
     text: &mut RecordingText,
     canvas: Rect,
     backing: f32,
     palette: Palette,
 ) {
+    let (output, filename) = destination;
     assert!(
         !output.join(filename).exists(),
         "refusing to overwrite {filename}"
@@ -745,8 +745,7 @@ fn render_case(
     );
     save_gpu(
         renderer,
-        output,
-        &filename,
+        (output, &filename),
         &scene,
         &mut text,
         canvas,
