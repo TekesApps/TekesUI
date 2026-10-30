@@ -27,33 +27,42 @@ fn node(role: &str, id: u64) -> serde_json::Value {
 }
 #[test]
 fn real_old_reply_decoder_rejects_entire_selection_snapshot() {
- for role in ["Checkbox", "RadioGroup", "RadioButton", "SegmentedGroup", "Segment"] {
-    assert_eq!(VERSION, 2);
-    let encoded = serde_json::to_vec(&reply(role)).unwrap();
-    let new: wire::Reply = serde_json::from_slice(&encoded).unwrap();
-    assert_eq!(
-        new.semantics.as_ref().unwrap()[1].semantics.role,
-        serde_json::from_value(serde_json::json!(role)).unwrap()
-    );
-    assert_eq!(
-        serde_json::from_slice::<wire::Reply>(&serde_json::to_vec(&new).unwrap()).unwrap(),
-        new
-    );
-    let error = serde_json::from_slice::<old_content::Reply>(&encoded)
-        .unwrap_err()
-        .to_string();
-    assert!(error.contains(&format!("unknown variant `{role}`")), "{error}");
-    // The receiver never receives a partial Vec/Reply even with a valid first node.
-    let mut part_reply = reply("Group");
-    part_reply["semantics"][1]["parts"] = serde_json::json!([{
-        "index":0,"parent":null,"frame":[0.,0.,20.,20.],"focused":false,
-        "semantics":node(role,3)["semantics"].clone()
-    }]);
-    assert!(serde_json::from_value::<wire::Reply>(part_reply.clone()).is_ok());
-    assert!(serde_json::from_value::<old_content::Reply>(part_reply).is_err());
-    let nodes = serde_json::to_vec(new.semantics.as_ref().unwrap()).unwrap();
-    assert!(serde_json::from_slice::<Vec<old_content::SemanticNode>>(&nodes).is_err());
- }
+    for role in [
+        "Checkbox",
+        "RadioGroup",
+        "RadioButton",
+        "SegmentedGroup",
+        "Segment",
+    ] {
+        assert_eq!(VERSION, 2);
+        let encoded = serde_json::to_vec(&reply(role)).unwrap();
+        let new: wire::Reply = serde_json::from_slice(&encoded).unwrap();
+        assert_eq!(
+            new.semantics.as_ref().unwrap()[1].semantics.role,
+            serde_json::from_value(serde_json::json!(role)).unwrap()
+        );
+        assert_eq!(
+            serde_json::from_slice::<wire::Reply>(&serde_json::to_vec(&new).unwrap()).unwrap(),
+            new
+        );
+        let error = serde_json::from_slice::<old_content::Reply>(&encoded)
+            .unwrap_err()
+            .to_string();
+        assert!(
+            error.contains(&format!("unknown variant `{role}`")),
+            "{error}"
+        );
+        // The receiver never receives a partial Vec/Reply even with a valid first node.
+        let mut part_reply = reply("Group");
+        part_reply["semantics"][1]["parts"] = serde_json::json!([{
+            "index":0,"parent":null,"frame":[0.,0.,20.,20.],"focused":false,
+            "semantics":node(role,3)["semantics"].clone()
+        }]);
+        assert!(serde_json::from_value::<wire::Reply>(part_reply.clone()).is_ok());
+        assert!(serde_json::from_value::<old_content::Reply>(part_reply).is_err());
+        let nodes = serde_json::to_vec(new.semantics.as_ref().unwrap()).unwrap();
+        assert!(serde_json::from_slice::<Vec<old_content::SemanticNode>>(&nodes).is_err());
+    }
 }
 #[test]
 fn old_text_input_encoding_and_both_decoders_are_unchanged() {
@@ -73,11 +82,33 @@ fn old_text_input_encoding_and_both_decoders_are_unchanged() {
 #[test]
 fn actual_combo17_roles_and_set_expanded_remain_compatible() {
     // These are the actual pre-Selection peer roles, not a simulated role decoder.
-    for role in ["Group", "ProgressIndicator", "Text", "Image", "Button", "Link", "TextInput", "ComboBox", "Slider", "Splitter", "Switch", "List", "ListItem", "Dialog", "MenuButton", "Menu", "MenuItem"] {
+    for role in [
+        "Group",
+        "ProgressIndicator",
+        "Text",
+        "Image",
+        "Button",
+        "Link",
+        "TextInput",
+        "ComboBox",
+        "Slider",
+        "Splitter",
+        "Switch",
+        "List",
+        "ListItem",
+        "Dialog",
+        "MenuButton",
+        "Menu",
+        "MenuItem",
+    ] {
         let encoded = serde_json::to_vec(&reply(role)).unwrap();
         let new: wire::Reply = serde_json::from_slice(&encoded).unwrap();
         let old: old_content::Reply = serde_json::from_slice(&encoded).unwrap();
-        assert_eq!(serde_json::to_value(new).unwrap(), serde_json::to_value(old).unwrap(), "{role}");
+        assert_eq!(
+            serde_json::to_value(new).unwrap(),
+            serde_json::to_value(old).unwrap(),
+            "{role}"
+        );
     }
     let request = wire::Input::Accessibility {
         target: wire::Target { id: 41, mount: 92 },
@@ -88,5 +119,8 @@ fn actual_combo17_roles_and_set_expanded_remain_compatible() {
     let encoded = serde_json::to_vec(&request).unwrap();
     let new: wire::Input = serde_json::from_slice(&encoded).unwrap();
     let old: old_content::Input = serde_json::from_slice(&encoded).unwrap();
-    assert_eq!(serde_json::to_value(new).unwrap(), serde_json::to_value(old).unwrap());
+    assert_eq!(
+        serde_json::to_value(new).unwrap(),
+        serde_json::to_value(old).unwrap()
+    );
 }

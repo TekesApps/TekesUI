@@ -187,13 +187,26 @@ fn tabs_preserve_equal_cap_and_infeasible_wrap() {
     for width in [320., 400., 160.] {
         let mut host = navigation_content::tabs().unwrap();
         let text = render(&mut host, width);
-        let node = host.semantics().into_iter().find(|node| node.id == TABS).unwrap();
-        assert_eq!(node.parts[0].frame.size.width, node.parts[1].frame.size.width);
+        let node = host
+            .semantics()
+            .into_iter()
+            .find(|node| node.id == TABS)
+            .unwrap();
+        assert_eq!(
+            node.parts[0].frame.size.width,
+            node.parts[1].frame.size.width
+        );
         assert!(node.parts.iter().all(|part| part.frame.size.width <= 160.));
         if width >= 320. {
-            for word in ["Overview", "Welcome", "Settings"] { whole(&text, word); }
+            for word in ["Overview", "Welcome", "Settings"] {
+                whole(&text, word);
+            }
         } else {
-            assert!(text.draws.iter().any(|draw| draw.text == "Overview" && draw.lines.len() > 1));
+            assert!(
+                text.draws
+                    .iter()
+                    .any(|draw| draw.text == "Overview" && draw.lines.len() > 1)
+            );
         }
     }
 }
@@ -201,10 +214,20 @@ fn tabs_preserve_equal_cap_and_infeasible_wrap() {
 fn breadcrumb_wide_row_and_genuinely_oversized_word_keep_original_fallback() {
     let mut host = navigation_content::breadcrumb(&["Home", "Library", "Current"]).unwrap();
     let text = render(&mut host, 400.);
-    let node = host.semantics().into_iter().find(|node| node.id == BREADCRUMB).unwrap();
-    assert!(node.parts.iter().all(|part| part.frame.min_y() == node.parts[0].frame.min_y()));
+    let node = host
+        .semantics()
+        .into_iter()
+        .find(|node| node.id == BREADCRUMB)
+        .unwrap();
+    assert!(
+        node.parts
+            .iter()
+            .all(|part| part.frame.min_y() == node.parts[0].frame.min_y())
+    );
     assert_eq!(node.parts.last().unwrap().frame.max_x(), 412.);
-    for word in ["Home", "Library", "Current"] { whole(&text, word); }
+    for word in ["Home", "Library", "Current"] {
+        whole(&text, word);
+    }
     let long = "Supercalifragilisticexpialidocious";
     let mut host = navigation_content::breadcrumb(&[long]).unwrap();
     let text = render(&mut host, 240.);

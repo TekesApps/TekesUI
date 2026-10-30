@@ -1156,7 +1156,10 @@ mod navigation_role_tests {
             let mut semantics = ContentSemantics::new(role, "Workspace");
             semantics.selected = true;
             let node = project(
-                AccessibilityKey { component: 63, part: Some(1) },
+                AccessibilityKey {
+                    component: 63,
+                    part: Some(1),
+                },
                 None,
                 tekes_ui_scene::Rect::new(10., 20., 80., 40.),
                 true,

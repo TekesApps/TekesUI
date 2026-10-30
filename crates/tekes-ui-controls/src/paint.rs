@@ -481,36 +481,59 @@ pub(crate) fn control_surface_state(state: ControlState) -> &'static str {
 
 /// Complete generated marker bundle; the surrounding label resolves `control-label` separately.
 pub(crate) fn check_surface_colors(
-    palette: Palette, surface: &str, state: ControlState, checked: CheckState,
+    palette: Palette,
+    surface: &str,
+    state: ControlState,
+    checked: CheckState,
 ) -> tekes_ui_tokens::surface_palette::SurfaceColors {
-    use tekes_ui_tokens::surface_palette::{resolve_surface_with_options, SurfaceOptions};
+    use tekes_ui_tokens::surface_palette::{SurfaceOptions, resolve_surface_with_options};
     let usage = match checked {
         CheckState::Unchecked => "check-unchecked",
         CheckState::Checked => "check-checked",
         CheckState::Mixed => "check-mixed",
     };
     let state_name = control_surface_state(state);
-    resolve_surface_with_options(palette, surface, usage, state_name,
-        SurfaceOptions { error: state.error, read_only: false })
-        .expect("validated choice Surface/use/state")
+    resolve_surface_with_options(
+        palette,
+        surface,
+        usage,
+        state_name,
+        SurfaceOptions {
+            error: state.error,
+            read_only: false,
+        },
+    )
+    .expect("validated choice Surface/use/state")
 }
 
 pub(crate) fn choice_label_color(palette: Palette, surface: &str, state: ControlState) -> Rgba {
     tekes_ui_tokens::surface_palette::resolve_surface(
-        palette, surface, "control-label", control_surface_state(state),
-    ).expect("validated choice label Surface").text
+        palette,
+        surface,
+        "control-label",
+        control_surface_state(state),
+    )
+    .expect("validated choice label Surface")
+    .text
 }
 
 pub(crate) fn checkbox_on_surface(
-    scene: &mut Scene, rect: Rect, palette: Palette, state: ControlState,
-    checked: CheckState, surface: &str,
+    scene: &mut Scene,
+    rect: Rect,
+    palette: Palette,
+    state: ControlState,
+    checked: CheckState,
+    surface: &str,
 ) -> Rgba {
     let colors = check_surface_colors(palette, surface, state, checked);
     let radius = proposal::metric("radius", "c-checkbox-radius").expect("checkbox radius");
     let ink = colors.marker.unwrap_or(colors.icon);
     let mut quad = Quad::new(rect, colors.background).with_corner_radius(radius);
     if let Some(boundary) = colors.boundary {
-        quad = quad.with_border(proposal::metric("stroke", "stroke-rule").expect("checkbox stroke"), boundary);
+        quad = quad.with_border(
+            proposal::metric("stroke", "stroke-rule").expect("checkbox stroke"),
+            boundary,
+        );
     }
     scene.push_quad(quad);
     if checked == CheckState::Mixed {
@@ -544,7 +567,11 @@ pub(crate) fn checkbox_on_surface(
         }
     }
 
-    if state.focused && state.focus_visible && !state.disabled && let Some(focus) = colors.focus {
+    if state.focused
+        && state.focus_visible
+        && !state.disabled
+        && let Some(focus) = colors.focus
+    {
         focus_ring_with_color(scene, rect, focus, radius);
     }
     ink

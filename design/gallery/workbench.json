@@ -320,7 +320,8 @@
       "api_bindings": [
         "tekes_ui_controls::extended::Link",
         "tekes_ui_controls::layout_view::LinkView"
-      ]
+      ],
+      "api_notes": "Additive public Content: tekes_ui_controls::composition::LinkContent. Original Link/View owns string label/action state; destination and action policy remain host-owned; no browser auto-open. String label and original Link/View; typed action delegates product navigation/open policy to the host. No automatic URL opening or caller-owned label slot. Ordinary Link has CPU/Scene coverage, no separate Link GPU matrix or native acceptance."
     },
     {
       "title": "TextField",
@@ -384,7 +385,8 @@
       "api_bindings": [
         "tekes_ui_controls::extended::ComboBox",
         "tekes_ui_controls::layout_view::ComboBoxView"
-      ]
+      ],
+      "api_notes": "Additive public Content: tekes_ui_controls::composition::ComboBoxContent. Original ComboBox/ComboBoxView plus unique internal TextFieldContent editor. String options and original indices; no arbitrary option Content. Fixed string options and the unique original TextFieldContent editor; no arbitrary option Content, portal or async loading/error protocol. Source-position option identity is not a persistent business key. Native/physical IME/VoiceOver/performance remain unverified."
     },
     {
       "title": "Slider",
@@ -415,7 +417,8 @@
       "api": "tekes_ui_controls::Checkbox",
       "api_bindings": [
         "tekes_ui_controls::Checkbox"
-      ]
+      ],
+      "api_notes": "Additive public Content: tekes_ui_controls::composition::CheckboxContent. Original Checkbox/ButtonModel owns three-state value and key/gesture state; string label. Original three-state Checkbox/ButtonModel with a string label; no arbitrary label Content. Native/VoiceOver/performance remain unverified."
     },
     {
       "title": "RadioGroup",
@@ -431,7 +434,8 @@
       "api_bindings": [
         "tekes_ui_controls::extended::RadioGroup",
         "tekes_ui_controls::RadioGroupView"
-      ]
+      ],
+      "api_notes": "Additive public Content: tekes_ui_controls::composition::RadioGroupContent. Original RadioGroup/RadioGroupView owns selection and roving focus; fixed labels/indices; no caller RadioButton Content slot. Original fixed-label RadioGroup/View with indexed controlled selection and roving focus; no caller-owned interactive radio or arbitrary label slots. Native/VoiceOver/performance remain unverified."
     },
     {
       "title": "Switch",
@@ -463,7 +467,8 @@
       "api_bindings": [
         "tekes_ui_controls::extended::SegmentedControl",
         "tekes_ui_controls::layout_view::SegmentedControlView"
-      ]
+      ],
+      "api_notes": "Additive public Content: tekes_ui_controls::composition::SegmentedControlContent. Original SegmentedControl/View owns selection and focus; string labels; narrow high-scale visible-glyph limit stays in finite evidence. Original string-label segments and selection model; no panel ownership or arbitrary segment Content. In 36 accepted narrow/high-scale GPU cases labels are wholly clipped in both original View and Content: those cases prove chrome/clip equality, not visible glyphs. Native/VoiceOver/performance remain unverified."
     },
     {
       "title": "Field",
@@ -527,7 +532,8 @@
       "api_bindings": [
         "tekes_ui_controls::Tabs",
         "tekes_ui_controls::TabsView"
-      ]
+      ],
+      "api_notes": "Additive public Content: tekes_ui_controls::composition::TabsContent. TabsView owns selection/focus. Caller label is passive, semantics suppressed; caller panel keeps its original Content identity. No independent tab action owner. Retained caller TabItem panel Content with passive custom labels; only selected panel active. No interactive custom tab labels or automatic reconstruction. Disclosure-under-Tabs executable conditions are provided, but the additional regression has not been executed. Native/VoiceOver/performance remain unverified."
     },
     {
       "title": "Breadcrumb",
@@ -543,7 +549,8 @@
       "api_bindings": [
         "tekes_ui_controls::extended::Breadcrumb",
         "tekes_ui_controls::layout_view::BreadcrumbView"
-      ]
+      ],
+      "api_notes": "Additive public Content: tekes_ui_controls::composition::BreadcrumbContent. Original Breadcrumb/View owns path strings, layout and actions; ancestor Link/current Text projections; separators are internal, no caller Content slot. Original hierarchy/current location and string labels; separators are internal passive Content rather than a caller separator slot. No arbitrary label Content. Native/VoiceOver/performance remain unverified."
     },
     {
       "title": "CommandPalette",
@@ -559,7 +566,8 @@
       "api_bindings": [
         "tekes_ui_controls::extended::CommandPalette",
         "tekes_ui_controls::layout_view::CommandPaletteView"
-      ]
+      ],
+      "api_notes": "Additive public Content: tekes_ui_controls::composition::CommandPaletteContent. Original CommandPalette/View and caller query editor own state. Original string result model; no arbitrary result Content or second editor/IME owner. Passive caller trigger and query restricted to original TextFieldContent; results remain original string choices and original FilteredMenuView. No arbitrary result Content or async data protocol. Native/physical IME/VoiceOver/performance remain unverified."
     },
     {
       "title": "List",

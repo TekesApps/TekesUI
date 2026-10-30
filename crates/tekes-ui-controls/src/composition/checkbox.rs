@@ -114,10 +114,20 @@ impl Component for CheckboxContent {
     }
     fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
         action_preparation::prepare_original(
-            self, request, Self::decide_action, Self::apply_action,
-            |d| (d.response, if d.response.consumed {
-                PreparedActionFocus::Owner
-            } else { PreparedActionFocus::None }),
+            self,
+            request,
+            Self::decide_action,
+            Self::apply_action,
+            |d| {
+                (
+                    d.response,
+                    if d.response.consumed {
+                        PreparedActionFocus::Owner
+                    } else {
+                        PreparedActionFocus::None
+                    },
+                )
+            },
         )
     }
     fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
@@ -229,7 +239,9 @@ impl Component for CheckboxContent {
         }
         let Some(decision) = self.decide_action(
             &action_preparation::OwnedActionRequest::Accessibility(part, action.clone()),
-        ) else { return ContentResponse::default(); };
+        ) else {
+            return ContentResponse::default();
+        };
         let response = decision.response;
         self.apply_action(decision);
         response
@@ -263,9 +275,13 @@ impl Component for CheckboxContent {
                 }
             }
             ContentEvent::PointerDown(point) => {
-                let Some(decision) = self.decide_action(
-                    &action_preparation::OwnedActionRequest::Pointer(ContentEvent::PointerDown(*point)),
-                ) else { return ContentResponse::default(); };
+                let Some(decision) =
+                    self.decide_action(&action_preparation::OwnedActionRequest::Pointer(
+                        ContentEvent::PointerDown(*point),
+                    ))
+                else {
+                    return ContentResponse::default();
+                };
                 let response = decision.response;
                 self.apply_action(decision);
                 response
@@ -297,34 +313,50 @@ struct PreparedCheckboxAction {
 }
 impl action_preparation::OriginalActionDecision for PreparedCheckboxAction {}
 impl CheckboxContent {
-    fn decide_action(&self, request: &action_preparation::OwnedActionRequest) -> Option<PreparedCheckboxAction> {
-        if !self.available() { return None; }
+    fn decide_action(
+        &self,
+        request: &action_preparation::OwnedActionRequest,
+    ) -> Option<PreparedCheckboxAction> {
+        if !self.available() {
+            return None;
+        }
         let pointer = matches!(request, action_preparation::OwnedActionRequest::Pointer(_));
         let decision = match request {
             action_preparation::OwnedActionRequest::Pointer(event) => {
                 let routed = event.routing_event();
-                let ContentEvent::PointerDown(point) = routed.as_ref() else { return None; };
+                let ContentEvent::PointerDown(point) = routed.as_ref() else {
+                    return None;
+                };
                 self.model.prepare_content_down(*point)
             }
             action_preparation::OwnedActionRequest::Accessibility(part, action) => {
-                if part.is_some() || !matches!(action, AccessibilityAction::Press) { return None; }
+                if part.is_some() || !matches!(action, AccessibilityAction::Press) {
+                    return None;
+                }
                 self.model.prepare_content_press()
             }
         };
         let response = ContentResponse {
-            consumed: decision.consumed, changed: decision.consumed,
-            activated: decision.activated, capture_pointer: pointer && decision.consumed,
+            consumed: decision.consumed,
+            changed: decision.consumed,
+            activated: decision.activated,
+            capture_pointer: pointer && decision.consumed,
             ..Default::default()
         };
         Some(PreparedCheckboxAction {
-            decision, mount: self.published_mount.expect("available original root"), response,
+            decision,
+            mount: self.published_mount.expect("available original root"),
+            response,
         })
     }
     fn apply_action(&mut self, decision: PreparedCheckboxAction) {
         self.last = None;
         self.model.apply_content_action(decision.decision);
         if decision.response.activated {
-            self.last = Some(CheckboxIntent { checked: self.model.checked, mount: decision.mount });
+            self.last = Some(CheckboxIntent {
+                checked: self.model.checked,
+                mount: decision.mount,
+            });
         }
     }
 }

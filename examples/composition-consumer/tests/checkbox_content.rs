@@ -197,7 +197,10 @@ fn exposure_renewal_rejects_old_native_capture_focus_return_and_intent_without_r
             "inactive" => h.set_window_active(true),
             _ => {}
         }
-        assert!(h.pointer_capture().is_none(), "restoring availability cannot republish a revoked capture lease before arrangement");
+        assert!(
+            h.pointer_capture().is_none(),
+            "restoring availability cannot republish a revoked capture lease before arrangement"
+        );
         render(&mut h, &mut t);
         let new = content_key(&h, CHECK, None).unwrap();
         assert_ne!(old, new);

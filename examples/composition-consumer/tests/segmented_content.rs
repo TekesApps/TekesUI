@@ -239,8 +239,10 @@ fn original_view_geometry_and_paint_match_at_focus_and_clip() {
                     let mut model = SegmentedControl::new(3);
                     let mut view = SegmentedControlView::new(3);
                     // Match the Surface inherited by the real Host, as well as its palette.
-                    view.set_surface(ContentTheme::from(tekes_ui_tokens::Palette::from(theme)).surface())
-                        .unwrap();
+                    view.set_surface(
+                        ContentTheme::from(tekes_ui_tokens::Palette::from(theme)).surface(),
+                    )
+                    .unwrap();
                     let owned = labels();
                     let ls = owned.iter().map(String::as_str).collect::<Vec<_>>();
                     let mut ot = coretext::Text::new(1.5);

@@ -1,8 +1,8 @@
 {
   "format": "tekesui-composition-audit/1",
-  "head": "7e165892327382b7fd513394c0b585180931f8bb",
-  "source": "Reviewed accepted current composition source at cdcc806f983b75a2d8285417b17114e51c4ce4f9. Current registered public bindings and source anchors are rebound to exact current bytes; bounded accepted Content adapters are reflected without expanding family/native claims.",
-  "audited_at": "2026-10-27",
+  "head": "96804afb96b450125f1065a16bd06712ba0af49d",
+  "source": "Reviewed complete accepted first-three-domain source cohort at 96804afb96b450125f1065a16bd06712ba0af49d plus necessary formatting and explicit metadata. Exact current source hashes and context-reviewed API anchors are freshness authority; historical program observations retain original identities.",
+  "audited_at": "2026-10-31",
   "issue14_updated_at": "2026-10-17T08:15:16Z",
   "status_values": [
     "已实现",
@@ -72,7 +72,7 @@
         {
           "api": "tekes_ui_controls::composition::StackContent",
           "path": "crates/tekes-ui-controls/src/composition.rs",
-          "line": 3732,
+          "line": 3970,
           "anchor": "pub struct StackContent {"
         }
       ]
@@ -117,7 +117,7 @@
         {
           "api": "tekes_ui_controls::composition::GridContent",
           "path": "crates/tekes-ui-controls/src/composition.rs",
-          "line": 3876,
+          "line": 4114,
           "anchor": "pub struct GridContent {"
         }
       ]
@@ -239,13 +239,13 @@
         {
           "api": "tekes_ui_controls::ScrollArea",
           "path": "crates/tekes-ui-controls/src/scroll_view.rs",
-          "line": 32,
+          "line": 53,
           "anchor": "pub struct ScrollView {"
         },
         {
           "api": "tekes_ui_controls::composition::ScrollContent",
           "path": "crates/tekes-ui-controls/src/composition.rs",
-          "line": 3985,
+          "line": 4223,
           "anchor": "pub struct ScrollContent {"
         }
       ]
@@ -377,7 +377,7 @@
         {
           "api": "tekes_ui_controls::Toolbar",
           "path": "crates/tekes-ui-controls/src/widgets.rs",
-          "line": 3146,
+          "line": 3504,
           "anchor": "pub struct Toolbar;"
         },
         {
@@ -438,7 +438,7 @@
         {
           "api": "tekes_ui_controls::composition::TextContent",
           "path": "crates/tekes-ui-controls/src/composition.rs",
-          "line": 4271,
+          "line": 4509,
           "anchor": "pub struct TextContent {"
         }
       ]
@@ -548,20 +548,22 @@
       "kind": "leaf",
       "legacy_content": "text label and Link model",
       "protocol": {
-        "status": "缺失",
-        "public_adapters": [],
-        "representation": "view-hosted"
+        "status": "已实现",
+        "public_adapters": [
+          "tekes_ui_controls::composition::LinkContent"
+        ],
+        "representation": "owned-content"
       },
       "slots": [],
       "content_capacity": "不适用",
       "heterogeneous_consumer_content": "不适用",
-      "runtime_profile": "view-hosted",
-      "state_identity": "model/view object retains local state; no unified child keys or mount contract",
-      "limits": "Link semantics/presentation still use action runtime; no Content Link role/adapter or URL host callback in composition",
+      "runtime_profile": "owned-content",
+      "state_identity": "Original Link/View owns string label/action state; destination and action policy remain host-owned; no browser auto-open.",
+      "limits": "String label and original Link/View; typed action delegates product navigation/open policy to the host. No automatic URL opening or caller-owned label slot. Ordinary Link has CPU/Scene coverage, no separate Link GPU matrix or native acceptance.",
       "native_acceptance": "未验证",
-      "accessibility": "no built-in Content semantics adapter; system/native acceptance unverified",
-      "requires_internal_source_edit": "not for a caller-owned Component newtype; built-in migration needs library adapter work",
-      "compatibility": "legacy API unchanged by this audit; future slot adapter should be additive",
+      "accessibility": "Owned Content publishes actual mounted active semantics/parts and uses the existing checked Host/macOS bridge. Source and CPU/GPU evidence do not establish this family native window or VoiceOver acceptance.",
+      "requires_internal_source_edit": "no; additive public owned Content adapter and existing host callbacks",
+      "compatibility": "Original public model/View APIs retained; additive experimental Content adapter on the same registry identity and route.",
       "evidence": [
         {
           "api": "tekes_ui_controls::extended::Link",
@@ -574,6 +576,12 @@
           "path": "crates/tekes-ui-controls/src/layout_view.rs",
           "line": 1351,
           "anchor": "pub struct LinkView {"
+        },
+        {
+          "api": "tekes_ui_controls::composition::LinkContent",
+          "path": "crates/tekes-ui-controls/src/composition/link.rs",
+          "line": 8,
+          "anchor": "pub struct LinkContent {"
         }
       ]
     },
@@ -691,35 +699,43 @@
     {
       "id": "tui.combo-box",
       "title": "ComboBox",
-      "kind": "leaf-and-slots",
+      "kind": "leaf",
       "legacy_content": "items/query strings + filtered MenuView",
       "protocol": {
-        "status": "缺失",
-        "public_adapters": [],
-        "representation": "view-hosted"
+        "status": "已实现",
+        "public_adapters": [
+          "tekes_ui_controls::composition::ComboBoxContent"
+        ],
+        "representation": "owned-content"
       },
       "slots": [],
-      "content_capacity": "缺失",
-      "heterogeneous_consumer_content": "缺失",
-      "runtime_profile": "view-hosted",
-      "state_identity": "model/view object retains local state; no unified child keys or mount contract",
-      "limits": "Fixed selection/filter semantics; no Content label/editor/item slot; not an arbitrary form container MenuView now exposes natural-size measurement shared with production row layout; placement follows measured anchor and available side. Filtered empty queries keep caller state and delegate feedback without an empty option surface. No portal/new window or new content adapter implied.; caller TextSurface retains input pointer/skin/draft; eight exact states probed; loading/error composition not promoted; public key convenience reports each valid Enter confirmation, including same value; cancellation/key-up/empty do not activate; independent consumer reuses original TextFieldContent, ComboBox and ComboBoxView with existing caller Status/Feedback; host gives composing editor control keys and captured drag its release before overlays; live async and full native accessibility remain open Current bounded choice refresh: original source-position keys survive filtering; normal dismissal retains exit paint, stale/data/window cancellation clears. Failure feedback is outside options. Source positions are not persistent business IDs across arbitrary dataset replacement. See design/reviews/filtered-choice-exit-20261020/acceptance.json; VoiceOver remains separate.",
+      "content_capacity": "不适用",
+      "heterogeneous_consumer_content": "不适用",
+      "runtime_profile": "owned-content",
+      "state_identity": "Original ComboBox/ComboBoxView plus unique internal TextFieldContent editor. String options and original indices; no arbitrary option Content.",
+      "limits": "Fixed string options and the unique original TextFieldContent editor; no arbitrary option Content, portal or async loading/error protocol. Source-position option identity is not a persistent business key. Native/physical IME/VoiceOver/performance remain unverified.",
       "native_acceptance": "未验证",
-      "accessibility": "Default Gallery source-index Menu/MenuItem projection reuses actual TextDemo and FilteredMenuView snapshot guard; native U2790B bounded evidence in filtered-menu-accessibility-20261019; complete VoiceOver/physical IME unverified",
-      "requires_internal_source_edit": "not for a caller-owned Component newtype; built-in migration needs library adapter work",
-      "compatibility": "legacy API unchanged by this audit; future slot adapter should be additive",
+      "accessibility": "Owned Content publishes actual mounted active semantics/parts and uses the existing checked Host/macOS bridge. Source and CPU/GPU evidence do not establish this family native window or VoiceOver acceptance.",
+      "requires_internal_source_edit": "no; additive public owned Content adapter and existing host callbacks",
+      "compatibility": "Original public model/View APIs retained; additive experimental Content adapter on the same registry identity and route.",
       "evidence": [
         {
           "api": "tekes_ui_controls::extended::ComboBox",
           "path": "crates/tekes-ui-controls/src/extended.rs",
-          "line": 1246,
+          "line": 1310,
           "anchor": "pub struct ComboBox {"
         },
         {
           "api": "tekes_ui_controls::layout_view::ComboBoxView",
           "path": "crates/tekes-ui-controls/src/layout_view.rs",
-          "line": 2678,
+          "line": 3256,
           "anchor": "pub struct ComboBoxView {"
+        },
+        {
+          "api": "tekes_ui_controls::composition::ComboBoxContent",
+          "path": "crates/tekes-ui-controls/src/composition/combobox.rs",
+          "line": 38,
+          "anchor": "pub struct ComboBoxContent {"
         }
       ]
     },
@@ -761,7 +777,7 @@
         {
           "api": "tekes_ui_controls::composition::SliderContent",
           "path": "crates/tekes-ui-controls/src/composition/adapters.rs",
-          "line": 1054,
+          "line": 1074,
           "anchor": "pub struct SliderContent {"
         }
       ]
@@ -772,49 +788,59 @@
       "kind": "leaf",
       "legacy_content": "checkbox model and text label",
       "protocol": {
-        "status": "缺失",
-        "public_adapters": [],
-        "representation": "view-hosted"
+        "status": "已实现",
+        "public_adapters": [
+          "tekes_ui_controls::composition::CheckboxContent"
+        ],
+        "representation": "owned-content"
       },
       "slots": [],
       "content_capacity": "不适用",
       "heterogeneous_consumer_content": "不适用",
-      "runtime_profile": "view-hosted",
-      "state_identity": "model/view object retains local state; no unified child keys or mount contract; any observed unavailable key boundary cancels existing Button capture/Space arm before filtering unsupported keys",
-      "limits": "No Checkbox Content role/adapter; do not reuse Switch role to claim semantic completion",
+      "runtime_profile": "owned-content",
+      "state_identity": "Original Checkbox/ButtonModel owns three-state value and key/gesture state; string label.",
+      "limits": "Original three-state Checkbox/ButtonModel with a string label; no arbitrary label Content. Native/VoiceOver/performance remain unverified.",
       "native_acceptance": "未验证",
-      "accessibility": "Default Gallery publishes actual retained name/state/bounds and routes AX actions to original control; bounded Dark/U2790B evidence in selection-accessibility-20261019; VoiceOver and full matrix pending.",
-      "requires_internal_source_edit": "not for a caller-owned Component newtype; built-in migration needs library adapter work",
-      "compatibility": "legacy API unchanged by this audit; future slot adapter should be additive",
+      "accessibility": "Owned Content publishes actual mounted active semantics/parts and uses the existing checked Host/macOS bridge. Source and CPU/GPU evidence do not establish this family native window or VoiceOver acceptance.",
+      "requires_internal_source_edit": "no; additive public owned Content adapter and existing host callbacks",
+      "compatibility": "Original public model/View APIs retained; additive experimental Content adapter on the same registry identity and route.",
       "evidence": [
         {
           "api": "tekes_ui_controls::Checkbox",
           "path": "crates/tekes-ui-controls/src/widgets.rs",
-          "line": 1225,
+          "line": 1396,
           "anchor": "pub struct Checkbox {"
+        },
+        {
+          "api": "tekes_ui_controls::composition::CheckboxContent",
+          "path": "crates/tekes-ui-controls/src/composition/checkbox.rs",
+          "line": 20,
+          "anchor": "pub struct CheckboxContent {"
         }
       ]
     },
     {
       "id": "tui.radio-group",
       "title": "RadioGroup",
-      "kind": "slots",
+      "kind": "leaf",
       "legacy_content": "labels slice; indexed selection/roving buttons",
       "protocol": {
-        "status": "缺失",
-        "public_adapters": [],
-        "representation": "view-hosted"
+        "status": "已实现",
+        "public_adapters": [
+          "tekes_ui_controls::composition::RadioGroupContent"
+        ],
+        "representation": "owned-content"
       },
       "slots": [],
-      "content_capacity": "缺失",
-      "heterogeneous_consumer_content": "缺失",
-      "runtime_profile": "view-hosted",
-      "state_identity": "model/view object retains local state; no unified child keys or mount contract",
-      "limits": "Semantic item collection has fixed string presentation; no arbitrary label Content or radio/group AX composition",
+      "content_capacity": "不适用",
+      "heterogeneous_consumer_content": "不适用",
+      "runtime_profile": "owned-content",
+      "state_identity": "Original RadioGroup/RadioGroupView owns selection and roving focus; fixed labels/indices; no caller RadioButton Content slot.",
+      "limits": "Original fixed-label RadioGroup/View with indexed controlled selection and roving focus; no caller-owned interactive radio or arbitrary label slots. Native/VoiceOver/performance remain unverified.",
       "native_acceptance": "未验证",
-      "accessibility": "Default Gallery publishes actual retained name/state/bounds and routes AX actions to original control; bounded Dark/U2790B evidence in selection-accessibility-20261019; VoiceOver and full matrix pending.",
-      "requires_internal_source_edit": "not for a caller-owned Component newtype; built-in migration needs library adapter work",
-      "compatibility": "legacy API unchanged by this audit; future slot adapter should be additive",
+      "accessibility": "Owned Content publishes actual mounted active semantics/parts and uses the existing checked Host/macOS bridge. Source and CPU/GPU evidence do not establish this family native window or VoiceOver acceptance.",
+      "requires_internal_source_edit": "no; additive public owned Content adapter and existing host callbacks",
+      "compatibility": "Original public model/View APIs retained; additive experimental Content adapter on the same registry identity and route.",
       "evidence": [
         {
           "api": "tekes_ui_controls::RadioGroupView",
@@ -825,8 +851,14 @@
         {
           "api": "tekes_ui_controls::extended::RadioGroup",
           "path": "crates/tekes-ui-controls/src/extended.rs",
-          "line": 666,
+          "line": 678,
           "anchor": "pub struct RadioGroup {"
+        },
+        {
+          "api": "tekes_ui_controls::composition::RadioGroupContent",
+          "path": "crates/tekes-ui-controls/src/composition/radio.rs",
+          "line": 41,
+          "anchor": "pub struct RadioGroupContent {"
         }
       ]
     },
@@ -856,13 +888,13 @@
         {
           "api": "tekes_ui_controls::SwitchView",
           "path": "crates/tekes-ui-controls/src/selection.rs",
-          "line": 638,
+          "line": 784,
           "anchor": "pub struct SwitchView {"
         },
         {
           "api": "tekes_ui_controls::extended::Switch",
           "path": "crates/tekes-ui-controls/src/extended.rs",
-          "line": 783,
+          "line": 836,
           "anchor": "pub struct Switch {"
         },
         {
@@ -876,35 +908,43 @@
     {
       "id": "tui.segmented-control",
       "title": "SegmentedControl",
-      "kind": "slots",
+      "kind": "leaf",
       "legacy_content": "labels slice and selected index",
       "protocol": {
-        "status": "缺失",
-        "public_adapters": [],
-        "representation": "view-hosted"
+        "status": "已实现",
+        "public_adapters": [
+          "tekes_ui_controls::composition::SegmentedControlContent"
+        ],
+        "representation": "owned-content"
       },
       "slots": [],
-      "content_capacity": "缺失",
-      "heterogeneous_consumer_content": "缺失",
-      "runtime_profile": "view-hosted",
-      "state_identity": "model/view object retains local state; no unified child keys or mount contract",
-      "limits": "Own selection model but action-button presentation; no Content segments/selection-group role or panels",
+      "content_capacity": "不适用",
+      "heterogeneous_consumer_content": "不适用",
+      "runtime_profile": "owned-content",
+      "state_identity": "Original SegmentedControl/View owns selection and focus; string labels; narrow high-scale visible-glyph limit stays in finite evidence.",
+      "limits": "Original string-label segments and selection model; no panel ownership or arbitrary segment Content. In 36 accepted narrow/high-scale GPU cases labels are wholly clipped in both original View and Content: those cases prove chrome/clip equality, not visible glyphs. Native/VoiceOver/performance remain unverified.",
       "native_acceptance": "未验证",
-      "accessibility": "Default Gallery publishes actual retained name/state/bounds and routes AX actions to original control; bounded Dark/U2790B evidence in selection-accessibility-20261019; VoiceOver and full matrix pending. Current public View focused() supports independent native part-focus projection; final new-version external followup pending, no new VoiceOver acceptance.",
-      "requires_internal_source_edit": "not for a caller-owned Component newtype; built-in migration needs library adapter work",
-      "compatibility": "Existing API retained; additive focused() accessor exposes actual roving item; keyboard-from-focus and focus paint ordering repaired without a new container/slot protocol. Future slot adapter remains separate.",
+      "accessibility": "Owned Content publishes actual mounted active semantics/parts and uses the existing checked Host/macOS bridge. Source and CPU/GPU evidence do not establish this family native window or VoiceOver acceptance.",
+      "requires_internal_source_edit": "no; additive public owned Content adapter and existing host callbacks",
+      "compatibility": "Original public model/View APIs retained; additive experimental Content adapter on the same registry identity and route.",
       "evidence": [
         {
           "api": "tekes_ui_controls::extended::SegmentedControl",
           "path": "crates/tekes-ui-controls/src/extended.rs",
-          "line": 808,
+          "line": 861,
           "anchor": "pub struct SegmentedControl {"
         },
         {
           "api": "tekes_ui_controls::layout_view::SegmentedControlView",
           "path": "crates/tekes-ui-controls/src/layout_view.rs",
-          "line": 1526,
+          "line": 1593,
           "anchor": "pub struct SegmentedControlView {"
+        },
+        {
+          "api": "tekes_ui_controls::composition::SegmentedControlContent",
+          "path": "crates/tekes-ui-controls/src/composition/segmented.rs",
+          "line": 34,
+          "anchor": "pub struct SegmentedControlContent {"
         }
       ]
     },
@@ -934,7 +974,7 @@
         {
           "api": "tekes_ui_controls::Field",
           "path": "crates/tekes-ui-controls/src/widgets.rs",
-          "line": 1655,
+          "line": 1948,
           "anchor": "pub struct Field {"
         },
         {
@@ -975,13 +1015,13 @@
         {
           "api": "tekes_ui_controls::Select",
           "path": "crates/tekes-ui-controls/src/widgets.rs",
-          "line": 1590,
+          "line": 1883,
           "anchor": "pub struct Select {"
         },
         {
           "api": "tekes_ui_controls::layout_view::SelectView",
           "path": "crates/tekes-ui-controls/src/layout_view.rs",
-          "line": 2316,
+          "line": 2886,
           "anchor": "pub struct SelectView {"
         }
       ]
@@ -1012,7 +1052,7 @@
         {
           "api": "tekes_ui_controls::NumberField",
           "path": "crates/tekes-ui-controls/src/widgets.rs",
-          "line": 1611,
+          "line": 1904,
           "anchor": "pub struct NumberField {"
         },
         {
@@ -1038,28 +1078,33 @@
     {
       "id": "tui.tabs",
       "title": "Tabs",
-      "kind": "slots",
+      "kind": "leaf-and-slots",
       "legacy_content": "labels slice + selected/roving Tabs model",
       "protocol": {
-        "status": "缺失",
-        "public_adapters": [],
-        "representation": "view-hosted"
+        "status": "已实现",
+        "public_adapters": [
+          "tekes_ui_controls::composition::TabsContent"
+        ],
+        "representation": "owned-content"
       },
-      "slots": [],
-      "content_capacity": "缺失",
-      "heterogeneous_consumer_content": "缺失",
-      "runtime_profile": "view-hosted",
-      "state_identity": "model/view object retains local state; no unified child keys or mount contract",
-      "limits": "No owned label/panel Content or stable label↔panel semantic relation in composition Caller-owned public Component wrapper now demonstrates retained loading/error/empty bodies and independent header focus; no built-in adapter/default Gallery migration is implied.",
+      "slots": [
+        "passive label per TabItem",
+        "retained panel per TabItem, selected panel active"
+      ],
+      "content_capacity": "已实现",
+      "heterogeneous_consumer_content": "已实现",
+      "runtime_profile": "owned-content",
+      "state_identity": "TabsView owns selection/focus. Caller label is passive, semantics suppressed; caller panel keeps its original Content identity. No independent tab action owner.",
+      "limits": "Retained caller TabItem panel Content with passive custom labels; only selected panel active. No interactive custom tab labels or automatic reconstruction. Disclosure-under-Tabs executable conditions are provided, but the additional regression has not been executed. Native/VoiceOver/performance remain unverified.",
       "native_acceptance": "未验证",
-      "accessibility": "no built-in Content semantics adapter; system/native acceptance unverified",
-      "requires_internal_source_edit": "not for a caller-owned Component newtype; built-in migration needs library adapter work",
-      "compatibility": "legacy API unchanged by this audit; future slot adapter should be additive",
+      "accessibility": "Owned Content publishes actual mounted active semantics/parts and uses the existing checked Host/macOS bridge. Source and CPU/GPU evidence do not establish this family native window or VoiceOver acceptance.",
+      "requires_internal_source_edit": "no; additive public owned Content adapter and existing host callbacks",
+      "compatibility": "Original public model/View APIs retained; additive experimental Content adapter on the same registry identity and route.",
       "evidence": [
         {
           "api": "tekes_ui_controls::Tabs",
           "path": "crates/tekes-ui-controls/src/widgets.rs",
-          "line": 1490,
+          "line": 1783,
           "anchor": "pub struct Tabs {"
         },
         {
@@ -1067,76 +1112,101 @@
           "path": "crates/tekes-ui-controls/src/composite.rs",
           "line": 91,
           "anchor": "pub struct TabsView {"
+        },
+        {
+          "api": "tekes_ui_controls::composition::TabsContent",
+          "path": "crates/tekes-ui-controls/src/composition/navigation.rs",
+          "line": 74,
+          "anchor": "pub struct TabsContent {"
         }
       ]
     },
     {
       "id": "tui.breadcrumb",
       "title": "Breadcrumb",
-      "kind": "slots",
+      "kind": "leaf",
       "legacy_content": "hierarchical labels/current location",
       "protocol": {
-        "status": "缺失",
-        "public_adapters": [],
-        "representation": "view-hosted"
+        "status": "已实现",
+        "public_adapters": [
+          "tekes_ui_controls::composition::BreadcrumbContent"
+        ],
+        "representation": "owned-content"
       },
       "slots": [],
-      "content_capacity": "缺失",
-      "heterogeneous_consumer_content": "缺失",
-      "runtime_profile": "view-hosted",
-      "state_identity": "model/view object retains local state; no unified child keys or mount contract",
-      "limits": "Fixed navigation hierarchy; no arbitrary label Content; does not become a free-form box",
+      "content_capacity": "不适用",
+      "heterogeneous_consumer_content": "不适用",
+      "runtime_profile": "owned-content",
+      "state_identity": "Original Breadcrumb/View owns path strings, layout and actions; ancestor Link/current Text projections; separators are internal, no caller Content slot.",
+      "limits": "Original hierarchy/current location and string labels; separators are internal passive Content rather than a caller separator slot. No arbitrary label Content. Native/VoiceOver/performance remain unverified.",
       "native_acceptance": "未验证",
-      "accessibility": "no built-in Content semantics adapter; system/native acceptance unverified",
-      "requires_internal_source_edit": "not for a caller-owned Component newtype; built-in migration needs library adapter work",
-      "compatibility": "legacy API unchanged by this audit; future slot adapter should be additive",
+      "accessibility": "Owned Content publishes actual mounted active semantics/parts and uses the existing checked Host/macOS bridge. Source and CPU/GPU evidence do not establish this family native window or VoiceOver acceptance.",
+      "requires_internal_source_edit": "no; additive public owned Content adapter and existing host callbacks",
+      "compatibility": "Original public model/View APIs retained; additive experimental Content adapter on the same registry identity and route.",
       "evidence": [
         {
           "api": "tekes_ui_controls::extended::Breadcrumb",
           "path": "crates/tekes-ui-controls/src/extended.rs",
-          "line": 873,
+          "line": 937,
           "anchor": "pub struct Breadcrumb {"
         },
         {
           "api": "tekes_ui_controls::layout_view::BreadcrumbView",
           "path": "crates/tekes-ui-controls/src/layout_view.rs",
-          "line": 1820,
+          "line": 2266,
           "anchor": "pub struct BreadcrumbView {"
+        },
+        {
+          "api": "tekes_ui_controls::composition::BreadcrumbContent",
+          "path": "crates/tekes-ui-controls/src/composition/navigation/breadcrumb.rs",
+          "line": 10,
+          "anchor": "pub struct BreadcrumbContent {"
         }
       ]
     },
     {
       "id": "tui.command-palette",
       "title": "CommandPalette",
-      "kind": "slots",
+      "kind": "leaf-and-slots",
       "legacy_content": "query/items strings + trigger and filtered menu",
       "protocol": {
-        "status": "缺失",
-        "public_adapters": [],
-        "representation": "view-hosted"
+        "status": "已实现",
+        "public_adapters": [
+          "tekes_ui_controls::composition::CommandPaletteContent"
+        ],
+        "representation": "owned-content"
       },
-      "slots": [],
-      "content_capacity": "缺失",
-      "heterogeneous_consumer_content": "缺失",
-      "runtime_profile": "view-hosted",
-      "state_identity": "model/view object retains local state; no unified child keys or mount contract",
-      "limits": "Caller still owns query editor wiring; no unified input/item Content subtree or semantic command palette adapter MenuView now exposes natural-size measurement shared with production row layout; placement follows measured anchor and available side. Filtered empty queries keep caller state and delegate feedback without an empty option surface. No portal/new window or new content adapter implied.; trigger pointer move reuses Button; blur_trigger transfers focus without dismissing query; whole blur/window lifecycle stays distinct; public key convenience reports each valid Enter confirmation, including same value; cancellation/key-up/empty do not activate; independent caller mounts original CommandPaletteView trigger/results and TextFieldContent with existing Status/Feedback; preserves retained query/IME/selection/candidate through status updates and restores trigger focus on execute/dismiss; initial empty data supported; native live async/AX/full motion not accepted; open_from captures the original invoker and requests query focus, take_restore_focus is one-shot after close; blur/deactivation discards handoff. Gallery and independent caller share this contract; host validates mounted/enabled caller. No owned child slots or native acceptance promotion. Current bounded choice refresh: original source-position keys survive filtering; normal dismissal retains exit paint, stale/data/window cancellation clears. Failure feedback is outside options. Source positions are not persistent business IDs across arbitrary dataset replacement. See design/reviews/filtered-choice-exit-20261020/acceptance.json; VoiceOver remains separate.",
+      "slots": [
+        "passive trigger Content",
+        "query Content restricted to original TextFieldContent"
+      ],
+      "content_capacity": "已实现",
+      "heterogeneous_consumer_content": "已实现",
+      "runtime_profile": "owned-content",
+      "state_identity": "Original CommandPalette/View and caller query editor own state. Original string result model; no arbitrary result Content or second editor/IME owner.",
+      "limits": "Passive caller trigger and query restricted to original TextFieldContent; results remain original string choices and original FilteredMenuView. No arbitrary result Content or async data protocol. Native/physical IME/VoiceOver/performance remain unverified.",
       "native_acceptance": "未验证",
-      "accessibility": "Default Gallery source-index Menu/MenuItem projection reuses actual TextDemo and FilteredMenuView snapshot guard; native U2790B bounded evidence in filtered-menu-accessibility-20261019; complete VoiceOver/physical IME unverified",
-      "requires_internal_source_edit": "not for a caller-owned Component newtype; built-in migration needs library adapter work",
-      "compatibility": "legacy API unchanged by this audit; future slot adapter should be additive",
+      "accessibility": "Owned Content publishes actual mounted active semantics/parts and uses the existing checked Host/macOS bridge. Source and CPU/GPU evidence do not establish this family native window or VoiceOver acceptance.",
+      "requires_internal_source_edit": "no; additive public owned Content adapter and existing host callbacks",
+      "compatibility": "Original public model/View APIs retained; additive experimental Content adapter on the same registry identity and route.",
       "evidence": [
         {
           "api": "tekes_ui_controls::extended::CommandPalette",
           "path": "crates/tekes-ui-controls/src/extended.rs",
-          "line": 1312,
+          "line": 1398,
           "anchor": "pub struct CommandPalette {"
         },
         {
           "api": "tekes_ui_controls::layout_view::CommandPaletteView",
           "path": "crates/tekes-ui-controls/src/layout_view.rs",
-          "line": 2786,
+          "line": 3475,
           "anchor": "pub struct CommandPaletteView {"
+        },
+        {
+          "api": "tekes_ui_controls::composition::CommandPaletteContent",
+          "path": "crates/tekes-ui-controls/src/composition/navigation/command.rs",
+          "line": 13,
+          "anchor": "pub struct CommandPaletteContent {"
         }
       ]
     },
@@ -1174,7 +1244,7 @@
         {
           "api": "tekes_ui_controls::extended::List",
           "path": "crates/tekes-ui-controls/src/extended.rs",
-          "line": 883,
+          "line": 947,
           "anchor": "pub struct List {"
         },
         {
@@ -1215,7 +1285,7 @@
         {
           "api": "tekes_ui_controls::extended::Tree",
           "path": "crates/tekes-ui-controls/src/extended.rs",
-          "line": 924,
+          "line": 988,
           "anchor": "pub struct Tree {"
         }
       ]
@@ -1250,7 +1320,7 @@
         {
           "api": "tekes_ui_controls::extended::DataTable",
           "path": "crates/tekes-ui-controls/src/extended.rs",
-          "line": 1068,
+          "line": 1132,
           "anchor": "pub struct DataTable {"
         }
       ]
@@ -1326,13 +1396,13 @@
         {
           "api": "tekes_ui_controls::Menu",
           "path": "crates/tekes-ui-controls/src/widgets.rs",
-          "line": 1520,
+          "line": 1813,
           "anchor": "pub struct Menu {"
         },
         {
           "api": "tekes_ui_controls::MenuView",
           "path": "crates/tekes-ui-controls/src/composite.rs",
-          "line": 447,
+          "line": 677,
           "anchor": "pub struct MenuView {"
         },
         {
@@ -1371,7 +1441,7 @@
         {
           "api": "tekes_ui_controls::extended::Tooltip",
           "path": "crates/tekes-ui-controls/src/extended.rs",
-          "line": 1118,
+          "line": 1182,
           "anchor": "pub struct Tooltip {"
         },
         {
@@ -1412,7 +1482,7 @@
         {
           "api": "tekes_ui_controls::extended::Popover",
           "path": "crates/tekes-ui-controls/src/extended.rs",
-          "line": 1123,
+          "line": 1187,
           "anchor": "pub struct Popover {"
         },
         {
@@ -1436,7 +1506,7 @@
         {
           "api": "tekes_ui_controls::composition::HoverPreviewContent",
           "path": "crates/tekes-ui-controls/src/composition/popover.rs",
-          "line": 787,
+          "line": 788,
           "anchor": "pub struct HoverPreviewContent {"
         }
       ]
@@ -1471,19 +1541,19 @@
         {
           "api": "tekes_ui_controls::Dialog",
           "path": "crates/tekes-ui-controls/src/widgets.rs",
-          "line": 1564,
+          "line": 1857,
           "anchor": "pub struct Dialog {"
         },
         {
           "api": "tekes_ui_controls::DialogView",
           "path": "crates/tekes-ui-controls/src/composite.rs",
-          "line": 1650,
+          "line": 2060,
           "anchor": "pub struct DialogView {"
         },
         {
           "api": "tekes_ui_controls::composition::DialogContent",
           "path": "crates/tekes-ui-controls/src/composition/adapters.rs",
-          "line": 860,
+          "line": 880,
           "anchor": "pub struct DialogContent {"
         }
       ]
@@ -1516,7 +1586,7 @@
         {
           "api": "tekes_ui_controls::extended::Toast",
           "path": "crates/tekes-ui-controls/src/extended.rs",
-          "line": 1145,
+          "line": 1209,
           "anchor": "pub struct Toast {"
         },
         {
@@ -1567,7 +1637,7 @@
         {
           "api": "tekes_ui_controls::extended::Banner",
           "path": "crates/tekes-ui-controls/src/extended.rs",
-          "line": 1191,
+          "line": 1255,
           "anchor": "pub struct Banner {"
         },
         {
@@ -1616,7 +1686,7 @@
         {
           "api": "tekes_ui_controls::extended::StatusBadge",
           "path": "crates/tekes-ui-controls/src/extended.rs",
-          "line": 1207,
+          "line": 1271,
           "anchor": "pub enum StatusBadge {"
         },
         {
@@ -1659,7 +1729,7 @@
         {
           "api": "tekes_ui_controls::extended::Progress",
           "path": "crates/tekes-ui-controls/src/extended.rs",
-          "line": 1214,
+          "line": 1278,
           "anchor": "pub struct Progress {"
         },
         {
@@ -1704,7 +1774,7 @@
         {
           "api": "tekes_ui_controls::extended::EmptyState",
           "path": "crates/tekes-ui-controls/src/extended.rs",
-          "line": 1239,
+          "line": 1303,
           "anchor": "pub struct EmptyState {"
         },
         {
@@ -1802,7 +1872,7 @@
         {
           "api": "tekes_ui_controls::extended::Markdown",
           "path": "crates/tekes-ui-controls/src/extended.rs",
-          "line": 1338,
+          "line": 1424,
           "anchor": "pub struct Markdown {"
         },
         {
@@ -1845,7 +1915,7 @@
         {
           "api": "tekes_ui_controls::extended::CodeBlock",
           "path": "crates/tekes-ui-controls/src/extended.rs",
-          "line": 1352,
+          "line": 1438,
           "anchor": "pub struct CodeBlock {"
         },
         {
@@ -1888,7 +1958,7 @@
         {
           "api": "tekes_ui_controls::extended::DiffView",
           "path": "crates/tekes-ui-controls/src/extended.rs",
-          "line": 1373,
+          "line": 1459,
           "anchor": "pub struct DiffView {"
         },
         {
@@ -1901,39 +1971,67 @@
     }
   ],
   "not_implemented_candidates": [
-    "names",
-    "note"
+    "tui.select",
+    "tui.tree",
+    "tui.data-table"
   ],
   "source_sha256": {
     "DESIGN.md": "0085e260e7f5e511470dc90a2a7ae1d91671b92b7c928864ff160d0bd0a6167b",
+    "crates/tekes-ui-app-host/src/lib.rs": "3f6a64c2fa374ebc7cd371a63559e97253bbf365ad3b98542d17930d31500e91",
+    "crates/tekes-ui-app-host/src/window.rs": "ab2f9ec93c9548b59206555c38c78593d6d80c025dbc2043248e061014a8bd90",
+    "crates/tekes-ui-app-host/src/window_toolbar.rs": "05db7272e1dd15bfe0582331369d6777bbea07c63a3b40df6c73eaf20f1c2119",
     "crates/tekes-ui-controls/src/chart.rs": "9e3e5dd1e9d62f358cb74201a254f4165b81e4b79c3a97f0a74bde6f591e983c",
     "crates/tekes-ui-controls/src/collections_view.rs": "e5ed214228fa01b3477abb25dd7a0850c27b8b7ad07cd3308a417cad94b90c1f",
-    "crates/tekes-ui-controls/src/composite.rs": "8931bb75dcfe576efe58ed15021b5b3394ae4b217eed10723693080d1b4db276",
-    "crates/tekes-ui-controls/src/composition.rs": "fe5f2901bdc313fe687ea68f69049089cb8ae50d533ce5e9f4df5bfb619644e9",
-    "crates/tekes-ui-controls/src/composition/actions.rs": "8cf0970dc94639491d774cc54ccc28c1b8ce64e49c091f2b3057178537d914f1",
-    "crates/tekes-ui-controls/src/composition/adapters.rs": "6d16b70de8d8002de347abc319892b3066a3fd4041efe6ada0a0c4d4da35af4d",
+    "crates/tekes-ui-controls/src/composite.rs": "894168089bd41657cd675b9cdfacdceeee8279b9fa206c93c6b58246b4365cb7",
+    "crates/tekes-ui-controls/src/composition.rs": "131329da858c1e8d575e819209d63c14f80631caa383ed26dcb6d2048c7823d8",
+    "crates/tekes-ui-controls/src/composition/actions.rs": "f8c970655bddd724007f9d650a400e11c5d0a8c8b1588d3c8b90b8fe97cbf0ef",
+    "crates/tekes-ui-controls/src/composition/adapters.rs": "8b66668ff91e3b0f7eef21d020f529361cbd6589277e27c62050f55dd402e6f7",
+    "crates/tekes-ui-controls/src/composition/button.rs": "0a168f44280df2c4f615c243a32e4c8987fb526c8708e2b571d7f88b96f96f0e",
+    "crates/tekes-ui-controls/src/composition/chart_content.rs": "dc3b686d0b7c84e9e44cc3e0ee54c2e040204b141ee10b6970f2f6c88ea8cff4",
+    "crates/tekes-ui-controls/src/composition/checkbox.rs": "1529f88b17492441c19430de0761e4452b6cc283e3bc9cc0a2cbd637a20d6914",
+    "crates/tekes-ui-controls/src/composition/combobox.rs": "29d825cc459bef202edec0fc59bed240a25a2a3a40deddc012a772a8c9247154",
     "crates/tekes-ui-controls/src/composition/content_reading.rs": "62fb0c0bf18fec797983570e84df757de8221d36e8c2243439a29fd1a3949df9",
     "crates/tekes-ui-controls/src/composition/content_reveal.rs": "1d2173c778670f825e67257ea54912d04f497d555f293ced0228e19f8a1b2dde",
+    "crates/tekes-ui-controls/src/composition/disclosure.rs": "a84a4b1d9135b04165b625350c74a62859dd10628239878c30b7fb6ac69852f7",
+    "crates/tekes-ui-controls/src/composition/empty_state.rs": "7c9f782be95d0d5163cd0b11091211bb457aff7511ea4255c945d3c51aaa2776",
     "crates/tekes-ui-controls/src/composition/help.rs": "0ff05ea2ee135ecb418f5a87b4687db9379a3b53792c225cfb650a3f400b058e",
+    "crates/tekes-ui-controls/src/composition/icon.rs": "12bb7040fc42deaddc525c61bf8d5be96b54db859adefadbf9643079615b710b",
     "crates/tekes-ui-controls/src/composition/key.rs": "931e220d625f6d04dd6d36b023199169c619f32fe99c4530dda3e41718b4b407",
     "crates/tekes-ui-controls/src/composition/label.rs": "4b202e0281e1e33f9714e1cc9470a59ba5f1a54c9e1dd48045b8491437405887",
+    "crates/tekes-ui-controls/src/composition/link.rs": "17a6b5a9d7efc52cde5f0d7c7c0f6ebd735640fb0ae6dd5c8e9aac08a80276ad",
     "crates/tekes-ui-controls/src/composition/menu.rs": "32be72ca096eb7241dc07d798c11d499cf8c98dc3300901426062dc7e9e756be",
+    "crates/tekes-ui-controls/src/composition/navigation.rs": "4dd1a43ab34ae4a1f30da131b95af5448ab71568394727b38b5455a95811cd5a",
+    "crates/tekes-ui-controls/src/composition/navigation/breadcrumb.rs": "fd31b6198d468ecc5a11812e0e8c3402d46cceaec6fa4b2f46860414fb86394f",
+    "crates/tekes-ui-controls/src/composition/navigation/command.rs": "b190b1110f8b51f2aa0e7516f3b0b5e5577008d78b250ce07eca0737163407d5",
+    "crates/tekes-ui-controls/src/composition/notice.rs": "cc6dded89400f9bafa405ed499592f8f331792a68c746e501cb3e2768097c245",
+    "crates/tekes-ui-controls/src/composition/number.rs": "736ee3b0957c10800442cfd959a854bd4ea2cd67b43bdb8ffe762b296d779bbc",
+    "crates/tekes-ui-controls/src/composition/panel.rs": "d1db1479140a553ae93c02109c78e8b976a519c5662eadacd5227ba9fb31fc4f",
     "crates/tekes-ui-controls/src/composition/pointer.rs": "bab363a222d7c6195349569a4a317ca4586070463964a3503212c3c7aa3927d6",
+    "crates/tekes-ui-controls/src/composition/popover.rs": "7f98ed4d062e1694a3ffea0a31b8455de0958cc0974a3fd435025c44aec45690",
+    "crates/tekes-ui-controls/src/composition/progress.rs": "12cd00f2a0910d5888323aa64cb07ff6aae309147ce513614574c222f3f587cc",
+    "crates/tekes-ui-controls/src/composition/radio.rs": "b9529e6db4ceccd7297ece352a3e64a4b478294690a49f26e7fcd923ef717bfb",
+    "crates/tekes-ui-controls/src/composition/rich_content.rs": "b5e46ce2d697f152d03129032fd9c1754fd17dc2e9c9627ccea6b2367745ca67",
+    "crates/tekes-ui-controls/src/composition/rich_document.rs": "0b826474f713e197953e8c9737cb8c462db97ba1ba50a4cd2b13b4ddc6eb9ce0",
+    "crates/tekes-ui-controls/src/composition/segmented.rs": "a6bd41ec203d8491a9b0caf1a7550ebf0b4c59aec0f33f0de288340710cfc40a",
+    "crates/tekes-ui-controls/src/composition/separator.rs": "4fed31d0eb17470dadd33b7a3644ba922e06fa005a3feddb0f88379eed7f3397",
+    "crates/tekes-ui-controls/src/composition/skeleton.rs": "8f95c18a7aae090ca14ee2c70e539a1ed5123940ac4e98020bec9f57a043d959",
+    "crates/tekes-ui-controls/src/composition/split_view.rs": "4ec314c0fefb07b61ea7a5e8f84ab418f4f04de46a987c6688d2bcfb93e5e9c7",
+    "crates/tekes-ui-controls/src/composition/status_badge.rs": "55160ac8e5f901e644b09dcedb11f5b227e36a6aec7ff91706e6d3b422007f41",
     "crates/tekes-ui-controls/src/composition/toolbar_content.rs": "4c2ec24e1c5fa3a653c21fc5914268f0c72998111886078d25eff775087ec87f",
     "crates/tekes-ui-controls/src/control_motion.rs": "0301717c307ba6bdc2b91085c9e1995e6ca74391c7bbda9168af2c042a52a788",
-    "crates/tekes-ui-controls/src/extended.rs": "bc355766aeddabe1ae2d511de0c6512988e86f6821860c9638e44e0aa6306636",
+    "crates/tekes-ui-controls/src/extended.rs": "b1e443e0bd3b1f4b64c4a7df50b941c5437408405ba9701c5f878a4ab880b516",
     "crates/tekes-ui-controls/src/feedback_view.rs": "7156351e836a178a98ceeff412fbf500c9624b48bf6cf2e96da728b14b8ced22",
-    "crates/tekes-ui-controls/src/layout_view.rs": "b71e13507f9fbea1fd578db1d09adb4ada7b727e5cbeb7fb8d834249128992e5",
-    "crates/tekes-ui-controls/src/lib.rs": "7bd5ab9bec34e65ac0410fbc970734b227e2f7e030b9490108aefeb4d4d1b59d",
+    "crates/tekes-ui-controls/src/layout_view.rs": "d0dfc6f8feeaf7214e511c335b83607be3c906ffe91b6067b9edc2a64bd533ee",
+    "crates/tekes-ui-controls/src/lib.rs": "7c02ead867e15b5149dd5216b04b021d0ef4205ff2b6603835f3ada967074698",
     "crates/tekes-ui-controls/src/reading.rs": "65fae5533cfe23601197b33fcf8521b5e68999138dad658d6de67c00bad14d82",
-    "crates/tekes-ui-controls/src/scroll_view.rs": "9e3176c67669075319e8e594c791333c6fa08f7c87f3744cbeafe56d77e33476",
+    "crates/tekes-ui-controls/src/scroll_view.rs": "a5e590208cceabe72ff62cf61b6b070b16f44338235329622787e50541d9b65f",
     "crates/tekes-ui-controls/src/scroll_view/reveal.rs": "5882571d8dccd3cf0e4894292f473ac54023047f9025473f7fbae51c5de83e8e",
-    "crates/tekes-ui-controls/src/selection.rs": "84be6fb77fdbbf88c7855959f73dc84ac17e8f9e16f59f7b7f34ea7f98f853c3",
-    "crates/tekes-ui-controls/src/text_input.rs": "106072f519f93661226d101fd6237e141d700c8f006fdabb5d790906faed67f2",
+    "crates/tekes-ui-controls/src/selection.rs": "21e5b33e1e14bd49934dbc8808435f04a653950d6eeae2244c09569705b1def1",
+    "crates/tekes-ui-controls/src/text_input.rs": "fb413cea76491b4a7cc11383dd2426ea6740860c4d660517dc50df4904f8639b",
     "crates/tekes-ui-controls/src/text_input/external.rs": "872c6a58fc112c17f7711ce3fe88c868a6ecb0e2ee32fc394ed8877fa30626ca",
-    "crates/tekes-ui-controls/src/text_surface.rs": "65316a83bd0847462763d0efa0633a59b37ba8cd78af1af8d37e9bc9a71c7b93",
+    "crates/tekes-ui-controls/src/text_surface.rs": "078abcc5369d73020b974ff3f6374386cd586e4308984841735792d336a7538c",
     "crates/tekes-ui-controls/src/toolbar.rs": "ebb1e0678cedf656af14a99d48a5eb77e4778e4db1dcb7e3f316856b012793f5",
-    "crates/tekes-ui-controls/src/widgets.rs": "031c6585a1277ada308dc206bc9ced6f54426fb763149788dad9b20153ddf6f6",
+    "crates/tekes-ui-controls/src/widgets.rs": "e64ac99de36c0b8957e44613cf6be4623ca8486968dfe0929df62824d168e44d",
     "crates/tekes-ui-controls/tests/choice_contract.rs": "4ee09801a24dd52ffc229e45c7ed7adbb2e5ad25b61fea71fb233ec63787a564",
     "crates/tekes-ui-controls/tests/choice_selection_states.rs": "6d555d70d4a225dffd46db4cb37dfa08195dc756122aa32e080686c229b80e13",
     "crates/tekes-ui-controls/tests/choice_trigger_states.rs": "a65f2720e7e37af052f8a136bbfab06d07575cf7ddb33dab3f7dbae78172df0d",
@@ -1942,7 +2040,7 @@
     "crates/tekes-ui-controls/tests/collection_live_input.rs": "57f318912758da06f666641f865c63e95afeba24e7390105cc5e3c6b11325937",
     "crates/tekes-ui-controls/tests/collection_navigation_live.rs": "dd358b0475fe719e1e5cecd95b936c1df66930298fb33872f9ddd4562db83e43",
     "crates/tekes-ui-controls/tests/command_result_states.rs": "f878f949341b2d8108da8f84fa20331fa5d5e563a4a518b8df38d00ee1b16f1c",
-    "crates/tekes-ui-controls/tests/component_registry_api.rs": "aee67ee998a33c68e58a3b41969e601c9978e266e2fd4f6c3f6345ac5b50cc3b",
+    "crates/tekes-ui-controls/tests/component_registry_api.rs": "144833066b3639cac63ebc46d5de020c7cb134f508a3294f61e3d864b29c41b5",
     "crates/tekes-ui-controls/tests/composition.rs": "ddf5e18703784de33433423ac5da5f8a8149e2b33b14ca4bc9fd7bf4bf9a7096",
     "crates/tekes-ui-controls/tests/content_reading.rs": "8180d37ad003cee54fb8a3ca5607e05180e18b623660eb20c08fcf829ac66220",
     "crates/tekes-ui-controls/tests/external_preflight.rs": "e7a3b993e8cef971b50fbb4cff7bc4fd39e1854e5c1f86209c651d9d44f26736",
@@ -1975,11 +2073,11 @@
     "crates/tekes-ui-gallery/src/host.rs": "133bd1d74fbc106b1a88ec356be7c5bfe5f4b7f0662bc54ec890df7e34c5c4db",
     "crates/tekes-ui-gallery/src/reading_key.rs": "6932a589bce50e2f4365c780c67ab0c467a126c9a4677ad23eeda132f146adae",
     "crates/tekes-ui-gallery/src/viewport_acceptance.rs": "4087d2370154069e4b5dd4864425ef620327a6782a848643922f5be303abffad",
-    "crates/tekes-ui-platform-macos/src/accessibility.rs": "1620248d2a9ab1fc4d5a1e61e4d8af2c57af1ced4b21bade06dd063085ad1fd0",
+    "crates/tekes-ui-platform-macos/src/accessibility.rs": "23035652f7711f2a3152533fa890ded791e71f41cc1508e1f3035262f97bc953",
     "crates/tekes-ui-platform-macos/src/app.rs": "6cdf97dd199495130c3ae331b658906435043dd929da128145c908003815ac6b",
     "crates/tekes-ui-platform-macos/src/event.rs": "8cadbed800cf8b917371dec3cf534ec2fced49a7620b2b2745bb22b152ad3fef",
     "crates/tekes-ui-platform-macos/src/lib.rs": "616d171c95539a0352e7f8b4163282e846d11a032142c0fb7ecf122db3fe5a37",
-    "crates/tekes-ui-platform-macos/src/shared.rs": "4c222917ba644388d3c0f8c2a14867a076e3605d351185187843f2b4eb1c52ee",
+    "crates/tekes-ui-platform-macos/src/shared.rs": "761dadef79e6039ce486671544595f69a31fb9cf929c4859fc58387c27c7dbc3",
     "crates/tekes-ui-platform-macos/src/text_key.rs": "9546715dcec3acd93f938866702f0f3c7653a5e2c776db88ccbd2907fb6e4773",
     "crates/tekes-ui-platform-macos/src/view.rs": "56fde068bc1da484e6c2025e81c9f39d196d5ca46bb7a09de438a59cafccc901",
     "crates/tekes-ui-text/src/coretext/label.rs": "bc00cc86263847284b1b95ed4f2117faf6f2ec33316ad893e3b2d51b4d1b92f5",
@@ -1988,13 +2086,13 @@
     "crates/tekes-ui-text/src/label.rs": "07d46cd8afd41e5fa8fc79ad12070c45e8b9fa3b8ebeeed5746c9b6b37b7eac7",
     "crates/tekes-ui-text/src/lib.rs": "5bcc343e17bf3c8c0ec47858156fbeb751cd530b08d0152321475a239e64c4f8",
     "design/gallery/catalog.json": "4a9dde47550b1a7aa355c877649db73a8e9ec918e82bb823db19f8882a85433f",
-    "design/gallery/public-api-surface.json": "18a2874ee85a059ca6bf9e27ff138cfdde587d8d4de33d4ae6352679825e3b8e",
+    "design/gallery/public-api-surface.json": "75c615ad82ffbc704fb832358d8685c29d7dcec592806c64fad6cf879ba4174f",
     "docs/charter.md": "3d4f7d5cc0f25682b1595a900c5059c170b98661e4c33b4f978489c2002be12c",
     "docs/design/menu-action-records-20261021.md": "27b925716d27757e750c7be222ebfe0844bbd618a0e5b5373d35c5820164fa88",
     "docs/design/menu-declarations-20261021.md": "e1494ee1d9a9de6f5fb7bedc40d0c19a8e90dfefca0d0f983316ae8794976ee8",
     "docs/roadmap.md": "1648c62ec9209c206b98c18da6a48cda8e9df306d635e294b5d0ad5dcf1bd331",
     "examples/composition-consumer/Cargo.toml": "92baa39b50aa5d5b64ff80e60b1af6bed7d3faaf9e3feaa8d2e7a625a0d793bf",
-    "examples/composition-consumer/examples/native.rs": "c7fb874e447c369f10cc7601bceb74f3716a7b5f4aa44a5984b8897b271e1b3a",
+    "examples/composition-consumer/examples/native.rs": "228351a2f678b556b1fd948172b104eeb9a774441e21384dfc74a9434f197080",
     "examples/composition-consumer/examples/support/native_key.rs": "6932a589bce50e2f4365c780c67ab0c467a126c9a4677ad23eeda132f146adae",
     "examples/composition-consumer/src/choice_status.rs": "337878b760c8aa05fe0bdbb0dbce091604526acc082c5778645b6feb6199d678",
     "examples/composition-consumer/src/combo_status.rs": "1e36d6989f56ed61eb67f2ab1b56c751164f2e1726c486eb65dd5430f9f40166",
@@ -2011,7 +2109,7 @@
     "examples/composition-consumer/src/item_navigation.rs": "dc3af5a7a60f0ce04f75e3a1d06962051f0300202e68dc6b456ec61e108c2572",
     "examples/composition-consumer/src/label_content.rs": "4cb52fe99bdcc75f485903351b9158636b2f61765f120546be0a4b9cb366ba3e",
     "examples/composition-consumer/src/layout_activation.rs": "339b963c56189addd3f47f1280b0f5247464aca034cdff4b5d16526fa6f80f7d",
-    "examples/composition-consumer/src/lib.rs": "6dd8ebcf769b7c53be0120b9fa883c08b599edfb215c6d2443c9a49733cbcbd6",
+    "examples/composition-consumer/src/lib.rs": "e45282db914e41a4a82b9c0a4a22b4d5ec13d0f1fab1f216374c39b9d67be494",
     "examples/composition-consumer/src/padding_focus.rs": "2b7229dbd6048359c0c12422c0e8ac0a205e21dc8a5a509aa1dff96b743872ff",
     "examples/composition-consumer/src/plain_text.rs": "5d305d1868c698e4327ce6adaf97bd86db3bc19f6e5ef9de2e1752cdbbbe7227",
     "examples/composition-consumer/src/popover_content.rs": "fe991ba61cda61e502dabcc8e7c0ee854899d925a26c8b7056622181903a6dd5",
@@ -2019,6 +2117,7 @@
     "examples/composition-consumer/src/reading_stream.rs": "6b7662c94ed91ed94b78526499ea1694e865568ff2b542ab4d354b144cede247",
     "examples/composition-consumer/src/scenarios.rs": "d9552cc739cccb3c57f4b12daeabc47535dea5af72bb964516dae0fb206679b4",
     "examples/composition-consumer/src/scroll_updates.rs": "3f59942efc460f1c754580673e0f02799c7dcdb14a6358164091f76f60f8a121",
+    "examples/composition-consumer/src/semantic_label.rs": "a4ebb9a95ae05e2465ac7c430e99733c765b0e93c4284201a6c3dfc2e513c212",
     "examples/composition-consumer/src/slider_content.rs": "762da114a39181ba43e10501ef8f59e73a742c7171f907e2a047bc031c20d926",
     "examples/composition-consumer/src/text_viewport.rs": "abd219243c296bd0ced6722147ef0e43e2e03723c85a0c212f5d0ed3b1a6a1cf",
     "examples/composition-consumer/tests/choice_status.rs": "974f88e3442795daf781013922292b67a029c20265a01be4109487296c65cf1c",
@@ -2028,6 +2127,7 @@
     "examples/composition-consumer/tests/content_help.rs": "022fecc27b0743eabba44d0a2c2e02bc961f00b63ce6b942703765bad20c1024",
     "examples/composition-consumer/tests/controlled_reading.rs": "b6328a88559f196d90e34d2e63181efcea29a154f339c0919b2e6d6da4474620",
     "examples/composition-consumer/tests/dialog_accessibility.rs": "154568d070669e1f388af1b84a4c48d50918f1dd902cc5db860071b76dffc7d2",
+    "examples/composition-consumer/tests/editable_number.rs": "637055472100f4df5fec209e74b1e92ef42fe94128f76c2153dcc07f054c1598",
     "examples/composition-consumer/tests/editor_keys.rs": "76ed45394def28514e4abf9ee36e0484a91f74f9b23a17838751d1c30436fa7c",
     "examples/composition-consumer/tests/editor_navigation.rs": "791d2d4aba67fe610a084868b3f6fe6fbe7fb29445caf6ac059d164008e8bada",
     "examples/composition-consumer/tests/forwarded_actions.rs": "9e7d034242af5a9e5c1a8987d7b9d23f056be790630184d2c4af5dc89179bd9f",
@@ -2044,97 +2144,73 @@
     "examples/composition-consumer/tests/pointer_metadata.rs": "e804ffc666ec3128808a60b09e2b2007a1d3a4988193056fe2eda823a0e92679",
     "examples/composition-consumer/tests/scenarios.rs": "61c29e19d77c985409b22fd19d48d3b1204a07c5d0690e3733ce7b91ed4310ce",
     "examples/composition-consumer/tests/scroll_reveal.rs": "3fb0700db0e5d3f969b11062aa6b2b686cf442e7ff3410ec03f0706422901a2c",
+    "examples/composition-consumer/tests/semantic_label.rs": "60f638f90fc31d41b9ee328528b2ca53c723c4ebb45c46c78e4cb66a83ae44b6",
     "examples/composition-consumer/tests/slider_content.rs": "6b5bb596050ba55a1ea17b07680c1dadfd4e1fa83703a7e026355afd75c43e75",
     "examples/composition-consumer/tests/slider_states.rs": "9ba39cb152181ee5ab65b94d83e5573417fc706582a67eb6dc7712db5a1fc184",
     "examples/composition-consumer/tests/surface_host_scale.rs": "152941bff9d9baa1e402f3d1c52d051a4aacc0e5702de774780aa951178419c7",
-    "scripts/audit-menu-content-tokens.py": "c6c66ffd9939c61b2069cdafc9f798ea72b7aa58f1c7d8c0b3f55dc67765f867",
-    "crates/tekes-ui-controls/src/composition/number.rs": "736ee3b0957c10800442cfd959a854bd4ea2cd67b43bdb8ffe762b296d779bbc",
-    "examples/composition-consumer/tests/editable_number.rs": "637055472100f4df5fec209e74b1e92ef42fe94128f76c2153dcc07f054c1598",
-    "crates/tekes-ui-controls/src/composition/split_view.rs": "4ec314c0fefb07b61ea7a5e8f84ab418f4f04de46a987c6688d2bcfb93e5e9c7",
-    "crates/tekes-ui-controls/src/composition/panel.rs": "d1db1479140a553ae93c02109c78e8b976a519c5662eadacd5227ba9fb31fc4f",
-    "crates/tekes-ui-controls/src/composition/button.rs": "0a168f44280df2c4f615c243a32e4c8987fb526c8708e2b571d7f88b96f96f0e",
-    "crates/tekes-ui-controls/src/composition/chart_content.rs": "dc3b686d0b7c84e9e44cc3e0ee54c2e040204b141ee10b6970f2f6c88ea8cff4",
-    "crates/tekes-ui-controls/src/composition/notice.rs": "cc6dded89400f9bafa405ed499592f8f331792a68c746e501cb3e2768097c245",
-    "crates/tekes-ui-controls/src/composition/status_badge.rs": "55160ac8e5f901e644b09dcedb11f5b227e36a6aec7ff91706e6d3b422007f41",
-    "crates/tekes-ui-controls/src/composition/progress.rs": "12cd00f2a0910d5888323aa64cb07ff6aae309147ce513614574c222f3f587cc",
-    "crates/tekes-ui-controls/src/composition/empty_state.rs": "7c9f782be95d0d5163cd0b11091211bb457aff7511ea4255c945d3c51aaa2776",
-    "crates/tekes-ui-controls/src/composition/skeleton.rs": "8f95c18a7aae090ca14ee2c70e539a1ed5123940ac4e98020bec9f57a043d959",
-    "crates/tekes-ui-app-host/src/lib.rs": "3f6a64c2fa374ebc7cd371a63559e97253bbf365ad3b98542d17930d31500e91",
-    "crates/tekes-ui-app-host/src/window_toolbar.rs": "05db7272e1dd15bfe0582331369d6777bbea07c63a3b40df6c73eaf20f1c2119",
-    "crates/tekes-ui-app-host/src/window.rs": "ab2f9ec93c9548b59206555c38c78593d6d80c025dbc2043248e061014a8bd90",
-    "crates/tekes-ui-controls/src/composition/separator.rs": "4fed31d0eb17470dadd33b7a3644ba922e06fa005a3feddb0f88379eed7f3397",
-    "crates/tekes-ui-controls/src/composition/icon.rs": "12bb7040fc42deaddc525c61bf8d5be96b54db859adefadbf9643079615b710b",
-    "crates/tekes-ui-controls/src/composition/popover.rs": "60adbd8a89c8c990e93314938db5fe0bb1860f1f32b2e5b2ee280602379eaeb5",
-    "crates/tekes-ui-controls/src/composition/rich_document.rs": "0b826474f713e197953e8c9737cb8c462db97ba1ba50a4cd2b13b4ddc6eb9ce0",
-    "crates/tekes-ui-controls/src/composition/rich_content.rs": "b5e46ce2d697f152d03129032fd9c1754fd17dc2e9c9627ccea6b2367745ca67",
-    "examples/composition-consumer/src/semantic_label.rs": "a4ebb9a95ae05e2465ac7c430e99733c765b0e93c4284201a6c3dfc2e513c212",
-    "examples/composition-consumer/tests/semantic_label.rs": "60f638f90fc31d41b9ee328528b2ca53c723c4ebb45c46c78e4cb66a83ae44b6",
-    "crates/tekes-ui-controls/src/composition/disclosure.rs": "3ca1188222af53d9ec21a5ff48ce09455a28a17c89c23672f6f223d4055e3aff"
+    "scripts/audit-menu-content-tokens.py": "c6c66ffd9939c61b2069cdafc9f798ea72b7aa58f1c7d8c0b3f55dc67765f867"
   },
   "remaining": [
-    "minimal three scenarios: public/GPU and scoped native evidence exist; full physical IME/candidate/VoiceOver/current combined acceptance still unverified",
-    "Gallery host/default-page/workbench semantic export exists; per-family coverage, inspector and native/VoiceOver acceptance still require #5 verification; no blanket migration",
-    "Tabs/Tree/DataTable/Disclosure/Popover composition adapters await minimum-protocol acceptance and bounded family selection",
-    "window toolbar: one AppWindow now has a shared ToolbarHost with stable declared groups, edge regions, placement/order, supported command overflow, and bounded real-window owner/focus/overflow evidence; general multi-window lifecycle, arbitrary custom-content overflow, and full per-action native/VoiceOver acceptance remain unverified",
-    "role/value-range/document/selection-group semantics needed for future family adapters; no fake Button semantics",
-    "virtualization/reconstruction/edit-retention policy absent; owned detach/reattach is the current explicit boundary",
-    "performance excluded by user; not an acceptance blocker for this authorized run"
+    "Current protocol gaps and partial scopes remain exactly as listed per component; missing: tui.select, tui.tree, tui.data-table.",
+    "Search/Select and keyed collection recovery are on a separate preserved integration branch; this batch does not publish or accept those later changes.",
+    "All family native window, physical IME, VoiceOver, performance and complete Gold7 experience acceptance remain separately unverified.",
+    "Content slot capacity reflects the actual passive/retained public APIs; no arbitrary interactive slots, virtualization or automatic reconstruction are inferred."
   ],
   "dimension_policy": "kind describes semantic content responsibility, including fixed template/geometry entry points; only nonempty slots and public_adapters assert actual shared Content ownership. Leaves do not require children; menu items may constrain interaction. Missing direct adapter does not mean consumers cannot wrap an existing public view.",
   "shared_evidence": [
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 371,
+      "line": 423,
       "anchor": "pub trait Component: Debug + Any {"
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 2196,
+      "line": 2261,
       "anchor": "pub fn render("
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 2575,
+      "line": 2652,
       "anchor": "pub fn event(&mut self, event: &ContentEvent) -> ContentResponse {"
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 3074,
+      "line": 3191,
       "anchor": "pub fn focused_text(&self) -> Option<&crate::TextSurface> {"
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 3562,
+      "line": 3788,
       "anchor": "pub fn insert("
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 3598,
+      "line": 3824,
       "anchor": "pub fn remove(&mut self, id: ComponentId) -> Result<Content, CompositionError> {"
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 3647,
+      "line": 3873,
       "anchor": "pub fn reorder("
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 3715,
+      "line": 3953,
       "anchor": "pub fn semantics(&self) -> Vec<SemanticNode> {"
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 3387,
+      "line": 3612,
       "anchor": "pub fn show_dialog(&mut self, id: ComponentId) -> Result<(), CompositionError> {"
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 3427,
+      "line": 3653,
       "anchor": "pub fn close_dialog(&mut self) -> bool {"
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 1378,
+      "line": 1441,
       "anchor": "fn lifecycle(&mut self, event: Lifecycle) {"
     },
     {
@@ -2144,7 +2220,7 @@
     },
     {
       "path": "examples/composition-consumer/examples/native.rs",
-      "line": 810,
+      "line": 816,
       "anchor": "w.set_accessibility_nodes(nodes);"
     },
     {
@@ -2159,17 +2235,17 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/composite.rs",
-      "line": 594,
+      "line": 911,
       "anchor": "pub fn measure("
     },
     {
       "path": "crates/tekes-ui-controls/src/layout_view.rs",
-      "line": 2913,
+      "line": 3679,
       "anchor": "pub fn blur_trigger(&mut self) {"
     },
     {
       "path": "crates/tekes-ui-controls/src/layout_view.rs",
-      "line": 3041,
+      "line": 3851,
       "anchor": "pub fn pointer_move(&mut self, p: Point, model: &mut CommandPalette) {"
     },
     {
@@ -2179,12 +2255,12 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/layout_view.rs",
-      "line": 2383,
+      "line": 2953,
       "anchor": "pub fn render_trigger("
     },
     {
       "path": "crates/tekes-ui-controls/src/layout_view.rs",
-      "line": 2440,
+      "line": 3010,
       "anchor": "pub fn render_options("
     },
     {
@@ -2209,7 +2285,7 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/composition/adapters.rs",
-      "line": 1068,
+      "line": 1088,
       "anchor": "impl Component for SliderContent {"
     },
     {
@@ -2259,7 +2335,7 @@
     },
     {
       "path": "crates/tekes-ui-platform-macos/src/accessibility.rs",
-      "line": 131,
+      "line": 135,
       "anchor": "pub struct AccessibilityTextLayout {"
     },
     {
@@ -2284,12 +2360,12 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/composition/adapters.rs",
-      "line": 557,
+      "line": 580,
       "anchor": "s.required = self.field.required;"
     },
     {
       "path": "crates/tekes-ui-platform-macos/src/accessibility.rs",
-      "line": 956,
+      "line": 973,
       "anchor": "fn accessibilityRequired(&self) -> bool {"
     },
     {
@@ -2300,19 +2376,19 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 553,
+      "line": 605,
       "anchor": "fn paints_children(&self) -> bool {",
       "purpose": "Optional child paint ownership; default preserves automatic traversal"
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 2114,
+      "line": 2179,
       "anchor": "pub fn capture_focus(&self) -> Option<(ComponentId, u64)> {",
       "purpose": "Existing mount identity reused for temporary presentation focus intent"
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 2127,
+      "line": 2192,
       "anchor": "pub fn restore_focus(&mut self, captured: Option<(ComponentId, u64)>) -> bool {",
       "purpose": "Same mount/current eligibility validation; Dialog shares this implementation"
     },
@@ -2366,7 +2442,7 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 930,
+      "line": 993,
       "anchor": "pub fn with_label_layout(",
       "purpose": "Explicit readonly Content label opt-in on original components"
     },
@@ -2384,7 +2460,7 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 2140,
+      "line": 2205,
       "anchor": "fn check_text_services(",
       "purpose": "Single existing text-capability traversal and cancellation reused at all render layout boundaries"
     },
@@ -2447,7 +2523,7 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/composition/actions.rs",
-      "line": 227,
+      "line": 266,
       "anchor": "pub fn drain_action_records(&mut self) -> Vec<ContentActionRecord> {"
     },
     {
@@ -2477,7 +2553,7 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 736,
+      "line": 793,
       "anchor": "fn bubble_handled_event(&self, _event: &ContentEvent) -> bool {"
     },
     {
@@ -3031,7 +3107,7 @@
     "80d6b05649234f953ea452d42e1cbed369fdddbb",
     "b8999fe006adfcd70587f07af50ef9e240422788"
   ],
-  "current_review_scope": "Current source/line verification of existing45row reviewed matrix, #22 structured-reading followup and explicit public-enum compatibility delta; not a new whole-library native or visual audit.",
+  "current_review_scope": "Complete first-three-domain cohort: 8 finite accepted families, 21 newly classified public type paths, 45 total component rows. Other rows/profiles remain bounded; source audit does not establish native or public delivery.",
   "structured_reading_compatibility_20261020": {
     "scope": "Public CompositionError adds ReadingTransactionInProgress; Content gains a private per-instance activation-focus option and ScrollContent gains opt-in reading state.",
     "source_compatibility": "Downstream exhaustive CompositionError matches require an added arm; this is a potential source-breaking enum extension, even though existing entry signatures remain. No new required field on public ButtonContent.",
@@ -3492,5 +3568,31 @@
     "public_api": "crates/tekes-ui-controls/tests/toolbar_contract.rs"
   },
   "review_note": "Current review: composition/button.rs deliberately consolidates image/text/custom-content presentation into one Button over the original ButtonModel action state; obsolete ButtonContent/CompoundButton/IconButton entry points have no aliases. AppHost now contributes one shared ToolbarHost to each accepted AppWindow across its columns with stable declarations, placement, supported command overflow and bounded real-window owner/focus evidence. General multi-window lifecycle, arbitrary-content overflow, full per-action native semantics and VoiceOver remain unverified. ContentTheme passes Palette and canonical Surface through the mounted tree while foreground forwarding is explicit. No family native status is promoted. Coordinator review also reconciles the already accepted checked SplitViewContent panes and local PanelContent body, and pins the AppWindow constructor/mounted shared toolbar/actual toolbar render path. B2 remains open; no native promotion or new implementation is inferred.",
-  "review_note_history_20261021": "Reviewed Toolbar typography/slots/short splitter marker/native cursor delta against main09b4bab; reran public probes and consumer regressions. Other component classifications stay bounded; source audit does not promote native acceptance. See docs/design/toolbar-split-accepted-20261022.md."
+  "review_note_history_20261021": "Reviewed Toolbar typography/slots/short splitter marker/native cursor delta against main09b4bab; reran public probes and consumer regressions. Other component classifications stay bounded; source audit does not promote native acceptance. See docs/design/toolbar-split-accepted-20261022.md.",
+  "recovery_batch_20261031": {
+    "baseline": "96804afb96b450125f1065a16bd06712ba0af49d",
+    "scope": "Combo, Selection, Navigation/Link complete original-source cohort: 8 families/21 added public type paths. Source audit reflects finite accepted Content protocol only; generated public bindings and batchCI/publicdelivery remain required.",
+    "accepted_families": [
+      "tui.combo-box",
+      "tui.checkbox",
+      "tui.radio-group",
+      "tui.segmented-control",
+      "tui.tabs",
+      "tui.breadcrumb",
+      "tui.command-palette",
+      "tui.link"
+    ],
+    "evidence": "Finite original source/program/config identities retained in integration-executor-20261030-09/*integrator-acceptance.json; formatter mapping does not re-sign old executable observations.",
+    "excluded": "Later Search/Select and Collections source is not in this tree; their pending source/GPU/IPC cannot be promoted here.",
+    "previous_remaining": [
+      "minimal three scenarios: public/GPU and scoped native evidence exist; full physical IME/candidate/VoiceOver/current combined acceptance still unverified",
+      "Gallery host/default-page/workbench semantic export exists; per-family coverage, inspector and native/VoiceOver acceptance still require #5 verification; no blanket migration",
+      "Tabs/Tree/DataTable/Disclosure/Popover composition adapters await minimum-protocol acceptance and bounded family selection",
+      "window toolbar: one AppWindow now has a shared ToolbarHost with stable declared groups, edge regions, placement/order, supported command overflow, and bounded real-window owner/focus/overflow evidence; general multi-window lifecycle, arbitrary custom-content overflow, and full per-action native/VoiceOver acceptance remain unverified",
+      "role/value-range/document/selection-group semantics needed for future family adapters; no fake Button semantics",
+      "virtualization/reconstruction/edit-retention policy absent; owned detach/reattach is the current explicit boundary",
+      "performance excluded by user; not an acceptance blocker for this authorized run"
+    ],
+    "native": "未验证"
+  }
 }

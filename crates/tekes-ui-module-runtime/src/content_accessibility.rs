@@ -590,11 +590,14 @@ mod tests {
             .chain(tabs.parts.iter().map(|part| &part.semantics.role))
             .map(|role| serde_json::to_value(role).unwrap())
             .collect();
-        assert_eq!(roles, vec![
-            serde_json::json!("TabList"),
-            serde_json::json!("Tab"),
-            serde_json::json!("Tab")
-        ]);
+        assert_eq!(
+            roles,
+            vec![
+                serde_json::json!("TabList"),
+                serde_json::json!("Tab"),
+                serde_json::json!("Tab")
+            ]
+        );
         let encoded = serde_json::to_vec(&nodes).unwrap();
         let received: Vec<wire::SemanticNode> = serde_json::from_slice(&encoded).unwrap();
         assert_eq!(received, nodes);
@@ -717,7 +720,6 @@ mod tests {
             .is_err()
         );
     }
-
 }
 
 #[cfg(test)]

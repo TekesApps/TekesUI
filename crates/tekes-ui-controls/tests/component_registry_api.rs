@@ -597,6 +597,10 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
     let mut actual = Vec::new();
     public_type::<tekes_ui_controls::BarChart>(&mut actual, "tekes_ui_controls::BarChart");
     public_type::<tekes_ui_controls::BarGeometry>(&mut actual, "tekes_ui_controls::BarGeometry");
+    public_type::<tekes_ui_controls::BreadcrumbContent>(
+        &mut actual,
+        "tekes_ui_controls::BreadcrumbContent",
+    );
     public_type::<tekes_ui_controls::Button>(&mut actual, "tekes_ui_controls::Button");
     public_type::<tekes_ui_controls::ButtonActivationPhase>(
         &mut actual,
@@ -622,7 +626,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::ButtonTextAlign",
     );
     #[allow(dead_code)]
-    fn public_trait_11<T: tekes_ui_controls::ButtonTextRenderer + ?Sized>() {}
+    fn public_trait_12<T: tekes_ui_controls::ButtonTextRenderer + ?Sized>() {}
     actual.push("tekes_ui_controls::ButtonTextRenderer");
     public_type::<tekes_ui_controls::ChartContent>(&mut actual, "tekes_ui_controls::ChartContent");
     public_type::<tekes_ui_controls::ChartContentError>(
@@ -643,6 +647,10 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
     public_type::<tekes_ui_controls::CheckboxLayout>(
         &mut actual,
         "tekes_ui_controls::CheckboxLayout",
+    );
+    public_type::<tekes_ui_controls::CommandPaletteContent>(
+        &mut actual,
+        "tekes_ui_controls::CommandPaletteContent",
     );
     public_type::<tekes_ui_controls::ContainerLayout>(
         &mut actual,
@@ -779,7 +787,9 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
     public_type::<tekes_ui_controls::SliderView>(&mut actual, "tekes_ui_controls::SliderView");
     public_type::<tekes_ui_controls::SwitchLayout>(&mut actual, "tekes_ui_controls::SwitchLayout");
     public_type::<tekes_ui_controls::SwitchView>(&mut actual, "tekes_ui_controls::SwitchView");
+    public_type::<tekes_ui_controls::TabItem>(&mut actual, "tekes_ui_controls::TabItem");
     public_type::<tekes_ui_controls::Tabs>(&mut actual, "tekes_ui_controls::Tabs");
+    public_type::<tekes_ui_controls::TabsContent>(&mut actual, "tekes_ui_controls::TabsContent");
     public_type::<tekes_ui_controls::TabsLayout>(&mut actual, "tekes_ui_controls::TabsLayout");
     public_type::<tekes_ui_controls::TabsView>(&mut actual, "tekes_ui_controls::TabsView");
     public_type::<tekes_ui_controls::TextEditBaseline>(
@@ -797,14 +807,14 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::TextSurfaceAlignment",
     );
     #[allow(dead_code)]
-    fn public_trait_79<T: tekes_ui_controls::TextSurfaceHost + ?Sized>() {}
+    fn public_trait_83<T: tekes_ui_controls::TextSurfaceHost + ?Sized>() {}
     actual.push("tekes_ui_controls::TextSurfaceHost");
     public_type::<tekes_ui_controls::TextSurfacePresentation>(
         &mut actual,
         "tekes_ui_controls::TextSurfacePresentation",
     );
     #[allow(dead_code)]
-    fn public_trait_81<T: tekes_ui_controls::TextSurfaceTextRenderer + ?Sized>() {}
+    fn public_trait_85<T: tekes_ui_controls::TextSurfaceTextRenderer + ?Sized>() {}
     actual.push("tekes_ui_controls::TextSurfaceTextRenderer");
     public_type::<tekes_ui_controls::TickingNumber>(
         &mut actual,
@@ -892,7 +902,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::collections_view::MarkdownView",
     );
     #[allow(dead_code)]
-    fn public_trait_104<T: tekes_ui_controls::collections_view::PassiveCollectionView + ?Sized>() {}
+    fn public_trait_108<T: tekes_ui_controls::collections_view::PassiveCollectionView + ?Sized>() {}
     actual.push("tekes_ui_controls::collections_view::PassiveCollectionView");
     public_type::<tekes_ui_controls::collections_view::TreeView>(
         &mut actual,
@@ -913,6 +923,10 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
     public_type::<tekes_ui_controls::composition::BannerContent>(
         &mut actual,
         "tekes_ui_controls::composition::BannerContent",
+    );
+    public_type::<tekes_ui_controls::composition::BreadcrumbContent>(
+        &mut actual,
+        "tekes_ui_controls::composition::BreadcrumbContent",
     );
     public_type::<tekes_ui_controls::composition::Button>(
         &mut actual,
@@ -938,8 +952,32 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         &mut actual,
         "tekes_ui_controls::composition::ChartContentError",
     );
+    public_type::<tekes_ui_controls::composition::CheckboxContent>(
+        &mut actual,
+        "tekes_ui_controls::composition::CheckboxContent",
+    );
+    public_type::<tekes_ui_controls::composition::CheckboxIntent>(
+        &mut actual,
+        "tekes_ui_controls::composition::CheckboxIntent",
+    );
+    public_type::<tekes_ui_controls::composition::ComboBoxContent>(
+        &mut actual,
+        "tekes_ui_controls::composition::ComboBoxContent",
+    );
+    public_type::<tekes_ui_controls::composition::ComboBoxSelection>(
+        &mut actual,
+        "tekes_ui_controls::composition::ComboBoxSelection",
+    );
+    public_type::<tekes_ui_controls::composition::ComboBoxUpdateError>(
+        &mut actual,
+        "tekes_ui_controls::composition::ComboBoxUpdateError",
+    );
+    public_type::<tekes_ui_controls::composition::CommandPaletteContent>(
+        &mut actual,
+        "tekes_ui_controls::composition::CommandPaletteContent",
+    );
     #[allow(dead_code)]
-    fn public_trait_116<T: tekes_ui_controls::composition::Component + ?Sized>() {}
+    fn public_trait_127<T: tekes_ui_controls::composition::Component + ?Sized>() {}
     actual.push("tekes_ui_controls::composition::Component");
     public_type::<tekes_ui_controls::composition::ComponentActionRequest<'_>>(
         &mut actual,
@@ -1217,6 +1255,10 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         &mut actual,
         "tekes_ui_controls::composition::Lifecycle",
     );
+    public_type::<tekes_ui_controls::composition::LinkContent>(
+        &mut actual,
+        "tekes_ui_controls::composition::LinkContent",
+    );
     public_type::<tekes_ui_controls::composition::ListContent>(
         &mut actual,
         "tekes_ui_controls::composition::ListContent",
@@ -1254,7 +1296,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::composition::NumberFieldContent",
     );
     #[allow(dead_code)]
-    fn public_trait_189<T: tekes_ui_controls::composition::NumberFormat + ?Sized>() {}
+    fn public_trait_201<T: tekes_ui_controls::composition::NumberFormat + ?Sized>() {}
     actual.push("tekes_ui_controls::composition::NumberFormat");
     public_type::<tekes_ui_controls::composition::NumberParseError>(
         &mut actual,
@@ -1317,7 +1359,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::composition::PopoverSession",
     );
     #[allow(dead_code)]
-    fn public_trait_205<T: tekes_ui_controls::composition::PreparedActionEffect + ?Sized>() {}
+    fn public_trait_217<T: tekes_ui_controls::composition::PreparedActionEffect + ?Sized>() {}
     actual.push("tekes_ui_controls::composition::PreparedActionEffect");
     public_type::<tekes_ui_controls::composition::PreparedActionFocus>(
         &mut actual,
@@ -1354,6 +1396,18 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
     public_type::<tekes_ui_controls::composition::ProgressContent>(
         &mut actual,
         "tekes_ui_controls::composition::ProgressContent",
+    );
+    public_type::<tekes_ui_controls::composition::RadioContentError>(
+        &mut actual,
+        "tekes_ui_controls::composition::RadioContentError",
+    );
+    public_type::<tekes_ui_controls::composition::RadioGroupContent>(
+        &mut actual,
+        "tekes_ui_controls::composition::RadioGroupContent",
+    );
+    public_type::<tekes_ui_controls::composition::RadioSelectionIntent>(
+        &mut actual,
+        "tekes_ui_controls::composition::RadioSelectionIntent",
     );
     public_type::<tekes_ui_controls::composition::Rejected<()>>(
         &mut actual,
@@ -1410,6 +1464,18 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
     public_type::<tekes_ui_controls::composition::ScrollContent>(
         &mut actual,
         "tekes_ui_controls::composition::ScrollContent",
+    );
+    public_type::<tekes_ui_controls::composition::SegmentIntent>(
+        &mut actual,
+        "tekes_ui_controls::composition::SegmentIntent",
+    );
+    public_type::<tekes_ui_controls::composition::SegmentedContentError>(
+        &mut actual,
+        "tekes_ui_controls::composition::SegmentedContentError",
+    );
+    public_type::<tekes_ui_controls::composition::SegmentedControlContent>(
+        &mut actual,
+        "tekes_ui_controls::composition::SegmentedControlContent",
     );
     public_type::<tekes_ui_controls::composition::SemanticLabel>(
         &mut actual,
@@ -1493,9 +1559,17 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         &mut actual,
         "tekes_ui_controls::composition::SwitchContent",
     );
+    public_type::<tekes_ui_controls::composition::TabItem>(
+        &mut actual,
+        "tekes_ui_controls::composition::TabItem",
+    );
     public_type::<tekes_ui_controls::composition::TableTransactionCompatibility>(
         &mut actual,
         "tekes_ui_controls::composition::TableTransactionCompatibility",
+    );
+    public_type::<tekes_ui_controls::composition::TabsContent>(
+        &mut actual,
+        "tekes_ui_controls::composition::TabsContent",
     );
     public_type::<tekes_ui_controls::composition::TextContent>(
         &mut actual,
@@ -1684,6 +1758,10 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
     public_type::<tekes_ui_controls::extended::RadioGroup>(
         &mut actual,
         "tekes_ui_controls::extended::RadioGroup",
+    );
+    public_type::<tekes_ui_controls::extended::RadioSelectionError>(
+        &mut actual,
+        "tekes_ui_controls::extended::RadioSelectionError",
     );
     public_type::<tekes_ui_controls::extended::SegmentedControl>(
         &mut actual,
@@ -1894,7 +1972,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::layout_view::IconLayout",
     );
     #[allow(dead_code)]
-    fn public_trait_348<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
+    fn public_trait_369<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
     actual.push("tekes_ui_controls::layout_view::IconRenderer");
     public_type::<tekes_ui_controls::layout_view::IconView>(
         &mut actual,

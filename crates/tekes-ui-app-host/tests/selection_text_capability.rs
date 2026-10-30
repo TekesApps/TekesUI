@@ -13,7 +13,9 @@ struct SelectionField {
     role: ContentRole,
 }
 impl Component for SelectionField {
-    fn semantic_frame(&self, f: Rect) -> Rect { self.field.semantic_frame(f) }
+    fn semantic_frame(&self, f: Rect) -> Rect {
+        self.field.semantic_frame(f)
+    }
     fn measure(&mut self, t: &mut dyn ButtonTextRenderer, a: Size) -> MeasuredChild {
         self.field.measure(t, a)
     }
@@ -23,30 +25,56 @@ impl Component for SelectionField {
     fn prepare_text_input(&mut self, t: &mut dyn ButtonTextRenderer, f: Rect, c: Rect) {
         self.field.prepare_text_input(t, f, c);
     }
-    fn paint(&mut self, s: &mut Scene, t: &mut dyn ButtonTextRenderer, f: Rect, c: Rect, theme: ContentTheme) {
+    fn paint(
+        &mut self,
+        s: &mut Scene,
+        t: &mut dyn ButtonTextRenderer,
+        f: Rect,
+        c: Rect,
+        theme: ContentTheme,
+    ) {
         self.field.paint(s, t, f, c, theme);
     }
-    fn requires_text_services(&self) -> bool { self.field.requires_text_services() }
-    fn text_surface(&self) -> Option<&TextSurface> { self.field.text_surface() }
+    fn requires_text_services(&self) -> bool {
+        self.field.requires_text_services()
+    }
+    fn text_surface(&self) -> Option<&TextSurface> {
+        self.field.text_surface()
+    }
     fn semantics(&self) -> ContentSemantics {
         let mut s = ContentSemantics::new(self.role, "Choice");
-        if self.role == ContentRole::Checkbox { s.value = Some("mixed".into()); }
-        if matches!(self.role, ContentRole::RadioButton | ContentRole::Segment) { s.selected = true; }
+        if self.role == ContentRole::Checkbox {
+            s.value = Some("mixed".into());
+        }
+        if matches!(self.role, ContentRole::RadioButton | ContentRole::Segment) {
+            s.selected = true;
+        }
         s
     }
 }
 #[derive(Debug)]
-struct SelectionParent { role: ContentRole, children: Vec<Content> }
+struct SelectionParent {
+    role: ContentRole,
+    children: Vec<Content>,
+}
 impl Component for SelectionParent {
     fn arrange(&mut self, t: &mut dyn ButtonTextRenderer, f: Rect, c: Rect) {
-        for child in &mut self.children { child.arrange(t, f, c); }
+        for child in &mut self.children {
+            child.arrange(t, f, c);
+        }
     }
     fn measure(&mut self, _: &mut dyn ButtonTextRenderer, a: Size) -> MeasuredChild {
         MeasuredChild::new(a)
     }
-    fn children(&self) -> &[Content] { &self.children }
-    fn children_mut(&mut self) -> Option<&mut Vec<Content>> { Some(&mut self.children) }
-    fn semantics(&self) -> ContentSemantics { ContentSemantics::new(self.role, "Choices") }
+    fn children(&self) -> &[Content] {
+        &self.children
+    }
+    fn children_mut(&mut self) -> Option<&mut Vec<Content>> {
+        Some(&mut self.children)
+    }
+    fn semantics(&self) -> ContentSemantics {
+        ContentSemantics::new(self.role, "Choices")
+    }
 }
 
 fn host(role: ContentRole) -> (ContentHost, ComponentId) {
@@ -55,8 +83,20 @@ fn host(role: ContentRole) -> (ContentHost, ComponentId) {
     field.surface.input.select_range(1..3);
     let choice = Content::new(id, SelectionField { field, role });
     let root = match role {
-        ContentRole::RadioButton => Content::new(ComponentId(106), SelectionParent { role: ContentRole::RadioGroup, children: vec![choice] }),
-        ContentRole::Segment => Content::new(ComponentId(105), SelectionParent { role: ContentRole::SegmentedGroup, children: vec![choice] }),
+        ContentRole::RadioButton => Content::new(
+            ComponentId(106),
+            SelectionParent {
+                role: ContentRole::RadioGroup,
+                children: vec![choice],
+            },
+        ),
+        ContentRole::Segment => Content::new(
+            ComponentId(105),
+            SelectionParent {
+                role: ContentRole::SegmentedGroup,
+                children: vec![choice],
+            },
+        ),
         _ => choice,
     };
     (ContentHost::new(root).unwrap(), id)
@@ -75,11 +115,24 @@ fn original_coretext_surface_cannot_turn_selection_roles_into_text_owners_in_pub
         let frame = Rect::new(0., 0., 300., 100.);
         let mut text = coretext::Text::new(1.);
         text.services = true;
-        h.render(&mut Scene::new(), &mut text, frame, frame, Theme::LIGHT.into()).unwrap();
+        h.render(
+            &mut Scene::new(),
+            &mut text,
+            frame,
+            frame,
+            Theme::LIGHT.into(),
+        )
+        .unwrap();
         let original = h.get(id).unwrap().component::<SelectionField>().unwrap();
-        assert!(original.field.text_surface().is_some(), "the same original owner retains a real TextSurface for {role:?}");
+        assert!(
+            original.field.text_surface().is_some(),
+            "the same original owner retains a real TextSurface for {role:?}"
+        );
         assert!(!original.field.surface.input.selection().is_empty());
-        assert!(h.text_surface(id).is_none(), "ContentHost keeps selection roles out of text capability queries");
+        assert!(
+            h.text_surface(id).is_none(),
+            "ContentHost keeps selection roles out of text capability queries"
+        );
         assert!(h.semantic_text_input_snapshot(id).is_none());
         assert!(h.semantic_text_layout_snapshot(id, None).is_none());
 

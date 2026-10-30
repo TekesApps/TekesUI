@@ -228,18 +228,39 @@ impl TabsContent {
         }
     }
     fn measure_labels(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) {
-        let natural: Vec<_> = self.children.chunks_exact_mut(2).map(|pair|
-            pair[0].measure_intrinsic(text, available).size
-        ).collect();
-        self.lanes = TabsView::content_lanes(text, &natural, available.width, proposal::TextRole::UiBody, self.compact);
-        self.sizes = self.children.chunks_exact_mut(2).zip(&self.lanes).map(|(pair, lane)| {
-            let lane = TabsView::content_lane_width(text, *lane);
-            let insets = crate::ButtonModel::measure_content(text, Size::default(), lane, ButtonSize::Body, proposal::TextRole::UiBody).width;
-            pair[0].measure_intrinsic(text, Size::new((lane - insets).max(0.), available.height)).size
-        }).collect();
+        let natural: Vec<_> = self
+            .children
+            .chunks_exact_mut(2)
+            .map(|pair| pair[0].measure_intrinsic(text, available).size)
+            .collect();
+        self.lanes = TabsView::content_lanes(
+            text,
+            &natural,
+            available.width,
+            proposal::TextRole::UiBody,
+            self.compact,
+        );
+        self.sizes = self
+            .children
+            .chunks_exact_mut(2)
+            .zip(&self.lanes)
+            .map(|(pair, lane)| {
+                let lane = TabsView::content_lane_width(text, *lane);
+                let insets = crate::ButtonModel::measure_content(
+                    text,
+                    Size::default(),
+                    lane,
+                    ButtonSize::Body,
+                    proposal::TextRole::UiBody,
+                )
+                .width;
+                pair[0]
+                    .measure_intrinsic(text, Size::new((lane - insets).max(0.), available.height))
+                    .size
+            })
+            .collect();
         self.header_height = TabsView::content_height(text, &self.sizes, &self.lanes, self.compact);
     }
-
 }
 impl Component for TabsContent {
     fn validate(&self) -> Result<(), CompositionError> {

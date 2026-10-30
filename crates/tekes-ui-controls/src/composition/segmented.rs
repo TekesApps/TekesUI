@@ -65,7 +65,10 @@ struct SegmentedActionDecision {
 }
 impl action_preparation::OriginalActionDecision for SegmentedActionDecision {}
 impl SegmentedControlContent {
-    fn decide_action(&self, request: &action_preparation::OwnedActionRequest) -> Option<SegmentedActionDecision> {
+    fn decide_action(
+        &self,
+        request: &action_preparation::OwnedActionRequest,
+    ) -> Option<SegmentedActionDecision> {
         use action_preparation::OwnedActionRequest;
         let mut response = ContentResponse::default();
         let mut semantic = false;
@@ -74,48 +77,86 @@ impl SegmentedControlContent {
         match request {
             OwnedActionRequest::Pointer(ContentEvent::PointerDown(point)) => {
                 if self.available() {
-                    let target = self.view.layout().items.iter().position(|l| l.hit_test(*point));
-                    if let Some(index) = target.filter(|&i| self.geometry_available(i) && self.tokens[i].is_some()) {
-                        view = self.view.prepare_pointer_down(*point, self.view.focused() != Some(index));
-                        response.consumed = view.is_some(); response.changed = response.consumed;
+                    let target = self
+                        .view
+                        .layout()
+                        .items
+                        .iter()
+                        .position(|l| l.hit_test(*point));
+                    if let Some(index) =
+                        target.filter(|&i| self.geometry_available(i) && self.tokens[i].is_some())
+                    {
+                        view = self
+                            .view
+                            .prepare_pointer_down(*point, self.view.focused() != Some(index));
+                        response.consumed = view.is_some();
+                        response.changed = response.consumed;
                         response.capture_pointer = response.consumed;
                     }
                 }
             }
             OwnedActionRequest::Accessibility(part, action) => {
-                if !matches!(action, AccessibilityAction::Focus | AccessibilityAction::Press) { return None; }
+                if !matches!(
+                    action,
+                    AccessibilityAction::Focus | AccessibilityAction::Press
+                ) {
+                    return None;
+                }
                 if self.available()
-                    && let Some(index) = part.and_then(|token| self.tokens.iter().position(|t| *t == Some(token)))
+                    && let Some(index) =
+                        part.and_then(|token| self.tokens.iter().position(|t| *t == Some(token)))
                     && self.geometry_available(index)
                 {
                     view = match action {
-                        AccessibilityAction::Focus => self.view.prepare_focus(index, true, self.view.focused() != Some(index)),
-                        AccessibilityAction::Press => Some(self.view.prepare_select(index, &self.model)),
+                        AccessibilityAction::Focus => {
+                            self.view
+                                .prepare_focus(index, true, self.view.focused() != Some(index))
+                        }
+                        AccessibilityAction::Press => {
+                            Some(self.view.prepare_select(index, &self.model))
+                        }
                         _ => unreachable!(),
                     };
                     response.consumed = view.is_some();
                     response.changed = match action {
-                        AccessibilityAction::Focus => view.is_some() && self.view.focused() != Some(index),
+                        AccessibilityAction::Focus => {
+                            view.is_some() && self.view.focused() != Some(index)
+                        }
                         _ => view.as_ref().is_some_and(|d| d.changed_selection()),
                     };
-                    response.activated = matches!(action, AccessibilityAction::Press) && response.changed;
+                    response.activated =
+                        matches!(action, AccessibilityAction::Press) && response.changed;
                     semantic = response.consumed;
                     if response.activated {
-                        intent = Some(SegmentIntent { origin: self.origin.clone(), index,
-                            token: self.tokens[index].expect("preflighted original part") });
+                        intent = Some(SegmentIntent {
+                            origin: self.origin.clone(),
+                            index,
+                            token: self.tokens[index].expect("preflighted original part"),
+                        });
                     }
                 }
             }
             _ => return None,
         }
-        Some(SegmentedActionDecision { origin: action_preparation::OwnerIdentity(self.origin.clone()),
-            model: self.model.clone(), state: self.view.action_snapshot(), tokens: self.tokens.clone(),
-            available: self.available(), last_intent: self.last_intent.clone(), focus_receipt: self.focus_receipt,
-            view, response, semantic, intent })
+        Some(SegmentedActionDecision {
+            origin: action_preparation::OwnerIdentity(self.origin.clone()),
+            model: self.model.clone(),
+            state: self.view.action_snapshot(),
+            tokens: self.tokens.clone(),
+            available: self.available(),
+            last_intent: self.last_intent.clone(),
+            focus_receipt: self.focus_receipt,
+            view,
+            response,
+            semantic,
+            intent,
+        })
     }
     fn apply_action(&mut self, decision: SegmentedActionDecision) {
         self.begin_delivery();
-        if let Some(view) = decision.view { self.view.apply_decision(view, &mut self.model); }
+        if let Some(view) = decision.view {
+            self.view.apply_decision(view, &mut self.model);
+        }
         self.last_intent = decision.intent;
         self.focus_receipt = decision.semantic;
     }
@@ -292,8 +333,22 @@ impl Component for SegmentedControlContent {
         ActionTransactionCompatibility::StableHooks
     }
     fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
-        action_preparation::prepare_original(self, request, Self::decide_action, Self::apply_action,
-            |d| (d.response, if d.response.consumed { PreparedActionFocus::Owner } else { PreparedActionFocus::None }))
+        action_preparation::prepare_original(
+            self,
+            request,
+            Self::decide_action,
+            Self::apply_action,
+            |d| {
+                (
+                    d.response,
+                    if d.response.consumed {
+                        PreparedActionFocus::Owner
+                    } else {
+                        PreparedActionFocus::None
+                    },
+                )
+            },
+        )
     }
     fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
         let labels = self.labels.iter().map(String::as_str).collect::<Vec<_>>();
@@ -434,7 +489,8 @@ impl Component for SegmentedControlContent {
     ) -> ContentResponse {
         let request = action_preparation::OwnedActionRequest::Accessibility(part, action.clone());
         let Some(decision) = self.decide_action(&request) else {
-            self.begin_delivery(); return ContentResponse::default();
+            self.begin_delivery();
+            return ContentResponse::default();
         };
         let response = decision.response;
         self.apply_action(decision);
@@ -443,9 +499,14 @@ impl Component for SegmentedControlContent {
 
     fn event(&mut self, event: &ContentEvent) -> ContentResponse {
         if matches!(event, ContentEvent::PointerDown(_)) {
-            let decision = self.decide_action(&action_preparation::OwnedActionRequest::Pointer(event.clone()))
+            let decision = self
+                .decide_action(&action_preparation::OwnedActionRequest::Pointer(
+                    event.clone(),
+                ))
                 .expect("original pointer decision");
-            let response = decision.response; self.apply_action(decision); return response;
+            let response = decision.response;
+            self.apply_action(decision);
+            return response;
         }
         self.begin_delivery();
         if matches!(event, ContentEvent::Cancel) {
@@ -600,23 +661,45 @@ mod tests {
             let mut c = ready();
             let token = c.part_token(1).unwrap();
             let before = format!("{c:?}");
-            let request = action_preparation::OwnedActionRequest::Accessibility(Some(token), AccessibilityAction::Press);
+            let request = action_preparation::OwnedActionRequest::Accessibility(
+                Some(token),
+                AccessibilityAction::Press,
+            );
             let prepared = c.decide_action(&request).expect("original decision");
             assert_eq!(format!("{c:?}"), before, "preparation is read only");
             assert_eq!(c.decide_action(&request).as_ref(), Some(&prepared));
             match change {
                 0 => c.set_selected(2).unwrap(),
-                1 => { c.view.focus(2); c.view.key_event(ControlKey::Space, true, &mut c.model); }
-                2 => c.arrange(&mut Text, Rect::new(0., 0., 250., 40.), Rect::new(0., 0., 250., 40.)),
+                1 => {
+                    c.view.focus(2);
+                    c.view.key_event(ControlKey::Space, true, &mut c.model);
+                }
+                2 => c.arrange(
+                    &mut Text,
+                    Rect::new(0., 0., 250., 40.),
+                    Rect::new(0., 0., 250., 40.),
+                ),
                 3 => c.window_active_changed(false),
                 4 => {
-                    c.set_item_enabled(1, false).unwrap(); c.set_item_enabled(1, true).unwrap();
-                    c.arrange(&mut Text, Rect::new(0., 0., 300., 40.), Rect::new(0., 0., 300., 40.));
+                    c.set_item_enabled(1, false).unwrap();
+                    c.set_item_enabled(1, true).unwrap();
+                    c.arrange(
+                        &mut Text,
+                        Rect::new(0., 0., 300., 40.),
+                        Rect::new(0., 0., 300., 40.),
+                    );
                 }
-                _ => { let p = c.view.layout().items[0].frame.center(); c.event(&ContentEvent::PointerDown(p)); }
+                _ => {
+                    let p = c.view.layout().items[0].frame.center();
+                    c.event(&ContentEvent::PointerDown(p));
+                }
             }
             let mutated = format!("{c:?}");
-            assert_ne!(c.decide_action(&request).as_ref(), Some(&prepared), "stale change {change}");
+            assert_ne!(
+                c.decide_action(&request).as_ref(),
+                Some(&prepared),
+                "stale change {change}"
+            );
             assert_eq!(format!("{c:?}"), mutated, "validation is read only");
         }
     }
@@ -624,38 +707,80 @@ mod tests {
     fn prepared_segmented_consuming_apply_survives_original_focus_hooks() {
         for armed in [false, true] {
             for action in 0..3 {
-                let mut direct = ready(); let mut prepared_owner = ready();
+                let mut direct = ready();
+                let mut prepared_owner = ready();
                 for c in [&mut direct, &mut prepared_owner] {
                     c.view.focus(2);
-                    if armed { c.view.key_event(ControlKey::Space, true, &mut c.model); }
+                    if armed {
+                        c.view.key_event(ControlKey::Space, true, &mut c.model);
+                    }
                 }
                 let token = prepared_owner.part_token(1).unwrap();
                 let point = prepared_owner.view.layout().items[1].frame.center();
                 let down = ContentEvent::PointerDown(point);
                 let request = match action {
                     0 => action_preparation::OwnedActionRequest::Pointer(down.clone()),
-                    1 => action_preparation::OwnedActionRequest::Accessibility(Some(token), AccessibilityAction::Focus),
-                    _ => action_preparation::OwnedActionRequest::Accessibility(Some(token), AccessibilityAction::Press),
+                    1 => action_preparation::OwnedActionRequest::Accessibility(
+                        Some(token),
+                        AccessibilityAction::Focus,
+                    ),
+                    _ => action_preparation::OwnedActionRequest::Accessibility(
+                        Some(token),
+                        AccessibilityAction::Press,
+                    ),
                 };
-                let prepared = prepared_owner.decide_action(&request).expect("original decision");
-                assert_eq!(prepared_owner.decide_action(&request).as_ref(), Some(&prepared));
+                let prepared = prepared_owner
+                    .decide_action(&request)
+                    .expect("original decision");
+                assert_eq!(
+                    prepared_owner.decide_action(&request).as_ref(),
+                    Some(&prepared)
+                );
                 let expected = match action {
                     0 => direct.event(&down),
-                    1 => direct.accessibility_action(Some(direct.part_token(1).unwrap()), &AccessibilityAction::Focus),
-                    _ => direct.accessibility_action(Some(direct.part_token(1).unwrap()), &AccessibilityAction::Press),
+                    1 => direct.accessibility_action(
+                        Some(direct.part_token(1).unwrap()),
+                        &AccessibilityAction::Focus,
+                    ),
+                    _ => direct.accessibility_action(
+                        Some(direct.part_token(1).unwrap()),
+                        &AccessibilityAction::Press,
+                    ),
                 };
                 assert_eq!(prepared.response, expected);
                 // Same validated focus hook used by Host before consuming apply.
                 prepared_owner.set_focus(true, action != 0);
                 prepared_owner.apply_action(prepared);
                 assert_eq!(prepared_owner.model(), direct.model());
-                assert_eq!(format!("{:?}", prepared_owner.view()), format!("{:?}", direct.view()));
-                assert_eq!(prepared_owner.last_intent.as_ref().map(SegmentIntent::index), direct.last_intent.as_ref().map(SegmentIntent::index));
+                assert_eq!(
+                    format!("{:?}", prepared_owner.view()),
+                    format!("{:?}", direct.view())
+                );
+                assert_eq!(
+                    prepared_owner
+                        .last_intent
+                        .as_ref()
+                        .map(SegmentIntent::index),
+                    direct.last_intent.as_ref().map(SegmentIntent::index)
+                );
                 assert_eq!(prepared_owner.tokens, direct.tokens);
-                assert_eq!(prepared_owner.event(&ContentEvent::Key { key: ControlKey::Space, down: false }), direct.event(&ContentEvent::Key { key: ControlKey::Space, down: false }));
+                assert_eq!(
+                    prepared_owner.event(&ContentEvent::Key {
+                        key: ControlKey::Space,
+                        down: false
+                    }),
+                    direct.event(&ContentEvent::Key {
+                        key: ControlKey::Space,
+                        down: false
+                    })
+                );
                 prepared_owner.set_focus(false, false);
                 assert_eq!(prepared_owner.view().focused(), None);
-                assert!(!prepared_owner.event(&ContentEvent::PointerUp(point)).activated);
+                assert!(
+                    !prepared_owner
+                        .event(&ContentEvent::PointerUp(point))
+                        .activated
+                );
             }
         }
     }
@@ -664,20 +789,51 @@ mod tests {
         const GROUP: ComponentId = ComponentId(110901);
         const OLD: ComponentId = ComponentId(110902);
         for action in 0..3 {
-            let mut scroll = ScrollContent::new(crate::ScrollArea::default(), Content::new(GROUP,
-                SegmentedControlContent::new("Segments", vec!["A".into(), "B".into(), "C".into()])));
+            let mut scroll = ScrollContent::new(
+                crate::ScrollArea::default(),
+                Content::new(
+                    GROUP,
+                    SegmentedControlContent::new(
+                        "Segments",
+                        vec!["A".into(), "B".into(), "C".into()],
+                    ),
+                ),
+            );
             scroll.viewport_height = Some(80.);
-            let mut h = ContentHost::new(Content::new(ComponentId(110900), StackContent {
-                model: crate::extended::Stack { axis: crate::extended::Axis::Vertical, gap: 0. },
-                flexible_child: None, children: vec![Content::new(OLD, Button::new("Old")),
-                    Content::new(ComponentId(110903), scroll)],
-            })).unwrap();
+            let mut h = ContentHost::new(Content::new(
+                ComponentId(110900),
+                StackContent {
+                    model: crate::extended::Stack {
+                        axis: crate::extended::Axis::Vertical,
+                        gap: 0.,
+                    },
+                    flexible_child: None,
+                    children: vec![
+                        Content::new(OLD, Button::new("Old")),
+                        Content::new(ComponentId(110903), scroll),
+                    ],
+                },
+            ))
+            .unwrap();
             let frame = Rect::new(0., 0., 300., 200.);
-            h.render(&mut Scene::new(), &mut Text, frame, frame, tekes_ui_tokens::Theme::LIGHT.into()).unwrap();
-            assert!(h.focus(Some(OLD), true)); h.set_action_events(true);
-            let c = h.get(GROUP).unwrap().component::<SegmentedControlContent>().unwrap();
+            h.render(
+                &mut Scene::new(),
+                &mut Text,
+                frame,
+                frame,
+                tekes_ui_tokens::Theme::LIGHT.into(),
+            )
+            .unwrap();
+            assert!(h.focus(Some(OLD), true));
+            h.set_action_events(true);
+            let c = h
+                .get(GROUP)
+                .unwrap()
+                .component::<SegmentedControlContent>()
+                .unwrap();
             assert_eq!(c.semantic_parts().len(), 3);
-            let token = c.part_token(1).unwrap(); let point = c.semantic_parts()[1].frame.center();
+            let token = c.part_token(1).unwrap();
+            let point = c.semantic_parts()[1].frame.center();
             let before = format!("{c:?}");
             h.focus_epoch = u64::MAX;
             let response = match action {
@@ -686,10 +842,20 @@ mod tests {
                 _ => h.accessibility_action(GROUP, Some(token), AccessibilityAction::Press),
             };
             assert!(!response.consumed && !response.activated && !response.capture_pointer);
-            assert_eq!(h.focused(), Some(OLD)); assert_eq!(h.focus_epoch, u64::MAX);
-            assert!(h.captured.is_none()); assert!(h.drain_action_records().is_empty());
-            assert_eq!(format!("{:?}", h.get(GROUP).unwrap().component::<SegmentedControlContent>().unwrap()), before);
+            assert_eq!(h.focused(), Some(OLD));
+            assert_eq!(h.focus_epoch, u64::MAX);
+            assert!(h.captured.is_none());
+            assert!(h.drain_action_records().is_empty());
+            assert_eq!(
+                format!(
+                    "{:?}",
+                    h.get(GROUP)
+                        .unwrap()
+                        .component::<SegmentedControlContent>()
+                        .unwrap()
+                ),
+                before
+            );
         }
     }
-
 }

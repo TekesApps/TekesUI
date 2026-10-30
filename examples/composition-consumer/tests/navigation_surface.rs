@@ -456,7 +456,12 @@ fn breadcrumb_measure_render_and_hit_geometry_share_fair_wrapped_segments() {
             .collect::<Vec<_>>();
         assert_eq!(slash_frames.len(), labels.len() - 1);
         for slash in slash_frames {
-            assert!(!layout.items.iter().any(|item| item.frame().contains(slash.center())));
+            assert!(
+                !layout
+                    .items
+                    .iter()
+                    .any(|item| item.frame().contains(slash.center()))
+            );
         }
 
         view.focus(0);
@@ -498,7 +503,13 @@ fn breadcrumb_measure_render_and_hit_geometry_share_fair_wrapped_segments() {
         );
         assert_eq!(clipped.frame.size.height, 38.0_f32.max(measured.height));
         assert!(clipped.items[0].visible_frame().is_some());
-        assert!(clipped.items.iter().skip(1).any(|item| item.visible_frame().is_none()));
+        assert!(
+            clipped
+                .items
+                .iter()
+                .skip(1)
+                .any(|item| item.visible_frame().is_none())
+        );
         for item in &clipped.items {
             assert_eq!(item.visible_frame(), item.frame().intersection(&clip));
             if item.visible_frame().is_none() {
@@ -509,7 +520,10 @@ fn breadcrumb_measure_render_and_hit_geometry_share_fair_wrapped_segments() {
 
     let mut text = WrappingText::default();
     let view = BreadcrumbView::default();
-    assert_eq!(view.measure(&mut text, &model, &labels, 0.0, role), Size::new(0.0, 0.0));
+    assert_eq!(
+        view.measure(&mut text, &model, &labels, 0.0, role),
+        Size::new(0.0, 0.0)
+    );
 }
 
 #[test]
@@ -545,7 +559,10 @@ fn breadcrumb_coretext_cjk_emoji_and_combining_labels_stay_in_measured_bounds() 
         assert!(layout.frame.size.height.is_finite());
         assert_eq!(layout.frame.size.width, width);
         if width == 320.0 {
-            assert!(measured.height > 38.0, "expected expanded CoreText height, got {measured:?}");
+            assert!(
+                measured.height > 38.0,
+                "expected expanded CoreText height, got {measured:?}"
+            );
             let wrapped = labels.iter().any(|label| {
                 let natural_height = text
                     .shaper
@@ -559,17 +576,24 @@ fn breadcrumb_coretext_cjk_emoji_and_combining_labels_stay_in_measured_bounds() 
                     )
                     .height as f32;
                 text.measured.iter().any(|(value, offered_width, actual)| {
-                    value == label
-                        && *offered_width > 0.0
-                        && actual.height > natural_height + 0.1
+                    value == label && *offered_width > 0.0 && actual.height > natural_height + 0.1
                 })
             });
             assert!(wrapped, "the 320pt case should use real CoreText wrapping");
         } else if width > 0.0 {
-            assert!(measured.height > 0.0, "nonzero width should retain a measurable row: {measured:?}");
+            assert!(
+                measured.height > 0.0,
+                "nonzero width should retain a measurable row: {measured:?}"
+            );
         }
         assert!(layout.items[0].visible_frame().is_some());
-        assert!(layout.items.iter().skip(1).any(|item| item.visible_frame().is_none()));
+        assert!(
+            layout
+                .items
+                .iter()
+                .skip(1)
+                .any(|item| item.visible_frame().is_none())
+        );
         for item in &layout.items {
             let frame = item.frame();
             assert!(frame.min_x() >= layout.frame.min_x());
@@ -582,13 +606,22 @@ fn breadcrumb_coretext_cjk_emoji_and_combining_labels_stay_in_measured_bounds() 
         // An independently adequate allocation must still paint every label.
         text.drawn.clear();
         let layout = view.render(
-            &mut Scene::new(), &mut text, &model, &labels,
-            Rect::new(10.0, 10.0, width, measured.height), None, palette, role,
+            &mut Scene::new(),
+            &mut text,
+            &model,
+            &labels,
+            Rect::new(10.0, 10.0, width, measured.height),
+            None,
+            palette,
+            role,
         );
         assert_eq!(layout.frame.size, measured);
         for (label, item) in labels.iter().zip(&layout.items) {
             if width >= 80.0 {
-                assert!(text.drawn.iter().any(|(drawn, _)| drawn == label), "label omitted at width {width}: {label}");
+                assert!(
+                    text.drawn.iter().any(|(drawn, _)| drawn == label),
+                    "label omitted at width {width}: {label}"
+                );
             } // At 12pt the original button padding leaves no text content area.
             assert_eq!(item.visible_frame(), Some(item.frame()));
             assert!(item.frame().max_y() <= layout.frame.max_y() + 0.001);
@@ -599,7 +632,9 @@ fn breadcrumb_coretext_cjk_emoji_and_combining_labels_stay_in_measured_bounds() 
             .filter(|(value, _)| value == "/")
             .map(|(_, frame)| *frame)
             .collect::<Vec<_>>();
-        if width >= 80.0 { assert_eq!(slashes.len(), labels.len() - 1); }
+        if width >= 80.0 {
+            assert_eq!(slashes.len(), labels.len() - 1);
+        }
         for slash in slashes {
             for item in &layout.items {
                 let frame = item.frame();
@@ -612,13 +647,19 @@ fn breadcrumb_coretext_cjk_emoji_and_combining_labels_stay_in_measured_bounds() 
                     frame.size.width + 2.0 * focus_outset,
                     frame.size.height + 2.0 * focus_outset,
                 );
-                assert!(slash.intersection(&focus).is_none(), "separator overlaps a button focus outline");
+                assert!(
+                    slash.intersection(&focus).is_none(),
+                    "separator overlaps a button focus outline"
+                );
             }
         }
     }
     let mut text = CoreTextMetrics::new(1.5);
     let mut view = BreadcrumbView::default();
-    assert_eq!(view.measure(&mut text, &model, &labels, 0.0, role), Size::new(0.0, 0.0));
+    assert_eq!(
+        view.measure(&mut text, &model, &labels, 0.0, role),
+        Size::new(0.0, 0.0)
+    );
     let layout = view.render(
         &mut Scene::new(),
         &mut text,
@@ -794,17 +835,23 @@ fn combobox_candidate_pointer_does_not_survive_disabled_scope_cancellation() {
     let (baseline, layout) = render(&mut v, &mut m);
     let row = layout.items[1].frame;
     let fill = |scene: &Scene| {
-        scene.primitives().iter().find_map(|primitive| match primitive {
-            Primitive::Quad(quad) if quad.rect == row => Some(quad.fill),
-            _ => None,
-        })
+        scene
+            .primitives()
+            .iter()
+            .find_map(|primitive| match primitive {
+                Primitive::Quad(quad) if quad.rect == row => Some(quad.fill),
+                _ => None,
+            })
     };
     let resting_fill = fill(&baseline).expect("candidate button chrome is painted");
 
     v.pointer_move(row.center(), &mut m);
     let (hovered, _) = render(&mut v, &mut m);
     let hovered_fill = fill(&hovered).expect("hovered candidate chrome is painted");
-    assert_ne!(hovered_fill, resting_fill, "test must observe row hover paint");
+    assert_ne!(
+        hovered_fill, resting_fill,
+        "test must observe row hover paint"
+    );
 
     m.disabled = true;
     v.pointer_move(outside, &mut m);

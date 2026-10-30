@@ -105,10 +105,15 @@ pub struct TabsView {
 
 impl TabsView {
     /// Preserve the original roving stop and arm while adopting a declared parent.
-    pub fn set_surface(&mut self, name: &str) -> Result<(), tekes_ui_tokens::surface_palette::SurfaceError> {
+    pub fn set_surface(
+        &mut self,
+        name: &str,
+    ) -> Result<(), tekes_ui_tokens::surface_palette::SurfaceError> {
         let surface = tekes_ui_tokens::surface_palette::canonical_surface(name)?;
         self.surface = surface;
-        for button in &mut self.buttons { button.set_surface(surface); }
+        for button in &mut self.buttons {
+            button.set_surface(surface);
+        }
         Ok(())
     }
     pub fn new(count: usize) -> Self {
@@ -133,7 +138,9 @@ impl TabsView {
     }
 
     pub fn select(&mut self, index: usize) -> bool {
-        if self.disabled_items.get(index).copied().unwrap_or(true) { return false; }
+        if self.disabled_items.get(index).copied().unwrap_or(true) {
+            return false;
+        }
         let changed = self.model.select(index);
         if changed {
             self.cancel_arms();
@@ -155,61 +162,112 @@ impl TabsView {
     }
 
     pub(crate) fn set_item_disabled(&mut self, index: usize, disabled: bool) {
-        if let Some(item) = self.disabled_items.get_mut(index) { *item = disabled; }
+        if let Some(item) = self.disabled_items.get_mut(index) {
+            *item = disabled;
+        }
         if let Some(button) = self.buttons.get_mut(index) {
             button.state.disabled = self.disabled || disabled;
-            if disabled { button.cancel(); }
+            if disabled {
+                button.cancel();
+            }
         }
-        if disabled && self.focused == Some(index) { self.clear_focus(); }
+        if disabled && self.focused == Some(index) {
+            self.clear_focus();
+        }
         self.cancel_arms();
     }
-    pub(crate) fn focused_index(&self) -> Option<usize> { self.focused }
-    pub(crate) fn placement(&self) -> &TabsLayout { &self.placement }
-    pub(crate) fn content_theme(&self, index: usize, palette: Palette) -> Option<(tekes_ui_tokens::Rgba, tekes_ui_tokens::Rgba)> {
-        self.buttons.get(index).map(|button| { let colors = button.surface_colors(palette, paint::ButtonVariant::Quiet, self.surface); (colors.text, colors.icon) })
+    pub(crate) fn focused_index(&self) -> Option<usize> {
+        self.focused
+    }
+    pub(crate) fn placement(&self) -> &TabsLayout {
+        &self.placement
+    }
+    pub(crate) fn content_theme(
+        &self,
+        index: usize,
+        palette: Palette,
+    ) -> Option<(tekes_ui_tokens::Rgba, tekes_ui_tokens::Rgba)> {
+        self.buttons.get(index).map(|button| {
+            let colors = button.surface_colors(palette, paint::ButtonVariant::Quiet, self.surface);
+            (colors.text, colors.icon)
+        })
     }
     // Natural original Content sizes decide only whether the existing lanes
     // can be rebalanced. When equal lanes fit, or natural demands cannot fit
     // within the original budget/cap, retain the established equal geometry.
     pub(crate) fn content_lanes(
-        text: &mut dyn ButtonTextRenderer, natural: &[Size], width: f32,
-        role: proposal::TextRole, compact: bool,
+        text: &mut dyn ButtonTextRenderer,
+        natural: &[Size],
+        width: f32,
+        role: proposal::TextRole,
+        compact: bool,
     ) -> Vec<f32> {
-        if natural.is_empty() { return Vec::new(); }
+        if natural.is_empty() {
+            return Vec::new();
+        }
         let count = natural.len();
         let equal = (width / count as f32).min(160.);
         let gap = focus_reveal_outset(text.backing_scale()).max(4.);
-        let wanted: Vec<_> = natural.iter().map(|size|
-            ButtonModel::measure_content(text, *size, f32::MAX, size_role(compact), role).width + gap
-        ).collect();
+        let wanted: Vec<_> = natural
+            .iter()
+            .map(|size| {
+                ButtonModel::measure_content(text, *size, f32::MAX, size_role(compact), role).width
+                    + gap
+            })
+            .collect();
         let budget = width.min(160. * count as f32);
         let total: f32 = wanted.iter().sum();
         if wanted.iter().all(|need| *need <= equal)
-            || wanted.iter().any(|need| *need > 160.) || total > budget {
+            || wanted.iter().any(|need| *need > 160.)
+            || total > budget
+        {
             return vec![equal; count];
         }
         let mut lanes = wanted;
         let mut remaining = (budget - total).max(0.);
         while remaining > 0.0001 {
             let open = lanes.iter().filter(|lane| **lane < 160.).count();
-            if open == 0 { break; }
+            if open == 0 {
+                break;
+            }
             let share = remaining / open as f32;
             let before = remaining;
             for lane in &mut lanes {
                 let extra = share.min(160. - *lane);
-                *lane += extra; remaining = (remaining - extra).max(0.);
+                *lane += extra;
+                remaining = (remaining - extra).max(0.);
             }
-            if remaining >= before { break; }
+            if remaining >= before {
+                break;
+            }
         }
         lanes
     }
     pub(crate) fn content_lane_width(text: &mut dyn ButtonTextRenderer, advance: f32) -> f32 {
         (advance - focus_reveal_outset(text.backing_scale()).max(4.)).max(0.)
     }
-    pub(crate) fn content_height(text: &mut dyn ButtonTextRenderer, sizes: &[Size], lanes: &[f32], compact: bool) -> f32 {
+    pub(crate) fn content_height(
+        text: &mut dyn ButtonTextRenderer,
+        sizes: &[Size],
+        lanes: &[f32],
+        compact: bool,
+    ) -> f32 {
         let gap = focus_reveal_outset(text.backing_scale()).max(4.);
-        sizes.iter().zip(lanes).fold(row_height(compact), |height, (size, lane)| height.max(
-            ButtonModel::measure_content(text, *size, (*lane - gap).max(0.), size_role(compact), proposal::TextRole::UiBody).height))
+        sizes
+            .iter()
+            .zip(lanes)
+            .fold(row_height(compact), |height, (size, lane)| {
+                height.max(
+                    ButtonModel::measure_content(
+                        text,
+                        *size,
+                        (*lane - gap).max(0.),
+                        size_role(compact),
+                        proposal::TextRole::UiBody,
+                    )
+                    .height,
+                )
+            })
     }
 
     pub fn set_window_active(&mut self, active: bool) {
@@ -267,7 +325,16 @@ impl TabsView {
         compact: bool,
     ) -> TabsLayout {
         self.render_inner(
-            scene, text, &[], Some(content_sizes), Some(lanes), frame, clip, palette, role, compact,
+            scene,
+            text,
+            &[],
+            Some(content_sizes),
+            Some(lanes),
+            frame,
+            clip,
+            palette,
+            role,
+            compact,
         )
     }
 
@@ -300,13 +367,20 @@ impl TabsView {
             return self.placement.clone();
         }
         let frame = safe_rect(frame);
-        self.buttons.resize_with(self.model.count, ButtonModel::default);
+        self.buttons
+            .resize_with(self.model.count, ButtonModel::default);
         let lanes = if let Some(lanes) = lane_advances {
             lanes.to_vec()
         } else {
-            let natural: Vec<_> = (0..self.model.count).map(|index|
-                text.measure(labels.get(index).copied().unwrap_or(""), role, frame.size.width)
-            ).collect();
+            let natural: Vec<_> = (0..self.model.count)
+                .map(|index| {
+                    text.measure(
+                        labels.get(index).copied().unwrap_or(""),
+                        role,
+                        frame.size.width,
+                    )
+                })
+                .collect();
             Self::content_lanes(text, &natural, frame.size.width, role, compact)
         };
         let lane_gap = focus_reveal_outset(text.backing_scale()).max(4.0);
@@ -457,8 +531,13 @@ impl TabsView {
         let focused = self.focused?;
         if !down {
             let selected = focused;
-            let activated = self.buttons.get_mut(selected).is_some_and(|button| button.key(key, false));
-            if activated { self.model.select(selected); }
+            let activated = self
+                .buttons
+                .get_mut(selected)
+                .is_some_and(|button| button.key(key, false));
+            if activated {
+                self.model.select(selected);
+            }
             return activated.then_some(selected);
         }
         if matches!(
@@ -469,9 +548,16 @@ impl TabsView {
             self.focus_visible = true;
             if self.model.key(key) {
                 for _ in 0..self.model.count {
-                    if !self.disabled_items[self.model.selected] { break; }
-                    self.model.key(if key == ControlKey::Home { ControlKey::Right }
-                        else if key == ControlKey::End { ControlKey::Left } else { key });
+                    if !self.disabled_items[self.model.selected] {
+                        break;
+                    }
+                    self.model.key(if key == ControlKey::Home {
+                        ControlKey::Right
+                    } else if key == ControlKey::End {
+                        ControlKey::Left
+                    } else {
+                        key
+                    });
                 }
                 self.focus_index = self.model.selected;
                 self.focused = Some(self.model.selected);
@@ -486,8 +572,13 @@ impl TabsView {
             self.focus_visible = true;
             self.sync_focus_buttons();
         }
-        let activated = self.buttons.get_mut(selected).is_some_and(|button| button.key(key, true));
-        if activated { self.model.select(selected); }
+        let activated = self
+            .buttons
+            .get_mut(selected)
+            .is_some_and(|button| button.key(key, true));
+        if activated {
+            self.model.select(selected);
+        }
         activated.then_some(selected)
     }
 
@@ -1017,10 +1108,6 @@ impl MenuView {
         self.runtime.replace_items_model(&mut self.model, count);
     }
 
-
-
-
-
     pub(crate) fn set_row_styles(&mut self, styles: Vec<MenuRowStyle>) {
         if self.runtime.row_styles != styles {
             self.runtime.cancel_buttons();
@@ -1348,7 +1435,6 @@ impl MenuRuntime {
         self.row_styles.clear();
         *model = Menu::new(count);
     }
-
 
     fn row_style(&self, index: usize) -> MenuRowStyle {
         self.row_styles.get(index).copied().unwrap_or_default()
@@ -2770,14 +2856,6 @@ mod tests {
         )
         .expect("open menu layout")
     }
-
-
-
-
-
-
-
-
 
     #[test]
     fn checked_menu_open_generation_is_pure_and_reuses_original_external_open() {

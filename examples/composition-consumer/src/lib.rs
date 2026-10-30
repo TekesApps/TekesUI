@@ -282,8 +282,8 @@ pub mod rich_content;
 
 pub mod semantic_label;
 
-pub mod disclosure_review;
 pub mod checkbox_content;
+pub mod disclosure_review;
 
-pub mod navigation_content;
 pub mod link_content;
+pub mod navigation_content;

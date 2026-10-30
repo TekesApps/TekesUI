@@ -68,23 +68,40 @@ struct PreparedRadioAction {
     receipt: bool,
 }
 impl action_preparation::OriginalActionDecision for PreparedRadioAction {
-    fn focus_rect(&self) -> Option<Rect> { self.rect }
+    fn focus_rect(&self) -> Option<Rect> {
+        self.rect
+    }
 }
 impl RadioGroupContent {
-    fn decide_action(&self, request: &action_preparation::OwnedActionRequest) -> Option<PreparedRadioAction> {
+    fn decide_action(
+        &self,
+        request: &action_preparation::OwnedActionRequest,
+    ) -> Option<PreparedRadioAction> {
         use action_preparation::OwnedActionRequest::*;
         let mut d = PreparedRadioAction {
             identity: action_preparation::OwnerIdentity(self.origin.clone()),
-            exposures: self.exposures.clone(), selected: self.model.selected,
-            enabled: (0..self.model.len()).map(|i| self.model.is_enabled(i)).collect(),
-            view: None, selection: None, response: ContentResponse::default(),
-            focus: PreparedActionFocus::None, rect: None, receipt: false,
+            exposures: self.exposures.clone(),
+            selected: self.model.selected,
+            enabled: (0..self.model.len())
+                .map(|i| self.model.is_enabled(i))
+                .collect(),
+            view: None,
+            selection: None,
+            response: ContentResponse::default(),
+            focus: PreparedActionFocus::None,
+            rect: None,
+            receipt: false,
         };
-        if !self.available() { return Some(d); }
+        if !self.available() {
+            return Some(d);
+        }
         match request {
             Pointer(ContentEvent::PointerDown(p)) => {
-                let Some((i, row)) = self.view.layout().rows.iter().enumerate()
-                    .find(|(i,r)| self.exposures[*i].is_some() && self.exposable(*i) && r.contains(*p)) else { return Some(d); };
+                let Some((i, row)) = self.view.layout().rows.iter().enumerate().find(|(i, r)| {
+                    self.exposures[*i].is_some() && self.exposable(*i) && r.contains(*p)
+                }) else {
+                    return Some(d);
+                };
                 let v = self.view.prepare_content_down(*p, &self.model);
                 // Original pointer-down is handled even for a disabled row.
                 d.response = ContentResponse {
@@ -98,7 +115,9 @@ impl RadioGroupContent {
                 d.view = Some(v);
             }
             Accessibility(part, action) => {
-                let Some(i) = part.and_then(|t| self.resolve(t)) else { return Some(d); };
+                let Some(i) = part.and_then(|t| self.resolve(t)) else {
+                    return Some(d);
+                };
                 match action {
                     AccessibilityAction::Focus => {
                         d.view = Some(self.view.prepare_content_focus(&self.model, Some(i), true));
@@ -106,8 +125,12 @@ impl RadioGroupContent {
                     }
                     AccessibilityAction::Press => {
                         let selection = self.model.prepare_select(i);
-                        d.response = ContentResponse { consumed: true, changed: true,
-                            activated: selection.changed(), ..Default::default() };
+                        d.response = ContentResponse {
+                            consumed: true,
+                            changed: true,
+                            activated: selection.changed(),
+                            ..Default::default()
+                        };
                         d.selection = Some(selection);
                         d.view = Some(self.view.prepare_content_press(&self.model, i));
                     }
@@ -126,9 +149,15 @@ impl RadioGroupContent {
         self.focus_receipt = decision.receipt;
         if let Some(selection) = decision.selection {
             let changed = self.model.apply_select(selection);
-            self.response(if changed { SelectionEvent::Changed } else { SelectionEvent::Handled });
+            self.response(if changed {
+                SelectionEvent::Changed
+            } else {
+                SelectionEvent::Handled
+            });
         }
-        if let Some(view) = decision.view { self.view.apply_content_action(view); }
+        if let Some(view) = decision.view {
+            self.view.apply_content_action(view);
+        }
     }
     pub fn new(name: impl Into<String>, labels: Vec<String>) -> Self {
         Self::from_original(
@@ -177,7 +206,9 @@ impl RadioGroupContent {
     /// Read-only: no reservation, recovery or input is performed. Hidden/pending
     /// slots have no token; a visible disabled token still cannot authorize AX.
     pub fn part_token(&self, index: usize) -> Option<usize> {
-        self.exposable(index).then(|| self.exposures.get(index).copied().flatten()).flatten()
+        self.exposable(index)
+            .then(|| self.exposures.get(index).copied().flatten())
+            .flatten()
     }
     pub fn set_selected(&mut self, selected: Option<usize>) -> Result<(), RadioContentError> {
         self.model.validate_selected(selected)?;
@@ -314,8 +345,13 @@ impl Component for RadioGroupContent {
         ActionTransactionCompatibility::StableHooks
     }
     fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
-        action_preparation::prepare_original(self, request, Self::decide_action, Self::apply_action,
-            |d| (d.response, d.focus))
+        action_preparation::prepare_original(
+            self,
+            request,
+            Self::decide_action,
+            Self::apply_action,
+            |d| (d.response, d.focus),
+        )
     }
 
     fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
@@ -466,7 +502,9 @@ impl Component for RadioGroupContent {
         action: &AccessibilityAction,
     ) -> ContentResponse {
         let request = action_preparation::OwnedActionRequest::Accessibility(part, action.clone());
-        let Some(decision) = self.decide_action(&request) else { return ContentResponse::default(); };
+        let Some(decision) = self.decide_action(&request) else {
+            return ContentResponse::default();
+        };
         let response = decision.response;
         self.apply_action(decision);
         response
@@ -593,14 +631,17 @@ mod tests {
     fn ready() -> RadioGroupContent {
         let mut c = RadioGroupContent::new("Choices", vec!["A".into(), "B".into()]);
         c.lifecycle(Lifecycle::Mounted);
-        let f = Rect::new(0.,0.,300.,200.);
+        let f = Rect::new(0., 0., 300., 200.);
         c.arrange(&mut Text, f, f);
         c.presentation_runnable_changed(true);
         c
     }
-    fn prepared_press(c: &RadioGroupContent) -> (action_preparation::OwnedActionRequest, PreparedRadioAction) {
+    fn prepared_press(
+        c: &RadioGroupContent,
+    ) -> (action_preparation::OwnedActionRequest, PreparedRadioAction) {
         let request = action_preparation::OwnedActionRequest::Accessibility(
-            c.part_token(1), AccessibilityAction::Press,
+            c.part_token(1),
+            AccessibilityAction::Press,
         );
         let decision = c.decide_action(&request).expect("original press decision");
         (request, decision)
@@ -608,74 +649,108 @@ mod tests {
     #[test]
     fn prepared_final_validation_rejects_controlled_scope_geometry_and_foreign_changes() {
         for change in 0..6 {
-            let mut c = ready(); let (request, p) = prepared_press(&c);
+            let mut c = ready();
+            let (request, p) = prepared_press(&c);
             assert_eq!(c.decide_action(&request).as_ref(), Some(&p));
             match change {
                 0 => c.set_selected(None).unwrap(),
-                1 => c.set_item_enabled(1,false).unwrap(),
+                1 => c.set_item_enabled(1, false).unwrap(),
                 2 => c.window_active_changed(false),
                 3 => c.presentation_runnable_changed(false),
-                4 => c.arrange(&mut Text,Rect::new(0.,0.,300.,200.),Rect::new(600.,600.,1.,1.)),
-                _ => { c.lifecycle(Lifecycle::Unmounted); c.lifecycle(Lifecycle::Mounted);
-                    c.arrange(&mut Text,Rect::new(0.,0.,300.,200.),Rect::new(0.,0.,300.,200.));
-                    c.presentation_runnable_changed(true); }
+                4 => c.arrange(
+                    &mut Text,
+                    Rect::new(0., 0., 300., 200.),
+                    Rect::new(600., 600., 1., 1.),
+                ),
+                _ => {
+                    c.lifecycle(Lifecycle::Unmounted);
+                    c.lifecycle(Lifecycle::Mounted);
+                    c.arrange(
+                        &mut Text,
+                        Rect::new(0., 0., 300., 200.),
+                        Rect::new(0., 0., 300., 200.),
+                    );
+                    c.presentation_runnable_changed(true);
+                }
             }
-            assert_ne!(c.decide_action(&request).as_ref(), Some(&p), "change {change}");
+            assert_ne!(
+                c.decide_action(&request).as_ref(),
+                Some(&p),
+                "change {change}"
+            );
             assert!(c.last_intent.is_none());
         }
-        let c = ready(); let (request, p) = prepared_press(&c); let foreign = ready();
+        let c = ready();
+        let (request, p) = prepared_press(&c);
+        let foreign = ready();
         assert_ne!(foreign.decide_action(&request).as_ref(), Some(&p));
     }
     #[test]
     fn consumed_original_pointer_decision_survives_host_focus_hook_without_selecting() {
-        let mut c = ready(); let point = c.semantic_parts()[1].frame.center();
-        let event=ContentEvent::PointerDown(point);
+        let mut c = ready();
+        let point = c.semantic_parts()[1].frame.center();
+        let event = ContentEvent::PointerDown(point);
         let request = action_preparation::OwnedActionRequest::Pointer(event);
-        let p = c.decide_action(&request).expect("original pointer decision");
+        let p = c
+            .decide_action(&request)
+            .expect("original pointer decision");
         assert_eq!(c.decide_action(&request).as_ref(), Some(&p));
-        c.set_focus(true,false); // actual Host ordering: validate, focus, consume
+        c.set_focus(true, false); // actual Host ordering: validate, focus, consume
         c.apply_action(p);
-        assert_eq!(c.view.focused(),Some(1)); assert_eq!(c.model.selected,Some(0));
+        assert_eq!(c.view.focused(), Some(1));
+        assert_eq!(c.model.selected, Some(0));
         assert!(c.last_intent.is_none());
         assert!(c.event(&ContentEvent::PointerUp(point)).activated);
-        assert_eq!(c.last_intent.as_ref().unwrap().index(),1);
+        assert_eq!(c.last_intent.as_ref().unwrap().index(), 1);
         assert!(!c.event(&ContentEvent::PointerUp(point)).activated);
     }
     #[test]
     fn consumed_original_ax_decisions_survive_host_focus_hook() {
-        for press in [false,true] {
-            let mut c=ready(); let action=if press {AccessibilityAction::Press}else{AccessibilityAction::Focus};
-            let request = action_preparation::OwnedActionRequest::Accessibility(c.part_token(1), action);
+        for press in [false, true] {
+            let mut c = ready();
+            let action = if press {
+                AccessibilityAction::Press
+            } else {
+                AccessibilityAction::Focus
+            };
+            let request =
+                action_preparation::OwnedActionRequest::Accessibility(c.part_token(1), action);
             let p = c.decide_action(&request).expect("original AX decision");
-            assert_eq!(c.decide_action(&request).as_ref(), Some(&p)); c.set_focus(true,true); c.apply_action(p);
-            assert_eq!(c.view.focused(),Some(1));
-            assert_eq!(c.model.selected,Some(if press {1}else{0}));
-            assert_eq!(c.last_intent.is_some(),press); assert!(c.focus_receipt);
+            assert_eq!(c.decide_action(&request).as_ref(), Some(&p));
+            c.set_focus(true, true);
+            c.apply_action(p);
+            assert_eq!(c.view.focused(), Some(1));
+            assert_eq!(c.model.selected, Some(if press { 1 } else { 0 }));
+            assert_eq!(c.last_intent.is_some(), press);
+            assert!(c.focus_receipt);
         }
     }
 
     #[test]
     fn disabled_pointer_decision_preserves_original_host_focus_hook_result() {
         fn disabled_ready() -> RadioGroupContent {
-            let mut c = ready(); c.set_item_enabled(1, false).unwrap();
-            let f = Rect::new(0.,0.,300.,200.); c.arrange(&mut Text,f,f);
-            c.presentation_runnable_changed(true); c
+            let mut c = ready();
+            c.set_item_enabled(1, false).unwrap();
+            let f = Rect::new(0., 0., 300., 200.);
+            c.arrange(&mut Text, f, f);
+            c.presentation_runnable_changed(true);
+            c
         }
         let mut ordinary = disabled_ready();
         let point = ordinary.semantic_parts()[1].frame.center();
         let result = ordinary.event(&ContentEvent::PointerDown(point));
         assert!(result.consumed && !result.capture_pointer);
-        ordinary.set_focus(true,false); // original ordinary Host order
-        assert_eq!(ordinary.view.focused(),Some(0));
+        ordinary.set_focus(true, false); // original ordinary Host order
+        assert_eq!(ordinary.view.focused(), Some(0));
         let mut prepared = disabled_ready();
-        let request=action_preparation::OwnedActionRequest::Pointer(ContentEvent::PointerDown(point));
-        let decision=prepared.decide_action(&request).unwrap();
-        assert_eq!(decision.focus,PreparedActionFocus::Owner);
-        prepared.set_focus(true,false); // actual strict Host order
+        let request =
+            action_preparation::OwnedActionRequest::Pointer(ContentEvent::PointerDown(point));
+        let decision = prepared.decide_action(&request).unwrap();
+        assert_eq!(decision.focus, PreparedActionFocus::Owner);
+        prepared.set_focus(true, false); // actual strict Host order
         prepared.apply_action(decision);
-        assert_eq!(prepared.view.focused(),ordinary.view.focused());
-        assert_eq!(prepared.model.selected,ordinary.model.selected);
+        assert_eq!(prepared.view.focused(), ordinary.view.focused());
+        assert_eq!(prepared.model.selected, ordinary.model.selected);
         assert!(prepared.last_intent.is_none());
     }
-
 }

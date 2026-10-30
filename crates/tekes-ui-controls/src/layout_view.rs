@@ -1619,62 +1619,159 @@ pub(crate) struct SegmentedViewDecision {
 }
 #[derive(Debug, PartialEq)]
 enum SegmentedViewEffect {
-    Pointer { index: usize, button: crate::widgets::ButtonActionDecision, cancel: bool },
-    Focus { index: usize, visible: bool, cancel: bool },
-    Select { index: usize, selection: Option<crate::extended::SegmentedSelectionDecision> },
+    Pointer {
+        index: usize,
+        button: crate::widgets::ButtonActionDecision,
+        cancel: bool,
+    },
+    Focus {
+        index: usize,
+        visible: bool,
+        cancel: bool,
+    },
+    Select {
+        index: usize,
+        selection: Option<crate::extended::SegmentedSelectionDecision>,
+    },
 }
 impl SegmentedViewDecision {
     pub(crate) fn changed_selection(&self) -> bool {
-        matches!(self.effect, SegmentedViewEffect::Select { selection: Some(_), .. })
+        matches!(
+            self.effect,
+            SegmentedViewEffect::Select {
+                selection: Some(_),
+                ..
+            }
+        )
     }
 }
 impl SegmentedControlView {
     pub(crate) fn action_snapshot(&self) -> SegmentedActionSnapshot {
-        SegmentedActionSnapshot { layout: self.layout.clone(),
-            buttons: self.buttons.iter().map(ButtonModel::action_snapshot).collect(),
-            focus: (self.focused, self.focus_visible), hovered: self.hovered,
-            pressed: self.pressed, space_armed: self.space_armed,
-            window_active: self.window_active, disabled: self.disabled }
+        SegmentedActionSnapshot {
+            layout: self.layout.clone(),
+            buttons: self
+                .buttons
+                .iter()
+                .map(ButtonModel::action_snapshot)
+                .collect(),
+            focus: (self.focused, self.focus_visible),
+            hovered: self.hovered,
+            pressed: self.pressed,
+            space_armed: self.space_armed,
+            window_active: self.window_active,
+            disabled: self.disabled,
+        }
     }
-    pub(crate) fn prepare_pointer_down(&self, p: Point, cancel: bool) -> Option<SegmentedViewDecision> {
-        if !self.window_active || self.disabled { return None; }
+    pub(crate) fn prepare_pointer_down(
+        &self,
+        p: Point,
+        cancel: bool,
+    ) -> Option<SegmentedViewDecision> {
+        if !self.window_active || self.disabled {
+            return None;
+        }
         let index = self.layout.items.iter().position(|l| l.hit_test(p))?;
         let button = self.buttons.get(index)?;
-        if button.state.disabled { return None; }
-        Some(SegmentedViewDecision { expected: self.action_snapshot(), effect: SegmentedViewEffect::Pointer {
-            index, button: button.prepare_content_down_after_cancel(p, false, cancel), cancel } })
+        if button.state.disabled {
+            return None;
+        }
+        Some(SegmentedViewDecision {
+            expected: self.action_snapshot(),
+            effect: SegmentedViewEffect::Pointer {
+                index,
+                button: button.prepare_content_down_after_cancel(p, false, cancel),
+                cancel,
+            },
+        })
     }
-    pub(crate) fn prepare_focus(&self, index: usize, visible: bool, cancel: bool) -> Option<SegmentedViewDecision> {
-        if self.disabled || self.buttons.get(index).is_none_or(|b| b.state.disabled) { return None; }
-        Some(SegmentedViewDecision { expected: self.action_snapshot(), effect: SegmentedViewEffect::Focus { index, visible, cancel } })
+    pub(crate) fn prepare_focus(
+        &self,
+        index: usize,
+        visible: bool,
+        cancel: bool,
+    ) -> Option<SegmentedViewDecision> {
+        if self.disabled || self.buttons.get(index).is_none_or(|b| b.state.disabled) {
+            return None;
+        }
+        Some(SegmentedViewDecision {
+            expected: self.action_snapshot(),
+            effect: SegmentedViewEffect::Focus {
+                index,
+                visible,
+                cancel,
+            },
+        })
     }
-    pub(crate) fn prepare_select(&self, index: usize, model: &SegmentedControl) -> SegmentedViewDecision {
-        SegmentedViewDecision { expected: self.action_snapshot(), effect: SegmentedViewEffect::Select {
-            index, selection: (!self.disabled).then(|| model.prepare_select(index)).flatten() } }
+    pub(crate) fn prepare_select(
+        &self,
+        index: usize,
+        model: &SegmentedControl,
+    ) -> SegmentedViewDecision {
+        SegmentedViewDecision {
+            expected: self.action_snapshot(),
+            effect: SegmentedViewEffect::Select {
+                index,
+                selection: (!self.disabled)
+                    .then(|| model.prepare_select(index))
+                    .flatten(),
+            },
+        }
     }
     fn apply_pointer_decision(&mut self, decision: SegmentedViewDecision) {
-        let SegmentedViewEffect::Pointer { index, button, cancel } = decision.effect else { unreachable!() };
-        if cancel { self.cancel(); }
+        let SegmentedViewEffect::Pointer {
+            index,
+            button,
+            cancel,
+        } = decision.effect
+        else {
+            unreachable!()
+        };
+        if cancel {
+            self.cancel();
+        }
         self.buttons[index].apply_content_action(button);
-        self.pressed = Some(index); self.focused = Some(index); self.focus_visible = false;
+        self.pressed = Some(index);
+        self.focused = Some(index);
+        self.focus_visible = false;
     }
     fn apply_focus_decision(&mut self, decision: SegmentedViewDecision) {
-        let SegmentedViewEffect::Focus { index, visible, cancel } = decision.effect else { unreachable!() };
-        if cancel { self.cancel(); }
-        self.focused = Some(index); self.focus_visible = visible;
+        let SegmentedViewEffect::Focus {
+            index,
+            visible,
+            cancel,
+        } = decision.effect
+        else {
+            unreachable!()
+        };
+        if cancel {
+            self.cancel();
+        }
+        self.focused = Some(index);
+        self.focus_visible = visible;
     }
     // Consume an authenticated original decision. No handler replay or late refusal.
     // Parent set_focus hooks only touch this View's focus/arms: these assignments
     // deliberately establish the same original final focus/gesture after that hook.
-    pub(crate) fn apply_decision(&mut self, decision: SegmentedViewDecision, model: &mut SegmentedControl) {
+    pub(crate) fn apply_decision(
+        &mut self,
+        decision: SegmentedViewDecision,
+        model: &mut SegmentedControl,
+    ) {
         match decision.effect {
             SegmentedViewEffect::Pointer { .. } => self.apply_pointer_decision(decision),
             SegmentedViewEffect::Focus { .. } => self.apply_focus_decision(decision),
-            SegmentedViewEffect::Select { index, selection: Some(selection) } => {
+            SegmentedViewEffect::Select {
+                index,
+                selection: Some(selection),
+            } => {
                 model.apply_prepared_select(selection);
-                self.focused = Some(index); self.focus_visible = false; self.cancel();
+                self.focused = Some(index);
+                self.focus_visible = false;
+                self.cancel();
             }
-            SegmentedViewEffect::Select { selection: None, .. } => {}
+            SegmentedViewEffect::Select {
+                selection: None, ..
+            } => {}
         }
     }
 
@@ -1704,12 +1801,21 @@ impl SegmentedControlView {
         }
     }
     pub(crate) fn measure(
-        text: &mut impl ButtonTextRenderer, labels: &[&str], available: Size,
-        role: proposal::TextRole, compact: bool,
+        text: &mut impl ButtonTextRenderer,
+        labels: &[&str],
+        available: Size,
+        role: proposal::TextRole,
+        compact: bool,
     ) -> Size {
         let count = labels.len();
-        if count == 0 { return Size::default(); }
-        let size = if compact { ButtonSize::Sm } else { ButtonSize::Md };
+        if count == 0 {
+            return Size::default();
+        }
+        let size = if compact {
+            ButtonSize::Sm
+        } else {
+            ButtonSize::Md
+        };
         let width = (available.width / count as f32).max(0.);
         let mut result = Size::default();
         for label in labels {
@@ -1722,9 +1828,14 @@ impl SegmentedControlView {
     }
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn arrange(
-        &mut self, text: &mut impl ButtonTextRenderer, model: &SegmentedControl,
-        labels: &[&str], frame: Rect, clip: Option<Rect>,
-        role: proposal::TextRole, compact: bool,
+        &mut self,
+        text: &mut impl ButtonTextRenderer,
+        model: &SegmentedControl,
+        labels: &[&str],
+        frame: Rect,
+        clip: Option<Rect>,
+        role: proposal::TextRole,
+        compact: bool,
     ) -> SegmentedLayout {
         if !valid(frame, clip) {
             self.cancel();
@@ -1765,37 +1876,87 @@ impl SegmentedControlView {
             } else {
                 ButtonSize::Md
             };
-            items.push(button.prepare_layout(text, labels[i], cells[i], clip, size,
-                role, ButtonTextAlign::Leading, None));
+            items.push(button.prepare_layout(
+                text,
+                labels[i],
+                cells[i],
+                clip,
+                size,
+                role,
+                ButtonTextAlign::Leading,
+                None,
+            ));
         }
         self.layout = SegmentedLayout { frame, items };
-        if !self.layout.items.iter().any(|item| item.visible.is_some_and(has_area)) {
-            self.cancel(); self.focused = None; self.hovered = None;
+        if !self
+            .layout
+            .items
+            .iter()
+            .any(|item| item.visible.is_some_and(has_area))
+        {
+            self.cancel();
+            self.focused = None;
+            self.hovered = None;
         }
         self.layout.clone()
     }
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn paint_arranged(
-        &mut self, scene: &mut Scene, text: &mut impl ButtonTextRenderer,
-        model: &SegmentedControl, labels: &[&str], clip: Option<Rect>,
-        palette: Palette, role: proposal::TextRole, compact: bool,
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        model: &SegmentedControl,
+        labels: &[&str],
+        clip: Option<Rect>,
+        palette: Palette,
+        role: proposal::TextRole,
+        compact: bool,
     ) {
         let count = self.layout.items.len();
-        let focus_last = self.focused.filter(|&index| index < count && self.focus_visible
-            && self.window_active && !self.disabled && model.is_enabled(index));
+        let focus_last = self.focused.filter(|&index| {
+            index < count
+                && self.focus_visible
+                && self.window_active
+                && !self.disabled
+                && model.is_enabled(index)
+        });
         let clipped = safe_clip(scene, clip);
-        let size = if compact { ButtonSize::Sm } else { ButtonSize::Md };
-        for i in (0..count).filter(|i| Some(*i) != focus_last).chain(focus_last) {
-            self.buttons[i].paint_prepared_segment(scene, text, labels[i], self.layout.items[i],
-                clip, palette, size, role);
+        let size = if compact {
+            ButtonSize::Sm
+        } else {
+            ButtonSize::Md
+        };
+        for i in (0..count)
+            .filter(|i| Some(*i) != focus_last)
+            .chain(focus_last)
+        {
+            self.buttons[i].paint_prepared_segment(
+                scene,
+                text,
+                labels[i],
+                self.layout.items[i],
+                clip,
+                palette,
+                size,
+                role,
+            );
         }
-        if clipped { scene.pop_clip(); }
+        if clipped {
+            scene.pop_clip();
+        }
     }
     #[allow(clippy::too_many_arguments)]
     pub fn render(
-        &mut self, scene: &mut Scene, text: &mut impl ButtonTextRenderer,
-        model: &mut SegmentedControl, labels: &[&str], frame: Rect,
-        clip: Option<Rect>, palette: Palette, role: proposal::TextRole, compact: bool,
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        model: &mut SegmentedControl,
+        labels: &[&str],
+        frame: Rect,
+        clip: Option<Rect>,
+        palette: Palette,
+        role: proposal::TextRole,
+        compact: bool,
     ) -> SegmentedLayout {
         self.arrange(text, model, labels, frame, clip, role, compact);
         if valid(frame, clip) {
@@ -1818,7 +1979,9 @@ impl SegmentedControlView {
     }
     pub fn pointer_down(&mut self, p: Point) -> Option<usize> {
         let decision = self.prepare_pointer_down(p, false)?;
-        let SegmentedViewEffect::Pointer { index, .. } = &decision.effect else { unreachable!() };
+        let SegmentedViewEffect::Pointer { index, .. } = &decision.effect else {
+            unreachable!()
+        };
         let index = *index;
         // Pointer decision has no model effect; use the same consuming primitive.
         self.apply_pointer_decision(decision);
@@ -1971,26 +2134,48 @@ struct BreadcrumbMeasure {
 // Breadcrumb owns its path flow, not a general wrapping container. Item and
 // passive leading separator positions are the sole geometry used by rendering.
 fn measure_breadcrumb(
-    text: &mut impl ButtonTextRenderer, labels: &[&str], max_width: f32,
+    text: &mut impl ButtonTextRenderer,
+    labels: &[&str],
+    max_width: f32,
     role: proposal::TextRole,
 ) -> BreadcrumbMeasure {
-    let width = if max_width.is_finite() { max_width.max(0.) } else { 0. };
+    let width = if max_width.is_finite() {
+        max_width.max(0.)
+    } else {
+        0.
+    };
     if labels.is_empty() || width == 0. {
-        return BreadcrumbMeasure { items: vec![Rect::default(); labels.len()],
+        return BreadcrumbMeasure {
+            items: vec![Rect::default(); labels.len()],
             separators: vec![Rect::default(); labels.len().saturating_sub(1)],
-            size: Size::new(width, 0.), ..Default::default() };
+            size: Size::new(width, 0.),
+            ..Default::default()
+        };
     }
     let scale = text.resolved_font_size(role) / role.style().size;
-    let scale = if scale.is_finite() && scale > 0. { scale } else { 1. };
+    let scale = if scale.is_finite() && scale > 0. {
+        scale
+    } else {
+        1.
+    };
     let spacing = proposal::metric("spacing", "space-tight").expect("Breadcrumb spacing") * scale;
     let focus = proposal::metric("spacing", "c-focus-offset").expect("focus offset")
         + proposal::metric("stroke", "c-focus-width").expect("focus width");
     let slash = text.measure("/", role, width);
-    let glyph_width = if slash.width.is_finite() { slash.width.max(0.).min(width) } else { 0. };
+    let glyph_width = if slash.width.is_finite() {
+        slash.width.max(0.).min(width)
+    } else {
+        0.
+    };
     let natural_gap = glyph_width + 2. * (spacing + focus.max(0.));
-    let natural: Vec<_> = labels.iter().map(|label|
-        ButtonModel::measure(text, label, width, ButtonSize::Body, role).width.max(0.)
-    ).collect();
+    let natural: Vec<_> = labels
+        .iter()
+        .map(|label| {
+            ButtonModel::measure(text, label, width, ButtonSize::Body, role)
+                .width
+                .max(0.)
+        })
+        .collect();
     let total: f64 = natural.iter().map(|w| f64::from(*w)).sum::<f64>()
         + labels.len().saturating_sub(1) as f64 * f64::from(natural_gap);
     let single_row = total <= f64::from(width);
@@ -2002,12 +2187,18 @@ fn measure_breadcrumb(
         let gap = if index == 0 { 0. } else { natural_gap };
         let starts_new_row = !single_row && x > 0. && x + gap + preferred > width;
         if starts_new_row {
-            row += 1; row_heights.push(0.); x = 0.;
+            row += 1;
+            row_heights.push(0.);
+            x = 0.;
         }
         // An extremely narrow row must still leave a nonnegative item region;
         // a slash without its original focus clearance is not painted.
         let available = (width - x).max(0.);
-        let mut gap = if gap >= available { available * 0.5 } else { gap };
+        let mut gap = if gap >= available {
+            available * 0.5
+        } else {
+            gap
+        };
         // A leading passive separator must not turn an otherwise nonempty
         // original Button content slot into an empty one. Empty-label measure
         // supplies the original scaled horizontal insets without new constants.
@@ -2022,29 +2213,53 @@ fn measure_breadcrumb(
         let item_x = x + gap;
         let item_width = if single_row && index + 1 == labels.len() {
             (width - item_x).max(0.)
-        } else { preferred.min((width - item_x).max(0.)) };
-        let height = ButtonModel::measure(text, label, item_width, ButtonSize::Body, role).height.max(0.);
+        } else {
+            preferred.min((width - item_x).max(0.))
+        };
+        let height = ButtonModel::measure(text, label, item_width, ButtonSize::Body, role)
+            .height
+            .max(0.);
         row_heights[row] = row_heights[row].max(height);
         placements.push((row, item_x, item_width, x, gap));
         x = item_x + item_width;
     }
     let mut y = 0.;
-    let row_tops: Vec<_> = row_heights.iter().map(|height| { let top = y; y += height + spacing; top }).collect();
+    let row_tops: Vec<_> = row_heights
+        .iter()
+        .map(|height| {
+            let top = y;
+            y += height + spacing;
+            top
+        })
+        .collect();
     let height = (y - spacing).max(0.);
     let mut items = Vec::with_capacity(labels.len());
     let mut separators = Vec::with_capacity(labels.len().saturating_sub(1));
-    for (index, (row, x, width, separator_x, separator_width)) in placements.into_iter().enumerate() {
+    for (index, (row, x, width, separator_x, separator_width)) in placements.into_iter().enumerate()
+    {
         let row_height = row_heights[row];
         items.push(Rect::new(x, row_tops[row], width, row_height));
         if index > 0 {
             let fits = separator_width >= glyph_width + focus.max(0.) * 2.;
             let glyph_height = slash.height.max(0.).min(row_height);
-            separators.push(if fits { Rect::new(separator_x + (separator_width - glyph_width) * 0.5,
-                row_tops[row] + (row_height - glyph_height) * 0.5, glyph_width, glyph_height)
-            } else { Rect::default() });
+            separators.push(if fits {
+                Rect::new(
+                    separator_x + (separator_width - glyph_width) * 0.5,
+                    row_tops[row] + (row_height - glyph_height) * 0.5,
+                    glyph_width,
+                    glyph_height,
+                )
+            } else {
+                Rect::default()
+            });
         }
     }
-    BreadcrumbMeasure { items, separators, single_row, size: Size::new(width, height) }
+    BreadcrumbMeasure {
+        items,
+        separators,
+        single_row,
+        size: Size::new(width, height),
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -2153,7 +2368,9 @@ impl BreadcrumbView {
             b.state.hovered = self.window_active && self.hovered == Some(i);
             b.state.pressed = self.window_active && self.pressed == Some(i);
             let mut local = measured.items[i];
-            if measured.single_row { local.size.height = frame.size.height; }
+            if measured.single_row {
+                local.size.height = frame.size.height;
+            }
             let cell = local.offset(frame.min_x(), frame.min_y());
             let l = b.render(
                 scene,
@@ -2172,12 +2389,25 @@ impl BreadcrumbView {
             // It has no ButtonModel, hit rectangle, focus or AX identity.
             if i > 0 {
                 let mut glyph = measured.separators[i - 1];
-                if measured.single_row { glyph.origin.y = (frame.size.height - glyph.size.height) * 0.5; }
+                if measured.single_row {
+                    glyph.origin.y = (frame.size.height - glyph.size.height) * 0.5;
+                }
                 if !glyph.is_empty() {
-                    text.draw(scene, "/", role, glyph.offset(frame.min_x(), frame.min_y()),
+                    text.draw(
+                        scene,
+                        "/",
+                        role,
+                        glyph.offset(frame.min_x(), frame.min_y()),
                         ButtonTextAlign::Center,
-                        tekes_ui_tokens::surface_palette::resolve_surface(palette, self.surface, "content", "rest")
-                            .expect("validated Breadcrumb parent content").text);
+                        tekes_ui_tokens::surface_palette::resolve_surface(
+                            palette,
+                            self.surface,
+                            "content",
+                            "rest",
+                        )
+                        .expect("validated Breadcrumb parent content")
+                        .text,
+                    );
                 }
             }
         }
@@ -2411,8 +2641,21 @@ impl FilteredMenuView {
         compact: bool,
     ) -> Option<MenuLayout> {
         self.render_inner(
-            MenuRenderContext { scene, text, anchor, visible, clip, palette, role, compact },
-            items, mapping, active, open, None,
+            MenuRenderContext {
+                scene,
+                text,
+                anchor,
+                visible,
+                clip,
+                palette,
+                role,
+                compact,
+            },
+            items,
+            mapping,
+            active,
+            open,
+            None,
         )
     }
     fn render_inner(
@@ -2424,7 +2667,16 @@ impl FilteredMenuView {
         open: bool,
         header: Option<MenuHeader<'_>>,
     ) -> Option<MenuLayout> {
-        let MenuRenderContext { scene, text, anchor, visible, clip, palette, role, compact } = context;
+        let MenuRenderContext {
+            scene,
+            text,
+            anchor,
+            visible,
+            clip,
+            palette,
+            role,
+            compact,
+        } = context;
         // A press belongs to the options actually presented at pointer-down.
         // Updating labels/mapping must not retarget its eventual release.
         if self.mapping != mapping || self.labels != items {
@@ -2449,9 +2701,35 @@ impl FilteredMenuView {
         let labels: Vec<&str> = items.iter().map(String::as_str).collect();
         self.layout = None;
         let l = if let Some((header, paint)) = header {
-            self.menu_view.render_with_header(&mut self.menu, &labels, MenuRenderContext { scene, text, anchor, visible, clip, palette, role, compact }, header, paint)
+            self.menu_view.render_with_header(
+                &mut self.menu,
+                &labels,
+                MenuRenderContext {
+                    scene,
+                    text,
+                    anchor,
+                    visible,
+                    clip,
+                    palette,
+                    role,
+                    compact,
+                },
+                header,
+                paint,
+            )
         } else {
-            self.menu_view.render_with_model(&mut self.menu, scene, text, &labels, anchor, visible, clip, palette, role, compact)
+            self.menu_view.render_with_model(
+                &mut self.menu,
+                scene,
+                text,
+                &labels,
+                anchor,
+                visible,
+                clip,
+                palette,
+                role,
+                compact,
+            )
         }?;
         self.layout = Some(l.clone());
         Some(l)
@@ -3253,8 +3531,14 @@ impl CommandPaletteView {
             label_size: tekes_ui_scene::Size::default(),
         })
     }
-    pub(crate) fn trigger_content_ink(&self, palette: Palette, surface: &str) -> (tekes_ui_tokens::Rgba, tekes_ui_tokens::Rgba) {
-        let colors = self.trigger.surface_colors(palette, ButtonVariant::Primary, surface);
+    pub(crate) fn trigger_content_ink(
+        &self,
+        palette: Palette,
+        surface: &str,
+    ) -> (tekes_ui_tokens::Rgba, tekes_ui_tokens::Rgba) {
+        let colors = self
+            .trigger
+            .surface_colors(palette, ButtonVariant::Primary, surface);
         (colors.text, colors.icon)
     }
     /// Paint the original trigger action around arbitrary mounted Content.
@@ -3432,8 +3716,18 @@ impl CommandPaletteView {
         compact: bool,
     ) -> Option<MenuLayout> {
         self.render_inner(
-            MenuRenderContext { scene, text, anchor, visible, clip, palette, role, compact },
-            model, None,
+            MenuRenderContext {
+                scene,
+                text,
+                anchor,
+                visible,
+                clip,
+                palette,
+                role,
+                compact,
+            },
+            model,
+            None,
         )
     }
     pub(crate) fn render_with_header(
@@ -3486,9 +3780,8 @@ impl CommandPaletteView {
             .combo
             .active
             .and_then(|i| map.iter().position(|x| *x == i));
-        self.options.render_inner(
-            context, &items, &map, active, model.combo.open, header,
-        )
+        self.options
+            .render_inner(context, &items, &map, active, model.combo.open, header)
     }
     pub fn key_event(
         &mut self,
@@ -4437,7 +4730,11 @@ mod tests {
                 );
                 let stroke = proposal::metric(
                     "stroke",
-                    if focused { "stroke-emphasis" } else { "stroke-rule" },
+                    if focused {
+                        "stroke-emphasis"
+                    } else {
+                        "stroke-rule"
+                    },
                 )
                 .expect("original Link underline stroke");
                 let underline = scene

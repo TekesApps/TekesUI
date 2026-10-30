@@ -314,7 +314,10 @@ pub(crate) struct RadioViewDecision {
 }
 impl RadioGroupView {
     /// Surface identity affects paint only, retaining original focus and armed gestures.
-    pub fn set_surface(&mut self, surface: &str) -> Result<(), tekes_ui_tokens::surface_palette::SurfaceError> {
+    pub fn set_surface(
+        &mut self,
+        surface: &str,
+    ) -> Result<(), tekes_ui_tokens::surface_palette::SurfaceError> {
         self.surface = tekes_ui_tokens::surface_palette::canonical_surface(surface)?;
         Ok(())
     }
@@ -331,10 +334,15 @@ impl RadioGroupView {
         Self::default()
     }
     fn measured_layout(
-        text: &mut impl ButtonTextRenderer, model: &RadioGroup,
-        bounds: Rect, clip: Option<Rect>, labels: &[&str],
+        text: &mut impl ButtonTextRenderer,
+        model: &RadioGroup,
+        bounds: Rect,
+        clip: Option<Rect>,
+        labels: &[&str],
     ) -> RadioGroupLayout {
-        if invalid_rect(bounds) || invalid_clip(clip) { return RadioGroupLayout::default(); }
+        if invalid_rect(bounds) || invalid_clip(clip) {
+            return RadioGroupLayout::default();
+        }
         let normalized = ControlFrame::new(bounds, clip).frame();
         let minimum = proposal::metric("size", "size-comfortable-row")
             .expect("design system comfortable row");
@@ -390,16 +398,30 @@ impl RadioGroupView {
             indicators.push(indicator);
             label_slots.push(label);
         }
-        RadioGroupLayout { frame, rows, indicators, labels: label_slots }
+        RadioGroupLayout {
+            frame,
+            rows,
+            indicators,
+            labels: label_slots,
+        }
     }
     pub(crate) fn measure_content(
-        text: &mut impl ButtonTextRenderer, model: &RadioGroup, width: f32, labels: &[&str],
+        text: &mut impl ButtonTextRenderer,
+        model: &RadioGroup,
+        width: f32,
+        labels: &[&str],
     ) -> Size {
-        Self::measured_layout(text, model, Rect::new(0., 0., width, 0.), None, labels).frame.size
+        Self::measured_layout(text, model, Rect::new(0., 0., width, 0.), None, labels)
+            .frame
+            .size
     }
     pub(crate) fn arrange_content(
-        &mut self, text: &mut impl ButtonTextRenderer, model: &RadioGroup,
-        bounds: Rect, clip: Option<Rect>, labels: &[&str],
+        &mut self,
+        text: &mut impl ButtonTextRenderer,
+        model: &RadioGroup,
+        bounds: Rect,
+        clip: Option<Rect>,
+        labels: &[&str],
     ) -> RadioGroupLayout {
         self.layout = Self::measured_layout(text, model, bounds, clip, labels);
         if self
@@ -411,20 +433,35 @@ impl RadioGroupView {
                 .filter(|i| model.is_enabled(*i))
                 .or_else(|| (0..model.len()).find(|i| model.is_enabled(*i)));
         }
-        let all_hidden = self.layout.rows.iter().all(|row| row.visible_frame().is_none());
+        let all_hidden = self
+            .layout
+            .rows
+            .iter()
+            .all(|row| row.visible_frame().is_none());
         if self.disabled || self.pressed.is_some_and(|index| !model.is_enabled(index)) {
             self.cancel();
         }
-        if all_hidden { self.blur(); }
-        if all_hidden || self.pressed.is_some_and(|index| rows_visibility_for(&self.layout, index).is_none()) {
+        if all_hidden {
+            self.blur();
+        }
+        if all_hidden
+            || self
+                .pressed
+                .is_some_and(|index| rows_visibility_for(&self.layout, index).is_none())
+        {
             self.cancel();
         }
         self.layout.clone()
     }
     /// Paint only the original arranged geometry, without a second reconciliation.
     pub(crate) fn paint_content(
-        &self, scene: &mut Scene, text: &mut impl ButtonTextRenderer,
-        model: &RadioGroup, clip: Option<Rect>, palette: Palette, labels: &[&str],
+        &self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        model: &RadioGroup,
+        clip: Option<Rect>,
+        palette: Palette,
+        labels: &[&str],
     ) {
         for (index, row) in self.layout.rows.iter().enumerate() {
             let indicator = self.layout.indicators[index];
@@ -435,15 +472,15 @@ impl RadioGroupView {
                 }
                 let focused = self.focused == Some(index) && self.window_active && !self.disabled;
                 let state = ControlState {
-                        error: self.error,
-                        selected: model.selected == Some(index),
-                        disabled: self.disabled || !model.is_enabled(index),
-                        hovered: self.hovered == Some(index),
-                        pressed: self.pressed == Some(index),
-                        focused,
-                        focus_visible: focused && self.focus_visible,
-                        ..Default::default()
-                    };
+                    error: self.error,
+                    selected: model.selected == Some(index),
+                    disabled: self.disabled || !model.is_enabled(index),
+                    hovered: self.hovered == Some(index),
+                    pressed: self.pressed == Some(index),
+                    focused,
+                    focus_visible: focused && self.focus_visible,
+                    ..Default::default()
+                };
                 radio_on_surface(scene, indicator, palette, state, self.surface);
                 let label_visible = ControlFrame::new(label, row.visible_frame()).visible_frame();
                 if let Some(label_clip) = label_visible {
@@ -455,7 +492,9 @@ impl RadioGroupView {
                         label,
                         ButtonTextAlign::Leading,
                         if state.disabled {
-                            palette.color("disabled-text").expect("Radio disabled label role")
+                            palette
+                                .color("disabled-text")
+                                .expect("Radio disabled label role")
                         } else {
                             crate::paint::choice_label_color(palette, self.surface, state)
                         },
@@ -470,8 +509,14 @@ impl RadioGroupView {
     }
     #[allow(clippy::too_many_arguments)]
     pub fn render(
-        &mut self, scene: &mut Scene, text: &mut impl ButtonTextRenderer,
-        model: &RadioGroup, bounds: Rect, clip: Option<Rect>, palette: Palette, labels: &[&str],
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        model: &RadioGroup,
+        bounds: Rect,
+        clip: Option<Rect>,
+        palette: Palette,
+        labels: &[&str],
     ) -> RadioGroupLayout {
         self.arrange_content(text, model, bounds, clip, labels);
         self.paint_content(scene, text, model, clip, palette, labels);
@@ -482,42 +527,83 @@ impl RadioGroupView {
         self.layout = RadioGroupLayout::default();
     }
     fn action_state(&self) -> RadioActionState {
-        RadioActionState { focused: self.focused, focus_visible: self.focus_visible,
-            pressed: self.pressed, window_active: self.window_active, disabled: self.disabled }
+        RadioActionState {
+            focused: self.focused,
+            focus_visible: self.focus_visible,
+            pressed: self.pressed,
+            window_active: self.window_active,
+            disabled: self.disabled,
+        }
     }
-    pub(crate) fn prepare_content_focus(&self, model: &RadioGroup, index: Option<usize>, visible: bool) -> RadioViewDecision {
+    pub(crate) fn prepare_content_focus(
+        &self,
+        model: &RadioGroup,
+        index: Option<usize>,
+        visible: bool,
+    ) -> RadioViewDecision {
         let before = self.action_state();
         let mut next = before;
-        next.focused = if self.disabled { None } else {
-            index.filter(|i| *i < model.len() && model.is_enabled(*i))
+        next.focused = if self.disabled {
+            None
+        } else {
+            index
+                .filter(|i| *i < model.len() && model.is_enabled(*i))
                 .or(model.selected.filter(|i| model.is_enabled(*i)))
                 .or_else(|| (0..model.len()).find(|i| model.is_enabled(*i)))
         };
         let write_pressed = next.focused != before.focused || self.disabled;
-        if write_pressed { next.pressed = None; }
+        if write_pressed {
+            next.pressed = None;
+        }
         next.focus_visible = next.focused.is_some() && visible;
-        RadioViewDecision { before, next, event: SelectionEvent::Handled,
-            write_focus: true, write_pressed }
+        RadioViewDecision {
+            before,
+            next,
+            event: SelectionEvent::Handled,
+            write_focus: true,
+            write_pressed,
+        }
     }
-    pub(crate) fn prepare_content_down(&self, point: Point, model: &RadioGroup) -> RadioViewDecision {
+    pub(crate) fn prepare_content_down(
+        &self,
+        point: Point,
+        model: &RadioGroup,
+    ) -> RadioViewDecision {
         let before = self.action_state();
         let mut next = before;
         let mut write_focus = false;
         let mut write_pressed = false;
         if next.pressed.is_some_and(|i| !model.is_enabled(i)) {
-            next.pressed = None; write_pressed = true;
+            next.pressed = None;
+            write_pressed = true;
         }
-        let event = if !self.window_active { SelectionEvent::Ignored }
-        else if let Some(i) = self.layout.rows.iter().position(|r| r.contains(point)) {
+        let event = if !self.window_active {
+            SelectionEvent::Ignored
+        } else if let Some(i) = self.layout.rows.iter().position(|r| r.contains(point)) {
             if !self.disabled && model.is_enabled(i) {
-                next.pressed = Some(i); next.focused = Some(i); next.focus_visible = false;
-                write_focus = true; write_pressed = true;
+                next.pressed = Some(i);
+                next.focused = Some(i);
+                next.focus_visible = false;
+                write_focus = true;
+                write_pressed = true;
             }
             SelectionEvent::Handled
-        } else { SelectionEvent::Ignored };
-        RadioViewDecision { before, next, event, write_focus, write_pressed }
+        } else {
+            SelectionEvent::Ignored
+        };
+        RadioViewDecision {
+            before,
+            next,
+            event,
+            write_focus,
+            write_pressed,
+        }
     }
-    pub(crate) fn prepare_content_press(&self, model: &RadioGroup, index: usize) -> RadioViewDecision {
+    pub(crate) fn prepare_content_press(
+        &self,
+        model: &RadioGroup,
+        index: usize,
+    ) -> RadioViewDecision {
         let mut decision = self.prepare_content_focus(model, Some(index), true);
         decision.next.pressed = None;
         decision.write_pressed = true;
@@ -531,11 +617,15 @@ impl RadioGroupView {
             self.focused = decision.next.focused;
             self.focus_visible = decision.next.focus_visible;
         }
-        if decision.write_pressed { self.pressed = decision.next.pressed; }
+        if decision.write_pressed {
+            self.pressed = decision.next.pressed;
+        }
     }
     pub fn focus(&mut self, model: &RadioGroup, index: Option<usize>, focus_visible: bool) {
         let decision = self.prepare_content_focus(model, index, focus_visible);
-        if self.disabled { self.hovered = None; }
+        if self.disabled {
+            self.hovered = None;
+        }
         self.apply_content_action(decision);
     }
     pub fn blur(&mut self) {
@@ -1402,26 +1492,60 @@ mod tests {
                         let mut actual = Scene::new();
                         let mut text = TestText::default();
                         let layout = view.render(
-                            &mut actual, &mut text, &model,
-                            Rect::new(0., 0., 240., 48.), None, palette, &["Choice"],
+                            &mut actual,
+                            &mut text,
+                            &model,
+                            Rect::new(0., 0., 240., 48.),
+                            None,
+                            palette,
+                            &["Choice"],
                         );
                         // The existing public primitive is an unchanged independent
                         // oracle for Radio's disabled channel roles, not Checkbox's.
                         let mut original = Scene::new();
                         crate::extended::radio_with_state(
-                            &mut original, layout.indicators[0], palette,
-                            ControlState { selected: true, disabled: true, error, ..Default::default() },
+                            &mut original,
+                            layout.indicators[0],
+                            palette,
+                            ControlState {
+                                selected: true,
+                                disabled: true,
+                                error,
+                                ..Default::default()
+                            },
                         );
-                        let actual: Vec<_> = actual.primitives().iter().filter_map(|p| {
-                            if let tekes_ui_scene::Primitive::Quad(q) = p { Some(q) } else { None }
-                        }).collect();
-                        let original: Vec<_> = original.primitives().iter().filter_map(|p| {
-                            if let tekes_ui_scene::Primitive::Quad(q) = p { Some(q) } else { None }
-                        }).collect();
+                        let actual: Vec<_> = actual
+                            .primitives()
+                            .iter()
+                            .filter_map(|p| {
+                                if let tekes_ui_scene::Primitive::Quad(q) = p {
+                                    Some(q)
+                                } else {
+                                    None
+                                }
+                            })
+                            .collect();
+                        let original: Vec<_> = original
+                            .primitives()
+                            .iter()
+                            .filter_map(|p| {
+                                if let tekes_ui_scene::Primitive::Quad(q) = p {
+                                    Some(q)
+                                } else {
+                                    None
+                                }
+                            })
+                            .collect();
                         assert_eq!(actual.len(), 2);
                         assert_eq!(original.len(), 2);
-                        assert_eq!(actual[0].border_color, original[0].border_color, "{theme:?} {brand} {surface} {error}");
-                        assert_eq!(actual[1].fill, original[1].fill, "{theme:?} {brand} {surface} {error}");
+                        assert_eq!(
+                            actual[0].border_color, original[0].border_color,
+                            "{theme:?} {brand} {surface} {error}"
+                        );
+                        assert_eq!(
+                            actual[1].fill, original[1].fill,
+                            "{theme:?} {brand} {surface} {error}"
+                        );
                         assert_eq!(text.inks, vec![original[1].fill]);
                     }
                 }

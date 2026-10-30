@@ -326,7 +326,12 @@ fn custom_trigger_raw_frame_clip_preserves_visibility_and_availability() {
     let content = Size::new(48., 16.);
     let palette = Theme::LIGHT.into();
     let layout = view.render_trigger_content(
-        &mut Scene::new(), &mut text, &mut model, content, (frame, None), palette,
+        &mut Scene::new(),
+        &mut text,
+        &mut model,
+        content,
+        (frame, None),
+        palette,
     );
     assert_eq!(layout.visible, Some(layout.frame));
     let point = layout.visible.unwrap().center();
@@ -335,21 +340,35 @@ fn custom_trigger_raw_frame_clip_preserves_visibility_and_availability() {
     assert!(!view.pointer_up_trigger(point, &mut model));
     model.combo.open = false;
     let clipped = view.render_trigger_content(
-        &mut Scene::new(), &mut text, &mut model, content,
-        (frame, Some(Rect::default())), palette,
+        &mut Scene::new(),
+        &mut text,
+        &mut model,
+        content,
+        (frame, Some(Rect::default())),
+        palette,
     );
     assert_eq!(clipped.visible, None);
     assert!(!view.pointer_down_trigger(point));
     let clip = Rect::new(12., 12., 40., 40.);
     let partial = view.render_trigger_content(
-        &mut Scene::new(), &mut text, &mut model, content, (frame, Some(clip)), palette,
+        &mut Scene::new(),
+        &mut text,
+        &mut model,
+        content,
+        (frame, Some(clip)),
+        palette,
     );
     assert_eq!(partial.visible, partial.frame.intersection(&clip));
     let point = partial.visible.unwrap().center();
     assert!(view.pointer_down_trigger(point));
     model.combo.disabled = true;
     view.render_trigger_content(
-        &mut Scene::new(), &mut text, &mut model, content, (frame, None), palette,
+        &mut Scene::new(),
+        &mut text,
+        &mut model,
+        content,
+        (frame, None),
+        palette,
     );
     assert!(!view.pointer_down_trigger(point));
     assert!(!view.pointer_up_trigger(point, &mut model));
@@ -357,13 +376,23 @@ fn custom_trigger_raw_frame_clip_preserves_visibility_and_availability() {
     model.combo.disabled = false;
     view.set_window_active(false, &mut model);
     view.render_trigger_content(
-        &mut Scene::new(), &mut text, &mut model, content, (frame, None), palette,
+        &mut Scene::new(),
+        &mut text,
+        &mut model,
+        content,
+        (frame, None),
+        palette,
     );
     assert!(!view.pointer_down_trigger(point));
     assert!(!view.pointer_up_trigger(point, &mut model));
     view.set_window_active(true, &mut model);
     view.render_trigger_content(
-        &mut Scene::new(), &mut text, &mut model, content, (frame, None), palette,
+        &mut Scene::new(),
+        &mut text,
+        &mut model,
+        content,
+        (frame, None),
+        palette,
     );
     assert!(view.pointer_down_trigger(point));
     assert!(view.pointer_up_trigger(point, &mut model));

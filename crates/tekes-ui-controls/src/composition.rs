@@ -37,9 +37,9 @@ pub use prepared::{
 mod checkbox;
 pub use checkbox::{CheckboxContent, CheckboxIntent};
 mod radio;
-pub use radio::{RadioGroupContent, RadioContentError, RadioSelectionIntent};
+pub use radio::{RadioContentError, RadioGroupContent, RadioSelectionIntent};
 mod segmented;
-pub use segmented::{SegmentedControlContent, SegmentedContentError, SegmentIntent};
+pub use segmented::{SegmentIntent, SegmentedContentError, SegmentedControlContent};
 mod action_proxy;
 mod notice;
 pub use notice::{BannerContent, ToastContent};
@@ -260,7 +260,14 @@ pub enum ContentRole {
 }
 impl ContentRole {
     fn is_selection(self) -> bool {
-        matches!(self, Self::Checkbox | Self::RadioGroup | Self::RadioButton | Self::SegmentedGroup | Self::Segment)
+        matches!(
+            self,
+            Self::Checkbox
+                | Self::RadioGroup
+                | Self::RadioButton
+                | Self::SegmentedGroup
+                | Self::Segment
+        )
     }
     fn is_action_owner(self) -> bool {
         matches!(self, Self::Button | Self::Link | Self::MenuButton)
@@ -282,11 +289,17 @@ pub struct ContentSemantics {
 impl ContentSemantics {
     fn valid_selection(&self, parent: Option<ContentRole>) -> bool {
         use ContentRole as R;
-        if !self.role.is_selection() { return true; }
-        if self.expanded.is_some() { return false; }
+        if !self.role.is_selection() {
+            return true;
+        }
+        if self.expanded.is_some() {
+            return false;
+        }
         match self.role {
-            R::Checkbox => matches!((self.value.as_deref(), self.selected),
-                (Some("off" | "mixed"), false) | (Some("on"), true)),
+            R::Checkbox => matches!(
+                (self.value.as_deref(), self.selected),
+                (Some("off" | "mixed"), false) | (Some("on"), true)
+            ),
             R::RadioGroup | R::SegmentedGroup => self.value.is_none() && !self.selected,
             R::RadioButton => self.value.is_none() && parent == Some(R::RadioGroup),
             R::Segment => self.value.is_none() && parent == Some(R::SegmentedGroup),
@@ -3230,16 +3243,20 @@ impl ContentHost {
             }
             owner.component.semantic_part_text_layout(part)
         } else {
-            if owner.component.semantics().role.is_selection() { return None; }
+            if owner.component.semantics().role.is_selection() {
+                return None;
+            }
             owner.component.semantic_text_layout()
         }
     }
     /// Published text queries for active semantic owners, including unfocused
     /// fields. Closed or background modal subtrees cannot expose editable text.
     pub fn text_surface(&self, id: ComponentId) -> Option<&crate::TextSurface> {
-        self.scope()
-            .find_active(id)
-            .and_then(|c| (!c.component.semantics().role.is_selection()).then(|| c.component.text_surface()).flatten())
+        self.scope().find_active(id).and_then(|c| {
+            (!c.component.semantics().role.is_selection())
+                .then(|| c.component.text_surface())
+                .flatten()
+        })
     }
     /// Current active owner's process-local mount identity for native bridges.
     /// Reorder retains it; replacement/remount changes it even for the same ID.
@@ -3277,7 +3294,10 @@ impl ContentHost {
                             .component::<ComboBoxContent>()
                             .is_none_or(|combo| combo.capture_current(self.captured_overlay))
                 })
-                .filter(|node| node.component::<CheckboxContent>().is_none_or(|check| check.focusable()))
+                .filter(|node| {
+                    node.component::<CheckboxContent>()
+                        .is_none_or(|check| check.focusable())
+                })
                 .map(|node| (id, node.mount))
         })
     }
@@ -3399,46 +3419,101 @@ impl ContentHost {
         if !self.window_active {
             return ContentResponse::default();
         }
-        if self.is_composing() && self.focused != Some(id)
+        if self.is_composing()
+            && self.focused != Some(id)
             && (matches!(action, AccessibilityAction::Focus)
                 || (matches!(action, AccessibilityAction::Press)
-                    && self.scope().find_active(id).is_some_and(|n| n.component.semantics().role.is_selection())
+                    && self
+                        .scope()
+                        .find_active(id)
+                        .is_some_and(|n| n.component.semantics().role.is_selection())
                     && !self.semantic_preserves_activation_focus(id, part)))
-        { return ContentResponse::default(); }
-        // Validate finite selection authority before focus transfer or owner mutation.
-        // The original IME/scope gate above still owns admission.
-        let Some(node) = self.scope().find_active(id) else { return ContentResponse::default(); };
-        let root = node.component.semantics();
-        if root.role.is_selection() && (!root.valid_selection(None)
-            && !matches!(root.role, ContentRole::RadioButton | ContentRole::Segment)) {
+        {
             return ContentResponse::default();
         }
-        if root.role.is_selection() && (node.component.text_input_snapshot().is_some()
-            || node.component.semantic_text_layout().is_some() || node.component.value_range().is_some()) {
+        // Validate finite selection authority before focus transfer or owner mutation.
+        // The original IME/scope gate above still owns admission.
+        let Some(node) = self.scope().find_active(id) else {
+            return ContentResponse::default();
+        };
+        let root = node.component.semantics();
+        if root.role.is_selection()
+            && (!root.valid_selection(None)
+                && !matches!(root.role, ContentRole::RadioButton | ContentRole::Segment))
+        {
+            return ContentResponse::default();
+        }
+        if root.role.is_selection()
+            && (node.component.text_input_snapshot().is_some()
+                || node.component.semantic_text_layout().is_some()
+                || node.component.value_range().is_some())
+        {
             return ContentResponse::default();
         }
         let parts = node.component.semantic_parts();
         let selected_part = part.and_then(|i| parts.iter().find(|p| p.index == i));
-        if root.role.is_selection() || selected_part.is_some_and(|p| p.semantics.role.is_selection()) {
+        if root.role.is_selection()
+            || selected_part.is_some_and(|p| p.semantics.role.is_selection())
+        {
             let (s, parent, visible, extra) = if let Some(i) = part {
-                let Some(p) = selected_part else { return ContentResponse::default(); };
-                if !p.semantics.role.is_selection() { return ContentResponse::default(); }
+                let Some(p) = selected_part else {
+                    return ContentResponse::default();
+                };
+                if !p.semantics.role.is_selection() {
+                    return ContentResponse::default();
+                }
                 let parent = match node.component.semantic_part_parent(i) {
-                    Some(parent) => parts.iter().find(|p| p.index == parent).map(|p| p.semantics.role),
+                    Some(parent) => parts
+                        .iter()
+                        .find(|p| p.index == parent)
+                        .map(|p| p.semantics.role),
                     None => Some(root.role),
                 };
-                (&p.semantics, parent, !p.frame.is_empty() && p.frame.intersection(&node.clip).is_some_and(|r| !r.is_empty()),
-                    node.component.semantic_part_text_layout(i).is_some() || node.component.semantic_part_value_range(i).is_some())
+                (
+                    &p.semantics,
+                    parent,
+                    !p.frame.is_empty()
+                        && p.frame
+                            .intersection(&node.clip)
+                            .is_some_and(|r| !r.is_empty()),
+                    node.component.semantic_part_text_layout(i).is_some()
+                        || node.component.semantic_part_value_range(i).is_some(),
+                )
             } else {
-                let parent = self.semantics().iter().find(|n| n.id == id).and_then(|n| n.parent)
-                    .and_then(|id| self.scope().find_active(id)).map(|n| n.component.semantics().role);
-                (&root, parent, node.frame.intersection(&node.clip).is_some_and(|r| !r.is_empty()), node.component.text_input_snapshot().is_some()
-                    || node.component.semantic_text_layout().is_some() || node.component.value_range().is_some())
+                let parent = self
+                    .semantics()
+                    .iter()
+                    .find(|n| n.id == id)
+                    .and_then(|n| n.parent)
+                    .and_then(|id| self.scope().find_active(id))
+                    .map(|n| n.component.semantics().role);
+                (
+                    &root,
+                    parent,
+                    node.frame
+                        .intersection(&node.clip)
+                        .is_some_and(|r| !r.is_empty()),
+                    node.component.text_input_snapshot().is_some()
+                        || node.component.semantic_text_layout().is_some()
+                        || node.component.value_range().is_some(),
+                )
             };
-            if s.disabled || !visible || extra || !s.valid_selection(parent)
-                || !matches!(action, AccessibilityAction::Focus | AccessibilityAction::Press)
-                || (matches!(action, AccessibilityAction::Press) && matches!(s.role, ContentRole::RadioGroup | ContentRole::SegmentedGroup))
-            { return ContentResponse::default(); }
+            if s.disabled
+                || !visible
+                || extra
+                || !s.valid_selection(parent)
+                || !matches!(
+                    action,
+                    AccessibilityAction::Focus | AccessibilityAction::Press
+                )
+                || (matches!(action, AccessibilityAction::Press)
+                    && matches!(
+                        s.role,
+                        ContentRole::RadioGroup | ContentRole::SegmentedGroup
+                    ))
+            {
+                return ContentResponse::default();
+            }
         }
         if matches!(action, AccessibilityAction::ShowMenu) {
             return self.context_menu_accessibility_action(id, part);
@@ -3831,7 +3906,11 @@ impl ContentHost {
     pub fn value_range(&self, id: ComponentId) -> Option<std::ops::RangeInclusive<f64>> {
         self.scope()
             .find_active(id)
-            .and_then(|n| (!n.component.semantics().role.is_selection()).then(|| n.component.value_range()).flatten())
+            .and_then(|n| {
+                (!n.component.semantics().role.is_selection())
+                    .then(|| n.component.value_range())
+                    .flatten()
+            })
             .filter(|range| {
                 range.start().is_finite() && range.end().is_finite() && range.start() <= range.end()
             })
@@ -3858,7 +3937,14 @@ impl ContentHost {
         {
             return None;
         }
-        if owner.component.semantic_parts().iter().any(|p| p.index == part && p.semantics.role.is_selection()) { return None; }
+        if owner
+            .component
+            .semantic_parts()
+            .iter()
+            .any(|p| p.index == part && p.semantics.role.is_selection())
+        {
+            return None;
+        }
         let range = owner.component.semantic_part_value_range(part)?;
         (range.start().is_finite() && range.end().is_finite() && range.start() <= range.end())
             .then_some(range)

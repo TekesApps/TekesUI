@@ -669,7 +669,9 @@ pub(crate) struct RadioSelectDecision {
     next: Option<usize>,
 }
 impl RadioSelectDecision {
-    pub(crate) fn changed(self) -> bool { self.before != self.next }
+    pub(crate) fn changed(self) -> bool {
+        self.before != self.next
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -679,7 +681,10 @@ pub struct RadioGroup {
 }
 /// A controlled Radio selection must address an enabled original slot.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum RadioSelectionError { InvalidIndex, DisabledItem }
+pub enum RadioSelectionError {
+    InvalidIndex,
+    DisabledItem,
+}
 impl RadioGroup {
     pub fn new(count: usize) -> Self {
         Self {
@@ -740,21 +745,33 @@ impl RadioGroup {
     /// their behavior. Focus and gesture cancellation belong to the View.
     pub fn validate_selected(&self, selected: Option<usize>) -> Result<(), RadioSelectionError> {
         if let Some(index) = selected {
-            if index >= self.len() { return Err(RadioSelectionError::InvalidIndex); }
-            if !self.is_enabled(index) { return Err(RadioSelectionError::DisabledItem); }
+            if index >= self.len() {
+                return Err(RadioSelectionError::InvalidIndex);
+            }
+            if !self.is_enabled(index) {
+                return Err(RadioSelectionError::DisabledItem);
+            }
         }
         Ok(())
     }
     pub fn set_selected(&mut self, selected: Option<usize>) -> Result<bool, RadioSelectionError> {
         self.validate_selected(selected)?;
         let changed = self.selected != selected;
-        if let Some(index) = selected { self.select(index); } else { self.selected = None; }
+        if let Some(index) = selected {
+            self.select(index);
+        } else {
+            self.selected = None;
+        }
         Ok(changed)
     }
     pub(crate) fn prepare_select(&self, index: usize) -> RadioSelectDecision {
         RadioSelectDecision {
             before: self.selected,
-            next: if self.is_enabled(index) { Some(index) } else { self.selected },
+            next: if self.is_enabled(index) {
+                Some(index)
+            } else {
+                self.selected
+            },
         }
     }
     pub(crate) fn apply_select(&mut self, decision: RadioSelectDecision) -> bool {
@@ -846,7 +863,9 @@ pub struct SegmentedControl {
     enabled: Vec<bool>,
 }
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub(crate) struct SegmentedSelectionDecision { index: usize }
+pub(crate) struct SegmentedSelectionDecision {
+    index: usize,
+}
 impl SegmentedControl {
     pub fn new(count: usize) -> Self {
         Self {
@@ -877,13 +896,16 @@ impl SegmentedControl {
         self.enabled.get(i).copied().unwrap_or(false)
     }
     pub(crate) fn prepare_select(&self, i: usize) -> Option<SegmentedSelectionDecision> {
-        (self.is_enabled(i) && self.selected != i).then_some(SegmentedSelectionDecision { index: i })
+        (self.is_enabled(i) && self.selected != i)
+            .then_some(SegmentedSelectionDecision { index: i })
     }
     pub(crate) fn apply_prepared_select(&mut self, decision: SegmentedSelectionDecision) {
         self.selected = decision.index;
     }
     pub fn select(&mut self, i: usize) -> bool {
-        let Some(decision) = self.prepare_select(i) else { return false; };
+        let Some(decision) = self.prepare_select(i) else {
+            return false;
+        };
         self.apply_prepared_select(decision);
         true
     }
@@ -1739,11 +1761,23 @@ pub fn radio_with_state(
 }
 
 pub(crate) fn radio_on_surface(
-    scene: &mut Scene, rect: Rect, palette: Palette, state: ControlState, surface: &str,
+    scene: &mut Scene,
+    rect: Rect,
+    palette: Palette,
+    state: ControlState,
+    surface: &str,
 ) {
     let checked = state.selected;
-    let colors = crate::paint::check_surface_colors(palette, surface, state,
-        if checked { crate::CheckState::Checked } else { crate::CheckState::Unchecked });
+    let colors = crate::paint::check_surface_colors(
+        palette,
+        surface,
+        state,
+        if checked {
+            crate::CheckState::Checked
+        } else {
+            crate::CheckState::Unchecked
+        },
+    );
     let size = rect.size.width.min(rect.size.height).max(0.);
     let frame = Rect::new(
         rect.center().x - size * 0.5,
@@ -1754,20 +1788,29 @@ pub(crate) fn radio_on_surface(
     let mut quad = Quad::new(frame, colors.background).with_corner_radius(size * 0.5);
     // Radio's established disabled boundary/mark role differs from Checkbox.
     // Keep that component contract while the Surface packet owns other channels.
-    let disabled_ink = state.disabled.then(|| paint_color(palette, "disabled-text"));
+    let disabled_ink = state
+        .disabled
+        .then(|| paint_color(palette, "disabled-text"));
     let boundary = if state.error {
         colors.boundary
     } else {
         disabled_ink.or(colors.boundary)
     };
     if let Some(boundary) = boundary {
-        quad = quad.with_border(proposal::metric("stroke", "stroke-rule").expect("control stroke"), boundary);
+        quad = quad.with_border(
+            proposal::metric("stroke", "stroke-rule").expect("control stroke"),
+            boundary,
+        );
     }
     scene.push_quad(quad);
     if checked && let Some(marker) = disabled_ink.or(colors.marker) {
         scene.push_quad(Quad::new(frame.inset(size * 0.28), marker).with_corner_radius(size * 0.5));
     }
-    if state.focused && state.focus_visible && !state.disabled && let Some(focus) = colors.focus {
+    if state.focused
+        && state.focus_visible
+        && !state.disabled
+        && let Some(focus) = colors.focus
+    {
         crate::paint::focus_ring_with_color(scene, frame, focus, size * 0.5);
     }
 }
@@ -1856,52 +1899,95 @@ pub fn link_underline(
     theme: impl Into<Palette>,
     state: ControlState,
 ) -> Rgba {
-    link_underline_on_surface(scene,rect,theme.into(),state,"canvas")
+    link_underline_on_surface(scene, rect, theme.into(), state, "canvas")
         .expect("default Link Surface")
 }
 /// Resolve the complete original Link packet before painting. No Button styling
 /// or new hover/pressed state machine is introduced.
 pub fn link_underline_on_surface(
-    scene:&mut Scene,rect:Rect,palette:Palette,state:ControlState,surface:&str,
-) -> Result<Rgba,tekes_ui_tokens::surface_palette::SurfaceError> {
-    link_underline_with_content_on_surface(scene,rect,palette,state,surface,None)
+    scene: &mut Scene,
+    rect: Rect,
+    palette: Palette,
+    state: ControlState,
+    surface: &str,
+) -> Result<Rgba, tekes_ui_tokens::surface_palette::SurfaceError> {
+    link_underline_with_content_on_surface(scene, rect, palette, state, surface, None)
 }
 // Geometry comes from the same renderer/role/width that paints the original
 // label. A long wrapped label must not extend into a rounded ground's cutouts.
 pub(crate) fn link_underline_with_content_on_surface(
-    scene:&mut Scene,rect:Rect,palette:Palette,state:ControlState,surface:&str,
-    text_bounds:Option<Rect>,
-) -> Result<Rgba,tekes_ui_tokens::surface_palette::SurfaceError> {
-    let phase=if state.disabled {"disabled"}else if state.pressed {"pressed"}else if state.hovered {"hover"}else{"rest"};
-    let colors=tekes_ui_tokens::surface_palette::resolve_surface(palette,surface,"link",phase)?;
-    let mut radius=rect.size.width.min(rect.size.height).max(0.)*0.5;
-    if let Some(content)=text_bounds {
-        let horizontal=(content.min_x()-rect.min_x()).min(rect.max_x()-content.max_x()).max(0.);
-        let vertical=(content.min_y()-rect.min_y()).min(rect.max_y()-content.max_y()).max(0.);
+    scene: &mut Scene,
+    rect: Rect,
+    palette: Palette,
+    state: ControlState,
+    surface: &str,
+    text_bounds: Option<Rect>,
+) -> Result<Rgba, tekes_ui_tokens::surface_palette::SurfaceError> {
+    let phase = if state.disabled {
+        "disabled"
+    } else if state.pressed {
+        "pressed"
+    } else if state.hovered {
+        "hover"
+    } else {
+        "rest"
+    };
+    let colors =
+        tekes_ui_tokens::surface_palette::resolve_surface(palette, surface, "link", phase)?;
+    let mut radius = rect.size.width.min(rect.size.height).max(0.) * 0.5;
+    if let Some(content) = text_bounds {
+        let horizontal = (content.min_x() - rect.min_x())
+            .min(rect.max_x() - content.max_x())
+            .max(0.);
+        let vertical = (content.min_y() - rect.min_y())
+            .min(rect.max_y() - content.max_y())
+            .max(0.);
         // A corner radius no larger than the sum of both clearances contains
         // the whole text rectangle, including multi-line first/last rows.
-        radius=radius.min(horizontal+vertical);
+        radius = radius.min(horizontal + vertical);
     }
-    let mut background=Quad::new(rect,colors.background).with_corner_radius(radius);
-    if let Some(boundary)=colors.boundary {
-        background=background.with_border(proposal::metric("stroke","stroke-rule").expect("Link boundary stroke"),boundary);
+    let mut background = Quad::new(rect, colors.background).with_corner_radius(radius);
+    if let Some(boundary) = colors.boundary {
+        background = background.with_border(
+            proposal::metric("stroke", "stroke-rule").expect("Link boundary stroke"),
+            boundary,
+        );
     }
     scene.push_quad(background);
-    let focused=state.focused && state.focus_visible && !state.disabled;
-    if focused && let Some(focus)=colors.focus {
-        crate::paint::focus_ring_with_color(scene,rect,focus,radius);
+    let focused = state.focused && state.focus_visible && !state.disabled;
+    if focused && let Some(focus) = colors.focus {
+        crate::paint::focus_ring_with_color(scene, rect, focus, radius);
     }
-    let thickness=proposal::metric("stroke",if focused {"stroke-emphasis"}else{"stroke-rule"}).expect("Link underline stroke");
+    let thickness = proposal::metric(
+        "stroke",
+        if focused {
+            "stroke-emphasis"
+        } else {
+            "stroke-rule"
+        },
+    )
+    .expect("Link underline stroke");
     // Keep the underline inside the original rounded ground, rather than on
     // its bottom tangent where it crosses the independently offset focus ring.
     // The same content inset is used by LinkView; extreme short/narrow frames
     // are clamped without changing their hit or accessibility allocation.
-    let inset=proposal::metric("spacing","space-regular").expect("Link content inset").max(0.).min(radius);
-    let dy=(radius-inset).max(0.);
-    let arc_inset=radius-(radius*radius-dy*dy).max(0.).sqrt();
-    let horizontal=inset.max(arc_inset).min(rect.size.width.max(0.)*0.5);
-    let height=thickness.min((rect.size.height-inset*2.).max(0.));
-    scene.push_quad(Quad::new(Rect::new(rect.min_x()+horizontal,rect.max_y()-inset-height,(rect.size.width-horizontal*2.).max(0.),height),colors.text));
+    let inset = proposal::metric("spacing", "space-regular")
+        .expect("Link content inset")
+        .max(0.)
+        .min(radius);
+    let dy = (radius - inset).max(0.);
+    let arc_inset = radius - (radius * radius - dy * dy).max(0.).sqrt();
+    let horizontal = inset.max(arc_inset).min(rect.size.width.max(0.) * 0.5);
+    let height = thickness.min((rect.size.height - inset * 2.).max(0.));
+    scene.push_quad(Quad::new(
+        Rect::new(
+            rect.min_x() + horizontal,
+            rect.max_y() - inset - height,
+            (rect.size.width - horizontal * 2.).max(0.),
+            height,
+        ),
+        colors.text,
+    ));
     Ok(colors.text)
 }
 /// Compatibility entry point using the original canvas context.
