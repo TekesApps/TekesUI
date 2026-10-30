@@ -2573,8 +2573,16 @@ mod tests {
         assert_eq!(view.pointer_release_index(&view.model, point), None);
         assert_eq!(view.pointer_up_at(point), MenuEvent::None);
         assert!(view.is_open());
-        assert_eq!(view.key(ControlKey::Space, true), MenuEvent::None);
+        // Menu's public Space-down activates eagerly (covered by the original
+        // menu_keyboard_focus_syncs_before_enter_and_escape_works_before_render).
+        // Establish the original Button's held Space arm to test pointer-only
+        // cancellation; do not invent a second Menu keyboard policy.
+        assert!(!view.runtime.buttons[0].key(ControlKey::Space, true));
+        assert!(view.runtime.buttons[0].state.pressed);
+        assert!(!view.pointer_armed());
         view.cancel_pointer_arm();
+        assert!(view.runtime.buttons[0].state.pressed);
+        assert!(!view.pointer_armed());
         assert_eq!(
             view.key(ControlKey::Space, false),
             MenuEvent::Activated {
@@ -2582,6 +2590,7 @@ mod tests {
                 restore_focus: Some(42)
             }
         );
+        assert_eq!(view.key(ControlKey::Space, false), MenuEvent::None);
     }
 
     #[test]

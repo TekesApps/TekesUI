@@ -81,3 +81,16 @@ with its real #195/#199 callers and its preserved tests, then separately receive
 the required scoped compilation/behavior/GPU checks. The current strict repair
 has only static validation until the integration executor allocates a new frozen
 build window. It does not relabel window02 strict failure as success.
+
+### Pointer cancellation fixture contract — 2026-10-31 / #194
+
+The current Menu public Space-down path activates immediately; the original
+`menu_keyboard_focus_syncs_before_enter_and_escape_works_before_render` test
+retains that policy. The shared pointer-cancel fixture must not use Menu
+Space-down to establish a held Button Space arm. It now arms the original row
+Button with its own key API, verifies the pointer-only Menu cancel preserves the
+held press, and lets the original Menu key-up path deliver exactly one activation
+with its original restore-focus identity. A repeated key-up is rejected. The
+preceding cancel/pointer-up/no-activation assertions remain unchanged. This is a
+fixture correction supported by the window04 failure location and current original
+reducers, not a production Menu/Button behavior change or a relaxed cancel gate.
