@@ -1176,6 +1176,7 @@ dependencies = [
  "mach2",
  "objc2-io-surface",
  "png 0.17.16",
+ "serde",
  "serde_json",
  "tekes-ui-app-protocol",
  "tekes-ui-controls",
