@@ -122,7 +122,7 @@ impl Component for CheckboxContent {
     }
     fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
         MeasuredChild::new(Checkbox::measure(
-            &mut TextAdapter(text, None, true),
+            &mut TextAdapter(text),
             &self.label,
             available.width,
             proposal::TextRole::UiBody,
@@ -131,7 +131,7 @@ impl Component for CheckboxContent {
     fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
         let previous = self.prepared.layout.visible.is_some();
         self.prepared = self.model.prepare_layout(
-            &mut TextAdapter(text, None, true),
+            &mut TextAdapter(text),
             &self.label,
             frame,
             Some(clip),
@@ -151,7 +151,7 @@ impl Component for CheckboxContent {
     ) {
         self.model.paint_prepared(
             scene,
-            &mut TextAdapter(text, None, true),
+            &mut TextAdapter(text),
             &self.label,
             self.prepared,
             theme.palette,

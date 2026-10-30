@@ -321,7 +321,7 @@ impl Component for RadioGroupContent {
     fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
         let labels: Vec<_> = self.labels.iter().map(String::as_str).collect();
         MeasuredChild::new(RadioGroupView::measure_content(
-            &mut TextAdapter(text, None, true),
+            &mut TextAdapter(text),
             &self.model,
             available.width,
             &labels,
@@ -330,7 +330,7 @@ impl Component for RadioGroupContent {
     fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
         let labels: Vec<_> = self.labels.iter().map(String::as_str).collect();
         self.view.arrange_content(
-            &mut TextAdapter(text, None, true),
+            &mut TextAdapter(text),
             &self.model,
             frame,
             Some(clip),
@@ -364,7 +364,7 @@ impl Component for RadioGroupContent {
         let labels: Vec<_> = self.labels.iter().map(String::as_str).collect();
         self.view.paint_content(
             scene,
-            &mut TextAdapter(text, None, true),
+            &mut TextAdapter(text),
             &self.model,
             Some(clip),
             theme.palette,

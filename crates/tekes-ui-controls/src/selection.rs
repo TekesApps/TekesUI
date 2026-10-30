@@ -7,12 +7,12 @@ use crate::control_motion::{ProgressTransition, motion_for};
 use crate::{
     ButtonTextAlign, ButtonTextRenderer, ControlKey, ControlMotionContext, ControlState,
     extended::{
-        ControlFrame, RadioGroup, Slider, Switch, radio_with_state, slider, switch_with_state,
+        ControlFrame, RadioGroup, Slider, Switch, radio_on_surface, slider, switch_with_state,
         switch_with_state_and_thumb_progress,
     },
 };
 use std::time::Duration;
-use tekes_ui_scene::{Point, Rect, Scene};
+use tekes_ui_scene::{Point, Rect, Scene, Size};
 use tekes_ui_tokens::{Palette, proposal};
 
 fn invalid_rect(rect: Rect) -> bool {

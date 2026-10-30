@@ -1738,6 +1738,32 @@ pub fn radio_with_state(
     }
 }
 
+pub(crate) fn radio_on_surface(
+    scene: &mut Scene, rect: Rect, palette: Palette, state: ControlState, surface: &str,
+) {
+    let checked = state.selected;
+    let colors = crate::paint::check_surface_colors(palette, surface, state,
+        if checked { crate::CheckState::Checked } else { crate::CheckState::Unchecked });
+    let size = rect.size.width.min(rect.size.height).max(0.);
+    let frame = Rect::new(
+        rect.center().x - size * 0.5,
+        rect.center().y - size * 0.5,
+        size,
+        size,
+    );
+    let mut quad = Quad::new(frame, colors.background).with_corner_radius(size * 0.5);
+    if let Some(boundary) = colors.boundary {
+        quad = quad.with_border(proposal::metric("stroke", "stroke-rule").expect("control stroke"), boundary);
+    }
+    scene.push_quad(quad);
+    if checked && let Some(marker) = colors.marker {
+        scene.push_quad(Quad::new(frame.inset(size * 0.28), marker).with_corner_radius(size * 0.5));
+    }
+    if state.focused && state.focus_visible && !state.disabled && let Some(focus) = colors.focus {
+        crate::paint::focus_ring_with_color(scene, frame, focus, size * 0.5);
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct SliderGeometry {
     pub track: Rect,

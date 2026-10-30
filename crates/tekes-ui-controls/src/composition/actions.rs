@@ -1149,7 +1149,15 @@ mod checkbox_mount_tests {
         h.render(&mut Scene::new(),&mut Text,f,f,tekes_ui_tokens::Theme::LIGHT.into()).unwrap();
         let before=[h.root.find(ComponentId(2)).unwrap().mount,h.root.find(ComponentId(3)).unwrap().mount];
         for id in [ComponentId(2),ComponentId(3)] {let c=h.root.find_mut(id).unwrap().component_mut::<CheckboxContent>().unwrap();c.set_availability(true,false);c.set_availability(false,false);}
-        let _restore=super::mount_test_counter::Restore(ScopedMountOverride::current());
+        // Preserve restoration around the same original allocator even in the
+        // existing isolated counter-test process; no historical test module dependency.
+        struct Restore(u64);
+        impl Drop for Restore {
+            fn drop(&mut self) {
+                ScopedMountOverride::set(self.0);
+            }
+        }
+        let _restore = Restore(ScopedMountOverride::current());
         ScopedMountOverride::set(u64::MAX-1);
         assert_eq!(h.render(&mut Scene::new(),&mut Text,f,f,tekes_ui_tokens::Theme::LIGHT.into()),Err(CompositionError::MountExhausted));
         assert_eq!(ScopedMountOverride::current(),u64::MAX-1);

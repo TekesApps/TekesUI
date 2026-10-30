@@ -298,7 +298,7 @@ impl Component for SegmentedControlContent {
     fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
         let labels = self.labels.iter().map(String::as_str).collect::<Vec<_>>();
         MeasuredChild::new(SegmentedControlView::measure(
-            &mut TextAdapter(text, None, true),
+            &mut TextAdapter(text),
             &labels,
             available,
             proposal::TextRole::UiBody,
@@ -308,7 +308,7 @@ impl Component for SegmentedControlContent {
     fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
         let labels = self.labels.iter().map(String::as_str).collect::<Vec<_>>();
         self.view.arrange(
-            &mut TextAdapter(text, None, true),
+            &mut TextAdapter(text),
             &self.model,
             &labels,
             frame,
@@ -344,7 +344,7 @@ impl Component for SegmentedControlContent {
         let labels = self.labels.iter().map(String::as_str).collect::<Vec<_>>();
         self.view.paint_arranged(
             scene,
-            &mut TextAdapter(text, None, true),
+            &mut TextAdapter(text),
             &self.model,
             &labels,
             Some(clip),
