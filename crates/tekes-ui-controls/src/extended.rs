@@ -1856,35 +1856,53 @@ pub fn link_underline(
     theme: impl Into<Palette>,
     state: ControlState,
 ) -> Rgba {
-    let theme = theme.into();
-    let role = if state.disabled {
-        "disabled-text"
-    } else if state.pressed {
-        "c-link-pressed"
-    } else if state.hovered {
-        "c-link-hover"
-    } else {
-        "c-link-foreground"
-    };
-    let ink = paint_color(theme, role);
-    if state.focused && state.focus_visible && !state.disabled {
-        focus_outline(scene, rect, theme);
+    link_underline_on_surface(scene,rect,theme.into(),state,"canvas")
+        .expect("default Link Surface")
+}
+/// Resolve the complete original Link packet before painting. No Button styling
+/// or new hover/pressed state machine is introduced.
+pub fn link_underline_on_surface(
+    scene:&mut Scene,rect:Rect,palette:Palette,state:ControlState,surface:&str,
+) -> Result<Rgba,tekes_ui_tokens::surface_palette::SurfaceError> {
+    link_underline_with_content_on_surface(scene,rect,palette,state,surface,None)
+}
+// Geometry comes from the same renderer/role/width that paints the original
+// label. A long wrapped label must not extend into a rounded ground's cutouts.
+pub(crate) fn link_underline_with_content_on_surface(
+    scene:&mut Scene,rect:Rect,palette:Palette,state:ControlState,surface:&str,
+    text_bounds:Option<Rect>,
+) -> Result<Rgba,tekes_ui_tokens::surface_palette::SurfaceError> {
+    let phase=if state.disabled {"disabled"}else if state.pressed {"pressed"}else if state.hovered {"hover"}else{"rest"};
+    let colors=tekes_ui_tokens::surface_palette::resolve_surface(palette,surface,"link",phase)?;
+    let mut radius=rect.size.width.min(rect.size.height).max(0.)*0.5;
+    if let Some(content)=text_bounds {
+        let horizontal=(content.min_x()-rect.min_x()).min(rect.max_x()-content.max_x()).max(0.);
+        let vertical=(content.min_y()-rect.min_y()).min(rect.max_y()-content.max_y()).max(0.);
+        // A corner radius no larger than the sum of both clearances contains
+        // the whole text rectangle, including multi-line first/last rows.
+        radius=radius.min(horizontal+vertical);
     }
-    let thickness = if state.focused && state.focus_visible && !state.disabled {
-        2.
-    } else {
-        1.
-    };
-    scene.push_quad(Quad::new(
-        Rect::new(
-            rect.min_x(),
-            rect.max_y() - thickness,
-            rect.size.width.max(0.),
-            thickness,
-        ),
-        ink,
-    ));
-    ink
+    let mut background=Quad::new(rect,colors.background).with_corner_radius(radius);
+    if let Some(boundary)=colors.boundary {
+        background=background.with_border(proposal::metric("stroke","stroke-rule").expect("Link boundary stroke"),boundary);
+    }
+    scene.push_quad(background);
+    let focused=state.focused && state.focus_visible && !state.disabled;
+    if focused && let Some(focus)=colors.focus {
+        crate::paint::focus_ring_with_color(scene,rect,focus,radius);
+    }
+    let thickness=proposal::metric("stroke",if focused {"stroke-emphasis"}else{"stroke-rule"}).expect("Link underline stroke");
+    // Keep the underline inside the original rounded ground, rather than on
+    // its bottom tangent where it crosses the independently offset focus ring.
+    // The same content inset is used by LinkView; extreme short/narrow frames
+    // are clamped without changing their hit or accessibility allocation.
+    let inset=proposal::metric("spacing","space-regular").expect("Link content inset").max(0.).min(radius);
+    let dy=(radius-inset).max(0.);
+    let arc_inset=radius-(radius*radius-dy*dy).max(0.).sqrt();
+    let horizontal=inset.max(arc_inset).min(rect.size.width.max(0.)*0.5);
+    let height=thickness.min((rect.size.height-inset*2.).max(0.));
+    scene.push_quad(Quad::new(Rect::new(rect.min_x()+horizontal,rect.max_y()-inset-height,(rect.size.width-horizontal*2.).max(0.),height),colors.text));
+    Ok(colors.text)
 }
 /// Compatibility entry point using the original canvas context.
 pub fn progress(scene: &mut Scene, rect: Rect, theme: impl Into<Palette>, model: Progress) {

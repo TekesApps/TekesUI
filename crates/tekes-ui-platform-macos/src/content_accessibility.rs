@@ -277,6 +277,8 @@ fn project(
             Role::MenuButton => NativeRole::MenuButton,
             Role::Menu => NativeRole::Menu,
             Role::MenuItem => NativeRole::MenuItem,
+            Role::TabList => NativeRole::TabGroup,
+            Role::Tab => NativeRole::Tab,
             _ => NativeRole::Group,
         },
         frame: Rect {
@@ -1137,6 +1139,33 @@ mod context_menu_bridge_tests {
         host.set_window_active(false);
         assert!(content_nodes(&host).is_empty());
         assert!(!content_action(&mut host, current, AccessibilityAction::ShowMenu).consumed);
+    }
+}
+
+#[cfg(test)]
+#[cfg(test)]
+mod navigation_role_tests {
+    use super::*;
+
+    #[test]
+    fn tab_roles_keep_their_native_accessibility_identity() {
+        for (role, native) in [
+            (ContentRole::TabList, AccessibilityRole::TabGroup),
+            (ContentRole::Tab, AccessibilityRole::Tab),
+        ] {
+            let mut semantics = ContentSemantics::new(role, "Workspace");
+            semantics.selected = true;
+            let node = project(
+                AccessibilityKey { component: 63, part: Some(1) },
+                None,
+                tekes_ui_scene::Rect::new(10., 20., 80., 40.),
+                true,
+                &semantics,
+            );
+            assert_eq!(node.role, native);
+            assert!(node.selected && node.focused);
+            assert_eq!(node.label, "Workspace");
+        }
     }
 }
 

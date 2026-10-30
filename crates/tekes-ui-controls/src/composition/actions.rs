@@ -35,6 +35,23 @@ pub enum ContentActionPayload {
     SegmentSelection(SegmentIntent),
     /// Owned controlled Disclosure request captured at original delivery.
     DisclosureExpansion(DisclosureIntent),
+    /// Selection captured by the original Tabs event, before later model or
+    /// layout updates can change the currently selected panel.
+    TabSelection {
+        index: usize,
+        label: ComponentId,
+        panel: ComponentId,
+    },
+    /// Ancestor navigation captured against the rendered Breadcrumb path.
+    BreadcrumbNavigation {
+        index: usize,
+        path: Vec<String>,
+    },
+    /// Original command, captured before confirmation changes the query/filter.
+    CommandSelection {
+        index: usize,
+        label: String,
+    },
 }
 /// Item identity in one immutable model revision. Explicit values provide a
 /// stable path; legacy positional menus retain index, label and model revision.

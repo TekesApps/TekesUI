@@ -30,6 +30,8 @@ pub enum SemanticRole {
     MenuButton,
     Menu,
     MenuItem,
+    TabList,
+    Tab,
 }
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -215,5 +217,22 @@ mod tests {
         assert!(
             !AccessibilityAction::SetSelection(std::ops::Range { start: 3, end: 1 }).is_valid()
         );
+    }
+}
+
+#[cfg(test)]
+mod navigation_role_contract_tests {
+    use super::SemanticRole;
+
+    #[test]
+    fn tab_roles_roundtrip_and_future_roles_fail_closed() {
+        for (role, encoded) in [
+            (SemanticRole::TabList, r#""TabList""#),
+            (SemanticRole::Tab, r#""Tab""#),
+        ] {
+            assert_eq!(serde_json::to_string(&role).unwrap(), encoded);
+            assert_eq!(serde_json::from_str::<SemanticRole>(encoded).unwrap(), role);
+        }
+        assert!(serde_json::from_str::<SemanticRole>(r#""FutureRole""#).is_err());
     }
 }

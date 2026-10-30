@@ -241,6 +241,8 @@ fn semantics(s: &wire::Semantics) -> ContentSemantics {
             W::MenuButton => R::MenuButton,
             W::Menu => R::Menu,
             W::MenuItem => R::MenuItem,
+            W::TabList => R::TabList,
+            W::Tab => R::Tab,
         },
         name: s.name.clone(),
         value: s.value.clone(),
@@ -604,6 +606,85 @@ mod tests {
 #[cfg(test)]
 #[path = "combo_publication_tests.rs"]
 mod combo_publication_tests;
+
+#[cfg(test)]
+#[cfg(test)]
+mod navigation_recovery_tests {
+    use super::*;
+    #[test]
+    fn public_tabs_snapshot_returns_original_navigation_roles_and_identity() {
+        use tekes_ui_controls::{ButtonTextAlign, ButtonTextRenderer, composition::*};
+        use tekes_ui_scene::{Scene, Size};
+        use tekes_ui_tokens::{Rgba, Theme, proposal};
+        struct Text;
+        impl ButtonTextRenderer for Text {
+            fn measure(&mut self, text: &str, _: proposal::TextRole, width: f32) -> Size {
+                Size::new((text.len() as f32 * 8.).min(width), 20.)
+            }
+            fn draw(
+                &mut self,
+                _: &mut Scene,
+                _: &str,
+                _: proposal::TextRole,
+                _: Rect,
+                _: ButtonTextAlign,
+                _: Rgba,
+            ) {
+            }
+        }
+        let mut host = ContentHost::new(Content::new(
+            ComponentId(63),
+            TabsContent::new(
+                vec![
+                    TabItem::new(
+                        Content::new(ComponentId(64), TextContent::new("Overview")),
+                        Content::new(ComponentId(65), TextContent::new("Panel A")),
+                    ),
+                    TabItem::new(
+                        Content::new(ComponentId(66), TextContent::new("Settings")),
+                        Content::new(ComponentId(67), TextContent::new("Panel B")),
+                    ),
+                ],
+                1,
+            ),
+        ))
+        .unwrap();
+        let frame = Rect::new(0., 0., 300., 200.);
+        host.render(
+            &mut Scene::new(),
+            &mut Text,
+            frame,
+            frame,
+            Theme::LIGHT.into(),
+        )
+        .unwrap();
+        let sent = crate::content_accessibility::snapshot(&host).unwrap();
+        let received: Vec<wire::SemanticNode> =
+            serde_json::from_slice(&serde_json::to_vec(&sent).unwrap()).unwrap();
+        validate(&received).unwrap();
+        assert_eq!(
+            received, sent,
+            "serialization preserves target mount and part identity"
+        );
+        let tabs = received.iter().find(|node| node.target.id == 63).unwrap();
+        assert_eq!(
+            tabs.target.mount,
+            host.semantic_mount(ComponentId(63)).unwrap()
+        );
+        assert_eq!(semantics(&tabs.semantics).role, ContentRole::TabList);
+        assert_eq!(
+            tabs.parts
+                .iter()
+                .map(|part| (
+                    part.index,
+                    semantics(&part.semantics).role,
+                    semantics(&part.semantics).selected
+                ))
+                .collect::<Vec<_>>(),
+            vec![(0, ContentRole::Tab, false), (1, ContentRole::Tab, true)]
+        );
+    }
+}
 
 #[cfg(test)]
 mod selection_publication_tests {

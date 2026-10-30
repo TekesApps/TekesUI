@@ -86,6 +86,8 @@ pub enum AccessibilityRole {
     Menu,
     MenuButton,
     MenuItem,
+    TabGroup,
+    Tab,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -527,6 +529,8 @@ pub(crate) mod native {
                             objc2_app_kit::NSAccessibilityMenuButtonRole
                         }
                         AccessibilityRole::MenuItem => objc2_app_kit::NSAccessibilityMenuItemRole,
+                        AccessibilityRole::Tab => objc2_app_kit::NSAccessibilityRadioButtonRole,
+                        AccessibilityRole::TabGroup => objc2_app_kit::NSAccessibilityTabGroupRole,
                     }
                 };
                 role.retain()

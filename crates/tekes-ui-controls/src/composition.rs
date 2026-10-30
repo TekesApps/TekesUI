@@ -84,6 +84,10 @@ mod label;
 pub use tekes_ui_text::{
     LabelForeground, LabelForegroundRun, LabelSourceVersion, SemanticLabel, SemanticLabelError,
 };
+mod link;
+pub use link::LinkContent;
+mod navigation;
+pub use navigation::{BreadcrumbContent, CommandPaletteContent, TabItem, TabsContent};
 mod menu;
 mod number;
 pub use number::{
@@ -249,6 +253,8 @@ pub enum ContentRole {
     MenuButton,
     Menu,
     MenuItem,
+    TabList,
+    Tab,
     /// The original visible split divider, with its finite ratio domain.
     Splitter,
 }
@@ -846,6 +852,7 @@ pub struct Content {
     activity_parent: bool,
     composition_active: bool,
     retained_body_paint: bool,
+    semantic_suppressed: bool,
 }
 impl Content {
     fn active(&self) -> bool {
@@ -876,7 +883,12 @@ impl Content {
             activity_parent: true,
             composition_active: true,
             retained_body_paint: false,
+            semantic_suppressed: false,
         }
+    }
+    /// Hide a decorative slot from AX while preserving mount, layout and paint.
+    pub(super) fn suppress_semantics(&mut self) {
+        self.semantic_suppressed = true;
     }
     // The retained body stays mounted. Only ordinary paint may outlive activity.
     fn set_composition_active(&mut self, active: bool) {
@@ -1703,7 +1715,7 @@ impl Content {
         focused: Option<ComponentId>,
         out: &mut Vec<SemanticNode>,
     ) {
-        if !self.active() || self.component.semantic_subtree_hidden() {
+        if !self.active() || self.semantic_suppressed || self.component.semantic_subtree_hidden() {
             return;
         }
         let hidden = self.component.semantic_hidden();

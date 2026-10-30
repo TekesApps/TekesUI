@@ -8,7 +8,7 @@ use crate::control_motion::{ProgressTransition, motion_for};
 use crate::layout::{AlignmentOverride, MeasuredChild, layout_measured_children};
 use crate::{
     ButtonLayout, ButtonModel, ButtonSize, ButtonTextAlign, ButtonTextRenderer, ControlKey,
-    composite::{MenuEvent, MenuLayout, MenuView},
+    composite::{MenuEvent, MenuHeader, MenuLayout, MenuRenderContext, MenuView},
     extended::{
         Axis, Breadcrumb, ComboBox, CommandPalette, ControlFrame, Disclosure, Grid, Link,
         SegmentedControl, SplitView, Stack,
@@ -1357,11 +1357,21 @@ pub struct LinkView {
     pressed: bool,
     window_active: bool,
     visible: Option<Rect>,
+    surface: &'static str,
 }
 impl LinkView {
+    /// Validate the parent identity without changing the original arm/focus/model.
+    pub fn set_surface(
+        &mut self,
+        name: &str,
+    ) -> Result<(), tekes_ui_tokens::surface_palette::SurfaceError> {
+        self.surface = tekes_ui_tokens::surface_palette::canonical_surface(name)?;
+        Ok(())
+    }
     fn sync_model(&mut self, model: &Link) {
         self.button.state.disabled = model.button.state.disabled;
-        if model.button.state.disabled {
+        self.button.state.loading = model.button.state.loading;
+        if model.button.state.disabled || model.button.state.loading {
             self.cancel();
         }
     }
@@ -1379,7 +1389,10 @@ impl LinkView {
     ) -> ButtonComponentLayout {
         self.sync_model(model);
         let visible = ControlFrame::new(frame, clip).visible_frame();
-        if !visible.is_some_and(has_area) || model.button.state.disabled {
+        if !visible.is_some_and(has_area)
+            || model.button.state.disabled
+            || model.button.state.loading
+        {
             self.blur();
         }
         let inset = proposal::metric("spacing", "space-regular")
@@ -1407,7 +1420,22 @@ impl LinkView {
             if let Some(ancestor) = clip {
                 scene.push_clip(ancestor);
             }
-            let ink = crate::extended::link_underline(scene, frame, palette, self.button.state);
+            let measured = text.measure(label, role, content.size.width);
+            let text_bounds = Rect::new(
+                content.min_x(),
+                content.center().y - measured.height * 0.5,
+                measured.width.max(0.),
+                measured.height.max(0.),
+            );
+            let ink = crate::extended::link_underline_with_content_on_surface(
+                scene,
+                frame,
+                palette,
+                self.button.state,
+                self.surface,
+                Some(text_bounds),
+            )
+            .expect("validated Link Surface");
             if clip.is_some() {
                 scene.pop_clip();
             }
@@ -1418,6 +1446,11 @@ impl LinkView {
         model.button.state = self.button.state;
         self.layout
     }
+    pub(crate) fn routed_pointer_move(&mut self, p: Point) -> bool {
+        let before = (self.hovered, self.button.state.pressed);
+        self.pointer_move(p);
+        before != (self.hovered, self.button.state.pressed)
+    }
     pub fn pointer_move(&mut self, p: Point) {
         self.hovered = self.window_active && self.visible.is_some_and(|v| v.contains(p));
         if self.pressed && !self.hovered {
@@ -1425,17 +1458,29 @@ impl LinkView {
         }
     }
     pub fn pointer_down(&mut self, p: Point) -> bool {
+        self.pointer_down_with_focus(p, true)
+    }
+    pub(crate) fn routed_pointer_down(&mut self, p: Point, model: &Link) -> bool {
+        self.sync_model(model);
+        self.pointer_down_with_focus(p, false)
+    }
+    fn pointer_down_with_focus(&mut self, p: Point, request_focus: bool) -> bool {
         if !self.window_active
             || self.button.state.disabled
+            || self.button.state.loading
             || !self.visible.is_some_and(|v| v.contains(p))
         {
             return false;
         }
         self.pressed = true;
         self.hovered = true;
-        self.focused = true;
-        self.focus_visible = false;
+        if request_focus {
+            self.focused = true;
+            self.focus_visible = false;
+        }
         self.button.pointer_down();
+        self.button.state.focused = self.focused;
+        self.button.state.focus_visible = self.focus_visible;
         true
     }
     pub fn pointer_up(&mut self, p: Point, model: &mut Link) -> bool {
@@ -1452,6 +1497,7 @@ impl LinkView {
             || !self.focused
             || !self.window_active
             || self.button.state.disabled
+            || self.button.state.loading
         {
             return ComponentEvent::default();
         }
@@ -1465,13 +1511,33 @@ impl LinkView {
     }
     pub fn activate(&mut self, model: &mut Link) -> bool {
         self.sync_model(model);
-        if model.button.state.disabled {
+        if model.button.state.disabled || model.button.state.loading {
             return false;
         }
         if !self.focused {
             self.focus(false);
         }
         self.key(ControlKey::Enter, true, model).changed
+    }
+    // ContentHost owns activation focus; an auxiliary AX action must not create
+    // a second focused Link while a composing editor keeps the original focus.
+    pub(crate) fn routed_activate(&mut self, model: &mut Link) -> bool {
+        self.sync_model(model);
+        if !self.window_active || self.button.state.disabled || self.button.state.loading {
+            return false;
+        }
+        self.button.pointer_down();
+        let activated = self.button.pointer_up(true);
+        self.button.state.focused = self.focused;
+        self.button.state.focus_visible = self.focus_visible;
+        model.button.state = self.button.state;
+        activated
+    }
+    pub(crate) fn routed_cancel(&mut self) -> bool {
+        let changed = self.cancel() || self.hovered;
+        self.hovered = false;
+        self.button.state.hovered = false;
+        changed
     }
     pub fn focus(&mut self, visible: bool) {
         self.focused = true;
@@ -1513,6 +1579,7 @@ impl Default for LinkView {
             pressed: false,
             window_active: true,
             visible: None,
+            surface: "canvas",
         }
     }
 }
@@ -1892,6 +1959,94 @@ pub struct BreadcrumbLayout {
     pub frame: Rect,
     pub items: Vec<ControlFrame>,
 }
+
+#[derive(Clone, Debug, Default)]
+struct BreadcrumbMeasure {
+    items: Vec<Rect>,
+    separators: Vec<Rect>,
+    single_row: bool,
+    size: Size,
+}
+
+// Breadcrumb owns its path flow, not a general wrapping container. Item and
+// passive leading separator positions are the sole geometry used by rendering.
+fn measure_breadcrumb(
+    text: &mut impl ButtonTextRenderer, labels: &[&str], max_width: f32,
+    role: proposal::TextRole,
+) -> BreadcrumbMeasure {
+    let width = if max_width.is_finite() { max_width.max(0.) } else { 0. };
+    if labels.is_empty() || width == 0. {
+        return BreadcrumbMeasure { items: vec![Rect::default(); labels.len()],
+            separators: vec![Rect::default(); labels.len().saturating_sub(1)],
+            size: Size::new(width, 0.), ..Default::default() };
+    }
+    let scale = text.resolved_font_size(role) / role.style().size;
+    let scale = if scale.is_finite() && scale > 0. { scale } else { 1. };
+    let spacing = proposal::metric("spacing", "space-tight").expect("Breadcrumb spacing") * scale;
+    let focus = proposal::metric("spacing", "c-focus-offset").expect("focus offset")
+        + proposal::metric("stroke", "c-focus-width").expect("focus width");
+    let slash = text.measure("/", role, width);
+    let glyph_width = if slash.width.is_finite() { slash.width.max(0.).min(width) } else { 0. };
+    let natural_gap = glyph_width + 2. * (spacing + focus.max(0.));
+    let natural: Vec<_> = labels.iter().map(|label|
+        ButtonModel::measure(text, label, width, ButtonSize::Body, role).width.max(0.)
+    ).collect();
+    let total: f64 = natural.iter().map(|w| f64::from(*w)).sum::<f64>()
+        + labels.len().saturating_sub(1) as f64 * f64::from(natural_gap);
+    let single_row = total <= f64::from(width);
+    let mut placements = Vec::with_capacity(labels.len());
+    let mut row_heights = vec![0.0_f32];
+    let mut row = 0;
+    let mut x = 0.;
+    for (index, (label, preferred)) in labels.iter().zip(&natural).enumerate() {
+        let gap = if index == 0 { 0. } else { natural_gap };
+        let starts_new_row = !single_row && x > 0. && x + gap + preferred > width;
+        if starts_new_row {
+            row += 1; row_heights.push(0.); x = 0.;
+        }
+        // An extremely narrow row must still leave a nonnegative item region;
+        // a slash without its original focus clearance is not painted.
+        let available = (width - x).max(0.);
+        let mut gap = if gap >= available { available * 0.5 } else { gap };
+        // A leading passive separator must not turn an otherwise nonempty
+        // original Button content slot into an empty one. Empty-label measure
+        // supplies the original scaled horizontal insets without new constants.
+        // Only this already-wrapped row may omit its separator and its budget;
+        // a full row that also has no content keeps the existing narrow fallback.
+        if starts_new_row {
+            let insets = ButtonModel::measure(text, "", width, ButtonSize::Body, role).width;
+            if width > insets && (available - gap).max(0.) <= insets {
+                gap = 0.;
+            }
+        }
+        let item_x = x + gap;
+        let item_width = if single_row && index + 1 == labels.len() {
+            (width - item_x).max(0.)
+        } else { preferred.min((width - item_x).max(0.)) };
+        let height = ButtonModel::measure(text, label, item_width, ButtonSize::Body, role).height.max(0.);
+        row_heights[row] = row_heights[row].max(height);
+        placements.push((row, item_x, item_width, x, gap));
+        x = item_x + item_width;
+    }
+    let mut y = 0.;
+    let row_tops: Vec<_> = row_heights.iter().map(|height| { let top = y; y += height + spacing; top }).collect();
+    let height = (y - spacing).max(0.);
+    let mut items = Vec::with_capacity(labels.len());
+    let mut separators = Vec::with_capacity(labels.len().saturating_sub(1));
+    for (index, (row, x, width, separator_x, separator_width)) in placements.into_iter().enumerate() {
+        let row_height = row_heights[row];
+        items.push(Rect::new(x, row_tops[row], width, row_height));
+        if index > 0 {
+            let fits = separator_width >= glyph_width + focus.max(0.) * 2.;
+            let glyph_height = slash.height.max(0.).min(row_height);
+            separators.push(if fits { Rect::new(separator_x + (separator_width - glyph_width) * 0.5,
+                row_tops[row] + (row_height - glyph_height) * 0.5, glyph_width, glyph_height)
+            } else { Rect::default() });
+        }
+    }
+    BreadcrumbMeasure { items, separators, single_row, size: Size::new(width, height) }
+}
+
 #[derive(Clone, Debug)]
 pub struct BreadcrumbView {
     layout: BreadcrumbLayout,
@@ -1902,8 +2057,49 @@ pub struct BreadcrumbView {
     pressed: Option<usize>,
     window_active: bool,
     disabled: bool,
+    surface: &'static str,
+    rendered_path: Vec<String>,
 }
 impl BreadcrumbView {
+    /// Measure the multi-line breadcrumb at an available width. The returned
+    /// height is the same geometry used by `render`; callers can allocate it
+    /// before painting while existing fixed-frame callers remain compatible.
+    pub fn measure(
+        &self,
+        text: &mut impl ButtonTextRenderer,
+        model: &Breadcrumb,
+        labels: &[&str],
+        max_width: f32,
+        role: proposal::TextRole,
+    ) -> Size {
+        let count = model.items.len().min(labels.len());
+        measure_breadcrumb(text, &labels[..count], max_width, role).size
+    }
+
+    // A positional path cannot transfer an old gesture to different business
+    // content. Retain only the original layout's data identity, not input state.
+    fn path_is_current(&mut self, model: &Breadcrumb) -> bool {
+        if self.rendered_path == model.items {
+            return true;
+        }
+        self.blur();
+        self.hovered = None;
+        self.layout = BreadcrumbLayout::default();
+        false
+    }
+    /// Set the semantic parent before painting, preserving the original gesture
+    /// and current-page policy. Newly added path items inherit the same parent.
+    pub fn set_surface(
+        &mut self,
+        name: &str,
+    ) -> Result<(), tekes_ui_tokens::surface_palette::SurfaceError> {
+        let surface = tekes_ui_tokens::surface_palette::canonical_surface(name)?;
+        self.surface = surface;
+        for button in &mut self.buttons {
+            button.set_surface(surface);
+        }
+        Ok(())
+    }
     #[allow(clippy::too_many_arguments)]
     pub fn render(
         &mut self,
@@ -1923,6 +2119,9 @@ impl BreadcrumbView {
             self.layout = BreadcrumbLayout::default();
             return self.layout.clone();
         }
+        if !self.path_is_current(model) {
+            self.rendered_path.clone_from(&model.items);
+        }
         let n = model.items.len().min(labels.len());
         if self.buttons.len() != n {
             self.cancel();
@@ -1935,42 +2134,32 @@ impl BreadcrumbView {
             self.hovered = None;
         }
         self.buttons.resize_with(n, ButtonModel::default);
-        let mut cells = Vec::new();
-        let mut x = frame.min_x();
-        for (i, label) in labels.iter().take(n).enumerate() {
-            let size = ButtonModel::measure(
-                text,
-                label,
-                (frame.max_x() - x).max(0.),
-                ButtonSize::Body,
-                role,
-            );
-            let w = if i + 1 == n {
-                (frame.max_x() - x).max(0.)
-            } else {
-                (size.width + 22.).min((frame.max_x() - x).max(0.))
-            };
-            cells.push(Rect::new(x, frame.min_y(), w, frame.size.height));
-            x += w;
-            if i + 1 < n {
-                x += 8.;
-            }
-        }
+        let measured = measure_breadcrumb(text, &labels[..n], frame.size.width, role);
+        let frame = Rect::new(
+            frame.min_x(),
+            frame.min_y(),
+            measured.size.width,
+            frame.size.height.max(measured.size.height),
+        );
         let clipped = safe_clip(scene, clip);
         let mut items = Vec::new();
-        for i in 0..n {
+        for (i, label) in labels[..n].iter().enumerate() {
             let b = &mut self.buttons[i];
+            b.set_surface(self.surface);
             b.state.disabled = self.disabled || i + 1 == n;
             b.state.selected = i + 1 == n;
             b.state.focused = self.window_active && self.focused == Some(i);
             b.state.focus_visible = b.state.focused && self.focus_visible;
             b.state.hovered = self.window_active && self.hovered == Some(i);
             b.state.pressed = self.window_active && self.pressed == Some(i);
+            let mut local = measured.items[i];
+            if measured.single_row { local.size.height = frame.size.height; }
+            let cell = local.offset(frame.min_x(), frame.min_y());
             let l = b.render(
                 scene,
                 text,
-                labels[i],
-                cells[i],
+                label,
+                cell,
                 clip,
                 palette,
                 ButtonVariant::Quiet,
@@ -1978,24 +2167,19 @@ impl BreadcrumbView {
                 role,
                 ButtonTextAlign::Leading,
             );
-            if i + 1 < n {
-                let separator = Rect::new(
-                    (cells[i].max_x() - 13.0).max(cells[i].min_x()),
-                    frame.min_y(),
-                    (cells[i].max_x() - 5.0).max(cells[i].min_x())
-                        - (cells[i].max_x() - 13.0).max(cells[i].min_x()),
-                    frame.size.height,
-                );
-                text.draw(
-                    scene,
-                    "/",
-                    role,
-                    separator,
-                    ButtonTextAlign::Center,
-                    palette.color("primary-text").expect("primary text token"),
-                );
-            }
             items.push(ControlFrame::new(l.frame, clip));
+            // A cross-row slash is the successor's leading passive region.
+            // It has no ButtonModel, hit rectangle, focus or AX identity.
+            if i > 0 {
+                let mut glyph = measured.separators[i - 1];
+                if measured.single_row { glyph.origin.y = (frame.size.height - glyph.size.height) * 0.5; }
+                if !glyph.is_empty() {
+                    text.draw(scene, "/", role, glyph.offset(frame.min_x(), frame.min_y()),
+                        ButtonTextAlign::Center,
+                        tekes_ui_tokens::surface_palette::resolve_surface(palette, self.surface, "content", "rest")
+                            .expect("validated Breadcrumb parent content").text);
+                }
+            }
         }
         if clipped {
             scene.pop_clip();
@@ -2043,6 +2227,9 @@ impl BreadcrumbView {
         Some(i)
     }
     pub fn pointer_up(&mut self, p: Point, model: &Breadcrumb) -> Option<usize> {
+        if !self.path_is_current(model) {
+            return None;
+        }
         let i = self.pressed.take()?;
         if self.window_active
             && !self.disabled
@@ -2062,6 +2249,9 @@ impl BreadcrumbView {
         down: bool,
         model: &Breadcrumb,
     ) -> (bool, Option<usize>) {
+        if !self.path_is_current(model) {
+            return (false, None);
+        }
         let Some(i) = self
             .focused
             .filter(|_| self.window_active && !self.disabled)
@@ -2081,7 +2271,16 @@ impl BreadcrumbView {
         self.key_event(k, down, model).1
     }
     pub fn activate(&mut self, index: usize, model: &Breadcrumb) -> Option<usize> {
-        if self.disabled || !self.window_active {
+        if !self.path_is_current(model)
+            || self.disabled
+            || !self.window_active
+            || index >= self.layout.items.len().saturating_sub(1)
+            || !self
+                .layout
+                .items
+                .get(index)
+                .is_some_and(|item| item.visible_frame().is_some_and(has_area))
+        {
             return None;
         }
         let index = model.activate(index)?;
@@ -2100,6 +2299,10 @@ impl BreadcrumbView {
             self.focused = Some(i);
             self.focus_visible = visible;
         }
+    }
+    /// Original focused ancestor, shared by composition semantics and focus traversal.
+    pub fn focused_index(&self) -> Option<usize> {
+        self.focused
     }
     pub fn blur(&mut self) {
         self.focused = None;
@@ -2143,6 +2346,8 @@ impl Default for BreadcrumbView {
             pressed: None,
             window_active: true,
             disabled: false,
+            surface: "canvas",
+            rendered_path: Vec::new(),
         }
     }
 }
@@ -2205,6 +2410,21 @@ impl FilteredMenuView {
         role: proposal::TextRole,
         compact: bool,
     ) -> Option<MenuLayout> {
+        self.render_inner(
+            MenuRenderContext { scene, text, anchor, visible, clip, palette, role, compact },
+            items, mapping, active, open, None,
+        )
+    }
+    fn render_inner(
+        &mut self,
+        context: MenuRenderContext<'_, impl ButtonTextRenderer>,
+        items: &[String],
+        mapping: &[usize],
+        active: Option<usize>,
+        open: bool,
+        header: Option<MenuHeader<'_>>,
+    ) -> Option<MenuLayout> {
+        let MenuRenderContext { scene, text, anchor, visible, clip, palette, role, compact } = context;
         // A press belongs to the options actually presented at pointer-down.
         // Updating labels/mapping must not retarget its eventual release.
         if self.mapping != mapping || self.labels != items {
@@ -2214,7 +2434,7 @@ impl FilteredMenuView {
         self.labels = items.to_vec();
         // An open query with no candidates belongs to the caller's empty
         // feedback. No phantom option surface may paint or intercept input.
-        if items.is_empty() {
+        if items.is_empty() && header.is_none() {
             self.cancel();
             return None;
         }
@@ -2228,18 +2448,11 @@ impl FilteredMenuView {
         }
         let labels: Vec<&str> = items.iter().map(String::as_str).collect();
         self.layout = None;
-        let l = self.menu_view.render_with_model(
-            &mut self.menu,
-            scene,
-            text,
-            &labels,
-            anchor,
-            visible,
-            clip,
-            palette,
-            role,
-            compact,
-        )?;
+        let l = if let Some((header, paint)) = header {
+            self.menu_view.render_with_header(&mut self.menu, &labels, MenuRenderContext { scene, text, anchor, visible, clip, palette, role, compact }, header, paint)
+        } else {
+            self.menu_view.render_with_model(&mut self.menu, scene, text, &labels, anchor, visible, clip, palette, role, compact)
+        }?;
         self.layout = Some(l.clone());
         Some(l)
     }
@@ -2989,6 +3202,16 @@ pub struct CommandPaletteView {
     return_focus: Option<usize>,
 }
 impl CommandPaletteView {
+    /// The caller's Surface affects the original trigger only. The existing
+    /// filtered popup keeps its separate semantic Surface and input scope.
+    pub fn set_surface(
+        &mut self,
+        name: &str,
+    ) -> Result<(), tekes_ui_tokens::surface_palette::SurfaceError> {
+        let surface = tekes_ui_tokens::surface_palette::canonical_surface(name)?;
+        self.trigger.set_surface(surface);
+        Ok(())
+    }
     fn sync_trigger_availability(&mut self, model: &mut CommandPalette) -> bool {
         self.trigger.state.disabled = model.combo.disabled;
         if model.combo.disabled || !self.window_active {
@@ -3029,6 +3252,67 @@ impl CommandPaletteView {
             visible: None,
             label_size: tekes_ui_scene::Size::default(),
         })
+    }
+    pub(crate) fn trigger_content_ink(&self, palette: Palette, surface: &str) -> (tekes_ui_tokens::Rgba, tekes_ui_tokens::Rgba) {
+        let colors = self.trigger.surface_colors(palette, ButtonVariant::Primary, surface);
+        (colors.text, colors.icon)
+    }
+    /// Paint the original trigger action around arbitrary mounted Content.
+    /// Layout and semantics remain attached to the same ButtonModel; the
+    /// caller measures and arranges its original decorative child.
+    /// Pass raw `(frame, ancestor_clip)` together; `None` and an empty clip keep
+    /// their original meanings. This replaces the separate frame/clip arguments
+    /// introduced with the Content trigger API.
+    pub fn render_trigger_content(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        model: &mut CommandPalette,
+        content_size: Size,
+        frame_and_clip: (Rect, Option<Rect>),
+        palette: Palette,
+    ) -> ButtonLayout {
+        let (frame, clip) = frame_and_clip;
+        self.sync_trigger_availability(model);
+        self.trigger_layout = Some(self.trigger.render_content_frame(
+            scene,
+            text,
+            content_size,
+            frame,
+            clip,
+            palette,
+            ButtonVariant::Primary,
+        ));
+        self.trigger_layout.unwrap_or_else(|| ButtonLayout {
+            frame: Rect::default(),
+            content: Rect::default(),
+            visible: None,
+            label_size: tekes_ui_scene::Size::default(),
+        })
+    }
+    /// Resolve the same custom trigger slot before the host arranges its
+    /// original decorative Content child.
+    pub fn trigger_content_layout(
+        &mut self,
+        text: &mut dyn ButtonTextRenderer,
+        model: &mut CommandPalette,
+        content_size: Size,
+        frame: Rect,
+        clip: Rect,
+    ) -> ButtonLayout {
+        self.sync_trigger_availability(model);
+        let layout = ButtonLayout::resolve_with_text(
+            text,
+            frame,
+            Some(clip),
+            content_size,
+            ButtonSize::Body,
+            proposal::TextRole::UiBody,
+            ButtonTextAlign::Leading,
+            self.trigger.frame_policy,
+        );
+        self.trigger_layout = Some(layout);
+        layout
     }
     pub fn pointer_down_trigger(&mut self, p: Point) -> bool {
         if !self.window_active || self.trigger.state.disabled {
@@ -3116,6 +3400,10 @@ impl CommandPaletteView {
         self.cancel(model);
         self.return_focus = None;
     }
+    pub(crate) fn cancel_pointer_arm(&mut self) {
+        self.trigger.cancel_pointer();
+        self.options.cancel_pointer_arm();
+    }
     pub fn cancel(&mut self, model: &mut CommandPalette) {
         model.combo.open = false;
         self.trigger.cancel();
@@ -3143,6 +3431,48 @@ impl CommandPaletteView {
         role: proposal::TextRole,
         compact: bool,
     ) -> Option<MenuLayout> {
+        self.render_inner(
+            MenuRenderContext { scene, text, anchor, visible, clip, palette, role, compact },
+            model, None,
+        )
+    }
+    pub(crate) fn render_with_header(
+        &mut self,
+        context: MenuRenderContext<'_, impl ButtonTextRenderer>,
+        model: &mut CommandPalette,
+        header: MenuHeader<'_>,
+    ) -> Option<MenuLayout> {
+        self.render_inner(context, model, Some(header))
+    }
+    pub(crate) fn header_frame(
+        &mut self,
+        text: &mut impl ButtonTextRenderer,
+        model: &CommandPalette,
+        header: Size,
+        anchor: Rect,
+        viewport: Rect,
+    ) -> Rect {
+        let map = self.options.mapping_for_model(&model.combo);
+        let labels: Vec<&str> = map
+            .iter()
+            .map(|index| model.combo.items[*index].as_str())
+            .collect();
+        crate::MenuView::header_frame(
+            text,
+            &labels,
+            header,
+            anchor,
+            viewport,
+            proposal::TextRole::UiBody,
+            false,
+        )
+    }
+    fn render_inner(
+        &mut self,
+        context: MenuRenderContext<'_, impl ButtonTextRenderer>,
+        model: &mut CommandPalette,
+        header: Option<MenuHeader<'_>>,
+    ) -> Option<MenuLayout> {
         self.sync_trigger_availability(model);
         if model.combo.open {
             let _ = self
@@ -3156,19 +3486,8 @@ impl CommandPaletteView {
             .combo
             .active
             .and_then(|i| map.iter().position(|x| *x == i));
-        self.options.render(
-            scene,
-            text,
-            &items,
-            &map,
-            active,
-            model.combo.open,
-            anchor,
-            visible,
-            clip,
-            palette,
-            role,
-            compact,
+        self.options.render_inner(
+            context, &items, &map, active, model.combo.open, header,
         )
     }
     pub fn key_event(
@@ -3240,7 +3559,8 @@ impl CommandPaletteView {
         if !self.sync_trigger_availability(model) {
             if self.window_active {
                 // sync_trigger_availability has applied the live disabled
-                // state; update the saved pointer before the next paint.
+                // state. Re-evaluate hover so a stale enabled hover cannot
+                // survive a model update that arrived before the next paint.
                 self.trigger.pointer_move_at(p);
             } else {
                 self.trigger.blur();

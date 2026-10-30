@@ -97,11 +97,20 @@ pub struct TabsView {
     focused: Option<usize>,
     window_active: bool,
     disabled: bool,
+    disabled_items: Vec<bool>,
     compact: bool,
     press_target: Option<usize>,
+    surface: &'static str,
 }
 
 impl TabsView {
+    /// Preserve the original roving stop and arm while adopting a declared parent.
+    pub fn set_surface(&mut self, name: &str) -> Result<(), tekes_ui_tokens::surface_palette::SurfaceError> {
+        let surface = tekes_ui_tokens::surface_palette::canonical_surface(name)?;
+        self.surface = surface;
+        for button in &mut self.buttons { button.set_surface(surface); }
+        Ok(())
+    }
     pub fn new(count: usize) -> Self {
         Self {
             model: Tabs::new(count),
@@ -112,8 +121,10 @@ impl TabsView {
             focused: None,
             window_active: true,
             disabled: false,
+            disabled_items: vec![false; count],
             compact: false,
             press_target: None,
+            surface: "canvas",
         }
     }
 
@@ -122,6 +133,7 @@ impl TabsView {
     }
 
     pub fn select(&mut self, index: usize) -> bool {
+        if self.disabled_items.get(index).copied().unwrap_or(true) { return false; }
         let changed = self.model.select(index);
         if changed {
             self.cancel_arms();
@@ -131,7 +143,7 @@ impl TabsView {
 
     /// Moves the selected/roving stop as a host restores keyboard focus.
     pub fn focus(&mut self, index: usize, focus_visible: bool) -> bool {
-        if index >= self.model.count {
+        if index >= self.model.count || self.disabled_items[index] {
             return false;
         }
         self.model.selected = index;
@@ -140,6 +152,64 @@ impl TabsView {
         self.focus_visible = focus_visible;
         self.sync_focus_buttons();
         true
+    }
+
+    pub(crate) fn set_item_disabled(&mut self, index: usize, disabled: bool) {
+        if let Some(item) = self.disabled_items.get_mut(index) { *item = disabled; }
+        if let Some(button) = self.buttons.get_mut(index) {
+            button.state.disabled = self.disabled || disabled;
+            if disabled { button.cancel(); }
+        }
+        if disabled && self.focused == Some(index) { self.clear_focus(); }
+        self.cancel_arms();
+    }
+    pub(crate) fn focused_index(&self) -> Option<usize> { self.focused }
+    pub(crate) fn placement(&self) -> &TabsLayout { &self.placement }
+    pub(crate) fn content_theme(&self, index: usize, palette: Palette) -> Option<(tekes_ui_tokens::Rgba, tekes_ui_tokens::Rgba)> {
+        self.buttons.get(index).map(|button| { let colors = button.surface_colors(palette, paint::ButtonVariant::Quiet, self.surface); (colors.text, colors.icon) })
+    }
+    // Natural original Content sizes decide only whether the existing lanes
+    // can be rebalanced. When equal lanes fit, or natural demands cannot fit
+    // within the original budget/cap, retain the established equal geometry.
+    pub(crate) fn content_lanes(
+        text: &mut dyn ButtonTextRenderer, natural: &[Size], width: f32,
+        role: proposal::TextRole, compact: bool,
+    ) -> Vec<f32> {
+        if natural.is_empty() { return Vec::new(); }
+        let count = natural.len();
+        let equal = (width / count as f32).min(160.);
+        let gap = focus_reveal_outset(text.backing_scale()).max(4.);
+        let wanted: Vec<_> = natural.iter().map(|size|
+            ButtonModel::measure_content(text, *size, f32::MAX, size_role(compact), role).width + gap
+        ).collect();
+        let budget = width.min(160. * count as f32);
+        let total: f32 = wanted.iter().sum();
+        if wanted.iter().all(|need| *need <= equal)
+            || wanted.iter().any(|need| *need > 160.) || total > budget {
+            return vec![equal; count];
+        }
+        let mut lanes = wanted;
+        let mut remaining = (budget - total).max(0.);
+        while remaining > 0.0001 {
+            let open = lanes.iter().filter(|lane| **lane < 160.).count();
+            if open == 0 { break; }
+            let share = remaining / open as f32;
+            let before = remaining;
+            for lane in &mut lanes {
+                let extra = share.min(160. - *lane);
+                *lane += extra; remaining = (remaining - extra).max(0.);
+            }
+            if remaining >= before { break; }
+        }
+        lanes
+    }
+    pub(crate) fn content_lane_width(text: &mut dyn ButtonTextRenderer, advance: f32) -> f32 {
+        (advance - focus_reveal_outset(text.backing_scale()).max(4.)).max(0.)
+    }
+    pub(crate) fn content_height(text: &mut dyn ButtonTextRenderer, sizes: &[Size], lanes: &[f32], compact: bool) -> f32 {
+        let gap = focus_reveal_outset(text.backing_scale()).max(4.);
+        sizes.iter().zip(lanes).fold(row_height(compact), |height, (size, lane)| height.max(
+            ButtonModel::measure_content(text, *size, (*lane - gap).max(0.), size_role(compact), proposal::TextRole::UiBody).height))
     }
 
     pub fn set_window_active(&mut self, active: bool) {
@@ -174,6 +244,47 @@ impl TabsView {
         role: proposal::TextRole,
         compact: bool,
     ) -> TabsLayout {
+        self.render_inner(
+            scene, text, labels, None, None, frame, clip, palette, role, compact,
+        )
+    }
+
+    /// Render the same Tabs interaction chrome around caller-owned decorative
+    /// Content labels. The labels remain mounted by the composition host; this
+    /// view only measures their content and supplies the original ButtonModel
+    /// frames, focus, hover, press and hit geometry.
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn render_content(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        content_sizes: &[Size],
+        lanes: &[f32],
+        frame: Rect,
+        clip: Option<Rect>,
+        palette: Palette,
+        role: proposal::TextRole,
+        compact: bool,
+    ) -> TabsLayout {
+        self.render_inner(
+            scene, text, &[], Some(content_sizes), Some(lanes), frame, clip, palette, role, compact,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn render_inner(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        labels: &[&str],
+        content_sizes: Option<&[Size]>,
+        lane_advances: Option<&[f32]>,
+        frame: Rect,
+        clip: Option<Rect>,
+        palette: Palette,
+        role: proposal::TextRole,
+        compact: bool,
+    ) -> TabsLayout {
         self.compact = compact;
         if safe_rect(frame) != frame
             || frame.size.width <= 0.0
@@ -189,59 +300,83 @@ impl TabsView {
             return self.placement.clone();
         }
         let frame = safe_rect(frame);
-        self.buttons
-            .resize_with(self.model.count, ButtonModel::default);
-        let lane = if self.model.count == 0 {
-            0.0
+        self.buttons.resize_with(self.model.count, ButtonModel::default);
+        let lanes = if let Some(lanes) = lane_advances {
+            lanes.to_vec()
         } else {
-            (frame.size.width / self.model.count as f32).min(160.0)
+            let natural: Vec<_> = (0..self.model.count).map(|index|
+                text.measure(labels.get(index).copied().unwrap_or(""), role, frame.size.width)
+            ).collect();
+            Self::content_lanes(text, &natural, frame.size.width, role, compact)
         };
         let lane_gap = focus_reveal_outset(text.backing_scale()).max(4.0);
-        let lane_width = (lane - lane_gap).max(0.0);
         let base_height = row_height(compact);
         let mut measured_heights = Vec::with_capacity(self.model.count);
-        for index in 0..self.model.count {
+        for (index, lane) in lanes.iter().copied().enumerate().take(self.model.count) {
+            let lane_width = (lane - lane_gap).max(0.);
             let label = labels.get(index).copied().unwrap_or("");
-            let measured =
-                ButtonModel::measure(text, label, lane_width, size_role(compact), role).height;
+            let measured = content_sizes
+                .and_then(|sizes| sizes.get(index).copied())
+                .map(|size| {
+                    ButtonModel::measure_content(text, size, lane_width, size_role(compact), role)
+                        .height
+                })
+                .unwrap_or_else(|| {
+                    ButtonModel::measure(text, label, lane_width, size_role(compact), role).height
+                });
             measured_heights.push(base_height.max(measured));
         }
         let height = measured_heights.iter().copied().fold(base_height, f32::max);
         let component_frame = Rect::new(frame.min_x(), frame.min_y(), frame.size.width, height);
         let visible = clip_rect(component_frame, clip);
         let mut items = Vec::with_capacity(self.model.count);
+        let mut x = frame.min_x();
         for (index, measured_height) in measured_heights.iter().copied().enumerate() {
             let label = labels.get(index).copied().unwrap_or("");
             let item = Rect::new(
-                frame.min_x() + index as f32 * lane,
+                x,
                 frame.min_y(),
-                lane_width,
+                (lanes[index] - lane_gap).max(0.),
                 measured_height,
             );
             // The Tabs frame is an internal layout boundary, not a clipping
             // viewport. Keep focus-ring AA inside the true ancestor clip.
             let item_clip = clip;
             let button = &mut self.buttons[index];
+            button.set_surface(self.surface);
             set_button_state(
                 button,
                 self.window_active && self.focused == Some(index),
                 self.window_active && self.focus_visible && self.focused == Some(index),
-                self.disabled,
+                self.disabled || self.disabled_items[index],
                 self.model.selected == index,
             );
-            let layout = button.render(
-                scene,
-                text,
-                label,
-                item,
-                item_clip,
-                palette,
-                paint::ButtonVariant::Quiet,
-                size_role(compact),
-                role,
-                ButtonTextAlign::Leading,
-            );
+            let layout = if let Some(size) = content_sizes.and_then(|sizes| sizes.get(index)) {
+                button.render_content_frame(
+                    scene,
+                    text,
+                    *size,
+                    item,
+                    item_clip,
+                    palette,
+                    paint::ButtonVariant::Quiet,
+                )
+            } else {
+                button.render(
+                    scene,
+                    text,
+                    label,
+                    item,
+                    item_clip,
+                    palette,
+                    paint::ButtonVariant::Quiet,
+                    size_role(compact),
+                    role,
+                    ButtonTextAlign::Leading,
+                )
+            };
             items.push(layout);
+            x += lanes[index];
         }
         self.placement = TabsLayout {
             frame: component_frame,
@@ -280,7 +415,7 @@ impl TabsView {
             .items
             .iter()
             .position(|item| item.hit_test(point))?;
-        if target >= self.model.count {
+        if target >= self.model.count || self.disabled_items[target] {
             return None;
         }
         self.focus_visible = false;
@@ -322,10 +457,9 @@ impl TabsView {
         let focused = self.focused?;
         if !down {
             let selected = focused;
-            return self
-                .buttons
-                .get_mut(selected)
-                .and_then(|button| button.key(key, false).then_some(selected));
+            let activated = self.buttons.get_mut(selected).is_some_and(|button| button.key(key, false));
+            if activated { self.model.select(selected); }
+            return activated.then_some(selected);
         }
         if matches!(
             key,
@@ -334,6 +468,11 @@ impl TabsView {
             let previous = self.model.selected;
             self.focus_visible = true;
             if self.model.key(key) {
+                for _ in 0..self.model.count {
+                    if !self.disabled_items[self.model.selected] { break; }
+                    self.model.key(if key == ControlKey::Home { ControlKey::Right }
+                        else if key == ControlKey::End { ControlKey::Left } else { key });
+                }
                 self.focus_index = self.model.selected;
                 self.focused = Some(self.model.selected);
                 self.cancel_arms();
@@ -347,9 +486,9 @@ impl TabsView {
             self.focus_visible = true;
             self.sync_focus_buttons();
         }
-        self.buttons
-            .get_mut(selected)
-            .and_then(|button| button.key(key, true).then_some(selected))
+        let activated = self.buttons.get_mut(selected).is_some_and(|button| button.key(key, true));
+        if activated { self.model.select(selected); }
+        activated.then_some(selected)
     }
 
     pub fn cancel(&mut self) {
@@ -586,6 +725,93 @@ fn menu_surface_height(content: f32, inset: f32) -> f32 {
     (content + inset * 2.0).max(132.0)
 }
 
+// Optional header geometry belongs to the existing popup and shares its inset,
+// placement, clipping, and scrolling viewport.
+pub(crate) type MenuHeader<'a> = (
+    Size,
+    &'a mut dyn FnMut(&mut Scene, &mut dyn ButtonTextRenderer, Rect),
+);
+
+pub(crate) struct MenuRenderContext<'a, T: ButtonTextRenderer> {
+    pub scene: &'a mut Scene,
+    pub text: &'a mut T,
+    pub anchor: Rect,
+    pub visible: Rect,
+    pub clip: Option<Rect>,
+    pub palette: Palette,
+    pub role: proposal::TextRole,
+    pub compact: bool,
+}
+
+pub(crate) fn menu_popup_geometry(
+    anchor: Rect,
+    natural: Size,
+    viewport: Rect,
+    inset: f32,
+    row_heights: &[f32],
+    beside: bool,
+    header: Option<Size>,
+) -> (Rect, Rect, Rect) {
+    let gap = proposal::metric("spacing", "space-micro").expect("canonical popup spacing");
+    let header_height = header.map_or(0.0, |size| size.height.max(0.0));
+    let header_gap = if header.is_some() && !row_heights.is_empty() {
+        inset.max(4.0)
+    } else {
+        0.0
+    };
+    let rows_height = if header.is_some() && row_heights.is_empty() {
+        inset * 2.0
+    } else {
+        natural.height
+    };
+    let size = Size::new(
+        natural.width,
+        (rows_height + header_height + header_gap).max(0.0),
+    );
+    let below = (viewport.max_y() - anchor.max_y() - gap).clamp(0.0, viewport.size.height);
+    let above = (anchor.min_y() - gap - viewport.min_y()).clamp(0.0, viewport.size.height);
+    let available = below.max(above);
+    let first = row_heights.first().copied().unwrap_or(0.0);
+    let minimum = first + inset * 2.0 + header_height + header_gap;
+    let limit = if beside || available < minimum {
+        viewport.size.height
+    } else {
+        available
+    };
+    let size = Size::new(size.width, size.height.min(limit));
+    let popup = if beside {
+        let transpose = |r: Rect| Rect::new(r.min_y(), r.min_x(), r.size.height, r.size.width);
+        transpose(crate::feedback_view::place_overlay(
+            transpose(anchor),
+            Size::new(size.height, size.width),
+            transpose(viewport),
+            gap,
+        ))
+    } else {
+        crate::feedback_view::place_overlay(anchor, size, viewport, gap)
+    };
+    let inner = Rect::new(
+        popup.min_x() + inset,
+        popup.min_y() + inset,
+        (popup.size.width - inset * 2.0).max(0.0),
+        (popup.size.height - inset * 2.0).max(0.0),
+    );
+    let header_frame = Rect::new(
+        inner.min_x(),
+        inner.min_y(),
+        inner.size.width,
+        header_height.min(inner.size.height),
+    );
+    let rows_top = (header_frame.max_y() + header_gap).min(inner.max_y());
+    let rows = Rect::new(
+        inner.min_x(),
+        rows_top,
+        inner.size.width,
+        (inner.max_y() - rows_top).max(0.0),
+    );
+    (popup, header_frame, rows)
+}
+
 impl MenuView {
     /// Legacy flat-label popup size before viewport placement/scroll clamping.
     /// Controlled declaration metadata is measured by this same runtime.
@@ -629,6 +855,68 @@ impl MenuView {
             heights,
         )
     }
+    pub(crate) fn header_content_width(text: &mut impl ButtonTextRenderer, width: f32) -> f32 {
+        (Self::measure(text, &[], width, proposal::TextRole::UiBody, false).width
+            - focus_reveal_outset(text.backing_scale()) * 2.0)
+            .max(0.0)
+    }
+
+    pub(crate) fn header_frame(
+        text: &mut impl ButtonTextRenderer,
+        labels: &[&str],
+        header: Size,
+        anchor: Rect,
+        viewport: Rect,
+        role: proposal::TextRole,
+        compact: bool,
+    ) -> Rect {
+        let (natural, rows) = Self::measured_rows(text, labels, viewport.size.width, role, compact);
+        menu_popup_geometry(
+            anchor,
+            natural,
+            viewport,
+            focus_reveal_outset(text.backing_scale()),
+            &rows,
+            false,
+            Some(header),
+        )
+        .1
+    }
+
+    pub(crate) fn render_with_header(
+        &mut self,
+        model: &mut Menu,
+        labels: &[&str],
+        context: MenuRenderContext<'_, impl ButtonTextRenderer>,
+        header: Size,
+        paint_header: &mut dyn FnMut(&mut Scene, &mut dyn ButtonTextRenderer, Rect),
+    ) -> Option<MenuLayout> {
+        let MenuRenderContext {
+            scene,
+            text,
+            anchor,
+            visible,
+            clip,
+            palette,
+            role,
+            compact,
+        } = context;
+        self.bound_external = true;
+        self.runtime.render_model(
+            model,
+            scene,
+            text,
+            labels,
+            anchor,
+            visible,
+            clip,
+            palette,
+            role,
+            compact,
+            Some((header, paint_header)),
+        )
+    }
+
     pub(crate) fn cancel_pointer_arm(&mut self) {
         for button in &mut self.runtime.buttons {
             button.cancel_pointer();
@@ -728,6 +1016,10 @@ impl MenuView {
         );
         self.runtime.replace_items_model(&mut self.model, count);
     }
+
+
+
+
 
     pub(crate) fn set_row_styles(&mut self, styles: Vec<MenuRowStyle>) {
         if self.runtime.row_styles != styles {
@@ -903,6 +1195,7 @@ impl MenuView {
             palette,
             role,
             compact,
+            None,
         )
     }
 
@@ -932,6 +1225,7 @@ impl MenuView {
             palette,
             role,
             compact,
+            None,
         )
     }
 
@@ -1054,6 +1348,8 @@ impl MenuRuntime {
         self.row_styles.clear();
         *model = Menu::new(count);
     }
+
+
     fn row_style(&self, index: usize) -> MenuRowStyle {
         self.row_styles.get(index).copied().unwrap_or_default()
     }
@@ -1121,6 +1417,7 @@ impl MenuRuntime {
         palette: Palette,
         role: proposal::TextRole,
         compact: bool,
+        mut header: Option<MenuHeader<'_>>,
     ) -> Option<MenuLayout> {
         if safe_rect(anchor) != anchor
             || safe_rect(visible_bounds) != visible_bounds
@@ -1132,8 +1429,9 @@ impl MenuRuntime {
             self.clear_layout();
             return None;
         }
+        let header_size = header.as_ref().map(|(size, _)| *size);
         let paint_context = format!(
-            "{anchor:?}{visible_bounds:?}{ancestor_clip:?}{palette:?}{role:?}{compact:?}{}{labels:?}{:?}",
+            "{header_size:?}{anchor:?}{visible_bounds:?}{ancestor_clip:?}{palette:?}{role:?}{compact:?}{}{labels:?}{:?}",
             text.backing_scale(),
             self.row_styles
         );
@@ -1209,53 +1507,23 @@ impl MenuRuntime {
         }
         heights.resize(model.items.count, 36.0);
         self.row_heights = heights;
-        let width = natural_size.width;
         let popup_inset = self.focus_outset;
         let row_gap = popup_inset.max(4.0);
         let role_size = size_role(compact);
         let natural_content = self.row_heights.iter().take(count).sum::<f32>()
             + count.saturating_sub(1) as f32 * row_gap;
-        let gap =
-            proposal::metric("spacing", "space-micro").expect("canonical popup-to-anchor spacing");
-        let below =
-            (visible_bounds.max_y() - anchor.max_y() - gap).clamp(0.0, visible_bounds.size.height);
-        let above =
-            (anchor.min_y() - gap - visible_bounds.min_y()).clamp(0.0, visible_bounds.size.height);
-        let available = below.max(above);
-        let minimum_row = self.row_heights.first().copied().unwrap_or(0.0) + popup_inset * 2.0;
-        // Scroll inside an available side rather than covering a measured
-        // anchor. If neither side can show one full row, retain the existing
-        // viewport-bounded overlay fallback instead of an unusable thin strip.
-        let height_limit = if self.beside_anchor {
-            visible_bounds.size.height
-        } else if available >= minimum_row {
-            available
-        } else {
-            visible_bounds.size.height
-        };
-        let size = Size::new(width, natural_size.height.min(height_limit));
-        let popup = if self.beside_anchor {
-            // The same original placement rule, with axes transposed: right,
-            // then left, clamped to the real viewport. No host screen math.
-            let transpose = |r: Rect| Rect::new(r.min_y(), r.min_x(), r.size.height, r.size.width);
-            transpose(crate::feedback_view::place_overlay(
-                transpose(anchor),
-                Size::new(size.height, size.width),
-                transpose(visible_bounds),
-                gap,
-            ))
-        } else {
-            crate::feedback_view::place_overlay(anchor, size, visible_bounds, gap)
-        };
+        let (popup, header_frame, inner_viewport) = menu_popup_geometry(
+            anchor,
+            natural_size,
+            visible_bounds,
+            popup_inset,
+            &self.row_heights[..count],
+            self.beside_anchor,
+            header_size,
+        );
         let popup_container =
             ContainerLayout::new(popup, Insets::ZERO, Insets::ZERO, ancestor_clip);
         let visible = popup_container.visible_clip();
-        let inner_viewport = Rect::new(
-            popup.min_x() + popup_inset,
-            popup.min_y() + popup_inset,
-            (popup.size.width - popup_inset * 2.0).max(0.0),
-            (popup.size.height - popup_inset * 2.0).max(0.0),
-        );
         let document_height = natural_content.max(inner_viewport.size.height);
         self.scroll.layout(
             inner_viewport.size,
@@ -1291,15 +1559,32 @@ impl MenuRuntime {
             }
             scene.push_clip(visible);
         }
+        if let Some((_, paint_header)) = &mut header
+            && visible.is_some()
+        {
+            paint_header(scene, text, header_frame);
+        }
+        let rows_visible = if header_size.is_some() {
+            let top = (inner_viewport.min_y() - popup_inset).max(header_frame.max_y());
+            let gutter = Rect::new(
+                popup.min_x(),
+                top,
+                popup.size.width,
+                (popup.max_y() - top).max(0.0),
+            );
+            visible.and_then(|clip| gutter.intersection(&clip))
+        } else {
+            visible
+        };
         let mut items = Vec::with_capacity(model.items.count);
         let mut y = inner_viewport.min_y() - offset;
         for index in 0..model.items.count {
             let height = self.row_heights[index];
             let item = Rect::new(inner_viewport.min_x(), y, inner_viewport.size.width, height);
-            let row_clip = explicit_visible_clip(visible);
+            let row_clip = explicit_visible_clip(rows_visible);
             let style = self.row_style(index);
             if style.separator {
-                if let Some(clip) = visible {
+                if let Some(clip) = rows_visible {
                     scene.push_clip(clip);
                 }
                 crate::extended::separator_at_scale(
@@ -1309,19 +1594,20 @@ impl MenuRuntime {
                     crate::extended::Axis::Horizontal,
                     text.backing_scale(),
                 );
-                if visible.is_some() {
+                if rows_visible.is_some() {
                     scene.pop_clip();
                 }
                 items.push(ButtonLayout {
                     frame: item,
                     content: item,
-                    visible: clip_rect(item, visible),
+                    visible: clip_rect(item, rows_visible),
                     label_size: Size::default(),
                 });
                 y += height + row_gap;
                 continue;
             }
             let button = &mut self.buttons[index];
+            button.set_surface("popover");
             set_button_state(
                 button,
                 self.window_active && model.open && model.items.selected == index,
@@ -2484,6 +2770,14 @@ mod tests {
         )
         .expect("open menu layout")
     }
+
+
+
+
+
+
+
+
 
     #[test]
     fn checked_menu_open_generation_is_pure_and_reuses_original_external_open() {
