@@ -1557,6 +1557,7 @@ mod prepared_field_tests {
             if exhausted {
                 assert_eq!(response, ContentResponse::default());
                 assert_eq!(host.focused(), None);
+                assert!(!host.pointer_focus_requested());
                 assert_eq!(host.pointer_capture(), None);
                 assert_eq!(field.surface.input.action_snapshot(), before);
                 assert_eq!(format!("{:?}", field.surface.scroll), scroll);
@@ -1564,6 +1565,7 @@ mod prepared_field_tests {
             } else {
                 assert!(response.consumed);
                 assert_eq!(host.focused(), Some(id));
+                assert!(host.pointer_focus_requested());
                 assert!(field.has_focus());
                 assert!(field.surface.input.marked.is_none());
             }

@@ -733,10 +733,11 @@ impl ContentHost {
         {
             return Some(ContentResponse::default());
         }
-        if let Some(p) = focus
-            && matches!(self.apply_focus(p), FocusAdmission::Rejected)
-        {
-            return Some(ContentResponse::default());
+        if let Some(p) = focus {
+            if matches!(self.apply_focus(p), FocusAdmission::Rejected) {
+                return Some(ContentResponse::default());
+            }
+            self.pointer_focus_requested = true;
         }
         for a in actions {
             let n = a
@@ -1049,6 +1050,47 @@ mod tests {
         )
         .unwrap();
     }
+    #[test]
+    fn prepared_pointer_publishes_only_admitted_focus_and_keeps_single_activation() {
+        for (preserve, same_owner) in [(false, false), (false, true), (true, false), (true, true)] {
+            let mut h = host();
+            if same_owner {
+                assert!(h.focus(Some(TARGET), true));
+            }
+            let before_focus = h.focused();
+            h.get_mut(TARGET).unwrap().preserve_activation_focus = preserve;
+            let point = h.get(TARGET).unwrap().frame().center();
+            let response = h.event(&ContentEvent::PointerDown(point));
+            assert!(response.consumed);
+            assert_eq!(h.pointer_focus_requested(), !preserve);
+            assert_eq!(
+                h.focused(),
+                if preserve { before_focus } else { Some(TARGET) }
+            );
+            h.event(&ContentEvent::PointerUp(point));
+            assert!(
+                !h.pointer_focus_requested(),
+                "focus intent belongs only to pointer-down"
+            );
+            assert_eq!(
+                h.get(TARGET)
+                    .unwrap()
+                    .component::<Button>()
+                    .unwrap()
+                    .activations,
+                1
+            );
+            assert_eq!(
+                h.drain_actions()
+                    .iter()
+                    .filter(|action| action.target == TARGET
+                        && action.kind == ContentActionKind::Activate)
+                    .count(),
+                1
+            );
+        }
+    }
+
     #[test]
     fn actual_capture_and_activation_maxima_refuse_before_first_effect() {
         for capture in [true, false] {
