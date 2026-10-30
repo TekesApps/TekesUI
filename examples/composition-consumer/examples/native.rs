@@ -574,7 +574,7 @@ fn main() {
                         let (selection, toolbar_command) = match record.payload.as_ref() {
                             Some(tekes_ui_controls::composition::ContentActionPayload::MenuSelection(value)) => (Some(serde_json::json!({"index":value.index(),"label":value.label(),"model_revision":value.model_revision(),"value_path":value.value_path()})), None),
                             Some(tekes_ui_controls::composition::ContentActionPayload::ToolbarCommand(command)) => (None, Some(*command)),
-                            None => (None, None),
+                            Some(tekes_ui_controls::composition::ContentActionPayload::DisclosureExpansion(_)) | None => (None, None),
                         };
                         serde_json::json!({"target":record.action.target.0,"source":format!("{:?}",record.action.source),"kind":format!("{:?}",record.action.kind),"mount":record.mount,"selection":selection,"toolbar_command":toolbar_command})
                     }).collect::<Vec<_>>());
