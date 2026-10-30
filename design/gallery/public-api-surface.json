@@ -1280,6 +1280,24 @@
       "reason": "Shared input metadata, editor policy and once-only text-key acknowledgement at existing Component/ContentHost boundary; no editor state machine or additional component."
     },
     {
+      "api": "tekes_ui_controls::composition::LabelForeground",
+      "category": "composition",
+      "components": [],
+      "reason": "Bounded immutable readonly label foreground/source/version support on original TextContent and Button owners; no new component, editor, focus or AX owner."
+    },
+    {
+      "api": "tekes_ui_controls::composition::LabelForegroundRun",
+      "category": "composition",
+      "components": [],
+      "reason": "Bounded immutable readonly label foreground/source/version support on original TextContent and Button owners; no new component, editor, focus or AX owner."
+    },
+    {
+      "api": "tekes_ui_controls::composition::LabelSourceVersion",
+      "category": "composition",
+      "components": [],
+      "reason": "Bounded immutable readonly label foreground/source/version support on original TextContent and Button owners; no new component, editor, focus or AX owner."
+    },
+    {
       "api": "tekes_ui_controls::composition::Lifecycle",
       "category": "composition",
       "components": [],
@@ -1661,6 +1679,18 @@
         "tui.scroll-area"
       ],
       "reason": "Experimental composition adapter for the existing component family, exercised by the independent composition consumer; does not imply every family has migrated or native acceptance passed."
+    },
+    {
+      "api": "tekes_ui_controls::composition::SemanticLabel",
+      "category": "composition",
+      "components": [],
+      "reason": "Bounded immutable readonly label foreground/source/version support on original TextContent and Button owners; no new component, editor, focus or AX owner."
+    },
+    {
+      "api": "tekes_ui_controls::composition::SemanticLabelError",
+      "category": "composition",
+      "components": [],
+      "reason": "Bounded immutable readonly label foreground/source/version support on original TextContent and Button owners; no new component, editor, focus or AX owner."
     },
     {
       "api": "tekes_ui_controls::composition::SemanticNode",

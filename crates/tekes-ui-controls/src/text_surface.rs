@@ -51,6 +51,22 @@ pub trait TextSurfaceHost: TextSurfaceTextRenderer {
     ) -> Option<Rc<tekes_ui_text::LabelLayout>> {
         None
     }
+    /// Optional attributed readonly-label service. The default keeps old hosts
+    /// source compatible and explicitly declines nonempty styled input instead
+    /// of silently drawing it monochrome. Editing/TextSurface state is unchanged.
+    fn shape_semantic_label(
+        &mut self,
+        label: &tekes_ui_text::SemanticLabel,
+        role: proposal::TextRole,
+        width: f32,
+        options: tekes_ui_text::LabelOptions,
+    ) -> Option<Rc<tekes_ui_text::LabelLayout>> {
+        if label.runs().is_empty() {
+            self.shape_label(label.text(), role, width, options)
+        } else {
+            None
+        }
+    }
     fn type_scale(&self) -> f32 {
         1.0
     }

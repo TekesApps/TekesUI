@@ -620,6 +620,31 @@ impl tekes_ui_controls::TextSurfaceHost for TextEngine {
                 .with_min_line_height(f64::from(metrics.line_height * self.type_scale)),
         ))
     }
+    fn shape_semantic_label(
+        &mut self,
+        text: &tekes_ui_text::SemanticLabel,
+        role: proposal::TextRole,
+        width: f32,
+        options: tekes_ui_text::LabelOptions,
+    ) -> Option<Rc<tekes_ui_text::LabelLayout>> {
+        let metrics = role.style();
+        let style = if proposal::text_family(role.id()) == Some("mono") {
+            TextStyle::named("Menlo", metrics.size * self.type_scale)
+        } else {
+            TextStyle::system(metrics.size * self.type_scale)
+        }
+        .with_weight(metrics.weight);
+        Some(Rc::new(
+            self.shaper
+                .shape_semantic_label(
+                    text,
+                    &style,
+                    &ShapeOptions::with_width(f64::from(width)),
+                    options,
+                )
+                .with_min_line_height(f64::from(metrics.line_height * self.type_scale)),
+        ))
+    }
 
     fn shape_surface(
         &mut self,

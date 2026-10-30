@@ -174,6 +174,41 @@ pub(crate) fn typeset(text: &str, font: &CTFont) -> Typeset {
     }
 }
 
+/// Native foreground attributes split shaping runs before glyph collection,
+/// including a foreground boundary inside an optional fi/ffi ligature. These
+/// distinct marker colors are never painted: actual ink is resolved from the
+/// current Palette by the readonly label adapter after layout.
+pub(super) fn apply_label_foregrounds(
+    attributed: &CFMutableAttributedString,
+    label: &crate::SemanticLabel,
+    source: Range<usize>,
+) {
+    for run in label.runs() {
+        let start = run.utf16.start.max(source.start);
+        let end = run.utf16.end.min(source.end);
+        if start >= end {
+            continue;
+        }
+        let marker = match run.foreground {
+            crate::LabelForeground::Inherited => continue,
+            crate::LabelForeground::Secondary => 0.25,
+            crate::LabelForeground::Positive => 0.5,
+            crate::LabelForeground::Negative => 0.75,
+        };
+        let color = objc2_core_graphics::CGColor::new_generic_rgb(marker, 0., 0., 1.);
+        // SAFETY: validated UTF-16/grapheme source ranges, intersected with this
+        // exact native substring; CoreText retains the valid CGColor attribute.
+        unsafe {
+            CFMutableAttributedString::set_attribute(
+                Some(attributed),
+                CFRange::new((start - source.start) as isize, (end - start) as isize),
+                Some(objc2_core_text::kCTForegroundColorAttributeName),
+                Some(color.as_ref()),
+            );
+        }
+    }
+}
+
 /// 从 `location` 起的下一个字素簇的 UTF-16 长度，至少为 1。
 pub(crate) fn grapheme_len_at(text: &CFString, location: usize) -> usize {
     // SAFETY: location 在字符串之内（调用方保证）。
@@ -348,6 +383,23 @@ impl CoreTextShaper {
             grapheme_lengths,
             carets: RefCell::new(CaretCache::default()),
         }
+    }
+
+    pub(super) fn prepare_semantic_label(
+        &self,
+        label: &crate::SemanticLabel,
+        style: &TextStyle,
+    ) -> PreparedText {
+        let mut prepared = self.prepare(label.text(), style);
+        apply_label_foregrounds(
+            &prepared.typeset.attributed,
+            label,
+            0..prepared.typeset.utf16_len,
+        );
+        // CoreText typesetters snapshot the complete attributed string.
+        prepared.typeset.typesetter =
+            unsafe { CTTypesetter::with_attributed_string(&prepared.typeset.attributed) };
+        prepared
     }
 
     /// Recompute line breaks and geometry without replacing the document's

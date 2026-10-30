@@ -53,6 +53,7 @@ fn main() {
         window_active: bool,
         caret_on: bool,
         services_enabled: bool,
+        semantic_layouts: Vec<(tekes_ui_text::SemanticLabel, Rc<tekes_ui_text::LabelLayout>)>,
     }
     impl TextBackend {
         fn shape(
@@ -134,6 +135,33 @@ fn main() {
                     )
                     .with_min_line_height(f64::from(metrics.line_height * self.type_scale)),
             ))
+        }
+        fn shape_semantic_label(
+            &mut self,
+            text: &tekes_ui_text::SemanticLabel,
+            role: proposal::TextRole,
+            width: f32,
+            options: tekes_ui_text::LabelOptions,
+        ) -> Option<Rc<tekes_ui_text::LabelLayout>> {
+            let metrics = role.style();
+            let style = if proposal::text_family(role.id()) == Some("mono") {
+                TextStyle::named("Menlo", metrics.size * self.type_scale)
+            } else {
+                TextStyle::system(metrics.size * self.type_scale)
+            }
+            .with_weight(metrics.weight);
+            let layout = Rc::new(
+                self.shaper
+                    .shape_semantic_label(
+                        text,
+                        &style,
+                        &ShapeOptions::with_width(f64::from(width)),
+                        options,
+                    )
+                    .with_min_line_height(f64::from(metrics.line_height * self.type_scale)),
+            );
+            self.semantic_layouts.push((text.clone(), layout.clone()));
+            Some(layout)
         }
 
         fn shape_surface(
@@ -675,6 +703,28 @@ fn main() {
                         "type_scale": self.text.type_scale,
                     });
                 }
+                if matches!(self.mode.as_str(), "semantic-label" | "semantic-ellipsis") {
+                    use tekes_ui_composition_consumer::semantic_label as f;
+                    use tekes_ui_controls::composition::Button;
+                    let input = &self.tree.text_surface(f::COMPOSER).unwrap().input;
+                    snapshot["semantic_label_review"] = serde_json::json!({
+                        "source": self.tree.get(f::LABEL).unwrap().semantic_label().unwrap().text(),
+                        "layouts": self.text.semantic_layouts.iter().map(|(label, layout)| serde_json::json!({
+                            "source": label.text(), "constraint": layout.width(), "is_truncated": layout.is_truncated(),
+                            "elided_utf16": layout.elided_utf16(),
+                            "runs": layout.paragraph().lines.iter().map(|l| l.runs.len()).sum::<usize>(),
+                            "glyphs": layout.paragraph().lines.iter().flat_map(|l| &l.runs).flat_map(|r| &r.glyphs).map(|g| serde_json::json!({
+                                "id": g.id, "x": g.x, "y": g.y, "utf16": g.utf16_index, "cluster": g.cluster_utf16,
+                            })).collect::<Vec<_>>(),
+                        })).collect::<Vec<_>>(),
+                        "revision": self.tree.get(f::LABEL).unwrap().semantic_label().unwrap().version().revision,
+                        "focus": self.tree.focused().map(|id| id.0),
+                        "composer_text": input.text, "composer_selection": input.selection(),
+                        "composer_marked": input.marked, "type_scale": self.text.type_scale,
+                        "button_actions": ([f::ACTION, f::CUSTOM].map(|id| self.tree.get(id).unwrap().component::<Button>().unwrap().activations)),
+                        "names": self.tree.semantics().iter().map(|n| (n.id.0, n.semantics.name.clone())).collect::<Vec<_>>(),
+                    });
+                }
                 if self.mode == "label" {
                     use tekes_ui_controls::composition::{Button, ComponentId};
                     snapshot["label_review"] = serde_json::json!({
@@ -886,6 +936,7 @@ fn main() {
             self.text.window_active = w.is_active();
             self.text.scale = w.scale() as f32;
             self.text.frame_requested = false;
+            self.text.semantic_layouts.clear();
             self.text.atlas.begin_frame();
             self.scene.clear();
             let result =
@@ -899,6 +950,22 @@ fn main() {
             } else {
                 result.expect("valid consumer scene");
             }
+            if self.mode == "semantic-ellipsis" {
+                let mut truncated = 0;
+                for (label, layout) in &self.text.semantic_layouts {
+                    if layout.is_truncated() {
+                        tekes_ui_composition_consumer::semantic_label::assert_cross_run_ellipsis(
+                            label, layout,
+                        );
+                        truncated += 1;
+                    }
+                }
+                assert!(
+                    truncated >= 3,
+                    "all three original label presentations must actually elide"
+                );
+            }
+
             if self.mode == "toolbar-split" {
                 use tekes_ui_composition_consumer::split_toolbar::{ROOT, SplitToolbar};
                 let fixture = self
@@ -1514,6 +1581,32 @@ fn main() {
                     self.redraw(w);
                 }
                 Event::Key(key)
+                    if matches!(self.mode.as_str(), "semantic-label" | "semantic-ellipsis")
+                        && key.kind == KeyEventKind::Down
+                        && key.modifiers.command
+                        && matches!(key.key_code, 18 | 19 | 32) =>
+                {
+                    if key.key_code == 32 {
+                        use tekes_ui_composition_consumer::semantic_label as f;
+                        for id in [f::LABEL, f::ACTION, f::DECORATION] {
+                            let node = self.tree.get_mut(id).unwrap();
+                            let old = node.semantic_label().unwrap().version();
+                            node.update_semantic_label(
+                                old,
+                                if self.mode == "semantic-ellipsis" {
+                                    f::ellipsis_model(old.revision + 1)
+                                } else {
+                                    f::model(old.revision + 1)
+                                },
+                            )
+                            .unwrap();
+                        }
+                    } else {
+                        self.text.type_scale = if key.key_code == 18 { 1. } else { 1.5 };
+                    }
+                    self.redraw(w);
+                }
+                Event::Key(key)
                     if self.mode == "label"
                         && key.kind == KeyEventKind::Down
                         && key.modifiers.command
@@ -1606,6 +1699,12 @@ fn main() {
                     w.request_redraw();
                 }
                 Event::Created => {
+                    if self.mode == "semantic-ellipsis" {
+                        assert!(
+                            w.screen_info().is_some_and(|screen| !screen.builtin),
+                            "semantic ellipsis review requires an external display"
+                        );
+                    }
                     assert!(w.set_text_key_events(true));
                     self.gpu = Some(unsafe {
                         Renderer::new_for_metal_layer(
@@ -1619,6 +1718,93 @@ fn main() {
                         let _ = self.tree.focus(Some(self.invoker), false);
                     }
                     self.redraw(w);
+                    if matches!(self.mode.as_str(), "semantic-label" | "semantic-ellipsis")
+                        && std::env::var("TEKES_COMPOSITION_SELFTEST").as_deref()
+                            == Ok(self.mode.as_str())
+                    {
+                        use tekes_ui_composition_consumer::semantic_label as f;
+                        use tekes_ui_platform_macos::selftest::Action;
+                        let center = |id| self.tree.get(id).unwrap().visible().unwrap().center();
+                        let button = center(f::ACTION);
+                        let composer = center(f::COMPOSER);
+                        let dir = std::path::PathBuf::from(
+                            std::env::var_os("TEKESUI_COMPONENT_EVIDENCE")
+                                .expect("owned evidence directory"),
+                        );
+                        let modified = |code, chars| Action::KeyCharactersModified {
+                            key_code: code,
+                            chars,
+                            modifiers: tekes_ui_platform_macos::Modifiers {
+                                command: true,
+                                ..Default::default()
+                            },
+                        };
+                        let expected = || Action::ExpectTextState {
+                            text: "Composer draft 中文ni".into(),
+                            selection: 17..19,
+                            marked: Some(17..19),
+                            query: 17..19,
+                            actual: 17..19,
+                        };
+                        self.selftest_script = Some(vec![
+                            (200, Action::WindowDark(false)),
+                            (
+                                400,
+                                Action::Click {
+                                    x: button.x as f64,
+                                    y: button.y as f64,
+                                },
+                            ),
+                            (600, Action::Key { key_code: 36 }),
+                            (
+                                800,
+                                Action::AXPress {
+                                    component: f::CUSTOM.0,
+                                },
+                            ),
+                            (
+                                1100,
+                                Action::Click {
+                                    x: composer.x as f64,
+                                    y: composer.y as f64,
+                                },
+                            ),
+                            (
+                                1300,
+                                Action::PreeditRange {
+                                    text: "ni".into(),
+                                    selection: 0..2,
+                                    replacement: Some(17..17),
+                                },
+                            ),
+                            (1500, expected()),
+                            (
+                                1700,
+                                Action::Capture {
+                                    path: dir
+                                        .join("semantic-light.png")
+                                        .to_string_lossy()
+                                        .into_owned(),
+                                },
+                            ),
+                            (2000, modified(32, "u")),
+                            (2300, expected()),
+                            (2600, Action::Resize { w: 260., h: 640. }),
+                            (2900, Action::WindowDark(true)),
+                            (3200, modified(19, "2")),
+                            (3500, expected()),
+                            (
+                                3800,
+                                Action::Capture {
+                                    path: dir
+                                        .join("semantic-dark-narrow.png")
+                                        .to_string_lossy()
+                                        .into_owned(),
+                                },
+                            ),
+                            (4200, Action::Close),
+                        ]);
+                    }
                     if self.mode == "content-help"
                         && std::env::var("TEKES_COMPOSITION_SELFTEST").as_deref()
                             == Ok("content-help")
@@ -2115,6 +2301,8 @@ fn main() {
                 | "editable-number"
                 | "field"
                 | "label"
+                | "semantic-label"
+                | "semantic-ellipsis"
                 | "layout"
                 | "item"
                 | "menu-tree"
@@ -2166,6 +2354,16 @@ fn main() {
         (
             tree,
             tekes_ui_composition_consumer::layout_activation::FIELD,
+            None,
+        )
+    } else if matches!(mode.as_str(), "semantic-label" | "semantic-ellipsis") {
+        (
+            if mode == "semantic-ellipsis" {
+                tekes_ui_composition_consumer::semantic_label::build_ellipsis().unwrap()
+            } else {
+                tekes_ui_composition_consumer::semantic_label::build().unwrap()
+            },
+            tekes_ui_composition_consumer::semantic_label::ACTION,
             None,
         )
     } else if mode == "label" {
@@ -2267,6 +2465,7 @@ fn main() {
         window_active: true,
         caret_on: true,
         services_enabled: mode != "layout",
+        semantic_layouts: Vec::new(),
     };
     let layout_baseline = (mode == "layout").then(|| {
         tree.get(tekes_ui_composition_consumer::layout_activation::FIELD)
@@ -2613,7 +2812,11 @@ fn main() {
                 width: if mode == "nested-reading" { 320. } else { 360. },
                 height: 480.,
             }),
-            placement: if mode == "toolbar-split" {
+            placement: if mode == "semantic-ellipsis" {
+                tekes_ui_platform_macos::WindowPlacement::Screen(
+                    tekes_ui_platform_macos::ScreenChoice::External,
+                )
+            } else if mode == "toolbar-split" {
                 tekes_ui_platform_macos::WindowPlacement::Screen(
                     tekes_ui_platform_macos::ScreenChoice::Builtin,
                 )

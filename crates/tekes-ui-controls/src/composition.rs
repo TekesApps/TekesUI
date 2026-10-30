@@ -71,6 +71,9 @@ pub use progress::ProgressContent;
 mod help;
 mod key;
 mod label;
+pub use tekes_ui_text::{
+    LabelForeground, LabelForegroundRun, LabelSourceVersion, SemanticLabel, SemanticLabelError,
+};
 mod menu;
 mod number;
 pub use number::{
@@ -1091,7 +1094,8 @@ impl Content {
             if let Some(label) = &mut self.label {
                 self.component.paint(
                     scene,
-                    &mut label::LabelRenderer::new(text, label, self.clip),
+                    &mut label::LabelRenderer::new(text, label, self.clip)
+                        .with_palette(theme.palette),
                     self.frame,
                     self.clip,
                     theme,
