@@ -84,3 +84,96 @@ Native keyboard/pointer, physical IME, VoiceOver, current native screenshots, pu
 The automatic PR191 run `41025939082` at `11956d39a9f4ced7539babe652764bd4285a1f86` failed in three steps, with two distinct causes. Gallery's existing native icon backend accepted only its legacy chevron names, so the canonical Disclosure names painted no indicator. It now maps `tekes-forward`/`tekes-expand` to the same existing artwork; the original visible-chevron assertion remains unchanged. The independent menu consumer and native review helpers must also exhaustively reject or ignore the new non-menu `DisclosureExpansion` payload, preserving their existing MenuSelection assertions. No native fixture phases or modes are included in this compatibility repair. The original failed run and logs remain separate evidence; repair verification and the next exact-head CI result are recorded separately.
 
 Repair checks on the original controlled MAIN cache passed the formerly failing Gallery test (1), menu action-record tests (8), consumer `svg-icons --all-targets` compilation, and Gallery Clippy with `-D warnings`. Inputs remained unchanged during that run. Consumer all-target Clippy on the combined MAIN stopped only at a needless borrow in the separate r4 `examples/support/disclosure_review.rs:297`; that file and fixture are absent from this publication branch and were returned to their owner. This branch retains only the two native compatibility hunks. Exact-head cloud CI validates the resulting publication tree independently.
+
+### Native consumer acceptance slice (#38, preparation)
+
+`examples/composition-consumer/src/disclosure_review.rs` supplies one public
+DisclosureContent with a passive compound Chinese title, its original body
+TextField/Button and an unrelated editor. `native disclosure` reuses the existing
+composition native Host, public SvgIconCache and AppKit selftest. Build this mode
+with `--features svg-icons`; no Gallery or alternate trigger/painter is involved.
+The only shared-host changes are the mode selection, original SVG renderer
+adapter, action-record collection and phase-controller dispatch. Existing Menu
+payload matches explicitly reject/ignore the new Disclosure payload as appropriate.
+
+The 15 ordered phases request exactly one pointer, Enter, Space and native AX
+activation, then check controlled acceptance/rejection, rollback, stale generation,
+retained mounts, collapsed Tab/AX exclusion, original marked-body collapse refusal,
+disabled input, and narrow RTL light/dark presentation. Six PNGs are requested from
+the actual window. The marked setup has a fixed UTF-16 baseline: `中文 body draft`,
+selection `1..1`, marked `0..2`; it is checked again after refusal. The unrelated
+editor must remain `Keep A😀B` with selection `0..0` and no marked range.
+
+`tests/disclosure_review.rs` drives this exact controller through public ContentHost
+APIs in normal and Reduced Motion modes. It uses CoreText and a declared image lease
+for fixture validation, not AppKit or pixel acceptance. The existing 60 scoped
+Disclosure tests remain the evidence for intermediate closing paint/input gates,
+remount rejection, high contrast and the detailed theme/geometry contracts; the
+native fixture does not relabel those tests as native results.
+
+After a coordinator-controlled source switch, compile/test through the existing
+`scripts/tekesui_build.py` lock/environment and registered SSD review cache:
+
+```text
+cargo +1.95.0 test --locked --offline --manifest-path examples/composition-consumer/Cargo.toml --features svg-icons --test disclosure_review
+cargo +1.95.0 check --locked --offline --manifest-path examples/composition-consumer/Cargo.toml --features svg-icons --all-targets
+cargo +1.95.0 clippy --locked --offline --manifest-path examples/composition-consumer/Cargo.toml --features svg-icons --all-targets -- -D warnings
+cargo +1.95.0 build --locked --offline --manifest-path examples/composition-consumer/Cargo.toml --features svg-icons --example native
+```
+
+These are command payloads for the controlled entry point, not permission to bypass
+cache/source ownership. No target/cache registration is introduced by this slice.
+
+The future native window uses `scripts/diagnostics/disclosure38/run_native.py`.
+It reuses the existing coordinator helper loader, shared build lock, GPU occupancy
+guard, cache-owner check, native-process check and 60-second HID-idle check from the
+accepted #46 runner. It never builds, retries, waits for an occupied desktop, or
+terminates another task. The coordinator binds the actual archived successful build
+and executable, runner/helper digests, related changed source/manifests and existing
+guard paths in the same binding schema as #46 (`main`, `compiled_base`, `program`,
+`build_result`, `runner_sha256`, `base_loader`, `gpu_guard`, `build_helper_sha256`,
+`sources_and_manifests`, `native_process_pattern`, `external_display_id`). This does not add a source-closure
+admission gate. A launch requires a separately allocated native window:
+
+```text
+python3 -B scripts/diagnostics/disclosure38/run_native.py --binding /absolute/prepared-binding.json --output-root /absolute/authorized-SSD/attempts --reduced-motion 0
+```
+
+Run the same bound program with `--reduced-motion 1` in its next authorized window.
+Every invocation preserves a unique attempt, raw journal/logs, six screenshot files,
+input digests and result or not-run reason. Independent journal validation runs even
+if the process aborts late; unreached phases never count as passed. The offline reader
+regression is `python3 -B scripts/diagnostics/disclosure38/test_evidence.py` and does
+not import or invoke native `main()`.
+
+Preparation and headless results do not satisfy native screenshots, physical IME,
+VoiceOver, final Gold7, published exact consumer pin or AgentKit migration. Native
+PNG existence is checked automatically; coordinator visual review remains required.
+
+#### Consolidated candidate and evidence boundary
+
+The fixture candidate is based on PR191 `0215b6a7fbb7d06fc197feeb6f6ec6981c20e69a` (CI run `41030568192`: SUCCESS). The published tree is preserved. This candidate consolidates the r4 fixture, display preflight, explicit public-SDK marked AX refusal, and the fixture-only needless-borrow correction. It also keeps the actual native window on an external screen and checks that screen at creation. All three original mounts (trigger, body editor, unrelated editor) are asserted throughout; after Unmark, body text and selection must remain `中文 body draft` and `1..1` through disabled/RTL/resize/final closing.
+
+The retained r4 receipt is a failed headless fixture run (exit 101); native was not_run. It is not a passing result for this corrected candidate. The corrected fixture still needs its controlled Rust test, all-target compilation/Clippy and native example build. No native launch, physical IME, VoiceOver or pixel acceptance is authorized by preparing these commands. Display preflight proves the bound external target is present and unmirrored; SDK External placement plus the creation assertion enforces the external-screen class, not acceptance of a specific physical display or its pixels.
+
+| Phase | Check / next input | Cumulative actions |
+|---|---|---:|
+| 38001 | Collapsed body absent from AX; capture, pointer click | 0 |
+| 38002 | Pointer request accepted on same focused trigger; Enter | 1 |
+| 38003 | Enter rejected, duplicate confirmation rejected; Space | 2 |
+| 38004 | Space collapse accepted; Tab | 3 |
+| 38005 | Tab skips body; hidden body AX refused; AX trigger | 3 |
+| 38006 | AX accepted then authoritative rollback; AX trigger | 4 |
+| 38007 | First AX intent remains pending; second AX trigger | 5 |
+| 38008 | Old generation refused; select original editor and Preedit | 6 |
+| 38009 | Exact marked baseline; external collapse and SDK cross-owner AX refused without action | 6 |
+| 38010 | Pending collapse refused while marked; rejection settles without editor mutation; Unmark | 6 |
+| 38011 | Exact unmarked state retained; disable and click | 6 |
+| 38012 | Disabled click emits nothing; re-enable, RTL, narrow resize/dark | 6 |
+| 38013 | Narrow RTL/dark state and owner retained; AX trigger | 6 |
+| 38014 | Final AX collapse accepted; capture | 7 |
+| 38015 | Fully closed reveal, original owners retained, complete | 7 |
+
+Queued AXPress actions are positive AppKit callbacks. The marked negative AX case is explicitly a public SDK call and journal field; it is not relabeled as native AX or physical IME evidence. The offline reader rejects changed editor owners, changed post-Unmark state, and changed intermediate action owners/sources in addition to its existing phase/count/generation/refusal checks.
+
+Current consolidated-candidate checks: offline Python evidence/display-preflight regression 6 passed; rustfmt parse/format checks and generated inventory/composition audit (45 components) passed. No Cargo compilation/test/build was run for this candidate because the registered cache belongs to MAIN and no source-switch window was allocated. The corrected 15-phase Rust driver, native executable and all native/physical/pixel layers remain not_run until that controlled handoff.

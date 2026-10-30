@@ -1994,7 +1994,7 @@
     "docs/design/menu-declarations-20261021.md": "e1494ee1d9a9de6f5fb7bedc40d0c19a8e90dfefca0d0f983316ae8794976ee8",
     "docs/roadmap.md": "1648c62ec9209c206b98c18da6a48cda8e9df306d635e294b5d0ad5dcf1bd331",
     "examples/composition-consumer/Cargo.toml": "92baa39b50aa5d5b64ff80e60b1af6bed7d3faaf9e3feaa8d2e7a625a0d793bf",
-    "examples/composition-consumer/examples/native.rs": "05dae2f0aa5cfbd43ac82fd36d8546fa4ea043e2babaa910daadb9d69fa93a40",
+    "examples/composition-consumer/examples/native.rs": "c7fb874e447c369f10cc7601bceb74f3716a7b5f4aa44a5984b8897b271e1b3a",
     "examples/composition-consumer/examples/support/native_key.rs": "6932a589bce50e2f4365c780c67ab0c467a126c9a4677ad23eeda132f146adae",
     "examples/composition-consumer/src/choice_status.rs": "337878b760c8aa05fe0bdbb0dbce091604526acc082c5778645b6feb6199d678",
     "examples/composition-consumer/src/combo_status.rs": "1e36d6989f56ed61eb67f2ab1b56c751164f2e1726c486eb65dd5430f9f40166",
@@ -2011,7 +2011,7 @@
     "examples/composition-consumer/src/item_navigation.rs": "dc3af5a7a60f0ce04f75e3a1d06962051f0300202e68dc6b456ec61e108c2572",
     "examples/composition-consumer/src/label_content.rs": "4cb52fe99bdcc75f485903351b9158636b2f61765f120546be0a4b9cb366ba3e",
     "examples/composition-consumer/src/layout_activation.rs": "339b963c56189addd3f47f1280b0f5247464aca034cdff4b5d16526fa6f80f7d",
-    "examples/composition-consumer/src/lib.rs": "49e7a7d7a4f7c3d6f55e1d86e4e6b83c50fb2df25dabb965e3ebc77bef727a34",
+    "examples/composition-consumer/src/lib.rs": "6dd8ebcf769b7c53be0120b9fa883c08b599edfb215c6d2443c9a49733cbcbd6",
     "examples/composition-consumer/src/padding_focus.rs": "2b7229dbd6048359c0c12422c0e8ac0a205e21dc8a5a509aa1dff96b743872ff",
     "examples/composition-consumer/src/plain_text.rs": "5d305d1868c698e4327ce6adaf97bd86db3bc19f6e5ef9de2e1752cdbbbe7227",
     "examples/composition-consumer/src/popover_content.rs": "fe991ba61cda61e502dabcc8e7c0ee854899d925a26c8b7056622181903a6dd5",
@@ -2069,7 +2069,12 @@
     "crates/tekes-ui-controls/src/composition/rich_content.rs": "b5e46ce2d697f152d03129032fd9c1754fd17dc2e9c9627ccea6b2367745ca67",
     "examples/composition-consumer/src/semantic_label.rs": "a4ebb9a95ae05e2465ac7c430e99733c765b0e93c4284201a6c3dfc2e513c212",
     "examples/composition-consumer/tests/semantic_label.rs": "60f638f90fc31d41b9ee328528b2ca53c723c4ebb45c46c78e4cb66a83ae44b6",
-    "crates/tekes-ui-controls/src/composition/disclosure.rs": "3ca1188222af53d9ec21a5ff48ce09455a28a17c89c23672f6f223d4055e3aff"
+    "crates/tekes-ui-controls/src/composition/disclosure.rs": "3ca1188222af53d9ec21a5ff48ce09455a28a17c89c23672f6f223d4055e3aff",
+    "examples/composition-consumer/examples/support/disclosure_review.rs": "3581affc5d29213455efb31743c100968ed689228b7fe6d4265e35d56e77d3d4",
+    "examples/composition-consumer/src/disclosure_review.rs": "9f8b4588eadcb0f92d74145338ac5d3420ae1dc360ca760363b18df6f56ebd08",
+    "examples/composition-consumer/tests/disclosure_review.rs": "c0b853e263f6ce2521f0a3758bdf467bb85197c5562681512bb55e34ebd3a808",
+    "scripts/diagnostics/disclosure38/run_native.py": "8b59066e21a1e8a7d8d85e20618491e30c1916ac8e5034f22f3a41eb8a8c3b60",
+    "scripts/diagnostics/disclosure38/test_evidence.py": "27fa980f0291f35de89a316ef69e26e4b5a7d5db5acfd5e0055fca0dc25c7a8c"
   },
   "remaining": [
     "minimal three scenarios: public/GPU and scoped native evidence exist; full physical IME/candidate/VoiceOver/current combined acceptance still unverified",
@@ -2144,7 +2149,7 @@
     },
     {
       "path": "examples/composition-consumer/examples/native.rs",
-      "line": 803,
+      "line": 810,
       "anchor": "w.set_accessibility_nodes(nodes);"
     },
     {
