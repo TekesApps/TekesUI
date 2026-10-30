@@ -56,6 +56,6 @@ The #41 HID-refused attempt is preserved and is not retried by this batch.
 
 ## 集成验证（2026-10-30）
 
-实际输入为 MAIN `c439cc8` 加本候选及保留 WIP；修复前精确 selector 回归已编译并实际运行 1 项，以 marked 状态返回 redraw 而非 `Change::NONE` 失败。修复后两条新 selector 回归及五条既有焦点／reveal／leaf／disabled 回归均实际各执行 1 项并通过，Gallery binary/tests check 和 Clippy `-D warnings` 通过。原 handoff 的 disabled 测试路径少了 `interaction_tests`，其零测试日志保留；已按真实路径 `gallery::workbench::tests::interaction_tests::disabled_logical_target_is_skipped` 精确补跑通过。
+实际输入为 MAIN `c439cc8` 加本候选及保留 WIP；修复前精确 selector 回归已编译并实际运行 1 项，以 marked 状态返回 redraw 而非 `Change::NONE` 失败。修复后两条新 selector 回归及五条既有焦点／reveal／leaf／disabled 回归均实际各执行 1 项并通过，Gallery binary/tests check 和 Clippy `-D warnings` 通过。原 handoff 的 disabled 测试路径少了 `interaction_tests`，其零测试日志保留；已按真实路径 `gallery::workbench::interaction_tests::disabled_logical_target_is_skipped` 精确补跑通过。
 
 原始输入、日志、失败与修复结果见 SSD `artifacts/delivery/integration-executor-20261030-07/{red01,green03}/`。物理键盘、AppKit selector／IME、VoiceOver 和跨进程 native 未验，原 AC 保持。
