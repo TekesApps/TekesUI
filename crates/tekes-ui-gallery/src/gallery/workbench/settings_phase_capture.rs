@@ -1,9 +1,12 @@
-//! #12's non-Ready Settings page capture; phase transitions use the real story owner.
+//! #12's non-Ready Settings captures use the existing Workbench state owner.
+use super::state_capture::{settle_scroll, stabilize_document};
 use super::{Phase, entries};
 use crate::gallery::{Gallery, Page, static_text::StaticText};
 use tekes_ui_render::Renderer;
 use tekes_ui_scene::Scene;
 use tekes_ui_tokens::Theme;
+
+const SCROLL_POSITIONS: [(&str, f32); 2] = [("top", 0.0), ("bottom", 1.0)];
 
 #[test]
 #[ignore = "requires an allocated GPU window and a fresh TEKESUI_SETTINGS_PHASE_OUT directory"]
@@ -22,44 +25,127 @@ fn settings_non_ready_phases_render_real_gallery_page_across_themes() {
     assert_eq!(entries()[index].renderer(), "settings");
 
     let route = "example-settings/playground";
-    let mut gallery = Gallery::with_static_text(StaticText::new(None));
-    gallery.set_reduced_motion(true);
-    assert!(gallery.open_route(route));
-    assert_eq!(gallery.page, Page::Workbench(index));
-    gallery.set_view_size(720.0, 512.0);
-    gallery.workbench.text_scale = 1.5;
-    let state = gallery.workbench.state(index);
-    assert!(
-        state.draft_fixture.is_none(),
-        "Gallery Settings uses its local fixture"
-    );
-    assert_eq!(state.phase, Phase::Ready);
-
-    // Drive the current StoryState's original controller transitions. The
-    // Gallery still builds and paints its actual Settings route for each phase.
-    state.input.set_value("");
-    state.submit();
-    assert_eq!(gallery.workbench.state(index).phase, Phase::Invalid);
     let phases = [Phase::Invalid, Phase::Pending, Phase::Failed, Phase::Saved];
     let labels = ["invalid", "pending", "failed", "saved"];
     let mut manifest = Vec::new();
 
-    for (position, phase) in phases.into_iter().enumerate() {
-        let state = gallery.workbench.state(index);
-        assert_eq!(state.phase, phase);
+    for (phase_index, phase) in phases.into_iter().enumerate() {
         for theme in Theme::ALL {
-            gallery.set_system_theme(theme);
             for scale in [1.0_f32, 2.0] {
+                // Each phase/theme/scale starts with the real Settings defaults.
+                let mut gallery = Gallery::with_static_text(StaticText::new(None));
+                gallery.set_system_theme(theme);
+                gallery.set_reduced_motion(true);
+                assert!(gallery.open_route(route));
+                assert_eq!(gallery.page, Page::Workbench(index));
+                gallery.set_view_size(720.0, 512.0);
+                gallery.workbench.text_scale = 2;
                 gallery.text.set_scale(scale);
-                gallery.build_scene(&mut Scene::new());
-                let range = gallery.page_scroll_range().max(0.0);
-                for (scroll_position, fraction) in [("top", 0.0), ("bottom", 1.0)] {
-                    gallery.scroll_page_to(range * fraction);
+                let state = gallery.workbench.state(index);
+                assert_eq!(state.phase, Phase::Ready);
+                assert_eq!(state.input.query(), "Studio");
+                assert_eq!(state.attempts, 0);
+                assert!(state.draft_fixture.is_none());
+
+                configure_phase(state, phase);
+                let state = gallery.workbench.state(index);
+                assert_eq!(state.phase, phase);
+                assert_eq!(state.attempts, [0, 1, 1, 2][phase_index]);
+                assert_eq!(
+                    state.input.query(),
+                    if phase == Phase::Invalid {
+                        ""
+                    } else {
+                        "Studio"
+                    }
+                );
+                assert!(state.draft_fixture.is_none());
+                assert_eq!(gallery.theme(), theme);
+                assert_eq!(gallery.page, Page::Workbench(index));
+
+                stabilize_document(&mut gallery);
+                assert_eq!(gallery.text.type_scale(), 1.5);
+                let initial_range = gallery.page_scroll_range().max(0.0);
+                for (position, fraction) in SCROLL_POSITIONS {
+                    let (offset, actual_range) =
+                        settle_scroll(&mut gallery, fraction, initial_range * fraction);
+                    assert!((offset - actual_range * fraction).abs() < 0.5);
                     let mut scene = Scene::new();
                     gallery.build_scene(&mut scene);
-                    let offset = gallery.viewport.offset.y;
-                    let actual_range = gallery.page_scroll_range().max(0.0);
-                    assert!((offset - actual_range * fraction).abs() < 0.5);
+                    let document_height = gallery.page_document_height();
+                    let state_snapshot = {
+                        let state = gallery.workbench.state(index);
+                        assert_eq!(state.phase, phase);
+                        assert_eq!(state.attempts, [0, 1, 1, 2][phase_index]);
+                        assert_eq!(state.log.len(), [1, 1, 2, 4][phase_index]);
+                        assert_eq!(
+                            state.input.query(),
+                            if phase == Phase::Invalid {
+                                ""
+                            } else {
+                                "Studio"
+                            }
+                        );
+                        assert_eq!(state.buttons[&20].state.disabled, phase == Phase::Pending);
+                        assert_eq!(
+                            state.button_labels[&20],
+                            if phase == Phase::Failed {
+                                "Retry save"
+                            } else {
+                                "Save settings"
+                            }
+                        );
+                        assert_eq!(state.field.error.is_some(), phase == Phase::Invalid);
+                        assert_eq!(state.buttons.contains_key(&21), phase == Phase::Pending);
+
+                        let notification = state.buttons[&25]
+                            .layout()
+                            .expect("notification action layout")
+                            .frame;
+                        let save = state.buttons[&20]
+                            .layout()
+                            .expect("save action layout")
+                            .frame;
+                        let phase_frame = state.phase_frame.expect("Settings phase frame");
+                        let log = state.event_log_frame.expect("Settings event log frame");
+                        assert!(
+                            notification.max_y() + 11.9 <= save.min_y(),
+                            "notification/save order: {notification:?} {save:?}"
+                        );
+                        assert!(
+                            save.max_y() + 11.9 <= phase_frame.min_y(),
+                            "save/phase order: {save:?} {phase_frame:?}"
+                        );
+                        assert!(
+                            phase_frame.max_y() + 24.0 <= log.min_y(),
+                            "phase/event-log overlap: {phase_frame:?} {log:?}"
+                        );
+                        let resolve = state
+                            .buttons
+                            .get(&21)
+                            .and_then(|button| button.layout())
+                            .map(|layout| layout.frame);
+                        assert_eq!(resolve.is_some(), phase == Phase::Pending);
+                        serde_json::json!({
+                            "phase": format!("{:?}", state.phase),
+                            "attempts": state.attempts,
+                            "brand": state.brand,
+                            "input": state.input.query(),
+                            "event_log": state.log,
+                            "field_error": state.field.error,
+                            "save_disabled": state.buttons[&20].state.disabled,
+                            "save_label": state.button_labels[&20],
+                            "frames": {
+                                "notification": rect(notification),
+                                "save": rect(save),
+                                "phase": rect(phase_frame),
+                                "event_log": rect(log),
+                                "resolve": resolve.map(rect)
+                            }
+                        })
+                    };
+                    assert!(!scene.is_empty());
+
                     let width = (720.0 * scale) as u32;
                     let height = (512.0 * scale) as u32;
                     let rgba = renderer
@@ -75,13 +161,15 @@ fn settings_non_ready_phases_render_real_gallery_page_across_themes() {
                     let file = format!(
                         "example-settings__playground__{}__{}__720x512__type-150__{}@{}x.png",
                         theme_slug(theme),
-                        labels[position],
-                        scroll_position,
+                        labels[phase_index],
+                        position,
                         scale as u32
                     );
-                    let path = output.join(&file);
+                    // The existing PNG helper is private to the frozen A/B module.
+                    // Keep this one local write without widening that module's API.
                     let mut encoder = png::Encoder::new(
-                        std::fs::File::create(&path).expect("create fresh Settings phase PNG"),
+                        std::fs::File::create(output.join(&file))
+                            .expect("create fresh Settings phase PNG"),
                         width,
                         height,
                     );
@@ -89,51 +177,28 @@ fn settings_non_ready_phases_render_real_gallery_page_across_themes() {
                     encoder.set_depth(png::BitDepth::Eight);
                     encoder
                         .write_header()
-                        .expect("write PNG header")
+                        .expect("write Settings phase PNG header")
                         .write_image_data(&rgba)
-                        .expect("write Settings phase pixels");
-                    let state = gallery.workbench.state(index);
+                        .expect("write Settings phase PNG pixels");
                     manifest.push(serde_json::json!({
                         "file": file,
                         "route": route,
+                        "entry_index": index,
                         "renderer": "settings",
-                        "phase": format!("{:?}", state.phase),
-                        "status": labels[position],
+                        "status": labels[phase_index],
                         "theme": theme_slug(theme),
                         "backing_scale": scale,
                         "viewport": {"width": 720, "height": 512, "type_scale": 1.5},
-                        "position": scroll_position,
+                        "position": position,
                         "actual_offset": offset,
                         "actual_scroll_range": actual_range,
-                        "document_height": gallery.page_document_height(),
-                        "input": state.input.query(),
-                        "attempts": state.attempts,
-                        "event_log": state.log,
+                        "document_height": document_height,
+                        "state": state_snapshot,
                         "visual_review": "unverified",
-                        "evidence": "actual Gallery Settings scene on headless GPU; not native input or performance acceptance"
+                        "evidence": "actual Gallery Settings scene on headless GPU; fixture transitions are not native input, IME, VoiceOver or performance acceptance"
                     }));
                 }
             }
-        }
-        match phase {
-            Phase::Invalid => {
-                let state = gallery.workbench.state(index);
-                state.input.set_value("Studio");
-                state.submit();
-                assert_eq!(state.phase, Phase::Pending);
-            }
-            Phase::Pending => {
-                gallery.workbench.state(index).resolve();
-                assert_eq!(gallery.workbench.state(index).phase, Phase::Failed);
-            }
-            Phase::Failed => {
-                let state = gallery.workbench.state(index);
-                state.submit();
-                assert_eq!(state.phase, Phase::Pending);
-                state.resolve();
-                assert_eq!(state.phase, Phase::Saved);
-            }
-            Phase::Ready | Phase::Saved => {}
         }
     }
     assert_eq!(manifest.len(), 64);
@@ -142,6 +207,36 @@ fn settings_non_ready_phases_render_real_gallery_page_across_themes() {
         serde_json::to_vec_pretty(&manifest).expect("serialize Settings phase manifest"),
     )
     .expect("write Settings phase manifest");
+}
+
+fn configure_phase(state: &mut super::StoryState, phase: Phase) {
+    match phase {
+        Phase::Invalid => {
+            state.input.set_value("");
+            state.activate(20, "settings");
+        }
+        Phase::Pending => state.activate(20, "settings"),
+        Phase::Failed => {
+            state.activate(20, "settings");
+            state.activate(21, "settings");
+        }
+        Phase::Saved => {
+            state.activate(20, "settings");
+            state.activate(21, "settings");
+            state.activate(20, "settings");
+            state.activate(21, "settings");
+        }
+        Phase::Ready => unreachable!("capture only non-Ready Settings phases"),
+    }
+}
+
+fn rect(rect: tekes_ui_scene::Rect) -> [f32; 4] {
+    [
+        rect.min_x(),
+        rect.min_y(),
+        rect.size.width,
+        rect.size.height,
+    ]
 }
 
 fn theme_slug(theme: Theme) -> String {

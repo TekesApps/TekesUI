@@ -106,6 +106,8 @@ Workbench 中的实时渲染页面使用 `Workbench::preview_rect`，独立页�
 - Destructive actions：确认、取消、执行中、失败、重新确认恢复；仅修改 Story 状态，不删除任何文件。
 - Settings：真实文字输入、通知偏好、校验、保存中、失败和重试成功；不修改系统偏好。
 
+Settings 的非 Ready 整页捕获复用这个原状态控制器：空名称校验、提交 Pending、首次 Resolve 失败、Retry 后 Saved，不引入另一套状态。受控 `settings_non_ready_phases_render_real_gallery_page_across_themes` 入口覆盖720×512／150%字、四主题、1x/2x、页面顶底；当前只准备入口，编译、GPU及逐图结论须沿实际运行身份另记，不能由测试定义推断通过。执行包及与原#1/#55验收行的对应见[Settings 非 Ready 批次 C](../design/reviews/settings-nonready-20261030/README.md)。
+
 | P0 能力 | 本轮边界 |
 |---|---|
 | Field | 标签 / 帮助 / 错误描述模型，输入槽复用 TextInput；不是另一套编辑器 |

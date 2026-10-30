@@ -6,11 +6,11 @@ Status **NEEDS_COORDINATION**: the capture fixture is ready in isolation; it sti
 
 A's Settings initial Ready capture remains frozen at commit `aa50a24c37cf022cbd0f90448e53ec28b2b99323`, with its 48 images, program identity and visual review. B's master-detail candidate `13e9c3c6aaa6d58d3090ac71f02ccc72269edab4` and its unexecuted copy patch remain untouched. C is based on B and adds the current real Settings route's Invalid, Pending, Failed and Saved whole-page captures.
 
-Existing `settings_full_failure_retry_and_danger_cancel_recovery` covers Gallery Settings validation, real input/action progression, first failure, retry success, and the unrelated Danger cancel path. Reuse that passing test when its inputs remain unchanged. `settings_gallery_retained_themes_keep_fixture_values_and_actual_palette` already exercises a Failed Settings instance across all four Themes with actual input and palette roles, but it asserts selected paint primitives and geometry, not whole-page images. `draft_protocol_form_scenes_use_current_journal_and_real_gpu` captures form, not the Settings route. The concrete gap is therefore per-image whole-page review of non-Ready Settings states.
+Existing `settings_full_failure_retry_and_danger_cancel_recovery` is the source entrypoint for Pending → Failed → Retry → Saved plus the unrelated Danger cancel path; it does not itself empty the Settings name or cover validation. Its presence is not proof of a current passing execution. Reuse an existing passing receipt only when the relevant inputs remain unchanged; otherwise the scoped execution packet below includes this existing regression. `settings_gallery_retained_themes_keep_fixture_values_and_actual_palette` already exercises a Failed Settings instance across all four Themes with actual input and palette roles, but it asserts selected paint primitives and geometry, not whole-page images. `draft_protocol_form_scenes_use_current_journal_and_real_gpu` captures form, not the Settings route. The concrete gap is therefore per-image whole-page review of non-Ready Settings states.
 
 ## Candidate
 
-Test-only module declaration in `workbench.rs` plus isolated `workbench/settings_phase_capture.rs`. It drives the actual existing `StoryState::submit` and `resolve` controller in sequence: blank name produces `Invalid`; a real Gallery Settings submission reaches `Pending`; first resolve produces `Failed`; resubmission and the second resolve produce `Saved`. It asserts that the selected route is the registered `example-settings/playground` example and that Gallery Settings owns no durable Form store. No replacement state machine, product control, mock UI or production behavior is introduced.
+Test-only module declaration in `workbench.rs` plus isolated `workbench/settings_phase_capture.rs`. It drives the actual existing `StoryState::activate(20/21, "settings")` owner in a fresh Gallery per phase/theme/scale, which invokes `submit` and `resolve`: blank name produces `Invalid`; a real Gallery Settings submission reaches `Pending`; first resolve produces `Failed`; resubmission and the second resolve produce `Saved`. It asserts that the selected route is the registered `example-settings/playground` example and that Gallery Settings owns no durable Form store. No replacement state machine, product control, mock UI or production behavior is introduced.
 
 The capture test emits 64 fresh original PNGs: those four real phases × four themes × @1x/@2x × actual page top/bottom, 720×512 at type scale 150%. Its manifest records route, phase, theme, scale, offset/range, document height, input, attempts and original event log. It never clears or replaces an existing directory; manifest visual review remains `unverified` until the original files are reviewed individually.
 
@@ -34,3 +34,37 @@ Also run the existing named regression `settings_full_failure_retry_and_danger_c
 - `git diff --check`: pass.
 - Source inspection confirms the new test module and keeps the existing settings retry regression present.
 - Rust compile, regression execution, strict Clippy, GPU PNG generation and per-image review: not run; awaiting the shared rendering session's window.
+
+## Parent design/AC mapping and current scope
+
+The authoritative parent matrix is the existing section in
+`docs/design/component-registry-public-api-20261017.md`, integrated as `53fdb80` per the
+2026-10-30 #1/#55 current summaries. Its original eight AC and 23 Gold7 rows are retained.
+The source candidate patch is
+`/Volumes/HP P900/DEV/TekesUI/artifacts/issue-55/parent-ac-matrix-20261030-01/candidate.patch`,
+SHA256 `001b099d75802cf521005859dbf5c2a74f72b5821856dc1b2e46e9244b96846c`.
+C directly supplies the first ordered follow-up: Settings Pending → Failed → Saved;
+Invalid is the existing required-name failure preceding that flow. It contributes only to
+AC7 (four-theme/1x2x representative state pages) and the visual portion of
+G1/whole-page-reading-composition and G7/business-combinations-are-real.
+It does not close these rows, AC5's native focus requirements, or the remaining 23-row matrix.
+`docs/gallery.md` receives only this fixture pointer; no existing design contract, token or
+registry/maturity rule changes. No new matrix replaces the parent section.
+
+A and B remain frozen. The latest #12 integration result separately records B's real
+Document word-break visual failure; C does not relabel that failure or repair B in this batch.
+The specialized integration session owns actual MAIN/source selection and build/GPU scheduling.
+No C build/GPU/native window has been used by this domain.
+
+## Preparation revision
+
+Initial uncompiled C commit `d9ccec4184247ee96f0b83bda7987d2db734c6ac` is retained.
+Source review found `Workbench.text_scale: usize` assigned `1.5`; 150% is the existing
+index `2`. This is a confirmed preparation type error, not a claimed executed compiler failure.
+The revised candidate corrects it before any shared compilation, reuses the existing
+stabilized page scrolling helpers, keeps PNG encoding local because the A/B PNG helper is private,, and adds phase/value/action/layout assertions.
+This revision changes only the new C fixture and its documentation; A/B test source and
+historical results stay unchanged. The current source hashes and static results are in
+`preparation.json`; runtime compile, Clippy, regression, all64 GPU frames and visual review
+remain unverified until the execution packet is run. No product defect is established by
+an unexecuted fixture and no production repair is included.
