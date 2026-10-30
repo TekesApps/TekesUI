@@ -96,8 +96,8 @@ The only shared-host changes are the mode selection, original SVG renderer
 adapter, action-record collection and phase-controller dispatch. Existing Menu
 payload matches explicitly reject/ignore the new Disclosure payload as appropriate.
 
-The 15 ordered phases request exactly one pointer, Enter, Space and native AX
-activation, then check controlled acceptance/rejection, rollback, stale generation,
+The 15 ordered phases require one request per positive pointer/Enter/Space/AX
+gesture (seven total), then check controlled acceptance/rejection, rollback, stale generation,
 retained mounts, collapsed Tab/AX exclusion, original marked-body collapse refusal,
 disabled input, and narrow RTL light/dark presentation. Six PNGs are requested from
 the actual window. The marked setup has a fixed UTF-16 baseline: `中文 body draft`,
@@ -154,7 +154,7 @@ PNG existence is checked automatically; coordinator visual review remains requir
 
 The fixture candidate is based on PR191 `0215b6a7fbb7d06fc197feeb6f6ec6981c20e69a` (CI run `41030568192`: SUCCESS). The published tree is preserved. This candidate consolidates the r4 fixture, display preflight, explicit public-SDK marked AX refusal, and the fixture-only needless-borrow correction. It also keeps the actual native window on an external screen and checks that screen at creation. All three original mounts (trigger, body editor, unrelated editor) are asserted throughout; after Unmark, body text and selection must remain `中文 body draft` and `1..1` through disabled/RTL/resize/final closing.
 
-The retained r4 receipt is a failed headless fixture run (exit 101); native was not_run. It is not a passing result for this corrected candidate. The corrected fixture still needs its controlled Rust test, all-target compilation/Clippy and native example build. No native launch, physical IME, VoiceOver or pixel acceptance is authorized by preparing these commands. Display preflight proves the bound external target is present and unmirrored; SDK External placement plus the creation assertion enforces the external-screen class, not acceptance of a specific physical display or its pixels.
+The retained r4 receipt is a failed headless fixture run (exit 101); native was not_run. It is not a passing result for this corrected candidate. The corrected fixture has now passed the controlled Rust test, all-target compilation/Clippy and native example build on the actual MAIN combination recorded below; those results do not replace the retained r4 failure or imply native execution. No native launch, physical IME, VoiceOver or pixel acceptance is authorized by preparing these commands. Display preflight proves the bound external target is present and unmirrored; SDK External placement plus the creation assertion enforces the external-screen class, not acceptance of a specific physical display or its pixels.
 
 | Phase | Check / next input | Cumulative actions |
 |---|---|---:|
