@@ -922,6 +922,13 @@ impl OwnedActionRequest {
         }
     }
 }
+#[derive(Clone, Debug)]
+pub(super) struct OwnerIdentity(pub std::sync::Arc<()>);
+impl PartialEq for OwnerIdentity {
+    fn eq(&self, other: &Self) -> bool {
+        std::sync::Arc::ptr_eq(&self.0, &other.0)
+    }
+}
 pub(super) trait OriginalActionDecision: Debug + PartialEq {
     fn focus_rect(&self) -> Option<Rect> {
         None

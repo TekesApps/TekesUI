@@ -19,6 +19,11 @@ pub enum SemanticRole {
     /// Original split divider; requires a matching receiver.
     Splitter,
     Switch,
+    Checkbox,
+    RadioGroup,
+    RadioButton,
+    SegmentedGroup,
+    Segment,
     List,
     ListItem,
     Dialog,

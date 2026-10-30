@@ -28,6 +28,12 @@ fn semantics(s: ContentSemantics) -> Result<wire::Semantics> {
         ContentRole::Slider => W::Slider,
         ContentRole::Splitter => W::Splitter,
         ContentRole::Switch => W::Switch,
+        ContentRole::Checkbox => W::Checkbox,
+        ContentRole::RadioGroup => W::RadioGroup,
+        ContentRole::RadioButton => W::RadioButton,
+        ContentRole::SegmentedGroup => W::SegmentedGroup,
+        ContentRole::Segment => W::Segment,
+
         ContentRole::List => W::List,
         ContentRole::ListItem => W::ListItem,
         ContentRole::Dialog => W::Dialog,
@@ -559,3 +565,32 @@ mod combo_fixture;
 #[cfg(test)]
 #[path = "combo_snapshot_tests.rs"]
 mod combo_snapshot_tests;
+
+#[cfg(test)]
+mod selection_export_tests {
+    use super::*;
+    #[test]
+    fn five_roles_export_without_fallback_and_preserve_selection_metadata() {
+        for (role, wire_role) in [
+            (ContentRole::Checkbox, wire::SemanticRole::Checkbox),
+            (ContentRole::RadioGroup, wire::SemanticRole::RadioGroup),
+            (ContentRole::RadioButton, wire::SemanticRole::RadioButton),
+            (
+                ContentRole::SegmentedGroup,
+                wire::SemanticRole::SegmentedGroup,
+            ),
+            (ContentRole::Segment, wire::SemanticRole::Segment),
+        ] {
+            let mut s = ContentSemantics::new(role, "Finite");
+            s.disabled = true;
+            if role == ContentRole::Checkbox {
+                s.value = Some("mixed".into());
+            }
+            let projected = semantics(s.clone()).unwrap();
+            assert_eq!(projected.role, wire_role);
+            assert_eq!(projected.value, s.value);
+            assert_eq!(projected.selected, s.selected);
+            assert!(projected.disabled);
+        }
+    }
+}

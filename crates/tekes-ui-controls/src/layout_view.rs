@@ -1534,7 +1534,95 @@ pub struct SegmentedControlView {
     window_active: bool,
     disabled: bool,
 }
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct SegmentedActionSnapshot {
+    layout: SegmentedLayout,
+    buttons: Vec<crate::widgets::ButtonActionSnapshot>,
+    focus: (Option<usize>, bool),
+    hovered: Option<usize>,
+    pressed: Option<usize>,
+    space_armed: Option<usize>,
+    window_active: bool,
+    disabled: bool,
+}
+#[derive(Debug, PartialEq)]
+pub(crate) struct SegmentedViewDecision {
+    expected: SegmentedActionSnapshot,
+    effect: SegmentedViewEffect,
+}
+#[derive(Debug, PartialEq)]
+enum SegmentedViewEffect {
+    Pointer { index: usize, button: crate::widgets::ButtonActionDecision, cancel: bool },
+    Focus { index: usize, visible: bool, cancel: bool },
+    Select { index: usize, selection: Option<crate::extended::SegmentedSelectionDecision> },
+}
+impl SegmentedViewDecision {
+    pub(crate) fn changed_selection(&self) -> bool {
+        matches!(self.effect, SegmentedViewEffect::Select { selection: Some(_), .. })
+    }
+}
 impl SegmentedControlView {
+    pub(crate) fn action_snapshot(&self) -> SegmentedActionSnapshot {
+        SegmentedActionSnapshot { layout: self.layout.clone(),
+            buttons: self.buttons.iter().map(ButtonModel::action_snapshot).collect(),
+            focus: (self.focused, self.focus_visible), hovered: self.hovered,
+            pressed: self.pressed, space_armed: self.space_armed,
+            window_active: self.window_active, disabled: self.disabled }
+    }
+    pub(crate) fn prepare_pointer_down(&self, p: Point, cancel: bool) -> Option<SegmentedViewDecision> {
+        if !self.window_active || self.disabled { return None; }
+        let index = self.layout.items.iter().position(|l| l.hit_test(p))?;
+        let button = self.buttons.get(index)?;
+        if button.state.disabled { return None; }
+        Some(SegmentedViewDecision { expected: self.action_snapshot(), effect: SegmentedViewEffect::Pointer {
+            index, button: button.prepare_content_down_after_cancel(p, false, cancel), cancel } })
+    }
+    pub(crate) fn prepare_focus(&self, index: usize, visible: bool, cancel: bool) -> Option<SegmentedViewDecision> {
+        if self.disabled || self.buttons.get(index).is_none_or(|b| b.state.disabled) { return None; }
+        Some(SegmentedViewDecision { expected: self.action_snapshot(), effect: SegmentedViewEffect::Focus { index, visible, cancel } })
+    }
+    pub(crate) fn prepare_select(&self, index: usize, model: &SegmentedControl) -> SegmentedViewDecision {
+        SegmentedViewDecision { expected: self.action_snapshot(), effect: SegmentedViewEffect::Select {
+            index, selection: (!self.disabled).then(|| model.prepare_select(index)).flatten() } }
+    }
+    fn apply_pointer_decision(&mut self, decision: SegmentedViewDecision) {
+        let SegmentedViewEffect::Pointer { index, button, cancel } = decision.effect else { unreachable!() };
+        if cancel { self.cancel(); }
+        self.buttons[index].apply_content_action(button);
+        self.pressed = Some(index); self.focused = Some(index); self.focus_visible = false;
+    }
+    fn apply_focus_decision(&mut self, decision: SegmentedViewDecision) {
+        let SegmentedViewEffect::Focus { index, visible, cancel } = decision.effect else { unreachable!() };
+        if cancel { self.cancel(); }
+        self.focused = Some(index); self.focus_visible = visible;
+    }
+    // Consume an authenticated original decision. No handler replay or late refusal.
+    // Parent set_focus hooks only touch this View's focus/arms: these assignments
+    // deliberately establish the same original final focus/gesture after that hook.
+    pub(crate) fn apply_decision(&mut self, decision: SegmentedViewDecision, model: &mut SegmentedControl) {
+        match decision.effect {
+            SegmentedViewEffect::Pointer { .. } => self.apply_pointer_decision(decision),
+            SegmentedViewEffect::Focus { .. } => self.apply_focus_decision(decision),
+            SegmentedViewEffect::Select { index, selection: Some(selection) } => {
+                model.apply_prepared_select(selection);
+                self.focused = Some(index); self.focus_visible = false; self.cancel();
+            }
+            SegmentedViewEffect::Select { selection: None, .. } => {}
+        }
+    }
+
+    /// Apply the parent's semantic Surface to the existing retained buttons.
+    /// Validation completes before mutation; input/focus/capture are unchanged.
+    pub fn set_surface(
+        &mut self,
+        surface: &str,
+    ) -> Result<(), tekes_ui_tokens::surface_palette::SurfaceError> {
+        let surface = tekes_ui_tokens::surface_palette::canonical_surface(surface)?;
+        for button in &mut self.buttons {
+            button.set_surface(surface);
+        }
+        Ok(())
+    }
     pub fn new(count: usize) -> Self {
         Self {
             buttons: vec![ButtonModel::default(); count],
@@ -1548,18 +1636,28 @@ impl SegmentedControlView {
             disabled: false,
         }
     }
+    pub(crate) fn measure(
+        text: &mut impl ButtonTextRenderer, labels: &[&str], available: Size,
+        role: proposal::TextRole, compact: bool,
+    ) -> Size {
+        let count = labels.len();
+        if count == 0 { return Size::default(); }
+        let size = if compact { ButtonSize::Sm } else { ButtonSize::Md };
+        let width = (available.width / count as f32).max(0.);
+        let mut result = Size::default();
+        for label in labels {
+            let measured = ButtonModel::measure(text, label, width, size, role);
+            result.width = result.width.max(measured.width);
+            result.height = result.height.max(measured.height);
+        }
+        result.width *= count as f32;
+        result
+    }
     #[allow(clippy::too_many_arguments)]
-    pub fn render(
-        &mut self,
-        scene: &mut Scene,
-        text: &mut impl ButtonTextRenderer,
-        model: &mut SegmentedControl,
-        labels: &[&str],
-        frame: Rect,
-        clip: Option<Rect>,
-        palette: Palette,
-        role: proposal::TextRole,
-        compact: bool,
+    pub(crate) fn arrange(
+        &mut self, text: &mut impl ButtonTextRenderer, model: &SegmentedControl,
+        labels: &[&str], frame: Rect, clip: Option<Rect>,
+        role: proposal::TextRole, compact: bool,
     ) -> SegmentedLayout {
         if !valid(frame, clip) {
             self.cancel();
@@ -1585,21 +1683,8 @@ impl SegmentedControlView {
             self.focused = (0..count).find(|i| model.is_enabled(*i));
         }
         let cells = Stack::new(Axis::Horizontal).layout(frame, count);
-        let mut items = vec![None; count];
-        let clipped = safe_clip(scene, clip);
-        let focus_last = self.focused.filter(|&index| {
-            index < count
-                && self.focus_visible
-                && self.window_active
-                && !self.disabled
-                && model.is_enabled(index)
-        });
-        // Keep hit/layout slots in model order, while keyboard focus paints
-        // above adjacent opaque segments using the existing ButtonModel painter.
-        for i in (0..count)
-            .filter(|i| Some(*i) != focus_last)
-            .chain(focus_last)
-        {
+        let mut items = Vec::with_capacity(count);
+        for i in 0..count {
             let button = &mut self.buttons[i];
             let disabled = self.disabled || !model.is_enabled(i);
             button.state.disabled = disabled;
@@ -1613,37 +1698,41 @@ impl SegmentedControlView {
             } else {
                 ButtonSize::Md
             };
-            let l = button.render(
-                scene,
-                text,
-                labels[i],
-                cells[i],
-                clip,
-                palette,
-                ButtonVariant::Quiet,
-                size,
-                role,
-                ButtonTextAlign::Leading,
-            );
-            items[i] = Some(l);
-        }
-        let items = items
-            .into_iter()
-            .map(|item| item.expect("every segment retains its original layout slot"))
-            .collect();
-        if clipped {
-            scene.pop_clip();
+            items.push(button.prepare_layout(text, labels[i], cells[i], clip, size,
+                role, ButtonTextAlign::Leading, None));
         }
         self.layout = SegmentedLayout { frame, items };
-        if !self
-            .layout
-            .items
-            .iter()
-            .any(|item| item.visible.is_some_and(has_area))
-        {
-            self.cancel();
-            self.focused = None;
-            self.hovered = None;
+        if !self.layout.items.iter().any(|item| item.visible.is_some_and(has_area)) {
+            self.cancel(); self.focused = None; self.hovered = None;
+        }
+        self.layout.clone()
+    }
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn paint_arranged(
+        &mut self, scene: &mut Scene, text: &mut impl ButtonTextRenderer,
+        model: &SegmentedControl, labels: &[&str], clip: Option<Rect>,
+        palette: Palette, role: proposal::TextRole, compact: bool,
+    ) {
+        let count = self.layout.items.len();
+        let focus_last = self.focused.filter(|&index| index < count && self.focus_visible
+            && self.window_active && !self.disabled && model.is_enabled(index));
+        let clipped = safe_clip(scene, clip);
+        let size = if compact { ButtonSize::Sm } else { ButtonSize::Md };
+        for i in (0..count).filter(|i| Some(*i) != focus_last).chain(focus_last) {
+            self.buttons[i].paint_prepared_segment(scene, text, labels[i], self.layout.items[i],
+                clip, palette, size, role);
+        }
+        if clipped { scene.pop_clip(); }
+    }
+    #[allow(clippy::too_many_arguments)]
+    pub fn render(
+        &mut self, scene: &mut Scene, text: &mut impl ButtonTextRenderer,
+        model: &mut SegmentedControl, labels: &[&str], frame: Rect,
+        clip: Option<Rect>, palette: Palette, role: proposal::TextRole, compact: bool,
+    ) -> SegmentedLayout {
+        self.arrange(text, model, labels, frame, clip, role, compact);
+        if valid(frame, clip) {
+            self.paint_arranged(scene, text, model, labels, clip, palette, role, compact);
         }
         self.layout.clone()
     }
@@ -1661,18 +1750,12 @@ impl SegmentedControlView {
         }
     }
     pub fn pointer_down(&mut self, p: Point) -> Option<usize> {
-        if !self.window_active || self.disabled {
-            return None;
-        }
-        let i = self.layout.items.iter().position(|l| l.hit_test(p))?;
-        if self.buttons[i].state.disabled {
-            return None;
-        }
-        self.buttons[i].pointer_down_at(p);
-        self.pressed = Some(i);
-        self.focused = Some(i);
-        self.focus_visible = false;
-        Some(i)
+        let decision = self.prepare_pointer_down(p, false)?;
+        let SegmentedViewEffect::Pointer { index, .. } = &decision.effect else { unreachable!() };
+        let index = *index;
+        // Pointer decision has no model effect; use the same consuming primitive.
+        self.apply_pointer_decision(decision);
+        Some(index)
     }
     pub fn pointer_up(&mut self, p: Point, model: &mut SegmentedControl) -> Option<usize> {
         let i = self.pressed.take()?;
@@ -1746,24 +1829,17 @@ impl SegmentedControlView {
         self.key_event(key, down, model).changed
     }
     pub fn select(&mut self, index: usize, model: &mut SegmentedControl) -> bool {
-        let changed = !self.disabled && model.select(index);
-        if changed {
-            self.focused = Some(index);
-            self.focus_visible = false;
-            self.cancel();
-        }
+        let decision = self.prepare_select(index, model);
+        let changed = decision.changed_selection();
+        self.apply_decision(decision, model);
         changed
     }
     pub fn focus(&mut self, i: usize) {
         self.focus_with_visibility(i, true)
     }
     pub fn focus_with_visibility(&mut self, i: usize, visible: bool) {
-        if !self.disabled
-            && i < self.buttons.len()
-            && self.buttons.get(i).is_some_and(|b| !b.state.disabled)
-        {
-            self.focused = Some(i);
-            self.focus_visible = visible;
+        if let Some(decision) = self.prepare_focus(i, visible, false) {
+            self.apply_focus_decision(decision);
         }
     }
     pub fn blur(&mut self) {

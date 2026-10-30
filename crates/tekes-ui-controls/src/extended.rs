@@ -662,11 +662,24 @@ impl Slider {
     }
 }
 
+/// Consumed by the original selection owner after its caller validates the input.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct RadioSelectDecision {
+    before: Option<usize>,
+    next: Option<usize>,
+}
+impl RadioSelectDecision {
+    pub(crate) fn changed(self) -> bool { self.before != self.next }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct RadioGroup {
     pub selected: Option<usize>,
     enabled: Vec<bool>,
 }
+/// A controlled Radio selection must address an enabled original slot.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum RadioSelectionError { InvalidIndex, DisabledItem }
 impl RadioGroup {
     pub fn new(count: usize) -> Self {
         Self {
@@ -722,12 +735,35 @@ impl RadioGroup {
         }
         true
     }
-    pub fn select(&mut self, index: usize) -> bool {
-        if self.enabled.get(index) != Some(&true) || self.selected == Some(index) {
-            return false;
+    /// Validate the entire update before changing the original selection owner.
+    /// None is the original unselected state; existing select/key APIs retain
+    /// their behavior. Focus and gesture cancellation belong to the View.
+    pub fn validate_selected(&self, selected: Option<usize>) -> Result<(), RadioSelectionError> {
+        if let Some(index) = selected {
+            if index >= self.len() { return Err(RadioSelectionError::InvalidIndex); }
+            if !self.is_enabled(index) { return Err(RadioSelectionError::DisabledItem); }
         }
-        self.selected = Some(index);
-        true
+        Ok(())
+    }
+    pub fn set_selected(&mut self, selected: Option<usize>) -> Result<bool, RadioSelectionError> {
+        self.validate_selected(selected)?;
+        let changed = self.selected != selected;
+        if let Some(index) = selected { self.select(index); } else { self.selected = None; }
+        Ok(changed)
+    }
+    pub(crate) fn prepare_select(&self, index: usize) -> RadioSelectDecision {
+        RadioSelectDecision {
+            before: self.selected,
+            next: if self.is_enabled(index) { Some(index) } else { self.selected },
+        }
+    }
+    pub(crate) fn apply_select(&mut self, decision: RadioSelectDecision) -> bool {
+        let changed = decision.before != decision.next;
+        self.selected = decision.next;
+        changed
+    }
+    pub fn select(&mut self, index: usize) -> bool {
+        self.apply_select(self.prepare_select(index))
     }
     pub fn key(&mut self, key: ControlKey) -> bool {
         self.key_from(key, self.selected)
@@ -809,6 +845,8 @@ pub struct SegmentedControl {
     pub selected: usize,
     enabled: Vec<bool>,
 }
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct SegmentedSelectionDecision { index: usize }
 impl SegmentedControl {
     pub fn new(count: usize) -> Self {
         Self {
@@ -838,11 +876,15 @@ impl SegmentedControl {
     pub fn is_enabled(&self, i: usize) -> bool {
         self.enabled.get(i).copied().unwrap_or(false)
     }
+    pub(crate) fn prepare_select(&self, i: usize) -> Option<SegmentedSelectionDecision> {
+        (self.is_enabled(i) && self.selected != i).then_some(SegmentedSelectionDecision { index: i })
+    }
+    pub(crate) fn apply_prepared_select(&mut self, decision: SegmentedSelectionDecision) {
+        self.selected = decision.index;
+    }
     pub fn select(&mut self, i: usize) -> bool {
-        if self.enabled.get(i) != Some(&true) || self.selected == i {
-            return false;
-        }
-        self.selected = i;
+        let Some(decision) = self.prepare_select(i) else { return false; };
+        self.apply_prepared_select(decision);
         true
     }
     pub fn key(&mut self, key: ControlKey) -> bool {

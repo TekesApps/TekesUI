@@ -150,6 +150,67 @@ pub(crate) fn validate(nodes: &[wire::SemanticNode]) -> Result<()> {
                 .parent;
         }
     }
+    validate_selection(nodes)?;
+    Ok(())
+}
+fn validate_selection(nodes: &[wire::SemanticNode]) -> Result<()> {
+    // Finite selection capabilities are validated over the complete hierarchy.
+    fn selection(
+        s: &wire::Semantics,
+        parent: Option<wire::SemanticRole>,
+        text: bool,
+        range: bool,
+    ) -> Result<()> {
+        use wire::SemanticRole as R;
+        if !matches!(
+            s.role,
+            R::Checkbox | R::RadioGroup | R::RadioButton | R::SegmentedGroup | R::Segment
+        ) {
+            return Ok(());
+        }
+        ensure!(
+            !text && !range && s.expanded.is_none(),
+            "selection has text/range/expanded capability"
+        );
+        let valid = match s.role {
+            R::Checkbox => matches!(
+                (s.value.as_deref(), s.selected),
+                (Some("off" | "mixed"), false) | (Some("on"), true)
+            ),
+            R::RadioGroup | R::SegmentedGroup => s.value.is_none() && !s.selected,
+            R::RadioButton => s.value.is_none() && parent == Some(R::RadioGroup),
+            R::Segment => s.value.is_none() && parent == Some(R::SegmentedGroup),
+            _ => true,
+        };
+        ensure!(valid, "invalid selection value/parent");
+        Ok(())
+    }
+    for n in nodes {
+        selection(
+            &n.semantics,
+            n.parent
+                .and_then(|t| nodes.iter().find(|n| n.target == t))
+                .map(|n| n.semantics.role),
+            n.text.is_some() || n.text_binding.is_some() || n.text_layout.is_some(),
+            n.value_range.is_some(),
+        )?;
+        for p in &n.parts {
+            let parent = match p.parent {
+                Some(i) => n
+                    .parts
+                    .iter()
+                    .find(|p| p.index == i)
+                    .map(|p| p.semantics.role),
+                None => Some(n.semantics.role),
+            };
+            selection(
+                &p.semantics,
+                parent,
+                p.text_layout.is_some(),
+                p.value_range.is_some(),
+            )?;
+        }
+    }
     Ok(())
 }
 fn semantics(s: &wire::Semantics) -> ContentSemantics {
@@ -168,6 +229,12 @@ fn semantics(s: &wire::Semantics) -> ContentSemantics {
             W::Slider => R::Slider,
             W::Splitter => R::Splitter,
             W::Switch => R::Switch,
+        W::Checkbox => R::Checkbox,
+        W::RadioGroup => R::RadioGroup,
+        W::RadioButton => R::RadioButton,
+        W::SegmentedGroup => R::SegmentedGroup,
+        W::Segment => R::Segment,
+
             W::List => R::List,
             W::ListItem => R::ListItem,
             W::Dialog => R::Dialog,
@@ -537,3 +604,155 @@ mod tests {
 #[cfg(test)]
 #[path = "combo_publication_tests.rs"]
 mod combo_publication_tests;
+
+#[cfg(test)]
+mod selection_publication_tests {
+    use super::*;
+    use crate::native_content::semantic_test_snapshot;
+    fn node(id: u64) -> wire::SemanticNode {
+        serde_json::from_value(serde_json::json!({
+            "target":{"id":id,"mount":id+100},"parent":null,"frame":[0.,0.,200.,40.],
+            "visible":[0.,0.,200.,40.],"focused":false,"semantics":{
+            "role":"Checkbox","name":"Check","value":"mixed","selected":false,"disabled":false,
+            "expanded":null,"invalid":false,"required":false,"description":null},
+            "parts":[],"value_range":null,"text":null
+        }))
+        .unwrap()
+    }
+    fn frame() -> Rect {
+        Rect::new(0., 0., 200., 80.)
+    }
+    fn index(r: &RemoteSemantics) -> usize {
+        r.parts(frame(), frame(), false)[0].index
+    }
+    fn closed(r: &RemoteSemantics, old: usize) {
+        assert!(r.needs_refresh());
+        assert!(r.parts(frame(), frame(), false).is_empty());
+        assert!(r.callback(old).is_none());
+        assert!(r.text_layout(old, frame(), frame()).is_none());
+        assert!(r.parent(old).is_none());
+        assert!(!r.preserves_focus(old));
+    }
+    #[test]
+    fn malformed_b_revokes_a_without_publishing_valid_prefix_and_c_never_revives_old_targets() {
+        let mut r = RemoteSemantics::default();
+        r.update(semantic_test_snapshot(vec![node(1)])).unwrap();
+        let a = index(&r);
+        assert!(r.callback(a).is_some());
+        assert!(r.text_layout(a, frame(), frame()).is_none());
+        let next = r.next;
+        let mut malformed = node(3);
+        malformed.frame[2] = -1.;
+        assert!(
+            r.update(semantic_test_snapshot(vec![node(1), node(2), malformed]))
+                .is_err()
+        );
+        closed(&r, a);
+        assert!(r.entries.is_empty());
+        assert!(r.snapshot.is_none());
+        assert!(r.attachment.is_none());
+        assert_eq!(r.next, next);
+        // Even reusing the same remote target cannot revive the old projected ID.
+        r.update(semantic_test_snapshot(vec![node(1)])).unwrap();
+        let c = index(&r);
+        assert!(c > a);
+        assert!(r.callback(a).is_none());
+        assert!(r.text_layout(a, frame(), frame()).is_none());
+        assert!(r.callback(c).is_some());
+        r.revoke();
+        closed(&r, c);
+        r.update(semantic_test_snapshot(vec![node(1)])).unwrap();
+        assert!(index(&r) > c);
+        assert!(r.callback(c).is_none());
+    }
+    #[test]
+    fn capacity_failure_is_dirty_without_prefix_wrap_or_partial_allocator_commit() {
+        let mut r = RemoteSemantics::default();
+        r.update(semantic_test_snapshot(vec![node(1)])).unwrap();
+        let a = index(&r);
+        // One candidate allocation succeeds locally; the next would overflow.
+        r.next = usize::MAX - 1;
+        let old_entries = format!("{:?}", r.entries);
+        assert!(
+            r.update(semantic_test_snapshot(vec![node(1), node(2), node(3)]))
+                .is_err()
+        );
+        closed(&r, a);
+        assert!(r.dirty);
+        assert_eq!(r.next, usize::MAX - 1);
+        assert_eq!(format!("{:?}", r.entries), old_entries);
+        r.update(semantic_test_snapshot(vec![node(4)])).unwrap();
+        let last = index(&r);
+        assert_eq!(last, usize::MAX);
+        assert!(r.callback(a).is_none());
+        r.revoke();
+        closed(&r, last);
+        assert_eq!(r.next, usize::MAX);
+        assert!(r.update(semantic_test_snapshot(vec![node(5)])).is_err());
+        closed(&r, last);
+        assert_eq!(r.next, usize::MAX);
+    }
+}
+
+#[cfg(test)]
+mod selection_shape_tests {
+    use super::*;
+    fn group(role: &str, child: &str) -> wire::SemanticNode {
+        serde_json::from_value(serde_json::json!({
+            "target":{"id":1,"mount":2},"parent":null,"frame":[0.,0.,200.,40.],
+            "visible":[0.,0.,200.,40.],"focused":false,"semantics":{
+            "role":role,"name":"Group","value":null,"selected":false,"disabled":false,
+            "expanded":null,"invalid":false,"required":false,"description":null},
+            "parts":[{"index":0,"parent":null,"frame":[0.,0.,40.,40.],"focused":true,"semantics":{
+            "role":child,"name":"Choice","value":null,"selected":true,"disabled":false,
+            "expanded":null,"invalid":false,"required":false,"description":null}}],"value_range":null,"text":null
+        })).unwrap()
+    }
+    #[test]
+    fn finite_selection_parent_values_and_capabilities_are_closed() {
+        use wire::SemanticRole as R;
+        for (parent, child) in [("RadioGroup", "RadioButton"), ("SegmentedGroup", "Segment")] {
+            let n = group(parent, child);
+            validate(std::slice::from_ref(&n)).unwrap();
+            assert!(semantics(&n.parts[0].semantics).selected);
+            let mut bad = n.clone();
+            bad.semantics.selected = true;
+            assert!(validate(&[bad]).is_err());
+            let mut bad = n.clone();
+            bad.parts[0].semantics.role = if child == "Segment" {
+                R::RadioButton
+            } else {
+                R::Segment
+            };
+            assert!(validate(&[bad]).is_err());
+            let mut bad = n.clone();
+            bad.text_binding = Some(vec![1]);
+            assert!(validate(&[bad]).is_err());
+            let mut bad = n.clone();
+            bad.parts[0].value_range = Some([0., 1.]);
+            assert!(validate(&[bad]).is_err());
+            let mut bad = n.clone();
+            bad.parts[0].semantics.value = Some("on".into());
+            assert!(validate(&[bad]).is_err());
+            let mut bad = n.clone();
+            bad.semantics.value = Some("selected".into());
+            assert!(validate(&[bad]).is_err());
+        }
+        let mut n = group("RadioGroup", "RadioButton");
+        n.parts.clear();
+        n.semantics.role = R::Checkbox;
+        for (value, selected, valid) in [
+            ("off", false, true),
+            ("on", true, true),
+            ("mixed", false, true),
+            ("mixed", true, false),
+            ("off", true, false),
+            ("on", false, false),
+            ("unknown", false, false),
+        ] {
+            n.semantics.value = Some(value.into());
+            n.semantics.selected = selected;
+            assert_eq!(validate(std::slice::from_ref(&n)).is_ok(), valid);
+        }
+    }
+}

@@ -1,0 +1,81 @@
+{
+  "scope": "actual pre-Selection Combo17 whole decoder; no role/action stripped",
+  "source_commit": "ce69f8e92b5c0dc48e7b2cd0704bd8a4042f4b4d",
+  "old_roles": [
+    "Group",
+    "ProgressIndicator",
+    "Text",
+    "Image",
+    "Button",
+    "Link",
+    "TextInput",
+    "ComboBox",
+    "Slider",
+    "Splitter",
+    "Switch",
+    "List",
+    "ListItem",
+    "Dialog",
+    "MenuButton",
+    "Menu",
+    "MenuItem"
+  ],
+  "old_role_count": 17,
+  "new_roles": [
+    "Group",
+    "ProgressIndicator",
+    "Text",
+    "Image",
+    "Button",
+    "Link",
+    "TextInput",
+    "ComboBox",
+    "Slider",
+    "Splitter",
+    "Switch",
+    "Checkbox",
+    "RadioGroup",
+    "RadioButton",
+    "SegmentedGroup",
+    "Segment",
+    "List",
+    "ListItem",
+    "Dialog",
+    "MenuButton",
+    "Menu",
+    "MenuItem"
+  ],
+  "new_role_count": 22,
+  "new_only_roles": [
+    "Checkbox",
+    "RadioGroup",
+    "RadioButton",
+    "SegmentedGroup",
+    "Segment"
+  ],
+  "preserved_actions": [
+    "SetExpanded"
+  ],
+  "fixtures": [
+    {
+      "source_path": "crates/tekes-ui-app-protocol/src/component/content.rs",
+      "fixture_path": "crates/tekes-ui-app-protocol/tests/old_selection_schema/content.rs",
+      "source_commit": "ce69f8e92b5c0dc48e7b2cd0704bd8a4042f4b4d",
+      "source_sha256": "8d2f1e7f9c753f13b71c921214f79dda3b4ae46bf8bafd30293236d064ecf255",
+      "fixture_sha256": "8d2f1e7f9c753f13b71c921214f79dda3b4ae46bf8bafd30293236d064ecf255",
+      "source_git_blob": "95f47e56c4f75eb5ec40e16fa1bd1eacd9f035be",
+      "byte_identical": true
+    },
+    {
+      "source_path": "crates/tekes-ui-app-protocol/src/component/content/accessibility.rs",
+      "fixture_path": "crates/tekes-ui-app-protocol/tests/old_selection_schema/accessibility.rs",
+      "source_commit": "ce69f8e92b5c0dc48e7b2cd0704bd8a4042f4b4d",
+      "source_sha256": "e354f139b3eb53eb9c7905f19710c7c15efa84668ab5e57bf8fbc758756a82b3",
+      "fixture_sha256": "e354f139b3eb53eb9c7905f19710c7c15efa84668ab5e57bf8fbc758756a82b3",
+      "source_git_blob": "de9ff67fe92982b3703bae43e0c08f1097231da2",
+      "byte_identical": true
+    }
+  ],
+  "byte_capture_not_decoder_execution": true,
+  "admission_refresh_required_if_schema_changes": true
+}

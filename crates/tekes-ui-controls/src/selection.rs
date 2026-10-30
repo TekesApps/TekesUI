@@ -286,6 +286,7 @@ pub struct SwitchLayout {
 
 #[derive(Clone, Debug)]
 pub struct RadioGroupView {
+    surface: &'static str,
     layout: RadioGroupLayout,
     focused: Option<usize>,
     focus_visible: bool,
@@ -295,7 +296,29 @@ pub struct RadioGroupView {
     disabled: bool,
     error: bool,
 }
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct RadioActionState {
+    focused: Option<usize>,
+    focus_visible: bool,
+    pressed: Option<usize>,
+    window_active: bool,
+    disabled: bool,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct RadioViewDecision {
+    before: RadioActionState,
+    next: RadioActionState,
+    pub(crate) event: SelectionEvent,
+    write_focus: bool,
+    write_pressed: bool,
+}
 impl RadioGroupView {
+    /// Surface identity affects paint only, retaining original focus and armed gestures.
+    pub fn set_surface(&mut self, surface: &str) -> Result<(), tekes_ui_tokens::surface_palette::SurfaceError> {
+        self.surface = tekes_ui_tokens::surface_palette::canonical_surface(surface)?;
+        Ok(())
+    }
+
     /// Validation is independent of selection, focus and disabled interaction.
     /// The host supplies the explanatory message (for example through Field).
     pub fn set_error(&mut self, error: bool) {
@@ -307,22 +330,11 @@ impl RadioGroupView {
     pub fn new() -> Self {
         Self::default()
     }
-    #[allow(clippy::too_many_arguments)]
-    pub fn render(
-        &mut self,
-        scene: &mut Scene,
-        text: &mut impl ButtonTextRenderer,
-        model: &RadioGroup,
-        bounds: Rect,
-        clip: Option<Rect>,
-        palette: Palette,
-        labels: &[&str],
+    fn measured_layout(
+        text: &mut impl ButtonTextRenderer, model: &RadioGroup,
+        bounds: Rect, clip: Option<Rect>, labels: &[&str],
     ) -> RadioGroupLayout {
-        if invalid_rect(bounds) || invalid_clip(clip) {
-            self.layout = RadioGroupLayout::default();
-            self.blur();
-            return self.layout.clone();
-        }
+        if invalid_rect(bounds) || invalid_clip(clip) { return RadioGroupLayout::default(); }
         let normalized = ControlFrame::new(bounds, clip).frame();
         let minimum = proposal::metric("size", "size-comfortable-row")
             .expect("design system comfortable row");
@@ -360,15 +372,6 @@ impl RadioGroupView {
             normalized.size.width,
             total + row_gap * rows.len().saturating_sub(1) as f32,
         );
-        if self
-            .focused
-            .is_some_and(|i| i >= model.len() || !model.is_enabled(i))
-        {
-            self.focused = model
-                .selected
-                .filter(|i| model.is_enabled(*i))
-                .or_else(|| (0..model.len()).find(|i| model.is_enabled(*i)));
-        }
         let mut indicators = Vec::with_capacity(rows.len());
         let mut label_slots = Vec::with_capacity(rows.len());
         for (index, row) in rows.iter().enumerate() {
@@ -384,12 +387,54 @@ impl RadioGroupView {
                 (r.size.width - 40.).max(0.),
                 r.size.height,
             );
+            indicators.push(indicator);
+            label_slots.push(label);
+        }
+        RadioGroupLayout { frame, rows, indicators, labels: label_slots }
+    }
+    pub(crate) fn measure_content(
+        text: &mut impl ButtonTextRenderer, model: &RadioGroup, width: f32, labels: &[&str],
+    ) -> Size {
+        Self::measured_layout(text, model, Rect::new(0., 0., width, 0.), None, labels).frame.size
+    }
+    pub(crate) fn arrange_content(
+        &mut self, text: &mut impl ButtonTextRenderer, model: &RadioGroup,
+        bounds: Rect, clip: Option<Rect>, labels: &[&str],
+    ) -> RadioGroupLayout {
+        self.layout = Self::measured_layout(text, model, bounds, clip, labels);
+        if self
+            .focused
+            .is_some_and(|i| i >= model.len() || !model.is_enabled(i))
+        {
+            self.focused = model
+                .selected
+                .filter(|i| model.is_enabled(*i))
+                .or_else(|| (0..model.len()).find(|i| model.is_enabled(*i)));
+        }
+        let all_hidden = self.layout.rows.iter().all(|row| row.visible_frame().is_none());
+        if self.disabled || self.pressed.is_some_and(|index| !model.is_enabled(index)) {
+            self.cancel();
+        }
+        if all_hidden { self.blur(); }
+        if all_hidden || self.pressed.is_some_and(|index| rows_visibility_for(&self.layout, index).is_none()) {
+            self.cancel();
+        }
+        self.layout.clone()
+    }
+    /// Paint only the original arranged geometry, without a second reconciliation.
+    pub(crate) fn paint_content(
+        &self, scene: &mut Scene, text: &mut impl ButtonTextRenderer,
+        model: &RadioGroup, clip: Option<Rect>, palette: Palette, labels: &[&str],
+    ) {
+        for (index, row) in self.layout.rows.iter().enumerate() {
+            let indicator = self.layout.indicators[index];
+            let label = self.layout.labels[index];
             if row.visible_frame().is_some() {
                 if let Some(clip) = clip {
                     scene.push_clip(clip);
                 }
                 let focused = self.focused == Some(index) && self.window_active && !self.disabled;
-                radio_with_state(
+                radio_on_surface(
                     scene,
                     indicator,
                     palette,
@@ -403,6 +448,7 @@ impl RadioGroupView {
                         focus_visible: focused && self.focus_visible,
                         ..Default::default()
                     },
+                    self.surface,
                 );
                 let label_visible = ControlFrame::new(label, row.visible_frame()).visible_frame();
                 if let Some(label_clip) = label_visible {
@@ -413,13 +459,10 @@ impl RadioGroupView {
                         proposal::TextRole::UiBody,
                         label,
                         ButtonTextAlign::Leading,
-                        palette
-                            .color(if self.disabled || !model.is_enabled(index) {
-                                "disabled-text"
-                            } else {
-                                "primary-text"
-                            })
-                            .expect("Design System label text"),
+                        crate::paint::choice_label_color(palette, self.surface, ControlState {
+                            selected: model.selected == Some(index), disabled: self.disabled || !model.is_enabled(index),
+                            hovered: self.hovered == Some(index), pressed: self.pressed == Some(index), ..Default::default()
+                        }),
                     );
                     scene.pop_clip();
                 }
@@ -427,47 +470,77 @@ impl RadioGroupView {
                     scene.pop_clip();
                 }
             }
-            indicators.push(indicator);
-            label_slots.push(label);
         }
-        let all_hidden = rows.iter().all(|row| row.visible_frame().is_none());
-        self.layout = RadioGroupLayout {
-            frame,
-            rows,
-            indicators,
-            labels: label_slots,
-        };
-        if self.disabled || self.pressed.is_some_and(|index| !model.is_enabled(index)) {
-            self.cancel();
-        }
-        if all_hidden {
-            self.blur();
-        }
-        if all_hidden
-            || self
-                .pressed
-                .is_some_and(|index| rows_visibility_for(&self.layout, index).is_none())
-        {
-            self.cancel();
-        }
+    }
+    #[allow(clippy::too_many_arguments)]
+    pub fn render(
+        &mut self, scene: &mut Scene, text: &mut impl ButtonTextRenderer,
+        model: &RadioGroup, bounds: Rect, clip: Option<Rect>, palette: Palette, labels: &[&str],
+    ) -> RadioGroupLayout {
+        self.arrange_content(text, model, bounds, clip, labels);
+        self.paint_content(scene, text, model, clip, palette, labels);
         self.layout.clone()
     }
+    pub(crate) fn clear_content_layout(&mut self) {
+        self.blur();
+        self.layout = RadioGroupLayout::default();
+    }
+    fn action_state(&self) -> RadioActionState {
+        RadioActionState { focused: self.focused, focus_visible: self.focus_visible,
+            pressed: self.pressed, window_active: self.window_active, disabled: self.disabled }
+    }
+    pub(crate) fn prepare_content_focus(&self, model: &RadioGroup, index: Option<usize>, visible: bool) -> RadioViewDecision {
+        let before = self.action_state();
+        let mut next = before;
+        next.focused = if self.disabled { None } else {
+            index.filter(|i| *i < model.len() && model.is_enabled(*i))
+                .or(model.selected.filter(|i| model.is_enabled(*i)))
+                .or_else(|| (0..model.len()).find(|i| model.is_enabled(*i)))
+        };
+        let write_pressed = next.focused != before.focused || self.disabled;
+        if write_pressed { next.pressed = None; }
+        next.focus_visible = next.focused.is_some() && visible;
+        RadioViewDecision { before, next, event: SelectionEvent::Handled,
+            write_focus: true, write_pressed }
+    }
+    pub(crate) fn prepare_content_down(&self, point: Point, model: &RadioGroup) -> RadioViewDecision {
+        let before = self.action_state();
+        let mut next = before;
+        let mut write_focus = false;
+        let mut write_pressed = false;
+        if next.pressed.is_some_and(|i| !model.is_enabled(i)) {
+            next.pressed = None; write_pressed = true;
+        }
+        let event = if !self.window_active { SelectionEvent::Ignored }
+        else if let Some(i) = self.layout.rows.iter().position(|r| r.contains(point)) {
+            if !self.disabled && model.is_enabled(i) {
+                next.pressed = Some(i); next.focused = Some(i); next.focus_visible = false;
+                write_focus = true; write_pressed = true;
+            }
+            SelectionEvent::Handled
+        } else { SelectionEvent::Ignored };
+        RadioViewDecision { before, next, event, write_focus, write_pressed }
+    }
+    pub(crate) fn prepare_content_press(&self, model: &RadioGroup, index: usize) -> RadioViewDecision {
+        let mut decision = self.prepare_content_focus(model, Some(index), true);
+        decision.next.pressed = None;
+        decision.write_pressed = true;
+        decision
+    }
+    pub(crate) fn apply_content_action(&mut self, decision: RadioViewDecision) {
+        // Final validation precedes Host focus hooks. Consume the original next
+        // state; a hook may have focused the owner, but cannot invalidate it.
+        // Preserve hook writes for fields the original event did not write.
+        if decision.write_focus {
+            self.focused = decision.next.focused;
+            self.focus_visible = decision.next.focus_visible;
+        }
+        if decision.write_pressed { self.pressed = decision.next.pressed; }
+    }
     pub fn focus(&mut self, model: &RadioGroup, index: Option<usize>, focus_visible: bool) {
-        // A deferred focus request must not outlive the disabled scope.
-        // Re-enabling requires a fresh eligible focus request from the host.
-        if self.disabled {
-            self.blur();
-            return;
-        }
-        let next = index
-            .filter(|i| *i < model.len() && model.is_enabled(*i))
-            .or(model.selected.filter(|i| model.is_enabled(*i)))
-            .or_else(|| (0..model.len()).find(|i| model.is_enabled(*i)));
-        if self.focused != next {
-            self.cancel();
-        }
-        self.focused = next;
-        self.focus_visible = self.focused.is_some() && focus_visible;
+        let decision = self.prepare_content_focus(model, index, focus_visible);
+        if self.disabled { self.hovered = None; }
+        self.apply_content_action(decision);
     }
     pub fn blur(&mut self) {
         self.focused = None;
@@ -498,24 +571,10 @@ impl RadioGroupView {
         changed
     }
     pub fn pointer_down(&mut self, point: Point, model: &RadioGroup) -> SelectionEvent {
-        // A disabled or removed captured row cannot revive on a later release.
-        if self.pressed.is_some_and(|index| !model.is_enabled(index)) {
-            self.cancel();
-        }
-
-        if !self.window_active {
-            return SelectionEvent::Ignored;
-        }
-        let Some(index) = self.layout.rows.iter().position(|row| row.contains(point)) else {
-            return SelectionEvent::Ignored;
-        };
-        if self.disabled || !model.is_enabled(index) {
-            return SelectionEvent::Handled;
-        }
-        self.pressed = Some(index);
-        self.focused = Some(index);
-        self.focus_visible = false;
-        SelectionEvent::Handled
+        let decision = self.prepare_content_down(point, model);
+        let event = decision.event;
+        self.apply_content_action(decision);
+        event
     }
     pub fn pointer_up(&mut self, point: Point, model: &mut RadioGroup) -> SelectionEvent {
         let Some(index) = self.pressed.take() else {
@@ -622,6 +681,7 @@ impl RadioGroupView {
 impl Default for RadioGroupView {
     fn default() -> Self {
         Self {
+            surface: "canvas",
             layout: RadioGroupLayout::default(),
             focused: None,
             focus_visible: false,
