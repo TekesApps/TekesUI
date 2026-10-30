@@ -7,6 +7,7 @@ pub use composition::{Button, ButtonActivationPhase, ButtonContents, ButtonImage
 pub use composition::{
     ChartContent, ChartContentError, RequiredFocusEvidence, RequiredFocusResult, RequiredFocusSpace,
 };
+pub use composition::{DisclosureContent, DisclosureIntent};
 mod control_motion;
 mod draft;
 pub mod feedback_view;

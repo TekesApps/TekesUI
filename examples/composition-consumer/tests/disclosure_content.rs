@@ -41,7 +41,10 @@ fn host(body: Content, expanded: bool) -> ContentHost {
         ROOT,
         DisclosureContent::new(
             TRIGGER,
-            Content::new(TITLE, TextContent::new("长期项目分组：包含摘要、正在进行的任务与中文说明")),
+            Content::new(
+                TITLE,
+                TextContent::new("长期项目分组：包含摘要、正在进行的任务与中文说明"),
+            ),
             body,
             expanded,
         ),
