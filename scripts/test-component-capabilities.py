@@ -276,6 +276,7 @@ class CapabilityTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
             shutil.copytree(ROOT / 'crates/tekes-ui-controls/src', root / 'crates/tekes-ui-controls/src')
+            shutil.copytree(ROOT / 'crates/tekes-ui-text/src', root / 'crates/tekes-ui-text/src')
             shutil.copy2(ROOT / 'crates/tekes-ui-controls/build.rs', root / 'crates/tekes-ui-controls/build.rs')
             shutil.copy2(ROOT / capabilities.CONTROLS_MANIFEST, root / capabilities.CONTROLS_MANIFEST)
             for path in [capabilities.REGISTRY, capabilities.PUBLIC_SURFACE]:
