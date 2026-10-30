@@ -903,7 +903,6 @@ impl MenuView {
             palette,
             role,
             compact,
-            None,
         )
     }
 
