@@ -2221,7 +2221,7 @@
     "crates/tekes-ui-controls/src/composition/tree.rs": "d2a69f0ce142127c7a7ecc35bbb3eeafaba955afb585519dd608ec70b3777978",
     "crates/tekes-ui-controls/src/composition/datatable.rs": "1463e1cc08290d05f9769ed56b3abb95b07267df86150ab16bd9732403ec1045",
     "docs/design/selectable-list-public-content-20261024.md": "cad16726a3dda60fdd2b2ab18bad881150cf907bd78e76989713d7c269ecc2a0",
-    "docs/design/tree-public-content-20261024.md": "d134f7e4fdd8f40b400ee8e8a64aa99ee41c6d555efb8b01a9aaea8f2d5554e4",
+    "docs/design/tree-public-content-20261024.md": "a01a90370da0b5ad9e9bc589c9601fa61279b49fd2f5aa3c68910e90d58aa2bc",
     "docs/design/datatable-public-content-20261024.md": "6ec5be7910df4d6c6b18efa6fb48a63005ab40e783969191e5d9f930fcb1600e",
     "docs/design/disclosure-public-content-20261024.md": "31d3990e85dc3e1740a9d7d77b49042de714085813d45b70eb96b5c4576429f1"
   },
