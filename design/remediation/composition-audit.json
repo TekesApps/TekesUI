@@ -2223,7 +2223,7 @@
     "docs/design/selectable-list-public-content-20261024.md": "cad16726a3dda60fdd2b2ab18bad881150cf907bd78e76989713d7c269ecc2a0",
     "docs/design/tree-public-content-20261024.md": "a01a90370da0b5ad9e9bc589c9601fa61279b49fd2f5aa3c68910e90d58aa2bc",
     "docs/design/datatable-public-content-20261024.md": "812988af6954e21b11d6aca4fe769bfb405f26f256685c400f88cc28ef377cf9",
-    "docs/design/disclosure-public-content-20261024.md": "11a9e27ff7da777fbc40ade5c878367f65452440095bf3dc8689e5c2d2bdf9f2"
+    "docs/design/disclosure-public-content-20261024.md": "2aaf10bded59653db7ea311985e56848f62a8dd99a43c036273157ff53d73776"
   },
   "remaining": [
     "Collections49 public adapter/support paths recovered in thisf4df candidate; actual compatible compilation/consumer/IPC acceptance and publication remain Main gates. Tree/Table and keyed List slots remain finite passive contracts, not arbitrary interactive content or virtualization.",
