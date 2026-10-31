@@ -140,7 +140,7 @@ pub enum CollectionEvent {
     Toggled(usize),
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq)]
 struct CollectionInteraction {
     hovered: Option<usize>,
     focused: Option<usize>,
@@ -226,12 +226,57 @@ fn row_key_target(key: ControlKey, current: usize, ids: &[usize]) -> Option<usiz
 }
 
 /// Runtime for the existing single-selection [`List`] model.
+/// Runtime for the existing single-selection [`List`] model.
+#[derive(Clone, Debug)]
+struct ListViewIdentity {
+    instance: std::sync::Arc<()>,
+    revision: u64,
+    arranged: bool,
+    items: Vec<(crate::extended::ListItemKey, u64)>,
+}
+#[derive(Clone, Copy, Debug)]
+pub(crate) enum ListInput {
+    Down(Point),
+    Up(Point),
+    Key(ControlKey, bool),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct CollectionAction {
+    pub id: usize,
+    pub header: bool,
+    pub keyboard: bool,
+    pub capture: bool,
+    pub select: bool,
+    pub sort: bool,
+    pub next_sort: Option<(usize, crate::extended::SortDirection)>,
+    pub event: CollectionEvent,
+}
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct ListActionSnapshot {
+    layout: CollectionLayout,
+    state: CollectionInteraction,
+    disabled: bool,
+}
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct TableActionSnapshot {
+    layout: DataTableLayout,
+    state: CollectionInteraction,
+    disabled: bool,
+    header: Option<usize>,
+}
+/// Runtime for the existing single-selection [`List`] model.
 #[derive(Clone, Debug)]
 pub struct ListView {
     layout: CollectionLayout,
     state: CollectionInteraction,
     disabled: bool,
     buttons: Vec<ButtonModel>,
+    keyed: Option<ListViewIdentity>,
+    row_placements: Vec<crate::ButtonLayout>,
+    row_custom: Vec<bool>,
+    list_ancestor_clip: Option<Rect>,
+    unavailable_layout: CollectionLayout,
 }
 impl Default for ListView {
     fn default() -> Self {
@@ -243,6 +288,11 @@ impl Default for ListView {
             },
             disabled: false,
             buttons: Vec::new(),
+            keyed: None,
+            row_placements: Vec::new(),
+            row_custom: Vec::new(),
+            list_ancestor_clip: None,
+            unavailable_layout: CollectionLayout::default(),
         }
     }
 }
@@ -256,6 +306,20 @@ impl ListView {
             ..Default::default()
         }
     }
+    /// Intrinsic height using the same default row metrics as painting.
+    pub fn measure(
+        text: &mut impl ButtonTextRenderer,
+        labels: &[String],
+        width: f32,
+    ) -> tekes_ui_scene::Size {
+        Self::measure_content_rows(
+            text,
+            labels,
+            &(0..labels.len()).collect::<Vec<_>>(),
+            width,
+            &[],
+        )
+    }
     pub fn set_disabled(&mut self, disabled: bool) {
         self.disabled = disabled;
         if disabled {
@@ -263,7 +327,7 @@ impl ListView {
         }
     }
     pub fn focus(&mut self, index: usize, keyboard: bool) {
-        if self.disabled || !self.state.window_active {
+        if self.keyed.is_some() || self.disabled || !self.state.window_active {
             return;
         }
         self.state.focus(index, keyboard);
@@ -275,7 +339,11 @@ impl ListView {
         self.state.set_window_active(active);
     }
     pub fn layout(&self) -> &CollectionLayout {
-        &self.layout
+        if self.keyed.is_some() {
+            &self.unavailable_layout
+        } else {
+            &self.layout
+        }
     }
     pub fn render(
         &mut self,
@@ -287,7 +355,9 @@ impl ListView {
         clip: Option<Rect>,
         palette: Palette,
     ) -> CollectionLayout {
-        self.render_rows(scene, text, model, labels, frame, clip, palette, 1.0)
+        self.leave_keyed();
+        let ids = (0..model.count.min(labels.len())).collect::<Vec<_>>();
+        self.render_rows(scene, text, model, labels, &ids, frame, clip, palette, 1.0)
     }
     pub fn render_scaled(
         &mut self,
@@ -300,7 +370,11 @@ impl ListView {
         palette: Palette,
         scale: f32,
     ) -> CollectionLayout {
-        self.render_rows(scene, text, model, labels, frame, clip, palette, scale)
+        self.leave_keyed();
+        let ids = (0..model.count.min(labels.len())).collect::<Vec<_>>();
+        self.render_rows(
+            scene, text, model, labels, &ids, frame, clip, palette, scale,
+        )
     }
     fn render_rows(
         &mut self,
@@ -308,106 +382,303 @@ impl ListView {
         text: &mut impl ButtonTextRenderer,
         model: &List,
         labels: &[String],
+        ids: &[usize],
         frame: Rect,
         clip: Option<Rect>,
         palette: Palette,
         scale: f32,
     ) -> CollectionLayout {
-        let count = model.count.min(labels.len());
+        self.arrange_rows(text, labels, ids, frame, clip, scale, &[]);
+        self.paint_rows(scene, text, model, labels, palette, None, frame, clip);
+        self.layout.clone()
+    }
+    fn row_size(
+        text: &mut impl ButtonTextRenderer,
+        label: &str,
+        custom: Option<tekes_ui_scene::Size>,
+        width: f32,
+    ) -> tekes_ui_scene::Size {
+        match custom {
+            Some(size) => ButtonModel::measure_content(
+                text,
+                size,
+                width,
+                ButtonSize::Body,
+                proposal::TextRole::UiBody,
+            ),
+            None => ButtonModel::measure(
+                text,
+                label,
+                width,
+                ButtonSize::Body,
+                proposal::TextRole::UiBody,
+            ),
+        }
+    }
+    pub(crate) fn content_width(text: &mut impl ButtonTextRenderer, width: f32) -> f32 {
+        crate::ButtonLayout::resolve_with_text(
+            text,
+            Rect::new(0., 0., width, 0.),
+            None,
+            tekes_ui_scene::Size::default(),
+            ButtonSize::Body,
+            proposal::TextRole::UiBody,
+            ButtonTextAlign::Leading,
+            crate::ButtonFramePolicy::Minimum,
+        )
+        .content
+        .size
+        .width
+    }
+    pub(crate) fn measure_content_rows(
+        text: &mut impl ButtonTextRenderer,
+        labels: &[String],
+        ids: &[usize],
+        width: f32,
+        sizes: &[Option<tekes_ui_scene::Size>],
+    ) -> tekes_ui_scene::Size {
+        let h = ids
+            .iter()
+            .map(|i| {
+                Self::row_size(text, &labels[*i], sizes.get(*i).copied().flatten(), width)
+                    .height
+                    .max(row_height())
+            })
+            .sum::<f32>()
+            + row_gap() * ids.len().saturating_sub(1) as f32;
+        tekes_ui_scene::Size::new(width, h)
+    }
+    fn arrange_rows(
+        &mut self,
+        text: &mut impl ButtonTextRenderer,
+        labels: &[String],
+        ids: &[usize],
+        frame: Rect,
+        clip: Option<Rect>,
+        scale: f32,
+        sizes: &[Option<tekes_ui_scene::Size>],
+    ) {
+        self.list_ancestor_clip = clip;
+        self.state.retain_ids(ids);
+        self.row_placements.clear();
+        self.row_custom.clear();
         let rh = row_height()
-            * if scale.is_finite() && scale > 0.0 {
+            * if scale.is_finite() && scale > 0. {
                 scale
             } else {
-                1.0
+                1.
             };
-        let gap = row_gap();
-        let heights = labels
+        let heights = ids
             .iter()
-            .take(count)
-            .map(|label| {
-                ButtonModel::measure(
+            .map(|i| {
+                Self::row_size(
                     text,
-                    label,
+                    &labels[*i],
+                    sizes.get(*i).copied().flatten(),
                     frame.size.width,
-                    ButtonSize::Body,
-                    proposal::TextRole::UiBody,
                 )
                 .height
                 .max(rh)
             })
             .collect::<Vec<_>>();
-        let own_clip = own_clip(frame, clip);
-        let ids = (0..count).collect::<Vec<_>>();
-        self.state.retain_ids(&ids);
         self.layout = CollectionLayout {
             frame,
-            visible: own_clip,
-            content_height: heights.iter().sum::<f32>() + gap * count.saturating_sub(1) as f32,
-            items: Vec::with_capacity(count),
+            visible: own_clip(frame, clip),
+            content_height: heights.iter().sum::<f32>()
+                + row_gap() * ids.len().saturating_sub(1) as f32,
+            items: Vec::with_capacity(ids.len()),
         };
-        if own_clip.is_none() {
-            if mounted_bounds(frame, clip) {
-                self.state.captured = None;
-                self.state.hovered = None;
-                let mut y = frame.min_y();
-                for (id, height) in heights.iter().copied().enumerate() {
-                    self.layout.items.push(CollectionItemLayout {
-                        id,
-                        frame: Rect::new(frame.min_x(), y, frame.size.width, height),
-                        visible: None,
-                        depth: 0,
-                    });
-                    y += height + gap;
-                }
-            } else {
-                self.state.blur();
-            }
-            for button in &mut self.buttons {
-                button.clear_layout();
-            }
-            return self.layout.clone();
+        if !mounted_bounds(frame, clip) {
+            self.state.blur();
+            return;
         }
-        scene.push_clip(own_clip.expect("checked list clip"));
-        self.buttons.resize_with(count, ButtonModel::default);
-        if self.buttons.len() > count {
-            self.buttons.truncate(count);
+        if self.layout.visible.is_none() {
+            self.state.captured = None;
+            self.state.hovered = None;
         }
+        self.buttons.resize_with(ids.len(), ButtonModel::default);
+        self.buttons.truncate(ids.len());
+        let width = Self::content_width(text, frame.size.width);
         let mut y = frame.min_y();
-        for (index, label) in labels.iter().take(count).enumerate() {
-            let r = Rect::new(frame.min_x(), y, frame.size.width, heights[index]);
-            let focused = self.state.focused == Some(index) && self.state.window_active;
-            let button = &mut self.buttons[index];
-            button.state = control_state(
-                model.selected == Some(index),
-                self.state.hovered == Some(index),
-                focused,
-                self.disabled,
-                self.state.captured == Some(index),
+        for (ordinal, &id) in ids.iter().enumerate() {
+            let custom = sizes.get(id).copied().flatten();
+            let extent = custom.unwrap_or_else(|| {
+                if labels[id].is_empty() {
+                    tekes_ui_scene::Size::default()
+                } else {
+                    text.measure(&labels[id], proposal::TextRole::UiBody, width)
+                }
+            });
+            let r = Rect::new(frame.min_x(), y, frame.size.width, heights[ordinal]);
+            let mut layout = crate::ButtonLayout::resolve_with_text(
+                text,
+                r,
+                self.layout.visible,
+                extent,
+                ButtonSize::Body,
+                proposal::TextRole::UiBody,
+                ButtonTextAlign::Leading,
+                crate::ButtonFramePolicy::Minimum,
             );
-            let layout = render_quiet_button(button, scene, text, label, r, own_clip, palette);
+            // None is absence of viewport authority, not an unbounded clip.
+            layout.visible = visible(layout.frame, self.layout.visible);
             self.layout.items.push(CollectionItemLayout {
-                id: index,
+                id,
                 frame: r,
                 visible: layout.visible,
                 depth: 0,
             });
-            y += heights[index] + gap;
+            self.row_placements.push(layout);
+            self.row_custom.push(custom.is_some());
+            y += heights[ordinal] + row_gap();
+        }
+    }
+    fn paint_rows(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        model: &List,
+        labels: &[String],
+        palette: Palette,
+        surface: Option<&'static str>,
+        frame: Rect,
+        clip: Option<Rect>,
+    ) {
+        let Some(own) = self.layout.visible else {
+            return;
+        };
+        scene.push_clip(own);
+        for (ordinal, row) in self.layout.items.iter().enumerate() {
+            let button = &mut self.buttons[ordinal];
+            button.state = control_state(
+                model.selected == Some(row.id),
+                self.state.hovered == Some(row.id),
+                self.state.focused == Some(row.id) && self.state.window_active,
+                self.disabled,
+                self.state.captured == Some(row.id),
+            );
+            if let Some(surface) = surface {
+                button.set_surface(surface);
+            } else {
+                button.clear_surface();
+            }
+            button.paint_prepared_segment(
+                scene,
+                text,
+                if self.row_custom[ordinal] {
+                    ""
+                } else {
+                    &labels[row.id]
+                },
+                self.row_placements[ordinal],
+                Some(own),
+                palette,
+                ButtonSize::Body,
+                proposal::TextRole::UiBody,
+            );
         }
         scene.pop_clip();
         if !self.disabled
             && self.state.window_active
             && self.state.focus_visible
-            && let Some(item) = self
+            && let Some(row) = self
                 .layout
                 .items
                 .iter()
                 .find(|i| Some(i.id) == self.state.focused)
         {
-            paint_collection_focus(scene, item, frame, clip, palette);
+            paint_collection_focus(scene, row, frame, clip, palette);
         }
-        self.layout.clone()
+    }
+    pub(crate) fn invalidate_list_layout(&mut self, model: &crate::extended::KeyedList) {
+        self.guard_list(model);
+        self.cancel();
+        self.layout = CollectionLayout::default();
+        self.row_placements.clear();
+        if let Some(k) = &mut self.keyed {
+            k.arranged = false;
+        }
+    }
+    pub(crate) fn arrange_content_keyed(
+        &mut self,
+        text: &mut impl ButtonTextRenderer,
+        model: &crate::extended::KeyedList,
+        frame: Rect,
+        clip: Option<Rect>,
+        sizes: &[Option<tekes_ui_scene::Size>],
+    ) {
+        self.guard_list(model);
+        let labels = model
+            .snapshot()
+            .items
+            .iter()
+            .map(|i| i.name.clone())
+            .collect::<Vec<_>>();
+        self.arrange_rows(
+            text,
+            &labels,
+            model.display_indices(),
+            frame,
+            clip,
+            1.,
+            sizes,
+        );
+        self.keyed.as_mut().expect("guarded list").arranged = true;
+    }
+    pub(crate) fn paint_content_keyed(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        model: &crate::extended::KeyedList,
+        palette: Palette,
+        surface: Option<&'static str>,
+    ) {
+        if !self.list_current(model) {
+            return;
+        }
+        let labels = model
+            .snapshot()
+            .items
+            .iter()
+            .map(|i| i.name.clone())
+            .collect::<Vec<_>>();
+        self.paint_rows(
+            scene,
+            text,
+            model.original(),
+            &labels,
+            palette,
+            surface,
+            self.layout.frame,
+            self.list_ancestor_clip,
+        );
+    }
+    pub(crate) fn list_content_frame(&self, source: usize) -> Option<Rect> {
+        self.layout
+            .items
+            .iter()
+            .position(|r| r.id == source)
+            .and_then(|j| self.row_placements.get(j))
+            .map(|p| p.content)
+    }
+    pub(crate) fn list_row_ink(
+        &self,
+        source: usize,
+        palette: Palette,
+        surface: Option<&str>,
+    ) -> Option<(tekes_ui_tokens::Rgba, tekes_ui_tokens::Rgba)> {
+        let j = self.layout.items.iter().position(|r| r.id == source)?;
+        let b = self.buttons.get(j)?;
+        let c = b.surface_colors(palette, ButtonVariant::Quiet, surface.unwrap_or("canvas"));
+        Some((c.text, c.icon))
     }
     pub fn pointer_move(&mut self, point: Point) -> bool {
+        if self.keyed.is_some() {
+            return false;
+        }
+        self.pointer_move_impl(point)
+    }
+    fn pointer_move_impl(&mut self, point: Point) -> bool {
         if self.disabled || !self.state.window_active {
             let changed = self.state.hovered.take().is_some();
             return changed;
@@ -423,32 +694,107 @@ impl ListView {
         changed
     }
     pub fn pointer_down(&mut self, point: Point, model: &mut List) -> CollectionEvent {
-        if self.disabled || !self.state.window_active {
+        if self.keyed.is_some() {
             return CollectionEvent::Ignored;
         }
-        let Some(id) = self
+        self.pointer_down_impl(point, model)
+    }
+    fn decide_list_down(&self, point: Point, model: &List) -> Option<CollectionAction> {
+        if self.disabled || !self.state.window_active {
+            return None;
+        }
+        let id = self
             .layout
             .items
             .iter()
-            .find(|i| i.visible.is_some_and(|r| r.contains(point)))
-            .map(|i| i.id)
-        else {
+            .find(|r| r.visible.is_some_and(|r| r.contains(point)))?
+            .id;
+        if id >= model.count {
+            return None;
+        }
+        Some(CollectionAction {
+            id,
+            header: false,
+            keyboard: false,
+            capture: true,
+            select: true,
+            sort: false,
+            next_sort: None,
+            event: if model.selected != Some(id) {
+                CollectionEvent::Changed
+            } else {
+                CollectionEvent::Handled
+            },
+        })
+    }
+    fn pointer_down_impl(&mut self, point: Point, model: &mut List) -> CollectionEvent {
+        let Some(p) = self.decide_list_down(point, model) else {
             return CollectionEvent::Ignored;
         };
-        // Layout is a mounted geometry snapshot, not authority to select a
-        // source row that disappeared before the next paint.
-        if id >= model.count {
-            return CollectionEvent::Ignored;
+        let event = p.event;
+        self.apply_list_action(p, model);
+        event
+    }
+    pub(crate) fn list_action_snapshot(&self) -> ListActionSnapshot {
+        ListActionSnapshot {
+            layout: self.layout.clone(),
+            state: self.state.clone(),
+            disabled: self.disabled,
         }
-        self.state.focus(id, false);
-        self.state.captured = Some(id);
-        if model.select(id) {
-            CollectionEvent::Changed
-        } else {
-            CollectionEvent::Handled
+    }
+    pub(crate) fn prepare_list_down(
+        &self,
+        point: Point,
+        model: &crate::extended::KeyedList,
+    ) -> Option<CollectionAction> {
+        if !self.list_current(model) {
+            return None;
+        }
+        self.decide_list_down(point, model.original())
+    }
+    pub(crate) fn prepare_list_part(
+        &self,
+        key: crate::extended::ListItemKey,
+        press: bool,
+        model: &crate::extended::KeyedList,
+    ) -> Option<CollectionAction> {
+        if !self.list_current(model) || self.disabled || !self.state.window_active {
+            return None;
+        }
+        let id = model
+            .item_index(key)
+            .filter(|id| self.layout.items.iter().any(|r| r.id == *id))?;
+        Some(CollectionAction {
+            id,
+            header: false,
+            keyboard: true,
+            capture: false,
+            select: press,
+            sort: false,
+            next_sort: None,
+            event: if press {
+                CollectionEvent::Activated(id)
+            } else {
+                CollectionEvent::Changed
+            },
+        })
+    }
+    pub(crate) fn apply_list_action(&mut self, p: CollectionAction, model: &mut List) {
+        self.state.focus(p.id, p.keyboard);
+        if p.capture {
+            self.state.captured = Some(p.id);
+        }
+        if p.select {
+            model.selected = Some(p.id);
         }
     }
     pub fn pointer_up(&mut self, point: Point, model: &mut List) -> CollectionEvent {
+        if self.keyed.is_some() {
+            return CollectionEvent::Ignored;
+        }
+        self.pointer_up_impl(point, model)
+    }
+    fn pointer_up_impl(&mut self, point: Point, model: &mut List) -> CollectionEvent {
         let Some(id) = self.state.captured.take() else {
             return CollectionEvent::Ignored;
         };
@@ -471,6 +817,12 @@ impl ListView {
         }
     }
     pub fn key(&mut self, key: ControlKey, down: bool, model: &mut List) -> CollectionEvent {
+        if self.keyed.is_some() {
+            return CollectionEvent::Ignored;
+        }
+        self.key_impl(key, down, model)
+    }
+    fn key_impl(&mut self, key: ControlKey, down: bool, model: &mut List) -> CollectionEvent {
         if !down || self.disabled || !self.state.window_active {
             return CollectionEvent::Ignored;
         }
@@ -520,17 +872,262 @@ impl ListView {
     pub fn cancel(&mut self) {
         self.state.cancel_capture();
     }
+    fn list_current(&self, model: &crate::extended::KeyedList) -> bool {
+        self.keyed.as_ref().is_some_and(|k| {
+            k.arranged
+                && std::sync::Arc::ptr_eq(&k.instance, &model.view_identity())
+                && k.revision == model.revision()
+        })
+    }
+    fn leave_keyed(&mut self) {
+        if self.keyed.take().is_some() {
+            self.state.blur();
+            self.layout = CollectionLayout::default();
+            self.buttons.clear();
+        }
+    }
+    fn guard_list(&mut self, model: &crate::extended::KeyedList) {
+        let instance = model.view_identity();
+        if self.keyed.as_ref().is_some_and(|k| {
+            std::sync::Arc::ptr_eq(&k.instance, &instance) && k.revision == model.revision()
+        }) {
+            return;
+        }
+        let items = model
+            .snapshot()
+            .items
+            .iter()
+            .enumerate()
+            .map(|(i, r)| {
+                (
+                    r.key,
+                    model.item_incarnation(i).expect("validated list item"),
+                )
+            })
+            .collect();
+        self.accept_list_identity(instance, model.revision(), items, model.display_indices());
+    }
+    fn accept_list_identity(
+        &mut self,
+        instance: std::sync::Arc<()>,
+        revision: u64,
+        items: Vec<(crate::extended::ListItemKey, u64)>,
+        displayed: &[usize],
+    ) {
+        let focused = self
+            .keyed
+            .as_ref()
+            .filter(|k| std::sync::Arc::ptr_eq(&k.instance, &instance))
+            .and_then(|k| self.state.focused.and_then(|i| k.items.get(i)))
+            .and_then(|old| items.iter().position(|new| new == old))
+            .filter(|i| displayed.contains(i));
+        self.state.focused = focused;
+        if focused.is_none() {
+            self.state.focus_visible = false;
+        }
+        self.state.captured = None;
+        self.state.hovered = None;
+        self.layout = CollectionLayout::default();
+        self.row_placements.clear();
+        for b in &mut self.buttons {
+            b.clear_layout();
+        }
+        self.keyed = Some(ListViewIdentity {
+            instance,
+            revision,
+            arranged: false,
+            items,
+        });
+    }
+    /// Prepare focus mapping/capture cancellation and all identity storage before
+    /// the original model commits. No second model or selection authority.
+    pub(crate) fn prepare_list_update(
+        &self,
+        model: &crate::extended::KeyedList,
+        stage: &crate::extended::ListStage,
+    ) -> Self {
+        let mut view = self.clone();
+        let items = stage
+            .snapshot
+            .items
+            .iter()
+            .zip(&stage.incarnations)
+            .map(|(r, n)| (r.key, *n))
+            .collect();
+        view.accept_list_identity(
+            model.view_identity(),
+            stage.reconcile.revision,
+            items,
+            &stage.display_indices,
+        );
+        view
+    }
+    /// Pure query: no reconciliation or geometry publication on stale input.
+    pub fn layout_keyed(&self, model: &crate::extended::KeyedList) -> Option<&CollectionLayout> {
+        self.list_current(model).then_some(&self.layout)
+    }
+    pub fn focused_index_keyed(&self, model: &crate::extended::KeyedList) -> Option<usize> {
+        self.list_current(model)
+            .then_some(self.state.focused)
+            .flatten()
+    }
+    pub fn focused_keyed(
+        &self,
+        model: &crate::extended::KeyedList,
+    ) -> Option<crate::extended::ListItemKey> {
+        self.focused_index_keyed(model)
+            .and_then(|i| model.item_key(i))
+    }
+    /// The same original metrics/chrome, arranged in logical display order.
+    pub fn render_keyed(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        model: &crate::extended::KeyedList,
+        frame: Rect,
+        clip: Option<Rect>,
+        palette: Palette,
+    ) -> CollectionLayout {
+        self.render_keyed_scaled(scene, text, model, frame, clip, palette, 1.0)
+    }
+    pub fn render_keyed_scaled(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        model: &crate::extended::KeyedList,
+        frame: Rect,
+        clip: Option<Rect>,
+        palette: Palette,
+        scale: f32,
+    ) -> CollectionLayout {
+        self.guard_list(model);
+        let labels = model
+            .snapshot()
+            .items
+            .iter()
+            .map(|r| r.name.clone())
+            .collect::<Vec<_>>();
+        let layout = self.render_rows(
+            scene,
+            text,
+            model.original(),
+            &labels,
+            model.display_indices(),
+            frame,
+            clip,
+            palette,
+            scale,
+        );
+        self.keyed.as_mut().expect("guarded list").arranged = true;
+        layout
+    }
+    pub fn focus_keyed(&mut self, keyboard: bool, model: &crate::extended::KeyedList) -> bool {
+        self.guard_list(model);
+        let Some(key) = model
+            .original()
+            .selected
+            .or_else(|| model.display_indices().first().copied())
+            .and_then(|i| model.item_key(i))
+        else {
+            return false;
+        };
+        self.focus_item_keyed(key, keyboard, model)
+    }
+    pub fn focus_item_keyed(
+        &mut self,
+        key: crate::extended::ListItemKey,
+        keyboard: bool,
+        model: &crate::extended::KeyedList,
+    ) -> bool {
+        self.guard_list(model);
+        if !self.list_current(model) || self.disabled || !self.state.window_active {
+            return false;
+        }
+        let Some(i) = model
+            .item_index(key)
+            .filter(|i| self.layout.items.iter().any(|r| r.id == *i))
+        else {
+            return false;
+        };
+        self.state.focus(i, keyboard);
+        true
+    }
+    pub fn pointer_move_keyed(&mut self, point: Point, model: &crate::extended::KeyedList) -> bool {
+        self.guard_list(model);
+        self.list_current(model) && self.pointer_move_impl(point)
+    }
+    fn input_keyed(
+        &mut self,
+        input: ListInput,
+        model: &mut crate::extended::KeyedList,
+    ) -> CollectionEvent {
+        self.guard_list(model);
+        if !self.list_current(model) {
+            return CollectionEvent::Ignored;
+        }
+        model.view_input(self, input)
+    }
+    pub fn pointer_down_keyed(
+        &mut self,
+        point: Point,
+        model: &mut crate::extended::KeyedList,
+    ) -> CollectionEvent {
+        self.input_keyed(ListInput::Down(point), model)
+    }
+    pub fn pointer_up_keyed(
+        &mut self,
+        point: Point,
+        model: &mut crate::extended::KeyedList,
+    ) -> CollectionEvent {
+        self.input_keyed(ListInput::Up(point), model)
+    }
+    pub fn key_keyed(
+        &mut self,
+        key: ControlKey,
+        down: bool,
+        model: &mut crate::extended::KeyedList,
+    ) -> CollectionEvent {
+        self.input_keyed(ListInput::Key(key, down), model)
+    }
+    pub(crate) fn reduce_list(&mut self, input: ListInput, model: &mut List) -> CollectionEvent {
+        match input {
+            ListInput::Down(point) => self.pointer_down_impl(point, model),
+            ListInput::Up(point) => self.pointer_up_impl(point, model),
+            ListInput::Key(key, down) => self.key_impl(key, down, model),
+        }
+    }
 }
 
 /// Runtime for the existing hierarchical [`Tree`] model.
 #[derive(Clone, Debug)]
 pub struct TreeView {
     layout: CollectionLayout,
+    rows: Vec<TreeContentRow>,
+    unavailable_layout: CollectionLayout,
+    accepted_identity: Option<std::sync::Arc<()>>,
+    accepted_revision: Option<u64>,
+    layout_revision: Option<u64>,
+    accepted_nodes: Vec<TreeViewIdentity>,
+    keyed: bool,
     state: CollectionInteraction,
     disabled: bool,
     buttons: Vec<ButtonModel>,
     icons: Vec<IconView>,
     icon_slots: Vec<TreeIconSlot>,
+}
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct TreeContentRow {
+    pub(crate) id: usize,
+    pub(crate) content: Rect,
+    icon: Rect,
+    size: tekes_ui_scene::Size,
+    custom: bool,
+}
+#[derive(Clone, Debug)]
+struct TreeViewIdentity {
+    key: Option<crate::extended::TreeNodeKey>,
+    incarnation: Option<u64>,
+    parent: Option<usize>,
 }
 #[derive(Clone, Copy, Debug)]
 struct TreeIconSlot {
@@ -543,6 +1140,13 @@ impl Default for TreeView {
     fn default() -> Self {
         Self {
             layout: CollectionLayout::default(),
+            rows: Vec::new(),
+            unavailable_layout: CollectionLayout::default(),
+            accepted_identity: None,
+            accepted_revision: None,
+            layout_revision: None,
+            accepted_nodes: Vec::new(),
+            keyed: false,
             state: CollectionInteraction {
                 window_active: true,
                 ..Default::default()
@@ -555,6 +1159,156 @@ impl Default for TreeView {
     }
 }
 impl TreeView {
+    fn model_current(&self, model: &Tree) -> bool {
+        self.accepted_identity
+            .as_ref()
+            .is_some_and(|id| std::sync::Arc::ptr_eq(id, &model.model_identity()))
+            && self.accepted_revision == Some(model.model_revision())
+            && model.selection_projection_current()
+    }
+    fn invalidate_layout(&mut self) {
+        self.layout = CollectionLayout::default();
+        self.rows.clear();
+        self.layout_revision = None;
+        self.state.captured = None;
+        self.state.hovered = None;
+        self.buttons.clear();
+        self.icons.clear();
+        self.icon_slots.clear();
+    }
+    /// Automatic identity reconciliation; callers never need to forward deltas.
+    pub fn reconcile_model(&mut self, model: &Tree) {
+        if self.model_current(model) {
+            return;
+        }
+        let same_model = self
+            .accepted_identity
+            .as_ref()
+            .is_some_and(|id| std::sync::Arc::ptr_eq(id, &model.model_identity()));
+        if model.is_keyed() || self.keyed {
+            let visible = model.visible();
+            let old_focus = self.state.focused;
+            let mut focus = None;
+            if same_model && model.is_keyed() {
+                let map = |old: usize| {
+                    let identity = self.accepted_nodes.get(old)?;
+                    let i = model.node_index(identity.key?)?;
+                    (model.incarnation(i) == identity.incarnation
+                        && visible.contains(&i)
+                        && !model.nodes()[i].disabled)
+                        .then_some(i)
+                };
+                focus = old_focus.and_then(map);
+                if focus.is_none()
+                    && let Some(old) = old_focus
+                    && let Some(identity) = self.accepted_nodes.get(old)
+                {
+                    // Disabled current entities clear focus without ancestor recovery.
+                    let current = identity.key.and_then(|key| model.node_index(key));
+                    let revoked_or_disabled =
+                        current.is_some_and(|i| model.nodes()[i].disabled || visible.contains(&i));
+                    if !revoked_or_disabled {
+                        let mut ancestor = identity.parent;
+                        while let Some(i) = ancestor {
+                            if let Some(next) = map(i) {
+                                focus = Some(next);
+                                break;
+                            }
+                            ancestor = self.accepted_nodes.get(i).and_then(|node| node.parent);
+                        }
+                    }
+                }
+            }
+            self.state.focused = focus;
+            if focus.is_none() {
+                self.state.focus_visible = false;
+            }
+            self.invalidate_layout();
+        }
+        self.keyed = model.is_keyed();
+        self.accepted_identity = Some(model.model_identity());
+        self.accepted_revision = Some(model.model_revision());
+        self.accepted_nodes = model
+            .nodes()
+            .iter()
+            .enumerate()
+            .map(|(i, node)| TreeViewIdentity {
+                key: model.node_key(i),
+                incarnation: model.incarnation(i),
+                parent: node.parent,
+            })
+            .collect();
+    }
+    fn input_current(&mut self, model: &mut Tree) -> bool {
+        let tampered = model.restore_selection_projection();
+        if tampered {
+            self.invalidate_layout();
+        }
+        self.reconcile_model(model);
+        !model.is_keyed() || (!tampered && self.layout_revision == Some(model.model_revision()))
+    }
+    /// Pure query: stale geometry is unavailable and never reconciles state.
+    pub fn layout_for(&self, model: &Tree) -> Option<&CollectionLayout> {
+        (!(self.keyed || model.is_keyed())
+            || (self.model_current(model) && self.layout_revision == Some(model.model_revision())))
+        .then_some(&self.layout)
+    }
+    pub fn focused_index(&self, model: &Tree) -> Option<usize> {
+        if self.disabled || !self.state.window_active {
+            return None;
+        }
+        self.layout_for(model)?;
+        self.state.focused.filter(|i| {
+            model.nodes().get(*i).is_some_and(|n| !n.disabled) && model.visible().contains(i)
+        })
+    }
+    pub fn focus_model(&mut self, index: usize, keyboard: bool, model: &mut Tree) -> bool {
+        if !self.input_current(model)
+            || self.disabled
+            || !self.state.window_active
+            || model.nodes().get(index).is_none_or(|n| n.disabled)
+            || !model.visible().contains(&index)
+        {
+            return false;
+        }
+        self.state.focus(index, keyboard);
+        true
+    }
+    pub fn pointer_move_model(&mut self, point: Point, model: &mut Tree) -> bool {
+        if !self.input_current(model) {
+            return false;
+        }
+        self.pointer_move_impl(point)
+    }
+    pub fn render_icons_model(
+        &mut self,
+        scene: &mut Scene,
+        renderer: &mut impl IconRenderer,
+        model: &mut Tree,
+        clip: Option<Rect>,
+        palette: Palette,
+        icon_size: f32,
+    ) {
+        if self.input_current(model) {
+            self.render_icons_impl(scene, renderer, clip, palette, icon_size);
+        }
+    }
+    /// Mutable paint entry also repairs the compatibility selection projection.
+    pub fn render_model(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        model: &mut Tree,
+        frame: Rect,
+        clip: Option<Rect>,
+        palette: Palette,
+    ) -> CollectionLayout {
+        if model.restore_selection_projection() {
+            self.invalidate_layout();
+        }
+        self.render(scene, text, model, frame, clip, palette)
+    }
+
     pub fn new() -> Self {
         Self {
             state: CollectionInteraction {
@@ -571,7 +1325,7 @@ impl TreeView {
         }
     }
     pub fn focus(&mut self, index: usize, keyboard: bool) {
-        if self.disabled || !self.state.window_active {
+        if self.keyed || self.disabled || !self.state.window_active {
             return;
         }
         self.state.focus(index, keyboard);
@@ -583,7 +1337,11 @@ impl TreeView {
         self.state.set_window_active(active);
     }
     pub fn layout(&self) -> &CollectionLayout {
-        &self.layout
+        if self.keyed {
+            &self.unavailable_layout
+        } else {
+            &self.layout
+        }
     }
     pub fn render(
         &mut self,
@@ -594,79 +1352,210 @@ impl TreeView {
         clip: Option<Rect>,
         palette: Palette,
     ) -> CollectionLayout {
+        let metrics = Self::measure_rows(model, frame.size.width, text, |text, id, width, _| {
+            (
+                text.measure(&model.nodes()[id].label, proposal::TextRole::UiBody, width),
+                false,
+            )
+        });
+        self.arrange_rows(text, model, frame, clip, &metrics);
+        self.paint_rows(scene, text, model, clip, palette, "base");
+        self.layout.clone()
+    }
+    /// One row geometry resolver shared by legacy text and mounted Content.
+    pub(crate) fn measure_rows(
+        model: &Tree,
+        width: f32,
+        text: &mut dyn ButtonTextRenderer,
+        mut measure: impl FnMut(
+            &mut dyn ButtonTextRenderer,
+            usize,
+            f32,
+            f32,
+        ) -> (tekes_ui_scene::Size, bool),
+    ) -> Vec<(usize, tekes_ui_scene::Size, bool)> {
+        let slot =
+            proposal::metric("size", "size-inline-action").expect("Tree expand action slot token");
+        let inset = proposal::metric("spacing", "space-relaxed").unwrap_or(12.);
+        model
+            .visible()
+            .into_iter()
+            .map(|id| {
+                let row_width = (width - depth_indent(model, id)).max(0.);
+                let width = (row_width - inset * 2. - slot).max(0.);
+                let resolved = crate::ButtonLayout::resolve_with_text(
+                    text,
+                    Rect::new(0., 0., row_width, 34.),
+                    None,
+                    tekes_ui_scene::Size::default(),
+                    ButtonSize::Body,
+                    proposal::TextRole::UiBody,
+                    ButtonTextAlign::Leading,
+                    crate::ButtonFramePolicy::Minimum,
+                );
+                let custom_width = (resolved.content.size.width - slot).max(0.);
+                let (size, custom) = measure(text, id, width, custom_width);
+                (id, size, custom)
+            })
+            .collect()
+    }
+    fn resolved_row_height(
+        text: &mut dyn ButtonTextRenderer,
+        size: tekes_ui_scene::Size,
+        custom: bool,
+        width: f32,
+    ) -> f32 {
+        if custom {
+            ButtonModel::measure_content(
+                text,
+                size,
+                width,
+                ButtonSize::Body,
+                proposal::TextRole::UiBody,
+            )
+            .height
+            .max(34.)
+        } else {
+            size.height.max(34.)
+        }
+    }
+    pub(crate) fn rows_height(
+        text: &mut dyn ButtonTextRenderer,
+        width: f32,
+        metrics: &[(usize, tekes_ui_scene::Size, bool)],
+    ) -> f32 {
+        metrics
+            .iter()
+            .map(|(_, size, custom)| Self::resolved_row_height(text, *size, *custom, width))
+            .sum::<f32>()
+            + row_gap() * metrics.len().saturating_sub(1) as f32
+    }
+    pub(crate) fn arrange_rows(
+        &mut self,
+        text: &mut impl ButtonTextRenderer,
+        model: &Tree,
+        frame: Rect,
+        clip: Option<Rect>,
+        metrics: &[(usize, tekes_ui_scene::Size, bool)],
+    ) {
+        self.reconcile_model(model);
+        if !model.selection_projection_current() {
+            self.invalidate_layout();
+            return;
+        }
+        self.layout_revision = Some(model.model_revision());
+        self.rows.clear();
         self.icon_slots.clear();
         let ids = model.visible();
-        let rh = 34.0;
-        let gap = row_gap();
-        let icon_slot_width =
-            proposal::metric("size", "size-inline-action").expect("Tree expand action slot token");
-        let horizontal_inset = proposal::metric("spacing", "space-relaxed").unwrap_or(12.0);
-        let heights = ids
-            .iter()
-            .map(|id| {
-                let node = &model.nodes()[*id];
-                let row_width = (frame.size.width - depth_indent(model, *id)).max(0.0);
-                let label_width = (row_width - horizontal_inset * 2.0 - icon_slot_width).max(0.0);
-                text.measure(&node.label, proposal::TextRole::UiBody, label_width)
-                    .height
-                    .max(rh)
-            })
-            .collect::<Vec<_>>();
-        let own_clip = own_clip(frame, clip);
         self.state.retain_ids(&ids);
+        let own = own_clip(frame, clip);
         self.layout = CollectionLayout {
             frame,
-            visible: own_clip,
-            content_height: heights.iter().sum::<f32>() + gap * ids.len().saturating_sub(1) as f32,
-            items: Vec::with_capacity(ids.len()),
+            visible: own,
+            content_height: Self::rows_height(text, frame.size.width, metrics),
+            items: Vec::new(),
         };
-        if own_clip.is_none() {
-            if mounted_bounds(frame, clip) {
-                self.state.captured = None;
-                self.state.hovered = None;
-                let mut y = frame.min_y();
-                for (row, id) in ids.iter().copied().enumerate() {
-                    let indent = depth_indent(model, id);
-                    self.layout.items.push(CollectionItemLayout {
-                        id,
-                        frame: Rect::new(
-                            frame.min_x() + indent,
-                            y,
-                            (frame.size.width - indent).max(0.),
-                            heights[row],
-                        ),
-                        visible: None,
-                        depth: tree_depth(model, id),
-                    });
-                    y += heights[row] + gap;
-                }
-            } else {
+        if own.is_none() {
+            self.state.captured = None;
+            self.state.hovered = None;
+            for b in &mut self.buttons {
+                b.clear_layout();
+            }
+            if !mounted_bounds(frame, clip) {
                 self.state.blur();
+                return;
             }
-            for button in &mut self.buttons {
-                button.clear_layout();
-            }
-            return self.layout.clone();
         }
-        scene.push_clip(own_clip.expect("checked tree clip"));
+        let slot =
+            proposal::metric("size", "size-inline-action").expect("Tree expand action slot token");
+        let mut y = frame.min_y();
+        for &(id, size, custom) in metrics {
+            let indent = depth_indent(model, id);
+            let width = (frame.size.width - indent).max(0.);
+            let height = Self::resolved_row_height(text, size, custom, width);
+            let r = Rect::new(frame.min_x() + indent, y, width, height);
+            let button = crate::ButtonLayout::resolve_with_text(
+                text,
+                r,
+                own,
+                if custom {
+                    size
+                } else {
+                    tekes_ui_scene::Size::default()
+                },
+                ButtonSize::Body,
+                proposal::TextRole::UiBody,
+                ButtonTextAlign::Leading,
+                crate::ButtonFramePolicy::Minimum,
+            );
+            let content = button.content;
+            let side = slot.min(content.size.width);
+            let text_width = (content.size.width - side).max(0.);
+            let label_size = if custom {
+                size
+            } else {
+                text.measure(
+                    &model.nodes()[id].label,
+                    proposal::TextRole::UiBody,
+                    text_width,
+                )
+            };
+            let label_height = label_size.height.min(r.size.height);
+            let display = Rect::new(
+                content.min_x() + side,
+                r.center().y - label_height * 0.5,
+                text_width,
+                label_height,
+            );
+            self.layout.items.push(CollectionItemLayout {
+                id,
+                frame: r,
+                visible: if own.is_some() { button.visible } else { None },
+                depth: tree_depth(model, id),
+            });
+            self.rows.push(TreeContentRow {
+                id,
+                content: display,
+                icon: Rect::new(content.min_x(), r.min_y(), side, r.size.height),
+                size,
+                custom,
+            });
+            y += height + row_gap();
+        }
+        self.layout.content_height =
+            (y - frame.min_y() - if metrics.is_empty() { 0. } else { row_gap() }).max(0.);
+    }
+    pub(crate) fn content_rows(&self, model: &Tree) -> Option<&[TreeContentRow]> {
+        self.layout_for(model)?;
+        Some(&self.rows)
+    }
+    pub(crate) fn invalidate_content_layout(&mut self) {
+        self.invalidate_layout();
+    }
+    pub(crate) fn paint_rows(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        model: &Tree,
+        clip: Option<Rect>,
+        palette: Palette,
+        surface: &'static str,
+    ) {
+        if self.layout_for(model).is_none() {
+            return;
+        }
+        self.icon_slots.clear();
+        let Some(own) = self.layout.visible else {
+            return;
+        };
         self.buttons
             .resize_with(model.nodes().len(), ButtonModel::default);
-        if self.buttons.len() > model.nodes().len() {
-            self.buttons.truncate(model.nodes().len());
-        }
-        let mut y = frame.min_y();
-        for (row, id) in ids.iter().copied().enumerate() {
+        self.buttons.truncate(model.nodes().len());
+        scene.push_clip(own);
+        for (item, row) in self.layout.items.iter().zip(&self.rows) {
+            let id = item.id;
             let node = &model.nodes()[id];
-            let depth = tree_depth(model, id);
-            let x = depth_indent(model, id);
-            let r = Rect::new(
-                frame.min_x() + x,
-                y,
-                (frame.size.width - x).max(0.0),
-                heights[row],
-            );
             let focused = self.state.focused == Some(id) && self.state.window_active;
-            let has_children = model.nodes().iter().any(|n| n.parent == Some(id));
             let button = &mut self.buttons[id];
             button.state = control_state(
                 model.selected == Some(id),
@@ -675,68 +1564,58 @@ impl TreeView {
                 self.disabled || node.disabled,
                 self.state.captured == Some(id),
             );
-            let button_layout = render_quiet_button(button, scene, text, "", r, own_clip, palette);
-            let content = button_layout.content;
-            let slot_width = icon_slot_width.min(content.size.width);
-            let icon_frame = Rect::new(content.min_x(), r.min_y(), slot_width, r.size.height);
-            let text_frame = Rect::new(
-                content.min_x() + slot_width,
-                content.min_y(),
-                (content.size.width - slot_width).max(0.0),
-                content.size.height.max(
-                    r.size
-                        .height
-                        .min(proposal::TextRole::UiBody.style().line_height),
-                ),
-            );
-            let label_size = text.measure(
-                &node.label,
-                proposal::TextRole::UiBody,
-                text_frame.size.width,
-            );
-            let label_frame = Rect::new(
-                text_frame.min_x(),
-                r.center().y - label_size.height.min(r.size.height) * 0.5,
-                text_frame.size.width,
-                label_size.height.min(r.size.height),
-            );
-            let tint = if self.disabled || node.disabled {
-                palette
-                    .color("tertiary-text")
-                    .expect("disabled tree text token")
+            if surface == "base" {
+                button.clear_surface();
             } else {
-                palette.color("primary-text").expect("tree text token")
-            };
-            if button_layout.visible.is_some() && !node.label.is_empty() && !label_frame.is_empty()
+                button.set_surface(surface);
+            }
+            if row.custom {
+                button.render_content_frame(
+                    scene,
+                    text,
+                    row.size,
+                    item.frame,
+                    Some(own),
+                    palette,
+                    ButtonVariant::Quiet,
+                );
+            } else {
+                render_quiet_button(button, scene, text, "", item.frame, Some(own), palette);
+            }
+            let colors = button.surface_colors(
+                palette,
+                ButtonVariant::Quiet,
+                if surface == "base" { "canvas" } else { surface },
+            );
+            // The original string View and mounted Content share the Quiet
+            // Surface packet, including rest/selected/disabled text and icons.
+            let tint = colors.text;
+            if !row.custom
+                && item.visible.is_some()
+                && !node.label.is_empty()
+                && !row.content.is_empty()
             {
                 text.draw(
                     scene,
                     &node.label,
                     proposal::TextRole::UiBody,
-                    label_frame,
+                    row.content,
                     ButtonTextAlign::Leading,
                     tint,
                 );
             }
-            if has_children {
+            if model.nodes().iter().any(|n| n.parent == Some(id)) {
                 self.icon_slots.push(TreeIconSlot {
                     name: if node.expanded {
-                        "chevron-down"
+                        "tekes-expand"
                     } else {
-                        "chevron-right"
+                        "tekes-forward"
                     },
-                    frame: icon_frame,
-                    visible: button_layout.visible,
-                    tint,
+                    frame: row.icon,
+                    visible: item.visible,
+                    tint: colors.icon,
                 });
             }
-            self.layout.items.push(CollectionItemLayout {
-                id,
-                frame: r,
-                visible: button_layout.visible,
-                depth,
-            });
-            y += heights[row] + gap;
         }
         scene.pop_clip();
         if !self.disabled
@@ -747,18 +1626,27 @@ impl TreeView {
                 .items
                 .iter()
                 .find(|i| Some(i.id) == self.state.focused)
-            && model
-                .nodes()
-                .get(item.id)
-                .is_some_and(|node| !node.disabled)
+            && model.nodes().get(item.id).is_some_and(|n| !n.disabled)
         {
-            paint_collection_focus(scene, item, frame, clip, palette);
+            paint_collection_focus(scene, item, self.layout.frame, clip, palette);
         }
-        self.layout.clone()
     }
     /// Draw the branch affordances after releasing the host text-shaper borrow.
     /// Every row reserves the same leading slot, including leaf rows.
     pub fn render_icons(
+        &mut self,
+        scene: &mut Scene,
+        renderer: &mut impl IconRenderer,
+        clip: Option<Rect>,
+        palette: Palette,
+        icon_size: f32,
+    ) {
+        if self.keyed {
+            return;
+        }
+        self.render_icons_impl(scene, renderer, clip, palette, icon_size);
+    }
+    fn render_icons_impl(
         &mut self,
         scene: &mut Scene,
         renderer: &mut impl IconRenderer,
@@ -790,6 +1678,12 @@ impl TreeView {
         }
     }
     pub fn pointer_move(&mut self, point: Point) -> bool {
+        if self.keyed {
+            return false;
+        }
+        self.pointer_move_impl(point)
+    }
+    fn pointer_move_impl(&mut self, point: Point) -> bool {
         if self.disabled || !self.state.window_active {
             let changed = self.state.hovered.take().is_some();
             return changed;
@@ -805,6 +1699,9 @@ impl TreeView {
         changed
     }
     pub fn pointer_down(&mut self, point: Point, model: &mut Tree) -> CollectionEvent {
+        if !self.input_current(model) {
+            return CollectionEvent::Ignored;
+        }
         if self.disabled || !self.state.window_active {
             return CollectionEvent::Ignored;
         }
@@ -829,6 +1726,9 @@ impl TreeView {
         }
     }
     pub fn pointer_up(&mut self, point: Point, model: &mut Tree) -> CollectionEvent {
+        if !self.input_current(model) {
+            return CollectionEvent::Ignored;
+        }
         let Some(id) = self.state.captured.take() else {
             return CollectionEvent::Ignored;
         };
@@ -847,13 +1747,16 @@ impl TreeView {
         {
             return CollectionEvent::Handled;
         }
-        if model.nodes().iter().any(|n| n.parent == Some(id)) && model.toggle(id) {
-            CollectionEvent::Toggled(id)
+        if model.nodes().iter().any(|n| n.parent == Some(id)) {
+            self.set_expanded(id, !model.nodes()[id].expanded, model)
         } else {
             CollectionEvent::Handled
         }
     }
     pub fn key(&mut self, key: ControlKey, down: bool, model: &mut Tree) -> CollectionEvent {
+        if !self.input_current(model) {
+            return CollectionEvent::Ignored;
+        }
         if !down || self.disabled || !self.state.window_active {
             return CollectionEvent::Ignored;
         }
@@ -906,6 +1809,11 @@ impl TreeView {
                 CollectionEvent::Handled
             };
         }
+        if (key == ControlKey::Left && model.nodes()[id].expanded)
+            || (key == ControlKey::Right && !model.nodes()[id].expanded)
+        {
+            return self.set_expanded(id, key == ControlKey::Right, model);
+        }
         let selected = model.select(id);
         let moved = model.key(key);
         if selected || moved {
@@ -923,6 +1831,9 @@ impl TreeView {
         expanded: bool,
         model: &mut Tree,
     ) -> CollectionEvent {
+        if !self.input_current(model) {
+            return CollectionEvent::Ignored;
+        }
         if self.disabled
             || !self.state.window_active
             || model.nodes().get(index).is_none_or(|n| n.disabled)
@@ -946,12 +1857,14 @@ impl TreeView {
             self.state.focus(index, true);
         }
         self.state.captured = None;
+        self.reconcile_model(model);
         CollectionEvent::Toggled(index)
     }
     pub fn cancel(&mut self) {
         self.state.captured = None;
     }
 }
+
 fn tree_depth(tree: &Tree, mut id: usize) -> usize {
     let mut depth = 0;
     while let Some(parent) = tree.nodes().get(id).and_then(|n| n.parent) {
@@ -977,6 +1890,28 @@ pub struct DataTableLayout {
     pub columns: Vec<Rect>,
     pub content_height: f32,
 }
+// Optional passive measurements consumed by the original table layout service.
+#[derive(Clone, Debug, Default)]
+pub(crate) struct TableContentMetrics {
+    pub surface: Option<&'static str>,
+    pub headers: Vec<Option<tekes_ui_scene::Size>>,
+    pub cells: Vec<Vec<(Option<tekes_ui_scene::Size>, Option<tekes_ui_scene::Size>)>>,
+}
+// Accepted identity at the last model-aware call; no selection/sort copy.
+#[derive(Clone, Debug)]
+struct TableViewIdentity {
+    instance: std::sync::Arc<()>,
+    revision: u64,
+    rows: Vec<(crate::extended::TableRowKey, u64)>,
+    columns: Vec<(crate::extended::TableColumnKey, u64)>,
+    arranged: bool,
+}
+#[derive(Clone, Copy, Debug)]
+pub(crate) enum TableInput {
+    Down(Point),
+    Up(Point),
+    Key(ControlKey, bool),
+}
 #[derive(Clone, Debug)]
 pub struct DataTableView {
     layout: DataTableLayout,
@@ -985,6 +1920,9 @@ pub struct DataTableView {
     header_buttons: Vec<ButtonModel>,
     row_buttons: Vec<ButtonModel>,
     focused_header: Option<usize>,
+    keyed: Option<TableViewIdentity>,
+    unavailable_layout: DataTableLayout,
+    content_metrics: Option<TableContentMetrics>,
 }
 impl Default for DataTableView {
     fn default() -> Self {
@@ -998,6 +1936,9 @@ impl Default for DataTableView {
             header_buttons: Vec::new(),
             row_buttons: Vec::new(),
             focused_header: None,
+            keyed: None,
+            unavailable_layout: DataTableLayout::default(),
+            content_metrics: None,
         }
     }
 }
@@ -1019,6 +1960,12 @@ impl DataTableView {
         }
     }
     pub fn focus_row(&mut self, row: usize, keyboard: bool) {
+        if self.keyed.is_some() {
+            return;
+        }
+        self.focus_row_impl(row, keyboard);
+    }
+    fn focus_row_impl(&mut self, row: usize, keyboard: bool) {
         if self.disabled || !self.state.window_active {
             return;
         }
@@ -1026,6 +1973,12 @@ impl DataTableView {
         self.state.focus(row, keyboard);
     }
     pub fn focus_header(&mut self, column: usize, keyboard: bool) {
+        if self.keyed.is_some() {
+            return;
+        }
+        self.focus_header_impl(column, keyboard);
+    }
+    fn focus_header_impl(&mut self, column: usize, keyboard: bool) {
         if self.disabled || !self.state.window_active {
             return;
         }
@@ -1044,9 +1997,33 @@ impl DataTableView {
         }
     }
     pub fn layout(&self) -> &DataTableLayout {
-        &self.layout
+        if self.keyed.is_some() {
+            &self.unavailable_layout
+        } else {
+            &self.layout
+        }
     }
     pub fn render(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        model: &DataTable,
+        headers: &[String],
+        rows: &[Vec<String>],
+        row_order: &[usize],
+        frame: Rect,
+        clip: Option<Rect>,
+        palette: Palette,
+    ) -> DataTableLayout {
+        if self.keyed.take().is_some() {
+            self.blur();
+            self.layout = DataTableLayout::default();
+        }
+        self.render_impl(
+            scene, text, model, headers, rows, row_order, frame, clip, palette,
+        )
+    }
+    fn render_impl(
         &mut self,
         scene: &mut Scene,
         text: &mut impl ButtonTextRenderer,
@@ -1063,8 +2040,14 @@ impl DataTableView {
         let cw = width / columns as f32;
         // Preserve the Gallery's existing table contract: 34pt header and
         // rows, first row at 40pt, then 38pt pitch.
-        let header_h = 34.0;
-        let rh = 34.0;
+        // Header/row frames must contain the same original Button chrome at
+        // the renderer's resolved type scale; otherwise visible/frame diverge.
+        let minimum =
+            ButtonModel::measure(text, "", cw, ButtonSize::Body, proposal::TextRole::UiBody)
+                .height
+                .max(34.0);
+        let header_h = minimum;
+        let rh = minimum;
         let gap = row_gap();
         let own_clip = own_clip(frame, clip);
         let valid_order = row_order
@@ -1091,16 +2074,27 @@ impl DataTableView {
             .collect::<Vec<_>>();
         let header_heights = header_labels
             .iter()
-            .map(|title| {
-                ButtonModel::measure(
-                    text,
-                    title,
-                    cw,
-                    ButtonSize::Body,
-                    proposal::TextRole::UiBody,
-                )
-                .height
-                .max(header_h)
+            .enumerate()
+            .map(|(col, title)| {
+                if let Some(size) = self
+                    .content_metrics
+                    .as_ref()
+                    .and_then(|m| m.headers.get(col))
+                    .copied()
+                    .flatten()
+                {
+                    size.height.max(header_h)
+                } else {
+                    ButtonModel::measure(
+                        text,
+                        title,
+                        cw,
+                        ButtonSize::Body,
+                        proposal::TextRole::UiBody,
+                    )
+                    .height
+                    .max(header_h)
+                }
             })
             .collect::<Vec<_>>();
         let header_band = header_heights.iter().copied().fold(header_h, f32::max);
@@ -1110,12 +2104,24 @@ impl DataTableView {
             .map(|id| {
                 (0..model.columns)
                     .map(|col| {
-                        text.measure(
-                            rows[*id].get(col).map(String::as_str).unwrap_or(""),
-                            proposal::TextRole::UiBody,
-                            (cw - 16.).max(0.),
-                        )
-                        .height
+                        let (custom, accessory) = self
+                            .content_metrics
+                            .as_ref()
+                            .and_then(|m| m.cells.get(*id))
+                            .and_then(|r| r.get(col))
+                            .copied()
+                            .unwrap_or_default();
+                        let aw = accessory.map_or(0., |a| a.width.min((cw - 16.).max(0.)));
+                        custom
+                            .unwrap_or_else(|| {
+                                text.measure(
+                                    rows[*id].get(col).map(String::as_str).unwrap_or(""),
+                                    proposal::TextRole::UiBody,
+                                    (cw - 16. - aw).max(0.),
+                                )
+                            })
+                            .height
+                            .max(accessory.map_or(0., |a| a.height))
                     })
                     .fold(rh, f32::max)
             })
@@ -1196,8 +2202,20 @@ impl DataTableView {
                 cw,
                 header_band,
             );
-            let title = &header_labels[col];
+            let custom = self
+                .content_metrics
+                .as_ref()
+                .and_then(|m| m.headers.get(col))
+                .is_some_and(Option::is_some);
+            let title = if custom { "" } else { &header_labels[col] };
+            let surface = self
+                .content_metrics
+                .as_ref()
+                .and_then(|m| m.surface)
+                .filter(|s| *s != "base")
+                .unwrap_or("canvas");
             let button = &mut self.header_buttons[col];
+            button.set_surface(surface);
             let header_focused = self.focused_header == Some(col) && self.state.window_active;
             button.state = control_state(false, false, header_focused, self.disabled, false);
             let button_layout =
@@ -1214,7 +2232,14 @@ impl DataTableView {
             let row_height = row_heights[display];
             let r = Rect::new(frame.min_x(), y, width, row_height);
             let focused = self.state.focused == Some(id) && self.state.window_active;
+            let surface = self
+                .content_metrics
+                .as_ref()
+                .and_then(|m| m.surface)
+                .filter(|s| *s != "base")
+                .unwrap_or("canvas");
             let button = &mut self.row_buttons[id];
+            button.set_surface(surface);
             button.state = control_state(
                 model.selected_row == Some(id),
                 self.state.hovered == Some(id),
@@ -1224,10 +2249,21 @@ impl DataTableView {
             );
             let row_layout = render_quiet_button(button, scene, text, "", r, own_clip, palette);
             for col in 0..model.columns {
+                let (custom, accessory) = self
+                    .content_metrics
+                    .as_ref()
+                    .and_then(|m| m.cells.get(id))
+                    .and_then(|r| r.get(col))
+                    .copied()
+                    .unwrap_or_default();
+                if custom.is_some() {
+                    continue;
+                }
+                let aw = accessory.map_or(0., |a| a.width.min((cw - 16.).max(0.)));
                 let cell = Rect::new(
                     frame.min_x() + col as f32 * cw + 8.,
                     y,
-                    (cw - 16.).max(0.),
+                    (cw - 16. - aw).max(0.),
                     row_height,
                 );
                 if let Some(v) = visible(cell, row_layout.visible) {
@@ -1238,9 +2274,7 @@ impl DataTableView {
                         proposal::TextRole::UiBody,
                         cell,
                         ButtonTextAlign::Leading,
-                        palette
-                            .color("primary-text")
-                            .expect("DS primary text token"),
+                        Self::row_foreground(button, palette, surface).0,
                     );
                     scene.pop_clip();
                 }
@@ -1271,6 +2305,12 @@ impl DataTableView {
         result
     }
     pub fn pointer_move(&mut self, point: Point) -> bool {
+        if self.keyed.is_some() {
+            return false;
+        }
+        self.pointer_move_impl(point)
+    }
+    fn pointer_move_impl(&mut self, point: Point) -> bool {
         if self.disabled || !self.state.window_active {
             let changed = self.state.hovered.take().is_some();
             return changed;
@@ -1286,48 +2326,150 @@ impl DataTableView {
         changed
     }
     pub fn pointer_down(&mut self, point: Point, model: &mut DataTable) -> CollectionEvent {
-        if self.disabled || !self.state.window_active {
+        if self.keyed.is_some() {
             return CollectionEvent::Ignored;
         }
-        if let Some(col) = self
+        self.pointer_down_impl(point, model)
+    }
+    fn decide_table_down(&self, point: Point, model: &DataTable) -> Option<CollectionAction> {
+        if self.disabled || !self.state.window_active {
+            return None;
+        }
+        if let Some(id) = self
             .layout
             .headers
             .iter()
-            .find(|i| i.visible.is_some_and(|r| r.contains(point)))
-            .map(|i| i.id)
+            .find(|r| r.visible.is_some_and(|r| r.contains(point)))
+            .map(|r| r.id)
         {
-            if col >= model.columns {
-                return CollectionEvent::Ignored;
+            if id >= model.columns {
+                return None;
             }
-            self.focus_header(col, false);
-            return if model.sort_by(col) {
-                CollectionEvent::Changed
-            } else {
-                CollectionEvent::Handled
-            };
+            return Some(CollectionAction {
+                id,
+                header: true,
+                keyboard: false,
+                capture: false,
+                select: false,
+                sort: true,
+                next_sort: model.decided_sort(id),
+                event: CollectionEvent::Changed,
+            });
         }
-        let Some(id) = self
+        let id = self
             .layout
             .rows
             .iter()
-            .find(|i| i.visible.is_some_and(|r| r.contains(point)))
-            .map(|i| i.id)
-        else {
+            .find(|r| r.visible.is_some_and(|r| r.contains(point)))?
+            .id;
+        if id >= model.rows {
+            return None;
+        }
+        Some(CollectionAction {
+            id,
+            header: false,
+            keyboard: false,
+            capture: true,
+            select: true,
+            sort: false,
+            next_sort: None,
+            event: if model.selected_row != Some(id) {
+                CollectionEvent::Changed
+            } else {
+                CollectionEvent::Handled
+            },
+        })
+    }
+    fn pointer_down_impl(&mut self, point: Point, model: &mut DataTable) -> CollectionEvent {
+        let Some(p) = self.decide_table_down(point, model) else {
             return CollectionEvent::Ignored;
         };
-        if id >= model.rows {
-            return CollectionEvent::Ignored;
+        let event = p.event;
+        self.apply_table_action(p, model);
+        event
+    }
+    pub(crate) fn table_action_snapshot(&self) -> TableActionSnapshot {
+        TableActionSnapshot {
+            layout: self.layout.clone(),
+            state: self.state.clone(),
+            disabled: self.disabled,
+            header: self.focused_header,
         }
-        self.focused_header = None;
-        self.state.focus(id, false);
-        self.state.captured = Some(id);
-        if model.select_row(id) {
-            CollectionEvent::Changed
+    }
+    pub(crate) fn prepare_table_down(
+        &self,
+        point: Point,
+        model: &crate::extended::KeyedDataTable,
+    ) -> Option<CollectionAction> {
+        if !self.table_current(model) || model.revision() == u64::MAX {
+            return None;
+        }
+        self.decide_table_down(point, model.original())
+    }
+    pub(crate) fn prepare_table_part(
+        &self,
+        id: usize,
+        header: bool,
+        press: bool,
+        model: &crate::extended::KeyedDataTable,
+    ) -> Option<CollectionAction> {
+        if !self.table_current(model)
+            || self.disabled
+            || !self.state.window_active
+            || (press && model.revision() == u64::MAX)
+        {
+            return None;
+        }
+        if header {
+            if id >= model.original().columns {
+                return None;
+            }
+        } else if id >= model.original().rows || !model.row_displayed(id) {
+            return None;
+        }
+        Some(CollectionAction {
+            id,
+            header,
+            keyboard: true,
+            capture: false,
+            select: press && !header,
+            sort: press && header,
+            next_sort: if press && header {
+                model.original().decided_sort(id)
+            } else {
+                None
+            },
+            event: if !press || header || model.original().selected_row != Some(id) {
+                CollectionEvent::Changed
+            } else {
+                CollectionEvent::Activated(id)
+            },
+        })
+    }
+    pub(crate) fn apply_table_action(&mut self, p: CollectionAction, model: &mut DataTable) {
+        if p.header {
+            self.focus_header_impl(p.id, p.keyboard);
         } else {
-            CollectionEvent::Handled
+            self.focused_header = None;
+            self.state.focus(p.id, p.keyboard);
+        }
+        if p.capture {
+            self.state.captured = Some(p.id);
+        }
+        if p.select {
+            model.selected_row = Some(p.id);
+        }
+        if p.sort {
+            model.sort = p.next_sort;
         }
     }
     pub fn pointer_up(&mut self, point: Point, model: &mut DataTable) -> CollectionEvent {
+        if self.keyed.is_some() {
+            return CollectionEvent::Ignored;
+        }
+        self.pointer_up_impl(point, model)
+    }
+    fn pointer_up_impl(&mut self, point: Point, model: &mut DataTable) -> CollectionEvent {
         let Some(id) = self.state.captured.take() else {
             return CollectionEvent::Ignored;
         };
@@ -1350,6 +2492,12 @@ impl DataTableView {
         }
     }
     pub fn key(&mut self, key: ControlKey, down: bool, model: &mut DataTable) -> CollectionEvent {
+        if self.keyed.is_some() {
+            return CollectionEvent::Ignored;
+        }
+        self.key_impl(key, down, model)
+    }
+    fn key_impl(&mut self, key: ControlKey, down: bool, model: &mut DataTable) -> CollectionEvent {
         if !down || self.disabled || !self.state.window_active {
             return CollectionEvent::Ignored;
         }
@@ -1400,7 +2548,7 @@ impl DataTableView {
                     ControlKey::Up
                 };
                 let next = row_key_target(direction, column, &ids).unwrap_or(column);
-                self.focus_header(next, true);
+                self.focus_header_impl(next, true);
                 return CollectionEvent::Changed;
             }
             return CollectionEvent::Handled;
@@ -1462,6 +2610,322 @@ impl DataTableView {
     }
     pub fn cancel(&mut self) {
         self.state.cancel_capture();
+    }
+    fn table_current(&self, model: &crate::extended::KeyedDataTable) -> bool {
+        self.keyed.as_ref().is_some_and(|k| {
+            k.arranged
+                && std::sync::Arc::ptr_eq(&k.instance, &model.view_identity())
+                && k.revision == model.revision()
+        })
+    }
+    // Reconcile against accepted identities, not merely the most recent update.
+    // Multiple replacements between calls therefore cannot hide an ABA.
+    pub(crate) fn guard_table(&mut self, model: &crate::extended::KeyedDataTable) {
+        let instance = model.view_identity();
+        if self.keyed.as_ref().is_some_and(|k| {
+            std::sync::Arc::ptr_eq(&k.instance, &instance) && k.revision == model.revision()
+        }) {
+            return;
+        }
+        let same = self
+            .keyed
+            .as_ref()
+            .is_some_and(|k| std::sync::Arc::ptr_eq(&k.instance, &instance));
+        let row = same
+            .then(|| {
+                self.state
+                    .focused
+                    .and_then(|i| self.keyed.as_ref()?.rows.get(i).copied())
+            })
+            .flatten()
+            .and_then(|(key, incarnation)| {
+                model.row_index(key).filter(|i| {
+                    model.row_displayed(*i) && model.row_incarnation(*i) == Some(incarnation)
+                })
+            });
+        let column = same
+            .then(|| {
+                self.focused_header
+                    .and_then(|i| self.keyed.as_ref()?.columns.get(i).copied())
+            })
+            .flatten()
+            .and_then(|(key, incarnation)| {
+                model
+                    .column_index(key)
+                    .filter(|i| model.column_incarnation(*i) == Some(incarnation))
+            });
+        self.state.focused = row;
+        self.focused_header = column;
+        if row.is_none() && column.is_none() {
+            self.state.focus_visible = false;
+        }
+        self.state.captured = None;
+        self.state.hovered = None;
+        self.layout = DataTableLayout::default();
+        self.keyed = Some(TableViewIdentity {
+            instance,
+            revision: model.revision(),
+            arranged: false,
+            rows: model
+                .snapshot()
+                .rows
+                .iter()
+                .enumerate()
+                .map(|(i, r)| (r.key, model.row_incarnation(i).expect("validated row")))
+                .collect(),
+            columns: model
+                .snapshot()
+                .columns
+                .iter()
+                .enumerate()
+                .map(|(i, c)| {
+                    (
+                        c.key,
+                        model.column_incarnation(i).expect("validated column"),
+                    )
+                })
+                .collect(),
+        });
+    }
+    /// Arrange and paint through the original string-table layout service.
+    /// Calling this is the only way to publish fresh keyed geometry.
+    pub fn render_keyed(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        model: &crate::extended::KeyedDataTable,
+        frame: Rect,
+        clip: Option<Rect>,
+        palette: Palette,
+    ) -> DataTableLayout {
+        self.guard_table(model);
+        let headers = model
+            .snapshot()
+            .columns
+            .iter()
+            .map(|c| c.name.clone())
+            .collect::<Vec<_>>();
+        let rows = model
+            .snapshot()
+            .rows
+            .iter()
+            .map(|r| r.cells.clone())
+            .collect::<Vec<_>>();
+        let layout = self.render_impl(
+            scene,
+            text,
+            model.original(),
+            &headers,
+            &rows,
+            model.display_indices(),
+            frame,
+            clip,
+            palette,
+        );
+        self.keyed.as_mut().expect("guarded table").arranged = true;
+        layout
+    }
+    pub(crate) fn render_content_keyed(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        model: &crate::extended::KeyedDataTable,
+        frame: Rect,
+        clip: Option<Rect>,
+        palette: Palette,
+        metrics: TableContentMetrics,
+    ) -> DataTableLayout {
+        self.content_metrics = Some(metrics);
+        let layout = self.render_keyed(scene, text, model, frame, clip, palette);
+        self.content_metrics = None;
+        layout
+    }
+    pub(crate) fn invalidate_content_layout(&mut self) {
+        self.layout = DataTableLayout::default();
+        if let Some(k) = &mut self.keyed {
+            k.arranged = false;
+        }
+        self.cancel();
+    }
+    pub(crate) fn content_retained_cost(&self) -> Option<(usize, usize)> {
+        let mut units = 0usize;
+        let mut bytes = 0usize;
+        for (n, size) in [
+            (
+                self.header_buttons.capacity(),
+                std::mem::size_of::<ButtonModel>(),
+            ),
+            (
+                self.row_buttons.capacity(),
+                std::mem::size_of::<ButtonModel>(),
+            ),
+            (
+                self.layout.headers.capacity(),
+                std::mem::size_of::<CollectionItemLayout>(),
+            ),
+            (
+                self.layout.rows.capacity(),
+                std::mem::size_of::<CollectionItemLayout>(),
+            ),
+            (self.layout.columns.capacity(), std::mem::size_of::<Rect>()),
+        ] {
+            units = units.checked_add(n)?;
+            bytes = bytes.checked_add(n.checked_mul(size)?)?;
+        }
+        if let Some(k) = &self.keyed {
+            for n in [k.rows.capacity(), k.columns.capacity()] {
+                units = units.checked_add(n)?;
+                bytes = bytes.checked_add(n.checked_mul(24)?)?;
+            }
+        }
+        Some((units, bytes))
+    }
+    // Legacy strings and Content row child-theme share the original row
+    // Button/state foreground. This approved legacy ink change leaves layout,
+    // hit testing, focus and selection policies in their existing owners.
+    fn row_foreground(
+        button: &ButtonModel,
+        palette: Palette,
+        surface: &str,
+    ) -> (tekes_ui_tokens::Rgba, tekes_ui_tokens::Rgba) {
+        let surface = if surface == "base" { "canvas" } else { surface };
+        let colors = button.surface_colors(palette, ButtonVariant::Quiet, surface);
+        (colors.text, colors.icon)
+    }
+    pub(crate) fn content_row_ink(
+        &self,
+        index: usize,
+        palette: Palette,
+        surface: &str,
+    ) -> Option<(tekes_ui_tokens::Rgba, tekes_ui_tokens::Rgba)> {
+        self.row_buttons
+            .get(index)
+            .map(|button| Self::row_foreground(button, palette, surface))
+    }
+    /// Pure query: stale identity/geometry is unavailable and does not reconcile.
+    pub fn layout_keyed(
+        &self,
+        model: &crate::extended::KeyedDataTable,
+    ) -> Option<&DataTableLayout> {
+        self.table_current(model).then_some(&self.layout)
+    }
+    pub fn focused_row_keyed(
+        &self,
+        model: &crate::extended::KeyedDataTable,
+    ) -> Option<crate::extended::TableRowKey> {
+        self.table_current(model)
+            .then(|| self.state.focused.and_then(|i| model.row_key(i)))
+            .flatten()
+    }
+    pub fn focused_header_keyed(
+        &self,
+        model: &crate::extended::KeyedDataTable,
+    ) -> Option<crate::extended::TableColumnKey> {
+        self.table_current(model)
+            .then(|| self.focused_header.and_then(|i| model.column_key(i)))
+            .flatten()
+    }
+    /// Internal focus entry for a host that has already passed its focus barrier.
+    pub fn focus_keyed(&mut self, keyboard: bool, model: &crate::extended::KeyedDataTable) -> bool {
+        self.guard_table(model);
+        if !self.table_current(model) || self.disabled || !self.state.window_active {
+            return false;
+        }
+        let row = model
+            .original()
+            .selected_row
+            .or_else(|| model.display_indices().first().copied());
+        let Some(row) = row else {
+            return false;
+        };
+        self.focus_row_impl(row, keyboard);
+        true
+    }
+    pub fn focus_row_keyed(
+        &mut self,
+        key: crate::extended::TableRowKey,
+        keyboard: bool,
+        model: &crate::extended::KeyedDataTable,
+    ) -> bool {
+        self.guard_table(model);
+        if !self.table_current(model) || self.disabled || !self.state.window_active {
+            return false;
+        }
+        let Some(i) = model.row_index(key).filter(|i| model.row_displayed(*i)) else {
+            return false;
+        };
+        self.focus_row_impl(i, keyboard);
+        true
+    }
+    pub fn focus_header_keyed(
+        &mut self,
+        key: crate::extended::TableColumnKey,
+        keyboard: bool,
+        model: &crate::extended::KeyedDataTable,
+    ) -> bool {
+        self.guard_table(model);
+        if !self.table_current(model) || self.disabled || !self.state.window_active {
+            return false;
+        }
+        let Some(i) = model.column_index(key) else {
+            return false;
+        };
+        self.focus_header_impl(i, keyboard);
+        true
+    }
+    pub fn pointer_move_keyed(
+        &mut self,
+        point: Point,
+        model: &crate::extended::KeyedDataTable,
+    ) -> bool {
+        self.guard_table(model);
+        self.table_current(model) && self.pointer_move_impl(point)
+    }
+    fn input_keyed(
+        &mut self,
+        input: TableInput,
+        model: &mut crate::extended::KeyedDataTable,
+    ) -> CollectionEvent {
+        self.guard_table(model);
+        if !self.table_current(model) {
+            return CollectionEvent::Ignored;
+        }
+        let event = model.view_input(self, input);
+        self.guard_table(model);
+        event
+    }
+    pub fn pointer_down_keyed(
+        &mut self,
+        point: Point,
+        model: &mut crate::extended::KeyedDataTable,
+    ) -> CollectionEvent {
+        self.input_keyed(TableInput::Down(point), model)
+    }
+    pub fn pointer_up_keyed(
+        &mut self,
+        point: Point,
+        model: &mut crate::extended::KeyedDataTable,
+    ) -> CollectionEvent {
+        self.input_keyed(TableInput::Up(point), model)
+    }
+    pub fn key_keyed(
+        &mut self,
+        key: ControlKey,
+        down: bool,
+        model: &mut crate::extended::KeyedDataTable,
+    ) -> CollectionEvent {
+        self.input_keyed(TableInput::Key(key, down), model)
+    }
+    pub(crate) fn reduce_table(
+        &mut self,
+        input: TableInput,
+        model: &mut DataTable,
+    ) -> CollectionEvent {
+        match input {
+            TableInput::Down(point) => self.pointer_down_impl(point, model),
+            TableInput::Up(point) => self.pointer_up_impl(point, model),
+            TableInput::Key(key, down) => self.key_impl(key, down, model),
+        }
     }
 }
 

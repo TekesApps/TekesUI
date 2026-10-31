@@ -19,6 +19,24 @@ pub use icon::{SvgIconCache, SvgIconRenderer};
 mod disclosure;
 pub use disclosure::{DisclosureContent, DisclosureIntent};
 mod actions;
+mod collection_transaction;
+mod legacy_selectable_list;
+pub use legacy_selectable_list::SelectableListContent;
+mod selectable_list;
+pub use selectable_list::{
+    KeyedSelectableListContent, ListContentError, ListDisplayUpdate, ListIntent, ListIntentKind,
+    ListReadingUpdate, ListRowDisplay,
+};
+mod tree;
+pub use tree::{
+    TreeContent, TreeContentError, TreeContentNode, TreeDisplayUpdate, TreeIntent, TreeIntentKind,
+};
+mod datatable;
+pub use datatable::{
+    DataTableContent, TableCellDisplay, TableContentError, TableDisplayUpdate, TableDisplays,
+    TableHeaderDisplay, TableIntent, TableIntentKind, TableIntentTarget, TableReadingUpdate,
+    TableRowDisplay,
+};
 mod panel;
 pub use panel::{
     ContentGeometrySnapshot, CurveGeometryContext, CurveSubtreeCapability, HostRevealGeometry,
@@ -257,6 +275,25 @@ pub enum ContentRole {
     Segment,
     List,
     ListItem,
+    Tree,
+    TreeItem {
+        level: usize,
+    },
+    Table,
+    TableColumn {
+        index: usize,
+    },
+    TableColumnHeader {
+        index: usize,
+        sort: Option<crate::extended::SortDirection>,
+    },
+    TableRow {
+        index: usize,
+    },
+    TableCell {
+        row: usize,
+        column: usize,
+    },
     Dialog,
     MenuButton,
     /// Noneditable original Select trigger.
@@ -1453,6 +1490,9 @@ impl Content {
     }
     fn lifecycle(&mut self, event: Lifecycle) {
         self.lifecycle_with(event, &mut actions::next_mount);
+    }
+    fn lifecycle_reserved(&mut self, event: Lifecycle, range: &mut actions::MountRange) {
+        self.lifecycle_with(event, &mut || range.take());
     }
     fn lifecycle_start(&mut self, event: Lifecycle, mount: u64) {
         self.curve_geometry = None;
@@ -4638,5 +4678,121 @@ fn scene_dialog_contents(
             child.paint(scene, text, child_theme);
             child.paint_overlays(scene, text, child_theme);
         }
+    }
+}
+
+#[cfg(test)]
+mod shared_collection_seam_tests {
+    use super::*;
+    use std::{cell::RefCell, rc::Rc};
+    #[derive(Debug)]
+    struct Passive {
+        ordinal: u8,
+        log: Rc<RefCell<Vec<(u8, &'static str)>>>,
+        children: Vec<Content>,
+    }
+    impl Component for Passive {
+        fn measure(&mut self, _: &mut dyn ButtonTextRenderer, _: Size) -> MeasuredChild {
+            MeasuredChild::new(Size::default())
+        }
+        fn children(&self) -> &[Content] {
+            &self.children
+        }
+        fn children_mut(&mut self) -> Option<&mut Vec<Content>> {
+            Some(&mut self.children)
+        }
+        fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
+            TableTransactionCompatibility::StableHooks
+        }
+        fn event(&mut self, event: &ContentEvent) -> ContentResponse {
+            if matches!(event, ContentEvent::Cancel) {
+                self.log.borrow_mut().push((self.ordinal, "cancel"));
+            }
+            ContentResponse::default()
+        }
+        fn set_focus(&mut self, focused: bool, _: bool) {
+            assert!(!focused);
+            self.log.borrow_mut().push((self.ordinal, "blur"));
+        }
+        fn lifecycle(&mut self, event: Lifecycle) {
+            self.log.borrow_mut().push((
+                self.ordinal,
+                match event {
+                    Lifecycle::Mounted => "mounted",
+                    Lifecycle::Unmounted => "unmounted",
+                },
+            ));
+        }
+    }
+    #[test]
+    fn reserved_passive_lifecycle_consumes_only_staged_mounts_in_original_hook_order() {
+        let log = Rc::new(RefCell::new(vec![]));
+        let child = Content::new(
+            ComponentId(2),
+            Passive {
+                ordinal: 1,
+                log: log.clone(),
+                children: vec![],
+            },
+        );
+        let mut root = Content::new(
+            ComponentId(1),
+            Passive {
+                ordinal: 0,
+                log: log.clone(),
+                children: vec![child],
+            },
+        );
+        let old = root.mount;
+        let mut mounts = actions::reserve_mounts(2).unwrap();
+        root.lifecycle_reserved(Lifecycle::Unmounted, &mut mounts);
+        assert!(mounts.exhausted());
+        assert_ne!(root.mount, old);
+        assert_eq!(
+            *log.borrow(),
+            [
+                (0, "cancel"),
+                (0, "blur"),
+                (0, "unmounted"),
+                (1, "cancel"),
+                (1, "blur"),
+                (1, "unmounted")
+            ]
+        );
+    }
+    #[test]
+    fn decorative_semantics_suppression_preserves_mounts_and_active_siblings() {
+        let mut root = Content::new(
+            ComponentId(1),
+            ListContent::new(
+                "group",
+                vec![
+                    Content::new(ComponentId(2), TextContent::new("decorative")),
+                    Content::new(ComponentId(3), TextContent::new("inactive panel")),
+                    Content::new(ComponentId(4), TextContent::new("active panel")),
+                ],
+            ),
+        );
+        let mount = root.find(ComponentId(2)).unwrap().mount;
+        root.find_mut(ComponentId(2)).unwrap().suppress_semantics();
+        root.find_mut(ComponentId(3))
+            .unwrap()
+            .set_composition_active(false);
+        let mut nodes = vec![];
+        root.semantic_nodes(None, None, &mut nodes);
+        assert_eq!(
+            nodes.iter().map(|n| n.id).collect::<Vec<_>>(),
+            [ComponentId(1), ComponentId(4)]
+        );
+        assert_eq!(root.find(ComponentId(2)).unwrap().mount, mount);
+        root.find_mut(ComponentId(3))
+            .unwrap()
+            .set_composition_active(true);
+        nodes.clear();
+        root.semantic_nodes(None, None, &mut nodes);
+        assert_eq!(
+            nodes.iter().map(|n| n.id).collect::<Vec<_>>(),
+            [ComponentId(1), ComponentId(3), ComponentId(4)]
+        );
     }
 }

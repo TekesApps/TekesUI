@@ -26,6 +26,23 @@ fn semantics(s: ContentSemantics) -> Result<wire::Semantics> {
         ContentRole::TextInput => W::TextInput,
         ContentRole::SearchInput => W::SearchInput,
         ContentRole::ComboBox => W::ComboBox,
+        ContentRole::Tree => W::Tree,
+        ContentRole::TreeItem { level } => W::TreeItem { level },
+        ContentRole::Table => W::Table,
+        ContentRole::TableColumn { index } => W::TableColumn { index },
+        ContentRole::TableColumnHeader { index, sort } => W::TableColumnHeader {
+            index,
+            sort: sort.map(|direction| match direction {
+                tekes_ui_controls::extended::SortDirection::Ascending => {
+                    wire::TableSortDirection::Ascending
+                }
+                tekes_ui_controls::extended::SortDirection::Descending => {
+                    wire::TableSortDirection::Descending
+                }
+            }),
+        },
+        ContentRole::TableRow { index } => W::TableRow { index },
+        ContentRole::TableCell { row, column } => W::TableCell { row, column },
         ContentRole::Slider => W::Slider,
         ContentRole::Splitter => W::Splitter,
         ContentRole::Switch => W::Switch,
@@ -763,6 +780,9 @@ mod selection_export_tests {
     }
 }
 
+#[cfg(test)]
+#[path = "collection_sender_tests.rs"]
+mod collection_sender_tests;
 #[cfg(test)]
 #[path = "search_bridge_tests.rs"]
 mod search_bridge_tests;

@@ -27,6 +27,27 @@ pub enum SemanticRole {
     Segment,
     List,
     ListItem,
+    /// Hierarchical collection owner; child depth is carried by TreeItem.
+    Tree,
+    /// Depth follows the serialized parent chain; never a parent substitute.
+    TreeItem {
+        level: usize,
+    },
+    Table,
+    TableColumn {
+        index: usize,
+    },
+    TableColumnHeader {
+        index: usize,
+        sort: Option<TableSortDirection>,
+    },
+    TableRow {
+        index: usize,
+    },
+    TableCell {
+        row: usize,
+        column: usize,
+    },
     Dialog,
     MenuButton,
     Select,
@@ -35,6 +56,12 @@ pub enum SemanticRole {
     TabList,
     Tab,
 }
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum TableSortDirection {
+    Ascending,
+    Descending,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Semantics {

@@ -165,9 +165,168 @@ pub(crate) fn validate(nodes: &[wire::SemanticNode]) -> Result<()> {
                 .parent;
         }
     }
+    // Validate depth against the actual serialized hierarchy, including nested
+    // ProcessContainer projections. A depth is never a substitute for a parent.
+    let tree_parent =
+        |role: wire::SemanticRole, parent: Option<wire::SemanticRole>| -> Result<()> {
+            if let wire::SemanticRole::TreeItem { level } = role {
+                let expected = match parent {
+                    Some(wire::SemanticRole::Tree) => Some(0),
+                    Some(wire::SemanticRole::TreeItem { level }) => level.checked_add(1),
+                    _ => None,
+                };
+                ensure!(
+                    expected == Some(level),
+                    "invalid child TreeItem level/parent"
+                );
+            }
+            Ok(())
+        };
+    for n in nodes {
+        tree_parent(
+            n.semantics.role,
+            n.parent
+                .and_then(|t| nodes.iter().find(|n| n.target == t))
+                .map(|n| n.semantics.role),
+        )?;
+        for p in &n.parts {
+            let parent = match p.parent {
+                Some(i) => n
+                    .parts
+                    .iter()
+                    .find(|p| p.index == i)
+                    .map(|p| p.semantics.role),
+                None => Some(n.semantics.role),
+            };
+            tree_parent(p.semantics.role, parent)?;
+        }
+    }
+    validate_tables(nodes)?;
     validate_selection(nodes)?;
     Ok(())
 }
+fn validate_tables(nodes: &[wire::SemanticNode]) -> Result<()> {
+    use wire::SemanticRole as W;
+    let mut all = Vec::new();
+    for n in nodes {
+        all.push((
+            Key {
+                target: n.target,
+                part: None,
+            },
+            n.parent.map(|target| Key { target, part: None }),
+            n.semantics.role,
+            n.frame,
+            n.focused,
+        ));
+        all.extend(n.parts.iter().map(|p| {
+            (
+                Key {
+                    target: n.target,
+                    part: Some(p.index),
+                },
+                Some(Key {
+                    target: n.target,
+                    part: p.parent,
+                }),
+                p.semantics.role,
+                p.frame,
+                p.focused,
+            )
+        }));
+    }
+    let parent_role = |parent: Option<Key>| {
+        parent
+            .and_then(|k| all.iter().find(|e| e.0 == k))
+            .map(|e| e.2)
+    };
+    for (_, parent, role, frame, focused) in &all {
+        match role {
+            W::TableColumn { .. } | W::TableRow { .. } => ensure!(
+                parent_role(*parent) == Some(W::Table),
+                "invalid Table part parent/kind"
+            ),
+            W::TableColumnHeader { index, .. } => ensure!(
+                parent_role(*parent) == Some(W::TableColumn { index: *index }),
+                "invalid Table header ordinal/parent"
+            ),
+            W::TableCell { row, .. } => ensure!(
+                parent_role(*parent) == Some(W::TableRow { index: *row }),
+                "invalid Table cell ordinal/parent"
+            ),
+            _ => (),
+        }
+        if matches!(
+            role,
+            W::Table
+                | W::TableColumn { .. }
+                | W::TableColumnHeader { .. }
+                | W::TableRow { .. }
+                | W::TableCell { .. }
+        ) && (frame[2] == 0. || frame[3] == 0.)
+        {
+            ensure!(
+                frame[2] == 0. && frame[3] == 0. && !focused,
+                "invalid zero-area Table structure"
+            );
+        }
+    }
+    let contiguous = |mut ord: Vec<usize>| {
+        ord.sort_unstable();
+        ord.iter().enumerate().all(|(i, v)| i == *v)
+    };
+    for (table, _, role, _, _) in &all {
+        if *role != W::Table {
+            continue;
+        }
+        let columns: Vec<_> = all
+            .iter()
+            .filter(|e| e.1 == Some(*table))
+            .filter_map(|e| {
+                if let W::TableColumn { index } = e.2 {
+                    Some((e.0, index))
+                } else {
+                    None
+                }
+            })
+            .collect();
+        let rows: Vec<_> = all
+            .iter()
+            .filter(|e| e.1 == Some(*table))
+            .filter_map(|e| {
+                if let W::TableRow { index } = e.2 {
+                    Some((e.0, index))
+                } else {
+                    None
+                }
+            })
+            .collect();
+        ensure!(
+            contiguous(columns.iter().map(|e| e.1).collect())
+                && contiguous(rows.iter().map(|e| e.1).collect()),
+            "invalid/duplicate Table ordinal"
+        );
+        ensure!(
+            !columns.is_empty() || rows.is_empty(),
+            "Table rows without columns"
+        );
+        for (column, index) in &columns {
+            let headers: Vec<_> = all.iter().filter(|e| e.1 == Some(*column)).collect();
+            ensure!(
+                headers.len() == 1
+                    && matches!(headers[0].2,W::TableColumnHeader{index:i,..} if i==*index),
+                "invalid Table column/header closure"
+            );
+        }
+        for (row, index) in &rows {
+            let cells: Vec<_> = all.iter().filter(|e| e.1 == Some(*row)).collect();
+            ensure!(cells.len()==columns.len() && cells.iter().all(|e|matches!(e.2,W::TableCell{row:r,column:c} if r==*index && c<columns.len()))
+                && contiguous(cells.iter().filter_map(|e|if let W::TableCell{column,..}=e.2{Some(column)}else{None}).collect()),"invalid Table row/cell closure");
+        }
+    }
+    Ok(())
+}
+
 fn validate_selection(nodes: &[wire::SemanticNode]) -> Result<()> {
     // Finite selection capabilities are validated over the complete hierarchy.
     fn selection(
@@ -258,6 +417,23 @@ fn semantics(s: &wire::Semantics) -> ContentSemantics {
             W::Select => R::Select,
             W::Menu => R::Menu,
             W::MenuItem => R::MenuItem,
+            W::Tree => R::Tree,
+            W::TreeItem { level } => R::TreeItem { level },
+            W::Table => R::Table,
+            W::TableColumn { index } => R::TableColumn { index },
+            W::TableColumnHeader { index, sort } => R::TableColumnHeader {
+                index,
+                sort: sort.map(|direction| match direction {
+                    wire::TableSortDirection::Ascending => {
+                        tekes_ui_controls::extended::SortDirection::Ascending
+                    }
+                    wire::TableSortDirection::Descending => {
+                        tekes_ui_controls::extended::SortDirection::Descending
+                    }
+                }),
+            },
+            W::TableRow { index } => R::TableRow { index },
+            W::TableCell { row, column } => R::TableCell { row, column },
             W::TabList => R::TabList,
             W::Tab => R::Tab,
         },
@@ -394,6 +570,56 @@ impl RemoteSemantics {
         self.dirty = false;
         Ok(())
     }
+    /// Admit only original Table/Tree actions that the current parent Host
+    /// projection still maps to a visible part. This shares the same identity
+    /// map and final clip as `parts`; it does not infer a target from a label.
+    pub(crate) fn collection_action_admission(
+        &self,
+        target: wire::Target,
+        part: Option<usize>,
+        frame: Rect,
+        clip: Rect,
+        action: &wire::AccessibilityAction,
+    ) -> Option<bool> {
+        if self.needs_refresh() {
+            return None;
+        }
+        let entry = self
+            .entries
+            .iter()
+            .find(|entry| entry.key == (Key { target, part }))?;
+        use tekes_ui_controls::composition::ContentRole as R;
+        let role = semantics(&entry.semantics).role;
+        let table_role = matches!(
+            role,
+            R::Table
+                | R::TableColumn { .. }
+                | R::TableColumnHeader { .. }
+                | R::TableRow { .. }
+                | R::TableCell { .. }
+        );
+        let tree_item = matches!(role, R::TreeItem { .. });
+        if !table_role && !tree_item {
+            return None;
+        }
+        let visible = self
+            .parts(frame, clip, false)
+            .into_iter()
+            .find(|projected| projected.index == entry.index)?;
+        use wire::AccessibilityAction as A;
+        if table_role {
+            return Some(
+                matches!(role, R::TableColumnHeader { .. } | R::TableRow { .. })
+                    && matches!(action, A::Focus | A::Press)
+                    && !visible.frame.is_empty()
+                    && !visible.semantics.disabled,
+            );
+        }
+        Some(
+            !matches!(action, A::Focus | A::Press | A::SetExpanded(_)) || !visible.frame.is_empty(),
+        )
+    }
+
     pub fn parts(&self, frame: Rect, clip: Rect, focused: bool) -> Vec<SemanticPart> {
         if self.needs_refresh() {
             return Vec::new();
@@ -411,11 +637,20 @@ impl RemoteSemantics {
                     })
                     .and_then(|r| r.intersection(&frame))
                     .and_then(|r| r.intersection(&clip));
+                let frame =
+                    bounds.unwrap_or_else(|| Rect::new(frame.min_x(), frame.min_y(), 0., 0.));
+                let table_part = matches!(
+                    e.semantics.role,
+                    wire::SemanticRole::Table
+                        | wire::SemanticRole::TableColumn { .. }
+                        | wire::SemanticRole::TableColumnHeader { .. }
+                        | wire::SemanticRole::TableRow { .. }
+                        | wire::SemanticRole::TableCell { .. }
+                );
                 SemanticPart {
                     index: e.index,
-                    frame: bounds
-                        .unwrap_or_else(|| Rect::new(frame.min_x(), frame.min_y(), 0., 0.)),
-                    focused: focused && e.focused,
+                    frame,
+                    focused: focused && e.focused && (!table_part || !frame.is_empty()),
                     semantics: semantics(&e.semantics),
                 }
             })
@@ -854,3 +1089,7 @@ mod selection_shape_tests {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "collection_receiver_tests.rs"]
+mod collection_receiver_tests;

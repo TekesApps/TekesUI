@@ -31,6 +31,9 @@ pub enum ContentActionPayload {
     /// Original toolbar command captured before menu-close focus cleanup.
     ToolbarCommand(u64),
     MenuSelection(MenuSelection),
+    TreeIntent(TreeIntent),
+    TableIntent(TableIntent),
+    ListIntent(ListIntent),
     Search(SearchAction),
     ComboBoxSelection(ComboBoxSelection),
     CheckboxState(CheckboxIntent),

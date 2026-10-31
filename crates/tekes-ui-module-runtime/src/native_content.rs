@@ -3,6 +3,7 @@
 use crate::{
     NativeViewOptions, ProcessComponent,
     component::{Session, content as wire},
+    container_semantics::RemoteSemantics,
 };
 use anyhow::{Context, Result, ensure};
 use std::time::Duration;
@@ -104,6 +105,7 @@ pub struct ProcessContentBridge<'a> {
     process: &'a ProcessComponent,
     stamp: Stamp,
     timeout: Duration,
+    host_semantics: Option<(&'a RemoteSemantics, Rect, Rect)>,
 }
 impl<'a> ProcessContentBridge<'a> {
     /// Preserve the original ordinary-consumer constructor. Curve identity is
@@ -166,7 +168,20 @@ impl<'a> ProcessContentBridge<'a> {
                 curve,
             },
             timeout,
+            host_semantics: None,
         })
+    }
+    /// Bind collection AX to the owning ProcessContainer's current semantic
+    /// projection and final host clip. The borrow keeps that owner unchanged
+    /// for this bridge's lifetime.
+    pub(crate) fn with_host_semantics(
+        mut self,
+        semantics: &'a RemoteSemantics,
+        frame: Rect,
+        clip: Rect,
+    ) -> Self {
+        self.host_semantics = Some((semantics, frame, clip));
+        self
     }
     pub fn snapshot(&self) -> Result<ProcessContentSnapshot> {
         if let Some(stamp) = &self.stamp.curve {
@@ -320,6 +335,40 @@ impl<'a> ProcessContentBridge<'a> {
             previous.stamp == self.stamp,
             "stale native Content snapshot"
         );
+        if let wire::Input::Accessibility {
+            target,
+            part,
+            action,
+            ..
+        } = &input
+        {
+            let snapshot_role = previous
+                .reply
+                .semantics
+                .as_deref()
+                .and_then(|nodes| nodes.iter().find(|node| node.target == *target))
+                .and_then(|node| match part {
+                    Some(index) => node
+                        .parts
+                        .iter()
+                        .find(|candidate| candidate.index == *index)
+                        .map(|candidate| &candidate.semantics.role),
+                    None => Some(&node.semantics.role),
+                });
+            let snapshot_collection = snapshot_role.is_some_and(is_collection_role);
+            let current_admission =
+                self.host_semantics
+                    .as_ref()
+                    .and_then(|(semantics, frame, clip)| {
+                        semantics.collection_action_admission(*target, *part, *frame, *clip, action)
+                    });
+            if snapshot_collection || current_admission.is_some() {
+                ensure!(
+                    current_admission == Some(true),
+                    "collection AX requires a current visible owner Host projection"
+                );
+            }
+        }
         ensure!(
             self.stamp.curve.is_none()
                 || !matches!(
@@ -502,6 +551,18 @@ fn native_pointer(mouse: &native::MouseEvent) -> tekes_ui_controls::composition:
         },
         click_count: count,
     }
+}
+
+fn is_collection_role(role: &wire::SemanticRole) -> bool {
+    matches!(
+        role,
+        wire::SemanticRole::TreeItem { .. }
+            | wire::SemanticRole::Table
+            | wire::SemanticRole::TableColumn { .. }
+            | wire::SemanticRole::TableColumnHeader { .. }
+            | wire::SemanticRole::TableRow { .. }
+            | wire::SemanticRole::TableCell { .. }
+    )
 }
 
 fn valid_rect(r: Rect) -> bool {

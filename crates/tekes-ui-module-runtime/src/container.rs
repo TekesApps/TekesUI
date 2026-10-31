@@ -1243,7 +1243,11 @@ impl ProcessContainer {
         timeout: std::time::Duration,
     ) -> Result<crate::ProcessContentBridge<'_>> {
         ensure!(self.input_ready(), "container Content geometry unavailable");
-        self.geometry_content_bridge(timeout)
+        Ok(self.geometry_content_bridge(timeout)?.with_host_semantics(
+            &self.semantic_projection,
+            self.view_frame,
+            self.clip,
+        ))
     }
     fn geometry_content_bridge(
         &self,
@@ -2462,6 +2466,20 @@ impl Component for ProcessContainer {
                 || (self.content_keyboard_enabled() || self.content_accessibility_enabled())
                     && (self.input_ready()
                         || self.content_focused && self.available()
+                        // The original child has already accepted AX focus. A
+                        // paint-only invalidation must not veto its Host owner;
+                        // geometry and actual input callbacks remain fenced.
+                        || self.accessibility_focus
+                            && self.pointer_focus == Some(false)
+                            && self.repaint_dirty
+                            && !self.geometry_dirty
+                            && !self.geometry_input_pending
+                            && self.curve_geometry.is_none()
+                            && self.available()
+                            && self.content_snapshot.as_ref().is_some_and(|snapshot| {
+                                snapshot.reply().accessibility_focus_requested
+                                    && snapshot.reply().focused.is_some()
+                            })
                         || self.pointer_focus == Some(false) && self.delegates_curve_focus()))
     }
     fn set_focus(&mut self, focused: bool, visible: bool) {
@@ -3076,6 +3094,46 @@ impl Component for ProcessContainer {
         if !self.semantic_ready() {
             return ContentResponse::default();
         }
+        let projected =
+            part.and_then(|index| self.semantic_parts().into_iter().find(|p| p.index == index));
+        if projected.as_ref().is_some_and(|p| {
+            matches!(
+                p.semantics.role,
+                ContentRole::Table
+                    | ContentRole::TableColumn { .. }
+                    | ContentRole::TableColumnHeader { .. }
+                    | ContentRole::TableRow { .. }
+                    | ContentRole::TableCell { .. }
+            ) && (!matches!(
+                p.semantics.role,
+                ContentRole::TableColumnHeader { .. } | ContentRole::TableRow { .. }
+            ) || !matches!(
+                action,
+                tekes_ui_controls::composition::AccessibilityAction::Focus
+                    | tekes_ui_controls::composition::AccessibilityAction::Press
+            ) || p.frame.is_empty()
+                || p.semantics.disabled)
+        }) {
+            return ContentResponse::default();
+        }
+        if matches!(
+            action,
+            tekes_ui_controls::composition::AccessibilityAction::Focus
+                | tekes_ui_controls::composition::AccessibilityAction::Press
+                | tekes_ui_controls::composition::AccessibilityAction::SetExpanded(_)
+        ) && projected.as_ref().is_some_and(|p| {
+            matches!(p.semantics.role, ContentRole::TreeItem { .. }) && p.frame.is_empty()
+        }) {
+            return ContentResponse::default();
+        }
+        let collection_action = projected.as_ref().is_some_and(|p| {
+            matches!(
+                p.semantics.role,
+                ContentRole::TreeItem { .. }
+                    | ContentRole::TableColumnHeader { .. }
+                    | ContentRole::TableRow { .. }
+            )
+        });
         let Some((snapshot, target, child_part)) =
             part.and_then(|part| self.semantic_projection.callback(part))
         else {
@@ -3104,6 +3162,7 @@ impl Component for ProcessContainer {
             Ok(next) => {
                 let requested = next.reply().accessibility_focus_requested;
                 let response = self.accept_content(next);
+                self.repaint_dirty |= response.changed && collection_action;
                 self.accessibility_focus = requested;
                 if requested {
                     self.pointer_focus = Some(false);

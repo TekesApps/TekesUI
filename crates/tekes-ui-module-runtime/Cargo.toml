@@ -29,3 +29,22 @@ serde.workspace = true
 
 [target.'cfg(target_os = "macos")'.dev-dependencies]
 tekes-ui-text.workspace = true
+
+# Original finite collection verification fixtures; no default feature change.
+[features]
+svg-icons = ["tekes-ui-controls/svg-icons"]
+
+[[example]]
+name = "list_gpu"
+path = "examples/list_gpu.rs"
+required-features = ["svg-icons"]
+
+[[example]]
+name = "tree_gpu"
+path = "examples/tree_gpu.rs"
+required-features = ["svg-icons"]
+
+[[example]]
+name = "table_gpu"
+path = "examples/table_gpu.rs"
+required-features = ["svg-icons"]

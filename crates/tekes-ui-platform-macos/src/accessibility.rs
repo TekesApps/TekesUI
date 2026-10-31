@@ -340,7 +340,7 @@ fn text_in_range(text: &str, range: std::ops::Range<usize>) -> Option<String> {
 
 /// The actual raw Window snapshot admission policy, shared with headless tests.
 /// Invalid snapshots are rejected as a whole, without retaining a valid prefix.
-pub(crate) fn accept_accessibility_nodes(nodes: Vec<AccessibilityNode>) -> Vec<AccessibilityNode> {
+pub fn accept_accessibility_nodes(nodes: Vec<AccessibilityNode>) -> Vec<AccessibilityNode> {
     if validate_accessibility_nodes(&nodes) {
         nodes
     } else {
@@ -1347,6 +1347,7 @@ pub(crate) mod native {
                 }
                 let allowed = self.node().is_some_and(|node| {
                     node.enabled
+                        && Self::collection_has_action_geometry(&node)
                         && (((selector == sel!(setAccessibilityExpanded:)
                             || selector == sel!(setAccessibilityDisclosed:))
                             && (matches!(node.role, AccessibilityRole::TreeItem { .. })
@@ -1443,6 +1444,19 @@ pub(crate) mod native {
             )
         }
 
+        fn collection_has_action_geometry(node: &AccessibilityNode) -> bool {
+            !matches!(
+                node.role,
+                AccessibilityRole::Tree
+                    | AccessibilityRole::TreeItem { .. }
+                    | AccessibilityRole::Table
+                    | AccessibilityRole::TableColumn { .. }
+                    | AccessibilityRole::TableColumnHeader { .. }
+                    | AccessibilityRole::TableRow { .. }
+                    | AccessibilityRole::TableCell { .. }
+            ) || (node.frame.size.width > 0.0 && node.frame.size.height > 0.0)
+        }
+
         fn is_focusable(role: AccessibilityRole) -> bool {
             matches!(
                 role,
@@ -1527,7 +1541,8 @@ pub(crate) mod native {
             let Some((shared, node)) = self.shared_and_node() else {
                 return false;
             };
-            if shared.closed.get() || !node.enabled {
+            if shared.closed.get() || !node.enabled || !Self::collection_has_action_geometry(&node)
+            {
                 return false;
             }
             shared.dispatch(Event::Accessibility {

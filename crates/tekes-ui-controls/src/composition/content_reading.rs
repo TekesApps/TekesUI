@@ -620,3 +620,212 @@ impl ContentHost {
         }
     }
 }
+
+// Synchronous typed update only: no callback, second controller or history copy.
+#[derive(Debug)]
+pub(super) struct PreparedContentReadingAdvance {
+    version: ReadingDocumentVersion,
+    returned: ReadingDocumentVersion,
+    items: Vec<ComponentId>,
+    pending: Option<Anchor>,
+}
+/// Account before allocating the plan. Old frame/pending fallback storage is
+/// independent of how small the incoming document becomes.
+pub(super) fn reading_plan_cost(
+    state: &ContentReadingState,
+    expected: &ReadingDocumentVersion,
+    count: usize,
+) -> Option<(usize, usize)> {
+    let anchor = !state.frames.is_empty() || state.pending.is_some();
+    let fallback = if state.frames.is_empty() {
+        state.pending.as_ref().map_or(0, |a| a.fallback.len())
+    } else {
+        state.frames.len() - 1
+    };
+    let units = count
+        .checked_mul(3)?
+        .checked_add(2)?
+        .checked_add(usize::from(anchor))?
+        .checked_add(fallback)?;
+    let bytes = count
+        .checked_mul(std::mem::size_of::<ComponentId>())?
+        .checked_mul(3)?
+        .checked_add(expected.key().len().checked_mul(2)?)?
+        .checked_add(usize::from(anchor).checked_mul(std::mem::size_of::<Anchor>())?)?
+        .checked_add(fallback.checked_mul(std::mem::size_of::<ComponentId>())?)?;
+    Some((units, bytes))
+}
+pub(super) fn validate_reading_current(
+    state: &ContentReadingState,
+    expected: &ReadingDocumentVersion,
+) -> Result<(), ReadingUpdateError> {
+    state.version.validate_current(expected)
+}
+pub(super) fn prepare_reading_advance(
+    state: &ContentReadingState,
+    scroll: &ScrollArea,
+    expected: &ReadingDocumentVersion,
+    revision: u64,
+    items: Vec<ComponentId>,
+) -> Result<PreparedContentReadingAdvance, ReadingUpdateError> {
+    if !valid_items(&items) {
+        return Err(ReadingUpdateError::InvalidDocument);
+    }
+    let version = state.version.advanced(expected, revision)?;
+    let returned = version.clone();
+    // Capture while the original result still identifies the retained item;
+    // clearing result first would re-anchor to a preceding visible sliver.
+    let pending = state.capture(scroll);
+    Ok(PreparedContentReadingAdvance {
+        version,
+        returned,
+        items,
+        pending,
+    })
+}
+impl PreparedContentReadingAdvance {
+    /// Call after final current-owner/token validation, in the same typed update.
+    /// No search, allocation, callback, refusal or Result after tree commit.
+    pub(super) fn commit(self, state: &mut ContentReadingState) -> ReadingDocumentVersion {
+        state.pending = self.pending;
+        state.version = self.version;
+        state.items = self.items;
+        state.item_mounts.clear();
+        state.explicit_reveal = None;
+        state.result = None;
+        self.returned
+    }
+}
+
+#[cfg(test)]
+mod prepared_reading_advance_tests {
+    use super::*;
+    fn reader() -> ScrollContent {
+        let mut reader = ScrollContent::new(
+            ScrollArea::default(),
+            Content::new(ComponentId(1), TextContent::new("fixture")),
+        );
+        reader
+            .initialize_reading_document(
+                "prepared-reader",
+                1,
+                vec![ComponentId(1), ComponentId(2), ComponentId(3)],
+            )
+            .unwrap();
+        reader
+            .scroll
+            .layout(Size::new(100., 60.), Size::new(100., 300.));
+        let state = reader.reading.as_mut().unwrap();
+        state.restore_offset = None;
+        state.viewport = Rect::new(0., 0., 100., 60.);
+        state.frames = vec![
+            (ComponentId(1), Rect::new(0., 0., 100., 5.)),
+            (ComponentId(2), Rect::new(0., 5., 100., 30.)),
+            (ComponentId(3), Rect::new(0., 35., 100., 30.)),
+        ];
+        state.result = Some(ContentReadingResult {
+            version: state.version.clone(),
+            anchor: ContentReadingAnchorUpdate::Preserved(ComponentId(2)),
+            clamped: false,
+            user_input_won: false,
+        });
+        reader
+    }
+    #[test]
+    fn prepared_reading_advance_preserves_retained_anchor_before_clearing_result() {
+        let mut reader = reader();
+        let state = reader.reading.as_ref().unwrap();
+        let original = format!("{:?}", state);
+        let expected = state.version.clone();
+        let plan =
+            prepare_reading_advance(state, &reader.scroll, &expected, 2, state.items.clone())
+                .unwrap();
+        assert_eq!(format!("{:?}", reader.reading.as_ref().unwrap()), original);
+        let state = reader.reading.as_mut().unwrap();
+        let intent = state.intent.clone();
+        let version = plan.commit(state);
+        assert!(Rc::ptr_eq(&intent, &state.intent));
+        assert_eq!(state.pending.as_ref().unwrap().item, ComponentId(2));
+        assert_eq!(
+            state.pending.as_ref().unwrap().fallback,
+            [ComponentId(3), ComponentId(1)]
+        );
+        assert!(state.result.is_none());
+        let next = prepare_reading_advance(state, &reader.scroll, &version, 3, state.items.clone())
+            .unwrap();
+        next.commit(state);
+        assert_eq!(state.capture(&reader.scroll).unwrap().item, ComponentId(2));
+    }
+    #[test]
+    fn prepared_reading_advance_retains_successor_fallback_and_rejects_stale_or_duplicate_input() {
+        let mut reader = reader();
+        let state = reader.reading.as_ref().unwrap();
+        let expected = state.version.clone();
+        let before = format!("{:?}", state);
+        assert!(
+            prepare_reading_advance(
+                state,
+                &reader.scroll,
+                &expected,
+                2,
+                vec![ComponentId(1), ComponentId(1)]
+            )
+            .is_err()
+        );
+        assert_eq!(format!("{:?}", state), before);
+        let plan = prepare_reading_advance(
+            state,
+            &reader.scroll,
+            &expected,
+            2,
+            vec![ComponentId(1), ComponentId(3)],
+        )
+        .unwrap();
+        let state = reader.reading.as_mut().unwrap();
+        let returned = plan.commit(state);
+        assert!(validate_reading_current(state, &expected).is_err());
+        assert!(validate_reading_current(state, &returned).is_ok());
+        let mut children = vec![
+            Content::new(ComponentId(1), TextContent::new("a")),
+            Content::new(ComponentId(3), TextContent::new("c")),
+        ];
+        children[0].frame = Rect::new(0., 0., 100., 10.);
+        children[1].frame = Rect::new(0., 10., 100., 30.);
+        let anchor = state.pending.take();
+        state.restore(
+            &mut reader.scroll,
+            &children,
+            Rect::new(0., 0., 100., 60.),
+            anchor,
+        );
+        assert_eq!(
+            state.result.as_ref().unwrap().anchor,
+            ContentReadingAnchorUpdate::Fallback(Some(ComponentId(3)))
+        );
+    }
+    #[test]
+    fn prepared_reading_cost_charges_old_anchor_even_when_new_items_shrink() {
+        let mut reader = reader();
+        let state = reader.reading.as_mut().unwrap();
+        let expected = state.version.clone();
+        let empty_cost = reading_plan_cost(state, &expected, 0).unwrap();
+        assert!(
+            empty_cost.0 >= 5,
+            "old frames still require anchor and fallback storage"
+        );
+        state.frames.clear();
+        state.pending = Some(Anchor {
+            item: ComponentId(1),
+            within: 0.,
+            screen_y: 0.,
+            fallback: (2..1002).map(ComponentId).collect(),
+            fallback_used: false,
+        });
+        let cost = reading_plan_cost(state, &expected, 0).unwrap();
+        assert!(cost.0 >= 1001);
+        assert!(cost.1 >= 1000 * std::mem::size_of::<ComponentId>());
+        let before = format!("{:?}", state);
+        assert!(reading_plan_cost(state, &expected, usize::MAX).is_none());
+        assert_eq!(format!("{:?}", state), before);
+    }
+}
