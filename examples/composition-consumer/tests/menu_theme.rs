@@ -84,6 +84,19 @@ fn menu_retained_theme_changes_keep_real_title_items_checks_and_navigation_reada
         host.accessibility_action(MENU, None, AccessibilityAction::Press)
             .consumed
     );
+    let mut capture = std::env::var_os("TEKESUI_MENU_THEME_GPU_OUT").map(|directory| {
+        let directory = std::path::PathBuf::from(directory);
+        assert!(
+            directory.is_absolute(),
+            "GPU output must be an absolute path"
+        );
+        assert!(!directory.exists(), "GPU output must be fresh");
+        std::fs::create_dir_all(&directory).unwrap();
+        (
+            directory,
+            tekes_ui_render::Renderer::new_headless().expect("explicit Menu GPU capture"),
+        )
+    });
     let mut surfaces = Vec::new();
     let mut expected_active = 0;
     // Shared Button/Palette brand acceptance is reused; this menu stays mounted and open.
@@ -206,6 +219,36 @@ fn menu_retained_theme_changes_keep_real_title_items_checks_and_navigation_reada
                     .disabled
             );
             assert!(menu(&mut host).menu.is_open());
+            if state == "keyboard-focus"
+                && let Some((directory, renderer)) = capture.as_mut()
+            {
+                // Reuse this exact asserted Scene: Open is active, Checked is a
+                // distinct checked/rest row, and Disabled keeps its shared ink.
+                let pixels = renderer
+                    .render_to_rgba8(
+                        &scene,
+                        &mut text.inner.atlas,
+                        (640, 520),
+                        1.,
+                        palette.color("document-canvas").unwrap(),
+                    )
+                    .unwrap();
+                resvg::tiny_skia::Pixmap::from_vec(
+                    pixels,
+                    resvg::tiny_skia::IntSize::from_wh(640, 520).unwrap(),
+                )
+                .unwrap()
+                .save_png(directory.join(format!(
+                    "menu-{}-{}-keyboard-focus-1x.png",
+                    if theme.is_dark() { "dark" } else { "light" },
+                    if theme.is_increased() {
+                        "increased"
+                    } else {
+                        "standard"
+                    }
+                )))
+                .unwrap();
+            }
         }
         expected_active = 1;
         // Release the held pointer in the popup gutter: cancel the arm without closing/remounting.
