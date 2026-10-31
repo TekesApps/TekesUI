@@ -1,6 +1,6 @@
 {
   "format": "tekesui-composition-audit/1",
-  "head": "7eab5edb76900adfe6f3dee4b9e412f17c80815c",
+  "head": "26a10d36265430d659378737e6d4081c42d4689f",
   "source": "Reviewed first-three-domain source plus scoped CI200 repairs. New Gallery, Radio and Core targeted checks and normal real IPC passed at077; required compatible-batch CI and publication remain pending. Historical finite program evidence retains original source identities.",
   "audited_at": "2026-10-31",
   "issue14_updated_at": "2026-10-17T08:15:16Z",
@@ -2137,7 +2137,7 @@
     "examples/composition-consumer/tests/menu_action_records.rs": "fe19c5377928177979b80f0f081b9d273dc4e2ab56fd86800fc5e1bcfa1136c6",
     "examples/composition-consumer/tests/menu_content_tokens.rs": "13eaa02789da81e72b13c08323e2f4af5b295f76d632e663054fd07926583f89",
     "examples/composition-consumer/tests/menu_declarations.rs": "18526f81bf996a1ee52fae30b26cc049fca47aad918938e257e6accc2bca01fa",
-    "examples/composition-consumer/tests/menu_item_states.rs": "a689e8e07bb84d36c63682ebcf63e03771f29d5eb70e08711266a583f1c7c179",
+    "examples/composition-consumer/tests/menu_item_states.rs": "d1fc3dd210209eee1da3b768b2e2569cf69ed0bed41e59124796254fe698b4e5",
     "examples/composition-consumer/tests/native_key_translation.rs": "cc4e92492d471617de46b72b65eaf3cbdc76591d1e9ef4af83e7fbf1dd11c12f",
     "examples/composition-consumer/tests/native_pointer_translation.rs": "9b7ec44a2a1ba65fc538c87f0f43f3e94e662bd4f7e77735d2d16f0a435cf44e",
     "examples/composition-consumer/tests/padding_focus.rs": "c507f4f758d0eaecfbd2f2bf5f4589ced599d05fc3c1c35fc0e735bbc3eb0b67",
@@ -3107,7 +3107,8 @@
     "80d6b05649234f953ea452d42e1cbed369fdddbb",
     "b8999fe006adfcd70587f07af50ef9e240422788",
     "15ecb2ad86e7d77c39ff3f9ad368629d5352445b",
-    "077078d730cfaa6c872cfd0e3743775ec75b4753"
+    "077078d730cfaa6c872cfd0e3743775ec75b4753",
+    "7eab5edb76900adfe6f3dee4b9e412f17c80815c"
   ],
   "current_review_scope": "Complete first-three-domain cohort: 8 finite accepted families, 21 newly classified public type paths, 45 total component rows. Other rows/profiles remain bounded; source audit does not establish native or public delivery.",
   "structured_reading_compatibility_20261020": {
@@ -3613,6 +3614,8 @@
     "scope": "Only consumer native Menu/Toolbar action snapshot and MenuReview helper explicit newsevenpayload rejection; original modes/constructors/MenuToolbarDisclosureNonebranches preserved",
     "native": "未验证; no newnative launch oracceptance",
     "default_svg_alltargets": "NOT_RUN pending scopedwindow; previous0e compile E0004 rawfailure retained",
-    "earlier_scoped_evidence": "unchangedControls/Gallery/Radio/Host remain bound077 andactualoldprograms; no rerun/no resign"
+    "earlier_scoped_evidence": "unchangedControls/Gallery/Radio/Host remain bound077 andactualoldprograms; no rerun/no resign",
+    "Menu_item_fixture": "OnlyDisabledlabel expectation uses declared popover/action-quiet/disabled Surface text ratherthanglobaltertiary-text; independentSurfaceAPI, allThemeexactequality/marker/separator/columnasserts unchanged; targetretestpending",
+    "previous_scoped": "75d187trackedcheck/clippy0; defaultMenu19+6pass/1Disabledcolorfail; stoppedother3CPUandSVG. NoNative/GPUlaunch; exactalltargetscope excludesonlyuntrackedUnicodeWIP."
   }
 }
