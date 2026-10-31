@@ -224,22 +224,24 @@ fn menu_retained_theme_changes_keep_real_title_items_checks_and_navigation_reada
             {
                 // Reuse this exact asserted Scene: Open is active, Checked is a
                 // distinct checked/rest row, and Disabled keeps its shared ink.
+                let backing = text.backing_scale();
+                let size = ((640. * backing) as u32, (520. * backing) as u32);
                 let pixels = renderer
                     .render_to_rgba8(
                         &scene,
                         &mut text.inner.atlas,
-                        (640, 520),
-                        1.,
+                        size,
+                        backing,
                         palette.color("document-canvas").unwrap(),
                     )
                     .unwrap();
                 resvg::tiny_skia::Pixmap::from_vec(
                     pixels,
-                    resvg::tiny_skia::IntSize::from_wh(640, 520).unwrap(),
+                    resvg::tiny_skia::IntSize::from_wh(size.0, size.1).unwrap(),
                 )
                 .unwrap()
                 .save_png(directory.join(format!(
-                    "menu-{}-{}-keyboard-focus-1x.png",
+                    "menu-{}-{}-keyboard-focus-{backing}x.png",
                     if theme.is_dark() { "dark" } else { "light" },
                     if theme.is_increased() {
                         "increased"
