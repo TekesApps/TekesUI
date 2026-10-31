@@ -47141,7 +47141,7 @@
                 "expected": "7b25bc2f12a3be0d395a1ae06097afd3d93cb2ef9349a39c48114726e278105b"
               },
               "examples/composition-consumer/tests/breadcrumb_theme.rs": {
-                "actual": "f348ab1085f99f0a4b9963c0865f8106502443a2b0fcf4ba601f2e09af22ce81",
+                "actual": "c1336b5c2d9d1968520c4a859675e658a3a00a7cd0eeecfcb5999b205d9e69e6",
                 "expected": "0da781dd1b0dd19ad1b68bfc1fa399cc69a5949fe15b556202c4b1f17aa9c6b5"
               },
               "examples/composition-consumer/tests/support/coretext.rs": {
@@ -59671,7 +59671,7 @@
                 "expected": "d6d241657d8f1ded0e5895a8e9b32110d64ecee8aac96001e32d32345f9d6954"
               },
               "examples/composition-consumer/tests/menu_theme.rs": {
-                "actual": "8ba2d4d5a3f8096bb4be78e28d355f3e307096b6c304bae999e21ec32001213e",
+                "actual": "949be1aceaa0644780b0e4e8a4ee21ba5cd259a60b13cbaeadc8c21806d1a514",
                 "expected": "d5b19cd94834bd6d6f81aad64266ac85e49d8838cf8fead12d20a027549b7758"
               },
               "examples/composition-consumer/tests/support/coretext.rs": {
@@ -68328,7 +68328,7 @@
     "examples/composition-consumer/src/empty_state_content.rs": "a73d1bb24db806e91efadedcad79225ca0a4339ff212b8a85a446c6330ca61cb",
     "examples/composition-consumer/src/skeleton_content.rs": "80d44ba5650da213609eeb1a778bed69237550d17e6c5fed2ac91be16eaa6932",
     "examples/composition-consumer/tests/banner_label.rs": "8fef6d2a1580b69b9c67105a9431bfb0a0d3f96303cc05c83056d4a0d4835983",
-    "examples/composition-consumer/tests/breadcrumb_theme.rs": "f348ab1085f99f0a4b9963c0865f8106502443a2b0fcf4ba601f2e09af22ce81",
+    "examples/composition-consumer/tests/breadcrumb_theme.rs": "c1336b5c2d9d1968520c4a859675e658a3a00a7cd0eeecfcb5999b205d9e69e6",
     "examples/composition-consumer/tests/chart_content_host_gpu.rs": "704c686e5e2e7c804f08f96726a0c72144f92fc4468bcbcffc4887ff0e06bf80",
     "examples/composition-consumer/tests/checkbox_theme.rs": "849080ccac69b56bdaa6f751e708f91ed93e8383143414cccbb0baa2dc2969fc",
     "examples/composition-consumer/tests/code_block_theme.rs": "f4dde225a14755b9fff62c792685b74c80fffd3fabf6891bb688a5e14de5bd96",
@@ -68344,7 +68344,7 @@
     "examples/composition-consumer/tests/icon_theme.rs": "49b5adb26de708799a14330a8a2b8d341150ab673cb4e07626187f5f3b8f0814",
     "examples/composition-consumer/tests/list_theme.rs": "3f73caabbba6fff3368f54470ec3704b8935f8f9d2a25d019db2a82025033304",
     "examples/composition-consumer/tests/markdown_theme.rs": "4de00576cc7f49fee977b433a4ddc30bcf100863e3991ab89fa66f281dd2fae0",
-    "examples/composition-consumer/tests/menu_theme.rs": "8ba2d4d5a3f8096bb4be78e28d355f3e307096b6c304bae999e21ec32001213e",
+    "examples/composition-consumer/tests/menu_theme.rs": "949be1aceaa0644780b0e4e8a4ee21ba5cd259a60b13cbaeadc8c21806d1a514",
     "examples/composition-consumer/tests/number_field_theme.rs": "e24cab838a65de38b396f0e90e43a3ff60fdc08d741b1fcba9bf7e7c8eeff84a",
     "examples/composition-consumer/tests/radio_group_theme.rs": "6053b0b681fdb0053633ed05a25c863da6c5cbc401c1577be664d663a1f0560b",
     "examples/composition-consumer/tests/scroll_area_theme.rs": "a64afa37f06ad160330a797166fe7e4eb3c25a15d1e3ef214a6dda9d0e9b5133",
