@@ -327,6 +327,7 @@ pub struct DisclosureContent {
     body_height: f32,
     body_layout: crate::layout_view::DisclosureBodyLayout,
     arranged_children: Option<[(ComponentId, u64); 2]>,
+    arranged_body_clip: HostRevealVerticalClip,
 }
 impl DisclosureContent {
     pub fn new(trigger: ComponentId, title: Content, body: Content, expanded: bool) -> Self {
@@ -373,6 +374,10 @@ impl DisclosureContent {
             body_height: 0.,
             body_layout: Default::default(),
             arranged_children: None,
+            arranged_body_clip: HostRevealVerticalClip {
+                top: 0.,
+                bottom: 0.,
+            },
         };
         this.sync_body();
         this
@@ -536,12 +541,8 @@ impl Component for DisclosureContent {
         &self,
         child: ComponentId,
     ) -> Option<HostRevealVerticalClip> {
-        (self.host_reveal_passthrough() && child == self.children[1].id()).then(|| {
-            HostRevealVerticalClip {
-                top: self.body_layout.body_rect.min_y(),
-                bottom: self.body_layout.body_rect.min_y() + self.body_layout.occupied_height,
-            }
-        })
+        (self.host_reveal_passthrough() && child == self.children[1].id())
+            .then_some(self.arranged_body_clip)
     }
     fn validate(&self) -> Result<(), CompositionError> {
         if self.children.len() == 2 && self.children[0].component::<Trigger>().is_some() {
@@ -623,6 +624,15 @@ impl Component for DisclosureContent {
         // ring may use the already allocated clearance above that frame.
         let child_clip = self.body_layout.visible_clip.unwrap_or_default();
         self.children[1].arrange(text, child, child_clip);
+        // A fully offscreen ancestor has no actual visible reveal and the view
+        // reports occupied_height=0. Translation planning still needs the raw
+        // allocated strip, before that ancestor intersection, not an empty clip.
+        let allocated = (frame.max_y() - header.max_y()).max(0.);
+        let revealed = (block.size.height * self.body_layout.progress).min(allocated);
+        self.arranged_body_clip = HostRevealVerticalClip {
+            top: block.min_y(),
+            bottom: block.min_y() + revealed,
+        };
         self.arranged_children = Some([
             (self.children[0].id(), self.children[0].mount_identity()),
             (self.children[1].id(), self.children[1].mount_identity()),

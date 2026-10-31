@@ -512,7 +512,22 @@ fn a_changed_selected_edge_retires_a_plan_before_any_effects() {
 #[test]
 fn only_the_latest_arrange_and_settled_motion_grant_translation() {
     use std::time::Duration;
-    let mut host = offscreen_disclosure(false);
+    // A closed Scroll document only allocates its measured header height, so
+    // its body has no animation area and legitimately snaps. Keep a real fixed
+    // host allocation here to exercise the intermediate-motion qualification.
+    let mut host = ContentHost::new(Content::new(
+        ComponentId(1),
+        Proxy {
+            disclosure: DisclosureContent::new(
+                ComponentId(2),
+                Content::new(ComponentId(3), TextContent::new("folder")),
+                offscreen_body(),
+                false,
+            ),
+            arranged: false,
+        },
+    ))
+    .unwrap();
     disclosure_host::render_at(&mut host, Duration::ZERO);
     let proxy = host
         .get_mut(ComponentId(1))
@@ -534,18 +549,29 @@ fn only_the_latest_arrange_and_settled_motion_grant_translation() {
         progress > 0. && progress < 1.,
         "must exercise intermediate motion: {progress}"
     );
+    assert!(proxy.disclosure.body_layout().visible_clip.is_some());
     assert!(!proxy.host_reveal_passthrough());
     assert!(matches!(
         host.plan_host_reveal(LEAF, Default::default(), &[], Default::default()),
         Err(HostRevealError::UnsupportedLayout)
     ));
     disclosure_host::render_at(&mut host, Duration::from_secs(2));
+    let allocation_bottom = host.get(ComponentId(1)).unwrap().frame().max_y();
     let proxy = host
         .get_mut(ComponentId(1))
         .unwrap()
         .component_mut::<Proxy>()
         .unwrap();
     assert!(proxy.disclosure.host_reveal_passthrough());
+    assert_eq!(
+        proxy
+            .disclosure
+            .host_reveal_child_vertical_clip(ComponentId(4))
+            .unwrap()
+            .bottom,
+        allocation_bottom,
+        "the unclipped strip still stops at the allocated host bottom",
+    );
     proxy.disclosure.set_disabled(true);
     assert!(!proxy.disclosure.host_reveal_passthrough());
     render(&mut host);
@@ -586,10 +612,69 @@ fn nested_original_scrolls_keep_body_clips_and_original_mounts_at_landing() {
         },
     ));
     render(&mut host);
-    let leaf_mount = host.get(LEAF).unwrap().mount_identity();
-    let inner_mount = host.get(ComponentId(11)).unwrap().mount_identity();
-    let plan = host
-        .plan_host_reveal(
+    let header = host.get(ComponentId(2)).unwrap().frame();
+    let inner_frame = host.get(ComponentId(11)).unwrap().frame();
+    let initial_leaf = host.get(LEAF).unwrap().frame();
+    let sdk = host
+        .get(ComponentId(1))
+        .unwrap()
+        .component::<DisclosureContent>()
+        .unwrap();
+    assert!(sdk.body_layout().visible_clip.is_none());
+    assert_eq!(sdk.body_layout().occupied_height, 0.);
+    assert!(sdk.host_reveal_passthrough());
+    let strip = sdk
+        .host_reveal_child_vertical_clip(ComponentId(11))
+        .unwrap();
+    assert!(
+        strip.bottom > strip.top,
+        "offscreen does not mean an empty allocated strip"
+    );
+
+    // Same original nested Scroll geometry, with only the section replaced by
+    // an ordinary Stack. Preserve the real 900pt spacers and target/mount oracles.
+    let mut inner = ScrollContent::new(tekes_ui_controls::ScrollArea::default(), offscreen_body());
+    inner.viewport_height = Some(100.);
+    let mut stack = scroll_host(Content::new(
+        ComponentId(20),
+        StackContent {
+            model: Stack {
+                axis: Axis::Vertical,
+                gap: 0.,
+            },
+            flexible_child: None,
+            children: vec![
+                Content::new(ComponentId(21), FixedHeight(900.)),
+                Content::new(
+                    ComponentId(1),
+                    StackContent {
+                        model: Stack {
+                            axis: Axis::Vertical,
+                            gap: inner_frame.min_y() - header.max_y(),
+                        },
+                        flexible_child: None,
+                        children: vec![
+                            Content::new(ComponentId(2), FixedHeight(header.size.height)),
+                            Content::new(ComponentId(11), inner),
+                        ],
+                    },
+                ),
+            ],
+        },
+    ));
+    render(&mut stack);
+    assert_eq!(stack.get(LEAF).unwrap().frame(), initial_leaf);
+    assert_eq!(stack.get(ComponentId(11)).unwrap().frame(), inner_frame);
+    for (stage, h) in [
+        ("nested-stack", &mut stack),
+        ("nested-disclosure", &mut host),
+    ] {
+        let leaf_mount = h.get(LEAF).unwrap().mount_identity();
+        let inner_mount = h.get(ComponentId(11)).unwrap().mount_identity();
+        let outer_mount = h.get(SCROLL).unwrap().mount_identity();
+        assert!(h.get(LEAF).unwrap().frame().min_y() > 300.);
+        assert!(h.get(LEAF).unwrap().visible().is_none());
+        let result = h.plan_host_reveal(
             LEAF,
             tekes_ui_controls::ScrollRevealOptions {
                 animated: false,
@@ -597,27 +682,41 @@ fn nested_original_scrolls_keep_body_clips_and_original_mounts_at_landing() {
             },
             &[],
             Default::default(),
-        )
-        .unwrap();
-    assert!(host.commit_host_reveal(plan).unwrap().changed);
-    render(&mut host);
-    let leaf = host.get(LEAF).unwrap();
-    assert_eq!(leaf.mount_identity(), leaf_mount);
-    assert_eq!(leaf.visible(), Some(leaf.frame()));
-    for id in [SCROLL, ComponentId(11)] {
-        assert!(
-            host.get(id)
+        );
+        eprintln!(
+            "AC5_STAGE {stage}:plan={:?} initial_leaf={initial_leaf:?} inner={inner_frame:?}",
+            result.as_ref().map(|_| ())
+        );
+        let plan = result.expect(stage);
+        assert!(h.commit_host_reveal(plan).expect(stage).changed);
+        render(h);
+        let leaf = h.get(LEAF).unwrap();
+        assert_eq!(leaf.mount_identity(), leaf_mount, "{stage}");
+        assert_eq!(leaf.visible(), Some(leaf.frame()), "{stage}");
+        for id in [SCROLL, ComponentId(11)] {
+            let offset = h
+                .get(id)
                 .unwrap()
                 .component::<ScrollContent>()
                 .unwrap()
                 .scroll
                 .offset
-                .y
-                > 0.
+                .y;
+            assert!(offset > 0., "{stage}: {id:?} must actually scroll");
+            eprintln!(
+                "AC5_STAGE {stage}:scroll={id:?} offset={offset} leaf={:?}",
+                leaf.frame()
+            );
+        }
+        assert_eq!(
+            h.get(ComponentId(11)).unwrap().mount_identity(),
+            inner_mount,
+            "{stage}"
+        );
+        assert_eq!(
+            h.get(SCROLL).unwrap().mount_identity(),
+            outer_mount,
+            "{stage}"
         );
     }
-    assert_eq!(
-        host.get(ComponentId(11)).unwrap().mount_identity(),
-        inner_mount
-    );
 }
