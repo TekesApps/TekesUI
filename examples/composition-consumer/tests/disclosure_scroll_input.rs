@@ -125,7 +125,20 @@ fn scroll_ax_press_emits_one_owned_intent_and_accept_reject_keep_original_mounts
         let intent = take_intent(&mut h);
         assert!(control_mut(&mut h).confirm(&intent, true));
         assert!(!control(&h).expanded());
-        assert!(!h.get(BODY).unwrap().active());
+        assert!(!h.focus_targets().iter().any(|(id, _)| *id == BODY));
+        assert!(!h.semantics().iter().any(|node| node.id == BODY));
+        let old_body_point = h.get(BODY).unwrap().frame().center();
+        render(&mut h, &mut t, viewport());
+        let focused = h.focused();
+        assert!(!h.focus(Some(BODY), true));
+        assert_eq!(h.focused(), focused);
+        let denied = h.accessibility_action(BODY, None, AccessibilityAction::Focus);
+        assert!(!denied.activated);
+        assert_eq!(h.focused(), focused);
+        h.event(&ContentEvent::PointerDown(old_body_point));
+        assert_ne!(h.pointer_capture().map(|capture| capture.0), Some(BODY));
+        assert_ne!(h.focused(), Some(BODY));
+        h.event(&ContentEvent::PointerUp(old_body_point));
         assert_eq!(
             (
                 h.get(TRIGGER).unwrap().mount_identity(),
@@ -225,7 +238,7 @@ fn disabled_scroll_header_and_disable_interval_cannot_resurrect_pointer_or_inten
 }
 #[test]
 fn preserving_scroll_header_keeps_marked_editor_and_sibling_while_confirmation_refuses_hide() {
-    let mut control = DisclosureContent::new(
+    let mut disclosure_control = DisclosureContent::new(
         TRIGGER,
         Content::new(ComponentId(3), TextContent::new("folder")),
         Content::new(
@@ -244,8 +257,15 @@ fn preserving_scroll_header_keeps_marked_editor_and_sibling_while_confirmation_r
         ),
         true,
     );
-    let trigger = control.children_mut().unwrap().remove(0).preserving_focus();
-    control.children_mut().unwrap().insert(0, trigger);
+    let trigger = disclosure_control
+        .children_mut()
+        .unwrap()
+        .remove(0)
+        .preserving_focus();
+    disclosure_control
+        .children_mut()
+        .unwrap()
+        .insert(0, trigger);
     let mut h = ContentHost::new(Content::new(
         ComponentId(10),
         ScrollContent::new(
@@ -259,7 +279,7 @@ fn preserving_scroll_header_keeps_marked_editor_and_sibling_while_confirmation_r
                     },
                     flexible_child: None,
                     children: vec![
-                        Content::new(ROOT, control),
+                        Content::new(ROOT, disclosure_control),
                         Content::new(OUTSIDE, TextFieldContent::new("Outside", "outside draft")),
                     ],
                 },
@@ -349,7 +369,7 @@ fn rectangular_trigger_does_not_grant_curved_or_unknown_owner_admission() {
     trigger.paint(
         &mut Scene::new(),
         &mut WithIconRenderer::new(&mut t, &mut Icons),
-        Theme::LIGHT.into(),
+        tekes_ui_tokens::Palette::from(Theme::LIGHT).into(),
     );
     assert!(matches!(
         PanelContent::new(trigger),
