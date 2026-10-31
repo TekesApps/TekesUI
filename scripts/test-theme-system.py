@@ -275,6 +275,16 @@ class ThemeSystemTests(unittest.TestCase):
             # progress packets are checked separately; never rewrite the old fixture.
             packet={surface:{usage:states for usage,states in uses.items() if usage not in g.PASSIVE_USES | set(g.NOTICE_MARKERS) | {'progress-track','data-plot','data-category-label'}} for surface,uses in current.items()}
             self.assertEqual(sum(len(states) for uses in packet.values() for states in uses.values()),record['surface_packet_count'])
+            # #206 intentionally repairs only quiet disabled text/icon. Keep the
+            # immutable v1.6.1 fixture and prove every other channel is unchanged.
+            instance=next(i for i in instances if i['id']==record['theme_id'])
+            packet=copy.deepcopy(packet)
+            for uses in packet.values():
+                for usage in ['action-quiet','action-quiet-error']:
+                    for state in ['disabled','selected-disabled']:
+                        for channel in ['text','icon']:
+                            self.assertEqual(uses[usage][state][channel],instance['compiled_color_roles'][record['mode']]['tertiary-text'])
+                            uses[usage][state][channel]=instance['compiled_color_roles'][record['mode']]['disabled-text']
             self.assertEqual(hashlib.sha256(canonical(packet)).hexdigest(),record['canonical_sha256'],(record['theme_id'],record['mode']))
         for mode in g.MODES:
             default=instances[0]['modes'][mode]
@@ -485,6 +495,36 @@ class ThemeSystemTests(unittest.TestCase):
         ]:
             r=self.rules();mutation(r)
             with self.assertRaises(Exception):g.bindings(r)
+
+    def test_quiet_unavailable_labels_keep_readability_and_selection_anatomy(self):
+        output=json.loads(g.generate()['design/theme/generated/instances.json'])
+        for instance in output['instances']:
+            for mode,surfaces in instance['modes'].items():
+                for surface,uses in surfaces.items():
+                    for usage in ['action-quiet','action-quiet-error']:
+                        for state in ['disabled','selected-disabled']:
+                            pair=uses[usage][state]
+                            for channel in ['text','icon']:
+                                self.assertGreaterEqual(g.contrast(pair[channel],pair['background']),7.0 if mode.endswith('-ic') else 4.5,(instance['id'],mode,surface,usage,state,channel))
+                            self.assertIsNone(pair['focus'])
+                        self.assertNotEqual(uses[usage]['disabled']['background'],uses[usage]['selected-disabled']['background'])
+                        self.assertEqual(uses[usage]['selected-disabled']['boundary'],instance['compiled_color_roles'][mode]['separator'])
+                        self.assertEqual(uses[usage]['selected-disabled']['text'],instance['compiled_color_roles'][mode]['tertiary-text'])
+                        self.assertEqual(uses[usage]['selected']['text'],instance['compiled_color_roles'][mode]['primary-text'])
+        # Reject either repaired endpoint regressing, including an IC-only failure.
+        original_load=g.merge.load
+        for state in ['disabled','selected-disabled']:
+            for channel in ['text','icon']:
+                rules=self.rules();rules['profiles']['quiet'][state][channel]='disabled-text'
+                def load(path):return rules if path==ROOT/'design/theme/rules.json' else original_load(path)
+                with patch.object(g.merge,'load',side_effect=load):
+                    with self.assertRaisesRegex(ValueError,'insufficient foreground contrast'):g.generate()
+        definitions=copy.deepcopy(original_load(ROOT/'design/theme/themes.json'))
+        definitions[0]['inputs']['overrides']['neutral_base']['p-tertiary-text']={'light':'#606060','dark':'#B4B4B0','light-ic':'#777777','dark-ic':'#F4EEE2'}
+        def load(path):return definitions if path==ROOT/'design/theme/themes.json' else original_load(path)
+        with patch.object(g.merge,'load',side_effect=load):
+            # The existing brand boundary rejects this IC-only external input first.
+            with self.assertRaisesRegex(ValueError,'BRAND_CONTRAST: light-ic tertiary-text/'):g.generate()
 
     def test_known_low_contrast_foreground_role_is_not_a_valid_theme(self):
         r=self.rules();r['profiles']['content']['rest']['text']='document-canvas'

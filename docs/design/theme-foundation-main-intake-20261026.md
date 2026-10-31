@@ -78,3 +78,40 @@ The previously withheld #72 candidate is now verified on base `63214be` plus the
 Evidence is in SSD `artifacts/issue-136/progress72-main-63214be-intake/`: round02 public consumer/API; round03 platform action/remount/text projection, Gallery progress and production strict; gpu-round04 128 default plus 256 external-theme GPU readbacks, external public consumer and 48 actual Gallery captures; strict-round05 targeted consumer strict. Failures remain in their original rounds. The final GPU test only received an equivalent nested-condition cleanup and an explicit opt-in ignore annotation afterward; production inputs did not change and GPU evidence retains its original source identity. Run this test explicitly with `--ignored --exact final_progress_actual_gpu_readback`, original locks and fresh SSD output/environment; ordinary test runs must not require capture paths.
 
 The 0% boundary and View/Content pixel parity are verified, not inferred from screenshot counts. Two narrow large-text Gallery captures were visually inspected: progress track/fill/unknown states appear; navigation labels still wrap. The introductory copy incorrectly described indeterminate as absent at capture time; `6c7f55e` corrected that copy without changing rendering inputs. The remaining layout gap is retained under #12, not silently certified as full-page experience. Native windows, dedicated ProgressIndicator role, VoiceOver, physical IME, performance and full Gold7 remain unverified.
+
+
+## Quiet unavailable-label readability repair (Issue #206, 2026-10-31)
+
+Refs #55/#1, historical #123, consumer repairs #194/#195 and PR #200.
+The Menu all-row and Breadcrumb ancestor/current contracts retain unrounded
+4.5 standard / 7 increased-contrast text readability, including unavailable
+items. The earlier generic Button disabled exclusion above does not override
+these concrete consumer contracts. Historical passing evidence retains its
+original inputs; this is a bounded repair of the later shared Surface migration.
+
+The shared `quiet` profile now maps only `disabled` and `selected-disabled`
+text/icon to existing `tertiary-text`, matching the established readable-label
+role already used by `control-label`. This affects `action-quiet` and inherited
+`action-quiet-error` on canvas, code, hint, panel, popover, sidebar and toolbar.
+No base/disabled token, enabled state, other channel, public API or component
+state machine changes. Menu uses popover/disabled; Breadcrumb uses inherited
+Surface/disabled for unavailable ancestors and selected-disabled for current.
+The current page remains selected and nonactivatable: its row-selection ground
+and separator boundary differ from an ordinary disabled item's parent ground
+and absent boundary. Both suppress focus. Selected enabled labels remain
+primary-text; unavailable labels retain the subdued tertiary role. Role names
+do not promise a strict luminance ordering: existing dark tertiary is brighter
+than dark secondary, while remaining below primary. Visual acceptance must
+inspect that existing palette behavior, rather than assume token-name ordering.
+
+Generation rejects either quiet unavailable text/icon endpoint below 4.5/7 for
+every supplied Theme definition and Surface, including external neutral inputs.
+The immutable v1.6.1 fixture stays untouched. Its regression comparison restores
+only these exact repaired channels to their original disabled role before
+hashing, while independently asserting the new role, contrast, selection anatomy
+and negative cases. Every other historical packet/channel remains hash checked.
+
+Candidate generation and Python checks establish design consistency and static
+contrast only. Actual public Menu/Breadcrumb retained-instance CoreText tests,
+strict checks and necessary visual regression require the integration-owned
+source/resource window; this document does not claim they have run or passed.
