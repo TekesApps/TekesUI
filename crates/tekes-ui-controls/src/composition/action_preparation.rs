@@ -778,6 +778,23 @@ impl ContentHost {
                 .scope()
                 .find_active(id)
                 .is_some_and(|node| node.component::<ComboBoxContent>().is_some());
+        // A neighboring preedit owns the editor binding. Tree disclosure and
+        // row AX actions may transfer focus or mutate selection, so refuse them
+        // before the tree's legacy reducer can consume the request.
+        let composing_tree_action = self.is_composing()
+            && matches!(
+                action,
+                AccessibilityAction::Focus
+                    | AccessibilityAction::Press
+                    | AccessibilityAction::SetExpanded(_)
+            )
+            && self
+                .scope()
+                .find_active(id)
+                .is_some_and(|node| node.component::<TreeContent>().is_some());
+        if composing_tree_action {
+            return Some(ContentResponse::default());
+        }
         // Select prepares its own checked owner decision before focus admission.
         // Keep the root Focus path and SetExpanded role gate on their current routes.
         let prepared_select = !(self.strict_focus_requirement(id)
@@ -2459,5 +2476,54 @@ mod overlay_focus_admission_tests {
             .surface
             .input
             .test_edit_epoch(0);
+    }
+}
+
+pub(super) fn collection_response(
+    event: crate::collections_view::CollectionEvent,
+    capture: bool,
+) -> ContentResponse {
+    use crate::collections_view::CollectionEvent::*;
+    ContentResponse {
+        consumed: event != Ignored,
+        changed: matches!(event, Changed | Activated(_)),
+        activated: matches!(event, Activated(_)),
+        capture_pointer: capture,
+        ..Default::default()
+    }
+}
+
+#[cfg(test)]
+mod collection_helper_tests {
+    use super::*;
+    #[test]
+    fn collection_owner_identity_uses_original_allocation_not_unit_value_equality() {
+        let owner = OwnerIdentity(std::sync::Arc::new(()));
+        assert_eq!(owner, owner.clone());
+        assert_ne!(owner, OwnerIdentity(std::sync::Arc::new(())));
+    }
+    #[test]
+    fn collection_response_preserves_original_event_mapping_and_explicit_capture() {
+        use crate::collections_view::CollectionEvent::*;
+        for (event, consumed, changed, activated) in [
+            (Ignored, false, false, false),
+            (Handled, true, false, false),
+            (Changed, true, true, false),
+            (Activated(3), true, true, true),
+            (Toggled(3), true, false, false),
+        ] {
+            for capture in [false, true] {
+                let result = collection_response(event, capture);
+                assert_eq!(
+                    (
+                        result.consumed,
+                        result.changed,
+                        result.activated,
+                        result.capture_pointer
+                    ),
+                    (consumed, changed, activated, capture)
+                );
+            }
+        }
     }
 }

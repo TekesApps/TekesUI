@@ -288,3 +288,7 @@ pub mod disclosure_review;
 pub mod link_content;
 pub mod navigation_content;
 pub mod search_field;
+
+pub mod datatable_content;
+pub mod selectable_list_content;
+pub mod tree_content;

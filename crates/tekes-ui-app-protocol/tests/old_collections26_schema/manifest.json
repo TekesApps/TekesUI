@@ -1,0 +1,60 @@
+{
+  "baseline_commit": "6ec7a53dcf28bbefff866c4d80e43ffee6c7bbd4",
+  "actual_prior_schema_roles": [
+    "Group",
+    "ProgressIndicator",
+    "Text",
+    "Image",
+    "Button",
+    "Link",
+    "TextInput",
+    "SearchInput",
+    "ComboBox",
+    "Slider",
+    "Splitter",
+    "Switch",
+    "Checkbox",
+    "RadioGroup",
+    "RadioButton",
+    "SegmentedGroup",
+    "Segment",
+    "List",
+    "ListItem",
+    "Dialog",
+    "MenuButton",
+    "Select",
+    "Menu",
+    "MenuItem",
+    "TabList",
+    "Tab"
+  ],
+  "actual_role_count": 26,
+  "new_role_count": 33,
+  "capture": "Newactual6ec complete productiondecoder capture. Not copied/renamed old22.",
+  "transform": "existing cfg(test) module stripping only + normalized EOF; allproductiontypes/fields/serde/actions retained",
+  "SetExpanded": "pre-existing and retained accepted",
+  "source_records": {
+    "content.rs": {
+      "actual_source_path": "crates/tekes-ui-app-protocol/src/component/content.rs",
+      "actual_git_blob": "95f47e56c4f75eb5ec40e16fa1bd1eacd9f035be",
+      "source_sha256": "8d2f1e7f9c753f13b71c921214f79dda3b4ae46bf8bafd30293236d064ecf255",
+      "fixture_sha256": "3706aa5bc72e5dddefa3a8620dabb86271dc70012a6bfcfb53b5cdeee69dcda0"
+    },
+    "accessibility.rs": {
+      "actual_source_path": "crates/tekes-ui-app-protocol/src/component/content/accessibility.rs",
+      "actual_git_blob": "ae988da7dad3ce5531ffaad79d5b508444f1a628",
+      "source_sha256": "755bdb16582f65e83b09383202d6797468b0cc626aca27d054b323ccb1108dad",
+      "fixture_sha256": "51422482440c50cce57e63853572bb7f888daf24aad4b5e048d82b9df073ade7"
+    }
+  },
+  "new_roles": [
+    "Tree",
+    "TreeItem",
+    "Table",
+    "TableColumn",
+    "TableColumnHeader",
+    "TableRow",
+    "TableCell"
+  ],
+  "r4_old22": "remains intact in r4 artifacts; no label/hash rewriting"
+}

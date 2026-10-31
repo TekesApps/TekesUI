@@ -277,6 +277,15 @@ fn project(
     use AccessibilityRole as NativeRole;
     use ContentRole as Role;
 
+    let table_structure = matches!(
+        semantics.role,
+        Role::Table | Role::TableColumn { .. } | Role::TableCell { .. }
+    );
+    let table_value = matches!(
+        semantics.role,
+        Role::TableColumn { .. } | Role::TableCell { .. }
+    );
+
     AccessibilityNode {
         key,
         parent,
@@ -300,6 +309,23 @@ fn project(
             Role::RadioButton | Role::Segment => NativeRole::RadioButton,
             Role::List => NativeRole::List,
             Role::ListItem => NativeRole::ListItem,
+            Role::Tree => NativeRole::Tree,
+            Role::TreeItem { level } => NativeRole::TreeItem { level },
+            Role::Table => NativeRole::Table,
+            Role::TableColumn { index } => NativeRole::TableColumn { index },
+            Role::TableColumnHeader { index, sort } => NativeRole::TableColumnHeader {
+                index,
+                sort: sort.map(|direction| match direction {
+                    tekes_ui_controls::extended::SortDirection::Ascending => {
+                        crate::AccessibilitySortDirection::Ascending
+                    }
+                    tekes_ui_controls::extended::SortDirection::Descending => {
+                        crate::AccessibilitySortDirection::Descending
+                    }
+                }),
+            },
+            Role::TableRow { index } => NativeRole::TableRow { index },
+            Role::TableCell { row, column } => NativeRole::TableCell { row, column },
             Role::Dialog => NativeRole::Dialog,
             Role::MenuButton => NativeRole::MenuButton,
             Role::Select => NativeRole::PopUpButton,
@@ -323,13 +349,13 @@ fn project(
         value: semantics.value.clone(),
         description: semantics.description.clone(),
         enabled: !semantics.disabled,
-        focused,
+        focused: focused && !table_structure,
         selected: semantics.selected,
         expanded: semantics.expanded,
         invalid: semantics.invalid,
         required: semantics.required,
         text_selection: None,
-        read_only: false,
+        read_only: table_value,
         can_show_menu: false,
     }
 }
@@ -495,6 +521,12 @@ impl ContentAccessibilitySnapshot {
                     },
                 },
                 None => {
+                    if matches!(
+                        node.role,
+                        AccessibilityRole::TreeItem { .. } | AccessibilityRole::TableRow { .. }
+                    ) {
+                        node.focused = false;
+                    }
                     if matches!(node.role, AccessibilityRole::Group)
                         && !text_layouts.contains_key(&node.key)
                     {

@@ -23,6 +23,7 @@ pub use wake::{WakeResult, WindowWake};
 pub use accessibility::{
     AccessibilityAction, AccessibilityKey, AccessibilityNode, AccessibilityRange,
     AccessibilityRole, AccessibilitySortDirection, AccessibilityTextLayout,
+    accept_accessibility_nodes,
 };
 pub use config::{AppConfig, WindowConfig};
 pub use event::{

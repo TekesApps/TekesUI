@@ -1205,6 +1205,14 @@
       "reason": "Explicit original composition subtree capability for certified Panel curve traversal; unsupported descendants refuse. Classification does not certify B1/B2."
     },
     {
+      "api": "tekes_ui_controls::composition::DataTableContent",
+      "category": "component-adapter",
+      "components": [
+        "tui.data-table"
+      ],
+      "reason": "Additive public Content adapter over the existing tui.data-table family; original model/View and registered primary API remain. Finite keyed/passive collection contract and legacy selectable bridge are distinct from generic ListContent; no native, virtualization or maturity promotion."
+    },
+    {
       "api": "tekes_ui_controls::composition::DecimalNumberFormat",
       "category": "component-support",
       "components": [
@@ -1400,6 +1408,14 @@
       "reason": "Shared input metadata, editor policy and once-only text-key acknowledgement at existing Component/ContentHost boundary; no editor state machine or additional component."
     },
     {
+      "api": "tekes_ui_controls::composition::KeyedSelectableListContent",
+      "category": "component-adapter",
+      "components": [
+        "tui.list"
+      ],
+      "reason": "Additive public Content adapter over the existing tui.list family; original model/View and registered primary API remain. Finite keyed/passive collection contract and legacy selectable bridge are distinct from generic ListContent; no native, virtualization or maturity promotion."
+    },
+    {
       "api": "tekes_ui_controls::composition::LabelForeground",
       "category": "composition",
       "components": [],
@@ -1438,6 +1454,54 @@
         "tui.list"
       ],
       "reason": "Experimental composition adapter for the existing component family, exercised by the independent composition consumer; does not imply every family has migrated or native acceptance passed."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ListContentError",
+      "category": "component-support",
+      "components": [
+        "tui.list"
+      ],
+      "reason": "Public keyed model, dataset/key, display/update, intent, reading, budget, reconcile or error support for the existing tui.list collection contract; not an independent component or route."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ListDisplayUpdate",
+      "category": "component-support",
+      "components": [
+        "tui.list"
+      ],
+      "reason": "Public keyed model, dataset/key, display/update, intent, reading, budget, reconcile or error support for the existing tui.list collection contract; not an independent component or route."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ListIntent",
+      "category": "component-support",
+      "components": [
+        "tui.list"
+      ],
+      "reason": "Public keyed model, dataset/key, display/update, intent, reading, budget, reconcile or error support for the existing tui.list collection contract; not an independent component or route."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ListIntentKind",
+      "category": "component-support",
+      "components": [
+        "tui.list"
+      ],
+      "reason": "Public keyed model, dataset/key, display/update, intent, reading, budget, reconcile or error support for the existing tui.list collection contract; not an independent component or route."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ListReadingUpdate",
+      "category": "component-support",
+      "components": [
+        "tui.list"
+      ],
+      "reason": "Public keyed model, dataset/key, display/update, intent, reading, budget, reconcile or error support for the existing tui.list collection contract; not an independent component or route."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ListRowDisplay",
+      "category": "component-support",
+      "components": [
+        "tui.list"
+      ],
+      "reason": "Public keyed model, dataset/key, display/update, intent, reading, budget, reconcile or error support for the existing tui.list collection contract; not an independent component or route."
     },
     {
       "api": "tekes_ui_controls::composition::MenuContent",
@@ -1907,6 +1971,14 @@
       "reason": "Checked original Select declaration/part identity exhaustion error; no second selection model or publication claim."
     },
     {
+      "api": "tekes_ui_controls::composition::SelectableListContent",
+      "category": "component-adapter",
+      "components": [
+        "tui.list"
+      ],
+      "reason": "Additive public Content adapter over the existing tui.list family; original model/View and registered primary API remain. Finite keyed/passive collection contract and legacy selectable bridge are distinct from generic ListContent; no native, virtualization or maturity promotion."
+    },
+    {
       "api": "tekes_ui_controls::composition::SemanticLabel",
       "category": "composition",
       "components": [],
@@ -2062,6 +2134,86 @@
         "tui.tabs"
       ],
       "reason": "Original navigation Content input or adapter, also reachable through its explicit root reexport; belongs to the existing registered family and route."
+    },
+    {
+      "api": "tekes_ui_controls::composition::TableCellDisplay",
+      "category": "component-support",
+      "components": [
+        "tui.data-table"
+      ],
+      "reason": "Public keyed model, dataset/key, display/update, intent, reading, budget, reconcile or error support for the existing tui.data-table collection contract; not an independent component or route."
+    },
+    {
+      "api": "tekes_ui_controls::composition::TableContentError",
+      "category": "component-support",
+      "components": [
+        "tui.data-table"
+      ],
+      "reason": "Public keyed model, dataset/key, display/update, intent, reading, budget, reconcile or error support for the existing tui.data-table collection contract; not an independent component or route."
+    },
+    {
+      "api": "tekes_ui_controls::composition::TableDisplayUpdate",
+      "category": "component-support",
+      "components": [
+        "tui.data-table"
+      ],
+      "reason": "Public keyed model, dataset/key, display/update, intent, reading, budget, reconcile or error support for the existing tui.data-table collection contract; not an independent component or route."
+    },
+    {
+      "api": "tekes_ui_controls::composition::TableDisplays",
+      "category": "component-support",
+      "components": [
+        "tui.data-table"
+      ],
+      "reason": "Public keyed model, dataset/key, display/update, intent, reading, budget, reconcile or error support for the existing tui.data-table collection contract; not an independent component or route."
+    },
+    {
+      "api": "tekes_ui_controls::composition::TableHeaderDisplay",
+      "category": "component-support",
+      "components": [
+        "tui.data-table"
+      ],
+      "reason": "Public keyed model, dataset/key, display/update, intent, reading, budget, reconcile or error support for the existing tui.data-table collection contract; not an independent component or route."
+    },
+    {
+      "api": "tekes_ui_controls::composition::TableIntent",
+      "category": "component-support",
+      "components": [
+        "tui.data-table"
+      ],
+      "reason": "Public keyed model, dataset/key, display/update, intent, reading, budget, reconcile or error support for the existing tui.data-table collection contract; not an independent component or route."
+    },
+    {
+      "api": "tekes_ui_controls::composition::TableIntentKind",
+      "category": "component-support",
+      "components": [
+        "tui.data-table"
+      ],
+      "reason": "Public keyed model, dataset/key, display/update, intent, reading, budget, reconcile or error support for the existing tui.data-table collection contract; not an independent component or route."
+    },
+    {
+      "api": "tekes_ui_controls::composition::TableIntentTarget",
+      "category": "component-support",
+      "components": [
+        "tui.data-table"
+      ],
+      "reason": "Public keyed model, dataset/key, display/update, intent, reading, budget, reconcile or error support for the existing tui.data-table collection contract; not an independent component or route."
+    },
+    {
+      "api": "tekes_ui_controls::composition::TableReadingUpdate",
+      "category": "component-support",
+      "components": [
+        "tui.data-table"
+      ],
+      "reason": "Public keyed model, dataset/key, display/update, intent, reading, budget, reconcile or error support for the existing tui.data-table collection contract; not an independent component or route."
+    },
+    {
+      "api": "tekes_ui_controls::composition::TableRowDisplay",
+      "category": "component-support",
+      "components": [
+        "tui.data-table"
+      ],
+      "reason": "Public keyed model, dataset/key, display/update, intent, reading, budget, reconcile or error support for the existing tui.data-table collection contract; not an independent component or route."
     },
     {
       "api": "tekes_ui_controls::composition::TableTransactionCompatibility",
@@ -2258,6 +2410,54 @@
       "reason": "Window-owned Toolbar edge allocation, independent of a pane's lifecycle; positions stay local to the declared region."
     },
     {
+      "api": "tekes_ui_controls::composition::TreeContent",
+      "category": "component-adapter",
+      "components": [
+        "tui.tree"
+      ],
+      "reason": "Additive public Content adapter over the existing tui.tree family; original model/View and registered primary API remain. Finite keyed/passive collection contract and legacy selectable bridge are distinct from generic ListContent; no native, virtualization or maturity promotion."
+    },
+    {
+      "api": "tekes_ui_controls::composition::TreeContentError",
+      "category": "component-support",
+      "components": [
+        "tui.tree"
+      ],
+      "reason": "Public keyed model, dataset/key, display/update, intent, reading, budget, reconcile or error support for the existing tui.tree collection contract; not an independent component or route."
+    },
+    {
+      "api": "tekes_ui_controls::composition::TreeContentNode",
+      "category": "component-support",
+      "components": [
+        "tui.tree"
+      ],
+      "reason": "Public keyed model, dataset/key, display/update, intent, reading, budget, reconcile or error support for the existing tui.tree collection contract; not an independent component or route."
+    },
+    {
+      "api": "tekes_ui_controls::composition::TreeDisplayUpdate",
+      "category": "component-support",
+      "components": [
+        "tui.tree"
+      ],
+      "reason": "Public keyed model, dataset/key, display/update, intent, reading, budget, reconcile or error support for the existing tui.tree collection contract; not an independent component or route."
+    },
+    {
+      "api": "tekes_ui_controls::composition::TreeIntent",
+      "category": "component-support",
+      "components": [
+        "tui.tree"
+      ],
+      "reason": "Public keyed model, dataset/key, display/update, intent, reading, budget, reconcile or error support for the existing tui.tree collection contract; not an independent component or route."
+    },
+    {
+      "api": "tekes_ui_controls::composition::TreeIntentKind",
+      "category": "component-support",
+      "components": [
+        "tui.tree"
+      ],
+      "reason": "Public keyed model, dataset/key, display/update, intent, reading, budget, reconcile or error support for the existing tui.tree collection contract; not an independent component or route."
+    },
+    {
       "api": "tekes_ui_controls::composition::WithIconRenderer",
       "category": "component-support",
       "components": [
@@ -2383,6 +2583,70 @@
       "reason": "Registered component model or production View; identity and route are owned by workbench.json."
     },
     {
+      "api": "tekes_ui_controls::extended::KeyedDataTable",
+      "category": "component-support",
+      "components": [
+        "tui.data-table"
+      ],
+      "reason": "Public keyed model, dataset/key, display/update, intent, reading, budget, reconcile or error support for the existing tui.data-table collection contract; not an independent component or route."
+    },
+    {
+      "api": "tekes_ui_controls::extended::KeyedList",
+      "category": "component-support",
+      "components": [
+        "tui.list"
+      ],
+      "reason": "Public keyed model, dataset/key, display/update, intent, reading, budget, reconcile or error support for the existing tui.list collection contract; not an independent component or route."
+    },
+    {
+      "api": "tekes_ui_controls::extended::KeyedListItem",
+      "category": "component-support",
+      "components": [
+        "tui.list"
+      ],
+      "reason": "Public keyed model, dataset/key, display/update, intent, reading, budget, reconcile or error support for the existing tui.list collection contract; not an independent component or route."
+    },
+    {
+      "api": "tekes_ui_controls::extended::KeyedListSnapshot",
+      "category": "component-support",
+      "components": [
+        "tui.list"
+      ],
+      "reason": "Public keyed model, dataset/key, display/update, intent, reading, budget, reconcile or error support for the existing tui.list collection contract; not an independent component or route."
+    },
+    {
+      "api": "tekes_ui_controls::extended::KeyedTableColumn",
+      "category": "component-support",
+      "components": [
+        "tui.data-table"
+      ],
+      "reason": "Public keyed model, dataset/key, display/update, intent, reading, budget, reconcile or error support for the existing tui.data-table collection contract; not an independent component or route."
+    },
+    {
+      "api": "tekes_ui_controls::extended::KeyedTableRow",
+      "category": "component-support",
+      "components": [
+        "tui.data-table"
+      ],
+      "reason": "Public keyed model, dataset/key, display/update, intent, reading, budget, reconcile or error support for the existing tui.data-table collection contract; not an independent component or route."
+    },
+    {
+      "api": "tekes_ui_controls::extended::KeyedTableSnapshot",
+      "category": "component-support",
+      "components": [
+        "tui.data-table"
+      ],
+      "reason": "Public keyed model, dataset/key, display/update, intent, reading, budget, reconcile or error support for the existing tui.data-table collection contract; not an independent component or route."
+    },
+    {
+      "api": "tekes_ui_controls::extended::KeyedTreeNode",
+      "category": "component-support",
+      "components": [
+        "tui.tree"
+      ],
+      "reason": "Public keyed model, dataset/key, display/update, intent, reading, budget, reconcile or error support for the existing tui.tree collection contract; not an independent component or route."
+    },
+    {
       "api": "tekes_ui_controls::extended::Link",
       "category": "component",
       "components": [
@@ -2397,6 +2661,54 @@
         "tui.list"
       ],
       "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::extended::ListBudget",
+      "category": "component-support",
+      "components": [
+        "tui.list"
+      ],
+      "reason": "Public keyed model, dataset/key, display/update, intent, reading, budget, reconcile or error support for the existing tui.list collection contract; not an independent component or route."
+    },
+    {
+      "api": "tekes_ui_controls::extended::ListBudgetKind",
+      "category": "component-support",
+      "components": [
+        "tui.list"
+      ],
+      "reason": "Public keyed model, dataset/key, display/update, intent, reading, budget, reconcile or error support for the existing tui.list collection contract; not an independent component or route."
+    },
+    {
+      "api": "tekes_ui_controls::extended::ListDatasetKey",
+      "category": "component-support",
+      "components": [
+        "tui.list"
+      ],
+      "reason": "Public keyed model, dataset/key, display/update, intent, reading, budget, reconcile or error support for the existing tui.list collection contract; not an independent component or route."
+    },
+    {
+      "api": "tekes_ui_controls::extended::ListItemKey",
+      "category": "component-support",
+      "components": [
+        "tui.list"
+      ],
+      "reason": "Public keyed model, dataset/key, display/update, intent, reading, budget, reconcile or error support for the existing tui.list collection contract; not an independent component or route."
+    },
+    {
+      "api": "tekes_ui_controls::extended::ListReconcile",
+      "category": "component-support",
+      "components": [
+        "tui.list"
+      ],
+      "reason": "Public keyed model, dataset/key, display/update, intent, reading, budget, reconcile or error support for the existing tui.list collection contract; not an independent component or route."
+    },
+    {
+      "api": "tekes_ui_controls::extended::ListUpdateError",
+      "category": "component-support",
+      "components": [
+        "tui.list"
+      ],
+      "reason": "Public keyed model, dataset/key, display/update, intent, reading, budget, reconcile or error support for the existing tui.list collection contract; not an independent component or route."
     },
     {
       "api": "tekes_ui_controls::extended::Markdown",
@@ -2541,6 +2853,54 @@
       "reason": "Registered component model or production View; identity and route are owned by workbench.json."
     },
     {
+      "api": "tekes_ui_controls::extended::TableBudget",
+      "category": "component-support",
+      "components": [
+        "tui.data-table"
+      ],
+      "reason": "Public keyed model, dataset/key, display/update, intent, reading, budget, reconcile or error support for the existing tui.data-table collection contract; not an independent component or route."
+    },
+    {
+      "api": "tekes_ui_controls::extended::TableColumnKey",
+      "category": "component-support",
+      "components": [
+        "tui.data-table"
+      ],
+      "reason": "Public keyed model, dataset/key, display/update, intent, reading, budget, reconcile or error support for the existing tui.data-table collection contract; not an independent component or route."
+    },
+    {
+      "api": "tekes_ui_controls::extended::TableDatasetKey",
+      "category": "component-support",
+      "components": [
+        "tui.data-table"
+      ],
+      "reason": "Public keyed model, dataset/key, display/update, intent, reading, budget, reconcile or error support for the existing tui.data-table collection contract; not an independent component or route."
+    },
+    {
+      "api": "tekes_ui_controls::extended::TableReconcile",
+      "category": "component-support",
+      "components": [
+        "tui.data-table"
+      ],
+      "reason": "Public keyed model, dataset/key, display/update, intent, reading, budget, reconcile or error support for the existing tui.data-table collection contract; not an independent component or route."
+    },
+    {
+      "api": "tekes_ui_controls::extended::TableRowKey",
+      "category": "component-support",
+      "components": [
+        "tui.data-table"
+      ],
+      "reason": "Public keyed model, dataset/key, display/update, intent, reading, budget, reconcile or error support for the existing tui.data-table collection contract; not an independent component or route."
+    },
+    {
+      "api": "tekes_ui_controls::extended::TableUpdateError",
+      "category": "component-support",
+      "components": [
+        "tui.data-table"
+      ],
+      "reason": "Public keyed model, dataset/key, display/update, intent, reading, budget, reconcile or error support for the existing tui.data-table collection contract; not an independent component or route."
+    },
+    {
       "api": "tekes_ui_controls::extended::Toast",
       "category": "component",
       "components": [
@@ -2565,12 +2925,44 @@
       "reason": "Registered component model or production View; identity and route are owned by workbench.json."
     },
     {
+      "api": "tekes_ui_controls::extended::TreeDatasetKey",
+      "category": "component-support",
+      "components": [
+        "tui.tree"
+      ],
+      "reason": "Public keyed model, dataset/key, display/update, intent, reading, budget, reconcile or error support for the existing tui.tree collection contract; not an independent component or route."
+    },
+    {
       "api": "tekes_ui_controls::extended::TreeNode",
       "category": "component-support",
       "components": [
         "tui.tree"
       ],
       "reason": "Tree document/model data; the component owns interaction and rendering."
+    },
+    {
+      "api": "tekes_ui_controls::extended::TreeNodeKey",
+      "category": "component-support",
+      "components": [
+        "tui.tree"
+      ],
+      "reason": "Public keyed model, dataset/key, display/update, intent, reading, budget, reconcile or error support for the existing tui.tree collection contract; not an independent component or route."
+    },
+    {
+      "api": "tekes_ui_controls::extended::TreeReconcile",
+      "category": "component-support",
+      "components": [
+        "tui.tree"
+      ],
+      "reason": "Public keyed model, dataset/key, display/update, intent, reading, budget, reconcile or error support for the existing tui.tree collection contract; not an independent component or route."
+    },
+    {
+      "api": "tekes_ui_controls::extended::TreeUpdateError",
+      "category": "component-support",
+      "components": [
+        "tui.tree"
+      ],
+      "reason": "Public keyed model, dataset/key, display/update, intent, reading, budget, reconcile or error support for the existing tui.tree collection contract; not an independent component or route."
     },
     {
       "api": "tekes_ui_controls::feedback_view::BannerView",
