@@ -2079,7 +2079,7 @@
     "crates/tekes-ui-gallery/src/gallery/text.rs": "0861f4087a60f10bdf3d7c6697cb97e3513b2b6890fcc8984dd8ea966cbad13d",
     "crates/tekes-ui-gallery/src/gallery/text_demo.rs": "fb8612fca83c4a4fab7d2b6f8247389ad320bc935b7ca1b8c3209976ff1b76b1",
     "crates/tekes-ui-gallery/src/gallery/workbench.rs": "7cac72f56fb2cbe48194f822d8342cea07d6d8b53125ab5b987309f688bced0c",
-    "crates/tekes-ui-gallery/src/gallery/workbench/accessibility.rs": "8a63299f56b6063c4d5c4d544143d060d9498cb4a92d6bba634d12c79372025a",
+    "crates/tekes-ui-gallery/src/gallery/workbench/accessibility.rs": "73d46a813b568a9d69bfe20cb7af9aabead8f2df684b22ed16d05fe8e9fbd211",
     "crates/tekes-ui-gallery/src/gallery/workbench/content_status.rs": "2b3262d539c063b91493ee29db9aa13c8cdefacb3259c2efb6cdded337120588",
     "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs": "45cce35619761cebba57d7f7aa65ae637087d1f3a9a2dff4469f3f61bfde0ba4",
     "crates/tekes-ui-gallery/src/gallery/workbench/extended/collections_adapter.rs": "90216f944b5224905e8658bc90d2a9457db2f4fe89dce215b6034b7f8e10edea",
@@ -3037,6 +3037,15 @@
       "batch": "pub69fa-actual-metadata-r3-20261031",
       "conclusion": "Reviewed actual admitted PUB69fa fixture/reference and #195canonical delivery changes. Workbench test keeps clear editor focus and explicitly calls original Workbench.clear_focus before unfocused-placeholder phase; no production source or acceptance promotion. Navigation doc records bounded PR200 delivery, retains oldGPU/program/unverified limits. SourceSHA only refreshed for these reviewed bytes; all existinganchors unchanged; no new runtime on26role candidate claimed.",
       "evidence": "crates/tekes-ui-gallery/src/gallery/workbench.rs SHA7cac72f56fb2cbe48194f822d8342cea07d6d8b53125ab5b987309f688bced0c; docs/design/navigation-content-combo17-recovery-20261031.md SHAcab75179ffc5ed7be2ab4de95d3d43ed430c5195a0f5b2b7bf56ca215f454090; base69fa3499c99359a2581f9821910aa16d05e1d20c"
+    },
+    {
+      "batch": "pub313ff-actual-metadata-r4-20261031",
+      "source_head": "313ff01d3be3e9b39932b918348eacea353d43ff",
+      "review": "Reviewed immutable c54-to-313ff diff: only cfg(test) menu_tests::disabled_menu_popup_items_reject_semantic_activation mechanically expands the sole menu iteration and its always-50 branch. Both assertions, disable mutation and build_scene order remain. No production implementation, public API, existing evidence anchor or runtime acceptance change.",
+      "source_sha256": {
+        "crates/tekes-ui-gallery/src/gallery/workbench/accessibility.rs": "73d46a813b568a9d69bfe20cb7af9aabead8f2df684b22ed16d05fe8e9fbd211"
+      },
+      "evidence_boundary": "Original c54 CPU20 actual13 functional/lint passes and two Gallery strict failures remain original evidence. CPU20 jobs2 policy deviation is retained and is not resource/performance equivalence. Fresh r22 affected tests/strict and GPU remain separately gated; this refresh executes no Cargo/GPU/native/CI."
     }
   ],
   "text_key_review_20261018": {

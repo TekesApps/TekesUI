@@ -56893,7 +56893,7 @@
                 "expected": "eaeb3d1d0e268401ec77c359305d5bc13f4c727471d5286530ead46e9a5180f4"
               },
               "crates/tekes-ui-gallery/src/gallery/workbench/accessibility.rs": {
-                "actual": "8a63299f56b6063c4d5c4d544143d060d9498cb4a92d6bba634d12c79372025a",
+                "actual": "73d46a813b568a9d69bfe20cb7af9aabead8f2df684b22ed16d05fe8e9fbd211",
                 "expected": "78618232299c5a7f994e159d5b6f80a90d2cbcb22fa817c8ea1c3e691d4fa231"
               },
               "crates/tekes-ui-gallery/src/gallery/workbench/extended/collections_adapter.rs": {
@@ -68090,7 +68090,7 @@
     "crates/tekes-ui-gallery/src/gallery/theme.rs": "e1ede314548a0ae25ad633f1a86cefb7118473d7b61d0967dcb6bfbe551982d5",
     "crates/tekes-ui-gallery/src/gallery/viewport.rs": "d18ea19e94e33c67ef3bbfc2f7ad8ca1b5ec3ecda2a6ee18df327a26f8046918",
     "crates/tekes-ui-gallery/src/gallery/workbench.rs": "7cac72f56fb2cbe48194f822d8342cea07d6d8b53125ab5b987309f688bced0c",
-    "crates/tekes-ui-gallery/src/gallery/workbench/accessibility.rs": "8a63299f56b6063c4d5c4d544143d060d9498cb4a92d6bba634d12c79372025a",
+    "crates/tekes-ui-gallery/src/gallery/workbench/accessibility.rs": "73d46a813b568a9d69bfe20cb7af9aabead8f2df684b22ed16d05fe8e9fbd211",
     "crates/tekes-ui-gallery/src/gallery/workbench/basic_states.rs": "9f35f162c7e843faea590899b461e0231472826eaca9d53a2c3428b5fc60b59d",
     "crates/tekes-ui-gallery/src/gallery/workbench/brand_preview.rs": "f13d24a6b4b12f16b96c0ffc3df2542f8eadd95452dd1c18942d8214695d8f5a",
     "crates/tekes-ui-gallery/src/gallery/workbench/content_status.rs": "2b3262d539c063b91493ee29db9aa13c8cdefacb3259c2efb6cdded337120588",
