@@ -1421,7 +1421,7 @@
         {
           "api": "tekes_ui_controls::collections_view::ChartView",
           "path": "crates/tekes-ui-controls/src/collections_view.rs",
-          "line": 2942,
+          "line": 2945,
           "anchor": "pub struct ChartView {"
         },
         {
@@ -1930,7 +1930,7 @@
         {
           "api": "tekes_ui_controls::collections_view::MarkdownView",
           "path": "crates/tekes-ui-controls/src/collections_view.rs",
-          "line": 3282,
+          "line": 3285,
           "anchor": "pub struct MarkdownView {"
         },
         {
@@ -1973,7 +1973,7 @@
         {
           "api": "tekes_ui_controls::collections_view::CodeBlockView",
           "path": "crates/tekes-ui-controls/src/collections_view.rs",
-          "line": 3392,
+          "line": 3395,
           "anchor": "pub struct CodeBlockView {"
         },
         {
@@ -2016,7 +2016,7 @@
         {
           "api": "tekes_ui_controls::collections_view::DiffViewRuntime",
           "path": "crates/tekes-ui-controls/src/collections_view.rs",
-          "line": 3498,
+          "line": 3501,
           "anchor": "pub struct DiffViewRuntime {"
         },
         {
@@ -2045,7 +2045,7 @@
     "crates/tekes-ui-app-host/src/window.rs": "ab2f9ec93c9548b59206555c38c78593d6d80c025dbc2043248e061014a8bd90",
     "crates/tekes-ui-app-host/src/window_toolbar.rs": "05db7272e1dd15bfe0582331369d6777bbea07c63a3b40df6c73eaf20f1c2119",
     "crates/tekes-ui-controls/src/chart.rs": "9e3e5dd1e9d62f358cb74201a254f4165b81e4b79c3a97f0a74bde6f591e983c",
-    "crates/tekes-ui-controls/src/collections_view.rs": "f3e6f3129a590e0aa83ec09bc13a42f5c812d0fc19f3245c2d2555b3fdc556fb",
+    "crates/tekes-ui-controls/src/collections_view.rs": "150c6842b91b92b9ae9fe7ebd41b8038bd2c31fcb03e25f5c7e9b0491734f88d",
     "crates/tekes-ui-controls/src/composite.rs": "99d42809610c98e8b86136e3eb0698129c9ec9c659990d943c62d380e063042d",
     "crates/tekes-ui-controls/src/composition.rs": "8f7896918c23c1854c32adcfce1e3ba80bb00b38bd1eab4170f61d730eb986bd",
     "crates/tekes-ui-controls/src/composition/actions.rs": "fd2fe6882e6a5d3f17e1c42b635714c0d445c7913a44014461515cfbd3e0cf5c",
@@ -2156,7 +2156,7 @@
     "docs/design/menu-declarations-20261021.md": "e1494ee1d9a9de6f5fb7bedc40d0c19a8e90dfefca0d0f983316ae8794976ee8",
     "docs/roadmap.md": "1648c62ec9209c206b98c18da6a48cda8e9df306d635e294b5d0ad5dcf1bd331",
     "examples/composition-consumer/Cargo.toml": "92baa39b50aa5d5b64ff80e60b1af6bed7d3faaf9e3feaa8d2e7a625a0d793bf",
-    "examples/composition-consumer/examples/native.rs": "21952ccf2bcaf3dca6a653b55a94d2edd17c7bfcb5e804eceddde0ac54a5f51c",
+    "examples/composition-consumer/examples/native.rs": "06664abd5e262084e1788fbb44b8a2878e9c522e08188170f26cc4ee7c03d7b7",
     "examples/composition-consumer/examples/support/native_key.rs": "6932a589bce50e2f4365c780c67ab0c467a126c9a4677ad23eeda132f146adae",
     "examples/composition-consumer/src/choice_status.rs": "337878b760c8aa05fe0bdbb0dbce091604526acc082c5778645b6feb6199d678",
     "examples/composition-consumer/src/combo_status.rs": "1e36d6989f56ed61eb67f2ab1b56c751164f2e1726c486eb65dd5430f9f40166",
@@ -2198,7 +2198,7 @@
     "examples/composition-consumer/tests/item_navigation.rs": "47d15b84bb40029b8421d0f8b287f9538f6a2dd1ecdcb0a42597b40186d6d43e",
     "examples/composition-consumer/tests/label_content.rs": "51028aa25aeaf31c4c82cf15a1d73ffe1634ee726f290c791f57255b4a86c304",
     "examples/composition-consumer/tests/layout_text_services.rs": "c44adec0e0bbd221867b89417c6ae167c0bd88d80a4fef8011f8f62a21729e65",
-    "examples/composition-consumer/tests/menu_action_records.rs": "4c2edfa30a908d5cc18c8ea7953ec51ff852a7ab20aa4dcbb12d7a1248722842",
+    "examples/composition-consumer/tests/menu_action_records.rs": "5ca07cd88e31e5a4d96b25931bff823ef8655418040bcbe32f8024431f4ae5f1",
     "examples/composition-consumer/tests/menu_content_tokens.rs": "13eaa02789da81e72b13c08323e2f4af5b295f76d632e663054fd07926583f89",
     "examples/composition-consumer/tests/menu_declarations.rs": "18526f81bf996a1ee52fae30b26cc049fca47aad918938e257e6accc2bca01fa",
     "examples/composition-consumer/tests/menu_item_states.rs": "d1fc3dd210209eee1da3b768b2e2569cf69ed0bed41e59124796254fe698b4e5",
@@ -2219,10 +2219,10 @@
     "crates/tekes-ui-controls/src/composition/legacy_selectable_list.rs": "6bc18665bbef631a5394a744c8e935546c924fb2622860376546abcaa3020b04",
     "crates/tekes-ui-controls/src/composition/selectable_list.rs": "5d7e593f476fa72ead71a263a4552ab3cd4bb62367538ff788b247c326ca112c",
     "crates/tekes-ui-controls/src/composition/tree.rs": "d2a69f0ce142127c7a7ecc35bbb3eeafaba955afb585519dd608ec70b3777978",
-    "crates/tekes-ui-controls/src/composition/datatable.rs": "23b985cb677dd7ebd920ea68f55cc49cf14626cf28038640a883055a74fdec0e",
+    "crates/tekes-ui-controls/src/composition/datatable.rs": "1463e1cc08290d05f9769ed56b3abb95b07267df86150ab16bd9732403ec1045",
     "docs/design/selectable-list-public-content-20261024.md": "cad16726a3dda60fdd2b2ab18bad881150cf907bd78e76989713d7c269ecc2a0",
     "docs/design/tree-public-content-20261024.md": "d134f7e4fdd8f40b400ee8e8a64aa99ee41c6d555efb8b01a9aaea8f2d5554e4",
-    "docs/design/datatable-public-content-20261024.md": "1b60fdebbf9c3b62130486eb4bd499668a0e95c198dfa4858d37bbd1818743b3",
+    "docs/design/datatable-public-content-20261024.md": "ada198121503607a851705af0a1970368ad679ee7b4bda3e3c18e28de4098644",
     "docs/design/disclosure-public-content-20261024.md": "31d3990e85dc3e1740a9d7d77b49042de714085813d45b70eb96b5c4576429f1"
   },
   "remaining": [
@@ -2295,7 +2295,7 @@
     },
     {
       "path": "examples/composition-consumer/examples/native.rs",
-      "line": 826,
+      "line": 829,
       "anchor": "w.set_accessibility_nodes(nodes);"
     },
     {
