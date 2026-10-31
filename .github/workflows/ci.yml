@@ -60,6 +60,8 @@ jobs:
 
       - name: Independent composition consumer (public API)
         if: ${{ !cancelled() && steps.workspace_clippy.outcome == 'success' }}
+        env:
+          TEKESUI_CHECKBOX_GPU_OUT: ${{ runner.temp }}/tekesui-checkbox-gpu/default
         run: cargo test --manifest-path examples/composition-consumer/Cargo.toml --locked --no-fail-fast
 
       - name: Independent Panel consumer (Issue 82, no native windows)
@@ -111,3 +113,11 @@ jobs:
           for profile in two-panels three-panels mixed-columns independent-settings; do
             cargo build --manifest-path examples/app-host-demo/Cargo.toml --features "$profile" --locked --offline
           done
+
+      - name: Preserve Checkbox GPU evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: checkbox-gpu-default
+          path: ${{ runner.temp }}/tekesui-checkbox-gpu/default
+          if-no-files-found: warn
