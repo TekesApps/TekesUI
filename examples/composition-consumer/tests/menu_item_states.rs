@@ -206,7 +206,14 @@ fn check_marker_and_separator_reuse_original_palette_and_label_columns() {
         assert_eq!(label.1.min_x(), next.1.min_x());
         let disabled = t.draws.iter().find(|(s, _, _)| s == "Disabled").unwrap();
         let palette: tekes_ui_tokens::Palette = theme.into();
-        assert_eq!(disabled.2, palette.color("tertiary-text").unwrap());
+        let disabled_colors = tekes_ui_tokens::surface_palette::resolve_surface(
+            palette,
+            "popover",
+            "action-quiet",
+            "disabled",
+        )
+        .unwrap();
+        assert_eq!(disabled.2, disabled_colors.text);
     }
 }
 #[test]
