@@ -13631,6 +13631,19 @@ mod interaction_tests {
         w.handle(i, &key(36, true), &mut text);
         build(&mut w, i, &mut text);
         assert!(w.state(i).select_story.model().menu.open);
+        let native = w.state(i).select_story.native_nodes();
+        let invoker_key = native
+            .iter()
+            .find(|node| node.role == AccessibilityRole::PopUpButton)
+            .unwrap()
+            .key;
+        let option_keys = ["Automatic", "Compact", "Comfortable"].map(|label| {
+            native
+                .iter()
+                .find(|node| node.role == AccessibilityRole::MenuItem && node.label == label)
+                .unwrap()
+                .key
+        });
         let content = Rect::new(312., 70., 1000., 820.);
         let mut original_geometry = None;
         let contrast = |a: tekes_ui_tokens::Rgba, b: tekes_ui_tokens::Rgba| {
@@ -13759,8 +13772,8 @@ mod interaction_tests {
                     assert!(contrast(ring.border_color, surface.fill) >= 3.);
                 }
                 let nodes = w.accessibility_nodes(i);
-                let invoker = nodes.iter().find(|n| n.key.part == Some(20)).unwrap();
-                assert_eq!(invoker.role, AccessibilityRole::MenuButton);
+                let invoker = nodes.iter().find(|n| n.key == invoker_key).unwrap();
+                assert_eq!(invoker.role, AccessibilityRole::PopUpButton);
                 assert_eq!(invoker.value.as_deref(), Some("Compact"));
                 assert_eq!(invoker.expanded, Some(true));
                 let menu = nodes
@@ -13778,14 +13791,14 @@ mod interaction_tests {
                 assert!(
                     options
                         .iter()
-                        .find(|n| n.key.part == Some(61))
+                        .find(|n| n.key == option_keys[1])
                         .unwrap()
                         .selected
                 );
                 assert!(
                     options
                         .iter()
-                        .find(|n| n.key.part == Some(60 + active))
+                        .find(|n| n.key == option_keys[active])
                         .unwrap()
                         .focused
                 );
@@ -13805,7 +13818,7 @@ mod interaction_tests {
         );
         assert_eq!(w.state(i).focus, Some(20));
         let nodes = w.accessibility_nodes(i);
-        let invoker = nodes.iter().find(|n| n.key.part == Some(20)).unwrap();
+        let invoker = nodes.iter().find(|n| n.key == invoker_key).unwrap();
         assert_eq!(invoker.value.as_deref(), Some("Comfortable"));
         assert_eq!(invoker.expanded, Some(false));
         assert!(!nodes.iter().any(|n| n.role == AccessibilityRole::MenuItem));
