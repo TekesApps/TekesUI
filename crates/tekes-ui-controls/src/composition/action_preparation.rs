@@ -752,6 +752,7 @@ impl ContentHost {
             self.capture_epoch = epoch;
             self.captured = Some(id);
             self.captured_mount = self.root.find_active(id).map(|node| node.mount);
+            self.captured_overlay_handler = false;
         }
         self.event_bubbled = Some(bubbles);
         Some(response)

@@ -1867,6 +1867,9 @@ pub struct ContentHost {
     popover_order: Vec<PopoverSession>,
     captured: Option<ComponentId>,
     captured_overlay: bool,
+    // Capture source, distinct from merely being inside an overlay scope.
+    // Meaningful only while captured is Some; set at every acquisition.
+    captured_overlay_handler: bool,
     retired_combo_release: bool,
     captured_mount: Option<u64>,
     capture_epoch: u64,
@@ -1916,6 +1919,7 @@ impl ContentHost {
             popover_order: Vec::new(),
             captured: None,
             captured_overlay: false,
+            captured_overlay_handler: false,
             retired_combo_release: false,
             captured_mount: None,
             capture_epoch: 0,
@@ -2554,6 +2558,7 @@ impl ContentHost {
             }
             self.captured_mount = None;
             self.captured_overlay = false;
+            self.captured_overlay_handler = false;
             self.dirty = true;
         }
         if let Some(id) = self.focused.filter(|id| {
@@ -2932,17 +2937,14 @@ impl ContentHost {
             && let Some(id) = self.captured
         {
             let captured_overlay = self.captured_overlay;
+            let captured_overlay_handler = self.captured_overlay_handler;
             if matches!(routed, ContentEvent::PointerUp(_)) {
                 self.captured = None;
                 self.captured_mount = None;
                 self.captured_overlay = false;
+                self.captured_overlay_handler = false;
             }
-            let combo_overlay = captured_overlay
-                && self
-                    .root
-                    .find_active(id)
-                    .is_some_and(|node| node.component::<ComboBoxContent>().is_some());
-            let result = if combo_overlay {
+            let result = if captured_overlay_handler {
                 self.root.find_mut(id).map(|node| {
                     let response = node.deliver_actions(event, true, &mut self.actions);
                     (id, response, false)
@@ -2968,7 +2970,7 @@ impl ContentHost {
                     .deliver_actions(event, true, &mut self.actions);
             if response.consumed {
                 // The original overlay owner owns this down and its release.
-                // Existing Combo-specific capture validation and dispatch remain below.
+                // Existing Combo-specific capture lifecycle validation is unchanged.
                 if response.capture_pointer
                     && matches!(routed, ContentEvent::PointerDown(_))
                     && event.is_primary_pointer()
@@ -2980,6 +2982,7 @@ impl ContentHost {
                     self.captured = Some(id);
                     self.captured_mount = self.root.find_active(id).map(|node| node.mount);
                     self.captured_overlay = true;
+                    self.captured_overlay_handler = true;
                 }
                 self.record_reading_scroll(event, id, &response);
                 return response;
@@ -3115,6 +3118,7 @@ impl ContentHost {
                             .find_active(scope)
                             .is_some_and(|owner| owner.find(id).is_some())
                     });
+                    self.captured_overlay_handler = false;
                 }
                 if r.consumed
                     && self.root.find(id).is_some_and(|c| {
@@ -3375,6 +3379,7 @@ impl ContentHost {
             self.captured = None;
             self.captured_mount = None;
             self.captured_overlay = false;
+            self.captured_overlay_handler = false;
         }
         if focus {
             self.focus(None, false);
@@ -3434,6 +3439,9 @@ impl ContentHost {
         // Validate finite selection authority before focus transfer or owner mutation.
         // The original IME/scope gate above still owns admission.
         let Some(node) = self.scope().find_active(id) else {
+            // A closed scope still needs its original return-focus reconciliation.
+            // Retire that lifecycle state without dispatching the stale action.
+            self.reconcile_active_inputs();
             return ContentResponse::default();
         };
         let root = node.component.semantics();
@@ -3677,6 +3685,7 @@ impl ContentHost {
         };
         self.captured_mount = None;
         self.captured_overlay = false;
+        self.captured_overlay_handler = false;
         if let Some(owner) = self.root.find_mut(id) {
             owner.component.cancel_pointer();
         }
@@ -3711,6 +3720,7 @@ impl ContentHost {
         self.captured = None;
         self.captured_mount = None;
         self.captured_overlay = false;
+        self.captured_overlay_handler = false;
         self.focus(None, false);
     }
     /// Move the original mounted subtree, preserving its Content identities and
@@ -3862,6 +3872,7 @@ impl ContentHost {
             self.captured = None;
             self.captured_mount = None;
             self.captured_overlay = false;
+            self.captured_overlay_handler = false;
         }
         child.lifecycle(Lifecycle::Unmounted);
         self.reveal_clock.invalidate_input();

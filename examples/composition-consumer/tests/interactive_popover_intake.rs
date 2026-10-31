@@ -326,6 +326,7 @@ fn declared_scope_wraps_even_when_outer_host_yields_at_tab_boundary() {
 fn close_restores_original_mount_and_immediately_retires_popup_ax() {
     let mut host = fixture(false);
     host.focus(Some(ComponentId(51003)), true);
+    let original_mount = host.semantic_mount(ComponentId(51003)).unwrap();
     set_open(&mut host, true);
     render(&mut host);
     assert_eq!(host.focused(), Some(ComponentId(51002)));
@@ -340,6 +341,28 @@ fn close_restores_original_mount_and_immediately_retires_popup_ax() {
             .consumed
     );
     assert_eq!(host.focused(), Some(ComponentId(51003)));
+    assert_eq!(
+        host.semantic_mount(ComponentId(51003)),
+        Some(original_mount)
+    );
+    let restored_epoch = host.focus_epoch();
+    assert!(
+        !host
+            .accessibility_action(ComponentId(51002), None, AccessibilityAction::Press)
+            .consumed
+    );
+    assert_eq!(host.focused(), Some(ComponentId(51003)));
+    assert_eq!(host.focus_epoch(), restored_epoch);
+    for id in [ComponentId(51002), ComponentId(51003)] {
+        assert_eq!(
+            host.get(id)
+                .unwrap()
+                .component::<Button>()
+                .unwrap()
+                .activations,
+            0
+        );
+    }
     assert!(host.drain_actions().is_empty());
 }
 #[test]
@@ -427,6 +450,151 @@ impl Component for Scope {
         }
     }
 }
+// A test owner with two original Buttons records which existing handler
+// receives release. Popover remains the original open/close model.
+#[derive(Debug)]
+struct HandlerCapture {
+    body: Button,
+    overlay: Button,
+    popup: Popover,
+    body_ups: usize,
+    overlay_ups: usize,
+}
+impl Component for HandlerCapture {
+    fn measure(&mut self, _: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
+        MeasuredChild::new(available)
+    }
+    fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
+        self.body.arrange(text, frame, clip);
+        self.overlay.arrange(text, frame, clip);
+    }
+    fn paint(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut dyn ButtonTextRenderer,
+        frame: Rect,
+        clip: Rect,
+        theme: ContentTheme,
+    ) {
+        self.body.paint(scene, text, frame, clip, theme);
+        if self.popup.open {
+            self.overlay.paint(scene, text, frame, clip, theme);
+        }
+    }
+    fn overlay_open(&self) -> bool {
+        self.popup.open
+    }
+    fn focusable(&self) -> bool {
+        self.body.focusable()
+    }
+    fn set_focus(&mut self, focused: bool, visible: bool) {
+        self.body.set_focus(focused, visible);
+    }
+    fn semantics(&self) -> ContentSemantics {
+        self.body.semantics()
+    }
+    fn event(&mut self, event: &ContentEvent) -> ContentResponse {
+        if matches!(event, ContentEvent::PointerUp(_)) {
+            self.body_ups += 1;
+        }
+        let response = self.body.event(event);
+        if matches!(event, ContentEvent::PointerDown(_)) && response.capture_pointer {
+            self.popup.show(1);
+        }
+        response
+    }
+    fn overlay_event(&mut self, event: &ContentEvent) -> ContentResponse {
+        if matches!(event, ContentEvent::PointerUp(_)) {
+            self.overlay_ups += 1;
+        }
+        let response = self.overlay.event(event);
+        if response.activated {
+            self.popup.close();
+        }
+        response
+    }
+}
+fn handler_capture(open: bool, scoped: bool) -> (ContentHost, ComponentId) {
+    let id = ComponentId(51101);
+    let mut body = Button::new("Original body");
+    let mut overlay = Button::new("Original overlay");
+    body.button.frame_policy = tekes_ui_controls::ButtonFramePolicy::Exact;
+    overlay.button.frame_policy = tekes_ui_controls::ButtonFramePolicy::Exact;
+    let mut popup = Popover::default();
+    if open {
+        popup.show(1);
+    }
+    let owner = Content::new(
+        id,
+        HandlerCapture {
+            body,
+            overlay,
+            popup,
+            body_ups: 0,
+            overlay_ups: 0,
+        },
+    );
+    let root = if scoped {
+        Content::new(
+            ComponentId(51100),
+            Scope {
+                open: true,
+                disabled: false,
+                children: vec![owner],
+            },
+        )
+    } else {
+        owner
+    };
+    let mut host = ContentHost::new(root).unwrap();
+    host.set_action_events(true);
+    render(&mut host);
+    (host, id)
+}
+#[test]
+fn generic_overlay_capture_releases_to_its_acquiring_handler_once() {
+    for scoped in [false, true] {
+        let (mut host, id) = handler_capture(true, scoped);
+        let point = host.get(id).unwrap().visible().unwrap().center();
+        assert!(
+            host.event(&ContentEvent::PointerDown(point))
+                .capture_pointer
+        );
+        assert_eq!(host.pointer_capture().map(|(id, _)| id), Some(id));
+        assert!(host.event(&ContentEvent::PointerUp(point)).activated);
+        let owner = host.get(id).unwrap().component::<HandlerCapture>().unwrap();
+        assert_eq!((owner.body_ups, owner.overlay_ups), (0, 1));
+        assert_eq!((owner.body.activations, owner.overlay.activations), (0, 1));
+        assert!(!owner.popup.open);
+        assert!(host.pointer_capture().is_none());
+        assert_eq!(host.drain_actions().len(), 1);
+    }
+}
+#[test]
+fn scoped_body_capture_keeps_its_handler_when_same_owner_opens_overlay() {
+    let (mut host, id) = handler_capture(false, true);
+    let point = host.get(id).unwrap().visible().unwrap().center();
+    assert!(
+        host.event(&ContentEvent::PointerDown(point))
+            .capture_pointer
+    );
+    assert!(
+        host.get(id)
+            .unwrap()
+            .component::<HandlerCapture>()
+            .unwrap()
+            .popup
+            .open
+    );
+    assert!(host.event(&ContentEvent::PointerUp(point)).activated);
+    let owner = host.get(id).unwrap().component::<HandlerCapture>().unwrap();
+    assert_eq!((owner.body_ups, owner.overlay_ups), (1, 0));
+    assert_eq!((owner.body.activations, owner.overlay.activations), (1, 0));
+    assert!(owner.popup.open);
+    assert!(host.pointer_capture().is_none());
+    assert_eq!(host.drain_actions().len(), 1);
+}
+
 #[test]
 fn nested_scope_retires_to_outer_original_focus_and_disabled_subtree_is_not_published() {
     let mut host = ContentHost::new(Content::new(
