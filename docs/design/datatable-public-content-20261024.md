@@ -254,3 +254,12 @@ Historical C geometry/GPU RED candidates and old schema receipts remain immutabl
 不得把此成功倒签到旧 `cbe404...` 的 Table IPC 失败；也不得把 `853eed2f20792a2c1c64ae485b5aa82f8f650de5` 文档 successor 当作已编译源。旧 GPU lane 属 `70ee52503eeb9e830268d40918f42f005aa1da3b` 并依原身份保留；`collections-gpu-ipc-window02/continuation01` 中 List/Tree 是其各自的 cbe/70ee 收据，不是本 Table run 的共享来源。
 
 状态仍是有限 Table domain review complete、公共交付未完成：handoff 明确 broader Issue #198 OPEN，PR/CI/release 未由该 domain run 交付；native、physical IME、VoiceOver、性能和全 DS 验收不在本收据内。
+
+
+### CI209 repair candidate: preserve the legacy header and declared Content Surface
+
+The first PR209 CI at `41a8d2f` found a real legacy header paint regression: Gallery uses the original `DataTableView::render` path, which has no Content metrics, but the restored renderer selected an inherited canvas even for that path. Its header ground became document-canvas instead of the original surface-2. The existing Gallery test, including exact header/selected-row colors, sort identity, layout, focus, own-ground contrast and readonly Cell semantics, stays unchanged.
+
+The repair distinguishes an undeclared default from an actual Content Surface declaration using the existing ContentTheme state. A legacy or undeclared default header keeps its original palette fallback; a declared or inherited Content Surface continues through the original Surface resolution. Clearing the declaration restores the default. The internal legacy base fallback is not a new canonical Surface declaration. Row Surface and foreground propagation remain unchanged. The public consumer regression exercises the default, explicit, inherited and cleared cases without changing geometry or business state.
+
+This is a source candidate pending the one compatible affected local CPU/strict window and then required CI; the failed CI remains preserved. The normal089dc ACK/business IPC result retains its original source/program identity. This paint correction does not constitute a new IPC or GPU pass: old Table GPU images retain their prior source and do not certify the corrected header colors. No new GPU, native, physical IME, VoiceOver or performance execution is included in this repair preparation.

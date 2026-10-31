@@ -1,8 +1,8 @@
 use std::rc::Rc;
 use tekes_ui_composition_consumer::datatable_content::*;
 use tekes_ui_controls::{composition::*, extended::TableRowKey, layout_view::IconRenderer};
-use tekes_ui_scene::{ImageId, Point, Rect, Scene};
-use tekes_ui_tokens::{Rgba, Theme};
+use tekes_ui_scene::{ImageId, Point, Primitive, Rect, Scene};
+use tekes_ui_tokens::{Palette, Rgba, Theme};
 #[path = "support/coretext.rs"]
 mod coretext;
 struct Icons;
@@ -20,16 +20,27 @@ impl IconRenderer for Icons {
         Ok(IconImage::new(ImageId(1), Rc::new(())))
     }
 }
-fn render(h: &mut ContentHost, text: &mut coretext::Text, width: f32, clip: Rect, theme: Theme) {
+fn render_scene(
+    h: &mut ContentHost,
+    text: &mut coretext::Text,
+    width: f32,
+    clip: Rect,
+    theme: Theme,
+) -> Scene {
     let f = Rect::new(0., 0., width, 700.);
+    let mut scene = Scene::new();
     h.render(
-        &mut Scene::new(),
+        &mut scene,
         &mut WithIconRenderer::new(text, &mut Icons),
         f,
         clip,
         theme.into(),
     )
     .unwrap();
+    scene
+}
+fn render(h: &mut ContentHost, text: &mut coretext::Text, width: f32, clip: Rect, theme: Theme) {
+    let _ = render_scene(h, text, width, clip, theme);
 }
 fn parts(h: &ContentHost) -> Vec<SemanticPart> {
     h.semantics()
@@ -205,4 +216,140 @@ fn original_scaled_typography_keeps_row_wrapper_and_semantics_on_one_layout() {
             "scale={scale}"
         );
     }
+}
+
+#[test]
+fn table_header_surface_preserves_default_inherited_explicit_and_clear_contract() {
+    use tekes_ui_controls::extended::{SortDirection, TableColumnKey};
+    use tekes_ui_tokens::surface_palette::resolve_surface;
+
+    let mut host = build().unwrap();
+    let mut text = coretext::Text::new(1.);
+    text.services = true;
+    let viewport = Rect::new(0., 0., 500., 700.);
+    render_scene(&mut host, &mut text, 500., viewport, Theme::LIGHT);
+    let header = parts(&host)
+        .into_iter()
+        .find(|part| {
+            matches!(
+                part.semantics.role,
+                ContentRole::TableColumnHeader { index: 0, .. }
+            )
+        })
+        .unwrap();
+    assert!(host
+        .accessibility_action(TABLE, Some(header.index), AccessibilityAction::Press)
+        .consumed);
+    render_scene(&mut host, &mut text, 500., viewport, Theme::LIGHT);
+    let row = parts(&host)
+        .into_iter()
+        .find(|part| matches!(part.semantics.role, ContentRole::TableRow { index: 0 }))
+        .unwrap();
+    assert!(host
+        .accessibility_action(TABLE, Some(row.index), AccessibilityAction::Press)
+        .consumed);
+    render_scene(&mut host, &mut text, 500., viewport, Theme::LIGHT);
+
+    let baseline = parts(&host);
+    let table = host
+        .get(TABLE)
+        .unwrap()
+        .component::<DataTableContent>()
+        .unwrap();
+    let sort = table.sort_key_state();
+    let selected = table.selected_key();
+    assert_eq!(sort, Some((TableColumnKey(1), SortDirection::Ascending)));
+    assert_eq!(selected, Some(TableRowKey(1)));
+    assert_eq!(
+        baseline
+            .iter()
+            .filter(|part| {
+                matches!(part.semantics.role, ContentRole::TableCell { .. })
+                    && part.semantics.value.is_some()
+            })
+            .count(),
+        6
+    );
+
+    let palette = Palette::from(Theme::LIGHT);
+    let assert_state = |host: &ContentHost, scene: &Scene, expected: Rgba| {
+        let header = parts(host)
+            .into_iter()
+            .find(|part| {
+                matches!(
+                    part.semantics.role,
+                    ContentRole::TableColumnHeader { index: 0, .. }
+                )
+            })
+            .unwrap();
+        let fill = scene
+            .primitives()
+            .iter()
+            .find_map(|primitive| match primitive {
+                Primitive::Quad(quad) if quad.rect == header.frame && quad.fill.a > 0. => {
+                    Some(quad.fill)
+                }
+                _ => None,
+            })
+            .expect("filled quad at the actual first-header frame");
+        assert_eq!(fill, expected);
+        assert_eq!(parts(host), baseline);
+        let table = host
+            .get(TABLE)
+            .unwrap()
+            .component::<DataTableContent>()
+            .unwrap();
+        assert_eq!(table.sort_key_state(), sort);
+        assert_eq!(table.selected_key(), selected);
+    };
+
+    let scene = render_scene(&mut host, &mut text, 500., viewport, Theme::LIGHT);
+    assert_state(&host, &scene, palette.color("surface-2").unwrap());
+
+    host.get_mut(TABLE)
+        .unwrap()
+        .set_surface(Some("sidebar"))
+        .unwrap();
+    let scene = render_scene(&mut host, &mut text, 500., viewport, Theme::LIGHT);
+    assert_state(
+        &host,
+        &scene,
+        resolve_surface(palette, "sidebar", "action-quiet", "rest")
+            .unwrap()
+            .background,
+    );
+    host.get_mut(TABLE).unwrap().set_surface(None).unwrap();
+    let scene = render_scene(&mut host, &mut text, 500., viewport, Theme::LIGHT);
+    assert_state(&host, &scene, palette.color("surface-2").unwrap());
+
+    host.set_inherited_surface("panel").unwrap();
+    let scene = render_scene(&mut host, &mut text, 500., viewport, Theme::LIGHT);
+    assert_state(
+        &host,
+        &scene,
+        resolve_surface(palette, "panel", "action-quiet", "rest")
+            .unwrap()
+            .background,
+    );
+    host.get_mut(TABLE)
+        .unwrap()
+        .set_surface(Some("sidebar"))
+        .unwrap();
+    let scene = render_scene(&mut host, &mut text, 500., viewport, Theme::LIGHT);
+    assert_state(
+        &host,
+        &scene,
+        resolve_surface(palette, "sidebar", "action-quiet", "rest")
+            .unwrap()
+            .background,
+    );
+    host.get_mut(TABLE).unwrap().set_surface(None).unwrap();
+    let scene = render_scene(&mut host, &mut text, 500., viewport, Theme::LIGHT);
+    assert_state(
+        &host,
+        &scene,
+        resolve_surface(palette, "panel", "action-quiet", "rest")
+            .unwrap()
+            .background,
+    );
 }

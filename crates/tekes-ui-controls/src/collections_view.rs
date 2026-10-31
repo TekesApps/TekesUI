@@ -2212,10 +2212,13 @@ impl DataTableView {
                 .content_metrics
                 .as_ref()
                 .and_then(|m| m.surface)
-                .filter(|s| *s != "base")
-                .unwrap_or("canvas");
+                .filter(|s| *s != "base");
             let button = &mut self.header_buttons[col];
-            button.set_surface(surface);
+            if let Some(surface) = surface {
+                button.set_surface(surface);
+            } else {
+                button.clear_surface();
+            }
             let header_focused = self.focused_header == Some(col) && self.state.window_active;
             button.state = control_state(false, false, header_focused, self.disabled, false);
             let button_layout =
@@ -4156,7 +4159,7 @@ mod tests {
                 .iter()
                 .map(|item| item.0.as_str())
                 .collect::<Vec<_>>(),
-            ["chevron-down", "chevron-right"]
+            ["tekes-expand", "tekes-forward"]
         );
         assert!(
             icons
@@ -4216,7 +4219,7 @@ mod tests {
                 .iter()
                 .map(|item| item.0.as_str())
                 .collect::<Vec<_>>(),
-            ["chevron-down"]
+            ["tekes-expand"]
         );
         assert!(clipped_icons.0[0].1.intersection(&clipped).is_some());
 
@@ -4276,7 +4279,7 @@ mod tests {
                 .iter()
                 .map(|icon| icon.0.as_str())
                 .collect::<Vec<_>>(),
-            ["chevron-down", "chevron-right"]
+            ["tekes-expand", "tekes-forward"]
         );
 
         let full_clip = Rect::new(0.0, 0.0, frame.size.width, 34.0);
@@ -4303,7 +4306,7 @@ mod tests {
                 .iter()
                 .map(|icon| icon.0.as_str())
                 .collect::<Vec<_>>(),
-            ["chevron-down"]
+            ["tekes-expand"]
         );
 
         let partial_clip = Rect::new(0.0, 42.0, frame.size.width, 10.0);
@@ -4330,7 +4333,7 @@ mod tests {
                 .iter()
                 .map(|icon| icon.0.as_str())
                 .collect::<Vec<_>>(),
-            ["chevron-right"]
+            ["tekes-forward"]
         );
         let clips = scene
             .primitives()

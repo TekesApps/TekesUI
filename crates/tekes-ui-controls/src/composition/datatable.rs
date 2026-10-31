@@ -1484,7 +1484,7 @@ impl Component for DataTableContent {
         if let Some(l) = self.view.layout_keyed(&self.model) {
             let frame = l.frame;
             let mut metrics = self.metrics.clone();
-            metrics.surface = Some(t.surface());
+            metrics.surface = t.surface_declared.then_some(t.surface());
             self.view.render_content_keyed(
                 s,
                 &mut TextAdapter(text),
