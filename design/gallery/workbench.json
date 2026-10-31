@@ -369,7 +369,7 @@
       "api_bindings": [
         "tekes_ui_controls::TextSurface"
       ],
-      "api_notes": "Shared TextSurface/TextInput capability; read-only/multiline/search policy belongs to this registered variant, not a separate editor state machine."
+      "api_notes": "Primary TextSurface remains. SearchFieldContent is a fixed adapter over the original TextFieldContent editor and Clear Button; caller handles query effects. No caller Content slots or result/filtering engine; no complete Gallery migration claim. Original finite #199 evidence keeps actual611a/70ee identities; compatible candidate compilation/affected validation pending. No candidate runtime/native certification."
     },
     {
       "title": "ComboBox",
@@ -500,7 +500,8 @@
       "api_bindings": [
         "tekes_ui_controls::Select",
         "tekes_ui_controls::layout_view::SelectView"
-      ]
+      ],
+      "api_notes": "Primary Select/SelectView bindings remain. SelectContent retains original Select/View/Menu selection, focus and popup over fixed string choices; no arbitrary item/label Content. Blur retires interaction without overriding actual window authority. Original finite #199 evidence keeps actual611a/70ee identities; compatible candidate compilation/affected validation pending. No candidate runtime/native certification."
     },
     {
       "title": "NumberField",

@@ -101,6 +101,7 @@ impl Host {
     }
 
     fn sync_accessibility(&self, window: &Window) {
+        window.set_accessibility_text_layouts(self.gallery.accessibility_text_layouts());
         window.set_accessibility_nodes(self.gallery.accessibility_nodes());
         if let Some(out) = std::env::var_os("TEKESUI_GALLERY_AX_OUT") {
             let nodes:Vec<_>=window.accessibility_nodes().into_iter().map(|n|serde_json::json!({
@@ -414,5 +415,7 @@ impl WindowHandler for Host {
             }
             _ => {}
         }
+        #[cfg(feature = "composition-review")]
+        crate::gallery::workbench::settings_native207::observe(&self.gallery, &event);
     }
 }

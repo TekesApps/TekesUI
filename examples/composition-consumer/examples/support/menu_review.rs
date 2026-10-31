@@ -48,6 +48,7 @@ fn selection(record: &ContentActionRecord) -> &MenuSelection {
     match record.payload.as_ref().unwrap() {
         ContentActionPayload::MenuSelection(value) => value,
         ContentActionPayload::ToolbarCommand(_)
+        | ContentActionPayload::Search(_)
         | ContentActionPayload::ComboBoxSelection(_)
         | ContentActionPayload::CheckboxState(_)
         | ContentActionPayload::RadioSelection(_)

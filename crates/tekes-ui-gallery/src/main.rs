@@ -30,10 +30,12 @@ mod host;
 mod perf;
 #[cfg(all(target_os = "macos", feature = "composition-review"))]
 mod reading_acceptance;
-#[cfg(all(target_os = "macos", feature = "composition-review"))]
+#[cfg(target_os = "macos")]
 mod reading_key;
-#[cfg(all(target_os = "macos", feature = "composition-review"))]
+#[cfg(target_os = "macos")]
 mod reading_pointer;
+#[cfg(all(target_os = "macos", feature = "composition-review"))]
+mod settings_native207;
 #[cfg(all(target_os = "macos", feature = "composition-review"))]
 mod viewport_acceptance;
 #[cfg(all(target_os = "macos", feature = "composition-review"))]
@@ -128,6 +130,8 @@ fn main() {
     };
     match mode.as_deref() {
         None => {}
+        #[cfg(feature = "composition-review")]
+        Some("settings-native207") => selftest::run_script(settings_native207::script()),
         Some("workbench") => selftest::run_script(selftest_workbench_script()),
         Some("workbench-extended") => selftest::run_script(selftest_workbench_extended_script()),
         Some("gallery") => selftest::run_script(selftest_gallery_script()),

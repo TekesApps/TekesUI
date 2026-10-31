@@ -229,3 +229,12 @@ ID沿 `gold7-alignment.json`，不改变其历史assessment。下表“缺口”
 5. **保持后置/外部边界**：VoiceOver按已确认延期保留未验，恢复需原协调决定，不能由本表自动启动；AccessKit、#131–#135、跨repo迁移不恢复。媒体能力缺口交#55产品范围协调，#54外部消费不占本仓实施线；#57由图标独立owner处理。它们均不阻塞前四批中已经具备接口的独立交付。
 
 本轮实际执行仅原文/源码入口/收据核对和文档差量检查，无Cargo/GPU/native/桌面/CI；未判断新图、未晋级registry、未关闭父票。后续补验结果写回原Issue与原收据，本节同步具体行，不建立另一份动态台账。
+
+
+## Search / Settings r2 兼容交付候选（2026-10-31，未发布）
+
+Refs #199 / #207 / #1 / #55。固定基线为已发布PR200 `a883d00a29b98cdfb5262c23a2e728e6908384e0`；Search实现唯一采用原owner的 `pr200-standalone-source-20261031-r17/source-only.patch`，不再维护r1共享实现。r17的43路径在追加Settings前逐hash一致；仅host/main/workbench三文件增加Settings纯接线，另加两份原7414私有fixture，包含f569 observer与7414 BackTab修正。r1包、18差异及失败记录均冻结保留，r18独立后续测试不进入本批。
+
+公共类型为原384加Search/Select七路径共391；实际24角色加SearchInput/Select为26。primary API、api_bindings、45组件/5patterns/2examples和experimental保持。历史Search611a/70ee的CPU/GPU、Settings7414/program2c6bf的Native02有限结果不改签为新26-role组合验收；新peer/schema、bridge/consumer/strict等需原owner按真实相关输入确认或在集成分配窗口复验。原设计与r17 canonical说明同包，原native/物理IME/VoiceOver/性能/完整Gold7边界保留。
+
+metadata从实际r17加Settings候选生成；保留历史audit基线和runtime observation/practical-intake输入，actual源码hash/锚点按此候选绑定。Collections49路径、Media五条可选导出及AX205生产不进入此批，不读取当前MAIN的Table TEMP来生成发布指纹。若最终source/feature/config/依赖改变，先重生成actual metadata并复核受影响锚点；提交号本身不改签未变的原运行证据。

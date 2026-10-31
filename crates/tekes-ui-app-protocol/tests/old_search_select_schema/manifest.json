@@ -1,0 +1,60 @@
+{
+  "base": "a883d00a29b98cdfb5262c23a2e728e6908384e0",
+  "peer": "Actual entire immutable PR200 published production Reply/Input decoder, no role stripping",
+  "files": {
+    "content.rs": {
+      "immutable_source": "crates/tekes-ui-app-protocol/src/component/content.rs",
+      "git_blob": "95f47e56c4f75eb5ec40e16fa1bd1eacd9f035be",
+      "source_sha256": "8d2f1e7f9c753f13b71c921214f79dda3b4ae46bf8bafd30293236d064ecf255",
+      "fixture_sha256": "2c594bffffb99b23a60ebf8a091af97117d88c4e617eaae8ea09a465ff1330c7",
+      "adaptation": "sibling module path only"
+    },
+    "accessibility.rs": {
+      "immutable_source": "crates/tekes-ui-app-protocol/src/component/content/accessibility.rs",
+      "git_blob": "e5c21e7a5a8b9f38cbc130e23234fce59a9a799e",
+      "source_sha256": "091fa026ae2ca9962c27f61b817a03216f2c5b3d6118dfc12736b5da496ef811",
+      "fixture_sha256": "091fa026ae2ca9962c27f61b817a03216f2c5b3d6118dfc12736b5da496ef811",
+      "adaptation": "byte-identical whole production file"
+    }
+  },
+  "roles": [
+    "Group",
+    "ProgressIndicator",
+    "Text",
+    "Image",
+    "Button",
+    "Link",
+    "TextInput",
+    "ComboBox",
+    "Slider",
+    "Splitter",
+    "Switch",
+    "Checkbox",
+    "RadioGroup",
+    "RadioButton",
+    "SegmentedGroup",
+    "Segment",
+    "List",
+    "ListItem",
+    "Dialog",
+    "MenuButton",
+    "Menu",
+    "MenuItem",
+    "TabList",
+    "Tab"
+  ],
+  "new_roles_not_in_peer": [
+    "SearchInput",
+    "Select"
+  ],
+  "retained_actions": [
+    "SetExpanded(false)",
+    "SetExpanded(true)"
+  ],
+  "not_run": [
+    "Rust decoder tests",
+    "Cargo",
+    "CI"
+  ],
+  "prior_fixtures_unchanged": "Original r5 actual24 and611a actual33 fixtures preserved outside this r17 candidate"
+}

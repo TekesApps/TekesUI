@@ -13,6 +13,7 @@ pub enum SemanticRole {
     Button,
     Link,
     TextInput,
+    SearchInput,
     /// Matched-schema editable single-line owner; no extra popup editor.
     ComboBox,
     Slider,
@@ -28,6 +29,7 @@ pub enum SemanticRole {
     ListItem,
     Dialog,
     MenuButton,
+    Select,
     Menu,
     MenuItem,
     TabList,

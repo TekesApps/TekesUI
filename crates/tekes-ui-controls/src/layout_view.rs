@@ -2890,6 +2890,31 @@ pub struct SelectView {
     window_active: bool,
     disabled: bool,
 }
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) enum SelectPreparedInput {
+    PointerDown(Point),
+    Open,
+    Focus(usize),
+    Activate(usize),
+    Close,
+}
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct SelectPreparedAction {
+    expected: SelectPreparedState,
+    trigger: Option<crate::widgets::ButtonActionDecision>,
+    menu: Option<crate::composite::MenuPreparedAction>,
+    choice: Option<crate::widgets::SelectChoice>,
+    pub event: MenuEvent,
+    pub consumed: bool,
+    pub reserve_open: bool,
+}
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct SelectPreparedState {
+    trigger: crate::widgets::ButtonActionDecision,
+    layout: SelectLayout,
+    availability: (bool, bool),
+    model: (usize, bool, usize, usize, Option<usize>),
+}
 impl SelectView {
     /// Logical close may retain outgoing paint before the next frame starts exit.
     pub fn is_presented(&self) -> bool {
@@ -2913,6 +2938,123 @@ impl SelectView {
             window_active: true,
             disabled: false,
         }
+    }
+    pub(crate) fn prepared_state(&self, model: &crate::Select) -> SelectPreparedState {
+        SelectPreparedState {
+            trigger: self.trigger.prepare_content_press(),
+            layout: self.layout.clone(),
+            availability: (self.window_active, self.disabled),
+            model: (
+                model.selected,
+                model.menu.open,
+                model.menu.items.count,
+                model.menu.items.selected,
+                model.menu.last_action,
+            ),
+        }
+    }
+    pub(crate) fn prepare_select_action(
+        &self,
+        model: &crate::Select,
+        input: SelectPreparedInput,
+    ) -> Option<SelectPreparedAction> {
+        use crate::composite::MenuPreparedKind as K;
+        if self.disabled || !self.window_active || model.menu.items.count == 0 {
+            return None;
+        }
+        let mut trigger = None;
+        let mut menu = None;
+        let mut choice = None;
+        let mut event = MenuEvent::None;
+        let mut reserve_open = false;
+        let consumed = match input {
+            SelectPreparedInput::PointerDown(point) => {
+                if model.menu.open {
+                    return None;
+                }
+                self.next_open_generation()?;
+                let d = self.trigger.prepare_content_down(point, false);
+                let consumed = d.consumed;
+                reserve_open = consumed;
+                trigger = Some(d);
+                consumed
+            }
+            input => {
+                let kind = match input {
+                    SelectPreparedInput::Open => {
+                        reserve_open = !model.menu.open;
+                        K::Open {
+                            generation: 0,
+                            selected: model.selected,
+                        }
+                    }
+                    SelectPreparedInput::Focus(index) => K::Focus { index, offset: 0. },
+                    SelectPreparedInput::Activate(index) => {
+                        choice = Some(model.prepare_choice(index)?);
+                        K::Activate { index }
+                    }
+                    SelectPreparedInput::Close => K::Close,
+                    SelectPreparedInput::PointerDown(_) => unreachable!(),
+                };
+                let d = self.menu.prepare_select_action(&model.menu, kind)?;
+                event = d.event;
+                menu = Some(d);
+                true
+            }
+        };
+        Some(SelectPreparedAction {
+            expected: self.prepared_state(model),
+            trigger,
+            menu,
+            choice,
+            event,
+            consumed,
+            reserve_open,
+        })
+    }
+    pub(crate) fn apply_select_action(
+        &mut self,
+        model: &mut crate::Select,
+        action: SelectPreparedAction,
+    ) {
+        if let Some(d) = action.trigger {
+            self.trigger.apply_content_action(d);
+        }
+        if action.menu.is_some() {
+            self.trigger.cancel();
+        }
+        if let Some(d) = action.menu {
+            self.menu.apply_select_action(&mut model.menu, d);
+        }
+        if let Some(choice) = action.choice {
+            model.apply_choice(choice);
+            self.focus(true);
+        }
+    }
+    #[cfg(test)]
+    pub(crate) fn select_test_generation(&mut self, generation: u64) {
+        self.menu.select_test_generation(generation);
+    }
+    pub(crate) fn next_open_generation(&self) -> Option<u64> {
+        self.menu.next_open_generation()
+    }
+    pub(crate) fn open_generation(&self) -> u64 {
+        self.menu.open_generation()
+    }
+    /// The trigger inherits its parent Surface; the popup keeps its Menu Surface.
+    pub fn set_surface(
+        &mut self,
+        surface: &str,
+    ) -> Result<(), tekes_ui_tokens::surface_palette::SurfaceError> {
+        let surface = tekes_ui_tokens::surface_palette::canonical_surface(surface)?;
+        self.trigger.set_surface(surface);
+        Ok(())
+    }
+    pub(crate) fn replace_options(&mut self, model: &mut crate::Select, count: usize) {
+        self.trigger.cancel();
+        self.trigger.clear_layout();
+        self.menu.replace_items_with_model(&mut model.menu, count);
+        self.layout = SelectLayout::default();
     }
     pub fn set_disabled(&mut self, disabled: bool, model: &mut crate::Select) {
         self.disabled = disabled;
@@ -3001,6 +3143,13 @@ impl SelectView {
         if !trigger.visible.is_some_and(has_area) {
             self.cancel(model);
             self.trigger.blur();
+        } else if self.window_active && !self.disabled && !labels.is_empty() {
+            // Cancellation retires the popup runtime. A current visible trigger
+            // restores only its owning window's availability before a later
+            // checked AX open; it does not open or reserve anything here.
+            let _ = self
+                .menu
+                .set_window_active_with_model(&mut model.menu, true);
         }
         trigger
     }
@@ -3060,6 +3209,11 @@ impl SelectView {
             self.trigger.blur();
         }
         self.layout.popup.clone()
+    }
+    pub(crate) fn pointer_move_changed(&mut self, point: Point, model: &mut crate::Select) -> bool {
+        let before = (self.trigger.state, model.menu.items.selected);
+        self.pointer_move(point, model);
+        before != (self.trigger.state, model.menu.items.selected)
     }
     pub fn pointer_move(&mut self, p: Point, model: &mut crate::Select) {
         if model.menu.items.count == 0 {
@@ -3211,10 +3365,9 @@ impl SelectView {
     pub fn blur(&mut self, model: &mut crate::Select) {
         self.menu.clear_presentation();
         self.trigger.blur();
-        model.menu.open = false;
-        let _ = self
-            .menu
-            .set_window_active_with_model(&mut model.menu, false);
+        // Focus departure retires the interaction, not its actual window.
+        // True window deactivation remains owned by set_window_active(false).
+        let _ = self.menu.deactivate_with_model(&mut model.menu);
     }
     pub fn cancel(&mut self, model: &mut crate::Select) {
         self.menu.clear_presentation();

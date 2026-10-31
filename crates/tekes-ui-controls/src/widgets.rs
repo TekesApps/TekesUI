@@ -463,6 +463,10 @@ pub(crate) struct ButtonActionSnapshot {
     suspended: bool,
 }
 impl ButtonModel {
+    /// Select and Menu snapshots use the existing Button press decision.
+    pub(crate) fn prepare_content_press(&self) -> ButtonActionDecision {
+        self.prepare_accessibility_press()
+    }
     pub(crate) fn action_snapshot(&self) -> ButtonActionSnapshot {
         ButtonActionSnapshot {
             state: self.state,
@@ -1884,6 +1888,11 @@ pub struct Select {
     pub menu: Menu,
     pub selected: usize,
 }
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct SelectChoice {
+    index: usize,
+    expected: (usize, usize),
+}
 impl Select {
     pub fn new(count: usize) -> Self {
         Self {
@@ -1891,12 +1900,21 @@ impl Select {
             selected: 0,
         }
     }
-    pub fn choose(&mut self, i: usize) -> bool {
-        if i >= self.menu.items.count {
-            return false;
-        }
-        self.selected = i;
+    pub(crate) fn prepare_choice(&self, index: usize) -> Option<SelectChoice> {
+        (index < self.menu.items.count).then_some(SelectChoice {
+            index,
+            expected: (self.selected, self.menu.items.count),
+        })
+    }
+    pub(crate) fn apply_choice(&mut self, choice: SelectChoice) {
+        self.selected = choice.index;
         self.menu.open = false;
+    }
+    pub fn choose(&mut self, i: usize) -> bool {
+        let Some(choice) = self.prepare_choice(i) else {
+            return false;
+        };
+        self.apply_choice(choice);
         true
     }
 }
@@ -3737,5 +3755,44 @@ mod empty_state_surface_tests {
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod select_snapshot_tests {
+    use super::*;
+    #[test]
+    fn prepared_content_press_delegates_current_accessibility_decision_without_effects() {
+        let mut button = ButtonModel::default();
+        for (disabled, loading, suspended) in [
+            (false, false, false),
+            (true, false, false),
+            (false, true, false),
+            (false, false, true),
+        ] {
+            button.state.disabled = disabled;
+            button.state.loading = loading;
+            button.motion_suspended = suspended;
+            let state = button.state;
+            let arm = button.arm;
+            assert_eq!(
+                button.prepare_content_press(),
+                button.prepare_accessibility_press()
+            );
+            assert_eq!(button.state, state);
+            assert_eq!(button.arm, arm);
+            assert_eq!(
+                button.prepare_content_press().activated,
+                !disabled && !loading && !suspended
+            );
+        }
+        button.motion_suspended = false;
+        button.state.focused = true;
+        button.key(ControlKey::Space, true);
+        let decision = button.prepare_content_press();
+        assert!(!decision.activated);
+        assert_eq!(button.arm, ButtonArm::Space);
+        button.apply_content_action(decision);
+        assert!(button.key(ControlKey::Space, false));
     }
 }

@@ -91,13 +91,18 @@ fn enrich(
         // geometry is still published only from the original shaped layout below.
         if matches!(
             semantics.role,
-            ContentRole::TextInput | ContentRole::ComboBox | ContentRole::Image
+            ContentRole::TextInput
+                | ContentRole::ComboBox
+                | ContentRole::SearchInput
+                | ContentRole::Image
         ) && let Some(input) = host.semantic_text_input_snapshot(id)
         {
-            if !matches!(semantics.role, ContentRole::Image | ContentRole::ComboBox)
-                && host
-                    .text_surface(id)
-                    .is_some_and(|surface| surface.input.multiline)
+            if !matches!(
+                semantics.role,
+                ContentRole::Image | ContentRole::ComboBox | ContentRole::SearchInput
+            ) && host
+                .text_surface(id)
+                .is_some_and(|surface| surface.input.multiline)
             {
                 node.role = AccessibilityRole::TextArea;
             }
@@ -109,7 +114,10 @@ fn enrich(
     if let Some(layout) = host.semantic_text_layout_snapshot(id, part) {
         if !matches!(
             node.role,
-            AccessibilityRole::Image | AccessibilityRole::Splitter(_) | AccessibilityRole::ComboBox
+            AccessibilityRole::Image
+                | AccessibilityRole::Splitter(_)
+                | AccessibilityRole::ComboBox
+                | AccessibilityRole::SearchField
         ) && layout.multiline
         {
             node.role = AccessibilityRole::TextArea;
@@ -137,13 +145,22 @@ fn project_content_nodes(host: &ContentHost) -> Option<Vec<AccessibilityNode>> {
         let Some(key) = content_key(host, n.id, None) else {
             continue;
         };
-        if n.semantics.role == ContentRole::ComboBox
-            && (host
-                .text_surface(n.id)
-                .is_some_and(|surface| surface.input.multiline)
-                || host
-                    .semantic_text_layout_snapshot(n.id, None)
-                    .is_some_and(|layout| layout.multiline))
+        if n.semantics.role == ContentRole::Select
+            && (host.text_surface(n.id).is_some()
+                || host.semantic_text_input_snapshot(n.id).is_some()
+                || host.semantic_text_layout_snapshot(n.id, None).is_some())
+        {
+            return None;
+        }
+        if matches!(
+            n.semantics.role,
+            ContentRole::ComboBox | ContentRole::SearchInput
+        ) && (host
+            .text_surface(n.id)
+            .is_some_and(|surface| surface.input.multiline)
+            || host
+                .semantic_text_layout_snapshot(n.id, None)
+                .is_some_and(|layout| layout.multiline))
         {
             return None;
         }
@@ -165,10 +182,19 @@ fn project_content_nodes(host: &ContentHost) -> Option<Vec<AccessibilityNode>> {
             if part.semantics.role == ContentRole::Image && part.semantics.name.is_empty() {
                 continue;
             }
-            if part.semantics.role == ContentRole::ComboBox
+            if part.semantics.role == ContentRole::Select
                 && host
                     .semantic_text_layout_snapshot(n.id, Some(part.index))
-                    .is_some_and(|layout| layout.multiline)
+                    .is_some()
+            {
+                return None;
+            }
+            if matches!(
+                part.semantics.role,
+                ContentRole::ComboBox | ContentRole::SearchInput
+            ) && host
+                .semantic_text_layout_snapshot(n.id, Some(part.index))
+                .is_some_and(|layout| layout.multiline)
             {
                 return None;
             }
@@ -262,6 +288,7 @@ fn project(
             Role::Button => NativeRole::Button,
             Role::Link => NativeRole::Link,
             Role::TextInput => NativeRole::TextField,
+            Role::SearchInput => NativeRole::SearchField,
             Role::ComboBox => NativeRole::ComboBox,
             Role::Slider => NativeRole::Group,
             Role::Splitter => {
@@ -275,6 +302,7 @@ fn project(
             Role::ListItem => NativeRole::ListItem,
             Role::Dialog => NativeRole::Dialog,
             Role::MenuButton => NativeRole::MenuButton,
+            Role::Select => NativeRole::PopUpButton,
             Role::Menu => NativeRole::Menu,
             Role::MenuItem => NativeRole::MenuItem,
             Role::TabList => NativeRole::TabGroup,

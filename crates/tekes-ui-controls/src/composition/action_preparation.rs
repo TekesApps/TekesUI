@@ -778,7 +778,22 @@ impl ContentHost {
                 .scope()
                 .find_active(id)
                 .is_some_and(|node| node.component::<ComboBoxContent>().is_some());
-        if !self.strict_focus_requirement(id) {
+        // Select prepares its own checked owner decision before focus admission.
+        // Keep the root Focus path and SetExpanded role gate on their current routes.
+        let prepared_select = !(self.strict_focus_requirement(id)
+            || part.is_none() && matches!(action, AccessibilityAction::Focus))
+            && matches!(
+                action,
+                AccessibilityAction::Focus
+                    | AccessibilityAction::Press
+                    | AccessibilityAction::SetSelection(_)
+                    | AccessibilityAction::SetExpanded(_)
+            )
+            && self
+                .root
+                .find(id)
+                .is_some_and(|node| node.component::<SelectContent>().is_some());
+        if !self.strict_focus_requirement(id) && !prepared_select {
             // Other ordinary AX verbs keep their original non-transfer policy.
             // Strict cross-owner verbs below always need an original decision.
             if !matches!(
@@ -824,15 +839,21 @@ impl ContentHost {
                 Some(ContentResponse::default())
             };
         }
-        let ActionPreparation::Ready(prepared) = n
+        let prepared = match n
             .component
             .prepare_action(ComponentActionRequest::Accessibility { part, action })
-        else {
-            return if self.ordinary_ax_focus_admissible(id, part, action) {
-                None
-            } else {
-                Some(ContentResponse::default())
-            };
+        {
+            ActionPreparation::Ready(prepared) => prepared,
+            ActionPreparation::Unsupported if prepared_select => {
+                return Some(ContentResponse::default());
+            }
+            ActionPreparation::Unsupported => {
+                return if self.ordinary_ax_focus_admissible(id, part, action) {
+                    None
+                } else {
+                    Some(ContentResponse::default())
+                };
+            }
         };
         if prepared.refused {
             return Some(ContentResponse::default());
