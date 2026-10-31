@@ -225,3 +225,49 @@ Actual compiled source e4061e3c7d29e65d56ab9f3a7b0f520b67616b90, scoped CPU04: d
 - Pending Disclosure intent is retired across panel inactivity/reselect; stale confirmation remains rejected, a fresh generation on the same retained owner can confirm. Actual select changed-bool and selected0 state are independently asserted after real Tab routing.
 
 3579 source entries, original8WIP, HEAD/branch and cache markers were unchanged; owned processes/groups and original guards were released before handoff. No Navigation/Core production change, GUI, OS input, GPU/native execution or new CI in this batch. The target covers CPU/API/CoreText and Scene/clip under its fixture's default/Light inputs; synthetic icon lease does not establish SVG pixels. Real OS pinyin/physical IME, VoiceOver, performance, complete Gold7, broader theme/native matrix and AgentKit migration remain unverified. Prior finite normal/reduced native evidence keeps its original source/scope. #38 stays open for remaining original AC; publication belongs to the integrator's next independent compatible batch, not PR208.
+
+### 2026-11-01 AC5 CPU012: branch reveal clip repair design (interface review, not executed)
+
+CPU012 standalone public a883 consumer produced 5 PASS / 1 FAIL. The paired and independent original Stack controls actually planned/committed offset 0→670 with the same leaf landing wholly at y272..300 and the original mounts. The delegated Disclosure's same initial leaf frame failed planning with UnsupportedLayout, while fully open (progress1). The body's declared visible clip was (0,37,400,263), whereas the Scroll viewport was (0,0,400,300). Original CPU011/012 artifacts remain unchanged. This is a known compatibility failure, not a speculative layout extension.
+
+The Disclosure producer and content_reveal_plan.rs are byte-identical from a883 to normal-merged 7d9d792b4d5d26d9516671d8ff430d76a4e69a33. DisclosureView/layout_body and the Component reveal hooks are likewise unchanged; unrelated Select/Collections changes in their shared files are preserved. Candidate starts at 7d9d792, without writing MAIN/PUB.
+
+Proposed minimal shared interface:
+
+```rust
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct HostRevealVerticalClip {
+    pub top: f32,
+    pub bottom: f32,
+}
+// Component: default None, no new layout qualification.
+fn host_reveal_child_vertical_clip(
+    &self, child: ComponentId,
+) -> Option<HostRevealVerticalClip> { None }
+```
+
+The declaration describes ONLY the selected direct child edge's vertical boundary in last-arranged Host coordinates, BEFORE ancestor intersection. The planner translates top/bottom by the owner's accumulated ancestor Scroll y delta, then intersects with the current projected ancestor clip; it preserves that clip's x/width. It does not translate a previously viewport-clipped visible rectangle. Header edge returns None; body edge returns top=body_layout.body_rect.min_y(), bottom=top+body_layout.occupied_height. Thus the original reveal/clearance/clip painter and input geometry stay unchanged. No general callback framework, unknown-layout fallback, or consumer clip rewrite is introduced.
+
+NodeState snapshots only the actually selected next child's declaration, validates finite top/bottom and top<=bottom once on entry, and includes it in exact snapshot equality at commit. Existing common local_clip remains unchanged and applies before the edge boundary. Root/row/pane/curve authority is unchanged. Unknown owners still require their existing positive passthrough capability; the new declaration grants none. An empty selected strip is NoFeasibleRegion. Invalid numeric declarations remain Geometry(InvalidInput). Path identity/mount and original geometry generations retain their existing authority.
+
+DisclosureContent adds a last-arranged eligibility flag. measure/lifecycle/authoritative expansion changes invalidate it. A settled fully open (progress1) or fully closed (progress0) state after arrange can advertise translation passthrough; opening/closing intermediate layouts cannot predict geometry and remain UnsupportedLayout. The declaration uses the original body ID; children/order/mounts are never replaced. Existing closing retained paint, active=false body retirement, motion schedule, IME collapse barrier, input/AX ownership and palette are untouched. Closed descendants are still rejected first as UnavailableTarget. A business wrapper forwards the SDK's passthrough and new edge declaration, AND retains its own arrange/epoch/row-identity checks; a bare true is insufficient.
+
+Exact writer boundary (one SDK domain patch writer; Core readonly review; Main final integration):
+
+- crates/tekes-ui-controls/src/composition.rs: re-export the small geometry declaration and add the default Component hook beside host_reveal_local_clip.
+- crates/tekes-ui-controls/src/composition/content_reveal_plan.rs: public declaration; NodeState read/snapshot/equality; projected edge intersection; unchanged fail-closed baseline comparison and atomic commit path. Cover all three snapshot call sites, including logical-focus validation, without weakening their contracts.
+- crates/tekes-ui-controls/src/composition/disclosure.rs: retain latest arrange eligibility; exact body-edge declaration; settled passthrough hook. No Trigger painter, body arrange, public child hierarchy or existing actual clip change.
+- examples/composition-consumer/tests/disclosure_host_reveal.rs and a local support module if needed: genuine direct control and delegated control, same-geometry original Stack, real Scroll nonzero commit and complete landing, stable mount, trigger branch, closed exact error, stale plans, intermediate motion refusal, nested/translated ancestors and numeric-invalid declaration. Reuse CPU012's 900pt/400x300 oracle, not a synthetic replacement layout.
+- docs/design/disclosure-public-content-20261024.md: this design and subsequent actual results. No manifests/locks/features/host changes.
+
+Complete affected verification batch (all NOT_RUN until one explicit local grant): controls unit tests (includes original planner/scroll/focus/curve/transaction tests), default public composition consumer suite (includes existing disclosure_content/theme/integration/under_tabs/host_reveal_plan/scroll_reveal plus new target), strict controls and consumer all-targets default plus svg-icons and bitmap-images feature compile checks. All implementation/exhaustive enum matches/fixture literals impacted by the new NodeState field must be updated in the same candidate. SDK tests use a CPU icon-service seam; this does not claim pixels. Then AgentKit owner reuses original standalone six-gate inputs and forwards the new declaration; full six must pass, followed by affected real Summary/Sidebar CAS/epoch/mount/draft/reveal and host/second-consumer checks on one exact SDK freeze/pin. Formal CI is one later compatible Main batch, not domain self-CI. No GPU/native/physicalIME/VO/performance expansion.
+
+Reuse boundary: existing original native/pixel and theme/painter evidence keeps its old source/program identity; those painters/tokens are unchanged. CPU011/012 remain red on a883. Existing PR209 current-tree three under-Tabs passes remain valid historical evidence, but affected consumer/planner checks rerun for the new candidate. New pin/program results must never be inferred from old successes. SDK readiness requires actual affected checks; AC5 closure additionally requires AgentKit real consumption and normal public delivery.
+
+#### Candidate implementation and CPU-only verification refinement (not executed)
+
+Core readonly interface review accepted the design above. The implementation stores the last actual arrange's (child ID, mount) pair rather than a bare flag; selected edge snapshots share one helper across reveal, logical focus and commit reread. Authoritative expansion, disabled changes and lifecycle invalidate eligibility. Actual body arrange/clip/painter remain byte-for-byte unchanged except recording identities after arrange. Rustfmt 1.95 and git diff whitespace check passed; no Cargo/behavior validation has run.
+
+The initial phrase "default public composition consumer suite" is narrowed to the complete named CPU targets below: the full auto-discovered suite contains GPU tests and must not be run under a CPU grant. Runtime CPU target whitelist: disclosure_host_reveal (12 new public cases), disclosure_content, disclosure_under_tabs, disclosure_review, host_reveal_plan, scroll_reveal, pure_translation_guards, nested_reading, reading_checkpoint, split_view_content, radio_scroll_transaction, segmented_scroll_actions, composing_geometry, editor_keys. Each target runs in full, not a chosen case filter. Controls library units and component_registry_api compile/execution cover the shared planner and public type binding. No original protocol 18 named or unrelated workspace targets are rerun.
+
+Default/svg-icons/bitmap-images strict validation compiles Controls --lib --tests, and consumer --lib --tests plus exactly nine tracked examples: context_menu, hover_preview, icon_content, native, padding_focus, popover_content, rich_content, toolbar_mount, wake. Compiling native does not launch it. Do not auto-discover eight unrelated Unicode/WIP examples in the frozen MAIN source. No tests execute under SVG/bitmap strict commands. disclosure_integration and disclosure_focus_paint execute actual headless Renderer work behind svg-icons and are explicitly not run here; their painter/resource inputs are unchanged and their old qualified evidence keeps its original identity. Metadata ownership must classify composition::HostRevealVerticalClip and refresh the generated capability/API binding once against final source before this batch; no extra type/root re-export is proposed.

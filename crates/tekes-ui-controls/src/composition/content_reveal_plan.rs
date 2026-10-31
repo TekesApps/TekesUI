@@ -21,6 +21,13 @@ pub enum HostRevealError {
     CompositionBarrier,
     IdentityExhausted,
 }
+/// A direct child edge's vertical reveal strip, before ancestor intersection.
+/// Coordinates belong to its owner's last arrange and translate with that owner.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct HostRevealVerticalClip {
+    pub top: f32,
+    pub bottom: f32,
+}
 /// Explicit work policy, independent of depth or wall-clock performance acceptance.
 #[derive(Clone, Copy, Debug)]
 pub struct HostRevealBudget {
@@ -113,14 +120,22 @@ struct NodeState {
     clip: Rect,
     scroll: Option<ScrollState>,
     child_clip: Option<Rect>,
+    child_vertical_clip: Option<HostRevealVerticalClip>,
     pane_boundary: Option<Rect>,
     curve_requirement: bool,
     reveal_geometry: Option<HostRevealGeometry>,
     fixed_ancestor_curves: Vec<HostRevealGeometry>,
 }
 impl NodeState {
-    fn read(node: &Content) -> Result<Self, HostRevealError> {
+    fn read(node: &Content, child: Option<ComponentId>) -> Result<Self, HostRevealError> {
         let child_clip = node.component.host_reveal_local_clip();
+        let child_vertical_clip =
+            child.and_then(|id| node.component.host_reveal_child_vertical_clip(id));
+        if child_vertical_clip
+            .is_some_and(|c| !c.top.is_finite() || !c.bottom.is_finite() || c.top > c.bottom)
+        {
+            return Err(HostRevealError::Geometry(ClipError::InvalidInput));
+        }
         if child_clip.is_some_and(|r| {
             ![
                 r.origin.x,
@@ -143,6 +158,7 @@ impl NodeState {
             frame: node.frame,
             clip: node.clip,
             child_clip,
+            child_vertical_clip,
             pane_boundary: split_view::reveal_pane_boundary(node),
             curve_requirement: node.component.requires_focus_reveal(),
             reveal_geometry: node.component.host_reveal_geometry_constraint(),
@@ -161,14 +177,17 @@ impl NodeState {
         })
     }
 }
+fn snapshot_reveal_nodes(path: &[&Content]) -> Result<Vec<NodeState>, HostRevealError> {
+    path.iter()
+        .enumerate()
+        .map(|(i, n)| NodeState::read(n, path.get(i + 1).map(|child| child.id)))
+        .collect()
+}
 fn read_reveal_nodes(
     path: &[&Content],
     fixed_ancestor_curves: Vec<HostRevealGeometry>,
 ) -> Result<Vec<NodeState>, HostRevealError> {
-    let mut nodes = path
-        .iter()
-        .map(|n| NodeState::read(n))
-        .collect::<Result<Vec<_>, _>>()?;
+    let mut nodes = snapshot_reveal_nodes(path)?;
     if let Some(first) = nodes.first_mut() {
         first.fixed_ancestor_curves = fixed_ancestor_curves;
     }
@@ -476,6 +495,15 @@ fn projected(nodes: &[NodeState], targets: &[Point]) -> (Vec<Rect>, Vec<Rect>, V
         if let Some(boundary) = n.child_clip {
             clip = intersection(clip, boundary.offset(delta.x, delta.y));
         }
+        if let Some(boundary) = n.child_vertical_clip {
+            let top = clip.min_y().max(boundary.top + delta.y);
+            let bottom = clip.max_y().min(boundary.bottom + delta.y);
+            clip = if clip.is_empty() || top >= bottom {
+                Rect::default()
+            } else {
+                Rect::new(clip.min_x(), top, clip.size.width, bottom - top)
+            };
+        }
         if let Some(s) = &n.scroll {
             let viewport = s.viewport.offset(delta.x, delta.y);
             viewports.push(viewport);
@@ -781,10 +809,10 @@ impl ContentHost {
                 route.require_passthrough(&self.root, scope_depth + i)?;
             }
         }
-        if nodes
-            .iter()
-            .any(|n| n.child_clip.is_some_and(|r| r.is_empty()))
-        {
+        if nodes.iter().any(|n| {
+            n.child_clip.is_some_and(|r| r.is_empty())
+                || n.child_vertical_clip.is_some_and(|c| c.top == c.bottom)
+        }) {
             return Err(HostRevealError::NoFeasibleRegion);
         }
         let mut targets: Vec<_> = nodes
@@ -1219,10 +1247,7 @@ impl ContentHost {
                 )
                 .map_err(|_| HostRevealError::StalePlan)?
             } else {
-                path.iter()
-                    .map(|n| NodeState::read(n))
-                    .collect::<Result<_, _>>()
-                    .map_err(|_| HostRevealError::StalePlan)?
+                snapshot_reveal_nodes(&path).map_err(|_| HostRevealError::StalePlan)?
             }) != plan.nodes
             || path
                 .last()
@@ -1544,10 +1569,7 @@ impl ContentHost {
             // mount/scope/availability/IME still authorize logical focus, but
             // stale or offscreen Rect geometry grants no reveal guarantee.
             let (route, scope_depth) = self.capture_reveal_route(&path, budget.max_path_nodes)?;
-            let nodes: Vec<_> = path
-                .iter()
-                .map(|n| NodeState::read(n))
-                .collect::<Result<_, _>>()?;
+            let nodes = snapshot_reveal_nodes(&path)?;
             return Ok(HostRevealPlan {
                 owner: self.reveal_clock.owner.clone(),
                 stamp: self.reveal_clock.stamp()?,
@@ -1668,6 +1690,48 @@ mod tests {
     use super::*;
     use crate::Insets;
     use tekes_ui_scene::{ClipBudget, ClipShape, CornerRadii};
+    #[test]
+    fn child_vertical_strip_translates_y_without_shrinking_ancestor_x() {
+        let mut ancestor = NodeState::read(
+            &Content::new(ComponentId(1), TextContent::new("ancestor")),
+            None,
+        )
+        .unwrap();
+        ancestor.clip = Rect::new(10., 20., 400., 300.);
+        ancestor.scroll = Some(ScrollState {
+            viewport: ancestor.clip,
+            viewport_size: ancestor.clip.size,
+            document: Size::new(1000., 1000.),
+            offset: Point::default(),
+            visual: Point::default(),
+            limit: Point::new(600., 700.),
+            reveal: 0,
+            version: None,
+            item_mounts: None,
+        });
+        let mut owner = NodeState::read(
+            &Content::new(ComponentId(2), TextContent::new("owner")),
+            None,
+        )
+        .unwrap();
+        owner.child_vertical_clip = Some(HostRevealVerticalClip {
+            top: 57.,
+            bottom: 990.,
+        });
+        let leaf = NodeState::read(
+            &Content::new(ComponentId(3), TextContent::new("leaf")),
+            None,
+        )
+        .unwrap();
+        let nodes = [ancestor, owner, leaf];
+        let (_, clips, _) = projected(
+            &nodes,
+            &[Point::new(200., 670.), Point::default(), Point::default()],
+        );
+        assert_eq!(clips[2], Rect::new(10., 20., 400., 300.));
+        let (_, clips, _) = projected(&nodes, &[Point::default(); 3]);
+        assert_eq!(clips[2], Rect::new(10., 57., 400., 263.));
+    }
     fn region() -> ClipRegion {
         ClipRegion::new(
             &[ClipShape::normalize(

@@ -326,6 +326,7 @@ pub struct DisclosureContent {
     header_height: f32,
     body_height: f32,
     body_layout: crate::layout_view::DisclosureBodyLayout,
+    arranged_children: Option<[(ComponentId, u64); 2]>,
 }
 impl DisclosureContent {
     pub fn new(trigger: ComponentId, title: Content, body: Content, expanded: bool) -> Self {
@@ -371,6 +372,7 @@ impl DisclosureContent {
             header_height: 0.,
             body_height: 0.,
             body_layout: Default::default(),
+            arranged_children: None,
         };
         this.sync_body();
         this
@@ -415,6 +417,9 @@ impl DisclosureContent {
             trigger.model.open = intent.expanded;
         }
         trigger.revoke();
+        if accepted {
+            self.arranged_children = None;
+        }
         self.sync_body();
         true
     }
@@ -424,12 +429,16 @@ impl DisclosureContent {
         if !expanded && subtree_composing(&self.children[1]) {
             return false;
         }
+        self.arranged_children = None;
         self.trigger_mut().model.open = expanded;
         self.trigger_mut().revoke();
         self.sync_body();
         true
     }
     pub fn set_disabled(&mut self, disabled: bool) {
+        if self.disabled() != disabled {
+            self.arranged_children = None;
+        }
         let t = self.trigger_mut();
         if t.model.disabled != disabled {
             t.model.disabled = disabled;
@@ -440,6 +449,7 @@ impl DisclosureContent {
         }
     }
     pub fn set_rtl(&mut self, rtl: bool) {
+        self.arranged_children = None;
         self.trigger_mut().rtl = rtl;
     }
     pub fn set_accessible_name(&mut self, name: impl Into<String>) -> Result<(), CompositionError> {
@@ -447,10 +457,12 @@ impl DisclosureContent {
         if name.trim().is_empty() {
             return Err(CompositionError::EmptyAccessibleName);
         }
+        self.arranged_children = None;
         self.trigger_mut().name = name;
         Ok(())
     }
     pub fn set_window_active(&mut self, active: bool) {
+        self.arranged_children = None;
         let t = self.trigger_mut();
         t.window_active = active;
         t.view.set_window_active(active);
@@ -506,6 +518,31 @@ impl DisclosureContent {
     }
 }
 impl Component for DisclosureContent {
+    fn lifecycle(&mut self, _event: Lifecycle) {
+        self.arranged_children = None;
+    }
+    fn host_reveal_passthrough(&self) -> bool {
+        self.arranged_children.is_some_and(|arranged| {
+            self.children.len() == 2
+                && self
+                    .children
+                    .iter()
+                    .zip(arranged)
+                    .all(|(child, identity)| (child.id(), child.mount_identity()) == identity)
+                && self.body_layout.progress == if self.expanded() { 1. } else { 0. }
+        })
+    }
+    fn host_reveal_child_vertical_clip(
+        &self,
+        child: ComponentId,
+    ) -> Option<HostRevealVerticalClip> {
+        (self.host_reveal_passthrough() && child == self.children[1].id()).then(|| {
+            HostRevealVerticalClip {
+                top: self.body_layout.body_rect.min_y(),
+                bottom: self.body_layout.body_rect.min_y() + self.body_layout.occupied_height,
+            }
+        })
+    }
     fn validate(&self) -> Result<(), CompositionError> {
         if self.children.len() == 2 && self.children[0].component::<Trigger>().is_some() {
             Ok(())
@@ -526,6 +563,7 @@ impl Component for DisclosureContent {
         true
     }
     fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
+        self.arranged_children = None;
         self.header_height = self.children[0].measure(text, available).size.height;
         let header = Rect::new(0., 0., available.width, self.header_height);
         let clearance = Self::focus_clearance(header, text.backing_scale());
@@ -554,6 +592,7 @@ impl Component for DisclosureContent {
         ))
     }
     fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
+        self.arranged_children = None;
         let header = Rect::new(
             frame.min_x(),
             frame.min_y(),
@@ -584,6 +623,10 @@ impl Component for DisclosureContent {
         // ring may use the already allocated clearance above that frame.
         let child_clip = self.body_layout.visible_clip.unwrap_or_default();
         self.children[1].arrange(text, child, child_clip);
+        self.arranged_children = Some([
+            (self.children[0].id(), self.children[0].mount_identity()),
+            (self.children[1].id(), self.children[1].mount_identity()),
+        ]);
     }
     fn paint(
         &mut self,

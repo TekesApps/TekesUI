@@ -70,7 +70,7 @@ pub use action_preparation::{
 };
 mod content_reveal_plan;
 pub use content_reveal_plan::{
-    HostRevealBudget, HostRevealError, HostRevealOutcome, HostRevealPlan,
+    HostRevealBudget, HostRevealError, HostRevealOutcome, HostRevealPlan, HostRevealVerticalClip,
 };
 mod rich_content;
 mod rich_document;
@@ -562,6 +562,16 @@ pub trait Component: Debug + Any {
     /// clip; Some zero area is an empty domain. Finite safe-edge numeric input is
     /// checked during planning and final validation before any effects.
     fn host_reveal_local_clip(&self) -> Option<Rect> {
+        None
+    }
+    /// An additional vertical boundary for this direct child edge, in the last
+    /// arranged Host coordinates before ancestor intersection. The planner
+    /// translates it with this owner, preserving the ancestor's horizontal clip.
+    /// This declaration does not grant translation/passthrough capability.
+    fn host_reveal_child_vertical_clip(
+        &self,
+        _child: ComponentId,
+    ) -> Option<HostRevealVerticalClip> {
         None
     }
 
