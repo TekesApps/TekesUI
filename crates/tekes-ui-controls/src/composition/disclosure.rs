@@ -40,6 +40,9 @@ struct Trigger {
     image: Option<IconImage>,
     icon_error: Option<IconRenderError>,
     window_active: bool,
+    input_arranged: bool,
+    trigger_focusable: bool,
+    section_header_layout: bool,
 }
 impl Trigger {
     fn request(&mut self, activated: bool) -> ContentResponse {
@@ -70,7 +73,11 @@ impl Trigger {
     }
     fn title_measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> Size {
         let (inset, side, row) = DisclosureView::content_insets(&mut TextAdapter(text));
-        let width = (available.width - inset * 3. - side).max(0.);
+        let width = if self.section_header_layout {
+            (available.width - 32.).max(0.)
+        } else {
+            (available.width - inset * 3. - side).max(0.)
+        };
         self.size = self.title[0]
             .measure_intrinsic(text, Size::new(width, available.height))
             .size;
@@ -78,6 +85,9 @@ impl Trigger {
     }
 }
 impl Component for Trigger {
+    fn rectangular_input_geometry(&self) -> bool {
+        self.input_arranged
+    }
     fn validate(&self) -> Result<(), CompositionError> {
         if self.title.len() != 1 {
             return Err(CompositionError::InvalidSlotCount);
@@ -100,19 +110,29 @@ impl Component for Trigger {
         true
     }
     fn requires_icon_services(&self) -> bool {
-        true
+        !self.section_header_layout
     }
     fn icon_error(&self) -> Option<IconRenderError> {
         self.icon_error
     }
     fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
+        self.input_arranged = false;
         self.icon_error = None;
         MeasuredChild::new(self.title_measure(text, available))
     }
     fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
         self.title_measure(text, frame.size);
-        // Actual title frame is resolved by the original row during paint.
-        self.title[0].arrange(text, frame, clip);
+        let (title, _) = DisclosureView::content_frames(
+            &mut TextAdapter(text),
+            self.size,
+            frame,
+            self.rtl,
+            self.section_header_layout,
+        );
+        self.title[0].arrange(text, title, title.intersection(&clip).unwrap_or_default());
+        // The original reducer uses this Host rectangular allocation/clip.
+        // This is ordinary input geometry, not curved or prepared capability.
+        self.input_arranged = frame.intersection(&clip).is_some();
     }
     fn paint(
         &mut self,
@@ -135,6 +155,7 @@ impl Component for Trigger {
             clip,
             theme.palette,
             self.rtl,
+            self.section_header_layout,
         );
         let (ink, icon_ink) = self.view.content_inks(theme.palette, theme.surface());
         self.title[0].arrange(
@@ -151,6 +172,10 @@ impl Component for Trigger {
                 ..theme
             },
         );
+        if self.section_header_layout {
+            self.image = None;
+            return;
+        }
         let backing = text.backing_scale();
         let Some(service) = text.icon_renderer() else {
             self.icon_error = Some(IconRenderError::UnsupportedRenderer);
@@ -202,6 +227,7 @@ impl Component for Trigger {
         self.window_active = active;
         self.view.set_window_active(active);
         if !active {
+            self.input_arranged = false;
             self.revoke();
         }
     }
@@ -209,7 +235,10 @@ impl Component for Trigger {
         self.view.focus_decoration_above_siblings(&self.model)
     }
     fn focusable(&self) -> bool {
-        !self.model.disabled && self.window_active
+        self.trigger_focusable && !self.model.disabled && self.window_active
+    }
+    fn preserves_activation_focus(&self) -> bool {
+        !self.trigger_focusable
     }
     fn set_focus(&mut self, focused: bool, visible: bool) {
         if focused {
@@ -310,6 +339,7 @@ impl Component for Trigger {
     }
     fn lifecycle(&mut self, event: Lifecycle) {
         if event == Lifecycle::Unmounted {
+            self.input_arranged = false;
             self.revoke();
             self.view.cancel();
             self.image = None;
@@ -326,6 +356,8 @@ pub struct DisclosureContent {
     header_height: f32,
     body_height: f32,
     body_layout: crate::layout_view::DisclosureBodyLayout,
+    arranged_children: Option<[(ComponentId, u64); 2]>,
+    arranged_body_clip: HostRevealVerticalClip,
 }
 impl DisclosureContent {
     pub fn new(trigger: ComponentId, title: Content, body: Content, expanded: bool) -> Self {
@@ -364,6 +396,9 @@ impl DisclosureContent {
                         image: None,
                         icon_error: None,
                         window_active: true,
+                        input_arranged: false,
+                        trigger_focusable: true,
+                        section_header_layout: false,
                     },
                 ),
                 body,
@@ -371,9 +406,29 @@ impl DisclosureContent {
             header_height: 0.,
             body_height: 0.,
             body_layout: Default::default(),
+            arranged_children: None,
+            arranged_body_clip: HostRevealVerticalClip {
+                top: 0.,
+                bottom: 0.,
+            },
         };
         this.sync_body();
         this
+    }
+    /// Configure whether the sole trigger participates in explicit focus,
+    /// accessibility Focus and Tab traversal. Defaults to true. False preserves
+    /// the current input owner during Pointer/AX Press without disabling actions.
+    pub fn with_trigger_focusable(mut self, focusable: bool) -> Self {
+        self.trigger_mut().trigger_focusable = focusable;
+        self
+    }
+    /// Use a plain section heading: fixed 16pt logical horizontal insets and no
+    /// indicator slot or indicator image. The title retains its original passive
+    /// Content, clipping and label policy. The default leading-indicator layout
+    /// is unchanged; action ownership, controlled expansion and motion are shared.
+    pub fn with_section_header_layout(mut self) -> Self {
+        self.trigger_mut().section_header_layout = true;
+        self
     }
     fn trigger(&self) -> &Trigger {
         self.children[0]
@@ -415,6 +470,9 @@ impl DisclosureContent {
             trigger.model.open = intent.expanded;
         }
         trigger.revoke();
+        if accepted {
+            self.arranged_children = None;
+        }
         self.sync_body();
         true
     }
@@ -424,12 +482,16 @@ impl DisclosureContent {
         if !expanded && subtree_composing(&self.children[1]) {
             return false;
         }
+        self.arranged_children = None;
         self.trigger_mut().model.open = expanded;
         self.trigger_mut().revoke();
         self.sync_body();
         true
     }
     pub fn set_disabled(&mut self, disabled: bool) {
+        if self.disabled() != disabled {
+            self.arranged_children = None;
+        }
         let t = self.trigger_mut();
         if t.model.disabled != disabled {
             t.model.disabled = disabled;
@@ -440,6 +502,7 @@ impl DisclosureContent {
         }
     }
     pub fn set_rtl(&mut self, rtl: bool) {
+        self.arranged_children = None;
         self.trigger_mut().rtl = rtl;
     }
     pub fn set_accessible_name(&mut self, name: impl Into<String>) -> Result<(), CompositionError> {
@@ -447,16 +510,13 @@ impl DisclosureContent {
         if name.trim().is_empty() {
             return Err(CompositionError::EmptyAccessibleName);
         }
+        self.arranged_children = None;
         self.trigger_mut().name = name;
         Ok(())
     }
     pub fn set_window_active(&mut self, active: bool) {
-        let t = self.trigger_mut();
-        t.window_active = active;
-        t.view.set_window_active(active);
-        if !active {
-            t.revoke();
-        }
+        self.arranged_children = None;
+        self.trigger_mut().window_active_changed(active);
     }
     /// Original reveal block, including fixed header-focus clearance. The body
     /// Content's frame starts after that inset. The reveal clip retains the
@@ -506,6 +566,27 @@ impl DisclosureContent {
     }
 }
 impl Component for DisclosureContent {
+    fn lifecycle(&mut self, _event: Lifecycle) {
+        self.arranged_children = None;
+    }
+    fn host_reveal_passthrough(&self) -> bool {
+        self.arranged_children.is_some_and(|arranged| {
+            self.children.len() == 2
+                && self
+                    .children
+                    .iter()
+                    .zip(arranged)
+                    .all(|(child, identity)| (child.id(), child.mount_identity()) == identity)
+                && self.body_layout.progress == if self.expanded() { 1. } else { 0. }
+        })
+    }
+    fn host_reveal_child_vertical_clip(
+        &self,
+        child: ComponentId,
+    ) -> Option<HostRevealVerticalClip> {
+        (self.host_reveal_passthrough() && child == self.children[1].id())
+            .then_some(self.arranged_body_clip)
+    }
     fn validate(&self) -> Result<(), CompositionError> {
         if self.children.len() == 2 && self.children[0].component::<Trigger>().is_some() {
             Ok(())
@@ -526,6 +607,7 @@ impl Component for DisclosureContent {
         true
     }
     fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
+        self.arranged_children = None;
         self.header_height = self.children[0].measure(text, available).size.height;
         let header = Rect::new(0., 0., available.width, self.header_height);
         let clearance = Self::focus_clearance(header, text.backing_scale());
@@ -554,6 +636,7 @@ impl Component for DisclosureContent {
         ))
     }
     fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
+        self.arranged_children = None;
         let header = Rect::new(
             frame.min_x(),
             frame.min_y(),
@@ -584,6 +667,19 @@ impl Component for DisclosureContent {
         // ring may use the already allocated clearance above that frame.
         let child_clip = self.body_layout.visible_clip.unwrap_or_default();
         self.children[1].arrange(text, child, child_clip);
+        // A fully offscreen ancestor has no actual visible reveal and the view
+        // reports occupied_height=0. Translation planning still needs the raw
+        // allocated strip, before that ancestor intersection, not an empty clip.
+        let allocated = (frame.max_y() - header.max_y()).max(0.);
+        let revealed = (block.size.height * self.body_layout.progress).min(allocated);
+        self.arranged_body_clip = HostRevealVerticalClip {
+            top: block.min_y(),
+            bottom: block.min_y() + revealed,
+        };
+        self.arranged_children = Some([
+            (self.children[0].id(), self.children[0].mount_identity()),
+            (self.children[1].id(), self.children[1].mount_identity()),
+        ]);
     }
     fn paint(
         &mut self,

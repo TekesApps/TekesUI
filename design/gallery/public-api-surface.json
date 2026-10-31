@@ -1291,6 +1291,12 @@
       "reason": "Current source-visible R1 immutable finite reveal preparation; API classification only, #98 execution acceptance remains pending."
     },
     {
+      "api": "tekes_ui_controls::composition::HostRevealVerticalClip",
+      "category": "composition",
+      "components": [],
+      "reason": "Read-only pre-intersection vertical span for the selected direct-child edge in its owner's last arranged coordinates; translates with that owner while preserving the ancestor horizontal clip. Declaration grants no translation/passthrough capability or unknown-layout eligibility; not a component, new reveal owner or runtime acceptance."
+    },
+    {
       "api": "tekes_ui_controls::composition::HoverPreviewContent",
       "category": "component-adapter",
       "components": [
