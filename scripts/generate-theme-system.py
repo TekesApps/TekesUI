@@ -322,10 +322,14 @@ def generate():
             surfaces = {}
             for surface, usage, state, roles in rows:
                 colors = {k: None if v is None else merge.token_value(bundle,'color',v,mode) for k,v in roles.items()}
-                if 'disabled' not in state:
+                # Quiet labels remain readable even when their action is unavailable
+                # (Menu disabled items and Breadcrumb current pages; Issue #206).
+                readable_disabled_quiet = 'disabled' in state and usage in ['action-quiet','action-quiet-error']
+                if 'disabled' not in state or readable_disabled_quiet:
                     for fg in ['text','icon','marker']:
                         if colors[fg] is None: continue
-                        if contrast(colors[fg],colors['background']) < (3.0 if fg == 'marker' else 4.5):
+                        threshold = 7.0 if readable_disabled_quiet and mode.endswith('-ic') else (3.0 if fg == 'marker' else 4.5)
+                        if contrast(colors[fg],colors['background']) < threshold:
                             raise ValueError(f'insufficient foreground contrast: {definition["id"]}/{mode}/{surface}/{usage}/{state}/{fg}')
                 if colors['helper'] is not None and 'disabled' not in state:
                     label_background = merge.token_value(bundle,'color',rules['surfaces'][surface]['background'],mode)

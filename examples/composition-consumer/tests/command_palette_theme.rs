@@ -10,14 +10,13 @@ use tekes_ui_controls::{
     layout_view::CommandPaletteView,
 };
 use tekes_ui_scene::{Primitive, Quad, Rect, Scene};
-use tekes_ui_tokens::{Palette, Rgba, Theme, proposal};
+use tekes_ui_tokens::{Palette, Rgba, Theme, proposal, surface_palette::resolve_surface};
 
 fn assert_text_ground(
     scene: &Scene,
     frame: Rect,
     palette: Palette,
-    ground: &str,
-    ink: &str,
+    expected: (Rgba, Rgba),
     active: bool,
 ) -> Quad {
     let (background_index, quad) = scene
@@ -29,7 +28,7 @@ fn assert_text_ground(
             _ => None,
         })
         .expect("actual component background quad");
-    assert_eq!(quad.fill, palette.color(ground).unwrap());
+    assert_eq!(quad.fill, expected.0);
     assert_eq!(quad.fill.a, 1.);
     let inks: Vec<_> = scene.primitives()[background_index + 1..]
         .iter()
@@ -54,7 +53,7 @@ fn assert_text_ground(
         .collect();
     assert!(!inks.is_empty(), "actual CoreText glyphs in {frame:?}");
     for actual in inks {
-        assert_eq!(actual, palette.color(ink).unwrap());
+        assert_eq!(actual, expected.1);
         if active {
             let luminance = |c: Rgba| {
                 let c = c.to_linear();
@@ -69,7 +68,7 @@ fn assert_text_ground(
             };
             assert!(
                 ratio >= minimum,
-                "{ground}/{:?}: {ratio} < {minimum}",
+                "{frame:?}/{:?}: {ratio} < {minimum}",
                 palette.theme
             );
         }
@@ -148,8 +147,10 @@ fn command_palette_same_instance_preserves_query_and_active_candidate_across_the
             &scene,
             initial_query,
             palette,
-            "transcript-input",
-            "primary-text",
+            (
+                palette.color("transcript-input").unwrap(),
+                palette.color("primary-text").unwrap(),
+            ),
             true,
         );
         assert_eq!(
@@ -185,12 +186,20 @@ fn command_palette_same_instance_preserves_query_and_active_candidate_across_the
         );
         for part in &node.parts {
             assert_eq!(part.focused, part.index == 1);
-            let ground = if part.index == 1 {
-                "row-selection"
-            } else {
-                "surface-2"
-            };
-            let q = assert_text_ground(&scene, part.frame, palette, ground, "primary-text", true);
+            let colors = resolve_surface(
+                palette,
+                "popover",
+                "action-quiet",
+                if part.index == 1 { "selected" } else { "rest" },
+            )
+            .unwrap();
+            let q = assert_text_ground(
+                &scene,
+                part.frame,
+                palette,
+                (colors.background, colors.text),
+                true,
+            );
             if part.index == 1 {
                 selected_fills.push(q.fill);
             }
@@ -269,8 +278,10 @@ fn command_palette_disabled_closes_its_popup_and_suppresses_trigger_focus_in_all
             &scene,
             layout.frame,
             palette,
-            "action-primary-ground",
-            "action-primary-foreground",
+            (
+                palette.color("action-primary-ground").unwrap(),
+                palette.color("action-primary-foreground").unwrap(),
+            ),
             true,
         );
         assert!(scene.primitives().iter().any(|p| matches!(p, Primitive::Quad(q)
@@ -308,8 +319,10 @@ fn command_palette_disabled_closes_its_popup_and_suppresses_trigger_focus_in_all
             &scene,
             layout.frame,
             palette,
-            "surface-2",
-            "tertiary-text",
+            (
+                palette.color("surface-2").unwrap(),
+                palette.color("tertiary-text").unwrap(),
+            ),
             false,
         );
         assert!(

@@ -287,6 +287,10 @@ fn original_nested_body_focus_ring_stays_above_header_ground() {
             Some(upper_stroke),
             "original body-root/descendant focus stroke must use its allocated ancestor block, root_button={root_button}"
         );
+        for x in [focus.quad.rect.min_x(), focus.quad.rect.max_x() - width] {
+            let side_stroke = Rect::new(x, body.center().y - 2., width, 4.);
+            assert_eq!(focus.clip.intersection(&side_stroke), Some(side_stroke));
+        }
         assert_eq!(ground.clip.intersection(&upper_stroke), Some(upper_stroke));
         assert!(ground.index < focus.index);
         assert_eq!(host.focused(), Some(BODY_BUTTON));

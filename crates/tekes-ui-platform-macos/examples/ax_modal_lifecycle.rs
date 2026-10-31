@@ -72,13 +72,20 @@ mod native {
             ));
             let mtm = MainThreadMarker::new().unwrap();
             let windows = NSApplication::sharedApplication(mtm).windows();
-            windows
+            let window = windows
                 .iter()
                 .find(|w| w.title().to_string() == TITLE)
-                .expect("probe's actual window")
-                .contentView()
-                .unwrap()
-                .into()
+                .expect("probe's actual window");
+            let screen = window.screen().expect("probe window's actual screen");
+            let key = NSString::from_str("NSScreenNumber");
+            let id = screen
+                .deviceDescription()
+                .objectForKey(&key)
+                .expect("screen device ID")
+                .downcast::<NSNumber>()
+                .expect("screen device ID is a number");
+            println!("AX_MODAL_DISPLAY_ID={}", id.unsignedIntValue());
+            window.contentView().unwrap().into()
         }
     }
     impl WindowHandler for Handler {
@@ -88,7 +95,12 @@ mod native {
                     assert!(self.host.focus(Some(INVOKER), true));
                     let view = self.publish(window);
                     assert!(named(&view, "Modal scope").is_none());
-                    press(&named(&view, "Open modal").unwrap());
+                    let _invoker = named(&view, "Open modal").expect("initial native invoker");
+                    let key = content_key(&self.host, INVOKER, None).expect("initial invoker key");
+                    tekes_ui_platform_macos::selftest::run_script(vec![(
+                        0,
+                        tekes_ui_platform_macos::selftest::Action::AXPressKey { key },
+                    )]);
                 }
                 Event::Accessibility { target, action } => {
                     assert!(matches!(action, AccessibilityAction::Press));
@@ -109,7 +121,10 @@ mod native {
                         let dialog = named(&view, "Modal scope").unwrap();
                         let role: Retained<NSString> =
                             unsafe { msg_send![&*dialog, accessibilityRole] };
-                        assert_eq!(role.to_string(), "AXDialog");
+                        assert_eq!(role.to_string(), "AXGroup");
+                        let subrole: Retained<NSString> =
+                            unsafe { msg_send![&*dialog, accessibilitySubrole] };
+                        assert_eq!(subrole.to_string(), "AXDialog");
                         let choice = named(&view, "Modal choice").unwrap();
                         assert_eq!(value(&choice), 0);
                         press(&choice);
@@ -155,6 +170,7 @@ mod native {
                             unsafe { msg_send![&*invoker, accessibilityPerformPress] };
                         assert!(!live && !accepted);
                         self.saved.borrow_mut().completed = true;
+                        println!("AX_MODAL_CLOSE_COMPLETED");
                     }
                 }
                 _ => {}

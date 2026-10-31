@@ -169,6 +169,7 @@ impl ContentHost {
 
     pub(super) fn reconcile_overlay_scopes(&mut self) {
         let path = self.current_overlay_path();
+        self.reconcile_checkbox_scope_exposures();
         let common = path
             .iter()
             .zip(&self.overlay_scopes)

@@ -527,6 +527,7 @@ impl ContentHost {
             .view
             .show(&mut popup.model, usize::try_from(anchor.0).unwrap_or(0));
         self.popover_order.push(session);
+        self.reconcile_checkbox_scope_exposures();
         self.dirty = true;
         Ok(session)
     }

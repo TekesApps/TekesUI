@@ -154,6 +154,27 @@ pub struct TextSurface {
     navigation: Option<Navigation>,
 }
 
+/// Identity of the already-shaped paragraph, not a second layout copy.
+#[derive(Debug)]
+struct ParagraphIdentity(Rc<Paragraph>);
+impl PartialEq for ParagraphIdentity {
+    fn eq(&self, other: &Self) -> bool {
+        Rc::ptr_eq(&self.0, &other.0)
+    }
+}
+#[derive(Debug, PartialEq)]
+pub(crate) struct PreparedTextPointer {
+    input: crate::text_input::TextActionInputSnapshot,
+    geometry: (Rect, Rect, Option<Rect>, Point, Option<ParagraphIdentity>),
+    interaction: (bool, bool, bool, Option<Point>),
+    selection: Option<(usize, usize, u64)>,
+    scrollbar: Option<crate::scroll_view::ScrollPointerDecision>,
+    navigation: Option<(usize, f32)>,
+    pub(crate) accepted: bool,
+    pub(crate) reveal: bool,
+    pub(crate) focus_rect: Option<Rect>,
+}
+
 impl TextSurface {
     pub fn new(text: &str, multiline: bool, read_only: bool) -> Self {
         let mut input = TextInput::new(text, multiline);
@@ -539,35 +560,36 @@ impl TextSurface {
         });
         Some(())
     }
-    fn select_visual_point(&mut self, point: Point, extend: bool) {
-        let index = self.hit_drag(point);
-        self.navigation = None;
-        self.input.select(index, extend);
+    fn visual_navigation(&self, point: Point, caret: usize) -> Option<(usize, f32)> {
         if !self.layout_current() {
-            return;
+            return None;
         }
-        let p = self.paragraph.as_ref().expect("current paragraph");
+        let paragraph = self.paragraph.as_ref()?;
         let y = point.y - self.origin().y;
-        if let Some((index, line)) = p
+        let (index, line) = paragraph
             .lines
             .iter()
             .enumerate()
             .find(|(_, line)| f64::from(y) < line.top + line.height)
-            .or_else(|| p.lines.iter().enumerate().next_back())
-        {
-            let x = line
-                .carets
-                .iter()
-                .find(|(i, _)| *i == self.input.caret)
-                .map_or(line.width, |(_, x)| *x);
-            self.navigation = Some(Navigation {
-                revision: self.input.edit_revision(),
-                anchor: self.input.anchor,
-                caret: self.input.caret,
-                line: index,
-                preferred_x: x as f32,
-            });
-        }
+            .or_else(|| paragraph.lines.iter().enumerate().next_back())?;
+        let x = line
+            .carets
+            .iter()
+            .find(|(i, _)| *i == caret)
+            .map_or(line.width, |(_, x)| *x);
+        Some((index, x as f32))
+    }
+    fn select_visual_point(&mut self, point: Point, extend: bool) {
+        self.input.select(self.hit_drag(point), extend);
+        self.navigation =
+            self.visual_navigation(point, self.input.caret)
+                .map(|(line, preferred_x)| Navigation {
+                    revision: self.input.edit_revision(),
+                    anchor: self.input.anchor,
+                    caret: self.input.caret,
+                    line,
+                    preferred_x,
+                });
     }
 
     /// Standard editing commands over the original input/paragraph. Some(bool)
@@ -892,6 +914,14 @@ impl TextSurface {
         }
     }
 
+    /// Whether the existing reveal entry point will scroll the current caret.
+    /// Suppression is consumed only by the real effect, never by preparation.
+    pub(crate) fn caret_reveal_allowed(&self) -> bool {
+        !self.scrollbar_pointer_active
+            && self.scroll.dragging_axis().is_none()
+            && !self.scrollbar_reveal_suppressed
+    }
+
     pub fn reveal(&mut self) {
         // Scrollbar thumb drags and track paging take precedence over the
         // stale insertion caret, including explicit reveals during the gesture.
@@ -926,6 +956,165 @@ impl TextSurface {
         }
     }
 
+    /// Decide on the original input/paragraph without selecting, unmarking,
+    /// pausing a reader, scrolling or acquiring capture.
+    pub(crate) fn prepare_pointer_down(
+        &self,
+        point: Point,
+        shift: bool,
+        click_count: u32,
+        minimum_thumb: f32,
+    ) -> Option<PreparedTextPointer> {
+        let accepted = self.contains_visible(point) && !self.input.disabled;
+        let mut selection = None;
+        let mut navigation = None;
+        let mut scrollbar = None;
+        if accepted {
+            if !self.input.can_unmark() {
+                return None;
+            }
+            for vertical in [true, false] {
+                if let Some(decision) = self.scroll.prepare_pointer_down(
+                    point,
+                    vertical,
+                    self.track(vertical).inset(-Spacing::Micro.value()),
+                    minimum_thumb,
+                ) {
+                    scrollbar = Some(decision);
+                    break;
+                }
+            }
+            if scrollbar.is_none() {
+                let (mut anchor, mut caret) =
+                    self.input.point_selection(self.hit_drag(point), shift);
+                let mut steps = 1;
+                if click_count >= 3 {
+                    let range = self.input.paragraph_range_at(caret);
+                    anchor = range.start;
+                    caret = range.end;
+                    steps += 1;
+                } else if click_count == 2 {
+                    let range = self.input.word_range_at(self.selection_hit(point, caret));
+                    anchor = range.start;
+                    caret = range.end;
+                    steps += 1;
+                } else {
+                    navigation = self.visual_navigation(point, caret);
+                }
+                if !self
+                    .input
+                    .can_advance_edit_epochs(steps + self.input.unmark_epoch_steps())
+                {
+                    return None;
+                }
+                selection = Some((anchor, caret, steps));
+            }
+        }
+        // Selection application clears one-shot suppression; an existing
+        // scrollbar gesture still keeps priority over caret reveal.
+        let reveal = accepted
+            && !self.scrollbar_pointer_active
+            && self.scroll.dragging_axis().is_none()
+            && scrollbar.is_none();
+        let focus_rect = if let Some(decision) = &scrollbar {
+            let caret = if self.input.unmark_epoch_steps() > 0 {
+                self.decided_selection_focus_rect(self.input.caret, None, false)
+            } else {
+                self.caret()
+            };
+            let before = self.scroll.visual_offset();
+            let after = decision.visual_offset();
+            Some(caret.offset(before.x - after.x, before.y - after.y))
+        } else {
+            selection
+                .map(|(_, caret, _)| self.decided_selection_focus_rect(caret, navigation, reveal))
+        };
+        Some(PreparedTextPointer {
+            input: self.input.action_snapshot(),
+            geometry: (
+                self.outer,
+                self.inner,
+                self.ancestor_clip,
+                self.scroll.visual_offset(),
+                self.paragraph
+                    .as_ref()
+                    .map(|p| ParagraphIdentity(p.clone())),
+            ),
+            interaction: (
+                self.pointer_dragging,
+                self.scrollbar_pointer_active,
+                self.scrollbar_reveal_suppressed,
+                self.pending_reveal,
+            ),
+            selection,
+            scrollbar,
+            navigation,
+            accepted,
+            reveal,
+            focus_rect,
+        })
+    }
+    pub(crate) fn decided_selection_focus_rect(
+        &self,
+        caret: usize,
+        navigation: Option<(usize, f32)>,
+        reveal: bool,
+    ) -> Rect {
+        let doc = navigation
+            .and_then(|(line, _)| self.paragraph.as_ref()?.lines.get(line))
+            .map_or_else(
+                || {
+                    self.paragraph.as_ref().map_or(Rect::default(), |p| {
+                        p.caret_rect(caret, Stroke::Rule.value())
+                    })
+                },
+                |line| {
+                    Rect::new(
+                        line.carets
+                            .iter()
+                            .find(|(i, _)| *i == caret)
+                            .map_or(line.width, |(_, x)| *x) as f32,
+                        line.top as f32,
+                        Stroke::Rule.value(),
+                        line.height as f32,
+                    )
+                },
+            );
+        // Reuse the original ScrollView reducer on a value copy for exactly
+        // its existing nearest-caret policy, without introducing another plan.
+        let mut scroll = self.scroll.clone();
+        if reveal {
+            scroll.reveal(doc);
+        }
+        let origin = self.origin();
+        doc.offset(
+            origin.x + self.scroll.offset.x - scroll.offset.x,
+            origin.y + self.scroll.offset.y - scroll.offset.y,
+        )
+    }
+    pub(crate) fn apply_pointer_down(&mut self, decision: PreparedTextPointer) {
+        if !decision.accepted {
+            return;
+        }
+        self.scrollbar_reveal_suppressed = false;
+        if let Some(scrollbar) = decision.scrollbar {
+            self.input.unmark();
+            self.scroll.apply_pointer_down(scrollbar);
+            self.scrollbar_pointer_active = true;
+        } else if let Some((anchor, caret, steps)) = decision.selection {
+            self.input
+                .apply_decided_selection(anchor, caret, steps, true);
+            self.navigation = decision.navigation.map(|(line, preferred_x)| Navigation {
+                revision: self.input.edit_revision(),
+                anchor,
+                caret,
+                line,
+                preferred_x,
+            });
+            self.scrollbar_pointer_active = false;
+        }
+        self.pointer_dragging = true;
+    }
     pub fn pointer_down(
         &mut self,
         point: Point,
@@ -933,34 +1122,10 @@ impl TextSurface {
         click_count: u32,
         minimum_thumb: f32,
     ) -> Option<bool> {
-        if !self.contains_visible(point) || self.input.disabled {
-            return None;
-        }
-        self.input.unmark();
-        self.scrollbar_reveal_suppressed = false;
-        for vertical in [true, false] {
-            let track = self.track(vertical).inset(-Spacing::Micro.value());
-            if self
-                .scroll
-                .pointer_down(point, vertical, track, minimum_thumb)
-            {
-                self.pointer_dragging = true;
-                self.scrollbar_pointer_active = true;
-                return Some(true);
-            }
-        }
-        self.scrollbar_pointer_active = false;
-        self.select_visual_point(point, shift);
-        if click_count >= 3 {
-            self.navigation = None;
-            self.input.select_paragraph_at(self.input.caret);
-        } else if click_count == 2 {
-            self.navigation = None;
-            let grapheme = self.selection_hit(point, self.input.caret);
-            self.input.select_word_at(grapheme);
-        }
-        self.pointer_dragging = true;
-        Some(true)
+        let decision = self.prepare_pointer_down(point, shift, click_count, minimum_thumb)?;
+        let accepted = decision.accepted;
+        self.apply_pointer_down(decision);
+        accepted.then_some(true)
     }
 
     /// Resolve the glyph under the pointer using the existing shaped selection
@@ -1014,6 +1179,13 @@ impl TextSurface {
         self.select_visual_point(point, true);
         self.reveal();
         true
+    }
+
+    /// Whether the original text or scrollbar gesture still owns capture.
+    pub(crate) fn pointer_active(&self) -> bool {
+        self.pointer_dragging
+            || self.scrollbar_pointer_active
+            || self.scroll.dragging_axis().is_some()
     }
 
     pub fn pointer_up(&mut self) {
@@ -1340,6 +1512,134 @@ mod tests {
         let mut renderer = RecordingRenderer::default();
         view.draw(&mut renderer, &mut scene, Theme::LIGHT, false, false);
         (view, scene, renderer)
+    }
+
+    #[test]
+    fn prepared_pointer_is_pure_and_commits_marked_text_on_the_original_undo_owner() {
+        let mut surface = TextSurface::new("abcdef", false, false);
+        surface.outer = Rect::new(0., 0., 100., 40.);
+        surface.inner = surface.outer;
+        assert!(surface.input.preedit("中", 1..1, None));
+        let before = surface.input.action_snapshot();
+        let before_scroll = format!("{:?}", surface.scroll);
+        let decision = surface
+            .prepare_pointer_down(Point::new(10., 10.), false, 1, 24.)
+            .unwrap();
+        assert!(decision.accepted);
+        assert_eq!(surface.input.action_snapshot(), before);
+        assert_eq!(format!("{:?}", surface.scroll), before_scroll);
+        assert!(!surface.pointer_dragging);
+        surface.apply_pointer_down(decision);
+        assert!(surface.pointer_dragging);
+        assert!(surface.input.marked.is_none());
+        assert_eq!(surface.input.text, "中abcdef");
+        assert!(surface.input.undo());
+        assert_eq!(surface.input.text, "abcdef");
+
+        surface.input.preedit("中", 1..1, None);
+        surface.input.test_edit_epoch(u64::MAX);
+        let before = surface.input.action_snapshot();
+        assert!(
+            surface
+                .prepare_pointer_down(Point::new(10., 10.), false, 1, 24.)
+                .is_none()
+        );
+        assert_eq!(surface.input.action_snapshot(), before);
+        surface.input.test_edit_epoch(0);
+    }
+
+    #[test]
+    fn prepared_pointer_selection_keeps_shift_word_and_paragraph_epoch_contracts() {
+        for (shift, clicks, expected, steps) in
+            [(true, 1, 0..4, 1), (false, 2, 0..3, 2), (false, 3, 0..8, 2)]
+        {
+            let mut surface = TextSurface::new("one two\n三", true, true);
+            surface.outer = Rect::new(0., 0., 100., 40.);
+            surface.inner = surface.outer;
+            surface.input.select(4, false);
+            let revision = surface.input.edit_revision();
+            let decision = surface
+                .prepare_pointer_down(Point::new(10., 10.), shift, clicks, 24.)
+                .unwrap();
+            assert_eq!(surface.input.selection(), 4..4);
+            surface.apply_pointer_down(decision);
+            assert_eq!(surface.input.selection(), expected);
+            assert_eq!(
+                surface.input.edit_revision(),
+                (revision.0, revision.1 + steps)
+            );
+            assert!(
+                surface.input.read_only,
+                "selection does not grant edit authority"
+            );
+        }
+    }
+
+    #[test]
+    fn pointer_active_queries_original_capture_without_mutation_and_clears_on_release() {
+        let mut surface = TextSurface::new("body", true, false);
+        surface
+            .scroll
+            .layout(Size::new(100., 100.), Size::new(100., 400.));
+        for (selection, scrollbar, expected) in [
+            (false, false, false),
+            (true, false, true),
+            (false, true, true),
+            (true, true, true),
+        ] {
+            surface.pointer_dragging = selection;
+            surface.scrollbar_pointer_active = scrollbar;
+            let input = surface.input.action_snapshot();
+            let scroll = format!("{:?}", surface.scroll);
+            assert_eq!(surface.pointer_active(), expected);
+            assert_eq!(surface.pointer_active(), expected);
+            assert_eq!(surface.input.action_snapshot(), input);
+            assert_eq!(format!("{:?}", surface.scroll), scroll);
+            assert_eq!(surface.pointer_dragging, selection);
+            assert_eq!(surface.scrollbar_pointer_active, scrollbar);
+        }
+        surface.pointer_up();
+        assert!(!surface.pointer_active());
+        assert!(surface.scrollbar_reveal_suppressed);
+        let track = Rect::new(90., 0., 10., 100.);
+        assert!(
+            surface
+                .scroll
+                .pointer_down(Point::new(95., 10.), true, track, 24.)
+        );
+        assert!(surface.scroll.dragging_axis().is_some());
+        assert!(surface.pointer_active());
+        surface.cancel_interaction();
+        assert!(!surface.pointer_active());
+        assert!(surface.scroll.dragging_axis().is_none());
+    }
+
+    #[test]
+    fn prepared_scrollbar_page_keeps_caret_reveal_suppressed_through_release() {
+        let mut surface = TextSurface::new("body", true, false);
+        surface.outer = Rect::new(0., 0., 100., 100.);
+        surface.inner = surface.outer;
+        surface
+            .scroll
+            .layout(Size::new(100., 100.), Size::new(100., 400.));
+        surface.scroll.scroll_by(0., 120.);
+        let track = surface.track(true).inset(-Spacing::Micro.value());
+        let point = Point::new(track.center().x, surface.outer.max_y() - 1.);
+        let before = surface.input.action_snapshot();
+        let decision = surface.prepare_pointer_down(point, false, 1, 24.).unwrap();
+        assert!(decision.accepted);
+        assert!(decision.scrollbar.is_some());
+        assert!(!decision.reveal);
+        assert_eq!(surface.scroll.offset.y, 120.);
+        surface.apply_pointer_down(decision);
+        assert!(surface.scrollbar_pointer_active);
+        assert_eq!(surface.scroll.offset.y, 210.);
+        surface.reveal();
+        assert_eq!(surface.scroll.offset.y, 210.);
+        surface.pointer_up();
+        surface.reveal();
+        assert_eq!(surface.scroll.offset.y, 210.);
+        assert_eq!(surface.input.action_snapshot(), before);
     }
 
     #[test]

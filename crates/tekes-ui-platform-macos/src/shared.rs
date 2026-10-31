@@ -1053,6 +1053,19 @@ impl Window {
         crate::screens::current(&self.window)
     }
 
+    /// Current outer NSWindow frame in global AppKit points (bottom-left origin).
+    /// Diagnostic only; this does not move or resize the window.
+    pub fn native_window_frame(&self) -> crate::placement::Rect {
+        crate::screens::rect(self.window.frame())
+    }
+
+    /// Current NSScreenNumber / CGDirectDisplayID, if AppKit has a screen.
+    pub fn native_screen_id(&self) -> Option<u32> {
+        self.window
+            .screen()
+            .and_then(|screen| crate::screens::display_id(&screen))
+    }
+
     /// `NSWindow.windowNumber`，仅用于诊断（例如 `screencapture -l`）。
     pub fn native_window_number(&self) -> isize {
         self.window.windowNumber()

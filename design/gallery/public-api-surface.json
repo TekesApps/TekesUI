@@ -20,6 +20,14 @@
       "reason": "Chart input datum and measured bar/chart geometry; not independent controls."
     },
     {
+      "api": "tekes_ui_controls::BreadcrumbContent",
+      "category": "component-adapter",
+      "components": [
+        "tui.breadcrumb"
+      ],
+      "reason": "Original navigation Content input or adapter, also reachable through its explicit root reexport; belongs to the existing registered family and route."
+    },
+    {
       "api": "tekes_ui_controls::Button",
       "category": "component",
       "components": [
@@ -156,6 +164,14 @@
         "tui.checkbox"
       ],
       "reason": "Checkbox state and measured geometry."
+    },
+    {
+      "api": "tekes_ui_controls::CommandPaletteContent",
+      "category": "component-adapter",
+      "components": [
+        "tui.command-palette"
+      ],
+      "reason": "Original navigation Content input or adapter, also reachable through its explicit root reexport; belongs to the existing registered family and route."
     },
     {
       "api": "tekes_ui_controls::ContainerLayout",
@@ -541,12 +557,28 @@
       "reason": "Registered component model or production View; identity and route are owned by workbench.json."
     },
     {
+      "api": "tekes_ui_controls::TabItem",
+      "category": "component-support",
+      "components": [
+        "tui.tabs"
+      ],
+      "reason": "Original navigation Content input or adapter, also reachable through its explicit root reexport; belongs to the existing registered family and route."
+    },
+    {
       "api": "tekes_ui_controls::Tabs",
       "category": "component",
       "components": [
         "tui.tabs"
       ],
       "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::TabsContent",
+      "category": "component-adapter",
+      "components": [
+        "tui.tabs"
+      ],
+      "reason": "Original navigation Content input or adapter, also reachable through its explicit root reexport; belongs to the existing registered family and route."
     },
     {
       "api": "tekes_ui_controls::TabsLayout",
@@ -849,6 +881,14 @@
       "reason": "Public Content adapter retains the original Notice model/View, action owner and registered identity; no new queue or component."
     },
     {
+      "api": "tekes_ui_controls::composition::BreadcrumbContent",
+      "category": "component-adapter",
+      "components": [
+        "tui.breadcrumb"
+      ],
+      "reason": "Original navigation Content input or adapter, also reachable through its explicit root reexport; belongs to the existing registered family and route."
+    },
+    {
       "api": "tekes_ui_controls::composition::Button",
       "category": "component-adapter",
       "components": [
@@ -890,6 +930,54 @@
         "tui.chart"
       ],
       "reason": "Construction validation error for ChartContent; supporting API for the existing chart adapter, not an independent component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::CheckboxContent",
+      "category": "component-adapter",
+      "components": [
+        "tui.checkbox"
+      ],
+      "reason": "Owned Content adapter for the existing registered component; retains the original model and presentation contract. Finite recovery evidence is separate from native acceptance and public delivery."
+    },
+    {
+      "api": "tekes_ui_controls::composition::CheckboxIntent",
+      "category": "component-support",
+      "components": [
+        "tui.checkbox"
+      ],
+      "reason": "Typed intent, selection or rejection value for the existing component adapter; no additional component identity or state machine."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ComboBoxContent",
+      "category": "component-adapter",
+      "components": [
+        "tui.combo-box"
+      ],
+      "reason": "Owned Content adapter for the existing registered component; retains the original model and presentation contract. Finite recovery evidence is separate from native acceptance and public delivery."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ComboBoxSelection",
+      "category": "component-support",
+      "components": [
+        "tui.combo-box"
+      ],
+      "reason": "Typed intent, selection or rejection value for the existing component adapter; no additional component identity or state machine."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ComboBoxUpdateError",
+      "category": "component-support",
+      "components": [
+        "tui.combo-box"
+      ],
+      "reason": "Typed intent, selection or rejection value for the existing component adapter; no additional component identity or state machine."
+    },
+    {
+      "api": "tekes_ui_controls::composition::CommandPaletteContent",
+      "category": "component-adapter",
+      "components": [
+        "tui.command-palette"
+      ],
+      "reason": "Original navigation Content input or adapter, also reachable through its explicit root reexport; belongs to the existing registered family and route."
     },
     {
       "api": "tekes_ui_controls::composition::Component",
@@ -1336,6 +1424,14 @@
       "reason": "Existing experimental composition protocol/runtime, stable identity, routed events, semantics and lifecycle; not an additional Gallery component."
     },
     {
+      "api": "tekes_ui_controls::composition::LinkContent",
+      "category": "component-adapter",
+      "components": [
+        "tui.link"
+      ],
+      "reason": "Owned Content adapter for the original Link model/View and semantic underline; no separate navigation policy or route."
+    },
+    {
       "api": "tekes_ui_controls::composition::ListContent",
       "category": "component-adapter",
       "components": [
@@ -1586,6 +1682,30 @@
       "reason": "Ordinary Content adapter consumes the existing Progress model and shared Surface packet; retains the registered Progress identity."
     },
     {
+      "api": "tekes_ui_controls::composition::RadioContentError",
+      "category": "component-support",
+      "components": [
+        "tui.radio-group"
+      ],
+      "reason": "Typed intent, selection or rejection value for the existing component adapter; no additional component identity or state machine."
+    },
+    {
+      "api": "tekes_ui_controls::composition::RadioGroupContent",
+      "category": "component-adapter",
+      "components": [
+        "tui.radio-group"
+      ],
+      "reason": "Owned Content adapter for the existing registered component; retains the original model and presentation contract. Finite recovery evidence is separate from native acceptance and public delivery."
+    },
+    {
+      "api": "tekes_ui_controls::composition::RadioSelectionIntent",
+      "category": "component-support",
+      "components": [
+        "tui.radio-group"
+      ],
+      "reason": "Typed intent, selection or rejection value for the existing component adapter; no additional component identity or state machine."
+    },
+    {
       "api": "tekes_ui_controls::composition::Rejected",
       "category": "component-support",
       "components": [
@@ -1711,6 +1831,30 @@
         "tui.scroll-area"
       ],
       "reason": "Experimental composition adapter for the existing component family, exercised by the independent composition consumer; does not imply every family has migrated or native acceptance passed."
+    },
+    {
+      "api": "tekes_ui_controls::composition::SegmentIntent",
+      "category": "component-support",
+      "components": [
+        "tui.segmented-control"
+      ],
+      "reason": "Typed intent, selection or rejection value for the existing component adapter; no additional component identity or state machine."
+    },
+    {
+      "api": "tekes_ui_controls::composition::SegmentedContentError",
+      "category": "component-support",
+      "components": [
+        "tui.segmented-control"
+      ],
+      "reason": "Typed intent, selection or rejection value for the existing component adapter; no additional component identity or state machine."
+    },
+    {
+      "api": "tekes_ui_controls::composition::SegmentedControlContent",
+      "category": "component-adapter",
+      "components": [
+        "tui.segmented-control"
+      ],
+      "reason": "Owned Content adapter for the existing registered component; retains the original model and presentation contract. Finite recovery evidence is separate from native acceptance and public delivery."
     },
     {
       "api": "tekes_ui_controls::composition::SemanticLabel",
@@ -1862,12 +2006,28 @@
       "reason": "Experimental composition adapter for the existing component family, exercised by the independent composition consumer; does not imply every family has migrated or native acceptance passed."
     },
     {
+      "api": "tekes_ui_controls::composition::TabItem",
+      "category": "component-support",
+      "components": [
+        "tui.tabs"
+      ],
+      "reason": "Original navigation Content input or adapter, also reachable through its explicit root reexport; belongs to the existing registered family and route."
+    },
+    {
       "api": "tekes_ui_controls::composition::TableTransactionCompatibility",
       "category": "component-support",
       "components": [
         "tui.data-table"
       ],
       "reason": "Public default-Unknown recursive StableHooks contract for Table atomic staging and mutable access paths; ordinary Host dynamic hooks remain supported."
+    },
+    {
+      "api": "tekes_ui_controls::composition::TabsContent",
+      "category": "component-adapter",
+      "components": [
+        "tui.tabs"
+      ],
+      "reason": "Original navigation Content input or adapter, also reachable through its explicit root reexport; belongs to the existing registered family and route."
     },
     {
       "api": "tekes_ui_controls::composition::TextContent",
@@ -2241,6 +2401,14 @@
         "tui.radio-group"
       ],
       "reason": "Registered component model or production View; identity and route are owned by workbench.json."
+    },
+    {
+      "api": "tekes_ui_controls::extended::RadioSelectionError",
+      "category": "component-support",
+      "components": [
+        "tui.radio-group"
+      ],
+      "reason": "Finite invalid-index or disabled-item rejection for the original controlled RadioGroup selection update; not a separate component or selection owner."
     },
     {
       "api": "tekes_ui_controls::extended::SegmentedControl",

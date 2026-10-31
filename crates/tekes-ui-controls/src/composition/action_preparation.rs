@@ -623,8 +623,11 @@ impl ContentHost {
         // Its pointer-down may extend the original selection, so leave that
         // same-owner reducer untouched; cross-owner transfers use preparation.
         if self.focused.is_some_and(|focused| {
-            path.iter()
-                .any(|node| node.id == focused && node.component.text_surface().is_some())
+            path.iter().any(|node| {
+                node.id == focused
+                    && node.component.text_surface().is_some()
+                    && node.component::<ComboBoxContent>().is_none()
+            })
         }) {
             return None;
         }
@@ -730,10 +733,11 @@ impl ContentHost {
         {
             return Some(ContentResponse::default());
         }
-        if let Some(p) = focus
-            && matches!(self.apply_focus(p), FocusAdmission::Rejected)
-        {
-            return Some(ContentResponse::default());
+        if let Some(p) = focus {
+            if matches!(self.apply_focus(p), FocusAdmission::Rejected) {
+                return Some(ContentResponse::default());
+            }
+            self.pointer_focus_requested = true;
         }
         for a in actions {
             let n = a
@@ -748,6 +752,7 @@ impl ContentHost {
             self.capture_epoch = epoch;
             self.captured = Some(id);
             self.captured_mount = self.root.find_active(id).map(|node| node.mount);
+            self.captured_overlay_handler = false;
         }
         self.event_bubbled = Some(bubbles);
         Some(response)
@@ -768,6 +773,11 @@ impl ContentHost {
         {
             return None;
         }
+        let combo_expansion = matches!(action, AccessibilityAction::SetExpanded(_))
+            && self
+                .scope()
+                .find_active(id)
+                .is_some_and(|node| node.component::<ComboBoxContent>().is_some());
         if !self.strict_focus_requirement(id) {
             // Other ordinary AX verbs keep their original non-transfer policy.
             // Strict cross-owner verbs below always need an original decision.
@@ -776,13 +786,14 @@ impl ContentHost {
                 AccessibilityAction::Focus
                     | AccessibilityAction::Press
                     | AccessibilityAction::SetSelection(_)
-            ) {
+            ) && !combo_expansion
+            {
                 return None;
             }
             // Stable original Press owners use the same preflight/commit path
             // even on ordinary rectangles; this prevents an overflow or failed
             // focus admission from falling through to a partially mutating AX reducer.
-            let stable_press = matches!(action, AccessibilityAction::Press)
+            let stable_press = (matches!(action, AccessibilityAction::Press) || combo_expansion)
                 && self.scope().find_active(id).is_some_and(|n| {
                     n.component.action_transaction_compatibility()
                         == ActionTransactionCompatibility::StableHooks
@@ -913,6 +924,13 @@ impl OwnedActionRequest {
         }
     }
 }
+#[derive(Clone, Debug)]
+pub(super) struct OwnerIdentity(pub std::sync::Arc<()>);
+impl PartialEq for OwnerIdentity {
+    fn eq(&self, other: &Self) -> bool {
+        std::sync::Arc::ptr_eq(&self.0, &other.0)
+    }
+}
 pub(super) trait OriginalActionDecision: Debug + PartialEq {
     fn focus_rect(&self) -> Option<Rect> {
         None
@@ -1034,6 +1052,63 @@ mod tests {
         .unwrap();
     }
     #[test]
+    fn prepared_pointer_publishes_only_admitted_focus_and_keeps_single_activation() {
+        for (preserve, same_owner) in [(false, false), (false, true), (true, false), (true, true)] {
+            let mut h = host();
+            if same_owner {
+                assert!(h.focus(Some(TARGET), true));
+            }
+            let before_focus = h.focused();
+            h.get_mut(TARGET).unwrap().preserve_activation_focus = preserve;
+            // get_mut withdraws the geometry lease. Restore the normal render
+            // lifecycle before testing accepted focus through the Scroll owner.
+            render(&mut h);
+            let point = h
+                .get(TARGET)
+                .unwrap()
+                .component::<Button>()
+                .unwrap()
+                .button
+                .layout()
+                .unwrap()
+                .frame
+                .center();
+            assert!(h.get(TARGET).unwrap().visible().unwrap().contains(point));
+            let response = h.event(&ContentEvent::PointerDown(point));
+            assert!(
+                response.consumed,
+                "preserve={preserve}, same_owner={same_owner}"
+            );
+            assert_eq!(h.pointer_focus_requested(), !preserve);
+            assert_eq!(
+                h.focused(),
+                if preserve { before_focus } else { Some(TARGET) }
+            );
+            h.event(&ContentEvent::PointerUp(point));
+            assert!(
+                !h.pointer_focus_requested(),
+                "focus intent belongs only to pointer-down"
+            );
+            assert_eq!(
+                h.get(TARGET)
+                    .unwrap()
+                    .component::<Button>()
+                    .unwrap()
+                    .activations,
+                1
+            );
+            assert_eq!(
+                h.drain_actions()
+                    .iter()
+                    .filter(|action| action.target == TARGET
+                        && action.kind == ContentActionKind::Activate)
+                    .count(),
+                1
+            );
+        }
+    }
+
+    #[test]
     fn actual_capture_and_activation_maxima_refuse_before_first_effect() {
         for capture in [true, false] {
             let mut h = host();
@@ -1048,7 +1123,17 @@ mod tests {
                 render(&mut h);
             }
             let epoch = h.focus_epoch;
-            let point = h.get(TARGET).unwrap().frame.center();
+            let point = h
+                .get(TARGET)
+                .unwrap()
+                .component::<Button>()
+                .unwrap()
+                .button
+                .layout()
+                .unwrap()
+                .frame
+                .center();
+            assert!(h.get(TARGET).unwrap().visible().unwrap().contains(point));
             let r = if capture {
                 h.event(&ContentEvent::PointerDown(point))
             } else {

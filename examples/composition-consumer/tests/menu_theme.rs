@@ -84,6 +84,19 @@ fn menu_retained_theme_changes_keep_real_title_items_checks_and_navigation_reada
         host.accessibility_action(MENU, None, AccessibilityAction::Press)
             .consumed
     );
+    let mut capture = std::env::var_os("TEKESUI_MENU_THEME_GPU_OUT").map(|directory| {
+        let directory = std::path::PathBuf::from(directory);
+        assert!(
+            directory.is_absolute(),
+            "GPU output must be an absolute path"
+        );
+        assert!(!directory.exists(), "GPU output must be fresh");
+        std::fs::create_dir_all(&directory).unwrap();
+        (
+            directory,
+            tekes_ui_render::Renderer::new_headless().expect("explicit Menu GPU capture"),
+        )
+    });
     let mut surfaces = Vec::new();
     let mut expected_active = 0;
     // Shared Button/Palette brand acceptance is reused; this menu stays mounted and open.
@@ -138,35 +151,32 @@ fn menu_retained_theme_changes_keep_real_title_items_checks_and_navigation_reada
                         _ => None,
                     })
                     .unwrap();
-                let role = if index == layout.active_item {
-                    if state == "keyboard-focus" {
-                        "row-selection"
-                    } else {
-                        "row-selection-hover"
+                let row_state = if index == 2 {
+                    "disabled"
+                } else if index == layout.active_item {
+                    match state {
+                        "keyboard-focus" => "selected",
+                        "hover" => "selected-hover",
+                        "pressed" => "selected-pressed",
+                        _ => unreachable!("fixed Menu test state"),
                     }
                 } else {
-                    "surface-2"
+                    "rest"
                 };
-                assert_eq!(
-                    fill,
-                    palette.color(role).unwrap(),
-                    "{theme:?} {state} {label}"
-                );
+                let colors = tekes_ui_tokens::surface_palette::resolve_surface(
+                    palette,
+                    "popover",
+                    "action-quiet",
+                    row_state,
+                )
+                .unwrap();
+                assert_eq!(fill, colors.background, "{theme:?} {state} {label}");
                 let (_, frame, ink) = text
                     .draws
                     .iter()
                     .find(|(s, _, _)| s.as_str() == *label)
                     .expect("real menu label draw");
-                assert_eq!(
-                    *ink,
-                    palette
-                        .color(if index == 2 {
-                            "tertiary-text"
-                        } else {
-                            "primary-text"
-                        })
-                        .unwrap()
-                );
+                assert_eq!(*ink, colors.text, "{theme:?} {state} {label}");
                 assert!(scene.primitives().iter().any(|p| matches!(p, Primitive::Glyphs(run) if run.color == *ink && run.glyphs.iter().any(|g| frame.contains(g.origin)))), "actual CoreText item glyphs");
                 assert!(
                     contrast(*ink, fill) >= if theme.is_increased() { 7. } else { 4.5 },
@@ -209,6 +219,38 @@ fn menu_retained_theme_changes_keep_real_title_items_checks_and_navigation_reada
                     .disabled
             );
             assert!(menu(&mut host).menu.is_open());
+            if state == "keyboard-focus"
+                && let Some((directory, renderer)) = capture.as_mut()
+            {
+                // Reuse this exact asserted Scene: Open is active, Checked is a
+                // distinct checked/rest row, and Disabled keeps its shared ink.
+                let backing = text.backing_scale();
+                let size = ((640. * backing) as u32, (520. * backing) as u32);
+                let pixels = renderer
+                    .render_to_rgba8(
+                        &scene,
+                        &mut text.inner.atlas,
+                        size,
+                        backing,
+                        palette.color("document-canvas").unwrap(),
+                    )
+                    .unwrap();
+                resvg::tiny_skia::Pixmap::from_vec(
+                    pixels,
+                    resvg::tiny_skia::IntSize::from_wh(size.0, size.1).unwrap(),
+                )
+                .unwrap()
+                .save_png(directory.join(format!(
+                    "menu-{}-{}-keyboard-focus-{backing}x.png",
+                    if theme.is_dark() { "dark" } else { "light" },
+                    if theme.is_increased() {
+                        "increased"
+                    } else {
+                        "standard"
+                    }
+                )))
+                .unwrap();
+            }
         }
         expected_active = 1;
         // Release the held pointer in the popup gutter: cancel the arm without closing/remounting.

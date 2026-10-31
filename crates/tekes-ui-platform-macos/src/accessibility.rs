@@ -59,6 +59,8 @@ pub enum AccessibilityRole {
     RadioGroup,
     TextField,
     TextArea,
+    /// Editable single-line text with an attached option list.
+    ComboBox,
     List,
     ListItem,
     Tree,
@@ -84,6 +86,8 @@ pub enum AccessibilityRole {
     Menu,
     MenuButton,
     MenuItem,
+    TabGroup,
+    Tab,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -380,7 +384,9 @@ pub(crate) fn validate_accessibility_nodes_with_geometry(
             || node.text_selection.as_ref().is_some_and(|range| {
                 !matches!(
                     node.role,
-                    AccessibilityRole::TextField | AccessibilityRole::TextArea
+                    AccessibilityRole::TextField
+                        | AccessibilityRole::TextArea
+                        | AccessibilityRole::ComboBox
                 ) || text_in_range(node.value.as_deref().unwrap_or(""), range.clone()).is_none()
             })
             || (node.role == AccessibilityRole::Image
@@ -499,6 +505,7 @@ pub(crate) mod native {
                         }
                         AccessibilityRole::TextField => objc2_app_kit::NSAccessibilityTextFieldRole,
                         AccessibilityRole::TextArea => objc2_app_kit::NSAccessibilityTextAreaRole,
+                        AccessibilityRole::ComboBox => objc2_app_kit::NSAccessibilityComboBoxRole,
                         AccessibilityRole::List => objc2_app_kit::NSAccessibilityListRole,
                         AccessibilityRole::ListItem
                         | AccessibilityRole::TreeItem { .. }
@@ -522,6 +529,8 @@ pub(crate) mod native {
                             objc2_app_kit::NSAccessibilityMenuButtonRole
                         }
                         AccessibilityRole::MenuItem => objc2_app_kit::NSAccessibilityMenuItemRole,
+                        AccessibilityRole::Tab => objc2_app_kit::NSAccessibilityRadioButtonRole,
+                        AccessibilityRole::TabGroup => objc2_app_kit::NSAccessibilityTabGroupRole,
                     }
                 };
                 role.retain()
@@ -644,7 +653,9 @@ pub(crate) mod native {
                     let node = self.node()?;
                     if !matches!(
                         node.role,
-                        AccessibilityRole::TextField | AccessibilityRole::TextArea
+                        AccessibilityRole::TextField
+                            | AccessibilityRole::TextArea
+                            | AccessibilityRole::ComboBox
                     ) {
                         return None;
                     }
@@ -671,7 +682,9 @@ pub(crate) mod native {
                     let node = self.node()?;
                     if !matches!(
                         node.role,
-                        AccessibilityRole::TextField | AccessibilityRole::TextArea
+                        AccessibilityRole::TextField
+                            | AccessibilityRole::TextArea
+                            | AccessibilityRole::ComboBox
                     ) {
                         return None;
                     }
@@ -849,7 +862,9 @@ pub(crate) mod native {
                 if self.node().is_some_and(|n| {
                     matches!(
                         n.role,
-                        AccessibilityRole::TextField | AccessibilityRole::TextArea
+                        AccessibilityRole::TextField
+                            | AccessibilityRole::TextArea
+                            | AccessibilityRole::ComboBox
                     ) && n.text_selection.is_some()
                 }) {
                     self.dispatch(AccessibilityAction::SetSelection(range.location..end));
@@ -864,7 +879,9 @@ pub(crate) mod native {
                 if self.node().is_some_and(|n| {
                     matches!(
                         n.role,
-                        AccessibilityRole::TextField | AccessibilityRole::TextArea
+                        AccessibilityRole::TextField
+                            | AccessibilityRole::TextArea
+                            | AccessibilityRole::ComboBox
                     ) && !n.read_only
                 }) && let Some(value) = value.and_then(|v| v.downcast_ref::<NSString>())
                 {
@@ -975,7 +992,9 @@ pub(crate) mod native {
             #[unsafe(method(setAccessibilityExpanded:))]
             fn accessibilitySetExpanded(&self, expanded: bool) {
                 if self.node().is_some_and(|n| {
-                    matches!(n.role, AccessibilityRole::TreeItem { .. }) && n.expanded.is_some()
+                    (matches!(n.role, AccessibilityRole::TreeItem { .. })
+                        || n.role == AccessibilityRole::ComboBox)
+                        && n.expanded.is_some()
                 }) {
                     self.dispatch(AccessibilityAction::SetExpanded(expanded));
                 }
@@ -1163,7 +1182,9 @@ pub(crate) mod native {
                 }
                 if !matches!(
                     node.role,
-                    AccessibilityRole::TextField | AccessibilityRole::TextArea
+                    AccessibilityRole::TextField
+                        | AccessibilityRole::TextArea
+                        | AccessibilityRole::ComboBox
                 ) {
                     return;
                 }
@@ -1194,7 +1215,9 @@ pub(crate) mod native {
                 };
                 if matches!(
                     node.role,
-                    AccessibilityRole::TextField | AccessibilityRole::TextArea
+                    AccessibilityRole::TextField
+                        | AccessibilityRole::TextArea
+                        | AccessibilityRole::ComboBox
                 ) {
                     self.trace_text(&format!(
                         "allowed-query {}",
@@ -1223,7 +1246,9 @@ pub(crate) mod native {
                     Some(
                         matches!(
                             node.role,
-                            AccessibilityRole::TextField | AccessibilityRole::TextArea
+                            AccessibilityRole::TextField
+                                | AccessibilityRole::TextArea
+                                | AccessibilityRole::ComboBox
                         ) && if selector == sel!(accessibilityAttributedStringForRange:) {
                             node.value.is_some()
                         } else {
@@ -1301,7 +1326,9 @@ pub(crate) mod native {
                     node.enabled
                         && (((selector == sel!(setAccessibilityExpanded:)
                             || selector == sel!(setAccessibilityDisclosed:))
-                            && matches!(node.role, AccessibilityRole::TreeItem { .. })
+                            && (matches!(node.role, AccessibilityRole::TreeItem { .. })
+                                || (selector == sel!(setAccessibilityExpanded:)
+                                    && node.role == AccessibilityRole::ComboBox))
                             && node.expanded.is_some())
                             || (selector == sel!(accessibilityPerformPress)
                                 && Self::is_pressable(node.role))
@@ -1312,6 +1339,7 @@ pub(crate) mod native {
                                     node.role,
                                     AccessibilityRole::TextField
                                         | AccessibilityRole::TextArea
+                                        | AccessibilityRole::ComboBox
                                         | AccessibilityRole::Slider(_)
                                         | AccessibilityRole::Splitter(_)
                                 )
@@ -1319,7 +1347,9 @@ pub(crate) mod native {
                             || (selector == sel!(setAccessibilitySelectedText:)
                                 && matches!(
                                     node.role,
-                                    AccessibilityRole::TextField | AccessibilityRole::TextArea
+                                    AccessibilityRole::TextField
+                                        | AccessibilityRole::TextArea
+                                        | AccessibilityRole::ComboBox
                                 )
                                 && !node.read_only)
                             || ((selector == sel!(accessibilityPerformIncrement)
@@ -1333,7 +1363,9 @@ pub(crate) mod native {
                                 || selector == sel!(setAccessibilitySelectedTextRanges:))
                                 && matches!(
                                     node.role,
-                                    AccessibilityRole::TextField | AccessibilityRole::TextArea
+                                    AccessibilityRole::TextField
+                                        | AccessibilityRole::TextArea
+                                        | AccessibilityRole::ComboBox
                                 )
                                 && node.text_selection.is_some())
                             || (selector == sel!(setAccessibilityFocused:)
@@ -1367,6 +1399,7 @@ pub(crate) mod native {
                 role,
                 AccessibilityRole::Button
                     | AccessibilityRole::Link
+                    | AccessibilityRole::ComboBox
                     | AccessibilityRole::Switch
                     | AccessibilityRole::Checkbox
                     | AccessibilityRole::RadioButton
@@ -1391,6 +1424,7 @@ pub(crate) mod native {
                     | AccessibilityRole::RadioButton
                     | AccessibilityRole::TextField
                     | AccessibilityRole::TextArea
+                    | AccessibilityRole::ComboBox
                     | AccessibilityRole::MenuButton
                     | AccessibilityRole::MenuItem
                     | AccessibilityRole::ListItem
@@ -1436,7 +1470,9 @@ pub(crate) mod native {
             let (shared, node) = self.shared_and_node()?;
             if !matches!(
                 node.role,
-                AccessibilityRole::TextField | AccessibilityRole::TextArea
+                AccessibilityRole::TextField
+                    | AccessibilityRole::TextArea
+                    | AccessibilityRole::ComboBox
             ) {
                 return None;
             }
@@ -1603,7 +1639,11 @@ mod tests {
 
     #[test]
     fn text_selection_snapshots_reject_split_surrogates_and_non_text_owners() {
-        for role in [AccessibilityRole::TextField, AccessibilityRole::TextArea] {
+        for role in [
+            AccessibilityRole::TextField,
+            AccessibilityRole::TextArea,
+            AccessibilityRole::ComboBox,
+        ] {
             let mut n = node(1, None, None);
             n.role = role;
             n.value = Some("A😀中".into());

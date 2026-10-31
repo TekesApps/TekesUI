@@ -466,6 +466,116 @@ pub fn checkbox(
     }
     ink
 }
+pub(crate) fn control_surface_state(state: ControlState) -> &'static str {
+    match (state.selected, state.disabled, state.pressed, state.hovered) {
+        (true, true, _, _) => "selected-disabled",
+        (_, true, _, _) => "disabled",
+        (true, _, true, _) => "selected-pressed",
+        (_, _, true, _) => "pressed",
+        (true, _, _, true) => "selected-hover",
+        (_, _, _, true) => "hover",
+        (true, _, _, _) => "selected",
+        _ => "rest",
+    }
+}
+
+/// Complete generated marker bundle; the surrounding label resolves `control-label` separately.
+pub(crate) fn check_surface_colors(
+    palette: Palette,
+    surface: &str,
+    state: ControlState,
+    checked: CheckState,
+) -> tekes_ui_tokens::surface_palette::SurfaceColors {
+    use tekes_ui_tokens::surface_palette::{SurfaceOptions, resolve_surface_with_options};
+    let usage = match checked {
+        CheckState::Unchecked => "check-unchecked",
+        CheckState::Checked => "check-checked",
+        CheckState::Mixed => "check-mixed",
+    };
+    let state_name = control_surface_state(state);
+    resolve_surface_with_options(
+        palette,
+        surface,
+        usage,
+        state_name,
+        SurfaceOptions {
+            error: state.error,
+            read_only: false,
+        },
+    )
+    .expect("validated choice Surface/use/state")
+}
+
+pub(crate) fn choice_label_color(palette: Palette, surface: &str, state: ControlState) -> Rgba {
+    tekes_ui_tokens::surface_palette::resolve_surface(
+        palette,
+        surface,
+        "control-label",
+        control_surface_state(state),
+    )
+    .expect("validated choice label Surface")
+    .text
+}
+
+pub(crate) fn checkbox_on_surface(
+    scene: &mut Scene,
+    rect: Rect,
+    palette: Palette,
+    state: ControlState,
+    checked: CheckState,
+    surface: &str,
+) -> Rgba {
+    let colors = check_surface_colors(palette, surface, state, checked);
+    let radius = proposal::metric("radius", "c-checkbox-radius").expect("checkbox radius");
+    let ink = colors.marker.unwrap_or(colors.icon);
+    let mut quad = Quad::new(rect, colors.background).with_corner_radius(radius);
+    if let Some(boundary) = colors.boundary {
+        quad = quad.with_border(
+            proposal::metric("stroke", "stroke-rule").expect("checkbox stroke"),
+            boundary,
+        );
+    }
+    scene.push_quad(quad);
+    if checked == CheckState::Mixed {
+        scene.push_quad(
+            Quad::new(
+                Rect::new(
+                    rect.min_x() + 4.,
+                    rect.center().y - 1.,
+                    rect.size.width - 8.,
+                    2.,
+                ),
+                ink,
+            )
+            .with_corner_radius(1.),
+        );
+    } else if checked == CheckState::Checked {
+        let stroke = proposal::metric("size", "size-icon-artboard-stroke").expect("icon stroke");
+        for (a, b) in [((0.20, 0.50), (0.42, 0.72)), ((0.42, 0.72), (0.80, 0.28))] {
+            let ax = rect.min_x() + rect.size.width * a.0;
+            let ay = rect.min_y() + rect.size.height * a.1;
+            let dx = rect.size.width * (b.0 - a.0);
+            let dy = rect.size.height * (b.1 - a.1);
+            let steps = dx.abs().max(dy.abs()).ceil().max(1.) as usize;
+            for n in 0..=steps {
+                let t = n as f32 / steps as f32;
+                scene.push_quad(
+                    Quad::new(Rect::new(ax + dx * t, ay + dy * t, stroke, stroke), ink)
+                        .with_corner_radius(stroke / 2.),
+                );
+            }
+        }
+    }
+
+    if state.focused
+        && state.focus_visible
+        && !state.disabled
+        && let Some(focus) = colors.focus
+    {
+        focus_ring_with_color(scene, rect, focus, radius);
+    }
+    ink
+}
 pub fn skeleton(scene: &mut Scene, rect: Rect, theme: impl Into<Palette>) {
     skeleton_on_surface(scene, rect, theme.into(), "canvas")
         .expect("generated Skeleton canvas packet");

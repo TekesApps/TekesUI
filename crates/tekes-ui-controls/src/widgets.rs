@@ -454,7 +454,24 @@ pub(crate) struct ButtonActionDecision {
     pub consumed: bool,
     pub activated: bool,
 }
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct ButtonActionSnapshot {
+    state: ControlState,
+    arm: ButtonArm,
+    placement: Option<ButtonLayout>,
+    pointer: Option<Point>,
+    suspended: bool,
+}
 impl ButtonModel {
+    pub(crate) fn action_snapshot(&self) -> ButtonActionSnapshot {
+        ButtonActionSnapshot {
+            state: self.state,
+            arm: self.arm,
+            placement: self.placement,
+            pointer: self.last_pointer,
+            suspended: self.motion_suspended,
+        }
+    }
     pub(crate) fn set_surface(&mut self, surface: &'static str) {
         self.surface = Some(surface);
     }
@@ -851,6 +868,111 @@ impl ButtonModel {
         layout
     }
 
+    // Geometry and activation reconciliation shared by original render and the
+    // retained Segmented View. No Scene, motion tick or frame request occurs here.
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn prepare_layout(
+        &mut self,
+        text: &mut impl ButtonTextRenderer,
+        label: &str,
+        frame: Rect,
+        clip: Option<Rect>,
+        size: ButtonSize,
+        role: proposal::TextRole,
+        align: ButtonTextAlign,
+        measured_content: Option<Size>,
+    ) -> ButtonLayout {
+        // Pointer capture survives focus changes; only a keyboard Space arm
+        // is canceled when focus leaves between key-down and key-up.
+        self.synchronize_activation();
+        if !valid_frame(frame) || clip.is_some_and(|clip| !valid_clip(clip)) {
+            self.placement = Some(ButtonLayout::empty());
+            self.chrome_bounds = None;
+            self.blur();
+            return ButtonLayout::empty();
+        }
+        let scale = button_typography_scale(text, role);
+        let inset = if self.frame_policy == ButtonFramePolicy::Exact {
+            0.
+        } else {
+            size.inset() * scale
+        };
+        let max_width = (frame.size.width - inset * 2.0).max(0.0);
+        let layout = {
+            let label_size = measured_content.unwrap_or_else(|| {
+                if label.is_empty() {
+                    Size::default()
+                } else {
+                    text.measure(label, role, max_width)
+                }
+            });
+            ButtonLayout::resolve_scaled(
+                frame,
+                clip,
+                label_size,
+                size,
+                role,
+                align,
+                self.frame_policy,
+                scale,
+            )
+        };
+        self.prepare_published_layout(layout, role);
+
+        layout
+    }
+    fn prepare_published_layout(&mut self, layout: ButtonLayout, role: proposal::TextRole) {
+        self.placement = Some(layout);
+        let chrome = self
+            .chrome_height
+            .filter(|h| h.is_finite() && *h > 0.)
+            .map_or(layout.frame, |height| {
+                let ratio = (layout.label_size.height / role.style().line_height.max(1.)).max(1.);
+                let height = (height * ratio).min(layout.frame.size.height);
+                Rect::new(
+                    layout.frame.min_x(),
+                    layout.frame.center().y - height * 0.5,
+                    layout.frame.size.width,
+                    height,
+                )
+            });
+        self.chrome_bounds = Some(chrome);
+        if layout.visible.is_none() {
+            self.blur();
+        }
+        self.refresh_pointer_state();
+    }
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn paint_prepared_segment(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        label: &str,
+        layout: ButtonLayout,
+        clip: Option<Rect>,
+        palette: Palette,
+        size: ButtonSize,
+        role: proposal::TextRole,
+    ) {
+        let context = text.motion_context();
+        self.render_with_motion_context(
+            scene,
+            text,
+            label,
+            layout.frame,
+            clip,
+            palette,
+            crate::paint::ButtonVariant::Quiet,
+            size,
+            role,
+            ButtonTextAlign::Leading,
+            context,
+            None,
+            None,
+            Some(layout),
+        );
+    }
+
     /// Arrange through the original resolver without painting or arming input.
     pub(crate) fn prepare_label(
         &mut self,
@@ -1017,9 +1139,16 @@ impl ButtonModel {
                 .is_none_or(|region| region.contains([point.x as f64, point.y as f64]) == Ok(true))
     }
 
-    fn decided_pointer_arm(&self, mut state: ControlState) -> (ControlState, ButtonArm) {
-        if self.arm != ButtonArm::None {
-            return (state, self.arm);
+    fn decided_pointer_arm(&self, state: ControlState) -> (ControlState, ButtonArm) {
+        self.decided_pointer_arm_from(state, self.arm)
+    }
+    fn decided_pointer_arm_from(
+        &self,
+        mut state: ControlState,
+        arm: ButtonArm,
+    ) -> (ControlState, ButtonArm) {
+        if arm != ButtonArm::None {
+            return (state, arm);
         }
         let armed = !self.motion_suspended && !state.disabled && !state.loading;
         state.pressed = armed;
@@ -1040,15 +1169,27 @@ impl ButtonModel {
         point: Point,
         activate_on_press: bool,
     ) -> ButtonActionDecision {
+        self.prepare_content_down_after_cancel(point, activate_on_press, false)
+    }
+    pub(crate) fn prepare_content_down_after_cancel(
+        &self,
+        point: Point,
+        activate_on_press: bool,
+        cancel: bool,
+    ) -> ButtonActionDecision {
         let mut state = self.state;
         let mut arm = self.arm;
+        if cancel {
+            state.pressed = false;
+            arm = ButtonArm::None;
+        }
         let inside = self.hit_test(point);
         state.hovered = inside && !self.motion_suspended && !state.disabled && !state.loading;
         if matches!(arm, ButtonArm::Pointer | ButtonArm::PointerActivated) {
             state.pressed = state.hovered;
         }
         if inside {
-            (state, arm) = self.decided_pointer_arm(state);
+            (state, arm) = self.decided_pointer_arm_from(state, arm);
         }
         let consumed = inside && arm == ButtonArm::Pointer;
         let activated = consumed
@@ -1098,6 +1239,24 @@ impl ButtonModel {
         }
     }
 
+    pub(crate) fn prepare_content_cancel(&self) -> ButtonActionDecision {
+        let mut state = self.state;
+        state.pressed = false;
+        ButtonActionDecision {
+            expected: (
+                self.state,
+                self.arm,
+                self.placement,
+                self.last_pointer,
+                self.motion_suspended,
+            ),
+            next_state: state,
+            next_arm: ButtonArm::None,
+            point: self.last_pointer,
+            consumed: false,
+            activated: false,
+        }
+    }
     pub(crate) fn apply_content_action(&mut self, decision: ButtonActionDecision) {
         self.state = decision.next_state;
         self.arm = decision.next_arm;
@@ -1124,6 +1283,18 @@ impl ButtonModel {
         self.pointer_move_at(point);
         self.pointer_down();
         self.arm == ButtonArm::Pointer
+    }
+
+    /// Read the original release decision without consuming its pointer arm.
+    pub(crate) fn pointer_release_would_activate(&self, point: Point) -> bool {
+        self.arm == ButtonArm::Pointer
+            && !self.state.disabled
+            && !self.state.loading
+            && self.hit_test(point)
+    }
+
+    pub(crate) fn pointer_armed(&self) -> bool {
+        matches!(self.arm, ButtonArm::Pointer | ButtonArm::PointerActivated)
     }
 
     pub fn pointer_up_at(&mut self, point: Point) -> bool {
@@ -1226,7 +1397,60 @@ pub struct Checkbox {
     pub button: ButtonModel,
     pub checked: CheckState,
 }
+/// The original Checkbox's decision, authenticated against its ButtonModel and value.
+#[derive(Debug, PartialEq)]
+pub(crate) struct CheckboxActionDecision {
+    button: ButtonActionDecision,
+    expected_checked: CheckState,
+    checked: CheckState,
+    preserve_focus: bool,
+    pub consumed: bool,
+    pub activated: bool,
+}
 impl Checkbox {
+    pub(crate) fn prepare_content_down(&self, point: Point) -> CheckboxActionDecision {
+        let button = self.button.prepare_content_down(point, false);
+        CheckboxActionDecision {
+            consumed: button.consumed,
+            activated: false,
+            button,
+            expected_checked: self.checked,
+            checked: self.checked,
+            preserve_focus: false,
+        }
+    }
+    pub(crate) fn prepare_content_press(&self) -> CheckboxActionDecision {
+        let checked = self.next_checked();
+        CheckboxActionDecision {
+            button: self.button.prepare_content_cancel(),
+            expected_checked: self.checked,
+            checked: checked.unwrap_or(self.checked),
+            preserve_focus: true,
+            consumed: checked.is_some(),
+            activated: checked.is_some(),
+        }
+    }
+    pub(crate) fn apply_content_action(&mut self, decision: CheckboxActionDecision) {
+        let focus = (self.button.state.focused, self.button.state.focus_visible);
+        self.button.apply_content_action(decision.button);
+        // The prepared cancellation changes activation only. Preserve the original
+        // Host's already-admitted AX focus hook rather than replaying any handler.
+        if decision.preserve_focus {
+            self.button.state.focused = focus.0;
+            self.button.state.focus_visible = focus.1;
+        }
+        self.checked = decision.checked;
+    }
+    fn next_checked(&self) -> Option<CheckState> {
+        if self.button.state.disabled || self.button.state.loading {
+            return None;
+        }
+        Some(if self.checked == CheckState::Checked {
+            CheckState::Unchecked
+        } else {
+            CheckState::Checked
+        })
+    }
     /// Measure the complete checkbox row. The visual box is 16pt; the label
     /// wraps inside the space remaining after that box and the 6pt label gap.
     pub fn measure(
@@ -1270,10 +1494,56 @@ impl Checkbox {
         palette: impl Into<Palette>,
         role: proposal::TextRole,
     ) -> CheckboxLayout {
+        self.render_with_surface(scene, text, label, frame, clip, palette, role, "canvas")
+    }
+
+    /// Render on an inherited semantic Surface. Reject invalid names before placement or capture changes.
+    #[allow(clippy::too_many_arguments)]
+    pub fn render_on_surface(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        label: &str,
+        frame: Rect,
+        clip: Option<Rect>,
+        palette: impl Into<Palette>,
+        role: proposal::TextRole,
+        surface: &str,
+    ) -> Result<CheckboxLayout, tekes_ui_tokens::surface_palette::SurfaceError> {
+        let surface = tekes_ui_tokens::surface_palette::canonical_surface(surface)?;
+        Ok(self.render_with_surface(scene, text, label, frame, clip, palette, role, surface))
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn render_with_surface(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        label: &str,
+        frame: Rect,
+        clip: Option<Rect>,
+        palette: impl Into<Palette>,
+        role: proposal::TextRole,
+        surface: &str,
+    ) -> CheckboxLayout {
+        let prepared = self.prepare_layout(text, label, frame, clip, role);
+        self.paint_prepared(scene, text, label, prepared, palette.into(), role, surface);
+        prepared.layout
+    }
+
+    /// The original placement/reconciliation pass, shared with Content arrangement.
+    pub(crate) fn prepare_layout(
+        &mut self,
+        text: &mut impl ButtonTextRenderer,
+        label: &str,
+        frame: Rect,
+        clip: Option<Rect>,
+        role: proposal::TextRole,
+    ) -> CheckboxPrepared {
         if !valid_frame(frame) || clip.is_some_and(|clip| !valid_clip(clip)) {
             self.button.placement = Some(ButtonLayout::empty());
             self.button.blur();
-            return CheckboxLayout::default();
+            return CheckboxPrepared::default();
         }
         let frame_width = finite_nonnegative(frame.size.width);
         let control_size = checkbox_control_size();
@@ -1342,37 +1612,57 @@ impl Checkbox {
         self.button.synchronize_activation();
         self.button.refresh_pointer_state();
 
+        let control_fits_row = control.min_x() >= frame.min_x()
+            && control.min_y() >= frame.min_y()
+            && control.max_x() <= frame.max_x()
+            && control.max_y() <= frame.max_y();
+        let control_clip = if control_fits_row {
+            container.background_paint_clip()
+        } else {
+            container.visible_clip()
+        };
+        if layout.visible.is_none() {
+            self.button.blur();
+        }
+        CheckboxPrepared {
+            layout,
+            control_clip,
+        }
+    }
+
+    /// Paint only the original prepared geometry; never replay placement or input reconciliation.
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn paint_prepared(
+        &self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        label: &str,
+        prepared: CheckboxPrepared,
+        palette: Palette,
+        role: proposal::TextRole,
+        surface: &str,
+    ) {
+        let layout = prepared.layout;
+        let control = layout.control;
+        let label_slot = layout.label;
         if let Some(visible) = layout.visible {
-            let palette = palette.into();
-            let control_fits_row = control.min_x() >= frame.min_x()
-                && control.min_y() >= frame.min_y()
-                && control.max_x() <= frame.max_x()
-                && control.max_y() <= frame.max_y();
-            let control_clip = if control_fits_row {
-                container.background_paint_clip()
-            } else {
-                // Preserve the legacy row boundary when a narrow row cannot
-                // contain the fixed-size indicator; only fitting indicators
-                // may expose their outer AA fringe beyond the row frame.
-                container.visible_clip()
-            };
+            let control_clip = prepared.control_clip;
             if let Some(control_clip) = control_clip {
                 scene.push_clip(control_clip);
             }
-            let _mark_ink =
-                crate::paint::checkbox(scene, control, palette, self.button.state, self.checked);
+            let _mark_ink = crate::paint::checkbox_on_surface(
+                scene,
+                control,
+                palette,
+                self.button.state,
+                self.checked,
+                surface,
+            );
             if control_clip.is_some() {
                 scene.pop_clip();
             }
-            let label_ink = crate::paint::color(
-                palette,
-                if self.button.state.disabled {
-                    "tertiary-text"
-                } else {
-                    "primary-text"
-                },
-            );
-            if has_label && !label_slot.is_empty() {
+            let label_ink = crate::paint::choice_label_color(palette, surface, self.button.state);
+            if !label_slot.is_empty() {
                 scene.push_clip(visible);
                 text.draw(
                     scene,
@@ -1384,10 +1674,7 @@ impl Checkbox {
                 );
                 scene.pop_clip();
             }
-        } else {
-            self.button.blur();
         }
-        layout
     }
 
     pub fn layout(&self) -> Option<ButtonLayout> {
@@ -1403,7 +1690,10 @@ impl Checkbox {
     }
 
     pub fn pointer_down_at(&mut self, point: Point) -> bool {
-        self.button.pointer_down_at(point)
+        let decision = self.prepare_content_down(point);
+        let consumed = decision.consumed;
+        self.apply_content_action(decision);
+        consumed
     }
 
     pub fn pointer_up_at(&mut self, point: Point) -> bool {
@@ -1426,14 +1716,10 @@ impl Checkbox {
     }
 
     pub fn toggle(&mut self) -> bool {
-        if self.button.state.disabled || self.button.state.loading {
+        let Some(checked) = self.next_checked() else {
             return false;
-        }
-        self.checked = if self.checked == CheckState::Checked {
-            CheckState::Unchecked
-        } else {
-            CheckState::Checked
         };
+        self.checked = checked;
         true
     }
 }
@@ -1465,6 +1751,13 @@ fn checkbox_content_geometry(
     let control_top = (first_line_height - control_size).max(0.0) * 0.5;
     let content_height = (label_top + label_height).max(control_top + control_size);
     (content_height, control_top, label_top)
+}
+
+/// One result of the original checkbox arrangement. No second layout owner.
+#[derive(Clone, Copy, Debug, Default)]
+pub(crate) struct CheckboxPrepared {
+    pub(crate) layout: CheckboxLayout,
+    control_clip: Option<Rect>,
 }
 
 /// Geometry for a checkbox's full hit row, visual mark, label, and visible clip.
@@ -2630,6 +2923,71 @@ mod tests {
         button.state.loading = true;
         assert!(!button.pointer_up(true));
         assert!(!button.state.pressed);
+    }
+
+    #[test]
+    fn checked_button_release_matches_original_clip_and_once_predicate() {
+        let mut button = ButtonModel::default();
+        let mut text = FixedText {
+            measured: Size::new(40., 16.),
+            drawn: None,
+        };
+        button.render(
+            &mut Scene::new(),
+            &mut text,
+            "Action",
+            Rect::new(0., 0., 120., 36.),
+            None,
+            Theme::LIGHT,
+            crate::paint::ButtonVariant::Quiet,
+            ButtonSize::Xs,
+            proposal::TextRole::ButtonXs,
+            ButtonTextAlign::Center,
+        );
+        let point = Point::new(20., 20.);
+        assert!(!button.pointer_release_would_activate(point));
+        assert!(button.pointer_down_at(point));
+        let state = button.state;
+        assert!(button.pointer_armed());
+        assert!(button.pointer_release_would_activate(point));
+        assert!(button.pointer_release_would_activate(point));
+        assert_eq!(button.state, state);
+        button.state.disabled = true;
+        assert!(!button.pointer_release_would_activate(point));
+        button.state.disabled = false;
+        button.state.loading = true;
+        assert!(!button.pointer_release_would_activate(point));
+        button.state.loading = false;
+        let shape = tekes_ui_scene::ClipShape::normalize(
+            Rect::new(0., 0., 10., 36.),
+            Default::default(),
+            Point::new(0., 0.),
+        )
+        .unwrap();
+        button.set_clip_region(Some(
+            tekes_ui_scene::ClipRegion::new(
+                &[shape],
+                tekes_ui_scene::ClipBudget {
+                    max_shapes: 1,
+                    max_work: 4096,
+                },
+            )
+            .unwrap(),
+        ));
+        assert!(!button.pointer_release_would_activate(point));
+        assert!(!button.pointer_up_at(point));
+        assert!(!button.pointer_armed());
+        button.set_clip_region(None);
+        assert!(button.pointer_down_at(point));
+        assert!(button.pointer_release_would_activate(point));
+        assert!(button.pointer_up_at(point));
+        assert!(!button.pointer_release_would_activate(point));
+        assert!(!button.pointer_up_at(point));
+        button.state.focused = true;
+        button.key(ControlKey::Space, true);
+        assert!(!button.pointer_armed());
+        assert!(!button.pointer_release_would_activate(point));
+        assert!(button.key(ControlKey::Space, false));
     }
 
     #[test]

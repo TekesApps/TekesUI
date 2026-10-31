@@ -178,8 +178,11 @@ def native_assertions(attempt):
             errors.append("native screenshot missing or invalid: " + name)
     stderr = Path(attempt) / "stderr.log"
     log = stderr.read_text() if stderr.is_file() else ""
-    for token in ("composition-event mode=disclosure event=PointerDown", "composition-event mode=disclosure event=PointerUp",
-                  "composition-event mode=disclosure event=Preedit", "SELFTEST PASS AXPress component=38002"):
+    for phase in ("Down", "Up"):
+        pattern = r"^composition-event mode=disclosure event=Pointer\(PointerEvent \{[^\n]* phase: " + phase + ","
+        if re.search(pattern, log, re.MULTILINE) is None:
+            errors.append("native pointer callback evidence missing: " + phase)
+    for token in ("composition-event mode=disclosure event=Preedit", "SELFTEST PASS AXPress component=38002"):
         if token not in log:
             errors.append("native callback evidence missing: " + token)
     return {"passed": not errors, "errors": errors, "checkpoints":len(reports),

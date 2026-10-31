@@ -24,15 +24,24 @@ fn semantics(s: ContentSemantics) -> Result<wire::Semantics> {
         ContentRole::Button => W::Button,
         ContentRole::Link => W::Link,
         ContentRole::TextInput => W::TextInput,
+        ContentRole::ComboBox => W::ComboBox,
         ContentRole::Slider => W::Slider,
         ContentRole::Splitter => W::Splitter,
         ContentRole::Switch => W::Switch,
+        ContentRole::Checkbox => W::Checkbox,
+        ContentRole::RadioGroup => W::RadioGroup,
+        ContentRole::RadioButton => W::RadioButton,
+        ContentRole::SegmentedGroup => W::SegmentedGroup,
+        ContentRole::Segment => W::Segment,
+
         ContentRole::List => W::List,
         ContentRole::ListItem => W::ListItem,
         ContentRole::Dialog => W::Dialog,
         ContentRole::MenuButton => W::MenuButton,
         ContentRole::Menu => W::Menu,
         ContentRole::MenuItem => W::MenuItem,
+        ContentRole::TabList => W::TabList,
+        ContentRole::Tab => W::Tab,
         unsupported => anyhow::bail!("unsupported Content semantic role: {unsupported:?}"),
     };
     Ok(wire::Semantics {
@@ -183,6 +192,7 @@ pub(crate) fn action(
         wire::AccessibilityAction::Decrement => AccessibilityAction::Decrement,
         wire::AccessibilityAction::Focus => AccessibilityAction::Focus,
         wire::AccessibilityAction::Press => AccessibilityAction::Press,
+        wire::AccessibilityAction::SetExpanded(value) => AccessibilityAction::SetExpanded(*value),
         wire::AccessibilityAction::SetValue(v) => AccessibilityAction::SetValue(v.clone()),
         wire::AccessibilityAction::SetSelection(v) => AccessibilityAction::SetSelection(v.clone()),
         wire::AccessibilityAction::ReplaceSelectedText(v) => {
@@ -545,5 +555,208 @@ mod tests {
                 .as_deref(),
             Some(minimum.as_str())
         );
+    }
+    #[test]
+    fn public_tabs_snapshot_preserves_tab_roles_and_original_action_targets() {
+        let mut host = ContentHost::new(Content::new(
+            ComponentId(63),
+            TabsContent::new(
+                vec![
+                    TabItem::new(
+                        Content::new(ComponentId(64), TextContent::new("Overview")),
+                        Content::new(ComponentId(65), Button::new("Panel A action")),
+                    ),
+                    TabItem::new(
+                        Content::new(ComponentId(66), TextContent::new("Settings")),
+                        Content::new(ComponentId(67), Button::new("Panel B action")),
+                    ),
+                ],
+                0,
+            ),
+        ))
+        .unwrap();
+        host.set_action_events(true);
+        host.focus(Some(ComponentId(63)), true);
+        render(&mut host);
+        let before = (
+            host.focused(),
+            host.focus_epoch(),
+            host.pointer_capture(),
+            host.needs_render(),
+        );
+        let nodes = snapshot(&host).unwrap();
+        let tabs = nodes.iter().find(|node| node.target.id == 63).unwrap();
+        let roles: Vec<_> = std::iter::once(&tabs.semantics.role)
+            .chain(tabs.parts.iter().map(|part| &part.semantics.role))
+            .map(|role| serde_json::to_value(role).unwrap())
+            .collect();
+        assert_eq!(
+            roles,
+            vec![
+                serde_json::json!("TabList"),
+                serde_json::json!("Tab"),
+                serde_json::json!("Tab")
+            ]
+        );
+        let encoded = serde_json::to_vec(&nodes).unwrap();
+        let received: Vec<wire::SemanticNode> = serde_json::from_slice(&encoded).unwrap();
+        assert_eq!(received, nodes);
+        let tabs = received.iter().find(|node| node.target.id == 63).unwrap();
+        assert_eq!(
+            tabs.target.mount,
+            host.semantic_mount(ComponentId(63)).unwrap()
+        );
+        assert_eq!(
+            tabs.parts.iter().map(|part| part.index).collect::<Vec<_>>(),
+            vec![0, 1]
+        );
+        assert_eq!(
+            tabs.parts
+                .iter()
+                .map(|part| part.semantics.selected)
+                .collect::<Vec<_>>(),
+            vec![true, false]
+        );
+        assert_eq!(
+            before,
+            (
+                host.focused(),
+                host.focus_epoch(),
+                host.pointer_capture(),
+                host.needs_render()
+            )
+        );
+
+        let target = tabs.target;
+        assert!(
+            action(
+                &mut host,
+                target,
+                Some(1),
+                None,
+                &wire::AccessibilityAction::Focus
+            )
+            .unwrap()
+            .consumed
+        );
+        assert_eq!(host.focused(), Some(ComponentId(63)));
+        assert_eq!(
+            host.get(ComponentId(63))
+                .unwrap()
+                .component::<TabsContent>()
+                .unwrap()
+                .selected(),
+            1
+        );
+        assert!(
+            host.drain_action_records().is_empty(),
+            "Focus is not an activation"
+        );
+        let focused = snapshot(&host).unwrap();
+        let focused_tabs = focused.iter().find(|node| node.target == target).unwrap();
+        assert_eq!(
+            focused_tabs
+                .parts
+                .iter()
+                .map(|part| part.index)
+                .collect::<Vec<_>>(),
+            vec![0, 1]
+        );
+        assert_eq!(
+            focused_tabs
+                .parts
+                .iter()
+                .map(|part| part.semantics.selected)
+                .collect::<Vec<_>>(),
+            vec![false, true]
+        );
+        assert!(focused_tabs.parts[1].focused);
+        assert!(
+            action(
+                &mut host,
+                target,
+                Some(0),
+                None,
+                &wire::AccessibilityAction::Press
+            )
+            .unwrap()
+            .activated
+        );
+        let records = host.drain_action_records();
+        assert_eq!(records.len(), 1);
+        assert_eq!(records[0].action.target, ComponentId(target.id));
+        assert_eq!(records[0].action.source, ContentActionSource::Accessibility);
+        assert_eq!(records[0].mount, target.mount);
+        assert_eq!(
+            records[0].payload,
+            Some(ContentActionPayload::TabSelection {
+                index: 0,
+                label: ComponentId(64),
+                panel: ComponentId(65)
+            })
+        );
+        assert!(host.drain_action_records().is_empty());
+        assert!(
+            action(
+                &mut host,
+                wire::Target {
+                    mount: target.mount + 1,
+                    ..target
+                },
+                Some(0),
+                None,
+                &wire::AccessibilityAction::Press
+            )
+            .is_err()
+        );
+        assert!(
+            action(
+                &mut host,
+                target,
+                Some(17),
+                None,
+                &wire::AccessibilityAction::Focus
+            )
+            .is_err()
+        );
+    }
+}
+
+#[cfg(test)]
+#[path = "../../../examples/composition-consumer/tests/support/coretext.rs"]
+pub(crate) mod combo_coretext;
+#[cfg(test)]
+#[path = "combo_bridge_fixture.rs"]
+mod combo_fixture;
+#[cfg(test)]
+#[path = "combo_snapshot_tests.rs"]
+mod combo_snapshot_tests;
+
+#[cfg(test)]
+mod selection_export_tests {
+    use super::*;
+    #[test]
+    fn five_roles_export_without_fallback_and_preserve_selection_metadata() {
+        for (role, wire_role) in [
+            (ContentRole::Checkbox, wire::SemanticRole::Checkbox),
+            (ContentRole::RadioGroup, wire::SemanticRole::RadioGroup),
+            (ContentRole::RadioButton, wire::SemanticRole::RadioButton),
+            (
+                ContentRole::SegmentedGroup,
+                wire::SemanticRole::SegmentedGroup,
+            ),
+            (ContentRole::Segment, wire::SemanticRole::Segment),
+        ] {
+            let mut s = ContentSemantics::new(role, "Finite");
+            s.disabled = true;
+            if role == ContentRole::Checkbox {
+                s.value = Some("mixed".into());
+            }
+            let projected = semantics(s.clone()).unwrap();
+            assert_eq!(projected.role, wire_role);
+            assert_eq!(projected.value, s.value);
+            assert_eq!(projected.selected, s.selected);
+            assert!(projected.disabled);
+        }
     }
 }

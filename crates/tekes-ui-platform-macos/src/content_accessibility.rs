@@ -89,10 +89,12 @@ fn enrich(
         add_slider_range(host, id, semantics, node);
         // Preserve the existing value/selection contract before shaping. Complete
         // geometry is still published only from the original shaped layout below.
-        if matches!(semantics.role, ContentRole::TextInput | ContentRole::Image)
-            && let Some(input) = host.semantic_text_input_snapshot(id)
+        if matches!(
+            semantics.role,
+            ContentRole::TextInput | ContentRole::ComboBox | ContentRole::Image
+        ) && let Some(input) = host.semantic_text_input_snapshot(id)
         {
-            if semantics.role != ContentRole::Image
+            if !matches!(semantics.role, ContentRole::Image | ContentRole::ComboBox)
                 && host
                     .text_surface(id)
                     .is_some_and(|surface| surface.input.multiline)
@@ -107,7 +109,7 @@ fn enrich(
     if let Some(layout) = host.semantic_text_layout_snapshot(id, part) {
         if !matches!(
             node.role,
-            AccessibilityRole::Image | AccessibilityRole::Splitter(_)
+            AccessibilityRole::Image | AccessibilityRole::Splitter(_) | AccessibilityRole::ComboBox
         ) && layout.multiline
         {
             node.role = AccessibilityRole::TextArea;
@@ -135,6 +137,16 @@ fn project_content_nodes(host: &ContentHost) -> Option<Vec<AccessibilityNode>> {
         let Some(key) = content_key(host, n.id, None) else {
             continue;
         };
+        if n.semantics.role == ContentRole::ComboBox
+            && (host
+                .text_surface(n.id)
+                .is_some_and(|surface| surface.input.multiline)
+                || host
+                    .semantic_text_layout_snapshot(n.id, None)
+                    .is_some_and(|layout| layout.multiline))
+        {
+            return None;
+        }
         let mut owner = project(
             key,
             n.parent.and_then(|p| content_key(host, p, None)),
@@ -152,6 +164,13 @@ fn project_content_nodes(host: &ContentHost) -> Option<Vec<AccessibilityNode>> {
         for part in n.parts {
             if part.semantics.role == ContentRole::Image && part.semantics.name.is_empty() {
                 continue;
+            }
+            if part.semantics.role == ContentRole::ComboBox
+                && host
+                    .semantic_text_layout_snapshot(n.id, Some(part.index))
+                    .is_some_and(|layout| layout.multiline)
+            {
+                return None;
             }
             let key = AccessibilityKey {
                 part: Some(part.index),
@@ -243,17 +262,23 @@ fn project(
             Role::Button => NativeRole::Button,
             Role::Link => NativeRole::Link,
             Role::TextInput => NativeRole::TextField,
+            Role::ComboBox => NativeRole::ComboBox,
             Role::Slider => NativeRole::Group,
             Role::Splitter => {
                 NativeRole::Splitter(AccessibilityRange::new(0., 1.).expect("split ratio domain"))
             }
             Role::Switch => NativeRole::Switch,
+            Role::Checkbox => NativeRole::Checkbox,
+            Role::RadioGroup | Role::SegmentedGroup => NativeRole::RadioGroup,
+            Role::RadioButton | Role::Segment => NativeRole::RadioButton,
             Role::List => NativeRole::List,
             Role::ListItem => NativeRole::ListItem,
             Role::Dialog => NativeRole::Dialog,
             Role::MenuButton => NativeRole::MenuButton,
             Role::Menu => NativeRole::Menu,
             Role::MenuItem => NativeRole::MenuItem,
+            Role::TabList => NativeRole::TabGroup,
+            Role::Tab => NativeRole::Tab,
             _ => NativeRole::Group,
         },
         frame: Rect {
@@ -300,7 +325,7 @@ pub fn content_action(
         AccessibilityAction::SetValue(value) => ContentAction::SetValue(value),
         AccessibilityAction::SetSelection(range) => ContentAction::SetSelection(range),
         AccessibilityAction::ReplaceSelectedText(text) => ContentAction::ReplaceSelectedText(text),
-        AccessibilityAction::SetExpanded(_) => return ContentResponse::default(),
+        AccessibilityAction::SetExpanded(value) => ContentAction::SetExpanded(value),
     };
     host.accessibility_action(id, target.part, action)
 }
@@ -1114,5 +1139,74 @@ mod context_menu_bridge_tests {
         host.set_window_active(false);
         assert!(content_nodes(&host).is_empty());
         assert!(!content_action(&mut host, current, AccessibilityAction::ShowMenu).consumed);
+    }
+}
+
+#[cfg(test)]
+#[cfg(test)]
+mod navigation_role_tests {
+    use super::*;
+
+    #[test]
+    fn tab_roles_keep_their_native_accessibility_identity() {
+        for (role, native) in [
+            (ContentRole::TabList, AccessibilityRole::TabGroup),
+            (ContentRole::Tab, AccessibilityRole::Tab),
+        ] {
+            let mut semantics = ContentSemantics::new(role, "Workspace");
+            semantics.selected = true;
+            let node = project(
+                AccessibilityKey {
+                    component: 63,
+                    part: Some(1),
+                },
+                None,
+                tekes_ui_scene::Rect::new(10., 20., 80., 40.),
+                true,
+                &semantics,
+            );
+            assert_eq!(node.role, native);
+            assert!(node.selected && node.focused);
+            assert_eq!(node.label, "Workspace");
+        }
+    }
+}
+
+#[cfg(test)]
+mod selection_projection_tests {
+    use super::*;
+    #[test]
+    fn all_five_selection_roles_keep_values_and_finite_native_identity() {
+        let key = AccessibilityKey {
+            component: 107,
+            part: None,
+        };
+        for (role, expected) in [
+            (ContentRole::Checkbox, AccessibilityRole::Checkbox),
+            (ContentRole::RadioGroup, AccessibilityRole::RadioGroup),
+            (ContentRole::RadioButton, AccessibilityRole::RadioButton),
+            (ContentRole::SegmentedGroup, AccessibilityRole::RadioGroup),
+            (ContentRole::Segment, AccessibilityRole::RadioButton),
+        ] {
+            let mut s = ContentSemantics::new(role, "Choice");
+            s.disabled = true;
+            if role == ContentRole::Checkbox {
+                s.value = Some("mixed".into());
+            } else if matches!(role, ContentRole::RadioButton | ContentRole::Segment) {
+                s.selected = true;
+            }
+            let n = project(
+                key,
+                None,
+                tekes_ui_scene::Rect::new(0., 0., 40., 30.),
+                false,
+                &s,
+            );
+            assert_eq!(n.role, expected);
+            assert_eq!(n.value, s.value);
+            assert_eq!(n.selected, s.selected);
+            assert!(!n.enabled);
+            assert!(n.text_selection.is_none());
+        }
     }
 }

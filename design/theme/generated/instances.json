@@ -15,15 +15,15 @@
     "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/validate.py": "f48e97e00a0f8da9d0b373d4636da251c35cbdc667b33a03b9679e00460e1acc",
     "design/source/base.tokens.json": "16215625e85017b393a096046c37849315d7c473d87e8c15c52fe8db887abf87",
     "design/source/token-metadata.json": "53db464280f6d381cf108cb78c1f894a1dd31d780a5045145d31e6bd925e637b",
-    "design/system.json": "f3bf6a0719ba00f95fa1ab67ed782b94e6b31e4525b6d05411c6a62c71b3e72f",
+    "design/system.json": "7b51b15ccaec9bccbcab1e1e3afbc7f21180b682e8ae4132922ef546f226686e",
     "design/system.schema.json": "af11f7ef0f9f4b495181d72f0b8b4a3cb274e79fe3ce9e98d4d82b6aaa396393",
     "design/theme/artifact-lock.schema.json": "642653ddc482c053402ad6abe2f14c6d836ea282e16c709ca85792f8a435b32a",
     "design/theme/data-plot-pairs.json": "b75e6e57c155d596ba60a086406aa91cfa087009e6200847db1bbd25c2d442c7",
-    "design/theme/rules.json": "3e353c9b5cf35e92c79dd64020b195bfd85fb8e41e51b1d5cb1ed4b1dba423f0",
+    "design/theme/rules.json": "1b44512ec7a61a3e9032cce1d2e902129e3346af8266649232856834b90ab07d",
     "design/theme/rules.schema.json": "01c7c08a6ebd48db78e3e0a59f2f67b5f978b80b4acf8fcd00680cb254718dd6",
     "design/theme/theme.schema.json": "4c7d0f7195088487c4bf02b4b01a500baf1958caf6f6f62a436d9b5b37ea8f68",
     "design/theme/themes.json": "96865f75bda0471e2b6d618966068de5bddf9feb73ce565f98a6753114c520ae",
-    "scripts/generate-theme-system.py": "cabc0172733b41835740c266f5a13d6ffedacc3768ef0dca19e95e0c357f7a69",
+    "scripts/generate-theme-system.py": "98697ce1e383fb2aafc557f2b196d770bded49430b700e3d0d742c8a85e64297",
     "scripts/merge-design-system.py": "46831d8a089c1dfc06012b78a23025293bb4e2010100e0a4ce93c137b30b6ba2"
   },
   "instances": [
@@ -836,9 +836,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -881,9 +881,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -910,9 +910,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -955,9 +955,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -2735,9 +2735,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -2780,9 +2780,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -2809,9 +2809,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -2854,9 +2854,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -4634,9 +4634,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -4679,9 +4679,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -4708,9 +4708,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -4753,9 +4753,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -6533,9 +6533,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -6578,9 +6578,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -6607,9 +6607,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -6652,9 +6652,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -8432,9 +8432,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -8477,9 +8477,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -8506,9 +8506,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -8551,9 +8551,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -10331,9 +10331,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -10376,9 +10376,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -10405,9 +10405,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -10450,9 +10450,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -12230,9 +12230,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -12275,9 +12275,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -12304,9 +12304,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -12349,9 +12349,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -14131,9 +14131,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -14176,9 +14176,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -14205,9 +14205,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -14250,9 +14250,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -16030,9 +16030,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -16075,9 +16075,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -16104,9 +16104,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -16149,9 +16149,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -17929,9 +17929,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -17974,9 +17974,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -18003,9 +18003,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -18048,9 +18048,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -19828,9 +19828,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -19873,9 +19873,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -19902,9 +19902,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -19947,9 +19947,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -21727,9 +21727,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -21772,9 +21772,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -21801,9 +21801,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -21846,9 +21846,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -23626,9 +23626,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -23671,9 +23671,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -23700,9 +23700,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -23745,9 +23745,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -25525,9 +25525,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -25570,9 +25570,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -25599,9 +25599,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -25644,9 +25644,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -27426,9 +27426,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -27471,9 +27471,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -27500,9 +27500,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -27545,9 +27545,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -29325,9 +29325,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -29370,9 +29370,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -29399,9 +29399,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -29444,9 +29444,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -31224,9 +31224,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -31269,9 +31269,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -31298,9 +31298,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -31343,9 +31343,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -33123,9 +33123,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -33168,9 +33168,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -33197,9 +33197,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -33242,9 +33242,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -35022,9 +35022,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -35067,9 +35067,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -35096,9 +35096,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -35141,9 +35141,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -36921,9 +36921,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -36966,9 +36966,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -36995,9 +36995,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -37040,9 +37040,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -38820,9 +38820,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -38865,9 +38865,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -38894,9 +38894,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -38939,9 +38939,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -40721,9 +40721,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -40766,9 +40766,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -40795,9 +40795,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -40840,9 +40840,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -42620,9 +42620,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -42665,9 +42665,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -42694,9 +42694,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -42739,9 +42739,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -44519,9 +44519,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -44564,9 +44564,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -44593,9 +44593,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -44638,9 +44638,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -46418,9 +46418,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -46463,9 +46463,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -46492,9 +46492,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -46537,9 +46537,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -48317,9 +48317,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -48362,9 +48362,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -48391,9 +48391,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -48436,9 +48436,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -50216,9 +50216,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -50261,9 +50261,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -50290,9 +50290,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -50335,9 +50335,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -52115,9 +52115,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -52160,9 +52160,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -52189,9 +52189,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -52234,9 +52234,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -53864,7 +53864,7 @@
       "provenance": {
         "brand_config": "design/brand/config.json",
         "brand_config_sha256": "155eceec64c3aa33f4bc6b58a6ef7a1b071384b1dbbb55075a223e460d16e8a8",
-        "contract_sha256": "8aa76cb541498b74b7e7f95ee54d9605157d223e52fe711a75533e8dc4c6af23",
+        "contract_sha256": "6ac234ec83315267fbac69fe8d6717ad73684ab06491ac2847a4ee0c5ff8a3f8",
         "contract_version": "1.0.0",
         "overrides": {
           "neutral_base": {},
@@ -54683,9 +54683,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -54728,9 +54728,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -54757,9 +54757,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -54802,9 +54802,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -56582,9 +56582,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -56627,9 +56627,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -56656,9 +56656,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -56701,9 +56701,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -58481,9 +58481,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -58526,9 +58526,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -58555,9 +58555,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -58600,9 +58600,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -60380,9 +60380,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -60425,9 +60425,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -60454,9 +60454,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -60499,9 +60499,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -62279,9 +62279,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -62324,9 +62324,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -62353,9 +62353,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -62398,9 +62398,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -64178,9 +64178,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -64223,9 +64223,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -64252,9 +64252,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -64297,9 +64297,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -66077,9 +66077,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -66122,9 +66122,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -66151,9 +66151,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -66196,9 +66196,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -67978,9 +67978,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -68023,9 +68023,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -68052,9 +68052,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -68097,9 +68097,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -69877,9 +69877,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -69922,9 +69922,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -69951,9 +69951,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -69996,9 +69996,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -71776,9 +71776,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -71821,9 +71821,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -71850,9 +71850,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -71895,9 +71895,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -73675,9 +73675,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -73720,9 +73720,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -73749,9 +73749,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -73794,9 +73794,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -75574,9 +75574,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -75619,9 +75619,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -75648,9 +75648,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -75693,9 +75693,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -77473,9 +77473,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -77518,9 +77518,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -77547,9 +77547,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -77592,9 +77592,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -79372,9 +79372,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -79417,9 +79417,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -79446,9 +79446,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -79491,9 +79491,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -81273,9 +81273,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -81318,9 +81318,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -81347,9 +81347,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -81392,9 +81392,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -83172,9 +83172,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -83217,9 +83217,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -83246,9 +83246,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -83291,9 +83291,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -85071,9 +85071,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -85116,9 +85116,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -85145,9 +85145,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -85190,9 +85190,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -86970,9 +86970,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -87015,9 +87015,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -87044,9 +87044,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -87089,9 +87089,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -88869,9 +88869,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -88914,9 +88914,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -88943,9 +88943,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -88988,9 +88988,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -90768,9 +90768,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -90813,9 +90813,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -90842,9 +90842,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -90887,9 +90887,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -92667,9 +92667,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -92712,9 +92712,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -92741,9 +92741,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -92786,9 +92786,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -94568,9 +94568,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -94613,9 +94613,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -94642,9 +94642,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -94687,9 +94687,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -96467,9 +96467,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -96512,9 +96512,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -96541,9 +96541,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -96586,9 +96586,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -98366,9 +98366,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -98411,9 +98411,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -98440,9 +98440,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -98485,9 +98485,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -100265,9 +100265,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -100310,9 +100310,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -100339,9 +100339,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -100384,9 +100384,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -102164,9 +102164,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -102209,9 +102209,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -102238,9 +102238,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -102283,9 +102283,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -104063,9 +104063,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -104108,9 +104108,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -104137,9 +104137,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -104182,9 +104182,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -105962,9 +105962,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -106007,9 +106007,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -106036,9 +106036,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -106081,9 +106081,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -107711,7 +107711,7 @@
       "provenance": {
         "brand_config": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/examples/example-blue.json",
         "brand_config_sha256": "e89eb95c16e4e2c964588b2a7eab7e24364e183b493cf3859f7bc7da7ab230bd",
-        "contract_sha256": "8aa76cb541498b74b7e7f95ee54d9605157d223e52fe711a75533e8dc4c6af23",
+        "contract_sha256": "6ac234ec83315267fbac69fe8d6717ad73684ab06491ac2847a4ee0c5ff8a3f8",
         "contract_version": "1.0.0",
         "overrides": {
           "neutral_base": {},
@@ -108530,9 +108530,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -108575,9 +108575,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -108604,9 +108604,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -108649,9 +108649,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -110429,9 +110429,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -110474,9 +110474,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -110503,9 +110503,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -110548,9 +110548,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -112328,9 +112328,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -112373,9 +112373,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -112402,9 +112402,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -112447,9 +112447,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -114227,9 +114227,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -114272,9 +114272,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -114301,9 +114301,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -114346,9 +114346,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -116126,9 +116126,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -116171,9 +116171,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -116200,9 +116200,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -116245,9 +116245,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -118025,9 +118025,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -118070,9 +118070,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -118099,9 +118099,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -118144,9 +118144,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -119924,9 +119924,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -119969,9 +119969,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -119998,9 +119998,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -120043,9 +120043,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -121825,9 +121825,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -121870,9 +121870,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -121899,9 +121899,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -121944,9 +121944,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -123724,9 +123724,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -123769,9 +123769,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -123798,9 +123798,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -123843,9 +123843,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -125623,9 +125623,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -125668,9 +125668,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -125697,9 +125697,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -125742,9 +125742,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -127522,9 +127522,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -127567,9 +127567,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -127596,9 +127596,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -127641,9 +127641,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -129421,9 +129421,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -129466,9 +129466,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -129495,9 +129495,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -129540,9 +129540,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -131320,9 +131320,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -131365,9 +131365,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -131394,9 +131394,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -131439,9 +131439,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -133219,9 +133219,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -133264,9 +133264,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -133293,9 +133293,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -133338,9 +133338,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -135120,9 +135120,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -135165,9 +135165,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -135194,9 +135194,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -135239,9 +135239,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -137019,9 +137019,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -137064,9 +137064,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -137093,9 +137093,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -137138,9 +137138,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -138918,9 +138918,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -138963,9 +138963,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -138992,9 +138992,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -139037,9 +139037,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -140817,9 +140817,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -140862,9 +140862,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -140891,9 +140891,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -140936,9 +140936,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -142716,9 +142716,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -142761,9 +142761,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -142790,9 +142790,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -142835,9 +142835,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -144615,9 +144615,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -144660,9 +144660,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -144689,9 +144689,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -144734,9 +144734,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -146514,9 +146514,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -146559,9 +146559,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -146588,9 +146588,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -146633,9 +146633,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#918B81",
+                "icon": "#606060",
                 "marker": null,
-                "text": "#918B81"
+                "text": "#606060"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -148415,9 +148415,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -148460,9 +148460,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -148489,9 +148489,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -148534,9 +148534,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -150314,9 +150314,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -150359,9 +150359,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -150388,9 +150388,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -150433,9 +150433,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -152213,9 +152213,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -152258,9 +152258,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -152287,9 +152287,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -152332,9 +152332,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -154112,9 +154112,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -154157,9 +154157,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -154186,9 +154186,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -154231,9 +154231,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -156011,9 +156011,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -156056,9 +156056,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -156085,9 +156085,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -156130,9 +156130,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -157910,9 +157910,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -157955,9 +157955,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -157984,9 +157984,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -158029,9 +158029,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -159809,9 +159809,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -159854,9 +159854,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -159883,9 +159883,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -159928,9 +159928,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -161558,7 +161558,7 @@
       "provenance": {
         "brand_config": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/examples/example-clay.json",
         "brand_config_sha256": "c5a2160d582d90e0488810e66a6b7185c6bb3ff84876eed468c84a1d7e85ca52",
-        "contract_sha256": "8aa76cb541498b74b7e7f95ee54d9605157d223e52fe711a75533e8dc4c6af23",
+        "contract_sha256": "6ac234ec83315267fbac69fe8d6717ad73684ab06491ac2847a4ee0c5ff8a3f8",
         "contract_version": "1.0.0",
         "overrides": {
           "neutral_base": {},
@@ -162463,9 +162463,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -162508,9 +162508,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -162537,9 +162537,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -162582,9 +162582,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -164362,9 +164362,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -164407,9 +164407,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -164436,9 +164436,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -164481,9 +164481,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -166261,9 +166261,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -166306,9 +166306,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -166335,9 +166335,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -166380,9 +166380,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -168160,9 +168160,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -168205,9 +168205,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -168234,9 +168234,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -168279,9 +168279,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -170059,9 +170059,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -170104,9 +170104,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -170133,9 +170133,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -170178,9 +170178,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -171958,9 +171958,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -172003,9 +172003,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -172032,9 +172032,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -172077,9 +172077,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -173857,9 +173857,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -173902,9 +173902,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -173931,9 +173931,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "hover": {
                 "background": "#272726",
@@ -173976,9 +173976,9 @@
                 "boundary": "#353533",
                 "focus": null,
                 "helper": null,
-                "icon": "#807A70",
+                "icon": "#B4B4B0",
                 "marker": null,
-                "text": "#807A70"
+                "text": "#B4B4B0"
               },
               "selected-hover": {
                 "background": "#343433",
@@ -175758,9 +175758,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -175803,9 +175803,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -175832,9 +175832,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -175877,9 +175877,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -177657,9 +177657,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -177702,9 +177702,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -177731,9 +177731,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -177776,9 +177776,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -179556,9 +179556,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -179601,9 +179601,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -179630,9 +179630,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -179675,9 +179675,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -181455,9 +181455,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -181500,9 +181500,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -181529,9 +181529,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -181574,9 +181574,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -183354,9 +183354,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -183399,9 +183399,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -183428,9 +183428,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -183473,9 +183473,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -185253,9 +185253,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -185298,9 +185298,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -185327,9 +185327,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -185372,9 +185372,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -187152,9 +187152,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -187197,9 +187197,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -187226,9 +187226,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "hover": {
                 "background": "#36332D",
@@ -187271,9 +187271,9 @@
                 "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
-                "icon": "#A09A90",
+                "icon": "#F4EEE2",
                 "marker": null,
-                "text": "#A09A90"
+                "text": "#F4EEE2"
               },
               "selected-hover": {
                 "background": "#465151",
@@ -189053,9 +189053,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#333333",
+                "icon": "#111111",
                 "marker": null,
-                "text": "#333333"
+                "text": "#111111"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -189098,9 +189098,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#333333",
+                "icon": "#111111",
                 "marker": null,
-                "text": "#333333"
+                "text": "#111111"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -189127,9 +189127,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#333333",
+                "icon": "#111111",
                 "marker": null,
-                "text": "#333333"
+                "text": "#111111"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -189172,9 +189172,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#333333",
+                "icon": "#111111",
                 "marker": null,
-                "text": "#333333"
+                "text": "#111111"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -190952,9 +190952,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#333333",
+                "icon": "#111111",
                 "marker": null,
-                "text": "#333333"
+                "text": "#111111"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -190997,9 +190997,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#333333",
+                "icon": "#111111",
                 "marker": null,
-                "text": "#333333"
+                "text": "#111111"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -191026,9 +191026,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#333333",
+                "icon": "#111111",
                 "marker": null,
-                "text": "#333333"
+                "text": "#111111"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -191071,9 +191071,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#333333",
+                "icon": "#111111",
                 "marker": null,
-                "text": "#333333"
+                "text": "#111111"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -192851,9 +192851,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#333333",
+                "icon": "#111111",
                 "marker": null,
-                "text": "#333333"
+                "text": "#111111"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -192896,9 +192896,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#333333",
+                "icon": "#111111",
                 "marker": null,
-                "text": "#333333"
+                "text": "#111111"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -192925,9 +192925,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#333333",
+                "icon": "#111111",
                 "marker": null,
-                "text": "#333333"
+                "text": "#111111"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -192970,9 +192970,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#333333",
+                "icon": "#111111",
                 "marker": null,
-                "text": "#333333"
+                "text": "#111111"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -194750,9 +194750,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#333333",
+                "icon": "#111111",
                 "marker": null,
-                "text": "#333333"
+                "text": "#111111"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -194795,9 +194795,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#333333",
+                "icon": "#111111",
                 "marker": null,
-                "text": "#333333"
+                "text": "#111111"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -194824,9 +194824,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#333333",
+                "icon": "#111111",
                 "marker": null,
-                "text": "#333333"
+                "text": "#111111"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -194869,9 +194869,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#333333",
+                "icon": "#111111",
                 "marker": null,
-                "text": "#333333"
+                "text": "#111111"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -196649,9 +196649,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#333333",
+                "icon": "#111111",
                 "marker": null,
-                "text": "#333333"
+                "text": "#111111"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -196694,9 +196694,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#333333",
+                "icon": "#111111",
                 "marker": null,
-                "text": "#333333"
+                "text": "#111111"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -196723,9 +196723,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#333333",
+                "icon": "#111111",
                 "marker": null,
-                "text": "#333333"
+                "text": "#111111"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -196768,9 +196768,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#333333",
+                "icon": "#111111",
                 "marker": null,
-                "text": "#333333"
+                "text": "#111111"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -198548,9 +198548,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#333333",
+                "icon": "#111111",
                 "marker": null,
-                "text": "#333333"
+                "text": "#111111"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -198593,9 +198593,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#333333",
+                "icon": "#111111",
                 "marker": null,
-                "text": "#333333"
+                "text": "#111111"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -198622,9 +198622,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#333333",
+                "icon": "#111111",
                 "marker": null,
-                "text": "#333333"
+                "text": "#111111"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -198667,9 +198667,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#333333",
+                "icon": "#111111",
                 "marker": null,
-                "text": "#333333"
+                "text": "#111111"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -200447,9 +200447,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#333333",
+                "icon": "#111111",
                 "marker": null,
-                "text": "#333333"
+                "text": "#111111"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -200492,9 +200492,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#333333",
+                "icon": "#111111",
                 "marker": null,
-                "text": "#333333"
+                "text": "#111111"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -200521,9 +200521,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#333333",
+                "icon": "#111111",
                 "marker": null,
-                "text": "#333333"
+                "text": "#111111"
               },
               "hover": {
                 "background": "#E9E9E7",
@@ -200566,9 +200566,9 @@
                 "boundary": "#DFDFDD",
                 "focus": null,
                 "helper": null,
-                "icon": "#333333",
+                "icon": "#111111",
                 "marker": null,
-                "text": "#333333"
+                "text": "#111111"
               },
               "selected-hover": {
                 "background": "#DCDCD9",
@@ -202348,9 +202348,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -202393,9 +202393,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -202422,9 +202422,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -202467,9 +202467,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -204247,9 +204247,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -204292,9 +204292,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -204321,9 +204321,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -204366,9 +204366,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -206146,9 +206146,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -206191,9 +206191,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -206220,9 +206220,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -206265,9 +206265,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -208045,9 +208045,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -208090,9 +208090,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -208119,9 +208119,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -208164,9 +208164,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -209944,9 +209944,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -209989,9 +209989,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -210018,9 +210018,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -210063,9 +210063,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -211843,9 +211843,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -211888,9 +211888,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -211917,9 +211917,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -211962,9 +211962,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -213742,9 +213742,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -213787,9 +213787,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -213816,9 +213816,9 @@
                 "boundary": null,
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "hover": {
                 "background": "#DEDDD7",
@@ -213861,9 +213861,9 @@
                 "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
-                "icon": "#767066",
+                "icon": "#37352F",
                 "marker": null,
-                "text": "#767066"
+                "text": "#37352F"
               },
               "selected-hover": {
                 "background": "#CCD5D5",
@@ -215491,7 +215491,7 @@
       "provenance": {
         "brand_config": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/examples/example-blue.json",
         "brand_config_sha256": "e89eb95c16e4e2c964588b2a7eab7e24364e183b493cf3859f7bc7da7ab230bd",
-        "contract_sha256": "8aa76cb541498b74b7e7f95ee54d9605157d223e52fe711a75533e8dc4c6af23",
+        "contract_sha256": "6ac234ec83315267fbac69fe8d6717ad73684ab06491ac2847a4ee0c5ff8a3f8",
         "contract_version": "1.0.0",
         "overrides": {
           "neutral_base": {
@@ -215633,10 +215633,10 @@
       "design/system.schema.json": "af11f7ef0f9f4b495181d72f0b8b4a3cb274e79fe3ce9e98d4d82b6aaa396393",
       "design/theme/artifact-lock.schema.json": "642653ddc482c053402ad6abe2f14c6d836ea282e16c709ca85792f8a435b32a",
       "design/theme/data-plot-pairs.json": "b75e6e57c155d596ba60a086406aa91cfa087009e6200847db1bbd25c2d442c7",
-      "design/theme/rules.json": "3e353c9b5cf35e92c79dd64020b195bfd85fb8e41e51b1d5cb1ed4b1dba423f0",
+      "design/theme/rules.json": "1b44512ec7a61a3e9032cce1d2e902129e3346af8266649232856834b90ab07d",
       "design/theme/rules.schema.json": "01c7c08a6ebd48db78e3e0a59f2f67b5f978b80b4acf8fcd00680cb254718dd6",
       "design/theme/theme.schema.json": "4c7d0f7195088487c4bf02b4b01a500baf1958caf6f6f62a436d9b5b37ea8f68",
-      "scripts/generate-theme-system.py": "cabc0172733b41835740c266f5a13d6ffedacc3768ef0dca19e95e0c357f7a69",
+      "scripts/generate-theme-system.py": "98697ce1e383fb2aafc557f2b196d770bded49430b700e3d0d742c8a85e64297",
       "scripts/merge-design-system.py": "46831d8a089c1dfc06012b78a23025293bb4e2010100e0a4ce93c137b30b6ba2"
     },
     "rules_version": "1.10.0",

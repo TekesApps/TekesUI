@@ -34,6 +34,12 @@ pub use prepared::{
     PreparedEffects, PreparedEffectsError, PreparedHook, PreparedHookKind,
     PreparedLifecycleContext, PreparedPhase,
 };
+mod checkbox;
+pub use checkbox::{CheckboxContent, CheckboxIntent};
+mod radio;
+pub use radio::{RadioContentError, RadioGroupContent, RadioSelectionIntent};
+mod segmented;
+pub use segmented::{SegmentIntent, SegmentedContentError, SegmentedControlContent};
 mod action_proxy;
 mod notice;
 pub use notice::{BannerContent, ToastContent};
@@ -55,6 +61,8 @@ pub use rich_content::{
 };
 pub use rich_document::{RichBlock, RichBlockKind, RichDocument, RichLink};
 mod adapters;
+mod combobox;
+pub use combobox::{ComboBoxContent, ComboBoxSelection, ComboBoxUpdateError};
 mod chart_content;
 pub use chart_content::{ChartContent, ChartContentError};
 mod button;
@@ -76,6 +84,10 @@ mod label;
 pub use tekes_ui_text::{
     LabelForeground, LabelForegroundRun, LabelSourceVersion, SemanticLabel, SemanticLabelError,
 };
+mod link;
+pub use link::LinkContent;
+mod navigation;
+pub use navigation::{BreadcrumbContent, CommandPaletteContent, TabItem, TabsContent};
 mod menu;
 mod number;
 pub use number::{
@@ -226,18 +238,37 @@ pub enum ContentRole {
     /// A navigation action with one semantic owner; its children are decorative.
     Link,
     TextInput,
+    /// Single-line editable original ComboBox owner.
+    ComboBox,
     Slider,
     Switch,
+    Checkbox,
+    RadioGroup,
+    RadioButton,
+    SegmentedGroup,
+    Segment,
     List,
     ListItem,
     Dialog,
     MenuButton,
     Menu,
     MenuItem,
+    TabList,
+    Tab,
     /// The original visible split divider, with its finite ratio domain.
     Splitter,
 }
 impl ContentRole {
+    fn is_selection(self) -> bool {
+        matches!(
+            self,
+            Self::Checkbox
+                | Self::RadioGroup
+                | Self::RadioButton
+                | Self::SegmentedGroup
+                | Self::Segment
+        )
+    }
     fn is_action_owner(self) -> bool {
         matches!(self, Self::Button | Self::Link | Self::MenuButton)
     }
@@ -256,6 +287,25 @@ pub struct ContentSemantics {
     pub description: Option<String>,
 }
 impl ContentSemantics {
+    fn valid_selection(&self, parent: Option<ContentRole>) -> bool {
+        use ContentRole as R;
+        if !self.role.is_selection() {
+            return true;
+        }
+        if self.expanded.is_some() {
+            return false;
+        }
+        match self.role {
+            R::Checkbox => matches!(
+                (self.value.as_deref(), self.selected),
+                (Some("off" | "mixed"), false) | (Some("on"), true)
+            ),
+            R::RadioGroup | R::SegmentedGroup => self.value.is_none() && !self.selected,
+            R::RadioButton => self.value.is_none() && parent == Some(R::RadioGroup),
+            R::Segment => self.value.is_none() && parent == Some(R::SegmentedGroup),
+            _ => true,
+        }
+    }
     /// Construct an informative image semantic; blank alternative text is invalid.
     pub fn image_alt(name: impl Into<String>) -> Option<Self> {
         let name = name.into();
@@ -284,6 +334,8 @@ pub enum AccessibilityAction {
     Decrement,
     Focus,
     Press,
+    /// Set the original owner disclosure state; never toggle via Press.
+    SetExpanded(bool),
     /// Show the original owner's bound context menu without a primary action.
     ShowMenu,
     SetValue(String),
@@ -702,6 +754,11 @@ pub trait Component: Debug + Any {
                 ContentRole::Button
                     | ContentRole::Link
                     | ContentRole::TextInput
+                    | ContentRole::Checkbox
+                    | ContentRole::RadioGroup
+                    | ContentRole::RadioButton
+                    | ContentRole::SegmentedGroup
+                    | ContentRole::Segment
                     | ContentRole::Slider
                     | ContentRole::Switch
                     | ContentRole::Splitter
@@ -808,6 +865,7 @@ pub struct Content {
     activity_parent: bool,
     composition_active: bool,
     retained_body_paint: bool,
+    semantic_suppressed: bool,
 }
 impl Content {
     fn active(&self) -> bool {
@@ -838,7 +896,12 @@ impl Content {
             activity_parent: true,
             composition_active: true,
             retained_body_paint: false,
+            semantic_suppressed: false,
         }
+    }
+    /// Hide a decorative slot from AX while preserving mount, layout and paint.
+    pub(super) fn suppress_semantics(&mut self) {
+        self.semantic_suppressed = true;
     }
     // The retained body stays mounted. Only ordinary paint may outlive activity.
     fn set_composition_active(&mut self, active: bool) {
@@ -1207,7 +1270,7 @@ impl Content {
         theme: ContentTheme,
     ) {
         // Registered Popovers have one host-owned overlay pass in opening order.
-        if self.component::<PopoverContent>().is_some() {
+        if !self.composition_active || self.component::<PopoverContent>().is_some() {
             return;
         }
         let owned = self.component.paints_children();
@@ -1665,7 +1728,7 @@ impl Content {
         focused: Option<ComponentId>,
         out: &mut Vec<SemanticNode>,
     ) {
-        if !self.active() || self.component.semantic_subtree_hidden() {
+        if !self.active() || self.semantic_suppressed || self.component.semantic_subtree_hidden() {
             return;
         }
         let hidden = self.component.semantic_hidden();
@@ -1804,6 +1867,10 @@ pub struct ContentHost {
     popover_order: Vec<PopoverSession>,
     captured: Option<ComponentId>,
     captured_overlay: bool,
+    // Capture source, distinct from merely being inside an overlay scope.
+    // Meaningful only while captured is Some; set at every acquisition.
+    captured_overlay_handler: bool,
+    retired_combo_release: bool,
     captured_mount: Option<u64>,
     capture_epoch: u64,
     dirty: bool,
@@ -1852,6 +1919,8 @@ impl ContentHost {
             popover_order: Vec::new(),
             captured: None,
             captured_overlay: false,
+            captured_overlay_handler: false,
+            retired_combo_release: false,
             captured_mount: None,
             capture_epoch: 0,
             dirty: true,
@@ -2439,6 +2508,7 @@ impl ContentHost {
         }
         self.root.refresh_activity(self.window_active);
         self.root.notify_presentation_runnable(self.window_active);
+        self.publish_checkbox_exposures()?;
         self.publish_empty_state_exposures()?;
         self.publish_notice_exposures()?;
         self.last_layout = Some(requested);
@@ -2470,13 +2540,25 @@ impl ContentHost {
                 self.captured_mount != Some(c.mount)
                     || c.visible().is_none()
                     || c.component.semantics().disabled
+                    || c.component::<ComboBoxContent>()
+                        .is_some_and(|combo| !combo.capture_current(self.captured_overlay))
             })
         }) {
             if let Some(c) = self.captured.take().and_then(|id| self.root.find_mut(id)) {
-                c.component.event(&ContentEvent::Cancel);
+                if c.component::<ComboBoxContent>().is_some()
+                    && self.captured_mount == Some(c.mount)
+                {
+                    self.retired_combo_release = true;
+                    c.component.cancel_pointer();
+                    c.component
+                        .event(&ContentEvent::PointerMove(Point::new(f32::MIN, f32::MIN)));
+                } else {
+                    c.component.event(&ContentEvent::Cancel);
+                }
             }
             self.captured_mount = None;
             self.captured_overlay = false;
+            self.captured_overlay_handler = false;
             self.dirty = true;
         }
         if let Some(id) = self.focused.filter(|id| {
@@ -2786,6 +2868,16 @@ impl ContentHost {
         }
         let routing = event.routing_event();
         let routed = routing.as_ref();
+        if event.is_primary_pointer() && matches!(routed, ContentEvent::PointerDown(_)) {
+            self.retired_combo_release = false;
+        }
+        if event.is_primary_pointer()
+            && matches!(routed, ContentEvent::PointerUp(_))
+            && self.retired_combo_release
+        {
+            self.retired_combo_release = false;
+            return ContentResponse::consumed(false);
+        }
         if matches!(routed, ContentEvent::PointerDown(_))
             && event.is_primary_pointer()
             && self.capture_epoch == u64::MAX
@@ -2845,16 +2937,21 @@ impl ContentHost {
             && let Some(id) = self.captured
         {
             let captured_overlay = self.captured_overlay;
+            let captured_overlay_handler = self.captured_overlay_handler;
             if matches!(routed, ContentEvent::PointerUp(_)) {
                 self.captured = None;
                 self.captured_mount = None;
                 self.captured_overlay = false;
+                self.captured_overlay_handler = false;
             }
-            let result = if captured_overlay {
-                {
-                    let (scope, actions) = self.scope_with_actions();
-                    scope.route_from(id, event, actions)
-                }
+            let result = if captured_overlay_handler {
+                self.root.find_mut(id).map(|node| {
+                    let response = node.deliver_actions(event, true, &mut self.actions);
+                    (id, response, false)
+                })
+            } else if captured_overlay {
+                let (scope, actions) = self.scope_with_actions();
+                scope.route_from(id, event, actions)
             } else {
                 self.root.route_from(id, event, &mut self.actions)
             };
@@ -2872,6 +2969,21 @@ impl ContentHost {
                     .unwrap()
                     .deliver_actions(event, true, &mut self.actions);
             if response.consumed {
+                // The original overlay owner owns this down and its release.
+                // Existing Combo-specific capture lifecycle validation is unchanged.
+                if response.capture_pointer
+                    && matches!(routed, ContentEvent::PointerDown(_))
+                    && event.is_primary_pointer()
+                {
+                    self.capture_epoch = self
+                        .capture_epoch
+                        .checked_add(1)
+                        .expect("pointer capture identity exhausted");
+                    self.captured = Some(id);
+                    self.captured_mount = self.root.find_active(id).map(|node| node.mount);
+                    self.captured_overlay = true;
+                    self.captured_overlay_handler = true;
+                }
                 self.record_reading_scroll(event, id, &response);
                 return response;
             }
@@ -2937,6 +3049,14 @@ impl ContentHost {
                 self.event_bubbled = Some(bubbles);
                 return response;
             }
+            if let Some(response) = self
+                .focused
+                .and_then(|id| self.root.find_mut(id))
+                .map(|node| node.component.focus_boundary(*reverse))
+                .filter(|response| response.consumed)
+            {
+                return response;
+            }
             return self.advance_focus(*reverse);
         }
         if let ContentEvent::PointerMove(position) = routed {
@@ -2998,6 +3118,7 @@ impl ContentHost {
                             .find_active(scope)
                             .is_some_and(|owner| owner.find(id).is_some())
                     });
+                    self.captured_overlay_handler = false;
                 }
                 if r.consumed
                     && self.root.find(id).is_some_and(|c| {
@@ -3065,7 +3186,7 @@ impl ContentHost {
             return None;
         }
         let owner = self.scope().find_active(self.focused?)?;
-        if owner.component.semantics().disabled {
+        if owner.component.semantics().disabled || owner.component.semantics().role.is_selection() {
             return None;
         }
         owner.component.native_key_binding()
@@ -3089,7 +3210,7 @@ impl ContentHost {
             return None;
         }
         let owner = self.scope().find_active(id)?;
-        if owner.component.semantics().disabled {
+        if owner.component.semantics().disabled || owner.component.semantics().role.is_selection() {
             return None;
         }
         let mut input = owner.component.text_input_snapshot()?;
@@ -3120,21 +3241,26 @@ impl ContentHost {
                 .component
                 .semantic_parts()
                 .iter()
-                .any(|p| p.index == part)
+                .any(|p| p.index == part && !p.semantics.role.is_selection())
             {
                 return None;
             }
             owner.component.semantic_part_text_layout(part)
         } else {
+            if owner.component.semantics().role.is_selection() {
+                return None;
+            }
             owner.component.semantic_text_layout()
         }
     }
     /// Published text queries for active semantic owners, including unfocused
     /// fields. Closed or background modal subtrees cannot expose editable text.
     pub fn text_surface(&self, id: ComponentId) -> Option<&crate::TextSurface> {
-        self.scope()
-            .find_active(id)
-            .and_then(|c| c.component.text_surface())
+        self.scope().find_active(id).and_then(|c| {
+            (!c.component.semantics().role.is_selection())
+                .then(|| c.component.text_surface())
+                .flatten()
+        })
     }
     /// Current active owner's process-local mount identity for native bridges.
     /// Reorder retains it; replacement/remount changes it even for the same ID.
@@ -3168,6 +3294,13 @@ impl ContentHost {
                     self.captured_mount == Some(node.mount)
                         && node.visible().is_some()
                         && !node.component.semantics().disabled
+                        && node
+                            .component::<ComboBoxContent>()
+                            .is_none_or(|combo| combo.capture_current(self.captured_overlay))
+                })
+                .filter(|node| {
+                    node.component::<CheckboxContent>()
+                        .is_none_or(|check| check.focusable())
                 })
                 .map(|node| (id, node.mount))
         })
@@ -3246,6 +3379,7 @@ impl ContentHost {
             self.captured = None;
             self.captured_mount = None;
             self.captured_overlay = false;
+            self.captured_overlay_handler = false;
         }
         if focus {
             self.focus(None, false);
@@ -3289,6 +3423,105 @@ impl ContentHost {
         }
         if !self.window_active {
             return ContentResponse::default();
+        }
+        if self.is_composing()
+            && self.focused != Some(id)
+            && (matches!(action, AccessibilityAction::Focus)
+                || (matches!(action, AccessibilityAction::Press)
+                    && self
+                        .scope()
+                        .find_active(id)
+                        .is_some_and(|n| n.component.semantics().role.is_selection())
+                    && !self.semantic_preserves_activation_focus(id, part)))
+        {
+            return ContentResponse::default();
+        }
+        // Validate finite selection authority before focus transfer or owner mutation.
+        // The original IME/scope gate above still owns admission.
+        let Some(node) = self.scope().find_active(id) else {
+            // A closed scope still needs its original return-focus reconciliation.
+            // Retire that lifecycle state without dispatching the stale action.
+            self.reconcile_active_inputs();
+            return ContentResponse::default();
+        };
+        let root = node.component.semantics();
+        if root.role.is_selection()
+            && (!root.valid_selection(None)
+                && !matches!(root.role, ContentRole::RadioButton | ContentRole::Segment))
+        {
+            return ContentResponse::default();
+        }
+        if root.role.is_selection()
+            && (node.component.text_input_snapshot().is_some()
+                || node.component.semantic_text_layout().is_some()
+                || node.component.value_range().is_some())
+        {
+            return ContentResponse::default();
+        }
+        let parts = node.component.semantic_parts();
+        let selected_part = part.and_then(|i| parts.iter().find(|p| p.index == i));
+        if root.role.is_selection()
+            || selected_part.is_some_and(|p| p.semantics.role.is_selection())
+        {
+            let (s, parent, visible, extra) = if let Some(i) = part {
+                let Some(p) = selected_part else {
+                    return ContentResponse::default();
+                };
+                if !p.semantics.role.is_selection() {
+                    return ContentResponse::default();
+                }
+                let parent = match node.component.semantic_part_parent(i) {
+                    Some(parent) => parts
+                        .iter()
+                        .find(|p| p.index == parent)
+                        .map(|p| p.semantics.role),
+                    None => Some(root.role),
+                };
+                (
+                    &p.semantics,
+                    parent,
+                    !p.frame.is_empty()
+                        && p.frame
+                            .intersection(&node.clip)
+                            .is_some_and(|r| !r.is_empty()),
+                    node.component.semantic_part_text_layout(i).is_some()
+                        || node.component.semantic_part_value_range(i).is_some(),
+                )
+            } else {
+                let parent = self
+                    .semantics()
+                    .iter()
+                    .find(|n| n.id == id)
+                    .and_then(|n| n.parent)
+                    .and_then(|id| self.scope().find_active(id))
+                    .map(|n| n.component.semantics().role);
+                (
+                    &root,
+                    parent,
+                    node.frame
+                        .intersection(&node.clip)
+                        .is_some_and(|r| !r.is_empty()),
+                    node.component.text_input_snapshot().is_some()
+                        || node.component.semantic_text_layout().is_some()
+                        || node.component.value_range().is_some(),
+                )
+            };
+            if s.disabled
+                || !visible
+                || extra
+                || !s.valid_selection(parent)
+                || !matches!(
+                    action,
+                    AccessibilityAction::Focus | AccessibilityAction::Press
+                )
+                || (matches!(action, AccessibilityAction::Press)
+                    && matches!(
+                        s.role,
+                        ContentRole::RadioGroup | ContentRole::SegmentedGroup
+                    ))
+            {
+                return ContentResponse::default();
+            }
         }
         if matches!(action, AccessibilityAction::ShowMenu) {
             return self.context_menu_accessibility_action(id, part);
@@ -3408,6 +3641,7 @@ impl ContentHost {
         let restore = self.capture_focus();
         self.cancel();
         self.modal = Some((id, restore));
+        self.reconcile_checkbox_scope_exposures();
         self.modal_focus_pending = true;
         Ok(())
     }
@@ -3451,6 +3685,7 @@ impl ContentHost {
         };
         self.captured_mount = None;
         self.captured_overlay = false;
+        self.captured_overlay_handler = false;
         if let Some(owner) = self.root.find_mut(id) {
             owner.component.cancel_pointer();
         }
@@ -3485,6 +3720,7 @@ impl ContentHost {
         self.captured = None;
         self.captured_mount = None;
         self.captured_overlay = false;
+        self.captured_overlay_handler = false;
         self.focus(None, false);
     }
     /// Move the original mounted subtree, preserving its Content identities and
@@ -3636,6 +3872,7 @@ impl ContentHost {
             self.captured = None;
             self.captured_mount = None;
             self.captured_overlay = false;
+            self.captured_overlay_handler = false;
         }
         child.lifecycle(Lifecycle::Unmounted);
         self.reveal_clock.invalidate_input();
@@ -3680,7 +3917,11 @@ impl ContentHost {
     pub fn value_range(&self, id: ComponentId) -> Option<std::ops::RangeInclusive<f64>> {
         self.scope()
             .find_active(id)
-            .and_then(|n| n.component.value_range())
+            .and_then(|n| {
+                (!n.component.semantics().role.is_selection())
+                    .then(|| n.component.value_range())
+                    .flatten()
+            })
             .filter(|range| {
                 range.start().is_finite() && range.end().is_finite() && range.start() <= range.end()
             })
@@ -3704,6 +3945,14 @@ impl ContentHost {
             .semantic_parts()
             .iter()
             .any(|p| p.index == part)
+        {
+            return None;
+        }
+        if owner
+            .component
+            .semantic_parts()
+            .iter()
+            .any(|p| p.index == part && p.semantics.role.is_selection())
         {
             return None;
         }

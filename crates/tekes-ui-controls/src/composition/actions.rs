@@ -29,8 +29,29 @@ pub enum ContentActionPayload {
     /// Original toolbar command captured before menu-close focus cleanup.
     ToolbarCommand(u64),
     MenuSelection(MenuSelection),
+    ComboBoxSelection(ComboBoxSelection),
+    CheckboxState(CheckboxIntent),
+    RadioSelection(RadioSelectionIntent),
+    SegmentSelection(SegmentIntent),
     /// Owned controlled Disclosure request captured at original delivery.
     DisclosureExpansion(DisclosureIntent),
+    /// Selection captured by the original Tabs event, before later model or
+    /// layout updates can change the currently selected panel.
+    TabSelection {
+        index: usize,
+        label: ComponentId,
+        panel: ComponentId,
+    },
+    /// Ancestor navigation captured against the rendered Breadcrumb path.
+    BreadcrumbNavigation {
+        index: usize,
+        path: Vec<String>,
+    },
+    /// Original command, captured before confirmation changes the query/filter.
+    CommandSelection {
+        index: usize,
+        label: String,
+    },
 }
 /// Item identity in one immutable model revision. Explicit values provide a
 /// stable path; legacy positional menus retain index, label and model revision.
@@ -93,6 +114,20 @@ mod mount_capacity_test {
 }
 #[cfg(test)]
 pub(super) use mount_capacity_test::FAIL_MOUNT;
+/// Use the current allocator's scoped failure seam for the original Combo
+/// controlled-setter versus real-editor capacity regression.
+#[cfg(test)]
+pub(super) fn with_exhausted_mounts<T>(f: impl FnOnce() -> T) -> T {
+    struct Restore(bool);
+    impl Drop for Restore {
+        fn drop(&mut self) {
+            FAIL_MOUNT.with(|flag| flag.set(self.0));
+        }
+    }
+    let _restore = Restore(FAIL_MOUNT.with(|flag| flag.replace(true)));
+    f()
+}
+
 /// Finite tickets from the original allocator. No ambient identity fallback.
 pub(super) struct MountRange {
     next: u64,
@@ -113,6 +148,10 @@ impl MountRange {
     }
 }
 pub(super) fn reserve_mounts(count: usize) -> Option<MountRange> {
+    #[cfg(test)]
+    if FAIL_MOUNT.with(|flag| flag.get()) {
+        return None;
+    }
     let count = u64::try_from(count).ok()?;
     {
         let counter = &NEXT_MOUNT;
@@ -1102,5 +1141,149 @@ mod issue102_nested_reader_tests {
         eprintln!(
             "ISSUE102 two hidden readers x two Unmounted: fresh IDs follow parent/child callback order, not node registration order"
         );
+    }
+}
+
+#[cfg(test)]
+mod checkbox_mount_tests {
+    use super::*;
+    struct ScopedMountOverride;
+    impl ScopedMountOverride {
+        fn current() -> u64 {
+            NEXT_MOUNT.load(Ordering::Relaxed)
+        }
+        fn set(next: u64) {
+            NEXT_MOUNT.store(next, Ordering::Relaxed);
+        }
+    }
+    struct Text;
+    impl ButtonTextRenderer for Text {
+        fn measure(&mut self, _: &str, _: proposal::TextRole, w: f32) -> Size {
+            Size::new(w.min(80.), 20.)
+        }
+        fn draw(
+            &mut self,
+            _: &mut Scene,
+            _: &str,
+            _: proposal::TextRole,
+            _: Rect,
+            _: ButtonTextAlign,
+            _: Rgba,
+        ) {
+        }
+    }
+    #[test]
+    fn checkbox_complete_original_batch_capacity_no_partial_mount_and_no_wrap() {
+        if !super::issue102_counter_process(
+            "composition::actions::checkbox_mount_tests::checkbox_complete_original_batch_capacity_no_partial_mount_and_no_wrap",
+        ) {
+            return;
+        }
+        let root = Content::new(
+            ComponentId(1),
+            StackContent {
+                model: crate::extended::Stack {
+                    axis: crate::extended::Axis::Vertical,
+                    gap: 0.,
+                },
+                flexible_child: None,
+                children: vec![
+                    Content::new(
+                        ComponentId(2),
+                        CheckboxContent::new("", crate::CheckState::Mixed),
+                    ),
+                    Content::new(
+                        ComponentId(3),
+                        CheckboxContent::new("", crate::CheckState::Unchecked),
+                    ),
+                ],
+            },
+        );
+        let mut h = ContentHost::new(root).unwrap();
+        let f = Rect::new(0., 0., 300., 100.);
+        h.render(
+            &mut Scene::new(),
+            &mut Text,
+            f,
+            f,
+            tekes_ui_tokens::Theme::LIGHT.into(),
+        )
+        .unwrap();
+        let before = [
+            h.root.find(ComponentId(2)).unwrap().mount,
+            h.root.find(ComponentId(3)).unwrap().mount,
+        ];
+        for id in [ComponentId(2), ComponentId(3)] {
+            let c = h
+                .root
+                .find_mut(id)
+                .unwrap()
+                .component_mut::<CheckboxContent>()
+                .unwrap();
+            c.set_availability(true, false);
+            c.set_availability(false, false);
+        }
+        // Preserve restoration around the same original allocator even in the
+        // existing isolated counter-test process; no historical test module dependency.
+        struct Restore(u64);
+        impl Drop for Restore {
+            fn drop(&mut self) {
+                ScopedMountOverride::set(self.0);
+            }
+        }
+        let _restore = Restore(ScopedMountOverride::current());
+        ScopedMountOverride::set(u64::MAX - 1);
+        assert_eq!(
+            h.render(
+                &mut Scene::new(),
+                &mut Text,
+                f,
+                f,
+                tekes_ui_tokens::Theme::LIGHT.into()
+            ),
+            Err(CompositionError::MountExhausted)
+        );
+        assert_eq!(ScopedMountOverride::current(), u64::MAX - 1);
+        assert_eq!(
+            [
+                h.root.find(ComponentId(2)).unwrap().mount,
+                h.root.find(ComponentId(3)).unwrap().mount
+            ],
+            before
+        );
+        assert!(
+            !h.accessibility_action(ComponentId(2), None, AccessibilityAction::Press)
+                .activated
+        );
+        assert!(
+            !h.accessibility_action(ComponentId(3), None, AccessibilityAction::Press)
+                .activated
+        );
+        ScopedMountOverride::set(u64::MAX - 2);
+        h.render(
+            &mut Scene::new(),
+            &mut Text,
+            f,
+            f,
+            tekes_ui_tokens::Theme::LIGHT.into(),
+        )
+        .unwrap();
+        assert_eq!(ScopedMountOverride::current(), u64::MAX);
+        assert_eq!(h.root.find(ComponentId(2)).unwrap().mount, u64::MAX - 2);
+        assert_eq!(h.root.find(ComponentId(3)).unwrap().mount, u64::MAX - 1);
+        assert!(
+            h.accessibility_action(ComponentId(2), None, AccessibilityAction::Press)
+                .activated
+        );
+        // Continuous paint needs no reservation, even at exact exhaustion.
+        h.render(
+            &mut Scene::new(),
+            &mut Text,
+            f,
+            f,
+            tekes_ui_tokens::Theme::LIGHT.into(),
+        )
+        .unwrap();
+        assert_eq!(ScopedMountOverride::current(), u64::MAX);
     }
 }

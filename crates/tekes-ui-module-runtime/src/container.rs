@@ -3088,6 +3088,7 @@ impl Component for ProcessContainer {
             A::Decrement => W::Decrement,
             A::Focus => W::Focus,
             A::Press => W::Press,
+            A::SetExpanded(value) => W::SetExpanded(*value),
             // The current remote protocol has no context-menu attachment or
             // ShowMenu intent. Do not advertise/serialize it as a primary Press.
             A::ShowMenu => return ContentResponse::default(),
@@ -3141,3 +3142,7 @@ mod curve_packet_contract_tests {
         );
     }
 }
+
+#[cfg(test)]
+#[path = "../../tekes-ui-app-protocol/tests/old_combo_schema/content.rs"]
+mod old_combo_schema;

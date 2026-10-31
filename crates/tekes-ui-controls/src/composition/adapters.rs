@@ -226,6 +226,10 @@ pub struct TextFieldContent {
     focused: bool,
 }
 impl TextFieldContent {
+    pub(crate) fn has_focus(&self) -> bool {
+        self.focused
+    }
+
     pub fn new(label: impl Into<String>, value: &str) -> Self {
         Self {
             field: Field {
@@ -368,6 +372,27 @@ impl TextFieldContent {
     }
 }
 impl Component for TextFieldContent {
+    fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
+        action_preparation::prepare_original(
+            self,
+            request,
+            Self::decide_action,
+            Self::apply_action,
+            |decision| {
+                (
+                    decision.response,
+                    if decision.response.consumed {
+                        PreparedActionFocus::Owner
+                    } else {
+                        PreparedActionFocus::None
+                    },
+                )
+            },
+        )
+    }
+    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
+        ActionTransactionCompatibility::StableHooks
+    }
     fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
         CurveSubtreeCapability::Local
     }
@@ -430,17 +455,15 @@ impl Component for TextFieldContent {
         if part.is_some() || self.surface.input.disabled || self.surface.input.marked.is_some() {
             return ContentResponse::default();
         }
-        if let AccessibilityAction::SetSelection(range) = action {
-            let before = self.surface.input.selection();
-            return if self.surface.input.select_range(range.clone()) {
-                let changed = before != self.surface.input.selection();
-                if changed {
-                    self.surface.reveal();
-                }
-                ContentResponse::consumed(changed)
-            } else {
-                ContentResponse::default()
+        if matches!(action, AccessibilityAction::SetSelection(_)) {
+            let request =
+                action_preparation::OwnedActionRequest::Accessibility(part, action.clone());
+            let Some(decision) = self.decide_action(&request) else {
+                return ContentResponse::default();
             };
+            let response = decision.response;
+            self.apply_action(decision);
+            return response;
         }
         if self.surface.input.read_only {
             return ContentResponse::default();
@@ -528,7 +551,7 @@ impl Component for TextFieldContent {
         if let Some(host) = t.text_surface_host() {
             let caret_visible = host.caret_visible();
             self.surface
-                .draw(host, s, theme.palette, self.focused, caret_visible);
+                .draw(host, s, theme.palette, self.has_focus(), caret_visible);
         }
     }
     fn focusable(&self) -> bool {
@@ -698,27 +721,24 @@ impl TextFieldContent {
         result
     }
     fn input_event(&mut self, e: &ContentEvent, pointer: Option<&PointerEvent>) -> ContentResponse {
+        if matches!(e, ContentEvent::PointerDown(_)) {
+            let event =
+                pointer.map_or_else(|| e.clone(), |pointer| ContentEvent::Pointer(*pointer));
+            let Some(decision) =
+                self.decide_action(&action_preparation::OwnedActionRequest::Pointer(event))
+            else {
+                return ContentResponse::default();
+            };
+            let response = decision.response;
+            self.apply_action(decision);
+            return response;
+        }
+
         let mut r = ContentResponse::default();
         if self.surface.input.disabled && !matches!(e, ContentEvent::Cancel) {
             return r;
         }
         match e {
-            ContentEvent::PointerDown(p) => {
-                if let Some(reading) = &mut self.reading {
-                    reading.stop_following(&mut self.surface);
-                }
-                r.consumed = self
-                    .surface
-                    .pointer_down(
-                        *p,
-                        pointer.is_some_and(|p| p.modifiers.shift),
-                        pointer.map_or(1, |p| p.click_count),
-                        24.,
-                    )
-                    .is_some();
-                r.capture_pointer = r.consumed;
-                r.changed = r.consumed;
-            }
             ContentEvent::PointerMove(p) => r.changed = self.surface.pointer_drag(*p, 24.),
             ContentEvent::PointerUp(_) => {
                 self.surface.pointer_up();
@@ -1185,5 +1205,391 @@ impl Component for SliderContent {
             _ => return ContentResponse::default(),
         };
         changed.map_or_else(ContentResponse::default, ContentResponse::consumed)
+    }
+}
+
+// Original-owner effects used both by the host's atomic admission and the
+// ordinary immediate entry points. No component state lives in the decision.
+#[derive(Debug, PartialEq)]
+enum PreparedFieldEffect {
+    Pointer(Box<crate::text_surface::PreparedTextPointer>),
+    Selection { anchor: usize, caret: usize },
+}
+#[derive(Debug, PartialEq)]
+pub(super) struct PreparedFieldAction {
+    focus_rect: Option<Rect>,
+    effect: PreparedFieldEffect,
+    pub(super) response: ContentResponse,
+    input: crate::text_input::TextActionInputSnapshot,
+    focused: bool,
+}
+impl TextFieldContent {
+    pub(super) fn decide_action(
+        &self,
+        request: &action_preparation::OwnedActionRequest,
+    ) -> Option<PreparedFieldAction> {
+        if self.surface.input.disabled {
+            return None;
+        }
+        let (effect, response) = match request {
+            action_preparation::OwnedActionRequest::Pointer(event) => {
+                let routed = event.routing_event();
+                let ContentEvent::PointerDown(point) = routed.as_ref() else {
+                    return None;
+                };
+                let pointer = if let ContentEvent::Pointer(pointer) = event {
+                    Some(pointer)
+                } else {
+                    None
+                };
+                if pointer.is_some_and(|pointer| !pointer.is_primary()) {
+                    return None;
+                }
+                let decision = self.surface.prepare_pointer_down(
+                    *point,
+                    pointer.is_some_and(|pointer| pointer.modifiers.shift),
+                    pointer.map_or(1, |pointer| pointer.click_count),
+                    24.,
+                )?;
+                let response = ContentResponse {
+                    consumed: decision.accepted,
+                    changed: decision.accepted,
+                    capture_pointer: decision.accepted,
+                    ..Default::default()
+                };
+                (PreparedFieldEffect::Pointer(Box::new(decision)), response)
+            }
+            action_preparation::OwnedActionRequest::Accessibility(
+                part,
+                AccessibilityAction::SetSelection(range),
+            ) => {
+                if part.is_some()
+                    || self.surface.input.marked.is_some()
+                    || range.start > range.end
+                    || range.end > self.surface.input.len()
+                    || !self.surface.input.can_advance_edit_epochs(1)
+                {
+                    return None;
+                }
+                let range = self.surface.input.normalized_selection(range.clone());
+                let changed = self.surface.input.selection() != range;
+                (
+                    PreparedFieldEffect::Selection {
+                        anchor: range.start,
+                        caret: range.end,
+                    },
+                    ContentResponse::consumed(changed),
+                )
+            }
+            _ => return None,
+        };
+        let focus_rect = if self.surface.presentation == TextSurfacePresentation::Content {
+            match &effect {
+                PreparedFieldEffect::Pointer(pointer) => pointer.focus_rect,
+                PreparedFieldEffect::Selection { caret, .. } => {
+                    Some(self.surface.decided_selection_focus_rect(
+                        *caret,
+                        None,
+                        response.changed && self.surface.caret_reveal_allowed(),
+                    ))
+                }
+            }
+        } else {
+            None
+        };
+        Some(PreparedFieldAction {
+            focus_rect,
+            effect,
+            response,
+            input: self.surface.input.action_snapshot(),
+            focused: self.focused,
+        })
+    }
+    pub(super) fn apply_action(&mut self, decision: PreparedFieldAction) {
+        match decision.effect {
+            PreparedFieldEffect::Pointer(pointer) => {
+                if !pointer.accepted {
+                    return;
+                }
+                let reveal = pointer.reveal;
+                if let Some(reading) = &mut self.reading {
+                    reading.stop_following(&mut self.surface);
+                }
+                self.surface.apply_pointer_down(*pointer);
+                if reveal {
+                    self.surface.reveal();
+                }
+            }
+            PreparedFieldEffect::Selection { anchor, caret } => {
+                self.surface
+                    .input
+                    .apply_decided_selection(anchor, caret, 1, false);
+                if decision.response.changed {
+                    self.surface.reveal();
+                }
+            }
+        }
+    }
+}
+impl action_preparation::OriginalActionDecision for PreparedFieldAction {
+    fn focus_rect(&self) -> Option<Rect> {
+        self.focus_rect
+    }
+}
+
+#[cfg(test)]
+mod prepared_field_tests {
+    use super::*;
+    fn pointer(point: Point) -> action_preparation::OwnedActionRequest {
+        action_preparation::OwnedActionRequest::Pointer(ContentEvent::PointerDown(point))
+    }
+    #[test]
+    fn prepared_field_selection_is_pure_rejects_changed_state_and_keeps_readonly_selection() {
+        let mut field = TextFieldContent::new("Draft", "A😀B");
+        field.surface.input.read_only = true;
+        let request = action_preparation::OwnedActionRequest::Accessibility(
+            None,
+            AccessibilityAction::SetSelection(1..2),
+        );
+        let before = field.surface.input.action_snapshot();
+        let decision = field.decide_action(&request).unwrap();
+        assert!(decision.response.consumed && decision.response.changed);
+        assert_eq!(field.surface.input.action_snapshot(), before);
+        field.surface.input.select(4, false);
+        assert_ne!(Some(&decision), field.decide_action(&request).as_ref());
+        let decision = field.decide_action(&request).unwrap();
+        field.apply_action(decision);
+        assert_eq!(field.surface.input.selection(), 1..3);
+        assert_eq!(field.surface.input.text, "A😀B");
+        assert!(field.surface.input.read_only);
+    }
+    #[test]
+    fn prepared_field_pointer_refusal_preserves_reader_focus_and_composition() {
+        let mut field = TextFieldContent::new("Reader", "draft");
+        field.surface.outer = Rect::new(0., 0., 100., 40.);
+        field.surface.inner = field.surface.outer;
+        let mut reading = ReadingController::default();
+        reading.follow_latest(&mut field.surface);
+        field.reading = Some(reading);
+        let outside = field
+            .decide_action(&pointer(Point::new(200., 200.)))
+            .unwrap();
+        assert!(!outside.response.consumed);
+        field.apply_action(outside);
+        assert!(field.reading.as_ref().unwrap().is_following_latest());
+        assert!(!field.has_focus());
+        field.surface.input.preedit("中", 1..1, None);
+        let before = field.surface.input.action_snapshot();
+        let response = field.accessibility_action(None, &AccessibilityAction::SetSelection(0..0));
+        assert_eq!(response, ContentResponse::default());
+        assert_eq!(field.surface.input.action_snapshot(), before);
+        let decision = field.decide_action(&pointer(Point::new(10., 10.))).unwrap();
+        assert_eq!(field.surface.input.action_snapshot(), before);
+        assert!(field.reading.as_ref().unwrap().is_following_latest());
+        field.apply_action(decision);
+        assert!(!field.reading.as_ref().unwrap().is_following_latest());
+        assert_eq!(field.surface.input.text, "中draft");
+        assert!(field.surface.input.marked.is_none());
+    }
+    #[test]
+    fn prepared_field_selection_focus_rect_matches_actual_scrollbar_reveal_gates() {
+        for gate in [0, 1, 2] {
+            let mut field = TextFieldContent::new("Content", "ab");
+            field.surface.presentation = TextSurfacePresentation::Content;
+            field
+                .surface
+                .layout_with(Rect::new(0., 0., 100., 40.), None, 1., 1., |_, _| {
+                    std::rc::Rc::new(tekes_ui_text::Paragraph {
+                        lines: vec![tekes_ui_text::Line {
+                            index: 0,
+                            utf16: 0..2,
+                            bytes: 0..2,
+                            ascent: 15.,
+                            descent: 5.,
+                            leading: 0.,
+                            height: 20.,
+                            top: 0.,
+                            baseline_y: 15.,
+                            width: 600.,
+                            width_trimmed: 600.,
+                            runs: vec![],
+                            carets: vec![(0, 0.), (1, 300.), (2, 600.)],
+                            has_newline: false,
+                        }],
+                        width: 600.,
+                        height: 20.,
+                        default_line_height: 20.,
+                        fonts: vec![],
+                        utf16_len: 2,
+                    })
+                });
+            field.surface.scroll.scroll_by(120., 0.);
+            if gate != 0 {
+                let track = field.surface.track(false).inset(-Spacing::Micro.value());
+                let thumb = field.surface.scroll.thumb(false, track, 24.);
+                assert!(
+                    field
+                        .surface
+                        .pointer_down(thumb.center(), false, 1, 24.)
+                        .is_some()
+                );
+                if gate == 2 {
+                    field.surface.pointer_up();
+                }
+            }
+            let before = field.surface.scroll.offset;
+            let request = action_preparation::OwnedActionRequest::Accessibility(
+                None,
+                AccessibilityAction::SetSelection(2..2),
+            );
+            let decision = field.decide_action(&request).unwrap();
+            let predicted = decision.focus_rect.unwrap();
+            field.apply_action(decision);
+            assert_eq!(predicted, field.surface.caret(), "gate={gate}");
+            if gate == 0 {
+                assert_ne!(field.surface.scroll.offset, before);
+            } else {
+                assert_eq!(field.surface.scroll.offset, before);
+            }
+        }
+    }
+
+    #[test]
+    fn prepared_field_host_focus_refusal_does_not_run_target_effects() {
+        struct Text;
+        impl crate::TextSurfaceTextRenderer for Text {
+            fn push_visible(
+                &mut self,
+                _: &mut Scene,
+                _: &tekes_ui_text::Paragraph,
+                _: Point,
+                _: tekes_ui_tokens::Rgba,
+                _: Rect,
+            ) {
+            }
+        }
+        impl crate::TextSurfaceHost for Text {
+            fn shape_surface(
+                &mut self,
+                text: &str,
+                _: proposal::TextRole,
+                _: Option<f32>,
+            ) -> std::rc::Rc<tekes_ui_text::Paragraph> {
+                let len = text.encode_utf16().count();
+                let width = len as f64 * 7.;
+                std::rc::Rc::new(tekes_ui_text::Paragraph {
+                    lines: vec![tekes_ui_text::Line {
+                        index: 0,
+                        utf16: 0..len,
+                        bytes: 0..text.len(),
+                        ascent: 15.,
+                        descent: 5.,
+                        leading: 0.,
+                        height: 20.,
+                        top: 0.,
+                        baseline_y: 15.,
+                        width,
+                        width_trimmed: width,
+                        runs: vec![],
+                        carets: (0..=len).map(|i| (i, i as f64 * 7.)).collect(),
+                        has_newline: false,
+                    }],
+                    width,
+                    height: 20.,
+                    default_line_height: 20.,
+                    fonts: vec![],
+                    utf16_len: len,
+                })
+            }
+        }
+        impl ButtonTextRenderer for Text {
+            fn measure(&mut self, text: &str, _: proposal::TextRole, width: f32) -> Size {
+                Size::new((text.len() as f32 * 7.).min(width), 20.)
+            }
+            fn draw(
+                &mut self,
+                _: &mut Scene,
+                _: &str,
+                _: proposal::TextRole,
+                _: Rect,
+                _: ButtonTextAlign,
+                _: tekes_ui_tokens::Rgba,
+            ) {
+            }
+            fn text_surface_host(&mut self) -> Option<&mut dyn crate::TextSurfaceHost> {
+                Some(self)
+            }
+        }
+        let id = ComponentId(81940);
+        for exhausted in [false, true] {
+            let mut field = TextFieldContent::new("Draft", "draft");
+            field.show_metadata = false;
+            field.surface.presentation = TextSurfacePresentation::Content;
+            field.viewport = TextViewport::Fixed(40.);
+            field.surface.input.preedit("中", 1..1, None);
+            let mut host = ContentHost::new(Content::new(id, field)).unwrap();
+            let frame = Rect::new(0., 0., 100., 40.);
+            host.render(
+                &mut Scene::new(),
+                &mut Text,
+                frame,
+                frame,
+                tekes_ui_tokens::Theme::LIGHT.into(),
+            )
+            .unwrap();
+            if exhausted {
+                host.focus_epoch = u64::MAX;
+            }
+            let field = host
+                .get(id)
+                .unwrap()
+                .component::<TextFieldContent>()
+                .unwrap();
+            let before = field.surface.input.action_snapshot();
+            let scroll = format!("{:?}", field.surface.scroll);
+            let point = field.surface.outer.center();
+            let response = host.event(&ContentEvent::PointerDown(point));
+            let field = host
+                .get(id)
+                .unwrap()
+                .component::<TextFieldContent>()
+                .unwrap();
+            if exhausted {
+                assert_eq!(response, ContentResponse::default());
+                assert_eq!(host.focused(), None);
+                assert!(!host.pointer_focus_requested());
+                assert_eq!(host.pointer_capture(), None);
+                assert_eq!(field.surface.input.action_snapshot(), before);
+                assert_eq!(format!("{:?}", field.surface.scroll), scroll);
+                assert!(!field.has_focus());
+            } else {
+                assert!(response.consumed);
+                assert_eq!(host.focused(), Some(id));
+                assert!(host.pointer_focus_requested());
+                assert!(field.has_focus());
+                assert!(field.surface.input.marked.is_none());
+            }
+        }
+    }
+
+    #[test]
+    fn prepared_field_capacity_refusal_precedes_selection_and_reader_effects() {
+        let mut field = TextFieldContent::new("Draft", "value");
+        field.surface.outer = Rect::new(0., 0., 100., 40.);
+        field.surface.inner = field.surface.outer;
+        field.surface.input.preedit("中", 1..1, None);
+        field.surface.input.test_edit_epoch(u64::MAX);
+        let before = field.surface.input.action_snapshot();
+        assert!(
+            field
+                .decide_action(&pointer(Point::new(10., 10.)))
+                .is_none()
+        );
+        assert_eq!(
+            field.event(&ContentEvent::PointerDown(Point::new(10., 10.))),
+            ContentResponse::default()
+        );
+        assert_eq!(field.surface.input.action_snapshot(), before);
+        field.surface.input.test_edit_epoch(0);
     }
 }

@@ -13,16 +13,25 @@ pub enum SemanticRole {
     Button,
     Link,
     TextInput,
+    /// Matched-schema editable single-line owner; no extra popup editor.
+    ComboBox,
     Slider,
     /// Original split divider; requires a matching receiver.
     Splitter,
     Switch,
+    Checkbox,
+    RadioGroup,
+    RadioButton,
+    SegmentedGroup,
+    Segment,
     List,
     ListItem,
     Dialog,
     MenuButton,
     Menu,
     MenuItem,
+    TabList,
+    Tab,
 }
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -128,6 +137,8 @@ pub enum AccessibilityAction {
     Decrement,
     Focus,
     Press,
+    /// Set the original owner disclosure state; never toggle via Press.
+    SetExpanded(bool),
     SetValue(String),
     SetSelection(Range<usize>),
     ReplaceSelectedText(String),
@@ -206,5 +217,22 @@ mod tests {
         assert!(
             !AccessibilityAction::SetSelection(std::ops::Range { start: 3, end: 1 }).is_valid()
         );
+    }
+}
+
+#[cfg(test)]
+mod navigation_role_contract_tests {
+    use super::SemanticRole;
+
+    #[test]
+    fn tab_roles_roundtrip_and_future_roles_fail_closed() {
+        for (role, encoded) in [
+            (SemanticRole::TabList, r#""TabList""#),
+            (SemanticRole::Tab, r#""Tab""#),
+        ] {
+            assert_eq!(serde_json::to_string(&role).unwrap(), encoded);
+            assert_eq!(serde_json::from_str::<SemanticRole>(encoded).unwrap(), role);
+        }
+        assert!(serde_json::from_str::<SemanticRole>(r#""FutureRole""#).is_err());
     }
 }

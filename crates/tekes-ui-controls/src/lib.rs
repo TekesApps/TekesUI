@@ -2,6 +2,7 @@
 pub mod collections_view;
 mod composite;
 pub mod composition;
+pub use composition::{BreadcrumbContent, CommandPaletteContent, TabItem, TabsContent};
 pub use composition::{Button, ButtonActivationPhase, ButtonContents, ButtonImagePosition};
 pub use composition::{
     ChartContent, ChartContentError, RequiredFocusEvidence, RequiredFocusResult, RequiredFocusSpace,

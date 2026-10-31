@@ -1,9 +1,9 @@
 {
-  "contract_sha256": "be83c185812b5a2d5edd364281cdcc514cdbab6dc3ca66c4e242d20bdf62de61",
+  "contract_sha256": "f268512a64016d411270c19b62da99a96e44f78ca6ba911de959f468a32c5398",
   "definition_source_sha256": "96865f75bda0471e2b6d618966068de5bddf9feb73ce565f98a6753114c520ae",
   "format": "tekesui.theme-artifact-lock/1",
   "instance_format": "tekesui.theme-instances/2",
-  "instances_sha256": "f59b65124c89695ca411ee85d2dec37e8dc249bb5141debfd5a07865492eb176",
+  "instances_sha256": "a28aa7d8af05b0f0de5a30effeeaea4c036a2c6b24569c3c80c686b5595ea1f8",
   "source_inputs_sha256": {
     "design/brand/config.json": "155eceec64c3aa33f4bc6b58a6ef7a1b071384b1dbbb55075a223e460d16e8a8",
     "design/brand/policy.json": "8ab0d7c6c9605a72ace5af335cf90ffa8abe3243534ac9c4ca68f3fc39bf488c",
@@ -19,19 +19,19 @@
     "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/validate.py": "f48e97e00a0f8da9d0b373d4636da251c35cbdc667b33a03b9679e00460e1acc",
     "design/source/base.tokens.json": "16215625e85017b393a096046c37849315d7c473d87e8c15c52fe8db887abf87",
     "design/source/token-metadata.json": "53db464280f6d381cf108cb78c1f894a1dd31d780a5045145d31e6bd925e637b",
-    "design/system.json": "f3bf6a0719ba00f95fa1ab67ed782b94e6b31e4525b6d05411c6a62c71b3e72f",
+    "design/system.json": "7b51b15ccaec9bccbcab1e1e3afbc7f21180b682e8ae4132922ef546f226686e",
     "design/system.schema.json": "af11f7ef0f9f4b495181d72f0b8b4a3cb274e79fe3ce9e98d4d82b6aaa396393",
     "design/theme/artifact-lock.schema.json": "642653ddc482c053402ad6abe2f14c6d836ea282e16c709ca85792f8a435b32a",
     "design/theme/data-plot-pairs.json": "b75e6e57c155d596ba60a086406aa91cfa087009e6200847db1bbd25c2d442c7",
-    "design/theme/rules.json": "3e353c9b5cf35e92c79dd64020b195bfd85fb8e41e51b1d5cb1ed4b1dba423f0",
+    "design/theme/rules.json": "1b44512ec7a61a3e9032cce1d2e902129e3346af8266649232856834b90ab07d",
     "design/theme/rules.schema.json": "01c7c08a6ebd48db78e3e0a59f2f67b5f978b80b4acf8fcd00680cb254718dd6",
     "design/theme/theme.schema.json": "4c7d0f7195088487c4bf02b4b01a500baf1958caf6f6f62a436d9b5b37ea8f68",
     "design/theme/themes.json": "96865f75bda0471e2b6d618966068de5bddf9feb73ce565f98a6753114c520ae",
-    "scripts/generate-theme-system.py": "cabc0172733b41835740c266f5a13d6ffedacc3768ef0dca19e95e0c357f7a69",
+    "scripts/generate-theme-system.py": "98697ce1e383fb2aafc557f2b196d770bded49430b700e3d0d742c8a85e64297",
     "scripts/merge-design-system.py": "46831d8a089c1dfc06012b78a23025293bb4e2010100e0a4ce93c137b30b6ba2"
   },
-  "source_inputs_sha256_digest": "a541bdeeb2aa7d7e749628937f7b1790141c37660bc614c14f3792080c54d2e0",
-  "surface_rules_sha256": "56a4bf73c9bea027fc40791595b4487cfda48b164416e545db10cc24c5a077c9",
+  "source_inputs_sha256_digest": "84a15e9b5462f6ca7fcba2e132b9782d89cfcaad6ea432a7e1cbb8417476f94d",
+  "surface_rules_sha256": "424aeb451b710391e2938d2e5a8ee90c547e4396c33608784c5bf60006d87400",
   "themes": [
     {
       "brand_config": "design/brand/config.json",

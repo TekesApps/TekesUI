@@ -433,9 +433,9 @@
         "boundary": null,
         "focus": null,
         "helper": null,
-        "icon": "disabled-text",
+        "icon": "tertiary-text",
         "marker": null,
-        "text": "disabled-text"
+        "text": "tertiary-text"
       },
       "hover": {
         "background": "button-hover",
@@ -478,9 +478,9 @@
         "boundary": "separator",
         "focus": null,
         "helper": null,
-        "icon": "disabled-text",
+        "icon": "tertiary-text",
         "marker": null,
-        "text": "disabled-text"
+        "text": "tertiary-text"
       },
       "selected-hover": {
         "background": "row-selection-hover",

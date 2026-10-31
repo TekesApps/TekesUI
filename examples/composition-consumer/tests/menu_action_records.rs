@@ -63,7 +63,15 @@ fn choose(h: &mut ContentHost, i: usize) {
 fn selection(r: &ContentActionRecord) -> &MenuSelection {
     match r.payload.as_ref().unwrap() {
         ContentActionPayload::MenuSelection(s) => s,
-        ContentActionPayload::ToolbarCommand(_) | ContentActionPayload::DisclosureExpansion(_) => {
+        ContentActionPayload::ToolbarCommand(_)
+        | ContentActionPayload::ComboBoxSelection(_)
+        | ContentActionPayload::CheckboxState(_)
+        | ContentActionPayload::RadioSelection(_)
+        | ContentActionPayload::SegmentSelection(_)
+        | ContentActionPayload::DisclosureExpansion(_)
+        | ContentActionPayload::TabSelection { .. }
+        | ContentActionPayload::BreadcrumbNavigation { .. }
+        | ContentActionPayload::CommandSelection { .. } => {
             panic!("expected original MenuSelection payload")
         }
     }
