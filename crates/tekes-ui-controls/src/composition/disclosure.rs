@@ -518,14 +518,19 @@ impl DisclosureContent {
         self.arranged_children = None;
         self.trigger_mut().window_active_changed(active);
     }
-    /// Original reveal block, including fixed header-focus clearance. The body
-    /// Content's frame starts after that inset. The reveal clip retains the
-    /// actual ancestor's horizontal paint room; its vertical extent never exceeds
+    /// Original reveal block, including header-focus clearance except for an
+    /// explicitly nonfocusable plain section heading. That mode's actual body
+    /// frame starts at the header bottom; other modes retain the original inset.
+    /// The reveal clip retains the actual ancestor's horizontal paint room; its
+    /// vertical extent never exceeds
     /// the allocated reveal portion. A fully closed block occupies zero height.
     pub fn body_layout(&self) -> crate::layout_view::DisclosureBodyLayout {
         self.body_layout
     }
-    fn focus_clearance(header: Rect, backing: f32) -> f32 {
+    fn focus_clearance(&self, header: Rect, backing: f32) -> f32 {
+        if self.trigger().section_header_layout && !self.trigger().trigger_focusable {
+            return 0.;
+        }
         (crate::extended::ControlFrame::new(header, None)
             .focus_bounds(backing)
             .max_y()
@@ -610,7 +615,7 @@ impl Component for DisclosureContent {
         self.arranged_children = None;
         self.header_height = self.children[0].measure(text, available).size.height;
         let header = Rect::new(0., 0., available.width, self.header_height);
-        let clearance = Self::focus_clearance(header, text.backing_scale());
+        let clearance = self.focus_clearance(header, text.backing_scale());
         let allocated = (available.height - self.header_height).max(0.);
         self.body_height = self.children[1]
             .measure(
@@ -645,7 +650,7 @@ impl Component for DisclosureContent {
         );
         self.children[0].arrange(text, header, clip);
         let clearance = if self.body_height > 0. {
-            Self::focus_clearance(header, text.backing_scale())
+            self.focus_clearance(header, text.backing_scale())
         } else {
             0.
         };

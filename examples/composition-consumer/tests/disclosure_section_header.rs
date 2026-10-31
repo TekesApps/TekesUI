@@ -334,3 +334,137 @@ fn nonfocus_section_keeps_unarranged_clipped_disabled_and_window_refusal() {
     );
     assert!(!h.focus_targets().iter().any(|(id, _)| *id == TRIGGER));
 }
+
+#[test]
+fn only_nonfocus_plain_sections_remove_the_actual_header_body_gap() {
+    for theme in [Theme::LIGHT, Theme::DARK] {
+        for scale in [0.85, 1., 1.5] {
+            for backing in [1., 2.] {
+                for focusable in [false, true] {
+                    for section in [false, true] {
+                        let mut h = host(focusable, section);
+                        let mut t = text(scale);
+                        t.backing = backing;
+                        let mut icons = Icons::default();
+                        let frame = Rect::new(0., 0., 240., 300.);
+                        render(&mut h, &mut t, &mut icons, 240., frame, theme);
+                        let header = h.get(TRIGGER).unwrap().frame();
+                        let body = h.get(BODY).unwrap().frame();
+                        let clearance = if section && !focusable {
+                            assert_eq!(header.max_y(), body.min_y());
+                            0.
+                        } else {
+                            let original =
+                                tekes_ui_controls::extended::ControlFrame::new(header, None)
+                                    .focus_bounds(backing)
+                                    .max_y()
+                                    - header.max_y();
+                            assert!(original > 0.);
+                            assert!((body.min_y() - header.max_y() - original).abs() < 0.01);
+                            original
+                        };
+                        // The measured allocation and actual child frame agree;
+                        // zero spacing is not a cosmetic wrapper projection.
+                        assert!(
+                            (h.get(ROOT).unwrap().frame().size.height
+                                - header.size.height
+                                - clearance
+                                - body.size.height)
+                                .abs()
+                                < 0.01
+                        );
+                        let mounts = (
+                            h.get(TRIGGER).unwrap().mount_identity(),
+                            h.get(BODY).unwrap().mount_identity(),
+                        );
+                        assert!(h.focus(Some(BODY), true));
+                        render(&mut h, &mut t, &mut icons, 240., frame, theme);
+                        assert_eq!(h.get(BODY).unwrap().frame(), body);
+                        assert_eq!(h.focused(), Some(BODY));
+                        assert_eq!(
+                            (
+                                h.get(TRIGGER).unwrap().mount_identity(),
+                                h.get(BODY).unwrap().mount_identity()
+                            ),
+                            mounts
+                        );
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn nonfocus_plain_collapse_leaves_no_body_height_or_input_slot() {
+    let mut h = host(false, true);
+    let mut t = text(1.);
+    let mut icons = Icons::default();
+    let frame = Rect::new(0., 0., 240., 300.);
+    render(&mut h, &mut t, &mut icons, 240., frame, Theme::LIGHT);
+    let mounts = (
+        h.get(TRIGGER).unwrap().mount_identity(),
+        h.get(BODY).unwrap().mount_identity(),
+    );
+    assert_eq!(
+        h.get(TRIGGER).unwrap().frame().max_y(),
+        h.get(BODY).unwrap().frame().min_y()
+    );
+    let response = h.accessibility_action(TRIGGER, None, AccessibilityAction::Press);
+    assert!(response.consumed && response.activated);
+    let request = intent(&mut h);
+    assert!(
+        h.get_mut(ROOT)
+            .unwrap()
+            .component_mut::<DisclosureContent>()
+            .unwrap()
+            .confirm(&request, true)
+    );
+    render(&mut h, &mut t, &mut icons, 240., frame, Theme::LIGHT);
+    let d = h
+        .get(ROOT)
+        .unwrap()
+        .component::<DisclosureContent>()
+        .unwrap();
+    assert!(!d.expanded());
+    assert_eq!(d.body_layout().progress, 0.);
+    assert_eq!(d.body_layout().occupied_height, 0.);
+    assert_eq!(
+        h.get(ROOT).unwrap().frame().size.height,
+        h.get(TRIGGER).unwrap().frame().size.height
+    );
+    assert!(!h.focus_targets().iter().any(|(id, _)| *id == BODY));
+    assert!(!h.semantics().iter().any(|node| node.id == BODY));
+    assert!(!h.focus(Some(BODY), true));
+    assert!(
+        !h.accessibility_action(BODY, None, AccessibilityAction::Focus)
+            .activated
+    );
+    assert_eq!(
+        (
+            h.get(TRIGGER).unwrap().mount_identity(),
+            h.get(BODY).unwrap().mount_identity()
+        ),
+        mounts
+    );
+    assert!(
+        h.get_mut(ROOT)
+            .unwrap()
+            .component_mut::<DisclosureContent>()
+            .unwrap()
+            .set_expanded(true)
+    );
+    render(&mut h, &mut t, &mut icons, 240., frame, Theme::LIGHT);
+    assert_eq!(
+        h.get(TRIGGER).unwrap().frame().max_y(),
+        h.get(BODY).unwrap().frame().min_y()
+    );
+    assert_eq!(
+        (
+            h.get(TRIGGER).unwrap().mount_identity(),
+            h.get(BODY).unwrap().mount_identity()
+        ),
+        mounts
+    );
+    assert!(h.drain_action_records().is_empty());
+}

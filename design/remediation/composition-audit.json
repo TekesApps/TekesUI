@@ -2056,7 +2056,7 @@
     "crates/tekes-ui-controls/src/composition/combobox.rs": "29d825cc459bef202edec0fc59bed240a25a2a3a40deddc012a772a8c9247154",
     "crates/tekes-ui-controls/src/composition/content_reading.rs": "240961469cff6793b1fc02497ddab7eb77d14f96b4c7ae6b26ab4715154f2229",
     "crates/tekes-ui-controls/src/composition/content_reveal.rs": "1d2173c778670f825e67257ea54912d04f497d555f293ced0228e19f8a1b2dde",
-    "crates/tekes-ui-controls/src/composition/disclosure.rs": "9a20011be2e6646dc9b798be1d6ab8e0bf82b6fcfceb815d538adc6254a55d69",
+    "crates/tekes-ui-controls/src/composition/disclosure.rs": "994be293370a9be87317db78b11551cfd03bb7328626b5d2823b81408ffb8628",
     "crates/tekes-ui-controls/src/composition/empty_state.rs": "7c9f782be95d0d5163cd0b11091211bb457aff7511ea4255c945d3c51aaa2776",
     "crates/tekes-ui-controls/src/composition/help.rs": "0ff05ea2ee135ecb418f5a87b4687db9379a3b53792c225cfb650a3f400b058e",
     "crates/tekes-ui-controls/src/composition/icon.rs": "12bb7040fc42deaddc525c61bf8d5be96b54db859adefadbf9643079615b710b",
@@ -2223,7 +2223,7 @@
     "docs/design/selectable-list-public-content-20261024.md": "cad16726a3dda60fdd2b2ab18bad881150cf907bd78e76989713d7c269ecc2a0",
     "docs/design/tree-public-content-20261024.md": "a01a90370da0b5ad9e9bc589c9601fa61279b49fd2f5aa3c68910e90d58aa2bc",
     "docs/design/datatable-public-content-20261024.md": "812988af6954e21b11d6aca4fe769bfb405f26f256685c400f88cc28ef377cf9",
-    "docs/design/disclosure-public-content-20261024.md": "2aaf10bded59653db7ea311985e56848f62a8dd99a43c036273157ff53d73776"
+    "docs/design/disclosure-public-content-20261024.md": "a85cfe5d3dfe3c8f950b868bb560582843b64ee5b2f06d531b6917d77f044ab5"
   },
   "remaining": [
     "Collections49 public adapter/support paths recovered in thisf4df candidate; actual compatible compilation/consumer/IPC acceptance and publication remain Main gates. Tree/Table and keyed List slots remain finite passive contracts, not arbitrary interactive content or virtualization.",
