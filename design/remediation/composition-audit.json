@@ -1,7 +1,7 @@
 {
   "format": "tekesui-composition-audit/1",
-  "head": "15ecb2ad86e7d77c39ff3f9ad368629d5352445b",
-  "source": "Reviewed first-three-domain source cohort plus scoped CI200 compatibility repairs. Exact current source hashes/API anchors bind implementation facts; new Radio/focus/Gallery targeted runtime verification and full compatible-batch CI are still pending. Original finite program evidence retains its original source identities.",
+  "head": "077078d730cfaa6c872cfd0e3743775ec75b4753",
+  "source": "Reviewed first-three-domain source plus scoped CI200 repairs. New Gallery, Radio and Core targeted checks and normal real IPC passed at077; required compatible-batch CI and publication remain pending. Historical finite program evidence retains original source identities.",
   "audited_at": "2026-10-31",
   "issue14_updated_at": "2026-10-17T08:15:16Z",
   "status_values": [
@@ -3105,7 +3105,8 @@
   "prior_audit_heads": [
     "20c83bfd1f18044a9797bb0686feecaf575f29d3",
     "80d6b05649234f953ea452d42e1cbed369fdddbb",
-    "b8999fe006adfcd70587f07af50ef9e240422788"
+    "b8999fe006adfcd70587f07af50ef9e240422788",
+    "15ecb2ad86e7d77c39ff3f9ad368629d5352445b"
   ],
   "current_review_scope": "Complete first-three-domain cohort: 8 finite accepted families, 21 newly classified public type paths, 45 total component rows. Other rows/profiles remain bounded; source audit does not establish native or public delivery.",
   "structured_reading_compatibility_20261020": {
@@ -3596,12 +3597,14 @@
     "native": "未验证"
   },
   "ci200_repair_review": {
-    "source": "15ecb2ad86e7d77c39ff3f9ad368629d5352445b",
-    "Menu": "c92 actualdefault8/svg8/twostrict pass; unrelatedpayloadstrictpanic only",
-    "Navigation": "Two testreferences corrected against frozen declared Surface rules; allglyph/quad/contrast/stateasserts preserved; newtargetsNOT_RUN",
-    "Radio": "Privateuncheckedrest fillmatchesunchangedpublicprimitive; new72tupleCPUcase+affectedRadioGPU notyetexecuted; oldCheckbox/Segment evidenceunchanged",
-    "Core_focus": "Onlyacceptedpreparedfocus publishesparentpointerintent; preserve/rejected/once matrices added; CPU/HostIPCstillNOT_RUN; notuniqueprovenCIcause",
-    "native": "未验证",
+    "source": "077078d730cfaa6c872cfd0e3743775ec75b4753",
+    "Menu": "c92 default8/svg8/twostrict actualpass; explicit unexpectedpayload panic preserved",
+    "Navigation": "077 default/composition-review eachtwoexact1pass +alltargetsstrict0; frozen Surface references and glyph/quad/contrast/query/focus/navigation assertions preserved",
+    "Radio": "077 fresh37CPU/1ignored, new1test72tuple, freshpublicstrict0; Controls/Gallery defaultstrict reused sameinputs. TwoactualGPUlane60+60cases/120PNG originalRGBA0difference/clip0 andfullreview; Checkbox/Segment oldidentities unchanged",
+    "Core_focus": "Onlyacceptedpreparedfocus publishesparentpointerintent; Core01/02 fixtureconsumed failures retained; final077 normalrender-after-mutation matrix1test4tuple andstrict0; unchanged field/refusalIME/reorder/maxima evidence reused",
+    "Host": "077 normaltwo builds/default+scroll+anchor+lifecycle+services eachonceall0, exactterminalpayloads andcleanup; servicesnonreproduction doesnotestablisholdtimeoutcause/fix/stability",
+    "required_CI": "pending onnewcompatiblePR200head; attempt1Gallery/Menu/Processfailures retained, no blindrerun",
+    "native": "未验证; no physicalIME/VoiceOver/performance acceptance transfer",
     "historical_receipts": "notre-signed"
   }
 }
