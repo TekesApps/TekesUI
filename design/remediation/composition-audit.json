@@ -2150,7 +2150,7 @@
     "crates/tekes-ui-text/src/label.rs": "07d46cd8afd41e5fa8fc79ad12070c45e8b9fa3b8ebeeed5746c9b6b37b7eac7",
     "crates/tekes-ui-text/src/lib.rs": "5bcc343e17bf3c8c0ec47858156fbeb751cd530b08d0152321475a239e64c4f8",
     "design/gallery/catalog.json": "4a9dde47550b1a7aa355c877649db73a8e9ec918e82bb823db19f8882a85433f",
-    "design/gallery/public-api-surface.json": "c81da895283762c9e46fe4dd2dfb508ac41c3360982a8c79d28d435d296e9fec",
+    "design/gallery/public-api-surface.json": "11a45e90e98b8f275277bdccfc488872331bb40c9874526d3629e6f53e2d883d",
     "docs/charter.md": "3d4f7d5cc0f25682b1595a900c5059c170b98661e4c33b4f978489c2002be12c",
     "docs/design/menu-action-records-20261021.md": "27b925716d27757e750c7be222ebfe0844bbd618a0e5b5373d35c5820164fa88",
     "docs/design/menu-declarations-20261021.md": "e1494ee1d9a9de6f5fb7bedc40d0c19a8e90dfefca0d0f983316ae8794976ee8",
@@ -4157,11 +4157,13 @@
     "runtime": "new26role compatible candidate not compiled or run; old611a/7414 proofs keep original identities"
   },
   "media_public_candidate_20261101": {
-    "status": "SOURCE_STATIC_REVIEWED_NEW_RUNTIME_NOT_RUN",
+    "status": "CPU041_PARTIAL61_PASS_APIBITMAP_ORDER_FAILURE_METADATA_ONLY_FIX_NOT_RETESTED",
     "source_handoff_sha256": "67072cfddc13b08e5e4fd51194c545991268cd2efcdd5116e1f5349e44c7bfa3",
     "shared_patch_sha256": "d6f75ce2c7d8bb5800ab010ca8a886cbf4f9ed71a7769688869be6e2375bb2bd",
     "static_contract_review": "original CoreFocus exact shared-hunk PASS; not runtime/GUI acceptance",
     "source_boundary": "optional bitmap MediaViewer5types; original45 registeredcomponents/DisclosureReveal retained",
-    "remaining": "single frozen66CPU+4GPUignored/compile/strict, then affected GPU/public9 and publicdelivery; native M6/M8 remain open"
+    "remaining": "single frozen66CPU+4GPUignored/compile/strict, then affected GPU/public9 and publicdelivery; native M6/M8 remain open",
+    "failure": "Original API bitmap2P1F on c452 remains preserved;5Media metadata records canonicalorder only; original assertion unchanged",
+    "next": "Original61 qualifying proof plus freshbitmapAPI3 andconsumerCPU2/scopedcompile/strict underNEWgrant only"
   }
 }
