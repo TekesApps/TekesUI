@@ -727,22 +727,27 @@ fn passive_slot_selected_disabled_ink_comes_from_original_button_surface_colors(
         let f = Rect::new(0., 0., 360., 230.);
         h.render(&mut Scene::new(), &mut text, f, f, Theme::DARK.into())
             .unwrap();
-        let color = tekes_ui_tokens::surface_palette::resolve_surface(
-            Theme::DARK.into(),
-            "canvas",
-            "action-quiet",
-            if disabled {
-                "selected-disabled"
-            } else {
-                "selected"
-            },
-        )
-        .unwrap()
-        .text;
+        let color = if disabled {
+            // Disabling row actions must not dim readonly cell information.
+            tekes_ui_tokens::Palette::from(Theme::DARK)
+                .color("primary-text")
+                .unwrap()
+        } else {
+            tekes_ui_tokens::surface_palette::resolve_surface(
+                Theme::DARK.into(),
+                "canvas",
+                "action-quiet",
+                "selected",
+            )
+            .unwrap()
+            .text
+        };
         assert!(
             text.ink
                 .iter()
-                .any(|(s, c)| s == "custom\nsecond\nthird" && *c == color)
+                .any(|(s, c)| s == "custom\nsecond\nthird" && *c == color),
+            "readonly row ink: disabled={disabled}, actual={:?}, expected={color:?}",
+            text.ink
         );
     }
 }
