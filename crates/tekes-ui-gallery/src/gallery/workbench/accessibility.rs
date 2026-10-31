@@ -1952,14 +1952,11 @@ mod menu_tests {
     }
     #[test]
     fn disabled_menu_popup_items_reject_semantic_activation() {
-        for renderer in ["menu"] {
-            let (mut g, i) = gallery(renderer);
-            let base = if renderer == "menu" { 50 } else { 60 };
-            assert!(g.accessibility_action(key(i, 20), &A::Press).redraw);
-            g.workbench.state(i).disabled = true;
-            g.build_scene(&mut Scene::new());
-            assert!(!g.accessibility_action(key(i, base), &A::Press).redraw);
-        }
+        let (mut g, i) = gallery("menu");
+        assert!(g.accessibility_action(key(i, 20), &A::Press).redraw);
+        g.workbench.state(i).disabled = true;
+        g.build_scene(&mut Scene::new());
+        assert!(!g.accessibility_action(key(i, 50), &A::Press).redraw);
     }
 }
 
