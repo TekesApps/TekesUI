@@ -1465,6 +1465,26 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         &mut actual,
         "tekes_ui_controls::composition::ScrollContent",
     );
+    public_type::<tekes_ui_controls::composition::SearchAction>(
+        &mut actual,
+        "tekes_ui_controls::composition::SearchAction",
+    );
+    public_type::<tekes_ui_controls::composition::SearchCommand>(
+        &mut actual,
+        "tekes_ui_controls::composition::SearchCommand",
+    );
+    public_type::<tekes_ui_controls::composition::SearchCommandError>(
+        &mut actual,
+        "tekes_ui_controls::composition::SearchCommandError",
+    );
+    public_type::<tekes_ui_controls::composition::SearchCommandKind>(
+        &mut actual,
+        "tekes_ui_controls::composition::SearchCommandKind",
+    );
+    public_type::<tekes_ui_controls::composition::SearchFieldContent>(
+        &mut actual,
+        "tekes_ui_controls::composition::SearchFieldContent",
+    );
     public_type::<tekes_ui_controls::composition::SegmentIntent>(
         &mut actual,
         "tekes_ui_controls::composition::SegmentIntent",
@@ -1476,6 +1496,14 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
     public_type::<tekes_ui_controls::composition::SegmentedControlContent>(
         &mut actual,
         "tekes_ui_controls::composition::SegmentedControlContent",
+    );
+    public_type::<tekes_ui_controls::composition::SelectContent>(
+        &mut actual,
+        "tekes_ui_controls::composition::SelectContent",
+    );
+    public_type::<tekes_ui_controls::composition::SelectUpdateError>(
+        &mut actual,
+        "tekes_ui_controls::composition::SelectUpdateError",
     );
     public_type::<tekes_ui_controls::composition::SemanticLabel>(
         &mut actual,
@@ -1972,7 +2000,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::layout_view::IconLayout",
     );
     #[allow(dead_code)]
-    fn public_trait_369<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
+    fn public_trait_376<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
     actual.push("tekes_ui_controls::layout_view::IconRenderer");
     public_type::<tekes_ui_controls::layout_view::IconView>(
         &mut actual,

@@ -1,6 +1,8 @@
 //! Registry-driven native workbench. Fixtures orchestrate production control models;
 //! no duplicate component implementation lives in a story.
 mod accessibility;
+#[cfg(feature = "composition-review")]
+pub(crate) mod settings_native207;
 mod select_story;
 #[cfg(test)]
 mod select_story_tests;

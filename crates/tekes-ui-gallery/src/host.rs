@@ -415,5 +415,7 @@ impl WindowHandler for Host {
             }
             _ => {}
         }
+        #[cfg(feature = "composition-review")]
+        crate::gallery::workbench::settings_native207::observe(&self.gallery, &event);
     }
 }
