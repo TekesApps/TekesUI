@@ -138,35 +138,32 @@ fn menu_retained_theme_changes_keep_real_title_items_checks_and_navigation_reada
                         _ => None,
                     })
                     .unwrap();
-                let role = if index == layout.active_item {
-                    if state == "keyboard-focus" {
-                        "row-selection"
-                    } else {
-                        "row-selection-hover"
+                let row_state = if index == 2 {
+                    "disabled"
+                } else if index == layout.active_item {
+                    match state {
+                        "keyboard-focus" => "selected",
+                        "hover" => "selected-hover",
+                        "pressed" => "selected-pressed",
+                        _ => unreachable!("fixed Menu test state"),
                     }
                 } else {
-                    "surface-2"
+                    "rest"
                 };
-                assert_eq!(
-                    fill,
-                    palette.color(role).unwrap(),
-                    "{theme:?} {state} {label}"
-                );
+                let colors = tekes_ui_tokens::surface_palette::resolve_surface(
+                    palette,
+                    "popover",
+                    "action-quiet",
+                    row_state,
+                )
+                .unwrap();
+                assert_eq!(fill, colors.background, "{theme:?} {state} {label}");
                 let (_, frame, ink) = text
                     .draws
                     .iter()
                     .find(|(s, _, _)| s.as_str() == *label)
                     .expect("real menu label draw");
-                assert_eq!(
-                    *ink,
-                    palette
-                        .color(if index == 2 {
-                            "tertiary-text"
-                        } else {
-                            "primary-text"
-                        })
-                        .unwrap()
-                );
+                assert_eq!(*ink, colors.text, "{theme:?} {state} {label}");
                 assert!(scene.primitives().iter().any(|p| matches!(p, Primitive::Glyphs(run) if run.color == *ink && run.glyphs.iter().any(|g| frame.contains(g.origin)))), "actual CoreText item glyphs");
                 assert!(
                     contrast(*ink, fill) >= if theme.is_increased() { 7. } else { 4.5 },
