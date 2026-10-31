@@ -10755,7 +10755,7 @@ mod interaction_tests {
                 .collect();
             assert!(
                 !labels.is_empty(),
-                "actual original query or declared Search placeholder glyphs"
+                "actual original query or declared Search placeholder glyphs: {theme:?}/{frame:?}/{ink}"
             );
             assert!(
                 labels
@@ -10821,6 +10821,14 @@ mod interaction_tests {
                     1,
                     "SearchField clear part emits once"
                 );
+                assert!(w.state(i).input.search_host().unwrap().focused(),
+                    "auxiliary clear preserves its existing editor focus");
+                // This phase checks the declared unfocused placeholder. Use
+                // the complete Workbench departure so inner and outer focus
+                // agree; auxiliary Clear itself does not perform this blur.
+                w.clear_focus(i);
+                assert_eq!(w.focused_control_id(i), None);
+                assert!(!w.state(i).input.search_host().unwrap().focused());
             }
             for theme in Theme::ALL {
                 text.begin_frame();
