@@ -194,7 +194,7 @@ fn section_title_uses_original_fixed_insets_positive_increasing_width_and_one_ax
                         h.focused()
                     );
                     assert!((title.min_x() - header.min_x() - 16.).abs() < 0.01);
-                    assert!((title.size.width - (width - 32.)).abs() < 0.01);
+                    assert!((title.size.width - (header.size.width - 32.)).abs() < 0.01);
                     assert!(title.size.width > previous);
                     previous = title.size.width;
                     assert_eq!(
