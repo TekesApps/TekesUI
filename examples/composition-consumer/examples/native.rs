@@ -590,6 +590,9 @@ fn main() {
                             Some(tekes_ui_controls::composition::ContentActionPayload::DisclosureExpansion(_)) | None => (None, None),
                             Some(tekes_ui_controls::composition::ContentActionPayload::ComboBoxSelection(_))
                             | Some(tekes_ui_controls::composition::ContentActionPayload::Search(_))
+                            | Some(tekes_ui_controls::composition::ContentActionPayload::TreeIntent(_))
+                            | Some(tekes_ui_controls::composition::ContentActionPayload::TableIntent(_))
+                            | Some(tekes_ui_controls::composition::ContentActionPayload::ListIntent(_))
                             | Some(tekes_ui_controls::composition::ContentActionPayload::CheckboxState(_))
                             | Some(tekes_ui_controls::composition::ContentActionPayload::RadioSelection(_))
                             | Some(tekes_ui_controls::composition::ContentActionPayload::SegmentSelection(_))

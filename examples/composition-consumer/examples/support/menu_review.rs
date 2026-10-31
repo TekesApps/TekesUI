@@ -49,6 +49,9 @@ fn selection(record: &ContentActionRecord) -> &MenuSelection {
         ContentActionPayload::MenuSelection(value) => value,
         ContentActionPayload::ToolbarCommand(_)
         | ContentActionPayload::Search(_)
+        | ContentActionPayload::TreeIntent(_)
+        | ContentActionPayload::TableIntent(_)
+        | ContentActionPayload::ListIntent(_)
         | ContentActionPayload::ComboBoxSelection(_)
         | ContentActionPayload::CheckboxState(_)
         | ContentActionPayload::RadioSelection(_)
