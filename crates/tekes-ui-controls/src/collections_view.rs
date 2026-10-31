@@ -2239,10 +2239,13 @@ impl DataTableView {
                 .content_metrics
                 .as_ref()
                 .and_then(|m| m.surface)
-                .filter(|s| *s != "base")
-                .unwrap_or("canvas");
+                .filter(|s| *s != "base");
             let button = &mut self.row_buttons[id];
-            button.set_surface(surface);
+            if let Some(surface) = surface {
+                button.set_surface(surface);
+            } else {
+                button.clear_surface();
+            }
             button.state = control_state(
                 model.selected_row == Some(id),
                 self.state.hovered == Some(id),
@@ -2277,7 +2280,7 @@ impl DataTableView {
                         proposal::TextRole::UiBody,
                         cell,
                         ButtonTextAlign::Leading,
-                        Self::row_foreground(button, palette, surface).0,
+                        Self::row_foreground(button, palette, surface.unwrap_or("canvas")).0,
                     );
                     scene.pop_clip();
                 }
@@ -2783,14 +2786,19 @@ impl DataTableView {
         }
         Some((units, bytes))
     }
-    // Legacy strings and Content row child-theme share the original row
-    // Button/state foreground. This approved legacy ink change leaves layout,
-    // hit testing, focus and selection policies in their existing owners.
+    // Row labels are readonly information, so disabling row actions does not
+    // dim their text or icon with the disabled operation-label role.
     fn row_foreground(
         button: &ButtonModel,
         palette: Palette,
         surface: &str,
     ) -> (tekes_ui_tokens::Rgba, tekes_ui_tokens::Rgba) {
+        if button.state.disabled {
+            let ink = palette
+                .color("primary-text")
+                .expect("DS primary text token");
+            return (ink, ink);
+        }
         let surface = if surface == "base" { "canvas" } else { surface };
         let colors = button.surface_colors(palette, ButtonVariant::Quiet, surface);
         (colors.text, colors.icon)
