@@ -237,17 +237,19 @@ fn table_header_surface_preserves_default_inherited_explicit_and_clear_contract(
             )
         })
         .unwrap();
-    assert!(host
-        .accessibility_action(TABLE, Some(header.index), AccessibilityAction::Press)
-        .consumed);
+    assert!(
+        host.accessibility_action(TABLE, Some(header.index), AccessibilityAction::Press)
+            .consumed
+    );
     render_scene(&mut host, &mut text, 500., viewport, Theme::LIGHT);
     let row = parts(&host)
         .into_iter()
         .find(|part| matches!(part.semantics.role, ContentRole::TableRow { index: 0 }))
         .unwrap();
-    assert!(host
-        .accessibility_action(TABLE, Some(row.index), AccessibilityAction::Press)
-        .consumed);
+    assert!(
+        host.accessibility_action(TABLE, Some(row.index), AccessibilityAction::Press)
+            .consumed
+    );
     render_scene(&mut host, &mut text, 500., viewport, Theme::LIGHT);
 
     let baseline = parts(&host);
