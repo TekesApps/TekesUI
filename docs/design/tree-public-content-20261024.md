@@ -225,3 +225,10 @@ TreeIntent来源绑定补充裁定：原payload包含私有origin:Arc<()>，直�
 List/Table GPU lane 在该续跑中仅沿用 `70ee52503eeb9e830268d40918f42f005aa1da3b` 的旧身份（default/external Tree 外的两域各自原报告），见 `external-reuse-verified.json`，不是 cbe 或 `089dc` 的新编译。普通候选 `089dc65d958d62900fc68ba6e7ce41f603f05200` 及设计 successor `853eed2f20792a2c1c64ae485b5aa82f8f650de5` 不因这些旧收据被改签。
 
 该追加只同步有限 Tree IPC/GPU 证据与来源边界；不宣称 #66/#198 全部验收、公开发布、原生窗口/物理 IME/VoiceOver、性能或完整 Gold7 通过。
+
+
+### CPU30 Tree theme fixture event identity correction
+
+At source54e4651, the retained public Tree theme test passed its preceding four-Theme state/ground/ink/contrast/disabled-action checks, then failed on the final Left disclosure result: the View returned Toggled(root), while the older fixture expected Changed. TreeView::key already delegates a real Left collapse or Right expansion to the same set_expanded owner, whose result identifies the original toggled node. Existing tree_identity keyboard and public tree_table_semantics disclosure assertions require this exact event. Selection or movement to another visible node remains Changed, and Enter remains Activated(original id).
+
+Only the two stale post-matrix disclosure expectations are aligned to Toggled(root). The ordered selection/movement expectations, collapsed layout[root], subsequent expansion, End navigation and final activation checks stay intact. No production reducer, Theme, Surface, clip, geometry, owner identity or event wire is changed. The original CPU30 failure and runtime source/program identities remain preserved; this fixture candidate is not an actual pass until a fresh authorized continuation.

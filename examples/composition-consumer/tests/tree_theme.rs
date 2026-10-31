@@ -149,7 +149,7 @@ fn retained_tree_theme_preserves_hierarchy_disabled_rows_and_original_navigation
     }
     assert_eq!(
         view.key(ControlKey::Left, true, &mut tree),
-        CollectionEvent::Changed
+        CollectionEvent::Toggled(root)
     );
     let layout = view.render(
         &mut Scene::new(),
@@ -165,7 +165,7 @@ fn retained_tree_theme_preserves_hierarchy_disabled_rows_and_original_navigation
     );
     assert_eq!(
         view.key(ControlKey::Right, true, &mut tree),
-        CollectionEvent::Changed
+        CollectionEvent::Toggled(root)
     );
     view.render(
         &mut Scene::new(),
