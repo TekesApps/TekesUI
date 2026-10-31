@@ -3367,6 +3367,45 @@
       "category": "shared-support",
       "components": [],
       "reason": "Shared semantic paint configuration; these values do not own layout, events or state."
+    },
+    {
+      "api": "tekes_ui_controls::composition::MediaViewerContent",
+      "category": "optional-component",
+      "components": [],
+      "feature": "bitmap-images",
+      "reason": "Optional viewport over original ImageContent; no Gallery route or additional registered root."
+    },
+    {
+      "api": "tekes_ui_controls::composition::MediaViewerCommand",
+      "category": "optional-component-support",
+      "components": [],
+      "feature": "bitmap-images",
+      "reason": "Command, error or geometry projection of the optional MediaViewerContent owner.",
+      "owner_api": "tekes_ui_controls::composition::MediaViewerContent"
+    },
+    {
+      "api": "tekes_ui_controls::composition::MediaViewerError",
+      "category": "optional-component-support",
+      "components": [],
+      "feature": "bitmap-images",
+      "reason": "Command, error or geometry projection of the optional MediaViewerContent owner.",
+      "owner_api": "tekes_ui_controls::composition::MediaViewerContent"
+    },
+    {
+      "api": "tekes_ui_controls::composition::MediaViewerMode",
+      "category": "optional-component-support",
+      "components": [],
+      "feature": "bitmap-images",
+      "reason": "Command, error or geometry projection of the optional MediaViewerContent owner.",
+      "owner_api": "tekes_ui_controls::composition::MediaViewerContent"
+    },
+    {
+      "api": "tekes_ui_controls::composition::MediaViewerTransform",
+      "category": "optional-component-support",
+      "components": [],
+      "feature": "bitmap-images",
+      "reason": "Command, error or geometry projection of the optional MediaViewerContent owner.",
+      "owner_api": "tekes_ui_controls::composition::MediaViewerContent"
     }
   ],
   "type_free_includes": [

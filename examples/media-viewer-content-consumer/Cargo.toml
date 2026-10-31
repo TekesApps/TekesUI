@@ -1,0 +1,19 @@
+[package]
+name = "tekes-ui-media-viewer-content-consumer"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[dependencies]
+# Explicit development paths; release consumers require a published exact pin.
+tekes-ui-controls = { path = "../../crates/tekes-ui-controls", features = ["bitmap-images"] }
+tekes-ui-scene = { path = "../../crates/tekes-ui-scene" }
+tekes-ui-tokens = { path = "../../crates/tekes-ui-tokens" }
+tekes-ui-text = { path = "../../crates/tekes-ui-text" }
+tekes-ui-render = { path = "../../crates/tekes-ui-render" }
+
+[target.'cfg(target_os = "macos")'.dev-dependencies]
+tekes-ui-platform-macos = { path = "../../crates/tekes-ui-platform-macos", features = ["content-accessibility"] }
+resvg = { version = "0.48.0", default-features = false }
