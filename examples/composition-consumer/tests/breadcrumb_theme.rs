@@ -4,7 +4,7 @@
 mod coretext;
 use tekes_ui_controls::{ControlKey, extended::Breadcrumb, layout_view::BreadcrumbView};
 use tekes_ui_scene::{Point, Primitive, Rect, Scene};
-use tekes_ui_tokens::{Palette, Rgba, Theme, proposal};
+use tekes_ui_tokens::{Palette, Rgba, Theme, proposal, surface_palette::resolve_surface};
 
 fn contrast(a: Rgba, b: Rgba) -> f32 {
     let luminance = |c: Rgba| {
@@ -111,24 +111,27 @@ fn breadcrumb_same_instance_theme_states_keep_navigation_and_readable_actual_gly
                     _ => None,
                 })
                 .collect();
+            let endpoint = match state {
+                "hover" | "hover-focus" => "hover",
+                "pressed" | "pressed-focus" => "pressed",
+                "disabled" => "disabled",
+                _ => "rest",
+            };
+            let colors = resolve_surface(palette, "canvas", "action-quiet", endpoint).unwrap();
+            let current_colors =
+                resolve_surface(palette, "canvas", "action-quiet", "selected-disabled").unwrap();
             let fill_role = match state {
                 "hover" | "hover-focus" => "button-hover",
                 "pressed" | "pressed-focus" => "button-pressed",
-                _ => "surface-2",
+                _ => "document-canvas",
             };
             assert_eq!(
                 fills.first(),
-                Some(&palette.color(fill_role).unwrap()),
+                Some(&colors.background),
                 "{theme:?} {brand} {state}"
             );
-            let active_ink = palette
-                .color(if state == "disabled" {
-                    "tertiary-text"
-                } else {
-                    "primary-text"
-                })
-                .unwrap();
-            let current_ink = palette.color("tertiary-text").unwrap();
+            let active_ink = colors.text;
+            let current_ink = current_colors.text;
             let threshold = if theme.is_increased() { 7. } else { 4.5 };
             assert!(
                 contrast(active_ink, fills[0]) >= threshold,
@@ -142,7 +145,7 @@ fn breadcrumb_same_instance_theme_states_keep_navigation_and_readable_actual_gly
                     _ => None,
                 })
                 .expect("current-page production background");
-            assert_eq!(current_fill, palette.color("surface-2").unwrap());
+            assert_eq!(current_fill, current_colors.background);
             assert!(
                 contrast(current_ink, current_fill) >= threshold,
                 "current {theme:?}"

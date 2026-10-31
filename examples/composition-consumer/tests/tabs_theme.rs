@@ -4,7 +4,7 @@ mod coretext;
 
 use tekes_ui_controls::{ControlKey, TabsLayout, TabsView};
 use tekes_ui_scene::{Primitive, Quad, Rect, Scene};
-use tekes_ui_tokens::{Palette, Rgba, Theme, proposal};
+use tekes_ui_tokens::{Palette, Rgba, Theme, proposal, surface_palette::resolve_surface};
 
 fn contrast(a: Rgba, b: Rgba) -> f32 {
     let luminance = |c: Rgba| {
@@ -35,8 +35,7 @@ fn assert_item(
     layout: &TabsLayout,
     index: usize,
     palette: Palette,
-    ground: &str,
-    ink: &str,
+    state: &str,
     enabled: bool,
 ) -> Quad {
     let item = &layout.items[index];
@@ -48,7 +47,8 @@ fn assert_item(
             _ => None,
         })
         .expect("actual tab Button background");
-    assert_eq!(quad.fill, palette.color(ground).unwrap());
+    let colors = resolve_surface(palette, "canvas", "action-quiet", state).unwrap();
+    assert_eq!(quad.fill, colors.background);
     assert_eq!(quad.fill.a, 1.);
     assert_eq!(
         quad.corner_radii,
@@ -79,7 +79,7 @@ fn assert_item(
         .collect();
     assert!(!inks.is_empty(), "real CoreText glyphs for tab {index}");
     for actual in inks {
-        assert_eq!(actual, palette.color(ink).unwrap());
+        assert_eq!(actual, colors.text);
         if enabled {
             let minimum = if palette.theme.is_increased() {
                 7.
@@ -112,50 +112,18 @@ fn tabs_same_instance_repaints_selection_interaction_and_real_text_in_all_themes
         let (scene, layout) = render(&mut tabs, &mut text, theme);
         assert_eq!(layout, initial, "theme changes preserve tab geometry");
         assert_eq!(tabs.selected(), 1, "theme changes preserve selection");
-        let selected = assert_item(
-            &scene,
-            &layout,
-            1,
-            palette,
-            "row-selection",
-            "primary-text",
-            true,
-        );
+        let selected = assert_item(&scene, &layout, 1, palette, "selected", true);
         selected_fills.push(selected.fill);
-        let rest = assert_item(
-            &scene,
-            &layout,
-            2,
-            palette,
-            "surface-2",
-            "primary-text",
-            true,
-        );
+        let rest = assert_item(&scene, &layout, 2, palette, "rest", true);
         assert_ne!(selected.fill, rest.fill);
 
         tabs.pointer_move_at(target);
         let (scene, layout) = render(&mut tabs, &mut text, theme);
-        let hover = assert_item(
-            &scene,
-            &layout,
-            2,
-            palette,
-            "button-hover",
-            "primary-text",
-            true,
-        );
+        let hover = assert_item(&scene, &layout, 2, palette, "hover", true);
         assert_ne!(hover.fill, rest.fill);
         assert_eq!(tabs.pointer_down_at(target), Some(2));
         let (scene, layout) = render(&mut tabs, &mut text, theme);
-        let pressed = assert_item(
-            &scene,
-            &layout,
-            2,
-            palette,
-            "button-pressed",
-            "primary-text",
-            true,
-        );
+        let pressed = assert_item(&scene, &layout, 2, palette, "pressed", true);
         assert_ne!(pressed.fill, hover.fill);
         assert_eq!(tabs.pointer_up_at(tekes_ui_scene::Point::new(0., 0.)), None);
         assert_eq!(tabs.selected(), 1, "release outside cancels selection");
@@ -163,41 +131,17 @@ fn tabs_same_instance_repaints_selection_interaction_and_real_text_in_all_themes
         let selected_target = layout.items[1].frame.center();
         tabs.pointer_move_at(selected_target);
         let (scene, layout) = render(&mut tabs, &mut text, theme);
-        let selected_hover = assert_item(
-            &scene,
-            &layout,
-            1,
-            palette,
-            "row-selection-hover",
-            "primary-text",
-            true,
-        );
+        let selected_hover = assert_item(&scene, &layout, 1, palette, "selected-hover", true);
         assert_ne!(selected_hover.fill, selected.fill);
         assert_eq!(tabs.pointer_down_at(selected_target), Some(1));
         let (scene, layout) = render(&mut tabs, &mut text, theme);
-        // Quiet selected tabs retain their selected-hover ground while pressed.
-        assert_item(
-            &scene,
-            &layout,
-            1,
-            palette,
-            "row-selection-hover",
-            "primary-text",
-            true,
-        );
+        // The generated quiet-action contract defines selected-pressed separately.
+        assert_item(&scene, &layout, 1, palette, "selected-pressed", true);
         assert_eq!(tabs.pointer_up_at(selected_target), Some(1));
         tabs.pointer_move_at(tekes_ui_scene::Point::new(0., 0.));
         assert!(tabs.focus(1, true));
         let (scene, layout) = render(&mut tabs, &mut text, theme);
-        assert_item(
-            &scene,
-            &layout,
-            1,
-            palette,
-            "row-selection",
-            "primary-text",
-            true,
-        );
+        assert_item(&scene, &layout, 1, palette, "selected", true);
         assert!(scene.primitives().iter().any(|p| matches!(p,
             Primitive::Quad(q) if q.fill.a == 0. && q.border_width > 0.
                 && q.border_color == palette.color("border-focused").unwrap())));
@@ -209,8 +153,11 @@ fn tabs_same_instance_repaints_selection_interaction_and_real_text_in_all_themes
                 &layout,
                 index,
                 palette,
-                "surface-2",
-                "tertiary-text",
+                if index == tabs.selected() {
+                    "selected-disabled"
+                } else {
+                    "disabled"
+                },
                 false,
             );
         }
