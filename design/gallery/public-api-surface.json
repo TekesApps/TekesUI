@@ -1833,6 +1833,40 @@
       "reason": "Experimental composition adapter for the existing component family, exercised by the independent composition consumer; does not imply every family has migrated or native acceptance passed."
     },
     {
+      "api": "tekes_ui_controls::composition::SearchAction",
+      "category": "component-support",
+      "components": [
+        "tui.search-field"
+      ],
+      "reason": "Captured original query and submit/clear action payload for the registered SearchField variant; not a second editor or result engine."
+    },
+    {
+      "api": "tekes_ui_controls::composition::SearchCommand",
+      "category": "composition",
+      "components": [],
+      "reason": "Opaque once-consumed ContentHost Search intent retaining current mount and original send gate; not an independent component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::SearchCommandError",
+      "category": "composition",
+      "components": [],
+      "reason": "Finite rejection result for stale or inapplicable original Search Host commands."
+    },
+    {
+      "api": "tekes_ui_controls::composition::SearchCommandKind",
+      "category": "composition",
+      "components": [],
+      "reason": "Finite submit/clear intent discriminator used by the original Search Host command boundary."
+    },
+    {
+      "api": "tekes_ui_controls::composition::SearchFieldContent",
+      "category": "component-adapter",
+      "components": [
+        "tui.search-field"
+      ],
+      "reason": "SearchField adapter over the original TextFieldContent/TextSurface and inline clear Button; one editor owner, no filtering/results engine. Original contracts #88/#101; current-main recovery tracked in #199."
+    },
+    {
       "api": "tekes_ui_controls::composition::SegmentIntent",
       "category": "component-support",
       "components": [
@@ -1855,6 +1889,22 @@
         "tui.segmented-control"
       ],
       "reason": "Owned Content adapter for the existing registered component; retains the original model and presentation contract. Finite recovery evidence is separate from native acceptance and public delivery."
+    },
+    {
+      "api": "tekes_ui_controls::composition::SelectContent",
+      "category": "component-adapter",
+      "components": [
+        "tui.select"
+      ],
+      "reason": "Fixed-label ContentHost adapter retaining the original Select/SelectView/Menu owner, checked declarations, original overlay and queued selection payload; not a new component or acceptance claim."
+    },
+    {
+      "api": "tekes_ui_controls::composition::SelectUpdateError",
+      "category": "component-support",
+      "components": [
+        "tui.select"
+      ],
+      "reason": "Checked original Select declaration/part identity exhaustion error; no second selection model or publication claim."
     },
     {
       "api": "tekes_ui_controls::composition::SemanticLabel",
@@ -2919,56 +2969,6 @@
       "category": "shared-support",
       "components": [],
       "reason": "Shared semantic paint configuration; these values do not own layout, events or state."
-    },
-    {
-      "api": "tekes_ui_controls::composition::SearchAction",
-      "category": "component-support",
-      "components": [
-        "tui.search-field"
-      ],
-      "reason": "Captured original query and submit/clear action payload for the registered SearchField variant; not a second editor or result engine."
-    },
-    {
-      "api": "tekes_ui_controls::composition::SearchCommand",
-      "category": "composition",
-      "components": [],
-      "reason": "Opaque once-consumed ContentHost Search intent retaining current mount and original send gate; not an independent component."
-    },
-    {
-      "api": "tekes_ui_controls::composition::SearchCommandError",
-      "category": "composition",
-      "components": [],
-      "reason": "Finite rejection result for stale or inapplicable original Search Host commands."
-    },
-    {
-      "api": "tekes_ui_controls::composition::SearchCommandKind",
-      "category": "composition",
-      "components": [],
-      "reason": "Finite submit/clear intent discriminator used by the original Search Host command boundary."
-    },
-    {
-      "api": "tekes_ui_controls::composition::SearchFieldContent",
-      "category": "component-adapter",
-      "components": [
-        "tui.search-field"
-      ],
-      "reason": "SearchField adapter over the original TextFieldContent/TextSurface and inline clear Button; one editor owner, no filtering/results engine. Original contracts #88/#101; current-main recovery tracked in #199."
-    },
-    {
-      "api": "tekes_ui_controls::composition::SelectContent",
-      "category": "component-adapter",
-      "components": [
-        "tui.select"
-      ],
-      "reason": "Fixed-label ContentHost adapter retaining the original Select/SelectView/Menu owner, checked declarations, original overlay and queued selection payload; not a new component or acceptance claim."
-    },
-    {
-      "api": "tekes_ui_controls::composition::SelectUpdateError",
-      "category": "component-support",
-      "components": [
-        "tui.select"
-      ],
-      "reason": "Checked original Select declaration/part identity exhaustion error; no second selection model or publication claim."
     }
   ],
   "type_free_includes": [
