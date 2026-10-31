@@ -120,6 +120,7 @@ fn breadcrumb_same_instance_theme_states_keep_navigation_and_readable_actual_gly
             let colors = resolve_surface(palette, "canvas", "action-quiet", endpoint).unwrap();
             let current_colors =
                 resolve_surface(palette, "canvas", "action-quiet", "selected-disabled").unwrap();
+            #[cfg(feature = "token-audit")]
             let fill_role = match state {
                 "hover" | "hover-focus" => "button-hover",
                 "pressed" | "pressed-focus" => "button-pressed",
