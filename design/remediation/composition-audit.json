@@ -2078,7 +2078,7 @@
     "crates/tekes-ui-gallery/src/gallery/quality_effects.rs": "b99730312721bf8eec15f3b10255c977ba444c4ea064fdb8537186f3271e7d85",
     "crates/tekes-ui-gallery/src/gallery/text.rs": "0861f4087a60f10bdf3d7c6697cb97e3513b2b6890fcc8984dd8ea966cbad13d",
     "crates/tekes-ui-gallery/src/gallery/text_demo.rs": "fb8612fca83c4a4fab7d2b6f8247389ad320bc935b7ca1b8c3209976ff1b76b1",
-    "crates/tekes-ui-gallery/src/gallery/workbench.rs": "211d51c0fca61a19a8f1042bd6d751bed7285a71ba2f73f1614f45f1dae5f35e",
+    "crates/tekes-ui-gallery/src/gallery/workbench.rs": "dd769c727812f80b7d63bbcd70e55a0649fa13e47b8d900da5e1a38e99c644dc",
     "crates/tekes-ui-gallery/src/gallery/workbench/accessibility.rs": "7c98e4ba5c322000ec4ce553002b5a551647f864075d8d104b3bb0893932fd56",
     "crates/tekes-ui-gallery/src/gallery/workbench/content_status.rs": "2b3262d539c063b91493ee29db9aa13c8cdefacb3259c2efb6cdded337120588",
     "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs": "45cce35619761cebba57d7f7aa65ae637087d1f3a9a2dff4469f3f61bfde0ba4",
@@ -2107,7 +2107,7 @@
     "docs/design/menu-declarations-20261021.md": "e1494ee1d9a9de6f5fb7bedc40d0c19a8e90dfefca0d0f983316ae8794976ee8",
     "docs/roadmap.md": "1648c62ec9209c206b98c18da6a48cda8e9df306d635e294b5d0ad5dcf1bd331",
     "examples/composition-consumer/Cargo.toml": "92baa39b50aa5d5b64ff80e60b1af6bed7d3faaf9e3feaa8d2e7a625a0d793bf",
-    "examples/composition-consumer/examples/native.rs": "377d9a64178ff5f4bdd47b9543edafd0348537b87beea575d5e8787d1d8b2444",
+    "examples/composition-consumer/examples/native.rs": "21952ccf2bcaf3dca6a653b55a94d2edd17c7bfcb5e804eceddde0ac54a5f51c",
     "examples/composition-consumer/examples/support/native_key.rs": "6932a589bce50e2f4365c780c67ab0c467a126c9a4677ad23eeda132f146adae",
     "examples/composition-consumer/src/choice_status.rs": "337878b760c8aa05fe0bdbb0dbce091604526acc082c5778645b6feb6199d678",
     "examples/composition-consumer/src/combo_status.rs": "1e36d6989f56ed61eb67f2ab1b56c751164f2e1726c486eb65dd5430f9f40166",
@@ -2149,7 +2149,7 @@
     "examples/composition-consumer/tests/item_navigation.rs": "47d15b84bb40029b8421d0f8b287f9538f6a2dd1ecdcb0a42597b40186d6d43e",
     "examples/composition-consumer/tests/label_content.rs": "51028aa25aeaf31c4c82cf15a1d73ffe1634ee726f290c791f57255b4a86c304",
     "examples/composition-consumer/tests/layout_text_services.rs": "c44adec0e0bbd221867b89417c6ae167c0bd88d80a4fef8011f8f62a21729e65",
-    "examples/composition-consumer/tests/menu_action_records.rs": "fe19c5377928177979b80f0f081b9d273dc4e2ab56fd86800fc5e1bcfa1136c6",
+    "examples/composition-consumer/tests/menu_action_records.rs": "4c2edfa30a908d5cc18c8ea7953ec51ff852a7ab20aa4dcbb12d7a1248722842",
     "examples/composition-consumer/tests/menu_content_tokens.rs": "13eaa02789da81e72b13c08323e2f4af5b295f76d632e663054fd07926583f89",
     "examples/composition-consumer/tests/menu_declarations.rs": "18526f81bf996a1ee52fae30b26cc049fca47aad918938e257e6accc2bca01fa",
     "examples/composition-consumer/tests/menu_item_states.rs": "d1fc3dd210209eee1da3b768b2e2569cf69ed0bed41e59124796254fe698b4e5",
@@ -2238,7 +2238,7 @@
     },
     {
       "path": "examples/composition-consumer/examples/native.rs",
-      "line": 825,
+      "line": 826,
       "anchor": "w.set_accessibility_nodes(nodes);"
     },
     {
