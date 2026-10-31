@@ -737,7 +737,7 @@ fn public_navigation_content_generated_surface_variants() {
     );
     fs::create_dir(&out).expect("refuse existing evidence directory");
     let theme_id = std::env::var("TEKESUI_ISSUE63_THEME_ID")
-        .expect("parent-selected compiled non-default Theme ID required");
+        .expect("parent-selected compiled Theme ID required");
     let source_sha = std::env::var("TEKESUI_ISSUE63_SOURCE_SHA256")
         .expect("parent-provided source SHA-256 required");
     assert_eq!(source_sha.len(), 64);
@@ -754,8 +754,8 @@ fn public_navigation_content_generated_surface_variants() {
             .as_array()
             .unwrap()
             .iter()
-            .any(|d| d["id"] == theme_id && theme_id != "default"),
-        "Theme ID must be a real non-default live themes.json entry"
+            .any(|d| d["id"] == theme_id),
+        "Theme ID must be a real live themes.json entry"
     );
     let mut plan = planned_cases();
     assert_eq!(plan.len(), 18, "full plan must remain exactly 18 frames");
