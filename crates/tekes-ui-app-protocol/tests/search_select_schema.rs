@@ -6,10 +6,30 @@ mod old_content;
 use tekes_ui_app_protocol::component::{VERSION, content as wire};
 
 const PREFIX_ROLES: &[&str] = &[
-    "Group", "ProgressIndicator", "Text", "Image", "Button", "Link", "TextInput",
-    "ComboBox", "Slider", "Splitter", "Switch", "Checkbox", "RadioGroup",
-    "RadioButton", "SegmentedGroup", "Segment", "List", "ListItem", "Dialog",
-    "MenuButton", "Menu", "MenuItem", "TabList", "Tab",
+    "Group",
+    "ProgressIndicator",
+    "Text",
+    "Image",
+    "Button",
+    "Link",
+    "TextInput",
+    "ComboBox",
+    "Slider",
+    "Splitter",
+    "Switch",
+    "Checkbox",
+    "RadioGroup",
+    "RadioButton",
+    "SegmentedGroup",
+    "Segment",
+    "List",
+    "ListItem",
+    "Dialog",
+    "MenuButton",
+    "Menu",
+    "MenuItem",
+    "TabList",
+    "Tab",
 ];
 fn node(role: &str, id: u64) -> serde_json::Value {
     serde_json::json!({
@@ -38,11 +58,17 @@ fn actual_prefix24_rejects_entire_search_select_root_and_part_snapshots() {
         let value = reply(role);
         let bytes = serde_json::to_vec(&value).unwrap();
         let new: wire::Reply = serde_json::from_slice(&bytes).unwrap();
-        assert_eq!(serde_json::from_slice::<wire::Reply>(
-            &serde_json::to_vec(&new).unwrap()).unwrap(), new);
+        assert_eq!(
+            serde_json::from_slice::<wire::Reply>(&serde_json::to_vec(&new).unwrap()).unwrap(),
+            new
+        );
         let error = serde_json::from_slice::<old_content::Reply>(&bytes)
-            .unwrap_err().to_string();
-        assert!(error.contains(&format!("unknown variant `{role}`")), "{error}");
+            .unwrap_err()
+            .to_string();
+        assert!(
+            error.contains(&format!("unknown variant `{role}`")),
+            "{error}"
+        );
         let semantics = serde_json::to_vec(new.semantics.as_ref().unwrap()).unwrap();
         assert!(serde_json::from_slice::<Vec<old_content::SemanticNode>>(&semantics).is_err());
         let mut part = reply("Group");
@@ -61,17 +87,25 @@ fn all_actual_prefix24_roles_and_existing_expansion_action_remain_compatible() {
         let bytes = serde_json::to_vec(&reply(role)).unwrap();
         let new: wire::Reply = serde_json::from_slice(&bytes).unwrap();
         let old: old_content::Reply = serde_json::from_slice(&bytes).unwrap();
-        assert_eq!(serde_json::to_value(new).unwrap(), serde_json::to_value(old).unwrap(), "{role}");
+        assert_eq!(
+            serde_json::to_value(new).unwrap(),
+            serde_json::to_value(old).unwrap(),
+            "{role}"
+        );
     }
     for expanded in [false, true] {
         let input = wire::Input::Accessibility {
             target: wire::Target { id: 41, mount: 92 },
-            part: None, binding: None,
+            part: None,
+            binding: None,
             action: wire::AccessibilityAction::SetExpanded(expanded),
         };
         let bytes = serde_json::to_vec(&input).unwrap();
         let new: wire::Input = serde_json::from_slice(&bytes).unwrap();
         let old: old_content::Input = serde_json::from_slice(&bytes).unwrap();
-        assert_eq!(serde_json::to_value(new).unwrap(), serde_json::to_value(old).unwrap());
+        assert_eq!(
+            serde_json::to_value(new).unwrap(),
+            serde_json::to_value(old).unwrap()
+        );
     }
 }

@@ -789,8 +789,10 @@ impl ContentHost {
                     | AccessibilityAction::SetSelection(_)
                     | AccessibilityAction::SetExpanded(_)
             )
-            && self.root.find(id).is_some_and(|node|
-                node.component::<SelectContent>().is_some());
+            && self
+                .root
+                .find(id)
+                .is_some_and(|node| node.component::<SelectContent>().is_some());
         if !self.strict_focus_requirement(id) && !prepared_select {
             // Other ordinary AX verbs keep their original non-transfer policy.
             // Strict cross-owner verbs below always need an original decision.

@@ -80,10 +80,13 @@ pub(crate) fn validate(nodes: &[wire::SemanticNode]) -> Result<()> {
             "invalid child shaped text layout"
         );
         ensure!(
-            !matches!(n.semantics.role, wire::SemanticRole::ComboBox | wire::SemanticRole::SearchInput)
-                || n.text_layout
-                    .as_ref()
-                    .is_none_or(|layout| !layout.multiline),
+            !matches!(
+                n.semantics.role,
+                wire::SemanticRole::ComboBox | wire::SemanticRole::SearchInput
+            ) || n
+                .text_layout
+                .as_ref()
+                .is_none_or(|layout| !layout.multiline),
             "multiline ComboBox/SearchInput"
         );
         ensure!(
@@ -107,10 +110,13 @@ pub(crate) fn validate(nodes: &[wire::SemanticNode]) -> Result<()> {
                 "missing child adjustable part range"
             );
             ensure!(
-                !matches!(p.semantics.role, wire::SemanticRole::ComboBox | wire::SemanticRole::SearchInput)
-                    || p.text_layout
-                        .as_ref()
-                        .is_none_or(|layout| !layout.multiline),
+                !matches!(
+                    p.semantics.role,
+                    wire::SemanticRole::ComboBox | wire::SemanticRole::SearchInput
+                ) || p
+                    .text_layout
+                    .as_ref()
+                    .is_none_or(|layout| !layout.multiline),
                 "multiline ComboBox/SearchInput part"
             );
             ensure!(

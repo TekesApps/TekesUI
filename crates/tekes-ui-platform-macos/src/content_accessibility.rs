@@ -91,13 +91,18 @@ fn enrich(
         // geometry is still published only from the original shaped layout below.
         if matches!(
             semantics.role,
-            ContentRole::TextInput | ContentRole::ComboBox | ContentRole::SearchInput | ContentRole::Image
+            ContentRole::TextInput
+                | ContentRole::ComboBox
+                | ContentRole::SearchInput
+                | ContentRole::Image
         ) && let Some(input) = host.semantic_text_input_snapshot(id)
         {
-            if !matches!(semantics.role, ContentRole::Image | ContentRole::ComboBox | ContentRole::SearchInput)
-                && host
-                    .text_surface(id)
-                    .is_some_and(|surface| surface.input.multiline)
+            if !matches!(
+                semantics.role,
+                ContentRole::Image | ContentRole::ComboBox | ContentRole::SearchInput
+            ) && host
+                .text_surface(id)
+                .is_some_and(|surface| surface.input.multiline)
             {
                 node.role = AccessibilityRole::TextArea;
             }
@@ -109,7 +114,10 @@ fn enrich(
     if let Some(layout) = host.semantic_text_layout_snapshot(id, part) {
         if !matches!(
             node.role,
-            AccessibilityRole::Image | AccessibilityRole::Splitter(_) | AccessibilityRole::ComboBox | AccessibilityRole::SearchField
+            AccessibilityRole::Image
+                | AccessibilityRole::Splitter(_)
+                | AccessibilityRole::ComboBox
+                | AccessibilityRole::SearchField
         ) && layout.multiline
         {
             node.role = AccessibilityRole::TextArea;
@@ -144,13 +152,15 @@ fn project_content_nodes(host: &ContentHost) -> Option<Vec<AccessibilityNode>> {
         {
             return None;
         }
-        if matches!(n.semantics.role, ContentRole::ComboBox | ContentRole::SearchInput)
-            && (host
-                .text_surface(n.id)
-                .is_some_and(|surface| surface.input.multiline)
-                || host
-                    .semantic_text_layout_snapshot(n.id, None)
-                    .is_some_and(|layout| layout.multiline))
+        if matches!(
+            n.semantics.role,
+            ContentRole::ComboBox | ContentRole::SearchInput
+        ) && (host
+            .text_surface(n.id)
+            .is_some_and(|surface| surface.input.multiline)
+            || host
+                .semantic_text_layout_snapshot(n.id, None)
+                .is_some_and(|layout| layout.multiline))
         {
             return None;
         }
@@ -173,14 +183,18 @@ fn project_content_nodes(host: &ContentHost) -> Option<Vec<AccessibilityNode>> {
                 continue;
             }
             if part.semantics.role == ContentRole::Select
-                && host.semantic_text_layout_snapshot(n.id, Some(part.index)).is_some()
+                && host
+                    .semantic_text_layout_snapshot(n.id, Some(part.index))
+                    .is_some()
             {
                 return None;
             }
-            if matches!(part.semantics.role, ContentRole::ComboBox | ContentRole::SearchInput)
-                && host
-                    .semantic_text_layout_snapshot(n.id, Some(part.index))
-                    .is_some_and(|layout| layout.multiline)
+            if matches!(
+                part.semantics.role,
+                ContentRole::ComboBox | ContentRole::SearchInput
+            ) && host
+                .semantic_text_layout_snapshot(n.id, Some(part.index))
+                .is_some_and(|layout| layout.multiline)
             {
                 return None;
             }

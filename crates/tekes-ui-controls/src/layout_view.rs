@@ -2891,7 +2891,13 @@ pub struct SelectView {
     disabled: bool,
 }
 #[derive(Clone, Debug, PartialEq)]
-pub(crate) enum SelectPreparedInput { PointerDown(Point), Open, Focus(usize), Activate(usize), Close }
+pub(crate) enum SelectPreparedInput {
+    PointerDown(Point),
+    Open,
+    Focus(usize),
+    Activate(usize),
+    Close,
+}
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct SelectPreparedAction {
     expected: SelectPreparedState,
@@ -2904,8 +2910,10 @@ pub(crate) struct SelectPreparedAction {
 }
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct SelectPreparedState {
-    trigger: crate::widgets::ButtonActionDecision, layout: SelectLayout,
-    availability: (bool,bool), model: (usize,bool,usize,usize,Option<usize>),
+    trigger: crate::widgets::ButtonActionDecision,
+    layout: SelectLayout,
+    availability: (bool, bool),
+    model: (usize, bool, usize, usize, Option<usize>),
 }
 impl SelectView {
     /// Logical close may retain outgoing paint before the next frame starts exit.
@@ -2932,12 +2940,28 @@ impl SelectView {
         }
     }
     pub(crate) fn prepared_state(&self, model: &crate::Select) -> SelectPreparedState {
-        SelectPreparedState { trigger:self.trigger.prepare_content_press(),layout:self.layout.clone(),
-            availability:(self.window_active,self.disabled),model:(model.selected,model.menu.open,model.menu.items.count,model.menu.items.selected,model.menu.last_action) }
+        SelectPreparedState {
+            trigger: self.trigger.prepare_content_press(),
+            layout: self.layout.clone(),
+            availability: (self.window_active, self.disabled),
+            model: (
+                model.selected,
+                model.menu.open,
+                model.menu.items.count,
+                model.menu.items.selected,
+                model.menu.last_action,
+            ),
+        }
     }
-    pub(crate) fn prepare_select_action(&self, model: &crate::Select, input: SelectPreparedInput) -> Option<SelectPreparedAction> {
+    pub(crate) fn prepare_select_action(
+        &self,
+        model: &crate::Select,
+        input: SelectPreparedInput,
+    ) -> Option<SelectPreparedAction> {
         use crate::composite::MenuPreparedKind as K;
-        if self.disabled || !self.window_active || model.menu.items.count == 0 { return None; }
+        if self.disabled || !self.window_active || model.menu.items.count == 0 {
+            return None;
+        }
         let mut trigger = None;
         let mut menu = None;
         let mut choice = None;
@@ -2945,7 +2969,9 @@ impl SelectView {
         let mut reserve_open = false;
         let consumed = match input {
             SelectPreparedInput::PointerDown(point) => {
-                if model.menu.open { return None; }
+                if model.menu.open {
+                    return None;
+                }
                 self.next_open_generation()?;
                 let d = self.trigger.prepare_content_down(point, false);
                 let consumed = d.consumed;
@@ -2955,9 +2981,18 @@ impl SelectView {
             }
             input => {
                 let kind = match input {
-                    SelectPreparedInput::Open => { reserve_open = !model.menu.open; K::Open { generation: 0, selected: model.selected } }
+                    SelectPreparedInput::Open => {
+                        reserve_open = !model.menu.open;
+                        K::Open {
+                            generation: 0,
+                            selected: model.selected,
+                        }
+                    }
                     SelectPreparedInput::Focus(index) => K::Focus { index, offset: 0. },
-                    SelectPreparedInput::Activate(index) => { choice = Some(model.prepare_choice(index)?); K::Activate { index } }
+                    SelectPreparedInput::Activate(index) => {
+                        choice = Some(model.prepare_choice(index)?);
+                        K::Activate { index }
+                    }
                     SelectPreparedInput::Close => K::Close,
                     SelectPreparedInput::PointerDown(_) => unreachable!(),
                 };
@@ -2967,13 +3002,34 @@ impl SelectView {
                 true
             }
         };
-        Some(SelectPreparedAction { expected: self.prepared_state(model), trigger, menu, choice, event, consumed, reserve_open })
+        Some(SelectPreparedAction {
+            expected: self.prepared_state(model),
+            trigger,
+            menu,
+            choice,
+            event,
+            consumed,
+            reserve_open,
+        })
     }
-    pub(crate) fn apply_select_action(&mut self, model: &mut crate::Select, action: SelectPreparedAction) {
-        if let Some(d) = action.trigger { self.trigger.apply_content_action(d); }
-        if action.menu.is_some() { self.trigger.cancel(); }
-        if let Some(d) = action.menu { self.menu.apply_select_action(&mut model.menu, d); }
-        if let Some(choice) = action.choice { model.apply_choice(choice); self.focus(true); }
+    pub(crate) fn apply_select_action(
+        &mut self,
+        model: &mut crate::Select,
+        action: SelectPreparedAction,
+    ) {
+        if let Some(d) = action.trigger {
+            self.trigger.apply_content_action(d);
+        }
+        if action.menu.is_some() {
+            self.trigger.cancel();
+        }
+        if let Some(d) = action.menu {
+            self.menu.apply_select_action(&mut model.menu, d);
+        }
+        if let Some(choice) = action.choice {
+            model.apply_choice(choice);
+            self.focus(true);
+        }
     }
     #[cfg(test)]
     pub(crate) fn select_test_generation(&mut self, generation: u64) {
@@ -2982,7 +3038,9 @@ impl SelectView {
     pub(crate) fn next_open_generation(&self) -> Option<u64> {
         self.menu.next_open_generation()
     }
-    pub(crate) fn open_generation(&self) -> u64 { self.menu.open_generation() }
+    pub(crate) fn open_generation(&self) -> u64 {
+        self.menu.open_generation()
+    }
     /// The trigger inherits its parent Surface; the popup keeps its Menu Surface.
     pub fn set_surface(
         &mut self,
@@ -3089,7 +3147,9 @@ impl SelectView {
             // Cancellation retires the popup runtime. A current visible trigger
             // restores only its owning window's availability before a later
             // checked AX open; it does not open or reserve anything here.
-            let _ = self.menu.set_window_active_with_model(&mut model.menu, true);
+            let _ = self
+                .menu
+                .set_window_active_with_model(&mut model.menu, true);
         }
         trigger
     }

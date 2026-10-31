@@ -315,11 +315,17 @@ mod search_recovery_navigation_tests {
         assert!(g.open_route("component-search-field"));
         g.set_view_size(1200., 850.);
         g.build_scene(&mut tekes_ui_scene::Scene::new());
-        let key = g.accessibility_nodes().into_iter()
+        let key = g
+            .accessibility_nodes()
+            .into_iter()
             .find(|node| node.key.component == SEARCH && node.role == R::TextField)
-            .expect("original navigation search stays mounted").key;
+            .expect("original navigation search stays mounted")
+            .key;
         assert!(g.accessibility_action(key, &A::Focus).redraw);
-        assert!(g.accessibility_action(key, &A::SetValue("Slider".into())).redraw);
+        assert!(
+            g.accessibility_action(key, &A::SetValue("Slider".into()))
+                .redraw
+        );
         assert_eq!(g.navigation_search.query(), "Slider");
     }
 }

@@ -1,11 +1,11 @@
 //! Registry-driven native workbench. Fixtures orchestrate production control models;
 //! no duplicate component implementation lives in a story.
 mod accessibility;
-#[cfg(feature = "composition-review")]
-pub(crate) mod settings_native207;
 mod select_story;
 #[cfg(test)]
 mod select_story_tests;
+#[cfg(feature = "composition-review")]
+pub(crate) mod settings_native207;
 use select_story::SelectStoryHost;
 mod basic_states;
 mod brand_preview;
@@ -16,16 +16,16 @@ mod draft_capture;
 mod durable_draft;
 mod extended;
 mod focus;
+mod search_host;
+mod search_input;
 #[cfg(test)]
 mod settings_phase_capture;
 #[cfg(test)]
 mod state_capture;
-mod search_host;
-mod search_input;
-use search_input::StoryInput;
 use super::{Page, PageCtx, text_demo::TextDemo};
 use brand_preview::BrandPreview;
 use focus::FocusTarget;
+use search_input::StoryInput;
 use std::{
     collections::{HashMap, VecDeque},
     sync::OnceLock,
@@ -362,7 +362,13 @@ impl StoryState {
             }
             "select" if id == 20 => self.select_story.layout().trigger.frame,
             "select" if (60..63).contains(&id) => {
-                self.select_story.layout().popup.as_ref()?.items.get(id - 60)?.frame
+                self.select_story
+                    .layout()
+                    .popup
+                    .as_ref()?
+                    .items
+                    .get(id - 60)?
+                    .frame
             }
             "dialog" | "danger" if (70..72).contains(&id) => {
                 self.dialog_layout.as_ref()?.buttons.get(id - 70)?.frame
@@ -475,9 +481,7 @@ impl StoryState {
             )
             .into(),
             "search" => StoryInput::search(),
-            "filter" | "combo-box" | "command-palette" => {
-                TextDemo::field("", false, false).into()
-            }
+            "filter" | "combo-box" | "command-palette" => TextDemo::field("", false, false).into(),
             _ => s.input,
         };
         if e.renderer() == "form" {
@@ -785,9 +789,14 @@ impl StoryState {
     }
 
     fn menu_event(&mut self, event: MenuEvent, renderer: &str, select: bool) {
-        if select { return; }
+        if select {
+            return;
+        }
         match event {
-            MenuEvent::Activated { index, restore_focus } => {
+            MenuEvent::Activated {
+                index,
+                restore_focus,
+            } => {
                 self.menu_layout = None;
                 self.focus = self.restore_focus(restore_focus);
                 self.record(format!("menu action: {index}"));
@@ -1029,7 +1038,6 @@ impl StoryState {
                     // alone resets active focus to zero instead of the current value.
                     self.select_story.focus(false);
                     self.select_story.open();
-
                 }
                 "form" | "async" | "settings" => self.submit(),
                 _ => self.record("activate: primary action"),
@@ -1835,7 +1843,10 @@ impl Workbench {
     #[cfg(test)]
     pub(super) fn select_value_for_test(&self, i: usize) -> (bool, usize) {
         let state = self.states.get(&i).expect("mounted Select story");
-        (state.select_story.model().menu.open, state.select_story.model().selected)
+        (
+            state.select_story.model().menu.open,
+            state.select_story.model().selected,
+        )
     }
 
     #[cfg(test)]
@@ -2149,7 +2160,9 @@ impl Workbench {
         let input = if s.detail.state().is_some() {
             &mut s.detail
         } else {
-            s.input.legacy_mut().expect("non-Search route keeps TextDemo")
+            s.input
+                .legacy_mut()
+                .expect("non-Search route keeps TextDemo")
         };
         let mut copied = None;
         let changed = match command {
@@ -3452,7 +3465,8 @@ impl Workbench {
                     s.button_clip
                 };
                 if e.renderer() == "search" {
-                    s.input.build_search_clipped_with_brand(ctx, input, input_clip, scene, s.brand);
+                    s.input
+                        .build_search_clipped_with_brand(ctx, input, input_clip, scene, s.brand);
                 } else {
                     s.input.build_search_clipped(ctx, input, input_clip, scene);
                 }
@@ -3570,20 +3584,55 @@ impl Workbench {
                 );
             }
             "select" => {
-                let labels: Vec<String> = if s.select_empty { Vec::new() } else { vec!["Automatic".into(), "Compact".into(), "Comfortable".into()] };
+                let labels: Vec<String> = if s.select_empty {
+                    Vec::new()
+                } else {
+                    vec!["Automatic".into(), "Compact".into(), "Comfortable".into()]
+                };
                 let _ = s.select_story.set_labels(labels);
                 s.select_story.set_disabled(s.disabled);
                 s.select_story.set_error(s.error);
                 let selected = s.select_story.model().selected;
-                s.button_labels.insert(20, ["Automatic", "Compact", "Comfortable"].get(selected).copied().unwrap_or("").to_owned());
+                s.button_labels.insert(
+                    20,
+                    ["Automatic", "Compact", "Comfortable"]
+                        .get(selected)
+                        .copied()
+                        .unwrap_or("")
+                        .to_owned(),
+                );
                 let trigger_frame = Rect::new(x, body_y, w.min(230.), 36.);
-                let message = if s.select_empty { Some("No options available.") } else if s.error { Some("This choice is unavailable. Choose another option.") } else { None };
+                let message = if s.select_empty {
+                    Some("No options available.")
+                } else if s.error {
+                    Some("This choice is unavailable. Choose another option.")
+                } else {
+                    None
+                };
                 if let Some(message) = message {
-                    let height = ctx.text.proposal_label(message, proposal::TextRole::UiBody, Some(w)).height as f32;
-                    label(ctx, scene, Rect::new(x, trigger_frame.max_y() + 8., w, height), message, false);
+                    let height = ctx
+                        .text
+                        .proposal_label(message, proposal::TextRole::UiBody, Some(w))
+                        .height as f32;
+                    label(
+                        ctx,
+                        scene,
+                        Rect::new(x, trigger_frame.max_y() + 8., w, height),
+                        message,
+                        false,
+                    );
                 }
-                let layout = s.select_story.paint(scene, ctx.text, trigger_frame, s.preview, tekes_ui_tokens::Palette::new(ctx.theme, s.brand).expect("registered Gallery brand"));
-                if let Some(visible) = layout.trigger.visible { s.hits.push((20, visible)); }
+                let layout = s.select_story.paint(
+                    scene,
+                    ctx.text,
+                    trigger_frame,
+                    s.preview,
+                    tekes_ui_tokens::Palette::new(ctx.theme, s.brand)
+                        .expect("registered Gallery brand"),
+                );
+                if let Some(visible) = layout.trigger.visible {
+                    s.hits.push((20, visible));
+                }
                 let available = !s.disabled && !s.select_empty;
                 s.register_logical_focus(20, layout.trigger.frame, available, true, None, true);
                 s.buttons.entry(20).or_default().state.disabled = !available;
@@ -4449,7 +4498,12 @@ impl Workbench {
         }
     }
     pub fn has_pointer_capture(&self, i: usize) -> bool {
-        if self.states.get(&i).and_then(|state| state.input.search_host()).is_some_and(|host| host.has_pointer_capture()) {
+        if self
+            .states
+            .get(&i)
+            .and_then(|state| state.input.search_host())
+            .is_some_and(|host| host.has_pointer_capture())
+        {
             return true;
         }
         entry(i).renderer() == "split-view"
@@ -4475,16 +4529,26 @@ impl Workbench {
         if renderer == "select" {
             let (handled, focused, logs) = {
                 let state = self.state(i);
-                let labels = if state.select_empty { Vec::new() } else { vec!["Automatic".into(), "Compact".into(), "Comfortable".into()] };
+                let labels = if state.select_empty {
+                    Vec::new()
+                } else {
+                    vec!["Automatic".into(), "Compact".into(), "Comfortable".into()]
+                };
                 let _ = state.select_story.set_labels(labels);
                 state.select_story.set_disabled(state.disabled);
                 state.select_story.set_error(state.error);
                 let result = state.select_story.handle(event);
-                (result.map(|r| r.consumed), state.select_story.host.focused().is_some(), state.select_story.drain_logs())
+                (
+                    result.map(|r| r.consumed),
+                    state.select_story.host.focused().is_some(),
+                    state.select_story.drain_logs(),
+                )
             };
             if let Some(handled) = handled {
                 self.state(i).focus = focused.then_some(20);
-                for log in logs { self.state(i).record(log); }
+                for log in logs {
+                    self.state(i).record(log);
+                }
                 return handled;
             }
         }
@@ -4774,14 +4838,17 @@ impl Workbench {
                         s.menu_event(event, renderer, true);
                     }
                 }
-                if renderer == "select" && (s.select_story.model().menu.open || s.focus == Some(20)) {
+                if renderer == "select" && (s.select_story.model().menu.open || s.focus == Some(20))
+                {
                     if s.disabled {
                         return false;
                     }
                     let was_open = s.select_story.model().menu.open;
                     let event = s.select_story.key(key, down);
                     s.menu_event(event, renderer, true);
-                    if s.select_story.model().menu.open != was_open && s.select_story.model().menu.open {
+                    if s.select_story.model().menu.open != was_open
+                        && s.select_story.model().menu.open
+                    {
                         s.focus = Some(20);
                         s.record("select: open");
                     }
@@ -5537,7 +5604,10 @@ impl Workbench {
             _ => None,
         };
         let before = s.input.query().to_string();
-        let input = s.input.handle_with_text(event, point, text).unwrap_or(false);
+        let input = s
+            .input
+            .handle_with_text(event, point, text)
+            .unwrap_or(false);
         for log in s.input.drain_search_logs() {
             s.record(log);
         }
@@ -10821,8 +10891,10 @@ mod interaction_tests {
                     1,
                     "SearchField clear part emits once"
                 );
-                assert!(w.state(i).input.search_host().unwrap().focused(),
-                    "auxiliary clear preserves its existing editor focus");
+                assert!(
+                    w.state(i).input.search_host().unwrap().focused(),
+                    "auxiliary clear preserves its existing editor focus"
+                );
                 // This phase checks the declared unfocused placeholder. Use
                 // the complete Workbench departure so inner and outer focus
                 // agree; auxiliary Clear itself does not perform this blur.
@@ -13593,7 +13665,8 @@ mod interaction_tests {
                 let active = if hovered { 2 } else { 0 };
                 assert!(state.select_story.model().menu.open);
                 assert_eq!(
-                    state.select_story.model().selected, 1,
+                    state.select_story.model().selected,
+                    1,
                     "highlight does not replace original committed option"
                 );
                 assert_eq!(state.select_story.model().menu.items.selected, active);
@@ -14830,7 +14903,14 @@ mod interaction_tests {
         text.set_motion_context(Duration::from_secs(1), false);
         let scene = build(&mut w, i, &mut text);
         let trigger = w.state(i).select_story.layout().trigger.frame;
-        let popup = w.state(i).select_story.layout().popup.as_ref().unwrap().popup;
+        let popup = w
+            .state(i)
+            .select_story
+            .layout()
+            .popup
+            .as_ref()
+            .unwrap()
+            .popup;
         let popup_index = scene
             .primitives()
             .iter()
@@ -17064,7 +17144,14 @@ mod interaction_tests {
                 workbench.state(i).menu_layout.as_ref().unwrap().clone()
             } else {
                 assert!(workbench.state(i).select_story.model().menu.open);
-                workbench.state(i).select_story.layout().popup.as_ref().unwrap().clone()
+                workbench
+                    .state(i)
+                    .select_story
+                    .layout()
+                    .popup
+                    .as_ref()
+                    .unwrap()
+                    .clone()
             };
             let position = layout.popup.center();
             assert!(workbench.handle(i, &wheel(position, 1.0, false), &mut text));

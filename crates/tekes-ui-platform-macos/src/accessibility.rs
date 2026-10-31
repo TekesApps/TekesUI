@@ -506,7 +506,9 @@ pub(crate) mod native {
                         AccessibilityRole::RadioGroup => {
                             objc2_app_kit::NSAccessibilityRadioGroupRole
                         }
-                        AccessibilityRole::TextField | AccessibilityRole::SearchField => objc2_app_kit::NSAccessibilityTextFieldRole,
+                        AccessibilityRole::TextField | AccessibilityRole::SearchField => {
+                            objc2_app_kit::NSAccessibilityTextFieldRole
+                        }
                         AccessibilityRole::TextArea => objc2_app_kit::NSAccessibilityTextAreaRole,
                         AccessibilityRole::ComboBox => objc2_app_kit::NSAccessibilityComboBoxRole,
                         AccessibilityRole::List => objc2_app_kit::NSAccessibilityListRole,
@@ -531,7 +533,9 @@ pub(crate) mod native {
                         AccessibilityRole::MenuButton => {
                             objc2_app_kit::NSAccessibilityMenuButtonRole
                         }
-                        AccessibilityRole::PopUpButton => objc2_app_kit::NSAccessibilityPopUpButtonRole,
+                        AccessibilityRole::PopUpButton => {
+                            objc2_app_kit::NSAccessibilityPopUpButtonRole
+                        }
                         AccessibilityRole::MenuItem => objc2_app_kit::NSAccessibilityMenuItemRole,
                         AccessibilityRole::Tab => objc2_app_kit::NSAccessibilityRadioButtonRole,
                         AccessibilityRole::TabGroup => objc2_app_kit::NSAccessibilityTabGroupRole,
@@ -552,7 +556,10 @@ pub(crate) mod native {
                     .is_some_and(|n| matches!(n.role, AccessibilityRole::TreeItem { .. }))
                 {
                     unsafe { objc2_app_kit::NSAccessibilityOutlineRowSubrole.retain() }
-                } else if self.node().is_some_and(|n| n.role == AccessibilityRole::SearchField) {
+                } else if self
+                    .node()
+                    .is_some_and(|n| n.role == AccessibilityRole::SearchField)
+                {
                     unsafe { objc2_app_kit::NSAccessibilitySearchFieldSubrole.retain() }
                 } else {
                     NSString::from_str("")
@@ -1003,7 +1010,10 @@ pub(crate) mod native {
             fn accessibilitySetExpanded(&self, expanded: bool) {
                 if self.node().is_some_and(|n| {
                     (matches!(n.role, AccessibilityRole::TreeItem { .. })
-                        || matches!(n.role, AccessibilityRole::ComboBox | AccessibilityRole::PopUpButton))
+                        || matches!(
+                            n.role,
+                            AccessibilityRole::ComboBox | AccessibilityRole::PopUpButton
+                        ))
                         && n.expanded.is_some()
                 }) {
                     self.dispatch(AccessibilityAction::SetExpanded(expanded));
@@ -1341,7 +1351,11 @@ pub(crate) mod native {
                             || selector == sel!(setAccessibilityDisclosed:))
                             && (matches!(node.role, AccessibilityRole::TreeItem { .. })
                                 || (selector == sel!(setAccessibilityExpanded:)
-                                    && matches!(node.role, AccessibilityRole::ComboBox | AccessibilityRole::PopUpButton)))
+                                    && matches!(
+                                        node.role,
+                                        AccessibilityRole::ComboBox
+                                            | AccessibilityRole::PopUpButton
+                                    )))
                             && node.expanded.is_some())
                             || (selector == sel!(accessibilityPerformPress)
                                 && Self::is_pressable(node.role))

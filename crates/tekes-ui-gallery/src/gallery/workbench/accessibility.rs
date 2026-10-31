@@ -623,9 +623,8 @@ impl Workbench {
         if self.state(i).input.owns_native_key(key) {
             let s = self.state(i);
             let response = s.input.native_action(key, action.clone());
-            let focus_changed = response.consumed
-                && matches!(action, A::Focus)
-                && s.focus != Some(1000);
+            let focus_changed =
+                response.consumed && matches!(action, A::Focus) && s.focus != Some(1000);
             if response.consumed && matches!(action, A::Focus) {
                 s.focus = Some(1000);
                 s.sync_owned_focus(renderer, s.focus, true);
@@ -643,10 +642,16 @@ impl Workbench {
             let (response, focused, logs) = {
                 let state = self.state(i);
                 let response = state.select_story.native_action(key, action.clone());
-                (response, state.select_story.host.focused().is_some(), state.select_story.drain_logs())
+                (
+                    response,
+                    state.select_story.host.focused().is_some(),
+                    state.select_story.drain_logs(),
+                )
             };
             self.state(i).focus = focused.then_some(20);
-            for log in logs { self.state(i).record(log); }
+            for log in logs {
+                self.state(i).record(log);
+            }
             return response.consumed;
         }
         let Some(id) = key.part else {
@@ -862,7 +867,11 @@ impl Workbench {
             if matches!((renderer, id), ("menu", 49)) {
                 return false; // Published popup containers have no direct action.
             }
-            let popup_item = if renderer == "menu" { id.checked_sub(50).filter(|v| *v < 3) } else { None };
+            let popup_item = if renderer == "menu" {
+                id.checked_sub(50).filter(|v| *v < 3)
+            } else {
+                None
+            };
             if let Some(index) = popup_item {
                 let s = self.state(i);
                 return match action {
@@ -2277,16 +2286,22 @@ mod search_recovery_focus_tests {
 
     #[test]
     fn native_search_focus_updates_the_workbench_focus_owner() {
-        let i = entries().iter().position(|entry| entry.renderer() == "search").unwrap();
+        let i = entries()
+            .iter()
+            .position(|entry| entry.renderer() == "search")
+            .unwrap();
         let mut g = Gallery::with_static_text(StaticText::new(None));
         g.page = Page::Workbench(i);
         g.set_view_size(1200., 850.);
         g.build_scene(&mut Scene::new());
         assert!(g.workbench.focus_control(i, 10).is_some());
         assert_eq!(g.workbench.state(i).focus, Some(10));
-        let key = g.accessibility_nodes().into_iter()
+        let key = g
+            .accessibility_nodes()
+            .into_iter()
             .find(|node| node.role == R::SearchField)
-            .expect("projected original Search text owner").key;
+            .expect("projected original Search text owner")
+            .key;
         assert!(g.accessibility_action(key, &A::Focus).redraw);
         assert_eq!(g.workbench.state(i).focus, Some(1000));
         assert!(g.workbench.state(i).input.search_host().unwrap().focused());

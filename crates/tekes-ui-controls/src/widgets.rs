@@ -1889,7 +1889,10 @@ pub struct Select {
     pub selected: usize,
 }
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub(crate) struct SelectChoice { index: usize, expected: (usize, usize) }
+pub(crate) struct SelectChoice {
+    index: usize,
+    expected: (usize, usize),
+}
 impl Select {
     pub fn new(count: usize) -> Self {
         Self {
@@ -1908,7 +1911,9 @@ impl Select {
         self.menu.open = false;
     }
     pub fn choose(&mut self, i: usize) -> bool {
-        let Some(choice) = self.prepare_choice(i) else { return false; };
+        let Some(choice) = self.prepare_choice(i) else {
+            return false;
+        };
         self.apply_choice(choice);
         true
     }

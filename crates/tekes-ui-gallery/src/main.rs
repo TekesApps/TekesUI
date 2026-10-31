@@ -29,13 +29,13 @@ mod host;
 #[cfg(target_os = "macos")]
 mod perf;
 #[cfg(all(target_os = "macos", feature = "composition-review"))]
-mod settings_native207;
-#[cfg(all(target_os = "macos", feature = "composition-review"))]
 mod reading_acceptance;
 #[cfg(target_os = "macos")]
 mod reading_key;
 #[cfg(target_os = "macos")]
 mod reading_pointer;
+#[cfg(all(target_os = "macos", feature = "composition-review"))]
+mod settings_native207;
 #[cfg(all(target_os = "macos", feature = "composition-review"))]
 mod viewport_acceptance;
 #[cfg(all(target_os = "macos", feature = "composition-review"))]

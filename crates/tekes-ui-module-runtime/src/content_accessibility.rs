@@ -764,11 +764,11 @@ mod selection_export_tests {
 }
 
 #[cfg(test)]
-#[path = "search_bridge_fixture.rs"]
-mod search_fixture;
-#[cfg(test)]
 #[path = "search_bridge_tests.rs"]
 mod search_bridge_tests;
+#[cfg(test)]
+#[path = "search_bridge_fixture.rs"]
+mod search_fixture;
 #[cfg(test)]
 #[path = "select_bridge_tests.rs"]
 mod select_bridge_tests;
