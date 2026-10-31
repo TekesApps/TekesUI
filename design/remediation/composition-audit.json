@@ -72,7 +72,7 @@
         {
           "api": "tekes_ui_controls::composition::StackContent",
           "path": "crates/tekes-ui-controls/src/composition.rs",
-          "line": 3970,
+          "line": 3981,
           "anchor": "pub struct StackContent {"
         }
       ]
@@ -117,7 +117,7 @@
         {
           "api": "tekes_ui_controls::composition::GridContent",
           "path": "crates/tekes-ui-controls/src/composition.rs",
-          "line": 4114,
+          "line": 4125,
           "anchor": "pub struct GridContent {"
         }
       ]
@@ -245,7 +245,7 @@
         {
           "api": "tekes_ui_controls::composition::ScrollContent",
           "path": "crates/tekes-ui-controls/src/composition.rs",
-          "line": 4223,
+          "line": 4234,
           "anchor": "pub struct ScrollContent {"
         }
       ]
@@ -438,7 +438,7 @@
         {
           "api": "tekes_ui_controls::composition::TextContent",
           "path": "crates/tekes-ui-controls/src/composition.rs",
-          "line": 4509,
+          "line": 4520,
           "anchor": "pub struct TextContent {"
         }
       ]
@@ -1983,7 +1983,7 @@
     "crates/tekes-ui-controls/src/chart.rs": "9e3e5dd1e9d62f358cb74201a254f4165b81e4b79c3a97f0a74bde6f591e983c",
     "crates/tekes-ui-controls/src/collections_view.rs": "e5ed214228fa01b3477abb25dd7a0850c27b8b7ad07cd3308a417cad94b90c1f",
     "crates/tekes-ui-controls/src/composite.rs": "894168089bd41657cd675b9cdfacdceeee8279b9fa206c93c6b58246b4365cb7",
-    "crates/tekes-ui-controls/src/composition.rs": "131329da858c1e8d575e819209d63c14f80631caa383ed26dcb6d2048c7823d8",
+    "crates/tekes-ui-controls/src/composition.rs": "ce70a52b80061d1eb2b993708f1c1c2f2c7390447836d9bf4f0fe1056e2144cf",
     "crates/tekes-ui-controls/src/composition/actions.rs": "f8c970655bddd724007f9d650a400e11c5d0a8c8b1588d3c8b90b8fe97cbf0ef",
     "crates/tekes-ui-controls/src/composition/adapters.rs": "178c423bf773e69d6301f620ec4247ea68b2fe1e945a2887e0e9fdc17f1e3b18",
     "crates/tekes-ui-controls/src/composition/button.rs": "0a168f44280df2c4f615c243a32e4c8987fb526c8708e2b571d7f88b96f96f0e",
@@ -2165,47 +2165,47 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 2261,
+      "line": 2265,
       "anchor": "pub fn render("
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 2652,
+      "line": 2657,
       "anchor": "pub fn event(&mut self, event: &ContentEvent) -> ContentResponse {"
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 3191,
+      "line": 3195,
       "anchor": "pub fn focused_text(&self) -> Option<&crate::TextSurface> {"
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 3788,
+      "line": 3798,
       "anchor": "pub fn insert("
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 3824,
+      "line": 3834,
       "anchor": "pub fn remove(&mut self, id: ComponentId) -> Result<Content, CompositionError> {"
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 3873,
+      "line": 3884,
       "anchor": "pub fn reorder("
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 3953,
+      "line": 3964,
       "anchor": "pub fn semantics(&self) -> Vec<SemanticNode> {"
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 3612,
+      "line": 3620,
       "anchor": "pub fn show_dialog(&mut self, id: ComponentId) -> Result<(), CompositionError> {"
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 3653,
+      "line": 3661,
       "anchor": "pub fn close_dialog(&mut self) -> bool {"
     },
     {
@@ -2382,13 +2382,13 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 2179,
+      "line": 2183,
       "anchor": "pub fn capture_focus(&self) -> Option<(ComponentId, u64)> {",
       "purpose": "Existing mount identity reused for temporary presentation focus intent"
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 2192,
+      "line": 2196,
       "anchor": "pub fn restore_focus(&mut self, captured: Option<(ComponentId, u64)>) -> bool {",
       "purpose": "Same mount/current eligibility validation; Dialog shares this implementation"
     },
@@ -2460,7 +2460,7 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 2205,
+      "line": 2209,
       "anchor": "fn check_text_services(",
       "purpose": "Single existing text-capability traversal and cancellation reused at all render layout boundaries"
     },
@@ -3621,5 +3621,121 @@
     "validated_source": "12dffe108bbff444fe56f9bad3c5c1c89acc6a64",
     "CPU": "default19MenuDeclarations from75d retained +25remainingactual12d; SVG44actual12d; 0failed/0ignored inacceptedruns; old75dDisabledcolorfail preserved",
     "required_CI": "old0eCI actualtwoexampleE0004 preserved; newcompatiblecandidate requiresfullrequiredCI, no blindretry"
+  },
+  "ci200_afcf_compatible_repair_review": {
+    "baseline": "afcf3b9887acd77270cc6e438c079600ae38daf5",
+    "source_commits": [
+      "cb4b342",
+      "c85fa6a",
+      "edaa81e",
+      "8ea4dd5",
+      "7020c60",
+      "3cd5bf1"
+    ],
+    "scope": "Sharedquiet disabled/current original4.5/IC7 semantics; independent Core capture-handler and Popover lifecycle fixes; original consumer contract mappings; optional exact asserted Menu Scene GPU export; required Checkbox CI evidence env/collection",
+    "source_hash_changes": [
+      "crates/tekes-ui-controls/src/composition.rs"
+    ],
+    "anchor_updates": [
+      [
+        "crates/tekes-ui-controls/src/composition.rs",
+        2261,
+        2265,
+        "pub fn render("
+      ],
+      [
+        "crates/tekes-ui-controls/src/composition.rs",
+        2652,
+        2657,
+        "pub fn event(&mut self, event: &ContentEvent) -> ContentResponse {"
+      ],
+      [
+        "crates/tekes-ui-controls/src/composition.rs",
+        3191,
+        3195,
+        "pub fn focused_text(&self) -> Option<&crate::TextSurface> {"
+      ],
+      [
+        "crates/tekes-ui-controls/src/composition.rs",
+        3788,
+        3798,
+        "pub fn insert("
+      ],
+      [
+        "crates/tekes-ui-controls/src/composition.rs",
+        3824,
+        3834,
+        "pub fn remove(&mut self, id: ComponentId) -> Result<Content, CompositionError> {"
+      ],
+      [
+        "crates/tekes-ui-controls/src/composition.rs",
+        3873,
+        3884,
+        "pub fn reorder("
+      ],
+      [
+        "crates/tekes-ui-controls/src/composition.rs",
+        3953,
+        3964,
+        "pub fn semantics(&self) -> Vec<SemanticNode> {"
+      ],
+      [
+        "crates/tekes-ui-controls/src/composition.rs",
+        3612,
+        3620,
+        "pub fn show_dialog(&mut self, id: ComponentId) -> Result<(), CompositionError> {"
+      ],
+      [
+        "crates/tekes-ui-controls/src/composition.rs",
+        3653,
+        3661,
+        "pub fn close_dialog(&mut self) -> bool {"
+      ],
+      [
+        "crates/tekes-ui-controls/src/composition.rs",
+        2179,
+        2183,
+        "pub fn capture_focus(&self) -> Option<(ComponentId, u64)> {"
+      ],
+      [
+        "crates/tekes-ui-controls/src/composition.rs",
+        2192,
+        2196,
+        "pub fn restore_focus(&mut self, captured: Option<(ComponentId, u64)>) -> bool {"
+      ],
+      [
+        "crates/tekes-ui-controls/src/composition.rs",
+        2205,
+        2209,
+        "fn check_text_services("
+      ],
+      [
+        "crates/tekes-ui-controls/src/composition.rs",
+        3970,
+        3981,
+        "pub struct StackContent {"
+      ],
+      [
+        "crates/tekes-ui-controls/src/composition.rs",
+        4114,
+        4125,
+        "pub struct GridContent {"
+      ],
+      [
+        "crates/tekes-ui-controls/src/composition.rs",
+        4223,
+        4234,
+        "pub struct ScrollContent {"
+      ],
+      [
+        "crates/tekes-ui-controls/src/composition.rs",
+        4509,
+        4520,
+        "pub struct TextContent {"
+      ]
+    ],
+    "runtime": "NOT_RUN forcompatible finalbatch; allnewprograms mustretainactualidentity",
+    "acceptance": "no Issueclosure/native/maturity promotion; preserved actualafcf failures and Menu/Nav staticconflict; original thresholds retained",
+    "public_type_paths": 384
   }
 }
