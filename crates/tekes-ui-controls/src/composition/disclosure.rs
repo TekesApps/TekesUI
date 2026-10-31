@@ -40,6 +40,7 @@ struct Trigger {
     image: Option<IconImage>,
     icon_error: Option<IconRenderError>,
     window_active: bool,
+    input_arranged: bool,
 }
 impl Trigger {
     fn request(&mut self, activated: bool) -> ContentResponse {
@@ -78,6 +79,9 @@ impl Trigger {
     }
 }
 impl Component for Trigger {
+    fn rectangular_input_geometry(&self) -> bool {
+        self.input_arranged
+    }
     fn validate(&self) -> Result<(), CompositionError> {
         if self.title.len() != 1 {
             return Err(CompositionError::InvalidSlotCount);
@@ -106,6 +110,7 @@ impl Component for Trigger {
         self.icon_error
     }
     fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
+        self.input_arranged = false;
         self.icon_error = None;
         MeasuredChild::new(self.title_measure(text, available))
     }
@@ -113,6 +118,9 @@ impl Component for Trigger {
         self.title_measure(text, frame.size);
         // Actual title frame is resolved by the original row during paint.
         self.title[0].arrange(text, frame, clip);
+        // The original reducer uses this Host rectangular allocation/clip.
+        // This is ordinary input geometry, not curved or prepared capability.
+        self.input_arranged = frame.intersection(&clip).is_some();
     }
     fn paint(
         &mut self,
@@ -202,6 +210,7 @@ impl Component for Trigger {
         self.window_active = active;
         self.view.set_window_active(active);
         if !active {
+            self.input_arranged = false;
             self.revoke();
         }
     }
@@ -310,6 +319,7 @@ impl Component for Trigger {
     }
     fn lifecycle(&mut self, event: Lifecycle) {
         if event == Lifecycle::Unmounted {
+            self.input_arranged = false;
             self.revoke();
             self.view.cancel();
             self.image = None;
@@ -366,6 +376,7 @@ impl DisclosureContent {
                         image: None,
                         icon_error: None,
                         window_active: true,
+                        input_arranged: false,
                     },
                 ),
                 body,
@@ -468,12 +479,7 @@ impl DisclosureContent {
     }
     pub fn set_window_active(&mut self, active: bool) {
         self.arranged_children = None;
-        let t = self.trigger_mut();
-        t.window_active = active;
-        t.view.set_window_active(active);
-        if !active {
-            t.revoke();
-        }
+        self.trigger_mut().window_active_changed(active);
     }
     /// Original reveal block, including fixed header-focus clearance. The body
     /// Content's frame starts after that inset. The reveal clip retains the
