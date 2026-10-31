@@ -68052,7 +68052,7 @@
     "crates/tekes-ui-controls/tests/composition_focus_restore.rs": "f000764f62ddcaf847aa57aa8d61ec6335931b450a4315a85ddfb17b0de02b3f",
     "crates/tekes-ui-controls/tests/content_reading.rs": "8180d37ad003cee54fb8a3ca5607e05180e18b623660eb20c08fcf829ac66220",
     "crates/tekes-ui-controls/tests/context_menu.rs": "1a68d9041788ff8f58b34d433444afc709957e985c736e0f314575f77e35018b",
-    "crates/tekes-ui-controls/tests/datatable_content.rs": "aa6d535169ac8753cecdc8166346ee0590d54576f1338a65854749679a9176d3",
+    "crates/tekes-ui-controls/tests/datatable_content.rs": "23a39600ad9b93418987c335913b45b770e69c42c826a285c005dcdb93dd82c3",
     "crates/tekes-ui-controls/tests/datatable_foreground.rs": "57c36af99cafb7a0aaf3d1687d1341769d4b38ddf0f4d0c0c691fcfbd645f472",
     "crates/tekes-ui-controls/tests/datatable_identity.rs": "36a9009392bbe8950178fd242df195d211dc318449b8359e9772840113a04269",
     "crates/tekes-ui-controls/tests/draft_contract.rs": "6fb5b1b9e76e10be1f261b0335dacfdc3970a6b0ce1d44b2d254f441045337a4",
