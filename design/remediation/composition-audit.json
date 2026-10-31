@@ -2078,7 +2078,7 @@
     "crates/tekes-ui-gallery/src/gallery/quality_effects.rs": "b99730312721bf8eec15f3b10255c977ba444c4ea064fdb8537186f3271e7d85",
     "crates/tekes-ui-gallery/src/gallery/text.rs": "0861f4087a60f10bdf3d7c6697cb97e3513b2b6890fcc8984dd8ea966cbad13d",
     "crates/tekes-ui-gallery/src/gallery/text_demo.rs": "fb8612fca83c4a4fab7d2b6f8247389ad320bc935b7ca1b8c3209976ff1b76b1",
-    "crates/tekes-ui-gallery/src/gallery/workbench.rs": "ae9dd11ae75347a6f4b9e6d4c6b81dbff6b5b84d40fdea5ca5456b761ae61c5c",
+    "crates/tekes-ui-gallery/src/gallery/workbench.rs": "7cac72f56fb2cbe48194f822d8342cea07d6d8b53125ab5b987309f688bced0c",
     "crates/tekes-ui-gallery/src/gallery/workbench/accessibility.rs": "8a63299f56b6063c4d5c4d544143d060d9498cb4a92d6bba634d12c79372025a",
     "crates/tekes-ui-gallery/src/gallery/workbench/content_status.rs": "2b3262d539c063b91493ee29db9aa13c8cdefacb3259c2efb6cdded337120588",
     "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs": "45cce35619761cebba57d7f7aa65ae637087d1f3a9a2dff4469f3f61bfde0ba4",
@@ -2165,7 +2165,8 @@
     "examples/composition-consumer/tests/surface_host_scale.rs": "152941bff9d9baa1e402f3d1c52d051a4aacc0e5702de774780aa951178419c7",
     "scripts/audit-menu-content-tokens.py": "c6c66ffd9939c61b2069cdafc9f798ea72b7aa58f1c7d8c0b3f55dc67765f867",
     "crates/tekes-ui-controls/src/composition/select.rs": "886d05299cf93b606c4e2dd5850f4170d06d956408c1ea4da8cb0ff2db63b03c",
-    "crates/tekes-ui-controls/src/composition/search.rs": "0df6ed538f578de896ab5a7d01317cde4b36ab171e6668a2ddff2e648e370fef"
+    "crates/tekes-ui-controls/src/composition/search.rs": "0df6ed538f578de896ab5a7d01317cde4b36ab171e6668a2ddff2e648e370fef",
+    "docs/design/navigation-content-combo17-recovery-20261031.md": "cab75179ffc5ed7be2ab4de95d3d43ed430c5195a0f5b2b7bf56ca215f454090"
   },
   "remaining": [
     "Tree/DataTable specialized Content and keyed List recovery excluded; existing View/general List retained.",
@@ -3031,6 +3032,11 @@
       "batch": "issue47-passive-icon-main-intake-20261029",
       "conclusion": "Reviewed additive original passive IconContent and optional SVG services: same existing icon registry root; checked backend errors and original host capability/frame permission forwarding. API evidence/anchors rebound only; behavior acceptance remains separate pending actual tests. No component/native classification promotion.",
       "evidence": "examples/composition-consumer/tests/icon_content.rs; icon_motion.rs; icon_status.rs"
+    },
+    {
+      "batch": "pub69fa-actual-metadata-r3-20261031",
+      "conclusion": "Reviewed actual admitted PUB69fa fixture/reference and #195canonical delivery changes. Workbench test keeps clear editor focus and explicitly calls original Workbench.clear_focus before unfocused-placeholder phase; no production source or acceptance promotion. Navigation doc records bounded PR200 delivery, retains oldGPU/program/unverified limits. SourceSHA only refreshed for these reviewed bytes; all existinganchors unchanged; no new runtime on26role candidate claimed.",
+      "evidence": "crates/tekes-ui-gallery/src/gallery/workbench.rs SHA7cac72f56fb2cbe48194f822d8342cea07d6d8b53125ab5b987309f688bced0c; docs/design/navigation-content-combo17-recovery-20261031.md SHAcab75179ffc5ed7be2ab4de95d3d43ed430c5195a0f5b2b7bf56ca215f454090; base69fa3499c99359a2581f9821910aa16d05e1d20c"
     }
   ],
   "text_key_review_20261018": {
