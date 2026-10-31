@@ -2045,7 +2045,7 @@
     "crates/tekes-ui-app-host/src/window.rs": "ab2f9ec93c9548b59206555c38c78593d6d80c025dbc2043248e061014a8bd90",
     "crates/tekes-ui-app-host/src/window_toolbar.rs": "05db7272e1dd15bfe0582331369d6777bbea07c63a3b40df6c73eaf20f1c2119",
     "crates/tekes-ui-controls/src/chart.rs": "9e3e5dd1e9d62f358cb74201a254f4165b81e4b79c3a97f0a74bde6f591e983c",
-    "crates/tekes-ui-controls/src/collections_view.rs": "150c6842b91b92b9ae9fe7ebd41b8038bd2c31fcb03e25f5c7e9b0491734f88d",
+    "crates/tekes-ui-controls/src/collections_view.rs": "5df3fddef1cd54c07e7cab80991286a46f2e7e3c78eb1a30b90623fc0c468290",
     "crates/tekes-ui-controls/src/composite.rs": "99d42809610c98e8b86136e3eb0698129c9ec9c659990d943c62d380e063042d",
     "crates/tekes-ui-controls/src/composition.rs": "8f7896918c23c1854c32adcfce1e3ba80bb00b38bd1eab4170f61d730eb986bd",
     "crates/tekes-ui-controls/src/composition/actions.rs": "fd2fe6882e6a5d3f17e1c42b635714c0d445c7913a44014461515cfbd3e0cf5c",
