@@ -1,7 +1,7 @@
 {
   "format": "tekesui-composition-audit/1",
-  "head": "26a10d36265430d659378737e6d4081c42d4689f",
-  "source": "Reviewed first-three-domain source plus scoped CI200 repairs. New Gallery, Radio and Core targeted checks and normal real IPC passed at077; required compatible-batch CI and publication remain pending. Historical finite program evidence retains original source identities.",
+  "head": "12dffe108bbff444fe56f9bad3c5c1c89acc6a64",
+  "source": "Reviewed first-three-domain source with scoped CI200 repairs. Core/Gallery/Radio/normalIPC passed at077; Menu example compiled target boundary and corrected exact disabled Surface fixture verified across75d/12d. Historical programs retain actual source identities. New full required CI and public delivery remain pending.",
   "audited_at": "2026-10-31",
   "issue14_updated_at": "2026-10-17T08:15:16Z",
   "status_values": [
@@ -3108,7 +3108,8 @@
     "b8999fe006adfcd70587f07af50ef9e240422788",
     "15ecb2ad86e7d77c39ff3f9ad368629d5352445b",
     "077078d730cfaa6c872cfd0e3743775ec75b4753",
-    "7eab5edb76900adfe6f3dee4b9e412f17c80815c"
+    "7eab5edb76900adfe6f3dee4b9e412f17c80815c",
+    "26a10d36265430d659378737e6d4081c42d4689f"
   ],
   "current_review_scope": "Complete first-three-domain cohort: 8 finite accepted families, 21 newly classified public type paths, 45 total component rows. Other rows/profiles remain bounded; source audit does not establish native or public delivery.",
   "structured_reading_compatibility_20261020": {
@@ -3612,10 +3613,13 @@
   "ci200_example_payload_review": {
     "source": "7eab5edb76900adfe6f3dee4b9e412f17c80815c",
     "scope": "Only consumer native Menu/Toolbar action snapshot and MenuReview helper explicit newsevenpayload rejection; original modes/constructors/MenuToolbarDisclosureNonebranches preserved",
-    "native": "未验证; no newnative launch oracceptance",
-    "default_svg_alltargets": "NOT_RUN pending scopedwindow; previous0e compile E0004 rawfailure retained",
+    "native": "未验证; no examples launched, no GPU/OSinput",
+    "default_svg_alltargets": "default187trackedcheck/strict actualpassed75d; changedmenu_item_statesnewCPU/strict12d completescurrenttargetcoverage. SVG187trackedcheck/strict actualpassed12d. OnlyforeignuntrackedUnicodeexampleexcluded; all9trackedexamplescompiled, none launched.",
     "earlier_scoped_evidence": "unchangedControls/Gallery/Radio/Host remain bound077 andactualoldprograms; no rerun/no resign",
     "Menu_item_fixture": "OnlyDisabledlabel expectation uses declared popover/action-quiet/disabled Surface text ratherthanglobaltertiary-text; independentSurfaceAPI, allThemeexactequality/marker/separator/columnasserts unchanged; targetretestpending",
-    "previous_scoped": "75d187trackedcheck/clippy0; defaultMenu19+6pass/1Disabledcolorfail; stoppedother3CPUandSVG. NoNative/GPUlaunch; exactalltargetscope excludesonlyuntrackedUnicodeWIP."
+    "previous_scoped": "75d187trackedcheck/clippy0; defaultMenu19+6pass/1Disabledcolorfail; stoppedother3CPUandSVG. NoNative/GPUlaunch; exactalltargetscope excludesonlyuntrackedUnicodeWIP.",
+    "validated_source": "12dffe108bbff444fe56f9bad3c5c1c89acc6a64",
+    "CPU": "default19MenuDeclarations from75d retained +25remainingactual12d; SVG44actual12d; 0failed/0ignored inacceptedruns; old75dDisabledcolorfail preserved",
+    "required_CI": "old0eCI actualtwoexampleE0004 preserved; newcompatiblecandidate requiresfullrequiredCI, no blindretry"
   }
 }
