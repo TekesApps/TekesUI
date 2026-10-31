@@ -4167,8 +4167,13 @@ mod tests {
                 .iter()
                 .all(|(_, rect, _)| rect.size.width == 16.0 && rect.size.height == 16.0)
         );
-        let expected_ink = Palette::from(Theme::LIGHT).color("primary-text").unwrap();
-        assert!(icons.0.iter().all(|(_, _, tint)| *tint == expected_ink));
+        let expected_ink = Palette::from(Theme::LIGHT).color("secondary-text").unwrap();
+        assert!(
+            icons.0.iter().all(|(_, _, tint)| *tint == expected_ink),
+            "Quiet/rest icon tint: actual={:?}, expected secondary-text={:?}",
+            icons.0,
+            expected_ink
+        );
 
         view.set_disabled(true);
         view.render(
@@ -4192,7 +4197,10 @@ mod tests {
             disabled_icons
                 .0
                 .iter()
-                .all(|(_, _, tint)| *tint == disabled_ink)
+                .all(|(_, _, tint)| *tint == disabled_ink),
+            "Quiet/disabled icon tint: actual={:?}, expected tertiary-text={:?}",
+            disabled_icons.0,
+            disabled_ink
         );
         view.set_disabled(false);
 
