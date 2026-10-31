@@ -1055,6 +1055,43 @@ impl DisclosureView {
             proposal::metric("size", "size-action-button").expect("Disclosure row") * scale,
         )
     }
+    /// Shared arranged/painted geometry for the original passive title slot.
+    pub(crate) fn content_frames(
+        text: &mut impl ButtonTextRenderer,
+        size: Size,
+        frame: Rect,
+        rtl: bool,
+        section_header: bool,
+    ) -> (Rect, Rect) {
+        let (inset, side, _) = Self::content_insets(text);
+        let inset = if section_header { 16. } else { inset };
+        let width = (frame.size.width - inset * 2.).max(0.);
+        let side = if section_header {
+            0.
+        } else {
+            side.min(width).min(frame.size.height)
+        };
+        let slot = if section_header {
+            0.
+        } else {
+            (side + inset).min(width)
+        };
+        let icon_x = if rtl {
+            frame.max_x() - inset - side
+        } else {
+            frame.min_x() + inset
+        };
+        let title_x = frame.min_x() + inset + if rtl { 0. } else { slot };
+        (
+            Rect::new(
+                title_x,
+                frame.center().y - size.height.min(frame.size.height) * 0.5,
+                (width - slot).max(0.),
+                size.height.min(frame.size.height),
+            ),
+            Rect::new(icon_x, frame.center().y - side * 0.5, side, side),
+        )
+    }
     /// Original row chrome/runtime with a passive Content slot. Direction is
     /// local to this component; it is not a global text/layout RTL policy.
     #[allow(clippy::too_many_arguments)]
@@ -1068,9 +1105,9 @@ impl DisclosureView {
         clip: Rect,
         palette: Palette,
         rtl: bool,
+        section_header: bool,
     ) -> ButtonComponentLayout {
         self.sync_model(model);
-        let (inset, side, _) = Self::content_insets(text);
         self.runtime.button.state.focused = self.runtime.focused && self.runtime.window_active;
         let l = self.runtime.button.render_with_radius(
             scene,
@@ -1085,25 +1122,12 @@ impl DisclosureView {
             ButtonTextAlign::Leading,
             Some(proposal::metric("radius", "radius-row").expect("Disclosure radius token")),
         );
-        let width = (frame.size.width - inset * 2.).max(0.);
-        let side = side.min(width).min(frame.size.height);
-        let slot = (side + inset).min(width);
-        let icon_x = if rtl {
-            frame.max_x() - inset - side
-        } else {
-            frame.min_x() + inset
-        };
-        self.icon_frame = Rect::new(icon_x, frame.center().y - side * 0.5, side, side);
-        let title_x = frame.min_x() + inset + if rtl { 0. } else { slot };
+        let (content, icon) = Self::content_frames(text, size, frame, rtl, section_header);
+        self.icon_frame = icon;
         self.runtime.layout = ButtonComponentLayout {
             frame: l.frame,
             visible: l.visible,
-            content: Rect::new(
-                title_x,
-                frame.center().y - size.height.min(frame.size.height) * 0.5,
-                (width - slot).max(0.),
-                size.height.min(frame.size.height),
-            ),
+            content,
         };
         if self.runtime.layout.visible.is_none() {
             self.runtime.cancel();

@@ -41,6 +41,8 @@ struct Trigger {
     icon_error: Option<IconRenderError>,
     window_active: bool,
     input_arranged: bool,
+    trigger_focusable: bool,
+    section_header_layout: bool,
 }
 impl Trigger {
     fn request(&mut self, activated: bool) -> ContentResponse {
@@ -71,7 +73,11 @@ impl Trigger {
     }
     fn title_measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> Size {
         let (inset, side, row) = DisclosureView::content_insets(&mut TextAdapter(text));
-        let width = (available.width - inset * 3. - side).max(0.);
+        let width = if self.section_header_layout {
+            (available.width - 32.).max(0.)
+        } else {
+            (available.width - inset * 3. - side).max(0.)
+        };
         self.size = self.title[0]
             .measure_intrinsic(text, Size::new(width, available.height))
             .size;
@@ -104,7 +110,7 @@ impl Component for Trigger {
         true
     }
     fn requires_icon_services(&self) -> bool {
-        true
+        !self.section_header_layout
     }
     fn icon_error(&self) -> Option<IconRenderError> {
         self.icon_error
@@ -116,8 +122,14 @@ impl Component for Trigger {
     }
     fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
         self.title_measure(text, frame.size);
-        // Actual title frame is resolved by the original row during paint.
-        self.title[0].arrange(text, frame, clip);
+        let (title, _) = DisclosureView::content_frames(
+            &mut TextAdapter(text),
+            self.size,
+            frame,
+            self.rtl,
+            self.section_header_layout,
+        );
+        self.title[0].arrange(text, title, title.intersection(&clip).unwrap_or_default());
         // The original reducer uses this Host rectangular allocation/clip.
         // This is ordinary input geometry, not curved or prepared capability.
         self.input_arranged = frame.intersection(&clip).is_some();
@@ -143,6 +155,7 @@ impl Component for Trigger {
             clip,
             theme.palette,
             self.rtl,
+            self.section_header_layout,
         );
         let (ink, icon_ink) = self.view.content_inks(theme.palette, theme.surface());
         self.title[0].arrange(
@@ -159,6 +172,10 @@ impl Component for Trigger {
                 ..theme
             },
         );
+        if self.section_header_layout {
+            self.image = None;
+            return;
+        }
         let backing = text.backing_scale();
         let Some(service) = text.icon_renderer() else {
             self.icon_error = Some(IconRenderError::UnsupportedRenderer);
@@ -218,7 +235,10 @@ impl Component for Trigger {
         self.view.focus_decoration_above_siblings(&self.model)
     }
     fn focusable(&self) -> bool {
-        !self.model.disabled && self.window_active
+        self.trigger_focusable && !self.model.disabled && self.window_active
+    }
+    fn preserves_activation_focus(&self) -> bool {
+        !self.trigger_focusable
     }
     fn set_focus(&mut self, focused: bool, visible: bool) {
         if focused {
@@ -377,6 +397,8 @@ impl DisclosureContent {
                         icon_error: None,
                         window_active: true,
                         input_arranged: false,
+                        trigger_focusable: true,
+                        section_header_layout: false,
                     },
                 ),
                 body,
@@ -392,6 +414,21 @@ impl DisclosureContent {
         };
         this.sync_body();
         this
+    }
+    /// Configure whether the sole trigger participates in explicit focus,
+    /// accessibility Focus and Tab traversal. Defaults to true. False preserves
+    /// the current input owner during Pointer/AX Press without disabling actions.
+    pub fn with_trigger_focusable(mut self, focusable: bool) -> Self {
+        self.trigger_mut().trigger_focusable = focusable;
+        self
+    }
+    /// Use a plain section heading: fixed 16pt logical horizontal insets and no
+    /// indicator slot or indicator image. The title retains its original passive
+    /// Content, clipping and label policy. The default leading-indicator layout
+    /// is unchanged; action ownership, controlled expansion and motion are shared.
+    pub fn with_section_header_layout(mut self) -> Self {
+        self.trigger_mut().section_header_layout = true;
+        self
     }
     fn trigger(&self) -> &Trigger {
         self.children[0]
