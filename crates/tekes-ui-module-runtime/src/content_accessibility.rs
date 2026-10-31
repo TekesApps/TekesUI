@@ -24,6 +24,7 @@ fn semantics(s: ContentSemantics) -> Result<wire::Semantics> {
         ContentRole::Button => W::Button,
         ContentRole::Link => W::Link,
         ContentRole::TextInput => W::TextInput,
+        ContentRole::SearchInput => W::SearchInput,
         ContentRole::ComboBox => W::ComboBox,
         ContentRole::Slider => W::Slider,
         ContentRole::Splitter => W::Splitter,
@@ -38,6 +39,7 @@ fn semantics(s: ContentSemantics) -> Result<wire::Semantics> {
         ContentRole::ListItem => W::ListItem,
         ContentRole::Dialog => W::Dialog,
         ContentRole::MenuButton => W::MenuButton,
+        ContentRole::Select => W::Select,
         ContentRole::Menu => W::Menu,
         ContentRole::MenuItem => W::MenuItem,
         ContentRole::TabList => W::TabList,
@@ -760,3 +762,13 @@ mod selection_export_tests {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "search_bridge_fixture.rs"]
+mod search_fixture;
+#[cfg(test)]
+#[path = "search_bridge_tests.rs"]
+mod search_bridge_tests;
+#[cfg(test)]
+#[path = "select_bridge_tests.rs"]
+mod select_bridge_tests;

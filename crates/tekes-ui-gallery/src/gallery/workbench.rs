@@ -1,6 +1,10 @@
 //! Registry-driven native workbench. Fixtures orchestrate production control models;
 //! no duplicate component implementation lives in a story.
 mod accessibility;
+mod select_story;
+#[cfg(test)]
+mod select_story_tests;
+use select_story::SelectStoryHost;
 mod basic_states;
 mod brand_preview;
 #[cfg(any(test, feature = "composition-review"))]
@@ -14,6 +18,9 @@ mod focus;
 mod settings_phase_capture;
 #[cfg(test)]
 mod state_capture;
+mod search_host;
+mod search_input;
+use search_input::StoryInput;
 use super::{Page, PageCtx, text_demo::TextDemo};
 use brand_preview::BrandPreview;
 use focus::FocusTarget;
@@ -25,13 +32,12 @@ use std::{
 use tekes_ui_controls::{
     ButtonModel, ButtonSize, ButtonTextAlign, ButtonTextRenderer, CheckState, Checkbox, ControlKey,
     ControlState, DialogEvent, DialogView, Field, MenuEvent, MenuLayout, MenuView, MenuWheelEvent,
-    MenuWheelInput, NumberField, Select, TabsLayout, TabsView,
+    MenuWheelInput, NumberField, TabsLayout, TabsView,
     extended::{Axis, ControlFrame},
     feedback_view::{
         FieldPresentation, FieldView, NumberFieldView, SkeletonView, SurfaceView, ToolbarView,
     },
     layout::{AlignmentOverride, MeasuredChild, layout_measured_children},
-    layout_view::SelectView,
     paint,
 };
 use tekes_ui_platform_macos::{Event, KeyEventKind, MouseButton, MouseEventKind};
@@ -174,14 +180,13 @@ pub enum Phase {
 }
 #[derive(Debug)]
 pub struct StoryState {
-    input: TextDemo,
+    input: StoryInput,
     detail: TextDemo,
     pub checkbox: Checkbox,
     tabs_view: TabsView,
     menu_view: MenuView,
-    select_view: SelectView,
+    select_story: SelectStoryHost,
     dialog_view: DialogView,
-    pub select: Select,
     pub number: NumberField,
     field: Field,
     field_view: FieldView,
@@ -209,7 +214,6 @@ pub struct StoryState {
     button_clip: Option<Rect>,
     tabs_layout: Option<TabsLayout>,
     menu_layout: Option<MenuLayout>,
-    select_menu_layout: Option<MenuLayout>,
     dialog_layout: Option<tekes_ui_controls::DialogLayout>,
     buttons: HashMap<usize, ButtonModel>,
     button_labels: HashMap<usize, String>,
@@ -231,7 +235,7 @@ pub struct StoryState {
 impl Default for StoryState {
     fn default() -> Self {
         Self {
-            input: TextDemo::field("Studio", false, false),
+            input: TextDemo::field("Studio", false, false).into(),
             detail: TextDemo::field(
                 include_str!("../../../../fixtures/text/gallery-reading-en.txt"),
                 true,
@@ -240,9 +244,8 @@ impl Default for StoryState {
             checkbox: Checkbox::default(),
             tabs_view: TabsView::new(3),
             menu_view: MenuView::new(3),
-            select_view: SelectView::new(3),
+            select_story: SelectStoryHost::new(),
             dialog_view: DialogView::default(),
-            select: Select::new(3),
             number: NumberField::new(8., 1., 32., 1.).unwrap(),
             field: Field {
                 label: "Workspace name".into(),
@@ -275,7 +278,6 @@ impl Default for StoryState {
             button_clip: None,
             tabs_layout: None,
             menu_layout: None,
-            select_menu_layout: None,
             dialog_layout: None,
             buttons: HashMap::new(),
             button_labels: HashMap::new(),
@@ -304,7 +306,7 @@ impl StoryState {
         self.tabs_view.set_window_active(active);
         let menu_event = self.menu_view.set_window_active(active);
         self.menu_event(menu_event, "menu", false);
-        self.select_view.set_window_active(active, &mut self.select);
+        self.select_story.set_window_active(active);
         self.dialog_view.set_window_active(active);
         self.extended.set_window_active(active);
         for button in self.buttons.values_mut() {
@@ -356,9 +358,9 @@ impl StoryState {
             "menu" if (50..53).contains(&id) => {
                 self.menu_layout.as_ref()?.items.get(id - 50)?.frame
             }
-            "select" if id == 20 => self.select_view.layout().trigger.frame,
+            "select" if id == 20 => self.select_story.layout().trigger.frame,
             "select" if (60..63).contains(&id) => {
-                self.select_menu_layout.as_ref()?.items.get(id - 60)?.frame
+                self.select_story.layout().popup.as_ref()?.items.get(id - 60)?.frame
             }
             "dialog" | "danger" if (70..72).contains(&id) => {
                 self.dialog_layout.as_ref()?.buttons.get(id - 70)?.frame
@@ -429,7 +431,7 @@ impl StoryState {
             return layout.items.get(id - 50)?.visible;
         }
         if (60..63).contains(&id)
-            && let Some(layout) = &self.select_menu_layout
+            && let Some(layout) = &self.select_story.layout().popup
         {
             return layout.items.get(id - 60)?.visible;
         }
@@ -468,9 +470,11 @@ impl StoryState {
                 "A quiet room, an open window.\nWrite a complete paragraph here. 中日文と English.",
                 true,
                 false,
-            ),
-            "search" | "filter" | "combo-box" | "command-palette" => {
-                TextDemo::field("", false, false)
+            )
+            .into(),
+            "search" => StoryInput::search(),
+            "filter" | "combo-box" | "command-palette" => {
+                TextDemo::field("", false, false).into()
             }
             _ => s.input,
         };
@@ -712,9 +716,9 @@ impl StoryState {
             self.number_view.blur();
         }
         if renderer == "select" && target == Some(20) {
-            self.select_view.focus(visible);
+            self.select_story.focus(visible);
         } else {
-            self.select_view.blur(&mut self.select);
+            self.select_story.blur();
         }
     }
     fn open_command_palette(&mut self, text: &mut super::text::TextEngine) {
@@ -779,44 +783,22 @@ impl StoryState {
     }
 
     fn menu_event(&mut self, event: MenuEvent, renderer: &str, select: bool) {
+        if select { return; }
         match event {
-            MenuEvent::Activated {
-                index,
-                restore_focus,
-            } => {
-                if select {
-                    self.select_menu_layout = None;
-                } else {
-                    self.menu_layout = None;
-                }
-                self.focus = if select {
-                    self.restore_focus(Some(20))
-                } else {
-                    self.restore_focus(restore_focus)
-                };
-                if select {
-                    let _ = self.select.choose(index);
-                    self.record(format!("select: {index}"));
-                } else {
-                    self.record(format!("menu action: {index}"));
-                }
+            MenuEvent::Activated { index, restore_focus } => {
+                self.menu_layout = None;
+                self.focus = self.restore_focus(restore_focus);
+                self.record(format!("menu action: {index}"));
                 let _ = renderer;
             }
             MenuEvent::Dismissed { restore_focus } => {
-                if select {
-                    self.select_menu_layout = None;
-                } else {
-                    self.menu_layout = None;
-                }
-                self.focus = if select {
-                    self.restore_focus(Some(20))
-                } else {
-                    self.restore_focus(restore_focus)
-                };
+                self.menu_layout = None;
+                self.focus = self.restore_focus(restore_focus);
             }
             MenuEvent::None => {}
         }
     }
+
     fn dialog_title(renderer: &str) -> &'static str {
         if renderer == "danger" {
             "Delete this workspace? This fixture does not delete files."
@@ -1043,11 +1025,9 @@ impl StoryState {
                 "select" => {
                     // Use the retained trigger path: opening from the model
                     // alone resets active focus to zero instead of the current value.
-                    self.select_view.focus(false);
-                    let _ = self
-                        .select_view
-                        .key(ControlKey::Enter, true, &mut self.select);
-                    self.select_menu_layout = None;
+                    self.select_story.focus(false);
+                    self.select_story.open();
+
                 }
                 "form" | "async" | "settings" => self.submit(),
                 _ => self.record("activate: primary action"),
@@ -1853,7 +1833,7 @@ impl Workbench {
     #[cfg(test)]
     pub(super) fn select_value_for_test(&self, i: usize) -> (bool, usize) {
         let state = self.states.get(&i).expect("mounted Select story");
-        (state.select.menu.open, state.select.selected)
+        (state.select_story.model().menu.open, state.select_story.model().selected)
     }
 
     #[cfg(test)]
@@ -1921,7 +1901,7 @@ impl Workbench {
             s.detail.set_reduced_motion(reduced);
             s.list_scroll.set_reduced_motion(reduced);
             s.menu_view.set_reduced_motion(reduced);
-            s.select_view.set_reduced_motion(reduced);
+            s.select_story.set_reduced_motion(reduced);
             s.extended.combo_view.options.set_reduced_motion(reduced);
             s.extended.command_view.options.set_reduced_motion(reduced);
         }
@@ -1934,7 +1914,7 @@ impl Workbench {
                 || s.menu_view.needs_animation()
                 || s.dialog_view.needs_animation()
                 || s.extended.overlay_needs_animation()
-                || s.select_view.needs_animation()
+                || s.select_story.needs_animation()
                 || s.extended.combo_view.options.needs_animation()
                 || s.extended.command_view.options.needs_animation()
         }) || (entry(i).renderer() == "matrix" && self.brand_preview.needs_animation())
@@ -1949,7 +1929,7 @@ impl Workbench {
             | s.detail.animate(dt)
             | s.list_scroll.tick(dt)
             | s.menu_view.tick(dt)
-            | s.select_view.tick(dt)
+            | s.select_story.tick(dt)
             | s.extended.combo_view.options.tick(dt)
             | s.extended.command_view.options.tick(dt)
             | brand_preview_animated
@@ -2113,7 +2093,7 @@ impl Workbench {
             state.detail.set_reduced_motion(reduced);
             state.list_scroll.set_reduced_motion(reduced);
             state.menu_view.set_reduced_motion(reduced);
-            state.select_view.set_reduced_motion(reduced);
+            state.select_story.set_reduced_motion(reduced);
             state
                 .extended
                 .combo_view
@@ -2157,10 +2137,17 @@ impl Workbench {
         {
             return (false, None);
         }
+        if let Some(search) = s.input.search_host_mut() {
+            let result = search.command(command, clipboard, text);
+            for event in s.input.drain_search_logs() {
+                s.record(event);
+            }
+            return result;
+        }
         let input = if s.detail.state().is_some() {
             &mut s.detail
         } else {
-            &mut s.input
+            s.input.legacy_mut().expect("non-Search route keeps TextDemo")
         };
         let mut copied = None;
         let changed = match command {
@@ -2199,10 +2186,8 @@ impl Workbench {
             s.menu_view.clear_presentation();
             s.dialog_view.clear_presentation();
             s.extended.clear_overlay_presentation();
-            s.select_view.cancel(&mut s.select);
+            s.select_story.cancel();
             s.menu_layout = None;
-            s.select_menu_layout = None;
-            s.select.menu.open = false;
             if s.dialog_view.dialog().open {
                 let _ = s.dialog_view.close();
             }
@@ -2276,7 +2261,7 @@ impl Workbench {
             state.detail.set_reduced_motion(reduced);
             state.list_scroll.set_reduced_motion(reduced);
             state.menu_view.set_reduced_motion(reduced);
-            state.select_view.set_reduced_motion(reduced);
+            state.select_story.set_reduced_motion(reduced);
             state
                 .extended
                 .combo_view
@@ -2316,7 +2301,7 @@ impl Workbench {
         s.document_origin_y = content.min_y();
         s.tabs_layout = None;
         s.menu_layout = None;
-        s.select_menu_layout = None;
+
         s.dialog_layout = None;
         let x = c.min_x();
         let w = c.size.width;
@@ -3464,23 +3449,16 @@ impl Workbench {
                 } else {
                     s.button_clip
                 };
-                s.input.build_search_clipped(ctx, input, input_clip, scene);
+                if e.renderer() == "search" {
+                    s.input.build_search_clipped_with_brand(ctx, input, input_clip, scene, s.brand);
+                } else {
+                    s.input.build_search_clipped(ctx, input, input_clip, scene);
+                }
                 if let Some(visible) = s.input.visible_frame() {
                     s.hits.push((1000, visible));
                 }
                 if let Some(frame) = s.input.frame_at(0) {
                     s.register_logical_focus(1000, frame, !s.disabled, true, None, true);
-                }
-                if e.renderer() == "search" {
-                    action(
-                        s,
-                        ctx,
-                        scene,
-                        22,
-                        Rect::new(x, input.max_y() + 12., 140., 34.),
-                        "Clear query",
-                        (false, false),
-                    );
                 }
                 if s.error {
                     line(
@@ -3590,67 +3568,23 @@ impl Workbench {
                 );
             }
             "select" => {
-                s.select_view.set_disabled(s.disabled, &mut s.select);
-                s.select_view.set_error(s.error);
-                let labels: &[&str] = if s.select_empty {
-                    &[]
-                } else {
-                    &["Automatic", "Compact", "Comfortable"]
-                };
-                s.button_labels.insert(
-                    20,
-                    labels
-                        .get(s.select.selected.min(labels.len().saturating_sub(1)))
-                        .copied()
-                        .unwrap_or("")
-                        .to_owned(),
-                );
-                for (index, label) in labels.iter().enumerate() {
-                    s.button_labels.insert(60 + index, (*label).to_owned());
-                }
+                let labels: Vec<String> = if s.select_empty { Vec::new() } else { vec!["Automatic".into(), "Compact".into(), "Comfortable".into()] };
+                let _ = s.select_story.set_labels(labels);
+                s.select_story.set_disabled(s.disabled);
+                s.select_story.set_error(s.error);
+                let selected = s.select_story.model().selected;
+                s.button_labels.insert(20, ["Automatic", "Compact", "Comfortable"].get(selected).copied().unwrap_or("").to_owned());
                 let trigger_frame = Rect::new(x, body_y, w.min(230.), 36.);
-                // Caller feedback is base content. Paint it before the owned
-                // popup so it cannot cover options in the overlay.
-                let message = if s.select_empty {
-                    Some("No options available.")
-                } else if s.error {
-                    Some("This choice is unavailable. Choose another option.")
-                } else {
-                    None
-                };
+                let message = if s.select_empty { Some("No options available.") } else if s.error { Some("This choice is unavailable. Choose another option.") } else { None };
                 if let Some(message) = message {
-                    let height = ctx
-                        .text
-                        .proposal_label(message, proposal::TextRole::UiBody, Some(w))
-                        .height as f32;
-                    label(
-                        ctx,
-                        scene,
-                        Rect::new(x, trigger_frame.max_y() + 8., w, height),
-                        message,
-                        false,
-                    );
+                    let height = ctx.text.proposal_label(message, proposal::TextRole::UiBody, Some(w)).height as f32;
+                    label(ctx, scene, Rect::new(x, trigger_frame.max_y() + 8., w, height), message, false);
                 }
-                let layout = s.select_view.render(
-                    scene,
-                    ctx.text,
-                    &mut s.select,
-                    labels,
-                    trigger_frame,
-                    s.preview,
-                    s.button_clip,
-                    tekes_ui_tokens::Palette::new(ctx.theme, s.brand)
-                        .expect("registered Gallery brand"),
-                    proposal::TextRole::UiBody,
-                    s.density == 1,
-                );
-                if let Some(visible) = layout.trigger.visible {
-                    s.hits.push((20, visible));
-                }
+                let layout = s.select_story.paint(scene, ctx.text, trigger_frame, s.preview, tekes_ui_tokens::Palette::new(ctx.theme, s.brand).expect("registered Gallery brand"));
+                if let Some(visible) = layout.trigger.visible { s.hits.push((20, visible)); }
                 let available = !s.disabled && !s.select_empty;
                 s.register_logical_focus(20, layout.trigger.frame, available, true, None, true);
                 s.buttons.entry(20).or_default().state.disabled = !available;
-                s.select_menu_layout = layout.popup;
             }
             "menu" | "dialog" | "danger" => {
                 action(
@@ -4513,6 +4447,9 @@ impl Workbench {
         }
     }
     pub fn has_pointer_capture(&self, i: usize) -> bool {
+        if self.states.get(&i).and_then(|state| state.input.search_host()).is_some_and(|host| host.has_pointer_capture()) {
+            return true;
+        }
         entry(i).renderer() == "split-view"
             && self
                 .states
@@ -4533,6 +4470,22 @@ impl Workbench {
         text: &mut super::text::TextEngine,
     ) -> bool {
         let renderer = entry(i).renderer();
+        if renderer == "select" {
+            let (handled, focused, logs) = {
+                let state = self.state(i);
+                let labels = if state.select_empty { Vec::new() } else { vec!["Automatic".into(), "Compact".into(), "Comfortable".into()] };
+                let _ = state.select_story.set_labels(labels);
+                state.select_story.set_disabled(state.disabled);
+                state.select_story.set_error(state.error);
+                let result = state.select_story.handle(event);
+                (result.map(|r| r.consumed), state.select_story.host.focused().is_some(), state.select_story.drain_logs())
+            };
+            if let Some(handled) = handled {
+                self.state(i).focus = focused.then_some(20);
+                for log in logs { self.state(i).record(log); }
+                return handled;
+            }
+        }
         if renderer == "matrix"
             && let Event::Key(key) = event
             && key.kind == KeyEventKind::Down
@@ -4592,9 +4545,9 @@ impl Workbench {
             {
                 return true;
             }
-            if s.select.menu.open
+            if s.select_story.model().menu.open
                 && matches!(
-                    s.select_view.wheel_event(input, &s.select),
+                    s.select_story.wheel_event(input),
                     MenuWheelEvent::Consumed { .. }
                 )
             {
@@ -4814,19 +4767,19 @@ impl Workbench {
                         let event = s.menu_view.key(ControlKey::Escape, true);
                         s.menu_event(event, renderer, false);
                     }
-                    if s.select.menu.open {
-                        let event = s.select_view.key(ControlKey::Escape, true, &mut s.select);
+                    if s.select_story.model().menu.open {
+                        let event = s.select_story.key(ControlKey::Escape, true);
                         s.menu_event(event, renderer, true);
                     }
                 }
-                if renderer == "select" && (s.select.menu.open || s.focus == Some(20)) {
+                if renderer == "select" && (s.select_story.model().menu.open || s.focus == Some(20)) {
                     if s.disabled {
                         return false;
                     }
-                    let was_open = s.select.menu.open;
-                    let event = s.select_view.key(key, down, &mut s.select);
+                    let was_open = s.select_story.model().menu.open;
+                    let event = s.select_story.key(key, down);
                     s.menu_event(event, renderer, true);
-                    if s.select.menu.open != was_open && s.select.menu.open {
+                    if s.select_story.model().menu.open != was_open && s.select_story.model().menu.open {
                         s.focus = Some(20);
                         s.record("select: open");
                     }
@@ -4840,8 +4793,8 @@ impl Workbench {
                         return true;
                     }
                 }
-                if s.menu_view.is_open() || s.select.menu.open {
-                    let select = s.select.menu.open;
+                if s.menu_view.is_open() || s.select_story.model().menu.open {
+                    let select = s.select_story.model().menu.open;
                     let event = if select {
                         // The select runtime above owns open-list keyboard
                         // navigation and selection.
@@ -5214,15 +5167,15 @@ impl Workbench {
                     }
                     _ => {}
                 }
-            } else if s.select.menu.open {
-                let layout = s.select_menu_layout.clone();
+            } else if s.select_story.model().menu.open {
+                let layout = s.select_story.layout().popup.clone();
                 match m.kind {
                     MouseEventKind::Moved
                     | MouseEventKind::Entered
                     | MouseEventKind::Dragged {
                         button: MouseButton::Left,
                     } => {
-                        s.select_view.pointer_move(p, &mut s.select);
+                        s.select_story.pointer_move(p);
                         if layout.as_ref().is_some_and(|layout| {
                             layout.visible.is_some_and(|visible| visible.contains(p))
                         }) {
@@ -5233,19 +5186,19 @@ impl Workbench {
                         button: MouseButton::Left,
                         ..
                     } => {
-                        let was_open = s.select.menu.open;
-                        let consumed = s.select_view.pointer_down(p, &mut s.select);
+                        let was_open = s.select_story.model().menu.open;
+                        let consumed = s.select_story.pointer_down(p);
                         let inside_popup = layout.as_ref().is_some_and(|layout| {
                             layout.popup.contains(p)
                                 && layout.visible.is_some_and(|visible| visible.contains(p))
                         });
                         if was_open
-                            && !s.select.menu.open
+                            && !s.select_story.model().menu.open
                             && s.hit_at(p).is_some()
                             && s.hit_at(p) != Some(20)
                             && !inside_popup
                         {
-                            s.select_view.blur(&mut s.select);
+                            s.select_story.blur();
                         }
                         if inside_popup || (consumed && s.hit_at(p) == Some(20)) {
                             s.focus = Some(20);
@@ -5257,9 +5210,7 @@ impl Workbench {
                         button: MouseButton::Left,
                         ..
                     } => {
-                        let event = s.select_view.pointer_up(p, &mut s.select);
-                        let activated = matches!(event, MenuEvent::Activated { .. });
-                        s.menu_event(event, renderer, true);
+                        let activated = s.select_story.pointer_up(p);
                         if activated
                             || layout.as_ref().is_some_and(|layout| {
                                 layout.visible.is_some_and(|visible| visible.contains(p))
@@ -5291,7 +5242,7 @@ impl Workbench {
                         }
                     }
                     if renderer == "select" {
-                        s.select_view.pointer_move(p, &mut s.select);
+                        s.select_story.pointer_move(p);
                         if hit == Some(20) {
                             return true;
                         }
@@ -5359,9 +5310,9 @@ impl Workbench {
                         return true;
                     }
                     if renderer == "select"
-                        && !s.select.menu.open
+                        && !s.select_story.model().menu.open
                         && hit == Some(20)
-                        && s.select_view.pointer_down(p, &mut s.select)
+                        && s.select_story.pointer_down(p)
                     {
                         s.input.blur();
                         s.detail.blur();
@@ -5458,10 +5409,10 @@ impl Workbench {
                         }
                     } else if s.dialog_view.dialog().open {
                         return true;
-                    } else if s.menu_view.is_open() || s.select.menu.open {
-                        let select = s.select.menu.open;
+                    } else if s.menu_view.is_open() || s.select_story.model().menu.open {
+                        let select = s.select_story.model().menu.open;
                         let event = if select {
-                            s.select_view.blur(&mut s.select);
+                            s.select_story.blur();
                             MenuEvent::None
                         } else {
                             s.menu_view.deactivate()
@@ -5506,14 +5457,13 @@ impl Workbench {
                         }
                         return true;
                     }
-                    if renderer == "select" && !s.select.menu.open {
-                        let event = s.select_view.pointer_up(p, &mut s.select);
-                        let opened = s.select.menu.open;
+                    if renderer == "select" && !s.select_story.model().menu.open {
+                        let _ = s.select_story.pointer_up(p);
+                        let opened = s.select_story.model().menu.open;
                         if opened {
                             s.focus = Some(20);
                             s.record("select: open");
                         }
-                        s.menu_event(event, renderer, true);
                         if hit == Some(20) || opened {
                             return true;
                         }
@@ -5585,7 +5535,10 @@ impl Workbench {
             _ => None,
         };
         let before = s.input.query().to_string();
-        let input = s.input.handle(event, point).unwrap_or(false);
+        let input = s.input.handle_with_text(event, point, text).unwrap_or(false);
+        for log in s.input.drain_search_logs() {
+            s.record(log);
+        }
         let detail = if !input {
             s.detail.handle(event, point).unwrap_or(false)
         } else {
@@ -10841,7 +10794,21 @@ mod interaction_tests {
         let mut original_frame = None;
         for placeholder in [false, true] {
             if placeholder {
-                click(&mut w, i, 22, &mut text);
+                let clear = w
+                    .state(i)
+                    .input
+                    .search_host()
+                    .unwrap()
+                    .host
+                    .semantics()
+                    .into_iter()
+                    .find(|node| node.id == search_host::SEARCH)
+                    .unwrap()
+                    .parts[0]
+                    .frame
+                    .center();
+                w.handle(i, &mouse(clear, true), &mut text);
+                w.handle(i, &mouse(clear, false), &mut text);
                 assert!(w.state(i).input.query().is_empty());
                 assert_eq!(
                     w.state(i)
@@ -10850,7 +10817,7 @@ mod interaction_tests {
                         .filter(|s| s.as_str() == "filter: cleared")
                         .count(),
                     1,
-                    "original Clear query action ran once"
+                    "SearchField clear part emits once"
                 );
             }
             for theme in Theme::ALL {
@@ -13568,8 +13535,8 @@ mod interaction_tests {
         w.handle(i, &key(125, true), &mut text);
         w.handle(i, &key(36, true), &mut text);
         build(&mut w, i, &mut text);
-        assert_eq!(w.state(i).select.selected, 1);
-        let trigger = w.state(i).select_view.layout().trigger;
+        assert_eq!(w.state(i).select_story.model().selected, 1);
+        let trigger = w.state(i).select_story.layout().trigger;
         w.handle(
             i,
             &move_pointer(Point::new(
@@ -13581,7 +13548,7 @@ mod interaction_tests {
         assert!(w.focus_control(i, 20).is_some());
         w.handle(i, &key(36, true), &mut text);
         build(&mut w, i, &mut text);
-        assert!(w.state(i).select.menu.open);
+        assert!(w.state(i).select_story.model().menu.open);
         let content = Rect::new(312., 70., 1000., 820.);
         let mut original_geometry = None;
         let contrast = |a: tekes_ui_tokens::Rgba, b: tekes_ui_tokens::Rgba| {
@@ -13593,7 +13560,7 @@ mod interaction_tests {
             (a.max(b) + 0.05) / (a.min(b) + 0.05)
         };
         for theme in Theme::ALL {
-            let popup = w.state(i).select_view.layout().popup.clone().unwrap();
+            let popup = w.state(i).select_story.layout().popup.clone().unwrap();
             w.handle(i, &move_pointer(popup.popup.origin), &mut text);
             w.handle(i, &key(115, true), &mut text);
             for hovered in [false, true] {
@@ -13611,15 +13578,15 @@ mod interaction_tests {
                 w.build_clipped(i, &mut ctx, content, content, &mut scene);
                 assert!(scene.composition_error().is_none());
                 let state = w.state(i);
-                let layout = state.select_view.layout();
+                let layout = state.select_story.layout();
                 let popup = layout.popup.as_ref().unwrap();
                 let active = if hovered { 2 } else { 0 };
-                assert!(state.select.menu.open);
+                assert!(state.select_story.model().menu.open);
                 assert_eq!(
-                    state.select.selected, 1,
+                    state.select_story.model().selected, 1,
                     "highlight does not replace original committed option"
                 );
-                assert_eq!(state.select.menu.items.selected, active);
+                assert_eq!(state.select_story.model().menu.items.selected, active);
                 assert_eq!(popup.active_item, active);
                 let geometry = (
                     layout.trigger.frame,
@@ -13743,8 +13710,8 @@ mod interaction_tests {
         }
         w.handle(i, &key(36, true), &mut text);
         build(&mut w, i, &mut text);
-        assert_eq!(w.state(i).select.selected, 2);
-        assert!(!w.state(i).select.menu.open);
+        assert_eq!(w.state(i).select_story.model().selected, 2);
+        assert!(!w.state(i).select_story.model().menu.open);
         assert_eq!(
             w.state(i)
                 .log
@@ -13763,18 +13730,18 @@ mod interaction_tests {
         w.handle(i, &key(115, true), &mut text);
         w.handle(i, &key(53, true), &mut text);
         build(&mut w, i, &mut text);
-        assert_eq!(w.state(i).select.selected, 2);
-        assert!(!w.state(i).select.menu.open);
+        assert_eq!(w.state(i).select_story.model().selected, 2);
+        assert!(!w.state(i).select_story.model().menu.open);
         click(&mut w, i, 20, &mut text);
-        let trigger = w.state(i).select_view.layout().trigger;
+        let trigger = w.state(i).select_story.layout().trigger;
         w.handle(i, &mouse(trigger.frame.center(), true), &mut text);
         w.handle(i, &mouse(trigger.frame.center(), false), &mut text);
         build(&mut w, i, &mut text);
         assert!(
-            !w.state(i).select.menu.open,
+            !w.state(i).select_story.model().menu.open,
             "outside-popup dismiss cannot reopen on same release"
         );
-        assert_eq!(w.state(i).select.selected, 2);
+        assert_eq!(w.state(i).select_story.model().selected, 2);
     }
 
     #[test]
@@ -13783,19 +13750,19 @@ mod interaction_tests {
         let mut text = super::super::text::TextEngine::new();
         let i = index("select");
         click(&mut w, i, 20, &mut text);
-        assert!(w.state(i).select.menu.open);
-        assert!(w.state(i).select_view.layout().popup.is_some());
+        assert!(w.state(i).select_story.model().menu.open);
+        assert!(w.state(i).select_story.layout().popup.is_some());
         assert_eq!(w.state(i).focus, Some(20));
 
         w.handle(i, &key(125, true), &mut text);
         w.handle(i, &key(36, true), &mut text);
-        assert!(!w.state(i).select.menu.open);
-        assert_eq!(w.state(i).select.selected, 1);
+        assert!(!w.state(i).select_story.model().menu.open);
+        assert_eq!(w.state(i).select_story.model().selected, 1);
         assert!(w.state(i).log.iter().any(|event| event == "select: 1"));
 
         click(&mut w, i, 20, &mut text);
         w.handle(i, &key(53, true), &mut text);
-        assert!(!w.state(i).select.menu.open);
+        assert!(!w.state(i).select_story.model().menu.open);
         assert_eq!(w.state(i).focus, Some(20));
     }
 
@@ -14852,8 +14819,8 @@ mod interaction_tests {
         build(&mut w, i, &mut text);
         text.set_motion_context(Duration::from_secs(1), false);
         let scene = build(&mut w, i, &mut text);
-        let trigger = w.state(i).select_view.layout().trigger.frame;
-        let popup = w.state(i).select_menu_layout.as_ref().unwrap().popup;
+        let trigger = w.state(i).select_story.layout().trigger.frame;
+        let popup = w.state(i).select_story.layout().popup.as_ref().unwrap().popup;
         let popup_index = scene
             .primitives()
             .iter()
@@ -14893,19 +14860,19 @@ mod interaction_tests {
         let mut text = super::super::text::TextEngine::new();
         let i = index("select");
         build(&mut w, i, &mut text);
-        w.state(i).select.choose(2);
+        w.state(i).select_story.set_selected(2);
         click(&mut w, i, 13, &mut text);
         assert!(w.state(i).select_empty);
-        assert_eq!(w.state(i).select.menu.items.count, 0);
-        assert_eq!(w.state(i).select.selected, 2);
+        assert_eq!(w.state(i).select_story.model().menu.items.count, 0);
+        assert_eq!(w.state(i).select_story.model().selected, 2);
         click(&mut w, i, 20, &mut text);
-        assert!(!w.state(i).select.menu.open);
+        assert!(!w.state(i).select_story.model().menu.open);
         assert!(!w.state(i).logical_tab_ids().contains(&20));
         click(&mut w, i, 13, &mut text);
-        assert_eq!(w.state(i).select.menu.items.count, 3);
-        assert_eq!(w.state(i).select.selected, 2);
+        assert_eq!(w.state(i).select_story.model().menu.items.count, 3);
+        assert_eq!(w.state(i).select_story.model().selected, 2);
         click(&mut w, i, 20, &mut text);
-        assert!(w.state(i).select.menu.open);
+        assert!(w.state(i).select_story.model().menu.open);
     }
 
     #[test]
@@ -14914,23 +14881,23 @@ mod interaction_tests {
         let mut text = super::super::text::TextEngine::new();
         let i = index("select");
         build(&mut w, i, &mut text);
-        w.state(i).select.choose(1);
+        w.state(i).select_story.set_selected(1);
         click(&mut w, i, 12, &mut text);
         assert!(w.state(i).error);
         let scene = build(&mut w, i, &mut text);
-        let frame = w.state(i).select_view.layout().trigger.frame;
+        let frame = w.state(i).select_story.layout().trigger.frame;
         let role = proposal::control_boundary("error", tekes_ui_tokens::Theme::LIGHT).unwrap();
         assert!(scene.primitives().iter().any(|p| matches!(p,tekes_ui_scene::Primitive::Quad(q) if q.rect==frame && q.border_color==proposal::render_color(role,tekes_ui_tokens::Theme::LIGHT).unwrap())));
-        assert_eq!(w.state(i).select.selected, 1);
+        assert_eq!(w.state(i).select_story.model().selected, 1);
         click(&mut w, i, 20, &mut text);
         w.handle(i, &key(125, true), &mut text);
         w.handle(i, &key(36, true), &mut text);
         build(&mut w, i, &mut text);
-        assert_eq!(w.state(i).select.selected, 2);
+        assert_eq!(w.state(i).select_story.model().selected, 2);
         assert!(w.state(i).error, "caller still owns validation outcome");
         click(&mut w, i, 12, &mut text);
         assert!(!w.state(i).error);
-        assert_eq!(w.state(i).select.selected, 2);
+        assert_eq!(w.state(i).select_story.model().selected, 2);
     }
 
     #[test]
@@ -14940,14 +14907,14 @@ mod interaction_tests {
         let i = index("select");
         for open in [true, false, true] {
             click(&mut w, i, 20, &mut text);
-            assert_eq!(w.state(i).select.menu.open, open);
-            assert_eq!(w.state(i).select.selected, 0);
+            assert_eq!(w.state(i).select_story.model().menu.open, open);
+            assert_eq!(w.state(i).select_story.model().selected, 0);
         }
         w.handle(i, &key(125, true), &mut text);
         w.handle(i, &key(36, true), &mut text);
         build(&mut w, i, &mut text);
-        assert_eq!(w.state(i).select.selected, 1);
-        assert!(!w.state(i).select.menu.open);
+        assert_eq!(w.state(i).select_story.model().selected, 1);
+        assert!(!w.state(i).select_story.model().menu.open);
     }
 
     #[test]
@@ -15914,7 +15881,7 @@ mod interaction_tests {
             let open = match renderer {
                 "menu" => state.menu_view.is_open(),
                 "popover" => state.extended.popover.open,
-                "select" => state.select.menu.open,
+                "select" => state.select_story.model().menu.open,
                 _ => unreachable!(),
             };
             assert!(!open, "{renderer}: transient model reopened");
@@ -15923,7 +15890,7 @@ mod interaction_tests {
             let retained_overlay = match renderer {
                 "menu" => state.menu_view.is_presented(),
                 "popover" => state.extended.overlay_needs_animation(),
-                "select" => state.select_view.needs_animation(),
+                "select" => state.select_story.needs_animation(),
                 _ => unreachable!(),
             };
             if retained_overlay {
@@ -17086,13 +17053,8 @@ mod interaction_tests {
                 assert!(workbench.state(i).menu_view.is_open());
                 workbench.state(i).menu_layout.as_ref().unwrap().clone()
             } else {
-                assert!(workbench.state(i).select.menu.open);
-                workbench
-                    .state(i)
-                    .select_menu_layout
-                    .as_ref()
-                    .unwrap()
-                    .clone()
+                assert!(workbench.state(i).select_story.model().menu.open);
+                workbench.state(i).select_story.layout().popup.as_ref().unwrap().clone()
             };
             let position = layout.popup.center();
             assert!(workbench.handle(i, &wheel(position, 1.0, false), &mut text));
@@ -17100,7 +17062,7 @@ mod interaction_tests {
             let needs_animation = if renderer == "menu" {
                 workbench.state(i).menu_view.needs_animation()
             } else {
-                workbench.state(i).select_view.needs_animation()
+                workbench.state(i).select_story.needs_animation()
             };
             assert!(
                 !needs_animation,

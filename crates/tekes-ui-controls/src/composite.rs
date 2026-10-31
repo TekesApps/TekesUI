@@ -903,6 +903,36 @@ pub(crate) fn menu_popup_geometry(
     (popup, header_frame, rows)
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) enum MenuPreparedKind {
+    Open { generation: u64, selected: usize },
+    Focus { index: usize, offset: f32 },
+    Activate { index: usize },
+    Close,
+    Noop,
+}
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct MenuPreparedAction {
+    expected: MenuPreparedState,
+    kind: MenuPreparedKind,
+    pub event: MenuEvent,
+}
+#[derive(Clone, Debug, PartialEq)]
+struct MenuPreparedState {
+    model: (bool, usize, usize, Option<usize>),
+    generation: u64,
+    availability: (bool, bool, bool),
+    return_focus: Option<usize>,
+    layout: MenuLayout,
+    row_styles: Vec<MenuRowStyle>,
+    row_heights: Vec<f32>,
+    viewport: Rect,
+    offset: Point,
+    limit: Point,
+    focus_outset: f32,
+    gesture: bool,
+    buttons: Vec<crate::widgets::ButtonActionDecision>,
+}
 impl MenuView {
     /// Legacy flat-label popup size before viewport placement/scroll clamping.
     /// Controlled declaration metadata is measured by this same runtime.
@@ -1108,6 +1138,109 @@ impl MenuView {
         self.runtime.replace_items_model(&mut self.model, count);
     }
 
+    #[cfg(test)]
+    pub(crate) fn select_test_generation(&mut self, generation: u64) {
+        self.runtime.open_generation = generation;
+    }
+    pub(crate) fn prepare_select_action(
+        &self,
+        model: &Menu,
+        kind: MenuPreparedKind,
+    ) -> Option<MenuPreparedAction> {
+        let kind = match kind {
+            MenuPreparedKind::Open { selected, .. } => {
+                if !self.runtime.window_active || self.runtime.disabled || model.items.count == 0 {
+                    return None;
+                }
+                if model.open {
+                    MenuPreparedKind::Noop
+                } else {
+                    MenuPreparedKind::Open {
+                        generation: self.next_open_generation()?,
+                        selected: selected.min(model.items.count - 1),
+                    }
+                }
+            }
+            MenuPreparedKind::Focus { index, .. } => {
+                if !self.runtime.semantic_item_mounted(model, index) {
+                    return None;
+                }
+                MenuPreparedKind::Focus {
+                    index,
+                    offset: self.runtime.reveal_offset(index),
+                }
+            }
+            MenuPreparedKind::Activate { index } => {
+                if !self.runtime.semantic_item_mounted(model, index)
+                    || self.runtime.row_style(index).submenu
+                {
+                    return None;
+                }
+                MenuPreparedKind::Activate { index }
+            }
+            MenuPreparedKind::Close => MenuPreparedKind::Close,
+            MenuPreparedKind::Noop => MenuPreparedKind::Noop,
+        };
+        let event = match kind {
+            MenuPreparedKind::Activate { index } => MenuEvent::Activated {
+                index,
+                restore_focus: self.runtime.return_focus,
+            },
+            MenuPreparedKind::Close if model.open => MenuEvent::Dismissed {
+                restore_focus: self.runtime.return_focus,
+            },
+            _ => MenuEvent::None,
+        };
+        Some(MenuPreparedAction {
+            expected: self.runtime.select_prepared_state(model),
+            kind,
+            event,
+        })
+    }
+    pub(crate) fn apply_select_action(&mut self, model: &mut Menu, action: MenuPreparedAction) {
+        self.bound_external = true;
+        match action.kind {
+            MenuPreparedKind::Open {
+                generation,
+                selected,
+            } => {
+                self.runtime.window_active = true;
+                self.runtime.open_generation = generation;
+                model.open = true;
+                model.items.selected = selected;
+                self.runtime.return_focus = Some(0);
+                self.runtime.focus_visible = false;
+                self.runtime.scroll.offset.y = 0.;
+                self.runtime.clear_layout();
+                self.runtime.sync_focus(selected);
+            }
+            MenuPreparedKind::Focus { index, offset } => {
+                model.items.selected = index;
+                self.runtime.focus_visible = true;
+                self.runtime.scroll.offset.y = offset;
+                self.runtime.sync_focus(index);
+            }
+            MenuPreparedKind::Activate { index } => {
+                model.items.selected = index;
+                model.last_action = Some(index);
+                model.open = false;
+                self.runtime.clear_layout();
+                self.runtime.clear_button_pointer_positions();
+                self.runtime.return_focus = None;
+            }
+            MenuPreparedKind::Close => {
+                model.open = false;
+                self.runtime.clear_layout();
+                self.runtime.clear_button_pointer_positions();
+                self.runtime.return_focus = None;
+            }
+            MenuPreparedKind::Noop => {}
+        }
+    }
+    pub(crate) fn replace_items_with_model(&mut self, model: &mut Menu, count: usize) {
+        self.bound_external = true;
+        self.runtime.replace_items_model(model, count);
+    }
     pub(crate) fn set_row_styles(&mut self, styles: Vec<MenuRowStyle>) {
         if self.runtime.row_styles != styles {
             self.runtime.cancel_buttons();
@@ -1435,7 +1568,56 @@ impl MenuRuntime {
         self.row_styles.clear();
         *model = Menu::new(count);
     }
-
+    fn select_prepared_state(&self, model: &Menu) -> MenuPreparedState {
+        MenuPreparedState {
+            model: (
+                model.open,
+                model.items.count,
+                model.items.selected,
+                model.last_action,
+            ),
+            generation: self.open_generation,
+            availability: (self.window_active, self.disabled, self.focus_visible),
+            return_focus: self.return_focus,
+            layout: self.placement.clone(),
+            row_styles: self.row_styles.clone(),
+            row_heights: self.row_heights.clone(),
+            viewport: self.scroll_viewport,
+            offset: self.scroll.offset,
+            limit: self.scroll.limit(),
+            focus_outset: self.focus_outset,
+            gesture: self.scroll_gesture_captured,
+            buttons: self
+                .buttons
+                .iter()
+                .map(ButtonModel::prepare_content_press)
+                .collect(),
+        }
+    }
+    fn reveal_offset(&self, index: usize) -> f32 {
+        if self.row_heights.is_empty() {
+            return self.scroll.offset.y;
+        }
+        let index = index.min(self.row_heights.len() - 1);
+        let top = self
+            .row_heights
+            .iter()
+            .take(index)
+            .map(|h| h + self.focus_outset.max(4.))
+            .sum::<f32>()
+            - self.focus_outset;
+        let bottom = top + self.row_heights[index] + self.focus_outset * 2.;
+        let offset = self.scroll.offset.y;
+        let height = self.scroll_viewport.size.height.max(0.);
+        let target = if top < offset {
+            top
+        } else if bottom > offset + height {
+            bottom - height
+        } else {
+            offset
+        };
+        target.clamp(0., self.scroll.limit().y)
+    }
     fn row_style(&self, index: usize) -> MenuRowStyle {
         self.row_styles.get(index).copied().unwrap_or_default()
     }
@@ -2855,6 +3037,217 @@ mod tests {
             false,
         )
         .expect("open menu layout")
+    }
+
+    #[test]
+    fn select_prepared_open_is_pure_and_generation_exhaustion_is_checked() {
+        let mut view = MenuView::new_external();
+        let mut model = Menu::new(3);
+        let kind = MenuPreparedKind::Open {
+            generation: 0,
+            selected: 99,
+        };
+        let prepared = view.prepare_select_action(&model, kind.clone()).unwrap();
+        assert_eq!(
+            view.prepare_select_action(&model, kind),
+            Some(prepared.clone())
+        );
+        assert!(!model.open);
+        assert_eq!(view.open_generation(), 0);
+        assert_eq!(prepared.event, MenuEvent::None);
+        view.apply_select_action(&mut model, prepared);
+        assert!(model.open);
+        assert_eq!(model.items.selected, 2);
+        assert_eq!(view.open_generation(), 1);
+        assert_eq!(view.runtime.return_focus, Some(0));
+        let noop = view
+            .prepare_select_action(
+                &model,
+                MenuPreparedKind::Open {
+                    generation: 0,
+                    selected: 0,
+                },
+            )
+            .unwrap();
+        view.apply_select_action(&mut model, noop);
+        assert_eq!(model.items.selected, 2);
+        assert_eq!(view.open_generation(), 1);
+        model.open = false;
+        view.select_test_generation(u64::MAX);
+        assert!(
+            view.prepare_select_action(
+                &model,
+                MenuPreparedKind::Open {
+                    generation: 0,
+                    selected: 0
+                }
+            )
+            .is_none()
+        );
+        assert!(!model.open);
+        view.select_test_generation(0);
+        view.set_window_active_with_model(&mut model, false);
+        assert!(
+            view.prepare_select_action(
+                &model,
+                MenuPreparedKind::Open {
+                    generation: 0,
+                    selected: 0
+                }
+            )
+            .is_none()
+        );
+    }
+
+    #[test]
+    fn select_prepared_focus_uses_original_scroll_and_snapshot_staleness() {
+        let mut view = MenuView::new_external();
+        let mut model = Menu::new(20);
+        view.show_with_model(&mut model, 42);
+        view.render_with_model(
+            &mut model,
+            &mut Scene::new(),
+            &mut FixedText,
+            &["Choice"; 20],
+            Rect::new(12., 12., 120., 34.),
+            Rect::new(0., 0., 320., 260.),
+            None,
+            palette(),
+            proposal::TextRole::UiBody,
+            false,
+        )
+        .unwrap();
+        let prepared = view
+            .prepare_select_action(
+                &model,
+                MenuPreparedKind::Focus {
+                    index: 19,
+                    offset: 0.,
+                },
+            )
+            .unwrap();
+        assert_eq!(model.items.selected, 0);
+        assert_eq!(view.runtime.scroll.offset.y, 0.);
+        assert_eq!(prepared.event, MenuEvent::None);
+        // A changed original arm must invalidate the outer caller's equality check.
+        view.runtime.buttons[0].pointer_down();
+        assert_ne!(
+            view.prepare_select_action(
+                &model,
+                MenuPreparedKind::Focus {
+                    index: 19,
+                    offset: 0.
+                }
+            ),
+            Some(prepared.clone())
+        );
+        view.runtime.buttons[0].cancel();
+        let current = view
+            .prepare_select_action(
+                &model,
+                MenuPreparedKind::Focus {
+                    index: 19,
+                    offset: 0.,
+                },
+            )
+            .unwrap();
+        let expected_offset = view.runtime.reveal_offset(19);
+        view.apply_select_action(&mut model, current);
+        assert_eq!(model.items.selected, 19);
+        assert!(view.runtime.focus_visible);
+        assert!(view.runtime.scroll.offset.y > 0.);
+        assert_eq!(view.runtime.scroll.offset.y, expected_offset);
+    }
+
+    #[test]
+    fn select_prepared_activation_rejects_disabled_submenu_and_preserves_original_event() {
+        let mut view = MenuView::new_external();
+        let mut model = Menu::new(3);
+        view.set_row_styles(vec![
+            MenuRowStyle::default(),
+            MenuRowStyle {
+                submenu: true,
+                ..Default::default()
+            },
+            MenuRowStyle {
+                disabled: true,
+                ..Default::default()
+            },
+        ]);
+        view.show_with_model(&mut model, 42);
+        view.render_with_model(
+            &mut model,
+            &mut Scene::new(),
+            &mut FixedText,
+            &["One", "Submenu", "Disabled"],
+            Rect::new(12., 12., 120., 34.),
+            Rect::new(0., 0., 320., 260.),
+            None,
+            palette(),
+            proposal::TextRole::UiBody,
+            false,
+        )
+        .unwrap();
+        assert!(
+            view.prepare_select_action(&model, MenuPreparedKind::Activate { index: 1 })
+                .is_none()
+        );
+        assert!(
+            view.prepare_select_action(&model, MenuPreparedKind::Activate { index: 2 })
+                .is_none()
+        );
+        let action = view
+            .prepare_select_action(&model, MenuPreparedKind::Activate { index: 0 })
+            .unwrap();
+        assert_eq!(
+            action.event,
+            MenuEvent::Activated {
+                index: 0,
+                restore_focus: Some(42)
+            }
+        );
+        assert!(model.open);
+        assert_eq!(model.last_action, None);
+        view.apply_select_action(&mut model, action);
+        assert!(!model.open);
+        assert_eq!(model.last_action, Some(0));
+        assert_eq!(view.runtime.return_focus, None);
+        assert!(
+            view.prepare_select_action(&model, MenuPreparedKind::Activate { index: 0 })
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn select_replacement_and_prepared_close_retire_original_arms_and_geometry() {
+        let mut view = MenuView::new_external();
+        let mut model = Menu::new(2);
+        view.show_with_model(&mut model, 42);
+        let close = view
+            .prepare_select_action(&model, MenuPreparedKind::Close)
+            .unwrap();
+        assert_eq!(
+            close.event,
+            MenuEvent::Dismissed {
+                restore_focus: Some(42)
+            }
+        );
+        view.apply_select_action(&mut model, close);
+        assert!(!model.open);
+        assert!(view.runtime.placement.items.is_empty());
+        view.runtime.buttons.resize_with(2, ButtonModel::default);
+        view.runtime.buttons[0].pointer_down();
+        assert!(view.pointer_armed());
+        view.runtime.scroll_gesture_captured = true;
+        view.replace_items_with_model(&mut model, 1);
+        assert_eq!(model.items.count, 1);
+        assert!(!model.open);
+        assert_eq!(model.last_action, None);
+        assert!(!view.pointer_armed());
+        assert!(!view.scroll_gesture_captured());
+        assert!(!view.is_presented());
+        assert!(view.runtime.placement.items.is_empty());
+        assert_eq!(view.open_generation(), 1);
     }
 
     #[test]

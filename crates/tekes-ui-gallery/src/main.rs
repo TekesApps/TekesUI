@@ -30,9 +30,9 @@ mod host;
 mod perf;
 #[cfg(all(target_os = "macos", feature = "composition-review"))]
 mod reading_acceptance;
-#[cfg(all(target_os = "macos", feature = "composition-review"))]
+#[cfg(target_os = "macos")]
 mod reading_key;
-#[cfg(all(target_os = "macos", feature = "composition-review"))]
+#[cfg(target_os = "macos")]
 mod reading_pointer;
 #[cfg(all(target_os = "macos", feature = "composition-review"))]
 mod viewport_acceptance;

@@ -89,6 +89,10 @@ pub use link::LinkContent;
 mod navigation;
 pub use navigation::{BreadcrumbContent, CommandPaletteContent, TabItem, TabsContent};
 mod menu;
+mod search;
+pub use search::{SearchAction, SearchCommand, SearchCommandError, SearchCommandKind, SearchFieldContent};
+mod select;
+pub use select::{SelectContent, SelectUpdateError};
 mod number;
 pub use number::{
     DecimalNumberFormat, NumberCommitReason, NumberEditState, NumberFieldContent, NumberFormat,
@@ -238,6 +242,8 @@ pub enum ContentRole {
     /// A navigation action with one semantic owner; its children are decorative.
     Link,
     TextInput,
+    /// Single-line Search over the original editor.
+    SearchInput,
     /// Single-line editable original ComboBox owner.
     ComboBox,
     Slider,
@@ -251,6 +257,8 @@ pub enum ContentRole {
     ListItem,
     Dialog,
     MenuButton,
+    /// Noneditable original Select trigger.
+    Select,
     Menu,
     MenuItem,
     TabList,
@@ -270,7 +278,7 @@ impl ContentRole {
         )
     }
     fn is_action_owner(self) -> bool {
-        matches!(self, Self::Button | Self::Link | Self::MenuButton)
+        matches!(self, Self::Button | Self::Link | Self::MenuButton | Self::Select)
     }
 }
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -2660,6 +2668,9 @@ impl ContentHost {
         if !self.window_active {
             return ContentResponse::default();
         }
+        if self.search_pointer_blocked(event) {
+            return ContentResponse::default();
+        }
         self.reveal_clock.invalidate_input();
         self.event_bubbled = None;
         let overlay_barrier = self.overlay_scope_id().is_some();
@@ -3431,7 +3442,10 @@ impl ContentHost {
                     && self
                         .scope()
                         .find_active(id)
-                        .is_some_and(|n| n.component.semantics().role.is_selection())
+                        .is_some_and(|n| {
+                            n.component.semantics().role.is_selection()
+                                || n.component.semantics().role == ContentRole::Select
+                        })
                     && !self.semantic_preserves_activation_focus(id, part)))
         {
             return ContentResponse::default();
@@ -3535,6 +3549,9 @@ impl ContentHost {
                         .any(|p| p.index == part && p.semantics.role == ContentRole::Image)
                 })
         }) {
+            return ContentResponse::default();
+        }
+        if self.search_ax_blocked(id, part, &action) {
             return ContentResponse::default();
         }
         if let Some(response) = self.try_prepared_ax(id, part, &action) {

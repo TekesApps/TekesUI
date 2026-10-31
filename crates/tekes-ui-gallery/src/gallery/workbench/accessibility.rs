@@ -4,6 +4,17 @@ use tekes_ui_platform_macos::{
     AccessibilityAction as A, AccessibilityKey as K, AccessibilityNode as N, AccessibilityRole as R,
 };
 impl Workbench {
+    pub(in crate::gallery) fn search_native_layouts(
+        &self,
+        i: usize,
+    ) -> Vec<(K, tekes_ui_platform_macos::AccessibilityTextLayout)> {
+        self.states
+            .get(&i)
+            .and_then(|s| s.input.search_host())
+            .map(|host| host.native_layouts())
+            .unwrap_or_default()
+    }
+
     pub(in crate::gallery) fn accessibility_modal(&self, i: usize) -> bool {
         self.states
             .get(&i)
@@ -50,7 +61,11 @@ impl Workbench {
             return nodes;
         }
         let renderer = entry(i).renderer();
-        let mut nodes = Vec::new();
+        let mut nodes = if renderer == "select" {
+            s.select_story.native_nodes()
+        } else {
+            Vec::new()
+        };
         if renderer == "slider"
             && s.logical_focus.iter().any(|t| t.id == 20 && t.mounted)
             && let Some(frame) = s.extended.slider_view.layout().visible
@@ -75,6 +90,11 @@ impl Workbench {
             nodes.push(n);
         }
         for target in &s.logical_focus {
+            // The Select trigger/parts have their one ContentHost projection;
+            // keep the Gallery's independently mounted background controls.
+            if renderer == "select" && target.id == 20 {
+                continue;
+            }
             if !target.mounted {
                 continue;
             }
@@ -423,39 +443,11 @@ impl Workbench {
                 }
             }
         }
-        if renderer == "select"
-            && let Some(frame) = s.select_view.layout().trigger.visible
-        {
-            let title = s.button_labels.get(&20).map(String::as_str).unwrap_or("");
-            let mut n = node(
-                K {
-                    component: STORY + i as u64,
-                    part: Some(20),
-                },
-                R::MenuButton,
-                if title.is_empty() {
-                    entry(i).title()
-                } else {
-                    title
-                },
-                frame,
-            );
-            n.value = Some(title.to_owned());
-            n.enabled = !s.disabled && !s.select_empty;
-            n.invalid = s.error;
-            n.focused = s.window_active && s.focus == Some(20);
-            n.expanded = Some(s.select.menu.open);
-            nodes.push(n);
-        }
         let popup = match renderer {
             "menu" if s.menu_view.is_open() => s
                 .menu_layout
                 .as_ref()
                 .map(|p| (p, 50, s.menu_view.menu().items.selected)),
-            "select" if s.select.menu.open => s
-                .select_menu_layout
-                .as_ref()
-                .map(|p| (p, 60, s.select.menu.items.selected)),
             _ => None,
         };
         if let Some((layout, base, active)) = popup
@@ -500,7 +492,7 @@ impl Workbench {
                 n.parent = Some(parent);
                 n.enabled = !s.disabled;
                 n.focused = s.window_active && index == active;
-                n.selected = renderer == "select" && s.select.selected == index;
+                n.selected = false;
                 nodes.push(n);
             }
         }
@@ -627,10 +619,39 @@ impl Workbench {
         {
             return false;
         }
+        let renderer = entry(i).renderer();
+        if self.state(i).input.owns_native_key(key) {
+            let s = self.state(i);
+            let response = s.input.native_action(key, action.clone());
+            let focus_changed = response.consumed
+                && matches!(action, A::Focus)
+                && s.focus != Some(1000);
+            if response.consumed && matches!(action, A::Focus) {
+                s.focus = Some(1000);
+                s.sync_owned_focus(renderer, s.focus, true);
+            }
+            if response.changed {
+                s.input.refresh(text);
+                s.input_changed(renderer);
+                for event in s.input.drain_search_logs() {
+                    s.record(event);
+                }
+            }
+            return response.changed || focus_changed;
+        }
+        if renderer == "select" && self.state(i).select_story.owns_native_key(key) {
+            let (response, focused, logs) = {
+                let state = self.state(i);
+                let response = state.select_story.native_action(key, action.clone());
+                (response, state.select_story.host.focused().is_some(), state.select_story.drain_logs())
+            };
+            self.state(i).focus = focused.then_some(20);
+            for log in logs { self.state(i).record(log); }
+            return response.consumed;
+        }
         let Some(id) = key.part else {
             return false;
         };
-        let renderer = entry(i).renderer();
         if key.component == STORY + i as u64 {
             if matches!(
                 (renderer, id),
@@ -838,54 +859,34 @@ impl Workbench {
                     _ => false,
                 };
             }
-            if matches!((renderer, id), ("menu", 49) | ("select", 59)) {
+            if matches!((renderer, id), ("menu", 49)) {
                 return false; // Published popup containers have no direct action.
             }
-            let popup_item = match renderer {
-                "menu" => id.checked_sub(50).filter(|v| *v < 3),
-                "select" => id.checked_sub(60).filter(|v| *v < 3),
-                _ => None,
-            };
+            let popup_item = if renderer == "menu" { id.checked_sub(50).filter(|v| *v < 3) } else { None };
             if let Some(index) = popup_item {
                 let s = self.state(i);
                 return match action {
                     A::Focus => {
-                        let focused = if renderer == "select" {
-                            s.select_view.focus_option(index, &mut s.select)
-                        } else {
-                            s.menu_view.focus_item(index)
-                        };
+                        let focused = s.menu_view.focus_item(index);
                         if focused {
                             s.focus = Some(id);
                         }
                         focused
                     }
                     A::Press => {
-                        let event = if renderer == "select" {
-                            s.select_view.activate_option(index, &mut s.select)
-                        } else {
-                            s.menu_view.activate_item(index)
-                        };
+                        let event = s.menu_view.activate_item(index);
                         let changed = !matches!(event, MenuEvent::None);
-                        s.menu_event(event, renderer, renderer == "select");
+                        s.menu_event(event, renderer, false);
                         changed
                     }
                     _ => false,
                 };
             }
-            let popup_open = self.states.get(&i).is_some_and(|s| match renderer {
-                "menu" => s.menu_view.is_open(),
-                "select" => s.select.menu.open,
-                _ => false,
-            });
+            let popup_open = self.states.get(&i).is_some_and(|s| s.menu_view.is_open());
             if popup_open && matches!(action, A::Focus | A::Press) {
                 let s = self.state(i);
-                let event = if renderer == "select" {
-                    s.select_view.key(ControlKey::Escape, true, &mut s.select)
-                } else {
-                    s.menu_view.key(ControlKey::Escape, true)
-                };
-                s.menu_event(event, renderer, renderer == "select");
+                let event = s.menu_view.key(ControlKey::Escape, true);
+                s.menu_event(event, renderer, false);
                 // The expanded trigger dismisses once, just like its outside
                 // pointer press; do not close and reopen on the same action.
                 if id == 20 && matches!(action, A::Press) {
@@ -895,13 +896,6 @@ impl Workbench {
             match action {
                 A::Focus => return self.focus_control(i, id).is_some(),
                 A::Press => {
-                    if renderer == "select" && id == 20 {
-                        if self.focus_control(i, id).is_none() {
-                            return false;
-                        }
-                        self.state(i).activate(id, renderer);
-                        return true;
-                    }
                     if matches!(
                         (renderer, id),
                         ("icon-button" | "link" | "switch", 20)
@@ -942,9 +936,16 @@ impl Workbench {
             return false;
         }
         let before = s.input.query().to_owned();
-        let demo = if detail { &mut s.detail } else { &mut s.input };
-        let changed = demo.accessibility_action(id, action);
-        demo.refresh(text);
+        let changed = if detail {
+            s.detail.accessibility_action(id, action)
+        } else {
+            s.input.accessibility_action(id, action)
+        };
+        if detail {
+            s.detail.refresh(text);
+        } else {
+            s.input.refresh(text);
+        }
         if changed && matches!(action, A::Focus) {
             s.focus = Some(if detail { 1001 } else { 1000 });
             s.sync_owned_focus(renderer, s.focus, true);
@@ -1386,9 +1387,17 @@ mod text_family_tests {
             g.page = Page::Workbench(i);
             g.set_view_size(1200., 850.);
             g.build_scene(&mut Scene::new());
-            let key = K {
-                component: INPUT + i as u64,
-                part: Some(0),
+            let key = if renderer == "search" {
+                g.accessibility_nodes()
+                    .into_iter()
+                    .find(|node| node.key.component >= (1_u64 << 63) && node.value.is_some())
+                    .unwrap()
+                    .key
+            } else {
+                K {
+                    component: INPUT + i as u64,
+                    part: Some(0),
+                }
             };
             g.accessibility_action(key, &A::Focus);
             assert!(
@@ -1403,10 +1412,10 @@ mod text_family_tests {
                 .unwrap();
             assert_eq!(
                 n.role,
-                if renderer == "area" {
-                    R::TextArea
-                } else {
-                    R::TextField
+                match renderer {
+                    "area" => R::TextArea,
+                    "search" => R::SearchField,
+                    _ => R::TextField,
                 }
             );
             assert_eq!(n.value.as_deref(), Some("中文 😀 e\u{301}"));
@@ -1805,7 +1814,7 @@ mod menu_tests {
     }
     #[test]
     fn real_menu_and_select_export_popup_roles_and_activate_original_models_once() {
-        for renderer in ["menu", "select"] {
+        for renderer in ["menu"] {
             let (mut g, i) = gallery(renderer);
             let base = if renderer == "menu" { 50 } else { 60 };
             let trigger = g
@@ -1835,11 +1844,11 @@ mod menu_tests {
                 );
             }
             assert_eq!(nodes.iter().filter(|n| n.focused).count(), 1);
-            let before = g.workbench.states[&i].select.selected;
+            let before = g.workbench.states[&i].select_story.model().selected;
             assert!(g.accessibility_action(key(i, base + 2), &A::Focus).redraw);
             g.build_scene(&mut Scene::new());
             if renderer == "select" {
-                assert_eq!(g.workbench.states[&i].select.selected, before);
+                assert_eq!(g.workbench.states[&i].select_story.model().selected, before);
             }
             assert!(
                 g.accessibility_nodes()
@@ -1860,7 +1869,7 @@ mod menu_tests {
             );
             assert!(!g.accessibility_action(key(i, base + 2), &A::Press).redraw);
             if renderer == "select" {
-                assert_eq!(g.workbench.states[&i].select.selected, 2);
+                assert_eq!(g.workbench.states[&i].select_story.model().selected, 2);
                 assert!(g.accessibility_action(key(i, 20), &A::Press).redraw);
                 g.build_scene(&mut Scene::new());
                 let selected = g
@@ -1879,7 +1888,7 @@ mod menu_tests {
     }
     #[test]
     fn real_expanded_trigger_dismisses_without_reopening_and_background_focus_uses_escape() {
-        for renderer in ["menu", "select"] {
+        for renderer in ["menu"] {
             let (mut g, i) = gallery(renderer);
             for background in [false, true] {
                 assert!(g.accessibility_action(key(i, 20), &A::Press).redraw);
@@ -1907,7 +1916,7 @@ mod menu_tests {
     }
     #[test]
     fn outer_gallery_focus_transfer_dismisses_menu_and_select_without_restoring_underlay() {
-        for renderer in ["menu", "select"] {
+        for renderer in ["menu"] {
             for search in [true, false] {
                 let (mut g, i) = gallery(renderer);
                 assert!(g.accessibility_action(key(i, 20), &A::Press).redraw);
@@ -1942,8 +1951,8 @@ mod menu_tests {
         }
     }
     #[test]
-    fn disabled_popup_items_and_empty_select_reject_semantic_activation() {
-        for renderer in ["menu", "select"] {
+    fn disabled_menu_popup_items_reject_semantic_activation() {
+        for renderer in ["menu"] {
             let (mut g, i) = gallery(renderer);
             let base = if renderer == "menu" { 50 } else { 60 };
             assert!(g.accessibility_action(key(i, 20), &A::Press).redraw);
@@ -1951,10 +1960,6 @@ mod menu_tests {
             g.build_scene(&mut Scene::new());
             assert!(!g.accessibility_action(key(i, base), &A::Press).redraw);
         }
-        let (mut g, i) = gallery("select");
-        g.workbench.state(i).select_empty = true;
-        g.build_scene(&mut Scene::new());
-        assert!(!g.accessibility_action(key(i, 20), &A::Press).redraw);
     }
 }
 
@@ -2265,5 +2270,28 @@ mod tree_table_tests {
             g.build_scene(&mut Scene::new());
             assert!(!g.accessibility_action(key(i, 30), &A::Press).redraw);
         }
+    }
+}
+
+#[cfg(test)]
+mod search_recovery_focus_tests {
+    use super::*;
+    use crate::gallery::{Gallery, static_text::StaticText};
+
+    #[test]
+    fn native_search_focus_updates_the_workbench_focus_owner() {
+        let i = entries().iter().position(|entry| entry.renderer() == "search").unwrap();
+        let mut g = Gallery::with_static_text(StaticText::new(None));
+        g.page = Page::Workbench(i);
+        g.set_view_size(1200., 850.);
+        g.build_scene(&mut Scene::new());
+        assert!(g.workbench.focus_control(i, 10).is_some());
+        assert_eq!(g.workbench.state(i).focus, Some(10));
+        let key = g.accessibility_nodes().into_iter()
+            .find(|node| node.role == R::SearchField)
+            .expect("projected original Search text owner").key;
+        assert!(g.accessibility_action(key, &A::Focus).redraw);
+        assert_eq!(g.workbench.state(i).focus, Some(1000));
+        assert!(g.workbench.state(i).input.search_host().unwrap().focused());
     }
 }

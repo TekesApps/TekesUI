@@ -58,6 +58,7 @@ pub enum AccessibilityRole {
     RadioButton,
     RadioGroup,
     TextField,
+    SearchField,
     TextArea,
     /// Editable single-line text with an attached option list.
     ComboBox,
@@ -85,6 +86,7 @@ pub enum AccessibilityRole {
     Dialog,
     Menu,
     MenuButton,
+    PopUpButton,
     MenuItem,
     TabGroup,
     Tab,
@@ -385,6 +387,7 @@ pub(crate) fn validate_accessibility_nodes_with_geometry(
                 !matches!(
                     node.role,
                     AccessibilityRole::TextField
+                        | AccessibilityRole::SearchField
                         | AccessibilityRole::TextArea
                         | AccessibilityRole::ComboBox
                 ) || text_in_range(node.value.as_deref().unwrap_or(""), range.clone()).is_none()
@@ -503,7 +506,7 @@ pub(crate) mod native {
                         AccessibilityRole::RadioGroup => {
                             objc2_app_kit::NSAccessibilityRadioGroupRole
                         }
-                        AccessibilityRole::TextField => objc2_app_kit::NSAccessibilityTextFieldRole,
+                        AccessibilityRole::TextField | AccessibilityRole::SearchField => objc2_app_kit::NSAccessibilityTextFieldRole,
                         AccessibilityRole::TextArea => objc2_app_kit::NSAccessibilityTextAreaRole,
                         AccessibilityRole::ComboBox => objc2_app_kit::NSAccessibilityComboBoxRole,
                         AccessibilityRole::List => objc2_app_kit::NSAccessibilityListRole,
@@ -528,6 +531,7 @@ pub(crate) mod native {
                         AccessibilityRole::MenuButton => {
                             objc2_app_kit::NSAccessibilityMenuButtonRole
                         }
+                        AccessibilityRole::PopUpButton => objc2_app_kit::NSAccessibilityPopUpButtonRole,
                         AccessibilityRole::MenuItem => objc2_app_kit::NSAccessibilityMenuItemRole,
                         AccessibilityRole::Tab => objc2_app_kit::NSAccessibilityRadioButtonRole,
                         AccessibilityRole::TabGroup => objc2_app_kit::NSAccessibilityTabGroupRole,
@@ -548,6 +552,8 @@ pub(crate) mod native {
                     .is_some_and(|n| matches!(n.role, AccessibilityRole::TreeItem { .. }))
                 {
                     unsafe { objc2_app_kit::NSAccessibilityOutlineRowSubrole.retain() }
+                } else if self.node().is_some_and(|n| n.role == AccessibilityRole::SearchField) {
+                    unsafe { objc2_app_kit::NSAccessibilitySearchFieldSubrole.retain() }
                 } else {
                     NSString::from_str("")
                 }
@@ -654,6 +660,7 @@ pub(crate) mod native {
                     if !matches!(
                         node.role,
                         AccessibilityRole::TextField
+                            | AccessibilityRole::SearchField
                             | AccessibilityRole::TextArea
                             | AccessibilityRole::ComboBox
                     ) {
@@ -683,6 +690,7 @@ pub(crate) mod native {
                     if !matches!(
                         node.role,
                         AccessibilityRole::TextField
+                            | AccessibilityRole::SearchField
                             | AccessibilityRole::TextArea
                             | AccessibilityRole::ComboBox
                     ) {
@@ -863,6 +871,7 @@ pub(crate) mod native {
                     matches!(
                         n.role,
                         AccessibilityRole::TextField
+                            | AccessibilityRole::SearchField
                             | AccessibilityRole::TextArea
                             | AccessibilityRole::ComboBox
                     ) && n.text_selection.is_some()
@@ -880,6 +889,7 @@ pub(crate) mod native {
                     matches!(
                         n.role,
                         AccessibilityRole::TextField
+                            | AccessibilityRole::SearchField
                             | AccessibilityRole::TextArea
                             | AccessibilityRole::ComboBox
                     ) && !n.read_only
@@ -993,7 +1003,7 @@ pub(crate) mod native {
             fn accessibilitySetExpanded(&self, expanded: bool) {
                 if self.node().is_some_and(|n| {
                     (matches!(n.role, AccessibilityRole::TreeItem { .. })
-                        || n.role == AccessibilityRole::ComboBox)
+                        || matches!(n.role, AccessibilityRole::ComboBox | AccessibilityRole::PopUpButton))
                         && n.expanded.is_some()
                 }) {
                     self.dispatch(AccessibilityAction::SetExpanded(expanded));
@@ -1183,6 +1193,7 @@ pub(crate) mod native {
                 if !matches!(
                     node.role,
                     AccessibilityRole::TextField
+                        | AccessibilityRole::SearchField
                         | AccessibilityRole::TextArea
                         | AccessibilityRole::ComboBox
                 ) {
@@ -1216,6 +1227,7 @@ pub(crate) mod native {
                 if matches!(
                     node.role,
                     AccessibilityRole::TextField
+                        | AccessibilityRole::SearchField
                         | AccessibilityRole::TextArea
                         | AccessibilityRole::ComboBox
                 ) {
@@ -1247,6 +1259,7 @@ pub(crate) mod native {
                         matches!(
                             node.role,
                             AccessibilityRole::TextField
+                                | AccessibilityRole::SearchField
                                 | AccessibilityRole::TextArea
                                 | AccessibilityRole::ComboBox
                         ) && if selector == sel!(accessibilityAttributedStringForRange:) {
@@ -1328,7 +1341,7 @@ pub(crate) mod native {
                             || selector == sel!(setAccessibilityDisclosed:))
                             && (matches!(node.role, AccessibilityRole::TreeItem { .. })
                                 || (selector == sel!(setAccessibilityExpanded:)
-                                    && node.role == AccessibilityRole::ComboBox))
+                                    && matches!(node.role, AccessibilityRole::ComboBox | AccessibilityRole::PopUpButton)))
                             && node.expanded.is_some())
                             || (selector == sel!(accessibilityPerformPress)
                                 && Self::is_pressable(node.role))
@@ -1338,6 +1351,7 @@ pub(crate) mod native {
                                 && matches!(
                                     node.role,
                                     AccessibilityRole::TextField
+                                        | AccessibilityRole::SearchField
                                         | AccessibilityRole::TextArea
                                         | AccessibilityRole::ComboBox
                                         | AccessibilityRole::Slider(_)
@@ -1348,6 +1362,7 @@ pub(crate) mod native {
                                 && matches!(
                                     node.role,
                                     AccessibilityRole::TextField
+                                        | AccessibilityRole::SearchField
                                         | AccessibilityRole::TextArea
                                         | AccessibilityRole::ComboBox
                                 )
@@ -1364,6 +1379,7 @@ pub(crate) mod native {
                                 && matches!(
                                     node.role,
                                     AccessibilityRole::TextField
+                                        | AccessibilityRole::SearchField
                                         | AccessibilityRole::TextArea
                                         | AccessibilityRole::ComboBox
                                 )
@@ -1404,6 +1420,7 @@ pub(crate) mod native {
                     | AccessibilityRole::Checkbox
                     | AccessibilityRole::RadioButton
                     | AccessibilityRole::MenuButton
+                    | AccessibilityRole::PopUpButton
                     | AccessibilityRole::MenuItem
                     | AccessibilityRole::ListItem
                     | AccessibilityRole::TreeItem { .. }
@@ -1423,9 +1440,11 @@ pub(crate) mod native {
                     | AccessibilityRole::Checkbox
                     | AccessibilityRole::RadioButton
                     | AccessibilityRole::TextField
+                    | AccessibilityRole::SearchField
                     | AccessibilityRole::TextArea
                     | AccessibilityRole::ComboBox
                     | AccessibilityRole::MenuButton
+                    | AccessibilityRole::PopUpButton
                     | AccessibilityRole::MenuItem
                     | AccessibilityRole::ListItem
                     | AccessibilityRole::TreeItem { .. }
@@ -1471,6 +1490,7 @@ pub(crate) mod native {
             if !matches!(
                 node.role,
                 AccessibilityRole::TextField
+                    | AccessibilityRole::SearchField
                     | AccessibilityRole::TextArea
                     | AccessibilityRole::ComboBox
             ) {

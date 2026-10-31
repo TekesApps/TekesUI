@@ -165,6 +165,14 @@ impl Gallery {
         );
         nodes
     }
+    pub fn accessibility_text_layouts(
+        &self,
+    ) -> Vec<(K, tekes_ui_platform_macos::AccessibilityTextLayout)> {
+        if let Page::Workbench(i) = self.page {
+            return self.workbench.search_native_layouts(i);
+        }
+        Vec::new()
+    }
     pub fn accessibility_action(&mut self, target: K, action: &A) -> Change {
         // All Gallery producers share the host window scope, including controls
         // first mounted after the initial inactive notification.
@@ -196,10 +204,10 @@ impl Gallery {
                 _ => Change::NONE,
             };
         }
-        let Some(index) = target.part else {
-            return Change::NONE;
-        };
         if target.component == SEARCH {
+            let Some(index) = target.part else {
+                return Change::NONE;
+            };
             let changed = self.navigation_search.accessibility_action(index, action);
             if changed && matches!(action, A::Focus) {
                 if let Page::Workbench(i) = self.page {
@@ -229,6 +237,9 @@ impl Gallery {
                 Change::NONE
             };
         }
+        let Some(index) = target.part else {
+            return Change::NONE;
+        };
         let owner = INPUT + 0x100 + self.page.index() as u64;
         if target.component != owner {
             return Change::NONE;
@@ -290,5 +301,25 @@ mod window_lifecycle_tests {
         g.build_scene(&mut tekes_ui_scene::Scene::new());
         assert!(g.accessibility_action(open, &A::Press).redraw);
         assert!(g.workbench.accessibility_modal(i));
+    }
+}
+
+#[cfg(test)]
+mod search_recovery_navigation_tests {
+    use super::*;
+    use crate::gallery::static_text::StaticText;
+
+    #[test]
+    fn workbench_keeps_navigation_search_accessibility_route() {
+        let mut g = Gallery::with_static_text(StaticText::new(None));
+        assert!(g.open_route("component-search-field"));
+        g.set_view_size(1200., 850.);
+        g.build_scene(&mut tekes_ui_scene::Scene::new());
+        let key = g.accessibility_nodes().into_iter()
+            .find(|node| node.key.component == SEARCH && node.role == R::TextField)
+            .expect("original navigation search stays mounted").key;
+        assert!(g.accessibility_action(key, &A::Focus).redraw);
+        assert!(g.accessibility_action(key, &A::SetValue("Slider".into())).redraw);
+        assert_eq!(g.navigation_search.query(), "Slider");
     }
 }

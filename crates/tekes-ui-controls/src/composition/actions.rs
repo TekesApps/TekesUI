@@ -8,6 +8,8 @@ pub enum ContentActionKind {
     Activate,
     /// An editor's configured submission intent, not business delivery.
     Submit,
+    /// Original Search query clear intent.
+    Clear,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ContentActionSource {
@@ -29,6 +31,7 @@ pub enum ContentActionPayload {
     /// Original toolbar command captured before menu-close focus cleanup.
     ToolbarCommand(u64),
     MenuSelection(MenuSelection),
+    Search(SearchAction),
     ComboBoxSelection(ComboBoxSelection),
     CheckboxState(CheckboxIntent),
     RadioSelection(RadioSelectionIntent),
@@ -95,6 +98,19 @@ pub(super) struct PendingAction {
     pub(super) payload: Option<ContentActionPayload>,
 }
 static NEXT_MOUNT: AtomicU64 = AtomicU64::new(1);
+#[cfg(test)]
+static TEST_MOUNT_BASE: AtomicU64 = AtomicU64::new(1_u64 << 63);
+#[cfg(test)]
+use mount_test_counter::TEST_NEXT_MOUNT;
+#[cfg(test)]
+fn with_mount_counter<R>(f: impl FnOnce(&AtomicU64) -> R) -> R {
+    TEST_NEXT_MOUNT.with(|slot| {
+        let scoped = slot.borrow();
+        if let Some(counter) = scoped.as_ref() { f(counter) } else { f(&NEXT_MOUNT) }
+    })
+}
+#[cfg(not(test))]
+fn with_mount_counter<R>(f: impl FnOnce(&AtomicU64) -> R) -> R { f(&NEXT_MOUNT) }
 pub(super) fn next_mount() -> u64 {
     try_next_mount().expect("content mount identity exhausted")
 }
@@ -104,9 +120,11 @@ pub(super) fn try_next_mount() -> Result<u64, CompositionError> {
     if FAIL_MOUNT.with(|flag| flag.get()) {
         return Err(CompositionError::MountExhausted);
     }
-    NEXT_MOUNT
-        .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |n| n.checked_add(1))
-        .map_err(|_| CompositionError::MountExhausted)
+    with_mount_counter(|counter| {
+        counter
+            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |n| n.checked_add(1))
+            .map_err(|_| CompositionError::MountExhausted)
+    })
 }
 #[cfg(test)]
 mod mount_capacity_test {
@@ -153,22 +171,16 @@ pub(super) fn reserve_mounts(count: usize) -> Option<MountRange> {
         return None;
     }
     let count = u64::try_from(count).ok()?;
-    {
-        let counter = &NEXT_MOUNT;
+    with_mount_counter(|counter| {
         if count == 0 {
             let n = counter.load(Ordering::Relaxed);
             return Some(MountRange { next: n, end: n });
         }
         let start = counter
-            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |n| {
-                n.checked_add(count)
-            })
+            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |n| n.checked_add(count))
             .ok()?;
-        Some(MountRange {
-            next: start,
-            end: start + count,
-        })
-    }
+        Some(MountRange { next: start, end: start + count })
+    })
 }
 impl ContentEvent {
     pub(super) fn action_source(&self) -> ContentActionSource {
@@ -272,6 +284,11 @@ impl ContentHost {
             .filter_map(|pending| {
                 self.root
                     .find(pending.action.target)
+                    .filter(|_| {
+                        !matches!(pending.payload, Some(ContentActionPayload::Search(_)))
+                            || self.window_active
+                                && self.scope().find_active(pending.action.target).is_some()
+                    })
                     .filter(|content| {
                         content.mount == pending.mount
                             && empty_state::authorized_action(&self.root, pending.action.target)
@@ -1286,4 +1303,34 @@ mod checkbox_mount_tests {
         .unwrap();
         assert_eq!(ScopedMountOverride::current(), u64::MAX);
     }
+}
+
+#[cfg(test)]
+mod mount_test_counter {
+    use super::*;
+    thread_local! {
+        pub(super) static TEST_NEXT_MOUNT: std::cell::RefCell<Option<AtomicU64>> = const { std::cell::RefCell::new(None) };
+    }
+    pub(super) struct ScopedMountOverride { previous: Option<AtomicU64> }
+    impl ScopedMountOverride {
+        pub(super) fn enter() -> Self {
+            const RANGE: u64 = 1_u64 << 32;
+            let start = TEST_MOUNT_BASE.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |n| n.checked_add(RANGE))
+                .expect("test mount-id range exhausted");
+            let previous = TEST_NEXT_MOUNT.with(|cell| cell.replace(Some(AtomicU64::new(start))));
+            Self { previous }
+        }
+        pub(super) fn current() -> u64 { with_mount_counter(|counter| counter.load(Ordering::Relaxed)) }
+        pub(super) fn set(next: u64) { with_mount_counter(|counter| counter.store(next, Ordering::Relaxed)); }
+    }
+    impl Drop for ScopedMountOverride {
+        fn drop(&mut self) { TEST_NEXT_MOUNT.with(|cell| { cell.replace(self.previous.take()); }); }
+    }
+}
+#[cfg(test)]
+pub(super) fn select_test_mount_boundary<R>(next: u64, f: impl FnOnce() -> R) -> (R, u64) {
+    let _guard = mount_test_counter::ScopedMountOverride::enter();
+    mount_test_counter::ScopedMountOverride::set(next);
+    let result = f();
+    (result, mount_test_counter::ScopedMountOverride::current())
 }

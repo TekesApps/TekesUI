@@ -19,7 +19,7 @@ tekes-ui-icons = { path = "../tekes-ui-icons" }
 tekes-ui-motion = {path="../tekes-ui-motion"}
 tekes-ui-tokens.workspace = true
 tekes-ui-scene.workspace = true
-tekes-ui-platform-macos.workspace = true
+tekes-ui-platform-macos = { workspace = true, features = ["content-accessibility"] }
 tekes-ui-render.workspace = true
 tekes-ui-text.workspace = true
 png.workspace = true

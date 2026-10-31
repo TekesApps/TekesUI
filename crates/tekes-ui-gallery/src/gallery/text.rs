@@ -91,6 +91,7 @@ pub struct TextEngine {
     motion_enabled: bool,
     motion_context: Option<ControlMotionContext>,
     motion_frame_requested: bool,
+    fixture_surface_cache: bool,
 }
 
 impl std::fmt::Debug for TextEngine {
@@ -132,6 +133,7 @@ impl TextEngine {
             motion_enabled: false,
             motion_context: None,
             motion_frame_requested: false,
+            fixture_surface_cache: false,
         }
     }
 
@@ -210,6 +212,12 @@ impl TextEngine {
         context: Option<ControlMotionContext>,
     ) -> Option<ControlMotionContext> {
         std::mem::replace(&mut self.motion_context, context)
+    }
+
+    /// Immutable Search fixtures borrow the existing finite paragraph cache;
+    /// live editors retain the original document-local TextSurface cache.
+    pub(super) fn replace_fixture_surface_cache(&mut self, enabled: bool) -> bool {
+        std::mem::replace(&mut self.fixture_surface_cache, enabled)
     }
 
     pub fn motion_frame_requested(&self) -> bool {
@@ -652,7 +660,11 @@ impl tekes_ui_controls::TextSurfaceHost for TextEngine {
         role: proposal::TextRole,
         width: Option<f32>,
     ) -> Rc<Paragraph> {
-        Rc::new(self.shape_proposal(text, role, width))
+        if self.fixture_surface_cache {
+            self.proposal_document(text, role, width)
+        } else {
+            Rc::new(self.shape_proposal(text, role, width))
+        }
     }
     fn type_scale(&self) -> f32 {
         self.type_scale

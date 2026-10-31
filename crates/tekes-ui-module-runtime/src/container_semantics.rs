@@ -80,11 +80,16 @@ pub(crate) fn validate(nodes: &[wire::SemanticNode]) -> Result<()> {
             "invalid child shaped text layout"
         );
         ensure!(
-            n.semantics.role != wire::SemanticRole::ComboBox
+            !matches!(n.semantics.role, wire::SemanticRole::ComboBox | wire::SemanticRole::SearchInput)
                 || n.text_layout
                     .as_ref()
                     .is_none_or(|layout| !layout.multiline),
-            "multiline ComboBox"
+            "multiline ComboBox/SearchInput"
+        );
+        ensure!(
+            n.semantics.role != wire::SemanticRole::Select
+                || (n.text.is_none() && n.text_layout.is_none() && n.text_binding.is_none()),
+            "Select cannot carry a text owner"
         );
         let mut parts = std::collections::HashSet::new();
         for p in &n.parts {
@@ -102,11 +107,15 @@ pub(crate) fn validate(nodes: &[wire::SemanticNode]) -> Result<()> {
                 "missing child adjustable part range"
             );
             ensure!(
-                p.semantics.role != wire::SemanticRole::ComboBox
+                !matches!(p.semantics.role, wire::SemanticRole::ComboBox | wire::SemanticRole::SearchInput)
                     || p.text_layout
                         .as_ref()
                         .is_none_or(|layout| !layout.multiline),
-                "multiline ComboBox part"
+                "multiline ComboBox/SearchInput part"
+            );
+            ensure!(
+                p.semantics.role != wire::SemanticRole::Select || p.text_layout.is_none(),
+                "Select part cannot carry a text owner"
             );
             ensure!(
                 p.text_layout
@@ -225,6 +234,7 @@ fn semantics(s: &wire::Semantics) -> ContentSemantics {
             W::Button => R::Button,
             W::Link => R::Link,
             W::TextInput => R::TextInput,
+            W::SearchInput => R::SearchInput,
             W::ComboBox => R::ComboBox,
             W::Slider => R::Slider,
             W::Splitter => R::Splitter,
@@ -239,6 +249,7 @@ fn semantics(s: &wire::Semantics) -> ContentSemantics {
             W::ListItem => R::ListItem,
             W::Dialog => R::Dialog,
             W::MenuButton => R::MenuButton,
+            W::Select => R::Select,
             W::Menu => R::Menu,
             W::MenuItem => R::MenuItem,
             W::TabList => R::TabList,
