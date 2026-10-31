@@ -291,7 +291,7 @@
         {
           "api": "tekes_ui_controls::composition::DisclosureContent",
           "path": "crates/tekes-ui-controls/src/composition/disclosure.rs",
-          "line": 334,
+          "line": 354,
           "anchor": "pub struct DisclosureContent {"
         },
         {
@@ -574,7 +574,7 @@
         {
           "api": "tekes_ui_controls::layout_view::LinkView",
           "path": "crates/tekes-ui-controls/src/layout_view.rs",
-          "line": 1351,
+          "line": 1375,
           "anchor": "pub struct LinkView {"
         },
         {
@@ -735,7 +735,7 @@
         {
           "api": "tekes_ui_controls::layout_view::ComboBoxView",
           "path": "crates/tekes-ui-controls/src/layout_view.rs",
-          "line": 3409,
+          "line": 3433,
           "anchor": "pub struct ComboBoxView {"
         },
         {
@@ -944,7 +944,7 @@
         {
           "api": "tekes_ui_controls::layout_view::SegmentedControlView",
           "path": "crates/tekes-ui-controls/src/layout_view.rs",
-          "line": 1593,
+          "line": 1617,
           "anchor": "pub struct SegmentedControlView {"
         },
         {
@@ -1030,7 +1030,7 @@
         {
           "api": "tekes_ui_controls::layout_view::SelectView",
           "path": "crates/tekes-ui-controls/src/layout_view.rs",
-          "line": 2886,
+          "line": 2910,
           "anchor": "pub struct SelectView {"
         },
         {
@@ -1168,7 +1168,7 @@
         {
           "api": "tekes_ui_controls::layout_view::BreadcrumbView",
           "path": "crates/tekes-ui-controls/src/layout_view.rs",
-          "line": 2266,
+          "line": 2290,
           "anchor": "pub struct BreadcrumbView {"
         },
         {
@@ -1214,7 +1214,7 @@
         {
           "api": "tekes_ui_controls::layout_view::CommandPaletteView",
           "path": "crates/tekes-ui-controls/src/layout_view.rs",
-          "line": 3628,
+          "line": 3652,
           "anchor": "pub struct CommandPaletteView {"
         },
         {
@@ -2056,7 +2056,7 @@
     "crates/tekes-ui-controls/src/composition/combobox.rs": "29d825cc459bef202edec0fc59bed240a25a2a3a40deddc012a772a8c9247154",
     "crates/tekes-ui-controls/src/composition/content_reading.rs": "240961469cff6793b1fc02497ddab7eb77d14f96b4c7ae6b26ab4715154f2229",
     "crates/tekes-ui-controls/src/composition/content_reveal.rs": "1d2173c778670f825e67257ea54912d04f497d555f293ced0228e19f8a1b2dde",
-    "crates/tekes-ui-controls/src/composition/disclosure.rs": "1cd443d71cf9a0bf342faffd89f0085f66907a02b4b04511dee7e25a7aa8bd1b",
+    "crates/tekes-ui-controls/src/composition/disclosure.rs": "9a20011be2e6646dc9b798be1d6ab8e0bf82b6fcfceb815d538adc6254a55d69",
     "crates/tekes-ui-controls/src/composition/empty_state.rs": "7c9f782be95d0d5163cd0b11091211bb457aff7511ea4255c945d3c51aaa2776",
     "crates/tekes-ui-controls/src/composition/help.rs": "0ff05ea2ee135ecb418f5a87b4687db9379a3b53792c225cfb650a3f400b058e",
     "crates/tekes-ui-controls/src/composition/icon.rs": "12bb7040fc42deaddc525c61bf8d5be96b54db859adefadbf9643079615b710b",
@@ -2085,7 +2085,7 @@
     "crates/tekes-ui-controls/src/control_motion.rs": "0301717c307ba6bdc2b91085c9e1995e6ca74391c7bbda9168af2c042a52a788",
     "crates/tekes-ui-controls/src/extended.rs": "909baa03c35e64a5709e1f89780e4d3330a99fc56a85dd049ac1066dd15ac46c",
     "crates/tekes-ui-controls/src/feedback_view.rs": "7156351e836a178a98ceeff412fbf500c9624b48bf6cf2e96da728b14b8ced22",
-    "crates/tekes-ui-controls/src/layout_view.rs": "04208da4c26fbc303180bdf9e528bf79d1d9f4648ad4e6acb3dbb0a1761422b6",
+    "crates/tekes-ui-controls/src/layout_view.rs": "57aafc416bf53c41d7d937230164d1647f44da0b7e003e843b0b3a0376a64ab4",
     "crates/tekes-ui-controls/src/lib.rs": "7c02ead867e15b5149dd5216b04b021d0ef4205ff2b6603835f3ada967074698",
     "crates/tekes-ui-controls/src/reading.rs": "65fae5533cfe23601197b33fcf8521b5e68999138dad658d6de67c00bad14d82",
     "crates/tekes-ui-controls/src/scroll_view.rs": "a5e590208cceabe72ff62cf61b6b070b16f44338235329622787e50541d9b65f",
@@ -2223,7 +2223,7 @@
     "docs/design/selectable-list-public-content-20261024.md": "cad16726a3dda60fdd2b2ab18bad881150cf907bd78e76989713d7c269ecc2a0",
     "docs/design/tree-public-content-20261024.md": "a01a90370da0b5ad9e9bc589c9601fa61279b49fd2f5aa3c68910e90d58aa2bc",
     "docs/design/datatable-public-content-20261024.md": "812988af6954e21b11d6aca4fe769bfb405f26f256685c400f88cc28ef377cf9",
-    "docs/design/disclosure-public-content-20261024.md": "6f26c115500eae9f9900e33b9979a42328439b1df21b2eb59478270bb08593db"
+    "docs/design/disclosure-public-content-20261024.md": "11a9e27ff7da777fbc40ade5c878367f65452440095bf3dc8689e5c2d2bdf9f2"
   },
   "remaining": [
     "Collections49 public adapter/support paths recovered in thisf4df candidate; actual compatible compilation/consumer/IPC acceptance and publication remain Main gates. Tree/Table and keyed List slots remain finite passive contracts, not arbitrary interactive content or virtualization.",
@@ -2315,12 +2315,12 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/layout_view.rs",
-      "line": 3832,
+      "line": 3856,
       "anchor": "pub fn blur_trigger(&mut self) {"
     },
     {
       "path": "crates/tekes-ui-controls/src/layout_view.rs",
-      "line": 4004,
+      "line": 4028,
       "anchor": "pub fn pointer_move(&mut self, p: Point, model: &mut CommandPalette) {"
     },
     {
@@ -2330,12 +2330,12 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/layout_view.rs",
-      "line": 3095,
+      "line": 3119,
       "anchor": "pub fn render_trigger("
     },
     {
       "path": "crates/tekes-ui-controls/src/layout_view.rs",
-      "line": 3159,
+      "line": 3183,
       "anchor": "pub fn render_options("
     },
     {
