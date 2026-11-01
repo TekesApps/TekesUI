@@ -20,6 +20,7 @@ struct Text {
     frames: usize,
     shaper: CoreTextShaper,
     widths: Vec<Option<f32>>,
+    scale: f32,
 }
 impl Text {
     fn new(enabled: bool) -> Self {
@@ -31,10 +32,14 @@ impl Text {
             frames: 0,
             shaper: CoreTextShaper::new(CoreTextFonts::new()),
             widths: Vec::new(),
+            scale: 1.,
         }
     }
 }
 impl ButtonTextRenderer for Text {
+    fn backing_scale(&self) -> f32 {
+        self.scale
+    }
     fn text_surface_host(&mut self) -> Option<&mut dyn TextSurfaceHost> {
         if self.enabled { Some(self) } else { None }
     }
@@ -1408,4 +1413,254 @@ fn delegated_curve_ordinary_input_requires_current_owner_and_does_not_move_ances
             .offset,
         before
     );
+}
+
+// Real Form metadata and original layout/shaping; synthetic constraints are
+// deliberate test geometry, not a consumer layout or a replacement hit rule.
+fn form_focus_host(scale: f32, scrolling: bool, zero_padding: bool) -> (ContentHost, Text) {
+    let field = Content::new(FIELD, TextFieldContent::new("Editor", "retained draft"));
+    let child = if scrolling {
+        Content::new(
+            CHILD,
+            ScrollContent::new(tekes_ui_controls::ScrollArea::default(), field),
+        )
+    } else {
+        field
+    };
+    let mut panel = panel(child, true);
+    if !zero_padding {
+        // One full band fits the ring while keeping the metadata's top corner
+        // in the Panel cutout. At @1x, two bands reached the radius tangent.
+        let band = tekes_ui_controls::extended::FocusRingMetrics::new(scale).reserved_band();
+        panel
+            .set_padding(Some(Insets::new(0., band, 0., band)))
+            .unwrap();
+    }
+    let mut host = ContentHost::new(Content::new(ROOT, panel)).unwrap();
+    host.set_window_active(true);
+    let mut text = Text::new(true);
+    text.scale = scale;
+    render(&mut host, &mut text, Rect::new(0., 0., 100., 100.));
+    (host, text)
+}
+
+fn request_form_focus(host: &mut ContentHost, route: usize, point: Point) -> ContentResponse {
+    match route {
+        0 => host.event(&ContentEvent::PointerDown(point)),
+        1 => ContentResponse::consumed(host.focus(Some(FIELD), true)),
+        2 => host.event(&ContentEvent::Key {
+            key: tekes_ui_controls::ControlKey::Tab { reverse: false },
+            down: true,
+        }),
+        3 => host.accessibility_action(FIELD, None, AccessibilityAction::Focus),
+        _ => unreachable!(),
+    }
+}
+
+#[test]
+fn form_focus_complete_ring_uses_actual_scale_once_with_and_without_scroll() {
+    for scale in [1., 2.] {
+        for scrolling in [false, true] {
+            for route in 0..4 {
+                let (mut host, mut text) = form_focus_host(scale, scrolling, false);
+                let field = host.get(FIELD).unwrap();
+                let outer = field.component::<TextFieldContent>().unwrap().surface.outer;
+                let allocation = field.frame();
+                let bounds =
+                    tekes_ui_controls::extended::ControlFrame::new(outer, None).focus_bounds(scale);
+                let shape = host
+                    .get(ROOT)
+                    .unwrap()
+                    .component::<PanelContent>()
+                    .unwrap()
+                    .geometry()
+                    .unwrap()
+                    .shape;
+                if !scrolling {
+                    assert_eq!(
+                        shape.contains([
+                            f64::from(allocation.min_x()),
+                            f64::from(allocation.min_y())
+                        ]),
+                        Ok(false)
+                    );
+                }
+                assert!(
+                    allocation.min_y() < bounds.min_y(),
+                    "metadata lies outside the focus target"
+                );
+                for point in [
+                    [bounds.min_x(), bounds.min_y()],
+                    [bounds.max_x(), bounds.min_y()],
+                    [bounds.min_x(), bounds.max_y()],
+                    [bounds.max_x(), bounds.max_y()],
+                ] {
+                    assert_eq!(shape.contains(point.map(f64::from)), Ok(true));
+                }
+                // Exactly one full ring fits: wrong @1x reuse at @2x or double
+                // Scroll expansion cannot pass this original rectangular clip.
+                render(&mut host, &mut text, bounds);
+                let point = Point::new(
+                    outer.min_x() + outer.size.width * 0.5,
+                    outer.min_y() + outer.size.height * 0.5,
+                );
+                let response = request_form_focus(&mut host, route, point);
+                assert_eq!(
+                    host.focused(),
+                    Some(FIELD),
+                    "scale={scale} scrolling={scrolling} route={route}"
+                );
+                if route == 0 {
+                    assert!(response.consumed && response.capture_pointer);
+                    host.event(&ContentEvent::PointerUp(point));
+                }
+                let field = host
+                    .get(FIELD)
+                    .unwrap()
+                    .component::<TextFieldContent>()
+                    .unwrap();
+                assert_eq!(field.surface.input.text, "retained draft");
+                assert!(field.surface.input.marked.is_none());
+            }
+        }
+    }
+}
+
+#[test]
+fn form_focus_refuses_slot_clip_and_ring_only_clip_across_routes() {
+    for scale in [1., 2.] {
+        for scrolling in [false, true] {
+            for ring_only in [false, true] {
+                for route in 0..4 {
+                    let (mut host, mut text) = form_focus_host(scale, scrolling, false);
+                    let outer = host
+                        .get(FIELD)
+                        .unwrap()
+                        .component::<TextFieldContent>()
+                        .unwrap()
+                        .surface
+                        .outer;
+                    let clip = if ring_only {
+                        // The complete input viewport and painted ring fit,
+                        // but the required backing-pixel guard does not.
+                        outer.inset(
+                            -tekes_ui_controls::extended::FocusRingMetrics::new(scale).outset(),
+                        )
+                    } else {
+                        Rect::new(
+                            outer.min_x(),
+                            outer.min_y(),
+                            outer.size.width,
+                            outer.size.height * 0.75,
+                        )
+                    };
+                    render(&mut host, &mut text, clip);
+                    let before = host
+                        .get(FIELD)
+                        .unwrap()
+                        .component::<TextFieldContent>()
+                        .unwrap()
+                        .surface
+                        .input
+                        .selection();
+                    let offset = scrolling.then(|| {
+                        host.get(CHILD)
+                            .unwrap()
+                            .component::<ScrollContent>()
+                            .unwrap()
+                            .scroll
+                            .offset
+                    });
+                    let point = Point::new(
+                        outer.min_x() + outer.size.width * 0.5,
+                        outer.min_y() + outer.size.height * 0.5,
+                    );
+                    let response = request_form_focus(&mut host, route, point);
+                    assert_eq!(
+                        host.focused(),
+                        None,
+                        "scale={scale} scrolling={scrolling} ring_only={ring_only} route={route}"
+                    );
+                    assert!(!response.changed && !response.capture_pointer && !response.activated);
+                    let field = host
+                        .get(FIELD)
+                        .unwrap()
+                        .component::<TextFieldContent>()
+                        .unwrap();
+                    assert_eq!(field.surface.input.text, "retained draft");
+                    assert_eq!(field.surface.input.selection(), before);
+                    assert!(field.surface.input.marked.is_none());
+                    if let Some(offset) = offset {
+                        assert_eq!(
+                            host.get(CHILD)
+                                .unwrap()
+                                .component::<ScrollContent>()
+                                .unwrap()
+                                .scroll
+                                .offset,
+                            offset
+                        );
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn original_full_width_zero_padding_form_remains_infeasible_for_complete_ring() {
+    for route in 0..4 {
+        let (mut host, _) = form_focus_host(1., false, true);
+        let outer = host
+            .get(FIELD)
+            .unwrap()
+            .component::<TextFieldContent>()
+            .unwrap()
+            .surface
+            .outer;
+        let shape = host
+            .get(ROOT)
+            .unwrap()
+            .component::<PanelContent>()
+            .unwrap()
+            .geometry()
+            .unwrap()
+            .shape;
+        assert_eq!(shape.rect().min_x(), outer.min_x());
+        assert_eq!(shape.rect().max_x(), outer.max_x());
+        let point = Point::new(
+            outer.min_x() + outer.size.width * 0.5,
+            outer.min_y() + outer.size.height * 0.5,
+        );
+        let response = request_form_focus(&mut host, route, point);
+        assert_eq!(host.focused(), None, "route={route}");
+        assert!(!response.changed && !response.capture_pointer && !response.activated);
+    }
+}
+
+#[test]
+fn empty_fill_field_does_not_gain_focus_space_from_ring_expansion() {
+    for route in 0..4 {
+        let mut field = TextFieldContent::new("Editor", "retained draft");
+        field.viewport = TextViewport::Fill;
+        let mut panel = panel(Content::new(FIELD, field), true);
+        panel
+            .set_padding(Some(Insets::new(48., 16., 48., 16.)))
+            .unwrap();
+        let mut host = ContentHost::new(Content::new(ROOT, panel)).unwrap();
+        host.set_window_active(true);
+        let mut text = Text::new(true);
+        render(&mut host, &mut text, Rect::new(0., 0., 100., 100.));
+        let field = host.get(FIELD).unwrap();
+        assert!(!field.frame().is_empty());
+        let outer = field.component::<TextFieldContent>().unwrap().surface.outer;
+        assert!(outer.is_empty());
+        let response = request_form_focus(
+            &mut host,
+            route,
+            Point::new(outer.min_x() + outer.size.width * 0.5, outer.min_y()),
+        );
+        assert_eq!(host.focused(), None, "route={route}");
+        assert!(!response.changed && !response.capture_pointer && !response.activated);
+    }
 }
