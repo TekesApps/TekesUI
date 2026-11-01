@@ -13,6 +13,198 @@ mod native_key;
 #[cfg(target_os = "macos")]
 #[path = "../tests/support/native_pointer.rs"]
 mod native_pointer;
+// Native-object probe only; no shared Host/AX implementation or replacement UI.
+#[cfg(target_os = "macos")]
+mod stale_ax {
+    use objc2::{Message, msg_send, rc::Retained, runtime::AnyObject};
+    use objc2_app_kit::NSApplication;
+    use objc2_foundation::{MainThreadMarker, NSArray, NSString};
+    use std::{
+        path::PathBuf,
+        sync::{
+            Arc,
+            atomic::{AtomicBool, Ordering},
+            mpsc,
+        },
+        thread::JoinHandle,
+        time::{Duration, Instant},
+    };
+    use tekes_ui_platform_macos::{WakeResult, Window, WindowWake};
+
+    pub struct Peer {
+        view: Retained<AnyObject>,
+        zoom: Retained<AnyObject>,
+    }
+    fn named(node: &AnyObject, label: &str, matches: &mut Vec<Retained<AnyObject>>) {
+        let children: Retained<NSArray<AnyObject>> =
+            unsafe { msg_send![node, accessibilityChildren] };
+        for child in children.iter() {
+            let name: Retained<NSString> = unsafe { msg_send![&*child, accessibilityLabel] };
+            if name.to_string() == label {
+                matches.push(child.retain());
+            }
+            named(&child, label, matches);
+        }
+    }
+    impl Peer {
+        pub fn retain(window: &Window) -> Self {
+            let mtm = MainThreadMarker::new().expect("native AX witness stays on main thread");
+            let windows = NSApplication::sharedApplication(mtm).windows();
+            let matches: Vec<_> = windows
+                .iter()
+                .filter(|w| {
+                    w.title().to_string() == "Media Viewer Consumer 204"
+                        && w.windowNumber() == window.native_window_number()
+                })
+                .collect();
+            assert_eq!(matches.len(), 1, "unique actual owned native window");
+            let view: Retained<AnyObject> = matches[0].contentView().unwrap().into();
+            let mut matches = Vec::new();
+            named(&view, "Zoom in", &mut matches);
+            assert_eq!(matches.len(), 1, "unique current published native Zoom");
+            Self {
+                view,
+                zoom: matches.remove(0),
+            }
+        }
+        pub fn identity(&self) -> String {
+            format!("view={:p} zoom={:p}", &*self.view, &*self.zoom)
+        }
+        pub fn live(&self) -> bool {
+            unsafe { msg_send![&*self.zoom, isAccessibilityElement] }
+        }
+        pub fn press(&self) -> bool {
+            unsafe { msg_send![&*self.zoom, accessibilityPerformPress] }
+        }
+    }
+    #[derive(Debug)]
+    pub enum Request {
+        Retained,
+        Check,
+        ObserverStopped,
+        TimedOut,
+    }
+    pub struct Channel {
+        receiver: mpsc::Receiver<Request>,
+        path: PathBuf,
+        stop: Arc<AtomicBool>,
+        worker: Option<JoinHandle<Result<(), String>>>,
+    }
+    impl Channel {
+        pub fn start(path: PathBuf, wake: WindowWake) -> Self {
+            let (sender, receiver) = mpsc::channel();
+            let stop = Arc::new(AtomicBool::new(false));
+            let stopping = stop.clone();
+            let cleanup_path = path.clone();
+            let worker = std::thread::spawn(move || {
+                let result = (|| -> Result<(), String> {
+                    let end = Instant::now() + Duration::from_secs(90);
+                    for (file, request) in [
+                        ("MEDIA_M6_EXTERNAL_RETAINED", Request::Retained),
+                        ("MEDIA_M6_STALE_CHECK_REQUEST", Request::Check),
+                        ("MEDIA_M6_OBSERVER_STOPPED", Request::ObserverStopped),
+                    ] {
+                        let request = loop {
+                            if stopping.load(Ordering::Relaxed) {
+                                return Ok(());
+                            }
+                            if Instant::now() >= end {
+                                break Request::TimedOut;
+                            }
+                            if path.join(file).try_exists().map_err(|error| {
+                                format!("probe channel metadata {file}: {error}")
+                            })? {
+                                break request;
+                            }
+                            std::thread::sleep(Duration::from_millis(20));
+                        };
+                        let timed_out = matches!(request, Request::TimedOut);
+                        sender
+                            .send(request)
+                            .map_err(|error| format!("probe channel send {file}: {error}"))?;
+                        match wake.wake() {
+                            WakeResult::Queued | WakeResult::Coalesced => {}
+                            WakeResult::Closed => {
+                                if stopping.load(Ordering::Relaxed) {
+                                    return Ok(());
+                                }
+                                return Err(format!(
+                                    "probe channel wake {file}: window closed before completion"
+                                ));
+                            }
+                        }
+                        if timed_out {
+                            return Ok(());
+                        }
+                    }
+                    Ok(())
+                })();
+                if let Err(error) = &result {
+                    // Preserve the first worker failure even if a closed window cannot wake UI.
+                    if let Err(record_error) =
+                        std::fs::write(path.join("MEDIA_M6_CHANNEL_ERROR"), error)
+                    {
+                        return Err(format!(
+                            "{error}; recording channel failure: {record_error}"
+                        ));
+                    }
+                }
+                result
+            });
+            Self {
+                receiver,
+                path: cleanup_path,
+                stop,
+                worker: Some(worker),
+            }
+        }
+        fn join_worker(&mut self) -> Result<(), String> {
+            let Some(worker) = self.worker.take() else {
+                return Ok(());
+            };
+            worker.join().map_err(|payload| {
+                let detail = payload
+                    .downcast_ref::<String>()
+                    .map(String::as_str)
+                    .or_else(|| payload.downcast_ref::<&str>().copied())
+                    .unwrap_or("non-string panic payload");
+                format!("probe channel worker panic: {detail}")
+            })?
+        }
+        pub fn next(&mut self) -> Option<Request> {
+            match self.receiver.try_recv() {
+                Ok(request) => Some(request),
+                Err(mpsc::TryRecvError::Empty) => None,
+                Err(mpsc::TryRecvError::Disconnected) => {
+                    let error = self
+                        .join_worker()
+                        .err()
+                        .unwrap_or_else(|| "probe channel disconnected before completion".into());
+                    panic!("{error}")
+                }
+            }
+        }
+    }
+    impl Drop for Channel {
+        fn drop(&mut self) {
+            self.stop.store(true, Ordering::Relaxed);
+            // Cleanup must not replace an existing UI/probe failure with a second panic.
+            let result = self.join_worker();
+            let receipt = format!(
+                "stop_requested=true ui_unwinding={} join={result:?}\n",
+                std::thread::panicking()
+            );
+            if let Err(error) = std::fs::write(self.path.join("MEDIA_M6_CHANNEL_CLEANUP"), receipt)
+            {
+                eprintln!("probe channel cleanup receipt: {error}");
+            }
+            if let Err(error) = result {
+                eprintln!("{error}");
+            }
+        }
+    }
+}
+
 #[cfg(not(target_os = "macos"))]
 fn main() {
     panic!("macOS native fixture required");
@@ -108,6 +300,188 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             ),
         }
     }
+    #[derive(Debug, PartialEq)]
+    enum StalePhase {
+        Publication,
+        ExternalRetain,
+        Dismissal,
+        StaleRequest,
+        Checked,
+        Complete,
+    }
+    struct StaleProbe {
+        path: std::path::PathBuf,
+        phase: StalePhase,
+        peer: Option<stale_ax::Peer>,
+        channel: Option<stale_ax::Channel>,
+        host_identity: Option<usize>,
+        dismissed: Option<ImeWitness>,
+    }
+    impl StaleProbe {
+        fn new(path: std::path::PathBuf) -> Self {
+            std::fs::create_dir_all(&path).expect("owned probe channel");
+            assert!(
+                std::fs::read_dir(&path).unwrap().next().is_none(),
+                "fresh probe channel required"
+            );
+            Self {
+                path,
+                phase: StalePhase::Publication,
+                peer: None,
+                channel: None,
+                host_identity: None,
+                dismissed: None,
+            }
+        }
+        fn emit(&self, name: &str, window: &Window) {
+            let file = self.path.join(name);
+            assert!(!file.exists(), "phase receipt must not be overwritten");
+            let temporary = self.path.join(format!("{name}.tmp"));
+            std::fs::write(
+                &temporary,
+                format!(
+                    "pid={}\nwindow_number={}\nhost={:x}\n{}\n",
+                    std::process::id(),
+                    window.native_window_number(),
+                    self.host_identity.unwrap(),
+                    self.peer.as_ref().unwrap().identity()
+                ),
+            )
+            .expect("phase receipt write");
+            std::fs::rename(temporary, file).expect("atomic phase publication");
+        }
+        fn current_caller(tree: &ContentHost, window: &Window) {
+            assert!(
+                window.is_active() && tree.is_window_active(),
+                "same live active window required"
+            );
+            assert_eq!(tree.focused(), Some(fixture::INVOKER));
+            let key = p::content_accessibility::content_key(tree, fixture::INVOKER, None).unwrap();
+            let publication = window.content_accessibility_publication().unwrap();
+            assert!(
+                publication.is_current() && publication.owner(key).is_some(),
+                "live caller publication required"
+            );
+        }
+        fn requests(
+            &mut self,
+            tree: &ContentHost,
+            window: &Window,
+            log: &mut std::fs::File,
+        ) -> bool {
+            while let Some(request) = self.channel.as_mut().and_then(stale_ax::Channel::next) {
+                assert_eq!(
+                    self.host_identity,
+                    Some(tree as *const ContentHost as usize)
+                );
+                match request {
+                    stale_ax::Request::Retained => {
+                        assert_eq!(self.phase, StalePhase::ExternalRetain);
+                        assert!(window.is_active() && tree.is_window_active());
+                        assert!(ime_witness(tree).dialog_open);
+                        let ack =
+                            std::fs::read_to_string(self.path.join("MEDIA_M6_EXTERNAL_RETAINED"))
+                                .unwrap();
+                        writeln!(
+                            log,
+                            "m6_stale_external_retained host={tree:p} receipt={ack:?}"
+                        )
+                        .unwrap();
+                        self.phase = StalePhase::Dismissal;
+                        // Existing public AppKit input path, after external retain only.
+                        p::selftest::run_script(vec![(
+                            0,
+                            p::selftest::Action::KeyCharacters {
+                                key_code: 53,
+                                chars: "\u{1b}",
+                            },
+                        )]);
+                    }
+                    stale_ax::Request::Check => {
+                        assert_eq!(self.phase, StalePhase::StaleRequest);
+                        Self::current_caller(tree, window);
+                        let before = ime_witness(tree);
+                        assert_eq!(self.dismissed.as_ref(), Some(&before));
+                        let peer = self.peer.as_ref().unwrap();
+                        let live = peer.live();
+                        let accepted = peer.press();
+                        let after = ime_witness(tree);
+                        writeln!(log, "m6_stale_post_external host={tree:p} {} live={live} press={accepted} before={before:?} after={after:?}", peer.identity()).unwrap();
+                        assert!(
+                            !live && !accepted,
+                            "retained native scoped Zoom must refuse"
+                        );
+                        assert_eq!(before, after);
+                        self.phase = StalePhase::Checked;
+                        self.emit("MEDIA_M6_STALE_CHECKED_READY", window);
+                    }
+                    stale_ax::Request::ObserverStopped => {
+                        assert_eq!(self.phase, StalePhase::Checked);
+                        Self::current_caller(tree, window);
+                        assert_eq!(self.dismissed.as_ref(), Some(&ime_witness(tree)));
+                        let receipt =
+                            std::fs::read_to_string(self.path.join("MEDIA_M6_OBSERVER_STOPPED"))
+                                .unwrap();
+                        writeln!(log, "m6_stale_observer_stopped host={tree:p} receipt={receipt:?} final={:?}", ime_witness(tree)).unwrap();
+                        self.phase = StalePhase::Complete;
+                        self.emit("MEDIA_M6_COMPLETED", window);
+                        writeln!(log, "M6_RETAINED_NATIVE_SCOPE_CHECK_COMPLETED external_AXError_requires_separate_review=true").unwrap();
+                        log.flush().unwrap();
+                        return true;
+                    }
+                    stale_ax::Request::TimedOut => panic!("retained AX channel deadline reached"),
+                }
+            }
+            false
+        }
+        fn published(&mut self, tree: &ContentHost, window: &Window, log: &mut std::fs::File) {
+            if self.phase == StalePhase::Publication {
+                let key = p::content_accessibility::content_key(tree, fixture::COMMANDS[1].0, None);
+                let publication = window.content_accessibility_publication();
+                let ready = window.is_active()
+                    && tree.is_window_active()
+                    && key.is_some_and(|key| {
+                        publication
+                            .as_ref()
+                            .is_some_and(|p| p.is_current() && p.owner(key).is_some())
+                    });
+                if !ready {
+                    return;
+                }
+                assert!(ime_witness(tree).dialog_open);
+                self.host_identity = Some(tree as *const ContentHost as usize);
+                let peer = stale_ax::Peer::retain(window);
+                assert!(peer.live(), "original current native Zoom must start live");
+                writeln!(
+                    log,
+                    "m6_stale_modal_ready host={tree:p} key={key:?} {} state={:?}",
+                    peer.identity(),
+                    ime_witness(tree)
+                )
+                .unwrap();
+                self.peer = Some(peer);
+                self.channel = Some(stale_ax::Channel::start(
+                    self.path.clone(),
+                    window.wake_proxy(),
+                ));
+                self.phase = StalePhase::ExternalRetain;
+                self.emit("MEDIA_M6_MODAL_READY", window);
+            } else if self.phase == StalePhase::Dismissal && !ime_witness(tree).dialog_open {
+                Self::current_caller(tree, window);
+                let before = ime_witness(tree);
+                let peer = self.peer.as_ref().unwrap();
+                let live = peer.live();
+                let accepted = peer.press();
+                let after = ime_witness(tree);
+                writeln!(log, "m6_stale_dismissed host={tree:p} {} live={live} press={accepted} before={before:?} after={after:?}", peer.identity()).unwrap();
+                assert!(!live && !accepted);
+                assert_eq!(before, after);
+                self.dismissed = Some(after);
+                self.phase = StalePhase::StaleRequest;
+                self.emit("MEDIA_M6_DISMISSED_READY", window);
+            }
+        }
+    }
     struct Host {
         tree: Option<ContentHost>,
         gpu: Option<Renderer>,
@@ -115,6 +489,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         actions: fixture::Actions,
         log: std::fs::File,
         external_display_id: u32,
+        stale_probe: Option<StaleProbe>,
         ime_mode: bool,
         ime_script_started: bool,
         ime_before: Option<(u64, ImeWitness)>,
@@ -460,6 +835,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 None
             };
             match event {
+                Event::Wake
+                    if self
+                        .stale_probe
+                        .as_mut()
+                        .is_some_and(|probe| probe.requests(tree, window, &mut self.log)) =>
+                {
+                    window.set_content_accessibility_publication(None);
+                    window.close();
+                    return;
+                }
                 Event::Resized {
                     drawable_size,
                     scale,
@@ -555,6 +940,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     writeln!(self.log, "ax_response={response:?}").unwrap();
                 }
                 Event::CloseRequested => {
+                    if let Some(probe) = &self.stale_probe {
+                        assert_eq!(
+                            probe.phase,
+                            StalePhase::Complete,
+                            "probe must finish before own window close"
+                        );
+                    }
                     if self.ime_mode {
                         assert!(
                             self.ime_script_started,
@@ -697,6 +1089,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     Self::start_ime_script(tree);
                 }
             }
+            if let Some(probe) = &mut self.stale_probe {
+                probe.published(tree, window, &mut self.log);
+            }
             writeln!(
                 self.log,
                 "viewport={:?} image={:?} semantics={:#?}",
@@ -737,6 +1132,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "m6_input_source=PROGRAMMATIC_NATIVE_APPKIT_SELFTEST physical_ime=false cua=false"
         )?;
     }
+    let stale_probe = std::env::var_os("MEDIA_VIEWER_M6_STALE_CHANNEL").map(|path| {
+        assert!(std::env::var_os("MEDIA_VIEWER_MODAL").is_some());
+        assert!(
+            std::env::var_os("MEDIA_VIEWER_M6_IME").is_none(),
+            "independent probe modes"
+        );
+        let path = std::path::PathBuf::from(path);
+        assert_eq!(
+            path,
+            directory.join("m6-stale-channel"),
+            "channel belongs to fresh owned raw directory"
+        );
+        StaleProbe::new(path)
+    });
     let external_display_id: u32 = std::env::var("MEDIA_VIEWER_EXTERNAL_DISPLAY_ID")?.parse()?;
     App::new(AppConfig {
         name: Some("Media Viewer Consumer 204".into()),
@@ -760,6 +1169,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             actions: fixture::Actions::default(),
             log,
             external_display_id,
+            stale_probe,
             ime_mode: std::env::var_os("MEDIA_VIEWER_M6_IME").is_some(),
             ime_script_started: false,
             ime_before: None,

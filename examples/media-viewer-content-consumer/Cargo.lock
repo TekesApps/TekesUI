@@ -919,6 +919,9 @@ version = "0.1.0"
 name = "tekes-ui-media-viewer-content-consumer"
 version = "0.0.0"
 dependencies = [
+ "objc2",
+ "objc2-app-kit",
+ "objc2-foundation",
  "resvg",
  "tekes-ui-controls",
  "tekes-ui-platform-macos",
