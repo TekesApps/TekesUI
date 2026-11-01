@@ -1629,21 +1629,9 @@ impl Host {
         {
             self.b2.text_query_due = true;
         }
-        // Sample the original clock at real input, not at arbitrary IPC wakes.
-        // Otherwise a later hover/open starts from an old caret-blink instant.
-        if !self.curve_mode
-            && w.is_active()
-            && matches!(
-                &event,
-                native::Event::Mouse(_)
-                    | native::Event::Scroll(_)
-                    | native::Event::Key(_)
-                    | native::Event::TextKey(_)
-                    | native::Event::Accessibility { .. }
-            )
-        {
-            self.sync_context(false)?;
-        }
+        // Dispatch against the acknowledged frame. Advancing the child View
+        // clock here would invalidate input immediately before this event.
+        // AnimationFrame/CaretBlink and environment changes own context updates.
         match event {
             native::Event::Created => self.created(w)?,
             native::Event::AnimationFrame(_) => {

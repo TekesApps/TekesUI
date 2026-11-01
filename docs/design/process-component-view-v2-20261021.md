@@ -186,3 +186,32 @@ The original tested commit is not an ancestor of this publication; file identity
 establishes inclusion of the repair, without signing the old run as a current-main run.
 The independent consumer support/migration and execution map is in
 [`examples/process-content-consumer/README.md`](../../examples/process-content-consumer/README.md).
+
+## Native input uses the acknowledged View context (#48, 2026-11-01)
+
+The native consumer dispatches input against the already acknowledged child frame.
+It must not advance and broadcast `ViewContext.elapsed_nanos` immediately before
+forwarding the same input: even a clock-only `set_view_context` correctly marks the
+child repaint pending, so the original `input_ready` gate rejects that event.
+Clock sampling continues through existing AnimationFrame/CaretBlink and environment
+updates; no input replay, geometry bypass, forced focus or fixed selftest clock is
+introduced. The native adapter simply avoids creating its own invalidation at the
+input-dispatch boundary. Curve routing and all original native assertions remain.
+
+Native063 on public `c138a7b4f456961132a35fa424bd11c9b5353e87`, program
+`96f0c8195d0d4f7e013423070b6a315ec6b88f2a7072a07244ec394b676737fb`,
+reached all three Ready children. Its first click at (166.5, 388) is inside the
+published first Message frame [0, 372, 333, 32]. Immediately before Down and Up,
+the journaled adapter advanced the context; both events returned unconsumed with
+no focus. TextCommit/Preedit then also remained unconsumed, and the unchanged
+UTF-16 expectation aborted with NSNotFound. This is a programmatic native adapter
+failure, not a physical IME failure. Later auxiliary/Tab/resize/reactivation/final
+phases were not reached. The original failure and resource-release evidence stay
+under SSD `artifacts/issue-48/public-native-c138-20261101-r1/`.
+
+The isolated adapter correction removes only that pre-dispatch context update.
+Compilation and the same original complete native script must still validate it;
+no passing behavior or Issue closure follows from this source analysis. Existing
+Table ACK, Host normal, independent native wheel, and Panel six-stage proofs retain
+their original identities. Physical Pinyin/candidate observations and applicable
+VoiceOver/performance are neither substituted nor resumed by this repair.
