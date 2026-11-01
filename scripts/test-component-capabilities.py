@@ -301,12 +301,32 @@ class CapabilityTests(unittest.TestCase):
     def test_optional_bitmap_public_types_keep_feature_owner_without_gallery_roots(self):
         surface = self.data['public_type_surface']['types']
         optional = [entry for entry in surface if entry.get('feature') == 'bitmap-images']
-        owner = 'tekes_ui_controls::composition::ImageContent'
-        self.assertEqual(len(optional), 8)
-        self.assertEqual([entry['api'] for entry in optional if entry['category'] == 'optional-component'], [owner])
+        prefix = 'tekes_ui_controls::composition::'
+        image_owner = prefix + 'ImageContent'
+        media_owner = prefix + 'MediaViewerContent'
+        expected_owners = {
+            prefix + 'ImageAlignment': image_owner,
+            prefix + 'ImageContent': image_owner,
+            prefix + 'ImageContentError': image_owner,
+            prefix + 'ImageFit': image_owner,
+            prefix + 'ImageLoadOutcome': image_owner,
+            prefix + 'ImageLoadRequest': image_owner,
+            prefix + 'ImageLoadStatus': image_owner,
+            prefix + 'ImageSemantics': image_owner,
+            prefix + 'MediaViewerCommand': media_owner,
+            prefix + 'MediaViewerContent': media_owner,
+            prefix + 'MediaViewerError': media_owner,
+            prefix + 'MediaViewerMode': media_owner,
+            prefix + 'MediaViewerTransform': media_owner,
+        }
+        self.assertEqual({entry['api'] for entry in optional}, set(expected_owners))
+        self.assertEqual(len(optional), len(expected_owners))
+        self.assertEqual([entry['api'] for entry in optional if entry['category'] == 'optional-component'],
+                         [image_owner, media_owner])
         for entry in optional:
             self.assertEqual(entry['components'], [])
             self.assertEqual(entry['routes'], [])
+            owner = expected_owners[entry['api']]
             if entry['api'] != owner:
                 self.assertEqual(entry['category'], 'optional-component-support')
                 self.assertEqual(entry['owner_api'], owner)
