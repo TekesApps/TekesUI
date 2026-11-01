@@ -1,7 +1,7 @@
 # Independent Process Content consumer (#48)
 
 Source baseline for this guide: public main
-`eec9aebe555a85a4caecf57034d331def2bb867d` (2026-11-01).
+`1bc847726138e60804b3068dd800d7e081f29941` (PR213, 2026-11-01).
 Check out the complete repository at that revision. This standalone Cargo workspace
 uses its checked-in `Cargo.lock` and `../../crates` path dependencies; retain the
 repository build scripts and token/JSON inputs. Copying this directory alone does
@@ -69,11 +69,20 @@ continuation and candidate-window move/resize observations must be recorded in a
 allocated native window with matching source/program identity. Programmatic
 preedit and text queries do not certify the system candidate interaction.
 
-The one-call native ACK-drain repair passed strict/build at `0aec8897`; its native
-run was refused by HID admission and then withdrawn. The original native startup
-timeout remains failed. This is separate from the Table logical AX-focus repair
-and the old services timeouts. Reuse the existing native execution package after
-source/program qualification; no automatic retry or new TEMP trace is requested.
+The one-call native ACK-drain repair first passed strict/build at `0aec8897`;
+that allocated native run was refused by HID admission and then withdrawn. The
+original startup timeout and later Native063 first-input failure remain failed
+historical results. PR213 published the subsequent input-clock adapter correction
+at the public revision above. The design's
+[scoped verification section](../../docs/design/process-component-view-v2-20261021.md#scoped-verification-and-remaining-observations-2026-11-01)
+records CPU069/Native070 and the exact archived cohort; the
+[original six-AC map](../../docs/design/process-component-view-v2-20261021.md#original-issue-48-acceptance-map-after-pr213-2026-11-01)
+records remaining scope. That archived native result includes diagnostic WIP and
+must not be relabeled as a clean run of this public pin or later Core libraries.
+The late AX samples are a publication-sampling evidence gap, not a demonstrated
+defect or a new final-state gate. These results remain separate from the Table
+logical AX-focus repair and old services timeouts; no repeat run or speculative
+fix is requested by this documentation update.
 
 #48 original AC3 remains open. Existing native wheel/Tab/AX and headless
 anchor/lifecycle proofs keep their exact scopes; current-main native execution is

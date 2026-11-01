@@ -1611,27 +1611,43 @@ impl ContentHost {
             }
             RequiredFocusSpace::Legacy | RequiredFocusSpace::NotRequired => (None, None),
         };
-        let rect = required_witness.or(prepared_rect).unwrap_or_else(|| {
+        // Ordinary original Fields focus their input viewport, not form metadata.
+        // Bind the full ring to that surface's actual arranged backing scale.
+        let field_focus_bounds = if required_witness.is_none() && prepared_rect.is_none() {
             target
-                .component
-                .text_surface()
-                .filter(|s| s.presentation == crate::TextSurfacePresentation::Content)
-                .map_or(target.frame, |s| {
-                    let (horizontal, vertical) = s.scroll.scroll_policy();
-                    if s.input.read_only
-                        && (horizontal != crate::ScrollPolicy::Disabled
-                            || vertical != crate::ScrollPolicy::Disabled)
-                    {
-                        // Internally scrolled readonly content paints its focus
-                        // indicator on the viewport, not an insertion caret.
-                        // Keep its reading position when entering that viewport.
-                        s.outer
-                    } else {
-                        s.caret()
-                    }
-                })
-        });
-        let rect = if let Some(scroll) = path
+                .component::<TextFieldContent>()
+                .and_then(TextFieldContent::field_focus_bounds)
+        } else {
+            None
+        };
+        let rect = required_witness
+            .or(prepared_rect)
+            .or(field_focus_bounds)
+            .unwrap_or_else(|| {
+                target
+                    .component
+                    .text_surface()
+                    .filter(|s| s.presentation == crate::TextSurfacePresentation::Content)
+                    .map_or(target.frame, |s| {
+                        let (horizontal, vertical) = s.scroll.scroll_policy();
+                        if s.input.read_only
+                            && (horizontal != crate::ScrollPolicy::Disabled
+                                || vertical != crate::ScrollPolicy::Disabled)
+                        {
+                            // Internally scrolled readonly content paints its focus
+                            // indicator on the viewport, not an insertion caret.
+                            // Keep its reading position when entering that viewport.
+                            s.outer
+                        } else {
+                            s.caret()
+                        }
+                    })
+            });
+        let rect = if field_focus_bounds.is_some() {
+            // The chosen Field fallback already includes its ring and one
+            // backing pixel. An ancestor Scroll must not expand it twice.
+            rect
+        } else if let Some(scroll) = path
             .iter()
             .rev()
             .find_map(|n| n.component::<ScrollContent>())

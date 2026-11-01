@@ -224,8 +224,21 @@ pub struct TextFieldContent {
     pub show_metadata: bool,
     inline_width_em: Option<f32>,
     focused: bool,
+    backing_scale: f32,
 }
 impl TextFieldContent {
+    pub(super) fn field_focus_bounds(&self) -> Option<Rect> {
+        (self.surface.presentation == TextSurfacePresentation::Field).then(|| {
+            // A Fill viewport may be empty; decoration cannot create input space.
+            if self.surface.outer.is_empty() {
+                self.surface.outer
+            } else {
+                crate::extended::ControlFrame::new(self.surface.outer, None)
+                    .focus_bounds(self.backing_scale)
+            }
+        })
+    }
+
     pub(crate) fn has_focus(&self) -> bool {
         self.focused
     }
@@ -245,6 +258,7 @@ impl TextFieldContent {
             show_metadata: true,
             inline_width_em: None,
             focused: false,
+            backing_scale: 1.,
         }
     }
     /// A single-line original editor for compact rows. Width follows body
@@ -613,6 +627,8 @@ impl TextFieldContent {
                         host.shape_surface(s, role, w)
                     });
             }
+            // Keep focus coverage on the same arranged surface and actual scale.
+            self.backing_scale = scale;
         }
     }
     fn keyboard(&mut self, key: &ContentKeyEvent, allow_submit: bool) -> ContentResponse {

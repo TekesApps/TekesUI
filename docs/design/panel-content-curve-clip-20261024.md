@@ -945,3 +945,43 @@ original pixel/pointer/AX/editor/text/candidate-rect/resize-stale/close assertio
 passed, exit0 without timeout. Evidence remains in verified-owned-child-exit-r37,
 verification-r37 and native-r19. The old CI trace did not expose its internal receive
 stage, so the fixed source-backed interleaving is not claimed as its uniquely proven cause.
+
+
+## 2026-11-01 Field focus target and complete ring correction (#48)
+
+Root selected the existing full-ring contract (A); allowing clipped rings (B) is
+not authorized. Native075/080/084 full-width zero-padding Form/Panel failures
+remain failures and complete-ring negative cases. Native084's exact prepared
+focus error is NoFeasibleRegion; this does not identify rounded corners alone.
+The slot and Panel share horizontal boundaries, so any positive ring outset
+crosses the rectangular ancestor boundary independently of corner curvature.
+
+For the original TextFieldContent with Field presentation, implicit focus reveal
+uses its arranged input slot TextSurface.outer, excluding form label/help/error,
+plus the existing complete ControlFrame focus bounds at the same actual arranged
+backing scale. This applies to that original type's Form, Fixed, Fill, Grow,
+inline and multiline Field configurations; Content presentation retains its
+existing caret/readonly viewport policy. Search and custom wrapper owners keep
+their existing target contracts. Required witness and prepared rect retain
+precedence. The selected Field fallback is expanded exactly once with or without
+Scroll; other existing Scroll targets retain their original expansion policy.
+The private cached scale is updated only with real surface layout; it grants no
+new geometry authority. Existing no-Scroll/no-curve logical focus remains its
+existing logical policy, not a new complete-geometry guarantee.
+
+Pointer, direct, Tab and AX acquisition share this same plan. Actual clip,
+certified curves, full landing, geometry/mount/IME and plan/validate/commit gates
+remain authoritative. No padding, pointer coordinate, render, clip relaxation,
+forced focus, fallback acceptance or public API is added. Root separately
+approved an independent same-Host/Dialog valid consumer containment profile;
+it must retain the historical failures and obtain its own layout/input identity.
+
+Four new public regressions cover a metadata allocation crossing the curve
+while its complete input slot+ring is legal; @1x/@2x exact one-ring clips with and
+without Scroll; slot clipping and ring/coverage-only clipping; and the original
+full-width zero-padding refusal and an empty Fill viewport that decoration
+must not turn into input space. Four acquisition routes are checked with
+retained text/selection and no rejected capture/scroll mutation. Source-only
+preparation does not establish red/green, compilation or native/IME acceptance.
+Those require Main's new affected CPU/strict/build window and original M6 script
+under the separately admitted valid consumer profile.
