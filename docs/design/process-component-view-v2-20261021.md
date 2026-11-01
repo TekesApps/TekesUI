@@ -215,3 +215,32 @@ no passing behavior or Issue closure follows from this source analysis. Existing
 Table ACK, Host normal, independent native wheel, and Panel six-stage proofs retain
 their original identities. Physical Pinyin/candidate observations and applicable
 VoiceOver/performance are neither substituted nor resumed by this repair.
+
+
+### Scoped verification and remaining observations (2026-11-01)
+
+CPU069 passed the affected consumer's offline all-target strict Clippy and one
+matching build. Native070 then ran the unchanged complete programmatic native
+script once against archived program
+`dce85d5a73790637cfef39fbde24b8df42df0f3e4e250b44c7bc9cba145275e4`:
+exit 0 in 22.34 seconds. The first click was consumed and focused Message 200;
+all seven original phases reached normal close, including auxiliary append/scroll,
+Tab, resize, reactivation, UTF-16 selection/marked text, and Unmark assertions.
+The original Native063 failure remains preserved. The compiled inputs were public
+c138 plus the exact two-path repair and eight preserved diagnostic WIP files;
+this is the archived run's identity, not a claim of a clean public-tree execution.
+The later publication supplement changes documentation only.
+
+Final and before-close journal snapshots contained four Group AX nodes. The Host
+contract does not make input readiness an AX publication fence, and those captures
+did not record or await the separate semantic/image publication fences. This is a
+sampling evidence gap, not a demonstrated product defect or proof of full AX
+restoration. Physical Pinyin/candidate observation, VoiceOver, performance and the
+other effective #48 acceptance criteria remain open; this finite adapter fix does
+not close the Issue.
+
+Primary immutable receipts are under SSD
+`artifacts/issue-48/native063-input-clock-repair-20261101-r1/`:
+`main-acceptance-r1/run01/main-release-acceptance.json` (CPU069),
+`main-native-r1/NATIVE070-PASS-AND-RELEASE.json` (Native070), and
+`domain-review-native070-r1/` (original-owner raw/contract review).
