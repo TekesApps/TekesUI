@@ -302,3 +302,15 @@ remain immutable. Whole M6 retained stale native AX, M8 real OS gestures and
 external-display conditions, physical IME, VoiceOver, performance and pinch
 remain independently open/deferred. They do not block this compatible ordinary
 source delivery; merge/CI/publication remain Main's responsibility.
+
+## 16. Native096/098 disabled Actual 原因说明的有限验证（2026-11-01）
+
+Native096 使用 CPU094/b71/native20445 的原归档程序，实际 Fit=2.4、Actual 所需 relative scale=1/2.4，低于允许下限1。禁用状态正确，但原可见说明和 Actual AX Help 均缺少原因，保持 FAIL。consumer 仅在原 `refresh_status` 复用 Ready/原 Fit 与 Actual 可用性及公开 transform，投影同一原因到 STATUS 和原 Button Help，不改变几何、命令阈值或 IME 脚本。Fit 已放大图像时明确说明不能缩小到 Fit 以下；另一个范围分支说明 Actual 超出最大8倍 Fit。Loading/Failed/Missing 文案保留，条件消失时清除 Help。
+
+CPU097 在 actual HEAD `d48a4f8c7789a1f29aea1f192d4ad7054188958f`、native6b3 和新 fixturee217 输入上完成定向 strict/build/即时归档，Main 接受收据 `6009dcc8eb488bb05b19d454c64ef0414c17d2237fc16f9b494f4ffd5bb70583`。新归档 `fbe6c69f2e717c7808b0dcabb3e21ee093b8eb9328c6ce765725057141f8775b` 经独立签名派生为 `4cf1ff93d24899f0528b3c3e353e440b6031f8913448a673a20ceca04db24f63`，不是旧 CPU094 程序的新标签。Native098 唯一正常窗口只读 fresh AX/完整 own-window 截图后使用系统窗口关闭按钮，exit0/21.368836s；原 ownPID/PG 和 GPU guard 均已释放，Main 独立接受有限结果与释放收据 SHA `18bb35bc349ae7401952dfa1e195380d1c5a16cbac81d25ac05fe3f0ea7b188e`。
+
+本次 Fit>1 条件下，Actual 禁用、完整可读且未裁切的两行原因说明、Actual AX Help 中完全相同的原因，分别获得有限 PASS。长说明实际换行使 viewport 从 `(0,188,480,532)` 变为 `(0,204,480,516)`，Fit 的 y 平移由146变为138；relative scale1、absolute scale2.4、x平移0不变，最终 `Fit=min(480/200,516/100)=2.4`、`qActual=1/2.4`。平移符合正常 Fit 居中 `(516-240)/2=138`，但确为一次真实变化。严格 whole-observation transform-unchanged 判据为 **NOT_MET**，不得以剔除启动帧或事后改判得到无条件 case PASS。日志在 render 前记录 state/drain、render 后记录 viewport，不把相邻的新旧布局日志误配为同时刻错误。未建立 stable pre-read baseline，也未将原 normal 日志仅有的 Close/Retry=0 冒称七计数测量。
+
+#203 对冻结 geometry 的补充核对确认：Fit 模式在 viewport 分配变化时按原 `set_viewport` / `fit_translation` 合同重新居中，Content arrange 使用实际 frame.size；无需新增 Pan/Zoom 命令或修改 geometry。补充收据 SHA `e30cb2a7d4fd4ecb6472d597e8be69d8d10ca3d1b9cc74718564f017fb464f21`。该原因说明不改签 strict unchanged 门。
+
+证据：`issue-204/disabled-actual-copy-fix-20261101-r1/normal-readonly/run01/DOMAIN-REVIEW.json` SHA `19097512bdc863fa145afc7db91e6f01abce5913dd48f59d6fc19c8c4b4e7974`；#203 actual review SHA `b2dcaf6df3508537229892a57401f18e248db963642ab83d6f9d4500dfe04946`，结论为 finite copy why PASS / strict unchanged NOT_MET。原096 FAIL和095 composing-editor子场景 PASS 保留。另一 qActual>8 分支仅有源码合同审，未做原生窗口验证；enabled Actual、retained AX、其余 M8 与原延期边界仍开放，无额外运行或整票通过。
