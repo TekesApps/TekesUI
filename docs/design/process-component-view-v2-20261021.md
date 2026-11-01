@@ -244,3 +244,29 @@ Primary immutable receipts are under SSD
 `main-acceptance-r1/run01/main-release-acceptance.json` (CPU069),
 `main-native-r1/NATIVE070-PASS-AND-RELEASE.json` (Native070), and
 `domain-review-native070-r1/` (original-owner raw/contract review).
+
+## Original Issue 48 acceptance map after PR213 (2026-11-01)
+
+The published adapter correction is available at complete public revision
+`1bc847726138e60804b3068dd800d7e081f29941`. The scoped verification section above
+retains the exact CPU069/Native070 cohort, preserved diagnostic WIP and prior
+failures. Publishing the source or subsequently changing shared Core libraries
+does not make that archived run a clean execution of the newer library set.
+
+| Original AC | Existing bounded evidence | Remaining boundary |
+| --- | --- | --- |
+| 1. Public revision, dependency closure, consumer/CI, capability matrix and migration | Complete public revision above; independent consumer manifest/lock, capability and migration guide, existing CI entry. | Source delivery is distinct from native execution on each later shared-library combination; no new binary-hosting or external adoption condition is added. |
+| 2. Three mixed containers with real PID/session; local results separate | Original mounted consumer and Native070 retain three generic Reader instances with original editor, text, button and history state and exact identities. | Local ContentHost use remains a separate mode; no in-process ProcessContainer equivalence is claimed. |
+| 3. Physical Pinyin with auxiliary/reveal/background updates; candidate position during movement/scale | The archived programmatic native run establishes only its recorded text-service/marked-state and action continuity. | Real Pinyin composition, original auxiliary/reveal/background interaction without submit/focus/marked disruption, and system candidate-window movement/resize still require a human operator and visual evidence. They remain not_run. |
+| 4. Append/prepend/width/type scale, stable item-local anchor, user priority and latest | Original independent reading-anchor and accepted normal-IPC evidence retain their exact source identities and original one-point bound. | The native input repair does not rerun or replace those reading proofs. |
+| 5. Hide/show, crash/remount/session replacement, late input/AX/viewport rejection and release | Original finite lifecycle/late-frame evidence remains separate; Native070 adds only its recorded normal close and cleanup. | A passing native text script is not a new complete crash/lifecycle test; old hosted failures remain failed. |
+| 6. Independent native nested scroll/bubbling, window deactivation, Tab and system AX | Original independent wheel/bubbling evidence and Native070's bounded deactivation/re-entry, child-editor Tab and AX action are retained. | Final-menu/pre-close snapshots are not semantic publication fences. Their four-Group observation neither proves final recovery nor a defect; no extra final-state gate is introduced. |
+
+Issue48 remains open because original AC3 requires physical input and candidate
+observations that have not run. Use the original manual journal path in the
+[consumer guide](../../examples/process-content-consumer/README.md) only with an
+actual allocated window, matching source/program identity and human operator.
+Synthetic preedit, text queries, a build or CI pass cannot substitute. VoiceOver
+and external AgentKit adoption are not additional Issue48 closing conditions;
+Issues45/82 retain their independently applicable physical/VO/performance scope.
+No deferred VO/performance work is resumed by this documentation update.
