@@ -17,3 +17,20 @@ tekes-ui-render = { path = "../../crates/tekes-ui-render" }
 [target.'cfg(target_os = "macos")'.dev-dependencies]
 tekes-ui-platform-macos = { path = "../../crates/tekes-ui-platform-macos", features = ["content-accessibility"] }
 resvg = { version = "0.48.0", default-features = false }
+
+# Direct imports for the opt-in consumer-native AX selector witness only.
+# Exact versions already exist transitively in this lockfile; no new package.
+[target.'cfg(target_os = "macos")'.dev-dependencies.objc2]
+version = "=0.6.5"
+default-features = false
+features = ["std"]
+
+[target.'cfg(target_os = "macos")'.dev-dependencies.objc2-foundation]
+version = "=0.3.2"
+default-features = false
+features = ["std", "NSObject", "NSArray", "NSString", "NSEnumerator", "NSThread"]
+
+[target.'cfg(target_os = "macos")'.dev-dependencies.objc2-app-kit]
+version = "=0.3.2"
+default-features = false
+features = ["std", "NSApplication", "NSResponder", "NSWindow", "NSView"]
