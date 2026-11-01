@@ -168,6 +168,24 @@ pub fn modal_fixture(gpu: &mut Renderer) -> ContentHost {
 /// Status copy is projected from original load state; no second state owner.
 pub fn refresh_status(host: &mut ContentHost) {
     let status = viewer(host).image_status();
+    let actual_help = if status == Some(ImageLoadStatus::Ready)
+        && viewer(host).can_execute(MediaViewerCommand::Fit)
+        && !viewer(host).can_execute(MediaViewerCommand::ActualLogicalSize)
+    {
+        let transform = viewer(host).transform().unwrap();
+        Some(if transform.scale > transform.relative_scale {
+            "Actual logical size is unavailable because Fit already enlarges this image. Zoom cannot go below Fit."
+        } else {
+            "Actual logical size is unavailable because it exceeds the maximum zoom of 8 times Fit."
+        })
+    } else {
+        None
+    };
+    host.get_mut(ComponentId(20414))
+        .unwrap()
+        .component_mut::<Button>()
+        .unwrap()
+        .set_help(actual_help.map(str::to_owned));
     let text = match status {
         Some(ImageLoadStatus::Loading) => {
             "Loading replacement. Previous image remains visible.".into()
@@ -177,7 +195,9 @@ pub fn refresh_status(host: &mut ContentHost) {
             viewer(host).failure_message().unwrap_or("Unknown error")
         ),
         Some(ImageLoadStatus::Missing) => "Image missing. Retry or close.".into(),
-        _ => "Arrow keys pan. Fit resets. Logical size differs from bitmap pixels.".into(),
+        _ => actual_help
+            .unwrap_or("Arrow keys pan. Fit resets. Logical size differs from bitmap pixels.")
+            .into(),
     };
     host.get_mut(STATUS)
         .unwrap()
