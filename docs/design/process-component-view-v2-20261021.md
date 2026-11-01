@@ -186,3 +186,61 @@ The original tested commit is not an ancestor of this publication; file identity
 establishes inclusion of the repair, without signing the old run as a current-main run.
 The independent consumer support/migration and execution map is in
 [`examples/process-content-consumer/README.md`](../../examples/process-content-consumer/README.md).
+
+## Native input uses the acknowledged View context (#48, 2026-11-01)
+
+The native consumer dispatches input against the already acknowledged child frame.
+It must not advance and broadcast `ViewContext.elapsed_nanos` immediately before
+forwarding the same input: even a clock-only `set_view_context` correctly marks the
+child repaint pending, so the original `input_ready` gate rejects that event.
+Clock sampling continues through existing AnimationFrame/CaretBlink and environment
+updates; no input replay, geometry bypass, forced focus or fixed selftest clock is
+introduced. The native adapter simply avoids creating its own invalidation at the
+input-dispatch boundary. Curve routing and all original native assertions remain.
+
+Native063 on public `c138a7b4f456961132a35fa424bd11c9b5353e87`, program
+`96f0c8195d0d4f7e013423070b6a315ec6b88f2a7072a07244ec394b676737fb`,
+reached all three Ready children. Its first click at (166.5, 388) is inside the
+published first Message frame [0, 372, 333, 32]. Immediately before Down and Up,
+the journaled adapter advanced the context; both events returned unconsumed with
+no focus. TextCommit/Preedit then also remained unconsumed, and the unchanged
+UTF-16 expectation aborted with NSNotFound. This is a programmatic native adapter
+failure, not a physical IME failure. Later auxiliary/Tab/resize/reactivation/final
+phases were not reached. The original failure and resource-release evidence stay
+under SSD `artifacts/issue-48/public-native-c138-20261101-r1/`.
+
+The isolated adapter correction removes only that pre-dispatch context update.
+Compilation and the same original complete native script must still validate it;
+no passing behavior or Issue closure follows from this source analysis. Existing
+Table ACK, Host normal, independent native wheel, and Panel six-stage proofs retain
+their original identities. Physical Pinyin/candidate observations and applicable
+VoiceOver/performance are neither substituted nor resumed by this repair.
+
+
+### Scoped verification and remaining observations (2026-11-01)
+
+CPU069 passed the affected consumer's offline all-target strict Clippy and one
+matching build. Native070 then ran the unchanged complete programmatic native
+script once against archived program
+`dce85d5a73790637cfef39fbde24b8df42df0f3e4e250b44c7bc9cba145275e4`:
+exit 0 in 22.34 seconds. The first click was consumed and focused Message 200;
+all seven original phases reached normal close, including auxiliary append/scroll,
+Tab, resize, reactivation, UTF-16 selection/marked text, and Unmark assertions.
+The original Native063 failure remains preserved. The compiled inputs were public
+c138 plus the exact two-path repair and eight preserved diagnostic WIP files;
+this is the archived run's identity, not a claim of a clean public-tree execution.
+The later publication supplement changes documentation only.
+
+Final and before-close journal snapshots contained four Group AX nodes. The Host
+contract does not make input readiness an AX publication fence, and those captures
+did not record or await the separate semantic/image publication fences. This is a
+sampling evidence gap, not a demonstrated product defect or proof of full AX
+restoration. Physical Pinyin/candidate observation, VoiceOver, performance and the
+other effective #48 acceptance criteria remain open; this finite adapter fix does
+not close the Issue.
+
+Primary immutable receipts are under SSD
+`artifacts/issue-48/native063-input-clock-repair-20261101-r1/`:
+`main-acceptance-r1/run01/main-release-acceptance.json` (CPU069),
+`main-native-r1/NATIVE070-PASS-AND-RELEASE.json` (Native070), and
+`domain-review-native070-r1/` (original-owner raw/contract review).
