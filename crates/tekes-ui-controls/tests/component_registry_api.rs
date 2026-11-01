@@ -1299,6 +1299,41 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         &mut actual,
         "tekes_ui_controls::composition::ListRowDisplay",
     );
+    #[cfg(feature = "bitmap-images")]
+    {
+        public_type::<tekes_ui_controls::composition::MediaViewerCommand>(
+            &mut actual,
+            "tekes_ui_controls::composition::MediaViewerCommand",
+        );
+    }
+    #[cfg(feature = "bitmap-images")]
+    {
+        public_type::<tekes_ui_controls::composition::MediaViewerContent>(
+            &mut actual,
+            "tekes_ui_controls::composition::MediaViewerContent",
+        );
+    }
+    #[cfg(feature = "bitmap-images")]
+    {
+        public_type::<tekes_ui_controls::composition::MediaViewerError>(
+            &mut actual,
+            "tekes_ui_controls::composition::MediaViewerError",
+        );
+    }
+    #[cfg(feature = "bitmap-images")]
+    {
+        public_type::<tekes_ui_controls::composition::MediaViewerMode>(
+            &mut actual,
+            "tekes_ui_controls::composition::MediaViewerMode",
+        );
+    }
+    #[cfg(feature = "bitmap-images")]
+    {
+        public_type::<tekes_ui_controls::composition::MediaViewerTransform>(
+            &mut actual,
+            "tekes_ui_controls::composition::MediaViewerTransform",
+        );
+    }
     public_type::<tekes_ui_controls::composition::MenuContent>(
         &mut actual,
         "tekes_ui_controls::composition::MenuContent",
@@ -1332,7 +1367,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::composition::NumberFieldContent",
     );
     #[allow(dead_code)]
-    fn public_trait_210<T: tekes_ui_controls::composition::NumberFormat + ?Sized>() {}
+    fn public_trait_215<T: tekes_ui_controls::composition::NumberFormat + ?Sized>() {}
     actual.push("tekes_ui_controls::composition::NumberFormat");
     public_type::<tekes_ui_controls::composition::NumberParseError>(
         &mut actual,
@@ -1395,7 +1430,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::composition::PopoverSession",
     );
     #[allow(dead_code)]
-    fn public_trait_226<T: tekes_ui_controls::composition::PreparedActionEffect + ?Sized>() {}
+    fn public_trait_231<T: tekes_ui_controls::composition::PreparedActionEffect + ?Sized>() {}
     actual.push("tekes_ui_controls::composition::PreparedActionEffect");
     public_type::<tekes_ui_controls::composition::PreparedActionFocus>(
         &mut actual,
@@ -2200,7 +2235,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::layout_view::IconLayout",
     );
     #[allow(dead_code)]
-    fn public_trait_426<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
+    fn public_trait_431<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
     actual.push("tekes_ui_controls::layout_view::IconRenderer");
     public_type::<tekes_ui_controls::layout_view::IconView>(
         &mut actual,

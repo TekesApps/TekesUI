@@ -29,6 +29,7 @@ jobs:
           cargo fetch --locked --manifest-path examples/brand-consumer/Cargo.toml
           cargo fetch --locked --manifest-path examples/app-host-demo/Cargo.toml
           cargo fetch --locked --manifest-path examples/process-content-consumer/Cargo.toml
+          cargo fetch --locked --manifest-path examples/media-viewer-content-consumer/Cargo.toml
       - name: Design package, brand generation and Rust boundaries
         run: |
           python3 -m pip install -r design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/requirements.txt
@@ -104,6 +105,8 @@ jobs:
           # GPU cases remain explicit local locked runs; the original Toolbar positive is still open.
           cargo clippy --manifest-path examples/composition-consumer/Cargo.toml --features bitmap-images --test parent_boundary_proof --locked --offline -- -D warnings
           cargo test --manifest-path examples/composition-consumer/Cargo.toml --features bitmap-images --test parent_boundary_proof --no-run --locked --offline
+          # Optional MediaViewer public CPU contract; GPU/native remain separately allocated.
+          CARGO_TARGET_DIR="$GITHUB_WORKSPACE/target" cargo test --manifest-path examples/media-viewer-content-consumer/Cargo.toml --test cpu_contract --locked --offline
 
       - name: Independent AppWindow and Settings delivery (Issue 70)
         if: ${{ !cancelled() && steps.workspace_clippy.outcome == 'success' }}

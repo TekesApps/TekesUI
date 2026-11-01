@@ -416,6 +416,11 @@
   ],
   "media_viewer": {
     "status": "specified-not-implemented",
+    "design_candidate": {
+      "$ref": "../../docs/design/media-viewer-design-20261031.md",
+      "issue": "https://github.com/TekesApps/TekesUI/issues/201",
+      "status": "proposed-not-runtime"
+    },
     "api": {
       "inputs": [
         "resource",

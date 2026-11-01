@@ -12,6 +12,12 @@ pub use bitmap::{
     ImageAlignment, ImageContent, ImageContentError, ImageFit, ImageLoadOutcome, ImageLoadRequest,
     ImageLoadStatus, ImageSemantics,
 };
+#[cfg(feature = "bitmap-images")]
+mod media_viewer;
+#[cfg(feature = "bitmap-images")]
+pub use media_viewer::{
+    MediaViewerCommand, MediaViewerContent, MediaViewerError, MediaViewerMode, MediaViewerTransform,
+};
 mod icon;
 pub use icon::{IconContent, IconImage, IconRenderError, WithIconRenderer};
 #[cfg(feature = "svg-icons")]
@@ -823,6 +829,15 @@ pub trait Component: Debug + Any {
                     | ContentRole::Switch
                     | ContentRole::Splitter
             )
+    }
+    /// Whether an already acquired pointer capture still belongs to this owner.
+    /// Pure query: no mutation, event delivery, capture acquisition or other side effects.
+    /// A gesture-aware owner returns false after cancellation and remains false until
+    /// it admits a fresh primary PointerDown. Repeated queries must be observational.
+    /// Controls that cancel during layout or source updates retire the original
+    /// Host capture through this query. The default preserves existing control policy.
+    fn pointer_capture_current(&self) -> bool {
+        true
     }
     /// Full metadata entry point. The default preserves existing primary-pointer
     /// components; context actions opt in here instead of activating ordinary controls.
@@ -2603,6 +2618,7 @@ impl ContentHost {
                 self.captured_mount != Some(c.mount)
                     || c.visible().is_none()
                     || c.component.semantics().disabled
+                    || !c.component.pointer_capture_current()
                     || c.component::<ComboBoxContent>()
                         .is_some_and(|combo| !combo.capture_current(self.captured_overlay))
             })
@@ -2919,7 +2935,16 @@ impl ContentHost {
             return ContentResponse::default();
         }
         self.reconcile_active_inputs();
-        if event.is_primary_pointer()
+        // A stale spatial lease rejects positioned input, not keyboard or
+        // lifecycle commands such as Escape closing the current modal scope.
+        if matches!(
+            event,
+            ContentEvent::Pointer(_)
+                | ContentEvent::PointerDown(_)
+                | ContentEvent::PointerMove(_)
+                | ContentEvent::PointerUp(_)
+                | ContentEvent::Scroll { .. }
+        ) && event.is_primary_pointer()
             && self.requires_curve_geometry()
             && self
                 .geometry_snapshot()
@@ -3360,6 +3385,7 @@ impl ContentHost {
                     self.captured_mount == Some(node.mount)
                         && node.visible().is_some()
                         && !node.component.semantics().disabled
+                        && node.component.pointer_capture_current()
                         && node
                             .component::<ComboBoxContent>()
                             .is_none_or(|combo| combo.capture_current(self.captured_overlay))

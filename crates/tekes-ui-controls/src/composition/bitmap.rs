@@ -361,6 +361,10 @@ impl ImageContent {
         self.arranged = None;
         Ok(true)
     }
+    // Query the original resource owner without duplicating its load state.
+    pub(super) fn displayed_logical_size(&self) -> Option<Size> {
+        ready_state(&self.state).map(|image| image.logical_size)
+    }
     fn arranged_ready(&self) -> Option<&ReadyImage> {
         ready_state(&self.state)
     }

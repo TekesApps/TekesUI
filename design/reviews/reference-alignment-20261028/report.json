@@ -1,10 +1,10 @@
 {
   "format": "tekesui-reference-alignment-report/1",
   "date": "2026-10-16",
-  "source_commit": "3cd5bf16952e981f42a6711a77dd98fea275519b",
+  "source_commit": "470c7912227424706bdfa294e5167b36c46a8df8",
   "source_state": "working-tree; hashes identify audited inputs, not a clean commit",
   "inputs_sha256": {
-    "design/behavior/reference-alignment.json": "9cbe99f744244f42f4846e279232ee5226b6181673da2ae55d5f1d9e0610c468",
+    "design/behavior/reference-alignment.json": "ab611945579b71db47e5cab3d3f9a67a89216fffd50f6f1f640a2e9e8e98f318",
     "design/brand/apricot.json": "07442028268d7673e89fd1287b9b235e9765418610d73205650f627a049d12ce",
     "design/brand/config.json": "155eceec64c3aa33f4bc6b58a6ef7a1b071384b1dbbb55075a223e460d16e8a8",
     "design/brand/gallery.json": "ba7cc2b8678d71fa397f99faa51f03733d5ae68ff384f5ce822bd07cd52d5e14",

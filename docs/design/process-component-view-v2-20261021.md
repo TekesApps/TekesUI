@@ -122,3 +122,67 @@ No native-window or physical IME acceptance is added by this headless IPC/GPU
 resource case, and no runtime API is changed.
 
 Rectangular parent Scroll admission uses the default-false `Component::rectangular_input_geometry` opt-in. ProcessContainer declares it only for ready, negotiated Content input; the original current focus/reveal checks still run. This does not grant prepared-action purity or curved Panel support, and Curve V1 remains reject-only. The public consumer retains its real outer Scroll and Grid, with a valid arranged translation contract for its fixed row.
+
+## Logical AX focus during paint-only invalidation (#48 / #198, 2026-10-31)
+
+Logical keyboard ownership and current input geometry have separate lifetimes.
+A child AX action can accept focus and invalidate its collection paint in the same
+reply. The containing Host must still be able to admit that acknowledged owner
+while the new paint is pending; it must not treat the paint invalidation as a
+failed child focus request.
+
+The bounded normal-runtime path applies only when the existing AX focus receipt
+and one-shot content-route pointer are present, the cached reply reports a child
+Host owner, the process remains available, and only repaint is pending. Geometry
+and deferred-input invalidation must be clear, and this path is limited to the
+ordinary non-Curve View. The original Host prepare/apply/reconcile policy still
+decides admission. Its existing `set_focus` consumes the receipt and uses the
+acknowledged-child path without another Focus RPC. No focus call, replay, new
+receipt field, protocol event or reducer is introduced.
+
+`input_ready`, bridge and semantic geometry admission remain unchanged: the new
+frame must pass the original acknowledgement before geometry-dependent callbacks
+resume. Hidden/inactive, stale session/View/viewport/mount/part, cancelled input
+and Curve admission keep their existing fences. A consumed response alone, or a
+public `focus()` result of `false` (which reports only `changed`), does not prove
+that a Host owner was installed.
+
+The actual diagnostic source `df5e27e1db6551b821d02428acaaed5b3c872f70`
+showed the failure before clip restoration: stderr lines 1611–1627 correlate child
+Focus acceptance and its delivered owner/request receipt; line 1628 records
+repaint pending with input unavailable; lines 1631–1632 show the containing Host
+rejecting admission as `UnavailableTarget`. No `set_focus(true)` followed. The
+restored header later had raw child focus and a nonempty frame, but projection
+correctly remained unfocused because its parent focus input was false. Final
+Cancel/blur records were teardown, not the initial failure. This evidence remains
+attached to that failed diagnostic program; it is not a passing normal run.
+
+The one-file Runtime adapter repair was source-admitted at
+`089dc65d958d62900fc68ba6e7ce41f603f05200` after bounded Core contract review.
+That exact Runtime source subsequently passed its two registered receiver tests,
+SVG example strict/build and one normal real-IPC run of the unchanged Table
+consumer. The run exited 0 with one `TABLE_PROCESS_PASS` and all five malformed
+receiver modes rejected (`ordinal`, `orphan`, `duplicate`, `kind`, `budget`). Its
+normal program SHA-256 is
+`ffca741cbdc18c3adbc740f2868d1001f68eca1e6c0275ad7d7d234a8c545045`.
+The original restore/business-state, stale identity and inactive-scope assertions
+were retained; this is finite validation of the acknowledged-focus repair for
+that consumer, not a new per-delivery trace or a general acceptance claim.
+
+The tested source remains `089dc65d958d62900fc68ba6e7ce41f603f05200`;
+the documentation-only successor `853eed2f20792a2c1c64ae485b5aa82f8f650de5`
+is not relabeled as a compiled input. The old diagnostic restore assertion
+failure and its later `NOT_REACHED` gates remain attached to the failed diagnostic
+program. This result establishes neither publication nor native-window, physical
+IME, VoiceOver or performance acceptance, and does not expand the existing
+Issue 48 acceptance scope. Primary receipts: SSD
+`artifacts/issue-48/table-process-actualTEMP01-analysis-r1/` and
+`artifacts/delivery/integration-executor-20261030-09/table-runtime-ack-normal-window01/run/integrator-key-acceptance.json`.
+
+Public source audit (2026-11-01): main `eec9aebe555a85a4caecf57034d331def2bb867d`
+contains the repaired container with SHA-256
+`05db7983122cf203fa534a8ea69ab4a5be7277188f6792a1f0832933e600ba43`.
+The original tested commit is not an ancestor of this publication; file identity
+establishes inclusion of the repair, without signing the old run as a current-main run.
+The independent consumer support/migration and execution map is in
+[`examples/process-content-consumer/README.md`](../../examples/process-content-consumer/README.md).

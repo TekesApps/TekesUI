@@ -72,7 +72,7 @@
         {
           "api": "tekes_ui_controls::composition::StackContent",
           "path": "crates/tekes-ui-controls/src/composition.rs",
-          "line": 4050,
+          "line": 4076,
           "anchor": "pub struct StackContent {"
         }
       ]
@@ -117,7 +117,7 @@
         {
           "api": "tekes_ui_controls::composition::GridContent",
           "path": "crates/tekes-ui-controls/src/composition.rs",
-          "line": 4194,
+          "line": 4220,
           "anchor": "pub struct GridContent {"
         }
       ]
@@ -245,7 +245,7 @@
         {
           "api": "tekes_ui_controls::composition::ScrollContent",
           "path": "crates/tekes-ui-controls/src/composition.rs",
-          "line": 4303,
+          "line": 4329,
           "anchor": "pub struct ScrollContent {"
         }
       ]
@@ -438,7 +438,7 @@
         {
           "api": "tekes_ui_controls::composition::TextContent",
           "path": "crates/tekes-ui-controls/src/composition.rs",
-          "line": 4589,
+          "line": 4615,
           "anchor": "pub struct TextContent {"
         }
       ]
@@ -2047,7 +2047,7 @@
     "crates/tekes-ui-controls/src/chart.rs": "9e3e5dd1e9d62f358cb74201a254f4165b81e4b79c3a97f0a74bde6f591e983c",
     "crates/tekes-ui-controls/src/collections_view.rs": "16e46f93d95c701281538c4150a244977584a0d4db7b1059ac4fd5d6dcb6a6fd",
     "crates/tekes-ui-controls/src/composite.rs": "99d42809610c98e8b86136e3eb0698129c9ec9c659990d943c62d380e063042d",
-    "crates/tekes-ui-controls/src/composition.rs": "a16f527fecf5f4c515b26b6f415a9e81c2c738d6a5edeb1286319dcab745c885",
+    "crates/tekes-ui-controls/src/composition.rs": "9323f5c1c91f83b5d94a7f3ca6aa16c6e2ce6b9f8b3f13730f722c49121e8f48",
     "crates/tekes-ui-controls/src/composition/actions.rs": "fd2fe6882e6a5d3f17e1c42b635714c0d445c7913a44014461515cfbd3e0cf5c",
     "crates/tekes-ui-controls/src/composition/adapters.rs": "178c423bf773e69d6301f620ec4247ea68b2fe1e945a2887e0e9fdc17f1e3b18",
     "crates/tekes-ui-controls/src/composition/button.rs": "0a168f44280df2c4f615c243a32e4c8987fb526c8708e2b571d7f88b96f96f0e",
@@ -2104,7 +2104,7 @@
     "crates/tekes-ui-controls/tests/collection_live_input.rs": "57f318912758da06f666641f865c63e95afeba24e7390105cc5e3c6b11325937",
     "crates/tekes-ui-controls/tests/collection_navigation_live.rs": "dd358b0475fe719e1e5cecd95b936c1df66930298fb33872f9ddd4562db83e43",
     "crates/tekes-ui-controls/tests/command_result_states.rs": "f878f949341b2d8108da8f84fa20331fa5d5e563a4a518b8df38d00ee1b16f1c",
-    "crates/tekes-ui-controls/tests/component_registry_api.rs": "2f99f6e3e91b8a834902a9d42fcaa8e1d1b85932f2de09ad5be17044d37df114",
+    "crates/tekes-ui-controls/tests/component_registry_api.rs": "e2d8111486c3db19b8a6cdad41cd67a71c9e86c6c2c7bab1eb434c5e37a66faf",
     "crates/tekes-ui-controls/tests/composition.rs": "ddf5e18703784de33433423ac5da5f8a8149e2b33b14ca4bc9fd7bf4bf9a7096",
     "crates/tekes-ui-controls/tests/content_reading.rs": "8180d37ad003cee54fb8a3ca5607e05180e18b623660eb20c08fcf829ac66220",
     "crates/tekes-ui-controls/tests/external_preflight.rs": "e7a3b993e8cef971b50fbb4cff7bc4fd39e1854e5c1f86209c651d9d44f26736",
@@ -2150,7 +2150,7 @@
     "crates/tekes-ui-text/src/label.rs": "07d46cd8afd41e5fa8fc79ad12070c45e8b9fa3b8ebeeed5746c9b6b37b7eac7",
     "crates/tekes-ui-text/src/lib.rs": "5bcc343e17bf3c8c0ec47858156fbeb751cd530b08d0152321475a239e64c4f8",
     "design/gallery/catalog.json": "4a9dde47550b1a7aa355c877649db73a8e9ec918e82bb823db19f8882a85433f",
-    "design/gallery/public-api-surface.json": "88d3ee47e3f961c73792069b7cb63d12fe9cec08eba2d47b14d3311535c9d76a",
+    "design/gallery/public-api-surface.json": "11a45e90e98b8f275277bdccfc488872331bb40c9874526d3629e6f53e2d883d",
     "docs/charter.md": "3d4f7d5cc0f25682b1595a900c5059c170b98661e4c33b4f978489c2002be12c",
     "docs/design/menu-action-records-20261021.md": "27b925716d27757e750c7be222ebfe0844bbd618a0e5b5373d35c5820164fa88",
     "docs/design/menu-declarations-20261021.md": "e1494ee1d9a9de6f5fb7bedc40d0c19a8e90dfefca0d0f983316ae8794976ee8",
@@ -2223,7 +2223,8 @@
     "docs/design/selectable-list-public-content-20261024.md": "cad16726a3dda60fdd2b2ab18bad881150cf907bd78e76989713d7c269ecc2a0",
     "docs/design/tree-public-content-20261024.md": "a01a90370da0b5ad9e9bc589c9601fa61279b49fd2f5aa3c68910e90d58aa2bc",
     "docs/design/datatable-public-content-20261024.md": "812988af6954e21b11d6aca4fe769bfb405f26f256685c400f88cc28ef377cf9",
-    "docs/design/disclosure-public-content-20261024.md": "1d9a5e8149c04ab5320ffe8639026034b25dfdd267c38631dd8f9c3f2b078f39"
+    "docs/design/disclosure-public-content-20261024.md": "1d9a5e8149c04ab5320ffe8639026034b25dfdd267c38631dd8f9c3f2b078f39",
+    "docs/design/media-viewer-design-20261031.md": "b54eaadff42cffdc281f7ce59f111a5c6bfcdcf7c00ee93705644984443a79d0"
   },
   "remaining": [
     "Collections49 public adapter/support paths recovered in thisf4df candidate; actual compatible compilation/consumer/IPC acceptance and publication remain Main gates. Tree/Table and keyed List slots remain finite passive contracts, not arbitrary interactive content or virtualization.",
@@ -2235,57 +2236,57 @@
   "shared_evidence": [
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 473,
+      "line": 479,
       "anchor": "pub trait Component: Debug + Any {"
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 2328,
+      "line": 2343,
       "anchor": "pub fn render("
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 2720,
+      "line": 2736,
       "anchor": "pub fn event(&mut self, event: &ContentEvent) -> ContentResponse {"
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 3261,
+      "line": 3286,
       "anchor": "pub fn focused_text(&self) -> Option<&crate::TextSurface> {"
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 3867,
+      "line": 3893,
       "anchor": "pub fn insert("
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 3903,
+      "line": 3929,
       "anchor": "pub fn remove(&mut self, id: ComponentId) -> Result<Content, CompositionError> {"
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 3953,
+      "line": 3979,
       "anchor": "pub fn reorder("
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 4033,
+      "line": 4059,
       "anchor": "pub fn semantics(&self) -> Vec<SemanticNode> {"
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 3689,
+      "line": 3715,
       "anchor": "pub fn show_dialog(&mut self, id: ComponentId) -> Result<(), CompositionError> {"
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 3730,
+      "line": 3756,
       "anchor": "pub fn close_dialog(&mut self) -> bool {"
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 1501,
+      "line": 1516,
       "anchor": "fn lifecycle(&mut self, event: Lifecycle) {"
     },
     {
@@ -2451,19 +2452,19 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 665,
+      "line": 671,
       "anchor": "fn paints_children(&self) -> bool {",
       "purpose": "Optional child paint ownership; default preserves automatic traversal"
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 2246,
+      "line": 2261,
       "anchor": "pub fn capture_focus(&self) -> Option<(ComponentId, u64)> {",
       "purpose": "Existing mount identity reused for temporary presentation focus intent"
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 2259,
+      "line": 2274,
       "anchor": "pub fn restore_focus(&mut self, captured: Option<(ComponentId, u64)>) -> bool {",
       "purpose": "Same mount/current eligibility validation; Dialog shares this implementation"
     },
@@ -2517,7 +2518,7 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 1053,
+      "line": 1068,
       "anchor": "pub fn with_label_layout(",
       "purpose": "Explicit readonly Content label opt-in on original components"
     },
@@ -2535,7 +2536,7 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 2272,
+      "line": 2287,
       "anchor": "fn check_text_services(",
       "purpose": "Single existing text-capability traversal and cancellation reused at all render layout boundaries"
     },
@@ -2628,7 +2629,7 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 853,
+      "line": 868,
       "anchor": "fn bubble_handled_event(&self, _event: &ContentEvent) -> bool {"
     },
     {
@@ -4155,5 +4156,17 @@
     "r1": "frozen superseded candidate; no alternative shared implementation retained",
     "r18": "independent followup omitted",
     "runtime": "new26role compatible candidate not compiled or run; old611a/7414 proofs keep original identities"
+  },
+  "media_public_candidate_20261101": {
+    "status": "CPU61_QUALIFIED_PLUS5FRESH_AND_PUBLIC_GPU9_PASS_REQUIRED_CI_PENDING",
+    "source_handoff_sha256": "67072cfddc13b08e5e4fd51194c545991268cd2efcdd5116e1f5349e44c7bfa3",
+    "shared_patch_sha256": "d6f75ce2c7d8bb5800ab010ca8a886cbf4f9ed71a7769688869be6e2375bb2bd",
+    "static_contract_review": "original CoreFocus exact shared-hunk PASS; not runtime/GUI acceptance",
+    "source_boundary": "optional bitmap MediaViewer5types; original45 registeredcomponents/DisclosureReveal retained",
+    "remaining": "single frozen66CPU+4GPUignored/compile/strict, then affected GPU/public9 and publicdelivery; native M6/M8 remain open",
+    "failure": "CPU041 APIbitmap2P1F originalsource/program/raw retained; canonicalorder-only metadata repair thenwholeAPI3freshpassed",
+    "next": "Main requiredcompatibleCI then normalpublicmerge/checkpoint; native M6/M8/AX/IME/VO/performance remain open",
+    "CPU": "CPU04161 independentpass retainedoriginalidentity; CPU0425fresh/0F; never66fresh",
+    "GPU": "GPU043 actual archivedpublic9/0F/0ignored; offscreenonly"
   }
 }

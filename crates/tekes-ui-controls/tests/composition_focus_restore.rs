@@ -153,3 +153,97 @@ fn dialog_does_not_capture_an_already_ineligible_programmatic_caller() {
         "reenabling cannot create return-focus intent absent at modal open"
     );
 }
+
+#[test]
+fn stale_curved_pointer_input_does_not_block_modal_escape_and_original_caller_restore() {
+    for lossless in [false, true] {
+        let mut h = ContentHost::new(Content::new(
+            ROOT,
+            StackContent {
+                model: Stack::new(Axis::Vertical),
+                flexible_child: None,
+                children: vec![
+                    Content::new(CALLER, Button::new("Original caller")),
+                    Content::new(
+                        DIALOG,
+                        DialogContent::new(
+                            "Curved body dialog",
+                            Content::new(ComponentId(13), TextContent::new("Header")),
+                            Content::new(
+                                ComponentId(16),
+                                PanelContent::new(Content::new(
+                                    ComponentId(14),
+                                    Button::new("Body action"),
+                                ))
+                                .unwrap(),
+                            ),
+                            Content::new(ComponentId(15), Button::new("Close")),
+                        ),
+                    ),
+                ],
+            },
+        ))
+        .unwrap();
+        render(&mut h);
+        assert!(h.focus(Some(CALLER), true));
+        let caller_mount = h.get(CALLER).unwrap().mount_identity();
+        h.show_dialog(DIALOG).unwrap();
+        render(&mut h);
+        let point = h
+            .get(ComponentId(14))
+            .unwrap()
+            .component::<Button>()
+            .unwrap()
+            .button
+            .layout()
+            .unwrap()
+            .frame
+            .center();
+        assert_eq!(h.pointer_hit_test(point), Some(ComponentId(14)));
+        let owner = h.focused();
+        // The public mutable accessor withdraws input authority even when its
+        // caller makes no change. Do not render or force focus before Escape.
+        let _ = h.get_mut(ComponentId(14)).unwrap();
+        assert!(h.needs_render());
+        for phase in [PointerPhase::Down, PointerPhase::Up] {
+            let event = if lossless {
+                ContentEvent::Pointer(PointerEvent {
+                    position: point,
+                    phase,
+                    button: Some(PointerButton::Primary),
+                    modifiers: PointerModifiers::default(),
+                    click_count: 1,
+                })
+            } else if phase == PointerPhase::Down {
+                ContentEvent::PointerDown(point)
+            } else {
+                ContentEvent::PointerUp(point)
+            };
+            let response = h.event(&event);
+            assert!(!response.capture_pointer && !response.activated);
+            assert!(h.pointer_capture().is_none());
+            assert_eq!(h.focused(), owner);
+        }
+        assert_eq!(
+            h.get(ComponentId(14))
+                .unwrap()
+                .component::<Button>()
+                .unwrap()
+                .activations,
+            0
+        );
+        assert!(
+            h.event(&ContentEvent::Key {
+                key: tekes_ui_controls::ControlKey::Escape,
+                down: true,
+            })
+            .consumed
+        );
+        assert_eq!(h.focused(), Some(CALLER));
+        assert_eq!(h.get(CALLER).unwrap().mount_identity(), caller_mount);
+        assert!(
+            !h.close_dialog(),
+            "Escape already closed the original modal"
+        );
+    }
+}
