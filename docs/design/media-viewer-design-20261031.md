@@ -185,3 +185,120 @@ GPU043 executed the actual CPU042 public_viewer archivefd1d121d97d0b255bfeb30a64
 Main checked actual raw/counts and programme/dep-info hashes,3636source bytes/timestamps, cache markers and actual owned PID/PG/lock/guard retirement for each window before this result append. Primary receipts: artifacts/issue-203/public-cpu-execution-20261101-r1/main-resource-release-acceptance.json, artifacts/issue-203/api-order-c4522-20261101-r1/main-qualified-cpu041-61.json, artifacts/issue-203/public-cpu-continuation-20261101-r1/main-resource-release-acceptance.json and artifacts/issue-204/public-gpu-only-runtime-r1/main-resource-release-acceptance.json.
 
 Reference alignment was regenerated through its existing compiler because the new design_candidate reference legitimately changed its audited JSON input. The actual check passed15 mappings,13profiles by4themes and12688 declared contrast checks; native remains unverified. No color/policy/source compiler change or acceptance promotion was made. Required compatible CI/publication remain Main delivery gates. Existing native M6/M8, actual AX/IME/VoiceOver/performance and new112matrix/16focus acceptance remain separate and open; ordinary source/CPU/public9 delivery does not wait for those advanced conditions.
+
+
+## 14. 2026-11-01 M6 composing-editor containment A
+
+M6 原生 IME 夹具须遵守既有完整焦点环准入：原生绘制的 ring、gap 与一个 backing pixel 均应在实际祖先 clip 内。Native075/080/084 原零 padding MediaPanel 中的全宽 Form slot 与 Panel 横界相同，完整焦点环无法容纳；084 实际记录原 prepared-focus 的 `NoFeasibleRegion`。这些运行保留为失败及负例，3 个 marked 向量和 positive 控制未达，不能因后续移动夹具而改签。
+
+总协调选择 A，保留完整 ring 合同。Core 唯一 owner 修普通 Field 的基础目标为实际输入槽并按真实倍率恰一次包含完整 ring，保持有/无 Scroll 与 pointer/direct/Tab/AX 合同一致，保留 clipped slot、clipped ring、旧 full-width 配置负例。不得将裸输入槽通过称为完整焦点合法，也不放宽 Panel 曲线或 clip。
+
+#204 独立新 profile `M6_IME_LEGAL_CONTAINMENT_A_R1` 在同一原 Host/Dialog 中组合 Form 与原 MediaPanel 为 siblings；使用原 Dialog 内边距，普通 Stack 仅保 Panel 为 flexible child，不添加 padding、强制焦点或复制组件状态。原 Media 资源与命令、Dialog 三 slots/Invoker/return focus 保持，原 IME 三 marked、七计数不逃逸和 Right32 Down/Up/Escape 控制全部保留。实际点击由当前 published label/frame 求得，不宣称旧点或 Viewer 几何不变；实际倍率、完整 ring 与 Dialog clip 必须在新运行记录。新源码/profile/compiled freeze/programme/输入来源与历史红例分开，Core TEMP 诊断不得进入正常功能候选。
+
+本条仅同步已授权夹具与修复边界，源码审、编译、CPU 与 native 结果各自记录，不宣告 M6 或 #204 完成。stale retained native AX、M8 及原物理 IME/VO/性能/pinch 延期边界保持。
+
+
+### Native095 focused programmatic-native IME 验证（2026-11-01）
+
+新合法 A 夹具已用实际 AppKit selftest 完成原 composing-editor 子场景。实际编译 HEAD 为 `b71a369099fddb3dadf716acd950755c808ef7f7` 加已冻结 Viewer prepared-pointer 候选及 consumer native20445；CPU094 原生 example 定向 strict/build 均通过，独立归档后签名运行。Native095 唯一实例正常 exit0（6.174946s），全部进程组与原 GPU guard 已释放。
+
+原编辑器通过当前 published label/实际点取得焦点与原生 caret；actual scale2、token width2/gap2/physical AA1 推得保留带4.5，输入槽 `(22,80,436,32)` 的完整 ring `(17.5,75.5,445,41)` 独立重算后完整位于 Dialog 实际 clip `(10,24,460,696)`。三个 marked Tab/Right/Escape 均记录同 ID Started/Finished、composing-at-start 和 Host Editor/InputConsumed；七按钮计数、Viewer transform/status、焦点及 Dialog 全部前后不变。随后原 published Viewer 点击实际取得20401焦点与 capture，Up释放；原普通 Right Down 平移恰−32pt，Up无额外变化；普通 Escape Down 关闭 Dialog 并恢复20461，Up不重复，原 ExpectNoText 与最终关闭断言全部通过。未改变原脚本、坐标推导或断言。
+
+证据：`issue-204/m6-legal-containment-a-20261101-r1/native-pointer-r3-run01/DOMAIN-REVIEW.json` SHA `07a8c94a0356b5ab78e5b1cb3a72f99836e9a82130a0a7682131708df96a2617`；Main 独立签收 `ui-main-Native095-pass-release-acceptance.json` SHA `989adafe7f03c63cc6ec555abd2698d03297b863c3834a1cdcf1ba9df47dc26d`。该通过只覆盖 focused composing-editor 的 programmatic native 输入及原 positive controls，不代表物理 IME、候选窗或完整视觉验收。retained stale native AX、M8 与原 VoiceOver/性能/pinch 延期仍保持；075/080/084 原夹具红、086 无效几何红、090 Viewer 拒焦点红继续保留，不能由新 profile 通过改签。
+
+
+Public candidate formatting: Rust 1.95.0 pinned rustfmt produces native SHA `6b3a2be2884fb0b996edd4f17ac99e902bf3c67a4280a1ac03bb111b8cee39c2`. Per-hunk token-tree review confirms only whitespace and ten optional trailing commas in existing calls or two-element tuples; actions, times, literals and assertions are unchanged. Native095 compiled source remains SHA `20445b260a3229fbac40a297b367ef69b85e846f01025fa14b488d441bc0acf4`; the formatted candidate has not been rebuilt or rerun.
+
+
+## 15. 2026-11-01 MediaViewer prepared primary pointer admission
+
+Native090 proves the valid sibling Form's complete ring/caret and three native
+marked-key frames with unchanged original seven counters/Viewer state. The
+subsequent original Viewer click hits the current Viewer, but does not acquire
+focus/capture; Right stays with the editor and the original positive32 assertion
+fails. This remains an actual failure. Its unrecorded internal error and Viewer
+witness must not be invented. The earlier missing-Dialog-passthrough hypothesis
+was withdrawn: the compiled original Dialog already supplies that contract.
+
+The frozen Viewer declares Recursive curved-subtree support and required focus
+reveal, but lacks an original prepared action contract. In a curved Host its
+Unsupported primary Down cannot use the ordinary fallback: reveal requirements
+exclude the legacy route, and Recursive nondelegated geometry is not Local.
+The component now prepares only its original primary PointerDown decision using
+the existing original-owner action/effect adapter. Current readiness, viewport,
+transform, focus evidence and prior drag authenticate the decision; the Host
+still owns mount/epoch/current clip/full witness/IME/focus/capture admission.
+After those checks and focus commit, the effect only installs the decided
+original drag. Ordinary Down consumes the same decision. Loading/unavailable
+remain inert; Ready Fit consumes/focuses without capture; pannable Ready acquires
+one original capture. Move/Up/Cancel, image ownership/loading, transform/key
+commands and painting remain unchanged. No shared gate, table transaction,
+public API, custom layout or AX verb is added.
+
+Two CPU regressions cover pure preparation and unchanged Loading focus/capture.
+One explicitly ignored, mandatory real-Renderer-resource regression uses an
+authentic registered bitmap and actual Host primary Down inside a Panel: full
+focus witness and current hit precede focus/capture, Up adds no transform,
+RightDown pans32 and Up adds none, Fit focuses without capture, and a legal
+point with insufficient complete witness refuses without focus/capture/transform
+or notification mutation. The same test must be run on old production plus new
+tests and on the candidate under separate Main CPU/build and GPU grants. A real
+BitmapImageLease requires the Renderer/device; Loading or fabricated Ready is
+not a public Ready-pointer CPU proof. No pixel/visual or physical-IME acceptance
+is inferred from this resource/input test. Source checks are not actual red/green.
+
+Main integrates only this component and design append over the admitted Core A
+R3/native A fixture. New programmes/profile hashes and explicit GPU execution
+of the ignored case are required before the unchanged native M6 positive chain
+is revalidated. Original075/080/084/090 failures, CPU086 invalid red and the
+separate Core087/088 evidence remain immutable and separately qualified.
+
+### Actual affected verification and Native095 result
+
+This fix is a complete tested delivery batch over public baseline
+`b71a369099fddb3dadf716acd950755c808ef7f7`. The baseline component is
+`0315bbb9…`; the tested component is exactly `185f9c89…`. Main CPU091 compiled
+old production plus identical corrected regression tests (`23e33512…`) with
+`--no-run` and immediately archived it; no baseline CPU test was executed.
+CPU092 compiled and archived the candidate, then ran the exact Content module:
+15 passed, 0 failed, 5 explicitly ignored GPU tests (465 other tests filtered),
+and the original scoped strict check passed. The five ignored cases are not
+five GPU passes. Unchanged Core087/088 and geometry evidence were reused.
+
+GPU093 explicitly executed the same ignored Ready-pointer case on both retained
+programmes. Old `422820a8…` reached the designated Ready Down focus assertion at
+line2128 (actual ComponentId7703, expected7701): exit101,0passed,1failed,0ignored.
+New `b504cee1…` passed the complete original Renderer-registration/Host case:
+exit0,1passed,0failed,0ignored. Each programme remains bound to its own complete
+compiled source freeze; the current execution freeze is a separate identity.
+The case includes primary Down focus/capture, Up release, RightDown32 and no
+RightUp duplicate, Fit focus without capture, and insufficient-witness atomic
+refusal. It does not render or certify a pixel matrix.
+
+CPU094 scoped native strict/build/archive passed on actual compiled HEAD b71,
+with the admitted Core A R3 and consumer `20445b26…`: native archive `e427c9ca…`,
+identity `776b5db1…`, full freeze `08e5c638…`, profile `e8b75027…`. The signed
+payload `7358ef80…` is a derivation of that archive, not another compilation.
+Native095 then ran once under a new grant and exited0 in6.174946s. The actual
+Editor complete ring (17.5,75.5,445,41), recomputed from scale2 and token
+width2/gap2/one physical AA pixel, fits the Dialog clip (10,24,460,696). Three
+composing Tab/Right/Escape transactions retained the same Editor target and
+InputConsumed result, with all seven counters and the complete Viewer/focus/
+Dialog witness unchanged. The original positive chain acquired Viewer20401
+focus/capture by the published primary pointer, released on Up, dispatched
+ordinary Right Down by exactly−32 with no Up delta, then ordinary Escape closed
+the Dialog, restored20461 and passed the original ExpectNoText assertion.
+Down geometry45 and Up46 were separately current; equal generations are not an
+oracle. No separate pre-Right None query was added: ordinary routing supports
+the unpublished-editor conclusion, while explicit None was checked after Escape.
+
+Main's Native095 pass/release acceptance is
+`artifacts/issue-204/m6-legal-containment-a-20261101-r1/native-pointer-r3-run01/ui-main-Native095-pass-release-acceptance.json`
+(SHA989adafe…). Owned process/group retirement and the original paired GPU
+guard were accepted; no retry or unused-window reuse occurred. This evidence
+completes this prepared-pointer regression fix and the focused programmatic
+native IME/positive-control subcase only. Native090 and all earlier failures
+remain immutable. Whole M6 retained stale native AX, M8 real OS gestures and
+external-display conditions, physical IME, VoiceOver, performance and pinch
+remain independently open/deferred. They do not block this compatible ordinary
+source delivery; merge/CI/publication remain Main's responsibility.
