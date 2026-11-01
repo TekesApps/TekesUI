@@ -1,5 +1,6 @@
-//! Controlled-window fixture, no automatic input injection. Raw OS events are
-//! logged; the operator must separately record whether input was physical/CUA/AX.
+//! Controlled-window fixture. Default mode injects no input; explicit M6 IME
+//! mode uses public programmatic AppKit selftests, never a physical IME claim.
+//! Raw native events and operator input provenance remain separate.
 #[cfg(target_os = "macos")]
 #[path = "../tests/support/coretext.rs"]
 mod coretext;
@@ -27,6 +28,86 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     use tekes_ui_render::Renderer;
     use tekes_ui_scene::{Rect, Scene};
     use tekes_ui_tokens::{Palette, Theme};
+    const IME_EDITOR: ComponentId = ComponentId(20470);
+    const IME_BODY: ComponentId = ComponentId(20471);
+    const IME_EDITOR_LABEL: &str = "M6 composition editor";
+    fn ime_modal_fixture(gpu: &mut Renderer) -> ContentHost {
+        let mut tree = fixture::modal_fixture(gpu);
+        // A profile: the original Form and MediaPanel are siblings within the
+        // original Dialog. Its existing inset reserves the complete focus ring;
+        // the editor no longer inherits the MediaPanel's zero-padding clip.
+        let slots = tree
+            .get_mut(fixture::DIALOG)
+            .unwrap()
+            .component_mut::<DialogContent>()
+            .unwrap()
+            .children_mut()
+            .unwrap();
+        let panel = slots.remove(1);
+        slots.insert(
+            1,
+            Content::new(
+                IME_BODY,
+                StackContent {
+                    model: tekes_ui_controls::extended::Stack::new(
+                        tekes_ui_controls::extended::Axis::Vertical,
+                    ),
+                    flexible_child: Some(fixture::ROOT),
+                    children: vec![
+                        Content::new(IME_EDITOR, TextFieldContent::new(IME_EDITOR_LABEL, "draft")),
+                        panel,
+                    ],
+                },
+            ),
+        );
+        tree
+    }
+    // Reads the same original controls; no get_mut/drain or copied editor state.
+    #[derive(Clone, Debug, PartialEq)]
+    struct ImeWitness {
+        buttons: Vec<usize>,
+        focused: Option<ComponentId>,
+        dialog_open: bool,
+        transform: Option<MediaViewerTransform>,
+        image_status: String,
+    }
+    fn ime_witness(tree: &ContentHost) -> ImeWitness {
+        ImeWitness {
+            buttons: fixture::COMMANDS
+                .iter()
+                .map(|(id, _, _)| *id)
+                .chain([fixture::CLOSE, fixture::RETRY, fixture::INVOKER])
+                .map(|id| {
+                    tree.get(id)
+                        .unwrap()
+                        .component::<Button>()
+                        .unwrap()
+                        .activations
+                })
+                .collect(),
+            focused: tree.focused(),
+            dialog_open: tree
+                .get(fixture::DIALOG)
+                .unwrap()
+                .component::<DialogContent>()
+                .unwrap()
+                .is_open(),
+            transform: tree
+                .get(fixture::VIEW)
+                .unwrap()
+                .component::<MediaViewerContent>()
+                .unwrap()
+                .transform(),
+            image_status: format!(
+                "{:?}",
+                tree.get(fixture::VIEW)
+                    .unwrap()
+                    .component::<MediaViewerContent>()
+                    .unwrap()
+                    .image_status()
+            ),
+        }
+    }
     struct Host {
         tree: Option<ContentHost>,
         gpu: Option<Renderer>,
@@ -34,6 +115,235 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         actions: fixture::Actions,
         log: std::fs::File,
         external_display_id: u32,
+        ime_mode: bool,
+        ime_script_started: bool,
+        ime_before: Option<(u64, ImeWitness)>,
+        ime_completed: usize,
+        ime_positive_before: Option<ImeWitness>,
+        ime_positive_done: bool,
+    }
+    impl Host {
+        // Same published UTF-16/caret mapping as composition-consumer Host::text_state.
+        fn text_state(s: &tekes_ui_controls::TextSurface) -> p::TextInputState {
+            let r = s.caret();
+            let origin = s.origin();
+            p::TextInputState {
+                caret_index: s.input.caret,
+                text: s.input.text.clone(),
+                selection: s.input.selection(),
+                marked: s.input.marked.clone(),
+                caret_origin: p::Point {
+                    x: r.min_x() as f64,
+                    y: r.min_y() as f64,
+                },
+                caret_size: p::Size {
+                    width: r.size.width as f64,
+                    height: r.size.height as f64,
+                },
+                read_only: s.input.read_only,
+                carets: s
+                    .paragraph
+                    .as_ref()
+                    .map(|paragraph| {
+                        paragraph
+                            .lines
+                            .iter()
+                            .filter(|line| {
+                                origin.y + (line.top + line.height) as f32 >= s.inner.min_y()
+                                    && origin.y + line.top as f32 <= s.inner.max_y()
+                            })
+                            .flat_map(|line| {
+                                line.carets.iter().map(move |(index, x)| {
+                                    (
+                                        *index,
+                                        p::Point {
+                                            x: f64::from(origin.x) + x,
+                                            y: f64::from(origin.y) + line.top,
+                                        },
+                                        p::Size {
+                                            width: f64::from(tekes_ui_tokens::Stroke::Rule.value()),
+                                            height: line.height,
+                                        },
+                                    )
+                                })
+                            })
+                            .collect()
+                    })
+                    .unwrap_or_default(),
+            }
+        }
+        // Read-only diagnostics for the original pointer/focus admission. These
+        // observations are not a second hit-test or focus implementation.
+        fn write_pointer_witness(
+            tree: &ContentHost,
+            window: &Window,
+            point: tekes_ui_scene::Point,
+            phase: &str,
+            log: &mut std::fs::File,
+        ) {
+            let geometry = tree.geometry_snapshot();
+            let editor_key = p::content_accessibility::content_key(tree, IME_EDITOR, None);
+            let publication = window.content_accessibility_publication();
+            let editor_published = editor_key.is_some_and(|key| {
+                publication
+                    .as_ref()
+                    .is_some_and(|publication| publication.owner(key).is_some())
+            });
+            let scope_focus_targets = tree.focus_targets();
+            let editor_focus_target = scope_focus_targets.iter().find(|(id, _)| *id == IME_EDITOR);
+            let dialog_open = tree
+                .get(fixture::DIALOG)
+                .unwrap()
+                .component::<DialogContent>()
+                .unwrap()
+                .is_open();
+            writeln!(log,
+                "m6_pointer_{phase} point={point:?} window_active={} host_active={} focused={:?} needs_render={} requires_curve={} geometry={:?} host_pointer_hit={:?} geometry_entry_hit={:?} editor_key={editor_key:?} editor_published={editor_published} editor_focus_target={editor_focus_target:?} scope_focus_targets={scope_focus_targets:?} dialog_open={dialog_open}",
+                window.is_active(), tree.is_window_active(), tree.focused(), tree.needs_render(),
+                tree.requires_curve_geometry(), geometry.as_ref().map(|g| (g.generation, g.is_current())),
+                tree.pointer_hit_test(point), geometry.as_ref().and_then(|g| g.hit_test(point))).unwrap();
+            // Actual A containment: Dialog -> IME_BODY -> [Editor, Panel].
+            for id in [
+                fixture::MODAL_ROOT,
+                fixture::DIALOG,
+                IME_BODY,
+                fixture::ROOT,
+                fixture::BODY,
+                IME_EDITOR,
+            ] {
+                let node = tree.get(id).unwrap();
+                writeln!(log,
+                    "m6_pointer_node phase={phase} id={id:?} mount={} frame={:?} visible={:?} allocated_contains={} visible_contains={} curve_bounds={:?}",
+                    node.mount_identity(), node.frame(), node.visible(), node.frame().contains(point),
+                    node.visible().is_some_and(|rect| rect.contains(point)),
+                    geometry.as_ref().map(|g| g.bounds(id, None, node.frame()))).unwrap();
+            }
+            let surface = &tree
+                .get(IME_EDITOR)
+                .unwrap()
+                .component::<TextFieldContent>()
+                .unwrap()
+                .surface;
+            let metrics = tekes_ui_controls::extended::FocusRingMetrics::new(window.scale() as f32);
+            let full_ring = metrics.bounds(surface.outer);
+            let dialog = tree.get(fixture::DIALOG).unwrap();
+            let modal = dialog
+                .component::<DialogContent>()
+                .unwrap()
+                .semantic_frame(dialog.frame());
+            let dialog_clip = dialog.visible().and_then(|clip| modal.intersection(&clip));
+            let full_ring_in_dialog =
+                dialog_clip.and_then(|clip| full_ring.intersection(&clip)) == Some(full_ring);
+            writeln!(log,
+                "m6_legal_containment_a phase={phase} backing_scale={} metrics={metrics:?} full_ring={full_ring:?} dialog_modal={modal:?} dialog_clip={dialog_clip:?} full_ring_in_dialog={full_ring_in_dialog} editor_parent={IME_BODY:?} panel_sibling={:?}",
+                window.scale(), fixture::ROOT).unwrap();
+            writeln!(log,
+                "m6_pointer_surface phase={phase} outer={:?} inner={:?} visible={:?} contains_visible={} disabled={} read_only={} marked={:?}",
+                surface.outer, surface.inner, surface.visible_frame(), surface.contains_visible(point),
+                surface.input.disabled, surface.input.read_only, surface.input.marked).unwrap();
+        }
+        fn start_ime_script(tree: &ContentHost) {
+            use p::selftest::{Action as A, run_script_published_state};
+            let zoom = p::content_accessibility::content_key(tree, fixture::COMMANDS[1].0, None)
+                .expect("current original Zoom key");
+            let mut steps = vec![
+                (0, A::AXPressKey { key: zoom }),
+                (100, A::AXPressKey { key: zoom }),
+                (200, A::AXPressKey { key: zoom }),
+                (300, A::AXPressKey { key: zoom }),
+                (
+                    400,
+                    A::ClickPublished {
+                        label: IME_EDITOR_LABEL,
+                        secondary: false,
+                    },
+                ),
+                (
+                    500,
+                    A::ExpectText {
+                        text: "draft".into(),
+                        marked: false,
+                    },
+                ),
+            ];
+            // Reset only after the previous native End asserted no global effect.
+            // Key-local text/mark/caret changes are legal; native replacement
+            // re-establishes an explicit UTF-16 baseline without copying state.
+            for (index, (key_code, chars)) in [(48, "\t"), (124, "\u{f703}"), (53, "\u{1b}")]
+                .into_iter()
+                .enumerate()
+            {
+                let t = 600 + index as u64 * 800;
+                steps.extend([
+                    (t, A::Unmark),
+                    (t + 100, A::TextCommand("selectAll:")),
+                    (t + 200, A::Text("draft".into())),
+                    (
+                        t + 300,
+                        A::ExpectTextState {
+                            text: "draft".into(),
+                            selection: 5..5,
+                            marked: None,
+                            query: 0..5,
+                            actual: 0..5,
+                        },
+                    ),
+                    (
+                        t + 400,
+                        A::PreeditRange {
+                            text: "拼音".into(),
+                            selection: 2..2,
+                            replacement: Some(5..5),
+                        },
+                    ),
+                    (
+                        t + 500,
+                        A::ExpectTextState {
+                            text: "draft拼音".into(),
+                            selection: 7..7,
+                            marked: Some(5..7),
+                            query: 0..7,
+                            actual: 0..7,
+                        },
+                    ),
+                    (
+                        t + 600,
+                        A::ExpectText {
+                            text: "draft拼音".into(),
+                            marked: true,
+                        },
+                    ),
+                    (t + 700, A::KeyCharacters { key_code, chars }),
+                ]);
+            }
+            steps.extend([
+                (3100, A::Unmark),
+                (
+                    3200,
+                    A::ClickPublished {
+                        label: "Media viewer",
+                        secondary: false,
+                    },
+                ),
+                (
+                    3300,
+                    A::KeyCharacters {
+                        key_code: 124,
+                        chars: "\u{f703}",
+                    },
+                ),
+                (
+                    3400,
+                    A::KeyCharacters {
+                        key_code: 53,
+                        chars: "\u{1b}",
+                    },
+                ),
+                (3500, A::ExpectNoText),
+                (3600, A::Close),
+            ]);
+            run_script_published_state(steps, None);
+        }
     }
     impl WindowHandler for Host {
         fn handle(&mut self, event: Event, window: &mut Window) {
@@ -67,7 +377,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     )
                 }
                 .unwrap();
-                let mut tree = if std::env::var_os("MEDIA_VIEWER_MODAL").is_some() {
+                let mut tree = if self.ime_mode {
+                    ime_modal_fixture(&mut gpu)
+                } else if std::env::var_os("MEDIA_VIEWER_MODAL").is_some() {
                     fixture::modal_fixture(&mut gpu)
                 } else {
                     fixture::fixture(&mut gpu)
@@ -96,6 +408,57 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let Some(tree) = &mut self.tree else {
                 return;
             };
+            if self.ime_mode
+                && let Event::TextKey(p::TextKeyEvent::Started(context)) = &event
+                && context.composing_at_start
+            {
+                assert!(self.ime_before.is_none(), "nested native key frame");
+                assert_eq!(
+                    context.key.key_code,
+                    [48, 124, 53][self.ime_completed],
+                    "original Tab/Right/Escape sequence"
+                );
+                let witness = ime_witness(tree);
+                assert_eq!(witness.focused, Some(IME_EDITOR));
+                assert!(witness.dialog_open);
+                assert!(
+                    witness.transform.unwrap().relative_scale > 1.,
+                    "Viewer zoom setup must be active; positive Right later verifies horizontal pan"
+                );
+                writeln!(
+                    self.log,
+                    "m6_ime_start id={} before={witness:?}",
+                    context.id
+                )
+                .unwrap();
+                self.ime_before = Some((context.id, witness));
+            }
+            // With Viewer focused there is no text input state, so the actual
+            // AppKit route is ordinary Key Down/Up, not a TextKey frame.
+            let ime_positive_key = if self.ime_mode
+                && self.ime_completed == 3
+                && tree.focused() == Some(fixture::VIEW)
+                && let Event::Key(key) = &event
+                && key.key_code == 124
+            {
+                if key.kind == p::KeyEventKind::Down {
+                    assert!(!self.ime_positive_done);
+                    assert!(self.ime_positive_before.is_none());
+                    assert!(!key.is_repeat);
+                    self.ime_positive_before = Some(ime_witness(tree));
+                }
+                Some(key.kind)
+            } else {
+                None
+            };
+            let ime_finish = if self.ime_mode {
+                match &event {
+                    Event::TextKey(p::TextKeyEvent::Finished { context, .. }) => Some(context.id),
+                    _ => None,
+                }
+            } else {
+                None
+            };
             match event {
                 Event::Resized {
                     drawable_size,
@@ -108,8 +471,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .resize(drawable_size, scale as f32),
                 Event::Focus(active) => tree.set_window_active(active),
                 Event::Mouse(mouse) => {
-                    tree.event_with_text(&native_pointer::translate(mouse), &mut self.text)
+                    let point = tekes_ui_scene::Point::new(
+                        mouse.position.x as f32,
+                        mouse.position.y as f32,
+                    );
+                    let focus_before = tree.focused();
+                    if self.ime_mode {
+                        Self::write_pointer_witness(tree, window, point, "before", &mut self.log);
+                    }
+                    let response = tree
+                        .event_with_text(&native_pointer::translate(mouse), &mut self.text)
                         .unwrap();
+                    if self.ime_mode {
+                        writeln!(self.log, "m6_pointer_response point={point:?} focus_before={focus_before:?} focus_after={:?} response={response:?}", tree.focused()).unwrap();
+                        Self::write_pointer_witness(tree, window, point, "after", &mut self.log);
+                    }
                 }
                 Event::Key(key) => {
                     tree.event_with_text(
@@ -119,7 +495,49 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .unwrap();
                 }
                 Event::TextKey(key) => {
-                    tree.event_with_text(&native_key::translate(key), &mut self.text)
+                    let response = tree
+                        .event_with_text(&native_key::translate(key), &mut self.text)
+                        .unwrap();
+                    if self.ime_mode {
+                        writeln!(self.log, "m6_text_key_response={response:?}").unwrap();
+                        if let Some(id) = ime_finish
+                            && self.ime_before.is_some()
+                        {
+                            let outcome = response
+                                .text_key
+                                .expect("original Host key acknowledgement");
+                            assert_eq!(outcome.id, id);
+                            assert_eq!(outcome.target, Some(IME_EDITOR));
+                            assert_eq!(outcome.disposition, TextKeyDisposition::InputConsumed);
+                        }
+                    }
+                }
+                Event::TextPreedit {
+                    text,
+                    selection,
+                    clauses,
+                    replacement,
+                } if self.ime_mode => {
+                    tree.event_with_text(
+                        &ContentEvent::Preedit {
+                            text,
+                            selection,
+                            clauses,
+                            replacement,
+                        },
+                        &mut self.text,
+                    )
+                    .unwrap();
+                }
+                Event::TextCommit { text, replacement } if self.ime_mode => {
+                    tree.event_with_text(
+                        &ContentEvent::Commit { text, replacement },
+                        &mut self.text,
+                    )
+                    .unwrap();
+                }
+                Event::TextUnmark if self.ime_mode => {
+                    tree.event_with_text(&ContentEvent::Unmark, &mut self.text)
                         .unwrap();
                 }
                 Event::TextCommand(command) => {
@@ -137,6 +555,32 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     writeln!(self.log, "ax_response={response:?}").unwrap();
                 }
                 Event::CloseRequested => {
+                    if self.ime_mode {
+                        assert!(
+                            self.ime_script_started,
+                            "original script must start after publication"
+                        );
+                        assert!(self.ime_before.is_none());
+                        assert!(
+                            self.ime_positive_done,
+                            "unmarked Viewer Right must pan 32pt"
+                        );
+                        assert_eq!(
+                            self.ime_completed, 3,
+                            "all three composing native key frames required"
+                        );
+                        assert!(
+                            !tree
+                                .get(fixture::DIALOG)
+                                .unwrap()
+                                .component::<DialogContent>()
+                                .unwrap()
+                                .is_open()
+                        );
+                        assert_eq!(tree.focused(), Some(fixture::INVOKER));
+                        window.set_text_input_state(None);
+                        writeln!(self.log, "M6_NATIVE_IME_PASS composing_keys=3 positive_right=32 positive_escape_restore=20461 physical_ime=false").unwrap();
+                    }
                     tree.set_window_active(false);
                     window.set_content_accessibility_publication(None);
                     window.close();
@@ -161,6 +605,40 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 window.set_content_accessibility_publication(None);
                 window.close();
                 return;
+            }
+            if let Some(id) = ime_finish
+                && let Some((started, before)) = self.ime_before.take()
+            {
+                assert_eq!(started, id, "native TextKey Start/End ID mismatch");
+                let after = ime_witness(tree);
+                assert_eq!(
+                    before, after,
+                    "composing native key must not escape to global controls"
+                );
+                self.ime_completed += 1;
+                writeln!(self.log, "m6_ime_finish id={id} after={after:?}").unwrap();
+            }
+            if let Some(kind) = ime_positive_key {
+                let mut expected = self
+                    .ime_positive_before
+                    .as_ref()
+                    .expect("positive Right Down must precede Up")
+                    .clone();
+                expected.transform.as_mut().unwrap().translation.x -= 32.;
+                let after = ime_witness(tree);
+                assert_eq!(
+                    expected, after,
+                    "original Viewer Right Down pans exactly32pt; Up adds no changes"
+                );
+                writeln!(
+                    self.log,
+                    "m6_ime_positive_right kind={kind:?} after={after:?}"
+                )
+                .unwrap();
+                if kind == p::KeyEventKind::Up {
+                    self.ime_positive_before = None;
+                    self.ime_positive_done = true;
+                }
             }
             // Retry notifies this host once; it performs no I/O or implicit load.
             fixture::refresh_buttons(tree);
@@ -194,6 +672,30 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 ));
             } else {
                 window.set_content_accessibility_publication(None);
+            }
+            if self.ime_mode {
+                window.set_text_input_state(tree.focused_text().map(Self::text_state));
+                let zoom_key =
+                    p::content_accessibility::content_key(tree, fixture::COMMANDS[1].0, None);
+                let publication = window.content_accessibility_publication();
+                let publication_current = publication.as_ref().is_some_and(|p| p.is_current());
+                let zoom_published = zoom_key.is_some_and(|key| {
+                    publication.as_ref().is_some_and(|p| p.owner(key).is_some())
+                });
+                let ready = window.is_active()
+                    && tree.is_window_active()
+                    && publication_current
+                    && zoom_published;
+                writeln!(self.log,
+                    "m6_script_readiness window_active={} host_active={} zoom_key={zoom_key:?} publication_current={publication_current} zoom_published={zoom_published} started={}",
+                    window.is_active(), tree.is_window_active(), self.ime_script_started).unwrap();
+                if !self.ime_script_started && ready {
+                    // Created can be background. Start once only after the actual
+                    // active normal frame has published this original Zoom key.
+                    self.ime_script_started = true;
+                    writeln!(self.log, "m6_script_start count=1 zoom_key={zoom_key:?}").unwrap();
+                    Self::start_ime_script(tree);
+                }
             }
             writeln!(
                 self.log,
@@ -229,6 +731,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         log,
         "input_source=UNATTESTED; operator must supply provenance; physical IME/VO/performance/pinch NOT_TESTED"
     )?;
+    if std::env::var_os("MEDIA_VIEWER_M6_IME").is_some() {
+        writeln!(
+            log,
+            "m6_input_source=PROGRAMMATIC_NATIVE_APPKIT_SELFTEST physical_ime=false cua=false"
+        )?;
+    }
     let external_display_id: u32 = std::env::var("MEDIA_VIEWER_EXTERNAL_DISPLAY_ID")?.parse()?;
     App::new(AppConfig {
         name: Some("Media Viewer Consumer 204".into()),
@@ -252,6 +760,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             actions: fixture::Actions::default(),
             log,
             external_display_id,
+            ime_mode: std::env::var_os("MEDIA_VIEWER_M6_IME").is_some(),
+            ime_script_started: false,
+            ime_before: None,
+            ime_completed: 0,
+            ime_positive_before: None,
+            ime_positive_done: false,
         },
     );
     Ok(())

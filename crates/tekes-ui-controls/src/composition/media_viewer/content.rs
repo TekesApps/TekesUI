@@ -18,11 +18,23 @@ fn focus_boundary_inside(rect: Rect, shape: ClipShape) -> Result<bool, ClipError
     Ok(true)
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 struct Drag {
     pointer: Point,
     translation: Point,
 }
+
+#[derive(Debug, PartialEq)]
+struct PreparedViewerPointer {
+    input_ready: bool,
+    viewport: Rect,
+    transform: Option<MediaViewerTransform>,
+    focus_space: RequiredFocusSpace,
+    previous_drag: Option<Drag>,
+    drag: Option<Drag>,
+    response: ContentResponse,
+}
+impl action_preparation::OriginalActionDecision for PreparedViewerPointer {}
 
 /// A local, optional image viewport. Dialog, Close, Retry and toolbar Buttons
 /// compose around this Content through the original Host. No I/O or decoding.
@@ -51,6 +63,50 @@ pub struct MediaViewerContent {
     changes: Vec<MediaViewerTransform>,
 }
 impl MediaViewerContent {
+    fn decide_pointer_down(&self, point: Point) -> PreparedViewerPointer {
+        let input_ready = self.input_ready();
+        let transform = self.transform();
+        let mut drag = self.drag;
+        let mut response = ContentResponse::default();
+        if input_ready {
+            response.consumed = true;
+            if self.geometry.can_pan() {
+                drag = Some(Drag {
+                    pointer: point,
+                    translation: transform.expect("input-ready geometry").translation,
+                });
+                response.capture_pointer = true;
+            }
+        }
+        PreparedViewerPointer {
+            input_ready,
+            viewport: self.viewport,
+            transform,
+            focus_space: self.focus_space.clone(),
+            previous_drag: self.drag,
+            drag,
+            response,
+        }
+    }
+    fn decide_action(
+        &self,
+        request: &action_preparation::OwnedActionRequest,
+    ) -> Option<PreparedViewerPointer> {
+        let action_preparation::OwnedActionRequest::Pointer(event) = request else {
+            return None;
+        };
+        let routing = event.routing_event();
+        let ContentEvent::PointerDown(point) = routing.as_ref() else {
+            return None;
+        };
+        if !event.is_primary_pointer() || !point.x.is_finite() || !point.y.is_finite() {
+            return None;
+        }
+        Some(self.decide_pointer_down(*point))
+    }
+    fn apply_pointer_down(&mut self, decision: PreparedViewerPointer) {
+        self.drag = decision.drag;
+    }
     pub fn new(
         image_id: ComponentId,
         image: ImageContent,
@@ -320,6 +376,27 @@ impl MediaViewerContent {
     }
 }
 impl Component for MediaViewerContent {
+    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
+        ActionTransactionCompatibility::StableHooks
+    }
+    fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
+        action_preparation::prepare_original(
+            self,
+            request,
+            Self::decide_action,
+            Self::apply_pointer_down,
+            |decision| {
+                (
+                    decision.response,
+                    if decision.response.consumed {
+                        PreparedActionFocus::Owner
+                    } else {
+                        PreparedActionFocus::None
+                    },
+                )
+            },
+        )
+    }
     fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
         CurveSubtreeCapability::Recursive
     }
@@ -509,18 +586,12 @@ impl Component for MediaViewerContent {
             return ContentResponse::default();
         }
         match event {
-            ContentEvent::PointerDown(point) if self.geometry.can_pan() => {
-                self.drag = Some(Drag {
-                    pointer: *point,
-                    translation: self.transform().unwrap().translation,
-                });
-                ContentResponse {
-                    consumed: true,
-                    capture_pointer: true,
-                    ..Default::default()
-                }
+            ContentEvent::PointerDown(point) => {
+                let decision = self.decide_pointer_down(*point);
+                let response = decision.response;
+                self.apply_pointer_down(decision);
+                response
             }
-            ContentEvent::PointerDown(_) => ContentResponse::consumed(false),
             ContentEvent::PointerMove(point) => {
                 let Some(drag) = self.drag else {
                     return ContentResponse::default();
@@ -1972,5 +2043,307 @@ mod tests {
                 assert_ne!(before, after, "actual focused rendering must change pixels");
             }
         }
+    }
+
+    const POINTER_VIEW: ComponentId = ComponentId(7701);
+    const POINTER_IMAGE: ComponentId = ComponentId(7702);
+    const POINTER_OLD: ComponentId = ComponentId(7703);
+    fn pointer_contract_host(viewer: MediaViewerContent) -> ContentHost {
+        let panel_id = ComponentId(7704);
+        let mut panel = PanelContent::new(Content::new(POINTER_VIEW, viewer)).unwrap();
+        panel.set_padding(Some(crate::Insets::ZERO)).unwrap();
+        ContentHost::new(Content::new(
+            ComponentId(7700),
+            StackContent {
+                model: crate::extended::Stack::new(crate::extended::Axis::Vertical),
+                flexible_child: Some(panel_id),
+                children: vec![
+                    Content::new(POINTER_OLD, Button::new("Previous owner")),
+                    Content::new(panel_id, panel),
+                ],
+            },
+        ))
+        .unwrap()
+    }
+    fn pointer_contract_scene(host: &mut ContentHost, clip: Rect) {
+        host.render(
+            &mut Scene::new(),
+            &mut ScaledText(2.0),
+            Rect::new(0., 0., 480., 720.),
+            clip,
+            Theme::LIGHT.into(),
+        )
+        .unwrap();
+    }
+    #[test]
+    fn cpu_primary_pointer_preparation_is_pure_and_keeps_other_requests_unsupported() {
+        let mut viewer = loading();
+        layout(
+            &mut viewer,
+            Rect::new(0., 0., 200., 100.),
+            Rect::new(0., 0., 200., 100.),
+        );
+        let before = format!("{viewer:?}");
+        let down = ContentEvent::PointerDown(Point::new(40., 40.));
+        assert!(matches!(
+            viewer.prepare_action(ComponentActionRequest::PointerDown(&down)),
+            ActionPreparation::Ready(_)
+        ));
+        assert_eq!(format!("{viewer:?}"), before, "preparation is read-only");
+        assert!(matches!(
+            viewer.prepare_action(ComponentActionRequest::Accessibility {
+                part: None,
+                action: &AccessibilityAction::Press,
+            }),
+            ActionPreparation::Unsupported
+        ));
+        let secondary = ContentEvent::Pointer(PointerEvent {
+            position: Point::new(40., 40.),
+            phase: PointerPhase::Down,
+            button: Some(PointerButton::Secondary),
+            click_count: 1,
+            modifiers: PointerModifiers::default(),
+        });
+        assert!(matches!(
+            viewer.prepare_action(ComponentActionRequest::PointerDown(&secondary)),
+            ActionPreparation::Unsupported
+        ));
+        assert_eq!(format!("{viewer:?}"), before);
+    }
+    #[test]
+    fn cpu_loading_pointer_in_panel_keeps_previous_focus_and_no_capture() {
+        let image = ImageContent::loading(
+            Size::new(200., 100.),
+            ImageSemantics::Alternative("Loading original image".into()),
+        )
+        .unwrap();
+        let viewer = MediaViewerContent::new(POINTER_IMAGE, image, "Viewer").unwrap();
+        let mut host = pointer_contract_host(viewer);
+        let frame = Rect::new(0., 0., 480., 720.);
+        pointer_contract_scene(&mut host, frame);
+        assert!(host.focus(Some(POINTER_OLD), true));
+        pointer_contract_scene(&mut host, frame);
+        let viewer = host.get(POINTER_VIEW).unwrap();
+        let point = Point::new(
+            viewer.frame().min_x() + viewer.frame().size.width * 0.5,
+            viewer.frame().min_y() + viewer.frame().size.height * 0.5,
+        );
+        assert_eq!(host.pointer_hit_test(point), Some(POINTER_VIEW));
+        let before = viewer
+            .component::<MediaViewerContent>()
+            .unwrap()
+            .transform();
+        let response = host.event(&ContentEvent::PointerDown(point));
+        assert!(!response.changed && !response.capture_pointer && !response.activated);
+        assert_eq!(host.focused(), Some(POINTER_OLD));
+        assert!(host.pointer_capture().is_none());
+        assert_eq!(
+            host.get(POINTER_VIEW)
+                .unwrap()
+                .component::<MediaViewerContent>()
+                .unwrap()
+                .transform(),
+            before
+        );
+    }
+    #[test]
+    #[ignore = "requires original Renderer bitmap registration; explicit GPU grant"]
+    fn gpu_ready_panel_pointer_prepares_focus_capture_and_rejects_insufficient_witness() {
+        let mut renderer = tekes_ui_render::Renderer::new_headless().unwrap();
+        let lease = renderer
+            .register_bitmap_image(&[255, 0, 0, 255].repeat(4), 2, 2)
+            .unwrap();
+        let image = ImageContent::ready(
+            lease,
+            Size::new(200., 100.),
+            ImageSemantics::Alternative("Original registered bitmap".into()),
+        )
+        .unwrap();
+        let viewer = MediaViewerContent::new(POINTER_IMAGE, image, "Viewer").unwrap();
+        let mut host = pointer_contract_host(viewer);
+        let frame = Rect::new(0., 0., 480., 720.);
+        pointer_contract_scene(&mut host, frame);
+        {
+            let viewer = host
+                .get_mut(POINTER_VIEW)
+                .unwrap()
+                .component_mut::<MediaViewerContent>()
+                .unwrap();
+            for _ in 0..4 {
+                assert!(viewer.execute(MediaViewerCommand::ZoomIn).unwrap());
+            }
+            viewer.drain_transform_changes();
+        }
+        pointer_contract_scene(&mut host, frame);
+        assert!(host.focus(Some(POINTER_OLD), true));
+        pointer_contract_scene(&mut host, frame);
+        let viewer = host.get(POINTER_VIEW).unwrap();
+        let point = Point::new(
+            viewer.frame().min_x() + viewer.frame().size.width * 0.5,
+            viewer.frame().min_y() + viewer.frame().size.height * 0.5,
+        );
+        assert_eq!(host.pointer_hit_test(point), Some(POINTER_VIEW));
+        assert!(matches!(
+            viewer
+                .component::<MediaViewerContent>()
+                .unwrap()
+                .required_focus_space(),
+            RequiredFocusSpace::Sufficient { .. }
+        ));
+        let before = viewer
+            .component::<MediaViewerContent>()
+            .unwrap()
+            .transform()
+            .unwrap();
+        let image_mount = host.get(POINTER_IMAGE).unwrap().mount_identity();
+        let down = host.event(&ContentEvent::PointerDown(point));
+        assert_eq!(
+            host.focused(),
+            Some(POINTER_VIEW),
+            "Ready primary Down in Panel must acquire original Viewer focus"
+        );
+        assert!(down.consumed && down.capture_pointer);
+        assert_eq!(host.pointer_capture().map(|(id, _)| id), Some(POINTER_VIEW));
+        assert_eq!(
+            host.get(POINTER_IMAGE).unwrap().mount_identity(),
+            image_mount
+        );
+        assert!(
+            host.get(POINTER_VIEW)
+                .unwrap()
+                .component::<MediaViewerContent>()
+                .unwrap()
+                .changes
+                .is_empty()
+        );
+        let up = host.event(&ContentEvent::PointerUp(point));
+        assert!(up.consumed);
+        assert!(host.pointer_capture().is_none());
+        assert_eq!(
+            host.get(POINTER_VIEW)
+                .unwrap()
+                .component::<MediaViewerContent>()
+                .unwrap()
+                .transform(),
+            Some(before)
+        );
+        host.event(&ContentEvent::Key {
+            key: ControlKey::Right,
+            down: true,
+        });
+        let mut expected = before;
+        expected.translation.x -= 32.;
+        assert_eq!(
+            host.get(POINTER_VIEW)
+                .unwrap()
+                .component::<MediaViewerContent>()
+                .unwrap()
+                .transform(),
+            Some(expected)
+        );
+        assert_eq!(
+            host.get(POINTER_VIEW)
+                .unwrap()
+                .component::<MediaViewerContent>()
+                .unwrap()
+                .changes
+                .len(),
+            1
+        );
+        host.event(&ContentEvent::Key {
+            key: ControlKey::Right,
+            down: false,
+        });
+        assert_eq!(
+            host.get(POINTER_VIEW)
+                .unwrap()
+                .component::<MediaViewerContent>()
+                .unwrap()
+                .transform(),
+            Some(expected)
+        );
+        assert_eq!(
+            host.get(POINTER_VIEW)
+                .unwrap()
+                .component::<MediaViewerContent>()
+                .unwrap()
+                .changes
+                .len(),
+            1,
+            "Right Up must not enqueue another transform change"
+        );
+        {
+            let viewer = host
+                .get_mut(POINTER_VIEW)
+                .unwrap()
+                .component_mut::<MediaViewerContent>()
+                .unwrap();
+            viewer.execute(MediaViewerCommand::Fit).unwrap();
+            viewer.drain_transform_changes();
+        }
+        pointer_contract_scene(&mut host, frame);
+        assert!(host.focus(Some(POINTER_OLD), true));
+        pointer_contract_scene(&mut host, frame);
+        let fit = host
+            .get(POINTER_VIEW)
+            .unwrap()
+            .component::<MediaViewerContent>()
+            .unwrap()
+            .transform();
+        let fit_down = host.event(&ContentEvent::PointerDown(point));
+        assert!(fit_down.consumed && !fit_down.capture_pointer);
+        assert_eq!(host.focused(), Some(POINTER_VIEW));
+        assert!(host.pointer_capture().is_none());
+        host.event(&ContentEvent::PointerUp(point));
+        assert_eq!(
+            host.get(POINTER_VIEW)
+                .unwrap()
+                .component::<MediaViewerContent>()
+                .unwrap()
+                .transform(),
+            fit
+        );
+        // A legal hit without sufficient complete focus coverage must not apply
+        // the drag decision, change focus/transform, or acquire capture.
+        pointer_contract_scene(&mut host, Rect::new(point.x - 4., point.y - 4., 8., 8.));
+        assert_eq!(host.pointer_hit_test(point), Some(POINTER_VIEW));
+        assert!(matches!(
+            host.get(POINTER_VIEW)
+                .unwrap()
+                .component::<MediaViewerContent>()
+                .unwrap()
+                .required_focus_space(),
+            RequiredFocusSpace::Insufficient
+        ));
+        let focused = host.focused();
+        let queued = host
+            .get(POINTER_VIEW)
+            .unwrap()
+            .component::<MediaViewerContent>()
+            .unwrap()
+            .changes
+            .clone();
+        let refused = host.event(&ContentEvent::PointerDown(point));
+        assert!(
+            !refused.consumed && !refused.changed && !refused.capture_pointer && !refused.activated
+        );
+        assert_eq!(host.focused(), focused);
+        assert!(host.pointer_capture().is_none());
+        assert_eq!(
+            host.get(POINTER_VIEW)
+                .unwrap()
+                .component::<MediaViewerContent>()
+                .unwrap()
+                .transform(),
+            fit
+        );
+        assert_eq!(
+            host.get(POINTER_VIEW)
+                .unwrap()
+                .component::<MediaViewerContent>()
+                .unwrap()
+                .changes,
+            queued
+        );
     }
 }
