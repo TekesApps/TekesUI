@@ -1,6 +1,6 @@
 {
   "format": "tekesui-composition-audit/1",
-  "head": "12dffe108bbff444fe56f9bad3c5c1c89acc6a64",
+  "head": "9c7444fabf5ee033ae169964597c7fcb3902b96d",
   "source": "Reviewed static PR200-compatible Search/Select plus Settings207 candidate;391 classified paths. Exact candidate sourceSHA/anchors are authority. Original611a/70ee/7414 programs retain identity. New candidate has not run Cargo/CI/native.",
   "audited_at": "2026-10-31",
   "issue14_updated_at": "2026-10-17T08:15:16Z",
@@ -784,7 +784,7 @@
         {
           "api": "tekes_ui_controls::composition::SliderContent",
           "path": "crates/tekes-ui-controls/src/composition/adapters.rs",
-          "line": 1074,
+          "line": 1090,
           "anchor": "pub struct SliderContent {"
         }
       ]
@@ -1617,7 +1617,7 @@
         {
           "api": "tekes_ui_controls::composition::DialogContent",
           "path": "crates/tekes-ui-controls/src/composition/adapters.rs",
-          "line": 880,
+          "line": 896,
           "anchor": "pub struct DialogContent {"
         }
       ]
@@ -2049,7 +2049,7 @@
     "crates/tekes-ui-controls/src/composite.rs": "99d42809610c98e8b86136e3eb0698129c9ec9c659990d943c62d380e063042d",
     "crates/tekes-ui-controls/src/composition.rs": "9323f5c1c91f83b5d94a7f3ca6aa16c6e2ce6b9f8b3f13730f722c49121e8f48",
     "crates/tekes-ui-controls/src/composition/actions.rs": "fd2fe6882e6a5d3f17e1c42b635714c0d445c7913a44014461515cfbd3e0cf5c",
-    "crates/tekes-ui-controls/src/composition/adapters.rs": "178c423bf773e69d6301f620ec4247ea68b2fe1e945a2887e0e9fdc17f1e3b18",
+    "crates/tekes-ui-controls/src/composition/adapters.rs": "64c59aa37d84550148630f26693008a8c20e378ba846e5e2148afed057893bbb",
     "crates/tekes-ui-controls/src/composition/button.rs": "0a168f44280df2c4f615c243a32e4c8987fb526c8708e2b571d7f88b96f96f0e",
     "crates/tekes-ui-controls/src/composition/chart_content.rs": "dc3b686d0b7c84e9e44cc3e0ee54c2e040204b141ee10b6970f2f6c88ea8cff4",
     "crates/tekes-ui-controls/src/composition/checkbox.rs": "1529f88b17492441c19430de0761e4452b6cc283e3bc9cc0a2cbd637a20d6914",
@@ -2361,7 +2361,7 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/composition/adapters.rs",
-      "line": 1088,
+      "line": 1104,
       "anchor": "impl Component for SliderContent {"
     },
     {
@@ -2436,7 +2436,7 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/composition/adapters.rs",
-      "line": 580,
+      "line": 594,
       "anchor": "s.required = self.field.required;"
     },
     {
