@@ -76,3 +76,28 @@ TextCommand/focus/AX, IME/candidate windows, VoiceOver, timing/performance,
 other widths/brands/states, full Gold7 or registry maturity. Deferred work is
 not restored. The historical Danger wide images retain their old receipt-derived
 source/program identity and are not relabeled as this candidate or current MAIN.
+
+## First actual window and bounded repair
+
+CPU108/GPU109 compiled candidate `43f052a` and passed scoped strict. The four
+regression commands each executed **zero tests** because the card used `tests`
+instead of the actual `interaction_tests` module; exit zero is not a pass. All
+three original capture tests ran once and failed, producing zero PNGs. The raw
+programme, original runner, logs, source and actual release are preserved under
+`artifacts/issue-12/pattern-reading-main-window-20261102-r1/owner-run`. No retry
+or MAIN repair occurred in that grant.
+
+The repair keeps the same 192-frame contract and exact log oracles. Real input
+commits record `input: value changed`; Filter/Async now include that event. The
+original event log retains only its last six events, so Danger retry success
+asserts that exact suffix. Danger draws its phase label through `Self::phase`
+but does not retain a `phase_frame`; the manifest records the actual null field
+and this limitation rather than inventing geometry. Phase text and separation
+still require actual image review.
+
+The corrected card names the four `interaction_tests` exactly and requires one
+actual pass, zero failures and zero ignored tests per command. The next binding
+must record the actual driver process group with `os.getpgrp()`; the original
+run's missing driver-group field is not filled from its PID. New Rust requires
+a new Main grant for affected compile/strict, the four unexecuted regressions
+and the three failed captures. All old failures remain failures.

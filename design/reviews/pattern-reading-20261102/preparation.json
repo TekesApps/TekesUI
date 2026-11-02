@@ -1,6 +1,6 @@
 {
   "issue": 12,
-  "status": "SOURCE_PREPARATION_NOT_EXECUTED",
+  "status": "REPAIRED_SOURCE_NOT_EXECUTED_AFTER_ACTUAL108_109_FAILURES",
   "baseline": "6adec68a50568b60766de12d20cb8d6850edc83b",
   "scope": "Existing Filter/Async/Danger narrow whole-page state fixtures only",
   "original_contracts": [
@@ -80,14 +80,17 @@
       "fixed static-preparation mutability/layout-timing/module-order issues before execution; no compilerred claimed",
       "removed duplicate actionmetadata and renderer-mirroring result-area calculation; expected resulttext remains explicit oracle",
       "Main read-only git apply --check succeeds using one contextline around unique settings_phase_capture module anchor; defaultcontext patch fails because MAIN has later search modules, rawpatch/check preserved separately",
-      "Current MAIN StoryInput query/frame_at/state and Workbench focus_control/state interfaces inspected for candidate compatibility; actual compiler remains notrun"
+      "Current MAIN StoryInput query/frame_at/state and Workbench focus_control/state interfaces inspected for candidate compatibility; actual compiler remains notrun",
+      "repair scopedrustfmt1.95 check0/diffcheck0",
+      "readonlyaudit confirmed currentinput_changed event, record6eventcap, DangerSelf::phase doesnotretainphaseframe and interaction_tests module",
+      "prepared nextbinding PythonASTparse only; originalbinding/logs/releases preserved untouched"
     ],
     "not_run": [
-      "compile/no-run",
-      "realcontroller assertions and affected regressions",
-      "ignoredGPUcapture192",
-      "individual192PNGvisualreview",
-      "Gallerystrict",
+      "repairedsource compile/no-run",
+      "corrected4 actualregressions",
+      "repaired3 capture192",
+      "repairedsourceGallerystrict",
+      "individual192PNGreview",
       "native/physicalinput/IME/VO/performance",
       "repositoryCI"
     ]
@@ -115,10 +118,10 @@
     ],
     "required_actual_program": "CargoJSON executable target tekes-ui-gallery/profile.test=true; archive and hash before any subsequent relink",
     "affected_regressions": [
-      "gallery::workbench::tests::pattern_filter_retained_themes_keep_real_query_results_and_clear_action",
-      "gallery::workbench::tests::search_filter_row_wraps_without_overlapping_hits_or_results",
-      "gallery::workbench::tests::pattern_async_gallery_keeps_nonstore_draft_through_themes_and_real_retry_reset",
-      "gallery::workbench::tests::settings_full_failure_retry_and_danger_cancel_recovery"
+      "gallery::workbench::interaction_tests::pattern_filter_retained_themes_keep_real_query_results_and_clear_action",
+      "gallery::workbench::interaction_tests::search_filter_row_wraps_without_overlapping_hits_or_results",
+      "gallery::workbench::interaction_tests::pattern_async_gallery_keeps_nonstore_draft_through_themes_and_real_retry_reset",
+      "gallery::workbench::interaction_tests::settings_full_failure_retry_and_danger_cancel_recovery"
     ],
     "regression_argv_template": [
       "<retained_test_program>",
@@ -175,6 +178,77 @@
     "requested_budget_note": "Main chooses actual time: up to600compile/480affected regressions+captures+strict/120cleanup. No nativeApp launch or desktop needed. Budget is request, not a grant or runtime promise.",
     "failure_policy": "Stop failed route once, retain original rawfailure; do not repeat passing other routes/legacyevidence. Repair in domain and Maingrants affected rerun only. Compilation/strict failures remain failures, not visualpass.",
     "visual_review": "After actual process/guardrelease, individually inspect all192originals, retain perfileSHA/observations/passfail; no counts-as-pass or newsource relabel of historicalwide.",
-    "capture_env_note": "Avoid unrelated inherited TEKESUI_* selftest/output/reference flags; with_static_text(None) isolates fixture references. Native or selftest launch remains forbidden."
+    "capture_env_note": "Avoid unrelated inherited TEKESUI_* selftest/output/reference flags; with_static_text(None) isolates fixture references. Native or selftest launch remains forbidden.",
+    "regression_acceptance": "Each exact named test must actually execute exactly1 pass and0ignored; exit0 with0tests is FAILURE, never reused as passingevidence. Names statically checked in currentMAIN interaction_tests module; optional --list only if newMaingrant explicitly includes it.",
+    "runner_required_delta": "Record actual driver_pid=os.getpid() AND driver_pgid=os.getpgrp(); do not infer PG fromPID. Original owner-binding.py/receipts unchanged; nextbinding adapts only newgrant/source identity and this actualPG metadata."
+  },
+  "execution108_109": {
+    "source_candidate": "43f052a3522413b4bd3c5130043b7aa4d7c9a512",
+    "grant": "PatternReading-CPU108-OffscreenGPU109",
+    "output": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-12/pattern-reading-main-window-20261102-r1/owner-run",
+    "program_sha256": "0ef1a7895cad95d898ce780ff47c4e3f60ba5bb3a4f6f7eaba524382f0c048cd",
+    "actual_compile_exit": 0,
+    "actual_strict_exit": 0,
+    "regressions": {
+      "actual_each_executed": 0,
+      "exit_each": 0,
+      "status": "FAIL_ZERO_TEST_NAME_MISMATCH",
+      "original_wrong_module": "tests",
+      "correct_actual_module": "interaction_tests"
+    },
+    "captures": {
+      "filter": {
+        "exit": 101,
+        "actual_pngs": 0,
+        "failure": "expectedemptylog; realinput-change event retained"
+      },
+      "async": {
+        "exit": 101,
+        "actual_pngs": 0,
+        "failure": "Ready expected[]; actual[input:value changed]"
+      },
+      "danger": {
+        "exit": 101,
+        "actual_pngs": 0,
+        "failure": "phase_frame.expect despite Danger renderer not retaining phaseframe"
+      }
+    },
+    "release_sha256": "f3442d11444478b3ff5efafb0c220c862a6e30637edf2f681f01d3839b7a0866",
+    "release_status": "RELEASED: raw ownedPID/PG/compilers empty;source/git/index/4markers same;guardrelease present. Original driverPG was not recorded, not fabricated.",
+    "review": "NOT_RUN_NO_IMAGES",
+    "retry_in_grant": false,
+    "main_restore_receipt": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-12/pattern-reading-main-window-20261102-r1/ui-main-CPU108-GPU109-failure-release-normal-restore.json",
+    "main_restore_sha256": "69861b0c0c1835d7f0412a244e9cd65e7d4f973ae519897d6cd677d1c2de160e"
+  },
+  "repair_contract": {
+    "filter_log": {
+      "notes": [
+        "input: value changed"
+      ],
+      "not-found": [
+        "input: value changed"
+      ],
+      "clear-all": [
+        "input: value changed",
+        "filter: cleared"
+      ]
+    },
+    "async_logs": "Exact oldsubmit/result sequences retained, with realinput:valuechanged prepended for each edited-input case",
+    "danger_log": "Original last6 retention enforced; Saved expects original8-event sequence suffix6, does not require impossible8retained events",
+    "danger_geometry": "Record actualoptional phase_frame asnull and originalrenderer limitation explicitly; no generated/substitute frame. Actual phase label readability still mandatory image review, unchanged192scope.",
+    "new_window_required": [
+      "affectedcompile/no-run newprogramme+JSONarchive",
+      "correct4regressions actual1P0F0ignored each",
+      "all3originalfailedcaptures48/64/80 once each",
+      "Gallerystrict for changedtestRust",
+      "afterrelease individuallyinspect192originals"
+    ],
+    "not_repeated": [
+      "oldABC/Progress/Dangerwide images",
+      "no production oraclerelaxation/no MAINrepair/no oldgrantreuse"
+    ],
+    "prepared_binding": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-12/pattern-reading-repair-20261102-r2/owner-binding-r2.py",
+    "prepared_binding_sha256": "b906afaf77c1e08f3cd39033dd259c627eea7847bfaa974706fae508d79b7576",
+    "binding_check": "PythonASTparse only, notexecuted. Reuses runtime4ea31/helper94/wrapper1e760/acceptedengine, records actualdriverPG; requires freshMaingrantpath+hash and rejectsretired108-109 name. Fourregression actual1P0F0ignored guard retained/explicit."
   }
 }
