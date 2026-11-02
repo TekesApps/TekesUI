@@ -1,0 +1,180 @@
+{
+  "issue": 12,
+  "status": "SOURCE_PREPARATION_NOT_EXECUTED",
+  "baseline": "6adec68a50568b60766de12d20cb8d6850edc83b",
+  "scope": "Existing Filter/Async/Danger narrow whole-page state fixtures only",
+  "original_contracts": [
+    "Issue12 full-page four themes/backing1x2x/narrow large-type/readability and preservedgoldens",
+    "docs/gallery.md102-106 original query/no-match/Clear; pending/failure/retry/success; confirmation/cancellation/executing/failure/reconfirmation recovery",
+    "G1 whole-page reading and G7 actual existing business compositions; no fullGold7 claim"
+  ],
+  "allowed_files": [
+    "crates/tekes-ui-gallery/src/gallery/workbench.rs (new test-only module declaration only)",
+    "crates/tekes-ui-gallery/src/gallery/workbench/pattern_reading_capture.rs",
+    "design/reviews/pattern-reading-20261102/README.md",
+    "design/reviews/pattern-reading-20261102/preparation.json"
+  ],
+  "capture_contract": {
+    "window": [
+      720,
+      512
+    ],
+    "type_scale": 1.5,
+    "brand": 0,
+    "backing_scales": [
+      1,
+      2
+    ],
+    "themes": "Theme::ALL",
+    "positions": [
+      "top",
+      "bottom"
+    ],
+    "filter_cases": [
+      "notes",
+      "not-found",
+      "clear-all"
+    ],
+    "async_cases": [
+      "ready",
+      "pending",
+      "failed",
+      "saved"
+    ],
+    "danger_cases": [
+      "modal-open",
+      "cancelled",
+      "pending",
+      "failed",
+      "saved"
+    ],
+    "expected_png_counts": {
+      "filter": 48,
+      "async": 64,
+      "danger": 80,
+      "total": 192
+    },
+    "modal_open_position": "Scroll closed original page first, open original modal at thatposition, capture without claiming underlay wheel scrolling."
+  },
+  "source_and_run_boundary": {
+    "main_read_only_observation": "04fddf90a099e960d6ea27974ce42b111af32a14; not buildadmission",
+    "source_candidate_isolation": "currentissue12 worktree only; noMAIN/source/cache mutation",
+    "controlled_entry": "Main-owned originalhelperbuild_lock/environment, registeredMAINreviewcache, originalGPUguard, cargo+1.95.0 --locked --offline",
+    "required_grant_fields": [
+      "uniquegrantID/actualowner",
+      "actualMAINhead/branch/sourcefreeze with candidate admitted plus preservedWIP",
+      "actualtestarchiveSHA and CargoJSONtarget/profile/features fromno-run",
+      "freshSSDoutput root",
+      "start/deadline/cleanupbudget",
+      "predecessoractualrelease/nooverlappingcacheorGPUowner"
+    ],
+    "native_app_launches": 0,
+    "no_frontend_input_required": true,
+    "intake_note": "Use candidate-ready.patch one-context exact modulehunk; initial defaultcontext failure is retained. Never replace wholeWorkbench. Main must use actualcurrent source/program admission, not this older candidate HEAD."
+  },
+  "verification": {
+    "completed": [
+      "scoped rustfmt+1.95.0 --edition2024 --check --configskip_children=true on two source files exit0",
+      "git diff --check exit0",
+      "staticreview against original StoryState/DialogView/Filter/Async controller contracts; no phase/layout direct writes",
+      "fixed static-preparation mutability/layout-timing/module-order issues before execution; no compilerred claimed",
+      "removed duplicate actionmetadata and renderer-mirroring result-area calculation; expected resulttext remains explicit oracle",
+      "Main read-only git apply --check succeeds using one contextline around unique settings_phase_capture module anchor; defaultcontext patch fails because MAIN has later search modules, rawpatch/check preserved separately",
+      "Current MAIN StoryInput query/frame_at/state and Workbench focus_control/state interfaces inspected for candidate compatibility; actual compiler remains notrun"
+    ],
+    "not_run": [
+      "compile/no-run",
+      "realcontroller assertions and affected regressions",
+      "ignoredGPUcapture192",
+      "individual192PNGvisualreview",
+      "Gallerystrict",
+      "native/physicalinput/IME/VO/performance",
+      "repositoryCI"
+    ]
+  },
+  "unchanged_evidence": [
+    "A48/B24/C64/Progress1x24+2x24 and all their failures/receipts",
+    "historicalDanger8wide originalsource/programreceipts; not current-sourcevalidation"
+  ],
+  "remaining": "Prepared tests and metadata do not constitute runtime or visual acceptance; Main grant needed after source batchreview.",
+  "verification_card": {
+    "status": "NOT_GRANTED_NOT_RUN",
+    "existing_entry": "Main existing controlled entry; helper94eacada, wrapper1e76057 functions only, originalbuild/GPUguard; no new runner supplied",
+    "no_run_argv": [
+      "cargo",
+      "+1.95.0",
+      "test",
+      "--locked",
+      "--offline",
+      "--message-format=json",
+      "-p",
+      "tekes-ui-gallery",
+      "--bin",
+      "tekes-ui-gallery",
+      "--no-run"
+    ],
+    "required_actual_program": "CargoJSON executable target tekes-ui-gallery/profile.test=true; archive and hash before any subsequent relink",
+    "affected_regressions": [
+      "gallery::workbench::tests::pattern_filter_retained_themes_keep_real_query_results_and_clear_action",
+      "gallery::workbench::tests::search_filter_row_wraps_without_overlapping_hits_or_results",
+      "gallery::workbench::tests::pattern_async_gallery_keeps_nonstore_draft_through_themes_and_real_retry_reset",
+      "gallery::workbench::tests::settings_full_failure_retry_and_danger_cancel_recovery"
+    ],
+    "regression_argv_template": [
+      "<retained_test_program>",
+      "<one_exact_test_name>",
+      "--exact",
+      "--nocapture",
+      "--test-threads=1"
+    ],
+    "captures": [
+      {
+        "test": "gallery::workbench::pattern_reading_capture::pattern_filter_reading_states_capture_real_gallery_pages",
+        "output_child": "filter",
+        "expected_pngs": 48
+      },
+      {
+        "test": "gallery::workbench::pattern_reading_capture::pattern_async_reading_phases_capture_real_gallery_pages",
+        "output_child": "async",
+        "expected_pngs": 64
+      },
+      {
+        "test": "gallery::workbench::pattern_reading_capture::pattern_danger_reading_states_capture_real_gallery_pages",
+        "output_child": "danger",
+        "expected_pngs": 80
+      }
+    ],
+    "capture_argv_template": [
+      "<retained_test_program>",
+      "<one_exact_capture_test>",
+      "--exact",
+      "--ignored",
+      "--nocapture",
+      "--test-threads=1"
+    ],
+    "capture_env": {
+      "TEKESUI_PATTERN_READING_OUT": "<fresh Main-provisioned SSD parent; each route child absent>"
+    },
+    "strict_argv": [
+      "cargo",
+      "+1.95.0",
+      "clippy",
+      "--locked",
+      "--offline",
+      "--message-format=json",
+      "-p",
+      "tekes-ui-gallery",
+      "--bin",
+      "tekes-ui-gallery",
+      "--tests",
+      "--",
+      "-D",
+      "warnings"
+    ],
+    "requested_budget_seconds": 1200,
+    "requested_budget_note": "Main chooses actual time: up to600compile/480affected regressions+captures+strict/120cleanup. No nativeApp launch or desktop needed. Budget is request, not a grant or runtime promise.",
+    "failure_policy": "Stop failed route once, retain original rawfailure; do not repeat passing other routes/legacyevidence. Repair in domain and Maingrants affected rerun only. Compilation/strict failures remain failures, not visualpass.",
+    "visual_review": "After actual process/guardrelease, individually inspect all192originals, retain perfileSHA/observations/passfail; no counts-as-pass or newsource relabel of historicalwide.",
+    "capture_env_note": "Avoid unrelated inherited TEKESUI_* selftest/output/reference flags; with_static_text(None) isolates fixture references. Native or selftest launch remains forbidden."
+  }
+}

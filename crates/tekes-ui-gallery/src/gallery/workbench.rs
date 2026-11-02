@@ -19,6 +19,8 @@ mod focus;
 mod search_host;
 mod search_input;
 #[cfg(test)]
+mod pattern_reading_capture;
+#[cfg(test)]
 mod settings_phase_capture;
 #[cfg(test)]
 mod state_capture;
