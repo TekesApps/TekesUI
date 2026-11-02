@@ -118,6 +118,13 @@ mod stale_ax {
                 ],
             )
         }
+        pub fn start_readonly(path: PathBuf, wake: WindowWake) -> Self {
+            Self::start_steps(
+                path,
+                wake,
+                &[("MEDIA_M8_READ_FINISHED", Request::FreshPerformed)],
+            )
+        }
         fn start_steps(
             path: PathBuf,
             wake: WindowWake,
@@ -828,6 +835,272 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     }
+    // M8 normal fixture has six actual buttons. The modal-only seventh role
+    // and Dialog are represented as absent, never fabricated zero measurements.
+    #[derive(Clone, Debug, PartialEq)]
+    struct ReadOnlyWitness {
+        buttons: Vec<(ComponentId, Option<usize>)>,
+        focused: Option<ComponentId>,
+        dialog_open: Option<bool>,
+        transform: Option<MediaViewerTransform>,
+        image_status: String,
+    }
+    fn readonly_witness(tree: &ContentHost) -> ReadOnlyWitness {
+        ReadOnlyWitness {
+            buttons: fixture::COMMANDS
+                .iter()
+                .map(|(id, _, _)| *id)
+                .chain([fixture::CLOSE, fixture::RETRY, fixture::INVOKER])
+                .map(|id| {
+                    (
+                        id,
+                        tree.get(id)
+                            .map(|content| content.component::<Button>().unwrap().activations),
+                    )
+                })
+                .collect(),
+            focused: tree.focused(),
+            dialog_open: tree
+                .get(fixture::DIALOG)
+                .map(|content| content.component::<DialogContent>().unwrap().is_open()),
+            transform: tree
+                .get(fixture::VIEW)
+                .unwrap()
+                .component::<MediaViewerContent>()
+                .unwrap()
+                .transform(),
+            image_status: format!(
+                "{:?}",
+                tree.get(fixture::VIEW)
+                    .unwrap()
+                    .component::<MediaViewerContent>()
+                    .unwrap()
+                    .image_status()
+            ),
+        }
+    }
+    #[derive(Clone, Debug, PartialEq)]
+    struct ReadOnlyObservation {
+        witness: ReadOnlyWitness,
+        viewport: Rect,
+        screen_id: u32,
+        builtin: bool,
+        backing_scale: f64,
+    }
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    enum ReadOnlyPhase {
+        Settling,
+        AwaitRead,
+        PostRead,
+        ConfirmRead,
+        Checked,
+    }
+    struct ReadOnlyProbe {
+        path: std::path::PathBuf,
+        phase: ReadOnlyPhase,
+        channel: Option<stale_ax::Channel>,
+        seq: usize,
+        notifications: usize,
+        drained: usize,
+        first: Option<(ReadOnlyObservation, usize)>,
+        last: Option<(ReadOnlyObservation, usize)>,
+        equal_transitions: usize,
+        baseline: Option<(ReadOnlyObservation, usize)>,
+        baseline_seq: usize,
+        final_seq: usize,
+        whole_unchanged: bool,
+    }
+    impl ReadOnlyProbe {
+        fn new(path: std::path::PathBuf) -> Self {
+            std::fs::create_dir_all(&path).unwrap();
+            assert!(std::fs::read_dir(&path).unwrap().next().is_none());
+            Self {
+                path,
+                phase: ReadOnlyPhase::Settling,
+                channel: None,
+                seq: 0,
+                notifications: 0,
+                drained: 0,
+                first: None,
+                last: None,
+                equal_transitions: 0,
+                baseline: None,
+                baseline_seq: 0,
+                final_seq: 0,
+                whole_unchanged: true,
+            }
+        }
+        fn emit(
+            &self,
+            name: &str,
+            sample_seq: usize,
+            sample: &(ReadOnlyObservation, usize),
+            tree: &ContentHost,
+            window: &Window,
+            log: &mut std::fs::File,
+        ) {
+            let (observation, notifications) = sample;
+            let text = format!(
+                "schema=m8-readonly-v1\npid={}\nwindow_number={}\nhost={tree:p}\nsample_seq={sample_seq}\nconfirmed_by_seq={}\nnotifications={notifications}\nwhole_unchanged={}\nobservation={observation:?}\n",
+                std::process::id(),
+                window.native_window_number(),
+                self.seq,
+                self.whole_unchanged
+            );
+            writeln!(
+                log,
+                "m8_readonly_marker name={name} sample_seq={sample_seq} confirmed_by_seq={}",
+                self.seq
+            )
+            .unwrap();
+            log.flush().unwrap();
+            let path = self.path.join(name);
+            assert!(!path.exists());
+            let temporary = path.with_extension("tmp");
+            std::fs::write(&temporary, text).unwrap();
+            std::fs::rename(temporary, path).unwrap();
+        }
+        fn requests(&mut self, window: &Window, log: &mut std::fs::File) {
+            if let Some(request) = self.channel.as_mut().and_then(stale_ax::Channel::next) {
+                assert!(
+                    matches!(request, stale_ax::Request::FreshPerformed),
+                    "readonly channel timed out"
+                );
+                assert_eq!(self.phase, ReadOnlyPhase::AwaitRead);
+                let receipt =
+                    std::fs::read_to_string(self.path.join("MEDIA_M8_READ_FINISHED")).unwrap();
+                let expected = format!(
+                    "pid={}\nwindow_number={}\nbaseline_seq={}\nread_complete=true\n",
+                    std::process::id(),
+                    window.native_window_number(),
+                    self.baseline_seq
+                );
+                assert_eq!(
+                    receipt, expected,
+                    "read completion must bind actual baseline/window/PID"
+                );
+                writeln!(
+                    log,
+                    "m8_readonly_read_done seq={} receipt={receipt:?}",
+                    self.seq
+                )
+                .unwrap();
+                drop(self.channel.take());
+                self.phase = ReadOnlyPhase::PostRead;
+            }
+        }
+        fn published(
+            &mut self,
+            tree: &ContentHost,
+            window: &Window,
+            display_id: u32,
+            display_builtin: bool,
+            log: &mut std::fs::File,
+        ) {
+            self.seq += 1;
+            assert_eq!(window.native_screen_id(), Some(display_id));
+            assert_eq!(
+                window.screen_info().map(|screen| screen.builtin),
+                Some(display_builtin)
+            );
+            let observation = ReadOnlyObservation {
+                witness: readonly_witness(tree),
+                viewport: tree.get(fixture::VIEW).unwrap().frame(),
+                screen_id: display_id,
+                builtin: display_builtin,
+                backing_scale: window.scale(),
+            };
+            let sample = (observation, self.notifications);
+            self.first.get_or_insert_with(|| sample.clone());
+            self.whole_unchanged &= self.first.as_ref() == Some(&sample);
+            let key = p::content_accessibility::content_key(tree, fixture::COMMANDS[3].0, None);
+            let current = window
+                .content_accessibility_publication()
+                .is_some_and(|publication| {
+                    publication.is_current()
+                        && key.is_some_and(|key| publication.owner(key).is_some())
+                });
+            let active = window.is_active() && tree.is_window_active();
+            let ready = active
+                && current
+                && sample.0.witness.image_status == "Some(Ready)"
+                && sample.0.viewport.size.width > 0.
+                && sample.0.viewport.size.height > 0.;
+            writeln!(log, "m8_readonly_sample seq={} phase={:?} active={active} ready={ready} drained={} notifications={} whole_unchanged={} observation={:?}", self.seq, self.phase, self.drained, self.notifications, self.whole_unchanged, sample.0).unwrap();
+            assert!(
+                sample
+                    .0
+                    .witness
+                    .buttons
+                    .iter()
+                    .all(|(_, value)| value.is_none_or(|count| count == 0)),
+                "readonly case must not activate any button"
+            );
+            if self.phase == ReadOnlyPhase::Settling {
+                if !ready {
+                    self.last = None;
+                    self.equal_transitions = 0;
+                    return;
+                }
+                if self.last.as_ref() == Some(&sample) && self.drained == 0 {
+                    self.equal_transitions += 1;
+                } else {
+                    self.equal_transitions = 0;
+                }
+                self.last = Some(sample.clone());
+                if self.equal_transitions < 2 {
+                    window.request_redraw();
+                    return;
+                }
+                // This ordinary frame's single pre-render drain confirms the
+                // previous equal post-render sample, not the just-rendered queue.
+                self.baseline_seq = self.seq - 1;
+                self.baseline = Some(sample.clone());
+                self.emit(
+                    "MEDIA_M8_BASELINE_READY",
+                    self.baseline_seq,
+                    &sample,
+                    tree,
+                    window,
+                    log,
+                );
+                self.channel = Some(stale_ax::Channel::start_readonly(
+                    self.path.clone(),
+                    window.wake_proxy(),
+                ));
+                self.phase = ReadOnlyPhase::AwaitRead;
+            } else if self.phase != ReadOnlyPhase::Checked {
+                assert!(
+                    ready,
+                    "readonly interval lost active/current/Ready viewport"
+                );
+                assert_eq!(
+                    self.baseline.as_ref(),
+                    Some(&sample),
+                    "readonly interval changed complete witness/viewport/notifications"
+                );
+                assert_eq!(
+                    self.drained, 0,
+                    "readonly interval produced transform notification"
+                );
+                if self.phase == ReadOnlyPhase::PostRead {
+                    self.final_seq = self.seq;
+                    self.phase = ReadOnlyPhase::ConfirmRead;
+                    window.request_redraw();
+                } else if self.phase == ReadOnlyPhase::ConfirmRead {
+                    self.emit(
+                        "MEDIA_M8_READ_CHECKED",
+                        self.final_seq,
+                        &sample,
+                        tree,
+                        window,
+                        log,
+                    );
+                    self.phase = ReadOnlyPhase::Checked;
+                }
+            }
+        }
+    }
     struct Host {
         tree: Option<ContentHost>,
         gpu: Option<Renderer>,
@@ -839,6 +1112,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         display_policy: String,
         stale_probe: Option<StaleProbe>,
         remount_probe: Option<RemountProbe>,
+        readonly_probe: Option<ReadOnlyProbe>,
         ime_mode: bool,
         ime_script_started: bool,
         ime_before: Option<(u64, ImeWitness)>,
@@ -1205,6 +1479,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     window.close();
                     return;
                 }
+                Event::Wake => {
+                    if let Some(probe) = &mut self.readonly_probe {
+                        probe.requests(window, &mut self.log);
+                    }
+                }
                 Event::Resized {
                     drawable_size,
                     scale,
@@ -1300,6 +1579,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     writeln!(self.log, "ax_response={response:?}").unwrap();
                 }
                 Event::CloseRequested => {
+                    if let Some(probe) = &self.readonly_probe {
+                        writeln!(
+                            self.log,
+                            "m8_readonly_close phase={:?} seq={} whole_unchanged={}",
+                            probe.phase, probe.seq, probe.whole_unchanged
+                        )
+                        .unwrap();
+                        self.log.flush().unwrap();
+                    }
                     if let Some(probe) = &self.remount_probe {
                         assert_eq!(probe.phase, RemountPhase::Complete, "early remount close");
                     }
@@ -1344,7 +1632,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 _ => {}
             }
             let (close, retry) = self.actions.dispatch(tree);
-            if let Some(probe) = &mut self.remount_probe {
+            if let Some(probe) = &mut self.readonly_probe {
+                let focused = tree.focused();
+                let transform = fixture::viewer(tree).transform();
+                let changes = fixture::viewer(tree).drain_transform_changes();
+                probe.drained = changes.len();
+                probe.notifications += changes.len();
+                writeln!(self.log, "close={close} retry={retry} focused={focused:?} transform={transform:?} changes={changes:?}").unwrap();
+            } else if let Some(probe) = &mut self.remount_probe {
                 let focused = tree.focused();
                 let transform = fixture::viewer(tree).transform();
                 let changes = fixture::viewer(tree).drain_transform_changes();
@@ -1467,6 +1762,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             if let Some(probe) = &mut self.remount_probe {
                 probe.published(tree, window, &mut self.log);
             }
+            if let Some(probe) = &mut self.readonly_probe {
+                probe.published(
+                    tree,
+                    window,
+                    self.display_id,
+                    self.display_builtin,
+                    &mut self.log,
+                );
+            }
             if self.remount_probe.is_some() {
                 assert_eq!(window.native_screen_id(), Some(self.display_id));
                 assert_eq!(
@@ -1547,6 +1851,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         assert_eq!(path, directory.join("m6-remount-channel"));
         RemountProbe::new(path)
     });
+    let readonly_probe = std::env::var_os("MEDIA_VIEWER_M8_READONLY_CHANNEL").map(|path| {
+        assert!(std::env::var_os("MEDIA_VIEWER_MODAL").is_none());
+        assert!(std::env::var_os("MEDIA_VIEWER_M6_IME").is_none());
+        assert!(stale_probe.is_none() && remount_probe.is_none());
+        let path = std::path::PathBuf::from(path);
+        assert_eq!(path, directory.join("m8-readonly-channel"));
+        ReadOnlyProbe::new(path)
+    });
     let display_policy =
         std::env::var("MEDIA_VIEWER_DISPLAY_POLICY").unwrap_or_else(|_| "external-only".into());
     let (display_id, display_builtin) = match display_policy.as_str() {
@@ -1558,6 +1870,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             assert!(
                 remount_probe.is_some(),
                 "designated display is M6 remount only"
+            );
+            (
+                std::env::var("MEDIA_VIEWER_DISPLAY_ID")?.parse::<u32>()?,
+                std::env::var("MEDIA_VIEWER_DISPLAY_BUILTIN")?.parse::<bool>()?,
+            )
+        }
+        "m8-readonly-designated" => {
+            assert!(
+                readonly_probe.is_some(),
+                "designated M8 display requires normal readonly witness opt-in"
             );
             (
                 std::env::var("MEDIA_VIEWER_DISPLAY_ID")?.parse::<u32>()?,
@@ -1600,6 +1922,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             display_policy,
             stale_probe,
             remount_probe,
+            readonly_probe,
             ime_mode: std::env::var_os("MEDIA_VIEWER_M6_IME").is_some(),
             ime_script_started: false,
             ime_before: None,
