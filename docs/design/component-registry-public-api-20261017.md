@@ -153,10 +153,10 @@ Gallery 的所有组件 API 引用改为读取同一登记；移除组件 render
 
 </details>
 
-## #1 / #55 当前剩余验收矩阵（2026-10-30）
+## #1 / #55 当前剩余验收矩阵（2026-11-02，接纳PR214–217有限公开证据）
 
 本节是上述唯一52根表的父票验收说明，Refs #1 / #55；不新增组件登记、机器状态或成熟度。
-文档候选基线 `b4b1f92f472353a24febe3e968b7b47214922422`，只读核对，不是新一轮产品验收。
+原2026-10-30文档候选基线 `b4b1f92f472353a24febe3e968b7b47214922422` 保持历史身份；本次只读公开 `a96602d00db783b894fa34469c182125aecab8de`，接纳下列Main公开回执与原owner已验范围，不是新一轮产品验收。
 #113/#114/#121–#125已完成原实用Theme范围，不重新实施Theme，不恢复owned闭包门禁。
 #55历史S2/S4/S5中的“其余52根待迁移”、本表旧行中的“全族未完成”不能覆盖后来的实际收口；S6和原产品体验仍开放。
 依赖落实到下表的场景或接口，不使用 #55→#1→#12→#55 的整票等待。
@@ -207,13 +207,13 @@ ID沿 `gold7-alignment.json`，不改变其历史assessment。下表“缺口”
 | G4/real-component-motion-integration | H原生产接线、原浮层帧 | 上述控件与Menu/Dialog/Popover进入/退出、中间帧和页面卸载；按适用通道，非要求每个被动组件动画 | #12真实交互 / 原生＋GPU帧 |
 | G4/direct-manipulation-and-interruption | H、B Split、#103 A+B已交付 | component-split-view/playground拖动跨侧栏、丢捕获/失活/取消；可见窗口实测，hidden Window断言不代签 | #12真实交互 / 原生指针＋窗口 |
 | G4/reduced-motion-path | H系统/renderer降级接线 | 系统Reduced Motion开/关下Button/Switch/Disclosure与浮层重开/取消，动作结果一致且无补播 | #12真实交互 / 系统设置＋原生 |
-| G5/ime-and-suggestion-priority | T输入功能、H composition guards | pattern-form/search、component-combo-box/dialog内中日文marked/候选确认/取消、Enter及Escape优先级，指针提交不误发 | #12物理输入 / 物理中日IME窗口 |
+| G5/ime-and-suggestion-priority | T/H；PR214完整Field焦点边界；PR215 Native095的三组程序化composing barriers及Viewer正向控制有限通过 | pattern-form/search、component-combo-box/dialog的物理中日IME、真实候选窗/确认取消仍未验；095不是物理IME，也不改签为clean-public整M6 | #12物理输入；Media原#204消费验收 / 原输入法与候选窗环境、Main具名窗口 |
 | G5/durable-draft-recovery | T pattern-form、H真实本地journal/outbox | pattern-form/playground显式TEKESUI_GALLERY_DRAFT_FIXTURE临时路径，编辑→提交→中断/重启→旧ack后新编辑保留；仅本地fixture，不冒充真实服务/断电 | #12真实交互 / 原生＋隔离fixture存储 |
 | G5/manual-scroll-reading-anchor | H append-only anchor | 现有scroll路由/Page::ScrollArea阅读历史后append/resize/选区/嵌套滚动；不外推prepend/任意替换 | #12真实交互 / 原生滚动＋键鼠 |
 | G5/explicit-return-to-latest | H真实Button回最新 | 同scroll入口手动到底不自动repin；点击/键盘显式返回后检查body焦点与后续append | #12真实交互 / 原生键鼠 |
-| G6/zoom-preserves-reading-anchor | H仅历史specified-not-implemented | 现有52根未提供媒体viewer原缩放入口；仍为能力缺口待主协调核对现行媒体交付，不能用Scene3D相机或HoverPreview替代；未获范围恢复不新建实现 | #55产品范围协调 / 产品范围决定，非build阻塞 |
-| G6/bounded-split-and-pan-geometry | B、#103已完成Split；H媒体pan历史缺口 | Split键盘/双击/窄窗口恢复用component-split-view/playground补真实输入；媒体pan仍沿上一行独立能力缺口 | #12真实交互 / 原生键鼠（媒体由#55范围协调接收） |
-| G6/cancel-and-non-gesture-alternatives | H、#103捕获及语义投影 | Split失活/丢release/Enter/Space/reset真实体验；媒体zoom/reset/close无入口部分不虚记不适用或通过 | #12真实交互 / 原生键鼠（媒体缺口沿上一行） |
+| G6/zoom-preserves-reading-anchor | PR212已有MediaViewer公开入口；PR215有限Viewer焦点/普通Right控制；PR216 disabled Actual说明公开 | 不再登记为“无入口”。enabled Actual/真实viewport anchor仍按M8-A1验；说明重排后的whole-observation transform不变为NOT_MET，不由有限说明PASS补签 | #204原consumer验收（#201/#202原geometry oracle）/ measured viewport使f∈[1/8,1]、可启用Actual及新具名窗口 |
+| G6/bounded-split-and-pan-geometry | B/#103原Split；Media公开pan及原GPU/Native095各自有限正向证据 | Split原场景继续由#12验；Media真实OS拖拽、界外释放、后续unheld move及border resize不由程序化Right或atomic drag单独证明 | #12负责Split；#204负责Media / D1已定义MacVec2坐标域与ownwindow端点、R1真实border几何；不重造引擎 |
+| G6/cancel-and-non-gesture-alternatives | H/#103；Media Zoom/Fit/Close/普通Escape入口及原M1/M2/095有限证据已存在 | active-drag Escape/失焦/resize/source变动等held组合仍未验；post-dismiss旧native对象已有限接收，remount生命周期另列未验，不相互代替 | #12负责Split；#204负责Media、#205原observer协作 / 支持分开held Down/Move/Up的授权工具合同；remount需新parent/child窗口 |
 | G7/reusable-real-component-contract | T/P、各公共consumer；#81/#103限定交付 | 每个拟晋级组件只补其原适用native/键盘/输入/AX结果；public编译和截图不等于原生体验 | #12成熟度验收 / 文档＋对应原生窗口 |
 | G7/component-documentation-and-runnable-preview | 原registry route/API、T/P、H状态story | 对变更或拟晋级入口对照原公开API及可运行预览；程序化AX与VO分开；不自动将旧“bridge missing”作为新实现任务 | #12成熟度验收 / 文档＋对应原生窗口 |
 | G7/business-combinations-are-real | T五pattern及Settings真实流程、S | 完整窄/大字form/filter/master/async/danger及Settings状态链的实际交互与阅读；Danger仅模拟失败不删文件，Async不冒充远端服务 | #12真实交互 / 原生键鼠；视觉交给#12整页视觉 |
@@ -226,7 +226,7 @@ ID沿 `gold7-alignment.json`，不改变其历史assessment。下表“缺口”
 2. **真实键鼠与TextCommand → #12真实交互**：上列页面加component-menu/dialog/select/combo-box及导航Search；实际Tab/Shift-Tab、方向、Escape、提交/失败/重试、剪贴板/选择的原生TextCommand，离屏焦点reveal、Split捕获和Reduced Motion。现有合成 `Event::TextCommand` 测试只作参照；不等于真实AppKit输入。需要明确原生/桌面窗口。
 3. **物理IME → #12物理输入**：在第2批输入入口执行中/日候选窗、marked提交/取消和祖先Escape优先；单独记录输入法、系统、程序、操作和结果。需要物理输入窗口，程序化AX/Key/TextCommit不能代签。
 4. **持续阅读/物理倍率 → #12整页视觉**：复用通过GPU页，补实际显示器倍率、注意力、边缘与焦点；不重生成无变化图。性能另由#12性能验收记录帧节奏/空闲CPU/持续滚动/适用120Hz硬件，截图或平均帧时间不能抵消未测。当前无获分配窗口，不执行。
-5. **保持后置/外部边界**：VoiceOver按已确认延期保留未验，恢复需原协调决定，不能由本表自动启动；AccessKit、#131–#135、跨repo迁移不恢复。媒体能力缺口交#55产品范围协调，#54外部消费不占本仓实施线；#57由图标独立owner处理。它们均不阻塞前四批中已经具备接口的独立交付。
+5. **保持后置/外部边界**：VoiceOver按已确认延期保留未验，恢复需原协调决定，不能由本表自动启动；AccessKit、#131–#135、跨repo迁移不恢复。Media公共入口已交付，剩余验收沿下方原owner具体依赖，不重新创建组件或引擎；#54外部消费不占本仓实施线；#57由图标独立owner处理。它们均不阻塞前四批中已经具备接口的独立交付。
 
 本轮实际执行仅原文/源码入口/收据核对和文档差量检查，无Cargo/GPU/native/桌面/CI；未判断新图、未晋级registry、未关闭父票。后续补验结果写回原Issue与原收据，本节同步具体行，不建立另一份动态台账。
 
@@ -238,3 +238,39 @@ Refs #199 / #207 / #1 / #55。固定基线为已发布PR200 `a883d00a29b98cdfb52
 公共类型为原384加Search/Select七路径共391；实际24角色加SearchInput/Select为26。primary API、api_bindings、45组件/5patterns/2examples和experimental保持。历史Search611a/70ee的CPU/GPU、Settings7414/program2c6bf的Native02有限结果不改签为新26-role组合验收；新peer/schema、bridge/consumer/strict等需原owner按真实相关输入确认或在集成分配窗口复验。原设计与r17 canonical说明同包，原native/物理IME/VoiceOver/性能/完整Gold7边界保留。
 
 metadata从实际r17加Settings候选生成；保留历史audit基线和runtime observation/practical-intake输入，actual源码hash/锚点按此候选绑定。Collections49路径、Media五条可选导出及AX205生产不进入此批，不读取当前MAIN的Table TEMP来生成发布指纹。若最终source/feature/config/依赖改变，先重生成actual metadata并复核受影响锚点；提交号本身不改签未变的原运行证据。
+
+
+## PR214–217 父票覆盖接续（2026-11-02，仅接纳既有公开回执）
+
+本节修正上文2026-10-30时点的Media“无入口”与未收录范围，不改变原8项AC、23项Gold7要求、T/P实用Theme闭合结论或组件成熟度。公开基线为PR217 normal merge `a96602d00db783b894fa34469c182125aecab8de` / tree `0b1962fc51866db73378e93ab680d535f22bcc1b`；当前446公共类型、45组件/5patterns/2examples保持。PR212完整exact13双owner测试、53Python及原API顺序/8vs13失败均保留，不因后续发布重跑或改签。
+
+### 已交付差量与有限范围
+
+下列Main回执均为SSD根 `/Volumes/HP P900/DEV/TekesUI/artifacts/` 下原文件；本次只读接收，不重验raw、旧programme或归档。各PR已normal merge、原required CI全22步成功并有annotated checkpoint；不是新的clean-public native执行。
+
+| 公开批次 / Main原回执 | 可接纳范围 | 必须保留的界限 |
+|---|---|---|
+| [PR214](https://github.com/TekesApps/TekesUI/pull/214) → `b71a369099fddb3dadf716acd950755c808ef7f7`；CI41286318209；checkpoint-20261101-05；`issue-48/field-core-runtime-docs-publication-20261101-r1/PUBLIC-HANDOFF.json` | Field实际input viewport完整ring/backing-pixel bounds；CPU087有效RED、CPU088 Panel26＋strict；兼容Process设计/六AC文档回填 | 原native fixture的2x fullring/caret/三barriers是限定cohort，整M6当时仍因Viewer positive失败；不冒称clean-public native或物理IME |
+| [PR215](https://github.com/TekesApps/TekesUI/pull/215) → `f41476fb31506f7b24d6ee675772a7def7c45c45`；CI41294204933；checkpoint-20261101-06；`issue-203/viewer-pointer-publication-20261101-r1/PUBLIC-HANDOFF.json` | Viewer prepared-pointer原owner路径；CPU09215P/5GPU ignored＋strict、GPU093同case oldfocus RED/new1PASS；Native095三组composing barriers和原正向链有限PASS | 095为程序化AppKit输入，不是物理中日IME/候选窗；格式qualified公开native不等于merge新programme；整M6/M8/视觉/性能不升级 |
+| [PR216](https://github.com/TekesApps/TekesUI/pull/216) → `a77f93cebecc7b7cfd4fb90109bc6376e891e746`；CI41297606279；checkpoint-20261101-07；`issue-204/disabled-actual-copy-publication-20261101-r1/PUBLIC-HANDOFF.json` | CPU097/Native098有限disabled Actual原因说明：两行可读文字＋对应AX help，普通窗口正常关闭 | longer copy使viewport/Fit正常居中变化，严格whole-observation transform-unchanged为 **NOT_MET**；无稳定pre-read baseline。不是无条件whole-case/M8 PASS；q>8上限分支仍未验；095PASS/096FAIL各保身份 |
+| [PR217](https://github.com/TekesApps/TekesUI/pull/217) → `a96602d00db783b894fa34469c182125aecab8de`；CI41304630699；checkpoint-20261101-08；`issue-204/retained-ax-publication-20261101-r1/PUBLIC-HANDOFF.json` | 原native retained reference经dismiss后的native BOOL拒绝、whole7 witness不变及实际cleanup，Main接受有限post-dismiss业务证据；独立pure605在原sealed101上29断言通过 | 原Native101 controller仍FAIL/exit1/empty-stderr NOT_MET/null及下游NOT_REACHED；605接受精确Escape trace不是重跑或倒签101 PASS。**remount仍NOT_RUN**，whole205/wholeM6/其它M8不跟关 |
+
+Native095已通过的正向链仅沿原programme：完整焦点环/caret、三组composing Tab/Right/Escape与七计数不逃逸、Viewer Down/Up取焦capture、普通Right Down −32pt/Up无增量、Escape恢复20461/ExpectNoText、exit0/实际释放。`issue-203/viewer-prepared-pointer-tested-handoff-20261101-r1/REMAINING-AC.json` 是较早原owner依赖表；其中“post-dismiss witness尚待准备”“disabled说明未验”已由PR216/217限定范围取代，其他D/R/A/S及物理层条件继续有效，不能照抄旧状态。
+
+### 剩余AC → 原owner → 具体依赖
+
+本表只组织现有票和入口，不分配资源、不新增验收门槛或第二套动态台账。不等外接屏来完成这次文档同步；硬件条件仅约束其对应执行行。
+
+| 剩余AC / 当前状态 | 唯一接收owner（协作边界） | 具体依赖 / 原入口 |
+|---|---|---|
+| M6 remount旧对象拒绝、新对象正向：**NOT_RUN**；post-dismiss已有限接受，不重复095或101 | #204 consumer/operator；#205只协作原Session/observer，Main授parent/真实child窗口 | 现有`issue-204/remount-complete-preparation-20261101-r3/HANDOFF.json`已offline READY。CPU103/签名归原身份；Native104因fresh HID5.268699s<60s在准入拒绝，native/observer/Session和业务均NOT_REACHED，不是remount行为失败。需fresh HID合格、真实parent/205 child lease及same-source/bundle绑定；按原fresh-positive→old-ref Press次序和cleanup执行，不能用post-dismiss或fresh AX整数代替 |
+| M8 disabled说明有限交付之外的strict transform条件：**NOT_MET**；另q>8原因分支未验 | #204原说明/consumer验收；#203仅接实际组件缺陷 | PR216说明不是transform不变PASS。若继续原条件，须先有稳定pre-read baseline并明确原case下的真实viewport/transform对照；不能覆盖旧NOT_MET或把正常Fit重排偷换成“无变化”。q>8分支需真实适用状态，未授权不强造 |
+| M8-A1 enabled Actual/anchor：未验 | #204；#201/#202提供既有geometry oracle | 实测viewport与200×100逻辑图使f=min(Vw/200,Vh/100)∈[1/8,1]且Actual实际enabled；当前disabled解释/无操作不代正向通过。原R1场景和Main新具名窗口，不新增geometry实现 |
+| M8-D1/R1真实OS pan/界外release/后续move、border resize：未验 | #204原输入验收；Main协调工具合同/资源 | 原M8卡：MacVec2原点/单位/global-vs-app映射和安全ownwindow端点必须明确；R1另需真实resize border。atomic drag不是残留capture或held组合证明，programmatic MouseMove/NSWindow resize不冒充OS gesture |
+| M8-D2 held drag中Escape/失焦/resize/source切换：未验 | #204；Main协调受支持输入合同 | 当前只有atomic drag；需受支持且授权的分开Down/Move/Up/interleave合同。不得自造CGEvent/AppleScript/private driver或用CPU/Host结果代签 |
+| M8-S1不同backing scale：未验 | Main环境协调；#204原operator | 真正允许的不同倍率外屏与正常移动路径；当前同倍率/不支持的scale setter不代签，不改系统设置。只阻此行，不阻文档、普通源码或其它独立AC |
+| 物理中日IME/真实候选窗：未验/原物理层边界 | #204负责Media；#12负责原页面物理输入；Main协调原窗口 | 实际输入法/候选窗/操作来源和原oracle。095的程序化NSTextInputClient、UTF16/caret/barrier证据只能沿其原范围；不因此新开输入实现或重跑095 |
+| VoiceOver、性能与pinch原延期/范围外 | 原#204适用范围；Main恢复范围/性能owner | VO需真实导航/播报环境；性能需预定义workload/cadence/threshold/测量cohort；pinch需原协调明确恢复范围和支持工具。不从AX snapshot、测试耗时或Zoom按钮推导通过，不恢复成普通批新前置 |
+| 父AC4/5/7整页/Gold7与其余23项体验 | #12原整页视觉/真实交互owner；图标#57独立 | 上表原Settings/五patterns/普通与IC焦点、错误、窄大字等具体场景保持，按相关输入补受影响项。PR214–217提供其有限局部证据，不是全页族、全品牌、全硬件/120Hz或全产品Gold7 |
+
+本次仅更新父票覆盖与剩余AC映射；Main的公开receipt、原owner有效范围和所有旧红/原source/program身份保留。#1/#55保持OPEN，#203/#204/#205的有效AC和关闭由原owner/主协调接收。未改registry/capabilities/production、未运行构建/CI/GPU/native/UI或新checker，无Release/部署。

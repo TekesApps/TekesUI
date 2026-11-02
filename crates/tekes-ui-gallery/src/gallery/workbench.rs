@@ -16,6 +16,8 @@ mod draft_capture;
 mod durable_draft;
 mod extended;
 mod focus;
+#[cfg(test)]
+mod pattern_reading_capture;
 mod search_host;
 mod search_input;
 #[cfg(test)]
