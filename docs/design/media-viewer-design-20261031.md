@@ -348,3 +348,34 @@ Native113 的完整正向 witness 为七计数[0,1,0,0,0,0,0]、focus20412、Dia
 主证据位于 issue-204/remount-current-peer-designated-runtime-20261103-r1/run01：DOMAIN-REVIEW.json SHA a95eca993508985f701a00892c6cf6655d2322ff5a5310def031ac13deeefe18；PROTOCOL-PROJECTION.json SHA 7d396c9e4dc4f6bf4cd2b5b86081260cb687cf8429108449f5756d96b8897e48；ACTUAL-RELEASE-CHECK.json SHA a919defca198f9dbd99d45155076147fa041f6800388e3cc12fa6408457809c4。冻结 controller 的 RESULT 仍明确 PROTOCOL_COMPLETE_REQUIRES_DOMAIN_REVIEW/no_automatic_AC_PASS；本域结论为 finite M6 true-remount PASS，Main 须独立接受，不以 exit0 或 SDK0 自动扩大 AC。
 
 保留 Native105 的旧 peer-lifetime 断言 FAIL、104 fresh HID拒绝与 lateralarm、101冻结FAIL及独立605 purechecker结果，不回写旧审/原件。没有生产 Viewer/Host/AX/Kernel 修复、manifest/lock/fixture更改，普通源码交付仅 native 与本节。原095 programmatic focusedIME及098有限copy保持其原身份，physicalIME/VO/performance/pinch、真实 held-drag/窗外释放、真实 borderresize/enabledActual 及不同倍率屏幕仍按原门槛未验；不将本次 builtin M6 功能通过升级为 M8 外屏、物理或双倍率通过，不复用113余时。REMAINING-AC-CHECK.json SHA c2879f9c22d63e0a9ffaa58192e8a190bf16f346c738203a99c0b72a15abbae2 列出已授权原卡的具体工具/坐标/硬件门槛，当前 grant 未提供另一个可直接执行的 case。
+
+
+## 19. M8 normal read-only query interval: tested Native118 increment (2026-11-03)
+
+本节仅对应原§2纯查询不发动作、§4.1/§3合法viewport变更时Fit居中、§6/§7 M8只读观察及§16原098双层结果；关联父#201、consumer#204与合同/领域审#203。§1–18完整字节前缀保持，不重写已审Native113或原失败。203合同 `issue-203/m8-stable-preread-interval-contract-20261103-r1/CONTRACT.json` SHA `9116522ca675ffd80c0f730d7ad98b30d7ed853bb85c30cf33d60f835bf34d9b` 明确：新稳定区间可提供原pure-query/no-action invariant的有限直接证据，不替代098冻结whole-observation NOT_MET，不代表whole M8、全状态或未来所有查询通过。
+
+### 已测源码与独立策略
+
+本批唯一native源为CPU116及Native117/118实际使用的 `d09a092a1755eecc92790805f2d3fcdb8ddfc079ecb3d3bab6896eae226fa216`，在已测113的26cd上仅增加独立normal/nonmodal readonly witness与 `m8-readonly-designated` opt-in。只有此显式模式允许协调方指定ID1/builtin=true；默认及其他M8仍external-only。§18的既有M6/RemountProbe、原IME witness和生产Viewer/Host/AX/Kernel均不改。fresh inventory/nonmirror、actual native ID/class/active、HID≥60、occupancy/GPUguard仍强制，不自动迁屏或fallback。没有新依赖、driver/controller、205 Session/observer、合成产品输入、resize或geometry/layout/state修改。
+
+normal窗口真实存在六按钮20411/12/13/14/16/17，modal INVOKER20461和Dialog缺席。原七role槽记录为六Some(actualcount)+INVOKER None，Dialog None；既比较缺席也比较值，不补假零或dummy控件。只消费原normal每帧同一次drain，保留原mutable访问数；纯读witness不另drain。B必须在所有CUA entrypoint/截图读取前，经过Ready/active/current publication/正viewport、三个相等普通postrender样本和后继普通publication单drain确认。B/F的sample_seq指前一postrender观察，confirmed_by_seq=sample+1确认其原队列无新通知，不能将当前prerender drained0冒作当前postrender队列空。
+
+一个原getApp及getAXStateAndScreenshot只读组返回成功后，保存原AX文本字节、原图像字节及READOUT/有序真实调用reference，再写精确PID/window/Bseq的 `MEDIA_M8_READ_FINISHED` 成功ACK。既有Channel/start_steps/WindowWake仅安排普通publication，不发产品动作。B后每个区间样本均比较完整状态及通知，坏帧立即失败，不过滤、重选B或重试；F为postread样本并由下一普通publication/drain确认。原Channel90秒、native120秒+10清理、parent hardend前60秒输入截止全部保持。原capture拒绝保留error/NOT_OBSERVED且无成功ACK，不换截图途径、不改权限；成功capture后协议失败仍是OBSERVED/FAIL。
+
+### Native117失败与Native118实际顺序
+
+CPU116在actualHEAD `d6e4b18d3de420b40c8b57b9e9fd600478e987fa` +单D09+8preservedWIP上完成原定向strict/build/archive；programme `7c1a61f0190150468c5639145e1a221730b8fa57d73b1c81ed8460336487dffd`、identity2d77、fullfreeze6e134、Main5e3b；原bundle1ae44/signed63516派生复用。这是记录过的实际编译环境，不冒clean public新编译，不借CPU112或113身份。203源码审54765与原合同复用；操作顺序修复不改源码/程序/计时限制。
+
+Native117原AX/fullUI读取成功，原图93325bytes已保存，但operator延误未在原90秒内写ACK，native timeout panic/exit−6、runner1，READ_FINISHED/F缺失；capture=OBSERVED，stable区间INCOMPLETE/NOT_PROVEN，whole=NOT_MET。其原DOMAIN-REVIEW SHA `117d13220adab18af24645ac1b45be63d11260d336c3b718a49e299385f9f224` 不改写，不补ACK、不以118追认117。Main接受仅operator顺序r2修复后，独立fresh grant Native118 SHA `8a6dda680ca94a1772c8c9a8bd0fe2367e127f1d53f9e6437c9b6429adcfea2e` 启动唯一run02，未复用117时段。
+
+Native118 runner33205/app33212/window32221/host0xa73042938。B sample10、confirm11先于原CUA；原getApp及一次getAXStateAndScreenshot成功，原AX与93325bytes完整own-window图像先原样落盘，READOUT落盘后同一prepared CUA cell立即atomic ACK，无model/视觉审阅或tool往返夹在其中。工具未暴露provider UUID，reference明确为实际会话有序调用/API及返回keys/字节数，不伪造UUID。随后真正F sample12、confirm13在ownOSclose之前出现。B..F seq10–13四样本连续，均active/Ready/drained0、notifications2，六Some(0)+INVOKER/Dialog None、focusNone、Fit/q1/s2.4/T(0,138)、viewport(0,204,480,516)、ID1/builtintrue/backing2完全相同；无业务按钮、Tab、拖拽、resize或IME操作。原纯文件checker只运行一次exit0，输出PROTOCOL_COMPLETE_REQUIRES_DOMAIN_REVIEW，不能自动决定AC。
+
+### 两列结果与清理偏差
+
+**新有限B→F纯查询业务证据：PASS，待Main/#203 actual审接受。** 原图中Actual disabled、完整两行原因可见，原AX Help同文；此处只是本次原只读返回的实际观察，不重复升级§16或另一个qActual>8分支。**完整launch-to-final strict unchanged：NOT_MET。** 全13样本原始记录保留；启动viewport由480×532/Ty146变为480×516/Ty138，whole_unchanged=false永久latched，不能删启动帧或用稳定列覆盖。原098 NOT_MET及117失败均不变，也不据此宣称新产品query缺陷或整票M8通过。
+
+F后首个prepared关闭cell发生 `ReferenceError: m8AtomicApp is not defined`，在任何API调用前结束：前一atomic cell的try内变量未跨cell保留。operator随后以实际kill0确认本次app33212仍活，才用原getApp同signed bundle重新绑定、fresh AX唯一实际OSclose11关闭。此为明确执行偏差，不写成无错误、零偏差或所有CUA都0；无新增截图组、产品Close按钮、替代输入、重新启动或关闭后query。原source末尾CloseRequested/Checked seq13，app exit0/39.652176s/timed_out=false、stdout/stderr空。producer GPU acquire/release成对、inputs unchanged、无buildlock；独立actual检查runner/app两PID均absent、两PG空、物理GPU锁lsof无holder、CUA无inflight，Main实际release SHA `04252d11d79a6e55dbb5e5ffedaf698c4e0d50560e9911a8404b0b13d29dabad` 接受并清canonical；资源释放不等于业务或整体AC接受。
+
+主原件位于 `issue-204/m8-readonly-stable-runtime-20261103-r1/run02/`：HANDOFF SHA `298fafc6ca14f3bc40e1c239e1e745793b04ddf5ec8f4325d580b2e72a31feae`；DOMAIN-REVIEW SHA `73b438bcd57b135889b2341a755e6c94e9793d1519941d881db347513e43a0a8`；PROTOCOL-PROJECTION SHA `0fae42487be77ffdd411824d61ff2c0afb64b430521bc2c4cae09e70eba5d11f`；READOUT SHA `cba92499784293ee9d3cf5ebac0344ef74af34e0e21c4f4d5d9f6060392a7b78`；CUA-TOOL-LEDGER SHA `c1b2e4419dbb53919b678970c4ae6d4e251d65812cbcafd44c2d786ddce1115d`。原件与117 packet保持不可变。Main已独立查看原完整图+AX并核实际释放；#203 directed actual审进行中，本节不预写其结论。
+
+本批离线交付仅native与新增§19，设计§1–18逐字前缀及113 packet均不动。复用范围限未变D09/CPU116/原source审/实际118输入与原协议证据；最终文档和patch组合仅做离线应用/反向还原、路径/hash/prefix核对，未新CI/build/sign/native。与PR219/113批次分开，不因其CI而重推。enabledActual、genuine qActual>8及fit<1/8、真实OS border resize/held drag/窗外释放、不同倍率屏幕、physicalIME、VoiceOver、performance、pinch等仍按原AC独立未验/延期，wholeM8/wholeIssue不关闭。下一步由Main在actual审接受后串行接入独立普通批次并决定所需公开检查/CI。
