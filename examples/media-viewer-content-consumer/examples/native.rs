@@ -70,6 +70,9 @@ mod stale_ax {
         pub fn identity(&self) -> String {
             format!("view={:p} zoom={:p}", &*self.view, &*self.zoom)
         }
+        pub fn same_zoom(&self, other: &Self) -> bool {
+            std::ptr::eq(&*self.zoom, &*other.zoom)
+        }
         pub fn live(&self) -> bool {
             unsafe { msg_send![&*self.zoom, isAccessibilityElement] }
         }
@@ -77,10 +80,11 @@ mod stale_ax {
             unsafe { msg_send![&*self.zoom, accessibilityPerformPress] }
         }
     }
-    #[derive(Debug)]
+    #[derive(Clone, Copy, Debug)]
     pub enum Request {
         Retained,
         Check,
+        FreshPerformed,
         ObserverStopped,
         TimedOut,
     }
@@ -92,6 +96,33 @@ mod stale_ax {
     }
     impl Channel {
         pub fn start(path: PathBuf, wake: WindowWake) -> Self {
+            Self::start_steps(
+                path,
+                wake,
+                &[
+                    ("MEDIA_M6_EXTERNAL_RETAINED", Request::Retained),
+                    ("MEDIA_M6_STALE_CHECK_REQUEST", Request::Check),
+                    ("MEDIA_M6_OBSERVER_STOPPED", Request::ObserverStopped),
+                ],
+            )
+        }
+        pub fn start_remount(path: PathBuf, wake: WindowWake) -> Self {
+            Self::start_steps(
+                path,
+                wake,
+                &[
+                    ("MEDIA_M6_EXTERNAL_RETAINED", Request::Retained),
+                    ("MEDIA_M6_FRESH_ACTION_PERFORMED", Request::FreshPerformed),
+                    ("MEDIA_M6_STALE_CHECK_REQUEST", Request::Check),
+                    ("MEDIA_M6_OBSERVER_STOPPED", Request::ObserverStopped),
+                ],
+            )
+        }
+        fn start_steps(
+            path: PathBuf,
+            wake: WindowWake,
+            steps: &'static [(&'static str, Request)],
+        ) -> Self {
             let (sender, receiver) = mpsc::channel();
             let stop = Arc::new(AtomicBool::new(false));
             let stopping = stop.clone();
@@ -99,11 +130,7 @@ mod stale_ax {
             let worker = std::thread::spawn(move || {
                 let result = (|| -> Result<(), String> {
                     let end = Instant::now() + Duration::from_secs(90);
-                    for (file, request) in [
-                        ("MEDIA_M6_EXTERNAL_RETAINED", Request::Retained),
-                        ("MEDIA_M6_STALE_CHECK_REQUEST", Request::Check),
-                        ("MEDIA_M6_OBSERVER_STOPPED", Request::ObserverStopped),
-                    ] {
+                    for (file, request) in steps.iter().copied() {
                         let request = loop {
                             if stopping.load(Ordering::Relaxed) {
                                 return Ok(());
@@ -429,6 +456,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         log.flush().unwrap();
                         return true;
                     }
+                    stale_ax::Request::FreshPerformed => {
+                        panic!("remount-only message in dismissal case")
+                    }
                     stale_ax::Request::TimedOut => panic!("retained AX channel deadline reached"),
                 }
             }
@@ -482,14 +512,333 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     }
+    #[derive(Debug, PartialEq)]
+    enum RemountPhase {
+        Initial,
+        Retain,
+        Stabilizing,
+        Ready,
+        PositivePending,
+        PositiveStable,
+        PostPositive,
+        StalePending,
+        Checked,
+        Complete,
+    }
+    struct RemountProbe {
+        path: std::path::PathBuf,
+        phase: RemountPhase,
+        channel: Option<stale_ax::Channel>,
+        old: Option<stale_ax::Peer>,
+        positive_peer: Option<stale_ax::Peer>,
+        old_key: Option<p::AccessibilityKey>,
+        new_key: Option<p::AccessibilityKey>,
+        host: Option<usize>,
+        baseline: Option<ImeWitness>,
+        last: Option<(ImeWitness, Rect)>,
+        notifications: usize,
+        baseline_notifications: usize,
+        drained: usize,
+    }
+    impl RemountProbe {
+        fn new(path: std::path::PathBuf) -> Self {
+            std::fs::create_dir_all(&path).expect("owned remount channel");
+            assert!(std::fs::read_dir(&path).unwrap().next().is_none());
+            Self {
+                path,
+                phase: RemountPhase::Initial,
+                channel: None,
+                old: None,
+                positive_peer: None,
+                old_key: None,
+                new_key: None,
+                host: None,
+                baseline: None,
+                last: None,
+                notifications: 0,
+                baseline_notifications: 0,
+                drained: 0,
+            }
+        }
+        fn emit(&self, file: &str, window: &Window) {
+            let path = self.path.join(file);
+            assert!(!path.exists());
+            let temporary = path.with_extension("tmp");
+            std::fs::write(
+                &temporary,
+                format!(
+                    "pid={}\nwindow_number={}\nhost={:x}\n{}\n",
+                    std::process::id(),
+                    window.native_window_number(),
+                    self.host.unwrap(),
+                    self.old.as_ref().unwrap().identity()
+                ),
+            )
+            .unwrap();
+            std::fs::rename(temporary, path).unwrap();
+        }
+        fn publication(&self, tree: &ContentHost, window: &Window, log: &mut std::fs::File) {
+            assert_eq!(self.host, Some(tree as *const ContentHost as usize));
+            assert!(window.is_active() && tree.is_window_active());
+            assert!(ime_witness(tree).dialog_open);
+            assert!(
+                !tree
+                    .get(fixture::COMMANDS[1].0)
+                    .unwrap()
+                    .component::<Button>()
+                    .unwrap()
+                    .button
+                    .state
+                    .disabled
+            );
+            let viewer = tree
+                .get(fixture::VIEW)
+                .unwrap()
+                .component::<MediaViewerContent>()
+                .unwrap();
+            assert_eq!(viewer.image_status(), Some(ImageLoadStatus::Ready));
+            assert!(viewer.can_execute(MediaViewerCommand::ZoomIn));
+            let publication = window.content_accessibility_publication().unwrap();
+            let key =
+                p::content_accessibility::content_key(tree, fixture::COMMANDS[1].0, None).unwrap();
+            assert!(publication.is_current() && publication.owner(key).is_some());
+            assert_eq!(Some(key), self.new_key);
+            assert_ne!(Some(key), self.old_key);
+            assert!(publication.owner(self.old_key.unwrap()).is_none());
+            // A normal snapshot publication replaces the native element cache.
+            // The external positive reference stays fixed; only this local current
+            // publication witness is freshly obtained, never the original old peer.
+            let current = stale_ax::Peer::retain(window);
+            assert!(!self.old.as_ref().unwrap().same_zoom(&current));
+            assert!(current.live());
+            writeln!(
+                log,
+                "m6_remount_current_publication phase={:?} key={key:?} current_{} live=true",
+                self.phase,
+                current.identity()
+            )
+            .unwrap();
+        }
+        fn requests(
+            &mut self,
+            tree: &mut ContentHost,
+            window: &Window,
+            log: &mut std::fs::File,
+        ) -> bool {
+            while let Some(request) = self.channel.as_mut().and_then(stale_ax::Channel::next) {
+                assert_eq!(self.host, Some(tree as *const ContentHost as usize));
+                let ack_file = match request {
+                    stale_ax::Request::Retained => "MEDIA_M6_EXTERNAL_RETAINED",
+                    stale_ax::Request::FreshPerformed => "MEDIA_M6_FRESH_ACTION_PERFORMED",
+                    stale_ax::Request::Check => "MEDIA_M6_STALE_CHECK_REQUEST",
+                    stale_ax::Request::ObserverStopped => "MEDIA_M6_OBSERVER_STOPPED",
+                    stale_ax::Request::TimedOut => panic!("remount channel deadline reached"),
+                };
+                let receipt = std::fs::read_to_string(self.path.join(ack_file)).unwrap();
+                writeln!(
+                    log,
+                    "m6_remount_ack host={tree:p} request={request:?} receipt={receipt:?}"
+                )
+                .unwrap();
+                match request {
+                    stale_ax::Request::Retained => {
+                        assert_eq!(self.phase, RemountPhase::Retain);
+                        let before = ime_witness(tree);
+                        let old_mount = tree.get(fixture::COMMANDS[1].0).unwrap().mount_identity();
+                        let dialog = tree.remove(fixture::DIALOG).unwrap();
+                        assert!(tree.get(fixture::DIALOG).is_none());
+                        assert!(tree.get(fixture::COMMANDS[1].0).is_none());
+                        assert!(tree.semantic_mount(fixture::COMMANDS[1].0).is_none());
+                        let absent_focus = tree.focused();
+                        tree.insert(fixture::MODAL_ROOT, dialog).unwrap();
+                        let new_mount = tree.get(fixture::COMMANDS[1].0).unwrap().mount_identity();
+                        assert_ne!(old_mount, new_mount);
+                        tree.show_dialog(fixture::DIALOG).unwrap();
+                        writeln!(log, "m6_remount_lifecycle host={tree:p} old_mount={old_mount} absent=true absent_focus={absent_focus:?} new_mount={new_mount} api=remove_Dialog_insert_outerStack_show before={before:?} after={:?}", ime_witness(tree)).unwrap();
+                        self.phase = RemountPhase::Stabilizing;
+                        self.last = None;
+                    }
+                    stale_ax::Request::FreshPerformed => {
+                        assert_eq!(self.phase, RemountPhase::Ready);
+                        self.phase = RemountPhase::PositivePending;
+                    }
+                    stale_ax::Request::Check => {
+                        assert_eq!(self.phase, RemountPhase::PostPositive);
+                        self.phase = RemountPhase::StalePending;
+                    }
+                    stale_ax::Request::ObserverStopped => {
+                        assert_eq!(self.phase, RemountPhase::Checked);
+                        self.publication(tree, window, log);
+                        assert_eq!(self.baseline.as_ref(), Some(&ime_witness(tree)));
+                        assert_eq!(self.notifications, self.baseline_notifications);
+                        writeln!(
+                            log,
+                            "m6_remount_observer_stopped host={tree:p} final={:?} notifications={}",
+                            ime_witness(tree),
+                            self.notifications
+                        )
+                        .unwrap();
+                        self.phase = RemountPhase::Complete;
+                        self.emit("MEDIA_M6_COMPLETED", window);
+                        writeln!(log, "M6_REMOUNT_SCOPE_CHECK_COMPLETED external_AXError_requires_separate_review=true").unwrap();
+                        log.flush().unwrap();
+                        return true;
+                    }
+                    stale_ax::Request::TimedOut => panic!("remount channel deadline reached"),
+                }
+            }
+            false
+        }
+        fn published(&mut self, tree: &ContentHost, window: &Window, log: &mut std::fs::File) {
+            if self.phase == RemountPhase::Initial {
+                let key = p::content_accessibility::content_key(tree, fixture::COMMANDS[1].0, None);
+                let publication = window.content_accessibility_publication();
+                if !(window.is_active()
+                    && tree.is_window_active()
+                    && key.is_some_and(|key| {
+                        publication
+                            .as_ref()
+                            .is_some_and(|p| p.is_current() && p.owner(key).is_some())
+                    }))
+                {
+                    return;
+                }
+                let old = stale_ax::Peer::retain(window);
+                assert!(old.live());
+                self.host = Some(tree as *const ContentHost as usize);
+                self.old_key = key;
+                writeln!(
+                    log,
+                    "m6_remount_initial host={tree:p} old_key={key:?} {} state={:?}",
+                    old.identity(),
+                    ime_witness(tree)
+                )
+                .unwrap();
+                self.old = Some(old);
+                self.channel = Some(stale_ax::Channel::start_remount(
+                    self.path.clone(),
+                    window.wake_proxy(),
+                ));
+                self.phase = RemountPhase::Retain;
+                self.emit("MEDIA_M6_MODAL_READY", window);
+                return;
+            }
+            if self.phase == RemountPhase::Stabilizing {
+                let current = ime_witness(tree);
+                let frame = tree.get(fixture::VIEW).unwrap().frame();
+                if self.last.as_ref() != Some(&(current.clone(), frame)) || self.drained != 0 {
+                    writeln!(log, "m6_remount_settling host={tree:p} frame={frame:?} state={current:?} drained={}", self.drained).unwrap();
+                    self.last = Some((current, frame));
+                    window.request_redraw();
+                    return;
+                }
+                let fresh = stale_ax::Peer::retain(window);
+                let old = self.old.as_ref().unwrap();
+                assert!(!old.same_zoom(&fresh));
+                let before = ime_witness(tree);
+                let live = old.live();
+                let accepted = old.press();
+                assert!(!live && !accepted && fresh.live());
+                assert_eq!(before, ime_witness(tree));
+                self.new_key =
+                    p::content_accessibility::content_key(tree, fixture::COMMANDS[1].0, None);
+                self.positive_peer = Some(fresh);
+                self.publication(tree, window, log);
+                writeln!(log, "m6_remount_ready host={tree:p} old_key={:?} new_key={:?} old_{} current_{} old_live={live} old_press={accepted} baseline={before:?} notifications={} frame={frame:?}", self.old_key, self.new_key, old.identity(), self.positive_peer.as_ref().unwrap().identity(), self.notifications).unwrap();
+                self.baseline = Some(before);
+                self.baseline_notifications = self.notifications;
+                self.phase = RemountPhase::Ready;
+                self.emit("MEDIA_M6_REMOUNT_READY", window);
+            } else if self.phase == RemountPhase::PositivePending {
+                self.publication(tree, window, log);
+                let before = self.baseline.as_ref().unwrap();
+                let after = ime_witness(tree);
+                let mut expected = before.clone();
+                expected.buttons[1] += 1;
+                expected.focused = Some(fixture::COMMANDS[1].0);
+                let old = before.transform.unwrap();
+                assert_eq!(old.relative_scale, 1.0);
+                let mut next = old;
+                next.relative_scale *= 1.25;
+                next.scale *= 1.25;
+                next.mode = MediaViewerMode::Manual;
+                let frame = tree.get(fixture::VIEW).unwrap().frame();
+                let translation = [
+                    (
+                        f64::from(frame.size.width),
+                        f64::from(old.translation.x),
+                        200.0,
+                    ),
+                    (
+                        f64::from(frame.size.height),
+                        f64::from(old.translation.y),
+                        100.0,
+                    ),
+                ]
+                .map(|(viewport, offset, source)| {
+                    let extent = source * next.scale;
+                    if extent <= viewport {
+                        ((viewport - extent) / 2.0) as f32
+                    } else {
+                        (viewport / 2.0 - (viewport / 2.0 - offset) * 1.25)
+                            .clamp(viewport - extent, 0.0) as f32
+                    }
+                });
+                next.translation = tekes_ui_scene::Point::new(translation[0], translation[1]);
+                expected.transform = Some(next);
+                assert_eq!(
+                    expected, after,
+                    "new current AXPress must activate Zoom exactlyonce with originalcenterzoom"
+                );
+                assert_eq!(self.notifications, self.baseline_notifications + 1);
+                writeln!(log, "m6_remount_positive host={tree:p} expected={expected:?} after={after:?} notifications={}", self.notifications).unwrap();
+                self.baseline = Some(after);
+                self.baseline_notifications = self.notifications;
+                self.last = None;
+                self.phase = RemountPhase::PositiveStable;
+                window.request_redraw();
+            } else if self.phase == RemountPhase::PositiveStable {
+                self.publication(tree, window, log);
+                let current = ime_witness(tree);
+                let frame = tree.get(fixture::VIEW).unwrap().frame();
+                assert_eq!(self.baseline.as_ref(), Some(&current));
+                assert_eq!(self.notifications, self.baseline_notifications);
+                if self.last.as_ref() != Some(&(current.clone(), frame)) || self.drained != 0 {
+                    self.last = Some((current, frame));
+                    window.request_redraw();
+                    return;
+                }
+                writeln!(log, "m6_remount_postpositive_baseline host={tree:p} state={current:?} notifications={} frame={frame:?}", self.notifications).unwrap();
+                self.phase = RemountPhase::PostPositive;
+                self.emit("MEDIA_M6_FRESH_CHECKED_READY", window);
+            } else if self.phase == RemountPhase::StalePending {
+                self.publication(tree, window, log);
+                let before = ime_witness(tree);
+                assert_eq!(self.baseline.as_ref(), Some(&before));
+                assert_eq!(self.notifications, self.baseline_notifications);
+                let old = self.old.as_ref().unwrap();
+                let live = old.live();
+                let accepted = old.press();
+                let after = ime_witness(tree);
+                assert!(!live && !accepted);
+                assert_eq!(before, after);
+                writeln!(log, "m6_remount_stale_checked host={tree:p} old_{} old_live={live} old_press={accepted} before={before:?} after={after:?} notifications={}", old.identity(), self.notifications).unwrap();
+                self.phase = RemountPhase::Checked;
+                self.emit("MEDIA_M6_STALE_CHECKED_READY", window);
+            }
+        }
+    }
     struct Host {
         tree: Option<ContentHost>,
         gpu: Option<Renderer>,
         text: coretext::Text,
         actions: fixture::Actions,
         log: std::fs::File,
-        external_display_id: u32,
+        display_id: u32,
+        display_builtin: bool,
+        display_policy: String,
         stale_probe: Option<StaleProbe>,
+        remount_probe: Option<RemountProbe>,
         ime_mode: bool,
         ime_script_started: bool,
         ime_before: Option<(u64, ImeWitness)>,
@@ -736,12 +1085,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 self.log.flush().unwrap();
                 assert_eq!(
                     window.native_screen_id(),
-                    Some(self.external_display_id),
-                    "native window must start on the granted external display"
+                    Some(self.display_id),
+                    "native window must start on the granted display"
                 );
-                assert!(
-                    window.screen_info().is_some_and(|screen| !screen.builtin),
-                    "external display required"
+                assert_eq!(
+                    window.screen_info().map(|screen| screen.builtin),
+                    Some(self.display_builtin),
+                    "granted display builtin identity must match"
                 );
                 assert!(window.set_text_key_events(true));
                 let mut gpu = unsafe {
@@ -845,6 +1195,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     window.close();
                     return;
                 }
+                Event::Wake
+                    if self
+                        .remount_probe
+                        .as_mut()
+                        .is_some_and(|probe| probe.requests(tree, window, &mut self.log)) =>
+                {
+                    window.set_content_accessibility_publication(None);
+                    window.close();
+                    return;
+                }
                 Event::Resized {
                     drawable_size,
                     scale,
@@ -940,6 +1300,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     writeln!(self.log, "ax_response={response:?}").unwrap();
                 }
                 Event::CloseRequested => {
+                    if let Some(probe) = &self.remount_probe {
+                        assert_eq!(probe.phase, RemountPhase::Complete, "early remount close");
+                    }
                     if let Some(probe) = &self.stale_probe {
                         assert_eq!(
                             probe.phase,
@@ -981,14 +1344,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 _ => {}
             }
             let (close, retry) = self.actions.dispatch(tree);
-            writeln!(
-                self.log,
-                "close={close} retry={retry} focused={:?} transform={:?} changes={:?}",
-                tree.focused(),
-                fixture::viewer(tree).transform(),
-                fixture::viewer(tree).drain_transform_changes()
-            )
-            .unwrap();
+            if let Some(probe) = &mut self.remount_probe {
+                let focused = tree.focused();
+                let transform = fixture::viewer(tree).transform();
+                let changes = fixture::viewer(tree).drain_transform_changes();
+                probe.drained = changes.len();
+                probe.notifications += changes.len();
+                writeln!(self.log, "close={close} retry={retry} focused={focused:?} transform={transform:?} changes={changes:?}").unwrap();
+            } else {
+                writeln!(
+                    self.log,
+                    "close={close} retry={retry} focused={:?} transform={:?} changes={:?}",
+                    tree.focused(),
+                    fixture::viewer(tree).transform(),
+                    fixture::viewer(tree).drain_transform_changes()
+                )
+                .unwrap();
+            }
             if close > 0 && tree.get(fixture::DIALOG).is_some() {
                 assert!(tree.close_dialog());
                 writeln!(self.log, "modal_close_restored_focus={:?}", tree.focused()).unwrap();
@@ -1092,6 +1464,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             if let Some(probe) = &mut self.stale_probe {
                 probe.published(tree, window, &mut self.log);
             }
+            if let Some(probe) = &mut self.remount_probe {
+                probe.published(tree, window, &mut self.log);
+            }
+            if self.remount_probe.is_some() {
+                assert_eq!(window.native_screen_id(), Some(self.display_id));
+                assert_eq!(
+                    window.screen_info().map(|screen| screen.builtin),
+                    Some(self.display_builtin)
+                );
+                writeln!(
+                    self.log,
+                    "m6_display policy={} screen_id={:?} builtin={:?} backing_scale={} active={} viewport={:?}",
+                    self.display_policy,
+                    window.native_screen_id(),
+                    window.screen_info().map(|screen| screen.builtin),
+                    window.scale(),
+                    window.is_active(),
+                    tree.get(fixture::VIEW).unwrap().frame()
+                )
+                .unwrap();
+            }
             writeln!(
                 self.log,
                 "viewport={:?} image={:?} semantics={:#?}",
@@ -1146,7 +1539,37 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         );
         StaleProbe::new(path)
     });
-    let external_display_id: u32 = std::env::var("MEDIA_VIEWER_EXTERNAL_DISPLAY_ID")?.parse()?;
+    let remount_probe = std::env::var_os("MEDIA_VIEWER_M6_REMOUNT_CHANNEL").map(|path| {
+        assert!(std::env::var_os("MEDIA_VIEWER_MODAL").is_some());
+        assert!(std::env::var_os("MEDIA_VIEWER_M6_IME").is_none());
+        assert!(std::env::var_os("MEDIA_VIEWER_M6_STALE_CHANNEL").is_none());
+        let path = std::path::PathBuf::from(path);
+        assert_eq!(path, directory.join("m6-remount-channel"));
+        RemountProbe::new(path)
+    });
+    let display_policy =
+        std::env::var("MEDIA_VIEWER_DISPLAY_POLICY").unwrap_or_else(|_| "external-only".into());
+    let (display_id, display_builtin) = match display_policy.as_str() {
+        "external-only" => (
+            std::env::var("MEDIA_VIEWER_EXTERNAL_DISPLAY_ID")?.parse::<u32>()?,
+            false,
+        ),
+        "m6-designated" => {
+            assert!(
+                remount_probe.is_some(),
+                "designated display is M6 remount only"
+            );
+            (
+                std::env::var("MEDIA_VIEWER_DISPLAY_ID")?.parse::<u32>()?,
+                std::env::var("MEDIA_VIEWER_DISPLAY_BUILTIN")?.parse::<bool>()?,
+            )
+        }
+        _ => panic!("unknown Media Viewer display policy"),
+    };
+    assert_ne!(
+        display_id, 0,
+        "explicit nonzero granted display ID required"
+    );
     App::new(AppConfig {
         name: Some("Media Viewer Consumer 204".into()),
         ..Default::default()
@@ -1158,7 +1581,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 width: 480.,
                 height: 720.,
             },
-            placement: p::WindowPlacement::Screen(p::ScreenChoice::External),
+            placement: p::WindowPlacement::Screen(if display_builtin {
+                p::ScreenChoice::Builtin
+            } else {
+                p::ScreenChoice::External
+            }),
             ..Default::default()
         },
         MenuBar::default(),
@@ -1168,8 +1595,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             text: coretext::Text::new(1.),
             actions: fixture::Actions::default(),
             log,
-            external_display_id,
+            display_id,
+            display_builtin,
+            display_policy,
             stale_probe,
+            remount_probe,
             ime_mode: std::env::var_os("MEDIA_VIEWER_M6_IME").is_some(),
             ime_script_started: false,
             ime_before: None,
