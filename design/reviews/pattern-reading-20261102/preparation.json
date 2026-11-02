@@ -1,6 +1,6 @@
 {
   "issue": 12,
-  "status": "REPAIRED_SOURCE_NOT_EXECUTED_AFTER_ACTUAL108_109_FAILURES",
+  "status": "READY_BOUNDED_SOURCE_BEHAVIOR_CAPTURE_AND_192_VISUAL_REVIEW",
   "baseline": "6adec68a50568b60766de12d20cb8d6850edc83b",
   "scope": "Existing Filter/Async/Danger narrow whole-page state fixtures only",
   "original_contracts": [
@@ -83,23 +83,23 @@
       "Current MAIN StoryInput query/frame_at/state and Workbench focus_control/state interfaces inspected for candidate compatibility; actual compiler remains notrun",
       "repair scopedrustfmt1.95 check0/diffcheck0",
       "readonlyaudit confirmed currentinput_changed event, record6eventcap, DangerSelf::phase doesnotretainphaseframe and interaction_tests module",
-      "prepared nextbinding PythonASTparse only; originalbinding/logs/releases preserved untouched"
+      "prepared nextbinding PythonASTparse only; originalbinding/logs/releases preserved untouched",
+      "freshCPU110/GPU111 compile/4actualregressions/3actualcapture192/scopedstrict allpass; actualprogram+source/archive retained",
+      "source/git/index/markers unchanged; actualdriverPID/PG/guards released; Mainnormalrestore independently accepted before offline review",
+      "all192 originalPNGs individuallyopened; main13Danger+5Async independentsamples, all48Filter; everyPNGhash/dimensions/matrix rechecked",
+      "Danger8reviewclassification resolved against originalprimarycontract, raw8FAILreport preserved unchanged; see finalvisualreceipt"
     ],
     "not_run": [
-      "repairedsource compile/no-run",
-      "corrected4 actualregressions",
-      "repaired3 capture192",
-      "repairedsourceGallerystrict",
-      "individual192PNGreview",
-      "native/physicalinput/IME/VO/performance",
-      "repositoryCI"
+      "native/physicaldisplay/input/IME/VO/performance",
+      "repositoryCI",
+      "otherwidths/brands/locales/fullGold7/#12remainingAC/registrymaturity"
     ]
   },
   "unchanged_evidence": [
     "A48/B24/C64/Progress1x24+2x24 and all their failures/receipts",
     "historicalDanger8wide originalsource/programreceipts; not current-sourcevalidation"
   ],
-  "remaining": "Prepared tests and metadata do not constitute runtime or visual acceptance; Main grant needed after source batchreview.",
+  "remaining": "Only this finite batch READY for soleMain integration/delivery; no extraRust/GPU requested for documentation-only evidence successor. Original#12 remainingnative/physical/deferred boundaries stayopen.",
   "verification_card": {
     "status": "NOT_GRANTED_NOT_RUN",
     "existing_entry": "Main existing controlled entry; helper94eacada, wrapper1e76057 functions only, originalbuild/GPUguard; no new runner supplied",
@@ -250,5 +250,30 @@
     "prepared_binding": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-12/pattern-reading-repair-20261102-r2/owner-binding-r2.py",
     "prepared_binding_sha256": "b906afaf77c1e08f3cd39033dd259c627eea7847bfaa974706fae508d79b7576",
     "binding_check": "PythonASTparse only, notexecuted. Reuses runtime4ea31/helper94/wrapper1e760/acceptedengine, records actualdriverPG; requires freshMaingrantpath+hash and rejectsretired108-109 name. Fourregression actual1P0F0ignored guard retained/explicit."
+  },
+  "execution110_111": {
+    "source_candidate": "c05024ba97dcc63e6cc21a882022bcb2876954b3",
+    "actual_main_head": "04fddf90a099e960d6ea27974ce42b111af32a14",
+    "actual_source": "minimal4admittedfiles plus8preservedUnicodeWIP;3640source map",
+    "grant_sha256": "8d9ad14c800074d617ee26d05b8a623d37ef7f11d4b2c4fda519a4dd0dbf6bda",
+    "source_freeze_sha256": "642d7afdfb07c59bca25da6afd2475f063513340a514d4a5c4678cf19a5c6194",
+    "programme_sha256": "243ab20a0b9f3f54a70eaf17160294bfb1be6206d4c5c4e1df1900a9b9373777",
+    "compile_exit": 0,
+    "correct_four_regressions": "eachactual1P0F0ignored",
+    "three_captures": "eachactual1P0F0ignored;48+64+80=192originalPNG",
+    "strict_exit": 0,
+    "release_sha256": "f190c3a21bd6e0e7152fa2351b1090d0676ed526a0b42b092067639ea0a343f5",
+    "Main_restore_sha256": "c7fd52b3a0e57611873e3be3024346e80010e6ab6bc514b878ff5b65a8293b31",
+    "visual_review": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-12/pattern-reading-main-window-20261102-r2/owner-run/final-visual-review.json",
+    "visual_review_sha256": "d242e2216f62d4f4fdbb903c4794e69f01fa342528123257d7ed040df36048bf",
+    "perfile_opened": {
+      "main_filter": 48,
+      "worker_async": 64,
+      "worker_danger": 80
+    },
+    "bounded_accepted_reading_pass": 192,
+    "product_visual_failure": 0,
+    "disagreement": "OriginalDanger reviewer8FAIL preserved at55ebf27b; mainindependentlyopened all8 and resolved expectedunderlayocclusion using originalscrim/Surface geometry and documentedpaintorder. Workerconfirmed noforegroundocclusion/contractevidence; no image/source/token change foragreement.",
+    "review_date": "2026-11-03 Asia/Shanghai"
   }
 }

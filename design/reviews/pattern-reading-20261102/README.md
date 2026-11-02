@@ -101,3 +101,34 @@ must record the actual driver process group with `os.getpgrp()`; the original
 run's missing driver-group field is not filled from its PID. New Rust requires
 a new Main grant for affected compile/strict, the four unexecuted regressions
 and the three failed captures. All old failures remain failures.
+
+## Actual repaired validation and visual review
+
+Fresh CPU110/GPU111 admitted Main `04fddf90` plus the exact repaired test patch
+`c05024ba` and eight preserved Unicode WIP files (3640-file actual map). Gallery
+no-run and strict passed; all four correctly named regressions and all three
+explicit ignored captures each executed one passing test with zero ignored.
+The actual retained test programme is
+`243ab20a0b9f3f54a70eaf17160294bfb1be6206d4c5c4e1df1900a9b9373777`.
+Filter 48, Async 64 and Danger 80 original PNGs were generated. Main independently
+accepted actual process/guard release and restored normal source before review.
+
+All 192 originals were individually opened and their hashes and dimensions
+checked. The bounded reading result is pass. The original Danger reviewer marked
+eight modal-top underlay fragments as failures; that report is preserved. Main
+independently opened all eight: the fragments lie outside the opaque modal,
+under the deliberately translucent scrim, with no foreground title/action
+occlusion. The original paint order and scrim contract explain this result; the
+reviewer confirmed there was no contrary contract or foreground-clipping evidence.
+This is recorded as expected background occlusion, without changing images,
+layout, tokens or acceptance criteria. Closed-state phase text was still read
+across the actual viewport slices; null phase geometry did not substitute for it.
+
+The full dated review (2026-11-03 Asia/Shanghai), per-file original reviews,
+primary source/program/command identities and adjudication are in
+`artifacts/issue-12/pattern-reading-main-window-20261102-r2/owner-run/final-visual-review.json`,
+SHA256 `d242e2216f62d4f4fdbb903c4794e69f01fa342528123257d7ed040df36048bf`.
+This documentation-only evidence successor does not relabel the actual captured
+source or rerun unchanged code. CPU108/GPU109 failures, historical wide images,
+A/B/C/Progress and every native/physical/deferred boundary remain unchanged.
+This finite batch does not close #12 or promote registry maturity.
