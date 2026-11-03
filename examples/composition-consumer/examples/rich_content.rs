@@ -471,6 +471,46 @@ fn main() {
                     p::selftest::run_script(script);
                     return;
                 }
+                Event::Command(p::CommandId(command))
+                    if !self.started && (25_012..=25_013).contains(&command) =>
+                {
+                    let focus = self.tree.focused();
+                    let mount = self.tree.semantic_mount(f::COMPOSER);
+                    let baseline = self
+                        .tree
+                        .text_surface(f::COMPOSER)
+                        .unwrap()
+                        .input
+                        .external_baseline();
+                    let label = if command == 25_012 {
+                        "manual-append"
+                    } else {
+                        "manual-theme"
+                    };
+                    self.record(window, &format!("{label}-before"));
+                    if command == 25_012 {
+                        f::append(&mut self.tree);
+                    } else {
+                        self.theme = if self.theme == Theme::LIGHT {
+                            Theme::DARK
+                        } else {
+                            Theme::LIGHT
+                        };
+                    }
+                    self.draw(window);
+                    self.record(window, &format!("{label}-after"));
+                    assert_eq!(self.tree.focused(), focus);
+                    assert_eq!(self.tree.semantic_mount(f::COMPOSER), mount);
+                    assert_eq!(
+                        self.tree
+                            .text_surface(f::COMPOSER)
+                            .unwrap()
+                            .input
+                            .external_baseline(),
+                        baseline
+                    );
+                    return;
+                }
                 Event::Mouse(mouse) => self.event(native_pointer::translate(mouse), window),
                 Event::Key(key) => self.event(ContentEvent::KeyInput(native_key::key(key)), window),
                 Event::TextKey(key) => self.event(native_key::translate(key), window),
@@ -547,7 +587,21 @@ fn main() {
                 )],
             }
         } else {
-            MenuBar::default()
+            MenuBar {
+                menus: vec![Menu::new(
+                    "Rich content manual",
+                    vec![
+                        MenuItem::Command(MenuCommand::new(
+                            "Append rich document",
+                            p::CommandId(25_012),
+                        )),
+                        MenuItem::Command(MenuCommand::new(
+                            "Toggle light / dark",
+                            p::CommandId(25_013),
+                        )),
+                    ],
+                )],
+            }
         },
         Host {
             tree,
