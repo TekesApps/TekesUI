@@ -379,3 +379,34 @@ F后首个prepared关闭cell发生 `ReferenceError: m8AtomicApp is not defined`�
 主原件位于 `issue-204/m8-readonly-stable-runtime-20261103-r1/run02/`：HANDOFF SHA `298fafc6ca14f3bc40e1c239e1e745793b04ddf5ec8f4325d580b2e72a31feae`；DOMAIN-REVIEW SHA `73b438bcd57b135889b2341a755e6c94e9793d1519941d881db347513e43a0a8`；PROTOCOL-PROJECTION SHA `0fae42487be77ffdd411824d61ff2c0afb64b430521bc2c4cae09e70eba5d11f`；READOUT SHA `cba92499784293ee9d3cf5ebac0344ef74af34e0e21c4f4d5d9f6060392a7b78`；CUA-TOOL-LEDGER SHA `c1b2e4419dbb53919b678970c4ae6d4e251d65812cbcafd44c2d786ddce1115d`。原件与117 packet保持不可变。Main已独立查看原完整图+AX并核实际释放；#203 directed actual审进行中，本节不预写其结论。
 
 本批离线交付仅native与新增§19，设计§1–18逐字前缀及113 packet均不动。复用范围限未变D09/CPU116/原source审/实际118输入与原协议证据；最终文档和patch组合仅做离线应用/反向还原、路径/hash/prefix核对，未新CI/build/sign/native。与PR219/113批次分开，不因其CI而重推。enabledActual、genuine qActual>8及fit<1/8、真实OS border resize/held drag/窗外释放、不同倍率屏幕、physicalIME、VoiceOver、performance、pinch等仍按原AC独立未验/延期，wholeM8/wholeIssue不关闭。下一步由Main在actual审接受后串行接入独立普通批次并决定所需公开检查/CI。
+
+
+## 20. 独立 primary R1 指定屏策略与 Native139 有限实测交付（2026-11-03）
+
+本节对应原§4 Manual resize 阅读锚点/先解锚点再clamp/未钳制2pt、§6当前完整焦点环以及§7 M8-R1真实OS边框resize，关联父#201、consumer#204与#203受影响策略/实际审。此前§1–19完整字节前缀保持。普通consumer只新增严格独立的 `m8-gesture-designated` match分支：显式 `MEDIA_VIEWER_M8_GESTURE_R1=1`、normal/nonmodal、无IME/readonly/stale/remount探针，精确非零displayID/builtin identity，沿原public Builtin/External placement和实际native ID/class校验；本次指定active/nonmirror ID1/builtin=true/backing2。默认及其他M8仍external-only，M6/113和readonly118分支不变，不借旧授权。源89520由#203策略审7a2c通过，不更改生产Viewer/Host/AX/Kernel、geometry/layout/图逻辑尺寸、输入路由或原acceptance。
+
+CPU126实际compiledHEAD ab354c2f8a0b45dd2fe5fc7e451696f83f5cb594 +单consumer native89520/候选§20+8preservedWIP，原定向strict/build/archive各0；不是clean public新编译或CPU116重标。归档programme dfb33559122dfd3ce32749e52be868037592691c5411b9ebba1afba64a268b21、identity6d045b6b、fullfreezee7bbf65c，原五工具派生bundle15ba550a/signed11cb3ef6。Main CPU126 release4a861578确认原Main/fullmap/index/status/8WIP恢复及实际PIDPG/锁释放。此交付的native逐字等于该留存源码；最终文档仅将已审策略及实际结果追加到§1–19后，不改变已测程序。
+
+### 原件输入来源与失败保全
+
+205 Native125仅证明primary helper下window-top-left2x像素（含titlebar）的定向native事件与有限实际边框resize，global cursor固定的不确定性、外屏windowNotFoundAtPosition失败均保持；非通用global物理指针合同。真实Media必须绑定本次producer process.txt实际PID/exe、Created native_window_frame与原CG同PID/windowNumber，保存本次原AX/完整ownwindow JPEG及freshCG；自身三个地标拟合加独立第4点holdout须≤1原生point，完整footprint须在指定屏，缺失/歧义/错误都STOP而不猜坐标。地标原生点由本次viewport/content/frame加冻结Panel radius/AA/focus-witness/painter合同推导，明确不是direct logged numeric witness；像素点由四个分离局部角区的stroke外切线测量，原ICC仅内存分析，不更改原bytes、不以整图宽高比或helper offset代替地标。
+
+Native130猜PID/live读退出后history/PIL缺失及首错后只读继续、132 process先于完整Created的StopIteration、134原色块地标min(empty)、136 Main末行semantic `]`/ContentId误判而在实际Tab4 VIEW后继续至7，均保持operator FAIL与R1 NOT_RUN，不归产品或追认通过。后续必要operator修复只在原件与literal：完整producer两条记录Ready→一次原readonlygetApp→完整CreatedReady→一次identity，共享15s启动界；焦点只读当前close= ComponentId并与freshAX明确focused-element一致，首次VIEW立即停。主runtime/PIL读取原JPEG，真实130/134/136离线输入链与缺失样本分别记录。原2pt/≤1point、native120+10/end60/HID60/occupancy/GPUguard/首错STOP和owncleanup不变。旧098whole NOT_MET、117 OBSERVED但无ACK/F超时FAIL也不改。
+
+### Native139 原操作与全部发布核对
+
+fresh grant Native139 SHA4f0746bb6564a4d430b92d5c7df79e541c96bb6e8061a02e930d19b7b258b07b下唯一run05，runner93101/app93109/window35940。共享15s的两Ready/原readonly入口/identity通过；原ZoomIn一次，Tab第4次实际到VIEW20401即停止，再原Right一次，形成非中央Manual锚点。pre post-arrange viewport=(0,204,480,516)、image=(-92,312,600,300)，q1.25/s3/T(-92,108)，中心内容点P=(110.6666667,50)，并非只检验平凡图中心。原Ready来自固定ImageContent::ready bitmap16×8/logical200×100夹具与无source/Retry/load动作；原按钮availability、Image语义和原图协同证明可运行图像。normal producer未直接输出image_status，不能将can_execute单独冒作Ready状态读数。
+
+本次NEW原JPEG105164bytes/ea19c2c9、freshCG、同PID/window的live证书adc163ff：自身3fit及独立4th均0point，derived input[959,752]→[1119,752]由本次数据得出，不复制134旧点。一次原App.drag后，原native Resized实际content480×720→560×720、drawable1120×1440/scale2；同93109/35940 CG outer480×752→560×752，X516/Y90保持，宽增80，完整新footprint仍在primary。原Host收到边缘Moved、OS Resized、Redraw、Entered；没有Viewer Down/Pan拖拽或额外refocus键。输入为原受支持CUA/AX/Key/native-border层，不宣称真人globalcursor移动或held gesture。
+
+原pre snapshot之后的四份新post-arrange发布逐一保留核对：第一份Moved仍480宽，之后Resized/Redraw/Entered三份均560宽；不能只取末帧。四份q1.25/Manual、VIEW focus、原Image和button语义保持。normal在render前记transform、render后记imageRect/viewport；实际post s/T由同一post-arrange几何解出，不将Resized行的旧s3/T与新V误配。新V=(0,204,560,516)，f2.8、s3.5；P保持要求Tx=280−3.5×110.6666667=−107.3333333，记录−107.333336，X位于[−140,0]，未钳制非中央锚点最大漂移2.6666667e−6point，满足原≤2pt；Y因image高350<516强制居中83，实测83，不冒称另一未钳制分支。没有宣称实际触达X饱和边界/所有clamp分支。Resize后的原下一Redraw仅原单drain取到一次新transform通知，后续无重复；不是118 readonly零通知/whole-unchanged case。
+
+204独立按原raw/语义及Fraction算术核对全部四份，不调用Main numeric reader作为裁决；并在app退出后直接查看原pre/post完整图。完整当前深色focus边界均在Panel clip内、右边随560宽改变、上/下及圆角未截断或被四色图覆盖；原postAX明确VIEW/350%，无resize后Tab/refocus或第二resize。实际outer ring pre LTRB(11,205,469,709)、post(11,205,549,709)是冻结布局推导，原图目视核对与该推导分列，不冒直接coverage数值log。仅此原normal主题/primary2x有限证据，不替代四主题/双倍率矩阵。
+
+### 清理、有限结论与公开边界
+
+原postAX/JPEG/raw及freshCG落盘后立即用fresh唯一系统ownOSclose，无checker先行或关闭后UI。app exit0/70.1682429s/timed_out=false，native stdout/stderr空；Main实际PID93101/93109及PG空、GPU成对释放/noholder、inputs unchanged/noBuildlock、CUA无inflight，实际释放收据b1d303deb69e6a06a598c6aab47c3edcc846918de3a0d64601f5653f3dc7f5f7。一次后关闭compact诊断误读CGrows[0]交通灯小窗的stdout错误明确保留；原metadata helper/证书/主读者始终按93109/35940选择560×752主窗口，未改原rows，不签整段无错误。这一诊断错误不污染已完成原R1业务证据。
+
+主原件 `issue-204/m8-primary-gesture-runtime-20261103-r1/run05/`：DOMAIN-REVIEW SHA4dde2e1b81df5142dc5b4a3d123fa0884d7d692cb3c162e1c365057ba2753e6f；独立逐publication审bf49e1d5；独立原图审1ce4d6bf；HANDOFF c55b0a6c。204结论为 **finite original M9-R1 actual primary OS-border resize / Manual anchor / current focus boundary PASS，待Main有限接收及#203定向actual/最终§20审**；exit0、certificatePASS或数值一致自身不自动决定AC。§1–19和113/118原结果、130/132/134/136旧失败保持不可变，source89520与文档本节为仅两路径交付，公开intake/所需CI由Main独立普通batch负责。
+
+剩余D1完整窗外释放+后续无按键移动、D2 held/interleave、S1不同backing倍率迁移、genuine qActual>8/enabledActual、physicalIME/VO/performance/pinch及wholeM9/整票均不因此通过；无新source补偿/renderer/driver/权限/设备设置/AgentKit采用承诺。原geometry CPU合同可复用，实际139冻结输入与未来current-main/公开构建身份严格区分，不因head变化重跑所有旧矩阵，也不把本次候选runtime签为未测的新环境。

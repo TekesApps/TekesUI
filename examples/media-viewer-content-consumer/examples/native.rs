@@ -1886,6 +1886,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 std::env::var("MEDIA_VIEWER_DISPLAY_BUILTIN")?.parse::<bool>()?,
             )
         }
+        "m8-gesture-designated" => {
+            assert_eq!(
+                std::env::var("MEDIA_VIEWER_M8_GESTURE_R1").as_deref(),
+                Ok("1"),
+                "designated gesture display is explicitly R1 only"
+            );
+            assert!(std::env::var_os("MEDIA_VIEWER_MODAL").is_none());
+            assert!(std::env::var_os("MEDIA_VIEWER_M6_IME").is_none());
+            assert!(
+                readonly_probe.is_none() && stale_probe.is_none() && remount_probe.is_none(),
+                "R1 gesture does not borrow read-only or M6 probes"
+            );
+            (
+                std::env::var("MEDIA_VIEWER_DISPLAY_ID")?.parse::<u32>()?,
+                std::env::var("MEDIA_VIEWER_DISPLAY_BUILTIN")?.parse::<bool>()?,
+            )
+        }
         _ => panic!("unknown Media Viewer display policy"),
     };
     assert_ne!(
