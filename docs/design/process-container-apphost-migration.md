@@ -1,15 +1,58 @@
 # ProcessComponent / ProcessContainer / AppHost migration boundary
 
-## Local main local-column intake — 2026-10-27 (#70/#136)
+## Current public boundary — 2026-11-03
+
+The AppWindow/Settings delivery tracked by Issue70 is complete. PR139 published
+its accepted scope at `5634d2ab15379b172930416358ab8442de9434b3`, with final
+independent checkout `45f1cf1ffd175403ae6e6f65065ebab8b2f06dc8` and same-source
+CI40507011917. Original column/mixed-input and both Settings display-mode
+save/Undo/close/focus receipts keep their original identities. See
+[Issue70](https://github.com/TekesApps/TekesUI/issues/70) and the
+[public demo guide](../../examples/app-host-demo/README.md). Issue136's finite
+frozen intake is also complete; later component obligations remain with their
+own Issues. The local intake below is historical, not a current unpublished
+AppHost dependency or a reason to repeat accepted native checks.
+
+The public column descriptor `tekes_ui_app_host::ProcessContainer::new` holds a
+compiled ModuleDefinition; `Column::Container` selects the original local
+ContentHost path. Neither API alone establishes complete remote editor support.
+The negotiated Content adapter is
+`tekes_ui_module_runtime::ProcessContainer::new_view`, with the explicit child
+capabilities, text/input bridge and lifecycle fences described in the
+[Process View contract](process-component-view-v2-20261021.md). Host assembly,
+local Content consumption and negotiated remote Content acceptance must be
+reported separately. No new process manager or Agent-specific presentation is
+introduced by this boundary clarification.
+
+The Runtime input repair and its acceptance/support documentation were published
+through PR213 and PR214. Native070 remains the exact archived c138-plus-repair
+and diagnostic-WIP cohort; publishing it does not certify a clean native run of
+this source pin or newer shared libraries. Issue48's remaining original AC3
+requires real Pinyin during auxiliary/reveal/background interaction, preserved
+focus/marked text/no-submit behavior, and actual candidate-window movement/resize
+observations. These require a human operator and a separately allocated window;
+programmatic text queries/preedit cannot substitute. Lifecycle, independent native
+wheel, consumer compatibility and existing CPU/GPU proofs are separate accepted
+evidence, not work blocked on physical IME or Media acceptance. Late AX final
+samples do not establish a product defect or add a new closing gate.
+
+Issue45/82 retain their own applicable physical/VO/performance boundaries. No
+VoiceOver/performance defer is resumed, no AgentKit adoption or Kernel change is
+implied, and no extra native check is added to the completed Issue70 scope.
+Any new consumer adoption must bind its own source and original acceptance;
+actual foreground work remains allocated by the single integration executor.
+
+## Historical local-column intake — 2026-10-27 (#70/#136)
+
 
 Owner: root; validation baseline `b7634699b5b7026a28fa26cc2416b55f2235ff8d` plus the frozen 13 AppHost paths. Receives real local Container/Column/AppWindow composition, source-bound runtime declarations, one shared ToolbarHost, existing CoreText services and original platform multi-Host accessibility publication. Logical toolbar return intent is authenticated by the original semantic mount and declaration Source; temporary barriers revoke arms, while replacement sources cannot inherit focus. Oversized native rows preserve nonnegative full-content allocation; exact native center is not promised for oversized content.
 
 Actual acceptance: AppHost all-target compile, all 32 library behavior tests and all-target strict pass. The original Window focus/capture/viewport tests remain, along with actual local columns, shared toolbar and native publication model tests. Strict first rejected only items after a test module; moving that exact module after the production impl fixed the lint, and only strict was rerun. The original behavior run retains its pre-reorder source identity. Evidence: SSD `artifacts/issue-136/apphost-columns-mainb763469-intake/round01` and `round02`.
 
-This is a partial #70 delivery: Settings/save/UndoRedo business, PR #52 independent fixed public dependencies and CI, real native window/physical IME/VoiceOver and remote process acceptance are not certified. No new process engine or shared Theme rules; no unchanged Controls/GPU rerun. Historical migration obligations below remain; this intake does not close #70 or #136.
+At this historical intake, this was a partial #70 delivery: Settings/save/UndoRedo business, PR #52 independent fixed public dependencies and CI, real native window/physical IME/VoiceOver and remote process acceptance are not certified. No new process engine or shared Theme rules; no unchanged Controls/GPU rerun. Historical migration obligations below remain; this intake does not close #70 or #136.
 
 
-The shared ProcessComponent foundation and optional-View ProcessContainer adapter are owned by the Rust TekesUI task. Rust AppHost owns its consumer migration; do not fork a second process manager. This file records integration requirements against the existing live WIP, not an assertion that the public API is already implemented.
+The shared ProcessComponent foundation and optional-View ProcessContainer adapter are owned by the Rust TekesUI task. Rust AppHost owns its consumer migration; do not fork a second process manager. The following migration requirements retain their original checkpoint scope; current public delivery and remaining acceptance are distinguished above.
 
 ## Move into the public process foundation / View adapter
 
