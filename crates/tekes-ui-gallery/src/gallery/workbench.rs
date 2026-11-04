@@ -2123,6 +2123,13 @@ impl Workbench {
             state
         })
     }
+    pub fn search_text_focused(&self, i: usize) -> bool {
+        self.states
+            .get(&i)
+            .and_then(|state| state.input.search_host())
+            .is_some_and(|host| host.state().is_some())
+    }
+
     pub fn text_state(&self, i: usize) -> Option<tekes_ui_platform_macos::TextInputState> {
         if entry(i).renderer() == "matrix" {
             return self.brand_preview.text_state();
@@ -11051,6 +11058,104 @@ mod interaction_tests {
                 .filter(|s| s.as_str() == "filter: cleared")
                 .count(),
             1
+        );
+        // In the platform legacy editing path Return reaches the editor as
+        // a selector, without Event::Key. A selector alone must not submit.
+        w.handle(i, &Event::TextCommand("insertNewline:".into()), &mut text);
+        assert!(
+            !w.state(i)
+                .log
+                .iter()
+                .any(|s| s.starts_with("search: submit "))
+        );
+        for (id, composing) in [(800, false), (801, true)] {
+            if composing {
+                w.handle(
+                    i,
+                    &Event::TextPreedit {
+                        text: "ni".into(),
+                        selection: 0..2,
+                        clauses: Vec::new(),
+                        replacement: None,
+                    },
+                    &mut text,
+                );
+            }
+            let Event::Key(enter) = key(36, true) else {
+                unreachable!()
+            };
+            let context = tekes_ui_platform_macos::TextKeyContext {
+                id,
+                key: enter,
+                composing_at_start: composing,
+            };
+            w.handle(
+                i,
+                &Event::TextKey(tekes_ui_platform_macos::TextKeyEvent::Started(
+                    context.clone(),
+                )),
+                &mut text,
+            );
+            if composing {
+                w.handle(
+                    i,
+                    &Event::TextCommit {
+                        text: "你".into(),
+                        replacement: None,
+                    },
+                    &mut text,
+                );
+            } else {
+                w.handle(i, &Event::TextCommand("insertNewline:".into()), &mut text);
+            }
+            w.handle(
+                i,
+                &Event::TextKey(tekes_ui_platform_macos::TextKeyEvent::Finished {
+                    context,
+                    input_context_handled: Some(true),
+                    disposition: if composing {
+                        tekes_ui_platform_macos::TextKeyDisposition::TextDispatched
+                    } else {
+                        tekes_ui_platform_macos::TextKeyDisposition::CommandDispatched
+                    },
+                    text_callbacks: u64::from(composing),
+                    command_callbacks: u64::from(!composing),
+                }),
+                &mut text,
+            );
+            assert_eq!(
+                w.state(i)
+                    .log
+                    .iter()
+                    .filter(|s| s.starts_with("search: submit "))
+                    .count(),
+                1,
+                "plain Enter submits once; composition-confirming Enter never submits"
+            );
+        }
+        assert!(
+            w.state(i)
+                .log
+                .iter()
+                .any(|s| s == "search: submit readme 查询")
+        );
+        // An explicit platform Key maps to the original ContentEvent::KeyInput,
+        // not the separate legacy ContentEvent::Key contract. Preserve its
+        // existing affirmative submit policy (also used by native fallback).
+        let query = w.state(i).input.query().to_owned();
+        w.handle(i, &key(36, true), &mut text);
+        assert_eq!(
+            w.state(i)
+                .log
+                .iter()
+                .filter(|s| s.starts_with("search: submit "))
+                .count(),
+            2,
+            "explicit KeyInput Enter adds exactly one submit"
+        );
+        assert_eq!(
+            w.state(i).log.back(),
+            Some(&format!("search: submit {query}"))
         );
     }
 
