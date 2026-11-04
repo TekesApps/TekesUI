@@ -108,6 +108,8 @@ pub struct Gallery {
     scroll_demo: text_demo::TextDemo,
     sidebar: navigation::Navigation,
     navigation_focus: Option<Page>,
+    /// Native Started/Finished nesting; mode changes wait for the outer span.
+    text_key_depth: usize,
     motion: motion_preview::MotionPreview,
     scroll_owner: Option<ScrollOwner>,
     icon_search: text_demo::TextDemo,
@@ -185,6 +187,7 @@ impl Gallery {
             scroll_demo: text_demo::TextDemo::scroll_only(),
             sidebar: navigation::Navigation::default(),
             navigation_focus: None,
+            text_key_depth: 0,
             motion: motion_preview::MotionPreview::default(),
             scroll_owner: None,
             icon_search: text_demo::TextDemo::search(),
@@ -1061,6 +1064,17 @@ impl Gallery {
             self.editor.scroll_to(offset);
         }
     }
+    /// None means a native key is still interpreting; retain its current mode.
+    pub fn text_key_events(&self) -> Option<bool> {
+        if self.text_key_depth != 0 {
+            return None;
+        }
+        Some(
+            self.navigation_search.state().is_none()
+                && matches!(self.page, Page::Workbench(i) if self.workbench.search_text_focused(i)),
+        )
+    }
+
     pub fn text_input_state(&self) -> Option<tekes_ui_platform_macos::TextInputState> {
         if let Some(state) = self.navigation_search.state() {
             return Some(state);
@@ -1352,6 +1366,15 @@ impl Gallery {
 
     /// 处理输入事件。
     pub fn handle_input(&mut self, event: &Event) -> Change {
+        match event {
+            Event::TextKey(tekes_ui_platform_macos::TextKeyEvent::Started(_)) => {
+                self.text_key_depth += 1;
+            }
+            Event::TextKey(tekes_ui_platform_macos::TextKeyEvent::Finished { .. }) => {
+                self.text_key_depth -= 1;
+            }
+            _ => {}
+        }
         // Preserve the platform's raw event contract, but give every Gallery
         // control the same semantic Enter path for Return and keypad Enter.
         // The independent native consumer already maps both hardware codes.
@@ -2397,6 +2420,134 @@ mod tests {
         assert!(
             g.navigation_search.state().is_some(),
             "reverse Tab from navigation returns to search"
+        );
+        assert_eq!(
+            g.text_key_events(),
+            Some(false),
+            "navigation uses legacy text input"
+        );
+        g.handle_input(&Event::TextCommand("insertBacktab:".into()));
+        assert!(g.workbench.focused_control_id(i).is_some());
+        assert_eq!(
+            g.text_key_events(),
+            Some(false),
+            "settings TextDemo stays legacy"
+        );
+
+        let search = workbench::entries()
+            .iter()
+            .position(|e| e.renderer() == "search")
+            .unwrap();
+        assert!(g.open_route(&format!("{}/playground", workbench::entry(search).slug())));
+        g.build_scene(&mut Scene::new());
+        g.navigation_search.focus_field();
+        g.handle_input(&Event::TextCommand("insertTab:".into()));
+        g.handle_input(&key(48, Modifiers::NONE));
+        // The story begins with its Docs/Playground/etc. buttons, not the
+        // input. Follow the registered Tab order and render each reveal.
+        g.build_scene(&mut Scene::new());
+        for _ in 0..g.workbench.tab_stop_ids(search).len() {
+            if g.workbench.focused_control_id(search) == Some(1000) {
+                break;
+            }
+            assert_eq!(
+                g.text_key_events(),
+                Some(false),
+                "story buttons are not text owners"
+            );
+            g.handle_input(&key(48, Modifiers::NONE));
+            g.build_scene(&mut Scene::new());
+        }
+        assert_eq!(g.navigation_focus, None);
+        assert!(g.navigation_search.state().is_none());
+        assert_eq!(g.workbench.focused_control_id(search), Some(1000));
+        assert!(
+            g.text_input_state().is_some(),
+            "revealed Search publishes actual text state"
+        );
+        assert_eq!(
+            g.text_key_events(),
+            Some(true),
+            "original Search owns acknowledged keys"
+        );
+        // Forward Tab can visit Clear before exiting. Finish every actual span
+        // even when the selector has transferred focus to the shell.
+        for id in 700..704 {
+            if g.text_key_events() == Some(true) {
+                let Event::Key(tab) = key(48, Modifiers::NONE) else {
+                    unreachable!()
+                };
+                let context = tekes_ui_platform_macos::TextKeyContext {
+                    id,
+                    key: tab,
+                    composing_at_start: false,
+                };
+                g.handle_input(&Event::TextKey(
+                    tekes_ui_platform_macos::TextKeyEvent::Started(context.clone()),
+                ));
+                assert_eq!(g.text_key_events(), None);
+                g.handle_input(&Event::TextCommand("insertTab:".into()));
+                assert_eq!(
+                    g.text_key_events(),
+                    None,
+                    "do not disable inside the native span"
+                );
+                g.handle_input(&Event::TextKey(
+                    tekes_ui_platform_macos::TextKeyEvent::Finished {
+                        context,
+                        input_context_handled: Some(true),
+                        disposition: tekes_ui_platform_macos::TextKeyDisposition::CommandDispatched,
+                        text_callbacks: 0,
+                        command_callbacks: 1,
+                    },
+                ));
+            } else {
+                assert_eq!(g.text_key_events(), Some(false));
+                if g.text_input_state().is_some() {
+                    g.handle_input(&Event::TextCommand("insertTab:".into()));
+                } else {
+                    g.handle_input(&key(48, Modifiers::NONE));
+                }
+            }
+            g.build_scene(&mut Scene::new());
+            if g.navigation_search.state().is_some() {
+                break;
+            }
+        }
+        assert!(g.navigation_search.state().is_some());
+        assert_eq!(
+            g.text_key_events(),
+            Some(false),
+            "Finished applies the new text owner mode"
+        );
+        g.handle_input(&Event::TextCommand("insertTab:".into()));
+        g.handle_input(&key(48, Modifiers::NONE));
+        // The story begins with its Docs/Playground/etc. buttons, not the
+        // input. Follow the registered Tab order and render each reveal.
+        g.build_scene(&mut Scene::new());
+        for _ in 0..g.workbench.tab_stop_ids(search).len() {
+            if g.workbench.focused_control_id(search) == Some(1000) {
+                break;
+            }
+            assert_eq!(
+                g.text_key_events(),
+                Some(false),
+                "story buttons are not text owners"
+            );
+            g.handle_input(&key(48, Modifiers::NONE));
+            g.build_scene(&mut Scene::new());
+        }
+        assert_eq!(g.navigation_focus, None);
+        assert!(g.navigation_search.state().is_none());
+        assert_eq!(g.workbench.focused_control_id(search), Some(1000));
+        assert!(
+            g.text_input_state().is_some(),
+            "revealed Search publishes actual text state"
+        );
+        assert_eq!(
+            g.text_key_events(),
+            Some(true),
+            "returning from navigation re-enables Search"
         );
     }
 

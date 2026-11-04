@@ -431,3 +431,51 @@ source-freeze SHA256
 613e0565b8b11dd45b1e5f7964c13e075d89a8919a06dbe0dda86192d1412ea8.
 Actual native evidence remains MAIN-overlay evidence, not a clean-public-head
 claim. The original13 WIP files remain byte-identical and excluded from delivery.
+
+
+### 2026-11-05 bounded normal-Gallery Search submission wiring
+
+The normal Gallery Host now forwards the existing TextKey provenance markers
+and enables that existing platform mode only while the original Search owns
+text input. Navigation search takes priority, and legacy TextDemo keeps its
+existing text interpretation path. Tab may change focus inside a native key
+span: mode synchronization waits until Finished so Started/Finished remain
+balanced before switching the platform mode. No synthetic submit or replay,
+new platform API, or replacement editor is introduced.
+
+Two original tests were extended: Search retained-theme/query/clear with
+acknowledged Enter submission and composing/legacy no-submit checks, and shell
+Tab routing across Search, sidebar and legacy text ownership. The Search test
+actually passed once in actual-run-002; the shell test actually passed once in
+actual-run-003. Scoped strict clippy and the normal Gallery build passed in
+actual-run-003. The earlier Search raw-Key/selector oracle failure and shell
+focus-oracle failure remain preserved in actual-run-001 and actual-run-002;
+they are not relabeled as passing runs.
+
+Evidence: work/parallel-batch1/search-submit/{ROOT-INTAKE-r4.json,
+R3-ORACLE-CORRECTION.json,R4-FOCUS-ORACLE.json,actual-run-002/partial-results.json,
+actual-run-003/partial-results.json,PUBLIC-DEPENDENCY-CHECK.json}.
+In T33-16, the actual normal signed program (SHA256
+33de93760b574a05c55af4310a5dd978df06820a5bad78418ad91f8c16d4dab4)
+received `T40 visible` and one Return. After scrolling the right document down,
+the screenshot showed one matching `search: submit T40 visible` row. This is a
+bounded actual native submission pass; AX itself did not expose the log rows.
+Evidence: work/parallel-batch1/page-interaction/cu/T33-16-SEARCH-VISIBLE-LOG.json
+and its referenced original CU screenshot/AX transcript.
+
+Native14/15's earlier absence of a visible submit row is retained as an
+incomplete viewport observation, not proof that submission failed. The existing
+full-Gallery diagnostic replay in actual-run-004 recorded the submit action and
+glyph drawing; the log starts at y=769 and its latest third row is at y=837,
+below the viewport bottom at y=809. Scrolling in T33-16 supplied the missing
+actual visibility. The temporary 91-line diagnostic was archived with its patch
+and results, then removed; the coordinator rechecked the r4 source freeze byte
+for byte. It is not part of this candidate or a new layout acceptance gate.
+Only the two affected original regression-test extensions remain in delivery.
+
+Actual local build/native identities are the recorded MAIN overlay,
+not a clean-public runtime. The relevant TextKey platform API and original
+Search dependencies are already public; the dependency check establishes
+bounded source equivalence, not whole-overlay equivalence. The 13 unrelated
+platform WIP files are excluded. Capability declarations and maturity are
+unchanged; #12/#56 remain subject to their original remaining acceptance.

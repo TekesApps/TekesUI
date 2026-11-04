@@ -87,6 +87,15 @@ impl Host {
         }
     }
 
+    fn sync_text_input(&self, window: &Window) {
+        window.set_text_input_state(self.gallery.text_input_state());
+        // Tab can move focus inside a native key span. Defer switching the
+        // platform mode until Finished; its FIFO markers must stay balanced.
+        if let Some(enabled) = self.gallery.text_key_events() {
+            assert!(window.set_text_key_events(enabled));
+        }
+    }
+
     fn sync_animation(&mut self, window: &Window, animate: bool) {
         // A performance run owns its display link, including its stopped cooldown.
         // System preference and mouse events must never restart or stop that link.
@@ -127,7 +136,7 @@ impl Host {
         self.scene.clear();
         self.gallery.build_scene(&mut self.scene);
         window.set_cursor_regions(self.gallery.cursor_regions());
-        window.set_text_input_state(self.gallery.text_input_state());
+        self.sync_text_input(window);
         self.sync_accessibility(window);
         let clear = Gallery::background(theme);
         self.log(format_args!(
@@ -303,7 +312,7 @@ impl WindowHandler for Host {
                     self.log(format_args!("command {command:?}"));
                     let change = self.gallery.apply(command);
                     self.apply_change(change, window);
-                    window.set_text_input_state(self.gallery.text_input_state());
+                    self.sync_text_input(window);
                     self.sync_animation(window, self.gallery.needs_animation());
                 }
             }
@@ -321,7 +330,7 @@ impl WindowHandler for Host {
                 {
                     self.accessibility_events.push(serde_json::json!({"component":target.component,"part":target.part,"action":format!("{action:?}"),"changed":change.redraw}));
                 }
-                window.set_text_input_state(self.gallery.text_input_state());
+                self.sync_text_input(window);
                 self.apply_change(change, window);
                 self.sync_accessibility(window);
                 self.sync_animation(window, self.gallery.needs_animation());
@@ -344,7 +353,7 @@ impl WindowHandler for Host {
                 if let Some(text) = copied {
                     window.set_clipboard_text(&text);
                 }
-                window.set_text_input_state(self.gallery.text_input_state());
+                self.sync_text_input(window);
                 self.apply_change(change, window);
             }
             Event::Key(k)
@@ -363,7 +372,7 @@ impl WindowHandler for Host {
                 if let Some(text) = copied {
                     window.set_clipboard_text(&text);
                 }
-                window.set_text_input_state(self.gallery.text_input_state());
+                self.sync_text_input(window);
                 self.apply_change(change, window);
             }
             Event::Focus(active) => {
@@ -371,7 +380,7 @@ impl WindowHandler for Host {
                 self.last_animation_target = None;
                 let change = self.gallery.handle_input(&event);
                 self.apply_change(change, window);
-                window.set_text_input_state(self.gallery.text_input_state());
+                self.sync_text_input(window);
                 window.set_cursor_regions(self.gallery.cursor_regions());
                 // Focus changes must reach assistive clients even when an
                 // occluded window cannot produce another rendered frame.
@@ -381,6 +390,7 @@ impl WindowHandler for Host {
             // handle_input 返回哪些状态变了；没变就什么都不做（不请求重绘）。
             Event::Mouse(_)
             | Event::Key(_)
+            | Event::TextKey(_)
             | Event::Scroll(_)
             | Event::TextCommit { .. }
             | Event::TextPreedit { .. }
@@ -392,7 +402,7 @@ impl WindowHandler for Host {
                 if self.gallery.hover() != hover {
                     self.log(format_args!("hover {:?}", self.gallery.hover()));
                 }
-                window.set_text_input_state(self.gallery.text_input_state());
+                self.sync_text_input(window);
                 if matches!(event, Event::Scroll(_)) {
                     self.pending_redraw |= change.redraw;
                     self.sync_animation(
