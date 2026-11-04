@@ -321,3 +321,6 @@ fn settings_whole_page_reading_matrix_uses_actual_route_and_scroll_positions() {
 
 #[path = "master_reading_capture.rs"]
 mod master_reading_capture;
+
+#[path = "visual_remainder.rs"]
+mod visual_remainder;

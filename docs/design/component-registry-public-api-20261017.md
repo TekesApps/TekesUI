@@ -338,3 +338,45 @@ Native095已通过的正向链仅沿原programme：完整焦点环/caret、三�
   不称clean-public-head GUI通过。所需CI、合并及checkpoint单独记录，不提前称发布。
 
 Refs #1 #5 #12 #25 #41 #44 #46 #48 #55 #56 #203 #204 #205。
+
+
+### 2026-11-05 bounded visual and semantic evidence intake
+
+T32 supplements existing A48/B24/C64/PR218 acceptance with Settings at
+720x512/100% and 1440x960/150%, four themes and top/bottom positions (16 files),
+plus original Menu/Dialog overlays with existing nondefault brand 1 (8 files).
+The two explicitly allocated GPU capture tests, Gallery test-target build and
+strict clippy passed. All 24 original PNGs were opened individually and passed
+bounded visual review. They contain 20 unique pixel outputs: wide top/bottom
+pairs have zero scroll range and are not independent scrolling evidence.
+The large-text Save settings label wraps into two complete readable lines.
+
+The original E0425 failure is preserved. Its minimal test-only repair uses the
+existing tekes_ui_tokens::palette::gallery_brand_preset path; no new brand or
+production behavior was added. The declared concentric-geometry pixel contract
+reuses the unchanged PR217 passing source. Native interaction, physical display
+and scale, candidate-window following, and deferred VoiceOver remain separate.
+This batch does not close #1/#12/#55/#56.
+
+Evidence: artifacts/issue-12/t32-visual-remainder-20261105-r1/captures-002/.
+Per-image review SHA256:
+3209d6291b6b6d7627fb7ac3f1df6b9387e3a548b85054dd42adb1a18a0da9c4.
+Actual rendering binds the MAIN overlay source-freeze SHA256:
+a2546ea690c615718429a284cb276263721d29f5221c0f5f176dfa725ad62ee3.
+It is not clean-public-head native acceptance. The original 13 WIP files are
+preserved separately and are not imported by this batch.
+
+T31 maps Button/Icon, selection, text input, collections, Menu/Select and Dialog
+to current source, named tests and original native receipts; nine source hashes
+and nine primary receipt hashes were checked. The accepted Gallery native-tree.json
+export and actual readback satisfy the bounded original exported-tree inspection
+criterion. A historical future interactive Inspector note does not add a new
+panel to this batch. External AX actions/notifications in #205 remain unresolved,
+VoiceOver remains deferred, and #5 remains open.
+
+PR225 CI exposed stale composition-audit and then capability-input source hashes;
+both failures are preserved. Regeneration keeps 45 components, five patterns, two
+examples and capability declarations unchanged. Publication still requires actual
+required CI success on the final combined head, a normal merge and an annotated
+checkpoint. CI runner-capacity retry limits have been withdrawn by the user;
+real test failures require diagnosis rather than unchanged blind retries.
