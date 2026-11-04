@@ -1937,6 +1937,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 std::env::var("MEDIA_VIEWER_DISPLAY_BUILTIN")?.parse::<bool>()?,
             )
         }
+        "m8-drag-designated" => {
+            assert_eq!(
+                std::env::var("MEDIA_VIEWER_M8_DRAG_D1").as_deref(),
+                Ok("1"),
+                "designated drag display requires its own D1 opt-in"
+            );
+            assert!(std::env::var_os("MEDIA_VIEWER_MODAL").is_none());
+            assert!(std::env::var_os("MEDIA_VIEWER_M6_IME").is_none());
+            assert!(
+                readonly_probe.is_none() && stale_probe.is_none() && remount_probe.is_none(),
+                "D1 does not borrow read-only or M6 probes"
+            );
+            (
+                std::env::var("MEDIA_VIEWER_DISPLAY_ID")?.parse::<u32>()?,
+                std::env::var("MEDIA_VIEWER_DISPLAY_BUILTIN")?.parse::<bool>()?,
+            )
+        }
         _ => panic!("unknown Media Viewer display policy"),
     };
     assert_ne!(
