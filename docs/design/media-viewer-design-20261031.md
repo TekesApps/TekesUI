@@ -522,3 +522,51 @@ Up后没有真正unheld Moved，也没有第二pan；原source释放drag的合�
 原grant.mode/execution_card及source-program-env-binding.input_source沿用Rich IME描述，是明确metadata偏差。Main追加 `MAIN-METADATA-ERRATA.json`（SHA 9b00508c7ba08856519a1803afaae539c50399bb46bd79c8a261bcb89b72d78f）绑定实际8d2c D1卡和非物理CU输入；原grant/binding/raw不改、无重跑/新测试。实际grant.scope/program/argv/operator_materials/profile、OWNED-CONTEXT的D1 env、normal原事件和CU calls本来均为D1，不能据复制标签冒IME证据。
 
 主原件 `delivery/media-d1-cu-runtime-20261104-r1/`，原raw SHA `ab758384f9252a58db1a867a1166d25776bd908aa3bebddfc276e2a8f46a7bc2`。204独立完整审见 `issue-204/d1-actual-domain-review-20261104-r1/`；203实际审 `issue-203/finite-pan-actual-review-20261104-r1/REVIEW.json` SHA `0f79c3bb7baf5a23b9def675b20b108959d9bd3c133f9dd98c02aa6102f0004c`，原publication/calls/returns/图像均具名。仅有限atomic pan几何/clamp/q及outside-VIEW native Up接受，Main正常汇总/metadata/docpin/公开CI与发布另具名，不为最终文档重编或重跑本次原生。Issue204已补本域有限结论，原AC及历史红例不改。
+
+## 24. Stable status layout during drag activation (#204, #203; 2026-11-05)
+
+A new native check delivered Down at (240,462), Dragged and Up at (500,462)
+to the original consumer while its full OS window remained 480 points wide.
+The Up was 20 points beyond the window, but horizontal pan remained unchanged.
+This failure is separate from the earlier focused-pan pass in section 23.
+
+The consumer selected Actual-size explanatory text using command availability.
+After window deactivation, that transient availability shortened the status text
+and increased the viewport height from 516 to 532 points. PointerDown restored
+the longer text, shrinking the viewport to 516 points and cancelling the new drag
+under the existing resize-cancels-input contract. Vertical translation changed
+by -8 points to preserve the image centre; it was not horizontal pan.
+
+The consumer now derives this geometry explanation from Ready image state and the
+published transform. Window activity and presentation readiness still control
+command execution, but no longer change this explanation or its text layout.
+Core viewport-change, focus-loss, Escape and lifecycle cancellation rules remain
+unchanged. No extra state owner or public API is introduced.
+
+Affected native build and strict clippy passed on the actual MAIN overlay, with
+all 13 original WIP files preserved and only the consumer fixture repair added.
+The new signed programme completed one native outside-window pan: Down at
+(240,462), Dragged/Up at (500,462), translation X -345.9375 to -85.9375 (+260),
+Y -34.96875 and relative scale 2.44140625 unchanged, and no additional change on
+Up. Full window 41050 stayed at CG (516,90,480,752), so the release was outside
+the complete OS window. The programme closed normally (exit 0).
+
+Startup Focus(false/true) was observed with stable status layout. Attempts to
+switch foreground after zoom did not emit those native focus events; they are
+not claimed as a replay of post-zoom OS deactivation. A separate real-Renderer,
+CoreText and complete-fixture regression explicitly drives Host inactive/active,
+refreshes status and layout, starts a new drag, verifies an unclamped +40-point
+pan and one transform notification, then verifies release without duplication.
+That exact ignored test was explicitly executed: 1 passed, 0 failed, 0 ignored;
+its build and strict clippy also passed. Host-state testing is not physical or
+external OS-focus evidence. The two evidence scopes remain separate.
+
+Primary records: coordinator delivery work/parallel-batch1/m9/outside-runtime-r2/
+(original failure), fix-build/actual-run-002/ (affected build), fix-runtime/
+(native result), and regression-validation/actual-run-001/ (targeted test).
+The signed native binding is SSD artifacts/issue-204/
+status-layout-fix-native-20261105-r1/media-status-fix-receipt.json. Native evidence
+retains its compiled overlay identity; it is not a clean-public-head execution.
+Post-release unheld motion, held Esc/deactivation cancellation, different actual
+backing scales and other original unverified criteria remain open. This finite
+repair does not close #204 or #203.
