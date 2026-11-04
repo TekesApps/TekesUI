@@ -137,6 +137,17 @@ define_class!(
             }
         }
 
+        // Window movement changes screen-space candidate geometry without
+        // changing the original text state or the view-local caret rectangle.
+        #[unsafe(method(windowDidMove:))]
+        fn window_did_move(&self, _notification: &NSNotification) {
+            if let Some(objects) = self.ivars().shared.objects.get()
+                && let Some(context) = objects.view.inputContext()
+            {
+                context.invalidateCharacterCoordinates();
+            }
+        }
+
         #[unsafe(method(windowDidBecomeKey:))]
         fn window_did_become_key(&self, _notification: &NSNotification) {
             let shared = &self.ivars().shared;

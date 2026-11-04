@@ -270,3 +270,30 @@ Synthetic preedit, text queries, a build or CI pass cannot substitute. VoiceOver
 and external AgentKit adoption are not additional Issue48 closing conditions;
 Issues45/82 retain their independently applicable physical/VO/performance scope.
 No deferred VO/performance work is resumed by this documentation update.
+
+## Window-move input-coordinate notification (#48, #25; 2026-11-05)
+
+Moving a native window changes the screen coordinates of its text without
+necessarily changing the published view-local caret. The window delegate now
+forwards `windowDidMove` to that window's existing view input context with
+`invalidateCharacterCoordinates`, when a context exists. This is a notification
+only: text, marked range, selection and focus remain under their existing owners.
+It does not discard composition, inject an input event or change the resize path.
+
+The same notification logic was compiled in the CPU160 diagnostic cohort. In the
+archived Panel Window-menu move, the original log records 31 completed coordinate
+invalidation calls during the return to the external display. This establishes
+notification delivery on that cohort; it is not a fresh execution of this smaller
+source batch, which omits the diagnostic logging dependencies.
+
+Actual system candidate placement remains unverified: the archived App images
+did not show a comparable candidate overlay, and no new `firstRect` query was
+recorded after that move. Neither fact establishes candidate-follow success or
+failure. The prior human observation of a candidate remaining behind is preserved.
+The original #48 candidate-position AC and the independent #25 resize observation
+remain open; this finite notification change does not close either Issue.
+
+Primary evidence: SSD `artifacts/delivery/ime-geometry-internal-build-20261104-r1/`
+and `artifacts/delivery/ime-geometry-cu-Panel-window-menu-20261104-r1/ime-geometry.log`
+(lines 230–291). This batch does not add the shared/platform or Rich consumer
+diagnostic WIP to the public source.
