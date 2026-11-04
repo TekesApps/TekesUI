@@ -505,6 +505,8 @@ impl Workbench {
                     "Command query"
                 } else if renderer == "search" {
                     "Search"
+                } else if renderer == "filter" {
+                    "Filter files"
                 } else {
                     "Project name"
                 },

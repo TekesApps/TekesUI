@@ -380,3 +380,54 @@ examples and capability declarations unchanged. Publication still requires actua
 required CI success on the final combined head, a normal merge and an annotated
 checkpoint. CI runner-capacity retry limits have been withdrawn by the user;
 real test failures require diagnosis rather than unchanged blind retries.
+
+
+### 2026-11-05 actual Gallery interaction defects and targeted repair
+
+The original normal Gallery batch exercised Filter, Async, Danger, Select,
+ComboBox and local Form interruption/restart through the single official CU
+operator. Accepted sequences retain their original signed-program identity
+44849438f6c9b99eb825dcae6cbcfb9307131e9c686839c756a8659c0a8d9dc2.
+These are software-driven native interactions, not physical-input, VoiceOver,
+network-service or power-loss acceptance. Original screenshots/AX observations
+remain in the named CU tool calls; no exported PNG files are claimed.
+
+Two concrete failures were repaired within existing #5/#12/#56 contracts:
+
+- Filter's actual AX input name was Project name because its renderer fell into
+  the generic name branch. Name only that original input Filter files. The
+  existing narrow/large-text regression now checks its mounted node name/value.
+- After a grounded coordinate click established Document 01 focus, Down selected
+  Document 02 but left Document 1 detail. Reuse the existing activation path when
+  the keyboard target changes, keeping focus/reveal. Home/End now implement the
+  already-advertised endpoints; repeated boundary navigation preserves detail
+  selection. Extend the existing Master reveal regression to cover this path.
+
+The exact tests are in gallery::workbench::interaction_tests:
+search_filter_row_wraps_without_overlapping_hits_or_results and
+master_detail_keyboard_focus_reveals_scrolled_rows_with_focus_bounds.
+Each ran once and passed; Gallery strict and normal build passed. The first
+qualified-name invocation selected zero tests and was correctly rejected; its
+failure is retained and the already-compiled binary was reused for the corrected
+names. No zero-test result is counted as a pass.
+
+Fresh signed programme
+7980760588ffa1b9957cd76fc3f73dd0693b6f685cfd9e067526a8f023a18fb5
+actually exposes Filter files, and Master Down/Up/Home/End selected rows match
+Document 2/13/1/80 details; scrolling list and detail remains separate. Original
+indexed-click focus uncertainty and a CU half-scale coordinate error remain
+separate from the confirmed product mismatch. Read-only detail drag selection
+and Copy were not established by that run and remain unverified.
+
+Form's first normal exit persisted draft B at revision28 while acknowledging
+revision15; a same-file restart visibly restored B and notifications, without
+reset/edit/submit. This is the explicit local draft fixture only. Original
+successful Filter/Async/Danger/Select/Combo/Form sequences were not repeated for
+the two repairs. System Reduced Motion propagation and other original motion,
+physical-input/candidate and external-AX criteria remain separately outstanding.
+
+Evidence: artifacts/issue-12/t33-page-native-20261105-r1/ and -r2/;
+source-freeze SHA256
+613e0565b8b11dd45b1e5f7964c13e075d89a8919a06dbe0dda86192d1412ea8.
+Actual native evidence remains MAIN-overlay evidence, not a clean-public-head
+claim. The original13 WIP files remain byte-identical and excluded from delivery.
