@@ -2138,7 +2138,7 @@
     "crates/tekes-ui-gallery/src/reading_key.rs": "6932a589bce50e2f4365c780c67ab0c467a126c9a4677ad23eeda132f146adae",
     "crates/tekes-ui-gallery/src/viewport_acceptance.rs": "4087d2370154069e4b5dd4864425ef620327a6782a848643922f5be303abffad",
     "crates/tekes-ui-platform-macos/src/accessibility.rs": "4c87b3cf122400c3720d723b0a040f18aa95ff17e4d751396f4c1ab55a17d851",
-    "crates/tekes-ui-platform-macos/src/app.rs": "6cdf97dd199495130c3ae331b658906435043dd929da128145c908003815ac6b",
+    "crates/tekes-ui-platform-macos/src/app.rs": "efb4670e1d1b7b6c61e7bc9be7da7c88a0455728b92d3513b37212d8b9431276",
     "crates/tekes-ui-platform-macos/src/event.rs": "8cadbed800cf8b917371dec3cf534ec2fced49a7620b2b2745bb22b152ad3fef",
     "crates/tekes-ui-platform-macos/src/lib.rs": "38b492134c3230dd8d23c56e2d7636180e098cb002f0c7a13bfa8f9b4b50066e",
     "crates/tekes-ui-platform-macos/src/shared.rs": "761dadef79e6039ce486671544595f69a31fb9cf929c4859fc58387c27c7dbc3",

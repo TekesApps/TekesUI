@@ -274,3 +274,67 @@ Native095已通过的正向链仅沿原programme：完整焦点环/caret、三�
 | 父AC4/5/7整页/Gold7与其余23项体验 | #12原整页视觉/真实交互owner；图标#57独立 | 上表原Settings/五patterns/普通与IC焦点、错误、窄大字等具体场景保持，按相关输入补受影响项。PR214–217提供其有限局部证据，不是全页族、全品牌、全硬件/120Hz或全产品Gold7 |
 
 本次仅更新父票覆盖与剩余AC映射；Main的公开receipt、原owner有效范围和所有旧红/原source/program身份保留。#1/#55保持OPEN，#203/#204/#205的有效AC和关闭由原owner/主协调接收。未改registry/capabilities/production、未运行构建/CI/GPU/native/UI或新checker，无Release/部署。
+
+
+## 2026-11-05 恢复批次：原验收范围与缺项更新
+
+本节覆盖前文较早快照中的当前状态，不改原八条 AC、23 个 Gold7 ID、
+原失败或具体 source/program 身份。已完成且相关输入未变的检查继续复用；
+模块基础供应完成不等于关联父票全部完成。VoiceOver 按用户要求后置；
+原性能/120Hz、AccessKit、#131–#135 与跨仓迁移边界不自动恢复。
+
+### 八条 AC 的现有证据与下一交付
+
+| 原 AC | 本轮接收与范围 | 仍需完成 |
+|---|---|---|
+| AC1/AC2/AC3/AC6 | 原52根实用 Theme、语义/状态映射及45组件＋5 patterns＋2 examples准确投影复用；#206共享可读性已闭合 | 仅对真实新增/变更路径补相应检查，不重做52根迁移 |
+| AC4 | 原 Quiet/Search/工具动作合同，以及 Settings A、Master B、PR218 Filter/Async/Danger有限阅读图复用 | 原代表非默认品牌与页面强调对照；真实操作中主次层级的未覆盖部分 |
+| AC5 | 必要对比/状态、#206、Settings #207和#3原焦点/TextCommand接收保持各自范围 | 原表单/菜单/选择/浮层适用真实输入和物理阅读缺项，不把图片当操作证明 |
+| AC7 | A48、B24、C64、Progress既有1x/2x及PR218的192图＋4回归分别按原身份接收 | 原非默认品牌、窄常规/宽大字等代表差量，以及实际倍率/物理显示；不做品牌×尺寸笛卡尔全排列 |
+| AC8 | 原原件、red/修复/通过记录与公开批次保留；以下逐ID对应更新 | 后续真实结果持续回填；未完成父票不关闭，registry不由文档更新自动晋级 |
+
+### 原23个 Gold7 ID 的证据去重与缺项
+
+| 原要求ID | 本轮处理 |
+|---|---|
+| G1/warm-neutral-reading-foundation | 原主题与有限页面图复用；持续物理阅读/主次观察仍单列未验 |
+| G1/consumer-brand-derivation | 原品牌生成/隔离证据复用；代表非默认品牌的实际 Menu/Dialog 叠层与页面对照继续补缺 |
+| G1/whole-page-reading-composition | PR218 Filter48/Async64/Danger80以及A/B/C/Progress已有阅读批次复用；只补原未覆盖代表组合 |
+| G2/four-semantic-surface-roles | 原Surface消费合同复用；具体canvas/region/panel/overlay代表页面去重后补图审 |
+| G2/same-color-geometric-distinction | 原1x/2x浮层GPU保留；物理屏幕边缘观察未由GPU代签 |
+| G3/hairline-and-required-boundary-roles | 原必要边界、错误/focus和#206阈值复用；未覆盖同屏/物理阅读继续单列 |
+| G3/component-role-radius-map | 原角色映射/合理例外复用；仅补适用实例的实际阅读 |
+| G3/nested-radius-geometry | 只验已经声明同心的原实例outer/inset/inner与像素，不给普通相邻控件新增同心要求 |
+| G3/real-scale-rendering | 原离屏双倍率不冒实际双倍率；真实显示与适用reveal仍按原来源要求 |
+| G4/named-press-expansion-snap-presets | 原#9/#38有限合同及已接受结果复用；未覆盖真实按压/反向时序仍保留 |
+| G4/real-component-motion-integration | 原生产接线/已有浮层帧复用；原适用进入/退出/中间帧/卸载缺项继续 |
+| G4/direct-manipulation-and-interruption | 原Split软件/GPU接收不代签真实中断；Media有限拖动见下方，held取消尚未完成 |
+| G4/reduced-motion-path | 原降级接线复用；系统设置下适用控件/浮层动作及取消仍需实际证据 |
+| G5/ime-and-suggestion-priority | #3原真人有限接收、真拼音一次你好和M7/M8有限组字链分源复用；候选跟随及其余适用中日IME缺项保留 |
+| G5/durable-draft-recovery | 原journal/outbox/受控草稿证据复用；原本地fixture实际编辑/中断/重启/旧ack路径只补未覆盖部分，不冒真实断电 |
+| G5/manual-scroll-reading-anchor | M3 #22/#53原有限完成复用；本地阅读与Process #48真实交互分开，不重复M3，不代签跨进程 |
+| G5/explicit-return-to-latest | 原M3实际latest/嵌套阅读按原身份复用；其他原页面缺项逐入口处理 |
+| G6/zoom-preserves-reading-anchor | #201/#202设计/几何已关闭，后续#204的Actual/resize/最大说明按其原有限收据复用；不再仅凭本表旧“未验”重跑；未闭合严格条件保留 |
+| G6/bounded-split-and-pan-geometry | 已有普通图片pan；本轮新程序实际+260pt并在完整窗口外20pt松手，q/Y不变、Up无重复变换。未验的是释放后unheld移动；Split原真实项独立 |
+| G6/cancel-and-non-gesture-alternatives | 原按钮/键盘/生命周期证据分源复用；原子drag后再Esc不证明held取消。实际按住期间Esc/失焦等组合仍未验 |
+| G7/reusable-real-component-contract | M1/M3/M4/M6已有SDK有限供应及M2原AC复用；完整#5语义控件族仍逐项对账，不能凭modal少数case代签 |
+| G7/component-documentation-and-runnable-preview | 既有公共API/路由/预览复用；只有变化或拟晋级入口补适用检查，无成熟度自动晋级 |
+| G7/business-combinations-are-real | PR218完整有限192图与4回归已公开；form/filter/master/async/danger及Settings的真实操作与图审分列，Danger仍只模拟失败 |
+
+### 原范围内继续推进的明确任务
+
+- #48 CI197 的 geometry-pending native Tab continuation 和 owned Reader crash status
+  两个原失败未因随后通过而闭合；当前按精确失败日志定位，不循环跑通过掩盖。
+- #48 三子容器真实拼音 auxiliary/reveal/append 与候选移动缩放仍是独立 AC；
+  local Panel 系统菜单跨屏成功不能替代实际 Process parent/child/session 交互。
+- #25 真实组字期间 Append/Toggle 尚未完成。用户接受的仅是打开原生菜单后的
+  候选消失/拉丁拼音观察，不能扩大为后台更新通过。无既有不扰组字入口时保留未验。
+- #5/#205 原 AXPress 返回错误及外部通知/撤权未完成；内容点击和截图成功不覆盖它。
+- CU direct typeText 在系统标准文本框和SDK均丢CJK，#41保留工具边界；
+  真拼音输入成功不改签该工具路径，也不据该工具失败改写SDK正常输入。
+- PR225 的原代码批次 `55b574fa4e9a952589edbb1f28065168d6628b18` 包含有限D1、
+  windowDidMove坐标失效通知和consumer状态布局修复。本地受影响build/strict、
+  窗口外pan及完整fixture真实Renderer回归通过；native仍绑定MAIN overlay，
+  不称clean-public-head GUI通过。所需CI、合并及checkpoint单独记录，不提前称发布。
+
+Refs #1 #5 #12 #25 #41 #44 #46 #48 #55 #56 #203 #204 #205。
