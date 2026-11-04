@@ -2143,7 +2143,7 @@
     "crates/tekes-ui-platform-macos/src/lib.rs": "38b492134c3230dd8d23c56e2d7636180e098cb002f0c7a13bfa8f9b4b50066e",
     "crates/tekes-ui-platform-macos/src/shared.rs": "761dadef79e6039ce486671544595f69a31fb9cf929c4859fc58387c27c7dbc3",
     "crates/tekes-ui-platform-macos/src/text_key.rs": "9546715dcec3acd93f938866702f0f3c7653a5e2c776db88ccbd2907fb6e4773",
-    "crates/tekes-ui-platform-macos/src/view.rs": "56fde068bc1da484e6c2025e81c9f39d196d5ca46bb7a09de438a59cafccc901",
+    "crates/tekes-ui-platform-macos/src/view.rs": "1ed7c871088fdff83ba201a187f83e7a5103767430ea7212a4d94a9d39bd665a",
     "crates/tekes-ui-text/src/coretext/label.rs": "bc00cc86263847284b1b95ed4f2117faf6f2ec33316ad893e3b2d51b4d1b92f5",
     "crates/tekes-ui-text/src/coretext/mod.rs": "8313d43943f7b9718a792eec04234c30d53025fdfd724bba4fa052e128dd1d38",
     "crates/tekes-ui-text/src/coretext/shaper.rs": "a0ef69c825a3f82b8ebda7787c006b53605b50c5306139103a7c3d05447b4490",
@@ -4168,5 +4168,14 @@
     "next": "Main requiredcompatibleCI then normalpublicmerge/checkpoint; native M6/M8/AX/IME/VO/performance remain open",
     "CPU": "CPU04161 independentpass retainedoriginalidentity; CPU0425fresh/0F; never66fresh",
     "GPU": "GPU043 actual archivedpublic9/0F/0ignored; offscreenonly"
+  },
+  "ax_layout_delivery_review_20261105": {
+    "issue": 205,
+    "baseline": "17d354647a0c9d6fa4c7dfe7044eb51a9ba6c8d4",
+    "source": "crates/tekes-ui-platform-macos/src/view.rs",
+    "before_sha256": "56fde068bc1da484e6c2025e81c9f39d196d5ca46bb7a09de438a59cafccc901",
+    "after_sha256": "1ed7c871088fdff83ba201a187f83e7a5103767430ea7212a4d94a9d39bd665a",
+    "review": "Only structural Layout publication changes: current native roots payload and actual unignored ancestor sender. Content dimensions, mounted semantics, Focus/Value/SelectedText, publication authority and close revocation are unchanged. No existing API evidence anchor in this view file requires relocation.",
+    "classification": "All 45 component classifications and source-audit native_acceptance values unchanged. Bounded external AX verification is recorded separately in docs/design/ax-modal-lifecycle-20261030.md; source hashes do not promote broad native acceptance."
   }
 }

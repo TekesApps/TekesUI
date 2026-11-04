@@ -73,3 +73,38 @@ The resource/source lease ended before offline evidence analysis.
 External AX notifications, physical IME, VoiceOver, GPU pixel acceptance,
 performance and other Issue #5 acceptance criteria remain unverified. Keep the
 Issue open; this result does not replace those acceptance categories.
+
+
+## #205：外部 Layout 通知与分阶段验收（2026-11-05）
+
+本批对应 [Issue #205](https://github.com/TekesApps/TekesUI/issues/205)。原设计的真实原生 owner 要求不变；以下记录具体实现和有限验证。
+
+结构快照发布现在通过 `NSAccessibilityPostNotificationWithUserInfo` 发送 Layout，
+`NSAccessibilityUIElementsKey` 携带当前真实原生根元素数组；发送对象为
+`NSAccessibilityUnignoredAncestor(TekesView)` 实际返回的对象。没有返回对象时不制造
+替代对象或通知。Focus、Value、SelectedText、缓存与关闭撤权路径保持原行为。
+外部 Layout 订阅须在首个动作前绑定该实际对象；不能将 Focus 的 NSApp 路由推定为
+Layout 的路由，也不能从已收到的事件反选期望来源。
+
+新增独立 `ax205_staged_acceptance` example，复用原 `ax_modal_fixture` 和公共发布接口。
+真实动作及 snapshot 提交保持同步；窗口/布局祖先和原生属性取证移到已有 `WindowWake`
+主队列阶段，全部原断言成功后才生成阶段 marker，避免取证嵌套在外部 AXPress 回调内。
+它需要协调方分配的原生资源窗口及 `TEKESUI_AX205_CHANNEL`；外部控制器按原握手执行
+三次 live Press、关闭时保持进程存活、旧引用请求、同 Host 无副作用检查和单独 FINISH。
+这不是普通 unattended Cargo test，不能脱离资源分配直接启动。
+
+受控实际证据位于 `artifacts/issue-205/layout-ancestor-20261105-r1/actual-run-001/`：
+冻结程序 `537af4f7f57beda23ae58252569581519f0e665bf7ea07c410efa3b6917429d0`
+完成 46 步，source-aligned oracle 25/25 通过；包含真实 Layout/Focus/Value、三次 live
+AXPress、进程存活下的关闭撤权和同 Host 不变、最终正常退出。stale 请求 raw AXError
+与实际无副作用/原生拒绝证据分别判断，不能把 raw0 当作 Host 接受。
+
+该程序来自 MAIN 的冻结 WIP overlay，包含未公开的 IME 诊断源差异；不能将其签成
+本次精简公共提交的实测。公共候选仅接入 Layout 修改、这个独立 example 和本文档，
+不包含 app/shared/view 的 IME 诊断改动。独立差量审核确认这些诊断没有改变本次
+通知、动作、Host 与关闭契约，因此复用上述功能证据；这不建立公共程序的实际运行身份。
+公共精确 tree 仍须通过原 required CI，其中包含 content-accessibility 全 targets 严格检查
+及本 example 的显式编译链接。原默认发送、payload-only 和错误订阅条件的失败记录均保留。
+25/25 是此分阶段 AX 契约的有限通过，不等于整个 #205/#5、VoiceOver、物理 IME、GPU
+视觉、性能或全部外部窗口操作通过。外部 V7 控制器和原始证据当前仍在受管理 artifacts，
+本批没有把本机 guard/权限配置复制成可任意执行的公共脚本。

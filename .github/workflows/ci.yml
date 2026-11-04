@@ -101,6 +101,8 @@ jobs:
           cargo clippy -p tekes-ui-platform-macos --features content-accessibility --all-targets --locked -- -D warnings
           cargo test -p tekes-ui-platform-macos --features content-accessibility --lib --locked
           cargo test -p tekes-ui-platform-macos --features content-accessibility --test link_native --locked
+          # Compile the #205 staged AX entry point; native acceptance uses allocated local windows.
+          cargo build -p tekes-ui-platform-macos --features content-accessibility --example ax205_staged_acceptance --locked --offline
           # Issue 127 AC5: compile the actual optional-bitmap proof consumer.
           # GPU cases remain explicit local locked runs; the original Toolbar positive is still open.
           cargo clippy --manifest-path examples/composition-consumer/Cargo.toml --features bitmap-images --test parent_boundary_proof --locked --offline -- -D warnings
