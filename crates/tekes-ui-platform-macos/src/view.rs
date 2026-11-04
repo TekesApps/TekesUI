@@ -737,10 +737,23 @@ impl TekesView {
         // owner so assistive clients can query its updated value and selection.
         unsafe {
             if structural {
-                objc2_app_kit::NSAccessibilityPostNotification(
-                    self,
-                    objc2_app_kit::NSAccessibilityLayoutChangedNotification,
-                );
+                // AppKit's layout contract carries the currently changed subtree.
+                // Snapshot the roots before posting; no cache borrow crosses callbacks.
+                let changed_elements = self.accessibility_children_snapshot();
+                let user_info =
+                    objc2_foundation::NSDictionary::<_, objc2::runtime::AnyObject>::from_slices(
+                        &[objc2_app_kit::NSAccessibilityUIElementsKey],
+                        &[changed_elements.as_ref()],
+                    );
+                // Unlike focus notifications (routed through NSApp), ordinary
+                // layout observers belong to an unignored accessibility object.
+                if let Some(target) = objc2_app_kit::NSAccessibilityUnignoredAncestor(self) {
+                    objc2_app_kit::NSAccessibilityPostNotificationWithUserInfo(
+                        &target,
+                        objc2_app_kit::NSAccessibilityLayoutChangedNotification,
+                        Some(&user_info),
+                    );
+                }
             }
             if focus_changed {
                 objc2_app_kit::NSAccessibilityPostNotification(
