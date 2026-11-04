@@ -435,3 +435,49 @@ Main、204与203直接查看三份原图。resized原图仍为旧两行Fit unava
 post原AX/JPEG/raw与fresh after-CG落盘后立即fresh唯一own OSclose，再做离线结果审；app exit0/100.7597718秒/timed_out=false，原stdout/stderr空，PID/PG/GPU成对释放/input pins unchanged、无关闭后UI查询。Main实际release c4f5a32d；204 domain ca6ff85a以独立25publication Fraction/66原件/原图ICC分析审，203独立actual审b8834328未调用204数值reader，两者接受有限原A1 Actual准入/激活/逻辑尺寸效果并保留上述像素限界。Main有限接收3bf18108。
 
 主原件 `issue-204/m9-a1-native-runtime-20261104-r1/run01/`；204交接edfc9164、逐publication560383f1、原图4ce0bda8；203审 `issue-203/native142-a1-actual-review-20261104-r1/REVIEW.json`。原Native140 M5 operator检查拼写失败/Pin未运行及所有历史红例不改标。A1不关闭whole M9/#204/#203；qActual>8须独立新具名策略/真实正V且f<1/8，D1释放后无按键移动、D2 held interleave、S1不同backing倍率、physicalIME/VoiceOver/performance/pinch与AgentKit采用均保持原范围。当前两屏ratio2是环境记录，不是不同scale迁移事件或等用户操作。
+
+
+## 22. M9 original Actual maximum-range disabled projection: tested Native149 increment (2026-11-04)
+
+本节仅补原§3/§6/§7中真实正 viewport 下 `qActual > 8` 的原 Actual 禁用原因投影。**有限接收范围仅为原 raw semantic/AX projection，不是 settled MAX 文案像素、禁用动作拒绝/no-effect、whole M9 或 whole Issue。** 公开 `4d8736c8157e8cf8001d5d207f52749e4cd47de7` 的§1–21完整字节前缀不变，Native139 R1/PR222 与 Native142 enabledActual/PR223 的证据、限制和历史失败均不扩签，不重跑。父#201、consumer#204与领域合同/独立审#203保持原责任边界。
+
+### 独立 MAX 开关与实际 programme 身份
+
+源码 `8c606323706afc2fe1702df9bf548fff7ddc3fc40317a415fcbac0e43b952186` 在已测 A1 源 f0a946 上只增加独立 `m8-actual-max-designated` match arm，严格要求 `MEDIA_VIEWER_M8_ACTUAL_MAX=1`、明确非零 display ID/builtin class、normal/nonmodal，无 IME/read-only/stale/remount probes。实际 ID1/builtin=true/backing scale2，经原 Builtin 初始放置与真实 ID/class 校验；默认 external-only、R1-only、A1-only 均不变。不得借 A1 flag、旧 binary/grant 或更改原图逻辑200×100、bitmap16×8、q范围、layout、初始窗口或 driver。source/Actual 合同审 `6dd3720c442200f3c888acdd3de833b61a3a3ad04d234a136ed455585f0c4675` 保留。
+
+实际 CPU144 在 compiled baseline `a81b7cd4685b06aca451a0937e9abbe5da6b4510` + 本批 exact scoped source/design/README overlay +8preservedWIP 上 strict/build均0；256归档引用核验、MAIN3640原文件/8WIP/index恢复。不是 clean-public 编译，也不是随后4d8736c的 native 新编译。实际 programme archive SHA `30ab9ee73b21ca4d1211e41f7c791941fece76f0ad8cd26e2958d0b0a6cf8baa`，identity `f229c33ad6b8fc3625e41845e087dc8479a8a95907f6aa2de483c19eb72f13d4`，full source freeze `1fb12e70113c60ff99fb0979002757bbc979bea27cad83bf339aed307e880e95`；CPU144 Main acceptance `6aa75f73a01bda2dde98d29fee2b6163657501ee429a393f45c192ee6c0d62b0`。
+
+原五工具派生的独立 MAX bundle ID 为 `org.tekesapps.diagnostics.media-viewer-204.m9-actual-max`；signed executable SHA `6a023d174a6fd5c90df6a3530cf38d7043e88ab82c2b3078270f1e32165a80df`。原 bundle receipt `8aa894cd5f714915c9eb798ddcc4c6ce9c941294ca8bb18d74e08f87c0fecf29` 因序列化漏 `source_or_cargo_changes` 字段而保留不变，Main补 r2 receipt `db95fbaf5aae8cabcbe165d5e58ca6832e7fba2d517978b52671b0b4cfefc03a` 说明实际false及原receipt来源；programme/bundle/exe未重编或重签，原runner严格oracle未削弱。PR223/4d8736c只交付已测A1源/§21/README/docpin四path，CPU144已包含A1分支；Main qualified-reuse proof在 Native149 CASE 中具名，compiled identity仍为a81b7+exact overlay，不能改标为 public4d 新native。
+
+### 启动失败、调度修复及独立 fresh149
+
+所有历史 operator 失败按原身份保留：§19的117及118关闭变量偏差、§20的130/132/134/136、§21记录的140及更早失败不回写。本 MAX 的独立窗口也不合并或自动重试：
+
+| Case | 原结果和执行边界 |
+|---|---|
+| Native146/run01 | shared15s内launch→process读取已耗8.318782s，readonly getApp后调用Created checker过期，原门严格拒绝；identity/Zoom/Tab/Right/drag/MAX未运行，正常产品输入0，app72495/40.500519s/exit0后释放。完整Created存在于封存raw不能后补及时通过。 |
+| Native147/run02 | owner将含顶层await批次交普通eval，解析即SyntaxError；operator/native输出均未创建，零launch、零CUA、零输入、零GPUguard，Main清预留。原红例不是产品失败。 |
+| Native148/run03 | direct async宿主及launch+process同批已成功，但getApp后生成长Created+identity调用的跨model调度仍耗原15s；Created超时即ownclose，identity及产品步骤未运行。app77887/21.385318s/exit0、GPU/输入/PIDPG释放；不延时、不补PASS。 |
+| Native149/run04 | 新grant/新CASE完整执行一次；clock前仅保存原两helper的JSON工具参数，getApp后提交短literal调用，未用eval/Function/动态loader或新输入driver。Created在原shared15s内通过，未复用146–148余时或追认红例。 |
+
+Native149 fresh grant SHA `d1ddfff2fa8b584c6fa2b0ce553f27b1cf0d701b212cdbdf4a3b5abe42c65c10`，窗口2026-11-04T04:39:52.676512Z→04:43:52.676512Z，fresh HID958.872秒、canonical/occupancy/GPU及唯一executor原门保持。原native120秒+10清理、hardend前60秒输入截止、完整240秒窗、启动shared15秒均未放宽。launch receipt04:40:21.411273Z；process READY04:40:22.764221Z，sole original getApp后，Created READY04:40:32.900859Z，早于原deadline04:40:36.411273Z，启动耗11.489586秒。之后仅一次actual identity：app/PG80890、own window37164、actual executable/ID1/builtintrue/CG frame精确匹配，不用猜PID或live process-history。
+
+原CUA ZoomIn恰一次，Tab首次VIEW在4即停，Right一次，NEW pre AX/JPEG105009bytes/raw落盘；normal固定Ready夹具、无Retry/load/source transition和原图/语义合证，normal无direct image_status，不以按钮可用单独替代Ready。owner工具输入采用原cell的compact inline等价顺序，原pinned文件不变，但不声称整段tool input与pinned cell逐字相同；未用的证书reader省略，真实分支/原事件/原AX及有序调用仍保留。
+
+### 一次真实底边缩窗与严格 MAX 投影
+
+fresh own image/同PID/window CG 的原 live ICC-aware 3fit+独立holdout证书通过后，恰一次本次派生 Vec[480,1503]→[480,487]，原生 bottom-border缩508pt；own CG outer480×752→480×244，X516/Y90不变，真实content480×720→480×212。没有第二resize、width fallback、setFrame、改q/图像或Actual click。本次只证明480×212真实可达，不证明OS最小尺寸。
+
+全部post-arrange发布保留：唯一Resized(content480×212)及随后Redraw两次均 V=(0,204,480,8)、image=(230,203,20,10)。`f=min(480/200,8/100)=2/25`，候选 `qActual=1/f=25/2` 严格大于8，正viewport成立，q8或零V均不能签本分支。**这与当前实际 Manual q=5/4、s=1/10 不同**：前置q保持5/4，图像缩为20×10逻辑pt，local T=(230,-1)，X因小图居中230，Y保留source center50并在8高viewport上下各裁1pt。首resize的normal transform仍为render前旧s3/T(-92,108)，不能与新V混配；Redraw才记录当前s0.1/T(230,-1)并排出单项resize通知，不是Actual动作或额外query不变性证明。
+
+原语义Actual20414 disabled，原maximum8timesFit原因在raw semantics及fresh AX Actual Help/status一致，VIEW20401焦点保持；AX“10% logical size”对应当前s0.1，不是候选qActual12.5。strict CLI result只输出 `QMAX_RAW_AX_DISABLED_REASON_CONFIRMED_NOT_PIXEL_OR_WHOLE_M9_PASS`。resized−pre delta中Actual Press为0，完整raw唯一AXPress是前置Zoom；因此本节**不签尝试禁用动作被拒/no-effect**，也不冒全7项按钮直接计数。
+
+### 原图限制、释放与有限接收
+
+Main、204、203直接查看pre/resized两份原图。resized原图仍显示旧Fit-enlargement两行文案，较后raw/AX已maximum8Fit原因；保存该不同步，不签settled MAX copy或最新focus-ring像素PASS，也不单靠capture判产品bug。tiny image20×10在V8上下各裁1pt，不称全图未裁视觉验收。原JPEG从未重编码/覆盖，ICC只作内存只读分析，未调图/阈值或额外发UI事件使画面通过。
+
+strict MAX CLI通过后，fresh同PID/window after-CG即接fresh唯一own OSclose11，再进行离线审；没有Actual click、第二resize、关闭后UI query或分析时占用原生窗。app80890 exit0/74.8369658秒/timed_out=false、stdout/stderr空，原runner已wait/reap，owned PID/PG空、GPU acquire/release配对、input pins unchanged、无buildlock/CUA inflight。Main actual release `a12d71cc578223869bad4a233ccd333a1c4608a2b906ecd5e31eebe202ddf3a3` 独立核并清canonical；资源释放不等于whole AC。
+
+主原件位于 `issue-204/m9-qmax-native-runtime-20261104-r1/run04/`：pre image `3f29588d1f5c269bd552e259f64627286c24221680c53094f233b3423f961b4b`，resized image `5840bc487c860228c720d2dcd1b39779c56bbe2871875efecd808e00c3d88930`，QMAX-RESULT `330ce9a7b1dbc89c34e4cbfee9ccbec2560375978308b772e609956f0a4479d9`，owner release `976a80240cff786bf443c5c2570b3de91ee29141e4d0aae3d6ea48503c45ebe2`。raw链为pre10009行→resized11011行→full11012行，最后只增加CloseRequested。204审以66原件/22publication独立Fraction、原图直看/ICC只读观察封存：DOMAIN `2288cda885a6525eb06ac3a1c15958f1a5e11b23fa5f3f9ac41d7bd640ecf75a`、HANDOFF `f3e77c7e0f338a72aada1046cc4e36d055dcdcf8e79baab3ead64adbb60b9d2c`。203独立审 `f4f4793389e945269c5b707ecdf334dee3b1110c66f1247313cbdea78b61589c` / EVIDENCE `9f0bf22533b7399a0a3d581fd4e7b07373f9fea8635fcb4bbb2decb76f494f15` 未调用204数值reader或producer checker；Main有限接收 `b2b30a790a804eaa118fd7a4c8b5b74746ab7fd20f46d509226325539f76bb58`。
+
+最终普通候选仅native8c606、本节§22和README；Main独占metadata/docpin、整合和公开CI/发布。文档交付复用确切CPU144/Native149/203/Main证据，不重跑Rust/native/sign，不把后续CI或public SHA冒作新GUI实测。whole M9/#204/#203仍开放；D1释放后无按键运动、D2 held interleave、S1不同backing scale、physicalIME/VoiceOver/performance/pinch、AgentKit采用及所有原延期保持独立原门槛，像素时序问题也不被有限MAX投影接收覆盖。
