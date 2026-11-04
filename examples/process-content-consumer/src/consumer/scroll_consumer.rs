@@ -1293,10 +1293,46 @@ pub(super) fn lifecycle_roundtrip() -> Result<serde_json::Value> {
             container(&host, id).status(),
             Some(ProcessStatus::Failed { .. })
         )
-    }).with_context(|| format!(
-        "owned Reader crash status propagation: pid={old_pid} session={old_session:?} observed={:?}",
-        container(&host, id).status()
-    ))?;
+    }).with_context(|| {
+        // The original deadline has already failed. Preserve that failure and
+        // observe the owned target before ContentHost drop tears it down.
+        let observed = container(&host, id).status();
+        let failure_wall = std::time::SystemTime::now();
+        eprintln!(
+            "PROCESS_CRASH_FAILURE parent={} pid={old_pid} session={old_session:?} observed={observed:?} wall={failure_wall:?}",
+            std::process::id()
+        );
+        match std::process::Command::new("/bin/ps")
+            .args(["-p", &old_pid.to_string(), "-o", "pid=,ppid=,stat=,etime=,comm="])
+            .output()
+        {
+            Ok(output) => eprintln!(
+                "PROCESS_CRASH_FAILURE ps_exit={:?} stdout={} stderr={}",
+                output.status.code(),
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            ),
+            Err(error) => eprintln!("PROCESS_CRASH_FAILURE ps_error={error}"),
+        }
+        // macOS sample observes only this parent for one second. The original
+        // executor's outer bound includes collection; errors remain evidence.
+        // This is a temporary hosted diagnostic, not a passing-state retry.
+        match std::process::Command::new("/usr/bin/sample")
+            .args([&std::process::id().to_string(), "1", "1"])
+            .output()
+        {
+            Ok(output) => eprintln!(
+                "PROCESS_CRASH_FAILURE sample_exit={:?} stdout={} stderr={}",
+                output.status.code(),
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            ),
+            Err(error) => eprintln!("PROCESS_CRASH_FAILURE sample_error={error}"),
+        }
+        format!(
+            "owned Reader crash status propagation: pid={old_pid} session={old_session:?} observed={observed:?} failure_wall={failure_wall:?}"
+        )
+    })?;
     ensure!(
         host.get_mut(id)
             .unwrap()

@@ -1,126 +1,214 @@
-name: CI
+# Temporary isolated diagnostic-branch replacement for the existing ci.yml.
+# Do not merge this file into main or use it as PR225's required CI.
+name: CI197 bounded diagnosis
 
 on:
-  pull_request:
   workflow_dispatch:
+    inputs:
+      expected_head:
+        description: Exact isolated diagnostic commit to execute
+        required: true
+        type: string
+
+permissions:
+  contents: read
 
 jobs:
-  check:
+  diagnose:
     runs-on: macos-latest
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
-      - name: 安装工具链（读取 rust-toolchain.toml）
+      - name: Verify exact diagnostic checkout
+        env:
+          EXPECTED_HEAD: ${{ inputs.expected_head }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+      - name: Install pinned repository toolchain
         run: rustup show
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-      - name: Public icon catalog projections and assets
-        run: |
-          python3 scripts/generate-icon-web-bindings.py --check
-          node --test crates/tekes-ui-icons/web/icons.test.mjs
-      - name: Fetch pinned dependencies for offline consumers
-        run: |
-          cargo fetch --locked
-          cargo fetch --locked --manifest-path examples/composition-consumer/Cargo.toml
-          cargo fetch --locked --manifest-path examples/panel-content-consumer/Cargo.toml
-          cargo fetch --locked --manifest-path examples/brand-consumer/Cargo.toml
-          cargo fetch --locked --manifest-path examples/app-host-demo/Cargo.toml
-          cargo fetch --locked --manifest-path examples/process-content-consumer/Cargo.toml
-          cargo fetch --locked --manifest-path examples/media-viewer-content-consumer/Cargo.toml
-      - name: Design package, brand generation and Rust boundaries
-        run: |
-          python3 -m pip install -r design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/requirements.txt
-          python3 -m unittest discover -s scripts/tests
-          for test in scripts/test-*.py; do python3 "$test"; done
-          python3 scripts/generate-gallery-brands.py --check
-          python3 scripts/generate-component-capabilities.py --check
-          python3 scripts/check-reference-alignment.py --self-test
-          python3 scripts/check-reference-alignment.py
-          python3 scripts/check-gold7.py
-          python3 -I scripts/check-pure-rust.py --self-test
-          python3 -I scripts/check-pure-rust.py
-          python3 -I scripts/check-design-baseline.py --self-test
-          python3 scripts/merge-design-system.py --check
-          python3 scripts/check-design-system.py
-          cargo run --locked -p tekes-ui-design-export -- --generate design/tokens.json "$RUNNER_TEMP/tokens.rs"
-          cargo run --locked -p tekes-ui-design-export -- --check design/tokens.json "$RUNNER_TEMP/tokens.rs"
-      - run: cargo fmt --check
-      - id: workspace_clippy
-        run: cargo clippy --workspace --all-targets --locked -- -D warnings
-      - name: Workspace correctness tests (performance deferred)
+      - name: Compile and run the two original cases once
         env:
-          TEKESUI_FRAGMENT_GPU_OUT: ${{ runner.temp }}/tekesui-fragment-gpu
-        run: >-
-          cargo test --workspace --locked --no-fail-fast --
-          --skip timing_is_off_by_default_and_costs_nothing_to_drain
-          --skip cpu_segments_are_consistent_and_frames_are_numbered
-          --skip gpu_time_agrees_with_wall_clock_on_a_heavy_frame
-
-      - name: Independent composition consumer (public API)
-        if: ${{ !cancelled() && steps.workspace_clippy.outcome == 'success' }}
-        env:
-          TEKESUI_CHECKBOX_GPU_OUT: ${{ runner.temp }}/tekesui-checkbox-gpu/default
-        run: cargo test --manifest-path examples/composition-consumer/Cargo.toml --locked --no-fail-fast
-
-      - name: Independent Panel consumer (Issue 82, no native windows)
-        if: ${{ !cancelled() && steps.workspace_clippy.outcome == 'success' }}
+          EVIDENCE_DIR: ${{ runner.temp }}/ci197-diagnostic
         run: |
-          cargo clippy --manifest-path examples/panel-content-consumer/Cargo.toml --all-targets --locked --offline -- -D warnings
-          cargo test --manifest-path examples/panel-content-consumer/Cargo.toml --test panel_content --locked --offline
-          cargo build --manifest-path examples/panel-content-consumer/Cargo.toml --example native --locked --offline
-
-      - name: Optional SVG IconContent (Issue 47)
-        if: ${{ !cancelled() && steps.workspace_clippy.outcome == 'success' }}
-        run: |
-          cargo clippy -p tekes-ui-controls --features svg-icons --all-targets --locked --offline -- -D warnings
-          cargo test -p tekes-ui-controls --features svg-icons --test component_registry_api --locked --offline
-          cargo clippy --manifest-path examples/composition-consumer/Cargo.toml --features svg-icons --all-targets --locked --offline -- -D warnings
-          cargo test --manifest-path examples/composition-consumer/Cargo.toml --features svg-icons --test icon_gpu --test icon_status_gpu --no-fail-fast --locked --offline
-
-      - name: Independent Process Content consumer (Issue 48, no native windows)
-        if: ${{ !cancelled() && steps.workspace_clippy.outcome == 'success' }}
-        run: |
-          cargo clippy --manifest-path examples/process-content-consumer/Cargo.toml --all-targets --locked --offline -- -D warnings
-          result=0
-          cargo run -p tekes-ui-module-runtime --example process_component_services --locked --offline || result=1
-          # Default already includes the three mounted-container geometry scenario.
-          cargo run --manifest-path examples/process-content-consumer/Cargo.toml --locked --offline || result=1
-          for mode in accessibility projection query-wake view-context three-surfaces overlay scroll reading-anchor reading-lifecycle; do
-            cargo run --manifest-path examples/process-content-consumer/Cargo.toml --locked --offline -- "--$mode-only" || result=1
-          done
-          exit "$result"
-
-      - name: Optional bitmap Content and local Image semantics (Issue 117)
-        if: ${{ !cancelled() && steps.workspace_clippy.outcome == 'success' }}
-        run: |
-          cargo clippy -p tekes-ui-controls --features bitmap-images --all-targets --locked -- -D warnings
-          cargo test -p tekes-ui-controls --features bitmap-images --lib --test component_registry_api --test bitmap_content_consumer --locked
-          cargo clippy -p tekes-ui-platform-macos --features content-accessibility --all-targets --locked -- -D warnings
-          cargo test -p tekes-ui-platform-macos --features content-accessibility --lib --locked
-          cargo test -p tekes-ui-platform-macos --features content-accessibility --test link_native --locked
-          # Issue 127 AC5: compile the actual optional-bitmap proof consumer.
-          # GPU cases remain explicit local locked runs; the original Toolbar positive is still open.
-          cargo clippy --manifest-path examples/composition-consumer/Cargo.toml --features bitmap-images --test parent_boundary_proof --locked --offline -- -D warnings
-          cargo test --manifest-path examples/composition-consumer/Cargo.toml --features bitmap-images --test parent_boundary_proof --no-run --locked --offline
-          # Optional MediaViewer public CPU contract; GPU/native remain separately allocated.
-          CARGO_TARGET_DIR="$GITHUB_WORKSPACE/target" cargo test --manifest-path examples/media-viewer-content-consumer/Cargo.toml --test cpu_contract --locked --offline
-
-      - name: Independent AppWindow and Settings delivery (Issue 70)
-        if: ${{ !cancelled() && steps.workspace_clippy.outcome == 'success' }}
-        run: |
-          cargo clippy --manifest-path examples/app-host-demo/Cargo.toml --all-targets --all-features --locked --offline -- -D warnings
-          cargo test --manifest-path examples/app-host-demo/Cargo.toml --test settings_worker_entry --locked --offline
-          for profile in two-panels three-panels mixed-columns independent-settings; do
-            cargo build --manifest-path examples/app-host-demo/Cargo.toml --features "$profile" --locked --offline
-          done
-
-      - name: Preserve Checkbox GPU evidence
+          python3 - <<'PY'
+          import ctypes, hashlib, json, os, shutil, signal, subprocess, time
+          from pathlib import Path
+          root = Path.cwd()
+          out = Path(os.environ['EVIDENCE_DIR'])
+          out.mkdir(exist_ok=False)
+          receipt = {'classification': 'temporary failure-side observation, not a repair',
+                     'head': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
+                     'runner': {k: os.environ.get(k) for k in ['ImageOS', 'ImageVersion', 'RUNNER_OS', 'RUNNER_ARCH']},
+                     'builds': [], 'cases': []}
+          def save():
+              (out / 'receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          def sha(path):
+              return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+          for name, argv in [('os', ['sw_vers']), ('xcode', ['xcodebuild', '-version']),
+                             ('rustc', ['rustc', '-vV']), ('cargo', ['cargo', '-vV'])]:
+              result = subprocess.run(argv, text=True, capture_output=True, timeout=15)
+              (out / (name + '.log')).write_text(result.stdout + result.stderr)
+              if result.returncode:
+                  raise RuntimeError(f'{name} identity query failed: {result.returncode}')
+          receipt['source'] = {p: sha(root / p) for p in [
+              'rust-toolchain.toml', 'Cargo.lock',
+              'examples/process-content-consumer/Cargo.toml',
+              'examples/process-content-consumer/Cargo.lock',
+              'examples/process-content-consumer/src/main.rs',
+              'examples/process-content-consumer/src/consumer/scroll_consumer.rs',
+              '.github/workflows/ci.yml']}
+          for relative in receipt['source']:
+              destination = out / 'source-inputs' / relative
+              destination.parent.mkdir(parents=True, exist_ok=True)
+              shutil.copy2(root / relative, destination)
+          save()
+          commands = [
+              ['cargo', 'fetch', '--locked', '--manifest-path', 'examples/process-content-consumer/Cargo.toml'],
+              ['cargo', 'clippy', '--manifest-path', 'examples/process-content-consumer/Cargo.toml', '--all-targets', '--locked', '--offline', '--', '-D', 'warnings'],
+              ['cargo', 'build', '--manifest-path', 'examples/process-content-consumer/Cargo.toml', '--locked', '--offline', '--message-format=json-render-diagnostics'],
+          ]
+          build_deadline = time.monotonic() + 1200
+          for index, argv in enumerate(commands):
+              entry = {'argv': argv}
+              receipt['builds'].append(entry)
+              save()
+              with (out / f'build-{index}.stdout').open('w') as stdout, (out / f'build-{index}.stderr').open('w') as stderr:
+                  proc = subprocess.Popen(argv, stdout=stdout, stderr=stderr, start_new_session=True)
+                  try:
+                      entry['exit_code'] = proc.wait(timeout=max(1, build_deadline - time.monotonic()))
+                  except subprocess.TimeoutExpired:
+                      entry['timeout'] = True
+                      os.killpg(proc.pid, signal.SIGTERM)
+                      try:
+                          proc.wait(timeout=5)
+                      except subprocess.TimeoutExpired:
+                          os.killpg(proc.pid, signal.SIGKILL)
+                          proc.wait(timeout=5)
+                      save()
+                      raise
+              save()
+              if entry['exit_code']:
+                  raise RuntimeError('compile/fetch failed; both original cases not_run')
+          artifacts = []
+          for line in (out / 'build-2.stdout').read_text().splitlines():
+              if not line.startswith('{'):
+                  continue
+              record = json.loads(line)
+              if (record.get('reason') == 'compiler-artifact'
+                  and record.get('target', {}).get('name') == 'tekes-ui-process-content-consumer'
+                  and record.get('executable') and record['profile']['test'] is False):
+                  artifacts.append(record)
+          if len(artifacts) != 1:
+              raise RuntimeError('exact non-test compiler executable not established')
+          artifact = artifacts[0]
+          if Path(artifact['target']['src_path']).resolve() != (root / 'examples/process-content-consumer/src/main.rs').resolve():
+              raise RuntimeError('unexpected compiler source')
+          program = out / 'actual-process-consumer'
+          shutil.copy2(artifact['executable'], program)
+          if sha(program) != sha(artifact['executable']):
+              raise RuntimeError('archive copy mismatch')
+          receipt['program'] = {'path': str(program), 'sha256': sha(program), 'compiler_artifact': artifact}
+          save()
+          lib = ctypes.CDLL('/usr/lib/libproc.dylib')
+          lib.proc_pidpath.argtypes = [ctypes.c_int, ctypes.c_void_p, ctypes.c_uint32]
+          lib.proc_pidpath.restype = ctypes.c_int
+          def executable(pid):
+              buf = ctypes.create_string_buffer(4096)
+              return Path(buf.value.decode()) if lib.proc_pidpath(pid, buf, len(buf)) > 0 else None
+          def inventory(group):
+              raw = subprocess.check_output(['/bin/ps', '-axo', 'pid=,ppid=,pgid=,stat=,comm='], text=True, timeout=10)
+              rows = []
+              for line in raw.splitlines():
+                  p = line.strip().split(None, 4)
+                  if len(p) == 5 and int(p[2]) == group:
+                      rows.append({'pid': int(p[0]), 'ppid': int(p[1]), 'pgid': int(p[2]), 'stat': p[3], 'comm': p[4]})
+              return rows
+          allowed = [program, Path('/usr/bin/sample'), Path('/bin/ps'), Path('/bin/kill')]
+          def cleanup(group):
+              result = []
+              for row in inventory(group):
+                  pid = row['pid']
+                  actual = executable(pid)
+                  if actual is None:
+                      result.append(dict(row, absent=True))
+                      continue
+                  if not any(p.exists() and os.path.samefile(actual, p) for p in allowed):
+                      raise RuntimeError('unknown executable in owned group; no signal: ' + str(row))
+                  for sig, seconds in [(signal.SIGTERM, 3), (signal.SIGKILL, 2)]:
+                      current = executable(pid)
+                      if current is None:
+                          break
+                      try:
+                          if current != actual or os.getpgid(pid) != group:
+                              raise RuntimeError('cleanup identity changed; no signal')
+                          os.kill(pid, sig)
+                      except ProcessLookupError:
+                          break
+                      end = time.monotonic() + seconds
+                      while executable(pid) is not None and time.monotonic() < end:
+                          time.sleep(.05)
+                  result.append(dict(row, executable=str(actual), absent=executable(pid) is None))
+              return result
+          for name, suffix in [('default', []), ('reading-lifecycle', ['--reading-lifecycle-only'])]:
+              lane = out / name
+              lane.mkdir()
+              entry = {'argv': [str(program)] + suffix, 'outer_bound_seconds': 180, 'observed': []}
+              receipt['cases'].append(entry)
+              env = dict(os.environ)
+              env.pop('TEKESUI_PROCESS_CRASH_TRACE', None)
+              with (lane / 'stdout.log').open('w') as stdout, (lane / 'stderr.log').open('w') as stderr:
+                  proc = subprocess.Popen(entry['argv'], env=env, stdout=stdout, stderr=stderr, start_new_session=True)
+                  entry['parent_pid'] = proc.pid
+                  entry['started_wall_ns'] = time.time_ns()
+                  started = time.monotonic()
+                  seen = set()
+                  save()
+                  try:
+                      while proc.poll() is None:
+                          for row in inventory(proc.pid):
+                              if row['pid'] not in seen:
+                                  seen.add(row['pid'])
+                                  actual = executable(row['pid'])
+                                  entry['observed'].append(dict(row, executable=str(actual) if actual else None))
+                          if time.monotonic() - started >= 180:
+                              entry['timeout'] = True
+                              raise TimeoutError('original case outer bound')
+                          time.sleep(.1)
+                      entry['exit_code'] = proc.wait(timeout=2)
+                  finally:
+                      if proc.poll() is None:
+                          proc.terminate()
+                          try:
+                              proc.wait(timeout=5)
+                          except subprocess.TimeoutExpired:
+                              proc.kill()
+                              proc.wait(timeout=5)
+                      try:
+                          entry['cleanup'] = cleanup(proc.pid)
+                      except BaseException as error:
+                          entry['cleanup_error'] = str(error)
+                          save()
+                          raise
+                      entry['owned_group_empty'] = not inventory(proc.pid)
+                      entry['all_observed_absent'] = all(executable(pid) is None for pid in seen)
+                      entry['duration_seconds'] = time.monotonic() - started
+                      entry['finished_wall_ns'] = time.time_ns()
+                      save()
+              if not entry['owned_group_empty'] or not entry['all_observed_absent']:
+                  raise RuntimeError('cleanup unproven; next case not_run')
+              if sha(program) != receipt['program']['sha256']:
+                  raise RuntimeError('program changed; next case not_run')
+          receipt['source_unchanged'] = all(sha(root / p) == expected for p, expected in receipt['source'].items())
+          save()
+          if not receipt['source_unchanged'] or any(c.get('exit_code') != 0 for c in receipt['cases']):
+              raise SystemExit(1)
+          PY
+      - name: Preserve exact source, programme and raw diagnostic results
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: checkbox-gpu-default
-          path: ${{ runner.temp }}/tekesui-checkbox-gpu/default
-          if-no-files-found: warn
+          name: ci197-diagnostic-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ci197-diagnostic
+          if-no-files-found: error

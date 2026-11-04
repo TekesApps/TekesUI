@@ -1927,8 +1927,32 @@ mod consumer {
             ensure!(Instant::now() < end, "pending native boundary deadline");
             std::thread::sleep(Duration::from_millis(5));
         }
+        let observed_outer_focus = host.focused();
+        if observed_outer_focus != Some(ids[1]) {
+            // Failure-only observation of the same value used by the original
+            // assertion. Never consume a key receipt or repeat navigation here.
+            eprintln!(
+                "PROCESS_OUTER_TAB_FAILURE parent={} key=1017 expected={:?} observed={observed_outer_focus:?} frame={pending_tab_frame:?} wall={:?}",
+                std::process::id(),
+                ids[1],
+                std::time::SystemTime::now()
+            );
+            for id in ids {
+                let child = host
+                    .get(id)
+                    .unwrap()
+                    .component::<ProcessContainer>()
+                    .unwrap();
+                eprintln!(
+                    "PROCESS_OUTER_TAB_FAILURE child={id:?} session={:?} status={:?} input_ready={}",
+                    child.session(),
+                    child.status(),
+                    child.input_ready()
+                );
+            }
+        }
         ensure!(
-            host.focused() == Some(ids[1]),
+            observed_outer_focus == Some(ids[1]),
             "geometry-pending native Tab lost original outer continuation"
         );
         ensure!(
