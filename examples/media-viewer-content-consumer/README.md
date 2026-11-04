@@ -129,3 +129,33 @@ failures and Native147 zero-launch operator failure remain unchanged.
 See design section 22 and the immutable CPU144/Native149 receipts for programme,
 source, input and release identities. Whole M9, held gestures, backing migration,
 physical IME, VoiceOver, performance and other remaining scope stay open.
+
+
+## Independent D1 finite atomic pan acceptance
+
+`MEDIA_VIEWER_DISPLAY_POLICY=m8-drag-designated` requires its own
+`MEDIA_VIEWER_M8_DRAG_D1=1`, explicit display ID/class and normal nonmodal mode
+without IME/read-only/stale/remount probes. Default/R1/A1/MAX contracts stay
+separate. This source is `8af5915e`; it cannot run under an old MAX/A1 programme
+or grant. Main built it once on public f4e7772 plus the preserved scoped overlay
+and WIP; see design section 23 for the exact programme and new-case grant.
+
+The sole CU executed one actual image pan after four original Zoom actions used
+only to create overflow on both axes and four Tabs stopping at the first VIEW.
+Original Down(240,462), Dragged through (420,176), and Up(420,176) yielded
+T=(-165.9375,-69.9375) from (-345.9375,-34.96875): X moved +180pt and Y clamped
+exactly to the lower bound. Manual q=625/256 stayed fixed. Independent raw
+reviews accept only this finite geometry and native Up outside the viewport,
+inside the same window's noninteractive status region. Pan notifications are
+0/0/1/0; business Close/Retry remain zero. The window then closed normally.
+
+Original pre/post images show translation, but the post image has no visible
+ring despite retained VIEW focus; no settled ring-pixel acceptance is claimed.
+Only content/viewport stability and absence of later Moved/Resized are observed;
+there is no fresh before/after CG origin pair. No unheld movement follows Up,
+so full D1 residual-capture and outside-OS-window release remain unverified.
+Held-interleave D2, different-backing-scale S1 and whole M9 remain open.
+Copied Rich IME description fields were corrected by an append-only Main errata;
+this run provides no IME/physical/VoiceOver/performance acceptance. No original
+raw, grant or earlier finite evidence was rewritten, and no runtime was repeated
+for these final result documents.

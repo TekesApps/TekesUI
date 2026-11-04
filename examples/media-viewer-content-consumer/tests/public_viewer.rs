@@ -567,3 +567,97 @@ fn original_tab_scope_and_window_inactivity_cancel_pointer_authority() {
     host.event(&ContentEvent::PointerUp(center));
     assert_eq!(viewer(&mut host).transform(), unfocused);
 }
+
+#[test]
+#[ignore = "requires an allocated real Renderer/GPU window"]
+fn ready_status_keeps_layout_and_new_drag_across_window_reactivation() {
+    let mut gpu = Renderer::new_headless().expect("real GPU required");
+    let mut host = fixture::fixture(&mut gpu);
+    let frame = Rect::new(0., 0., 480., 720.);
+    // Match the native consumer's post-event status refresh and original layout.
+    let publish = |host: &mut ContentHost| {
+        fixture::refresh_buttons(host);
+        fixture::refresh_status(host);
+        scene(host, frame, frame);
+    };
+    let snapshot = |host: &ContentHost| {
+        (
+            host.get(fixture::STATUS)
+                .unwrap()
+                .component::<TextContent>()
+                .unwrap()
+                .text
+                .clone(),
+            host.get(VIEW).unwrap().frame(),
+            host.get(VIEW)
+                .unwrap()
+                .component::<MediaViewerContent>()
+                .unwrap()
+                .transform()
+                .unwrap(),
+        )
+    };
+    publish(&mut host);
+    for _ in 0..4 {
+        assert!(
+            viewer(&mut host)
+                .execute(MediaViewerCommand::ZoomIn)
+                .unwrap()
+        );
+        publish(&mut host);
+    }
+    assert_eq!(
+        viewer(&mut host).image_status(),
+        Some(ImageLoadStatus::Ready)
+    );
+    publish(&mut host);
+    assert!(host.focus(Some(VIEW), true));
+    publish(&mut host);
+    let (status, viewport, before) = snapshot(&host);
+    let image = host.get(IMAGE).unwrap().frame();
+    assert!(image.size.width > viewport.size.width && image.size.height > viewport.size.height);
+    // This movement must be visible if the newly acquired drag survives render.
+    let delta_x = 40.;
+    assert!(before.translation.x + delta_x < 0.);
+    assert!(before.translation.x + delta_x > viewport.size.width - image.size.width);
+    viewer(&mut host).drain_transform_changes();
+    publish(&mut host);
+
+    for active in [false, true] {
+        host.set_window_active(active);
+        publish(&mut host);
+        assert_eq!(snapshot(&host), (status.clone(), viewport, before));
+    }
+    assert!(host.focused().is_none());
+    let down_at = viewport.center();
+    let down = host
+        .event_with_text(&ContentEvent::PointerDown(down_at), &mut Text::new(1.))
+        .unwrap();
+    assert!(down.consumed && down.capture_pointer);
+    publish(&mut host);
+    assert_eq!(host.focused(), Some(VIEW));
+    assert_eq!(host.pointer_capture().map(|(id, _)| id), Some(VIEW));
+    assert_eq!(snapshot(&host), (status.clone(), viewport, before));
+
+    let moved_to = Point::new(down_at.x + delta_x, down_at.y);
+    let moved = host
+        .event_with_text(&ContentEvent::PointerMove(moved_to), &mut Text::new(1.))
+        .unwrap();
+    assert!(moved.consumed && moved.changed);
+    publish(&mut host);
+    let mut expected = before;
+    expected.translation.x += delta_x;
+    assert_eq!(snapshot(&host), (status.clone(), viewport, expected));
+    let changes = viewer(&mut host).drain_transform_changes();
+    assert_eq!(changes, vec![expected]);
+    // Draining through get_mut invalidates input geometry; acknowledge it before Up.
+    publish(&mut host);
+    let up = host
+        .event_with_text(&ContentEvent::PointerUp(moved_to), &mut Text::new(1.))
+        .unwrap();
+    assert!(up.consumed);
+    publish(&mut host);
+    assert!(host.pointer_capture().is_none());
+    assert_eq!(snapshot(&host), (status, viewport, expected));
+    assert!(viewer(&mut host).drain_transform_changes().is_empty());
+}

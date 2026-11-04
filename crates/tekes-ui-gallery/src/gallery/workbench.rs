@@ -4926,13 +4926,18 @@ impl Workbench {
                 }
                 if renderer == "master"
                     && let Some(id) = s.focus.filter(|id| (10000..10100).contains(id))
-                    && matches!(key, ControlKey::Up | ControlKey::Down)
+                    && matches!(
+                        key,
+                        ControlKey::Up | ControlKey::Down | ControlKey::Home | ControlKey::End
+                    )
                 {
                     if down {
                         let current = id - 10000;
                         let next = match key {
                             ControlKey::Up => current.saturating_sub(1),
                             ControlKey::Down => (current + 1).min(79),
+                            ControlKey::Home => 0,
+                            ControlKey::End => 79,
                             _ => current,
                         };
                         let target = 10000 + next;
@@ -4940,7 +4945,9 @@ impl Workbench {
                             previous.state.focus_visible = false;
                         }
                         s.focus = Some(target);
-                        s.selected = next;
+                        if next != current {
+                            s.activate(target, renderer);
+                        }
                         s.focus_reveal = Some(target);
                         let focused = s.buttons.entry(target).or_default();
                         focused.state.focused = true;
@@ -7863,16 +7870,41 @@ mod interaction_tests {
         let mut workbench = Workbench::default();
         let mut text = super::super::text::TextEngine::new();
         let i = index("master");
-        workbench.state(i).focus = Some(10000);
         build(&mut workbench, i, &mut text);
+        let row = workbench
+            .state(i)
+            .hits
+            .iter()
+            .find(|(id, _)| *id == 10000)
+            .unwrap()
+            .1;
+        assert!(workbench.handle(i, &mouse(row.center(), true), &mut text));
+        assert!(workbench.handle(i, &mouse(row.center(), false), &mut text));
+        assert_eq!(workbench.state(i).focus, Some(10000));
+        assert!(workbench.handle(i, &key(125, true), &mut text));
+        assert_eq!(workbench.state(i).selected, 1);
+        assert_eq!(
+            workbench.state(i).detail.query(),
+            format!(
+                "Document 2 — reading notes\n\n{}",
+                include_str!("../../../../fixtures/text/gallery-reading-en.txt")
+            )
+        );
 
-        for _ in 0..50 {
+        for _ in 0..49 {
             assert!(workbench.handle(i, &key(125, true), &mut text));
         }
         let scene = build(&mut workbench, i, &mut text);
         let state = workbench.state(i);
         assert_eq!(state.focus, Some(10050));
         assert_eq!(state.selected, 50);
+        assert_eq!(
+            state.detail.query(),
+            format!(
+                "Document 51 — reading notes\n\n{}",
+                include_str!("../../../../fixtures/text/gallery-reading-en.txt")
+            )
+        );
         assert!(state.list_scroll.offset.y > 0.0);
         let button = &state.buttons[&10050];
         assert!(button.state.focus_visible);
@@ -7892,6 +7924,46 @@ mod interaction_tests {
             }),
             "focus ring is painted for the keyboard-focused row"
         );
+        for (code, selected) in [(126, 49), (115, 0), (119, 79)] {
+            assert!(workbench.handle(i, &key(code, true), &mut text));
+            build(&mut workbench, i, &mut text);
+            let state = workbench.state(i);
+            assert_eq!(state.focus, Some(10000 + selected));
+            assert_eq!(state.selected, selected);
+            assert_eq!(
+                state.detail.query(),
+                format!(
+                    "Document {} — reading notes\n\n{}",
+                    selected + 1,
+                    include_str!("../../../../fixtures/text/gallery-reading-en.txt")
+                )
+            );
+            let layout = state.buttons[&(10000 + selected)].layout().unwrap();
+            assert!(
+                layout
+                    .focus_bounds()
+                    .intersection(&state.list_bounds)
+                    .is_some()
+            );
+            assert!(workbench.handle(i, &key(code, false), &mut text));
+            assert_eq!(workbench.state(i).selected, selected);
+            if selected == 0 || selected == 79 {
+                let detail = &mut workbench.state(i).detail;
+                detail.focus_field();
+                assert_eq!(detail.command("selectAll:"), Some(true));
+                let selection = detail.state().unwrap().selection;
+                assert!(!selection.is_empty());
+                detail.blur();
+                let boundary_key = if selected == 0 { 126 } else { 125 };
+                assert!(workbench.handle(i, &key(boundary_key, true), &mut text));
+                build(&mut workbench, i, &mut text);
+                assert_eq!(workbench.state(i).selected, selected);
+                let detail = &mut workbench.state(i).detail;
+                detail.focus_field();
+                assert_eq!(detail.state().unwrap().selection, selection);
+                detail.blur();
+            }
+        }
     }
 
     #[test]
@@ -8187,6 +8259,17 @@ mod interaction_tests {
                 );
                 assert_eq!(state.hit_at(input.center()), Some(1000));
                 assert_eq!(state.hit_at(button.center()), Some(22));
+                let filter_key = tekes_ui_platform_macos::AccessibilityKey {
+                    component: crate::gallery::accessibility::INPUT + i as u64,
+                    part: Some(0),
+                };
+                let filter_node = workbench
+                    .accessibility_nodes(i)
+                    .into_iter()
+                    .find(|node| node.key == filter_key)
+                    .expect("actual mounted filter input");
+                assert_eq!(filter_node.label, "Filter files");
+                assert_eq!(filter_node.value.as_deref(), Some("not-found"));
                 if width > 400.0 {
                     assert!(input.max_x() + gap <= button.min_x() + 0.01);
                     assert!(

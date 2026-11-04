@@ -168,15 +168,18 @@ pub fn modal_fixture(gpu: &mut Renderer) -> ContentHost {
 /// Status copy is projected from original load state; no second state owner.
 pub fn refresh_status(host: &mut ContentHost) {
     let status = viewer(host).image_status();
-    let actual_help = if status == Some(ImageLoadStatus::Ready)
-        && viewer(host).can_execute(MediaViewerCommand::Fit)
-        && !viewer(host).can_execute(MediaViewerCommand::ActualLogicalSize)
-    {
-        let transform = viewer(host).transform().unwrap();
-        Some(if transform.scale > transform.relative_scale {
-            "Actual logical size is unavailable because Fit already enlarges this image. Zoom cannot go below Fit."
-        } else {
-            "Actual logical size is unavailable because it exceeds the maximum zoom of 8 times Fit."
+    // Geometry explains the Actual limit even while input is temporarily inactive.
+    // Using can_execute here would change the text height on blur/reactivation,
+    // resize the viewport after PointerDown, and cancel the new drag.
+    let actual_help = if status == Some(ImageLoadStatus::Ready) {
+        viewer(host).transform().and_then(|transform| {
+            if transform.scale > transform.relative_scale {
+                Some("Actual logical size is unavailable because Fit already enlarges this image. Zoom cannot go below Fit.")
+            } else if transform.scale * 8.0 < transform.relative_scale {
+                Some("Actual logical size is unavailable because it exceeds the maximum zoom of 8 times Fit.")
+            } else {
+                None
+            }
         })
     } else {
         None

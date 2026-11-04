@@ -274,3 +274,160 @@ Native095已通过的正向链仅沿原programme：完整焦点环/caret、三�
 | 父AC4/5/7整页/Gold7与其余23项体验 | #12原整页视觉/真实交互owner；图标#57独立 | 上表原Settings/五patterns/普通与IC焦点、错误、窄大字等具体场景保持，按相关输入补受影响项。PR214–217提供其有限局部证据，不是全页族、全品牌、全硬件/120Hz或全产品Gold7 |
 
 本次仅更新父票覆盖与剩余AC映射；Main的公开receipt、原owner有效范围和所有旧红/原source/program身份保留。#1/#55保持OPEN，#203/#204/#205的有效AC和关闭由原owner/主协调接收。未改registry/capabilities/production、未运行构建/CI/GPU/native/UI或新checker，无Release/部署。
+
+
+## 2026-11-05 恢复批次：原验收范围与缺项更新
+
+本节覆盖前文较早快照中的当前状态，不改原八条 AC、23 个 Gold7 ID、
+原失败或具体 source/program 身份。已完成且相关输入未变的检查继续复用；
+模块基础供应完成不等于关联父票全部完成。VoiceOver 按用户要求后置；
+原性能/120Hz、AccessKit、#131–#135 与跨仓迁移边界不自动恢复。
+
+### 八条 AC 的现有证据与下一交付
+
+| 原 AC | 本轮接收与范围 | 仍需完成 |
+|---|---|---|
+| AC1/AC2/AC3/AC6 | 原52根实用 Theme、语义/状态映射及45组件＋5 patterns＋2 examples准确投影复用；#206共享可读性已闭合 | 仅对真实新增/变更路径补相应检查，不重做52根迁移 |
+| AC4 | 原 Quiet/Search/工具动作合同，以及 Settings A、Master B、PR218 Filter/Async/Danger有限阅读图复用 | 原代表非默认品牌与页面强调对照；真实操作中主次层级的未覆盖部分 |
+| AC5 | 必要对比/状态、#206、Settings #207和#3原焦点/TextCommand接收保持各自范围 | 原表单/菜单/选择/浮层适用真实输入和物理阅读缺项，不把图片当操作证明 |
+| AC7 | A48、B24、C64、Progress既有1x/2x及PR218的192图＋4回归分别按原身份接收 | 原非默认品牌、窄常规/宽大字等代表差量，以及实际倍率/物理显示；不做品牌×尺寸笛卡尔全排列 |
+| AC8 | 原原件、red/修复/通过记录与公开批次保留；以下逐ID对应更新 | 后续真实结果持续回填；未完成父票不关闭，registry不由文档更新自动晋级 |
+
+### 原23个 Gold7 ID 的证据去重与缺项
+
+| 原要求ID | 本轮处理 |
+|---|---|
+| G1/warm-neutral-reading-foundation | 原主题与有限页面图复用；持续物理阅读/主次观察仍单列未验 |
+| G1/consumer-brand-derivation | 原品牌生成/隔离证据复用；代表非默认品牌的实际 Menu/Dialog 叠层与页面对照继续补缺 |
+| G1/whole-page-reading-composition | PR218 Filter48/Async64/Danger80以及A/B/C/Progress已有阅读批次复用；只补原未覆盖代表组合 |
+| G2/four-semantic-surface-roles | 原Surface消费合同复用；具体canvas/region/panel/overlay代表页面去重后补图审 |
+| G2/same-color-geometric-distinction | 原1x/2x浮层GPU保留；物理屏幕边缘观察未由GPU代签 |
+| G3/hairline-and-required-boundary-roles | 原必要边界、错误/focus和#206阈值复用；未覆盖同屏/物理阅读继续单列 |
+| G3/component-role-radius-map | 原角色映射/合理例外复用；仅补适用实例的实际阅读 |
+| G3/nested-radius-geometry | 只验已经声明同心的原实例outer/inset/inner与像素，不给普通相邻控件新增同心要求 |
+| G3/real-scale-rendering | 原离屏双倍率不冒实际双倍率；真实显示与适用reveal仍按原来源要求 |
+| G4/named-press-expansion-snap-presets | 原#9/#38有限合同及已接受结果复用；未覆盖真实按压/反向时序仍保留 |
+| G4/real-component-motion-integration | 原生产接线/已有浮层帧复用；原适用进入/退出/中间帧/卸载缺项继续 |
+| G4/direct-manipulation-and-interruption | 原Split软件/GPU接收不代签真实中断；Media有限拖动见下方，held取消尚未完成 |
+| G4/reduced-motion-path | 原降级接线复用；系统设置下适用控件/浮层动作及取消仍需实际证据 |
+| G5/ime-and-suggestion-priority | #3原真人有限接收、真拼音一次你好和M7/M8有限组字链分源复用；候选跟随及其余适用中日IME缺项保留 |
+| G5/durable-draft-recovery | 原journal/outbox/受控草稿证据复用；原本地fixture实际编辑/中断/重启/旧ack路径只补未覆盖部分，不冒真实断电 |
+| G5/manual-scroll-reading-anchor | M3 #22/#53原有限完成复用；本地阅读与Process #48真实交互分开，不重复M3，不代签跨进程 |
+| G5/explicit-return-to-latest | 原M3实际latest/嵌套阅读按原身份复用；其他原页面缺项逐入口处理 |
+| G6/zoom-preserves-reading-anchor | #201/#202设计/几何已关闭，后续#204的Actual/resize/最大说明按其原有限收据复用；不再仅凭本表旧“未验”重跑；未闭合严格条件保留 |
+| G6/bounded-split-and-pan-geometry | 已有普通图片pan；本轮新程序实际+260pt并在完整窗口外20pt松手，q/Y不变、Up无重复变换。未验的是释放后unheld移动；Split原真实项独立 |
+| G6/cancel-and-non-gesture-alternatives | 原按钮/键盘/生命周期证据分源复用；原子drag后再Esc不证明held取消。实际按住期间Esc/失焦等组合仍未验 |
+| G7/reusable-real-component-contract | M1/M3/M4/M6已有SDK有限供应及M2原AC复用；完整#5语义控件族仍逐项对账，不能凭modal少数case代签 |
+| G7/component-documentation-and-runnable-preview | 既有公共API/路由/预览复用；只有变化或拟晋级入口补适用检查，无成熟度自动晋级 |
+| G7/business-combinations-are-real | PR218完整有限192图与4回归已公开；form/filter/master/async/danger及Settings的真实操作与图审分列，Danger仍只模拟失败 |
+
+### 原范围内继续推进的明确任务
+
+- #48 CI197 的 geometry-pending native Tab continuation 和 owned Reader crash status
+  两个原失败未因随后通过而闭合；当前按精确失败日志定位，不循环跑通过掩盖。
+- #48 三子容器真实拼音 auxiliary/reveal/append 与候选移动缩放仍是独立 AC；
+  local Panel 系统菜单跨屏成功不能替代实际 Process parent/child/session 交互。
+- #25 真实组字期间 Append/Toggle 尚未完成。用户接受的仅是打开原生菜单后的
+  候选消失/拉丁拼音观察，不能扩大为后台更新通过。无既有不扰组字入口时保留未验。
+- #5/#205 原 AXPress 返回错误及外部通知/撤权未完成；内容点击和截图成功不覆盖它。
+- CU direct typeText 在系统标准文本框和SDK均丢CJK，#41保留工具边界；
+  真拼音输入成功不改签该工具路径，也不据该工具失败改写SDK正常输入。
+- PR225 的原代码批次 `55b574fa4e9a952589edbb1f28065168d6628b18` 包含有限D1、
+  windowDidMove坐标失效通知和consumer状态布局修复。本地受影响build/strict、
+  窗口外pan及完整fixture真实Renderer回归通过；native仍绑定MAIN overlay，
+  不称clean-public-head GUI通过。所需CI、合并及checkpoint单独记录，不提前称发布。
+
+Refs #1 #5 #12 #25 #41 #44 #46 #48 #55 #56 #203 #204 #205。
+
+
+### 2026-11-05 bounded visual and semantic evidence intake
+
+T32 supplements existing A48/B24/C64/PR218 acceptance with Settings at
+720x512/100% and 1440x960/150%, four themes and top/bottom positions (16 files),
+plus original Menu/Dialog overlays with existing nondefault brand 1 (8 files).
+The two explicitly allocated GPU capture tests, Gallery test-target build and
+strict clippy passed. All 24 original PNGs were opened individually and passed
+bounded visual review. They contain 20 unique pixel outputs: wide top/bottom
+pairs have zero scroll range and are not independent scrolling evidence.
+The large-text Save settings label wraps into two complete readable lines.
+
+The original E0425 failure is preserved. Its minimal test-only repair uses the
+existing tekes_ui_tokens::palette::gallery_brand_preset path; no new brand or
+production behavior was added. The declared concentric-geometry pixel contract
+reuses the unchanged PR217 passing source. Native interaction, physical display
+and scale, candidate-window following, and deferred VoiceOver remain separate.
+This batch does not close #1/#12/#55/#56.
+
+Evidence: artifacts/issue-12/t32-visual-remainder-20261105-r1/captures-002/.
+Per-image review SHA256:
+3209d6291b6b6d7627fb7ac3f1df6b9387e3a548b85054dd42adb1a18a0da9c4.
+Actual rendering binds the MAIN overlay source-freeze SHA256:
+a2546ea690c615718429a284cb276263721d29f5221c0f5f176dfa725ad62ee3.
+It is not clean-public-head native acceptance. The original 13 WIP files are
+preserved separately and are not imported by this batch.
+
+T31 maps Button/Icon, selection, text input, collections, Menu/Select and Dialog
+to current source, named tests and original native receipts; nine source hashes
+and nine primary receipt hashes were checked. The accepted Gallery native-tree.json
+export and actual readback satisfy the bounded original exported-tree inspection
+criterion. A historical future interactive Inspector note does not add a new
+panel to this batch. External AX actions/notifications in #205 remain unresolved,
+VoiceOver remains deferred, and #5 remains open.
+
+PR225 CI exposed stale composition-audit and then capability-input source hashes;
+both failures are preserved. Regeneration keeps 45 components, five patterns, two
+examples and capability declarations unchanged. Publication still requires actual
+required CI success on the final combined head, a normal merge and an annotated
+checkpoint. CI runner-capacity retry limits have been withdrawn by the user;
+real test failures require diagnosis rather than unchanged blind retries.
+
+
+### 2026-11-05 actual Gallery interaction defects and targeted repair
+
+The original normal Gallery batch exercised Filter, Async, Danger, Select,
+ComboBox and local Form interruption/restart through the single official CU
+operator. Accepted sequences retain their original signed-program identity
+44849438f6c9b99eb825dcae6cbcfb9307131e9c686839c756a8659c0a8d9dc2.
+These are software-driven native interactions, not physical-input, VoiceOver,
+network-service or power-loss acceptance. Original screenshots/AX observations
+remain in the named CU tool calls; no exported PNG files are claimed.
+
+Two concrete failures were repaired within existing #5/#12/#56 contracts:
+
+- Filter's actual AX input name was Project name because its renderer fell into
+  the generic name branch. Name only that original input Filter files. The
+  existing narrow/large-text regression now checks its mounted node name/value.
+- After a grounded coordinate click established Document 01 focus, Down selected
+  Document 02 but left Document 1 detail. Reuse the existing activation path when
+  the keyboard target changes, keeping focus/reveal. Home/End now implement the
+  already-advertised endpoints; repeated boundary navigation preserves detail
+  selection. Extend the existing Master reveal regression to cover this path.
+
+The exact tests are in gallery::workbench::interaction_tests:
+search_filter_row_wraps_without_overlapping_hits_or_results and
+master_detail_keyboard_focus_reveals_scrolled_rows_with_focus_bounds.
+Each ran once and passed; Gallery strict and normal build passed. The first
+qualified-name invocation selected zero tests and was correctly rejected; its
+failure is retained and the already-compiled binary was reused for the corrected
+names. No zero-test result is counted as a pass.
+
+Fresh signed programme
+7980760588ffa1b9957cd76fc3f73dd0693b6f685cfd9e067526a8f023a18fb5
+actually exposes Filter files, and Master Down/Up/Home/End selected rows match
+Document 2/13/1/80 details; scrolling list and detail remains separate. Original
+indexed-click focus uncertainty and a CU half-scale coordinate error remain
+separate from the confirmed product mismatch. Read-only detail drag selection
+and Copy were not established by that run and remain unverified.
+
+Form's first normal exit persisted draft B at revision28 while acknowledging
+revision15; a same-file restart visibly restored B and notifications, without
+reset/edit/submit. This is the explicit local draft fixture only. Original
+successful Filter/Async/Danger/Select/Combo/Form sequences were not repeated for
+the two repairs. System Reduced Motion propagation and other original motion,
+physical-input/candidate and external-AX criteria remain separately outstanding.
+
+Evidence: artifacts/issue-12/t33-page-native-20261105-r1/ and -r2/;
+source-freeze SHA256
+613e0565b8b11dd45b1e5f7964c13e075d89a8919a06dbe0dda86192d1412ea8.
+Actual native evidence remains MAIN-overlay evidence, not a clean-public-head
+claim. The original13 WIP files remain byte-identical and excluded from delivery.

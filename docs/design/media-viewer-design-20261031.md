@@ -481,3 +481,92 @@ strict MAX CLI通过后，fresh同PID/window after-CG即接fresh唯一own OSclos
 主原件位于 `issue-204/m9-qmax-native-runtime-20261104-r1/run04/`：pre image `3f29588d1f5c269bd552e259f64627286c24221680c53094f233b3423f961b4b`，resized image `5840bc487c860228c720d2dcd1b39779c56bbe2871875efecd808e00c3d88930`，QMAX-RESULT `330ce9a7b1dbc89c34e4cbfee9ccbec2560375978308b772e609956f0a4479d9`，owner release `976a80240cff786bf443c5c2570b3de91ee29141e4d0aae3d6ea48503c45ebe2`。raw链为pre10009行→resized11011行→full11012行，最后只增加CloseRequested。204审以66原件/22publication独立Fraction、原图直看/ICC只读观察封存：DOMAIN `2288cda885a6525eb06ac3a1c15958f1a5e11b23fa5f3f9ac41d7bd640ecf75a`、HANDOFF `f3e77c7e0f338a72aada1046cc4e36d055dcdcf8e79baab3ead64adbb60b9d2c`。203独立审 `f4f4793389e945269c5b707ecdf334dee3b1110c66f1247313cbdea78b61589c` / EVIDENCE `9f0bf22533b7399a0a3d581fd4e7b07373f9fea8635fcb4bbb2decb76f494f15` 未调用204数值reader或producer checker；Main有限接收 `b2b30a790a804eaa118fd7a4c8b5b74746ab7fd20f46d509226325539f76bb58`。
 
 最终普通候选仅native8c606、本节§22和README；Main独占metadata/docpin、整合和公开CI/发布。文档交付复用确切CPU144/Native149/203/Main证据，不重跑Rust/native/sign，不把后续CI或public SHA冒作新GUI实测。whole M9/#204/#203仍开放；D1释放后无按键运动、D2 held interleave、S1不同backing scale、physicalIME/VoiceOver/performance/pinch、AgentKit采用及所有原延期保持独立原门槛，像素时序问题也不被有限MAX投影接收覆盖。
+
+
+## 23. Issue204 ordinary atomic pan: tested finite result (2026-11-04)
+
+本节更新本批 PREPARED_NOT_RUN 计划为一次真实有限结果，仅接收原§3/§5/§7 M8-D1 的普通 atomic pan 几何/clamp/q及 viewport 外 native Up；不是 Rich Content M8 IME，也不关闭 full D1、D2、S1、whole M9/#203/#204。公开 PR224/f4e7772 的§1–22字节前缀保持，已过139/142/149及原失败不重验或追认。
+
+### 已测源码、配置和环境身份
+
+独立 `m8-drag-designated` 只在 `MEDIA_VIEWER_M8_DRAG_D1=1`、显式非零displayID/builtin identity、normal/nonmodal且无IME/read-only/stale/remount probes时可用。实际使用ID1/builtintrue/backing2；默认external-only和既有R1/A1/MAX分支不变。不能借旧A1/MAX旗标、binary或grant。native源SHA `8af5915e5105c5073476a6701004185f068c9fbf9eeb667da36aa86aece9a429` 仅新增此独立入口；原Viewer/几何/夹具/输入状态机/driver均不改。
+
+实际编译 baseline `f4e777231f87611ba7eda509e51a3949deba065e` +Main保留的CPU160五文件/其他WIP+D1源码/§23准备文档/README/docpin。一次affectedbuild和strict均exit0，未运行tests/native/CI；programme archive `f2e4546c2687faf04cf094eb22c75f6b68beb5f80dce69e331f65fb53ee2af1f`、compiler identity `75c1e845c4696d732c5f9e3b189be9b3d1233a93ab50fe5e741e953f6bfbdb13`、source freeze `f84918256c9ffd0b66b62bc0175d3c8c56e05900ba2b6a55fabb6ad8bf8e6a62`。原build收据保留14PID/2PG、source/status/cache不变及锁实际释放。不是clean-public编译，也不把最终文档或后续public merge改标成已运行native。
+
+原五工具准备新 `MediaViewerD1.app`，bundle ID `org.tekesapps.diagnostics.media-viewer-204.m9-ordinary-drag`，真实executable为 `Contents/MacOS/host-native-media-d1`，signed SHA `32cf6dcbef5129c500fe77e08f31a00fd24921662313447e07af003891d95b93`；receipt `a122f2cdad23a2bb935b4386adb7b197876bfdf8bb98bfd3ec7d4fceafcaf57c` 记录plutil/sign/verify/display/otool各0。204编译源/静态配置审核对retained native逐字等8af591，剔除唯一D1 arm逐字还原8c606；geometry/Content/fixture/Hostcomposition/AXbridge/config与CPU144冻结源相同，平台app.rs包含Main保留的较新overlay，因此不把旧149的整个programme runtime验收转用于本次。
+
+本次是新Main授权的完整独占窗口：grant `TekesUI-M9-Finite-Atomic-Pan-001` SHA `fee2777077f633324ba7baf7d36d7e7c2a84d185c0f6843b9582e011d56166ea`，2026-11-04T15:04:18.942941Z→15:14:18.942941Z，总600秒=420输入+180清理，new-case native cap480；当前用户主动双屏模式明确无HID60 scheduler门。此为独立D1新上下文，不复用旧MAX的15秒启动阶段或更改旧失败的原预算。唯一CU executor `01a1a5b8-6c60-7d62-9c39-8b485fec2423`，Main持有原build/GPU/lifecycle守卫，204/203不争前台。
+
+### 原实际输入与逐事件几何
+
+实际app23785/controller23765，原process/current_exe、source/program/run-binding与normal Created主屏ID/class一致。原CU先getApp/独立getScreenshot，在当前非交互status区校准Vec[800,416]；原native Down/Up为content(400,176)，不激活Close/Retry。当前2x/full-window title32对应由这次真实命中建立，借鉴同日Rich成功坐标方法，但不把Rich的组字失败或旧Media图像offset迁为本次已通过证据。
+
+四次原Zoom AXPress仅建立双轴overflow前提，不重复签zoom验收；每次用新AX索引，原native key15 Press各一次。Tab四次首次到VIEW20401即停：Fit20413→Close20416→Retry20417→VIEW20401；原Focus(true)已先于输入，后无Focus(false)。原固定Ready logical200×100/bitmap16×8、无Retry/source/load切换及原图/语义合证，normal不直接输出image_status或全七项按钮计数。
+
+pan前同一post-arrange V=(0,204,480,516)，image size=(1171.875,585.9375)，q=(5/4)^4=625/256，s=375/64，T=(-5535/16,-1119/32)=(-345.9375,-34.96875)，两轴真实overflow。一次独立官方 `app.drag([480,988],[840,416])` 完成后，原native序列为Down(240,462)→Dragged(240,462)→Dragged(420,176)→Up(420,176)。终点y176<viewport top204，但仍在own content480×720内的status区，**仅为viewport外释放，不是整个OS窗口外释放**。
+
+204和203分别从原完整raw用独立regex/Fraction解析，不调用actor派生读数或彼此numeric checker。首个零位移Dragged不改变T，第二个Dragged实际delta=(+180,-286)为viewport pt，不能再除s。X未钳制，T.x=-5535/16+180=-2655/16=-165.9375；Y夹到Vh−imageH=516−9375/16=-1119/16=-69.9375。每个实际点的clamp均符，q=625/256、s=375/64、Manual、VIEW20401和post-arrange V均保持。outside-VIEW的Dragged仍更新原Viewer，是实际路由的功能证据；不冒normal未直接记录的internal capture-owner/lease查询。
+
+四次pan publication的transform通知数为0/0/1/0；Up同点没有额外变换/通知。完整raw为28 events/27 publications，全部normal Close/Retry业务值0；全程7项变换通知包含启动/layout及四次Zoom前提，不是7次pan。原preamble input_source=UNATTESTED保留，实际CU calls提供非物理click/AXZoom/Tab/atomicdrag来源，不据API成功、截图或SDK返回单独签AC。启动transform=None及原render前/后记录均不删除，不把旧normal transform与新post-arrange V误配。
+
+### 窗口、像素、释放及准确限制
+
+原Created AppKit frame=(516,140,480,752)，只有一次initial Resized(content480×720)；pan期间原content/V/image extent稳定、无新增Moved/Resized。原CU记录没有 `windows_for` 或fresh前/后CG/window-server origin pair，因此**不声称独立CG origin/OS外框不变已证**；相同960×1504图片大小也不是该证明。
+
+203从原CU toolreturns离线提取未改写pre/post JPEG，204/203直接查看；可见图像实际向右/上平移，toolbar/viewport范围视觉稳定。pre图有VIEW环，post图无可见环，但raw/AX仍VIEW焦点；只签图像平移观察，不签settled ring像素或据此定产品bug。无新截图、重编码/改图或新UI补帧。pre JPEG SHA `e24120a512b9a99b28ffe743862e1b5db9300501f0fd453b546f99af393add31`，post SHA `615d3b76b1b950cf8968369eac6b189d5d3b1cc41c3de94e641c5046f7cb5ad5`。
+
+Up后没有真正unheld Moved，也没有第二pan；原source释放drag的合同不能代替runtime capture-lease观察。因此full D1的释放后残留capture/后续无按键运动仍NOT_RUN。D2按住期间Escape/失焦等interleave未做，当前atomic API不提供split-held路径；S1实际不同backing scale未提供，外接屏存在不是倍率迁移证明。所有physicalIME/VoiceOver/performance/pinch、旧149像素时序限制及whole M9/#203/#204保持独立原门槛。
+
+末尾只有fresh AX唯一own OSclose11导致CloseRequested，之后无UI查询。app23785 exit0/112.1953762秒/timed_out=false，stdout/stderr空；Main fresh核app/controller PIDPG及两原锁空、inputs unchanged/inputReleased=true/inflight=false，清canonical。Main实际release SHA `57e8f52f871cca32dd7e800c303158f24c7b95aa18e408581d65560d38f0b3c7`，资源释放不等于整票业务接收。
+
+原grant.mode/execution_card及source-program-env-binding.input_source沿用Rich IME描述，是明确metadata偏差。Main追加 `MAIN-METADATA-ERRATA.json`（SHA 9b00508c7ba08856519a1803afaae539c50399bb46bd79c8a261bcb89b72d78f）绑定实际8d2c D1卡和非物理CU输入；原grant/binding/raw不改、无重跑/新测试。实际grant.scope/program/argv/operator_materials/profile、OWNED-CONTEXT的D1 env、normal原事件和CU calls本来均为D1，不能据复制标签冒IME证据。
+
+主原件 `delivery/media-d1-cu-runtime-20261104-r1/`，原raw SHA `ab758384f9252a58db1a867a1166d25776bd908aa3bebddfc276e2a8f46a7bc2`。204独立完整审见 `issue-204/d1-actual-domain-review-20261104-r1/`；203实际审 `issue-203/finite-pan-actual-review-20261104-r1/REVIEW.json` SHA `0f79c3bb7baf5a23b9def675b20b108959d9bd3c133f9dd98c02aa6102f0004c`，原publication/calls/returns/图像均具名。仅有限atomic pan几何/clamp/q及outside-VIEW native Up接受，Main正常汇总/metadata/docpin/公开CI与发布另具名，不为最终文档重编或重跑本次原生。Issue204已补本域有限结论，原AC及历史红例不改。
+
+## 24. Stable status layout during drag activation (#204, #203; 2026-11-05)
+
+A new native check delivered Down at (240,462), Dragged and Up at (500,462)
+to the original consumer while its full OS window remained 480 points wide.
+The Up was 20 points beyond the window, but horizontal pan remained unchanged.
+This failure is separate from the earlier focused-pan pass in section 23.
+
+The consumer selected Actual-size explanatory text using command availability.
+After window deactivation, that transient availability shortened the status text
+and increased the viewport height from 516 to 532 points. PointerDown restored
+the longer text, shrinking the viewport to 516 points and cancelling the new drag
+under the existing resize-cancels-input contract. Vertical translation changed
+by -8 points to preserve the image centre; it was not horizontal pan.
+
+The consumer now derives this geometry explanation from Ready image state and the
+published transform. Window activity and presentation readiness still control
+command execution, but no longer change this explanation or its text layout.
+Core viewport-change, focus-loss, Escape and lifecycle cancellation rules remain
+unchanged. No extra state owner or public API is introduced.
+
+Affected native build and strict clippy passed on the actual MAIN overlay, with
+all 13 original WIP files preserved and only the consumer fixture repair added.
+The new signed programme completed one native outside-window pan: Down at
+(240,462), Dragged/Up at (500,462), translation X -345.9375 to -85.9375 (+260),
+Y -34.96875 and relative scale 2.44140625 unchanged, and no additional change on
+Up. Full window 41050 stayed at CG (516,90,480,752), so the release was outside
+the complete OS window. The programme closed normally (exit 0).
+
+Startup Focus(false/true) was observed with stable status layout. Attempts to
+switch foreground after zoom did not emit those native focus events; they are
+not claimed as a replay of post-zoom OS deactivation. A separate real-Renderer,
+CoreText and complete-fixture regression explicitly drives Host inactive/active,
+refreshes status and layout, starts a new drag, verifies an unclamped +40-point
+pan and one transform notification, then verifies release without duplication.
+That exact ignored test was explicitly executed: 1 passed, 0 failed, 0 ignored;
+its build and strict clippy also passed. Host-state testing is not physical or
+external OS-focus evidence. The two evidence scopes remain separate.
+
+Primary records: coordinator delivery work/parallel-batch1/m9/outside-runtime-r2/
+(original failure), fix-build/actual-run-002/ (affected build), fix-runtime/
+(native result), and regression-validation/actual-run-001/ (targeted test).
+The signed native binding is SSD artifacts/issue-204/
+status-layout-fix-native-20261105-r1/media-status-fix-receipt.json. Native evidence
+retains its compiled overlay identity; it is not a clean-public-head execution.
+Post-release unheld motion, held Esc/deactivation cancellation, different actual
+backing scales and other original unverified criteria remain open. This finite
+repair does not close #204 or #203.
