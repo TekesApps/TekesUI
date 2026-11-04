@@ -80,3 +80,23 @@ Ordinary pointer drag/outside release, OS resize, enabled Actual logical size,
 backing-scale transitions, interleaved active-drag cancellation, retained stale
 native AX identity, focused/physical IME, VoiceOver, performance and pinch retain
 separate unverified boundaries. No source package or image count closes them.
+
+
+## Independent A1 designated-display acceptance
+
+`MEDIA_VIEWER_DISPLAY_POLICY=m8-actual-designated` additionally requires explicit
+`MEDIA_VIEWER_M8_ACTUAL_A1=1`, display ID/class and the original normal nonmodal
+case without IME/read-only/stale/remount probes. Default external-only and the
+separate R1-only policy keep their existing contracts.
+
+CPU141 built this independent candidate on public a81b7cd plus its exact scoped
+source/documentation overlay and preserved WIP. Native142 used a fresh signed
+bundle and grant: one actual bottom-border shrink admitted Actual at f=24/25,
+then one activation produced Manual s=1, q=25/24 and a 200x100 logical image.
+This finite A1 result preserves resize-capture timing differences and a 2pt
+vertical crop on each side in the 96pt viewport; it does not claim settled
+resize pixels, a fully visible uncropped image or a native run of a future
+public merge. See design section 21 and the immutable Native142 receipts.
+
+q>8, held gestures, backing migration, physical IME, VoiceOver, performance and
+other remaining acceptance retain their original separate scope.

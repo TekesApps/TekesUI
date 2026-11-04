@@ -410,3 +410,28 @@ fresh grant Native139 SHA4f0746bb6564a4d430b92d5c7df79e541c96bb6e8061a02e930d19b
 主原件 `issue-204/m8-primary-gesture-runtime-20261103-r1/run05/`：DOMAIN-REVIEW SHA4dde2e1b81df5142dc5b4a3d123fa0884d7d692cb3c162e1c365057ba2753e6f；独立逐publication审bf49e1d5；独立原图审1ce4d6bf；HANDOFF c55b0a6c。204结论为 **finite original M9-R1 actual primary OS-border resize / Manual anchor / current focus boundary PASS，待Main有限接收及#203定向actual/最终§20审**；exit0、certificatePASS或数值一致自身不自动决定AC。§1–19和113/118原结果、130/132/134/136旧失败保持不可变，source89520与文档本节为仅两路径交付，公开intake/所需CI由Main独立普通batch负责。
 
 剩余D1完整窗外释放+后续无按键移动、D2 held/interleave、S1不同backing倍率迁移、genuine qActual>8/enabledActual、physicalIME/VO/performance/pinch及wholeM9/整票均不因此通过；无新source补偿/renderer/driver/权限/设备设置/AgentKit采用承诺。原geometry CPU合同可复用，实际139冻结输入与未来current-main/公开构建身份严格区分，不因head变化重跑所有旧矩阵，也不把本次候选runtime签为未测的新环境。
+
+
+## 21. 独立 A1 指定屏策略与 Native142 Actual 有限实测（2026-11-04）
+
+本节对应原 #204 A1/§3 Actual 逻辑尺寸合同。普通 consumer 新增独立 `m8-actual-designated` 分支，严格要求 `MEDIA_VIEWER_M8_ACTUAL_A1=1`、明确非零 display ID/builtin class、normal nonmodal 且无 IME/readonly/stale/remount 探针；默认 external-only、原 R1-only 与 M6/只读分支保持。原203合同审77449715确认精确 native89520→f0a946仅新增该 match arm，删除后全文件逐字还原，不改图像、窗口/Viewer布局、transform/q边界、命令或原验收门。原R1/Native139已随PR222公开，不重复或借用其授权/二进制。
+
+CPU141在实际公开baseline a81b7cd4685b06aca451a0937e9abbe5da6b4510 +独立A1源码/候选设计/README三文件+8保留WIP上完成定向strict/build各0，原engine/build_lock/environment/SSD/shared cache/jobs2复用。实际programme6487214024b9fae7b6fbcd377ccdeaf2c278d4af6d2272070533280a5079382f、identity2089ecde、compiledfreeze fa1afe3e；255归档引用核对，原五工具派生新A1 bundle99ccae9e/signed38b416d5。MAIN3640源哈希/status/WIP恢复，git stat刷新仅改变index缓存字节，staged entries/cached patch相等后恢复原index字节；首次index断言及已还原后再次reverse-check拒绝的诊断保留，不重跑build。CPU释放/源恢复收据163bf113。最终本节是实际结果补录，不冒称新公开环境native复验。
+
+原139/134真实raw新解析链离线核对73工件/23原始pins：f>1的三份实际样本正确拒绝，历史PID不能过live门；sealed图像3fit/独立holdout0及算术尾部不是live准入，也不伪造eligible/Actual成功样本。新绑定packet981094fe逐一钉住18执行材料/16编译源/新bundle，保留原120+10/end60/HID60/240秒总窗及共享15秒startup；所有输入在新grant142内。
+
+Native142 app66688/window36671使用上述新程序，fresh HID106.21秒；process→一次原readonlygetApp→Created在同15秒内完成，Created实读03:38:22.875Z<截止03:38:23.835Z，随后原identity绑定。原ZoomIn一次、首次VIEW Tab4即停、Right一次，保存当次完整AX/JPEG105002bytes/raw。原Ready来自固定ready图像夹具/无Retry或source/load动作以及语义/原图，normal不直接输出image_status，不以按钮可用单独替代Ready。
+
+本次新图+同PID/window CG的live证书5752f40f，3fit与独立holdout合格后，只做一次本次派生底边Vec[480,1503]→[480,631]。原生content480×720→480×284；ownCG outer480×752→480×316，X516/Y90不变，新footprint在原主屏内。480×284是这一次实测可达尺寸，不是OS最小值；min_size=None仅说明应用未设置contentMinSize。没有第二resize、setFrame、改图像尺寸或改q门。
+
+resize的全部post-arrange发布保留：先V=(0,204,480,80)、s1/T(140,-10)，后状态重排V=(0,188,480,96)、s1.2/T(120,-12)，q5/4保持。不能把render前transform与render后V混配。实际准入V480×96给f=min(480/200,96/100)=24/25、qActual25/24∈[1,8]，fresh原Actual唯一enabled、raw+AX VIEW focus成立；admission160f9b24只证明该步准入，不签效果。
+
+随后仅一次原Actual AX activation：post−resized原件delta恰一key17 Press，其原response consumed/changed/activated=true、focus20414与原Actual映射相符；不把CUA index5当原生key17。新post同一post-arrange几何为V=(0,188,480,96)、image=(140,186,200,100)，s1、q25/24、Manual、local T=(140,-2)，符合原中心anchor后clamp，AX为100% logical size。逻辑200×100不同于bitmap16×8或backing2x；不是仅凭click返回/AX100%判定。原drain两项分别为先前resize s1.2与本次Actual s1，不能误称两次Actual或整段单通知；normal没有全7项动作直接计数，不补造。
+
+### 图像时序与有限可见范围
+
+Main、204与203直接查看三份原图。resized原图仍为旧两行Fit unavailable文案/400物理像素图宽，较后AX/raw已enabled/120%/V96/image240×120；这张图不能作为最新布局、status copy或focus ring同步/settled PASS，也不能单靠capture猜产品缺陷。最终post原图400物理像素宽符合Actual逻辑200pt，100高逻辑image在96高viewport上下各裁2pt，是原中心clamp/clip结果；不称整图未裁视觉验收。post focus在Actual按钮符合一次AX动作，不声称R1的VIEW focus保留。
+
+post原AX/JPEG/raw与fresh after-CG落盘后立即fresh唯一own OSclose，再做离线结果审；app exit0/100.7597718秒/timed_out=false，原stdout/stderr空，PID/PG/GPU成对释放/input pins unchanged、无关闭后UI查询。Main实际release c4f5a32d；204 domain ca6ff85a以独立25publication Fraction/66原件/原图ICC分析审，203独立actual审b8834328未调用204数值reader，两者接受有限原A1 Actual准入/激活/逻辑尺寸效果并保留上述像素限界。Main有限接收3bf18108。
+
+主原件 `issue-204/m9-a1-native-runtime-20261104-r1/run01/`；204交接edfc9164、逐publication560383f1、原图4ce0bda8；203审 `issue-203/native142-a1-actual-review-20261104-r1/REVIEW.json`。原Native140 M5 operator检查拼写失败/Pin未运行及所有历史红例不改标。A1不关闭whole M9/#204/#203；qActual>8须独立新具名策略/真实正V且f<1/8，D1释放后无按键移动、D2 held interleave、S1不同backing倍率、physicalIME/VoiceOver/performance/pinch与AgentKit采用均保持原范围。当前两屏ratio2是环境记录，不是不同scale迁移事件或等用户操作。
