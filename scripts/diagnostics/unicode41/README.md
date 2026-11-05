@@ -10,17 +10,19 @@ existing occupancy/input guards. Raw logs contain the fixed diagnostic text.
 
 - SDK: `examples/composition-consumer/examples/unicode_input_compare.rs`, through
   the existing registered build helper/cache on MAIN, not a candidate cache.
-- AppKit: compile `AppKitBaseline.swift` using `xcrun swiftc -swift-version 5
-  AppKitBaseline.swift -o AppKitBaseline` in that same allocated build window.
-  This standalone example uses system AppKit; it is not a production dependency.
-- `AppKitStockBaseline.swift` is the separate default-editor Pinyin dispatch
-  observation control; it accepts `pid-hardware-key pinyin-first DISPLAY_ID`.
-- `AppKitUntouchedStockBaseline.swift` is the manual default-editor outcome
-  control. Compile with `xcrun swiftc -swift-version 5` and pass
+- AppKit controls are external, independent test artifacts, not sources or build
+  dependencies of this pure Rust repository. Obtain the exact archived source
+  identified below before compiling outside the repository with the original
+  Swift41 helper/toolchain and registered cache. Never rename/embed foreign source
+  to bypass the repository boundary.
+- External `AppKitBaseline.swift` is the instrumented standard field-editor
+  control; `AppKitStockBaseline.swift` observes application dispatch around the
+  default editor and accepts `pid-hardware-key pinyin-first DISPLAY_ID`.
+- External `AppKitUntouchedStockBaseline.swift` is the manual default-editor
+  outcome control with standard target-nil Edit/Paste Command-V. Pass
   `SOURCE CASE DISPLAY_ID`; SOURCE is `physical-keyboard`, `cua-typeText` or
-  `paste`. It has no key/editing callback hooks and records only presentation
-  and an explicit final outcome. Its standard Edit/Paste menu uses target nil
-  and Command-V. Preserve the historical no-Edit-menu program identity.
+  `paste`. No key/editing callback hooks or ready record are added. Preserve
+  the historical menu-less stock program identity.
 - SDK and instrumented `AppKitBaseline` arguments: `SOURCE CASE`.
 - Sources: `cua-typeText`, `pid-hardware-key`, `local-key-characters`, `paste`,
   `physical-keyboard`. This argument is an operator declaration, not proof.
@@ -235,3 +237,30 @@ Issue41 paste-comparison evidence. These finite results do not prove bytewise
 clipboard restoration, CUA App.paste, typeText repair or human physical IME.
 The SDK archive retains its original MAIN WIP compilation context; it is not
 proof of a build from only the publicly delivered diagnostic files.
+
+## External AppKit control source identity
+
+These controls are not part of the current pure Rust source tree or its build.
+Exact previously published source remains independently retrievable from the
+fixed historical commit below. Download the raw file from each linked page to a
+separate external diagnostic directory, outside this repository and its managed
+worktree; verify its SHA256 before compiling. Do not restore these files into the
+current repository, rename/embed them, or add a repository compiler hook.
+
+- [AppKitBaseline.swift](https://github.com/TekesApps/TekesUI/blob/05830cb7d54694431ced01565db40446c4b304eb/scripts/diagnostics/unicode41/AppKitBaseline.swift): SHA256 `04d0cc07dcd16d73a316846cc3464a00be48ceb3d3a7ba39569e942c73b24fba`.
+- [AppKitStockBaseline.swift](https://github.com/TekesApps/TekesUI/blob/05830cb7d54694431ced01565db40446c4b304eb/scripts/diagnostics/unicode41/AppKitStockBaseline.swift): SHA256 `488b4c7e9fca4cfb35695147cf241b8ef656fca1df24bc8589b40b66be3b0dce`.
+- [AppKitUntouchedStockBaseline.swift](https://github.com/TekesApps/TekesUI/blob/05830cb7d54694431ced01565db40446c4b304eb/scripts/diagnostics/unicode41/AppKitUntouchedStockBaseline.swift): SHA256 `602feb1c6d25e6c4297ce48d919f9368154e8c7299e0e47f04a2ed62ce95b501`.
+
+Compile/package the external files only in a separately allocated diagnostic
+build window, retaining source/program/toolchain receipts and the source-specific
+arguments above. The standard AppKit controls use system frameworks. Cargo and
+repository CI neither fetch nor compile them. The existing Rust SDK example,
+fixed inputs, comparator and system-Pinyin steps remain in this repository.
+
+Historical commit `05830cb7d54694431ced01565db40446c4b304eb` failed CI199's
+Pure Rust boundary because it included these files. It is retained solely as an
+immutable external comparison-source retrieval reference, not a validated or
+supported buildable product baseline. Current-tree removal does not erase that
+failure or change the original archived programs and finite input outcomes.
+The corrected current commit must independently pass its repository checks/CI;
+the historical-source links do not certify typeText repair or human physical IME.

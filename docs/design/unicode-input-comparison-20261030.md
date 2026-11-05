@@ -134,3 +134,27 @@ The SDK archive contains its actual MAIN WIP compilation context; passing that
 archive does not verify a clean public baseline containing only this diagnostic
 closure. Exclude unrelated candidate-geometry platform WIP from this delivery;
 public source strict/build acceptance must name its actual integrated baseline.
+
+
+## Pure Rust publication boundary correction (PR232 / CI199)
+
+CI199 rejected the three newly tracked Swift control sources under the existing
+Pure Rust source boundary. That failure remains retained. Issue41 requires an
+independent standard-control comparison and reproducible system-IME procedure;
+it does not require foreign source inside the TekesUI repository. The standard
+AppKit controls therefore retain their existing independent external artifact
+identities. Their exact source hashes and archived locations are listed in the
+README; all original sources, binaries, failures and accepted input results are
+preserved. The Rust SDK diagnostic and Python comparison/procedure remain public.
+
+The three Swift paths are removed only from this PR's public tree. No boundary
+exception, extension disguise, embedded source, foreign compiler invocation or
+production API change is introduced. Local MAIN WIP is not removed. Exact external
+source is retrievable through the README's permanent per-file links to published
+commit `05830cb7d54694431ced01565db40446c4b304eb`, with individual SHA256 values.
+Fetch into a separate diagnostic directory outside the managed repository and
+verify the bytes before any separately allocated external compilation. Cargo/CI
+never fetches or compiles this source. The historical commit failed the source
+boundary and serves only as immutable comparison material, not a validated or
+supported product build baseline. The corrected public commit must pass its own
+static checks/CI; CI199 and all old typeText failures retain their identities.
