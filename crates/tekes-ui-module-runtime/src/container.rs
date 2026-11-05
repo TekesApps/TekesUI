@@ -2960,12 +2960,18 @@ impl Component for ProcessContainer {
         if self.content_pointer_enabled() && !self.input_ready() {
             if self.content_captured()
                 && pointer.is_primary()
-                && self.delegates_curve_focus()
+                && (self.delegates_curve_focus()
+                    || self.curve_geometry.is_none()
+                        && !self.geometry_dirty
+                        && !self.geometry_input_pending)
                 && matches!(
                     pointer.phase,
                     PointerPhase::Up | PointerPhase::Move | PointerPhase::Drag
                 )
             {
+                // A same-geometry legacy repaint (for example caret blink)
+                // cannot drop the original captured release. Queue it through
+                // the existing session/view/capture-validated delivery path.
                 let input = match crate::native_content::pointer_input(pointer, self.view_frame) {
                     Ok(input) => input,
                     Err(error) => {

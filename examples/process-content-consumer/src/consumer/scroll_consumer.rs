@@ -700,6 +700,99 @@ pub(super) fn roundtrip() -> Result<serde_json::Value> {
         let old = host.text_input_snapshot();
         let epoch = host.focus_epoch();
         let focus = host.focused();
+        if id == IDS[0] {
+            // Match native CaretBlink between the original marked editor's
+            // preserving-focus Auxiliary Down and Up, without a render in between.
+            let actions = inspect_container(container(&host, id))?;
+            let aux_point = point(&actions, "aux_frame", origin);
+            let old_actions = actions["aux_activations"].as_u64().unwrap();
+            ensure!(
+                host.event(&ContentEvent::PointerDown(aux_point))
+                    .capture_pointer,
+                "original marked Auxiliary did not acquire capture"
+            );
+            ensure!(
+                host.pointer_capture()
+                    .is_some_and(|capture| capture.0 == id)
+            );
+            host.get_mut(id)
+                .unwrap()
+                .component_mut::<ProcessContainer>()
+                .unwrap()
+                .set_view_context(ViewContext {
+                    reduced_motion: true,
+                    caret_visible: true,
+                    elapsed_nanos: 1,
+                    ..Default::default()
+                })?;
+            ensure!(
+                !container(&host, id).input_ready(),
+                "caret repaint did not create the original release barrier"
+            );
+            let release = host.event(&ContentEvent::PointerUp(aux_point));
+            ensure!(
+                release.consumed,
+                "captured Auxiliary release was dropped during caret repaint: {release:?}"
+            );
+            // input_ready only admits input against the current geometry. It
+            // does not acknowledge a queued business action; keep the ordinary
+            // prepare/render cycle alive until that original release completes.
+            let release_deadline = Instant::now() + Duration::from_secs(15);
+            loop {
+                for reader_id in IDS {
+                    host.get_mut(reader_id)
+                        .unwrap()
+                        .component_mut::<ProcessContainer>()
+                        .unwrap()
+                        .prepare(&mut gpu)?;
+                }
+                let frame = Rect::new(0., 0., 960., 420.);
+                host.render(
+                    &mut Scene::new(),
+                    &mut Text,
+                    frame,
+                    frame,
+                    Theme::LIGHT.into(),
+                )?;
+                for reader_id in IDS {
+                    ensure!(
+                        container(&host, reader_id).error().is_none(),
+                        "deferred Auxiliary worker error {:?}",
+                        container(&host, reader_id).error()
+                    );
+                }
+                let released = inspect_container(container(&host, id))?;
+                ensure!(
+                    released["aux_activations"]
+                        .as_u64()
+                        .is_some_and(|n| n <= old_actions + 1)
+                        && released["submits"] == 0,
+                    "deferred Auxiliary duplicated an action: {released}"
+                );
+                ensure!(
+                    host.text_input_snapshot() == old
+                        && host.focus_epoch() == epoch
+                        && host.focused() == focus,
+                    "deferred Auxiliary release changed the marked editor continuation"
+                );
+                if released["aux_activations"].as_u64() == Some(old_actions + 1)
+                    && released["aux_pressed"] == false
+                {
+                    break;
+                }
+                ensure!(
+                    Instant::now() < release_deadline,
+                    "original captured Auxiliary release did not complete: {released}"
+                );
+                std::thread::sleep(Duration::from_millis(5));
+            }
+            ensure!(
+                host.text_input_snapshot() == old
+                    && host.focus_epoch() == epoch
+                    && host.focused() == focus,
+                "deferred Auxiliary release changed the marked editor continuation"
+            );
+        }
         let states: Vec<_> = IDS
             .iter()
             .map(|id| container_message(container(&host, *id), "reading-inspect"))
