@@ -576,9 +576,9 @@ fn ready_status_keeps_layout_and_new_drag_across_window_reactivation() {
     let frame = Rect::new(0., 0., 480., 720.);
     // Match the native consumer's post-event status refresh and original layout.
     let publish = |host: &mut ContentHost| {
-        fixture::refresh_buttons(host);
-        fixture::refresh_status(host);
-        scene(host, frame, frame);
+        let active = host.is_window_active();
+        fixture::render_frame(host, &mut Text::new(1.), frame, active, Theme::LIGHT.into())
+            .unwrap();
     };
     let snapshot = |host: &ContentHost| {
         (
@@ -660,4 +660,87 @@ fn ready_status_keeps_layout_and_new_drag_across_window_reactivation() {
     assert!(host.pointer_capture().is_none());
     assert_eq!(snapshot(&host), (status, viewport, expected));
     assert!(viewer(&mut host).drain_transform_changes().is_empty());
+}
+
+#[test]
+#[ignore = "requires an allocated real Renderer/GPU window"]
+fn first_zoom_button_after_reactivation_uses_published_availability() {
+    let mut gpu = Renderer::new_headless().expect("real GPU required");
+    let mut host = fixture::fixture(&mut gpu);
+    let frame = Rect::new(0., 0., 480., 720.);
+    let mut text = Text::new(1.);
+    // Use the same consumer publication routine as native, not a copy of its
+    // ordering or a test-only manual enabled-state repair.
+    for active in [true, true, false] {
+        fixture::render_frame(&mut host, &mut text, frame, active, Theme::LIGHT.into()).unwrap();
+    }
+    // Startup layout changes precede the first-click observation interval.
+    // Draining uses get_mut, so the final active publication must follow it
+    // before any input; retain every reactivation/click notification below.
+    let _startup_changes = viewer(&mut host).drain_transform_changes();
+    fixture::render_frame(&mut host, &mut text, frame, true, Theme::LIGHT.into()).unwrap();
+    let zoom = fixture::COMMANDS[1].0;
+    assert!(
+        !host
+            .get(zoom)
+            .unwrap()
+            .component::<Button>()
+            .unwrap()
+            .button
+            .state
+            .disabled,
+        "first reactivated publication must enable Zoom in before another input"
+    );
+    let viewport = host.get(VIEW).unwrap().frame();
+    let before = host
+        .get(VIEW)
+        .unwrap()
+        .component::<MediaViewerContent>()
+        .unwrap()
+        .transform()
+        .unwrap();
+    assert_eq!(before.relative_scale, 1.);
+    let point = host.get(zoom).unwrap().frame().center();
+    let mut actions = fixture::Actions::default();
+    for event in [
+        ContentEvent::PointerDown(point),
+        ContentEvent::PointerUp(point),
+    ] {
+        let response = host.event_with_text(&event, &mut text).unwrap();
+        assert!(
+            response.consumed,
+            "original first-click route must consume {event:?}"
+        );
+        assert_eq!(actions.dispatch(&mut host), (0, 0));
+        fixture::render_frame(&mut host, &mut text, frame, true, Theme::LIGHT.into()).unwrap();
+    }
+    assert_eq!(host.focused(), Some(zoom));
+    assert_eq!(
+        host.get(zoom)
+            .unwrap()
+            .component::<Button>()
+            .unwrap()
+            .activations,
+        1
+    );
+    assert_eq!(host.get(VIEW).unwrap().frame(), viewport);
+    let after = host
+        .get(VIEW)
+        .unwrap()
+        .component::<MediaViewerContent>()
+        .unwrap()
+        .transform()
+        .unwrap();
+    assert_eq!(after.relative_scale, 1.25);
+    assert_eq!(after.mode, MediaViewerMode::Manual);
+    assert_eq!(actions.dispatch(&mut host), (0, 0));
+    assert_eq!(
+        host.get(VIEW)
+            .unwrap()
+            .component::<MediaViewerContent>()
+            .unwrap()
+            .transform(),
+        Some(after)
+    );
+    assert_eq!(viewer(&mut host).drain_transform_changes(), vec![after]);
 }
