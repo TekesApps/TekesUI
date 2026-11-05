@@ -198,6 +198,17 @@ updates; no input replay, geometry bypass, forced focus or fixed selftest clock 
 introduced. The native adapter simply avoids creating its own invalidation at the
 input-dispatch boundary. Curve routing and all original native assertions remain.
 
+Captured pointer continuation is distinct from fresh input admission. A caret-only
+repaint between Down and Up must retain the original primary Move/Drag/Up through
+the existing bounded input queue when the legacy View geometry is unchanged.
+Delivery revalidates the original session, View and capture; real geometry changes,
+cancellation and inactive scopes retain their existing rejection barriers. Fresh
+Down is still rejected while the frame is not ready. Input readiness alone does
+not acknowledge a queued action: the consumer continues its ordinary prepare/render
+cycle until that action completes, under its existing deadline. The Issue 48
+regression requires exactly one Auxiliary activation, cleared pressed state, and
+unchanged composition and focus after the caret repaint.
+
 Native063 on public `c138a7b4f456961132a35fa424bd11c9b5353e87`, program
 `96f0c8195d0d4f7e013423070b6a315ec6b88f2a7072a07244ec394b676737fb`,
 reached all three Ready children. Its first click at (166.5, 388) is inside the
