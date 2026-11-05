@@ -1,10 +1,11 @@
 use tekes_ui_controls::{
-    Insets,
+    ButtonTextRenderer, Insets,
     composition::*,
     extended::{Axis, Stack},
 };
 use tekes_ui_render::Renderer;
-use tekes_ui_scene::Size;
+use tekes_ui_scene::{Rect, Scene, Size};
+use tekes_ui_tokens::Palette;
 pub const ROOT: ComponentId = ComponentId(20400);
 pub const VIEW: ComponentId = ComponentId(20401);
 pub const IMAGE: ComponentId = ComponentId(20402);
@@ -122,17 +123,58 @@ impl Actions {
 }
 
 /// Disabled state is a read-only projection of the same Viewer owner.
-pub fn refresh_buttons(host: &mut ContentHost) {
+pub fn refresh_buttons(host: &mut ContentHost) -> bool {
+    let mut changed = false;
     for (id, _, command) in COMMANDS {
-        let enabled = viewer(host).can_execute(command);
-        host.get_mut(id)
+        let enabled = host
+            .get(VIEW)
             .unwrap()
-            .component_mut::<Button>()
+            .component::<MediaViewerContent>()
+            .unwrap()
+            .can_execute(command);
+        let disabled = host
+            .get(id)
+            .unwrap()
+            .component::<Button>()
             .unwrap()
             .button
             .state
-            .disabled = !enabled;
+            .disabled;
+        if disabled == enabled {
+            host.get_mut(id)
+                .unwrap()
+                .component_mut::<Button>()
+                .unwrap()
+                .button
+                .state
+                .disabled = !enabled;
+            changed = true;
+        }
     }
+    changed
+}
+
+/// Publish the native consumer's original command/status projection and scene.
+/// Layout is the sole publisher of the Viewer's runnable input authority.
+pub fn render_frame(
+    host: &mut ContentHost,
+    text: &mut dyn ButtonTextRenderer,
+    frame: Rect,
+    active: bool,
+    palette: Palette,
+) -> Result<Scene, CompositionError> {
+    refresh_buttons(host);
+    refresh_status(host);
+    host.set_window_active(active);
+    let mut scene = Scene::new();
+    host.render(&mut scene, text, frame, frame, palette)?;
+    // Recompute availability after layout restores runnable authority. Mutate
+    // only changed projections, then acknowledge them before presenting.
+    if refresh_buttons(host) {
+        scene = Scene::new();
+        host.render(&mut scene, text, frame, frame, palette)?;
+    }
+    Ok(scene)
 }
 
 pub const MODAL_ROOT: ComponentId = ComponentId(20460);

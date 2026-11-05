@@ -1700,9 +1700,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
             // Retry notifies this host once; it performs no I/O or implicit load.
-            fixture::refresh_buttons(tree);
-            fixture::refresh_status(tree);
-            tree.set_window_active(window.is_active());
             self.text.backing = window.scale() as f32;
             self.text.atlas.begin_frame();
             let frame = Rect::new(
@@ -1711,10 +1708,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 window.size().width as f32,
                 window.size().height as f32,
             );
-            let mut scene = Scene::new();
             let palette = Palette::from(Theme::LIGHT);
-            tree.render(&mut scene, &mut self.text, frame, frame, palette)
-                .unwrap();
+            let scene =
+                fixture::render_frame(tree, &mut self.text, frame, window.is_active(), palette)
+                    .unwrap();
             let clear = tekes_ui_tokens::surface_palette::resolve_surface(
                 palette, "canvas", "content", "rest",
             )
