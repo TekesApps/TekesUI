@@ -5,7 +5,7 @@
 <a id="container-owned-toolbar"></a>
 ## 2026-11-05 确认：Window 直接承载 Container
 
-**用户已确认设计方向；本轮仅文档与 Issue，不修改代码。** 本节及修订后的第 3、4 节定义目标；日期化原型与验收记录保留原身份。跟踪 [#229](https://github.com/TekesApps/TekesUI/issues/229)，规划入口 [#56](https://github.com/TekesApps/TekesUI/issues/56)。旧 [#14](https://github.com/TekesApps/TekesUI/issues/14)、[#69](https://github.com/TekesApps/TekesUI/issues/69)、[#70](https://github.com/TekesApps/TekesUI/issues/70) 已关闭，不因新设计重开，也不代表新结构已实现。
+**用户已确认设计方向；本轮仅文档与 Issue，不修改代码。** 本节及修订后的第 3、4 节定义目标；第 3 节进一步明确 [可选 NavBar + focus / others 范式](#apphost-focus-others)。日期化原型与验收记录保留原身份。跟踪 [#229](https://github.com/TekesApps/TekesUI/issues/229)，规划入口 [#56](https://github.com/TekesApps/TekesUI/issues/56)。旧 [#14](https://github.com/TekesApps/TekesUI/issues/14)、[#69](https://github.com/TekesApps/TekesUI/issues/69)、[#70](https://github.com/TekesApps/TekesUI/issues/70) 已关闭，不因新设计重开，也不代表新结构已实现。
 
 ### 关系与命名
 
@@ -72,7 +72,7 @@ Window 提供容器实际区域及与系统控件相交的保留区域；Contain
 
 后续检查覆盖本地/进程/混合容器、无标题/无 Toolbar、按钮隐藏/恢复/无目标/溢出、单次命令与原 owner、Main/Settings/导航及平台窗口行为。复用未受影响的证据，补受影响的交互、进程、GPU/原生检查；文档通过不等于功能通过。
 
-本轮不扩展任意 docking、自动合并 Toolbar、通用跨容器控件迁移、动态插件或新进程协议；既有一至三个容器能力不因改名自动变成无限数量或新增竖排支持。后文历史协议的 panel_id、Panel/列及验收夹具名称保留来源含义，不构成新的公共分区层。
+本轮不扩展任意 docking、自动合并 Toolbar、通用跨容器控件迁移、动态插件或新进程协议。第 3 节的 focus/others 上下布局及多容器 Tabs/List 是用户新增的设计目标；既有一至三列源码限制不是新范式的永久数量上限，也不能因文档更新声称这些能力已实现。后文历史协议的 panel_id、Panel/列及验收夹具名称保留来源含义，不构成新的公共分区层。
 
 ## 既有设计与交付记录（按原日期保留）
 
@@ -166,23 +166,76 @@ examples/
 
 当前原型直接传递本地 `Scene`/`GlyphAtlas` 给 runtime；typed toolbar 描述跨 IPC 发送。首版实现 Layout、指针、Command、Cancel、viewport 与帧序号；后文完整几何代次、capture、IME 和联合切换仍是设计契约，不能误认为本次拆分已实现。
 
-## 3. Window 与 Container 布局（2026-11-05 修订）
+<a id="apphost-focus-others"></a>
+## 3. AppHost 范式：可选 NavBar + focus / others（2026-11-05 确认）
 
 ```text
-Window（下图仅为三容器示例，Toolbar 不要求存在或等高）
-├─ Container A：可选 Toolbar/标题 + Content（local 或 process）
-├─ Container B：可选 Toolbar/标题 + Content（local 或 process）
-└─ Container C：可选 Toolbar/标题 + Content（local 或 process）
+Window
+┌────────────────────┬──────────────────────────────────────┐
+│ NavBar Container   │ focus：一个当前主展示 Container       │
+│ 可选，启动配置决定 │ 自己的可选 Toolbar / 标题 + Content    │
+│                    ├──────────────────────────────────────┤
+│                    │ others：可显示 / 隐藏，也可完全不配置 │
+│                    │ [Container A] [Container B] [List]    │
+│                    │ 当前 Tab 的内容                       │
+└────────────────────┴──────────────────────────────────────┘
+
+List Tab：others 中支持 List 展示的容器纵向排列
+  Container C（自己的可选 Toolbar / 标题 + Content）
+  Container D（自己的可选 Toolbar / 标题 + Content）
+  ...（可调整上下顺序，具体交互另议）
 ```
 
-Window 直接包含容器，不引入 Column 或窗口 Pane。`left / middle / right` 只是布局位置，不是导航、编辑器、检查器等固定类型。Container 有稳定身份；业务角色、布局位置、本地/进程承载方式分别表达。
+这是一套 AppHost 装配范式，不是每个基础 Window/组件消费者都必须采用的布局。Window 仍直接组织容器；NavBar 是左侧容器的用途，focus/others 是展示角色与布局状态，不新增 Column、Pane、FocusContainer 或 OthersContainer 类型。每个实际 Container 仍可采用本地或进程承载方式，并拥有自己的可选 Toolbar/标题和 Content。
+
+### 3.1 启动配置与运行时状态
+
+| 部分 | 启动配置 | 运行时语义 |
+|---|---|---|
+| 左侧 NavBar Container | 可配置一个，也可以完全不配置 | 提供应用自己的导航内容；缺省不自动生成导航容器或占位 |
+| focus | 应用从右侧可用容器中指定初始主展示者 | 当前展示一个容器，可与 others 中的单个容器互换 |
+| others | 可配置，也可完全没有；配置时可给初始显隐状态 | 开启时展示下半区 Tabs；关闭时隐藏，保留已打开容器、选择与顺序 |
+| 普通 Tab | 应用装配可打开的容器 | 打开/切换一个容器；可将该容器与 focus 互换 |
+| List Tab | 由容器是否支持 List 展示决定参与集合 | 一个聚合 Tab，纵向展示 others 中所有支持 List 的容器；各 item 可上下调序 |
+
+NavBar 与 others 的配置相互独立，支持“NavBar + focus + others”“focus + others”“NavBar + focus”“仅 focus”。完全未配置 others 与运行时 off 不同：前者没有 others 的打开入口/空 Tab 区，后者可以重新开启。关闭 others 让 focus 使用释放的右侧空间，不等于关闭其容器、文档或进程。应用未配置 NavBar 时，右侧区域使用其释放的空间。
+
+这里的 `focus` 表示**主展示位置**，不是键盘输入焦点。用户可以在 others 中输入，而不自动将该容器提升为 focus。键盘/IME/AX 焦点仍沿原输入协议管理。
+
+### 3.2 focus 与普通 Tab 互换
+
+用户已明确选择：**两者交换位置，原 focus 回到 others。** 例如 focus=A，others 的普通 Tab=B；提升 B 后 focus=B，A 回到 B 原普通 Tab 的位置，不复制 A/B 的业务状态或新建进程。只切换 others 的当前 Tab 不改变 focus；提升为 focus 是另一项操作。
+
+切换位置保留原容器身份与业务状态，Toolbar/标题随容器移动。旧几何的按压/capture/菜单和原输入焦点按既有生命周期处理，不把主展示切换当作无条件转移键盘焦点或业务导航。切换不更改应用为容器配置的导航响应关系。
+
+### 3.3 List 是一个特殊 Tab
+
+List 不替代整个 others 的 Tabs 模式，而是其中一个 Tab。其集合按“当前属于 others，且声明支持 List 展示”形成；支持能力表示同一容器可以被纵向组织，不是把任意复杂内容自动压缩成摘要或复制一份业务 View。普通容器 Tab 与 List item 引用同一稳定容器身份，切换呈现不产生第二份可写状态。
+
+List 中的每个 item 是实际 Container，仍拥有自己的 Toolbar/标题/Content。List 仅组织纵向排列与顺序，不合并 item 的 Toolbar，不接管各容器业务状态。调序只改变列表位置；拖拽、按钮、快捷键等具体交互及顺序持久化策略留待后续讨论，本轮不选择。
+
+用户已明确选择：**List Tab 不能整体成为 focus；只有单个容器可以。** List 的聚合身份不能被当成一个新的 Container。为避免同一容器在 focus 和 List 中重复展示，focus 容器不计入 others 的 List 集合；焦点位置互换后按容器身份重新形成集合。若从 List item 提升单个容器，原 focus 回到 others；其是否进入 List 仍取决于自身 List 支持声明，不支持 List 的容器仍可作为普通 Tab。普通 Tab 和 List 顺序是两种布局状态，不因 item 调序自动改普通 Tab 顺序。
+
+List 为空时的占位/隐藏方式、item 高度和滚动分配、打开/关闭 Tab 的具体交互在实施前细化；不把这些待定细节声称为已确认的产品行为。
+
+### 3.4 导航响应由应用决定
+
+哪些容器响应左侧 NavBar 的选择或上下文变化，由具体应用绑定；可以是 focus、部分 others、多个容器或没有接收者。AppHost 不默认广播给全部容器，也不默认只更新 focus。业务订阅/路由绑定稳定容器身份，不因 Tabs/List 切换或 focus 互换自动改绑。
+
+应用决定业务响应及其是否需要联合切换；Host 只执行获准路由并按原协议维护输入/呈现一致性。未显示或 others off 时是否继续处理业务更新由应用决定，不能把隐藏自动解释为取消业务订阅。NavBar Container 是可选可见 UI，与既有无 View 的导航历史 ProcessComponent 是不同概念；本范式不强制每次左侧选择写入 nav.json，也不强制采用该服务。
+
+### 3.5 通用布局与验收边界
+
+以下容器/输入约束继续适用。旧三列原型是历史验收场景，不再定义此范式的固定槽位或功能上限。
 
 - Window 分配容器区域、分隔条和平台保留区域，系统窗口按钮始终归 Window/平台，不随容器换位或模块结束转移所有权。
 - Container 自己计算 Toolbar 与 Content 几何，splitter 或安全区变化时同步更新实际 Content 视口；布局、绘制、输入和 AX 使用同一几何，不重复扣标题栏高度。
-- 目标允许容器调宽、隐藏/恢复与换位；换位时 Toolbar 和 Content 一起移动，不销毁模块或迁移业务状态。既有源码支持与历史验收仍按原身份记录，middle 不是必须可见的特殊类型。
+- focus/others 的切换与配置按上文执行；移动时 Toolbar 与 Content 一起移动，不销毁模块或迁移业务状态。具体尺寸和分隔条交互实施前确定，不由旧三列的 middle/leading/trailing 规则推导。
 - 隐藏不关闭会话或卸载模块，默认保留进程及状态并暂停无用内容帧；业务任务是否继续由业务所有者决定。保留按钮与无目标恢复按[已确认规则](#container-owned-toolbar)。
 - 记录稳定容器 ID、顺序、显隐意图、有效宽度与可恢复焦点引用；临时窄窗折叠不覆盖用户显隐意图。多窗口实例不共享一个可变 UI 单例。
 - 控件、splitter、系统控件和窗口可拖动空白区各按实际命中区域处理；内容 capture 不得占用原生窗口控件。
+
+后续验收应覆盖四种启动组合、others 未配置与 off/on 的区别、Tab 切换不改 focus、单容器互换保状态、List 能力筛选/顺序及禁止整组提升、导航按应用绑定而不按展示位置广播。当前仅记录设计，不运行上述功能验收；实现仍由 #229 后续有界任务承接。
 
 ### Toolbar 测量与内容边界
 
@@ -435,6 +488,8 @@ Host 原生界面可即时应用系统设置；异步 content 在匹配新环境
 Host 维护布局、已装配组件的呈现/执行路由和实际内容上下文。公共 ProcessComponent 承担进程与资源生命周期；模块/外部业务提供方维护业务数据、草稿、checked/selection、业务任务及文档。导航模块独占导航历史、游标和 nav.json，Host 不维护可独立修改的副本。Host 可以消费只读投影，不复制可独立修改的业务状态机。
 
 跨 Panel 交互由 target app 声明的业务协调适配器通过通用路由处理，Host 不解析具体业务字段。每项业务状态有一个权威来源；多个模块共享会话时，通过明确的服务/协议共享，而非依赖各自链接进模块进程 的 Kit 单例。
+
+在 [focus/others 范式](#apphost-focus-others) 中，左侧 NavBar 的响应集合由应用绑定稳定容器身份；下述联合切换只覆盖应用选定的参与者。focus/others/List 的呈现位置不能替应用决定订阅或隐式扩大事务范围。
 
 上下文切换使用一致 revision：新上下文未提交前保留一致旧画面或显示等待态，不能用新内容画面配旧上下文命令。toolbar 的 enable/checked、content 操作和异步结果关联同一目标与代次；拒绝晚到事件和陈旧回执。
 

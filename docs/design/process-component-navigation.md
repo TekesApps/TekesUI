@@ -37,6 +37,8 @@ leading/trailing 显隐仍是 AppHost 的窗口布局操作，与导航历史分
 
 声明容器管理工具项呈现生命周期，导航命令/状态及原 module instance、registration、window、history revision 仍归原服务契约；显示位置改变不接管或复制导航历史。无 View 服务不新增 GPU、共享纹理或内容帧依赖。本文的持久化、事务、恢复及旧原型证据不变，新呈现所有权和平台标题栏行为未实现/未验，见 [#229](https://github.com/TekesApps/TekesUI/issues/229)。
 
+同日新增的 [AppHost focus/others 范式](app-host-architecture.md#apphost-focus-others) 中，可选左侧 NavBar Container 是可见应用 UI，不等同于本文无 View 的历史服务。应用决定哪些容器响应它，绑定不随 focus/Tab/List 位置变化；不默认全量广播或只投递 focus。布局切换/Tab 选择不自动写入 nav.json；仅应用选择接入本服务的业务导航使用本文持久化与事务契约。
+
 ## 3. nav.json 的持久化模型
 
 导航模块是一个 history namespace 内唯一写入者；AppHost 仅在装配时提供存储位置/作用域及可恢复 route 的能力。多个 App/profile、workspace 或独立窗口历史必须使用不同 namespace/path；同一文件的第二个写入者须被拒绝，不能各持有可写副本。

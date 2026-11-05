@@ -12,6 +12,15 @@ The [AppHost container/toolbar decision](app-host-architecture.md#container-owne
 
 The process/transport, geometry, cancellation, navigation persistence and source-validation contracts below remain. New ownership and titlebar behavior require later scoped implementation and verification tracked in [#229](https://github.com/TekesApps/TekesUI/issues/229); historical checks do not certify them.
 
+### AppHost presentation pattern — 2026-11-05 follow-up
+
+The [confirmed focus/others pattern](app-host-architecture.md#apphost-focus-others) replaces the old fixed three-column shell as the target AppHost assembly: optional left NavBar Container; right-side focus above an optional, toggleable others area. Others has ordinary Container tabs plus one List tab vertically composing its list-capable containers. These are presentation roles, not new Pane/Container subclasses. Local/process modes retain the same structure.
+
+Promoting one Container swaps it with the current focus; the old focus returns to others. The List tab cannot become focus as a whole. List ordering interaction remains undecided. Runtime off retains others state; no others in startup configuration means no area/toggle. NavBar response bindings belong to the app, remain tied to container identity across movement, and do not imply all containers or only focus react. Presentation focus is distinct from keyboard focus; the optional visible NavBar is distinct from the existing headless navigation-history service.
+
+The lower sections' physical columns/splitter baseline and process-count checks describe the original migration scenario, not completion or permanent limits of this new pattern. No source, worker/API, native UI or IPC changes are authorized by this documentation update.
+
+
 
 ## Current public boundary — 2026-11-03
 
