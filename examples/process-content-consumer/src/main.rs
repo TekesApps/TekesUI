@@ -1923,7 +1923,9 @@ mod consumer {
                 .is_some_and(|key| key.disposition == TextKeyDisposition::Deferred)
         );
         let end = Instant::now() + Duration::from_secs(15);
-        while !tick(&mut host, &mut renderer, &ids, pending_tab_frame)? {
+        while !tick(&mut host, &mut renderer, &ids, pending_tab_frame)?
+            || host.focused() != Some(ids[1])
+        {
             ensure!(Instant::now() < end, "pending native boundary deadline");
             std::thread::sleep(Duration::from_millis(5));
         }
