@@ -1,5 +1,7 @@
 # One mounted Toolbar host per window
 
+> **Current implementation reference, not the new AppHost ownership target (2026-11-05).** The [confirmed container-owned Toolbar design](design/app-host-architecture.md#container-owned-toolbar), tracked in [#229](https://github.com/TekesApps/TekesUI/issues/229), replaces the future AppHost requirement for one window-level ToolbarHost with a Toolbar owned by each Container. Current source still exposes the APIs below; this documentation change does not remove them or certify migration. The examples and lifecycle/visibility guidance below describe the existing implementation and its original evidence. Reuse their interaction and source-identity guarantees when migrating, but do not treat stable window-owned regions/no relocation as the new button-retention contract. Only explicitly retained buttons may change presentation under the new design; no arbitrary interactive Content migration is implied.
+
 `composition::ToolbarHost<B>` is the window's declaration/mount adapter over **one original ContentHost**. It does not add a second Button, pointer, focus, tooltip or menu state machine. Main, Settings and other areas declare original `ToolbarGroup` Content under the same host. Placement is local to the receiving `ToolbarRegion`, never a global screen coordinate.
 
 ## Minimal command group

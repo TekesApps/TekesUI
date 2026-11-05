@@ -1,6 +1,80 @@
 # TekesUI AppHost 框架设计
 
-日期：2026-10-21
+初稿：2026-10-21；容器与工具栏职责修订：2026-11-05。
+
+<a id="container-owned-toolbar"></a>
+## 2026-11-05 确认：Window 直接承载 Container
+
+**用户已确认设计方向；本轮仅文档与 Issue，不修改代码。** 本节及修订后的第 3、4 节定义目标；日期化原型与验收记录保留原身份。跟踪 [#229](https://github.com/TekesApps/TekesUI/issues/229)，规划入口 [#56](https://github.com/TekesApps/TekesUI/issues/56)。旧 [#14](https://github.com/TekesApps/TekesUI/issues/14)、[#69](https://github.com/TekesApps/TekesUI/issues/69)、[#70](https://github.com/TekesApps/TekesUI/issues/70) 已关闭，不因新设计重开，也不代表新结构已实现。
+
+### 关系与命名
+
+```text
+Window / AppWindow
+└─ Container（窗口直接装配）
+   ├─ Toolbar（可选；标题可作为其中的内容）
+   └─ Content
+
+Container 的承载方式：
+├─ LocalContainer   → 当前进程的 ContentHost / 内容树
+└─ ProcessContainer → 独立进程提供内容与业务动作
+```
+
+`Container` 是统一容器概念；`LocalContainer` / `ProcessContainer` 是两种承载方式，不是再套一层分区。两者都有可选标题、可选 Toolbar 和 Content。概念关系不要求 Rust 继承；正式类型签名、枚举/适配形式和兼容迁移在实施前落实。
+
+| 当前名称 | 目标名称/职责 | 边界 |
+|---|---|---|
+| `app_host::Column` | `Container`：统一装配类型 | 不引入窗口分区 Column 或 Pane |
+| `app_host::Container`（仅本地） | `LocalContainer` | 保留 ContentHost/内容树 |
+| `app_host::ProcessContainer` | `ProcessContainer` | 复用既有进程运行器 |
+| `AppWindow::from_columns` | `AppWindow::from_containers` | 目标名称，尚非可调用 API |
+| 窗口级 `ToolbarHost` | 各容器自有的共享 `Toolbar` 组件实例 | 调整真实所有权，不是只改名字 |
+| `window.rs` 内部 `Panel` | 容器运行状态记录 | 不成为公共分区层；内部名字实施时确定 |
+
+当前 `module_runtime::ProcessContainer` 是内容树中的进程适配组件，与 `app_host::ProcessContainer` 装配声明不是同一 Rust 类型。实施时说明复用/衔接关系，不做全库字符串替换。`ContentHost`、`PanelContent`、`SplitViewContent` 与 SplitView 内部表示两侧的 `Pane` 保持各自职责，不在本轮改名范围。
+
+### 职责与所有权
+
+| 对象 | 负责 | 边界 |
+|---|---|---|
+| Window / AppWindow | 容器排列、尺寸、分隔条、显隐；原生窗口行为与安全区域；跨容器输入路由/焦点顺序；保留按钮的目标显示位置 | 不集中拥有所有 Toolbar 条目，不复制各 Toolbar/ContentHost 的菜单、hover/press、焦点状态机 |
+| Container | 自己的 Toolbar 实例/生命周期、可选标题、Content、内部测量与视口、事件协调 | 不复制业务状态、不管理其他容器的工具栏 |
+| Toolbar | 本区域内标题/按钮/已支持内容的布局、交互、焦点、帮助、溢出和语义 | 复用原组件能力，不决定窗口布局 |
+| Content / ContentHost | 内容树与既有布局、输入、绘制契约 | 不接管窗口装配或业务真源 |
+| 业务模块 / ProcessComponent | 命令、enabled/checked 等状态、文档或导航历史 | 不随按钮显示位置改变业务所有者 |
+
+Toolbar 归 ProcessContainer 不等于必须在子进程绘制。窗口侧容器可呈现子进程声明，动作回到原业务所有者。各容器复用同一共享 Toolbar 和 Content 输入机制；不复制交互实现，也不另建全窗口 ToolbarHost。
+
+### 隐藏时保留按钮
+
+按钮可声明“所属容器隐藏后保留显示”，默认随容器隐藏；以下明确最小行为边界，不冻结字段名、目标选择 API 或 IPC 编码。
+
+1. 默认随容器隐藏；仅明确声明保留的按钮可显示到其他可见容器的 Toolbar。首版不迁移任意编辑器、组字内容、整组或完整 Toolbar。
+2. Window 按装配配置选择可见且有 Toolbar 的目标容器；具体目标映射/API 在实施前落实，当前不规定自动寻找“第一个可见容器”。容器之间不互相寻找/搬运控件，不增加通用优先级或路由引擎；目标不可用时走第 5 条恢复入口。
+3. 原声明容器保留按钮身份与生命周期，原业务所有者保留命令/状态/进程来源；目标 Toolbar 承接当前位置的布局和交互。只保留一个有效呈现/激活入口，不克隆另一份可写状态。
+4. 原容器恢复可见时按钮回到原 Toolbar。沿既有机制取消旧按压/capture、处理菜单/焦点并更新 AX；旧位置 release 不能激活新位置目标。稳定身份不承诺保留失效的瞬时交互。
+5. 宽度不足走目标 Toolbar 既有溢出。没有可见且有 Toolbar 的目标，或恢复按钮无法保持可达时，通过窗口菜单/快捷键恢复；不自动补空 Toolbar 或虚构容器，全部容器隐藏也应可恢复。
+6. 隐藏不等于关闭/销毁/进程重启。原所有者结束清理其条目；进程失效不得执行旧命令。保留显示不绕过命令条件、几何要求或隐藏内容的输入禁用。
+
+针对保留按钮，Window 只决定目标位置与分配区域；目标 Toolbar 管理本地交互。Window 仍协调跨容器输入路由、Tab/焦点移动与原生拖动交接，实际焦点/capture/菜单状态沿原组件宿主维护，不另建集中式工具栏或焦点状态机。
+
+### 可选标题与原生窗口边界
+
+各 Container 自己决定是否显示标题、是否有 Toolbar。标题可作为 Toolbar 内容；仅标题也可使用该组件。无标题且无 Toolbar 时不预留空行，不强制全窗口 Toolbar 等高。
+
+目标不要求独立可见的原生标题栏，也不由 Window 强制绘制公共标题行。系统窗口标题元数据、关闭/最小化/缩放、系统窗口按钮、拖动、resize、全屏与安全区域仍归 Window/平台。具体平台实现须另验，本轮不选择 AppKit flag 或声称原生效果通过。
+
+Window 提供容器实际区域及与系统控件相交的保留区域；Container 自己测量 Toolbar、计算 Content 视口。布局/绘制/命中/原生语义使用一致几何，不重复扣标题栏高度，不覆盖系统控件。
+
+### 实施与验收边界
+
+只读源码基线为 `aecd20e3254afff77895ecc7cbe73ac68b9887bd`：代码仍使用 Column、本地 Container、from_columns 和窗口级 ToolbarHost。新名字、所有权、按钮属性与标题栏行为均未实现/未验。后续按 #229 落实有界接口与兼容迁移任务，再实施；旧 #69/#70 通过记录不代替新结构验收。
+
+后续检查覆盖本地/进程/混合容器、无标题/无 Toolbar、按钮隐藏/恢复/无目标/溢出、单次命令与原 owner、Main/Settings/导航及平台窗口行为。复用未受影响的证据，补受影响的交互、进程、GPU/原生检查；文档通过不等于功能通过。
+
+本轮不扩展任意 docking、自动合并 Toolbar、通用跨容器控件迁移、动态插件或新进程协议；既有一至三个容器能力不因改名自动变成无限数量或新增竖排支持。后文历史协议的 panel_id、Panel/列及验收夹具名称保留来源含义，不构成新的公共分区层。
+
+## 既有设计与交付记录（按原日期保留）
 
 状态：设计基线与实验性基础通路原型并行；接口名称为职责示意，未冻结 Rust API 或 IPC 格式。原型验证记录见 `docs/handoffs/app-host-native-prototype-20261021.md`，不表示下列全部契约已实现或验收。
 
@@ -46,13 +120,13 @@ Main 冷启动修正（2026-10-27，验证基线 `477baed` + `window.rs` 精确�
 
 ## 1. 目标与范围
 
-维护一套共享 App Host 源码，按构建 profile 预定模块组合、平台能力和发行资源，构建并打包成不同 target apps。Host 的 toolbar、Panel 容器和 splitter 均使用 native TekesUI 组件，由 Host 组合并管理其布局状态；每个 Panel 通过 ProcessContainer 承载独立的带 View ProcessComponent，模块声明 content/toolbar 并输出画面、事件和请求。另可固定装配无 View 的导航 ProcessComponent：它独占 nav.json 和导航历史，Host 只执行导航，成功后回报，由导航模块提交历史。
+维护一套共享 App Host 源码，按构建 profile 预定模块组合、平台能力和发行资源，构建并打包成不同 target apps。Window 直接装配 Container，使用共享布局和 splitter 分配区域；各 Container 自行组织可选 Toolbar 与 Content，可采用 LocalContainer 或 ProcessContainer 承载方式。进程内容复用带 View ProcessComponent，模块提供内容/工具项、状态和动作。另可固定装配无 View 的导航 ProcessComponent：它独占 nav.json 和导航历史，Host 只执行导航，成功后回报，由导航模块提交历史。
 
 这是一套公共框架与共享启动入口，不是生成多份 App 源码的代码模板。消费产品通过装配配置及必要的 host adapter 接入，不复制 Host 的状态机和 View。
 
 AppHost、模块运行器及其接口在 TekesUI 仓库内分层维护；仓库共享不表示底层 controls/text/scene/render 反向依赖 Host。消费者提供用途型原生模块、固定装配配置和产品资源/能力适配，由共享构建工具产出目标 App。
 
-本规范只讨论通用 Host、模块边界、三列布局、进程管理、渲染合成和输入输出契约；不列举具体业务模块，不定义业务 Kit 的内部结构或业务模型。
+本规范只讨论通用 Host、模块边界、容器布局、进程管理、渲染合成和输入输出契约；三列是既有布局与验收场景，不是公共容器类型；不列举具体业务模块，不定义业务 Kit 的内部结构或业务模型。
 
 首版不提供用户安装插件、运行时发现任意模块、动态库加载、产品切换、模块热替换或热卸载。消费者通过普通 Rust crate 和模块工厂在编译期固定装配；首版将 Host、runtime 和选定模块链接为同一目标 App 可执行文件。Host 启动同一可执行文件的独立子进程，通过固定模块 ID 选择工厂；每个子进程只创建自己的模块实例，Host 不调用业务 View 工厂。崩溃后重新启动同一预定模块不属于动态插件替换。
 
@@ -63,7 +137,7 @@ AppHost、模块运行器及其接口在 TekesUI 仓库内分层维护；仓库�
 | 层 | 负责 | 边界 |
 |---|---|---|
 | TekesUI | 通用组件、布局、文本、输入、焦点、无障碍、动画与绘制；ProcessComponent 基础进程能力及带 View 的 ProcessContainer 适配 | 不依赖 TekesAppHost、业务类型或模块目录；无 View 不启动 GPU/共享纹理 |
-| TekesAppHost | 固定装配、窗口、三列布局、原生 toolbar 呈现、焦点/输入协调、执行导航与结果回报 | 不实现业务 View、复制进程机制或维护第二份导航历史；不直接写 nav.json |
+| TekesAppHost | 固定装配、Window/Container 边界、容器布局、各容器 Toolbar 接入、窗口输入协调、导航执行/回报 | 不建立全窗口 ToolbarHost；不实现业务 View、复制进程机制或导航历史；不直接写 nav.json |
 | 模块运行进程 | 公共 runtime 管理生命周期、IPC、命令/事件与可选 View/平台/GPU 输出 | 带 View 的 Panel 独立运行；无 View 模块不伪造容器/帧；不直接控制整个窗口 |
 | 无 View 导航模块 | 导航历史、游标、前进/后退 toolbar 声明、nav.json 持久化与恢复 | 独立 ProcessComponent；Host 成功执行后才提交历史 |
 | content 原生模块 | 按用途组织的业务界面与逻辑、toolbar 注册、事件/请求输出 | 公共接口是模块级接口，不是逐个导出底层组件 |
@@ -92,55 +166,43 @@ examples/
 
 当前原型直接传递本地 `Scene`/`GlyphAtlas` 给 runtime；typed toolbar 描述跨 IPC 发送。首版实现 Layout、指针、Command、Cancel、viewport 与帧序号；后文完整几何代次、capture、IME 和联合切换仍是设计契约，不能误认为本次拆分已实现。
 
-## 3. 三列布局
+## 3. Window 与 Container 布局（2026-11-05 修订）
 
 ```text
-App window / workspace (TekesUI + native macOS chrome)
-┌───────────────────────┬───────────────────┬───────────────────┐
-│ ● ● ●  left toolbar   │ middle toolbar    │ right toolbar     │
-├───────────────────────┼───────────────────┼───────────────────┤
-│ left content          │ middle content    │ right content     │
-│ native module process │ native process    │ native process    │
-└───────────────────────┴───────────────────┴───────────────────┘
+Window（下图仅为三容器示例，Toolbar 不要求存在或等高）
+├─ Container A：可选 Toolbar/标题 + Content（local 或 process）
+├─ Container B：可选 Toolbar/标题 + Content（local 或 process）
+└─ Container C：可选 Toolbar/标题 + Content（local 或 process）
 ```
 
-macOS 上三列 toolbar 与原生标题栏、红黄绿窗口按钮处于**同一条顶部栏**，不能在普通标题栏下再放一排独立 toolbar。AppKit 管理真实窗口按钮、统一窗口 chrome 和原生窗口拖动；TekesUI 呈现模块注册的 toolbar 控件。左侧窗口按钮属于窗口而非某个 Panel，Panel 换位时它们不移动、不随模块卸载。
+Window 直接包含容器，不引入 Column 或窗口 Pane。`left / middle / right` 只是布局位置，不是导航、编辑器、检查器等固定类型。Container 有稳定身份；业务角色、布局位置、本地/进程承载方式分别表达。
 
-- 顶部栏中的三段 toolbar 与各列 content 的横向边界保持一致；splitter 改变列宽时同帧更新 Host 的 toolbar 布局，模块只接收 content 的视口。
-- Host 为原生窗口按钮、安全区以及系统附加指示器预留空间；这些保留区不参与模块按钮命中，不传给模块。换位后按**物理槽位**重新计算保留区，不把左列偏移绑定到模块身份。
-- toolbar 控件优先接收输入；可拖动的空白区域交由 AppKit 拖动窗口，splitter 命中区仍归 splitter。模块的 content capture 不得占用原生窗口控件。
-- 标题栏高度、安全区随平台、窗口模式变化时，Host 重新计算 toolbar/content 几何，按现有 viewport/几何代次契约发布；不得在全尺寸 content view 上重复扣除普通标题栏高度。
-- 单列与三列原型均验收：无额外标题行、窗口按钮与 toolbar 同排、左列无重叠、三列 toolbar 可点击、splitter 调宽后 toolbar 与内容对齐。全屏、不同系统样式与辅助功能作为后续平台覆盖验收。
+- Window 分配容器区域、分隔条和平台保留区域，系统窗口按钮始终归 Window/平台，不随容器换位或模块结束转移所有权。
+- Container 自己计算 Toolbar 与 Content 几何，splitter 或安全区变化时同步更新实际 Content 视口；布局、绘制、输入和 AX 使用同一几何，不重复扣标题栏高度。
+- 目标允许容器调宽、隐藏/恢复与换位；换位时 Toolbar 和 Content 一起移动，不销毁模块或迁移业务状态。既有源码支持与历史验收仍按原身份记录，middle 不是必须可见的特殊类型。
+- 隐藏不关闭会话或卸载模块，默认保留进程及状态并暂停无用内容帧；业务任务是否继续由业务所有者决定。保留按钮与无目标恢复按[已确认规则](#container-owned-toolbar)。
+- 记录稳定容器 ID、顺序、显隐意图、有效宽度与可恢复焦点引用；临时窄窗折叠不覆盖用户显隐意图。多窗口实例不共享一个可变 UI 单例。
+- 控件、splitter、系统控件和窗口可拖动空白区各按实际命中区域处理；内容 capture 不得占用原生窗口控件。
 
-`left / middle / right` 是物理槽位，不是导航、编辑器或检查器等固定业务角色。Panel 是有稳定身份的整体，包含 toolbar、content 和模块进程绑定；列指 Panel 当前占据的槽位。
+### Toolbar 测量与内容边界
 
-- 三个 Panel 可以交换位置，整列 toolbar 与 content 一起移动；不销毁模块实例、不重启进程、不迁移业务状态。
-- 每个 Panel 可以独立调整宽度、隐藏和重新打开；middle 没有必须可见的特殊规则。
-- 隐藏不关闭会话或卸载模块，默认保留进程及模块状态，暂停不必要的内容帧生产；业务任务是否继续由业务所有者决定。
-- 三列全部隐藏后，仍通过窗口菜单或快捷键恢复，入口不能仅存在于列内 toolbar。
-- 记录 Panel ID、槽位顺序、显隐意图、有效宽度及可恢复的焦点引用。窄窗口的临时折叠不覆盖用户显隐意图。
-- Host 使用 TekesUI 的 Panel、toolbar 和 splitter 组件管理分列、分隔线及 toolbar 与 content 的几何关系；向模块传入扣除 toolbar 后的 content 视口。
-- 多窗口中，即使引用相同模块定义，每个 Panel 实例仍有独立进程和输入/呈现状态，不共享一个可变 UI 单例。
+各 Container 选择是否有 Toolbar/标题，并使用共享 Toolbar 的固有测量、单行布局、溢出和交互能力。无 Toolbar 不留空行；不强制全窗口取最大高度。标题换行按既有单行标签规则处理；窄宽沿原 Toolbar 能力，不宣称任意自定义内容可自动转为菜单。
 
-### 顶部栏测量与容器边界
+Container 使用平台约束计算实际视口并按 backing scale 对齐；旧帧仍受原 viewport/几何输入门控。菜单由所属 Toolbar 管理，显示位置改变不改写原命令来源。无独立标题栏的系统按钮、安全区、拖动、全屏和窗口元数据必须另做平台验收，旧同排顶部栏原型不能代签。
 
-每个 Panel 的模块声明是否注册 toolbar 以及动作、可用状态和命令 ID；消费 App 与 AppHost 不补造业务 toolbar。TekesUI Toolbar 组件拥有固有尺寸测量、单行排布、溢出触发器/菜单、禁用状态与输入交互。宽度不足转入溢出菜单，不换行改变顶部栏高度。模块标题中的换行按空白处理。
+ProcessContainer 是显式进程承载方式，不为任意组件增加 `subprocess=true`。ProcessComponent/runtime 提供已有进程基础，Container 负责窗口侧装配；内容树中的 runtime 适配器保留自己的 API 边界。无 View 导航服务不创建虚假内容容器、renderer 或共享纹理；其工具项按第 4 节接入真实容器 Toolbar。详见 [ProcessComponent 与导航契约](process-component-navigation.md)。
 
-共享 Host 仅将窗口级贡献与三个 Panel 已注册 toolbar 的所需高度和平台当前窗口 chrome 安全区取最大值，并按 backing scale 对齐，统一三列顶部栏。左右按钮安全区来自平台实际窗口控件几何。高度变化与分栏变化一样更新 content viewport；绘制裁剪和指针 down/move/up 坐标使用同一份 content 几何，旧帧仍受 viewport 输入门控。溢出菜单作为 toolbar 自己的 overlay 最后合成，Host 只转发原命令 ID。
+## 4. Container 拥有 Toolbar，模块提供命令与状态
 
-普通 UI Container 保持布局/组合语义。本轮不为所有 Container 增加 `subprocess=true`。可复用的进程容器应是显式模块边界（ProcessContainer），声明固定模块入口并承载进程、IPC、共享画面和失败处理；任意现有组件子树不能靠布尔值自动移到新进程。ProcessComponent 是公共进程基础，View 可选；ProcessContainer 仅适配有 View 的模块。无 View 导航模块不创建容器、renderer 或共享纹理，toolbar 注册独立于内容帧。当前公共抽取与无 View 接口仍待实现，不得把旧 PanelModule 原型当作已经支持。详见 [ProcessComponent 与导航契约](process-component-navigation.md)。
-
-## 4. content 注册本列 toolbar
-
-每列 toolbar 的内容由该列 content 原生模块注册。无 View 的导航 ProcessComponent 也可注册常驻窗口级 toolbar 贡献，其纯图标前进/后退不依赖 Panel/View 或 frame-ready。Host 负责呈现并按所有者转发动作；模块负责命令语义、描述及状态。leading/trailing 显隐仍属于 Host 布局操作，不写入导航历史。
+各 Container 拥有自己的可选 Toolbar，本地内容或进程模块提供工具项、命令与状态。无 View 导航 ProcessComponent 的 window scope 表示贡献授权及生命周期，不是窗口级 ToolbarHost：装配将贡献接入指定 Container 的 Toolbar，业务所有者仍是原服务，不为其伪造 Content/View。需要在容器隐藏后保持可达的按钮使用前述保留显示规则，导航命令不依赖内容帧。leading/trailing 显隐仍归 Window 布局，不写入导航历史。
 
 ```text
-content 原生模块 → 注册 toolbar 描述 → 模块进程 / IPC → Host 原生 toolbar
+content 原生模块 → 注册 toolbar 描述 → 模块进程 / IPC → 所属 Container 的 Toolbar
 content 原生模块 ← toolbar action ← 模块进程 / IPC ← 用户操作
-content 原生模块 → 新状态 / 描述更新 → Host 更新同一 toolbar
+content 原生模块 → 新状态 / 描述更新 → Container 更新同一 Toolbar
 ```
 
-职责级契约包括：
+以下 Host 指共享宿主接入/传输边界，不表示 Window 拥有工具栏实例；注册作用域与目标呈现容器是两个维度。职责级契约包括：
 
 | 方向 | 内容 |
 |---|---|
@@ -168,20 +230,23 @@ toolbar 描述是原生控件的贡献数据，不传递原生 Rust View 对象�
 | 层 | toolbar / icons 职责 |
 |---|---|
 | TekesUI | 定义通用 toolbar/item/group 模型、图标资源引用与呈现、尺寸/着色、间距、对齐、伸缩、溢出优先级、交互及无障碍规则；不定义业务命令 |
-| AppHost | 使用 TekesUI 组件挂载 View/窗口作用域 toolbar，提供可用空间，按作用域管理挂载/注册寿命、Panel 换位和命令路由；不另写布局算法 |
+| Window / AppHost 装配 | 分配容器/平台区域，确定保留按钮目标，连接原业务路由；不集中管理所有工具项和交互 |
+| Container | 拥有 Toolbar 实例，接入获准的 View/服务贡献，管理挂载与内部布局，保持原命令来源；复用共享 Toolbar/Content |
 | 有/无 View 的 ProcessComponent | 在获准的 View/窗口作用域注册 item/command ID、分组、建议位置、图标、标题/提示、可见性及 enabled/checked 等业务投影 |
 
-TekesUI 的通用行为参考 Apple HIG 与 AppKit 的 toolbar 分组、优先级和空间分配约定，不直接把 NSToolbar 对象或平台私有行为暴露为跨平台协议。View 与窗口级 toolbar 的挂载、模块归属、作用域及消息寿命属于 Host/公共注册契约，不由 AppKit 自动提供。
+TekesUI 的通用行为参考 Apple HIG 与 AppKit 的 toolbar 分组、优先级和空间分配约定，不直接把 NSToolbar 对象或平台私有行为暴露为跨平台协议。View/窗口作用域贡献的模块归属、授权与消息寿命属于公共注册契约；工具栏呈现归 Container，不由 AppKit 自动提供，也不要求窗口级 ToolbarHost。
 
 位置使用 leading/center/trailing、组内顺序、间隔/伸缩和溢出优先级等布局意图，由 TekesUI 根据可用空间与布局方向求解；模块不指定按钮的屏幕绝对坐标。具体控件集合、分组是否整体溢出、中心区避让及最小宽度待 TekesUI 接口设计时确定。
 
 图标使用命名空间化资源引用或受控资源句柄，声明尺寸、模板着色或多色等呈现意图，由 TekesUI 统一解释。Host/运行器负责校验引用、解析随包资源并按资源代次缓存；缺失资源使用可诊断的回退，不允许模块借图标引用任意读取文件。平台图标映射、缩放及辅助功能标签遵循同一通用规则。
 
-“跟随”分别约定：整列 toolbar 跟随 Panel 换位由 Host 管理；跟随上下文/选区变化由模块提供投影；随滚动固定、隐藏或浮动等通用呈现行为由 TekesUI 提供，Host 按声明策略配置。首版默认 toolbar 位于本列 content 上方，不跟随 content 滚出；其他行为不视为已经支持。
+“跟随”分别约定：Toolbar 随所属 Container 换位，由 Window 改变容器位置；跟随上下文/选区变化由模块提供投影；随滚动固定、隐藏或浮动等通用呈现行为由 TekesUI 提供，Host 按声明策略配置。首版默认 toolbar 位于本列 content 上方，不跟随 content 滚出；其他行为不视为已经支持。
 
 toolbar 的通用布局规则不能替代第 9.1 节的上下文联合发布门控。
 
-## 5. 每个 Panel 的独立模块进程
+## 5. ProcessContainer 的独立模块进程（原三进程场景）
+
+本节仅描述进程承载方式；不要求 LocalContainer 创建子进程。图中的 Panel A/B/C 是历史原型名称，对应目标中的三个 ProcessContainer。
 
 ```text
 App Host（native TekesUI）
@@ -495,7 +560,7 @@ live resize 的测试分别记录 splitter 自身帧表现、content 尺寸跟�
 - 模块进程内的完整文本、输入与平台服务适配；native Rust API 不替代跨进程语义契约。
 - IPC 编码、资源拥有/借用映射、背压、超时和关闭门控机制。
 - 同 GPU 选择、实际导入、跨进程共享纹理与同步的 macOS 原型，以及后续平台适配。
-- TekesUI toolbar 控件/分组/图标接口、窄列溢出和快捷键冲突规则；Host 仅定义注册/挂载适配。
+- 各 Container 的共享 Toolbar 接入、按钮保留属性和公开兼容迁移；窗口只提供布局/平台区域与目标位置，不重建全窗口 ToolbarHost。窄宽溢出和快捷键复用原能力并按影响验收。
 - 三列最小宽度、窄窗口策略、live-resize 消息格式和临时呈现反馈。
 - press/capture 建立/确认/终止消息、临时路由与 grant 顺序边界、有限期限、坐标与变换代次，以及外部几何变化时允许继续的协商边界；保留第 7.2 节的捕获活性与清理约束。
 - 原生文本/无障碍快照字段、输入确认/校正及焦点与组字移交的可行性。

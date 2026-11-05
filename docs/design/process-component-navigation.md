@@ -31,6 +31,12 @@ toolbar 统一作用域规则：所有注册绑定所有者模块实例及其获
 
 leading/trailing 显隐仍是 AppHost 的窗口布局操作，与导航历史分开；其纯图标控件保持可恢复入口，隐藏默认保留对应进程和状态。它们绑定物理槽位，不随内容模块换位。nav.json 不兼任布局状态文件。
 
+### 2026-11-05 呈现边界更新（仅设计，#229）
+
+按 [AppHost 容器职责](app-host-architecture.md#container-owned-toolbar)，`scope=window` 表示导航贡献的授权/生命周期，不要求存在窗口级 ToolbarHost。装配将服务贡献接入指定 Container 的 Toolbar，窗口只提供布局区域和保留按钮的目标位置。容器隐藏后仍需显示的按钮通过声明属性进入该规则；无可见 Toolbar 时保留窗口菜单/快捷键恢复入口，不创建虚假 View 或容器。
+
+声明容器管理工具项呈现生命周期，导航命令/状态及原 module instance、registration、window、history revision 仍归原服务契约；显示位置改变不接管或复制导航历史。无 View 服务不新增 GPU、共享纹理或内容帧依赖。本文的持久化、事务、恢复及旧原型证据不变，新呈现所有权和平台标题栏行为未实现/未验，见 [#229](https://github.com/TekesApps/TekesUI/issues/229)。
+
 ## 3. nav.json 的持久化模型
 
 导航模块是一个 history namespace 内唯一写入者；AppHost 仅在装配时提供存储位置/作用域及可恢复 route 的能力。多个 App/profile、workspace 或独立窗口历史必须使用不同 namespace/path；同一文件的第二个写入者须被拒绝，不能各持有可写副本。
