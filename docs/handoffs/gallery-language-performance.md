@@ -215,3 +215,25 @@ ScrollArea 两次顺序对照的 encode 均值分别为 0.100 → 0.067ms、0.20
 用户确认：120Hz / 8.33ms 专项固定在支持 120Hz 的内建屏，普通布局、视觉和交互复测使用外接屏。现有性能 runner 已显式设置 `TEKESUI_WINDOW_PLACEMENT=builtin`，不因外接屏连接而改目标。系统清单确认内建 Color LCD 与外接 U2790B（30Hz）同时连接；清单本身不证明实际呈现达到 120Hz。
 
 使用最新已验证 release 二进制，对当前 ScrollArea Story 做有界低负载预检：30 秒内未满足连续 15 秒安静门槛，exit 3、gate_passed=false，正式原生测量未启动。没有停止其他项目进程，也没有放宽阈值；本轮没有新的 Gallery CPU 负载或 120Hz 呈现结论。[脱敏预检回执](../../design/reviews/builtin-120hz-retest-20261017/preflight.json)。
+
+### 当前公开源码的有界性能接收（2026-11-06，Issue #12）
+
+用户恢复本专项后，以公开 `b26a527eeabb6af8f61f5accbd72a0553e6e7f1c` 的 clean checkout、原注册共享缓存构建 release Gallery。实际 compiler artifact 为 opt-level 3、debug assertions=false；归档程序 SHA256 `f3a1ab2639dae929c780fd1fce544d5288954f3f191386d51b5cba221370b0b5`。未导入 MAIN WIP；此前原生输入程序的 dev 身份保持原样。环境为 Mac16,1 / Apple M4 / 32GB、交流电、内建屏；显示清单报告 120Hz，仅作为前提，实际节奏以下述 presentedTime 为准。
+
+静止可见 ScrollArea 的五个独立 60 秒区间共取得 300 个有效 CPU 样本，每轮中位数/最大值均为 0.0%，各区间 redraw 均为 3→3。第一轮采样后 CU 正常关闭超时，原失败与清退收据保留，仅复用其完整采样区间；其余四轮正常关闭。两次启动/观察前提超时没有采样，不计入五轮。后两轮复用同源同页面视觉前提，自动核实际窗口并保存截图，主协调与 CU 测后逐图确认；没有在采样期间截图或输入。不将此结果外推为所有页面或严格零线程唤醒。
+
+`measure-idle-cpu.sh` 原先把默认 top 的累计 IDLEW 快照相加，首轮误报 353。修复只改唤醒计数聚合、标签及说明，不改 top 命令、CPU 样本、首样本丢弃、排序或 MAX_CPU 门槛。原 60 行保存数据实算首末保留快照 1→11，正确观察区间增量为 10；不含已丢弃首样本边界，不能称完整 60 秒总唤醒数。五轮对应增量为 10/8/8/5/3，不新增零 IDLEW 门槛；CPU 0.0% 也不证明完全没有唤醒。
+
+正式滚动预检在原 30 秒预算内未满足连续 15 秒低负载条件（单进程 <30%、外部合计 <100%，100%=一逻辑核），exit 3，未启动 Gallery。保留预检，未关闭其他项目进程或放宽门槛。随后使用已有共享桌面诊断模式，CAD/FIFO2、GPU timestamp、三页各一次 60 秒，结果如下；不替代原五轮正式矩阵或同机参照比较。
+
+| 页面 | CPU active p99 ms | GPU pass p99 ms | 含 drawable 等待的回调 p99 ms | 实际呈现均值 ms | >1.5刷新周期间隔数 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| ScrollArea | 0.873125 | 2.489583 | 8.710750 | 8.339054 | 5 |
+| Editor | 1.057166 | 2.485500 | 8.702750 | 8.335578 | 2 |
+| Icons | 1.097083 | 2.279750 | 8.695917 | 8.335577 | 2 |
+
+三页没有缺失、未呈现或重复收据；停止后完整约 5 秒的显示链接回调和 drawable 获取均为 0。CPU active 与 GPU pass 的本次 p99 低于 8.3ms，但实际长呈现间隔仍存在，严格零掉帧目标未通过。`cpu_ms` 包含 drawable 等待，不能说成 CPU 忙耗时；原 strict 墙钟诊断也保留，不能删掉拒绝理由制造通过。
+
+一次目标 PID 49212 的 40 秒 Metal System Trace 完整保存、导出并正常退出；4880 个目标 render buffer 均按 command-buffer ID 关联到 GPU 和 completion。GPU span 最大 3.614ms，commit→completion 最大 6.679ms。最长 drawable 等待 32.068ms 中，相关 render/Present 工作已完成约 30.2ms 后才取得 drawable；邻近实际呈现及系统 display swap 均出现约 29.166ms 间隔。额外四张必要小表提供目标 surface 133/41 与 compositor 访问的有限关系，但没有完整 layer/drawable→显示 surface 100/16/102 映射。不能据此归责应用或系统，未作猜测性生产修改。Trace 有采集开销，其 22 个长间隔不与无 profiler 的 5 个作因果 A/B。
+
+本批主件位于协调目录 `work/performance-resume/`：`release-build-001/{PROGRAM.json,source-freeze.json,release.json}`、`IDLE-FIVE-ACCEPTANCE.json`、`idle-counter-repair/REPAIR-READY.json`、`native-execution/scroll-diagnostic-001/ROOT-REVIEW.json`、`TRACE-REVIEW.json`、`SURFACE-OWNERSHIP-REVIEW.json`，原始 trace/XML/逐秒记录及失败保留。当前结论是有限空闲 CPU/无持续 redraw 已取得五轮证据，呈现节奏仍未正式验收；低负载五轮及同机参照未完成。VoiceOver 仍按用户决定后置；本记录不关闭整个 #12，也不提高 registry 成熟度。
