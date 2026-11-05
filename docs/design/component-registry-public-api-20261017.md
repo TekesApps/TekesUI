@@ -479,3 +479,86 @@ Search dependencies are already public; the dependency check establishes
 bounded source equivalence, not whole-overlay equivalence. The 13 unrelated
 platform WIP files are excluded. Capability declarations and maturity are
 unchanged; #12/#56 remain subject to their original remaining acceptance.
+
+
+## 2026-11-06 原生输入与实际显示接收
+
+本节是上述恢复批次的当前结论；早期“仍未验”和交付前状态保留为历史，
+不据此重开已完成批次。仅回填原范围，不改变八条 AC、23 个 Gold7 ID、
+公开能力或 experimental 成熟度。来源是 CU2/ESP 自动原生操作及实际屏幕
+截图，不称人类实体操作，也不把 GPU 图、构建、公开交付或消费方采用混算。
+
+### 原 AC 的本批证据
+
+| 原 AC | 当前有限接收 | 后续边界 |
+|---|---|---|
+| AC1/2/3/6 | 继续复用原52根实用 Theme、语义/状态映射、45组件＋5 patterns＋2 examples及已有检查 | 无变化的实现与检查不重做 |
+| AC4 | 原页面图审、T32非默认品牌/代表尺寸对照及T33真实操作继续有效；本批补 Settings普通/Disabled与Master大字实际阅读 | 所见代表组合，不是所有品牌、尺寸的笛卡尔矩阵 |
+| AC5 | Form普通Dark与Dark IC实际2x焦点/错误态可辨；Menu、Popover、RichDialog实际边界/标签可辨 | 无数值对比度或全控件全硬件声明；原状态/GPU证据按身份复用 |
+| AC7 | T32四主题及窄常规/宽大字图审、原双倍率证据继续有效；本批补代表实际显示观察 | Text150是字号比例，不是backing scale；原真实1x/2x媒体跨屏证据保持其范围 |
+| AC8 | 下述原始证据与历史失败保留，本节补原覆盖文档 | 本地文档接入、公开发布及整票关闭分别核验，不由本节自动关票 |
+
+### 本批原要求对应
+
+- G1/warm-neutral-reading-foundation、whole-page-reading-composition：Settings
+  Dark/Text100实际2x普通与Disabled的标题、帮助、字段和操作标签可读；Master
+  Light/Text150实际2x初始及滚动后的代表正文可读、正常换行。Master通过正文
+  滚动条轨道一次点击取得后文，Document01不变；不声称读完整篇。
+- G1/consumer-brand-derivation、G2/four-semantic-surface-roles、
+  G3/nested-radius-geometry：复用T32原品牌叠层、四主题及既有几何契约图审，
+  不增加全组合检查或给普通相邻控件新增同心要求。
+- G2/same-color-geometric-distinction：Popover实际Dark/Light/Dark IC三种外观；
+  当前Gallery Menu实际Dark一次展开；RichDialog复用实际Dark原图。
+  面板边缘/阴影、菜单选中行与文字可辨，原行为检查不重复。
+- G3/hairline-and-required-boundary-roles、component-role-radius-map、
+  real-scale-rendering：Form普通/IC的实际焦点与错误边界，及上述实际显示
+  与原尺寸/倍率/reveal证据分层接收，不把单个2x窗口外推全部倍率。
+- G5/ime-and-suggestion-priority：Search、Form、可编辑Combo与RichDialog的
+  适用中日文组字、候选确认、自然提交及取消按原事件和截图接收。Search
+  普通Return仅一次提交，与组字阶段Enter分开；RichDialog先取消组字，再
+  以普通Escape关闭模态。部分中文运行实际Commit为拉丁`nihao`，不能改写为
+  提交“你好”。此前真实拼音“你好”的独立通过证据保持原身份。
+- G4及G6原直接操作/中断、G5原草稿/阅读/latest、G7业务组合：继续复用T33、
+  Split及各原消费方有限收据；本批不重复或扩大其通过范围。
+- G7契约、文档与预览：保留原公共API、路由、能力边界及原golden。
+  不以这些有限观察晋级所有组件成熟度。
+
+### 程序与原件
+
+Gallery程序 SHA256：
+`33de93760b574a05c55af4310a5dd978df06820a5bad78418ad91f8c16d4dab4`。
+RichDialog consumer程序 SHA256：
+`127681a4152aa3f7c0edc0349cd56037f465b1742c3914aff169d34ac71c5214`。
+它们是各自归档MAIN overlay/consumer构建，不改签为一次新的clean-public运行。
+本次发布checkout的registry、Gallery commands/theme/mod/workbench/host及
+`fixtures/text/gallery-reading-en.txt`七个相关文件与阅读执行卡冻结哈希一致；
+这是相关输入核对，不是整个overlay与公开树相同的声明。
+
+原件根目录为协调工作区
+`work/native-capability-preflight/`；各收据内保留原始事件、截图哈希、
+输入依赖、实际退出和资源释放：
+
+| 有限范围 | 原收据（相对上述根目录） |
+|---|---|
+| Search | `t33-next-ime/actual-native-003/ROOT-ACCEPTANCE.json`、`actual-native-006/ROOT-ACCEPTANCE.json`及`search-cancel-remainder/actual-native-001/ROOT-ACCEPTANCE.json`（后两项同属`t33-next-ime/`） |
+| Form | `t33-next-ime/form-native-002/ROOT-ACCEPTANCE.json`、`form-native-003/ROOT-ACCEPTANCE.json`（同目录族）；`t35-form-contrast/actual-native-003/ROOT-ACCEPTANCE.json` |
+| Combo/RichDialog | `t33-next-ime/combo-native-001/ROOT-ACCEPTANCE.json`；`t35-dialog-scope/actual-native-001/ROOT-ACCEPTANCE.json` |
+| Popover/Menu/Dialog边界 | `t35-overlay-edges/actual-native-001/ROOT-ACCEPTANCE.json`、`menu-single/actual-native-001/ROOT-ACCEPTANCE.json`及`ROOT-EXISTING-VISUAL-ACCEPTANCE.json`（同属`t35-overlay-edges/`） |
+| Settings/Master阅读 | `t35-display-reading/settings-native-001/ROOT-ACCEPTANCE.json`；`t35-display-reading/master-track/actual-native-001/ROOT-ACCEPTANCE.json` |
+
+Master旧001仅定位后超时退出124；002轮值过小，仅初始可见阅读通过。
+两次原件均保留，未倒签成功。轨道点击批次正常退出0（78.429秒），
+后文截图与MouseUp/Redraw对应；其他本批已接受运行的原退出/输入源恢复
+与锁释放以各收据为准。滚轮小delta原因未确定，本批未修改框架、CU2或固件。
+
+### 独立保留项
+
+- 候选框不随移窗移动已与Apple行为对照并由用户排除，不再列产品缺陷。
+- VoiceOver按用户要求后置；原性能/120Hz等延期范围不自动恢复，均不记通过。
+- Reader当前检查通过与CI197旧失败根因未知分别保留；无新失败现场不循环重跑。
+- 直接typeText丢CJK的旧工具路径不改写为已修复；#41按原来源限制分支交付收口，
+  CU2原生输入与独立paste证据各保留身份。
+- PR225及后续已交付批次不再写作等待原CI；具体源码、CI、merge和checkpoint
+  仍以各公开交付收据为准。本节不新增Release、部署或消费方采用声明。
+
+Refs #1 #12 #55 #56。
