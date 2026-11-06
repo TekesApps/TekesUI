@@ -26,7 +26,7 @@ objc2-io-surface = { version = "0.3.2", optional = true }
 objc2-core-foundation = { workspace = true, features = ["CFDictionary", "CFNumber"], optional = true }
 
 objc2-core-graphics = { workspace = true, features = ["CGColorSpace"] }
-objc2-quartz-core = { workspace = true, features = ["CALayer", "CAMetalLayer"] }
+objc2-quartz-core = { workspace = true, features = ["CALayer", "CAMetalLayer", "CABase", "objc2-core-foundation"] }
 
 [dev-dependencies]
 png.workspace = true

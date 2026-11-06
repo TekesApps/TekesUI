@@ -1082,6 +1082,24 @@ impl Renderer {
         self.timing = Some(Timing::new(&self.device, &self.queue, false));
     }
 
+    /// Benchmark only: timestamp the existing work-done notification, not GPU end.
+    #[cfg(target_os = "macos")]
+    pub fn observe_gpu_work_done_host(&mut self) -> Result<(), &'static str> {
+        self.timing
+            .as_mut()
+            .ok_or("frame_timing_not_enabled")?
+            .observe_work_done_host();
+        Ok(())
+    }
+
+    /// Rows are (FrameTiming.frame, callback_observed_host_s); missing stays missing.
+    #[cfg(target_os = "macos")]
+    pub fn gpu_work_done_host_observations(&self) -> Option<Result<Vec<(u64, f64)>, &'static str>> {
+        self.timing
+            .as_ref()
+            .and_then(Timing::work_done_host_observations)
+    }
+
     /// 最近一次真正画出（没有因遮挡等跳过）的帧的编号，对应 [`FrameTiming::frame`]。
     /// 计时关着或还没画过时为 `None`。宿主靠它把自己量的数字和渲染器的结果配对。
     pub fn last_timed_frame(&self) -> Option<u64> {

@@ -478,6 +478,7 @@ pub struct Perf {
     symbols: Option<symbol_perf::SymbolWorkload>,
     cfg: PerfConfig,
     measure_gpu: bool,
+    work_done_host_requested: bool,
     plan: Plan,
     paragraphs: Vec<Paragraph>,
     /// 私有的 Gallery（自带文字引擎和 atlas，窗口里的那个 Gallery 不参与），用来逐页编整屏，不影响窗口里的那个。
@@ -573,6 +574,8 @@ impl Perf {
                 Vec::new()
             },
             measure_gpu: std::env::var("TEKES_PERF_GPU_TIMING").as_deref() != Ok("0"),
+            work_done_host_requested: std::env::var("TEKES_PERF_WORK_DONE_HOST").as_deref()
+                == Ok("1"),
             cfg,
             plan,
             paragraphs,
@@ -642,6 +645,11 @@ impl Perf {
             renderer.set_frame_timing(true);
         } else {
             renderer.set_frame_timing_cpu_only();
+        }
+        if self.work_done_host_requested {
+            if let Err(error) = renderer.observe_gpu_work_done_host() {
+                eprintln!("GPU work-done observation unavailable: {error}");
+            }
         }
         let t = Instant::now();
         self.prewarm(renderer);
@@ -1359,6 +1367,40 @@ impl Perf {
             },
             "total_run_s": self.started.elapsed().as_secs_f64(),
         });
+        if self.work_done_host_requested {
+            report["gpu_work_done_upper_bound"] = match renderer.gpu_work_done_host_observations() {
+                None => json!({"requested":true,"state":"observer_not_enabled","rows":[]}),
+                Some(Err(error)) => {
+                    json!({"requested":true,"state":"observer_error","error":error,"rows":[]})
+                }
+                Some(Ok(observed)) => {
+                    let by_frame: std::collections::HashMap<_, _> =
+                        observed.iter().copied().collect();
+                    let rows: Vec<_> = samples.iter().zip(&self.render_ids).zip(&self.drawable_serials)
+                        .filter(|((sample,_),_)| sample.rendered)
+                        .map(|((sample,id),serial)| {
+                            let at = id.and_then(|id|by_frame.get(&id).copied());
+                            let valid = at.is_some_and(|v|v.is_finite() && v>0.0);
+                            let value = match at {
+                                None => Value::Null,
+                                Some(v) if v.is_finite() => json!(v),
+                                Some(v) => json!({"type":"nonfinite-number","value":if v.is_nan(){"NaN"}else if v.is_sign_positive(){"+Infinity"}else{"-Infinity"}}),
+                            };
+                            let presented = receipts.get(serial);
+                            json!({"target_s":sample.target_timestamp,"render_frame":id,"drawable_serial":serial,
+                                "acquired_s":presented.map(|r|r.acquired_at),"presented_s":presented.map(|r|r.presented_at),
+                                "state":if valid{"observed_upper_bound"}else if at.is_some(){"invalid_observed_host_time"}else{"missing_receipt_at_snapshot"},
+                                "callback_observed_host_s":value})
+                        }).collect();
+                    json!({"requested":true,"state":"snapshot","rows":rows,
+                        "clock":"CACurrentMediaTime host seconds, same host timeline as target/acquired/presented; callback execution time, not GPU timestamp",
+                        "semantics":"If valid callback C precedes a real observed event E, submitted GPU work completed no later than C and before E; C later than E is UNKNOWN, not proof of late GPU completion. E is not a compositor deadline.",
+                        "callback_registration":"existing on_submitted_work_done only, requires GPU query ticket; disabled/unsupported/full-slot frames may have no receipt",
+                        "observations_including_warmup":observed.len(),
+                        "limits":"no extra submit/poll/wait or extended drain; missing remains missing; not GPUEndTime, physical scanout or performance acceptance"})
+                }
+            };
+        }
         report["scene3d_workload"] = scene3d_workload.unwrap_or(Value::Null);
         if self.reference_requested {
             report["reference_fixture"] = self
