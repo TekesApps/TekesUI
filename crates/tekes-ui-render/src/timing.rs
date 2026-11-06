@@ -33,6 +33,9 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicU8, Ordering};
 use std::time::Duration;
 
+#[cfg(target_os = "macos")]
+type WorkDoneHostObservations = Arc<std::sync::Mutex<Vec<(u64, f64)>>>;
+
 /// 回读槽的数量：同时在途的带 GPU 计时的帧数上限。
 const SLOTS: usize = 8;
 
@@ -92,7 +95,7 @@ pub(crate) struct Timing {
     last_frame: Option<u64>,
     /// Opt-in completion-notification observations, keyed by already assigned frame.
     #[cfg(target_os = "macos")]
-    work_done_host: Option<Arc<std::sync::Mutex<Vec<(u64, f64)>>>>,
+    work_done_host: Option<WorkDoneHostObservations>,
 }
 
 /// 这一帧占用的槽。
