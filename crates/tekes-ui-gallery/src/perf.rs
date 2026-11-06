@@ -1289,12 +1289,6 @@ impl Perf {
                 "scroll_range_pt": if matches!(self.cfg.content,ContentKind::Editor|ContentKind::ScrollArea) {self.gallery.editor_scroll_metrics().0}else if self.cfg.content==ContentKind::Icons {self.gallery.page_scroll_range()}else if matches!(self.cfg.content,ContentKind::Motion|ContentKind::Symbols|ContentKind::Scene3d) {0.0}else{(self.plan.height-self.view_h).max(0.0)},
                 "segments": if matches!(self.cfg.content,ContentKind::Editor|ContentKind::ScrollArea|ContentKind::Icons|ContentKind::Motion|ContentKind::Symbols|ContentKind::Scene3d) {Value::Null}else{json!(self.plan.segments.len())},
             },
-            "reference_fixture": (self.reference_requested && self.cfg.content == ContentKind::ScrollArea)
-                .then(|| self.gallery.scroll_reference_fixture()).flatten(),
-            "reference_scroll": self.reference_requested.then(|| json!({
-                "columns": ["target_s", "logical_y", "visual_y"], "samples": self.reference_scroll,
-                "clock": "same target_timestamp as frame samples; callbacks are not actual presentation",
-            })),
             "gpu_timing": {
                 "supported": renderer.gpu_timing_supported(),
                 "enabled": self.measure_gpu,
@@ -1369,6 +1363,16 @@ impl Perf {
             "total_run_s": self.started.elapsed().as_secs_f64(),
         });
         report["scene3d_workload"] = scene3d_workload.unwrap_or(Value::Null);
+        if self.reference_requested {
+            report["reference_fixture"] = self
+                .gallery
+                .scroll_reference_fixture()
+                .unwrap_or(Value::Null);
+            report["reference_scroll"] = json!({
+                "columns": ["target_s", "logical_y", "visual_y"], "samples": self.reference_scroll,
+                "clock": "same target_timestamp as frame samples; callbacks are not actual presentation",
+            });
+        }
         report
     }
 }
