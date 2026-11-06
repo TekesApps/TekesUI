@@ -127,3 +127,5 @@ oracle 在建窗前校验 JSON、原始内文（与公开夹具 `gallery-reading
 受影响验证（由主协调集成后依原资源窗口执行）：release Gallery + `scroll_oracle` 同源构建；原 Gallery perf/ScrollArea 行为回归；oracle 默认校准路径短回归；缺文件/缺元数据/NaN秒数/旧输出路径的启动前 exit2；匹配或真实不匹配布局的可审计准入；一轮完整60s+idle正常退出/自有group空/输入hash不变。仅在准入、环境及指标覆盖明确后再排5轮 median/worst，当前候选没有执行 Cargo/GUI，也没有宣称这些验证通过。
 
 实际准入红例（2026-11-06）：按隐藏名 `.SFNS-Regular` 调用 fontWithName 被 CoreText 拒绝；改用公开 systemFontOfSize，再逐项比较实际 PostScript 名，未放宽字体要求。准入错误在 Created 内立即关窗会被后续平台 makeKeyAndOrderFront 重开，原运行180s超时保留；改为保留原窗口身份并在下一事件循环一次性执行既有关闭路径。修复仍须新运行确认，不把红例改标通过。
+
+字体身份接续：oracle002已正常exit2/0.664s并清空自有进程组，拒绝关闭修复已验证；NSFont系统字体的按名称对照仍拒绝。候选改为复用Gallery的CoreTextFonts::create_font及ComposerBody字重，核实际CoreText PostScript名/字号，再按Apple公开toll-free约定将同一对象交给NSFont。NSFont别名仅作记录，不据此换字体；实际准入待验证。

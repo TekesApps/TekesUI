@@ -227,17 +227,35 @@ mod mac {
             if (window.backingScaleFactor()-r.scale).abs() > 0.001 {
                 return Err("backing scale differs from Gallery".into());
             }
-            // System UI font names are private lookup keys; obtain the public
-            // system font first, then still require the measured exact identity.
-            let system_font = NSFont::systemFontOfSize(r.font_size);
-            let font = if system_font.fontName().to_string() == r.font_name {
-                system_font
-            } else {
-                NSFont::fontWithName_size(&NSString::from_str(&r.font_name), r.font_size)
-                    .ok_or("AppKit could not resolve the measured PostScript font")?
+            // Match Gallery TextEngine::prepare_proposal, not an NSFont name alias.
+            let role = tekes_ui_tokens::proposal::TextRole::ComposerBody;
+            if r.fixture["role"].as_str() != Some(role.id()) {
+                return Err("CoreText system-font reference requires the measured composer-body role".into());
+            }
+            let style = tekes_ui_text::style::TextStyle::system(r.font_size as f32)
+                .with_weight(role.style().weight);
+            let ct_font = tekes_ui_text::coretext::CoreTextFonts::new().create_font(&style);
+            // SAFETY: read-only queries on the owned CTFont returned above.
+            let (ct_name, ct_size) = unsafe {
+                (ct_font.post_script_name().to_string(), ct_font.size())
             };
-            if font.fontName().to_string() != r.font_name {
-                return Err("AppKit could not resolve the exact measured PostScript font".into());
+            if ct_name != r.font_name || ct_size.to_bits() != r.font_size.to_bits() {
+                let appkit_system = NSFont::systemFontOfSize(r.font_size);
+                return Err(format!(
+                    "font identity mismatch: expected CoreText PS={:?} size={:?}; Gallery API created PS={:?} size={:?}; AppKit systemFont name={:?} size={:?}; no font substitution applied",
+                    r.font_name, r.font_size, ct_name, ct_size,
+                    appkit_system.fontName().to_string(), appkit_system.pointSize()
+                ));
+            }
+            // SAFETY: Apple documents CTFontRef/NSFont as toll-free bridged on macOS:
+            // https://developer.apple.com/library/archive/documentation/StringsTextFonts/Conceptual/CoreText_Programming/Overview/Overview.html
+            // Retain this exact CTFont as NSFont while its CF owner is alive. The
+            // new ObjC retain is balanced by Retained; no ownership is transferred.
+            let font: Retained<NSFont> = unsafe {
+                Retained::retain(std::ptr::from_ref(&*ct_font).cast::<NSFont>().cast_mut())
+            }.expect("owned nonnull CTFont has an NSFont toll-free bridge");
+            if font.pointSize().to_bits() != ct_size.to_bits() {
+                return Err(format!("CTFont/NSFont bridge size mismatch: PS={ct_name:?} CT={ct_size:?} NS={:?} NSFont name={:?}",font.pointSize(),font.fontName().to_string()));
             }
             doc.setFont(Some(&font));
             doc.setSelectable(true);
@@ -283,7 +301,10 @@ mod mac {
                 return Err(format!("AppKit actual line/wrap/baseline/extent/viewport mismatch: {} vs {} lines; height {} vs {}",native_lines.len(),expected.len(),used.size.height,r.document_height));
             }
             Ok(json!({"status":"MATCHED_BODY_INPUT_AND_LINE_GEOMETRY","scope":"text body only; Gallery chrome excluded",
-                "font_post_script_name":font.fontName().to_string(),"lines":native_lines,
+                "font_post_script_name":ct_name,"font_point_size":ct_size,
+                "appkit_font_name":font.fontName().to_string(),
+                "font_source":"Gallery CoreTextFonts::create_font(system + ComposerBody weight); same object toll-free bridged",
+                "lines":native_lines,
                 "used_height_pt":used.size.height,"viewport_pt":[r.width,r.height],"backing_scale":window.backingScaleFactor(),
                 "native_resolved_glyph_fallback":"UNKNOWN; exact base font and measured line geometry matched",
                 "actual_presentation":"UNKNOWN","gpu_frame_cost":"UNKNOWN"}))
