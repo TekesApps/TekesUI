@@ -148,3 +148,7 @@ TEKES_SCROLL_ORACLE_OUT=/absolute/fresh/appkit-baseline-diagnostic.json \
 这项显式诊断接收的是已知跨引擎 baseline 策略差异，不修改 comparison-method §2.2 的0.25pt基线门槛，也不替代 §2.3 同机同夹具性能非劣、frame CPU/GPU 或实际呈现验收。已有7gap失败及完整三页/5轮缺口不变。
 
 已知基线差异（oracle005 实测）：同一字体 `.SFNS-Regular` / 14pt、1070×520pt视口下，61行UTF-16范围、行顶、20pt行高和1220pt总高一致。Gallery按字体ascent/descent居中，44个非空行的AppKit基线比Gallery低1.708984375pt；17个纯换行行的首glyph位置比Gallery名义基线低4.708984375pt。后者是不可见控制glyph的位置，不是实测墨迹基线。该记录不说明AppKit或TekesUI有缺陷，也不豁免44个非空行的0.25pt精确基线检查。oracle005正常exit2/0.877s，未输入、未进入性能采样；旧拒绝证据保留。
+
+正文诊断实际运行（oracle007）：release程序 `d24976645d3dd49ce0a7177212fa767573dfafd8b8a36f5216f6710505654449` 来自 `485e6ac19e19a020f191c0a855943f53723b2124`，后继格式提交不改签程序身份。连续CU2脚本在runner启动2.6505s后完成一次滚轮命令；原生记录实际覆盖60.0079s、7195个滚动状态、3814个本地适配事件及235个进程CPU样本，之后5.0011s空闲且显示回调0，正常exit0/68.4126s并释放输入和自有进程组。
+
+本次正文进程CPU均值2.6196%（100%=一个逻辑核），空闲约0.0119%；这是单次共享桌面诊断，非quiet正式结果。31个含预热的手势阶段组及实际offset变化已核对；4个CAD状态回调间隔超过12.5ms，最大20.8161ms，不能称实际呈现丢帧或120Hz通过。61项baseline差异、frameCPU/GPU和实际呈现未测、非整页及不足5轮限制均保留；不得用这些数字对原Gallery宣称性能非劣或提升。旧oracle006未送seed而180s超时的执行失败仍保留，本次只解决了连续执行和有限数据采集。
