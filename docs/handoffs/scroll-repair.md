@@ -90,3 +90,65 @@
 已读取并核对 `design/reviews/symbols-performance/summary.json` 与 README，独立验证 raw manifest 中全部 10 份 gzip/原文 SHA256、长度和 JSON 可读性。正式结果未达到严格 120Hz 零掉帧：24 实例三种负载各 60s 出现 2～4 次实际呈现长间隔，平均 CPU 约 45.8%～46.5%；72 实例压力 30s 出现 40 次，CPU 约 98.9%（100%=一个逻辑核心），建场景 p99 10.80ms。42 实例全效果短测未出现实际长间隔，仍因回调/CPU 峰值不满足而保留未通过。
 
 固定纹理诊断仍有呈现长间隔，说明不能把全部问题归到动画数学或逐帧重画；逐帧 SVG 光栅化/上传的主要 CPU 开销、drawable 等待和实际呈现应分别继续优化与验证。停止后额外回调为零和低空闲 CPU 属于已通过项。完整负载定义、指标、限制、冻结二进制及每帧证据以该目录为准；本次双指滚动修复不自动继承另一份冻结动画二进制的验收结果。
+
+## #12 / T43-C：有界 AppKit CPU / 滚动状态参照（候选）
+
+原 `scroll_oracle` 默认校准路径不变。新增可选模式只比较同一内文区域的进程 CPU 和滚动状态；不替代原 CPU/GPU 帧耗时、实际呈现、零 gap、同机非劣化验收。窗口/完整 Gallery chrome 的工作量不同，不能把正文参照叫作整页性能等价。
+
+Gallery 新程序以 `TEKES_PERF_REFERENCE=1` 开启附加观测。每帧只保存 target/logical/visual 三个标量；停止后的 JSON 报告一次性导出 `reference_fixture`：当前已布局 TextSurface 的真实 inner/outer rect、wrap width、原文、字体 PostScript 名/字号/回退、行 UTF-16 范围/高度/基线和滚动 extent。导出经 `TextDemo` 和 `Gallery` 的只读方法，不重排、不改变控件或字体行为。新字段与程序身份只属于新构建，不能倒贴旧 f3a 程序或旧报告。
+
+在主协调原 guard/runtime 独占窗口内，先用新 Gallery 程序取得完整可见的 ScrollArea 报告，保持英文、内建屏、同机/OS/电源/scale：
+
+```sh
+TEKES_PERF_REFERENCE=1 TEKES_PERF=scroll:60 TEKES_PERF_CONTENT=scroll-area \
+TEKES_PERF_WORKBENCH=1 TEKESUI_GALLERY_LOCALE=en TEKESUI_WINDOW_PLACEMENT=builtin \
+TEKES_PERF_GPU_TIMING=1 TEKES_PERF_FRAME_LATENCY=2 TEKES_METAL_DISPLAY_LINK=0 \
+TEKES_PERF_OUT=/absolute/fresh/gallery-reference-input.json /absolute/new-release/tekes-ui-gallery
+```
+
+现有 `measure-scroll-pages-quiet.py --reference-metadata` 显式传递该观测开关；默认仍清理继承的 TEKES_PERF 环境变量。此处仅说明原程序参数，实际执行仍绑定既有 quiet runner/进程组 timeout/清退与二进制 hash；不绕过 admission。Gallery 的既有性能拒绝理由原样保留。`reference_fixture=null`、未完成/隐藏/失焦报告或缺少 reference_scroll 时，不可启动参照模式。新环境变量不要在旧程序上使用后宣称取得了新元数据。
+
+```sh
+TEKES_SCROLL_REFERENCE=/absolute/fresh/gallery-reference-input.json \
+TEKES_SCROLL_SECONDS=60 TEKES_SCROLL_ORACLE_OUT=/absolute/fresh/appkit-reference.json \
+/absolute/new-release/scroll_oracle
+```
+
+oracle 在建窗前校验 JSON、原始内文（与公开夹具 `gallery-reading-en.txt.trim_end()` 完全一致）、必要有限正数、完整 Gallery 观测和新输出路径；秒数必须有限且大于零，并与输入Gallery报告相同，warmup须为原1.5s。当前有界模式仅支持一个非彩色已解析字体和一致的实际行高，遇到回退字体/变行高明确拒绝，不替换为任意字体。AppKit 使用该 PostScript 字体，核实际解析名、backing scale、viewport、NSLayoutManager 行 UTF-16/行高/基线和 used height。行几何容差沿原 comparison-method：1x 半点、2x 四分之一点，文档总高一点评差；不同排版是参照输入未准入，不据此宣称产品渲染缺陷。原始内文一致不证明栅格、完整页面或呈现等价。
+
+一次真实本地 scrollWheel 事件仍用于提供原公开 NSEvent adapter 的窗口/位置种子。它被消费为种子，不作为正式手势；不能冒充物理触控板采集。无种子不开始计时，主协调须使用原进程组 timeout（60s 模式外层180s），10s 内未获得种子应停止，不依赖旧36000回调后备退出。
+
+种子后先预热1.5s，复用 Gallery 的2s交替 top/bottom、.35s finger、.65s `exp(-8*t)` momentum、1s settle、相同 speed/extent 公式，经原 local adapter 送 AppKit。记录 native bounds.y 与原始输入，允许识别原生与 Rust 的实际物理轨迹差异，不强制把每帧结果改成同值。性能模式关闭编号网格、HUD和 Rust 校准模型推进。CPU 使用与 Gallery 相同的 macOS process CPU clock（user+system，100%=一逻辑核），记录均值及至少250ms间隔样本，不换算成每帧8.3ms预算。
+
+到测量终点停止输入并 invalidate CAD link；仅安排一个5秒 one-shot timer，记录 idle CPU/残余显示回调后写报告、正常关窗。提前关闭、准入失败、可见性无效或 idle 不完整时 `completed=false`/exit2；缺图或 CPU 读数不补零。`completed`只表示本次记录完整，不自动判定CPU性能通过。输出不覆盖旧文件。机器/OS/显示器和程序 source/profile/hash 的实际绑定由主协调执行收据记录，不能用输入 Gallery 机器字段冒充 oracle 当次机器。
+
+`frame_cpu_ms`、`frame_gpu_ms`、`actual_presentation` 明确为 null/unmeasured。CAD target/callback、NSLayoutManager/drawRect 和 one-shot timer 都不是实际呈现收据；全 WindowServer CPU/GPU 也不归给此窗口。即使正文布局与进程 CPU 对照成功，GPU/实际呈现/完整三页参照仍未验，原7gap失败与后续零 gap 约束不变。
+
+受影响验证（由主协调集成后依原资源窗口执行）：release Gallery + `scroll_oracle` 同源构建；原 Gallery perf/ScrollArea 行为回归；oracle 默认校准路径短回归；缺文件/缺元数据/NaN秒数/旧输出路径的启动前 exit2；匹配或真实不匹配布局的可审计准入；一轮完整60s+idle正常退出/自有group空/输入hash不变。仅在准入、环境及指标覆盖明确后再排5轮 median/worst，当前候选没有执行 Cargo/GUI，也没有宣称这些验证通过。
+
+实际准入红例（2026-11-06）：按隐藏名 `.SFNS-Regular` 调用 fontWithName 被 CoreText 拒绝；改用公开 systemFontOfSize，再逐项比较实际 PostScript 名，未放宽字体要求。准入错误在 Created 内立即关窗会被后续平台 makeKeyAndOrderFront 重开，原运行180s超时保留；改为保留原窗口身份并在下一事件循环一次性执行既有关闭路径。修复仍须新运行确认，不把红例改标通过。
+
+字体身份接续：oracle002已正常exit2/0.664s并清空自有进程组，拒绝关闭修复已验证；NSFont系统字体的按名称对照仍拒绝。候选改为复用Gallery的CoreTextFonts::create_font及ComposerBody字重，核实际CoreText PostScript名/字号，再按Apple公开toll-free约定将同一对象交给NSFont。NSFont别名仅作记录，不据此换字体；实际准入待验证。
+
+### 显式 baseline 差异诊断（#12 / T43-C）
+
+`TEKES_SCROLL_REFERENCE_BASELINE_DIAGNOSTIC=1` 仅在已有 reference 模式中启用正文 CPU/滚动状态诊断。未设置或 `0` 保持严格准入；其他值启动前 exit2。该开关只允许 baseline 差异继续，字体、UTF-16 换行/行数、行顶/行高、extent/viewport 的原检查与容差保持不变。
+
+```sh
+TEKES_SCROLL_REFERENCE=/absolute/gallery-reference-input.json \
+TEKES_SCROLL_REFERENCE_BASELINE_DIAGNOSTIC=1 TEKES_SCROLL_SECONDS=60 \
+TEKES_SCROLL_ORACLE_OUT=/absolute/fresh/appkit-baseline-diagnostic.json \
+/absolute/new-release/scroll_oracle
+```
+
+沿用原 guard/种子输入、180s外层 timeout、5s idle 和正常关窗/清退契约。环境模式必须在执行收据单列：共享桌面诊断不代表 quiet 通过；正式比较仍要求独立通过原 quiet 门槛。新开关需要新 oracle 构建身份；原 strict005 exit2 及逐行差异证据保留。只有所有非 baseline 条件通过才会继续；不匹配不会通过开关隐藏。
+
+有 baseline 差异时，admission status 为 `PARTIAL_BODY_CPU_SCROLL_STATE_DIAGNOSTIC`，顶层及 admission 的 `exact_layout_passed=false`，`comparison_scope`明确为 partial body CPU/scroll state；`baseline_differences`逐项保留 index、UTF-16、实际/期望基线和 delta，原 fixture.lines 与实际 lines 也保留。无超容差差异时原 `MATCHED_BODY_INPUT_AND_LINE_GEOMETRY` 标签不变。`completed`仍只表示记录是否完整，不表示精确排版或性能验收通过。
+
+这项显式诊断接收的是已知跨引擎 baseline 策略差异，不修改 comparison-method §2.2 的0.25pt基线门槛，也不替代 §2.3 同机同夹具性能非劣、frame CPU/GPU 或实际呈现验收。已有7gap失败及完整三页/5轮缺口不变。
+
+已知基线差异（oracle005 实测）：同一字体 `.SFNS-Regular` / 14pt、1070×520pt视口下，61行UTF-16范围、行顶、20pt行高和1220pt总高一致。Gallery按字体ascent/descent居中，44个非空行的AppKit基线比Gallery低1.708984375pt；17个纯换行行的首glyph位置比Gallery名义基线低4.708984375pt。后者是不可见控制glyph的位置，不是实测墨迹基线。该记录不说明AppKit或TekesUI有缺陷，也不豁免44个非空行的0.25pt精确基线检查。oracle005正常exit2/0.877s，未输入、未进入性能采样；旧拒绝证据保留。
+
+正文诊断实际运行（oracle007）：release程序 `d24976645d3dd49ce0a7177212fa767573dfafd8b8a36f5216f6710505654449` 来自 `485e6ac19e19a020f191c0a855943f53723b2124`，后继格式提交不改签程序身份。连续CU2脚本在runner启动2.6505s后完成一次滚轮命令；原生记录实际覆盖60.0079s、7195个滚动状态、3814个本地适配事件及235个进程CPU样本，之后5.0011s空闲且显示回调0，正常exit0/68.4126s并释放输入和自有进程组。
+
+本次正文进程CPU均值2.6196%（100%=一个逻辑核），空闲约0.0119%；这是单次共享桌面诊断，非quiet正式结果。31个含预热的手势阶段组及实际offset变化已核对；4个CAD状态回调间隔超过12.5ms，最大20.8161ms，不能称实际呈现丢帧或120Hz通过。61项baseline差异、frameCPU/GPU和实际呈现未测、非整页及不足5轮限制均保留；不得用这些数字对原Gallery宣称性能非劣或提升。旧oracle006未送seed而180s超时的执行失败仍保留，本次只解决了连续执行和有限数据采集。

@@ -568,6 +568,43 @@ impl TextDemo {
         }
     }
 
+    pub(super) fn scroll_reference_state(&self) -> Option<[f32; 2]> {
+        let surface = self.surfaces.last()?;
+        Some([surface.scroll.offset.y, surface.scroll.visual_offset().y])
+    }
+
+    /// Benchmark-only snapshot of the actual retained layout; never reshapes text.
+    pub(super) fn scroll_reference_fixture(&self) -> Option<serde_json::Value> {
+        let s = self.surfaces.last()?;
+        let paragraph = s.paragraph.as_ref()?;
+        if s.shaped != s.input.text {
+            return None;
+        }
+        let rect = |r: Rect| [r.origin.x, r.origin.y, r.size.width, r.size.height];
+        Some(serde_json::json!({
+            "schema": "tekesui-scroll-reference-fixture/1",
+            "text": s.shaped,
+            "normalization": "gallery-reading-en.txt.trim_end()",
+            "outer_rect_pt": rect(s.outer),
+            "inner_rect_pt": rect(s.inner),
+            "wrap_width_pt": s.width,
+            "role": s.role.id(),
+            "type_scale": s.type_scale,
+            "read_only": s.input.read_only,
+            "multiline": s.input.multiline,
+            "paragraph_height_pt": paragraph.height,
+            "scroll_limit_pt": s.scroll.limit().y,
+            "fonts": paragraph.fonts.iter().map(|f| serde_json::json!({
+                "post_script_name": f.post_script_name, "size_pt": f.size,
+                "is_color": f.is_color,
+            })).collect::<Vec<_>>(),
+            "lines": paragraph.lines.iter().map(|l| serde_json::json!({
+                "utf16": [l.utf16.start, l.utf16.end],
+                "top_pt": l.top, "height_pt": l.height, "baseline_pt": l.baseline_y,
+            })).collect::<Vec<_>>(),
+        }))
+    }
+
     pub fn scroll_metrics(&self) -> (f32, f32) {
         let s = self.surfaces.last().unwrap();
         (s.scroll.limit().y, s.inner.size.height)

@@ -492,6 +492,8 @@ pub struct Perf {
     measure_end: Option<Instant>,
     cpu_rate_last: Option<(Instant, f64)>,
     cpu_rates: Vec<[f64; 2]>,
+    reference_requested: bool,
+    reference_scroll: Vec<[f64; 3]>,
     prev_render_id: Option<u64>,
     samples: Vec<FrameSample>,
     dispatch_delays: Vec<f64>,
@@ -561,8 +563,15 @@ impl Perf {
         let capacity = (cfg.seconds.mul_add(132.0, 240.0).min(100_000.0)) as usize;
         let symbols =
             (cfg.content == ContentKind::Symbols).then(symbol_perf::SymbolWorkload::from_env);
+        let reference_requested = std::env::var("TEKES_PERF_REFERENCE").as_deref() == Ok("1");
         Perf {
             symbols,
+            reference_requested,
+            reference_scroll: if reference_requested {
+                Vec::with_capacity(capacity)
+            } else {
+                Vec::new()
+            },
             measure_gpu: std::env::var("TEKES_PERF_GPU_TIMING").as_deref() != Ok("0"),
             cfg,
             plan,
@@ -1009,6 +1018,12 @@ impl Perf {
                 .push((f.target_timestamp, occluded, key));
         }
         self.dispatch_delays.push(f.queue_delay() * 1000.0);
+        if self.reference_requested
+            && let Some([logical, visual]) = self.gallery.scroll_reference_state()
+        {
+            self.reference_scroll
+                .push([f.target_timestamp, f64::from(logical), f64::from(visual)]);
+        }
         self.samples.push(FrameSample {
             target_timestamp: f.target_timestamp,
             callback_time: f.callback_time,
@@ -1345,6 +1360,16 @@ impl Perf {
             "total_run_s": self.started.elapsed().as_secs_f64(),
         });
         report["scene3d_workload"] = scene3d_workload.unwrap_or(Value::Null);
+        if self.reference_requested {
+            report["reference_fixture"] = self
+                .gallery
+                .scroll_reference_fixture()
+                .unwrap_or(Value::Null);
+            report["reference_scroll"] = json!({
+                "columns": ["target_s", "logical_y", "visual_y"], "samples": self.reference_scroll,
+                "clock": "same target_timestamp as frame samples; callbacks are not actual presentation",
+            });
+        }
         report
     }
 }
