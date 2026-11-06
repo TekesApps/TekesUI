@@ -48,9 +48,19 @@ def usage(previous, current, binary, excluded, per_process, total_limit):
     blockers = [p for p in processes if p['cpu_percent'] > per_process
                 or (p['cpu_percent'] > 1 and (Path(p['command']).name in heavy_names
                     or ('/target/' in p['command'] and '/deps/' in p['command'])))]
+    shared = [p for p in processes if Path(p['command']).name == 'WindowServer']
+    external = [p for p in processes if Path(p['command']).name != 'WindowServer']
+    external_total = sum(p['cpu_percent'] for p in external)
+    external_blockers = [p for p in blockers if Path(p['command']).name != 'WindowServer']
     return {'wall_unix': time.time(), 'interval_s': elapsed, 'cpu_percent_total': total,
             'quiet': not blockers and total <= total_limit,
-            'blockers': blockers, 'processes': processes}
+            'blockers': blockers, 'processes': processes,
+            'cpu_attribution': {
+                'shared_compositor': {'attribution': 'UNKNOWN', 'processes': shared,
+                                      'cpu_percent_total': sum(p['cpu_percent'] for p in shared)},
+                'known_external': {'processes': external, 'cpu_percent_total': external_total,
+                                   'blockers': external_blockers,
+                                   'below_limits': not external_blockers and external_total <= total_limit}}}
 
 
 def main():
