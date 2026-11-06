@@ -1368,15 +1368,48 @@ impl Perf {
             "total_run_s": self.started.elapsed().as_secs_f64(),
         });
         if self.work_done_host_requested {
-            report["gpu_work_done_upper_bound"] = match renderer.gpu_work_done_host_observations() {
-                None => json!({"requested":true,"state":"observer_not_enabled","rows":[]}),
-                Some(Err(error)) => {
-                    json!({"requested":true,"state":"observer_error","error":error,"rows":[]})
-                }
-                Some(Ok(observed)) => {
-                    let by_frame: std::collections::HashMap<_, _> =
-                        observed.iter().copied().collect();
-                    let rows: Vec<_> = samples.iter().zip(&self.render_ids).zip(&self.drawable_serials)
+            append_work_done_upper_bound(
+                &mut report,
+                renderer.gpu_work_done_host_observations(),
+                &samples,
+                &self.render_ids,
+                &self.drawable_serials,
+                &receipts,
+            );
+        }
+        report["scene3d_workload"] = scene3d_workload.unwrap_or(Value::Null);
+        if self.reference_requested {
+            report["reference_fixture"] = self
+                .gallery
+                .scroll_reference_fixture()
+                .unwrap_or(Value::Null);
+            report["reference_scroll"] = json!({
+                "columns": ["target_s", "logical_y", "visual_y"], "samples": self.reference_scroll,
+                "clock": "same target_timestamp as frame samples; callbacks are not actual presentation",
+            });
+        }
+        report
+    }
+}
+
+// Keep the real optional annotation isolated so its frame join and preservation
+// of the original report can be verified without constructing a native Window.
+fn append_work_done_upper_bound(
+    report: &mut Value,
+    observed: Option<Result<Vec<(u64, f64)>, &'static str>>,
+    samples: &[FrameSample],
+    render_ids: &[Option<u64>],
+    drawable_serials: &[u64],
+    receipts: &std::collections::HashMap<u64, tekes_ui_platform_macos::PresentedFrame>,
+) {
+    report["gpu_work_done_upper_bound"] = match observed {
+        None => json!({"requested":true,"state":"observer_not_enabled","rows":[]}),
+        Some(Err(error)) => {
+            json!({"requested":true,"state":"observer_error","error":error,"rows":[]})
+        }
+        Some(Ok(observed)) => {
+            let by_frame: std::collections::HashMap<_, _> = observed.iter().copied().collect();
+            let rows: Vec<_> = samples.iter().zip(render_ids).zip(drawable_serials)
                         .filter(|((sample,_),_)| sample.rendered)
                         .map(|((sample,id),serial)| {
                             let at = id.and_then(|id|by_frame.get(&id).copied());
@@ -1392,28 +1425,14 @@ impl Perf {
                                 "state":if valid{"observed_upper_bound"}else if at.is_some(){"invalid_observed_host_time"}else{"missing_receipt_at_snapshot"},
                                 "callback_observed_host_s":value})
                         }).collect();
-                    json!({"requested":true,"state":"snapshot","rows":rows,
+            json!({"requested":true,"state":"snapshot","rows":rows,
                         "clock":"CACurrentMediaTime host seconds, same host timeline as target/acquired/presented; callback execution time, not GPU timestamp",
                         "semantics":"If valid callback C precedes a real observed event E, submitted GPU work completed no later than C and before E; C later than E is UNKNOWN, not proof of late GPU completion. E is not a compositor deadline.",
                         "callback_registration":"existing on_submitted_work_done only, requires GPU query ticket; disabled/unsupported/full-slot frames may have no receipt",
                         "observations_including_warmup":observed.len(),
                         "limits":"no extra submit/poll/wait or extended drain; missing remains missing; not GPUEndTime, physical scanout or performance acceptance"})
-                }
-            };
         }
-        report["scene3d_workload"] = scene3d_workload.unwrap_or(Value::Null);
-        if self.reference_requested {
-            report["reference_fixture"] = self
-                .gallery
-                .scroll_reference_fixture()
-                .unwrap_or(Value::Null);
-            report["reference_scroll"] = json!({
-                "columns": ["target_s", "logical_y", "visual_y"], "samples": self.reference_scroll,
-                "clock": "same target_timestamp as frame samples; callbacks are not actual presentation",
-            });
-        }
-        report
-    }
+    };
 }
 
 // A skipped render has no acquisition. Never duplicate its previous drawable's
@@ -1479,6 +1498,154 @@ fn summary(r: &Value) -> String {
 
 #[cfg(test)]
 mod tests {
+    // Uses the same annotation function as Perf::report, including serialization.
+    fn work_done_sample(target: f64, rendered: bool) -> FrameSample {
+        FrameSample {
+            target_timestamp: target,
+            rendered,
+            ..Default::default()
+        }
+    }
+
+    fn work_done_failed_report() -> Value {
+        // Keep the actual observed failure categories visible after annotation.
+        json!({"completed":true,"presentation":{"gaps_over_1_5_refresh":18},
+            "stats":{"cpu_ms":{"p99":8.895291},"gpu_ms":{"p99":2.536625}},
+            "strict_rejection_reasons":["actual_presentation_gap_or_invalid_timeline",
+                "callback_missed_refreshes","cpu_exceeds_frame_period_or_unknown"],
+            "quiet_gate_and_zero_drop_pass":false})
+    }
+
+    #[test]
+    fn work_done_report_joins_exact_frame_and_drawable_not_time_or_order() {
+        // Deliberately equal targets, reordered notification delivery, unrelated
+        // warmup frame, and a skipped sample carrying an old frame/serial.
+        let samples = [
+            work_done_sample(1.0, true),
+            work_done_sample(1.0, true),
+            work_done_sample(3.0, false),
+            work_done_sample(4.0, true),
+        ];
+        let receipts = [(7, drain_receipt(7, 1.1)), (8, drain_receipt(8, 2.1))]
+            .into_iter()
+            .collect();
+        let before = work_done_failed_report();
+        let mut report = before.clone();
+        append_work_done_upper_bound(
+            &mut report,
+            Some(Ok(vec![(11, 2.2), (99, 9.0), (10, 1.0)])),
+            &samples,
+            &[Some(10), Some(11), Some(10), Some(12)],
+            &[7, 8, 7, 9],
+            &receipts,
+        );
+        let rows = report["gpu_work_done_upper_bound"]["rows"]
+            .as_array()
+            .unwrap();
+        assert_eq!(rows.len(), 3);
+        assert_eq!(rows[0]["render_frame"], 10);
+        assert_eq!(rows[0]["drawable_serial"], 7);
+        assert_eq!(rows[0]["presented_s"], 1.1);
+        assert_eq!(rows[0]["callback_observed_host_s"], 1.0);
+        assert_eq!(rows[1]["render_frame"], 11);
+        assert_eq!(rows[1]["drawable_serial"], 8);
+        assert_eq!(rows[1]["presented_s"], 2.1);
+        assert_eq!(rows[1]["callback_observed_host_s"], 2.2);
+        assert_eq!(rows[2]["state"], "missing_receipt_at_snapshot");
+        assert!(rows[2]["callback_observed_host_s"].is_null());
+        assert!(rows[2]["presented_s"].is_null());
+        // A late C remains a valid observation, not a late-GPU classification.
+        assert_eq!(rows[1]["state"], "observed_upper_bound");
+        assert!(
+            report["gpu_work_done_upper_bound"]["semantics"]
+                .as_str()
+                .unwrap()
+                .contains("C later than E is UNKNOWN, not proof of late GPU completion")
+        );
+        report
+            .as_object_mut()
+            .unwrap()
+            .remove("gpu_work_done_upper_bound");
+        assert_eq!(report, before);
+    }
+
+    #[test]
+    fn work_done_report_preserves_invalid_and_missing_without_serialization_loss() {
+        let values = [0.0, -1.0, f64::NAN, f64::INFINITY, f64::NEG_INFINITY];
+        let samples: Vec<_> = (0..6)
+            .map(|i| work_done_sample(i as f64 + 1.0, true))
+            .collect();
+        let frames: Vec<_> = (0..6).map(Some).collect();
+        let serials = [1, 2, 3, 4, 5, 6];
+        let observed = values
+            .into_iter()
+            .enumerate()
+            .map(|(i, v)| (i as u64, v))
+            .collect();
+        let before = work_done_failed_report();
+        let mut report = before.clone();
+        append_work_done_upper_bound(
+            &mut report,
+            Some(Ok(observed)),
+            &samples,
+            &frames,
+            &serials,
+            &Default::default(),
+        );
+        let rows = report["gpu_work_done_upper_bound"]["rows"]
+            .as_array()
+            .unwrap();
+        for row in &rows[..5] {
+            assert_eq!(row["state"], "invalid_observed_host_time");
+        }
+        assert_eq!(rows[0]["callback_observed_host_s"], 0.0);
+        assert_eq!(rows[1]["callback_observed_host_s"], -1.0);
+        for (index, label) in [(2, "NaN"), (3, "+Infinity"), (4, "-Infinity")] {
+            assert_eq!(
+                rows[index]["callback_observed_host_s"]["type"],
+                "nonfinite-number"
+            );
+            assert_eq!(rows[index]["callback_observed_host_s"]["value"], label);
+        }
+        assert_eq!(rows[5]["state"], "missing_receipt_at_snapshot");
+        assert!(rows[5]["callback_observed_host_s"].is_null());
+        let encoded = serde_json::to_vec(&report).unwrap();
+        assert_eq!(serde_json::from_slice::<Value>(&encoded).unwrap(), report);
+        report
+            .as_object_mut()
+            .unwrap()
+            .remove("gpu_work_done_upper_bound");
+        assert_eq!(report, before);
+    }
+
+    #[test]
+    fn work_done_report_keeps_unavailable_and_store_error_distinct() {
+        for (observed, state) in [
+            (None, "observer_not_enabled"),
+            (
+                Some(Err("work_done_observations_lock_poisoned")),
+                "observer_error",
+            ),
+        ] {
+            let before = work_done_failed_report();
+            let mut report = before.clone();
+            append_work_done_upper_bound(&mut report, observed, &[], &[], &[], &Default::default());
+            assert_eq!(report["gpu_work_done_upper_bound"]["state"], state);
+            assert_eq!(report["gpu_work_done_upper_bound"]["rows"], json!([]));
+            if state == "observer_error" {
+                assert_eq!(
+                    report["gpu_work_done_upper_bound"]["error"],
+                    "work_done_observations_lock_poisoned"
+                );
+            }
+            report
+                .as_object_mut()
+                .unwrap()
+                .remove("gpu_work_done_upper_bound");
+            assert_eq!(report, before);
+        }
+    }
+
     #[test]
     fn early_close_cannot_complete_the_five_second_idle_observation() {
         assert!(!measurement_complete(
