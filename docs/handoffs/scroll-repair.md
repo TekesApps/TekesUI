@@ -159,7 +159,7 @@ TEKES_SCROLL_ORACLE_OUT=/absolute/fresh/appkit-baseline-diagnostic.json \
 在新构建 Gallery 的原受控执行绑定中显式设置 `TEKES_PERF_WORK_DONE_HOST=1`，
 才在既有 `on_submitted_work_done` 回调保存 `callback_observed_host_s`。默认关闭；不增加
 HAL/原生依赖、command buffer、submit、poll、wait、缓冲深度或 drain 时限。
-现有 quiet runner 会清理继承的 `TEKES_PERF*`，协调绑定需显式传递该开关并冻结新身份，
+现有 quiet runner 会清理继承的 `TEKES_PERF*`，使用显式 `--work-done-host` 参数传递该开关并记录请求，协调绑定需冻结新身份，
 不能绕过 admission，也不能把新字段倒贴旧18-gap数据。
 
 `gpu_work_done_upper_bound.rows` 以已分配 `FrameTiming.frame` 经 Gallery render_ids 与
