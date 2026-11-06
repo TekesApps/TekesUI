@@ -248,3 +248,26 @@ ScrollArea 两次顺序对照的 encode 均值分别为 0.100 → 0.067ms、0.20
 该轮原 release（SHA-256 `f3a1ab2639dae929c780fd1fce544d5288954f3f191386d51b5cba221370b0b5`）CPU active p99 为 0.597876ms、GPU pass p99 为 2.521750ms，仍有 7 个实际长呈现间隔，下一页低负载预检拒绝。一次 latency 2→1 配对减少约一刷新周期的排队时间，但没有证明掉帧改善；生产默认未改。历史 trace 已排除两个 Present 标签即重复上屏的误读；新增系统追踪的有效调度事件未覆盖所观测掉帧，不能据此归因或修改渲染器。本补充只修复记录归属，不代表五轮正式性能矩阵、同机参照或整个 #12 完成。
 
 协调证据：`work/performance-resume/quiet-attribution-fix/{READY.json,VALIDATION.json}`、`MEASUREMENT-QUIET-ATTRIBUTION-REVIEW.json`、`native-execution/scroll-formal-cu2-ready-001/ROOT-REVIEW.json`、`LATENCY-PAIR-REVIEW.json`、`COMPOSITOR-TRIGGER-REVIEW.json`、`SYSTEM-ALL-REVIEW.json`；原始失败保留。
+
+
+## 已采纳的共享合成器 quiet 方法修订（2026-11-06，#12 / T43）
+
+用户已采纳本次口径修订，范围见 [#12 comment6681957461](https://github.com/TekesApps/TekesUI/issues/12#issuecomment-6681957461)。
+`measure-scroll-pages-quiet.py --quiet-method raw` 是保留的旧默认（方法ID `tekesui-scroll-quiet/raw-v1`）；
+未来正式 grant 必须显式选择 `--quiet-method known-external`（`tekesui-scroll-quiet/known-external-v1`），
+不能仅更新一个未记录的环境偏好。新方法以既有 `cpu_attribution.known_external.below_limits` 判准入与运行期 CPU 条件。
+阈值仍为每进程30%、合计100%，含既有重负载进程 blocker 规则；WindowServer 仍属 shared-compositor/UNKNOWN，
+它的观测并未被删掉，也不能称为已证明全由被测应用产生。
+
+每个原始样本的 `quiet`、`cpu_percent_total`、`blockers`、`processes` 和归属分区原样保留，
+追加 `selected_quiet`；audit/运行 receipt/summary 记录 `quiet_method`、`quiet_method_id` 与 raw/selected 两种结果。
+audit 既有 `external_process_cpu_below_threshold_during_all_samples` 保持 raw 含义；
+`selected_process_cpu_below_threshold_during_all_samples` 才是显式选择方法的结果。
+summary 既有 `ambient_cpu_below_limits`/`quiet_gate_passed`/`quiet_gate_and_zero_drop_pass` 对应已记录的 selected 方法，
+同时保留明确 raw 字段；默认 raw 时旧结果含义不变。空 during 必为 false，`--shared-desktop-diagnostic` 的准入永远 false，
+不能用新口径把诊断升级为正式通过。
+
+CPU/GPU p99、elapsed/active 区分、strict_verdict、实际呈现零 gap/唯一回执、可见性、时长与 idle 条件完全不变。
+本次不改变 Symbols 执行入口或其默认方法。旧冻结文件、旧 raw 结论和失败均不回签。
+SSD 单元仅在新复核中按新方法回放：它仍有3个 known-external 独立超标样本和27个实际 gap，因此即使采用新口径仍失败；
+不能把历史 rawfalse 简写成全部是系统外部干扰，亦不能归因为 SSD/FileProvider 或生产渲染缺陷。

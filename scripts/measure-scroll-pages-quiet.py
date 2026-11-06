@@ -25,8 +25,25 @@ quiet = load('quiet', 'measure-symbols-quiet.py')
 summary = load('summary', 'f1-scroll-summary.py')
 
 
+QUIET_METHODS = {
+    'raw': 'tekesui-scroll-quiet/raw-v1',
+    'known-external': 'tekesui-scroll-quiet/known-external-v1',
+}
+
+
+def quiet_sample_passed(row, method):
+    # CLI validates method once; usage() owns the unchanged 30/100 rules.
+    return row['quiet'] if method == 'raw' else row['cpu_attribution']['known_external']['below_limits']
+
+
+def quiet_during_passed(rows, method):
+    return bool(rows) and all(quiet_sample_passed(row, method) for row in rows)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--quiet-method', choices=QUIET_METHODS, default='raw',
+                        help='Explicit method identity: raw retains shared compositor; known-external uses attributed external CPU only')
     parser.add_argument('--binary', required=True)
     parser.add_argument('--out', required=True)
     parser.add_argument('--prefix', required=True)
@@ -58,30 +75,34 @@ def main():
         if any(path.exists() for path in (report, audit_path, out/(label+'-run.json'), out/(label+'.log'))):
             raise SystemExit('Refusing to overwrite '+label)
         audit = {'format': 'tekesui-ambient-cpu/1', 'label': label,
+                 'quiet_method': args.quiet_method, 'quiet_method_id': QUIET_METHODS[args.quiet_method],
                  'limits': {**vars(args), 'per_process_limit': 30, 'total_limit': 100},
                  'caution': 'CPU-only low-background gate; does not certify GPU, I/O or user inactivity. WindowServer activity during measurement can be caused by the benchmark itself; exceeding a threshold is not causal evidence of outside interference.',
                  'before': [], 'during': []}
         def save():
             audit_path.write_text(json.dumps(audit, indent=2)+'\n')
         start = time.monotonic()
-        stable = 0
+        stable = raw_stable = 0
         previous = quiet.snapshot()
         while True:
             time.sleep(args.interval)
             current = quiet.snapshot()
             row = quiet.usage(previous, current, str(binary), {os.getpid()}, 30, 100)
             previous = current
+            row['selected_quiet'] = quiet_sample_passed(row, args.quiet_method)
             audit['before'].append(row)
-            stable = stable+row['interval_s'] if row['quiet'] else 0
+            raw_stable = raw_stable+row['interval_s'] if row['quiet'] else 0
+            stable = stable+row['interval_s'] if row['selected_quiet'] else 0
             save()
             if args.shared_desktop_diagnostic or stable >= args.stable_seconds:
                 break
             if time.monotonic()-start >= args.wait_seconds:
-                audit['gate_passed'] = False
+                audit.update(gate_passed=False, raw_gate_passed=False, selected_gate_passed=False)
                 save()
                 print('No quiet window; native measurement not launched: '+label, flush=True)
                 raise SystemExit(3)
-        audit['gate_passed'] = not args.shared_desktop_diagnostic
+        audit['raw_gate_passed'] = not args.shared_desktop_diagnostic and raw_stable >= args.stable_seconds
+        audit['gate_passed'] = audit['selected_gate_passed'] = not args.shared_desktop_diagnostic
         audit['launch_mode'] = 'shared-desktop-diagnostic' if args.shared_desktop_diagnostic else 'quiet-gated'
         save()
         if hashlib.sha256(binary.read_bytes()).hexdigest() != checksum:
@@ -97,7 +118,9 @@ def main():
             env['TEKES_PERF_WORK_DONE_HOST'] = '1'
         if args.reference_metadata:
             env['TEKES_PERF_REFERENCE'] = '1'
-        receipt = {'work_done_host_requested': args.work_done_host, 'reference_metadata_requested': args.reference_metadata, 'binary': str(binary), 'binary_sha256': checksum,
+        receipt = {'quiet_method': args.quiet_method, 'quiet_method_id': QUIET_METHODS[args.quiet_method],
+                   'raw_gate_passed': audit['raw_gate_passed'], 'selected_gate_passed': audit['selected_gate_passed'],
+                   'work_done_host_requested': args.work_done_host, 'reference_metadata_requested': args.reference_metadata, 'binary': str(binary), 'binary_sha256': checksum,
                    'driver': args.driver, 'frame_latency': int(args.frame_latency), 'gpu_timing_requested': args.gpu_timing == '1', 'content': content,
                    'seconds': args.seconds, 'workbench': args.workbench, 'started_unix': time.time()}
         receipt_path = out/(label+'-run.json')
@@ -109,14 +132,21 @@ def main():
             while process.poll() is None:
                 time.sleep(args.interval)
                 current = quiet.snapshot()
-                audit['during'].append(quiet.usage(previous, current, str(binary), {os.getpid(), process.pid}, 30, 100))
+                row = quiet.usage(previous, current, str(binary), {os.getpid(), process.pid}, 30, 100)
+                row['selected_quiet'] = quiet_sample_passed(row, args.quiet_method)
+                audit['during'].append(row)
                 previous = current
                 save()
         receipt.update(exit_code=process.returncode, finished_unix=time.time(),
                        binary_sha256_after=hashlib.sha256(binary.read_bytes()).hexdigest())
         receipt_path.write_text(json.dumps(receipt, indent=2)+'\n')
         audit['exit_code'] = process.returncode
-        audit['external_process_cpu_below_threshold_during_all_samples'] = bool(audit['during']) and all(row['quiet'] for row in audit['during'])
+        # Legacy field remains raw; selected outcome is named and recorded separately.
+        audit['external_process_cpu_below_threshold_during_all_samples'] = quiet_during_passed(audit['during'], 'raw')
+        audit['selected_process_cpu_below_threshold_during_all_samples'] = quiet_during_passed(audit['during'], args.quiet_method)
+        receipt.update(raw_ambient_cpu_below_limits=audit['external_process_cpu_below_threshold_during_all_samples'],
+                       selected_ambient_cpu_below_limits=audit['selected_process_cpu_below_threshold_during_all_samples'])
+        receipt_path.write_text(json.dumps(receipt, indent=2)+'\n')
         save()
         if not report.exists():
             raise SystemExit('Missing native report: '+label)
@@ -124,12 +154,18 @@ def main():
         reasons = summary.strict_verdict(data)
         if receipt['binary_sha256_after'] != checksum:
             reasons.append('binary_changed_during_measurement')
-        results.append({'case': label, 'cpu_percent': data['process']['cpu_percent_while_scrolling'],
+        results.append({'quiet_method': args.quiet_method, 'quiet_method_id': QUIET_METHODS[args.quiet_method],
+                        'case': label, 'cpu_percent': data['process']['cpu_percent_while_scrolling'],
                         'presentation': {key: value for key,value in data['presentation'].items() if key != 'samples'},
                         'strict_rejection_reasons': reasons, 'exit_code': process.returncode,
-                        'ambient_cpu_below_limits': audit['external_process_cpu_below_threshold_during_all_samples'],
+                        'raw_ambient_cpu_below_limits': audit['external_process_cpu_below_threshold_during_all_samples'],
+                        'selected_ambient_cpu_below_limits': audit['selected_process_cpu_below_threshold_during_all_samples'],
+                        'ambient_cpu_below_limits': audit['selected_process_cpu_below_threshold_during_all_samples'],
+                        'raw_quiet_gate_passed': audit['raw_gate_passed'],
+                        'selected_quiet_gate_passed': audit['selected_gate_passed'],
                         'quiet_gate_passed': audit['gate_passed'],
-                        'quiet_gate_and_zero_drop_pass': not reasons and audit['gate_passed'] and audit['external_process_cpu_below_threshold_during_all_samples']})
+                        'raw_quiet_gate_and_zero_drop_pass': not reasons and audit['raw_gate_passed'] and audit['external_process_cpu_below_threshold_during_all_samples'],
+                        'quiet_gate_and_zero_drop_pass': not reasons and audit['gate_passed'] and audit['selected_process_cpu_below_threshold_during_all_samples']})
         (out/(args.prefix+'-summary.json')).write_text(json.dumps(results, indent=2)+'\n')
         print(label+': '+('mechanical gate passed' if not reasons else ', '.join(reasons)), flush=True)
         if process.returncode:
