@@ -298,7 +298,19 @@ mod mac {
                 || (used.size.height-r.document_height).abs() > 1.0
                 || (scroll.contentView().bounds().size.width-r.width).abs() > tolerance
                 || (scroll.contentView().bounds().size.height-r.height).abs() > tolerance {
-                return Err(format!("AppKit actual line/wrap/baseline/extent/viewport mismatch: {} vs {} lines; height {} vs {}",native_lines.len(),expected.len(),used.size.height,r.document_height));
+                let first_line_difference = native_lines.iter().zip(expected).enumerate().find(|(_, (a, b))| {
+                    a["utf16"] != b["utf16"] || ["top_pt", "height_pt", "baseline_pt"].iter().any(|k|
+                        (a[*k].as_f64().unwrap()-b[*k].as_f64().unwrap()).abs() > tolerance)
+                }).map(|(index, (actual, expected))| json!({"index":index,"actual":actual,"expected":expected}));
+                return Err(format!("AppKit layout mismatch: {}", json!({
+                    "font_post_script_name":ct_name,"font_point_size":ct_size,"appkit_font_name":font.fontName().to_string(),
+                    "actual_viewport_pt":[scroll.contentView().bounds().size.width,scroll.contentView().bounds().size.height],
+                    "expected_viewport_pt":[r.width,r.height],"actual_used_height_pt":used.size.height,
+                    "expected_height_pt":r.document_height,"geometry_tolerance_pt":tolerance,
+                    "first_line_difference":first_line_difference,"actual_lines":native_lines,
+                    "expected_lines_source":"fixture.lines in the same report"
+                })));
+
             }
             Ok(json!({"status":"MATCHED_BODY_INPUT_AND_LINE_GEOMETRY","scope":"text body only; Gallery chrome excluded",
                 "font_post_script_name":ct_name,"font_point_size":ct_size,
