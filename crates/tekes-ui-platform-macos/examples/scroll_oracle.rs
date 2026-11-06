@@ -97,12 +97,17 @@ mod mac {
             let gallery: Value =
                 serde_json::from_slice(&std::fs::read(path).map_err(|e| e.to_string())?)
                     .map_err(|e| e.to_string())?;
-            let baseline_diagnostic = match std::env::var("TEKES_SCROLL_REFERENCE_BASELINE_DIAGNOSTIC") {
-                Err(std::env::VarError::NotPresent) => false,
-                Ok(value) if value == "0" => false,
-                Ok(value) if value == "1" => true,
-                _ => return Err("TEKES_SCROLL_REFERENCE_BASELINE_DIAGNOSTIC must be 0 or 1".into()),
-            };
+            let baseline_diagnostic =
+                match std::env::var("TEKES_SCROLL_REFERENCE_BASELINE_DIAGNOSTIC") {
+                    Err(std::env::VarError::NotPresent) => false,
+                    Ok(value) if value == "0" => false,
+                    Ok(value) if value == "1" => true,
+                    _ => {
+                        return Err(
+                            "TEKES_SCROLL_REFERENCE_BASELINE_DIAGNOSTIC must be 0 or 1".into()
+                        );
+                    }
+                };
             let fixture = gallery["reference_fixture"].clone();
             let number = |v: &Value| {
                 v.as_f64()
