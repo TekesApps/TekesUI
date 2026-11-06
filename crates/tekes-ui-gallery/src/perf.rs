@@ -1018,14 +1018,11 @@ impl Perf {
                 .push((f.target_timestamp, occluded, key));
         }
         self.dispatch_delays.push(f.queue_delay() * 1000.0);
-        if self.reference_requested {
-            if let Some([logical, visual]) = self.gallery.scroll_reference_state() {
-                self.reference_scroll.push([
-                    f.target_timestamp,
-                    f64::from(logical),
-                    f64::from(visual),
-                ]);
-            }
+        if self.reference_requested
+            && let Some([logical, visual]) = self.gallery.scroll_reference_state()
+        {
+            self.reference_scroll
+                .push([f.target_timestamp, f64::from(logical), f64::from(visual)]);
         }
         self.samples.push(FrameSample {
             target_timestamp: f.target_timestamp,
