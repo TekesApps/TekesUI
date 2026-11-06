@@ -294,9 +294,19 @@ pub(super) fn roundtrip() -> Result<serde_json::Value> {
     );
     denied.close();
     wait(|| matches!(denied.status(), ProcessStatus::Closed))?;
-    for p in &processes {
+    for (index, p) in processes.iter().enumerate() {
+        let before = p.status();
+        eprintln!(
+            "SEMANTIC_CLOSE_BEGIN index={index} session={:?} original_pid={} before={before:?}",
+            p.session(), rows[index]["pid"]
+        );
         p.close();
-        wait(|| matches!(p.status(), ProcessStatus::Closed))?;
+        wait(|| matches!(p.status(), ProcessStatus::Closed)).with_context(|| {
+            format!(
+                "semantic child close index={index} session={:?} original_pid={} before={before:?} after={:?}",
+                p.session(), rows[index]["pid"], p.status()
+            )
+        })?;
     }
     Ok(
         serde_json::json!({"result":"ORIGINAL_REMOTE_SEMANTICS_ACTION_OK","runs":rows,"native":false,"GPU_visual":false,"VoiceOver":false,"performance":false,"remaining":"parent semantic projection and native text geometry/AX lifecycle"}),
