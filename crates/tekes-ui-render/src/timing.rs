@@ -33,6 +33,9 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicU8, Ordering};
 use std::time::Duration;
 
+#[cfg(target_os = "macos")]
+type WorkDoneHostObservations = Arc<std::sync::Mutex<Vec<(u64, f64)>>>;
+
 /// 回读槽的数量：同时在途的带 GPU 计时的帧数上限。
 const SLOTS: usize = 8;
 
@@ -90,6 +93,9 @@ pub(crate) struct Timing {
     done: Vec<FrameTiming>,
     /// 最近一次画出的帧的编号。
     last_frame: Option<u64>,
+    /// Opt-in completion-notification observations, keyed by already assigned frame.
+    #[cfg(target_os = "macos")]
+    work_done_host: Option<WorkDoneHostObservations>,
 }
 
 /// 这一帧占用的槽。
@@ -133,7 +139,25 @@ impl Timing {
             waiting: VecDeque::new(),
             done: Vec::new(),
             last_frame: None,
+            #[cfg(target_os = "macos")]
+            work_done_host: None,
         }
+    }
+
+    #[cfg(target_os = "macos")]
+    pub fn observe_work_done_host(&mut self) {
+        self.work_done_host = Some(Arc::new(std::sync::Mutex::new(Vec::new())));
+    }
+
+    /// Snapshot of (FrameTiming.frame, callback_observed_host_s), not GPU end times.
+    #[cfg(target_os = "macos")]
+    pub fn work_done_host_observations(&self) -> Option<Result<Vec<(u64, f64)>, &'static str>> {
+        self.work_done_host.as_ref().map(|store| {
+            store
+                .lock()
+                .map(|rows| rows.clone())
+                .map_err(|_| "work_done_observations_lock_poisoned")
+        })
     }
 
     pub fn last_frame(&self) -> Option<u64> {
@@ -174,7 +198,22 @@ impl Timing {
         };
         let state = g.slots[t.0].state.clone();
         state.store(SUBMITTED, Ordering::Release);
-        queue.on_submitted_work_done(move || state.store(WORK_DONE, Ordering::Release));
+        #[cfg(target_os = "macos")]
+        let observation = self.work_done_host.as_ref().map(Arc::clone);
+        #[cfg(target_os = "macos")]
+        let frame = timing.frame;
+        queue.on_submitted_work_done(move || {
+            state.store(WORK_DONE, Ordering::Release);
+            #[cfg(target_os = "macos")]
+            if let Some(store) = &observation {
+                // This callback is delivered by a later poll/submit. GPU work
+                // finished no later than this host time; it may finish earlier.
+                let observed = objc2_quartz_core::CACurrentMediaTime();
+                if let Ok(mut rows) = store.lock() {
+                    rows.push((frame, observed));
+                }
+            }
+        });
         self.waiting.push_back(Waiting { timing, slot: t.0 });
     }
 

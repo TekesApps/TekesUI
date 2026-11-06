@@ -152,3 +152,26 @@ TEKES_SCROLL_ORACLE_OUT=/absolute/fresh/appkit-baseline-diagnostic.json \
 正文诊断实际运行（oracle007）：release程序 `d24976645d3dd49ce0a7177212fa767573dfafd8b8a36f5216f6710505654449` 来自 `485e6ac19e19a020f191c0a855943f53723b2124`，后继格式提交不改签程序身份。连续CU2脚本在runner启动2.6505s后完成一次滚轮命令；原生记录实际覆盖60.0079s、7195个滚动状态、3814个本地适配事件及235个进程CPU样本，之后5.0011s空闲且显示回调0，正常exit0/68.4126s并释放输入和自有进程组。
 
 本次正文进程CPU均值2.6196%（100%=一个逻辑核），空闲约0.0119%；这是单次共享桌面诊断，非quiet正式结果。31个含预热的手势阶段组及实际offset变化已核对；4个CAD状态回调间隔超过12.5ms，最大20.8161ms，不能称实际呈现丢帧或120Hz通过。61项baseline差异、frameCPU/GPU和实际呈现未测、非整页及不足5轮限制均保留；不得用这些数字对原Gallery宣称性能非劣或提升。旧oracle006未送seed而180s超时的执行失败仍保留，本次只解决了连续执行和有限数据采集。
+
+
+## GPU 完成通知上界（#12 / T43，单向诊断）
+
+在新构建 Gallery 的原受控执行绑定中显式设置 `TEKES_PERF_WORK_DONE_HOST=1`，
+才在既有 `on_submitted_work_done` 回调保存 `callback_observed_host_s`。默认关闭；不增加
+HAL/原生依赖、command buffer、submit、poll、wait、缓冲深度或 drain 时限。
+现有 quiet runner 会清理继承的 `TEKES_PERF*`，使用显式 `--work-done-host` 参数传递该开关并记录请求，协调绑定需冻结新身份，
+不能绕过 admission，也不能把新字段倒贴旧18-gap数据。
+
+`gpu_work_done_upper_bound.rows` 以已分配 `FrameTiming.frame` 经 Gallery render_ids 与
+同 sample 的 drawable serial 关联 target/acquired/presented。C 使用 CACurrentMediaTime host seconds，
+是后续 submit/poll 执行完成通知的时间，不是实际 GPU 结束时刻。
+只有 C 早于真实观测事件 E，才能证明该帧先前提交的 GPU 工作在 E 前已经完成；
+C 晚于 E 统一为 UNKNOWN，不能称 GPU 完成晚。前一真实 presentedTime 是可观测 E，
+而它加 refresh 不是已证 compositor deadline。新字段不证明独占 GPU/physical scanout，不替代 T43 验收。
+
+回调只增加 host-clock 读数和受锁标量追加，不持有 drawable/CB，不访问主线程 API，不逐帧打印。
+仅原本获得 GPU query ticket 的帧注册该回调；GPU timing 关闭、不支持或槽满时保持缺失。
+缺失/尚未送达、无效时间和锁错误分别保留，不能用 null/晚回调推断执行结束晚或补造通过。
+报告沿原 drain 截止，callbacks 的排队延迟未知。原 GPU duration、呈现 gap、quiet 与 CPU 判定不改。
+必要集成验证：编译现有依赖 feature closure；离线同帧 join/missing/晚通知=UNKNOWN检查；
+任何后续授权测量使用新程序 hash，保留既有环境/时长/清退合同。
