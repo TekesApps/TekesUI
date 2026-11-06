@@ -41,6 +41,7 @@ mod mac {
         fixture: Value,
         gallery: Value,
         seconds: f64,
+        baseline_diagnostic: bool,
         speed: f64,
         scale: f64,
         width: f64,
@@ -96,6 +97,12 @@ mod mac {
             let gallery: Value =
                 serde_json::from_slice(&std::fs::read(path).map_err(|e| e.to_string())?)
                     .map_err(|e| e.to_string())?;
+            let baseline_diagnostic = match std::env::var("TEKES_SCROLL_REFERENCE_BASELINE_DIAGNOSTIC") {
+                Err(std::env::VarError::NotPresent) => false,
+                Ok(value) if value == "0" => false,
+                Ok(value) if value == "1" => true,
+                _ => return Err("TEKES_SCROLL_REFERENCE_BASELINE_DIAGNOSTIC must be 0 or 1".into()),
+            };
             let fixture = gallery["reference_fixture"].clone();
             let number = |v: &Value| {
                 v.as_f64()
@@ -188,6 +195,7 @@ mod mac {
                 fixture,
                 gallery,
                 seconds,
+                baseline_diagnostic,
                 speed,
                 scale,
                 width,
@@ -292,12 +300,20 @@ mod mac {
             }
             let expected = r.fixture["lines"].as_array().unwrap();
             let tolerance = 0.5/r.scale;
-            if native_lines.len() != expected.len() || native_lines.iter().zip(expected).any(|(a,b)|
-                a["utf16"] != b["utf16"] || ["top_pt","height_pt","baseline_pt"].iter().any(|k|
+            let baseline_differences: Vec<Value> = native_lines.iter().zip(expected).enumerate()
+                .filter_map(|(index,(actual,expected))| {
+                    let delta = actual["baseline_pt"].as_f64().unwrap()-expected["baseline_pt"].as_f64().unwrap();
+                    (delta.abs()>tolerance).then(||json!({"index":index,"utf16":expected["utf16"],
+                        "actual_baseline_pt":actual["baseline_pt"],"expected_baseline_pt":expected["baseline_pt"],
+                        "delta_pt":delta}))
+                }).collect();
+            let non_baseline_mismatch = native_lines.len() != expected.len() || native_lines.iter().zip(expected).any(|(a,b)|
+                a["utf16"] != b["utf16"] || ["top_pt","height_pt"].iter().any(|k|
                     (a[*k].as_f64().unwrap()-b[*k].as_f64().unwrap()).abs() > tolerance))
                 || (used.size.height-r.document_height).abs() > 1.0
                 || (scroll.contentView().bounds().size.width-r.width).abs() > tolerance
-                || (scroll.contentView().bounds().size.height-r.height).abs() > tolerance {
+                || (scroll.contentView().bounds().size.height-r.height).abs() > tolerance;
+            if non_baseline_mismatch || (!r.baseline_diagnostic && !baseline_differences.is_empty()) {
                 let first_line_difference = native_lines.iter().zip(expected).enumerate().find(|(_, (a, b))| {
                     a["utf16"] != b["utf16"] || ["top_pt", "height_pt", "baseline_pt"].iter().any(|k|
                         (a[*k].as_f64().unwrap()-b[*k].as_f64().unwrap()).abs() > tolerance)
@@ -308,11 +324,18 @@ mod mac {
                     "expected_viewport_pt":[r.width,r.height],"actual_used_height_pt":used.size.height,
                     "expected_height_pt":r.document_height,"geometry_tolerance_pt":tolerance,
                     "first_line_difference":first_line_difference,"actual_lines":native_lines,
+                    "baseline_diagnostic_requested":r.baseline_diagnostic,"non_baseline_mismatch":non_baseline_mismatch,
+                    "baseline_differences":baseline_differences,
                     "expected_lines_source":"fixture.lines in the same report"
                 })));
 
             }
-            Ok(json!({"status":"MATCHED_BODY_INPUT_AND_LINE_GEOMETRY","scope":"text body only; Gallery chrome excluded",
+            let exact_layout_passed = baseline_differences.is_empty();
+            let comparison_scope = if exact_layout_passed { "body input and line geometry; Gallery chrome excluded" }
+                else { "partial body CPU/scroll state; baseline mismatch retained; no exact layout acceptance" };
+            Ok(json!({"status":if exact_layout_passed {"MATCHED_BODY_INPUT_AND_LINE_GEOMETRY"} else {"PARTIAL_BODY_CPU_SCROLL_STATE_DIAGNOSTIC"},
+                "scope":if exact_layout_passed {"text body only; Gallery chrome excluded"} else {comparison_scope},"comparison_scope":comparison_scope,"exact_layout_passed":exact_layout_passed,
+                "baseline_diagnostic_requested":r.baseline_diagnostic,"baseline_differences":baseline_differences,
                 "font_post_script_name":ct_name,"font_point_size":ct_size,
                 "appkit_font_name":font.fontName().to_string(),
                 "font_source":"Gallery CoreTextFonts::create_font(system + ComposerBody weight); same object toll-free bridged",
@@ -442,6 +465,9 @@ mod mac {
             && r.idle_callbacks == 0;
         let report = json!({"schema":"tekesui-appkit-scroll-reference/1","completed":completed,
             "failure":r.failure,"fixture":r.fixture,"admission":r.admission,
+            "baseline_diagnostic_requested":r.baseline_diagnostic,
+            "exact_layout_passed":r.admission.as_ref().map(|a|&a["exact_layout_passed"]),
+            "comparison_scope":r.admission.as_ref().map(|a|&a["comparison_scope"]),
             "gallery_machine":r.gallery["machine"],"gallery_display":r.gallery["display"],
             "identity_note":"program/source/profile and actual machine/OS/display binding require the root execution receipt; embedded Gallery metadata describes the input, not this process",
             "seconds":r.seconds,"speed_pt_s":r.speed,"warmup_s":1.5,

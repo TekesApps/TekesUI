@@ -129,3 +129,22 @@ oracle 在建窗前校验 JSON、原始内文（与公开夹具 `gallery-reading
 实际准入红例（2026-11-06）：按隐藏名 `.SFNS-Regular` 调用 fontWithName 被 CoreText 拒绝；改用公开 systemFontOfSize，再逐项比较实际 PostScript 名，未放宽字体要求。准入错误在 Created 内立即关窗会被后续平台 makeKeyAndOrderFront 重开，原运行180s超时保留；改为保留原窗口身份并在下一事件循环一次性执行既有关闭路径。修复仍须新运行确认，不把红例改标通过。
 
 字体身份接续：oracle002已正常exit2/0.664s并清空自有进程组，拒绝关闭修复已验证；NSFont系统字体的按名称对照仍拒绝。候选改为复用Gallery的CoreTextFonts::create_font及ComposerBody字重，核实际CoreText PostScript名/字号，再按Apple公开toll-free约定将同一对象交给NSFont。NSFont别名仅作记录，不据此换字体；实际准入待验证。
+
+### 显式 baseline 差异诊断（#12 / T43-C）
+
+`TEKES_SCROLL_REFERENCE_BASELINE_DIAGNOSTIC=1` 仅在已有 reference 模式中启用正文 CPU/滚动状态诊断。未设置或 `0` 保持严格准入；其他值启动前 exit2。该开关只允许 baseline 差异继续，字体、UTF-16 换行/行数、行顶/行高、extent/viewport 的原检查与容差保持不变。
+
+```sh
+TEKES_SCROLL_REFERENCE=/absolute/gallery-reference-input.json \
+TEKES_SCROLL_REFERENCE_BASELINE_DIAGNOSTIC=1 TEKES_SCROLL_SECONDS=60 \
+TEKES_SCROLL_ORACLE_OUT=/absolute/fresh/appkit-baseline-diagnostic.json \
+/absolute/new-release/scroll_oracle
+```
+
+沿用原 guard/种子输入、180s外层 timeout、5s idle 和正常关窗/清退契约。环境模式必须在执行收据单列：共享桌面诊断不代表 quiet 通过；正式比较仍要求独立通过原 quiet 门槛。新开关需要新 oracle 构建身份；原 strict005 exit2 及逐行差异证据保留。只有所有非 baseline 条件通过才会继续；不匹配不会通过开关隐藏。
+
+有 baseline 差异时，admission status 为 `PARTIAL_BODY_CPU_SCROLL_STATE_DIAGNOSTIC`，顶层及 admission 的 `exact_layout_passed=false`，`comparison_scope`明确为 partial body CPU/scroll state；`baseline_differences`逐项保留 index、UTF-16、实际/期望基线和 delta，原 fixture.lines 与实际 lines 也保留。无超容差差异时原 `MATCHED_BODY_INPUT_AND_LINE_GEOMETRY` 标签不变。`completed`仍只表示记录是否完整，不表示精确排版或性能验收通过。
+
+这项显式诊断接收的是已知跨引擎 baseline 策略差异，不修改 comparison-method §2.2 的0.25pt基线门槛，也不替代 §2.3 同机同夹具性能非劣、frame CPU/GPU 或实际呈现验收。已有7gap失败及完整三页/5轮缺口不变。
+
+已知基线差异（oracle005 实测）：同一字体 `.SFNS-Regular` / 14pt、1070×520pt视口下，61行UTF-16范围、行顶、20pt行高和1220pt总高一致。Gallery按字体ascent/descent居中，44个非空行的AppKit基线比Gallery低1.708984375pt；17个纯换行行的首glyph位置比Gallery名义基线低4.708984375pt。后者是不可见控制glyph的位置，不是实测墨迹基线。该记录不说明AppKit或TekesUI有缺陷，也不豁免44个非空行的0.25pt精确基线检查。oracle005正常exit2/0.877s，未输入、未进入性能采样；旧拒绝证据保留。
