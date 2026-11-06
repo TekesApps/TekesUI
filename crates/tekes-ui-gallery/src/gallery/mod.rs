@@ -1050,6 +1050,19 @@ impl Gallery {
     pub fn advance_motion(&mut self, dt: f32) {
         self.motion.animate(dt);
     }
+    pub(crate) fn scroll_reference_state(&self) -> Option<[f32; 2]> {
+        (self.content_page() == Page::ScrollArea)
+            .then(|| self.scroll_demo.scroll_reference_state())
+            .flatten()
+    }
+
+    /// Export only the current ScrollArea layout, without preparing a second copy.
+    pub(crate) fn scroll_reference_fixture(&self) -> Option<serde_json::Value> {
+        (self.content_page() == Page::ScrollArea)
+            .then(|| self.scroll_demo.scroll_reference_fixture())
+            .flatten()
+    }
+
     pub fn editor_scroll_metrics(&self) -> (f32, f32) {
         if self.content_page() == Page::ScrollArea {
             self.scroll_demo.scroll_metrics()

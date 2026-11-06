@@ -492,6 +492,8 @@ pub struct Perf {
     measure_end: Option<Instant>,
     cpu_rate_last: Option<(Instant, f64)>,
     cpu_rates: Vec<[f64; 2]>,
+    reference_requested: bool,
+    reference_scroll: Vec<[f64; 3]>,
     prev_render_id: Option<u64>,
     samples: Vec<FrameSample>,
     dispatch_delays: Vec<f64>,
@@ -561,8 +563,15 @@ impl Perf {
         let capacity = (cfg.seconds.mul_add(132.0, 240.0).min(100_000.0)) as usize;
         let symbols =
             (cfg.content == ContentKind::Symbols).then(symbol_perf::SymbolWorkload::from_env);
+        let reference_requested = std::env::var("TEKES_PERF_REFERENCE").as_deref() == Ok("1");
         Perf {
             symbols,
+            reference_requested,
+            reference_scroll: if reference_requested {
+                Vec::with_capacity(capacity)
+            } else {
+                Vec::new()
+            },
             measure_gpu: std::env::var("TEKES_PERF_GPU_TIMING").as_deref() != Ok("0"),
             cfg,
             plan,
@@ -1009,6 +1018,15 @@ impl Perf {
                 .push((f.target_timestamp, occluded, key));
         }
         self.dispatch_delays.push(f.queue_delay() * 1000.0);
+        if self.reference_requested {
+            if let Some([logical, visual]) = self.gallery.scroll_reference_state() {
+                self.reference_scroll.push([
+                    f.target_timestamp,
+                    f64::from(logical),
+                    f64::from(visual),
+                ]);
+            }
+        }
         self.samples.push(FrameSample {
             target_timestamp: f.target_timestamp,
             callback_time: f.callback_time,
@@ -1271,6 +1289,12 @@ impl Perf {
                 "scroll_range_pt": if matches!(self.cfg.content,ContentKind::Editor|ContentKind::ScrollArea) {self.gallery.editor_scroll_metrics().0}else if self.cfg.content==ContentKind::Icons {self.gallery.page_scroll_range()}else if matches!(self.cfg.content,ContentKind::Motion|ContentKind::Symbols|ContentKind::Scene3d) {0.0}else{(self.plan.height-self.view_h).max(0.0)},
                 "segments": if matches!(self.cfg.content,ContentKind::Editor|ContentKind::ScrollArea|ContentKind::Icons|ContentKind::Motion|ContentKind::Symbols|ContentKind::Scene3d) {Value::Null}else{json!(self.plan.segments.len())},
             },
+            "reference_fixture": (self.reference_requested && self.cfg.content == ContentKind::ScrollArea)
+                .then(|| self.gallery.scroll_reference_fixture()).flatten(),
+            "reference_scroll": self.reference_requested.then(|| json!({
+                "columns": ["target_s", "logical_y", "visual_y"], "samples": self.reference_scroll,
+                "clock": "same target_timestamp as frame samples; callbacks are not actual presentation",
+            })),
             "gpu_timing": {
                 "supported": renderer.gpu_timing_supported(),
                 "enabled": self.measure_gpu,
