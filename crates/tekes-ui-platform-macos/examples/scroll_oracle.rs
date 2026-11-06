@@ -295,8 +295,8 @@ mod mac {
             let mut native_lines = Vec::new();
             while index < count {
                 let mut range = NSRange::new(0, 0);
-                let rect: NSRect = unsafe { msg_send![&*manager, lineFragmentRectForGlyphAtIndex: index effectiveRange: &mut range] };
-                let chars: NSRange = unsafe { msg_send![&*manager, characterRangeForGlyphRange: range actualGlyphRange: std::ptr::null_mut::<NSRange>()] };
+                let rect: NSRect = unsafe { msg_send![&*manager, lineFragmentRectForGlyphAtIndex: index, effectiveRange: &mut range] };
+                let chars: NSRange = unsafe { msg_send![&*manager, characterRangeForGlyphRange: range, actualGlyphRange: std::ptr::null_mut::<NSRange>()] };
                 let baseline: NSPoint = unsafe { msg_send![&*manager, locationForGlyphAtIndex: index] };
                 native_lines.push(json!({"utf16":[chars.location, chars.location+chars.length],
                     "top_pt":rect.origin.y,"height_pt":rect.size.height,"baseline_pt":rect.origin.y+baseline.y}));
@@ -392,8 +392,8 @@ mod mac {
                 // One-shot idle wake; no display link/timer polling during idle.
                 unsafe {
                     let _: Retained<objc2::runtime::AnyObject> = msg_send![objc2::class!(NSTimer),
-                        scheduledTimerWithTimeInterval: 5.0_f64 target: scroll selector: sel!(oracleFinish:)
-                        userInfo: std::ptr::null::<objc2::runtime::AnyObject>() repeats: false];
+                        scheduledTimerWithTimeInterval: 5.0_f64, target: scroll, selector: sel!(oracleFinish:),
+                        userInfo: std::ptr::null::<objc2::runtime::AnyObject>(), repeats: false];
                 }
                 return None;
             }
@@ -438,14 +438,13 @@ mod mac {
                     ]);
                     r.last_cpu = Some((now, cpu));
                 }
-                if let Some(w) = &c.native_window {
-                    if !w.isKeyWindow()
+                if let Some(w) = &c.native_window
+                    && (!w.isKeyWindow()
                         || !w
                             .occlusionState()
-                            .contains(objc2_app_kit::NSWindowOcclusionState::Visible)
-                    {
-                        r.invalid_visibility += 1;
-                    }
+                            .contains(objc2_app_kit::NSWindowOcclusionState::Visible))
+                {
+                    r.invalid_visibility += 1;
                 }
             }
         });
@@ -835,8 +834,8 @@ mod mac {
                                 finish();
                                 unsafe {
                                     let _: Retained<objc2::runtime::AnyObject> = msg_send![objc2::class!(NSTimer),
-                                        scheduledTimerWithTimeInterval: 0.001_f64 target: &*scroll selector: sel!(oracleFinish:)
-                                        userInfo: std::ptr::null::<objc2::runtime::AnyObject>() repeats: false];
+                                        scheduledTimerWithTimeInterval: 0.001_f64, target: &*scroll, selector: sel!(oracleFinish:),
+                                        userInfo: std::ptr::null::<objc2::runtime::AnyObject>(), repeats: false];
                                 }
                                 return;
                             }
