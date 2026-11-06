@@ -646,10 +646,10 @@ impl Perf {
         } else {
             renderer.set_frame_timing_cpu_only();
         }
-        if self.work_done_host_requested {
-            if let Err(error) = renderer.observe_gpu_work_done_host() {
-                eprintln!("GPU work-done observation unavailable: {error}");
-            }
+        if self.work_done_host_requested
+            && let Err(error) = renderer.observe_gpu_work_done_host()
+        {
+            eprintln!("GPU work-done observation unavailable: {error}");
         }
         let t = Instant::now();
         self.prewarm(renderer);
