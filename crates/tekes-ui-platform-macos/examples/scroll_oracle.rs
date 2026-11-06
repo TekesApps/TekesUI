@@ -227,8 +227,15 @@ mod mac {
             if (window.backingScaleFactor()-r.scale).abs() > 0.001 {
                 return Err("backing scale differs from Gallery".into());
             }
-            let font = NSFont::fontWithName_size(&NSString::from_str(&r.font_name), r.font_size)
-                .ok_or("AppKit could not resolve the measured PostScript font")?;
+            // System UI font names are private lookup keys; obtain the public
+            // system font first, then still require the measured exact identity.
+            let system_font = NSFont::systemFontOfSize(r.font_size);
+            let font = if system_font.fontName().to_string() == r.font_name {
+                system_font
+            } else {
+                NSFont::fontWithName_size(&NSString::from_str(&r.font_name), r.font_size)
+                    .ok_or("AppKit could not resolve the measured PostScript font")?
+            };
             if font.fontName().to_string() != r.font_name {
                 return Err("AppKit could not resolve the exact measured PostScript font".into());
             }
@@ -755,9 +762,18 @@ mod mac {
                                 CAPTURE.with_borrow_mut(|c| {
                                     c.reference.as_mut().unwrap().failure = Some(error)
                                 });
+                                // Created is dispatched before platform setup makes the
+                                // anchor visible. Closing here would let setup reopen it.
+                                CAPTURE.with_borrow_mut(|c| {
+                                    c.native_window = Some(native_window);
+                                    c.anchor_window = Some(anchor_window);
+                                });
                                 finish();
-                                native_window.close();
-                                window.close();
+                                unsafe {
+                                    let _: Retained<objc2::runtime::AnyObject> = msg_send![objc2::class!(NSTimer),
+                                        scheduledTimerWithTimeInterval: 0.001_f64 target: &*scroll selector: sel!(oracleFinish:)
+                                        userInfo: std::ptr::null::<objc2::runtime::AnyObject>() repeats: false];
+                                }
                                 return;
                             }
                         }

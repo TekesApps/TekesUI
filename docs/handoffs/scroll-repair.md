@@ -125,3 +125,5 @@ oracle 在建窗前校验 JSON、原始内文（与公开夹具 `gallery-reading
 `frame_cpu_ms`、`frame_gpu_ms`、`actual_presentation` 明确为 null/unmeasured。CAD target/callback、NSLayoutManager/drawRect 和 one-shot timer 都不是实际呈现收据；全 WindowServer CPU/GPU 也不归给此窗口。即使正文布局与进程 CPU 对照成功，GPU/实际呈现/完整三页参照仍未验，原7gap失败与后续零 gap 约束不变。
 
 受影响验证（由主协调集成后依原资源窗口执行）：release Gallery + `scroll_oracle` 同源构建；原 Gallery perf/ScrollArea 行为回归；oracle 默认校准路径短回归；缺文件/缺元数据/NaN秒数/旧输出路径的启动前 exit2；匹配或真实不匹配布局的可审计准入；一轮完整60s+idle正常退出/自有group空/输入hash不变。仅在准入、环境及指标覆盖明确后再排5轮 median/worst，当前候选没有执行 Cargo/GUI，也没有宣称这些验证通过。
+
+实际准入红例（2026-11-06）：按隐藏名 `.SFNS-Regular` 调用 fontWithName 被 CoreText 拒绝；改用公开 systemFontOfSize，再逐项比较实际 PostScript 名，未放宽字体要求。准入错误在 Created 内立即关窗会被后续平台 makeKeyAndOrderFront 重开，原运行180s超时保留；改为保留原窗口身份并在下一事件循环一次性执行既有关闭路径。修复仍须新运行确认，不把红例改标通过。
