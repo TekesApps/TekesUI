@@ -36,6 +36,7 @@ def main():
     parser.add_argument('--content', nargs='+', choices=['scroll-area', 'editor', 'icons'], default=['scroll-area', 'editor', 'icons'], help='Select sequential real-page workloads; default remains all three')
     parser.add_argument('--gpu-timing', choices=['0','1'], default='0', help='Enable GPU timestamp diagnostics; records observer overhead separately')
     parser.add_argument('--frame-latency', choices=['1','2'], default='2', help='FIFO diagnostic only; production default remains 2')
+    parser.add_argument('--reference-metadata', action='store_true', help='Request opt-in actual ScrollArea layout metadata; does not change acceptance thresholds')
     parser.add_argument('--workbench', action='store_true', help='Exercise the current registered workbench route and its real chrome')
     parser.add_argument('--seconds', type=float, default=60)
     parser.add_argument('--wait-seconds', type=float, default=180)
@@ -91,7 +92,9 @@ def main():
                    TEKES_PERF_FRAME_LATENCY=args.frame_latency, TEKES_METAL_DISPLAY_LINK='1' if args.driver=='metal' else '0',
                    TEKESUI_GALLERY_LOCALE='en', TEKESUI_WINDOW_PLACEMENT='builtin',
                    TEKES_PERF_WORKBENCH='1' if args.workbench else '0')
-        receipt = {'binary': str(binary), 'binary_sha256': checksum,
+        if args.reference_metadata:
+            env['TEKES_PERF_REFERENCE'] = '1'
+        receipt = {'reference_metadata_requested': args.reference_metadata, 'binary': str(binary), 'binary_sha256': checksum,
                    'driver': args.driver, 'frame_latency': int(args.frame_latency), 'gpu_timing_requested': args.gpu_timing == '1', 'content': content,
                    'seconds': args.seconds, 'workbench': args.workbench, 'started_unix': time.time()}
         receipt_path = out/(label+'-run.json')

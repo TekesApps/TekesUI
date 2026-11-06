@@ -106,7 +106,7 @@ TEKES_PERF_GPU_TIMING=1 TEKES_PERF_FRAME_LATENCY=2 TEKES_METAL_DISPLAY_LINK=0 \
 TEKES_PERF_OUT=/absolute/fresh/gallery-reference-input.json /absolute/new-release/tekes-ui-gallery
 ```
 
-此处仅说明原程序参数，实际执行仍绑定既有 quiet runner/进程组 timeout/清退与二进制 hash；不绕过 admission。Gallery 的既有性能拒绝理由原样保留。`reference_fixture=null`、未完成/隐藏/失焦报告或缺少 reference_scroll 时，不可启动参照模式。新环境变量不要在旧程序上使用后宣称取得了新元数据。
+现有 `measure-scroll-pages-quiet.py --reference-metadata` 显式传递该观测开关；默认仍清理继承的 TEKES_PERF 环境变量。此处仅说明原程序参数，实际执行仍绑定既有 quiet runner/进程组 timeout/清退与二进制 hash；不绕过 admission。Gallery 的既有性能拒绝理由原样保留。`reference_fixture=null`、未完成/隐藏/失焦报告或缺少 reference_scroll 时，不可启动参照模式。新环境变量不要在旧程序上使用后宣称取得了新元数据。
 
 ```sh
 TEKES_SCROLL_REFERENCE=/absolute/fresh/gallery-reference-input.json \
