@@ -57,7 +57,8 @@ def main():
             raise SystemExit('Refusing to overwrite '+label)
         audit = {'format': 'tekesui-ambient-cpu/1', 'label': label,
                  'limits': {**vars(args), 'per_process_limit': 30, 'total_limit': 100},
-                 'caution': quiet.__doc__, 'before': [], 'during': []}
+                 'caution': 'CPU-only low-background gate; does not certify GPU, I/O or user inactivity. WindowServer activity during measurement can be caused by the benchmark itself; exceeding a threshold is not causal evidence of outside interference.',
+                 'before': [], 'during': []}
         def save():
             audit_path.write_text(json.dumps(audit, indent=2)+'\n')
         start = time.monotonic()

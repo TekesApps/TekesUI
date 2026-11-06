@@ -237,3 +237,14 @@ ScrollArea 两次顺序对照的 encode 均值分别为 0.100 → 0.067ms、0.20
 一次目标 PID 49212 的 40 秒 Metal System Trace 完整保存、导出并正常退出；4880 个目标 render buffer 均按 command-buffer ID 关联到 GPU 和 completion。GPU span 最大 3.614ms，commit→completion 最大 6.679ms。最长 drawable 等待 32.068ms 中，相关 render/Present 工作已完成约 30.2ms 后才取得 drawable；邻近实际呈现及系统 display swap 均出现约 29.166ms 间隔。额外四张必要小表提供目标 surface 133/41 与 compositor 访问的有限关系，但没有完整 layer/drawable→显示 surface 100/16/102 映射。不能据此归责应用或系统，未作猜测性生产修改。Trace 有采集开销，其 22 个长间隔不与无 profiler 的 5 个作因果 A/B。
 
 本批主件位于协调目录 `work/performance-resume/`：`release-build-001/{PROGRAM.json,source-freeze.json,release.json}`、`IDLE-FIVE-ACCEPTANCE.json`、`idle-counter-repair/REPAIR-READY.json`、`native-execution/scroll-diagnostic-001/ROOT-REVIEW.json`、`TRACE-REVIEW.json`、`SURFACE-OWNERSHIP-REVIEW.json`，原始 trace/XML/逐秒记录及失败保留。当前结论是有限空闲 CPU/无持续 redraw 已取得五轮证据，呈现节奏仍未正式验收；低负载五轮及同机参照未完成。VoiceOver 仍按用户决定后置；本记录不关闭整个 #12，也不提高 registry 成熟度。
+
+
+## 2026-11-06：共享合成器 CPU 归属说明（Refs #12）
+
+低负载记录原先将 WindowServer 全部计入 `cpu_percent_total`，但它也可能执行被测窗口自身的合成工作。因此超出门槛不是外部干扰的因果证据。现增加 `cpu_attribution`：WindowServer 单列为 `shared_compositor`、归属 `UNKNOWN`，其余被记录进程列为 `known_external`。后者的 `below_limits` 只描述该分区，不能代替原 `quiet` 或证明共享 GPU/合成器没有干扰。原进程记录、总量、blockers、30%/100% 门槛、启动/运行期判定和 strict 拒绝理由均不变；不通过减去 WindowServer 制造通过。
+
+114 行冻结观测的等价 CPU delta 离线回放中，新旧函数的全部原字段逐项相同。重建仅使用已保留进程百分比及采样间隔，不冒称保留了原始 ps 快照或被丢弃的低于 0.1% 数据。最新 ScrollArea 运行期 23 行中，14 行原拒绝仅涉及共享分区，7 行仍有其他进程负载超限，2 行原本满足 quiet；共享分区的真实来源仍未知。
+
+该轮原 release（SHA-256 `f3a1ab2639dae929c780fd1fce544d5288954f3f191386d51b5cba221370b0b5`）CPU active p99 为 0.597876ms、GPU pass p99 为 2.521750ms，仍有 7 个实际长呈现间隔，下一页低负载预检拒绝。一次 latency 2→1 配对减少约一刷新周期的排队时间，但没有证明掉帧改善；生产默认未改。历史 trace 已排除两个 Present 标签即重复上屏的误读；新增系统追踪的有效调度事件未覆盖所观测掉帧，不能据此归因或修改渲染器。本补充只修复记录归属，不代表五轮正式性能矩阵、同机参照或整个 #12 完成。
+
+协调证据：`work/performance-resume/quiet-attribution-fix/{READY.json,VALIDATION.json}`、`MEASUREMENT-QUIET-ATTRIBUTION-REVIEW.json`、`native-execution/scroll-formal-cu2-ready-001/ROOT-REVIEW.json`、`LATENCY-PAIR-REVIEW.json`、`COMPOSITOR-TRIGGER-REVIEW.json`、`SYSTEM-ALL-REVIEW.json`；原始失败保留。
