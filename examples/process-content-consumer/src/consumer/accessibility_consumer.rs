@@ -298,7 +298,8 @@ pub(super) fn roundtrip() -> Result<serde_json::Value> {
         let before = p.status();
         eprintln!(
             "SEMANTIC_CLOSE_BEGIN index={index} session={:?} original_pid={} before={before:?}",
-            p.session(), rows[index]["pid"]
+            p.session(),
+            rows[index]["pid"]
         );
         p.close();
         wait(|| matches!(p.status(), ProcessStatus::Closed)).with_context(|| {
