@@ -502,6 +502,26 @@ impl Window {
         crate::app::open_window(self.shared.mtm, config, handler, None)
     }
 
+    /// Install this window's engine menus only while it is still the key
+    /// window. Queued focus notifications from an older window are ignored.
+    /// Standard App/Window menus and AppKit's window list are preserved.
+    pub fn set_menu_bar(
+        &self,
+        bar: &crate::menu::MenuBar,
+    ) -> Result<bool, Box<dyn std::error::Error + Send + Sync>> {
+        bar.validate()?;
+        let delegate = self
+            .window
+            .delegate()
+            .ok_or("window delegate is unavailable")?;
+        if !self.window.isKeyWindow() {
+            return Ok(false);
+        }
+        let target: &AnyObject = delegate.as_ref();
+        crate::menu_build::replace_engine_menus(self.shared.mtm, bar, target)?;
+        Ok(true)
+    }
+
     /// Create Settings at this window's frame before its first presentation.
     /// Show Settings first, then hide the anchor and other visible app windows.
     pub fn open_exclusive_window(

@@ -2092,3 +2092,74 @@ pub fn splitter_role_contract() -> usize {
 mod combo_native_contract;
 #[doc(hidden)]
 pub use combo_native_contract::combo_text_role_contract;
+
+/// No windows or desktop input: verify replacement keeps AppKit-owned objects.
+#[doc(hidden)]
+pub fn window_menu_replacement_contract() {
+    use crate::{CommandId, Menu, MenuBar, MenuCommand, MenuItem};
+    use objc2::{rc::Retained, runtime::AnyObject};
+    use objc2_foundation::NSObject;
+    let mtm = MainThreadMarker::new().expect("menu probe must run on main thread");
+    let app = NSApplication::sharedApplication(mtm);
+    let old_main = app.mainMenu();
+    let old_windows = app.windowsMenu();
+    let target = NSObject::new();
+    let target: &AnyObject = target.as_ref();
+    let bar = |id| MenuBar {
+        menus: vec![Menu::new(
+            "Engine",
+            vec![MenuItem::Command(MenuCommand::new("Action", CommandId(id)))],
+        )],
+    };
+    crate::menu_build::install(mtm, "Probe", &bar(41), target);
+    let main = app.mainMenu().unwrap();
+    let application = main.itemAtIndex(0).unwrap();
+    let window = main.itemAtIndex(2).unwrap();
+    let window_menu = app.windowsMenu().unwrap();
+    crate::menu_build::replace_engine_menus(mtm, &bar(42), target).unwrap();
+    assert_eq!(
+        Retained::as_ptr(&main),
+        Retained::as_ptr(&app.mainMenu().unwrap())
+    );
+    assert_eq!(
+        Retained::as_ptr(&application),
+        Retained::as_ptr(&main.itemAtIndex(0).unwrap())
+    );
+    assert_eq!(
+        Retained::as_ptr(&window),
+        Retained::as_ptr(&main.itemAtIndex(2).unwrap())
+    );
+    assert_eq!(
+        Retained::as_ptr(&window_menu),
+        Retained::as_ptr(&app.windowsMenu().unwrap())
+    );
+    assert!(!crate::menu_build::set_command_checked(
+        mtm,
+        CommandId(41),
+        true
+    ));
+    let command = main
+        .itemAtIndex(1)
+        .unwrap()
+        .submenu()
+        .unwrap()
+        .itemAtIndex(0)
+        .unwrap();
+    assert_eq!(command.tag(), 42);
+    assert_eq!(command.action(), Some(crate::menu_build::command_action()));
+    assert_eq!(
+        command
+            .target()
+            .as_deref()
+            .map(|value| value as *const AnyObject),
+        Some(target as *const AnyObject)
+    );
+    crate::menu_build::replace_engine_menus(mtm, &MenuBar::default(), target).unwrap();
+    assert_eq!(main.numberOfItems(), 2);
+    assert_eq!(
+        Retained::as_ptr(&window),
+        Retained::as_ptr(&main.itemAtIndex(1).unwrap())
+    );
+    app.setMainMenu(old_main.as_deref());
+    app.setWindowsMenu(old_windows.as_deref());
+}

@@ -654,3 +654,7 @@ live resize 的测试分别记录 splitter 自身帧表现、content 尺寸跟�
 - [AppKit NSTextInputClient](https://developer.apple.com/documentation/appkit/nstextinputclient)
 - [Apple HIG Toolbar 指南](https://developer.apple.com/design/human-interface-guidelines/toolbars)
 - [AppKit toolbar 可见优先级](https://developer.apple.com/documentation/appkit/nstoolbaritem/visibilitypriority-swift.property)
+
+### Embedded application windows (#229, v0.2.1)
+
+`AppWindow::open(&Window, WindowConfig)` creates a window in the caller's existing native application loop. It uses the same initial container mount, settings provider and Host event/render routes as `run`; it does not re-enter `App::run`. Process-backed consumers must retain the executable's existing worker dispatch. Gallery uses only local containers. Engine menu contributions are installed for the actual key window on focus; standard App/Window menu objects and AppKit's window list remain intact. A queued stale focus event cannot replace another key window's menus. Window closure relies on native key-window changes to restore the next window's contributions.

@@ -123,7 +123,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "b9a2e81e38f2a72daf8efa9d8a63f2c12e2dacf174baaa4a58d346aa43f2b0b7",
+                "actual_sha256": "762d105642ca37e4a8e32f1341ba2f19a569ffe14f8a5a228dc23ad73add9372",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -313,7 +313,7 @@
         ],
         "runtime_identity_differences": [
           {
-            "actual_sha256": "b9a2e81e38f2a72daf8efa9d8a63f2c12e2dacf174baaa4a58d346aa43f2b0b7",
+            "actual_sha256": "762d105642ca37e4a8e32f1341ba2f19a569ffe14f8a5a228dc23ad73add9372",
             "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
             "path": "Cargo.lock"
           },
@@ -526,7 +526,7 @@
           ],
           "identity_differences": [
             {
-              "actual_sha256": "b9a2e81e38f2a72daf8efa9d8a63f2c12e2dacf174baaa4a58d346aa43f2b0b7",
+              "actual_sha256": "762d105642ca37e4a8e32f1341ba2f19a569ffe14f8a5a228dc23ad73add9372",
               "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
               "path": "Cargo.lock"
             },
@@ -925,7 +925,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "b9a2e81e38f2a72daf8efa9d8a63f2c12e2dacf174baaa4a58d346aa43f2b0b7",
+                "actual_sha256": "762d105642ca37e4a8e32f1341ba2f19a569ffe14f8a5a228dc23ad73add9372",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -1115,7 +1115,7 @@
         ],
         "runtime_identity_differences": [
           {
-            "actual_sha256": "b9a2e81e38f2a72daf8efa9d8a63f2c12e2dacf174baaa4a58d346aa43f2b0b7",
+            "actual_sha256": "762d105642ca37e4a8e32f1341ba2f19a569ffe14f8a5a228dc23ad73add9372",
             "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
             "path": "Cargo.lock"
           },
@@ -1328,7 +1328,7 @@
           ],
           "identity_differences": [
             {
-              "actual_sha256": "b9a2e81e38f2a72daf8efa9d8a63f2c12e2dacf174baaa4a58d346aa43f2b0b7",
+              "actual_sha256": "762d105642ca37e4a8e32f1341ba2f19a569ffe14f8a5a228dc23ad73add9372",
               "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
               "path": "Cargo.lock"
             },
@@ -1760,7 +1760,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "b9a2e81e38f2a72daf8efa9d8a63f2c12e2dacf174baaa4a58d346aa43f2b0b7",
+                "actual_sha256": "762d105642ca37e4a8e32f1341ba2f19a569ffe14f8a5a228dc23ad73add9372",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -1955,7 +1955,7 @@
         ],
         "runtime_identity_differences": [
           {
-            "actual_sha256": "b9a2e81e38f2a72daf8efa9d8a63f2c12e2dacf174baaa4a58d346aa43f2b0b7",
+            "actual_sha256": "762d105642ca37e4a8e32f1341ba2f19a569ffe14f8a5a228dc23ad73add9372",
             "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
             "path": "Cargo.lock"
           },
@@ -2173,7 +2173,7 @@
           ],
           "identity_differences": [
             {
-              "actual_sha256": "b9a2e81e38f2a72daf8efa9d8a63f2c12e2dacf174baaa4a58d346aa43f2b0b7",
+              "actual_sha256": "762d105642ca37e4a8e32f1341ba2f19a569ffe14f8a5a228dc23ad73add9372",
               "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
               "path": "Cargo.lock"
             },
@@ -6817,7 +6817,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "b9a2e81e38f2a72daf8efa9d8a63f2c12e2dacf174baaa4a58d346aa43f2b0b7",
+                "actual_sha256": "762d105642ca37e4a8e32f1341ba2f19a569ffe14f8a5a228dc23ad73add9372",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -7007,7 +7007,7 @@
         ],
         "runtime_identity_differences": [
           {
-            "actual_sha256": "b9a2e81e38f2a72daf8efa9d8a63f2c12e2dacf174baaa4a58d346aa43f2b0b7",
+            "actual_sha256": "762d105642ca37e4a8e32f1341ba2f19a569ffe14f8a5a228dc23ad73add9372",
             "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
             "path": "Cargo.lock"
           },
@@ -7220,7 +7220,7 @@
           ],
           "identity_differences": [
             {
-              "actual_sha256": "b9a2e81e38f2a72daf8efa9d8a63f2c12e2dacf174baaa4a58d346aa43f2b0b7",
+              "actual_sha256": "762d105642ca37e4a8e32f1341ba2f19a569ffe14f8a5a228dc23ad73add9372",
               "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
               "path": "Cargo.lock"
             },
@@ -53861,7 +53861,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "b9a2e81e38f2a72daf8efa9d8a63f2c12e2dacf174baaa4a58d346aa43f2b0b7",
+                "actual_sha256": "762d105642ca37e4a8e32f1341ba2f19a569ffe14f8a5a228dc23ad73add9372",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -54071,7 +54071,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "b9a2e81e38f2a72daf8efa9d8a63f2c12e2dacf174baaa4a58d346aa43f2b0b7",
+                "actual_sha256": "762d105642ca37e4a8e32f1341ba2f19a569ffe14f8a5a228dc23ad73add9372",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -54267,7 +54267,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "b9a2e81e38f2a72daf8efa9d8a63f2c12e2dacf174baaa4a58d346aa43f2b0b7",
+                "actual_sha256": "762d105642ca37e4a8e32f1341ba2f19a569ffe14f8a5a228dc23ad73add9372",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -54463,7 +54463,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "b9a2e81e38f2a72daf8efa9d8a63f2c12e2dacf174baaa4a58d346aa43f2b0b7",
+                "actual_sha256": "762d105642ca37e4a8e32f1341ba2f19a569ffe14f8a5a228dc23ad73add9372",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -54674,7 +54674,7 @@
         ],
         "runtime_identity_differences": [
           {
-            "actual_sha256": "b9a2e81e38f2a72daf8efa9d8a63f2c12e2dacf174baaa4a58d346aa43f2b0b7",
+            "actual_sha256": "762d105642ca37e4a8e32f1341ba2f19a569ffe14f8a5a228dc23ad73add9372",
             "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
             "path": "Cargo.lock"
           },
@@ -54956,7 +54956,7 @@
           ],
           "identity_differences": [
             {
-              "actual_sha256": "b9a2e81e38f2a72daf8efa9d8a63f2c12e2dacf174baaa4a58d346aa43f2b0b7",
+              "actual_sha256": "762d105642ca37e4a8e32f1341ba2f19a569ffe14f8a5a228dc23ad73add9372",
               "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
               "path": "Cargo.lock"
             },
@@ -55406,7 +55406,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "b9a2e81e38f2a72daf8efa9d8a63f2c12e2dacf174baaa4a58d346aa43f2b0b7",
+                "actual_sha256": "762d105642ca37e4a8e32f1341ba2f19a569ffe14f8a5a228dc23ad73add9372",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -55616,7 +55616,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "b9a2e81e38f2a72daf8efa9d8a63f2c12e2dacf174baaa4a58d346aa43f2b0b7",
+                "actual_sha256": "762d105642ca37e4a8e32f1341ba2f19a569ffe14f8a5a228dc23ad73add9372",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -55812,7 +55812,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "b9a2e81e38f2a72daf8efa9d8a63f2c12e2dacf174baaa4a58d346aa43f2b0b7",
+                "actual_sha256": "762d105642ca37e4a8e32f1341ba2f19a569ffe14f8a5a228dc23ad73add9372",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -56008,7 +56008,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "b9a2e81e38f2a72daf8efa9d8a63f2c12e2dacf174baaa4a58d346aa43f2b0b7",
+                "actual_sha256": "762d105642ca37e4a8e32f1341ba2f19a569ffe14f8a5a228dc23ad73add9372",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -56226,7 +56226,7 @@
         ],
         "runtime_identity_differences": [
           {
-            "actual_sha256": "b9a2e81e38f2a72daf8efa9d8a63f2c12e2dacf174baaa4a58d346aa43f2b0b7",
+            "actual_sha256": "762d105642ca37e4a8e32f1341ba2f19a569ffe14f8a5a228dc23ad73add9372",
             "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
             "path": "Cargo.lock"
           },
@@ -56508,7 +56508,7 @@
           ],
           "identity_differences": [
             {
-              "actual_sha256": "b9a2e81e38f2a72daf8efa9d8a63f2c12e2dacf174baaa4a58d346aa43f2b0b7",
+              "actual_sha256": "762d105642ca37e4a8e32f1341ba2f19a569ffe14f8a5a228dc23ad73add9372",
               "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
               "path": "Cargo.lock"
             },
@@ -56958,7 +56958,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "b9a2e81e38f2a72daf8efa9d8a63f2c12e2dacf174baaa4a58d346aa43f2b0b7",
+                "actual_sha256": "762d105642ca37e4a8e32f1341ba2f19a569ffe14f8a5a228dc23ad73add9372",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -57168,7 +57168,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "b9a2e81e38f2a72daf8efa9d8a63f2c12e2dacf174baaa4a58d346aa43f2b0b7",
+                "actual_sha256": "762d105642ca37e4a8e32f1341ba2f19a569ffe14f8a5a228dc23ad73add9372",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -57364,7 +57364,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "b9a2e81e38f2a72daf8efa9d8a63f2c12e2dacf174baaa4a58d346aa43f2b0b7",
+                "actual_sha256": "762d105642ca37e4a8e32f1341ba2f19a569ffe14f8a5a228dc23ad73add9372",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -57560,7 +57560,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "b9a2e81e38f2a72daf8efa9d8a63f2c12e2dacf174baaa4a58d346aa43f2b0b7",
+                "actual_sha256": "762d105642ca37e4a8e32f1341ba2f19a569ffe14f8a5a228dc23ad73add9372",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -57771,7 +57771,7 @@
         ],
         "runtime_identity_differences": [
           {
-            "actual_sha256": "b9a2e81e38f2a72daf8efa9d8a63f2c12e2dacf174baaa4a58d346aa43f2b0b7",
+            "actual_sha256": "762d105642ca37e4a8e32f1341ba2f19a569ffe14f8a5a228dc23ad73add9372",
             "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
             "path": "Cargo.lock"
           },
@@ -57985,7 +57985,7 @@
           ],
           "identity_differences": [
             {
-              "actual_sha256": "b9a2e81e38f2a72daf8efa9d8a63f2c12e2dacf174baaa4a58d346aa43f2b0b7",
+              "actual_sha256": "762d105642ca37e4a8e32f1341ba2f19a569ffe14f8a5a228dc23ad73add9372",
               "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
               "path": "Cargo.lock"
             },
@@ -58468,7 +58468,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "b9a2e81e38f2a72daf8efa9d8a63f2c12e2dacf174baaa4a58d346aa43f2b0b7",
+                "actual_sha256": "762d105642ca37e4a8e32f1341ba2f19a569ffe14f8a5a228dc23ad73add9372",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -58678,7 +58678,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "b9a2e81e38f2a72daf8efa9d8a63f2c12e2dacf174baaa4a58d346aa43f2b0b7",
+                "actual_sha256": "762d105642ca37e4a8e32f1341ba2f19a569ffe14f8a5a228dc23ad73add9372",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -58874,7 +58874,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "b9a2e81e38f2a72daf8efa9d8a63f2c12e2dacf174baaa4a58d346aa43f2b0b7",
+                "actual_sha256": "762d105642ca37e4a8e32f1341ba2f19a569ffe14f8a5a228dc23ad73add9372",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -59085,7 +59085,7 @@
         ],
         "runtime_identity_differences": [
           {
-            "actual_sha256": "b9a2e81e38f2a72daf8efa9d8a63f2c12e2dacf174baaa4a58d346aa43f2b0b7",
+            "actual_sha256": "762d105642ca37e4a8e32f1341ba2f19a569ffe14f8a5a228dc23ad73add9372",
             "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
             "path": "Cargo.lock"
           },
@@ -59299,7 +59299,7 @@
           ],
           "identity_differences": [
             {
-              "actual_sha256": "b9a2e81e38f2a72daf8efa9d8a63f2c12e2dacf174baaa4a58d346aa43f2b0b7",
+              "actual_sha256": "762d105642ca37e4a8e32f1341ba2f19a569ffe14f8a5a228dc23ad73add9372",
               "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
               "path": "Cargo.lock"
             },
@@ -59979,7 +59979,7 @@
             "path": "design/tokens.json"
           },
           {
-            "actual_sha256": "282744f400035fd2b15fd56923a34de2689eec4d8c3147d58b91d2479d4e0ff4",
+            "actual_sha256": "978da53e2bb2276e74a8fcce45a8948935331ecee32ffb1f3b8db0bc32dd5eee",
             "expected_sha256": "e9c265f2daf3476b3dbf05f8c2d2d34ff9ac515c5cfa9fbd40729ea78324f0f2",
             "path": "examples/composition-consumer/Cargo.lock"
           },
@@ -60319,7 +60319,7 @@
               "path": "design/tokens.json"
             },
             {
-              "actual_sha256": "282744f400035fd2b15fd56923a34de2689eec4d8c3147d58b91d2479d4e0ff4",
+              "actual_sha256": "978da53e2bb2276e74a8fcce45a8948935331ecee32ffb1f3b8db0bc32dd5eee",
               "expected_sha256": "e9c265f2daf3476b3dbf05f8c2d2d34ff9ac515c5cfa9fbd40729ea78324f0f2",
               "path": "examples/composition-consumer/Cargo.lock"
             },
@@ -60897,7 +60897,7 @@
                 "path": "design/tokens.json"
               },
               {
-                "actual_sha256": "282744f400035fd2b15fd56923a34de2689eec4d8c3147d58b91d2479d4e0ff4",
+                "actual_sha256": "978da53e2bb2276e74a8fcce45a8948935331ecee32ffb1f3b8db0bc32dd5eee",
                 "expected_sha256": "e9c265f2daf3476b3dbf05f8c2d2d34ff9ac515c5cfa9fbd40729ea78324f0f2",
                 "path": "examples/composition-consumer/Cargo.lock"
               },
@@ -61103,7 +61103,7 @@
                 "path": "design/tokens.json"
               },
               {
-                "actual_sha256": "282744f400035fd2b15fd56923a34de2689eec4d8c3147d58b91d2479d4e0ff4",
+                "actual_sha256": "978da53e2bb2276e74a8fcce45a8948935331ecee32ffb1f3b8db0bc32dd5eee",
                 "expected_sha256": "e9c265f2daf3476b3dbf05f8c2d2d34ff9ac515c5cfa9fbd40729ea78324f0f2",
                 "path": "examples/composition-consumer/Cargo.lock"
               },
@@ -61303,7 +61303,7 @@
             "path": "design/tokens.json"
           },
           {
-            "actual_sha256": "282744f400035fd2b15fd56923a34de2689eec4d8c3147d58b91d2479d4e0ff4",
+            "actual_sha256": "978da53e2bb2276e74a8fcce45a8948935331ecee32ffb1f3b8db0bc32dd5eee",
             "expected_sha256": "e9c265f2daf3476b3dbf05f8c2d2d34ff9ac515c5cfa9fbd40729ea78324f0f2",
             "path": "examples/composition-consumer/Cargo.lock"
           },
@@ -61527,7 +61527,7 @@
               "path": "design/tokens.json"
             },
             {
-              "actual_sha256": "282744f400035fd2b15fd56923a34de2689eec4d8c3147d58b91d2479d4e0ff4",
+              "actual_sha256": "978da53e2bb2276e74a8fcce45a8948935331ecee32ffb1f3b8db0bc32dd5eee",
               "expected_sha256": "e9c265f2daf3476b3dbf05f8c2d2d34ff9ac515c5cfa9fbd40729ea78324f0f2",
               "path": "examples/composition-consumer/Cargo.lock"
             },
@@ -61956,7 +61956,7 @@
             "path": "design/tokens.json"
           },
           {
-            "actual_sha256": "282744f400035fd2b15fd56923a34de2689eec4d8c3147d58b91d2479d4e0ff4",
+            "actual_sha256": "978da53e2bb2276e74a8fcce45a8948935331ecee32ffb1f3b8db0bc32dd5eee",
             "expected_sha256": "e9c265f2daf3476b3dbf05f8c2d2d34ff9ac515c5cfa9fbd40729ea78324f0f2",
             "path": "examples/composition-consumer/Cargo.lock"
           },
@@ -62327,7 +62327,7 @@
               "path": "design/tokens.json"
             },
             {
-              "actual_sha256": "282744f400035fd2b15fd56923a34de2689eec4d8c3147d58b91d2479d4e0ff4",
+              "actual_sha256": "978da53e2bb2276e74a8fcce45a8948935331ecee32ffb1f3b8db0bc32dd5eee",
               "expected_sha256": "e9c265f2daf3476b3dbf05f8c2d2d34ff9ac515c5cfa9fbd40729ea78324f0f2",
               "path": "examples/composition-consumer/Cargo.lock"
             },
@@ -63442,7 +63442,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "b9a2e81e38f2a72daf8efa9d8a63f2c12e2dacf174baaa4a58d346aa43f2b0b7",
+                "actual_sha256": "762d105642ca37e4a8e32f1341ba2f19a569ffe14f8a5a228dc23ad73add9372",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -63638,7 +63638,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "b9a2e81e38f2a72daf8efa9d8a63f2c12e2dacf174baaa4a58d346aa43f2b0b7",
+                "actual_sha256": "762d105642ca37e4a8e32f1341ba2f19a569ffe14f8a5a228dc23ad73add9372",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -63834,7 +63834,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "b9a2e81e38f2a72daf8efa9d8a63f2c12e2dacf174baaa4a58d346aa43f2b0b7",
+                "actual_sha256": "762d105642ca37e4a8e32f1341ba2f19a569ffe14f8a5a228dc23ad73add9372",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -64030,7 +64030,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "b9a2e81e38f2a72daf8efa9d8a63f2c12e2dacf174baaa4a58d346aa43f2b0b7",
+                "actual_sha256": "762d105642ca37e4a8e32f1341ba2f19a569ffe14f8a5a228dc23ad73add9372",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -64234,7 +64234,7 @@
         ],
         "runtime_identity_differences": [
           {
-            "actual_sha256": "b9a2e81e38f2a72daf8efa9d8a63f2c12e2dacf174baaa4a58d346aa43f2b0b7",
+            "actual_sha256": "762d105642ca37e4a8e32f1341ba2f19a569ffe14f8a5a228dc23ad73add9372",
             "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
             "path": "Cargo.lock"
           },
@@ -64448,7 +64448,7 @@
           ],
           "identity_differences": [
             {
-              "actual_sha256": "b9a2e81e38f2a72daf8efa9d8a63f2c12e2dacf174baaa4a58d346aa43f2b0b7",
+              "actual_sha256": "762d105642ca37e4a8e32f1341ba2f19a569ffe14f8a5a228dc23ad73add9372",
               "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
               "path": "Cargo.lock"
             },
@@ -64881,7 +64881,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "b9a2e81e38f2a72daf8efa9d8a63f2c12e2dacf174baaa4a58d346aa43f2b0b7",
+                "actual_sha256": "762d105642ca37e4a8e32f1341ba2f19a569ffe14f8a5a228dc23ad73add9372",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -65098,7 +65098,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "b9a2e81e38f2a72daf8efa9d8a63f2c12e2dacf174baaa4a58d346aa43f2b0b7",
+                "actual_sha256": "762d105642ca37e4a8e32f1341ba2f19a569ffe14f8a5a228dc23ad73add9372",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -65288,7 +65288,7 @@
         ],
         "runtime_identity_differences": [
           {
-            "actual_sha256": "b9a2e81e38f2a72daf8efa9d8a63f2c12e2dacf174baaa4a58d346aa43f2b0b7",
+            "actual_sha256": "762d105642ca37e4a8e32f1341ba2f19a569ffe14f8a5a228dc23ad73add9372",
             "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
             "path": "Cargo.lock"
           },
@@ -65515,7 +65515,7 @@
           ],
           "identity_differences": [
             {
-              "actual_sha256": "b9a2e81e38f2a72daf8efa9d8a63f2c12e2dacf174baaa4a58d346aa43f2b0b7",
+              "actual_sha256": "762d105642ca37e4a8e32f1341ba2f19a569ffe14f8a5a228dc23ad73add9372",
               "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
               "path": "Cargo.lock"
             },
@@ -66150,7 +66150,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "b9a2e81e38f2a72daf8efa9d8a63f2c12e2dacf174baaa4a58d346aa43f2b0b7",
+                "actual_sha256": "762d105642ca37e4a8e32f1341ba2f19a569ffe14f8a5a228dc23ad73add9372",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -66340,7 +66340,7 @@
         ],
         "runtime_identity_differences": [
           {
-            "actual_sha256": "b9a2e81e38f2a72daf8efa9d8a63f2c12e2dacf174baaa4a58d346aa43f2b0b7",
+            "actual_sha256": "762d105642ca37e4a8e32f1341ba2f19a569ffe14f8a5a228dc23ad73add9372",
             "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
             "path": "Cargo.lock"
           },
@@ -66554,7 +66554,7 @@
           ],
           "identity_differences": [
             {
-              "actual_sha256": "b9a2e81e38f2a72daf8efa9d8a63f2c12e2dacf174baaa4a58d346aa43f2b0b7",
+              "actual_sha256": "762d105642ca37e4a8e32f1341ba2f19a569ffe14f8a5a228dc23ad73add9372",
               "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
               "path": "Cargo.lock"
             },
@@ -66923,7 +66923,7 @@
                 "expected": "52f26c9fbafd3946dc8d43328028684c433840857152ddc4c5298680f5780c47"
               },
               "crates/tekes-ui-gallery/src/gallery/mod.rs": {
-                "actual": "0de073362e863b2badaefa78a52e0c46e08a771b5cf68fe317c262abec34d003",
+                "actual": "76c28d4f3f55b2c6ca344c2479e3be723a264e8662a8cc0966ebab3c79b4a611",
                 "expected": "18cec888b4b7fc85a239ed065a32140d78ef281e8a9aa4834765b6ca4afde2ca"
               },
               "crates/tekes-ui-gallery/src/gallery/workbench/extended/collections_adapter.rs": {
@@ -67361,7 +67361,7 @@
                 "expected": "52f26c9fbafd3946dc8d43328028684c433840857152ddc4c5298680f5780c47"
               },
               "crates/tekes-ui-gallery/src/gallery/mod.rs": {
-                "actual": "0de073362e863b2badaefa78a52e0c46e08a771b5cf68fe317c262abec34d003",
+                "actual": "76c28d4f3f55b2c6ca344c2479e3be723a264e8662a8cc0966ebab3c79b4a611",
                 "expected": "18cec888b4b7fc85a239ed065a32140d78ef281e8a9aa4834765b6ca4afde2ca"
               }
             },
@@ -67908,7 +67908,7 @@
     "crates/tekes-ui-app-host/examples/toolbar_artwork_metrics.rs": "105082460111126efbd6a232cb4d8cc4c73ade89f7be054213cdd203a4c5ce03",
     "crates/tekes-ui-app-host/src/columns.rs": "b5ad234acda2da96d6b977466c466524d7259096a146980db27151130ce3a14f",
     "crates/tekes-ui-app-host/src/gpu.rs": "7c06c1e8eb52319ba8c2211bff31bf7f5819ac02328992e74837631334371111",
-    "crates/tekes-ui-app-host/src/lib.rs": "568556c1d987067be63555bc622ce116e1f70b8ca805741ac7015f282650e3c5",
+    "crates/tekes-ui-app-host/src/lib.rs": "b4801c5a7e27ae43441bc5823416ec3de8698161712a15a203fa1ad03b35a3a2",
     "crates/tekes-ui-app-host/src/module_process.rs": "6f052cb33081edad27cd901f1c493ddc7da22dcd1a10a07718b8866f2244782d",
     "crates/tekes-ui-app-host/src/navigation/host.rs": "356fd20b80140bc4b2fc719cd37223067a0456c8c8c93837b686086fe9934725",
     "crates/tekes-ui-app-host/src/navigation/mod.rs": "f7ac122be60332b8a14310d74120c96ed3152c0efbb9d1ef76f41ad92cad996f",
@@ -67922,7 +67922,7 @@
     "crates/tekes-ui-app-host/src/sidebar_motion.rs": "26a26e146502520ceec897c1282294e189794834d49d63787dea6264b347a8e2",
     "crates/tekes-ui-app-host/src/text.rs": "4b362c5cdd8735b10760f57596ddc029c32db4a90085499cfcaa62284731dd0f",
     "crates/tekes-ui-app-host/src/toolbar_source.rs": "32ca789466235c78cbe2244a396c7c0f9037ef722684374809f8e8e6838e33bb",
-    "crates/tekes-ui-app-host/src/window.rs": "3c47cd36b3c291eebead526ee780557ed1aa9d601e8fd318b264caee45f10b06",
+    "crates/tekes-ui-app-host/src/window.rs": "856eebda6eabaf2af1657b6a1497f49903ce44d3c489e445874a9d40dd0a225f",
     "crates/tekes-ui-app-host/src/window_acceptance.rs": "e6abfe59a7df3f902d159f84e2b15662c428cefb0bd7587c0f693da55f02b343",
     "crates/tekes-ui-app-host/src/window_accessibility.rs": "1cc24d10cd5c08ba65d950fd876de0e7cba33b595a0dd0e8e8fdae11df7c966f",
     "crates/tekes-ui-app-host/src/window_columns.rs": "5e1809dc01692bc90d12236e55830bb398e0d180c5738e569613c4f474ba0508",
@@ -68115,6 +68115,7 @@
     "crates/tekes-ui-gallery/src/actions_acceptance.rs": "38f48c5a5490c58292cc5b371e3a4305cd9b24dafa199e4bbaa3b6b45c65e3d1",
     "crates/tekes-ui-gallery/src/controlled_acceptance.rs": "ce1776aecc775f77ff5ed53bbf51f55fcfc93a7857a4d2395470fccf051fc15c",
     "crates/tekes-ui-gallery/src/gallery/accessibility.rs": "32dcac224ea80fc8708e28691c65fdd01f936758d8801b86e2d794ec54bf0f8f",
+    "crates/tekes-ui-gallery/src/gallery/apphost.rs": "047f9c545df31b139f388798eba187c5af8597f3d77c2b5512a151c1db8ec1f5",
     "crates/tekes-ui-gallery/src/gallery/catalog.rs": "a092bab9bc4ee821175f5763aef51abb8af8b2d2fe9a45ebe5fc68270f69692c",
     "crates/tekes-ui-gallery/src/gallery/chrome.rs": "006b31ce3737bd6fcf6dfb61d5ed0c559f5ea5a2318dbb615020ec9bdbe1229e",
     "crates/tekes-ui-gallery/src/gallery/commands.rs": "1abb762b587964297e4ddd058f844c8cedbccec50b7eccc22850f469998c28b0",
@@ -68123,7 +68124,7 @@
     "crates/tekes-ui-gallery/src/gallery/icon_catalog.rs": "7ec0c62335f230984fd4d8bce1a145f82db09080468eec82d8752a547b2a6b27",
     "crates/tekes-ui-gallery/src/gallery/layout.rs": "ac347805f4a687ef6e3bbced72fa2d274d905ae159bde01b2c51c296aa6ddea2",
     "crates/tekes-ui-gallery/src/gallery/locale.rs": "b8c429ecdad2c265cd61ccd4f7b5e4e69e17cc2f1618492fb23246dcf426a285",
-    "crates/tekes-ui-gallery/src/gallery/mod.rs": "0de073362e863b2badaefa78a52e0c46e08a771b5cf68fe317c262abec34d003",
+    "crates/tekes-ui-gallery/src/gallery/mod.rs": "76c28d4f3f55b2c6ca344c2479e3be723a264e8662a8cc0966ebab3c79b4a611",
     "crates/tekes-ui-gallery/src/gallery/motion_preview.rs": "dd35eebb7edc40a9ef805445981693ac644275a833491709da7b562250084c55",
     "crates/tekes-ui-gallery/src/gallery/navigation.rs": "164ac5f639e4028e7947003d2c936c780bec14e99308ea93b55b7f10ccf7b9d1",
     "crates/tekes-ui-gallery/src/gallery/pages/icons.rs": "7ee1e0fa8960c6c769b2ba5ff62eab7192a37a37430519f961a44139724e34ca",
@@ -68167,7 +68168,7 @@
     "crates/tekes-ui-gallery/src/gallery/workbench/settings_phase_capture.rs": "b79e54f2b3d22f54651b1f8dedbdae56f50f08fa0919d56abca7831bb9bc0684",
     "crates/tekes-ui-gallery/src/gallery/workbench/state_capture.rs": "1d8654afbda24240b835070963ef710c0813dd9573691c5379451c1a1817d169",
     "crates/tekes-ui-gallery/src/gallery/workbench/visual_remainder.rs": "e42df9340b0ff042cdcb383c39569c8827a8a531ecc5787eefe0de47d9d8fe89",
-    "crates/tekes-ui-gallery/src/host.rs": "5938d057f641fcab995abe2e4f67a71cdd5861ff683cfe16afa36612970f9f08",
+    "crates/tekes-ui-gallery/src/host.rs": "a14a37dd1b5e8db9607a95f06bb1ccfe2c58894362456b00a356dbeb0c43fabc",
     "crates/tekes-ui-gallery/src/main.rs": "c3cb43699a3a7ec33015f1dca9262bddc8d5fc5965b4617e4cb56aa82dc11fbc",
     "crates/tekes-ui-gallery/src/perf.rs": "7ec90cd9e6569ad91b13940dce9f4fee5dc4e775583cf3da7bf7d6d09643c33a",
     "crates/tekes-ui-gallery/src/reading_acceptance.rs": "bb99bf643bb132690e17d1612d2b2ccabb37ac914e103883786c5738ba79244d",
@@ -68259,12 +68260,12 @@
     "crates/tekes-ui-platform-macos/src/event.rs": "8cadbed800cf8b917371dec3cf534ec2fced49a7620b2b2745bb22b152ad3fef",
     "crates/tekes-ui-platform-macos/src/lib.rs": "38b492134c3230dd8d23c56e2d7636180e098cb002f0c7a13bfa8f9b4b50066e",
     "crates/tekes-ui-platform-macos/src/menu.rs": "0532145b26b4006235ec4a26d52ce041b9b968089259e64681cdf16695e560e6",
-    "crates/tekes-ui-platform-macos/src/menu_build.rs": "de6687f166310a6ffaf71cad25bbf89057a5d2a5706e81878d5fe37240208dcc",
+    "crates/tekes-ui-platform-macos/src/menu_build.rs": "e3dcb662d0433e75daeeaecae4bca431a51a22cb8b7b6202da19434903c35689",
     "crates/tekes-ui-platform-macos/src/placement.rs": "a2167cf41d3f8bbe27b578726d871d57e0faac0d6e949e00923943105bc35aee",
     "crates/tekes-ui-platform-macos/src/presentation.rs": "25bbd094b63b0d2873d646eb00710de86146b30e5464dae33383f18d1431c3b6",
     "crates/tekes-ui-platform-macos/src/screens.rs": "c33ea852f0e8bdbd2843aa1754f3c077d928ae70f29f8669f30580746d2e0365",
-    "crates/tekes-ui-platform-macos/src/selftest.rs": "c8ccb62e479c41bfd1a2c24f7b899e26d2784556a6763cc0890f5c172da58c42",
-    "crates/tekes-ui-platform-macos/src/shared.rs": "761dadef79e6039ce486671544595f69a31fb9cf929c4859fc58387c27c7dbc3",
+    "crates/tekes-ui-platform-macos/src/selftest.rs": "9a854b5805d5de7d3aac88f36c9a44b0967a1cefdf0af5c670c35f09c800b7e4",
+    "crates/tekes-ui-platform-macos/src/shared.rs": "0f44b1a2901d8d31b3374140e57824114a53a75099a0f4a92f5ac902fd5a63f7",
     "crates/tekes-ui-platform-macos/src/text_key.rs": "9546715dcec3acd93f938866702f0f3c7653a5e2c776db88ccbd2907fb6e4773",
     "crates/tekes-ui-platform-macos/src/view.rs": "1ed7c871088fdff83ba201a187f83e7a5103767430ea7212a4d94a9d39bd665a",
     "crates/tekes-ui-platform-macos/src/wake.rs": "84a2b77a4f31181b4d7f42e19a9eeeff584c8c0cd417abc4231457f64d3f4ddd",
@@ -68274,7 +68275,7 @@
     "crates/tekes-ui-platform-macos/tests/exclusive_native.rs": "c9aac718eead3a7dd744d5e6dea2aa9e20bd4295d2f46683ce772777b6865ebd",
     "crates/tekes-ui-platform-macos/tests/link_native.rs": "4bef7a8aa77f64368296f8449cf43b71d580b3ee26a4613c53ea61cdd85e7111",
     "crates/tekes-ui-platform-macos/tests/panel_projection.rs": "8ea0d6b6115d13f1e31c314dbb8fdab45b23617f508210c6cabe303a76c392c4",
-    "crates/tekes-ui-platform-macos/tests/required_native.rs": "23fca934b0dbdd08950e8c11ab4123c4a8db3d70b95371692c1695474ef90000",
+    "crates/tekes-ui-platform-macos/tests/required_native.rs": "e5ea6e10bacdb4297feb7898d18e1759cd8db753cd822f17cfc1e9f7c7679f52",
     "crates/tekes-ui-platform-macos/tests/support/ax_modal_fixture.rs": "27ec895b2bb718400ca8b31a9a903867ed673589366ec47de3d12d6b76cec95a",
     "crates/tekes-ui-platform-macos/tests/titlebar_native.rs": "a1c1925ea2cf08a7d4d8a77b4069bef318dce3d8a9c6560d6a2bd2b89e268b39",
     "crates/tekes-ui-render/examples/dump_sample.rs": "da8a4b33ba1aeb25bd907a52983b0f28b14af4bd875e4d3284e167451368a692",
@@ -68384,7 +68385,7 @@
     "design/gallery/historical-component-map.json": "59f86d000c8f46d328ec696dbb7bf37d00b3e2349a55357540413753e3220d48",
     "design/gallery/navigation.json": "68253ae98b930acfedb199a1a37b2f4fc442f5551e8134d81c5f786d1b83e5f2",
     "design/gallery/public-api-surface.json": "11a45e90e98b8f275277bdccfc488872331bb40c9874526d3629e6f53e2d883d",
-    "design/gallery/workbench.json": "905fc8965b79b5973e44d17ba106f2155518e8ea15f7ecbdef0e7e76b9b9359a",
+    "design/gallery/workbench.json": "165ca0deddd397e6e1b94b2a986c14792c8ce34a20834a47159d7b56254da6d6",
     "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/component-contracts.json": "2798ec7769747d0ceeef73efa7527ab79da5fc7cdfbe1818bb4bb53041b74f2c",
     "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/registry/components.json": "07e807d924ea0109023be25224b48763b59eb81f98ac3552bac9750b0f3059cd",
     "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/registry/state-profiles.json": "b50872467c94d2a6d626d95f787070a33bd9325a338c9284d7659f390337a8fd",

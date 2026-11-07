@@ -156,6 +156,23 @@ impl AppWindow {
         self.settings = Some(settings);
         self
     }
+    /// Open a native window in an existing application event loop.
+    /// Process containers require the embedding executable's usual worker dispatch.
+    pub fn open(
+        mut self,
+        parent: &tekes_ui_platform_macos::Window,
+        config: tekes_ui_platform_macos::WindowConfig,
+    ) -> anyhow::Result<tekes_ui_platform_macos::WindowHandle> {
+        validate_assembly(
+            &self.profile,
+            self.columns.as_deref(),
+            self.navigation.is_some(),
+            self.presentation.as_ref(),
+        )?;
+        let settings = self.settings.take();
+        self.into_host(false).open(parent, config, settings)
+    }
+
     pub fn run(self) -> anyhow::Result<()> {
         run_columns(
             self.profile,
@@ -198,6 +215,31 @@ fn run_internal(
     run_columns(profile, None, navigation, settings, None)
 }
 #[cfg(target_os = "macos")]
+fn validate_assembly(
+    profile: &AppProfile,
+    columns: Option<&[Column]>,
+    navigation: bool,
+    presentation: Option<&PresentationOptions>,
+) -> anyhow::Result<()> {
+    if let Some(columns) = columns {
+        if let Some(presentation) = presentation {
+            PresentationState::from_columns(columns, presentation.clone())?;
+        } else {
+            columns::validate(columns)?;
+        }
+    } else {
+        validate(profile)?;
+    }
+    if navigation && let Some(presentation) = presentation {
+        anyhow::ensure!(
+            presentation.navigation_toolbar.is_some(),
+            "headless navigation requires an explicit container Toolbar target"
+        );
+    }
+    Ok(())
+}
+
+#[cfg(target_os = "macos")]
 fn run_columns(
     profile: AppProfile,
     columns: Option<Vec<Column>>,
@@ -205,23 +247,12 @@ fn run_columns(
     settings: Option<SettingsOptions>,
     presentation: Option<PresentationOptions>,
 ) -> anyhow::Result<()> {
-    if let Some(columns) = &columns {
-        if let Some(presentation) = &presentation {
-            PresentationState::from_columns(columns, presentation.clone())?;
-        } else {
-            columns::validate(columns)?;
-        }
-    } else {
-        validate(&profile)?;
-    }
-    if navigation.is_some()
-        && let Some(presentation) = &presentation
-    {
-        anyhow::ensure!(
-            presentation.navigation_toolbar.is_some(),
-            "headless navigation requires an explicit container Toolbar target"
-        );
-    }
+    validate_assembly(
+        &profile,
+        columns.as_deref(),
+        navigation.is_some(),
+        presentation.as_ref(),
+    )?;
     let args: Vec<String> = std::env::args().collect();
     if tekes_ui_module_runtime::run_component_worker_from_args(
         &[
@@ -258,4 +289,52 @@ fn run_columns(
 pub fn run(profile: AppProfile) -> anyhow::Result<()> {
     validate(&profile)?;
     anyhow::bail!("AppHost prototype currently requires macOS")
+}
+
+#[cfg(all(test, target_os = "macos"))]
+mod hosted_window_tests {
+    use super::*;
+    use tekes_ui_controls::composition::{ComponentId, Content, TextFieldContent};
+    #[test]
+    fn hosted_open_uses_run_assembly_preconditions_before_native_creation() {
+        let empty = AppProfile { modules: vec![] };
+        assert!(validate_assembly(&empty, None, false, None).is_err());
+        let local = LocalContainer::new(
+            "focus",
+            Content::new(ComponentId(1), TextFieldContent::new("Field", "")),
+        )
+        .unwrap();
+        let app = AppWindow::from_containers(vec![local.into()], PresentationOptions::new("focus"))
+            .unwrap();
+        assert!(
+            validate_assembly(
+                &app.profile,
+                app.columns.as_deref(),
+                true,
+                app.presentation.as_ref()
+            )
+            .unwrap_err()
+            .to_string()
+            .contains("explicit container Toolbar")
+        );
+        assert!(
+            validate_assembly(
+                &app.profile,
+                app.columns.as_deref(),
+                false,
+                app.presentation.as_ref()
+            )
+            .is_ok()
+        );
+        let presentation = app.presentation.unwrap().navigation_toolbar("focus");
+        assert!(
+            validate_assembly(
+                &app.profile,
+                app.columns.as_deref(),
+                true,
+                Some(&presentation)
+            )
+            .is_ok()
+        );
+    }
 }
