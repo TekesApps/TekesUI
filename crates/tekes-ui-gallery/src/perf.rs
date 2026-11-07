@@ -1283,7 +1283,7 @@ impl Perf {
                 "speed_pt_s": self.cfg.speed,
                 "content": self.cfg.content.name(),
                 "gallery_route": self.gallery.page().slug(),
-                "scroll_area_workload": "2s alternating top/bottom cycles: 0.35s finger, 0.65s OS-style momentum, 1s return/settle; routed through actual Gallery input",
+                "scroll_area_workload": (self.cfg.content == ContentKind::ScrollArea).then_some("2s alternating top/bottom cycles: 0.35s finger, 0.65s OS-style momentum, 1s return/settle; routed through actual Gallery input"),
                 "view_pt": [window.size().width, window.size().height],
                 "drawable_px": [window.drawable_size().0, window.drawable_size().1],
                 "scale": window.scale(),

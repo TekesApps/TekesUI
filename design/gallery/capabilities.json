@@ -68167,7 +68167,7 @@
     "crates/tekes-ui-gallery/src/gallery/workbench/visual_remainder.rs": "e42df9340b0ff042cdcb383c39569c8827a8a531ecc5787eefe0de47d9d8fe89",
     "crates/tekes-ui-gallery/src/host.rs": "5938d057f641fcab995abe2e4f67a71cdd5861ff683cfe16afa36612970f9f08",
     "crates/tekes-ui-gallery/src/main.rs": "c3cb43699a3a7ec33015f1dca9262bddc8d5fc5965b4617e4cb56aa82dc11fbc",
-    "crates/tekes-ui-gallery/src/perf.rs": "331cb99e1304db69d47e2f131b2ef889caa08f3bd13c394fc64591979ef4e910",
+    "crates/tekes-ui-gallery/src/perf.rs": "7ec90cd9e6569ad91b13940dce9f4fee5dc4e775583cf3da7bf7d6d09643c33a",
     "crates/tekes-ui-gallery/src/reading_acceptance.rs": "bb99bf643bb132690e17d1612d2b2ccabb37ac914e103883786c5738ba79244d",
     "crates/tekes-ui-gallery/src/reading_key.rs": "6932a589bce50e2f4365c780c67ab0c467a126c9a4677ad23eeda132f146adae",
     "crates/tekes-ui-gallery/src/reading_pointer.rs": "e4c1d9657a51365cb3b53f5b7946c03b5e2a71677d4502ed75c459329d7cd435",
