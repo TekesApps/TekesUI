@@ -1,5 +1,12 @@
 # ProcessComponent、无 View 导航模块与 nav.json
 
+## AppHost v0.2.0 呈现实施（#229）
+
+新 AppHost 入口通过 `PresentationOptions::navigation_toolbar(id)` 显式选择导航贡献的容器 Toolbar，通过 `navigation_targets(ids)` 独立绑定业务接收容器。窗口级 scope 仍是服务的授权/生命周期，不是全窗口工具栏所有权。Tabs/List/focus 移动不改变绑定或导航历史。隐藏本地目标同步命令完成不等待不存在的绘制，隐藏进程目标启动后等待真实响应；可见目标仍保留其呈现确认边界。导航 busy/input_open 门禁同时约束声明和命令派发。
+
+这是 #229 的新实现范围，下方日期化设计与原型证据保留为历史；完整窗口原生验收和公开交付见该 Issue，不由本说明代签。VoiceOver 不属于本版本必需验收。
+
+
 状态：2026-10-21 确认的设计契约，供 TekesUI 公共抽取与 AppHost 接入使用；本文件不表示当前 V1 runtime 已支持无 View 消息或持久化事务。既有原生进程、IPC、共享纹理实现继续复用，不创建第二套运行器。
 
 实现进展：基于公共 V2 ProcessComponent 的服务侧最小导航原型、窗口 toolbar 注册和 nav.json 故障验收已完成，见 [原型实现与证据](navigation-prototype-20261021.md)。该进展不改变下文完整窗口/联合发布的验收要求。
@@ -30,6 +37,14 @@
 toolbar 统一作用域规则：所有注册绑定所有者模块实例及其获准的贡献作用域；`scope=view(window_id, panel_id, view_id)` 额外绑定真实 Panel/View，`scope=window(window_id)` 只绑定真实窗口，不要求也不允许伪造 Panel/View。命令携带原注册作用域及代次并由所有者复核；相同 command ID 在不同模块/作用域中不混淆。View 的隐藏、移动或关闭不撤销无关窗口级贡献；窗口级贡献仅按所属窗口、所有者实例或授权生命周期清理。导航窗口命令按 history revision/事务校验，不套用 content 视口门控。
 
 leading/trailing 显隐仍是 AppHost 的窗口布局操作，与导航历史分开；其纯图标控件保持可恢复入口，隐藏默认保留对应进程和状态。它们绑定物理槽位，不随内容模块换位。nav.json 不兼任布局状态文件。
+
+### 2026-11-05 呈现边界更新（仅设计，#229）
+
+按 [AppHost 容器职责](app-host-architecture.md#container-owned-toolbar)，`scope=window` 表示导航贡献的授权/生命周期，不要求存在窗口级 ToolbarHost。装配将服务贡献接入指定 Container 的 Toolbar，窗口只提供布局区域和保留按钮的目标位置。容器隐藏后仍需显示的按钮通过声明属性进入该规则；无可见 Toolbar 时保留窗口菜单/快捷键恢复入口，不创建虚假 View 或容器。
+
+声明容器管理工具项呈现生命周期，导航命令/状态及原 module instance、registration、window、history revision 仍归原服务契约；显示位置改变不接管或复制导航历史。无 View 服务不新增 GPU、共享纹理或内容帧依赖。本文的持久化、事务、恢复及旧原型证据不变，新呈现所有权和平台标题栏行为未实现/未验，见 [#229](https://github.com/TekesApps/TekesUI/issues/229)。
+
+同日新增的 [AppHost focus/others 范式](app-host-architecture.md#apphost-focus-others) 中，可选左侧 NavBar Container 是可见应用 UI，不等同于本文无 View 的历史服务。应用决定哪些容器响应它，绑定不随 focus/Tab/List 位置变化；不默认全量广播或只投递 focus。布局切换/Tab 选择不自动写入 nav.json；仅应用选择接入本服务的业务导航使用本文持久化与事务契约。
 
 ## 3. nav.json 的持久化模型
 

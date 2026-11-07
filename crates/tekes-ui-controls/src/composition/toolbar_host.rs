@@ -624,6 +624,13 @@ impl<B: Clone + Debug> ToolbarHost<B> {
         self.invalidate();
         Ok(node)
     }
+    /// Leave this toolbar for another container without simulating window deactivation.
+    /// Revoke transient presses and queued commands before relinquishing focus.
+    pub fn blur(&mut self) {
+        self.host.cancel();
+        self.host.focus(None, false);
+        self.invocations.clear();
+    }
     pub fn set_window_active(&mut self, active: bool) {
         if self.active == active {
             return;

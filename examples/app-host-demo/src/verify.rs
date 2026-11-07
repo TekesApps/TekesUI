@@ -66,8 +66,17 @@ pub fn run(module_ids: &[String]) -> Result<()> {
                 frame.toolbar.first().is_some_and(|item| item.id == 1),
                 "no toolbar registered by native module"
             );
-            counter_toolbar = frame.toolbar.iter()
-                .map(|item| (item.id, item.title.clone(), item.enabled, item.geometry_dependent))
+            counter_toolbar = frame
+                .toolbar
+                .iter()
+                .map(|item| {
+                    (
+                        item.id,
+                        item.title.clone(),
+                        item.enabled,
+                        item.geometry_dependent,
+                    )
+                })
                 .collect::<Vec<_>>();
             let texture = import_frame(&context, &mut frame)?;
             let image = context.import_image(texture)?;
@@ -122,7 +131,10 @@ pub fn run(module_ids: &[String]) -> Result<()> {
             tekes_ui_panel_module_demo::DOCUMENT_A,
             tekes_ui_panel_module_demo::DOCUMENT_B,
             tekes_ui_panel_module_demo::DOCUMENT_C,
-        ].into_iter().enumerate() {
+        ]
+        .into_iter()
+        .enumerate()
+        {
             let seq = steps.len() as u64 + document as u64;
             let mut frame = c.request(&Request {
                 version: VERSION,
@@ -130,23 +142,44 @@ pub fn run(module_ids: &[String]) -> Result<()> {
                 seq,
                 viewport: 3,
                 kind: InputKind::Command,
-                x: 0., y: 0., width: 360, height: 360,
+                x: 0.,
+                y: 0.,
+                width: 360,
+                height: 360,
                 identity: i as u32,
                 scale: 1.,
             })?;
-            ensure!(frame.revision == count, "document command changed counter revision");
-            let toolbar = frame.toolbar.iter()
-                .map(|item| (item.id, item.title.clone(), item.enabled, item.geometry_dependent))
+            ensure!(
+                frame.revision == count,
+                "document command changed counter revision"
+            );
+            let toolbar = frame
+                .toolbar
+                .iter()
+                .map(|item| {
+                    (
+                        item.id,
+                        item.title.clone(),
+                        item.enabled,
+                        item.geometry_dependent,
+                    )
+                })
                 .collect::<Vec<_>>();
-            ensure!(toolbar == counter_toolbar, "document command changed counter toolbar");
+            ensure!(
+                toolbar == counter_toolbar,
+                "document command changed counter toolbar"
+            );
             let texture = import_frame(&context, &mut frame)?;
             let image = context.import_image(texture)?;
             let id = renderer.register_gpu_image(&image)?;
             let mut scene = Scene::new();
             scene.push_image(ImageQuad {
-                rect: Rect::new(0., 0., 360., 360.), image: id, opacity: 1.,
+                rect: Rect::new(0., 0., 360., 360.),
+                image: id,
+                opacity: 1.,
             });
-            let pixels = renderer.render_to_rgba8(&scene, &mut atlas, (360, 360), 1., Rgba::gray(0.))?;
+            let pixels =
+                renderer.render_to_rgba8(&scene, &mut atlas, (360, 360), 1., Rgba::gray(0.))?;
             renderer.unregister_image(id);
             // Exclude the counter/status (including layout timing); compare only
             // the actual imported document body, using the original body bounds.
@@ -157,15 +190,58 @@ pub fn run(module_ids: &[String]) -> Result<()> {
                 }
             }
             document_digests.push(body_hash);
-            document_frames.push(serde_json::json!({"command":command,"seq":seq,"body_digest":body_hash}));
+            document_frames
+                .push(serde_json::json!({"command":command,"seq":seq,"body_digest":body_hash}));
         }
-        ensure!(document_digests.iter().collect::<std::collections::HashSet<_>>().len() == 3,
-            "document commands did not produce three distinct imported GPU bodies");
+        ensure!(
+            document_digests
+                .iter()
+                .collect::<std::collections::HashSet<_>>()
+                .len()
+                == 3,
+            "document commands did not produce three distinct imported GPU bodies"
+        );
         proof.push(serde_json::json!({"pid":c.pid(),"module":module_ids[i],"counter":count,"text_pixels":text_pixels,"samples":samples,"label_digests":label_digests,"document_frames":document_frames}));
     }
+    // A hidden remote target can receive a navigation command before its first
+    // Layout. Exercise the exact cold 1-point request used by the original Host.
+    drop(connections);
+    let mut cold = ModuleProcess::spawn(&module_ids[0])?;
+    let cold_pid = cold.pid();
+    let request = Request {
+        version: VERSION,
+        command: Some(1),
+        seq: 1,
+        viewport: 0,
+        kind: InputKind::Command,
+        x: 0.,
+        y: 0.,
+        width: 1,
+        height: 1,
+        identity: 0,
+        scale: 1.,
+    };
+    let frame = cold.request(&request)?;
+    ensure!(
+        frame.seq == 1 && frame.viewport == 0 && frame.revision == 1,
+        "cold hidden command did not acknowledge its exact sequence once"
+    );
+    drop(frame);
+    let frame = cold.request(&Request {
+        command: Some(tekes_ui_panel_module_demo::DOCUMENT_B),
+        seq: 2,
+        ..request
+    })?;
+    ensure!(
+        frame.seq == 2 && frame.revision == 1,
+        "cold hidden document reply was lost or duplicated the counter command"
+    );
+    let cold_proof = serde_json::json!({"pid":cold_pid,"first_request":"Command; no preceding Layout", "logical_size":[1,1],"sequences":[1,2],"counter_after":frame.revision,"visible_presentation":false});
+    drop(frame);
+    drop(cold);
     println!(
         "{}",
-        serde_json::json!({"result":"NATIVE_GPU_IPC_VERIFIED","host_pid":std::process::id(),"panels":module_ids.len(),"workers":proof,"pixel_readback":"verification only; never IPC","producer_sync":"worker GPU completion before frame-ready","consumer_sync":"verifier serial; interactive Host bounds two immutable frames per panel with GPU completion acknowledgements"})
+        serde_json::json!({"result":"NATIVE_GPU_IPC_VERIFIED","cold_hidden_command":cold_proof,"host_pid":std::process::id(),"panels":module_ids.len(),"workers":proof,"pixel_readback":"verification only; never IPC","producer_sync":"worker GPU completion before frame-ready","consumer_sync":"verifier serial; interactive Host bounds two immutable frames per panel with GPU completion acknowledgements"})
     );
     Ok(())
 }

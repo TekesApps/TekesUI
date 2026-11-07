@@ -15,7 +15,7 @@ impl Host {
         }
         self.toolbar_accessibility_nodes(active); // refresh original stamped target map
         let mut fragments = Vec::new();
-        if !self.toolbar.modal() {
+        if self.open_toolbar().is_none() {
             for (i, panel) in self.panels.iter_mut().enumerate() {
                 if panel.bounds.size.width <= 0.
                     || (self.is_settings_window
@@ -31,39 +31,83 @@ impl Host {
                 }
             }
         }
-        let mut keys = std::collections::HashMap::new();
-        for node in self.toolbar.host.semantics() {
-            for (target, part) in std::iter::once((node.target, None))
-                .chain(node.parts.iter().map(|(t, p)| (*t, Some(p.index))))
+        let modal = self
+            .panels
+            .iter()
+            .position(|panel| panel.mounted_toolbar.modal());
+        for (index, panel) in self.panels.iter().enumerate() {
+            if modal.is_some_and(|owner| owner != index)
+                || panel.mounted_toolbar.host.semantics().is_empty()
             {
-                if let Some((key, _)) = self.toolbar_ax.iter().find(|(_, t)| *t == target) {
-                    keys.insert(
-                        tekes_ui_platform_macos::content_accessibility::content_key(
-                            self.toolbar.host.content_host(),
-                            node.node.id,
-                            part,
-                        )?,
-                        *key,
-                    );
+                continue;
+            }
+            let mut keys = std::collections::HashMap::new();
+            for node in panel.mounted_toolbar.host.semantics() {
+                for (target, part) in std::iter::once((node.target, None)).chain(
+                    node.parts
+                        .iter()
+                        .map(|(target, part)| (*target, Some(part.index))),
+                ) {
+                    if let Some((key, _, _)) = self
+                        .toolbar_ax
+                        .iter()
+                        .find(|(_, i, t)| *i == index && *t == target)
+                    {
+                        keys.insert(
+                            tekes_ui_platform_macos::content_accessibility::content_key(
+                                panel.mounted_toolbar.host.content_host(),
+                                node.node.id,
+                                part,
+                            )?,
+                            *key,
+                        );
+                    }
                 }
             }
+            let toolbar =
+                ContentAccessibilitySnapshot::from_host(panel.mounted_toolbar.host.content_host())?
+                    .with_native_keys(&keys)?;
+            fragments.push((
+                ContentAccessibilityOwner(Self::toolbar_accessibility_owner(index)),
+                toolbar,
+            ));
         }
-        let toolbar = ContentAccessibilitySnapshot::from_host(self.toolbar.host.content_host())?
-            .with_native_keys(&keys)?;
-        fragments.push((ContentAccessibilityOwner(0), toolbar));
+        if modal.is_none()
+            && let Some(tabs) = self.presentation_tabs_publication()
+        {
+            fragments.push(tabs);
+        }
         WindowAccessibilityPublication::prepare(fragments)
     }
     pub(super) fn local_text_state(
         &mut self,
         active: bool,
     ) -> Option<tekes_ui_platform_macos::TextInputState> {
-        if !active || self.sidebar_motion.needs_frame() || self.open_toolbar().is_some() {
+        if !active
+            || self.sidebar_motion.needs_frame()
+            || self.open_toolbar().is_some()
+            || self
+                .presentation_tabs
+                .as_ref()
+                .is_some_and(|tabs| tabs.focused().is_some())
+        {
             return None;
         }
-        if let Some(state) = crate::columns::text_state(self.toolbar.host.content_host()) {
+        if let Some(state) = crate::columns::text_state(
+            self.panels[self.toolbar_index]
+                .mounted_toolbar
+                .host
+                .content_host(),
+        ) {
             return Some(state);
         }
-        if self.toolbar.host.content_host().focused().is_some() {
+        if self.panels[self.toolbar_index]
+            .mounted_toolbar
+            .host
+            .content_host()
+            .focused()
+            .is_some()
+        {
             return None;
         }
         let mut state = None;
@@ -76,6 +120,10 @@ impl Host {
     }
     pub(super) fn local_content_event(&mut self, event: &Event, w: &Window) -> Result<bool> {
         if !w.is_active()
+            || self
+                .presentation_tabs
+                .as_ref()
+                .is_some_and(|tabs| tabs.focused().is_some())
             || self.sidebar_motion.needs_frame()
             || self.open_toolbar().is_some()
             || self
@@ -120,9 +168,17 @@ impl Host {
         let index = if let Event::Scroll(s) = event {
             let point = Point::new(s.position.x as f32, s.position.y as f32);
             self.panels.iter().position(|p| {
-                p.local.is_some() && content_geometry(p.bounds, p.toolbar_height).contains(point)
+                p.local.is_some()
+                    && content_geometry(p.bounds, p.toolbar_height).contains(point)
+                    && (self.presentation.is_none() || p.clip.contains(point))
             })
-        } else if self.toolbar.host.content_host().focused().is_none() {
+        } else if self.panels[self.toolbar_index]
+            .mounted_toolbar
+            .host
+            .content_host()
+            .focused()
+            .is_none()
+        {
             Some(self.focused)
         } else {
             None
@@ -216,10 +272,10 @@ mod tests {
     use super::*;
     #[test]
     fn mixed_columns_mount_without_launching_local_workers() {
-        use crate::{AppWindow, Container, ProcessContainer};
+        use crate::{AppWindow, LocalContainer, ProcessContainer};
         use tekes_ui_controls::composition::{Content, TextFieldContent};
         let local = |id| {
-            Container::new(
+            LocalContainer::new(
                 id,
                 Content::new(ComponentId(1), TextFieldContent::new("Notes", "local")),
             )
@@ -251,7 +307,7 @@ mod tests {
 mod window_publication_tests {
     use super::*;
     use crate::window_toolbar::{Contents, Declaration, Source};
-    use crate::{AppWindow, Container};
+    use crate::{AppWindow, LocalContainer};
     use tekes_ui_controls::composition::*;
     use tekes_ui_controls::composition::{
         ToolbarButtonDeclaration as ButtonDecl, ToolbarGroupOverflow as Overflow,
@@ -263,7 +319,7 @@ mod window_publication_tests {
     #[test]
     fn actual_apphost_three_hosts_keep_original_owners_and_open_toolbar_excludes_background() {
         let columns = vec![
-            Container::new(
+            LocalContainer::new(
                 "curve",
                 Content::new(
                     ComponentId(8100),
@@ -276,7 +332,7 @@ mod window_publication_tests {
             )
             .unwrap()
             .into(),
-            Container::new(
+            LocalContainer::new(
                 "plain",
                 Content::new(ComponentId(8200), Button::new("Body button")),
             )
@@ -306,8 +362,8 @@ mod window_publication_tests {
             pid: None,
             generation: 0,
         };
-        window
-            .toolbar
+        window.panels[window.toolbar_index]
+            .mounted_toolbar
             .sync(
                 Rect::new(0., 0., 360., 200.),
                 vec![ToolbarRegion::new(
@@ -333,12 +389,12 @@ mod window_publication_tests {
                 }],
             )
             .unwrap();
-        window
-            .toolbar
+        window.panels[window.toolbar_index]
+            .mounted_toolbar
             .host
             .render(&mut Scene::new(), &mut window.text, Theme::LIGHT.into())
             .unwrap();
-        assert!(!window.toolbar.modal());
+        assert!(!window.panels[window.toolbar_index].mounted_toolbar.modal());
         let publication = window.content_accessibility_publication(true).unwrap();
         let composer = publication
             .nodes()
@@ -366,29 +422,29 @@ mod window_publication_tests {
             .key;
         assert_eq!(
             publication.owner(overflow),
-            Some(ContentAccessibilityOwner(0))
+            Some(ContentAccessibilityOwner(
+                Host::toolbar_accessibility_owner(window.toolbar_index)
+            ))
         );
         assert!(
             window
                 .toolbar_accessibility_action(true, overflow, AccessibilityAction::Press)
                 .unwrap()
         );
-        window
-            .toolbar
+        window.panels[window.toolbar_index]
+            .mounted_toolbar
             .host
             .render(&mut Scene::new(), &mut window.text, Theme::LIGHT.into())
             .unwrap();
-        assert!(window.toolbar.modal());
+        assert!(window.panels[window.toolbar_index].mounted_toolbar.modal());
         let modal = window.content_accessibility_publication(true).unwrap();
         assert!(modal.owner(composer).is_none());
         assert!(modal.owner(body).is_none());
         assert!(!modal.nodes().is_empty());
-        assert!(
-            modal
-                .nodes()
-                .iter()
-                .all(|n| modal.owner(n.key) == Some(ContentAccessibilityOwner(0)))
-        );
+        assert!(modal.nodes().iter().all(|n| modal.owner(n.key)
+            == Some(ContentAccessibilityOwner(
+                Host::toolbar_accessibility_owner(window.toolbar_index)
+            ))));
         assert!(
             window
                 .content_accessibility_publication(false)

@@ -11,6 +11,7 @@ three-panels = []
 two-panels = []
 mixed-columns = ["three-panels"]
 independent-settings = []
+apphost-containers = []
 
 [dependencies]
 anyhow = "1"

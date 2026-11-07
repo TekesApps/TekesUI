@@ -14,6 +14,8 @@ mod columns;
 #[cfg(target_os = "macos")]
 mod navigation_window;
 #[cfg(target_os = "macos")]
+mod presentation;
+#[cfg(target_os = "macos")]
 mod sidebar_motion;
 #[cfg(target_os = "macos")]
 mod text;
@@ -24,7 +26,19 @@ mod window;
 #[cfg(target_os = "macos")]
 mod window_toolbar;
 #[cfg(target_os = "macos")]
-pub use columns::{Column, Container, ContainerContent, ProcessContainer};
+pub use columns::{
+    Column, Container, ContainerContent, ContainerOptions, LocalContainer, ProcessContainer,
+    RetainedButton,
+};
+#[cfg(target_os = "macos")]
+pub use presentation::{
+    OthersOptions, OthersTab, PresentationLayout, PresentationOptions, PresentationState,
+};
+/// Source migration helpers for the former local-only Container name.
+#[cfg(target_os = "macos")]
+pub mod legacy {
+    pub use crate::columns::{Column, LocalContainer as Container};
+}
 #[cfg(target_os = "macos")]
 pub use navigation_window::NavigationOptions;
 pub use tekes_ui_module_runtime::ModuleDefinition;
@@ -60,6 +74,7 @@ pub struct AppWindow {
     columns: Option<Vec<Column>>,
     navigation: Option<NavigationOptions>,
     settings: Option<SettingsWindow>,
+    presentation: Option<PresentationOptions>,
 }
 #[cfg(target_os = "macos")]
 impl AppWindow {
@@ -69,6 +84,7 @@ impl AppWindow {
             columns: None,
             navigation: None,
             settings: None,
+            presentation: None,
         }
     }
     pub fn from_columns(columns: Vec<Column>) -> anyhow::Result<Self> {
@@ -85,10 +101,40 @@ impl AppWindow {
             columns: Some(columns),
             navigation: None,
             settings: None,
+            presentation: None,
+        })
+    }
+    /// Assemble the optional NavBar and focus/others presentation from stable
+    /// container IDs. All backing objects are moved into the original Host.
+    pub fn from_containers(
+        containers: Vec<Container>,
+        presentation: PresentationOptions,
+    ) -> anyhow::Result<Self> {
+        PresentationState::new(&containers, presentation.clone())?;
+        let columns: Vec<Column> = containers.into_iter().map(Column::from).collect();
+        let modules = columns
+            .iter()
+            .filter_map(|c| match c {
+                Column::ProcessContainer(p) => Some(p.definition),
+                _ => None,
+            })
+            .collect();
+        Ok(Self {
+            profile: AppProfile { modules },
+            columns: Some(columns),
+            navigation: None,
+            settings: None,
+            presentation: Some(presentation),
         })
     }
     pub(crate) fn into_host(self, acceptance: bool) -> window::Host {
         match self.columns {
+            Some(columns) if self.presentation.is_some() => window::Host::from_containers(
+                columns.into_iter().map(Container::from).collect(),
+                acceptance,
+                self.navigation,
+                self.presentation,
+            ),
             Some(columns) => window::Host::from_columns(columns, acceptance, self.navigation),
             None => window::Host::new(
                 self.profile
@@ -111,7 +157,13 @@ impl AppWindow {
         self
     }
     pub fn run(self) -> anyhow::Result<()> {
-        run_columns(self.profile, self.columns, self.navigation, self.settings)
+        run_columns(
+            self.profile,
+            self.columns,
+            self.navigation,
+            self.settings,
+            self.presentation,
+        )
     }
 }
 
@@ -143,7 +195,7 @@ fn run_internal(
     navigation: Option<NavigationOptions>,
     settings: Option<SettingsOptions>,
 ) -> anyhow::Result<()> {
-    run_columns(profile, None, navigation, settings)
+    run_columns(profile, None, navigation, settings, None)
 }
 #[cfg(target_os = "macos")]
 fn run_columns(
@@ -151,11 +203,24 @@ fn run_columns(
     columns: Option<Vec<Column>>,
     navigation: Option<NavigationOptions>,
     settings: Option<SettingsOptions>,
+    presentation: Option<PresentationOptions>,
 ) -> anyhow::Result<()> {
     if let Some(columns) = &columns {
-        columns::validate(columns)?;
+        if let Some(presentation) = &presentation {
+            PresentationState::from_columns(columns, presentation.clone())?;
+        } else {
+            columns::validate(columns)?;
+        }
     } else {
         validate(&profile)?;
+    }
+    if navigation.is_some()
+        && let Some(presentation) = &presentation
+    {
+        anyhow::ensure!(
+            presentation.navigation_toolbar.is_some(),
+            "headless navigation requires an explicit container Toolbar target"
+        );
     }
     let args: Vec<String> = std::env::args().collect();
     if tekes_ui_module_runtime::run_component_worker_from_args(
@@ -182,9 +247,9 @@ fn run_columns(
         .map(|m| m.id.to_owned())
         .collect::<Vec<_>>();
     match args.get(1).map(String::as_str) {
-        None => window::run(ids, columns, false, navigation, settings),
+        None => window::run(ids, columns, false, navigation, settings, presentation),
         Some("--window-acceptance") if args.len() == 2 => {
-            window::run(ids, columns, true, navigation, settings)
+            window::run(ids, columns, true, navigation, settings, presentation)
         }
         _ => anyhow::bail!("fixed-profile app accepts no runtime module discovery or selection"),
     }

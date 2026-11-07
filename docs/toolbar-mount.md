@@ -1,6 +1,16 @@
-# One mounted Toolbar host per window
+# Mounted Toolbar ownership and AppHost containers
 
-`composition::ToolbarHost<B>` is the window's declaration/mount adapter over **one original ContentHost**. It does not add a second Button, pointer, focus, tooltip or menu state machine. Main, Settings and other areas declare original `ToolbarGroup` Content under the same host. Placement is local to the receiving `ToolbarRegion`, never a global screen coordinate.
+## AppHost v0.2.0 migration (#229)
+
+AppHost now gives each runtime Container its own shared `composition::ToolbarHost` instance over an original ContentHost. Window allocates geometry and routes among those original owners; it no longer collects all AppHost commands into one window-owned toolbar. `LocalContainer` and `ProcessContainer` use the same mechanism, including the compatibility horizontal layout and Settings.
+
+The public component name `ToolbarHost` remains: it is the reusable mount/input adapter, not an extra AppHost layout layer. Each owner uses the existing Button, pointer, focus, tooltip, menu and overflow implementations. `blur()` cancels transient input and queued invocations and relinquishes focus without pretending the native window deactivated or invalidating unchanged geometry.
+
+New AppHost assembly uses `AppWindow::from_containers(containers, presentation)`. Container metadata supplies optional title, List item height and explicit `retain_button(command, target_id)` mappings. With neither title nor commands there is no empty toolbar row. Retained buttons keep the original command owner, enabled state and process generation; the display target is a separate identity. Unbind old presentation before rebinding the target, and use the Containers menu to restore a hidden container when no eligible target is available. No arbitrary editor or entire Toolbar migration is implied.
+
+`PresentationOptions::navigation_toolbar(id)` chooses where headless navigation contributions are displayed. It is independent of `navigation_targets(ids)`, which selects business recipients by stable ID. Changing Tabs, List order or focus does not rewrite those bindings or nav.json.
+
+The generic component API and original source-identity rules below still apply to each mounted host. The later window-edge examples describe the original generic consumer and historical window-owned AppHost arrangement; they do not override the new Container ownership or retained-button policy. Exact implementation/native/release evidence is tracked in [#229](https://github.com/TekesApps/TekesUI/issues/229).
 
 ## Minimal command group
 
@@ -60,9 +70,9 @@ Custom activation owners bind `target: ORIGINAL_CONTENT_ID, action: None` to the
 - `set_visible`, `move_group` and `remove` own cleanup. Moving uses `ContentHost::reparent` on the original instance, preserving its help declarations and mount identity while cancelling old interaction geometry. A layout revision invalidates old published AX targets even when the underlying mount survives.
 - Native AX adapters retain the opaque `ToolbarAccessibilityTarget` provided for owners and parts. Never invoke a naked recycled Content ID. Republish current geometry after resize, font/backing-scale changes or declarations. While a successful render is pending, old targets and events are fenced. Window deactivation revokes input and clears focus/capture/hints/menus.
 
-## Migration and remaining window responsibilities
+## Historical single-host consumer setup and remaining window responsibilities
 
-1. Create one ToolbarHost for the window; declare all Main/Settings/other regions.
+1. A generic single-host consumer creates one ToolbarHost for its regions. AppHost instead mounts one in each runtime Container.
 2. Move existing original ToolbarGroups/ToolbarControls/custom Content into registrations. Bind original module command sources; register image handles with the window renderer as before.
 3. Replace per-group event loops, focus/menu fields and hint/overlay passes with one host event/render path. Consume each owned command drain once.
 4. Route state changes through registrations/value updates and notify the host of visibility, removal, region and window activity changes.

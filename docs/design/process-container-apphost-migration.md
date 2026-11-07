@@ -1,5 +1,36 @@
 # ProcessComponent / ProcessContainer / AppHost migration boundary
 
+## Implementation update — 2026-11-07 (#229, v0.2.0)
+
+User authorization now covers implementation, affected verification and formal semantic-version Release. The dated design-only and prior acceptance statements below remain historical. New assembly is `AppWindow::from_containers(Vec<Container>, PresentationOptions)` with `Container::{Local, Process}` and `LocalContainer`; old local-only source callers can temporarily import `legacy::Container`. `Column/from_columns` retains its horizontal layout semantics through the same Host and container-owned Toolbar instances, not a second runtime. The module-runtime Content adapter is unchanged.
+
+NavBar/focus/others use stable configured IDs. `navigation_toolbar` names a contribution display owner independently from `navigation_targets`. With no others configuration, unassigned extra containers are rejected because there is no Open/recovery area; configured off/empty others retains recovery. List height and eligibility are explicit, with outer scrolling and separate up/down order. Hidden retained commands use explicit target mappings and preserve original source/instance generation.
+
+The current source/unit batch and the independent demo/native/public delivery remain separate evidence. See [#229](https://github.com/TekesApps/TekesUI/issues/229); no old native receipt is re-signed as this new architecture.
+
+
+## Confirmed target — 2026-11-05 (#229; design only)
+
+The [AppHost container/toolbar decision](app-host-architecture.md#container-owned-toolbar) supersedes the window-owned ToolbarHost and column naming in the earlier migration plan. This revision changes documentation only; current APIs and the dated acceptance records below remain unchanged. #70 is now closed for its original delivery; its historical partial-intake statement below is not a new blocker.
+
+- Window directly assembles `Container`, with `LocalContainer` and `ProcessContainer` as the two backing modes. The target entry point is `from_containers`; there is no extra public Column/window Pane layer. Existing app-host and module-runtime ProcessContainer types are distinct and need an explicit reuse/adapter migration, not a text replacement.
+- Each Container owns its optional Toolbar, optional title and Content. Reuse the shared Toolbar/Content interaction implementation. Remove the target architecture's window-level ToolbarHost; do not retain centralized item/focus/menu state under another name.
+- Window allocates container rectangles, splitters, visibility and native safety regions, and coordinates cross-container input/focus routing without duplicating local interaction state. Each Container measures its Toolbar and computes its own content viewport; no mandatory common row height or empty toolbar row. Native window title metadata, system controls, drag/resize/fullscreen remain platform responsibilities even without a separate visible title bar.
+- A button may opt into remaining visible when its declaring container is hidden. Window selects a visible target with a Toolbar according to assembly configuration; the concrete mapping API remains to be specified before implementation, with no automatic first-visible-container policy frozen here. Original identity, declaration lifetime and business command/state ownership remain; only one presentation is active. No arbitrary editor or whole-toolbar migration. If no target exists or the recovery button is inaccessible, use the window menu/shortcut recovery path; never invent an empty container.
+- Headless navigation `window` scope is contribution authority/lifetime, not ToolbarHost ownership. Its contributions are assembled into a real Container's Toolbar while history/nav.json and command sources remain with the original service. No fake View, renderer or frame-ready dependency is introduced.
+
+The process/transport, geometry, cancellation, navigation persistence and source-validation contracts below remain. New ownership and titlebar behavior require later scoped implementation and verification tracked in [#229](https://github.com/TekesApps/TekesUI/issues/229); historical checks do not certify them.
+
+### AppHost presentation pattern — 2026-11-05 follow-up
+
+The [confirmed focus/others pattern](app-host-architecture.md#apphost-focus-others) replaces the old fixed three-column shell as the target AppHost assembly: optional left NavBar Container; right-side focus above an optional, toggleable others area. Others has ordinary Container tabs plus one List tab vertically composing its list-capable containers. These are presentation roles, not new Pane/Container subclasses. Local/process modes retain the same structure.
+
+Promoting one Container swaps it with the current focus; the old focus returns to others. The List tab cannot become focus as a whole. List ordering interaction remains undecided. Runtime off retains others state; no others in startup configuration means no area/toggle. NavBar response bindings belong to the app, remain tied to container identity across movement, and do not imply all containers or only focus react. Presentation focus is distinct from keyboard focus; the optional visible NavBar is distinct from the existing headless navigation-history service.
+
+The lower sections' physical columns/splitter baseline and process-count checks describe the original migration scenario, not completion or permanent limits of this new pattern. No source, worker/API, native UI or IPC changes are authorized by this documentation update.
+
+
+
 ## Current public boundary — 2026-11-03
 
 The AppWindow/Settings delivery tracked by Issue70 is complete. PR139 published
@@ -71,9 +102,9 @@ Shutdown needs an explicit ownership contract: the current connection can block 
 
 AppHost owns the window, two independent splitters / physical column allocations, module order, navigation execution/results, focus and native titlebar dragging. The navigation ProcessComponent alone owns history/cursor/nav.json. AppHost composes three ProcessContainer instances plus the independent headless navigation component; it must no longer spawn ModuleProcess, manipulate transport rights, copy queue/backpressure state or validate worker frame internals itself.
 
-The module still declares its content and optional toolbar. The shared Toolbar component owns its single-row measurement, icon/text layout, overflow and button/menu interaction. AppHost supplies parent constraints: unify registered window/Panel toolbar measurements with native chrome safety, reserve real traffic-light space, allocate content bounds and forward local input. Preserve ContentHost event propagation, primary-button/window-active gates, and the original native-down handoff cancellation rules.
+The module still declares its content and optional toolbar. Each Container owns an instance of the shared Toolbar component, which owns single-row measurement, icon/text layout, overflow and interaction. Window supplies container allocations and actual native safety regions; Container allocates its own toolbar/content bounds, without a mandatory common toolbar height. Preserve ContentHost event propagation, primary-button/window-active gates, and original native-down handoff cancellation rules.
 
-## Window toolbar contributions requested during migration
+## Window-scoped service contributions presented in Container toolbars
 
 Pure-icon back/forward is declared by the headless navigation ProcessComponent, with availability projected from its authoritative committed history and pending transaction. These contributions bind owner instance + window scope + registration generation, remain visible independently of hidden/reordered/closed views, and require no Panel/View or frame-ready. View-scoped contributions additionally bind their real Panel/View; commands cannot cross owner/scope even with identical IDs. Toolbar owns icon layout/overflow and Host dispatches original owner/command IDs.
 
@@ -87,7 +118,7 @@ The existing View toolbar path remains text-only. A separate V2 ProcessComponent
 
 1. Same fixed Single and Three profiles still compile; the View baseline remains 3 containers + 3 workers + 1 Host. The navigation-enabled assembly adds one headless worker, for 5 processes and still 3 content containers.
 2. Content and toolbar state remain in the same module processes during resize and reorder; original command IDs reach only their module.
-3. Left splitter changes left/middle only; right splitter changes middle/right only. Unified top height updates content viewport and pointer coordinates together.
+3. In the existing three-container layout, left splitter changes left/middle only; right splitter changes middle/right only. Each Container's toolbar height/allocation updates its content viewport and pointer coordinates together. The former mandatory unified top height is superseded by the 2026-11-05 target.
 4. Real Text/TextFieldContent path and default Style remain; no WASM, Scene JSON, CPU pixel transport or duplicate business view tree.
 5. Preserve two-frame bound, coalescing, monotonic intermediate resize presentation and precise-input gates; stale/future frames do not become valid input geometry.
 6. Native toolbar ordinary click/drag, splitter consumption, focus-loss/late-up and narrow-menu behavior remain separate desktop acceptance items; component/GPU checks are not physical-input evidence.

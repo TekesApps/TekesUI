@@ -18,14 +18,14 @@ fn settings_columns(
     surface: &std::rc::Rc<std::cell::RefCell<crate::settings::SettingsSurface>>,
 ) -> Vec<crate::Column> {
     vec![
-        crate::Column::from(crate::Container::from_source(
+        crate::Column::from(crate::LocalContainer::from_source(
             "settings-leading",
             SettingsColumn {
                 state: surface.clone(),
                 sidebar: true,
             },
         )),
-        crate::Column::from(crate::Container::from_source(
+        crate::Column::from(crate::LocalContainer::from_source(
             "settings-center",
             SettingsColumn {
                 state: surface.clone(),
@@ -84,6 +84,9 @@ impl Host {
         {
             return false;
         }
+        let navigation_toolbar = self
+            .toolbar_container(ToolbarTarget::Navigation)
+            .unwrap_or(self.toolbar_index);
         let mut back = false;
         let target = match event {
             Event::Mouse(mouse)
@@ -104,14 +107,14 @@ impl Host {
                         .get(ComponentId(4))
                         .and_then(|node| node.visible())
                         .is_some_and(|visible| visible.contains(point));
-                (self
-                    .toolbar
+                (self.panels[navigation_toolbar]
+                    .mounted_toolbar
                     .host
                     .content_host()
                     .get(Self::toolbar_control(ToolbarTarget::Navigation))
                     .is_some_and(|node| node.frame().contains(point))
-                    || self
-                        .toolbar
+                    || self.panels[navigation_toolbar]
+                        .mounted_toolbar
                         .host
                         .content_host()
                         .input_overlay_owner()
@@ -147,7 +150,11 @@ impl Host {
                                 | ControlKey::Enter
                         )
                     ))
-                    || (self.toolbar.host.content_host().focused()
+                    || (self.panels[navigation_toolbar]
+                        .mounted_toolbar
+                        .host
+                        .content_host()
+                        .focused()
                         == Some(Self::toolbar_control(ToolbarTarget::Navigation))
                         && matches!(key, Some(ControlKey::Enter | ControlKey::Space)))
                     || back
@@ -159,10 +166,11 @@ impl Host {
                     | tekes_ui_platform_macos::AccessibilityAction::Press,
             } => {
                 let owner = publication.and_then(|p| p.owner(*target));
-                if owner == Some(tekes_ui_platform_macos::content_accessibility::ContentAccessibilityOwner(0)) {
-                    let opaque = self.toolbar_ax.iter().find(|(key, _)| key == target).map(|(_, target)| *target);
-                    self.toolbar.host.semantics().iter().any(|node| node.node.id == Self::toolbar_control(ToolbarTarget::Navigation)
-                        && opaque.is_some_and(|target| node.target == target || node.parts.iter().any(|(part, _)| *part == target)))
+                if owner.is_some_and(|owner| owner.0 >= Self::toolbar_accessibility_owner(0) && owner.0 < Self::toolbar_accessibility_owner(self.panels.len())) {
+                    let opaque = self.toolbar_ax.iter().find(|(key, _, _)| key == target).map(|(_, index, target)| (*index, *target));
+                    let index = opaque.map_or(self.toolbar_index, |(index, _)| index);
+                    self.panels[index].mounted_toolbar.host.semantics().iter().any(|node| node.node.id == Self::toolbar_control(ToolbarTarget::Navigation)
+                        && opaque.is_some_and(|(_, target)| node.target == target || node.parts.iter().any(|(part, _)| *part == target)))
                 } else if self.leading_visible && owner == Some(tekes_ui_platform_macos::content_accessibility::ContentAccessibilityOwner(1)) {
                     let state = state.borrow();
                     back = state.sidebar.host.semantic_mount(ComponentId(4)) == Some(target.component)
@@ -227,6 +235,32 @@ impl Host {
         self.settings_loading = Some(rx);
         Ok(())
     }
+    /// Complete the cold child assembly before native Window creation. Both
+    /// display modes use this same original-container/service binding path.
+    fn create_settings_host(
+        &self,
+        surface: std::rc::Rc<std::cell::RefCell<crate::settings::SettingsSurface>>,
+    ) -> Result<Self> {
+        let columns = settings_columns(&surface);
+        let app = crate::AppWindow::from_columns(columns)?
+            .navigation(surface.borrow().navigation_options());
+        let mut host = app.into_host(false);
+        host.mount_initial_containers();
+        host.is_settings_window = true;
+        host.acceptance_shared = self.acceptance_shared.clone();
+        if self.acceptance_shared.is_some() {
+            host.settings_options = self.settings_options.clone();
+        }
+        host.leading_visible = true;
+        host.trailing_visible = false;
+        host.sidebar_motion = crate::sidebar_motion::SidebarMotion::new(true, false);
+        host.outer.set_ratio(0.25);
+        host.settings_back = surface.borrow().exclusive;
+        surface.borrow_mut().toolbar_window =
+            host.panels[host.toolbar_index].mounted_toolbar.window;
+        host.settings = Some(surface);
+        Ok(host)
+    }
     pub(super) fn poll_settings_open(&mut self, w: &Window) -> Result<()> {
         let Some(result) = self
             .settings_loading
@@ -257,24 +291,8 @@ impl Host {
             snapshot,
         )?;
         surface.show();
-        let back = surface.exclusive;
         let surface = std::rc::Rc::new(std::cell::RefCell::new(surface));
-        let columns = settings_columns(&surface);
-        let app = crate::AppWindow::from_columns(columns)?
-            .navigation(surface.borrow().navigation_options());
-        let mut host = app.into_host(false);
-        host.is_settings_window = true;
-        host.acceptance_shared = self.acceptance_shared.clone();
-        if self.acceptance_shared.is_some() {
-            host.settings_options = self.settings_options.clone();
-        }
-        host.leading_visible = true;
-        host.trailing_visible = false;
-        host.sidebar_motion = crate::sidebar_motion::SidebarMotion::new(true, false);
-        host.outer.set_ratio(0.25);
-        host.settings_back = back;
-        surface.borrow_mut().toolbar_window = host.toolbar.window;
-        host.settings = Some(surface);
+        let host = self.create_settings_host(surface)?;
         let config = WindowConfig {
             title: "Settings".into(),
             unified_titlebar: true,
@@ -569,8 +587,8 @@ impl Host {
                     .is_some_and(|s| !s.borrow().draft.dirty() && !s.borrow().blocked());
                 if saved.as_deref() == Some(edited.as_str())
                     && clean
-                    && let Some(undo) = self
-                        .toolbar
+                    && let Some(undo) = self.panels[self.toolbar_index]
+                        .mounted_toolbar
                         .host
                         .semantics()
                         .into_iter()
@@ -811,10 +829,13 @@ impl Host {
             },
             breadcrumb,
         )?;
-        self.toolbar
-            .host
-            .render(&mut toolbar_scene, &mut self.text, Theme::LIGHT.into())
-            .map_err(|e| anyhow::anyhow!("settings toolbar: {e:?}"))?;
+        for panel in &mut self.panels {
+            panel
+                .mounted_toolbar
+                .host
+                .render(&mut toolbar_scene, &mut self.text, Theme::LIGHT.into())
+                .map_err(|e| anyhow::anyhow!("settings container toolbar: {e:?}"))?;
+        }
         self.panels[1].bounds = frames[1];
         self.panels[1].local.as_mut().unwrap().render(
             &mut scene,
@@ -842,7 +863,11 @@ impl Host {
             )?;
         }
         let row = Rect::new(whole.min_x(), row_y, whole.size.width, paint);
-        let mut toolbar_controls = self.toolbar.host.content_host().pointer_regions();
+        let mut toolbar_controls = self
+            .panels
+            .iter()
+            .flat_map(|p| p.mounted_toolbar.host.content_host().pointer_regions())
+            .collect::<Vec<_>>();
         if leading > 0. {
             toolbar_controls.push(Rect::new(0., row_y, leading as f32, paint));
         }
@@ -885,10 +910,22 @@ impl Host {
             self.content_accessibility_publication(active && input_open),
         );
         w.set_text_input_state(if active && input_open {
-            crate::columns::text_state(self.toolbar.host.content_host()).or_else(|| {
-                (!self.toolbar.modal() && self.toolbar.host.content_host().focused().is_none())
-                    .then(|| self.settings.as_ref().unwrap().borrow().text_state())
-                    .flatten()
+            crate::columns::text_state(
+                self.panels[self.toolbar_index]
+                    .mounted_toolbar
+                    .host
+                    .content_host(),
+            )
+            .or_else(|| {
+                (!self.panels[self.toolbar_index].mounted_toolbar.modal()
+                    && self.panels[self.toolbar_index]
+                        .mounted_toolbar
+                        .host
+                        .content_host()
+                        .focused()
+                        .is_none())
+                .then(|| self.settings.as_ref().unwrap().borrow().text_state())
+                .flatten()
             })
         } else {
             None
@@ -920,7 +957,10 @@ impl Host {
                 window_acceptance::Stage::Done | window_acceptance::Stage::Failed
             )
         }) || self.sidebar_motion.needs_frame()
-            || self.toolbar.host.needs_render()
+            || self.panels[self.toolbar_index]
+                .mounted_toolbar
+                .host
+                .needs_render()
             || self.text.animation_requested()
             || self.settings.as_ref().unwrap().borrow().needs_frame())
             && active;
@@ -1501,9 +1541,10 @@ mod navigation_input_tests {
                 host_epoch: 1,
             },
             registration: 1,
-            window: host.toolbar.window,
+            window: host.panels[host.toolbar_index].mounted_toolbar.window,
         };
-        host.toolbar
+        host.panels[host.toolbar_index]
+            .mounted_toolbar
             .sync(
                 Rect::new(0., 0., 940., 600.),
                 vec![ToolbarRegion::new(
@@ -1585,7 +1626,8 @@ mod navigation_input_tests {
                 )
                 .unwrap();
         }
-        host.toolbar
+        host.panels[host.toolbar_index]
+            .mounted_toolbar
             .host
             .render(&mut Scene::new(), &mut host.text, Theme::LIGHT.into())
             .unwrap();
@@ -1786,6 +1828,46 @@ mod navigation_input_tests {
         }
     }
     #[test]
+    fn navigation_preflight_uses_actual_toolbar_after_another_container_owned_input() {
+        for marked in [false, true] {
+            let (mut host, path) = fixture(marked);
+            let publication = host.content_accessibility_publication(true).unwrap();
+            let node = publication
+                .nodes()
+                .iter()
+                .find(|node| node.label == "Back")
+                .unwrap();
+            let point = node.frame.origin;
+            let event = Event::Mouse(MouseEvent {
+                kind: MouseEventKind::Down {
+                    button: MouseButton::Left,
+                    click_count: 1,
+                },
+                position: point,
+                modifiers: Modifiers::NONE,
+            });
+            let (selected, text, composition) = {
+                let state = host.settings.as_ref().unwrap().borrow();
+                (
+                    state.selected.clone(),
+                    state.form.host.focused_text().unwrap().input.text.clone(),
+                    state.form.host.focused_text().unwrap().input.marked.clone(),
+                )
+            };
+            host.toolbar_index = 1;
+            assert!(host.settings_navigation_focus_guard(&event, Some(&publication)));
+            assert_eq!(
+                host.toolbar_index, 1,
+                "refusal precedes route/focus transfer"
+            );
+            assert_retained(&host, &selected, &text, composition);
+            correct(&mut host, marked);
+            assert!(!host.settings_navigation_focus_guard(&event, None));
+            drop(host);
+            std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
+        }
+    }
+    #[test]
     fn original_back_forward_producers_preserve_invalid_or_marked_then_allow_corrected_commands() {
         for marked in [false, true] {
             for name in ["Back", "Forward"] {
@@ -1812,7 +1894,11 @@ mod navigation_input_tests {
                 assert!(host.settings_navigation_focus_guard(&event, Some(&publication)));
                 assert_retained(&host, &selected, &text, composition);
                 assert!(
-                    host.toolbar.host.drain_commands().is_empty(),
+                    host.panels[host.toolbar_index]
+                        .mounted_toolbar
+                        .host
+                        .drain_commands()
+                        .is_empty(),
                     "refusal creates no transport request payload"
                 );
                 correct(&mut host, marked);
@@ -1823,14 +1909,23 @@ mod navigation_input_tests {
                     publication.is_current(),
                     "allowed toolbar AX preflight must not revoke form geometry"
                 );
-                let target = host.toolbar_ax.iter().find(|(k, _)| *k == key).unwrap().1;
+                let target = host
+                    .toolbar_ax
+                    .iter()
+                    .find(|(k, _, _)| *k == key)
+                    .unwrap()
+                    .2;
                 assert!(
-                    host.toolbar
+                    host.panels[host.toolbar_index]
+                        .mounted_toolbar
                         .host
                         .accessibility_action(target, ContentAction::Press)
                         .consumed
                 );
-                let invocations = host.toolbar.host.drain_commands();
+                let invocations = host.panels[host.toolbar_index]
+                    .mounted_toolbar
+                    .host
+                    .drain_commands();
                 assert_eq!(invocations.len(), 1);
                 assert_eq!(
                     invocations[0].command,
@@ -2098,5 +2193,112 @@ mod navigation_input_tests {
                 std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod cold_settings_host_tests {
+    use super::*;
+    use crate::{SettingsDisplayMode, SettingsWindow, settings::SettingsSurface};
+    use std::{cell::RefCell, rc::Rc};
+    use tekes_ui_settings::{FileProvider, Snapshot};
+    #[test]
+    fn production_cold_settings_assembly_binds_original_containers_once_in_both_display_modes() {
+        for mode in [
+            SettingsDisplayMode::Exclusive,
+            SettingsDisplayMode::Independent,
+        ] {
+            let path = std::env::temp_dir()
+                .join(format!(
+                    "settings-cold-host-{}-{}",
+                    std::process::id(),
+                    std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .unwrap()
+                        .as_nanos()
+                ))
+                .join("settings.toml");
+            let options = SettingsWindow::from_toml(
+                include_str!("../../tekes-ui-settings/tests/fixtures/layout.schema.toml"),
+                path.clone(),
+            )
+            .unwrap()
+            .display_mode(mode);
+            let provider =
+                FileProvider::open(path.clone(), options.schema.namespace.clone()).unwrap();
+            let mut surface = SettingsSurface::new(options, provider, Snapshot::default()).unwrap();
+            surface.show();
+            let surface = Rc::new(RefCell::new(surface));
+            let original = {
+                let mut state = surface.borrow_mut();
+                [
+                    &mut state.sidebar.host as *mut ContentHost as usize,
+                    &mut state.form.host as *mut ContentHost as usize,
+                ]
+            };
+            let parent = Host::new(vec!["parent".into()], false, None);
+            // This is the exact production helper called by poll_settings_open;
+            // no test-side mount or native/GPU initialization masks cold state.
+            let mut child = parent.create_settings_host(surface.clone()).unwrap();
+            assert!(child.is_settings_window);
+            assert_eq!(child.settings_back, mode == SettingsDisplayMode::Exclusive);
+            assert!(Rc::ptr_eq(child.settings.as_ref().unwrap(), &surface));
+            assert_eq!(child.panels.len(), 2);
+            assert!(child.column_definitions.is_none());
+            assert!(child.renderer.is_none());
+            assert!(child.navigation.is_none());
+            assert!(child.navigation_options.is_some());
+            let identities: Vec<_> = child
+                .panels
+                .iter()
+                .map(|panel| (panel.instance, panel.mounted_toolbar.window))
+                .collect();
+            let binding = surface.borrow().toolbar_window;
+            assert_eq!(binding, identities[0].1);
+            child.mount_initial_containers();
+            assert_eq!(
+                child
+                    .panels
+                    .iter()
+                    .map(|panel| (panel.instance, panel.mounted_toolbar.window))
+                    .collect::<Vec<_>>(),
+                identities
+            );
+            assert_eq!(surface.borrow().toolbar_window, binding);
+            for (index, panel) in child.panels.iter_mut().enumerate() {
+                assert!(panel.pid.is_none());
+                assert!(panel.launch_tx.is_none());
+                panel.local.as_mut().unwrap().with_host(&mut |host| {
+                    assert_eq!(host as *mut ContentHost as usize, original[index])
+                });
+            }
+            drop(child);
+            drop(parent);
+            drop(surface);
+            if path.parent().unwrap().exists() {
+                std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
+            }
+        }
+    }
+    #[test]
+    fn cold_fixed_process_profile_mount_does_not_start_or_replace_its_original_instances() {
+        let mut host = Host::new(vec!["first".into(), "second".into()], false, None);
+        host.mount_initial_containers();
+        let identities: Vec<_> = host
+            .panels
+            .iter()
+            .map(|panel| (panel.instance, panel.mounted_toolbar.window))
+            .collect();
+        host.mount_initial_containers();
+        assert_eq!(
+            host.panels
+                .iter()
+                .map(|panel| (panel.instance, panel.mounted_toolbar.window))
+                .collect::<Vec<_>>(),
+            identities
+        );
+        assert!(host.panels.iter().all(|panel| panel.local.is_none()
+            && panel.launch_tx.is_some()
+            && panel.pid.is_none()));
     }
 }
