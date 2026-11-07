@@ -1923,10 +1923,33 @@ mod consumer {
                 .is_some_and(|key| key.disposition == TextKeyDisposition::Deferred)
         );
         let end = Instant::now() + Duration::from_secs(15);
-        while !tick(&mut host, &mut renderer, &ids, pending_tab_frame)?
-            || host.focused() != Some(ids[1])
-        {
-            ensure!(Instant::now() < end, "pending native boundary deadline");
+        loop {
+            let last_tick = tick(&mut host, &mut renderer, &ids, pending_tab_frame)?;
+            if last_tick && host.focused() == Some(ids[1]) {
+                break;
+            }
+            ensure!(
+                Instant::now() < end,
+                "pending native boundary deadline: key=1017 last_tick={last_tick} focused={:?} expected={:?} containers={:?}",
+                host.focused(),
+                ids[1],
+                ids.iter()
+                    .map(|id| {
+                        let container = host
+                            .get(*id)
+                            .unwrap()
+                            .component::<ProcessContainer>()
+                            .unwrap();
+                        (
+                            *id,
+                            container.session(),
+                            container.status(),
+                            container.error(),
+                            container.input_ready(),
+                        )
+                    })
+                    .collect::<Vec<_>>()
+            );
             std::thread::sleep(Duration::from_millis(5));
         }
         ensure!(
