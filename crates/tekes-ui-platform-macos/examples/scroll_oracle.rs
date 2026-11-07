@@ -21,8 +21,8 @@ mod mac {
         NSScrollerStyle, NSStringDrawing, NSTextView, NSView, NSWindow, NSWindowStyleMask,
     };
     use objc2_foundation::{
-        MainThreadMarker, NSDictionary, NSObject, NSObjectProtocol, NSPoint, NSRange, NSRect, NSRunLoop,
-        NSRunLoopCommonModes, NSSize, NSString,
+        MainThreadMarker, NSDictionary, NSObject, NSObjectProtocol, NSPoint, NSRange, NSRect,
+        NSRunLoop, NSRunLoopCommonModes, NSSize, NSString,
     };
     use objc2_quartz_core::{CACurrentMediaTime, CADisplayLink, CAFrameRateRange};
     use serde_json::{Value, json};
@@ -115,7 +115,8 @@ mod mac {
                         );
                     }
                 };
-            let centered_baseline = match std::env::var("TEKES_SCROLL_REFERENCE_CENTERED_BASELINE") {
+            let centered_baseline = match std::env::var("TEKES_SCROLL_REFERENCE_CENTERED_BASELINE")
+            {
                 Err(std::env::VarError::NotPresent) => false,
                 Ok(value) if value == "0" => false,
                 Ok(value) if value == "1" => true,

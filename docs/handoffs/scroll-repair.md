@@ -175,3 +175,22 @@ C 晚于 E 统一为 UNKNOWN，不能称 GPU 完成晚。前一真实 presentedT
 报告沿原 drain 截止，callbacks 的排队延迟未知。原 GPU duration、呈现 gap、quiet 与 CPU 判定不改。
 必要集成验证：编译现有依赖 feature closure；离线同帧 join/missing/晚通知=UNKNOWN检查；
 任何后续授权测量使用新程序 hash，保留既有环境/时长/清退合同。
+
+
+### 共同垂直居中排版策略 AppKit 参照（#12 / T43-C）
+
+`TEKES_SCROLL_REFERENCE_CENTERED_BASELINE=1` 在 reference 模式中显式选择共同垂直居中策略；未设置或 `0` 不安装 delegate，保留 AppKit 默认原生排版，其他值拒绝。该策略使用同一真实 CoreText/NSFont 对象的 ascender、正值 descent 和每个实际 lineFragment 的高度，独立计算 `(height - ascent - descent) / 2 + ascent`，通过公开 `NSLayoutManagerDelegate` 在提交原生 layout cache 前设置 baselineOffset。不读取 `fixture.lines` 的期望基线来设置排版，不硬编码已观察差值，不修改字体、换行或行框高度。报告记录 NSFont/CoreText metrics、usesFontLeading 和 delegate 每行实际 before/after 值。
+
+```sh
+TEKES_SCROLL_REFERENCE=/absolute/gallery-reference-input.json \
+TEKES_SCROLL_REFERENCE_CENTERED_BASELINE=1 \
+TEKES_SCROLL_REFERENCE_BASELINE_DIAGNOSTIC=0 TEKES_SCROLL_SECONDS=60 \
+TEKES_SCROLL_ORACLE_OUT=/absolute/fresh/appkit-centered-reference.json \
+/absolute/new-release/scroll_oracle
+```
+
+这是明确配置过的 AppKit 参照策略，不代表默认 AppKit 排版已与 Gallery 等价。共同策略即使同时设置旧 baseline diagnostic 开关也不能绕过基线不匹配；字体、61行 UTF-16/行数/行顶/行高、viewport/extent 检查和原 2x 下 0.25pt 容差保持。非空行检查真实排版后的 glyph 基线。纯换行行另列 `nominal_baseline_pt` 和 `control_glyph_location_pt`；其比较值是独立字体度量计算的名义基线，不是可见墨迹基线。成功使用 `MATCHED_BODY_INPUT_AND_LINE_GEOMETRY_SHARED_VERTICAL_CENTER_POLICY` 和独立 policy ID，不能与默认策略标签混用。
+
+2026-11-07 首次严格原生验证来自源码 `33bdf9ad48bb54a28051d3df25c5054b3048de1e`、release 程序 SHA-256 `53ca9dcdfe23d855a4d233b8f7d79cc8b579ae2ce17a26b68a0b1f7356403275`。冻结证据位于 SSD `artifacts/issue-12/reference-baseline-policy-native-001/` 的 `appkit-reference.json` 和 `ROOT-REVIEW.json`：61行 range/top/height/比较基线差值均为0，44行真实 glyph 基线和17行名义空行基线分列，61次实际 delegate 调用符合公式；`exact_layout_passed=true`、`completed=true`，3810个本地适配输入、7199个滚动状态，原60秒测量及5.000562秒 idle 后正常退出，idle 显示回调0，自有资源释放。实际程序身份不能倒贴旧 d249 或未来构建。
+
+该结果完成所选共同策略的严格正文布局与原生滚动状态验证，不证明默认策略通过、整页等价、性能非劣、五轮正式矩阵、AppKit GPU 或实际呈现通过。旧 oracle005 默认策略拒绝及 oracle007/008 的61项差异保持历史原义，不回签。后续任何 strict 布局失败保留报告并停止，不调整容差或自动重试；沿现有真实 wheel、1.5秒预热、60秒测量、5秒 idle 和180秒自有进程清理契约执行。
