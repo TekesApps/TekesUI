@@ -68244,7 +68244,7 @@
     "crates/tekes-ui-platform-macos/examples/ax205_staged_acceptance.rs": "146467850a9742fa208fd0db1e4e2a2f95845a0ed22da314708cc2702f83aee8",
     "crates/tekes-ui-platform-macos/examples/ax_modal_lifecycle.rs": "78eb9073ff133838c538b0b14a3bcbca85eb804addd0b889c1b4ba56532cf7cf",
     "crates/tekes-ui-platform-macos/examples/combo_bridge_native.rs": "9eba9d32d3e0f2047bf7e5abc322c64c95124250a649cbc17ee8f5ae34cd1a00",
-    "crates/tekes-ui-platform-macos/examples/scroll_oracle.rs": "8bcf44548566f8c5d31f166f58d0e4b3261d41380215dfc20fb77046923f95c2",
+    "crates/tekes-ui-platform-macos/examples/scroll_oracle.rs": "4c3e1a1b4d722e9110c35558cd2ace6825d885ee93748e4a5f3b2a6e5e3cbf1e",
     "crates/tekes-ui-platform-macos/examples/toolbar_metrics.rs": "899f29db6a1bd0643e3bbcaf73a1599e87eae952c37197aca11eafc6e0dbf484",
     "crates/tekes-ui-platform-macos/examples/window.rs": "495817d6e5838bb10548ea7491d8711b0d221914dc1873bec0665819aa1a76b0",
     "crates/tekes-ui-platform-macos/src/accessibility.rs": "4c87b3cf122400c3720d723b0a040f18aa95ff17e4d751396f4c1ab55a17d851",

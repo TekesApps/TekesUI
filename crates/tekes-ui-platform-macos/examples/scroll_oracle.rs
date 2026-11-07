@@ -1,6 +1,11 @@
 //! Native NSScrollView oracle, built only as a measurement example.
 //! Public event adapter preserves a real local event's window/location; no global
 //! synthetic events, swizzling, private selectors, or native Gallery control.
+//! Reference-only opt-in: TEKES_SCROLL_REFERENCE_CENTERED_BASELINE=1 selects
+//! 共同垂直居中排版策略AppKit参照; default native AppKit layout remains unchanged.
+//! This policy changes native cached baselines from resolved font metrics, never
+//! fixture expected baselines. Newline locations are reported separately from
+//! nominal baselines; neither nominal blank baselines nor control glyphs are ink.
 #[cfg(not(target_os = "macos"))]
 fn main() {}
 #[cfg(target_os = "macos")]
@@ -16,8 +21,8 @@ mod mac {
         NSScrollerStyle, NSStringDrawing, NSTextView, NSView, NSWindow, NSWindowStyleMask,
     };
     use objc2_foundation::{
-        MainThreadMarker, NSDictionary, NSObjectProtocol, NSPoint, NSRange, NSRect, NSRunLoop,
-        NSRunLoopCommonModes, NSSize, NSString,
+        MainThreadMarker, NSDictionary, NSObject, NSObjectProtocol, NSPoint, NSRange, NSRect,
+        NSRunLoop, NSRunLoopCommonModes, NSSize, NSString,
     };
     use objc2_quartz_core::{CACurrentMediaTime, CADisplayLink, CAFrameRateRange};
     use serde_json::{Value, json};
@@ -42,6 +47,8 @@ mod mac {
         gallery: Value,
         seconds: f64,
         baseline_diagnostic: bool,
+        centered_baseline: bool,
+        baseline_delegate: Option<Retained<CenteredBaseline>>,
         speed: f64,
         scale: f64,
         width: f64,
@@ -108,6 +115,13 @@ mod mac {
                         );
                     }
                 };
+            let centered_baseline = match std::env::var("TEKES_SCROLL_REFERENCE_CENTERED_BASELINE")
+            {
+                Err(std::env::VarError::NotPresent) => false,
+                Ok(value) if value == "0" => false,
+                Ok(value) if value == "1" => true,
+                _ => return Err("TEKES_SCROLL_REFERENCE_CENTERED_BASELINE must be 0 or 1".into()),
+            };
             let fixture = gallery["reference_fixture"].clone();
             let number = |v: &Value| {
                 v.as_f64()
@@ -201,6 +215,8 @@ mod mac {
                 gallery,
                 seconds,
                 baseline_diagnostic,
+                centered_baseline,
+                baseline_delegate: None,
                 speed,
                 scale,
                 width,
@@ -235,8 +251,8 @@ mod mac {
         scroll: &MeasuredScroll,
         window: &NSWindow,
     ) -> Result<Value, String> {
-        CAPTURE.with_borrow(|c| {
-            let r = c.reference.as_ref().unwrap();
+        CAPTURE.with_borrow_mut(|c| {
+            let r = c.reference.as_mut().unwrap();
             if (window.backingScaleFactor()-r.scale).abs() > 0.001 {
                 return Err("backing scale differs from Gallery".into());
             }
@@ -277,12 +293,29 @@ mod mac {
             style.setMinimumLineHeight(r.line_height);
             style.setMaximumLineHeight(r.line_height);
             doc.setDefaultParagraphStyle(Some(&style));
-            doc.setString(&NSString::from_str(r.fixture["text"].as_str().unwrap()));
             // Public NSLayoutManager/NSTextContainer APIs via their exact ObjC ABI;
             // these classes are not enabled as typed bindings in this example's Cargo features.
             let (manager, container): (Retained<objc2::runtime::AnyObject>, Retained<objc2::runtime::AnyObject>) = unsafe {
                 (msg_send![doc, layoutManager], msg_send![doc, textContainer])
             };
+            // NSFont uses a negative descender; Gallery's descent is positive.
+            // These are queries on the exact CTFont/NSFont object above, not fixture baselines.
+            let ascent = font.ascender();
+            let descent = -font.descender();
+            let leading = font.leading();
+            if ![ascent, descent, leading].iter().all(|v| v.is_finite()) || ascent <= 0.0 || descent < 0.0 {
+                return Err("invalid resolved NSFont vertical metrics".into());
+            }
+            if r.centered_baseline {
+                let delegate = CenteredBaseline::alloc(MainThreadMarker::new().unwrap()).set_ivars(BaselinePolicy {
+                    ascent, descent, calls: RefCell::new(Vec::new()),
+                });
+                let delegate: Retained<CenteredBaseline> = unsafe { msg_send![super(delegate), init] };
+                unsafe { let (): () = msg_send![&*manager, setDelegate: &*delegate]; }
+                // NSLayoutManager's delegate is weak. Keep it alive through scrolling/finish.
+                r.baseline_delegate = Some(delegate);
+            }
+            doc.setString(&NSString::from_str(r.fixture["text"].as_str().unwrap()));
             unsafe {
                 let (): () = msg_send![&*container, setLineFragmentPadding: 0.0_f64];
                 let (): () = msg_send![&*container, setWidthTracksTextView: false];
@@ -293,16 +326,52 @@ mod mac {
             let count: usize = unsafe { msg_send![&*manager, numberOfGlyphs] };
             let mut index = 0;
             let mut native_lines = Vec::new();
+            let utf16: Vec<u16> = r.fixture["text"].as_str().unwrap().encode_utf16().collect();
             while index < count {
                 let mut range = NSRange::new(0, 0);
                 let rect: NSRect = unsafe { msg_send![&*manager, lineFragmentRectForGlyphAtIndex: index, effectiveRange: &mut range] };
                 let chars: NSRange = unsafe { msg_send![&*manager, characterRangeForGlyphRange: range, actualGlyphRange: std::ptr::null_mut::<NSRange>()] };
                 let baseline: NSPoint = unsafe { msg_send![&*manager, locationForGlyphAtIndex: index] };
+                let newline_only = utf16[chars.location..chars.location+chars.length].iter()
+                    .all(|c| *c == u16::from(b'\n') || *c == u16::from(b'\r'));
+                let nominal = (rect.size.height-ascent-descent)*0.5+ascent;
+                // Newline control glyph locations are not visible ink baselines.
+                // Nonempty lines always use the real, post-layout glyph location.
+                let comparison_baseline = if newline_only { nominal } else { baseline.y };
+                if r.centered_baseline {
+                    let calls = r.baseline_delegate.as_ref().unwrap().ivars().calls.borrow();
+                    if !calls.iter().any(|call| call["glyph_range"] == json!([range.location, range.location+range.length])
+                        && call["top_pt"] == rect.origin.y && call["height_pt"] == rect.size.height) {
+                        return Err(format!("centered baseline delegate did not observe line at glyph {index}"));
+                    }
+                }
                 native_lines.push(json!({"utf16":[chars.location, chars.location+chars.length],
-                    "top_pt":rect.origin.y,"height_pt":rect.size.height,"baseline_pt":rect.origin.y+baseline.y}));
+                    "top_pt":rect.origin.y,"height_pt":rect.size.height,
+                    "baseline_pt":rect.origin.y+comparison_baseline,
+                    "baseline_semantics":if newline_only {"nominal font-metric baseline; no visible ink"} else {"first visible line glyph baseline"},
+                    "newline_only":newline_only,
+                    "nominal_baseline_pt":rect.origin.y+nominal,
+                    "control_glyph_location_pt":if newline_only {Some(rect.origin.y+baseline.y)} else {None},
+                    "first_glyph_location_pt":rect.origin.y+baseline.y}));
                 if range.length == 0 { return Err("AppKit returned empty glyph line".into()); }
                 index = range.location+range.length;
             }
+            let uses_font_leading: bool = unsafe { msg_send![&*manager, usesFontLeading] };
+            let (ct_ascent, ct_descent, ct_leading) = unsafe {
+                (ct_font.ascent(), ct_font.descent(), ct_font.leading())
+            };
+            let baseline_policy = json!({
+                "id":if r.centered_baseline {"shared-font-metric-vertical-center-appkit-reference/v1"} else {"appkit-default/v1"},
+                "name":if r.centered_baseline {"共同垂直居中排版策略AppKit参照"} else {"AppKit default"},
+                "font_post_script_name":ct_name,"font_size_pt":ct_size,
+                "nsfont_ascender_pt":ascent,"nsfont_positive_descent_pt":descent,"nsfont_leading_pt":leading,
+                "uses_font_leading":uses_font_leading,
+                "coretext_ascent_pt":ct_ascent,"coretext_descent_pt":ct_descent,"coretext_leading_pt":ct_leading,
+                "formula":"(actual lineFragment height - NSFont ascender - positive descent)/2 + ascender",
+                "expected_baselines_used_to_set_layout":false,
+                "delegate_calls":r.baseline_delegate.as_ref().map(|d|d.ivars().calls.borrow().clone()),
+                "blank_comparison":"nominal font-metric baseline, not control glyph location or visible ink"
+            });
             let expected = r.fixture["lines"].as_array().unwrap();
             let tolerance = 0.5/r.scale;
             let baseline_differences: Vec<Value> = native_lines.iter().zip(expected).enumerate()
@@ -318,7 +387,7 @@ mod mac {
                 || (used.size.height-r.document_height).abs() > 1.0
                 || (scroll.contentView().bounds().size.width-r.width).abs() > tolerance
                 || (scroll.contentView().bounds().size.height-r.height).abs() > tolerance;
-            if non_baseline_mismatch || (!r.baseline_diagnostic && !baseline_differences.is_empty()) {
+            if non_baseline_mismatch || ((!r.baseline_diagnostic || r.centered_baseline) && !baseline_differences.is_empty()) {
                 let first_line_difference = native_lines.iter().zip(expected).enumerate().find(|(_, (a, b))| {
                     a["utf16"] != b["utf16"] || ["top_pt", "height_pt", "baseline_pt"].iter().any(|k|
                         (a[*k].as_f64().unwrap()-b[*k].as_f64().unwrap()).abs() > tolerance)
@@ -328,7 +397,7 @@ mod mac {
                     "actual_viewport_pt":[scroll.contentView().bounds().size.width,scroll.contentView().bounds().size.height],
                     "expected_viewport_pt":[r.width,r.height],"actual_used_height_pt":used.size.height,
                     "expected_height_pt":r.document_height,"geometry_tolerance_pt":tolerance,
-                    "first_line_difference":first_line_difference,"actual_lines":native_lines,
+                    "first_line_difference":first_line_difference,"actual_lines":native_lines,"baseline_policy":baseline_policy,
                     "baseline_diagnostic_requested":r.baseline_diagnostic,"non_baseline_mismatch":non_baseline_mismatch,
                     "baseline_differences":baseline_differences,
                     "expected_lines_source":"fixture.lines in the same report"
@@ -336,15 +405,16 @@ mod mac {
 
             }
             let exact_layout_passed = baseline_differences.is_empty();
-            let comparison_scope = if exact_layout_passed { "body input and line geometry; Gallery chrome excluded" }
+            let comparison_scope = if exact_layout_passed && r.centered_baseline { "body input and line geometry under explicit shared vertical-center policy; blank baselines nominal; Gallery chrome excluded" }
+                else if exact_layout_passed { "body input and line geometry; Gallery chrome excluded" }
                 else { "partial body CPU/scroll state; baseline mismatch retained; no exact layout acceptance" };
-            Ok(json!({"status":if exact_layout_passed {"MATCHED_BODY_INPUT_AND_LINE_GEOMETRY"} else {"PARTIAL_BODY_CPU_SCROLL_STATE_DIAGNOSTIC"},
+            Ok(json!({"status":if exact_layout_passed && r.centered_baseline {"MATCHED_BODY_INPUT_AND_LINE_GEOMETRY_SHARED_VERTICAL_CENTER_POLICY"} else if exact_layout_passed {"MATCHED_BODY_INPUT_AND_LINE_GEOMETRY"} else {"PARTIAL_BODY_CPU_SCROLL_STATE_DIAGNOSTIC"},
                 "scope":if exact_layout_passed {"text body only; Gallery chrome excluded"} else {comparison_scope},"comparison_scope":comparison_scope,"exact_layout_passed":exact_layout_passed,
                 "baseline_diagnostic_requested":r.baseline_diagnostic,"baseline_differences":baseline_differences,
                 "font_post_script_name":ct_name,"font_point_size":ct_size,
                 "appkit_font_name":font.fontName().to_string(),
                 "font_source":"Gallery CoreTextFonts::create_font(system + ComposerBody weight); same object toll-free bridged",
-                "lines":native_lines,
+                "lines":native_lines,"baseline_policy":baseline_policy,
                 "used_height_pt":used.size.height,"viewport_pt":[r.width,r.height],"backing_scale":window.backingScaleFactor(),
                 "native_resolved_glyph_fallback":"UNKNOWN; exact base font and measured line geometry matched",
                 "actual_presentation":"UNKNOWN","gpu_frame_cost":"UNKNOWN"}))
@@ -516,6 +586,40 @@ mod mac {
         phase: usize,
         momentum: usize,
     }
+    struct BaselinePolicy {
+        ascent: f64,
+        descent: f64,
+        calls: RefCell<Vec<Value>>,
+    }
+    // Public NSLayoutManagerDelegate optional method. Change the native layout cache,
+    // not merely the report. No fixture or expected line metadata is accessible here.
+    // https://developer.apple.com/documentation/appkit/nslayoutmanagerdelegate/layoutmanager(_:shouldsetlinefragmentrect:linefragmentusedrect:baselineoffset:in:forglyphrange:)
+    define_class!(
+        #[unsafe(super=NSObject)]
+        #[thread_kind=MainThreadOnly]
+        #[ivars=BaselinePolicy]
+        struct CenteredBaseline;
+        unsafe impl NSObjectProtocol for CenteredBaseline {}
+        impl CenteredBaseline {
+            #[unsafe(method(layoutManager:shouldSetLineFragmentRect:lineFragmentUsedRect:baselineOffset:inTextContainer:forGlyphRange:))]
+            fn center_line(&self, _manager: &objc2::runtime::AnyObject,
+                rect: std::ptr::NonNull<NSRect>, _used: std::ptr::NonNull<NSRect>,
+                mut offset: std::ptr::NonNull<f64>, _container: &objc2::runtime::AnyObject,
+                range: NSRange) -> bool {
+                // AppKit supplies live in/out pointers for this synchronous delegate call.
+                let rect = unsafe { rect.as_ref() };
+                let before = unsafe { *offset.as_ref() };
+                let after = (rect.size.height-self.ivars().ascent-self.ivars().descent)*0.5+self.ivars().ascent;
+                unsafe { *offset.as_mut() = after; }
+                self.ivars().calls.borrow_mut().push(json!({
+                    "glyph_range":[range.location,range.location+range.length],
+                    "top_pt":rect.origin.y,"height_pt":rect.size.height,
+                    "baseline_offset_before_pt":before,"baseline_offset_after_pt":after,
+                }));
+                true
+            }
+        }
+    );
     // A public NSEvent adapter preserves the real event's window/location/flags.
     // It does not reify private NSEvent storage; in-bounds release behavior must
     // be checked against physical input before claiming full native parity.
