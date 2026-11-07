@@ -259,3 +259,7 @@ The 45 component entries in `design/gallery/workbench.json` map to these product
 - Gallery `collections_adapter` delegates List, Tree, DataTable, Chart, Markdown, CodeBlock and DiffView stories to their production `collections_view` runtimes.
 TextEditor and SelectionSurface are internal primitives used by the lab; they are not counted among the public 45 entries. This mapping does not create a second API or renderer in Gallery.
 This mapping records renderer ownership, not maturity. Existing `experimental` status is retained where assigned; native performance, sustained 120 Hz / 8.33 ms, VoiceOver and physical input-method acceptance remain open until independently measured. The component-completion audit and old-to-new Gallery mapping are tracked in [the remaining components review](../design/reviews/remaining-components-20261017/summary.json).
+
+### AppHost launcher (#229, v0.2.1)
+
+The final **Applications → AppHost** entry is a launcher, not a component capability. Mouse activation, Enter/Space, accessibility Press and the Pages menu each open one new AppHost window; arrow navigation only selects the item. Repeated activation opens independent windows. The local-only assembly uses the public `AppWindow::open(&Window, WindowConfig)` API and the existing application event loop. Each window owns its focus/NavBar/Others containers and toolbars; Containers menu commands follow the current key window. Closing a child leaves Gallery and other AppHost windows alive.

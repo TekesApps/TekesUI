@@ -1753,6 +1753,8 @@ impl Host {
                 w.request_redraw();
             }
             Event::Focus(true) => {
+                w.set_menu_bar(&self.menu_bar())
+                    .map_err(|error| anyhow::anyhow!("AppHost menu: {error}"))?;
                 eprintln!(
                     "TOOLBAR_WINDOW_ACTIVE window={} active=true",
                     self.panels[self.toolbar_index].mounted_toolbar.window
@@ -1851,6 +1853,52 @@ impl WindowHandler for Host {
         }
     }
 }
+impl Host {
+    fn configure_settings(
+        &mut self,
+        settings: Option<crate::settings::SettingsOptions>,
+    ) -> Result<()> {
+        self.settings_provider = settings
+            .as_ref()
+            .map(|s| {
+                tekes_ui_settings::FileProvider::open(s.file.clone(), s.schema.namespace.clone())
+            })
+            .transpose()?;
+        self.settings_options = settings;
+        Ok(())
+    }
+    fn menu_bar(&self) -> MenuBar {
+        let mut menus = MenuBar::default();
+        if self.settings_options.is_some() {
+            menus.menus.push(tekes_ui_platform_macos::Menu::new(
+                "Settings",
+                vec![tekes_ui_platform_macos::MenuItem::Command(
+                    tekes_ui_platform_macos::MenuCommand::new(
+                        "Settings…",
+                        tekes_ui_platform_macos::CommandId(0x534554),
+                    )
+                    .key(tekes_ui_platform_macos::KeyEquivalent::command(',')),
+                )],
+            ));
+        }
+        if self.presentation.is_some() {
+            menus.menus.push(self.presentation_menu());
+        }
+        menus
+    }
+    pub(crate) fn open(
+        mut self,
+        parent: &Window,
+        config: WindowConfig,
+        settings: Option<crate::settings::SettingsOptions>,
+    ) -> Result<tekes_ui_platform_macos::WindowHandle> {
+        self.mount_initial_containers();
+        self.configure_settings(settings)?;
+        self.menu_bar().validate()?;
+        Ok(parent.open_window(config, self))
+    }
+}
+
 pub fn run(
     module_ids: Vec<String>,
     columns: Option<Vec<crate::Column>>,
@@ -1899,30 +1947,8 @@ pub fn run(
     if presentation_acceptance {
         host.presentation_acceptance = Some(window_acceptance::PresentationAcceptance::new());
     }
-    host.settings_provider = settings
-        .as_ref()
-        .map(|s| tekes_ui_settings::FileProvider::open(s.file.clone(), s.schema.namespace.clone()))
-        .transpose()?;
-    host.settings_options = settings;
-    let mut menus = if has_settings {
-        MenuBar {
-            menus: vec![tekes_ui_platform_macos::Menu::new(
-                "Settings",
-                vec![tekes_ui_platform_macos::MenuItem::Command(
-                    tekes_ui_platform_macos::MenuCommand::new(
-                        "Settings…",
-                        tekes_ui_platform_macos::CommandId(0x534554),
-                    )
-                    .key(tekes_ui_platform_macos::KeyEquivalent::command(',')),
-                )],
-            )],
-        }
-    } else {
-        MenuBar::default()
-    };
-    if host.presentation.is_some() {
-        menus.menus.push(host.presentation_menu());
-    }
+    host.configure_settings(settings)?;
+    let menus = host.menu_bar();
     App::new(AppConfig {
         name: Some("TekesUI AppHost Prototype".into()),
         ..Default::default()

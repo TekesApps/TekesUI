@@ -20,6 +20,7 @@
 use std::time::Duration;
 
 mod accessibility;
+pub mod apphost;
 pub mod catalog;
 pub mod chrome;
 pub mod commands;
@@ -94,6 +95,7 @@ enum ScrollOwner {
 #[derive(Debug)]
 pub struct Gallery {
     page: Page,
+    apphost_open_requests: usize,
     hover: Option<usize>,
     theme: ThemeState,
     /// 文字引擎与窗口用的 atlas（主线程）。
@@ -174,6 +176,7 @@ impl Gallery {
         text.set_motion_enabled(true);
         Gallery {
             page: Page::Workbench(0),
+            apphost_open_requests: 0,
             hover: None,
             theme: ThemeState::default(),
             text,
@@ -495,7 +498,7 @@ impl Gallery {
         let Some(page) = workbench::route(route) else {
             return false;
         };
-        self.apply(Command::Page(page));
+        self.select_page(page);
         if let Page::Workbench(i) = page {
             self.workbench.select_route(i, route);
         }
@@ -1215,28 +1218,10 @@ impl Gallery {
                 return Change::BOTH;
             }
             Command::Page(p) => {
-                if self.page == p {
-                    return Change::NONE;
+                if apphost::is_page(p) {
+                    self.apphost_open_requests += 1;
                 }
-                self.end_scroll_gestures();
-                self.scene3d.blur();
-                self.workbench.blur();
-                self.navigation_search.blur();
-                self.editor.blur();
-                self.text_view.blur();
-                self.scroll_demo.blur();
-                self.motion.deactivate();
-                self.static_text.blur();
-                self.icon_search.blur();
-                self.page_offsets[self.page.index()] = self.viewport.offset;
-                self.viewport.cancel();
-                self.page = p;
-                self.navigation_focus = None;
-                self.sidebar.reveal(p);
-                self.layout_page_extent();
-                self.viewport.offset = self.page_offsets[p.index()];
-                self.viewport.move_by(0.0, 0.0);
-                return Change::BOTH;
+                return self.select_page(p);
             }
             Command::Appearance(a) => {
                 if self.theme.appearance == a {
@@ -1258,13 +1243,42 @@ impl Gallery {
         }
     }
 
+    pub fn take_apphost_open_requests(&mut self) -> usize {
+        std::mem::take(&mut self.apphost_open_requests)
+    }
+
+    fn select_page(&mut self, p: Page) -> Change {
+        if self.page == p {
+            return Change::NONE;
+        }
+        self.end_scroll_gestures();
+        self.scene3d.blur();
+        self.workbench.blur();
+        self.navigation_search.blur();
+        self.editor.blur();
+        self.text_view.blur();
+        self.scroll_demo.blur();
+        self.motion.deactivate();
+        self.static_text.blur();
+        self.icon_search.blur();
+        self.page_offsets[self.page.index()] = self.viewport.offset;
+        self.viewport.cancel();
+        self.page = p;
+        self.navigation_focus = None;
+        self.sidebar.reveal(p);
+        self.layout_page_extent();
+        self.viewport.offset = self.page_offsets[p.index()];
+        self.viewport.move_by(0.0, 0.0);
+        Change::BOTH
+    }
+
     /// 切到相邻的页（`delta` 为 ±1），到头不循环。
     fn step_page(&mut self, delta: isize) -> Change {
         let pages = navigation::pages();
         let index = pages.iter().position(|p| *p == self.page).unwrap_or(0);
         let next = index as isize + delta;
         match usize::try_from(next).ok().and_then(|i| pages.get(i)) {
-            Some(p) => self.apply(Command::Page(*p)),
+            Some(p) => self.select_page(*p),
             None => Change::NONE,
         }
     }
@@ -1566,7 +1580,7 @@ impl Gallery {
                 }
                 if self.content_page_for(focused_page) == Page::Motion {
                     if self.page != focused_page {
-                        self.apply(Command::Page(focused_page));
+                        self.select_page(focused_page);
                     }
                     if let Some(frame) = pages::motion::focus_edge(&mut self.motion, false) {
                         self.navigation_focus = None;
@@ -1576,7 +1590,7 @@ impl Gallery {
                 }
                 if let Page::Workbench(i) = focused_page {
                     if self.page != focused_page {
-                        self.apply(Command::Page(focused_page));
+                        self.select_page(focused_page);
                     }
                     if self.content_page() == Page::Motion
                         && let Some(frame) = pages::motion::focus_edge(&mut self.motion, false)
@@ -1620,7 +1634,7 @@ impl Gallery {
                         (current + 1 < pages.len()).then_some(current + 1)
                     };
                     if let Some(next_page) = next.and_then(|index| pages.get(index)).copied() {
-                        self.apply(Command::Page(next_page));
+                        self.select_page(next_page);
                         self.navigation_focus = Some(next_page);
                         self.sidebar.reveal(next_page);
                         return Change::REDRAW;
@@ -1628,6 +1642,13 @@ impl Gallery {
                 }
                 return Change::NONE;
             } else if matches!(key.key_code, 36 | 49) {
+                if apphost::is_page(focused_page) {
+                    if !key.is_repeat {
+                        self.apply(Command::Page(focused_page));
+                    }
+                    self.navigation_focus = Some(focused_page);
+                    return Change::REDRAW;
+                }
                 if self.page != focused_page {
                     self.apply(Command::Page(focused_page));
                     self.navigation_focus = Some(focused_page);
@@ -2121,6 +2142,84 @@ mod tests {
     use super::*;
     use tekes_ui_controls::ButtonTextRenderer;
     use tekes_ui_platform_macos::{CommandId, KeyEvent, Modifiers, MouseEvent};
+
+    #[test]
+    fn apphost_activation_is_distinct_from_selection_and_queues_each_request_once() {
+        let mut g = Gallery::with_static_text(StaticText::new(None));
+        let index = workbench::entries()
+            .iter()
+            .position(|entry| entry.slug() == "apphost")
+            .unwrap();
+        let page = Page::Workbench(index);
+        let previous = navigation::pages().iter().position(|p| *p == page).unwrap() - 1;
+        g.select_page(navigation::pages()[previous]);
+        g.step_page(1);
+        assert_eq!(g.page(), page);
+        assert_eq!(g.take_apphost_open_requests(), 0, "arrows only select");
+        g.apply(Command::Page(page));
+        g.apply(Command::Page(page));
+        assert_eq!(
+            g.take_apphost_open_requests(),
+            2,
+            "repeated menu activation opens new windows"
+        );
+        assert_eq!(
+            g.take_apphost_open_requests(),
+            0,
+            "requests are consumed once"
+        );
+        g.navigation_focus = Some(page);
+        g.handle_input(&key(36, Modifiers::NONE));
+        g.handle_input(&key(49, Modifiers::NONE));
+        let mut repeat = key(49, Modifiers::NONE);
+        if let Event::Key(key) = &mut repeat {
+            key.is_repeat = true;
+        }
+        g.handle_input(&repeat);
+        assert_eq!(
+            g.take_apphost_open_requests(),
+            2,
+            "Enter/Space activate; autorepeat does not"
+        );
+        use tekes_ui_platform_macos::{AccessibilityAction, AccessibilityKey};
+        let target = AccessibilityKey {
+            component: accessibility::NAV,
+            part: Some(page.index()),
+        };
+        g.accessibility_action(target, &AccessibilityAction::Focus);
+        assert_eq!(g.take_apphost_open_requests(), 0);
+        g.select_page(navigation::pages()[0]);
+        g.sidebar.reveal(page);
+        g.accessibility_action(target, &AccessibilityAction::Focus);
+        assert_eq!(g.navigation_focus, Some(page));
+        g.handle_input(&key(48, Modifiers::NONE));
+        assert_eq!(
+            g.take_apphost_open_requests(),
+            0,
+            "Focus then Tab only prepares content"
+        );
+        assert_eq!(
+            g.page(),
+            page,
+            "Tab prepares the focused page without activation"
+        );
+        g.accessibility_action(target, &AccessibilityAction::Press);
+        assert_eq!(g.take_apphost_open_requests(), 1);
+        g.sidebar.reveal(page);
+        let frame = g
+            .sidebar
+            .geometry()
+            .document_to_viewport(navigation::row(page))
+            .unwrap();
+        let point = frame.center();
+        g.handle_input(&click(point.x as f64, point.y as f64));
+        g.handle_input(&release(point.x as f64, point.y as f64));
+        assert_eq!(
+            g.take_apphost_open_requests(),
+            1,
+            "mouse down/up generates one request"
+        );
+    }
 
     #[test]
     fn live_gallery_drives_the_text_renderer_motion_clock() {

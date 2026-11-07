@@ -376,6 +376,12 @@ impl WindowHandler for Host {
                 self.apply_change(change, window);
             }
             Event::Focus(active) => {
+                if *active {
+                    if let Err(error) = window.set_menu_bar(&self.gallery.menu_bar()) {
+                        eprintln!("GALLERY_MENU_ERROR {error}");
+                    }
+                    self.sync_chrome(window);
+                }
                 self.window_active = *active;
                 self.last_animation_target = None;
                 let change = self.gallery.handle_input(&event);
@@ -424,6 +430,12 @@ impl WindowHandler for Host {
                 self.sync_animation(window, animate);
             }
             _ => {}
+        }
+        for _ in 0..self.gallery.take_apphost_open_requests() {
+            match crate::gallery::apphost::open(window) {
+                Ok(_) => eprintln!("GALLERY_APPHOST_OPENED"),
+                Err(error) => eprintln!("GALLERY_APPHOST_OPEN_FAILED {error:#}"),
+            }
         }
         #[cfg(feature = "composition-review")]
         crate::gallery::workbench::settings_native207::observe(&self.gallery, &event);

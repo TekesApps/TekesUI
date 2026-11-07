@@ -2,6 +2,8 @@
 fn main() {
     let checks = tekes_ui_platform_macos::selftest::required_metadata_contract();
     assert_eq!(checks, 36);
+    tekes_ui_platform_macos::selftest::window_menu_replacement_contract();
+    println!("WINDOW_MENU_REPLACEMENT_OK windows=0 desktop_actions=0");
     println!("REQUIRED_NATIVE_OBJECT_CONTRACT_OK checks={checks} windows=0 desktop_actions=0");
 }
 #[cfg(not(target_os = "macos"))]

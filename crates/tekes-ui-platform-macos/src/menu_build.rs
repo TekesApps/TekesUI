@@ -160,6 +160,8 @@ fn window_menu(mtm: MainThreadMarker) -> Retained<NSMenu> {
     menu
 }
 
+const ENGINE_MENU_TAG: isize = -0x544b;
+
 /// 构建整条菜单栏并安装到 NSApplication。
 pub(crate) fn install(mtm: MainThreadMarker, app_name: &str, bar: &MenuBar, target: &AnyObject) {
     let app = NSApplication::sharedApplication(mtm);
@@ -177,6 +179,7 @@ pub(crate) fn install(mtm: MainThreadMarker, app_name: &str, bar: &MenuBar, targ
         }
         let top = top_level(mtm, &submenu);
         top.setTitle(&NSString::from_str(&m.title));
+        top.setTag(ENGINE_MENU_TAG);
         main.addItem(&top);
     }
 
@@ -188,6 +191,39 @@ pub(crate) fn install(mtm: MainThreadMarker, app_name: &str, bar: &MenuBar, targ
     app.setMainMenu(Some(&main));
     // 让 AppKit 自动往窗口菜单末尾追加打开的窗口列表。
     app.setWindowsMenu(Some(&window));
+}
+
+/// Replace only engine contributions. AppKit's standard menus and window list
+/// retain their object identities and responder-chain actions.
+pub(crate) fn replace_engine_menus(
+    mtm: MainThreadMarker,
+    bar: &MenuBar,
+    target: &AnyObject,
+) -> Result<(), &'static str> {
+    let app = NSApplication::sharedApplication(mtm);
+    let main = app.mainMenu().ok_or("application menu is not installed")?;
+    let old: Vec<_> = main
+        .itemArray()
+        .iter()
+        .filter(|item| item.tag() == ENGINE_MENU_TAG)
+        .collect();
+    for item in old {
+        main.removeItem(&item);
+    }
+    for (index, menu) in bar.menus.iter().enumerate() {
+        let submenu = new_menu(mtm, &menu.title);
+        for item in &menu.items {
+            match item {
+                MenuItem::Command(command) => submenu.addItem(&command_item(mtm, target, command)),
+                MenuItem::Separator => submenu.addItem(&NSMenuItem::separatorItem(mtm)),
+            }
+        }
+        let top = top_level(mtm, &submenu);
+        top.setTitle(&NSString::from_str(&menu.title));
+        top.setTag(ENGINE_MENU_TAG);
+        main.insertItem_atIndex(&top, (index + 1) as isize);
+    }
+    Ok(())
 }
 
 fn find_command(menu: &NSMenu, id: isize) -> Option<Retained<NSMenuItem>> {
