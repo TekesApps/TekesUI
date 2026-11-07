@@ -2041,9 +2041,9 @@
   ],
   "source_sha256": {
     "DESIGN.md": "0085e260e7f5e511470dc90a2a7ae1d91671b92b7c928864ff160d0bd0a6167b",
-    "crates/tekes-ui-app-host/src/lib.rs": "3f6a64c2fa374ebc7cd371a63559e97253bbf365ad3b98542d17930d31500e91",
-    "crates/tekes-ui-app-host/src/window.rs": "ab2f9ec93c9548b59206555c38c78593d6d80c025dbc2043248e061014a8bd90",
-    "crates/tekes-ui-app-host/src/window_toolbar.rs": "05db7272e1dd15bfe0582331369d6777bbea07c63a3b40df6c73eaf20f1c2119",
+    "crates/tekes-ui-app-host/src/lib.rs": "568556c1d987067be63555bc622ce116e1f70b8ca805741ac7015f282650e3c5",
+    "crates/tekes-ui-app-host/src/window.rs": "ca6ecf4fb8a80db143b96f095bbf35a1d86a69e8ed1d7d01eed42f7a149d276a",
+    "crates/tekes-ui-app-host/src/window_toolbar.rs": "162b41a6c7b1ae2484caf249d30e8ccb7e7a3638381b2a8d7738c509ab4d919a",
     "crates/tekes-ui-controls/src/chart.rs": "9e3e5dd1e9d62f358cb74201a254f4165b81e4b79c3a97f0a74bde6f591e983c",
     "crates/tekes-ui-controls/src/collections_view.rs": "16e46f93d95c701281538c4150a244977584a0d4db7b1059ac4fd5d6dcb6a6fd",
     "crates/tekes-ui-controls/src/composite.rs": "99d42809610c98e8b86136e3eb0698129c9ec9c659990d943c62d380e063042d",
@@ -2224,7 +2224,11 @@
     "docs/design/tree-public-content-20261024.md": "a01a90370da0b5ad9e9bc589c9601fa61279b49fd2f5aa3c68910e90d58aa2bc",
     "docs/design/datatable-public-content-20261024.md": "812988af6954e21b11d6aca4fe769bfb405f26f256685c400f88cc28ef377cf9",
     "docs/design/disclosure-public-content-20261024.md": "1d9a5e8149c04ab5320ffe8639026034b25dfdd267c38631dd8f9c3f2b078f39",
-    "docs/design/media-viewer-design-20261031.md": "1b3205a11b7d11f67c8d628e9a7c684283ddfea46a1fb5c54097d86ab11d52b0"
+    "docs/design/media-viewer-design-20261031.md": "1b3205a11b7d11f67c8d628e9a7c684283ddfea46a1fb5c54097d86ab11d52b0",
+    "crates/tekes-ui-app-host/src/columns.rs": "b5ad234acda2da96d6b977466c466524d7259096a146980db27151130ce3a14f",
+    "crates/tekes-ui-app-host/src/presentation.rs": "9512e5bc0b4cc466f8bf5f51f0ab3b4b15e67fff09f65eabe0be772c5eb082f1",
+    "crates/tekes-ui-app-host/src/window_presentation.rs": "ae3662c32dbdf3a0e495ab5354aff1507230638b567c759819268d19f6ec7434",
+    "crates/tekes-ui-controls/src/composition/toolbar_host.rs": "f75370c832662501d4493d84db1e552a0a712b72666293e4a851ae6552016e4a"
   },
   "remaining": [
     "Collections49 public adapter/support paths recovered in thisf4df candidate; actual compatible compilation/consumer/IPC acceptance and publication remain Main gates. Tree/Table and keyed List slots remain finite passive contracts, not arbitrary interactive content or virtualization.",
@@ -2644,8 +2648,8 @@
     },
     {
       "path": "crates/tekes-ui-app-host/src/lib.rs",
-      "line": 74,
-      "anchor": "pub fn from_columns(columns: Vec<Column>) -> anyhow::Result<Self> {"
+      "line": 109,
+      "anchor": "pub fn from_containers("
     },
     {
       "path": "crates/tekes-ui-app-host/src/window_toolbar.rs",
@@ -2654,8 +2658,33 @@
     },
     {
       "path": "crates/tekes-ui-app-host/src/window.rs",
-      "line": 814,
+      "line": 948,
       "anchor": ".render(&mut toolbar_scene, &mut self.text, Theme::LIGHT.into())"
+    },
+    {
+      "path": "crates/tekes-ui-app-host/src/window.rs",
+      "line": 208,
+      "anchor": "mounted_toolbar: crate::window_toolbar::MountedToolbar,"
+    },
+    {
+      "path": "crates/tekes-ui-app-host/src/columns.rs",
+      "line": 23,
+      "anchor": "pub struct LocalContainer {"
+    },
+    {
+      "path": "crates/tekes-ui-app-host/src/presentation.rs",
+      "line": 77,
+      "anchor": "pub struct PresentationState {"
+    },
+    {
+      "path": "crates/tekes-ui-app-host/src/window_presentation.rs",
+      "line": 522,
+      "anchor": "pub(super) fn sync_container_toolbars(&mut self, active: bool, whole: Rect) -> Result<()> {"
+    },
+    {
+      "path": "crates/tekes-ui-controls/src/composition/toolbar_host.rs",
+      "line": 629,
+      "anchor": "pub fn blur(&mut self) {"
     }
   ],
   "review_updates": [
@@ -3116,6 +3145,12 @@
       "source_head": "f4df3ca4205f1c9873ad9c835761b6d50d19766f",
       "conclusion": "Actual immutable55path candidate contains49 additive Controls public types under existing List/Tree/DataTable identities, plus Disclosure-under-Tabs consumer/doc. Preserve original391 classifications and registry bindings/routes; classify new4adapters/45support and restore sorted440. Source audit records finite passive slots and original model/View owner contracts, refreshes actualpins/anchors, and preserves every native status as未验证. No Media or unrelated AX TEMP metadata imported.",
       "evidence": "Actual design docs: docs/design/selectable-list-public-content-20261024.md, docs/design/tree-public-content-20261024.md, docs/design/datatable-public-content-20261024.md, docs/design/disclosure-public-content-20261024.md. Their appended receipts retain original cbe/70ee/089dc collection and e406 Disclosure CPU04 identities, including historical failures; no currentf4df runtime or broader/native/Gold7 promotion."
+    },
+    {
+      "batch": "apphost-container-ownership-229-v0.2.0",
+      "scope": "Reviewed AppWindow/LocalContainer/Container API, same Host with per-container Toolbar ownership, presentation state and explicit source/presenter routing; added blur uses original ContentHost state. Only these reviewed source hashes/anchors changed.",
+      "verification": "AppHost check/clippy and 61 lib tests passed; affected configuration follow-up 9+1 passed. Independent consumer/native/CI tracked separately by Issue229; no component native capability upgraded. Navigation busy/input_open declaration and dispatch gates subsequently reviewed; affected 6 toolbar + 11 input/focus tests and independent consumer strict checks pass.",
+      "compatibility": "Old local Container moves to LocalContainer or legacy::Container; Column/from_columns remains horizontal adapter into the same Host. module_runtime::ProcessContainer unchanged."
     }
   ],
   "text_key_review_20261018": {
@@ -3221,7 +3256,7 @@
     "evidence": "design/reviews/content-reading-anchor-20261020/progress.json",
     "frozen_boundary": "Accepted AgentKit inputs not overwritten; local new exportbd3 has independent sender replay but no public pin or receiver conclusion."
   },
-  "issue14_scope_current": "Composition audit/planning only; current accepted AppWindow toolbar contribution is bounded to one shared ToolbarHost across its columns, stable declarations/groups, edge regions, placement/order, supported command overflow, and bounded real-window owner/focus routing. General multi-window lifecycle, arbitrary content overflow and complete per-action native semantics remain unverified; no component expansion is inferred.",
+  "issue14_scope_current": "Issue14 retains its completed historical composition-audit scope. Issue229 migrates actual AppHost ownership to one shared Toolbar instance per runtime Container, with one Host routing stable owners and compatibility horizontal layout. General custom-content overflow and full native/VoiceOver acceptance are not inferred from this source audit.",
   "collection_input_compatibility_20261020": {
     "source": "No new public type/field/signature/token.",
     "behavior": "Held row Escape returns Handled and cancels capture; unowned Escape returns Ignored to parent, rather than swallowing it. Does not undo selection or immediate header sorting.",
@@ -3673,7 +3708,7 @@
     "token_evidence": "design/reviews/stage40-audit-refresh-20261021/probes-toolbar-final",
     "public_api": "crates/tekes-ui-controls/tests/toolbar_contract.rs"
   },
-  "review_note": "Current review: composition/button.rs deliberately consolidates image/text/custom-content presentation into one Button over the original ButtonModel action state; obsolete ButtonContent/CompoundButton/IconButton entry points have no aliases. AppHost now contributes one shared ToolbarHost to each accepted AppWindow across its columns with stable declarations, placement, supported command overflow and bounded real-window owner/focus evidence. General multi-window lifecycle, arbitrary-content overflow, full per-action native semantics and VoiceOver remain unverified. ContentTheme passes Palette and canonical Surface through the mounted tree while foreground forwarding is explicit. No family native status is promoted. Coordinator review also reconciles the already accepted checked SplitViewContent panes and local PanelContent body, and pins the AppWindow constructor/mounted shared toolbar/actual toolbar render path. B2 remains open; no native promotion or new implementation is inferred.",
+  "review_note": "Current review: composition/button.rs deliberately consolidates image/text/custom-content presentation into one Button over the original ButtonModel action state; obsolete ButtonContent/CompoundButton/IconButton entry points have no aliases. AppHost Issue229 now mounts a shared ToolbarHost in each runtime Container; Window routes stable source/presenter identities, optional focus/others/Tabs/List and explicit navigation targets. Source review and focused regression do not re-sign historical native evidence. General multi-window lifecycle, arbitrary-content overflow, full per-action native semantics and VoiceOver remain unverified. ContentTheme passes Palette and canonical Surface through the mounted tree while foreground forwarding is explicit. No family native status is promoted. Coordinator review also reconciles the already accepted checked SplitViewContent panes and local PanelContent body, and pins the from_containers constructor, container-owned mounted toolbar and actual toolbar render/sync paths. B2 remains open; no native promotion or new implementation is inferred.",
   "review_note_history_20261021": "Reviewed Toolbar typography/slots/short splitter marker/native cursor delta against main09b4bab; reran public probes and consumer regressions. Other component classifications stay bounded; source audit does not promote native acceptance. See docs/design/toolbar-split-accepted-20261022.md.",
   "recovery_batch_20261031": {
     "baseline": "96804afb96b450125f1065a16bd06712ba0af49d",
@@ -4192,5 +4227,9 @@
       }
     },
     "conclusions": "Existing composition classifications and native_acceptance remain unchanged; no maturity promotion; AppKit performance still unverified"
+  },
+  "historical_apphost_scope_before_229": {
+    "issue14_scope_current": "Composition audit/planning only; current accepted AppWindow toolbar contribution is bounded to one shared ToolbarHost across its columns, stable declarations/groups, edge regions, placement/order, supported command overflow, and bounded real-window owner/focus routing. General multi-window lifecycle, arbitrary content overflow and complete per-action native semantics remain unverified; no component expansion is inferred.",
+    "review_note": "Current review: composition/button.rs deliberately consolidates image/text/custom-content presentation into one Button over the original ButtonModel action state; obsolete ButtonContent/CompoundButton/IconButton entry points have no aliases. AppHost now contributes one shared ToolbarHost to each accepted AppWindow across its columns with stable declarations, placement, supported command overflow and bounded real-window owner/focus evidence. General multi-window lifecycle, arbitrary-content overflow, full per-action native semantics and VoiceOver remain unverified. ContentTheme passes Palette and canonical Surface through the mounted tree while foreground forwarding is explicit. No family native status is promoted. Coordinator review also reconciles the already accepted checked SplitViewContent panes and local PanelContent body, and pins the AppWindow constructor/mounted shared toolbar/actual toolbar render path. B2 remains open; no native promotion or new implementation is inferred."
   }
 }

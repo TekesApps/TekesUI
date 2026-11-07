@@ -110,12 +110,13 @@ jobs:
           # Optional MediaViewer public CPU contract; GPU/native remain separately allocated.
           CARGO_TARGET_DIR="$GITHUB_WORKSPACE/target" cargo test --manifest-path examples/media-viewer-content-consumer/Cargo.toml --test cpu_contract --locked --offline
 
-      - name: Independent AppWindow and Settings delivery (Issue 70)
+      - name: Independent AppWindow and Settings delivery (Issues 70, 229)
         if: ${{ !cancelled() && steps.workspace_clippy.outcome == 'success' }}
         run: |
           cargo clippy --manifest-path examples/app-host-demo/Cargo.toml --all-targets --all-features --locked --offline -- -D warnings
           cargo test --manifest-path examples/app-host-demo/Cargo.toml --test settings_worker_entry --locked --offline
-          for profile in two-panels three-panels mixed-columns independent-settings; do
+          cargo test --manifest-path examples/app-host-demo/Cargo.toml --features apphost-containers --bin tekes-ui-app-host-demo --locked --offline
+          for profile in two-panels three-panels mixed-columns independent-settings apphost-containers; do
             cargo build --manifest-path examples/app-host-demo/Cargo.toml --features "$profile" --locked --offline
           done
 

@@ -1,4 +1,4 @@
-//! Declarations and business bindings only. One shared ToolbarHost per window.
+//! Container-owned shared Toolbar instances and original command bindings.
 use crate::toolbar_source::ComponentSource;
 use anyhow::{Context, Result};
 use std::collections::HashMap;
@@ -82,6 +82,11 @@ impl MountedToolbar {
             window,
             declarations: vec![],
         }
+    }
+    pub(crate) fn sources(&self) -> impl Iterator<Item = &Source> {
+        self.declarations
+            .iter()
+            .map(|declaration| &declaration.source)
     }
     pub fn source(&self, group: ComponentId) -> Option<&Source> {
         self.declarations
@@ -201,6 +206,24 @@ impl MountedToolbar {
                 .map_err(|e| anyhow::anyhow!("toolbar registration: {e:?}"))?;
         }
         self.declarations = declarations;
+        Ok(())
+    }
+    pub(crate) fn retain_groups(&mut self, keep: &[ComponentId]) -> Result<()> {
+        let remove: Vec<_> = self
+            .declarations
+            .iter()
+            .filter(|declaration| !keep.contains(&declaration.id))
+            .map(|declaration| declaration.id)
+            .collect();
+        for id in remove {
+            if self.host.content_host().get(id).is_some() {
+                self.host
+                    .remove(id)
+                    .map_err(|e| anyhow::anyhow!("container toolbar unbind: {e:?}"))?;
+            }
+        }
+        self.declarations
+            .retain(|declaration| keep.contains(&declaration.id));
         Ok(())
     }
     pub fn modal(&self) -> bool {

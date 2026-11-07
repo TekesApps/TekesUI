@@ -1,5 +1,5 @@
-//! Public column assembly. Local views retain original ContentHost ownership;
-//! process columns retain the compiled module registry and isolated transport.
+//! Window container assembly. Local views retain their original ContentHost;
+//! process containers retain the compiled module registry and isolated transport.
 use anyhow::Result;
 use tekes_ui_controls::{
     ButtonTextRenderer,
@@ -20,15 +20,16 @@ impl ContainerContent for ContentHost {
 }
 type CommandHandler = Box<dyn FnMut(&mut ContentHost, u64) -> Result<()>>;
 type ActionHandler = Box<dyn FnMut(&mut ContentHost, Vec<ContentActionRecord>)>;
-pub struct Container {
+pub struct LocalContainer {
     id: String,
     source: Box<dyn ContainerContent>,
     action: Option<ActionHandler>,
     command: Option<CommandHandler>,
     pub(crate) toolbar: Vec<tekes_ui_app_protocol::ToolbarItem>,
     pub(crate) frame: Rect,
+    pub(crate) options: ContainerOptions,
 }
-impl Container {
+impl LocalContainer {
     pub fn new(id: impl Into<String>, content: Content) -> Result<Self> {
         let mut host =
             ContentHost::new(content).map_err(|e| anyhow::anyhow!("Container: {e:?}"))?;
@@ -43,7 +44,27 @@ impl Container {
             command: None,
             toolbar: vec![],
             frame: Rect::default(),
+            options: ContainerOptions::default(),
         }
+    }
+    pub fn options(mut self, options: ContainerOptions) -> Self {
+        self.options = options;
+        self
+    }
+    pub fn title(mut self, title: impl Into<String>) -> Self {
+        self.options.title = Some(title.into());
+        self
+    }
+    pub fn list_height(mut self, height: f32) -> Self {
+        self.options.list_height = Some(height);
+        self
+    }
+    pub fn retain_button(mut self, command: u64, target: impl Into<String>) -> Self {
+        self.options.retained_buttons.push(RetainedButton {
+            command,
+            target: target.into(),
+        });
+        self
     }
     pub fn id(&self) -> &str {
         &self.id
@@ -106,7 +127,7 @@ impl Container {
     ) -> Result<()> {
         if self.frame != frame {
             self.source.with_host(&mut |h| {
-                h.event(&ContentEvent::Cancel);
+                h.cancel_pointer_capture();
             });
         }
         self.frame = frame;
@@ -138,17 +159,85 @@ impl Container {
         result
     }
 }
+/// Presentation metadata belongs to the container, independently of its backing.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct ContainerOptions {
+    pub title: Option<String>,
+    /// Opt in to List with this content allocation (including its Toolbar).
+    pub list_height: Option<f32>,
+    /// Explicit destinations; there is no automatic first-visible fallback.
+    pub retained_buttons: Vec<RetainedButton>,
+}
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct RetainedButton {
+    pub command: u64,
+    pub target: String,
+}
 /// The factory remains compiled into the consumer; no runtime module discovery.
 pub struct ProcessContainer {
     pub(crate) definition: crate::ModuleDefinition,
+    pub(crate) options: ContainerOptions,
 }
 impl ProcessContainer {
     pub fn new(definition: crate::ModuleDefinition) -> Self {
-        Self { definition }
+        Self {
+            definition,
+            options: ContainerOptions::default(),
+        }
+    }
+    pub fn options(mut self, options: ContainerOptions) -> Self {
+        self.options = options;
+        self
+    }
+    pub fn title(mut self, title: impl Into<String>) -> Self {
+        self.options.title = Some(title.into());
+        self
+    }
+    pub fn list_height(mut self, height: f32) -> Self {
+        self.options.list_height = Some(height);
+        self
+    }
+    pub fn retain_button(mut self, command: u64, target: impl Into<String>) -> Self {
+        self.options.retained_buttons.push(RetainedButton {
+            command,
+            target: target.into(),
+        });
+        self
     }
 }
+/// A stable window container backed by local Content or a fixed process factory.
+pub enum Container {
+    Local(LocalContainer),
+    Process(ProcessContainer),
+}
+impl Container {
+    pub fn id(&self) -> &str {
+        match self {
+            Self::Local(c) => c.id(),
+            Self::Process(p) => p.definition.id,
+        }
+    }
+    pub fn container_options(&self) -> &ContainerOptions {
+        match self {
+            Self::Local(c) => &c.options,
+            Self::Process(p) => &p.options,
+        }
+    }
+}
+impl From<LocalContainer> for Container {
+    fn from(value: LocalContainer) -> Self {
+        Self::Local(value)
+    }
+}
+impl From<ProcessContainer> for Container {
+    fn from(value: ProcessContainer) -> Self {
+        Self::Process(value)
+    }
+}
+/// Legacy horizontal assembly descriptor. Converts into the same runtime;
+/// new applications use Container and AppWindow::from_containers.
 pub enum Column {
-    Container(Container),
+    Container(LocalContainer),
     ProcessContainer(ProcessContainer),
 }
 impl Column {
@@ -158,9 +247,15 @@ impl Column {
             Self::ProcessContainer(p) => p.definition.id,
         }
     }
+    pub fn options(&self) -> &ContainerOptions {
+        match self {
+            Self::Container(c) => &c.options,
+            Self::ProcessContainer(p) => &p.options,
+        }
+    }
 }
-impl From<Container> for Column {
-    fn from(value: Container) -> Self {
+impl From<LocalContainer> for Column {
+    fn from(value: LocalContainer) -> Self {
         Self::Container(value)
     }
 }
@@ -169,21 +264,66 @@ impl From<ProcessContainer> for Column {
         Self::ProcessContainer(value)
     }
 }
+impl From<Container> for Column {
+    fn from(value: Container) -> Self {
+        match value {
+            Container::Local(c) => Self::Container(c),
+            Container::Process(p) => Self::ProcessContainer(p),
+        }
+    }
+}
+impl From<Column> for Container {
+    fn from(value: Column) -> Self {
+        match value {
+            Column::Container(c) => Self::Local(c),
+            Column::ProcessContainer(p) => Self::Process(p),
+        }
+    }
+}
 pub(crate) fn validate(columns: &[Column]) -> Result<()> {
     anyhow::ensure!(
         (1..=3).contains(&columns.len()),
-        "AppWindow requires one to three columns"
+        "legacy horizontal AppWindow requires one to three columns"
     );
+    validate_ids(columns.iter().map(|c| (c.id(), c.options())))
+}
+pub(crate) fn validate_containers(containers: &[Container]) -> Result<()> {
+    validate_ids(containers.iter().map(|c| (c.id(), c.container_options())))
+}
+pub(crate) fn validate_ids<'a>(
+    containers: impl IntoIterator<Item = (&'a str, &'a ContainerOptions)>,
+) -> Result<()> {
     let mut ids = std::collections::HashSet::new();
-    for c in columns {
+    let mut destinations = Vec::new();
+    for (id, options) in containers {
         anyhow::ensure!(
-            !c.id().is_empty()
-                && c.id()
+            !id.is_empty()
+                && id
                     .bytes()
                     .all(|b| b.is_ascii_alphanumeric() || b"-_.".contains(&b)),
-            "invalid column ID"
+            "invalid container ID"
         );
-        anyhow::ensure!(ids.insert(c.id()), "duplicate column ID: {}", c.id());
+        anyhow::ensure!(ids.insert(id), "duplicate container ID: {id}");
+        anyhow::ensure!(
+            options.list_height.is_none_or(|h| h.is_finite() && h > 0.),
+            "invalid List height for {id}"
+        );
+        let mut commands = std::collections::HashSet::new();
+        for button in &options.retained_buttons {
+            anyhow::ensure!(
+                commands.insert(button.command),
+                "duplicate retained command {} for {id}",
+                button.command
+            );
+            destinations.push(button.target.as_str());
+        }
+    }
+    anyhow::ensure!(!ids.is_empty(), "AppWindow requires at least one container");
+    for target in destinations {
+        anyhow::ensure!(
+            ids.contains(target),
+            "unknown retained-button target: {target}"
+        );
     }
     Ok(())
 }
@@ -232,8 +372,8 @@ mod tests {
     use super::*;
     use tekes_ui_controls::composition::{ComponentId, TextFieldContent};
     use tekes_ui_tokens::Theme;
-    fn local(id: &str) -> Container {
-        Container::new(
+    fn local(id: &str) -> LocalContainer {
+        LocalContainer::new(
             id,
             Content::new(ComponentId(1), TextFieldContent::new("Notes", "hello")),
         )
@@ -270,6 +410,38 @@ mod tests {
             app.profile.modules.iter().map(|m| m.id).collect::<Vec<_>>(),
             ["remote"]
         );
+    }
+    #[test]
+    fn container_assembly_has_no_legacy_three_column_limit_and_keeps_registry() {
+        let containers = (0..6)
+            .map(|i| Container::from(local(&format!("c{i}"))))
+            .collect();
+        let app = crate::AppWindow::from_containers(
+            containers,
+            crate::PresentationOptions::new("c0").others(crate::OthersOptions::new(
+                (1..6).map(|i| format!("c{i}")).collect(),
+            )),
+        )
+        .unwrap();
+        assert_eq!(app.columns.as_ref().unwrap().len(), 6);
+        assert!(app.profile.modules.is_empty());
+    }
+    #[test]
+    fn retained_button_routes_require_known_targets_and_unique_owner_commands() {
+        let invalid: Vec<Container> = vec![local("a").retain_button(42, "missing").into()];
+        assert!(validate_containers(&invalid).is_err());
+        let duplicate: Vec<Container> = vec![
+            local("a")
+                .retain_button(42, "b")
+                .retain_button(42, "a")
+                .into(),
+            local("b").into(),
+        ];
+        assert!(validate_containers(&duplicate).is_err());
+        let valid: Vec<Container> =
+            vec![local("a").retain_button(42, "b").into(), local("b").into()];
+        validate_containers(&valid).unwrap();
+        assert_eq!(valid[0].container_options().retained_buttons[0].target, "b");
     }
     #[test]
     fn local_original_text_host_accepts_input_and_resize_cancel_without_ipc() {

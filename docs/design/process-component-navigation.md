@@ -1,5 +1,12 @@
 # ProcessComponent、无 View 导航模块与 nav.json
 
+## AppHost v0.2.0 呈现实施（#229）
+
+新 AppHost 入口通过 `PresentationOptions::navigation_toolbar(id)` 显式选择导航贡献的容器 Toolbar，通过 `navigation_targets(ids)` 独立绑定业务接收容器。窗口级 scope 仍是服务的授权/生命周期，不是全窗口工具栏所有权。Tabs/List/focus 移动不改变绑定或导航历史。隐藏本地目标同步命令完成不等待不存在的绘制，隐藏进程目标启动后等待真实响应；可见目标仍保留其呈现确认边界。导航 busy/input_open 门禁同时约束声明和命令派发。
+
+这是 #229 的新实现范围，下方日期化设计与原型证据保留为历史；完整窗口原生验收和公开交付见该 Issue，不由本说明代签。VoiceOver 不属于本版本必需验收。
+
+
 状态：2026-10-21 确认的设计契约，供 TekesUI 公共抽取与 AppHost 接入使用；本文件不表示当前 V1 runtime 已支持无 View 消息或持久化事务。既有原生进程、IPC、共享纹理实现继续复用，不创建第二套运行器。
 
 实现进展：基于公共 V2 ProcessComponent 的服务侧最小导航原型、窗口 toolbar 注册和 nav.json 故障验收已完成，见 [原型实现与证据](navigation-prototype-20261021.md)。该进展不改变下文完整窗口/联合发布的验收要求。

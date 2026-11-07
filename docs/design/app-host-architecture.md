@@ -2,6 +2,25 @@
 
 初稿：2026-10-21；容器与工具栏职责修订：2026-11-05。
 
+## 2026-11-07 实施批次（#229，目标 v0.2.0）
+
+用户已授权实现、测试、提交、语义版本标签与正式 Release。下文 2026-11-05 的“仅文档/未授权/尚未实现”描述保留其历史身份；本节说明当前实施范围，不能代替测试或公开交付回执。
+
+本批实现统一 Container 装配、容器自有 Toolbar、可选 NavBar、focus/others、Tabs/List、单容器交换、保留按钮路由，并迁移 Main/Settings 的受影响运行机制。旧水平布局入口可通过适配继续使用同一 Host 和同一容器所有权，不维护两套输入/工具栏状态机。历史文档中的动态插件、沙箱、新 IPC、完整联合发布协议不随本批扩入。
+
+公共入口为 `AppWindow::from_containers(Vec<Container>, PresentationOptions)`；`Container::{Local, Process}`，本地内容由 `LocalContainer` 持有。旧本地类型可暂用 `legacy::Container`。`navigation_toolbar(id)` 指定导航贡献的显示宿主，与业务 `navigation_targets(ids)` 独立。未配置 others 时，装配额外无角色容器会报错；配置 off/empty others 时保留 Open 恢复入口。
+
+本次落实的最小选择：
+
+- 初始 focus、可选 NavBar 及其响应目标均以应用提供的稳定容器 ID 配置；不从数组位置或键盘焦点推断业务订阅。
+- others 未配置表示无区域/开关；配置后 off 保留选择、顺序与实例。普通 Tab 不改变 focus；提升单容器与原 focus 交换原 Tab 槽位。
+- List 资格由容器显式声明，item 高度由应用配置，外层纵向滚动；顺序与普通 Tabs 分离。首版使用上移/下移操作，不增加拖拽排序或持久化框架。空 List 不展示其 Tab，成员恢复后可重新出现。
+- Toolbar 由各运行容器真实持有，Window 只协调位置与路由；无标题且无条目时无工具栏空行。跨宿主保留按钮先撤销旧呈现/瞬时交互，再在显式目标绑定原来源，只保留一个有效入口。
+- 不引入新的 AppKit 窗口 flag；保持现有平台窗口机制并验证逐容器安全区域、系统控件、拖动与缩放。VoiceOver 仍属后续版本。
+- 旧本地 `Container` 改为 `LocalContainer`，新的 `Container` 是统一装配概念；必要兼容入口明确标注，`module_runtime::ProcessContainer` 不改名或协议。
+
+当前进度与有效验收清单见 [#229](https://github.com/TekesApps/TekesUI/issues/229)。测试需覆盖四种布局组合、超过三容器、状态/进程身份保持、工具栏来源与单次执行、过期交互拒绝、Main/Settings 和原生几何；已有条件未变的证据复用。源码、构建、原生行为、公开 Release 与消费方采用分别记录。
+
 <a id="container-owned-toolbar"></a>
 ## 2026-11-05 确认：Window 直接承载 Container
 

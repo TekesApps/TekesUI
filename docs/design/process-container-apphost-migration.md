@@ -1,5 +1,14 @@
 # ProcessComponent / ProcessContainer / AppHost migration boundary
 
+## Implementation update — 2026-11-07 (#229, v0.2.0)
+
+User authorization now covers implementation, affected verification and formal semantic-version Release. The dated design-only and prior acceptance statements below remain historical. New assembly is `AppWindow::from_containers(Vec<Container>, PresentationOptions)` with `Container::{Local, Process}` and `LocalContainer`; old local-only source callers can temporarily import `legacy::Container`. `Column/from_columns` retains its horizontal layout semantics through the same Host and container-owned Toolbar instances, not a second runtime. The module-runtime Content adapter is unchanged.
+
+NavBar/focus/others use stable configured IDs. `navigation_toolbar` names a contribution display owner independently from `navigation_targets`. With no others configuration, unassigned extra containers are rejected because there is no Open/recovery area; configured off/empty others retains recovery. List height and eligibility are explicit, with outer scrolling and separate up/down order. Hidden retained commands use explicit target mappings and preserve original source/instance generation.
+
+The current source/unit batch and the independent demo/native/public delivery remain separate evidence. See [#229](https://github.com/TekesApps/TekesUI/issues/229); no old native receipt is re-signed as this new architecture.
+
+
 ## Confirmed target — 2026-11-05 (#229; design only)
 
 The [AppHost container/toolbar decision](app-host-architecture.md#container-owned-toolbar) supersedes the window-owned ToolbarHost and column naming in the earlier migration plan. This revision changes documentation only; current APIs and the dated acceptance records below remain unchanged. #70 is now closed for its original delivery; its historical partial-intake statement below is not a new blocker.
