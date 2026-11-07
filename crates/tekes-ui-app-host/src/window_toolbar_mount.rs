@@ -1089,17 +1089,49 @@ impl Host {
         if let Some(owner) = self.open_toolbar() {
             return Some(owner);
         }
-        self.toolbar_groups().into_iter().find(|&owner| {
-            self.toolbar_available(owner)
-                && self.toolbar_container(owner).is_some_and(|index| {
-                    self.panels[index]
-                        .mounted_toolbar
-                        .host
-                        .content_host()
-                        .get(Self::toolbar_control(owner))
-                        .is_some_and(|n| n.frame().contains(point))
-                })
-        })
+        self.toolbar_groups()
+            .into_iter()
+            .find(|&owner| {
+                self.toolbar_available(owner)
+                    && self.toolbar_container(owner).is_some_and(|index| {
+                        self.panels[index]
+                            .mounted_toolbar
+                            .host
+                            .content_host()
+                            .get(Self::toolbar_control(owner))
+                            .is_some_and(|n| n.frame().contains(point))
+                    })
+            })
+            .or_else(|| {
+                // Service/configuration contributions belong to their actual mounted
+                // container too; the last keyboard route is not a pointer target.
+                self.panels
+                    .iter()
+                    .enumerate()
+                    .find_map(|(presenter, panel)| {
+                        panel
+                            .mounted_toolbar
+                            .host
+                            .semantics()
+                            .into_iter()
+                            .find_map(|node| {
+                                if !node.node.visible.is_some_and(|clip| clip.contains(point))
+                                    || !node
+                                        .parts
+                                        .iter()
+                                        .any(|(_, part)| part.frame.contains(point))
+                                {
+                                    return None;
+                                }
+                                // MountedToolbar registers the original control at group+1,
+                                // the same declaration identity used by overlay routing.
+                                let group = ComponentId(node.node.id.0.checked_sub(1)?);
+                                panel.mounted_toolbar.source(group)?;
+                                let target = ToolbarTarget::Contribution { presenter, group };
+                                self.toolbar_available(target).then_some(target)
+                            })
+                    })
+            })
     }
     pub(super) fn panel_geometry(
         &mut self,
@@ -1143,6 +1175,204 @@ mod integration_tests {
     use super::*;
     use crate::{AppWindow, LocalContainer};
     use tekes_ui_controls::composition::{Content, TextContent, ToolbarPlacement, ToolbarRegion};
+    fn mounted_contribution_fixture(
+        service: bool,
+    ) -> (Host, Declaration, std::rc::Rc<std::cell::Cell<usize>>) {
+        let count = std::rc::Rc::new(std::cell::Cell::new(0));
+        let original = count.clone();
+        let owner = LocalContainer::new(
+            "owner",
+            Content::new(ComponentId(1), TextContent::new("Owner")),
+        )
+        .unwrap()
+        .toolbar(vec![ToolbarItem {
+            id: 7,
+            title: "Undo".into(),
+            enabled: true,
+            geometry_dependent: false,
+        }])
+        .on_command(move |_, command| {
+            assert_eq!(command, 7);
+            original.set(original.get() + 1);
+            Ok(())
+        });
+        let presenter = LocalContainer::new(
+            "presenter",
+            Content::new(ComponentId(1), TextContent::new("Presenter")),
+        )
+        .unwrap();
+        let mut host = AppWindow::from_columns(vec![owner.into(), presenter.into()])
+            .unwrap()
+            .into_host(false);
+        host.mount_initial_containers();
+        host.panels[0].bounds = Rect::new(0., 0., 280., 180.);
+        host.panels[1].bounds = Rect::new(300., 0., 640., 180.);
+        let source = if service {
+            Source::Undo(ComponentSource {
+                session: tekes_ui_module_runtime::component::Session {
+                    module: crate::settings_undo::MODULE_ID.into(),
+                    instance: 61,
+                    host_epoch: 1,
+                },
+                registration: 4,
+                window: host.panels[0].mounted_toolbar.window,
+            })
+        } else {
+            Source::Panel {
+                instance: host.panels[0].instance,
+                index: 0,
+                module: "owner".into(),
+                pid: None,
+                generation: 0,
+            }
+        };
+        let declaration = Declaration {
+            id: ComponentId(92300),
+            region: ComponentId(93000),
+            placement: Placement::SecondaryAction,
+            order: 0,
+            contents: Contents::Commands(
+                vec![ButtonDecl {
+                    id: 7,
+                    icon: None,
+                    text: "Undo".into(),
+                    hint: None,
+                    enabled: true,
+                }],
+                Overflow::Together,
+            ),
+            source,
+        };
+        mount_actual_contribution(&mut host, declaration.clone());
+        (host, declaration, count)
+    }
+    fn mount_actual_contribution(host: &mut Host, declaration: Declaration) {
+        host.panels[1]
+            .mounted_toolbar
+            .sync(
+                Rect::new(0., 0., 1000., 200.),
+                vec![ToolbarRegion::new(
+                    ComponentId(93000),
+                    Rect::new(300., 0., 640., 48.),
+                )],
+                vec![declaration],
+            )
+            .unwrap();
+        host.panels[1]
+            .mounted_toolbar
+            .host
+            .render(&mut Scene::new(), &mut host.text, Theme::LIGHT.into())
+            .unwrap();
+    }
+    fn contribution_button_point(host: &Host) -> Point {
+        host.panels[1]
+            .mounted_toolbar
+            .host
+            .semantics()
+            .into_iter()
+            .flat_map(|node| node.parts)
+            .find(|(_, part)| part.semantics.name == "Undo")
+            .unwrap()
+            .1
+            .frame
+            .center()
+    }
+    #[test]
+    fn mounted_undo_pointer_routes_to_its_actual_container_from_leading_route() {
+        let (mut host, _, _) = mounted_contribution_fixture(true);
+        assert_eq!(host.toolbar_index, 0);
+        let point = contribution_button_point(&host);
+        let owner = host
+            .toolbar_target_at(point)
+            .expect("the actual mounted center Undo must be discoverable from leading input route");
+        assert_eq!(
+            owner,
+            ToolbarTarget::Contribution {
+                presenter: 1,
+                group: ComponentId(92300)
+            }
+        );
+        // Shared pointer entry and Source dispatch are the production methods.
+        // Native save/Undo worker completion remains a separate GUI receipt.
+        assert!(
+            !host
+                .dispatch_toolbar(owner, &ContentEvent::PointerDown(point))
+                .unwrap()
+        );
+        assert_eq!(host.toolbar_index, 1);
+        assert_eq!(
+            host.panels[1].mounted_toolbar.host.content_host().focused(),
+            Some(ComponentId(92301))
+        );
+        assert!(
+            host.panels[0]
+                .mounted_toolbar
+                .host
+                .content_host()
+                .focused()
+                .is_none()
+        );
+        assert!(
+            !host
+                .dispatch_toolbar(owner, &ContentEvent::PointerUp(point))
+                .unwrap()
+        );
+        assert!(
+            host.panels[1]
+                .mounted_toolbar
+                .host
+                .drain_commands()
+                .is_empty()
+        );
+    }
+    #[test]
+    fn contribution_pointer_keeps_original_owner_and_rejects_disabled_or_replaced_source() {
+        let (mut host, mut declaration, count) = mounted_contribution_fixture(false);
+        let point = contribution_button_point(&host);
+        let owner = host
+            .toolbar_target_at(point)
+            .expect("actual mounted contribution target");
+        host.dispatch_toolbar(owner, &ContentEvent::PointerDown(point))
+            .unwrap();
+        host.dispatch_toolbar(owner, &ContentEvent::PointerUp(point))
+            .unwrap();
+        assert_eq!(
+            count.get(),
+            1,
+            "presenter must not replace original business owner"
+        );
+        if let Contents::Commands(buttons, _) = &mut declaration.contents {
+            buttons[0].enabled = false;
+        }
+        mount_actual_contribution(&mut host, declaration.clone());
+        let owner = host.toolbar_target_at(point).unwrap();
+        host.dispatch_toolbar(owner, &ContentEvent::PointerDown(point))
+            .unwrap();
+        host.dispatch_toolbar(owner, &ContentEvent::PointerUp(point))
+            .unwrap();
+        assert_eq!(count.get(), 1);
+        if let Contents::Commands(buttons, _) = &mut declaration.contents {
+            buttons[0].enabled = true;
+        }
+        mount_actual_contribution(&mut host, declaration.clone());
+        host.dispatch_toolbar(owner, &ContentEvent::PointerDown(point))
+            .unwrap();
+        if let Source::Panel { generation, .. } = &mut declaration.source {
+            *generation += 1;
+        }
+        mount_actual_contribution(&mut host, declaration);
+        host.dispatch_toolbar(owner, &ContentEvent::PointerUp(point))
+            .unwrap();
+        host.dispatch_toolbar(owner, &ContentEvent::PointerDown(point))
+            .unwrap();
+        host.dispatch_toolbar(owner, &ContentEvent::PointerUp(point))
+            .unwrap();
+        assert_eq!(
+            count.get(),
+            1,
+            "retired source and its old pointer arm cannot execute"
+        );
+    }
     #[test]
     fn real_appwindow_ax_projection_routes_original_column_once_and_rejects_old_generation() {
         let counts = std::rc::Rc::new(std::cell::RefCell::new(vec![]));

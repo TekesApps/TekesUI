@@ -217,6 +217,7 @@ struct Panel {
     pid: Option<u32>,
     module_id: String,
     launch_tx: Option<SyncSender<Result<Pending, String>>>,
+    acceptance_commands: Option<Vec<(u64, u64)>>,
 }
 impl Panel {
     fn new(id: u32, module_id: String) -> Self {
@@ -235,6 +236,7 @@ impl Panel {
             local: None,
             module_id,
             launch_tx: Some(tx),
+            acceptance_commands: None,
             inbox,
             process,
             rx,
@@ -351,6 +353,11 @@ impl Panel {
                 local.cancel();
             }
             self.seq += 1;
+            if let Some(command) = command
+                && let Some(trace) = &mut self.acceptance_commands
+            {
+                trace.push((command, self.seq));
+            }
             return Ok(());
         }
         self.seq += 1;
@@ -378,6 +385,11 @@ impl Panel {
         }
         ensure!(q.len() < 256, "input queue full");
         q.push_back(r);
+        if let Some(command) = command
+            && let Some(trace) = &mut self.acceptance_commands
+        {
+            trace.push((command, self.seq));
+        }
         self.inbox.cv.notify_one();
         Ok(())
     }
@@ -502,6 +514,8 @@ pub struct Host {
     order: Vec<usize>,
     acceptance: bool,
     acceptance_shared: Option<window_acceptance::Shared>,
+    presentation_acceptance: Option<window_acceptance::PresentationAcceptance>,
+    acceptance_draws: u64,
     step: u32,
 }
 impl Host {
@@ -562,6 +576,8 @@ impl Host {
             order: (0..n).collect(),
             acceptance,
             acceptance_shared: None,
+            presentation_acceptance: None,
+            acceptance_draws: 0,
             step: 0,
         }
     }
@@ -1081,6 +1097,9 @@ impl Host {
         let renderer = self.renderer.as_mut().unwrap();
         renderer.resize(w.drawable_size(), w.scale() as f32);
         renderer.render(&scene, &mut self.text.atlas, Rgba::gray(1.))?;
+        if self.acceptance {
+            self.acceptance_draws += 1;
+        }
         if let Some(settings) = &self.settings
             && settings.borrow().open
         {
@@ -1182,7 +1201,6 @@ impl Host {
                 self.navigation_noticed = true;
             }
         }
-        self.accept(w)?;
         let local_needs_frame = self.panels.iter_mut().any(|p| {
             let mut needs = false;
             if p.bounds.size.width > 0.
@@ -1345,9 +1363,17 @@ impl Host {
         }
         Ok(())
     }
-    fn accept(&mut self, w: &Window) -> Result<()> {
+    fn accept(&mut self, w: &mut Window) -> Result<()> {
         if !self.acceptance {
             return Ok(());
+        }
+        if let Some(mut probe) = self.presentation_acceptance.take() {
+            let result = self.accept_presentation(w, &mut probe);
+            if let Err(error) = &result {
+                probe.shared.fail(format!("{error:#}"));
+            }
+            self.presentation_acceptance = Some(probe);
+            return result;
         }
         if let Some(shared) = self.acceptance_shared.clone() {
             return self.accept_settings_window_parent(w, &shared);
@@ -1398,7 +1424,15 @@ impl Host {
     fn event(&mut self, event: Event, w: &mut Window) -> Result<()> {
         if !self.is_settings_window
             && matches!(&event, Event::Created)
-            && let Some(shared) = self.acceptance_shared.clone()
+            && let Some((shared, scope)) = self
+                .presentation_acceptance
+                .as_ref()
+                .map(|probe| (probe.shared.clone(), "presentation"))
+                .or_else(|| {
+                    self.acceptance_shared
+                        .clone()
+                        .map(|shared| (shared, "Settings-only"))
+                })
         {
             let start_watchdog = if let Ok(mut result) = shared.0.lock() {
                 result.parent_window = w.native_window_number();
@@ -1412,7 +1446,7 @@ impl Host {
                 std::thread::spawn(move || {
                     std::thread::sleep(std::time::Duration::from_secs(30));
                     if shared.stage() != window_acceptance::Stage::Done {
-                        shared.fail("30s total Settings-only acceptance timeout");
+                        shared.fail(format!("30s total {scope} acceptance timeout"));
                         if let Ok(result) = shared.0.lock() {
                             if let Some(wake) = &result.child_wake {
                                 let _ = wake.wake();
@@ -1778,7 +1812,22 @@ impl WindowHandler for Host {
     }
 
     fn handle(&mut self, event: Event, w: &mut Window) {
-        if let Err(e) = self.event(event, w) {
+        let acceptance_tick = matches!(
+            &event,
+            Event::Created
+                | Event::Redraw
+                | Event::Wake
+                | Event::AnimationFrame(_)
+                | Event::Resized { .. }
+        );
+        let result = self.event(event, w).and_then(|()| {
+            if acceptance_tick && self.renderer.is_some() {
+                self.accept(w)
+            } else {
+                Ok(())
+            }
+        });
+        if let Err(e) = result {
             eprintln!("HOST_ERROR {e:#}");
             if let Some(shared) = &self.acceptance_shared {
                 shared.fail(format!("HOST_ERROR {e:#}"));
@@ -1789,7 +1838,14 @@ impl WindowHandler for Host {
                 }
             }
             w.set_title(&format!("AppHost error: {e}"));
-            if self.acceptance_shared.is_some() {
+            if let Some(probe) = &self.presentation_acceptance {
+                probe.shared.fail(format!("{e:#}"));
+                eprintln!(
+                    "PRESENTATION_ACCEPTANCE_FAIL step={} draws={} automated_native=true physical_input=false error={e:#}",
+                    self.step, self.acceptance_draws
+                );
+            }
+            if self.acceptance_shared.is_some() || self.presentation_acceptance.is_some() {
                 w.close();
             }
         }
@@ -1829,6 +1885,19 @@ pub fn run(
         && std::env::var("TEKESUI_SETTINGS_WINDOW_ACCEPTANCE").as_deref() == Ok("1");
     if settings_window_acceptance {
         host.acceptance_shared = Some(window_acceptance::Shared::new());
+    }
+    let presentation_acceptance =
+        acceptance && std::env::var("TEKESUI_PRESENTATION_WINDOW_ACCEPTANCE").as_deref() == Ok("1");
+    ensure!(
+        !presentation_acceptance || host.presentation.is_some(),
+        "presentation acceptance requires from_containers"
+    );
+    ensure!(
+        !(presentation_acceptance && settings_window_acceptance),
+        "choose one finite window acceptance scope"
+    );
+    if presentation_acceptance {
+        host.presentation_acceptance = Some(window_acceptance::PresentationAcceptance::new());
     }
     host.settings_provider = settings
         .as_ref()

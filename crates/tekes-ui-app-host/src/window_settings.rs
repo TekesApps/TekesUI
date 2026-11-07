@@ -318,6 +318,28 @@ impl Host {
         self.settings_child = Some(child);
         Ok(())
     }
+    /// Observe the enabled control on its actual container, authenticated by the
+    /// original Settings service contribution rather than the last input route.
+    fn acceptance_settings_undo_target(&self) -> Option<(usize, Rect)> {
+        let original = self.settings.as_ref()?.borrow().toolbar_source.clone()?;
+        self.panels.iter().enumerate().find_map(|(index, panel)| {
+            if panel.mounted_toolbar.source(ComponentId(92300))
+                != Some(&crate::window_toolbar::Source::Undo(original.clone()))
+            {
+                return None;
+            }
+            panel
+                .mounted_toolbar
+                .host
+                .semantics()
+                .into_iter()
+                .find(|node| node.node.id == ComponentId(92301))
+                .into_iter()
+                .flat_map(|node| node.parts)
+                .find(|(_, part)| part.semantics.name == "Undo" && !part.semantics.disabled)
+                .map(|(_, part)| (index, part.frame))
+        })
+    }
     pub(super) fn drive_settings_acceptance(&mut self, w: &mut Window) -> Result<()> {
         let Some(shared) = self.acceptance_shared.clone() else {
             return Ok(());
@@ -398,6 +420,17 @@ impl Host {
                     text_size_targets,
                     text_field_count,
                     text_fields
+                );
+            }
+            if stage == window_acceptance::Stage::Saving {
+                let state = self.settings.as_ref().unwrap().borrow();
+                eprintln!(
+                    "SETTINGS_ACCEPTANCE_WAIT_TIMEOUT phase=Saving input_route={} dirty={} blocked={} original_source={:?} undo_target={:?}",
+                    self.toolbar_index,
+                    state.draft.dirty(),
+                    state.blocked(),
+                    state.toolbar_source,
+                    self.acceptance_settings_undo_target()
                 );
             }
             shared.fail(format!("10s timeout in {stage:?}"));
@@ -587,19 +620,15 @@ impl Host {
                     .is_some_and(|s| !s.borrow().draft.dirty() && !s.borrow().blocked());
                 if saved.as_deref() == Some(edited.as_str())
                     && clean
-                    && let Some(undo) = self.panels[self.toolbar_index]
-                        .mounted_toolbar
-                        .host
-                        .semantics()
-                        .into_iter()
-                        .flat_map(|n| n.parts.into_iter())
-                        .find(|(_, p)| p.semantics.name == "Undo" && !p.semantics.disabled)
-                        .map(|(_, p)| p.frame)
+                    && let Some((presenter, undo)) = self.acceptance_settings_undo_target()
                 {
                     eprintln!(
-                        "SETTINGS_ACCEPTANCE_SAVED path={} value={} draft_clean=true undo_enabled=true",
+                        "SETTINGS_ACCEPTANCE_SAVED path={} value={} draft_clean=true undo_enabled=true undo_presenter={} input_route={} original_source={:?}",
                         options.file.display(),
-                        edited
+                        edited,
+                        presenter,
+                        self.toolbar_index,
+                        self.settings.as_ref().unwrap().borrow().toolbar_source
                     );
                     shared.transition(window_acceptance::Stage::Undoing);
                     let point = tekes_ui_platform_macos::Point {
@@ -626,6 +655,10 @@ impl Host {
                         )?;
                     }
                     shared.transition(window_acceptance::Stage::Restoring);
+                } else {
+                    // Observe the current post-save toolbar projection on the
+                    // next actual paint, without relying on unrelated animation.
+                    w.request_redraw();
                 }
             }
             window_acceptance::Stage::Undoing => {
@@ -1866,6 +1899,99 @@ mod navigation_input_tests {
             drop(host);
             std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
         }
+    }
+    #[test]
+    fn saving_driver_observes_the_original_enabled_undo_in_center_while_input_route_is_leading() {
+        let (mut host, path) = fixture(false);
+        let source = ComponentSource {
+            session: tekes_ui_module_runtime::component::Session {
+                module: crate::settings_undo::MODULE_ID.into(),
+                instance: 40,
+                host_epoch: 2,
+            },
+            registration: 5,
+            window: host.panels[0].mounted_toolbar.window,
+        };
+        host.settings.as_ref().unwrap().borrow_mut().toolbar_source = Some(source.clone());
+        let mut declaration = Declaration {
+            id: ComponentId(92300),
+            region: ComponentId(93000),
+            placement: ToolbarPlacement::SecondaryAction,
+            order: 0,
+            contents: Contents::Commands(
+                vec![ToolbarButtonDeclaration {
+                    id: crate::settings_undo::UNDO,
+                    icon: None,
+                    text: "Undo".into(),
+                    hint: None,
+                    enabled: true,
+                }],
+                ToolbarGroupOverflow::Together,
+            ),
+            source: Source::Undo(source.clone()),
+        };
+        let mount = |host: &mut Host, declaration: Declaration| {
+            host.panels[1]
+                .mounted_toolbar
+                .sync(
+                    Rect::new(0., 0., 1000., 600.),
+                    vec![ToolbarRegion::new(
+                        ComponentId(93000),
+                        Rect::new(300., 0., 620., 48.),
+                    )],
+                    vec![declaration],
+                )
+                .unwrap();
+            host.panels[1]
+                .mounted_toolbar
+                .host
+                .render(&mut Scene::new(), &mut host.text, Theme::LIGHT.into())
+                .unwrap();
+        };
+        mount(&mut host, declaration.clone());
+        host.toolbar_index = 0;
+        let (presenter, frame) = host
+            .acceptance_settings_undo_target()
+            .expect("original center Undo is independent of the input-route index");
+        assert_eq!(presenter, 1);
+        assert!(frame.min_x() >= 300.);
+        assert_eq!(host.toolbar_index, 0);
+        let old = host.panels[1]
+            .mounted_toolbar
+            .host
+            .semantics()
+            .into_iter()
+            .flat_map(|node| node.parts)
+            .find(|(_, part)| part.semantics.name == "Undo")
+            .unwrap()
+            .0;
+        if let Contents::Commands(buttons, _) = &mut declaration.contents {
+            buttons[0].enabled = false;
+        }
+        mount(&mut host, declaration.clone());
+        assert!(host.acceptance_settings_undo_target().is_none());
+        assert!(
+            !host.panels[1]
+                .mounted_toolbar
+                .host
+                .accessibility_action(old, ContentAction::Press)
+                .consumed
+        );
+        if let Contents::Commands(buttons, _) = &mut declaration.contents {
+            buttons[0].enabled = true;
+        }
+        let mut replacement = source.clone();
+        replacement.registration += 1;
+        declaration.source = Source::Undo(replacement.clone());
+        mount(&mut host, declaration);
+        assert!(
+            host.acceptance_settings_undo_target().is_none(),
+            "another source cannot satisfy the original Settings locator"
+        );
+        host.settings.as_ref().unwrap().borrow_mut().toolbar_source = Some(replacement);
+        assert_eq!(host.acceptance_settings_undo_target().unwrap().0, 1);
+        drop(host);
+        std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
     }
     #[test]
     fn original_back_forward_producers_preserve_invalid_or_marked_then_allow_corrected_commands() {

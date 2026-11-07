@@ -102,3 +102,27 @@ Dependencies are explicit in-checkout source paths, not paths into another devel
 For the current ordinary local-core checkpoint, use the complete public repository at `52ed62b1468a332b208cf61f4da06dc45ac72764` (`checkpoint-20261029-2`), retaining the relative `crates/` and `examples/` layout. See the root README for the bounded Settings/Panel/list/text-input stage. Physical IME and VoiceOver are not certified here; the new #81 B2 and #127 prepared Toolbar support remain separate and do not block ordinary local components. The fixed demo's existing process modes do not opt into B2. No new native acceptance was run for this documentation update.
 
 Native acceptance may set `TEKESUI_APPHOST_DATA_DIR` to an absolute task-owned directory. Navigation and Settings then use that directory; the default Application Support location is unchanged, and HOME is not replaced. The existing `--verify` also checks a real cold hidden-worker Command/reply before its first Layout; this is IPC evidence, not visible-frame acceptance.
+
+### Finite automated native presentation acceptance (#229)
+
+Build the existing `apphost-containers` feature, set `TEKESUI_APPHOST_LAYOUT=nav-others`,
+`TEKESUI_APPHOST_BACKING=mixed`, `TEKESUI_PRESENTATION_WINDOW_ACCEPTANCE=1` and an absolute,
+fresh task-owned `TEKESUI_APPHOST_DATA_DIR`, then run the archived demo with
+`--window-acceptance`. Leave `TEKESUI_SETTINGS_WINDOW_ACCEPTANCE` unset. No runtime module
+registry, framework, public shortcut or extra cache is introduced.
+
+This explicit fixture binds the headless navigation Toolbar to `navbar` through the normal
+public assembly API; its business recipients remain `notes` and `demo-first`. Ordinary demo
+runs keep their existing `notes` Toolbar target. The finite sequence injects production Host
+commands from the existing menu declarations, pointer events at real Toolbar semantic frames,
+and AX/text events. It covers promotion, others off/on, retained command ownership/restore,
+List scrolling/reorder/clipped hit routing with editor state, native resize/safe area,
+preedit/commit and focus handoff, then one real Back operation with both original navigation
+recipients hidden and a subsequent reveal. It does not operate the system menu or OS IME.
+
+The existing 30-second watchdog terminates failure; `PRESENTATION_ACCEPTANCE_PASS` terminates
+success and closes the window. `PRESENTATION_ACCEPTANCE_FAIL` or `HOST_ERROR` is failure even
+if the process exits normally. Raw `PRESENTATION_ACCEPTANCE_INPUT`, `_STEP`, `_GEOMETRY` and
+`_HIDDEN_NAV` records identify the actual events, frames, original owner identities/PIDs and
+command/reply sequences. Evidence is **automated native**, not human input, OS Pinyin/Japanese
+IME, pixel readback, screen-scale matrix or a system-menu acceptance.

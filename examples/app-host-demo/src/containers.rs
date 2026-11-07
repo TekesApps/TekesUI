@@ -197,6 +197,18 @@ fn assembly(layout: Layout, backing: Backing) -> Result<(Vec<Container>, Present
     } else {
         options = options.navigation_targets(vec!["notes".into()]);
     }
+    if matches!(layout, Layout::NavOthers)
+        && matches!(backing, Backing::Mixed)
+        && std::env::var("TEKESUI_PRESENTATION_WINDOW_ACCEPTANCE").as_deref() == Ok("1")
+        && std::env::args().nth(1).as_deref() == Some("--window-acceptance")
+    {
+        // Keep the navigation controls visible while BOTH original business
+        // recipients are hidden. Normal demo assembly retains its notes target.
+        options = options.navigation_toolbar("navbar");
+        eprintln!(
+            "DEMO_ACCEPTANCE_FIXTURE navigation_toolbar=navbar navigation_targets=notes,demo-first normal_demo_unchanged=true"
+        );
+    }
     Ok((containers, options))
 }
 fn navigation() -> Result<NavigationOptions> {
