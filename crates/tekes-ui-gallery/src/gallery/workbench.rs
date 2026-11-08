@@ -11178,11 +11178,11 @@ mod interaction_tests {
             scene: &Scene,
             frame: Rect,
             palette: Palette,
-            state: (bool, bool, bool),
+            state: (bool, bool, bool, bool),
             ink_role: &str,
             backing: f32,
         ) {
-            let (read_only, disabled, invalid) = state;
+            let (read_only, disabled, invalid, focused) = state;
             let (index, ground) = scene
                 .primitives()
                 .iter()
@@ -11212,13 +11212,15 @@ mod interaction_tests {
             assert_eq!(
                 ground.border_color,
                 palette
-                    .color(
+                    .color(if focused && !disabled && !invalid {
+                        "border-focused"
+                    } else {
                         proposal::control_boundary(
                             if invalid { "error" } else { "required-input" },
-                            palette.theme
+                            palette.theme,
                         )
                         .unwrap()
-                    )
+                    })
                     .unwrap()
             );
             if invalid && !disabled {
@@ -11267,9 +11269,19 @@ mod interaction_tests {
                 }
             }
         }
-        fn has_ring(scene: &Scene, frame: Rect, palette: Palette) -> bool {
-            scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q)if q.fill.a==0. && q.border_width>0.
-                && q.rect.center()==frame.center() && q.border_color==palette.color("border-focused").unwrap()))
+        fn has_attached_focus(scene: &Scene, frame: Rect, palette: Palette, error: bool) -> bool {
+            // This fixture is Field presentation: focus is on the original edge.
+            // Content/document presentation keeps its separate scope elsewhere.
+            assert!(
+                !scene
+                    .primitives()
+                    .iter()
+                    .any(|p| matches!(p, Primitive::Quad(q)
+                if q.fill.a == 0. && q.border_width > 0. && q.rect.center() == frame.center()))
+            );
+            scene.primitives().iter().any(|p| matches!(p, Primitive::Quad(q) if q.rect == frame
+                && q.border_width == proposal::metric("stroke", "c-focus-width").unwrap()
+                && q.border_color == palette.color(if error { "status-failed" } else { "border-focused" }).unwrap()))
         }
 
         let mut gallery = Gallery::new();
@@ -11287,11 +11299,16 @@ mod interaction_tests {
             &scene,
             frame,
             Theme::LIGHT.into(),
-            (false, false, false),
+            (false, false, false, false),
             "primary-text",
             gallery.text.scale(),
         );
-        assert!(!has_ring(&scene, frame, Theme::LIGHT.into()));
+        assert!(!has_attached_focus(
+            &scene,
+            frame,
+            Theme::LIGHT.into(),
+            false
+        ));
         gallery.handle_input(&mouse(frame.center(), true));
         gallery.handle_input(&mouse(frame.center(), false));
         gallery.handle_input(&Event::TextCommand("selectAll:".into()));
@@ -11321,11 +11338,11 @@ mod interaction_tests {
                 &scene,
                 current,
                 theme.into(),
-                (false, false, false),
+                (false, false, false, true),
                 "primary-text",
                 gallery.text.scale(),
             );
-            assert!(has_ring(&scene, current, theme.into()));
+            assert!(has_attached_focus(&scene, current, theme.into(), false));
         }
         let palette: Palette = Theme::DARK_INCREASED.into();
         gallery.workbench.state(i).error = true;
@@ -11335,11 +11352,11 @@ mod interaction_tests {
             &scene,
             frame,
             palette,
-            (false, false, true),
+            (false, false, true, true),
             "primary-text",
             gallery.text.scale(),
         );
-        assert!(has_ring(&scene, frame, palette));
+        assert!(has_attached_focus(&scene, frame, palette, true));
         gallery.workbench.state(i).error = false;
         gallery.workbench.state(i).disabled = true;
         scene.clear();
@@ -11348,11 +11365,11 @@ mod interaction_tests {
             &scene,
             frame,
             palette,
-            (false, true, false),
+            (false, true, false, false),
             "disabled-text",
             gallery.text.scale(),
         );
-        assert!(!has_ring(&scene, frame, palette));
+        assert!(!has_attached_focus(&scene, frame, palette, false));
         gallery.handle_input(&Event::TextCommit {
             text: "blocked".into(),
             replacement: None,
@@ -11378,11 +11395,11 @@ mod interaction_tests {
             &scene,
             frame,
             palette,
-            (false, false, false),
+            (false, false, false, false),
             "secondary-text",
             gallery.text.scale(),
         );
-        assert!(!has_ring(&scene, frame, palette));
+        assert!(!has_attached_focus(&scene, frame, palette, false));
         gallery.handle_input(&mouse(frame.center(), true));
         gallery.handle_input(&mouse(frame.center(), false));
         gallery.handle_input(&Event::TextCommit {
@@ -11396,7 +11413,7 @@ mod interaction_tests {
             &scene,
             frame,
             palette,
-            (false, false, false),
+            (false, false, false, true),
             "primary-text",
             gallery.text.scale(),
         );
@@ -11453,7 +11470,13 @@ mod interaction_tests {
             let (a, b) = (l(a), l(b));
             (a.max(b) + 0.05) / (a.min(b) + 0.05)
         }
-        fn assert_input(scene: &Scene, frame: Rect, palette: Palette, backing: f32) -> usize {
+        fn assert_input(
+            scene: &Scene,
+            frame: Rect,
+            palette: Palette,
+            backing: f32,
+            focused: bool,
+        ) -> usize {
             let (index, ground) = scene
                 .primitives()
                 .iter()
@@ -11474,7 +11497,11 @@ mod interaction_tests {
             assert_eq!(
                 ground.border_color,
                 palette
-                    .color(proposal::control_boundary("required-input", palette.theme).unwrap())
+                    .color(if focused {
+                        "border-focused"
+                    } else {
+                        proposal::control_boundary("required-input", palette.theme).unwrap()
+                    })
                     .unwrap()
             );
             let inks: Vec<_> = scene.primitives()[index + 1..]
@@ -11563,9 +11590,20 @@ mod interaction_tests {
             }
             overlays.len()
         }
-        fn has_ring(scene: &Scene, frame: Rect, palette: Palette) -> bool {
-            scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q)if q.fill.a==0. && q.border_width>0.
-                && q.rect.center()==frame.center() && q.border_color==palette.color("border-focused").unwrap()))
+        fn has_attached_focus(scene: &Scene, frame: Rect, palette: Palette) -> bool {
+            // TextArea uses the decorated Field presentation, not document Content.
+            assert!(
+                !scene
+                    .primitives()
+                    .iter()
+                    .any(|p| matches!(p, Primitive::Quad(q)
+                if q.fill.a == 0. && q.border_width > 0. && q.rect.center() == frame.center()))
+            );
+            scene.primitives().iter().any(|p| {
+                matches!(p, Primitive::Quad(q) if q.rect == frame
+                && q.border_width == proposal::metric("stroke", "c-focus-width").unwrap()
+                && q.border_color == palette.color("border-focused").unwrap())
+            })
         }
 
         fn assert_thumb(scene: &Scene, frame: Rect, palette: Palette) -> Rect {
@@ -11610,8 +11648,14 @@ mod interaction_tests {
         let mut scene = Scene::new();
         gallery.build_scene(&mut scene);
         let frame = gallery.workbench.state(i).input.frame_at(0).unwrap();
-        assert_input(&scene, frame, Theme::LIGHT.into(), gallery.text.scale());
-        assert!(!has_ring(&scene, frame, Theme::LIGHT.into()));
+        assert_input(
+            &scene,
+            frame,
+            Theme::LIGHT.into(),
+            gallery.text.scale(),
+            false,
+        );
+        assert!(!has_attached_focus(&scene, frame, Theme::LIGHT.into()));
         let source = (0..24)
             .map(|i| format!("Area line {i}: original multiline input 中文 remains editable.\n"))
             .collect::<String>();
@@ -11651,9 +11695,9 @@ mod interaction_tests {
             assert_eq!(native.text, source);
             assert_eq!(native.selection, 0..4);
             assert_eq!(native.caret_origin, caret_origin);
-            assert_input(&scene, frame, theme.into(), gallery.text.scale());
+            assert_input(&scene, frame, theme.into(), gallery.text.scale(), true);
             assert_eq!(assert_thumb(&scene, frame, theme.into()), thumb);
-            assert!(has_ring(&scene, frame, theme.into()));
+            assert!(has_attached_focus(&scene, frame, theme.into()));
         }
 
         gallery.build_scene(&mut Scene::new());
@@ -11674,6 +11718,7 @@ mod interaction_tests {
             frame,
             Theme::DARK_INCREASED.into(),
             gallery.text.scale(),
+            true,
         );
     }
 
@@ -12344,9 +12389,7 @@ mod interaction_tests {
             );
             assert_eq!(
                 ground.border_color,
-                palette
-                    .color(proposal::control_boundary("required-input", palette.theme).unwrap())
-                    .unwrap()
+                palette.color("border-focused").unwrap()
             );
             let inks = text_ink(&scene.primitives()[index + 1..], frame, backing);
             assert!(
@@ -12623,7 +12666,10 @@ mod interaction_tests {
                 assert_input(&scene, frame, palette, gallery.text.scale()) > 0,
                 "retained visible selection must paint actual selection"
             );
-            assert!(scene.primitives().iter().any(|p| matches!(p, Primitive::Quad(q) if q.fill.a == 0. && q.border_width > 0. && q.rect.center() == frame.center() && q.border_color == palette.color("border-focused").unwrap())));
+            // The original Form editor has Field presentation: one attached
+            // focus edge; document Content retains a separate scope elsewhere.
+            assert_eq!(scene.primitives().iter().filter(|p| matches!(p, Primitive::Quad(q) if q.rect == frame && q.border_width == proposal::metric("stroke", "c-focus-width").unwrap() && q.border_color == palette.color("border-focused").unwrap())).count(), 1);
+            assert!(!scene.primitives().iter().any(|p| matches!(p, Primitive::Quad(q) if q.fill.a == 0. && q.border_width > 0. && q.rect.center() == frame.center())));
             assert_label(
                 &scene,
                 layout.label,

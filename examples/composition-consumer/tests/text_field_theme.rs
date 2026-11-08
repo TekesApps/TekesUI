@@ -16,11 +16,11 @@ fn assert_input(
     scene: &Scene,
     frame: Rect,
     palette: Palette,
-    state: (bool, bool, bool),
+    state: (bool, bool, bool, bool),
     ink_role: &str,
     backing: f32,
 ) {
-    let (read_only, disabled, invalid) = state;
+    let (read_only, disabled, invalid, focused) = state;
     let (index, ground) = scene
         .primitives()
         .iter()
@@ -48,13 +48,15 @@ fn assert_input(
     assert_eq!(
         ground.border_color,
         palette
-            .color(
+            .color(if focused && !disabled && !invalid {
+                "border-focused"
+            } else {
                 proposal::control_boundary(
                     if invalid { "error" } else { "required-input" },
-                    palette.theme
+                    palette.theme,
                 )
                 .unwrap()
-            )
+            })
             .unwrap()
     );
     if invalid && !disabled {
@@ -103,9 +105,11 @@ fn assert_input(
         }
     }
 }
-fn has_ring(scene: &Scene, frame: Rect, palette: Palette) -> bool {
-    scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q)if q.fill.a==0. && q.border_width>0.
-        && q.rect.center()==frame.center() && q.border_color==palette.color("border-focused").unwrap()))
+fn has_field_focus_boundary(scene: &Scene, frame: Rect) -> bool {
+    scene.primitives().iter().any(|p| {
+        matches!(p, Primitive::Quad(q) if q.rect == frame
+        && q.border_width == proposal::metric("stroke", "c-focus-width").unwrap())
+    })
 }
 
 fn render_surface(
@@ -150,27 +154,27 @@ fn text_field_primary_single_line_surface_retains_theme_and_declared_state_ink()
             &scene,
             field.outer,
             palette,
-            (false, false, false),
+            (false, false, false, false),
             "primary-text",
             text.backing,
         );
-        assert!(!has_ring(&scene, field.outer, palette));
+        assert!(!has_field_focus_boundary(&scene, field.outer));
     }
     let theme = Theme::DARK_INCREASED;
     let palette: Palette = theme.into();
     let scene = render_surface(&mut field, &mut text, theme, true);
-    assert!(has_ring(&scene, field.outer, palette));
+    assert!(has_field_focus_boundary(&scene, field.outer));
     field.error = true;
     let scene = render_surface(&mut field, &mut text, theme, true);
     assert_input(
         &scene,
         field.outer,
         palette,
-        (false, false, true),
+        (false, false, true, true),
         "primary-text",
         text.backing,
     );
-    assert!(has_ring(&scene, field.outer, palette));
+    assert!(has_field_focus_boundary(&scene, field.outer));
     field.error = false;
     field.input.read_only = true;
     let scene = render_surface(&mut field, &mut text, theme, true);
@@ -178,7 +182,7 @@ fn text_field_primary_single_line_surface_retains_theme_and_declared_state_ink()
         &scene,
         field.outer,
         palette,
-        (true, false, false),
+        (true, false, false, true),
         "primary-text",
         text.backing,
     );
@@ -191,11 +195,11 @@ fn text_field_primary_single_line_surface_retains_theme_and_declared_state_ink()
         &scene,
         field.outer,
         palette,
-        (false, true, false),
+        (false, true, false, false),
         "disabled-text",
         text.backing,
     );
-    assert!(!has_ring(&scene, field.outer, palette));
+    assert!(!has_field_focus_boundary(&scene, field.outer));
     assert!(!field.input.insert("blocked", None));
     assert_eq!(field.input.text, "Project draft");
 }
@@ -243,7 +247,7 @@ fn text_field_content_retained_themes_use_real_opted_in_host_and_original_input_
             &scene,
             frame,
             theme.into(),
-            (false, false, false),
+            (false, false, false, false),
             "primary-text",
             text.backing,
         );
@@ -266,7 +270,7 @@ fn text_field_content_retained_themes_use_real_opted_in_host_and_original_input_
     );
     let scene = render_host(&mut host, &mut text, theme);
     let frame = host.semantics()[0].frame;
-    assert!(has_ring(&scene, frame, palette));
+    assert!(has_field_focus_boundary(&scene, frame));
     assert_eq!(
         host.semantics()[0].semantics.value.as_deref(),
         Some("renamed")
@@ -283,7 +287,7 @@ fn text_field_content_retained_themes_use_real_opted_in_host_and_original_input_
         &scene,
         frame,
         palette,
-        (true, false, false),
+        (true, false, false, true),
         "primary-text",
         text.backing,
     );
@@ -321,7 +325,7 @@ fn text_field_content_retained_themes_use_real_opted_in_host_and_original_input_
         &scene,
         field.surface.outer,
         palette,
-        (false, false, true),
+        (false, false, true, true),
         "primary-text",
         text.backing,
     );
@@ -358,11 +362,11 @@ fn text_field_content_retained_themes_use_real_opted_in_host_and_original_input_
         &scene,
         frame,
         palette,
-        (false, true, false),
+        (false, true, false, false),
         "disabled-text",
         text.backing,
     );
-    assert!(!has_ring(&scene, frame, palette));
+    assert!(!has_field_focus_boundary(&scene, frame));
     assert!(host.semantics()[0].semantics.disabled);
     assert!(
         !host

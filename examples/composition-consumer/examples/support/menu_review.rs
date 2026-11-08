@@ -57,6 +57,7 @@ fn selection(record: &ContentActionRecord) -> &MenuSelection {
         | ContentActionPayload::RadioSelection(_)
         | ContentActionPayload::SegmentSelection(_)
         | ContentActionPayload::TabSelection { .. }
+        | ContentActionPayload::TabCloseRequest { .. }
         | ContentActionPayload::BreadcrumbNavigation { .. }
         | ContentActionPayload::CommandSelection { .. }
         | ContentActionPayload::DisclosureExpansion(_) => {

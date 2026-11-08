@@ -74,6 +74,7 @@ fn selection(r: &ContentActionRecord) -> &MenuSelection {
         | ContentActionPayload::SegmentSelection(_)
         | ContentActionPayload::DisclosureExpansion(_)
         | ContentActionPayload::TabSelection { .. }
+        | ContentActionPayload::TabCloseRequest { .. }
         | ContentActionPayload::BreadcrumbNavigation { .. }
         | ContentActionPayload::CommandSelection { .. } => {
             panic!("expected original MenuSelection payload")

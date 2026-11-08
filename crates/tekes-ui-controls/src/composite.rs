@@ -84,6 +84,8 @@ pub struct TabsLayout {
     pub visible: Option<Rect>,
     /// One entry per tab, in model order. Fully clipped tabs have `visible=None`.
     pub items: Vec<ButtonLayout>,
+    /// Independent close targets, indexed by the original tab identity.
+    pub close_buttons: Vec<Option<ButtonLayout>>,
 }
 
 /// ButtonModel-backed, roving-tabstop presentation for the existing `Tabs` model.
@@ -91,6 +93,14 @@ pub struct TabsLayout {
 pub struct TabsView {
     model: Tabs,
     buttons: Vec<ButtonModel>,
+    close_buttons: Vec<ButtonModel>,
+    close_resources: Vec<Option<crate::composition::IconImage>>,
+    close_icon_error: Option<crate::composition::IconRenderError>,
+    closable: Vec<bool>,
+    visible_items: Vec<bool>,
+    close_press: Option<usize>,
+    close_focused: Option<usize>,
+    close_request: Option<usize>,
     placement: TabsLayout,
     focus_visible: bool,
     focus_index: usize,
@@ -114,12 +124,23 @@ impl TabsView {
         for button in &mut self.buttons {
             button.set_surface(surface);
         }
+        for button in &mut self.close_buttons {
+            button.set_surface(surface);
+        }
         Ok(())
     }
     pub fn new(count: usize) -> Self {
         Self {
             model: Tabs::new(count),
             buttons: vec![ButtonModel::default(); count],
+            close_buttons: vec![ButtonModel::default(); count],
+            close_resources: vec![None; count],
+            close_icon_error: None,
+            closable: vec![false; count],
+            visible_items: vec![true; count],
+            close_press: None,
+            close_focused: None,
+            close_request: None,
             placement: TabsLayout::default(),
             focus_visible: false,
             focus_index: 0,
@@ -138,7 +159,9 @@ impl TabsView {
     }
 
     pub fn select(&mut self, index: usize) -> bool {
-        if self.disabled_items.get(index).copied().unwrap_or(true) {
+        if self.disabled_items.get(index).copied().unwrap_or(true)
+            || !self.visible_items.get(index).copied().unwrap_or(false)
+        {
             return false;
         }
         let changed = self.model.select(index);
@@ -150,15 +173,104 @@ impl TabsView {
 
     /// Moves the selected/roving stop as a host restores keyboard focus.
     pub fn focus(&mut self, index: usize, focus_visible: bool) -> bool {
-        if index >= self.model.count || self.disabled_items[index] {
+        if index >= self.model.count || self.disabled_items[index] || !self.visible_items[index] {
             return false;
         }
         self.model.selected = index;
         self.focus_index = index;
         self.focused = Some(index);
+        self.close_focused = None;
         self.focus_visible = focus_visible;
         self.sync_focus_buttons();
         true
+    }
+
+    /// Closing is an intent, separate from selection and owned by the host.
+    pub fn set_closable(&mut self, index: usize, closable: bool) {
+        if let Some(value) = self.closable.get_mut(index) {
+            *value = closable;
+            if !closable {
+                self.close_buttons[index].blur();
+                self.close_resources[index] = None;
+                self.cancel_arms();
+                if self.close_focused == Some(index) {
+                    self.close_focused = None;
+                }
+            }
+        }
+    }
+    pub fn take_close_request(&mut self) -> Option<usize> {
+        self.close_request.take()
+    }
+    /// Retain the backing tab and revoke its old input geometry while hidden.
+    pub fn set_item_visible(&mut self, index: usize, visible: bool) {
+        let Some(value) = self.visible_items.get_mut(index) else {
+            return;
+        };
+        if *value == visible {
+            return;
+        }
+        *value = visible;
+        self.cancel_arms();
+        self.buttons[index].clear_layout();
+        self.close_buttons[index].clear_layout();
+        if !visible {
+            self.close_resources[index] = None;
+        }
+        if let Some(item) = self.placement.items.get_mut(index) {
+            *item = empty_button_layout();
+        }
+        if let Some(item) = self.placement.close_buttons.get_mut(index) {
+            *item = None;
+        }
+        if self.focused == Some(index) || self.close_focused == Some(index) {
+            self.clear_focus();
+        }
+        if !self
+            .visible_items
+            .get(self.model.selected)
+            .copied()
+            .unwrap_or(false)
+        {
+            let candidate = (index + 1..self.model.count)
+                .chain((0..index).rev())
+                .find(|&i| self.visible_items[i] && !self.disabled_items[i]);
+            if let Some(candidate) = candidate {
+                self.model.selected = candidate;
+            } else if visible && !self.disabled_items[index] {
+                self.model.selected = index;
+            }
+        }
+    }
+    pub(crate) fn close_focused_index(&self) -> Option<usize> {
+        self.close_focused
+    }
+    pub(crate) fn close_press_index(&self) -> Option<usize> {
+        self.close_press
+    }
+    /// Latest explicit close artwork failure for direct View callers.
+    pub fn close_icon_error(&self) -> Option<crate::composition::IconRenderError> {
+        self.close_icon_error
+    }
+    pub(crate) fn focus_close(&mut self, index: usize, visible: bool) -> bool {
+        if !self.close_available(index) {
+            return false;
+        }
+        if self.close_focused != Some(index) {
+            self.cancel_arms();
+        }
+        self.focused = None;
+        self.close_focused = Some(index);
+        self.focus_visible = visible;
+        self.sync_focus_buttons();
+        true
+    }
+    fn close_available(&self, index: usize) -> bool {
+        !self.disabled
+            && self.window_active
+            && self.closable.get(index).copied().unwrap_or(false)
+            && self.visible_items[index]
+            && !self.disabled_items[index]
     }
 
     pub(crate) fn set_item_disabled(&mut self, index: usize, disabled: bool) {
@@ -173,6 +285,15 @@ impl TabsView {
         }
         if disabled && self.focused == Some(index) {
             self.clear_focus();
+        }
+        if disabled && self.close_focused == Some(index) {
+            self.clear_focus();
+        }
+        if let Some(button) = self.close_buttons.get_mut(index) {
+            button.state.disabled = self.disabled || disabled;
+            if disabled {
+                button.blur();
+            }
         }
         self.cancel_arms();
     }
@@ -246,6 +367,10 @@ impl TabsView {
     pub(crate) fn content_lane_width(text: &mut dyn ButtonTextRenderer, advance: f32) -> f32 {
         (advance - focus_reveal_outset(text.backing_scale()).max(4.)).max(0.)
     }
+    pub(crate) fn close_width(text: &mut dyn ButtonTextRenderer) -> f32 {
+        let role = proposal::TextRole::UiBody;
+        24. * (text.resolved_font_size(role) / role.style().size).max(1.)
+    }
     pub(crate) fn content_height(
         text: &mut dyn ButtonTextRenderer,
         sizes: &[Size],
@@ -275,8 +400,12 @@ impl TabsView {
         if !active {
             self.focus_visible = false;
             self.focused = None;
+            self.close_focused = None;
             self.cancel_arms();
             for button in &mut self.buttons {
+                button.blur();
+            }
+            for button in &mut self.close_buttons {
                 button.blur();
             }
             self.sync_focus_buttons();
@@ -353,6 +482,7 @@ impl TabsView {
         compact: bool,
     ) -> TabsLayout {
         self.compact = compact;
+        self.close_icon_error = None;
         if safe_rect(frame) != frame
             || frame.size.width <= 0.0
             || frame.size.height <= 0.0
@@ -363,6 +493,10 @@ impl TabsView {
             for button in &mut self.buttons {
                 button.clear_layout();
             }
+            for button in &mut self.close_buttons {
+                button.clear_layout();
+            }
+            self.close_resources.fill(None);
             self.placement = TabsLayout::default();
             return self.placement.clone();
         }
@@ -372,22 +506,52 @@ impl TabsView {
         let lanes = if let Some(lanes) = lane_advances {
             lanes.to_vec()
         } else {
+            let close_width = Self::close_width(text);
             let natural: Vec<_> = (0..self.model.count)
+                .filter(|&i| self.visible_items[i])
                 .map(|index| {
-                    text.measure(
+                    let mut size = text.measure(
                         labels.get(index).copied().unwrap_or(""),
                         role,
                         frame.size.width,
-                    )
+                    );
+                    if self.closable[index] {
+                        size.width += close_width;
+                    }
+                    size
                 })
                 .collect();
-            Self::content_lanes(text, &natural, frame.size.width, role, compact)
+            let visible_lanes =
+                Self::content_lanes(text, &natural, frame.size.width, role, compact);
+            let mut next = visible_lanes.into_iter();
+            self.visible_items
+                .iter()
+                .map(|visible| {
+                    if *visible {
+                        next.next().unwrap_or(0.)
+                    } else {
+                        0.
+                    }
+                })
+                .collect()
         };
         let lane_gap = focus_reveal_outset(text.backing_scale()).max(4.0);
+        let close_width = Self::close_width(text);
         let base_height = row_height(compact);
         let mut measured_heights = Vec::with_capacity(self.model.count);
         for (index, lane) in lanes.iter().copied().enumerate().take(self.model.count) {
-            let lane_width = (lane - lane_gap).max(0.);
+            if !self.visible_items[index] {
+                measured_heights.push(0.);
+                continue;
+            }
+            let lane_width = (lane
+                - lane_gap
+                - if self.closable[index] {
+                    close_width
+                } else {
+                    0.
+                })
+            .max(0.);
             let label = labels.get(index).copied().unwrap_or("");
             let measured = content_sizes
                 .and_then(|sizes| sizes.get(index).copied())
@@ -404,8 +568,17 @@ impl TabsView {
         let component_frame = Rect::new(frame.min_x(), frame.min_y(), frame.size.width, height);
         let visible = clip_rect(component_frame, clip);
         let mut items = Vec::with_capacity(self.model.count);
+        let mut close_layouts = Vec::with_capacity(self.model.count);
         let mut x = frame.min_x();
         for (index, measured_height) in measured_heights.iter().copied().enumerate() {
+            if !self.visible_items[index] {
+                self.buttons[index].clear_layout();
+                self.close_buttons[index].clear_layout();
+                self.close_resources[index] = None;
+                items.push(empty_button_layout());
+                close_layouts.push(None);
+                continue;
+            }
             let label = labels.get(index).copied().unwrap_or("");
             let item = Rect::new(
                 x,
@@ -418,6 +591,7 @@ impl TabsView {
             let item_clip = clip;
             let button = &mut self.buttons[index];
             button.set_surface(self.surface);
+            button.set_selection_fill_only(true);
             set_button_state(
                 button,
                 self.window_active && self.focused == Some(index),
@@ -425,11 +599,31 @@ impl TabsView {
                 self.disabled || self.disabled_items[index],
                 self.model.selected == index,
             );
-            let layout = if let Some(size) = content_sizes.and_then(|sizes| sizes.get(index)) {
+            let mut layout = if let Some(size) = content_sizes.and_then(|sizes| sizes.get(index)) {
                 button.render_content_frame(
                     scene,
                     text,
                     *size,
+                    item,
+                    item_clip,
+                    palette,
+                    paint::ButtonVariant::Quiet,
+                )
+            } else if self.closable[index] {
+                let insets = ButtonModel::measure_content(
+                    text,
+                    Size::default(),
+                    item.size.width,
+                    size_role(compact),
+                    role,
+                )
+                .width;
+                let width = (item.size.width - close_width - insets).max(0.);
+                let size = text.measure(label, role, width);
+                button.render_content_frame(
+                    scene,
+                    text,
+                    size,
                     item,
                     item_clip,
                     palette,
@@ -449,13 +643,100 @@ impl TabsView {
                     ButtonTextAlign::Leading,
                 )
             };
+            let close_layout = if self.closable[index] {
+                let width = close_width.min((item.size.width * 0.5).max(0.));
+                let close_frame =
+                    Rect::new(item.max_x() - width, item.min_y(), width, item.size.height);
+                layout.content.size.width = (close_frame.min_x() - layout.content.min_x()).max(0.);
+                let close = &mut self.close_buttons[index];
+                close.set_surface(self.surface);
+                close.frame_policy = crate::ButtonFramePolicy::Exact;
+                set_button_state(
+                    close,
+                    self.window_active && self.close_focused == Some(index),
+                    self.window_active && self.focus_visible && self.close_focused == Some(index),
+                    self.disabled || self.disabled_items[index],
+                    false,
+                );
+                let close_layout = close.render_content_frame(
+                    scene,
+                    text,
+                    Size::default(),
+                    close_frame,
+                    item_clip,
+                    palette,
+                    paint::ButtonVariant::Quiet,
+                );
+                if let Some(visible) = close_layout.visible {
+                    let body = proposal::TextRole::UiBody;
+                    let scale = (text.resolved_font_size(body) / body.style().size).max(1.);
+                    let side = (proposal::metric("size", "size-icon-standard")
+                        .expect("Tabs close icon size token")
+                        * scale)
+                        .min(close_frame.size.width)
+                        .min(close_frame.size.height);
+                    let artboard = Rect::new(
+                        close_frame.center().x - side * 0.5,
+                        close_frame.center().y - side * 0.5,
+                        side,
+                        side,
+                    );
+                    let tint = close
+                        .surface_colors(palette, paint::ButtonVariant::Quiet, self.surface)
+                        .icon;
+                    let backing = text.backing_scale();
+                    let image = text
+                        .icon_renderer()
+                        .ok_or(crate::composition::IconRenderError::UnsupportedRenderer)
+                        .and_then(|icons| {
+                            icons.prepare_icon("tekes-clear-group", side, backing, tint)
+                        });
+                    match image {
+                        Ok(image) => {
+                            scene.push_clip(visible);
+                            scene.push_image(tekes_ui_scene::ImageQuad {
+                                rect: artboard,
+                                image: image.id(),
+                                opacity: 1.,
+                            });
+                            scene.pop_clip();
+                            self.close_resources[index] = Some(image);
+                        }
+                        Err(error) => {
+                            self.close_resources[index] = None;
+                            self.close_icon_error = Some(error);
+                        }
+                    }
+                } else {
+                    self.close_resources[index] = None;
+                }
+                Some(close_layout)
+            } else {
+                self.close_buttons[index].clear_layout();
+                self.close_resources[index] = None;
+                None
+            };
+            if content_sizes.is_none() && self.closable[index] {
+                let colors =
+                    button.surface_colors(palette, paint::ButtonVariant::Quiet, self.surface);
+                text.draw(
+                    scene,
+                    label,
+                    role,
+                    layout.content,
+                    ButtonTextAlign::Leading,
+                    colors.text,
+                );
+            }
             items.push(layout);
+            close_layouts.push(close_layout);
             x += lanes[index];
         }
         self.placement = TabsLayout {
             frame: component_frame,
             visible,
             items,
+            close_buttons: close_layouts,
         };
         if !visible.is_some_and(|rect| rect.size.width > 0.0 && rect.size.height > 0.0)
             || self.focused.is_some_and(|index| {
@@ -463,6 +744,12 @@ impl TabsView {
                     .items
                     .get(index)
                     .is_none_or(|item| item.visible.is_none())
+            })
+            || self.close_focused.is_some_and(|index| {
+                self.placement
+                    .close_buttons
+                    .get(index)
+                    .is_none_or(|item| item.is_none_or(|item| item.visible.is_none()))
             })
         {
             self.clear_focus();
@@ -478,23 +765,50 @@ impl TabsView {
         for button in &mut self.buttons {
             button.pointer_move_at(point);
         }
+        for button in &mut self.close_buttons {
+            button.pointer_move_at(point);
+        }
+    }
+
+    pub(crate) fn close_target_at(&self, point: Point) -> Option<usize> {
+        self.placement
+            .close_buttons
+            .iter()
+            .position(|layout| layout.is_some_and(|layout| layout.hit_test(point)))
     }
 
     pub fn pointer_down_at(&mut self, point: Point) -> Option<usize> {
         if !self.window_active || self.disabled {
             return None;
         }
+        self.close_request = None;
+        if let Some(index) = self.close_target_at(point) {
+            self.cancel_arms();
+            if !self.close_available(index) {
+                return None;
+            }
+            self.focused = None;
+            self.close_focused = Some(index);
+            self.focus_visible = false;
+            self.sync_focus_buttons();
+            self.close_press = self.close_buttons[index]
+                .pointer_down_at(point)
+                .then_some(index);
+            return self.close_press;
+        }
         let target = self
             .placement
             .items
             .iter()
             .position(|item| item.hit_test(point))?;
-        if target >= self.model.count || self.disabled_items[target] {
+        if target >= self.model.count || self.disabled_items[target] || !self.visible_items[target]
+        {
             return None;
         }
         self.focus_visible = false;
         self.focus_index = target;
         self.focused = Some(target);
+        self.close_focused = None;
         self.sync_focus_buttons();
         self.press_target = self.buttons[target]
             .pointer_down_at(point)
@@ -505,6 +819,15 @@ impl TabsView {
     pub fn pointer_up_at(&mut self, point: Point) -> Option<usize> {
         if !self.window_active {
             self.cancel_arms();
+            return None;
+        }
+        if let Some(index) = self.close_press.take() {
+            let activated =
+                self.close_available(index) && self.close_buttons[index].pointer_up_at(point);
+            self.cancel_arms();
+            if activated {
+                self.close_request = Some(index);
+            }
             return None;
         }
         let target = self.press_target.take()?;
@@ -528,6 +851,12 @@ impl TabsView {
             self.cancel_arms();
             return None;
         }
+        if let Some(index) = self.close_focused {
+            if self.close_available(index) && self.close_buttons[index].key(key, down) {
+                self.close_request = Some(index);
+            }
+            return None;
+        }
         let focused = self.focused?;
         if !down {
             let selected = focused;
@@ -548,7 +877,9 @@ impl TabsView {
             self.focus_visible = true;
             if self.model.key(key) {
                 for _ in 0..self.model.count {
-                    if !self.disabled_items[self.model.selected] {
+                    if !self.disabled_items[self.model.selected]
+                        && self.visible_items[self.model.selected]
+                    {
                         break;
                     }
                     self.model.key(if key == ControlKey::Home {
@@ -591,7 +922,9 @@ impl TabsView {
 
     pub fn clear_focus(&mut self) {
         self.focused = None;
+        self.close_focused = None;
         self.focus_visible = false;
+        self.cancel_arms();
         self.sync_focus_buttons();
     }
 
@@ -609,11 +942,24 @@ impl TabsView {
             button.state.focused = true;
             button.state.focus_visible = self.focus_visible;
         }
+        for (index, button) in self.close_buttons.iter_mut().enumerate() {
+            if self.close_focused == Some(index) {
+                button.state.focused = true;
+                button.state.focus_visible = self.focus_visible;
+            } else if button.state.focused {
+                button.blur();
+            }
+        }
     }
 
     fn cancel_arms(&mut self) {
         self.press_target = None;
+        self.close_press = None;
+        self.close_request = None;
         for button in &mut self.buttons {
+            button.cancel();
+        }
+        for button in &mut self.close_buttons {
             button.cancel();
         }
     }
@@ -1876,6 +2222,7 @@ impl MenuRuntime {
             }
             let button = &mut self.buttons[index];
             button.set_surface("popover");
+            button.set_selection_fill_only(true);
             set_button_state(
                 button,
                 self.window_active && model.open && model.items.selected == index,
@@ -3466,6 +3813,110 @@ mod tests {
             }),
             "keyboard-selected menu row paints its focus ring"
         );
+    }
+
+    #[test]
+    fn menu_rows_use_selected_fill_without_strokes_and_keep_popup_and_keyboard_focus() {
+        for theme in Theme::ALL {
+            for scale in [1., 2.] {
+                for phase in 0..4 {
+                    let palette = Palette::from(theme);
+                    let mut text = ScaledText(scale);
+                    let mut view = MenuView::new(2);
+                    view.show(42);
+                    let mut scene = Scene::new();
+                    let anchor = Rect::new(20., 20., 100., 32.);
+                    let bounds = Rect::new(0., 0., 400., 320.);
+                    let layout = view
+                        .render(
+                            &mut scene,
+                            &mut text,
+                            &["First", "Second"],
+                            anchor,
+                            bounds,
+                            None,
+                            palette,
+                            proposal::TextRole::UiBody,
+                            false,
+                        )
+                        .unwrap();
+                    match phase {
+                        0 => {
+                            view.key(ControlKey::Down, true);
+                        }
+                        1 => view.pointer_move_at(layout.items[1].frame.center()),
+                        2 => {
+                            view.pointer_move_at(layout.items[1].frame.center());
+                            view.pointer_down_at(layout.items[1].frame.center());
+                        }
+                        _ => view.set_disabled(true),
+                    }
+                    let mut scene = Scene::new();
+                    let layout = view
+                        .render(
+                            &mut scene,
+                            &mut text,
+                            &["First", "Second"],
+                            anchor,
+                            bounds,
+                            None,
+                            palette,
+                            proposal::TextRole::UiBody,
+                            false,
+                        )
+                        .unwrap();
+                    let quads: Vec<_> = scene
+                        .primitives()
+                        .iter()
+                        .filter_map(|primitive| match primitive {
+                            tekes_ui_scene::Primitive::Quad(quad) => Some(quad),
+                            _ => None,
+                        })
+                        .collect();
+                    let popup = quads.iter().find(|quad| quad.rect == layout.popup).unwrap();
+                    assert_eq!(
+                        popup.border_width,
+                        paint::decorative_border(palette, scale).0
+                    );
+                    for item in &layout.items {
+                        let row: Vec<_> = quads
+                            .iter()
+                            .filter(|quad| quad.rect == item.frame)
+                            .collect();
+                        assert_eq!(row.len(), 1, "one original menu row ground");
+                        assert_eq!(
+                            row[0].border_width, 0.,
+                            "menu item strokes are absent in every state"
+                        );
+                    }
+                    let selected = &layout.items[layout.active_item];
+                    let row = quads
+                        .iter()
+                        .find(|quad| quad.rect == selected.frame)
+                        .unwrap();
+                    let fill = match phase {
+                        1 => "row-selection-hover",
+                        2 => "button-pressed",
+                        _ => "row-selection",
+                    };
+                    assert_eq!(row.fill, palette.color(fill).unwrap());
+                    if phase == 0 {
+                        let outset = proposal::metric("stroke", "c-focus-width").unwrap()
+                            + proposal::metric("spacing", "c-focus-offset").unwrap();
+                        assert_eq!(
+                            quads
+                                .iter()
+                                .filter(|quad| quad.rect == selected.frame.inset(-outset)
+                                    && quad.border_color
+                                        == palette.color("border-focused").unwrap())
+                                .count(),
+                            1,
+                            "keyboard highlight keeps one independent focus ring"
+                        );
+                    }
+                }
+            }
+        }
     }
 
     #[test]

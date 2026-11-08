@@ -661,6 +661,31 @@ pub fn button_variant_with_interaction(
     hover_progress: f32,
     pressed_progress: f32,
 ) -> Rgba {
+    button_variant_with_selection_fill(
+        scene,
+        rect,
+        theme,
+        state,
+        variant,
+        radius,
+        hover_progress,
+        pressed_progress,
+        false,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn button_variant_with_selection_fill(
+    scene: &mut Scene,
+    rect: Rect,
+    theme: Palette,
+    state: ControlState,
+    variant: ButtonVariant,
+    radius: f32,
+    hover_progress: f32,
+    pressed_progress: f32,
+    selection_fill_only: bool,
+) -> Rgba {
     let primary = variant == ButtonVariant::Primary && !state.disabled;
     let (rest, hover, pressed) = if state.disabled {
         ("surface-2", "surface-2", "surface-2")
@@ -728,7 +753,7 @@ pub fn button_variant_with_interaction(
     );
     let role = if state.error && !state.disabled {
         "error"
-    } else if state.selected && !state.disabled && !primary {
+    } else if state.selected && !state.disabled && !primary && !selection_fill_only {
         "selected"
     } else {
         match variant {
@@ -860,8 +885,12 @@ pub(crate) fn button_variant_on_surface(
     hover: f32,
     pressed: f32,
     surface: &str,
+    selection_fill_only: bool,
 ) -> tekes_ui_tokens::surface_palette::SurfaceColors {
-    let colors = button_surface_colors(palette, surface, state, variant, hover, pressed);
+    let mut colors = button_surface_colors(palette, surface, state, variant, hover, pressed);
+    if selection_fill_only && state.selected && !state.error {
+        colors.boundary = None;
+    }
     let mut quad = Quad::new(rect, colors.background).with_corner_radius(radius);
     if let Some(boundary) = colors.boundary {
         quad = quad.with_border(
@@ -1183,6 +1212,36 @@ mod focus_tests {
                         };
                         assert_eq!(ring.border_color, color(theme, "border-focused"));
                     }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn fill_only_selection_does_not_change_ordinary_actions_or_error_boundaries() {
+        for theme in Theme::ALL {
+            let palette = Palette::from(theme);
+            for (fill_only, error) in [(false, false), (true, false), (true, true)] {
+                let mut scene = Scene::new();
+                let colors = button_variant_on_surface(
+                    &mut scene,
+                    Rect::new(10., 10., 120., 36.),
+                    palette,
+                    ControlState {
+                        selected: true,
+                        error,
+                        ..Default::default()
+                    },
+                    ButtonVariant::Quiet,
+                    4.,
+                    0.,
+                    0.,
+                    "popover",
+                    fill_only,
+                );
+                assert_eq!(colors.boundary.is_none(), fill_only && !error);
+                if error {
+                    assert_eq!(colors.boundary, palette.color("status-failed"));
                 }
             }
         }

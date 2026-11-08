@@ -267,3 +267,22 @@ The final **Applications → AppHost** entry is a launcher, not a component capa
 ### v0.2.2 AppHost layout correction (#229)
 
 AppHost places focus on the left and Others on the right (optional NavBar farther left). Top container toolbars share the native traffic-light row; no additional full titlebar gap precedes them. A single Others container, including a non-selected tab or List member, can swap with focus; the List aggregate cannot. v0.2.1's stacked layout is retained only as historical evidence.
+
+## AppHost workspace template (v0.3.1)
+
+The standalone AppHost item demonstrates a usable workspace: grouped navigation,
+a reflowing document and an inspector bound to the selected document. Back and
+Forward use AppHost navigation history. NavBar and Others can be hidden and
+restored through the original window-edge sidebar/panel icons. Container-owned Switch actions exchange
+focus with the selected ordinary Others tab; the aggregate List is not a swap
+target. Closing a normal tab closes its presentation while preserving its content
+for reopening.
+
+The pre-migration AppHost geometry is retained: a 1100×640 window, original
+relative column widths, one-point body dividers and compact toolbars with the
+original edge icons and Back/Forward placement. Ordinary Others tabs are hosted in the same Toolbar row, with circular close
+icons. Focus and Others content uses the existing 16-point spacing token equally
+on all four sides, separately from Toolbar geometry. Hiding one side expands focus without resizing the other.
+Shared menu/tab selection uses fill, and text fields use an attached focus border. Existing
+platform/input-method and deferred verification boundaries remain separately
+recorded in Issues #229 and #245.

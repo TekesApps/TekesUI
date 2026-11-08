@@ -430,6 +430,8 @@ pub struct ButtonModel {
     motion_suspended: bool,
     // Effective parent Surface supplied by the original feedback View.
     surface: Option<&'static str>,
+    // Menu/Tab selection uses fill; ordinary actions retain their own boundary.
+    selection_fill_only: bool,
 }
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 enum ButtonArm {
@@ -481,6 +483,11 @@ impl ButtonModel {
     }
     pub(crate) fn clear_surface(&mut self) {
         self.surface = None;
+    }
+    /// Component-owned selection appearance; preserves the original state,
+    /// motion, geometry, error indicator and independent keyboard focus.
+    pub(crate) fn set_selection_fill_only(&mut self, fill_only: bool) {
+        self.selection_fill_only = fill_only;
     }
     pub(crate) fn surface_colors(
         &self,
@@ -837,10 +844,15 @@ impl ButtonModel {
                     hover,
                     pressed,
                     surface,
+                    self.selection_fill_only,
                 )
                 .text
-            } else if let Some((hover, pressed)) = transition_progress {
-                crate::paint::button_variant_with_interaction(
+            } else {
+                let (hover, pressed) = transition_progress.unwrap_or((
+                    if self.state.hovered { 1. } else { 0. },
+                    if self.state.pressed { 1. } else { 0. },
+                ));
+                crate::paint::button_variant_with_selection_fill(
                     scene,
                     chrome,
                     palette,
@@ -849,15 +861,7 @@ impl ButtonModel {
                     radius.unwrap_or_else(|| size.radius() * scale),
                     hover,
                     pressed,
-                )
-            } else {
-                crate::paint::button_variant_with_radius(
-                    scene,
-                    chrome,
-                    palette,
-                    self.state,
-                    variant,
-                    radius.unwrap_or_else(|| size.radius() * scale),
+                    self.selection_fill_only,
                 )
             };
             if background_clip.is_some() {

@@ -271,6 +271,7 @@ pub struct ListView {
     layout: CollectionLayout,
     state: CollectionInteraction,
     disabled: bool,
+    navigation_selection_fill_only: bool,
     buttons: Vec<ButtonModel>,
     keyed: Option<ListViewIdentity>,
     row_placements: Vec<crate::ButtonLayout>,
@@ -287,6 +288,7 @@ impl Default for ListView {
                 ..Default::default()
             },
             disabled: false,
+            navigation_selection_fill_only: false,
             buttons: Vec::new(),
             keyed: None,
             row_placements: Vec::new(),
@@ -305,6 +307,12 @@ impl ListView {
             },
             ..Default::default()
         }
+    }
+    /// Opt a navigation list into a filled selection without an enclosing
+    /// row stroke. The default List appearance and independent keyboard focus
+    /// remain unchanged; this does not change row state, layout or hit targets.
+    pub fn set_navigation_selection_fill_only(&mut self, fill_only: bool) {
+        self.navigation_selection_fill_only = fill_only;
     }
     /// Intrinsic height using the same default row metrics as painting.
     pub fn measure(
@@ -550,6 +558,7 @@ impl ListView {
         scene.push_clip(own);
         for (ordinal, row) in self.layout.items.iter().enumerate() {
             let button = &mut self.buttons[ordinal];
+            button.set_selection_fill_only(self.navigation_selection_fill_only);
             button.state = control_state(
                 model.selected == Some(row.id),
                 self.state.hovered == Some(row.id),

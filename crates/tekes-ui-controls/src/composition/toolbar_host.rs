@@ -124,6 +124,8 @@ pub struct ToolbarInvocation<B> {
     pub command: u64,
     pub source: B,
     pub input: ContentActionSource,
+    /// Original owned action details (including Tabs selection/close identity).
+    pub payload: Option<ContentActionPayload>,
 }
 /// A native adapter retains this exact target, not a naked reusable numeric ID.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -716,8 +718,8 @@ impl<B: Clone + Debug> ToolbarHost<B> {
                 continue;
             }
             let target = record.action.target;
-            let action = match record.payload {
-                Some(ContentActionPayload::ToolbarCommand(command)) => Some(command),
+            let action = match &record.payload {
+                Some(ContentActionPayload::ToolbarCommand(command)) => Some(*command),
                 _ => None,
             };
             // Consume the legacy delivery latch too; routing uses the owned
@@ -741,6 +743,7 @@ impl<B: Clone + Debug> ToolbarHost<B> {
                         command: binding.command,
                         source: binding.source.clone(),
                         input: record.action.source,
+                        payload: record.payload,
                     });
                     break;
                 }

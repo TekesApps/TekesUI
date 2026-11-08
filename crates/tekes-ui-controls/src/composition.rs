@@ -776,6 +776,12 @@ pub trait Component: Debug + Any {
     fn semantic_part_parent(&self, _part: usize) -> Option<usize> {
         None
     }
+    /// Explicit auxiliary action within a selection owner. The host currently
+    /// admits only a visible Button parented by an original Tab in a TabList;
+    /// ordinary selection parts retain their existing validation contract.
+    fn semantic_part_is_auxiliary_action(&self, _part: usize) -> bool {
+        false
+    }
     fn semantic_part_preserves_activation_focus(&self, _part: usize) -> bool {
         false
     }
@@ -3537,13 +3543,18 @@ impl ContentHost {
             return ContentResponse::default();
         };
         let root = node.component.semantics();
-        if root.role.is_selection()
-            && (!root.valid_selection(None)
+        // Tabs use their own retained selection model, so they intentionally
+        // are not in the Checkbox/Radio/Segment transaction classification.
+        // Their native AX parts still need this local admission boundary.
+        let tab_list = root.role == ContentRole::TabList;
+        let selection_owner = root.role.is_selection() || tab_list;
+        if selection_owner
+            && ((!root.valid_selection(None) || (tab_list && root.expanded.is_some()))
                 && !matches!(root.role, ContentRole::RadioButton | ContentRole::Segment))
         {
             return ContentResponse::default();
         }
-        if root.role.is_selection()
+        if selection_owner
             && (node.component.text_input_snapshot().is_some()
                 || node.component.semantic_text_layout().is_some()
                 || node.component.value_range().is_some())
@@ -3552,14 +3563,52 @@ impl ContentHost {
         }
         let parts = node.component.semantic_parts();
         let selected_part = part.and_then(|i| parts.iter().find(|p| p.index == i));
-        if root.role.is_selection()
+        let auxiliary_tab_action = tab_list
+            && matches!(
+                action,
+                AccessibilityAction::Focus | AccessibilityAction::Press
+            )
+            && part.is_some_and(|index| {
+                node.component.semantic_part_is_auxiliary_action(index)
+                    && selected_part.is_some_and(|p| {
+                        p.semantics.role == ContentRole::Button
+                            && !p.semantics.disabled
+                            && !p.frame.is_empty()
+                            && p.frame
+                                .intersection(&node.clip)
+                                .is_some_and(|r| !r.is_empty())
+                            && node.component.semantic_part_text_layout(index).is_none()
+                            && node.component.semantic_part_value_range(index).is_none()
+                    })
+                    && node
+                        .component
+                        .semantic_part_parent(index)
+                        .is_some_and(|parent| {
+                            node.component.semantic_part_text_layout(parent).is_none()
+                                && node.component.semantic_part_value_range(parent).is_none()
+                                && parts.iter().any(|p| {
+                                    p.index == parent
+                                        && p.semantics.role == ContentRole::Tab
+                                        && p.semantics.valid_selection(Some(ContentRole::TabList))
+                                        && p.semantics.expanded.is_none()
+                                        && !p.semantics.disabled
+                                        && !p.frame.is_empty()
+                                        && p.frame
+                                            .intersection(&node.clip)
+                                            .is_some_and(|r| !r.is_empty())
+                                })
+                        })
+            });
+        if (selection_owner && !auxiliary_tab_action)
             || selected_part.is_some_and(|p| p.semantics.role.is_selection())
         {
             let (s, parent, visible, extra) = if let Some(i) = part {
                 let Some(p) = selected_part else {
                     return ContentResponse::default();
                 };
-                if !p.semantics.role.is_selection() {
+                if !(p.semantics.role.is_selection()
+                    || tab_list && p.semantics.role == ContentRole::Tab)
+                {
                     return ContentResponse::default();
                 }
                 let parent = match node.component.semantic_part_parent(i) {
@@ -3602,6 +3651,11 @@ impl ContentHost {
                 || !visible
                 || extra
                 || !s.valid_selection(parent)
+                || (tab_list
+                    && (s.expanded.is_some()
+                        || (part.is_some()
+                            && (s.role != ContentRole::Tab
+                                || parent != Some(ContentRole::TabList)))))
                 || !matches!(
                     action,
                     AccessibilityAction::Focus | AccessibilityAction::Press

@@ -300,6 +300,7 @@ impl Host {
                 "TOOLBAR_INVOCATION window={} command={} input={:?} source={:?}",
                 invocation.window, invocation.command, invocation.input, invocation.source
             );
+            let mut exchanged = false;
             let result =
                 match invocation.source {
                     Source::Visibility(side) => self.toggle_visibility(side),
@@ -328,13 +329,20 @@ impl Host {
                             !nav.host.input_open || nav.busy || nav.error.is_some()
                         }) {
                             Ok(())
-                        } else if let Some(p) = self.panels.get_mut(index)
+                        } else if let Some(p) = self.panels.get(index)
                             && p.instance == instance
                             && p.module_id == module
                             && p.pid == pid
                             && p.toolbar_generation == generation
                         {
-                            p.command(invocation.command)
+                            if self.presentation.is_some()
+                                && p.options.focus_switch_command == Some(invocation.command)
+                            {
+                                self.switch_container_focus(index)
+                                    .map(|changed| exchanged = changed)
+                            } else {
+                                self.panels[index].command(invocation.command)
+                            }
                         } else {
                             Ok(())
                         }
@@ -342,6 +350,11 @@ impl Host {
                 };
             if let Err(error) = result {
                 eprintln!("TOOLBAR_COMMAND_REJECTED {error:#}");
+            }
+            // A completed presentation change revokes remaining old-position
+            // actions already drained in this input batch, as well as capture.
+            if exchanged {
+                break;
             }
         }
         Ok(())
@@ -666,6 +679,7 @@ impl Host {
                             presenter,
                         }),
                         Source::Navigation(_) => Some(ToolbarTarget::Navigation),
+                        Source::Visibility(side) => Some(ToolbarTarget::Visibility(*side)),
                         _ => None,
                     };
                     if let Some(target) = target
@@ -675,6 +689,22 @@ impl Host {
                     }
                 }
             }
+            groups.sort_by(|a, b| {
+                let position = |target: ToolbarTarget| {
+                    self.toolbar_container(target)
+                        .and_then(|index| {
+                            self.panels[index]
+                                .mounted_toolbar
+                                .host
+                                .content_host()
+                                .get(Self::toolbar_group(target))
+                        })
+                        .map_or(Point::default(), |content| content.frame().origin)
+                };
+                let a = position(*a);
+                let b = position(*b);
+                a.y.total_cmp(&b.y).then(a.x.total_cmp(&b.x))
+            });
             return groups;
         }
         let mut groups = Vec::new();
@@ -769,7 +799,19 @@ impl Host {
                     .navigation
                     .as_ref()
                     .is_some_and(|nav| nav.host.input_open && !nav.busy && nav.error.is_none()),
-                ToolbarTarget::Visibility(_) | ToolbarTarget::Contribution { .. } => false,
+                ToolbarTarget::Visibility(side) => {
+                    self.presentation.as_ref().is_some_and(|state| {
+                        if side == 0 {
+                            state.nav_bar_id().is_some()
+                        } else {
+                            state.others().is_some()
+                        }
+                    }) && self
+                        .navigation
+                        .as_ref()
+                        .is_none_or(|nav| nav.host.input_open && !nav.busy && nav.error.is_none())
+                }
+                ToolbarTarget::Contribution { .. } => false,
             };
         }
         match target {
@@ -877,8 +919,7 @@ impl Host {
         };
         self.blur_other_toolbars(index);
         if let Some(tabs) = &mut self.presentation_tabs {
-            tabs.cancel();
-            tabs.focus(None, false);
+            tabs.blur();
         }
         self.select_toolbar_container(index);
         let Some(target) = self.panels[self.toolbar_index]
@@ -1144,13 +1185,14 @@ impl Host {
         bounds: Rect,
         scale: f32,
         toolbar_height: f32,
+        header_extra: f32,
     ) -> Result<()> {
         self.remember_toolbar_focus(None);
         let toolbar_index = self
             .toolbar_container(ToolbarTarget::Panel(index))
             .unwrap_or(index);
         let previous = self.panels[index].viewport;
-        self.panels[index].geometry(bounds, scale, toolbar_height)?;
+        self.panels[index].geometry_with_header(bounds, scale, toolbar_height, header_extra)?;
         if self.panels[index].viewport != previous {
             let owner = ToolbarTarget::Panel(index);
             if self.panels[toolbar_index]
