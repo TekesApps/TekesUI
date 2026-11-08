@@ -2042,7 +2042,7 @@
   "source_sha256": {
     "DESIGN.md": "0085e260e7f5e511470dc90a2a7ae1d91671b92b7c928864ff160d0bd0a6167b",
     "crates/tekes-ui-app-host/src/lib.rs": "80374f39d64ec8afc8def826eafdbe1877cd4519c6f07d31c21c95c96b9b296d",
-    "crates/tekes-ui-app-host/src/window.rs": "e3618ec4825c792158f82e4a8a4bf58f2fef00e32579dce921987e4d70889c82",
+    "crates/tekes-ui-app-host/src/window.rs": "130f8618a91599f49927ee83ecdb5146ad0dfb78dcf206edd62a0bded36d3e22",
     "crates/tekes-ui-app-host/src/window_toolbar.rs": "059d17831e04f076d4231001e71c1c626709b7153a92991fb0e24589bdc9c745",
     "crates/tekes-ui-controls/src/chart.rs": "9e3e5dd1e9d62f358cb74201a254f4165b81e4b79c3a97f0a74bde6f591e983c",
     "crates/tekes-ui-controls/src/collections_view.rs": "cffc6d19dc3732226ff9f1584e86cba343015d3bc371ebc5f8d27dca717c92ed",
@@ -2658,7 +2658,7 @@
     },
     {
       "path": "crates/tekes-ui-app-host/src/window.rs",
-      "line": 1187,
+      "line": 1215,
       "anchor": ".render(&mut toolbar_scene, text, Theme::LIGHT.into())"
     },
     {

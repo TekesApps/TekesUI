@@ -569,6 +569,9 @@ enum ToolbarTarget {
 }
 
 pub struct Host {
+    draw_diagnostic: bool,
+    diagnostic_event: u64,
+    diagnostic_draw: u64,
     presentation_icons: tekes_ui_controls::composition::SvgIconCache,
     presentation_chrome_edges: [Rect; 2],
     native_toolbar_geometry: Option<(f32, f32, f32, f32)>,
@@ -620,6 +623,9 @@ pub struct Host {
     outer_view: SplitViewView,
     inner_view: SplitViewView,
     drag_split: Option<usize>,
+    // AppKit starts an asynchronous WindowServer drag and may omit mouse-up.
+    // This owns only unclaimed left-drag events, never content captures.
+    native_titlebar_drag: bool,
     pressed: Option<usize>,
     focused: usize,
     completion: Option<SyncSender<Vec<SyncSender<()>>>>,
@@ -638,6 +644,9 @@ impl Host {
     ) -> Self {
         let n = module_ids.len();
         Self {
+            draw_diagnostic: std::env::var("TEKESUI_APPHOST_DRAW_DIAGNOSTIC").as_deref() == Ok("1"),
+            diagnostic_event: 0,
+            diagnostic_draw: 0,
             presentation_icons: Default::default(),
             presentation_chrome_edges: [Rect::default(); 2],
             native_toolbar_geometry: None,
@@ -685,6 +694,7 @@ impl Host {
             outer_view: SplitViewView::new(Axis::Horizontal),
             inner_view: SplitViewView::new(Axis::Horizontal),
             drag_split: None,
+            native_titlebar_drag: false,
             pressed: None,
             focused: if n >= 2 { 1 } else { 0 },
             completion: None,
@@ -778,6 +788,9 @@ impl Host {
         if self.renderer.is_some() {
             return Ok(());
         }
+        if self.draw_diagnostic {
+            w.set_presentation_timing(true);
+        }
         let renderer = unsafe {
             Renderer::new_for_metal_layer(w.metal_layer(), w.drawable_size(), w.scale() as f32)
         }?;
@@ -815,6 +828,16 @@ impl Host {
         Ok(())
     }
     fn draw(&mut self, w: &Window) -> Result<()> {
+        // One opt-in summary at the end avoids synchronous stage logging inside
+        // the measured layout path. These are CPU boundaries, not presentation.
+        let diagnostic = self.draw_diagnostic.then(|| {
+            self.diagnostic_draw += 1;
+            (
+                std::time::Instant::now(),
+                self.diagnostic_event,
+                self.diagnostic_draw,
+            )
+        });
         self.init(w)?;
         if !self.is_settings_window {
             self.poll_settings_open(w)?;
@@ -822,8 +845,11 @@ impl Host {
         self.text
             .begin_frame(self.motion_epoch.elapsed(), self.reduced_motion);
         if self.is_settings_window {
+            // This probe covers the ordinary AppHost draw below, not Settings'
+            // separate renderer. Event timing still bounds the delegated call.
             return self.draw_settings(w);
         }
+        let initialized = diagnostic.map(|_| std::time::Instant::now());
         let progress = self.sidebar_motion.sample(
             self.motion_epoch.elapsed(),
             self.reduced_motion,
@@ -1073,6 +1099,7 @@ impl Host {
                 self.panel_geometry(index, *bounds, scale, height, extra)?;
             }
         }
+        let geometry_ready = diagnostic.map(|_| std::time::Instant::now());
         let renderer = self.renderer.as_mut().unwrap();
         for (slot, bounds) in frames.iter().enumerate() {
             let index = self.order[slot];
@@ -1139,6 +1166,7 @@ impl Host {
             }
         }
         let _ = renderer;
+        let body_scene_ready = diagnostic.map(|_| std::time::Instant::now());
         if self.presentation.is_some() {
             scene.push_quad(Quad::new(
                 Rect::new(
@@ -1212,6 +1240,7 @@ impl Host {
                 )?;
             }
         }
+        let toolbar_scene_ready = diagnostic.map(|_| std::time::Instant::now());
         let mut toolbar_controls = Vec::new();
         for panel in &self.panels {
             toolbar_controls.extend(panel.mounted_toolbar.host.content_host().pointer_regions());
@@ -1330,9 +1359,13 @@ impl Host {
         for primitive in toolbar_scene.primitives() {
             scene.push(primitive.clone());
         }
+        let renderer_begin = diagnostic.map(|_| std::time::Instant::now());
+        let drawable_before = diagnostic.map(|_| w.drawable_serial());
         let renderer = self.renderer.as_mut().unwrap();
         renderer.resize(w.drawable_size(), w.scale() as f32);
         renderer.render(&scene, &mut self.text.atlas, Rgba::gray(1.))?;
+        let renderer_return = diagnostic.map(|_| std::time::Instant::now());
+        let drawable_after = diagnostic.map(|_| w.drawable_serial());
         if self.acceptance {
             self.acceptance_draws += 1;
         }
@@ -1452,6 +1485,27 @@ impl Host {
             && w.is_active();
         if !w.set_animating(animate) && animate {
             w.request_redraw();
+        }
+        if let Some((begin, event, draw)) = diagnostic {
+            let end = std::time::Instant::now();
+            let offset = |boundary: Option<std::time::Instant>| {
+                boundary.map(|at| at.duration_since(begin).as_nanos())
+            };
+            eprintln!(
+                "APPHOST_DRAW_DIAGNOSTIC pid={} window={} event={} draw={} begin_monotonic={begin:?} end_monotonic={end:?} initialized_ns={:?} geometry_ready_ns={:?} body_scene_ready_ns={:?} toolbar_scene_ready_ns={:?} renderer_begin_ns={:?} renderer_return_ns={:?} total_ns={} cpu_only=true drawable_before={drawable_before:?} drawable_after={drawable_after:?} paragraph_layout={:?}",
+                std::process::id(),
+                w.native_window_number(),
+                event,
+                draw,
+                offset(initialized),
+                offset(geometry_ready),
+                offset(body_scene_ready),
+                offset(toolbar_scene_ready),
+                offset(renderer_begin),
+                offset(renderer_return),
+                end.duration_since(begin).as_nanos(),
+                self.text.paragraph_layout_diagnostic(),
+            );
         }
         Ok(())
     }
@@ -1680,7 +1734,50 @@ impl Host {
         }
         Ok(())
     }
+    /// Consume only uncaptured drag samples belonging to our accepted native
+    /// window handoff; all other events continue through their original routes.
+    fn owns_native_titlebar_drag_event(&mut self, event: &Event) -> bool {
+        // performWindowDragWithEvent returns immediately. Do not offer its
+        // subsequent drag samples to ContentHosts (even refused input retires
+        // their geometry lease), or schedule a full body paint for window moves.
+        // A new down or ordinary move also ends the scope when AppKit omitted up.
+        match event {
+            Event::Mouse(mouse) => match mouse.kind {
+                MouseEventKind::Down { .. } | MouseEventKind::Up { .. } | MouseEventKind::Moved => {
+                    self.native_titlebar_drag = false
+                }
+                MouseEventKind::Dragged {
+                    button: MouseButton::Left,
+                } if self.native_titlebar_drag
+                    && self.drag_split.is_none()
+                    && self.pressed.is_none()
+                    && self.settings_pointer.is_none()
+                    && self.panels.iter().all(|panel| {
+                        panel
+                            .mounted_toolbar
+                            .host
+                            .content_host()
+                            .pointer_capture()
+                            .is_none()
+                    })
+                    && self
+                        .presentation_tabs
+                        .as_ref()
+                        .is_none_or(|tabs| tabs.content_host().pointer_capture().is_none()) =>
+                {
+                    return true;
+                }
+                _ => {}
+            },
+            Event::Focus(false) | Event::CloseRequested => self.native_titlebar_drag = false,
+            _ => {}
+        }
+        false
+    }
     fn event(&mut self, event: Event, w: &mut Window) -> Result<()> {
+        if self.owns_native_titlebar_drag_event(&event) {
+            return Ok(());
+        }
         if !self.is_settings_window
             && matches!(&event, Event::Created)
             && let Some((shared, scope)) = self
@@ -1906,7 +2003,10 @@ impl Host {
                             if click_count == 2 {
                                 w.try_titlebar_double_click();
                             } else {
-                                w.try_begin_titlebar_drag();
+                                // Only a successful native handoff owns future
+                                // drag samples. Keep this down's existing paint
+                                // so focus/hover cancellation is acknowledged.
+                                self.native_titlebar_drag = w.try_begin_titlebar_drag();
                             }
                         }
                     }
@@ -2051,6 +2151,38 @@ impl WindowHandler for Host {
     }
 
     fn handle(&mut self, event: Event, w: &mut Window) {
+        // The existing observer reports actual drawable presentation on a
+        // separate CA clock. Join by window/serial; do not subtract Instant.
+        // Flush outside a drag so copying receipts cannot perturb its timing.
+        if self.draw_diagnostic && matches!(&event, Event::CloseRequested | Event::Focus(false)) {
+            eprintln!(
+                "APPHOST_PRESENT_DIAGNOSTIC pid={} window={} clock=CACurrentMediaTime drawable_serial={} acquisition_counts={:?} frames={:?}",
+                std::process::id(),
+                w.native_window_number(),
+                w.drawable_serial(),
+                w.drawable_acquisition_counts(),
+                w.presented_frames(),
+            );
+        }
+        let diagnostic = self.draw_diagnostic.then(|| {
+            self.diagnostic_event += 1;
+            let begin = std::time::Instant::now();
+            // MouseEvent does not expose NSEvent.timestamp. This marks receipt
+            // at the Host handler, after the platform's event queue.
+            let kind = match &event {
+                Event::Mouse(mouse) => format!(
+                    "Mouse::{:?}@{},{}",
+                    mouse.kind, mouse.position.x, mouse.position.y
+                ),
+                Event::Created => "Created".into(),
+                Event::Resized { .. } => "Resized".into(),
+                Event::Redraw => "Redraw".into(),
+                Event::Wake => "Wake".into(),
+                Event::AnimationFrame(_) => "AnimationFrame".into(),
+                _ => "Other".into(),
+            };
+            (begin, self.diagnostic_event, self.diagnostic_draw, kind)
+        });
         let acceptance_tick = matches!(
             &event,
             Event::Created
@@ -2066,6 +2198,19 @@ impl WindowHandler for Host {
                 Ok(())
             }
         });
+        if let Some((begin, event, draws_before, kind)) = diagnostic {
+            let end = std::time::Instant::now();
+            eprintln!(
+                "APPHOST_EVENT_DIAGNOSTIC pid={} window={} event={} kind={kind:?} begin_monotonic={begin:?} end_monotonic={end:?} draws_before={} draws_after={} elapsed_ns={} ok={} native_input_timestamp=unavailable",
+                std::process::id(),
+                w.native_window_number(),
+                event,
+                draws_before,
+                self.diagnostic_draw,
+                end.duration_since(begin).as_nanos(),
+                result.is_ok(),
+            );
+        }
         if let Err(e) = result {
             eprintln!("HOST_ERROR {e:#}");
             if let Some(shared) = &self.acceptance_shared {
@@ -2751,6 +2896,148 @@ mod window_focus_tests {
     }
     fn focused_groups(h: &Host) -> Vec<ToolbarTarget> {
         h.actual_toolbar_owner().into_iter().collect()
+    }
+    fn native_drag_mouse(kind: MouseEventKind) -> Event {
+        Event::Mouse(MouseEvent {
+            kind,
+            position: tekes_ui_platform_macos::Point { x: 110., y: 14. },
+            modifiers: Default::default(),
+        })
+    }
+    #[test]
+    fn native_titlebar_drag_preserves_clean_toolbar_geometry_without_routing_input() {
+        let mut h = fixture();
+        let owner = ToolbarTarget::Panel(1);
+        h.set_toolbar_focus(Some(owner), false);
+        render(&mut h);
+        let snapshots: Vec<_> = h
+            .panels
+            .iter()
+            .map(|p| {
+                assert!(!p.mounted_toolbar.host.needs_render());
+                p.mounted_toolbar
+                    .host
+                    .content_host()
+                    .geometry_snapshot()
+                    .unwrap()
+            })
+            .collect();
+        let drag = native_drag_mouse(MouseEventKind::Dragged {
+            button: MouseButton::Left,
+        });
+        assert!(!h.owns_native_titlebar_drag_event(&drag));
+        // Production assigns this only from try_begin_titlebar_drag's result.
+        h.native_titlebar_drag = true;
+        for _ in 0..7 {
+            assert!(h.owns_native_titlebar_drag_event(&drag));
+        }
+        for (panel, before) in h.panels.iter().zip(snapshots) {
+            assert!(!panel.mounted_toolbar.host.needs_render());
+            assert!(before.is_current());
+            assert_eq!(
+                panel
+                    .mounted_toolbar
+                    .host
+                    .content_host()
+                    .geometry_snapshot()
+                    .unwrap()
+                    .generation,
+                before.generation
+            );
+        }
+        assert_eq!(h.toolbar_focus, Some(owner));
+        assert!(commands(&h).is_empty());
+    }
+    #[test]
+    fn native_titlebar_drag_releases_without_up_and_preserves_non_drag_events() {
+        let mut h = fixture();
+        let drag = native_drag_mouse(MouseEventKind::Dragged {
+            button: MouseButton::Left,
+        });
+        for end in [
+            native_drag_mouse(MouseEventKind::Moved),
+            native_drag_mouse(MouseEventKind::Down {
+                button: MouseButton::Left,
+                click_count: 1,
+            }),
+            native_drag_mouse(MouseEventKind::Up {
+                button: MouseButton::Left,
+                click_count: 1,
+            }),
+            Event::Focus(false),
+        ] {
+            h.native_titlebar_drag = true;
+            assert!(!h.owns_native_titlebar_drag_event(&end));
+            assert!(!h.owns_native_titlebar_drag_event(&drag));
+        }
+        h.native_titlebar_drag = true;
+        for event in [
+            Event::Resized {
+                size: WindowSize {
+                    width: 900.,
+                    height: 500.,
+                },
+                scale: 2.,
+                drawable_size: (1800, 1000),
+            },
+            Event::Redraw,
+            native_drag_mouse(MouseEventKind::Exited),
+            native_drag_mouse(MouseEventKind::Entered),
+        ] {
+            assert!(!h.owns_native_titlebar_drag_event(&event));
+        }
+        assert!(h.owns_native_titlebar_drag_event(&drag));
+    }
+    #[test]
+    fn native_titlebar_drag_does_not_steal_existing_toolbar_split_or_body_capture() {
+        let mut h = fixture();
+        let owner = ToolbarTarget::Panel(0);
+        h.set_toolbar_focus(Some(owner), false);
+        let point = Point::new(110., 26.);
+        h.dispatch_toolbar(owner, &ContentEvent::PointerDown(point))
+            .unwrap();
+        let index = h.toolbar_index;
+        let capture = h.panels[index]
+            .mounted_toolbar
+            .host
+            .content_host()
+            .pointer_capture();
+        assert!(capture.is_some());
+        h.native_titlebar_drag = true;
+        let drag = native_drag_mouse(MouseEventKind::Dragged {
+            button: MouseButton::Left,
+        });
+        assert!(!h.owns_native_titlebar_drag_event(&drag));
+        assert_eq!(
+            h.panels[index]
+                .mounted_toolbar
+                .host
+                .content_host()
+                .pointer_capture(),
+            capture
+        );
+        h.dispatch_toolbar(owner, &ContentEvent::PointerUp(point))
+            .unwrap();
+        assert_eq!(commands(&h), vec![(0, 7)]);
+
+        let whole = Rect::new(0., 0., 1000., 400.);
+        h.outer_view.arrange(&mut h.outer, whole, Some(whole));
+        let divider = h.outer_view.layout().divider.frame();
+        let start = Point::new(divider.min_x() + divider.size.width / 2., 200.);
+        assert!(h.outer_view.pointer_down(start, &mut h.outer));
+        h.drag_split = Some(0);
+        assert!(!h.owns_native_titlebar_drag_event(&drag));
+        assert!(
+            h.outer_view
+                .pointer_move(Point::new(start.x + 30., start.y), &mut h.outer)
+        );
+        assert!(h.outer_view.pointer_up(&mut h.outer));
+        h.drag_split = None;
+        h.pressed = Some(1);
+        assert!(!h.owns_native_titlebar_drag_event(&drag));
+        assert_eq!(h.pressed, Some(1));
+        h.pressed = None;
+        assert!(h.owns_native_titlebar_drag_event(&drag));
     }
     #[test]
     fn whole_window_tabs_traverse_original_hosts_and_reverse_without_preclick() {

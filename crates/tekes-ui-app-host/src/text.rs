@@ -1,3 +1,4 @@
+use std::{collections::HashMap, rc::Rc};
 use tekes_ui_controls::{ButtonTextAlign, ButtonTextRenderer, ControlMotionContext};
 use tekes_ui_scene::{GlyphAtlas, Point, Rect, Scene, Size};
 use tekes_ui_text::{
@@ -6,6 +7,29 @@ use tekes_ui_text::{
     push_paragraph,
 };
 use tekes_ui_tokens::{Rgba, proposal};
+/// Opt-in per-draw CPU observations, reset by the original begin_frame call.
+#[derive(Clone, Copy, Debug, Default)]
+pub(crate) struct ParagraphLayoutDiagnostic {
+    pub requests: u64,
+    pub hits: u64,
+    pub misses: u64,
+    pub unique_entries: usize,
+    pub prepare_count: u64,
+    pub prepare_ns: u128,
+    pub natural_count: u64,
+    pub natural_ns: u128,
+    pub bounded_count: u64,
+    pub bounded_ns: u128,
+}
+/// Exact logical layout inputs. Draw position, color, clip and backing scale
+/// do not affect CoreText's point-space paragraph and are applied on every draw.
+#[derive(Debug, PartialEq, Eq, Hash)]
+struct ParagraphLayoutKey {
+    text: String,
+    role: proposal::TextRole,
+    type_scale: u32,
+    width: u32,
+}
 pub struct Text {
     pub atlas: GlyphAtlas,
     shaper: CoreTextShaper,
@@ -14,6 +38,8 @@ pub struct Text {
     type_scale: f32,
     motion_context: Option<ControlMotionContext>,
     animation_requested: bool,
+    paragraph_diagnostic: Option<ParagraphLayoutDiagnostic>,
+    frame_paragraphs: Option<HashMap<ParagraphLayoutKey, (Rc<tekes_ui_text::Paragraph>, f32)>>,
 }
 impl Text {
     pub fn new() -> Self {
@@ -26,6 +52,10 @@ impl Text {
             type_scale: 1.,
             motion_context: None,
             animation_requested: false,
+            frame_paragraphs: None,
+            paragraph_diagnostic: (std::env::var("TEKESUI_APPHOST_DRAW_DIAGNOSTIC").as_deref()
+                == Ok("1"))
+            .then(ParagraphLayoutDiagnostic::default),
         }
     }
     fn trimmed_advance(paragraph: &tekes_ui_text::Paragraph) -> f32 {
@@ -42,21 +72,74 @@ impl Text {
         value: &str,
         role: proposal::TextRole,
         width: f32,
-    ) -> (tekes_ui_text::Paragraph, f32) {
+    ) -> (Rc<tekes_ui_text::Paragraph>, f32) {
+        // Direct public measure/draw callers need not have a frame lifecycle.
+        // Only an explicit begin_frame opts into this frame's retained layouts.
+        let key = self.frame_paragraphs.as_ref().map(|_| ParagraphLayoutKey {
+            text: value.to_owned(),
+            role,
+            type_scale: self.type_scale.to_bits(),
+            width: width.to_bits(),
+        });
+        if let Some(stats) = &mut self.paragraph_diagnostic {
+            stats.requests += 1;
+        }
+        if let Some(layout) = key
+            .as_ref()
+            .and_then(|key| self.frame_paragraphs.as_ref()?.get(key))
+        {
+            if let Some(stats) = &mut self.paragraph_diagnostic {
+                stats.hits += 1;
+            }
+            return layout.clone();
+        }
+        if let Some(stats) = &mut self.paragraph_diagnostic {
+            stats.misses += 1;
+        }
         let metrics = role.style();
         let style = TextStyle::system(metrics.size * self.type_scale).with_weight(metrics.weight);
-        let natural = self.shaper.shape(value, &style, &ShapeOptions::default());
+        let begin = self.paragraph_diagnostic.map(|_| std::time::Instant::now());
+        // Both width queries describe the same text/style. Keep its native
+        // attributed string and typesetter for this miss only; retain just the layout.
+        let prepared = self.shaper.prepare(value, &style);
+        if let (Some(begin), Some(stats)) = (begin, &mut self.paragraph_diagnostic) {
+            stats.prepare_count += 1;
+            stats.prepare_ns += begin.elapsed().as_nanos();
+        }
+        let begin = self.paragraph_diagnostic.map(|_| std::time::Instant::now());
+        let natural = self
+            .shaper
+            .shape_prepared(&prepared, &ShapeOptions::default());
+        if let (Some(begin), Some(stats)) = (begin, &mut self.paragraph_diagnostic) {
+            stats.natural_count += 1;
+            stats.natural_ns += begin.elapsed().as_nanos();
+        }
         let intrinsic = Self::trimmed_advance(&natural);
-        if !width.is_finite() || intrinsic <= width.max(0.) + 1. / 64. {
+        let (paragraph, slot) = if !width.is_finite() || intrinsic <= width.max(0.) + 1. / 64. {
             (natural, intrinsic)
         } else {
             let slot = width.max(1.);
-            (
-                self.shaper
-                    .shape(value, &style, &ShapeOptions::with_width(f64::from(slot))),
-                slot,
-            )
+            let begin = self.paragraph_diagnostic.map(|_| std::time::Instant::now());
+            let bounded = self
+                .shaper
+                .shape_prepared(&prepared, &ShapeOptions::with_width(f64::from(slot)));
+            if let (Some(begin), Some(stats)) = (begin, &mut self.paragraph_diagnostic) {
+                stats.bounded_count += 1;
+                stats.bounded_ns += begin.elapsed().as_nanos();
+            }
+            (bounded, slot)
+        };
+        let paragraph = Rc::new(paragraph);
+        if let (Some(cache), Some(key)) = (&mut self.frame_paragraphs, key) {
+            cache.insert(key, (paragraph.clone(), slot));
+            if let Some(stats) = &mut self.paragraph_diagnostic {
+                stats.unique_entries = cache.len();
+            }
         }
+        (paragraph, slot)
+    }
+    pub(crate) fn paragraph_layout_diagnostic(&self) -> Option<ParagraphLayoutDiagnostic> {
+        self.paragraph_diagnostic
     }
     pub fn type_scale(&self) -> f32 {
         self.type_scale
@@ -67,6 +150,12 @@ impl Text {
             reduced_motion,
         });
         self.animation_requested = false;
+        self.frame_paragraphs
+            .get_or_insert_with(HashMap::new)
+            .clear();
+        if let Some(stats) = &mut self.paragraph_diagnostic {
+            *stats = ParagraphLayoutDiagnostic::default();
+        }
     }
     pub fn animation_requested(&self) -> bool {
         self.animation_requested
@@ -77,6 +166,12 @@ impl Text {
             return false;
         }
         self.type_scale = scale;
+        if let Some(cache) = &mut self.frame_paragraphs {
+            cache.clear();
+        }
+        if let Some(stats) = &mut self.paragraph_diagnostic {
+            stats.unique_entries = 0;
+        }
         true
     }
 }
@@ -259,6 +354,201 @@ mod tests {
         }
         fn draw_icon(&mut self, _: &mut Scene, _: &str, _: Rect, _: Rgba) {
             panic!("original Content must prepare its icon resource");
+        }
+    }
+    #[test]
+    fn frame_memo_repaints_current_scene_and_expires_on_frame_or_font_change() {
+        let source = "A shared paragraph keeps reading stable while a narrow document changes its position and color. 中文と日本語も保持します。";
+        let role = proposal::TextRole::UiBody;
+        let mut text = Text::new();
+        text.paragraph_diagnostic = Some(ParagraphLayoutDiagnostic::default());
+        // Legacy/direct callers without begin_frame never retain arbitrary keys.
+        for width in [180., 181., 182.] {
+            text.measure(source, role, width);
+        }
+        assert!(text.frame_paragraphs.is_none());
+        text.begin_frame(std::time::Duration::ZERO, false);
+        let (original, _) = text.paragraph_layout(source, role, 180.);
+        text.measure(source, role, 180.);
+        text.first_line_height(source, role, 180.);
+        for (scale, frame, color, align) in [
+            (
+                1.,
+                Rect::new(12.25, 14.75, 180., 320.),
+                Rgba::gray(0.),
+                ButtonTextAlign::Leading,
+            ),
+            (
+                2.,
+                Rect::new(54.5, 28.25, 180., 340.),
+                Rgba::new(0.2, 0.4, 0.8, 1.),
+                ButtonTextAlign::Center,
+            ),
+        ] {
+            text.scale = scale;
+            let mut expected = Scene::new();
+            expected.push_clip(frame);
+            let x = if align == ButtonTextAlign::Center {
+                frame.min_x() + (frame.size.width - Text::trimmed_advance(&original)) * 0.5
+            } else {
+                frame.min_x()
+            };
+            let y = frame.min_y() + (frame.size.height - original.height as f32) * 0.5;
+            push_paragraph(
+                &mut expected,
+                &mut text.atlas,
+                &mut text.raster,
+                &original,
+                Point::new(x.round(), y.round()),
+                scale,
+                color,
+            );
+            expected.pop_clip();
+            let mut actual = Scene::new();
+            text.draw(&mut actual, source, role, frame, align, color);
+            assert_eq!(
+                actual, expected,
+                "memo must never retain a Scene, position, color, clip or raster scale"
+            );
+        }
+        let stats = text.paragraph_layout_diagnostic().unwrap();
+        assert_eq!(stats.misses, 1);
+        assert_eq!(stats.prepare_count, 1);
+        assert_eq!(stats.hits, 4);
+        let (resized, _) = text.paragraph_layout(source, role, 90.);
+        assert!(resized.height > original.height);
+        let (edited, _) = text.paragraph_layout("A changed paragraph", role, 180.);
+        assert_ne!(edited.as_ref(), original.as_ref());
+        let (heading, _) = text.paragraph_layout(source, proposal::TextRole::UiHeading, 180.);
+        assert!(!Rc::ptr_eq(&heading, &original));
+        assert!(text.set_body_size(20.));
+        assert!(text.frame_paragraphs.as_ref().unwrap().is_empty());
+        let (larger, _) = text.paragraph_layout(source, role, 180.);
+        assert!(larger.height > original.height);
+        text.begin_frame(std::time::Duration::from_millis(1), false);
+        assert!(text.frame_paragraphs.as_ref().unwrap().is_empty());
+        let (next_frame, _) = text.paragraph_layout(source, role, 180.);
+        assert!(!Rc::ptr_eq(&larger, &next_frame));
+        assert_eq!(larger, next_frame);
+    }
+    #[test]
+    fn actual_scroll_stack_measure_and_paint_reuse_frame_layout_without_stale_reflow() {
+        let mut text = Text::new();
+        text.paragraph_diagnostic = Some(ParagraphLayoutDiagnostic::default());
+        text.begin_frame(std::time::Duration::ZERO, false);
+        let mut host = ContentHost::new(Content::new(ComponentId(1), ScrollContent::new(
+            tekes_ui_controls::ScrollArea::default(), Content::new(ComponentId(2), StackContent {
+                model: Stack { axis: Axis::Vertical, gap: 8. }, flexible_child: None,
+                children: vec![
+                    Content::new(ComponentId(3), TextContent::new("A long document paragraph wraps across many lines while the reader makes the window narrower. 中文と日本語も同じ本文に表示します。")),
+                    Content::new(ComponentId(4), TextContent::new("Another paragraph remains below the first.")),
+                ],
+            })))).unwrap();
+        let frame = Rect::new(10., 20., 180., 160.);
+        let mut first = Scene::new();
+        host.render(&mut first, &mut text, frame, frame, Theme::LIGHT.into())
+            .unwrap();
+        let wide_height = host.get(ComponentId(3)).unwrap().frame().size.height;
+        let stats = text.paragraph_layout_diagnostic().unwrap();
+        assert!(
+            stats.hits > 0,
+            "original Scroll/Stack measure/arrange/paint must reach the same layout more than once"
+        );
+        assert_eq!(stats.requests, stats.hits + stats.misses);
+        assert_eq!(stats.prepare_count, stats.misses);
+        assert_eq!(stats.natural_count, stats.misses);
+        assert_eq!(stats.unique_entries as u64, stats.misses);
+        let mut repeated = Scene::new();
+        host.render(&mut repeated, &mut text, frame, frame, Theme::LIGHT.into())
+            .unwrap();
+        assert_eq!(first, repeated);
+        let narrow = Rect::new(10., 20., 120., 160.);
+        let mut resized = Scene::new();
+        host.render(&mut resized, &mut text, narrow, narrow, Theme::LIGHT.into())
+            .unwrap();
+        assert!(host.get(ComponentId(3)).unwrap().frame().size.height > wide_height);
+        text.begin_frame(std::time::Duration::ZERO, false);
+        let mut rebuilt = Scene::new();
+        host.render(&mut rebuilt, &mut text, narrow, narrow, Theme::LIGHT.into())
+            .unwrap();
+        assert_eq!(
+            resized, rebuilt,
+            "new frame rebuilds layout with unchanged actual output"
+        );
+    }
+    #[test]
+    fn one_prepared_paragraph_matches_original_shape_entry_for_lines_glyphs_and_draw() {
+        let mut text = Text::new();
+        text.begin_frame(std::time::Duration::ZERO, false);
+        for source in [
+            "A quieter workspace keeps reading calm while the window becomes narrower.   ",
+            "中文与日本語の段落。改行しても文字と余白を保持します。\n次の行 🧑🏽‍💻 fi ffi a\u{301}",
+            "العربية עברית reading 123 with mixed directions and a final line.\n",
+        ] {
+            for body_size in [proposal::TextRole::UiBody.style().size, 20.] {
+                text.set_body_size(body_size);
+                let role = proposal::TextRole::UiBody;
+                let metrics = role.style();
+                let style =
+                    TextStyle::system(metrics.size * text.type_scale).with_weight(metrics.weight);
+                for width in [f32::INFINITY, 700., 333.3333, 180., 1., 0., -1.] {
+                    // Reference the previous production entry: each shape owns
+                    // its prepare, with the original width decision unchanged.
+                    let natural = text.shaper.shape(source, &style, &ShapeOptions::default());
+                    let intrinsic = Text::trimmed_advance(&natural);
+                    let (reference, slot) =
+                        if !width.is_finite() || intrinsic <= width.max(0.) + 1. / 64. {
+                            (natural, intrinsic)
+                        } else {
+                            let slot = width.max(1.);
+                            (
+                                text.shaper.shape(
+                                    source,
+                                    &style,
+                                    &ShapeOptions::with_width(f64::from(slot)),
+                                ),
+                                slot,
+                            )
+                        };
+                    let (actual, actual_slot) = text.paragraph_layout(source, role, width);
+                    assert_eq!(actual_slot, slot);
+                    // Includes line and glyph identity, UTF ranges, native
+                    // advances, baselines, carets and complete paragraph geometry.
+                    assert_eq!(
+                        actual.as_ref(),
+                        &reference,
+                        "width={width} body_size={body_size} text={source:?}"
+                    );
+                    if width.is_finite() && width > 0. {
+                        let frame = Rect::new(12.25, 14.75, width, reference.height as f32 + 20.);
+                        let mut expected_scene = Scene::new();
+                        expected_scene.push_clip(frame);
+                        push_paragraph(
+                            &mut expected_scene,
+                            &mut text.atlas,
+                            &mut text.raster,
+                            &reference,
+                            Point::new(frame.min_x().round(), (frame.min_y() + 10.).round()),
+                            text.scale,
+                            Rgba::gray(0.),
+                        );
+                        expected_scene.pop_clip();
+                        let mut actual_scene = Scene::new();
+                        text.draw(
+                            &mut actual_scene,
+                            source,
+                            role,
+                            frame,
+                            ButtonTextAlign::Leading,
+                            Rgba::gray(0.),
+                        );
+                        assert_eq!(
+                            actual_scene, expected_scene,
+                            "draw width={width} body_size={body_size}"
+                        );
+                    }
+                }
+            }
         }
     }
     #[test]
