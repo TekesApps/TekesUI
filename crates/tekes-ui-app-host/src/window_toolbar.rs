@@ -68,6 +68,7 @@ pub(crate) struct Declaration {
     pub source: Source,
 }
 pub(crate) struct MountedToolbar {
+    pub(crate) icons: SvgIconCache,
     pub host: ToolbarHost<Source>,
     pub window: u64,
     declarations: Vec<Declaration>,
@@ -77,11 +78,20 @@ impl MountedToolbar {
         static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
         let window = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         Self {
+            icons: SvgIconCache::default(),
             host: ToolbarHost::new(ComponentId(90000), window, Rect::default())
                 .expect("toolbar root"),
             window,
             declarations: vec![],
         }
+    }
+    pub(crate) fn occupied_frames(&self) -> Vec<Rect> {
+        self.declarations
+            .iter()
+            .filter_map(|declaration| self.host.content_host().get(declaration.region))
+            .map(|region| region.frame())
+            .filter(|frame| frame.size.width > 0. && frame.size.height > 0.)
+            .collect()
     }
     pub(crate) fn sources(&self) -> impl Iterator<Item = &Source> {
         self.declarations

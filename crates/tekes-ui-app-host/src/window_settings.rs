@@ -863,19 +863,32 @@ impl Host {
             breadcrumb,
         )?;
         for panel in &mut self.panels {
-            panel
-                .mounted_toolbar
-                .host
-                .render(&mut toolbar_scene, &mut self.text, Theme::LIGHT.into())
-                .map_err(|e| anyhow::anyhow!("settings container toolbar: {e:?}"))?;
+            with_content_icons(
+                self.renderer.as_mut().unwrap(),
+                &mut panel.mounted_toolbar.icons,
+                &mut self.text,
+                |text| {
+                    panel
+                        .mounted_toolbar
+                        .host
+                        .render(&mut toolbar_scene, text, Theme::LIGHT.into())
+                        .map_err(|e| anyhow::anyhow!("settings container toolbar: {e:?}"))
+                },
+            )?;
         }
         self.panels[1].bounds = frames[1];
-        self.panels[1].local.as_mut().unwrap().render(
-            &mut scene,
+        let panel = &mut self.panels[1];
+        with_content_icons(
+            self.renderer.as_mut().unwrap(),
+            &mut panel.content_icons,
             &mut self.text,
-            form_frame,
-            form_frame,
-            palette,
+            |text| {
+                panel
+                    .local
+                    .as_mut()
+                    .unwrap()
+                    .render(&mut scene, text, form_frame, form_frame, palette)
+            },
         )?;
         if frames[0].size.width > 32. {
             let left = content_geometry(frames[0], top);
@@ -887,12 +900,18 @@ impl Host {
                 (left.max_y() - 24. - list_top).max(1.),
             );
             self.panels[0].bounds = frames[0];
-            self.panels[0].local.as_mut().unwrap().render(
-                &mut scene,
+            let panel = &mut self.panels[0];
+            with_content_icons(
+                self.renderer.as_mut().unwrap(),
+                &mut panel.content_icons,
                 &mut self.text,
-                rect,
-                rect,
-                palette,
+                |text| {
+                    panel
+                        .local
+                        .as_mut()
+                        .unwrap()
+                        .render(&mut scene, text, rect, rect, palette)
+                },
             )?;
         }
         let row = Rect::new(whole.min_x(), row_y, whole.size.width, paint);
@@ -1537,10 +1556,12 @@ mod navigation_input_tests {
         fixture_mode(marked, SettingsDisplayMode::Independent)
     }
     fn fixture_mode(marked: bool, mode: SettingsDisplayMode) -> (Host, std::path::PathBuf) {
+        static NEXT_FIXTURE: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
         let path = std::env::temp_dir()
             .join(format!(
-                "settings-nav-input-{}-{}",
+                "settings-nav-input-{}-{}-{}",
                 std::process::id(),
+                NEXT_FIXTURE.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
                 std::time::SystemTime::now()
                     .duration_since(std::time::UNIX_EPOCH)
                     .unwrap()

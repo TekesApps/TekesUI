@@ -1,5 +1,35 @@
 # TekesUI AppHost 框架设计
 
+## 2026-11-08 最新修正：Others 工具栏内 Tabs 与等距正文留白
+
+用户在恢复旧视觉后的实际试用提出：Others 的 Tabs 是工具栏组成部分，必须在该工具栏同一行完成选择，不另占正文上方一行；关闭 affordance 使用圆圈内叉，保留独立关闭语义与原命中/键盘/AX。Focus 和 Others 正文使用已有 `Spacing::Loose`（16pt）四边一致留白，Toolbar 高度不算作正文 padding，不在内容树和宿主重复叠加。现有 token 表是尺寸真源，不新增任意常量。此修正明确取代上一批“Tabs在Toolbar下方”和“撤回正文padding”的安排；旧窗口尺寸、边缘图标及导航功能继续保留。通过受影响验证后安装并更新 Dock，源码交付、原生验收及公开 Release 分列。
+
+
+## 2026-11-08 最新纠偏：保留原视觉与功能，只迁移容器关系
+
+用户明确要求沿用本次 AppHost 修改前满意的布局、尺寸、位置、图标及功能，只将容器关系定义为左侧 Nav 容器与右侧 Focus／Others。结构调整不授权整体视觉重设计；下面同日的新外观计划须按本节重新核对。先以历史源码和证据确认基线，保持现有 WIP，不整批回滚共享组件修复；当前 v0.3.0 候选暂停发布。前进/后退、侧栏显隐等既有功能必须保留，不能用大段文字按钮替代原图标而改变整体空间布局。用户当前试用窗口保持，自动 GUI 操作暂停。
+
+
+当前实现基线核对为结构改造前 `3718ee9548ff0e20ee19ad3aea7ae0dd6e46e65c`。恢复 1100×640、原窗口位置、1pt 正文分隔及三等分初始几何；隐藏单侧时只扩展 Focus，另一侧保持原宽。原窗口边缘 sidebar/panel 图标和 Back/Forward 位置沿用原 ToolbarWindowEdge；各 Container 仍拥有自己的 Toolbar。普通 Others 的 Toolbar 与系统按钮同行，Tabs 位于其下，正文/输入/进程视口只扣一次 header。Gallery 显式 `nav_fraction=1/3`，默认 None 保持旧固定宽消费者。根正文新增的 16pt 统一 padding 和整条额外背景覆盖撤回；共享输入框、菜单和 Tabs 的独立修复保留。
+
+交付规则：今后对本批说“改好了”须已完成适用验证、安装并将 Dock 指向该准确程序，不能以源码或单独试用程序代替；公开 tag/Release 和本机安装仍分别留收据。
+
+## 2026-11-08 较早计划（下列视觉安排已被上述纠偏取代）
+
+本次用户要求进入下一交付批次，沿用每个 Container 自有 Toolbar，不恢复窗口级工具栏所有权。
+
+- 顶部所有 Toolbar 背景连续填满各自区域及容器交界，不留外 margin、不绘制贯穿工具栏的竖向 divider；系统按钮安全区域及正文区域的 resize 命中能力保留。Toolbar 内部按钮间距与系统避让不以“无外 margin”清零。
+- Container 正文四边使用现有 `Spacing::Loose`（16pt）token，测量、绘制、滚动、输入与 AX 几何必须一致；不把 padding 叠加到 Toolbar 外围。
+- 容器自有动作提供明确交换入口：others 单容器显示 `Switch to Focus`；focus 显示 `Switch to Others` 并与当前选中的普通 Container Tab 交换；当前为 List 或没有单容器目标时禁用，不自动选择第一项。实例、内容、命令来源保持；NavBar 不参与这两个展示位的交换。
+- Others 的普通 Tabs 提供真正关闭操作，关闭与选择分离；关闭后的选择、内容生命周期及恢复规则沿用容器模型，不仅绘制关闭图标。聚合 List 与单容器关闭语义分开，不能借关闭 List 删除所有成员。
+- Gallery 是可用的 AppHost 框架/模板，不能退化为静态组件拼盘。必须接回旧版已有前进/后退、NavBar 收起/展开、Others 收起/展开，并通过原导航服务维护历史与当前业务选择。收起后的恢复入口始终可达；恢复原容器实例、选中项及内容状态。导航列表选择、主内容与 Inspector 呈现一致，前进/后退真正恢复上下文。 `navigation_toolbar_follows_focus` 为显式选项，默认关闭保持既有消费者；Gallery启用后导航贡献只改变展示位置，业务 `navigation_targets` 仍绑定稳定文档容器。NavBar 的受控导航请求经过原服务 Push/publication，Back/Forward 的 publication 不再次 Push。
+- Gallery AppHost 使用实际共享组件展示职责：分 section 的导航 List、多行主内容及换行、Inspector/Property 表单。使用有限真实示例，不新建演示框架。
+- AppHost 各原有内容根及 Toolbar/Tabs 使用现有 SVG 图标服务；正文排版由实际 AppHost Text 渲染器按有限宽度测量和绘制，不用 Gallery 的其他渲染器测试代签。换行布局宽度与 CoreText 尾部空白 advance 分别处理，保留输入系统原有排版契约。
+- 共享 TextField focus、菜单行和 Tabs 视觉另按关联组件工作项核对。对照 AppKit，优先去掉无意义逐项描边和重复焦点外框，保留清晰键盘焦点、选择、禁用和高对比度状态。以实际渲染及 token 读取判断原因，不能只换颜色掩盖几何问题。
+
+对应 #229（AppHost/Tabs 接入）与 #245（共享视觉修正）；关闭请求由共享 Tabs 明确提供，AppHost 关闭展示保留 backing 并可恢复。通过后按实现、测试、提交、语义版本 tag、Release 交付。历史证据保留，不把旧版本检查直接改签为新外观通过。
+
+
 初稿：2026-10-21；容器与工具栏职责修订：2026-11-05。
 
 ## 2026-11-07 实施批次（#229，目标 v0.2.0）

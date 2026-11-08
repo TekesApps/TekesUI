@@ -184,6 +184,16 @@ impl AppWindow {
     }
 }
 
+/// Dispatch the fixed headless AppHost services before an embedding app creates
+/// any windows. Returns true only when this process was a component worker.
+#[cfg(target_os = "macos")]
+pub fn run_component_worker_from_args(args: &[String]) -> anyhow::Result<bool> {
+    tekes_ui_module_runtime::run_component_worker_from_args(
+        &[navigation::definition(), settings_undo::definition()],
+        args,
+    )
+}
+
 /// Same executable: parent is Host, --worker selects one fixed native factory.
 /// Factories are never invoked by the Host process. Any diagnostic
 /// entry point belongs to the consuming app.
@@ -254,13 +264,7 @@ fn run_columns(
         presentation.as_ref(),
     )?;
     let args: Vec<String> = std::env::args().collect();
-    if tekes_ui_module_runtime::run_component_worker_from_args(
-        &[
-            crate::navigation::definition(),
-            crate::settings_undo::definition(),
-        ],
-        &args,
-    )? {
+    if run_component_worker_from_args(&args)? {
         return Ok(());
     }
     if args.get(1).map(String::as_str) == Some("--worker") {

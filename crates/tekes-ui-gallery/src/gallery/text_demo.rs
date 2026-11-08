@@ -1840,7 +1840,7 @@ mod tests {
     }
 
     #[test]
-    fn focused_text_surface_ring_uses_viewport_gutter_without_expanding_frame() {
+    fn focused_text_surface_field_edge_keeps_viewport_clip_and_original_frame() {
         let content = Rect::new(100.0, 80.0, 500.0, 500.0);
         let viewport = Rect::new(84.0, 64.0, 532.0, 532.0);
         fn assert_real_ring(
@@ -1887,18 +1887,32 @@ mod tests {
                 "the parent viewport bounds paint while the layout frame remains within content"
             );
             let focused_border = proposal::render_color("border-focused", Theme::LIGHT).unwrap();
-            let ring = scene
+            assert_eq!(
+                demo.surfaces[surface_index].view.presentation,
+                tekes_ui_controls::TextSurfacePresentation::Field
+            );
+            let edge = scene
                 .primitives()
                 .iter()
                 .find_map(|primitive| match primitive {
-                    Primitive::Quad(quad) if quad.border_color == focused_border => Some(quad.rect),
+                    Primitive::Quad(quad)
+                        if quad.rect == outer && quad.border_color == focused_border =>
+                    {
+                        Some(quad)
+                    }
                     _ => None,
                 })
-                .expect("real focused TextSurface ring primitive");
-            assert!(ring.min_x() < outer.min_x());
-            assert!(ring.max_x() > outer.max_x());
-            assert!(ring.min_y() < outer.min_y());
-            assert!(ring.max_y() > outer.max_y());
+                .expect("real attached Field focus edge");
+            assert_eq!(
+                edge.border_width,
+                proposal::metric("stroke", "c-focus-width").unwrap()
+            );
+            let ring = edge.rect;
+            assert_eq!(
+                ring, outer,
+                "Field focus uses its original contour without an outer gap"
+            );
+            assert!(!scene.primitives().iter().any(|primitive| matches!(primitive, Primitive::Quad(quad) if quad.fill.a == 0. && quad.border_width > 0. && quad.rect.center() == outer.center())), "no independent Field ring; document Content keeps its own scope");
             assert!(viewport.contains(Point::new(ring.min_x(), ring.min_y())));
             assert!(viewport.contains(Point::new(ring.max_x(), ring.max_y())));
             assert_eq!(
@@ -2379,6 +2393,11 @@ mod tests {
             assert_eq!(gallery.theme(), theme);
             let surface = &gallery.text_view.surfaces[0].view;
             assert!(surface.input.read_only);
+            assert_eq!(
+                surface.presentation,
+                tekes_ui_controls::TextSurfacePresentation::Field,
+                "readonly capability does not imply undecorated Content presentation"
+            );
             assert_eq!(surface.input.text, source);
             assert_eq!(surface.input.selection(), 0..4);
             assert_eq!(surface.input.selected_text(), copy);
@@ -2389,8 +2408,8 @@ mod tests {
                 initial = Some((surface.outer, surface.inner));
             }
             assert_readonly_scene(&scene, surface, theme.into(), gallery.text.scale());
-            assert!(scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q)if q.fill.a==0. && q.border_width>0.
-                && q.rect.center()==surface.outer.center() && q.border_color==Palette::from(theme).color("border-focused").unwrap())));
+            assert!(scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q)if q.rect == surface.outer && q.border_width == proposal::metric("stroke", "c-focus-width").unwrap()
+                && q.border_color==Palette::from(theme).color("border-focused").unwrap())));
             assert_eq!(gallery.text_view.clipboard_selection(), Some(copy.clone()));
             let native = gallery
                 .text_view

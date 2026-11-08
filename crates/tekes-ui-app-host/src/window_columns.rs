@@ -89,7 +89,7 @@ impl Host {
             || self
                 .presentation_tabs
                 .as_ref()
-                .is_some_and(|tabs| tabs.focused().is_some())
+                .is_some_and(|tabs| tabs.content_host().focused().is_some())
         {
             return None;
         }
@@ -123,7 +123,7 @@ impl Host {
             || self
                 .presentation_tabs
                 .as_ref()
-                .is_some_and(|tabs| tabs.focused().is_some())
+                .is_some_and(|tabs| tabs.content_host().focused().is_some())
             || self.sidebar_motion.needs_frame()
             || self.open_toolbar().is_some()
             || self
@@ -169,7 +169,7 @@ impl Host {
             let point = Point::new(s.position.x as f32, s.position.y as f32);
             self.panels.iter().position(|p| {
                 p.local.is_some()
-                    && content_geometry(p.bounds, p.toolbar_height).contains(point)
+                    && p.content_frame().contains(point)
                     && (self.presentation.is_none() || p.clip.contains(point))
             })
         } else if self.panels[self.toolbar_index]

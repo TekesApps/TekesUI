@@ -1309,6 +1309,18 @@ impl TextSurface {
             scene.push_clip(background_clip);
         }
         if self.presentation == TextSurfacePresentation::Field {
+            // Fields express editing focus on their original edge. There is
+            // one contour, with no second outward ring or gap. Explicit error
+            // ink retains priority, while focus still increases that edge.
+            let editing_focus = focused && !self.input.disabled;
+            let boundary = if self.error {
+                proposal::control_boundary("error", theme.theme).expect("JSON text error boundary")
+            } else if editing_focus {
+                "border-focused"
+            } else {
+                proposal::control_boundary("required-input", theme.theme)
+                    .expect("JSON text boundary role")
+            };
             scene.push_quad(
                 Quad::new(
                     self.outer,
@@ -1325,33 +1337,17 @@ impl TextSurface {
                     proposal::metric("radius", "radius-input").expect("JSON radius"),
                 )
                 .with_border(
-                    Stroke::Rule.value(),
-                    color(
-                        proposal::control_boundary(
-                            if self.error {
-                                "error"
-                            } else {
-                                "required-input"
-                            },
-                            theme.theme,
-                        )
-                        .expect("JSON text boundary role"),
-                        theme,
-                    ),
+                    if editing_focus {
+                        proposal::metric("stroke", "c-focus-width").expect("input focus width")
+                    } else {
+                        Stroke::Rule.value()
+                    },
+                    color(boundary, theme),
                 ),
             );
-        }
-        if focused && !self.input.disabled {
-            crate::paint::focus_ring(
-                scene,
-                self.outer,
-                theme,
-                if self.presentation == TextSurfacePresentation::Field {
-                    proposal::metric("radius", "radius-input").expect("input radius")
-                } else {
-                    0.
-                },
-            );
+        } else if focused && !self.input.disabled {
+            // Undecorated document Content keeps its independent focus scope.
+            crate::paint::focus_ring(scene, self.outer, theme, 0.);
         }
         if background_clip.is_some() {
             scene.pop_clip();
@@ -1512,6 +1508,96 @@ mod tests {
         let mut renderer = RecordingRenderer::default();
         view.draw(&mut renderer, &mut scene, Theme::LIGHT, false, false);
         (view, scene, renderer)
+    }
+
+    #[test]
+    fn field_focus_is_one_attached_boundary_with_error_disabled_and_clip_preserved() {
+        let frame = Rect::new(20.25, 24.5, 200., 44.);
+        for theme in Theme::ALL {
+            for scale in [1., 2.] {
+                for focused in [false, true] {
+                    for (read_only, disabled, error) in [
+                        (false, false, false),
+                        (true, false, false),
+                        (false, true, false),
+                        (false, false, true),
+                    ] {
+                        for ancestor in [None, Some(Rect::new(30., 20., 90., 80.))] {
+                            let mut surface = TextSurface::new("", false, read_only);
+                            surface.input.disabled = disabled;
+                            surface.error = error;
+                            surface.layout_with(frame, ancestor, scale, 1., |_, _| {
+                                Rc::new(empty_paragraph())
+                            });
+                            let input_before = surface.input.action_snapshot();
+                            let mut scene = Scene::new();
+                            surface.draw(
+                                &mut RecordingRenderer::default(),
+                                &mut scene,
+                                theme,
+                                focused,
+                                false,
+                            );
+                            let quads: Vec<_> = scene
+                                .primitives()
+                                .iter()
+                                .filter_map(|primitive| match primitive {
+                                    Primitive::Quad(quad) => Some(quad),
+                                    _ => None,
+                                })
+                                .collect();
+                            assert_eq!(
+                                quads.len(),
+                                1,
+                                "input has one ground/edge and no separate outer contour"
+                            );
+                            let quad = quads[0];
+                            assert_eq!(quad.rect, frame);
+                            assert_eq!(
+                                quad.corner_radii,
+                                tekes_ui_scene::CornerRadii::uniform(
+                                    proposal::metric("radius", "radius-input").unwrap()
+                                )
+                            );
+                            let editing_focus = focused && !disabled;
+                            assert_eq!(
+                                quad.border_width,
+                                if editing_focus {
+                                    proposal::metric("stroke", "c-focus-width").unwrap()
+                                } else {
+                                    Stroke::Rule.value()
+                                }
+                            );
+                            let role = if error {
+                                "status-failed"
+                            } else if editing_focus {
+                                "border-focused"
+                            } else {
+                                "border"
+                            };
+                            assert_eq!(quad.border_color, color(role, theme.into()));
+                            assert_eq!(
+                                quad.fill,
+                                color(
+                                    if read_only {
+                                        "surface-1"
+                                    } else {
+                                        "transcript-input"
+                                    },
+                                    theme.into()
+                                )
+                            );
+                            if let Some(ancestor) = ancestor {
+                                assert!(
+                                    matches!(scene.primitives().first(), Some(Primitive::PushClip(clip)) if *clip == ancestor)
+                                );
+                            }
+                            assert_eq!(surface.input.action_snapshot(), input_before);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     #[test]

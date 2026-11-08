@@ -94,24 +94,23 @@ fn number_field_retained_themes_keep_draft_committed_value_and_actual_numeric_in
             assert_eq!(
                 background.border_color,
                 palette
-                    .color(
-                        proposal::control_boundary(
-                            if draft != "7" {
-                                "error"
-                            } else {
-                                "required-input"
-                            },
-                            theme
-                        )
-                        .unwrap()
-                    )
+                    .color(if draft != "7" {
+                        "status-failed"
+                    } else {
+                        "border-focused"
+                    })
                     .unwrap()
             );
             assert!(
                 contrast(background.border_color, background.fill) >= 3.,
                 "{theme:?}: original numeric input boundary"
             );
-            assert!(scene.primitives().iter().any(|p| matches!(p, Primitive::Quad(q) if q.fill.a == 0. && q.border_color == palette.color("border-focused").unwrap() && q.rect.intersection(&surface.outer).is_some())), "real focused editor ring");
+            assert_eq!(
+                background.border_width,
+                proposal::metric("stroke", "c-focus-width").unwrap(),
+                "the original numeric editor has one attached focus/error edge"
+            );
+            assert!(!scene.primitives().iter().any(|p| matches!(p, Primitive::Quad(q) if q.fill.a == 0. && q.border_width > 0. && q.rect.center() == surface.outer.center())), "no duplicate outer contour");
             let regions = [
                 (surface.inner, false, background.fill),
                 (

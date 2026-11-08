@@ -288,8 +288,21 @@ fn existing_choice_states_preserve_values_and_use_actual_production_tokens() {
                         assert_eq!(base.border_color, palette.color(boundary).unwrap());
                     }
                     if component == "tui.combo-box" {
-                        let boundary = proposal::control_boundary("required-input", theme).unwrap();
+                        let focused = matches!(state, "focus" | "pressed" | "open" | "empty");
+                        let boundary = if focused {
+                            "border-focused"
+                        } else {
+                            proposal::control_boundary("required-input", theme).unwrap()
+                        };
                         assert_eq!(base.border_color, palette.color(boundary).unwrap());
+                        assert_eq!(
+                            base.border_width,
+                            if focused {
+                                proposal::metric("stroke", "c-focus-width").unwrap()
+                            } else {
+                                proposal::metric("stroke", "stroke-rule").unwrap()
+                            }
+                        );
                         if state != "open" {
                             assert!(
                                 !reads.iter().any(|(family, token)| family == "color"

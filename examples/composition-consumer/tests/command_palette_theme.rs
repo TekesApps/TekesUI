@@ -159,18 +159,13 @@ fn command_palette_same_instance_preserves_query_and_active_candidate_across_the
                 proposal::metric("radius", "radius-input").unwrap()
             )
         );
-        assert_eq!(
-            field.border_color,
-            palette
-                .color(proposal::control_boundary("required-input", theme).unwrap())
-                .unwrap()
-        );
+        assert_eq!(field.border_color, palette.color("border-focused").unwrap());
         assert!(
             scene
                 .primitives()
                 .iter()
                 .any(|p| matches!(p, Primitive::Quad(q)
-            if q.fill.a == 0. && q.border_width > 0. && q.rect.center() == initial_query.center()
+            if q.rect == initial_query && q.border_width == proposal::metric("stroke", "c-focus-width").unwrap()
             && q.border_color == palette.color("border-focused").unwrap()))
         );
         let node = scenario

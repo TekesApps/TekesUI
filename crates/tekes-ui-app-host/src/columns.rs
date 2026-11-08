@@ -12,6 +12,11 @@ use tekes_ui_tokens::Palette;
 /// can expose its own host without cloning controls or leaking RefCell guards.
 pub trait ContainerContent {
     fn with_host(&mut self, visit: &mut dyn FnMut(&mut ContentHost));
+    /// Optional consumer request into the existing headless navigation service.
+    /// Called only while its input gate is open; publications must not push again.
+    fn take_navigation_request(&mut self) -> Option<crate::navigation::Entry> {
+        None
+    }
 }
 impl ContainerContent for ContentHost {
     fn with_host(&mut self, visit: &mut dyn FnMut(&mut ContentHost)) {
@@ -59,6 +64,12 @@ impl LocalContainer {
         self.options.list_height = Some(height);
         self
     }
+    /// Route this explicitly declared toolbar command through the window's
+    /// current focus/ordinary-Others exchange instead of business dispatch.
+    pub fn focus_switch(mut self, command: u64) -> Self {
+        self.options.focus_switch_command = Some(command);
+        self
+    }
     pub fn retain_button(mut self, command: u64, target: impl Into<String>) -> Self {
         self.options.retained_buttons.push(RetainedButton {
             command,
@@ -87,6 +98,9 @@ impl LocalContainer {
     ) -> Self {
         self.command = Some(Box::new(handler));
         self
+    }
+    pub(crate) fn take_navigation_request(&mut self) -> Option<crate::navigation::Entry> {
+        self.source.take_navigation_request()
     }
     pub(crate) fn command(&mut self, id: u64) -> Result<()> {
         let callback = self
@@ -163,6 +177,7 @@ impl LocalContainer {
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct ContainerOptions {
     pub title: Option<String>,
+    pub focus_switch_command: Option<u64>,
     /// Opt in to List with this content allocation (including its Toolbar).
     pub list_height: Option<f32>,
     /// Explicit destinations; there is no automatic first-visible fallback.
@@ -195,6 +210,12 @@ impl ProcessContainer {
     }
     pub fn list_height(mut self, height: f32) -> Self {
         self.options.list_height = Some(height);
+        self
+    }
+    /// Route this explicitly declared toolbar command through the window's
+    /// current focus/ordinary-Others exchange instead of business dispatch.
+    pub fn focus_switch(mut self, command: u64) -> Self {
+        self.options.focus_switch_command = Some(command);
         self
     }
     pub fn retain_button(mut self, command: u64, target: impl Into<String>) -> Self {

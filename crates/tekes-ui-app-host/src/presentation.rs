@@ -32,12 +32,17 @@ pub struct PresentationOptions {
     /// None means no area and no toggle. Some(visible=false) retains state.
     pub others: Option<OthersOptions>,
     pub nav_width: f32,
+    /// Optional relative width, preserving the original AppHost resize ratios.
+    pub nav_fraction: Option<f32>,
     pub focus_fraction: f32,
     /// Explicit stable identities for the optional history service. Empty means
     /// no recipients; it never implicitly means all containers or focus.
     pub navigation_targets: Vec<String>,
     /// Explicit container receiving the optional headless service's controls.
     pub navigation_toolbar: Option<String>,
+    /// Explicitly keep window history controls in the current focus Toolbar.
+    /// Business navigation_targets and the service identity remain unchanged.
+    pub navigation_toolbar_follows_focus: bool,
 }
 impl PresentationOptions {
     pub fn new(focus: impl Into<String>) -> Self {
@@ -46,13 +51,19 @@ impl PresentationOptions {
             focus: focus.into(),
             others: None,
             nav_width: 220.,
+            nav_fraction: None,
             focus_fraction: 0.6,
             navigation_targets: Vec::new(),
             navigation_toolbar: None,
+            navigation_toolbar_follows_focus: false,
         }
     }
     pub fn nav_bar(mut self, id: impl Into<String>) -> Self {
         self.nav_bar = Some(id.into());
+        self
+    }
+    pub fn nav_fraction(mut self, fraction: f32) -> Self {
+        self.nav_fraction = Some(fraction);
         self
     }
     pub fn others(mut self, others: OthersOptions) -> Self {
@@ -61,6 +72,10 @@ impl PresentationOptions {
     }
     pub fn navigation_toolbar(mut self, id: impl Into<String>) -> Self {
         self.navigation_toolbar = Some(id.into());
+        self
+    }
+    pub fn navigation_toolbar_follows_focus(mut self, enabled: bool) -> Self {
+        self.navigation_toolbar_follows_focus = enabled;
         self
     }
     pub fn navigation_targets(mut self, ids: Vec<String>) -> Self {
@@ -76,6 +91,7 @@ struct Member {
 #[derive(Clone, Debug)]
 pub struct PresentationState {
     options: PresentationOptions,
+    nav_visible: bool,
     members: Vec<Member>,
     list_order: Vec<String>,
     list_scroll: f32,
@@ -126,6 +142,12 @@ impl PresentationState {
             "invalid NavBar width"
         );
         ensure!(
+            options
+                .nav_fraction
+                .is_none_or(|fraction| fraction.is_finite() && fraction > 0. && fraction < 1.),
+            "invalid NavBar fraction"
+        );
+        ensure!(
             options.focus_fraction.is_finite()
                 && options.focus_fraction > 0.
                 && options.focus_fraction < 1.,
@@ -174,6 +196,7 @@ impl PresentationState {
             .collect();
         let mut state = Self {
             options,
+            nav_visible: true,
             members,
             list_order,
             list_scroll: 0.,
@@ -195,8 +218,31 @@ impl PresentationState {
     pub fn nav_bar_id(&self) -> Option<&str> {
         self.options.nav_bar.as_deref()
     }
+    pub fn nav_bar_visible(&self) -> bool {
+        self.options.nav_bar.is_some() && self.nav_visible
+    }
+    pub fn visible_nav_bar_id(&self) -> Option<&str> {
+        self.nav_bar_visible().then(|| self.nav_bar_id()).flatten()
+    }
+    pub fn toggle_nav_bar(&mut self) -> Result<()> {
+        ensure!(self.options.nav_bar.is_some(), "NavBar is not configured");
+        self.nav_visible = !self.nav_visible;
+        Ok(())
+    }
     pub fn navigation_toolbar_id(&self) -> Option<&str> {
         self.options.navigation_toolbar.as_deref()
+    }
+    pub(crate) fn navigation_uses_window_edge(&self) -> bool {
+        self.options.navigation_toolbar_follows_focus
+    }
+    pub fn navigation_toolbar_presenter_id(&self) -> Option<&str> {
+        self.navigation_toolbar_id().map(|configured| {
+            if self.options.navigation_toolbar_follows_focus {
+                self.focus_id()
+            } else {
+                configured
+            }
+        })
     }
     pub fn navigation_targets(&self) -> &[String] {
         &self.options.navigation_targets
@@ -285,6 +331,21 @@ impl PresentationState {
         others.containers.remove(index);
         self.reconcile_selection();
         Ok(())
+    }
+    /// A focus owner exchanges only with a selected ordinary Others tab.
+    /// List aggregates and absent selections never imply a first-item fallback.
+    pub fn focus_switch_target(&self, owner: &str) -> Option<&str> {
+        if owner == self.focus_id() {
+            match self.selected_tab() {
+                Some(OthersTab::Container(id)) => Some(id.as_str()),
+                _ => None,
+            }
+        } else {
+            self.others_ids()
+                .iter()
+                .find(|id| id.as_str() == owner)
+                .map(String::as_str)
+        }
     }
     pub fn promote_tab(&mut self, tab: &OthersTab) -> Result<()> {
         match tab {
@@ -376,19 +437,72 @@ impl PresentationState {
             .and_then(|m| m.list_height)
             .unwrap_or(0.)
     }
+    pub(crate) fn configured_nav_width(&self, area: Rect) -> f32 {
+        if self.nav_bar_id().is_none() {
+            return 0.;
+        }
+        self.options
+            .nav_fraction
+            .map_or(self.options.nav_width, |ratio| {
+                (area.size.width - 1.).max(0.) * ratio
+            })
+            .min((area.size.width - 1.).max(0.))
+    }
+    fn reference_split_width(&self, area: Rect) -> f32 {
+        // Preserve the old global SplitView fractions. The center receives the
+        // second one-point seam; hiding NavBar cannot change the opposite pane.
+        (area.size.width - self.configured_nav_width(area) - 1.).max(1.)
+    }
+    pub(crate) fn resize_nav_width(&mut self, width: f32, area: Rect, minimum: f32) {
+        let others = self.reference_split_width(area) * (1. - self.options.focus_fraction);
+        let maximum = (area.size.width - 2. - others - minimum).max(minimum);
+        let width = width.clamp(minimum, maximum);
+        if self.options.nav_fraction.is_some() {
+            self.options.nav_fraction =
+                Some((width / (area.size.width - 1.).max(1.)).clamp(0.01, 0.99));
+        } else {
+            self.options.nav_width = width;
+        }
+        self.options.focus_fraction =
+            (1. - others / self.reference_split_width(area)).clamp(0.01, 0.99);
+    }
+    pub(crate) fn resize_focus_ratio(
+        &mut self,
+        ratio: f32,
+        area: Rect,
+        minimum: f32,
+    ) -> Result<()> {
+        let visible_right = area.size.width
+            - if self.nav_bar_visible() {
+                self.configured_nav_width(area) + 1.
+            } else {
+                0.
+            };
+        let others = (visible_right - 1.).max(0.) * (1. - ratio);
+        let reference = self.reference_split_width(area);
+        let minimum =
+            ((minimum + if self.nav_bar_id().is_some() { 1. } else { 0. }) / reference).min(0.49);
+        self.set_focus_fraction(
+            (1. - others / reference).clamp(minimum.max(0.01), 1. - minimum.max(0.01)),
+        )
+    }
     pub fn frames(&self, area: Rect) -> Vec<(String, Rect)> {
         self.layout(area).frames
     }
     pub fn layout(&self, area: Rect) -> PresentationLayout {
-        const SPLITTER: f32 = 6.;
+        self.layout_with_toolbar(area, 0.)
+    }
+    pub(crate) fn layout_with_toolbar(
+        &self,
+        area: Rect,
+        toolbar_height: f32,
+    ) -> PresentationLayout {
+        const SPLITTER: f32 = 1.;
         const TABS: f32 = 36.;
         let mut layout = PresentationLayout::default();
         let mut right = area;
-        if let Some(nav) = self.nav_bar_id() {
-            let width = self
-                .options
-                .nav_width
-                .min((area.size.width - SPLITTER).max(0.) * 0.5);
+        if let Some(nav) = self.visible_nav_bar_id() {
+            let width = self.configured_nav_width(area);
             let frame = Rect::new(area.min_x(), area.min_y(), width, area.size.height);
             layout.frames.push((nav.into(), frame));
             layout.clips.push((nav.into(), frame));
@@ -399,17 +513,17 @@ impl PresentationState {
                 area.size.height,
             );
         }
-        // SplitView ratios describe the usable span, excluding the divider.
-        let usable_width = (right.size.width - SPLITTER).max(0.);
-        let focus_width = if self.others_visible() {
-            usable_width * self.options.focus_fraction
-        } else {
-            right.size.width
-        };
+        // Hiding NavBar expands focus only; the opposite Others allocation
+        // retains the original AppHost width and reappears without a jump.
         let others_width = if self.others_visible() {
-            usable_width - focus_width
+            self.reference_split_width(area) * (1. - self.options.focus_fraction)
         } else {
             0.
+        };
+        let focus_width = if self.others_visible() {
+            (right.size.width - SPLITTER - others_width).max(0.)
+        } else {
+            right.size.width
         };
         let focus = Rect::new(right.min_x(), right.min_y(), focus_width, right.size.height);
         layout.frames.push((self.focus_id().into(), focus));
@@ -417,19 +531,30 @@ impl PresentationState {
         if !self.others_visible() {
             return layout;
         }
-        let x = right.min_x() + focus_width + SPLITTER.min(right.size.width);
-        let tabs_height = TABS.min(right.size.height);
+        // Anchor the unchanged opposite allocation to its original window edge.
+        // Reconstructing x through focus introduces a different rounding path
+        // when NavBar is hidden, although Others has not moved or resized.
+        let x = area.max_x() - others_width;
+        let header = if toolbar_height > 0. {
+            toolbar_height
+        } else {
+            TABS
+        }
+        .min(right.size.height)
+        .max(0.);
+        let tabs_height = header;
         layout.tabs = Some(Rect::new(x, right.min_y(), others_width, tabs_height));
         let viewport = Rect::new(
             x,
-            right.min_y() + tabs_height,
+            right.min_y() + header,
             others_width,
-            (right.size.height - tabs_height).max(0.),
+            (right.size.height - header).max(0.),
         );
         match self.selected_tab() {
             Some(OthersTab::Container(id)) => {
-                layout.frames.push((id.clone(), viewport));
-                layout.clips.push((id.clone(), viewport));
+                let frame = Rect::new(x, right.min_y(), others_width, right.size.height);
+                layout.frames.push((id.clone(), frame));
+                layout.clips.push((id.clone(), frame));
             }
             Some(OthersTab::List) => {
                 layout.list_viewport = Some(viewport);
@@ -502,6 +627,99 @@ mod tests {
                 .navigation_targets(vec!["c".into(), "remote".into()]),
         )
         .unwrap()
+    }
+    #[test]
+    fn ordinary_toolbars_stay_on_native_row_and_list_content_uses_remaining_viewport() {
+        let mut state = configured();
+        let area = Rect::new(0., 0., 1100., 300.);
+        let ordinary = state.layout_with_toolbar(area, 52.);
+        assert!(ordinary.frames.iter().all(|(_, frame)| frame.min_y() == 0.));
+        assert_eq!(ordinary.tabs.unwrap().min_y(), 0.);
+        assert_eq!(ordinary.tabs.unwrap().max_y(), 52.);
+        state.select_tab(OthersTab::List).unwrap();
+        let viewport = state.layout_with_toolbar(area, 52.).list_viewport.unwrap();
+        assert_eq!(viewport.min_y(), 52.);
+        state.scroll_list(10000., viewport.size.height);
+        let list = state.layout_with_toolbar(area, 52.);
+        assert_eq!(list.frames.last().unwrap().1.max_y(), area.max_y());
+        for (_, clip) in list
+            .clips
+            .iter()
+            .filter(|(id, _)| id == "b" || id == "remote")
+        {
+            assert!(clip.min_y() >= viewport.min_y() && clip.max_y() <= viewport.max_y());
+        }
+    }
+    #[test]
+    fn original_relative_widths_and_side_hiding_keep_the_opposite_allocation_fixed() {
+        let members = members();
+        let mut options = PresentationOptions::new("a")
+            .nav_bar("nav")
+            .nav_fraction(1. / 3.)
+            .others(OthersOptions::new(vec![
+                "b".into(),
+                "c".into(),
+                "remote".into(),
+            ]));
+        options.focus_fraction = 0.5;
+        let mut state = PresentationState::new(&members, options).unwrap();
+        for area in [
+            Rect::new(0., 0., 1100., 640.),
+            Rect::new(0., 0., 900., 640.),
+        ] {
+            let shown = state.layout(area);
+            let nav = shown.frames.iter().find(|(id, _)| id == "nav").unwrap().1;
+            assert!((nav.size.width - (area.size.width - 1.) / 3.).abs() < 0.01);
+            let others = shown.tabs.unwrap();
+            let first = tekes_ui_controls::extended::SplitView::new(1. / 3.)
+                .layout(area, tekes_ui_controls::extended::Axis::Horizontal);
+            let second = tekes_ui_controls::extended::SplitView::new(2. / 3.)
+                .layout(area, tekes_ui_controls::extended::Axis::Horizontal);
+            assert!((nav.max_x() - first.0.max_x()).abs() < 0.01);
+            assert!((others.min_x() - second.2.min_x()).abs() < 0.01);
+            assert!((others.size.width - second.2.size.width).abs() < 0.01);
+            state.toggle_nav_bar().unwrap();
+            let hidden = state.layout(area);
+            assert_eq!(hidden.tabs.unwrap(), others);
+            assert_eq!(hidden.frames[0].1.min_x(), area.min_x());
+            state.toggle_nav_bar().unwrap();
+            assert_eq!(state.layout(area).frames, shown.frames);
+        }
+        let area = Rect::new(0., 0., 1100., 640.);
+        let original = state.layout(area).tabs.unwrap();
+        state.resize_nav_width(300., area, 120.);
+        let dragged = state.layout(area).tabs.unwrap();
+        assert!((dragged.min_x() - original.min_x()).abs() < 0.01);
+        assert!((dragged.size.width - original.size.width).abs() < 0.01);
+    }
+    #[test]
+    fn nav_visibility_and_explicit_follow_focus_keep_business_binding_and_original_members() {
+        let mut state = configured();
+        let before = state.layout(Rect::new(0., 0., 900., 600.));
+        state.toggle_nav_bar().unwrap();
+        assert_eq!(state.nav_bar_id(), Some("nav"));
+        assert!(!state.nav_bar_visible());
+        let hidden = state.layout(Rect::new(0., 0., 900., 600.));
+        assert!(!hidden.frames.iter().any(|(id, _)| id == "nav"));
+        assert_eq!(hidden.frames[0].1.min_x(), 0.);
+        state.toggle_nav_bar().unwrap();
+        assert_eq!(
+            state.layout(Rect::new(0., 0., 900., 600.)).frames,
+            before.frames
+        );
+        state.options.navigation_toolbar = Some("a".into());
+        state.options.navigation_toolbar_follows_focus = true;
+        state.promote("remote").unwrap();
+        state.toggle_others().unwrap();
+        assert_eq!(state.navigation_toolbar_id(), Some("a"));
+        assert_eq!(state.navigation_toolbar_presenter_id(), Some("remote"));
+        assert_eq!(state.navigation_targets(), &["c", "remote"]);
+        assert_eq!(state.focus_switch_target("remote"), Some("b"));
+        state.toggle_others().unwrap();
+        state.select_tab(OthersTab::List).unwrap();
+        assert_eq!(state.focus_switch_target("remote"), None);
+        assert_eq!(state.focus_switch_target("b"), Some("b"));
+        assert_eq!(state.focus_switch_target("nav"), None);
     }
     #[test]
     fn focus_and_others_split_width_and_any_single_member_can_swap() {

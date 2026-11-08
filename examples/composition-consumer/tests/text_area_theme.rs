@@ -30,9 +30,7 @@ fn assert_input(scene: &Scene, frame: Rect, palette: Palette, backing: f32) -> u
     );
     assert_eq!(
         ground.border_color,
-        palette
-            .color(proposal::control_boundary("required-input", palette.theme).unwrap())
-            .unwrap()
+        palette.color("border-focused").unwrap()
     );
     let inks: Vec<_> = scene.primitives()[index + 1..]
         .iter()
@@ -118,9 +116,10 @@ fn assert_input(scene: &Scene, frame: Rect, palette: Palette, backing: f32) -> u
     }
     overlays.len()
 }
-fn has_ring(scene: &Scene, frame: Rect, palette: Palette) -> bool {
-    scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q)if q.fill.a==0. && q.border_width>0.
-        && q.rect.center()==frame.center() && q.border_color==palette.color("border-focused").unwrap()))
+fn has_attached_focus(scene: &Scene, frame: Rect, palette: Palette) -> bool {
+    // Both fixtures use decorated Field presentation, including the TextFieldContent adapter.
+    assert!(!scene.primitives().iter().any(|p| matches!(p, Primitive::Quad(q) if q.fill.a == 0. && q.border_width > 0. && q.rect.center() == frame.center())));
+    scene.primitives().iter().any(|p| matches!(p, Primitive::Quad(q) if q.rect == frame && q.border_width == proposal::metric("stroke", "c-focus-width").unwrap() && q.border_color == palette.color("border-focused").unwrap()))
 }
 
 fn assert_thumb(scene: &Scene, frame: Rect, palette: Palette) -> Rect {
@@ -197,7 +196,7 @@ fn text_area_primary_retained_themes_keep_multiline_selection_scroll_and_real_in
             "first visible selection phase must paint selection"
         );
         assert!(scene.primitives().iter().any(|p|matches!(p,Primitive::Glyphs(run) if !run.glyphs.is_empty() && run.color==Palette::from(theme).color("selected-text").unwrap())));
-        assert!(has_ring(&scene, frame, theme.into()));
+        assert!(has_attached_focus(&scene, frame, theme.into()));
         assert_thumb(&scene, frame, theme.into());
     }
     assert!(area.scroll.scroll_by(0., 96.));
@@ -265,7 +264,7 @@ fn text_area_original_content_configuration_retains_multiline_input_and_theme_sc
         assert_eq!(field.surface.input.selection(), 0..4);
         assert_eq!(field.surface.input.text, source);
         assert_input(&scene, frame, theme.into(), text.backing);
-        assert!(has_ring(&scene, frame, theme.into()));
+        assert!(has_attached_focus(&scene, frame, theme.into()));
         assert_eq!(
             host.semantics()[0].semantics.value.as_deref(),
             Some(source.as_str())

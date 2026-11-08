@@ -194,8 +194,12 @@ fn command_results_use_the_production_query_and_menu_without_button_selected_pai
                         })
                         .unwrap();
                     assert_eq!(query_quad.fill, palette.color("transcript-input").unwrap());
-                    let boundary = proposal::control_boundary("required-input", theme).unwrap();
+                    let boundary = "border-focused";
                     assert_eq!(query_quad.border_color, palette.color(boundary).unwrap());
+                    assert_eq!(
+                        query_quad.border_width,
+                        proposal::metric("stroke", "c-focus-width").unwrap()
+                    );
                 }
                 cases.push(serde_json::json!({"component":"tui.command-palette","choice_state":state,"state_asserted":true,"theme":format!("{theme:?}"),"brand":brand,"lookups":reads}));
             }

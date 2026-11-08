@@ -48,6 +48,14 @@ fn main() {
 
 #[cfg(target_os = "macos")]
 fn main() {
+    match tekes_ui_app_host::run_component_worker_from_args(&std::env::args().collect::<Vec<_>>()) {
+        Ok(true) => return,
+        Ok(false) => {}
+        Err(error) => {
+            eprintln!("AppHost worker: {error:#}");
+            std::process::exit(1);
+        }
+    }
     use tekes_ui_platform_macos::{App, AppConfig, Size, WindowConfig, WindowPlacement, selftest};
 
     #[cfg(feature = "composition-review")]

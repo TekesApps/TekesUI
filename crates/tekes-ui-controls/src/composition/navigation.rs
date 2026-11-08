@@ -33,6 +33,7 @@ pub struct TabItem {
     panel: Content,
     name: String,
     disabled: bool,
+    closable: bool,
 }
 impl TabItem {
     pub fn new(label: Content, panel: Content) -> Self {
@@ -56,6 +57,7 @@ impl TabItem {
             label,
             panel,
             disabled: false,
+            closable: false,
         }
     }
     pub fn with_name(mut self, name: impl Into<String>) -> Self {
@@ -64,6 +66,11 @@ impl TabItem {
     }
     pub fn with_disabled(mut self, disabled: bool) -> Self {
         self.disabled = disabled;
+        self
+    }
+    /// Expose a close-request button. The host retains approval and lifecycle.
+    pub fn with_closable(mut self, closable: bool) -> Self {
+        self.closable = closable;
         self
     }
 }
@@ -75,6 +82,8 @@ pub struct TabsContent {
     children: Vec<Content>,
     names: Vec<String>,
     disabled_items: Vec<bool>,
+    closable_items: Vec<bool>,
+    open_items: Vec<bool>,
     view: TabsView,
     pub compact: bool,
     disabled: bool,
@@ -91,6 +100,8 @@ impl TabsContent {
             children: Vec::with_capacity(count * 2),
             names: Vec::new(),
             disabled_items: Vec::new(),
+            closable_items: Vec::new(),
+            open_items: vec![true; count],
             view: TabsView::new(count),
             compact: false,
             disabled: false,
@@ -104,11 +115,13 @@ impl TabsContent {
             item.label.suppress_semantics();
             this.names.push(item.name);
             this.disabled_items.push(item.disabled);
+            this.closable_items.push(item.closable);
             this.children.push(item.label);
             this.children.push(item.panel);
         }
         for (i, disabled) in this.disabled_items.iter().copied().enumerate() {
             this.view.set_item_disabled(i, disabled);
+            this.view.set_closable(i, this.closable_items[i]);
         }
         let initial = selected.min(count.saturating_sub(1));
         let initial = (!this.disabled_items.get(initial).copied().unwrap_or(true))
@@ -126,7 +139,8 @@ impl TabsContent {
     fn sync_panels(&mut self) {
         let selected = self.selected();
         for (index, pair) in self.children.chunks_exact_mut(2).enumerate() {
-            pair[1].set_composition_active(index == selected);
+            pair[0].set_composition_active(self.open_items[index]);
+            pair[1].set_composition_active(self.open_items[index] && index == selected);
         }
     }
     pub(super) fn subtree_composing(content: &Content) -> bool {
@@ -145,6 +159,7 @@ impl TabsContent {
         !self.disabled
             && self.window_active
             && index < self.names.len()
+            && self.open_items[index]
             && !self.disabled_items[index]
             && (index == self.selected()
                 || !Self::subtree_composing(&self.children[self.selected() * 2 + 1]))
@@ -174,6 +189,36 @@ impl TabsContent {
         self.view.set_item_disabled(index, disabled);
         changed
     }
+    pub fn is_tab_open(&self, index: usize) -> bool {
+        self.open_items.get(index).copied().unwrap_or(false)
+    }
+    /// Apply a host-approved presentation change without removing Content.
+    /// A composing selected panel must finish or cancel before it can close.
+    pub fn set_tab_open(&mut self, index: usize, open: bool) -> bool {
+        if self
+            .open_items
+            .get(index)
+            .is_none_or(|value| *value == open)
+            || (!open
+                && index == self.selected()
+                && Self::subtree_composing(&self.children[index * 2 + 1]))
+        {
+            return false;
+        }
+        self.open_items[index] = open;
+        self.view.set_item_visible(index, open);
+        self.sync_panels();
+        self.sizes.clear();
+        true
+    }
+    fn may_close(&self, index: usize) -> bool {
+        !self.disabled
+            && self.window_active
+            && self.closable_items.get(index).copied().unwrap_or(false)
+            && self.open_items[index]
+            && !self.disabled_items[index]
+            && (index != self.selected() || !Self::subtree_composing(&self.children[index * 2 + 1]))
+    }
     /// Reorder complete pairs, preserving Content mounts and selected panel.
     /// An outstanding gesture is revoked; no Content lifecycle is replayed.
     pub fn reorder(&mut self, order: &[usize]) -> bool {
@@ -193,16 +238,22 @@ impl TabsContent {
             .collect();
         let names = std::mem::take(&mut self.names);
         let disabled = std::mem::take(&mut self.disabled_items);
+        let closable = std::mem::take(&mut self.closable_items);
+        let open = std::mem::take(&mut self.open_items);
         for &index in order {
             self.children.push(children[index * 2].take().unwrap());
             self.children.push(children[index * 2 + 1].take().unwrap());
             self.names.push(names[index].clone());
             self.disabled_items.push(disabled[index]);
+            self.closable_items.push(closable[index]);
+            self.open_items.push(open[index]);
         }
         self.view = TabsView::new(order.len());
         self.view.select(selected);
         for (i, disabled) in self.disabled_items.iter().copied().enumerate() {
             self.view.set_item_disabled(i, disabled);
+            self.view.set_closable(i, self.closable_items[i]);
+            self.view.set_item_visible(i, self.open_items[i]);
         }
         self.view.set_disabled(self.disabled);
         self.view.set_window_active(self.window_active);
@@ -214,6 +265,9 @@ impl TabsContent {
         true
     }
     fn snapshot(&mut self, index: Option<usize>) -> ContentResponse {
+        if let Some(index) = self.view.take_close_request() {
+            return self.close_snapshot(index);
+        }
         self.last_selection = index.map(|index| ContentActionPayload::TabSelection {
             index,
             label: self.children[index * 2].id(),
@@ -227,25 +281,67 @@ impl TabsContent {
             ..Default::default()
         }
     }
+    fn close_snapshot(&mut self, index: usize) -> ContentResponse {
+        if !self.may_close(index) {
+            return ContentResponse::default();
+        }
+        self.last_selection = Some(ContentActionPayload::TabCloseRequest {
+            index,
+            label: self.children[index * 2].id(),
+            panel: self.children[index * 2 + 1].id(),
+        });
+        ContentResponse {
+            consumed: true,
+            changed: true,
+            activated: true,
+            ..Default::default()
+        }
+    }
     fn measure_labels(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) {
+        let close_width = TabsView::close_width(text);
         let natural: Vec<_> = self
             .children
             .chunks_exact_mut(2)
-            .map(|pair| pair[0].measure_intrinsic(text, available).size)
+            .enumerate()
+            .filter(|(index, _)| self.open_items[*index])
+            .map(|(index, pair)| {
+                let mut size = pair[0].measure_intrinsic(text, available).size;
+                if self.closable_items[index] {
+                    size.width += close_width;
+                }
+                size
+            })
             .collect();
-        self.lanes = TabsView::content_lanes(
+        let visible_lanes = TabsView::content_lanes(
             text,
             &natural,
             available.width,
             proposal::TextRole::UiBody,
             self.compact,
         );
+        let mut next = visible_lanes.into_iter();
+        self.lanes = self
+            .open_items
+            .iter()
+            .map(|open| if *open { next.next().unwrap_or(0.) } else { 0. })
+            .collect();
         self.sizes = self
             .children
             .chunks_exact_mut(2)
             .zip(&self.lanes)
-            .map(|(pair, lane)| {
+            .enumerate()
+            .map(|(index, (pair, lane))| {
+                if !self.open_items[index] {
+                    return Size::default();
+                }
                 let lane = TabsView::content_lane_width(text, *lane);
+                let lane = (lane
+                    - if self.closable_items[index] {
+                        close_width
+                    } else {
+                        0.
+                    })
+                .max(0.);
                 let insets = crate::ButtonModel::measure_content(
                     text,
                     Size::default(),
@@ -259,10 +355,23 @@ impl TabsContent {
                     .size
             })
             .collect();
-        self.header_height = TabsView::content_height(text, &self.sizes, &self.lanes, self.compact);
+        self.header_height = if self.open_items.iter().any(|open| *open) {
+            TabsView::content_height(text, &self.sizes, &self.lanes, self.compact)
+        } else {
+            0.
+        };
     }
 }
 impl Component for TabsContent {
+    fn requires_icon_services(&self) -> bool {
+        self.closable_items
+            .iter()
+            .zip(&self.open_items)
+            .any(|(closable, open)| *closable && *open)
+    }
+    fn icon_error(&self) -> Option<IconRenderError> {
+        self.view.close_icon_error()
+    }
     fn validate(&self) -> Result<(), CompositionError> {
         if self.children.len() != self.names.len() * 2 {
             return Err(CompositionError::InvalidSlotCount);
@@ -292,6 +401,12 @@ impl Component for TabsContent {
         let panel = self
             .children
             .get_mut(self.view.selected() * 2 + 1)
+            .filter(|_| {
+                self.open_items
+                    .get(self.view.selected())
+                    .copied()
+                    .unwrap_or(false)
+            })
             .map(|panel| {
                 panel
                     .measure(
@@ -380,18 +495,35 @@ impl Component for TabsContent {
         true
     }
     fn focusable(&self) -> bool {
-        !self.disabled && self.window_active && self.disabled_items.iter().any(|d| !d)
+        !self.disabled
+            && self.window_active
+            && self
+                .disabled_items
+                .iter()
+                .zip(&self.open_items)
+                .any(|(disabled, open)| *open && !disabled)
     }
     fn interactive(&self) -> bool {
         self.focusable()
     }
     fn set_focus(&mut self, focused: bool, visible: bool) {
         if focused {
+            if let Some(index) = self.view.close_focused_index()
+                && self.may_close(index)
+            {
+                self.view.focus_close(index, visible);
+                return;
+            }
             let index = self.view.focused_index().unwrap_or(self.selected());
-            let index = if !self.disabled_items.get(index).copied().unwrap_or(true) {
+            let index = if !self.disabled_items.get(index).copied().unwrap_or(true)
+                && self.is_tab_open(index)
+            {
                 Some(index)
             } else {
-                self.disabled_items.iter().position(|d| !d)
+                self.disabled_items
+                    .iter()
+                    .zip(&self.open_items)
+                    .position(|(disabled, open)| *open && !disabled)
             };
             if let Some(index) = index
                 && self.may_select(index)
@@ -417,7 +549,8 @@ impl Component for TabsContent {
         )
     }
     fn semantic_parts(&self) -> Vec<SemanticPart> {
-        self.view
+        let mut parts: Vec<_> = self
+            .view
             .placement()
             .items
             .iter()
@@ -435,7 +568,36 @@ impl Component for TabsContent {
                     semantics,
                 })
             })
-            .collect()
+            .collect();
+        for (index, layout) in self.view.placement().close_buttons.iter().enumerate() {
+            let Some(frame) = layout
+                .and_then(|layout| layout.visible)
+                .filter(|frame| !frame.is_empty())
+            else {
+                continue;
+            };
+            let mut semantics =
+                ContentSemantics::new(ContentRole::Button, format!("Close {}", self.names[index]));
+            semantics.disabled = !self.may_close(index);
+            parts.push(SemanticPart {
+                index: self.names.len() + index,
+                frame,
+                focused: self.view.close_focused_index() == Some(index),
+                semantics,
+            });
+        }
+        parts
+    }
+    fn semantic_part_parent(&self, part: usize) -> Option<usize> {
+        part.checked_sub(self.names.len()).filter(|index| {
+            self.closable_items.get(*index).copied().unwrap_or(false) && self.is_tab_open(*index)
+        })
+    }
+    fn semantic_part_is_auxiliary_action(&self, part: usize) -> bool {
+        self.semantic_part_parent(part).is_some()
+    }
+    fn semantic_part_preserves_activation_focus(&self, part: usize) -> bool {
+        self.semantic_part_parent(part).is_some()
     }
     fn accessibility_action(
         &mut self,
@@ -443,6 +605,30 @@ impl Component for TabsContent {
         action: &AccessibilityAction,
     ) -> ContentResponse {
         self.last_selection = None;
+        if let Some(index) = part.and_then(|part| part.checked_sub(self.names.len())) {
+            if !self.may_close(index)
+                || !self
+                    .view
+                    .placement()
+                    .close_buttons
+                    .get(index)
+                    .is_some_and(|layout| {
+                        layout.is_some_and(|layout| {
+                            layout.visible.is_some_and(|frame| !frame.is_empty())
+                        })
+                    })
+            {
+                return ContentResponse::default();
+            }
+            return match action {
+                AccessibilityAction::Press => self.close_snapshot(index),
+                AccessibilityAction::Focus => {
+                    self.view.focus_close(index, true);
+                    ContentResponse::consumed(true)
+                }
+                _ => ContentResponse::default(),
+            };
+        }
         let Some(index) = part.filter(|index| {
             self.view
                 .placement()
@@ -497,6 +683,19 @@ impl Component for TabsContent {
                 }
             }
             ContentEvent::PointerDown(point) => {
+                if let Some(index) = self.view.close_target_at(*point) {
+                    if !self.may_close(index) {
+                        self.view.cancel();
+                        return ContentResponse::consumed(false);
+                    }
+                    let pressed = self.view.pointer_down_at(*point).is_some();
+                    return ContentResponse {
+                        consumed: pressed,
+                        changed: pressed,
+                        capture_pointer: pressed,
+                        ..Default::default()
+                    };
+                }
                 if self
                     .view
                     .placement()
@@ -516,6 +715,14 @@ impl Component for TabsContent {
                 }
             }
             ContentEvent::PointerUp(point) => {
+                if let Some(index) = self.view.close_press_index() {
+                    if !self.may_close(index) {
+                        self.view.cancel();
+                        return ContentResponse::consumed(false);
+                    }
+                    self.view.pointer_up_at(*point);
+                    return self.snapshot(None);
+                }
                 if self
                     .view
                     .placement()
@@ -531,6 +738,12 @@ impl Component for TabsContent {
                 self.snapshot(index)
             }
             ContentEvent::Key { key, down } => {
+                if let Some(index) = self.view.close_focused_index()
+                    && !self.may_close(index)
+                {
+                    self.view.cancel();
+                    return ContentResponse::consumed(false);
+                }
                 if self
                     .children
                     .get(self.selected() * 2 + 1)

@@ -48,6 +48,13 @@ pub enum ContentActionPayload {
         label: ComponentId,
         panel: ComponentId,
     },
+    /// A controlled close request. The original label and panel remain mounted
+    /// until their host approves the request; this does not select the tab.
+    TabCloseRequest {
+        index: usize,
+        label: ComponentId,
+        panel: ComponentId,
+    },
     /// Ancestor navigation captured against the rendered Breadcrumb path.
     BreadcrumbNavigation {
         index: usize,

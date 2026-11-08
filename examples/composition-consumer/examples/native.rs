@@ -597,6 +597,7 @@ fn main() {
                             | Some(tekes_ui_controls::composition::ContentActionPayload::RadioSelection(_))
                             | Some(tekes_ui_controls::composition::ContentActionPayload::SegmentSelection(_))
                             | Some(tekes_ui_controls::composition::ContentActionPayload::TabSelection { .. })
+                            | Some(tekes_ui_controls::composition::ContentActionPayload::TabCloseRequest { .. })
                             | Some(tekes_ui_controls::composition::ContentActionPayload::BreadcrumbNavigation { .. })
                             | Some(tekes_ui_controls::composition::ContentActionPayload::CommandSelection { .. }) => {
                                 panic!("unexpected payload in native Menu/Toolbar action snapshot")
