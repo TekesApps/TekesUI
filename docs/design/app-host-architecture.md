@@ -91,7 +91,7 @@ Window 提供容器实际区域及与系统控件相交的保留区域；Contain
 
 后续检查覆盖本地/进程/混合容器、无标题/无 Toolbar、按钮隐藏/恢复/无目标/溢出、单次命令与原 owner、Main/Settings/导航及平台窗口行为。复用未受影响的证据，补受影响的交互、进程、GPU/原生检查；文档通过不等于功能通过。
 
-本轮不扩展任意 docking、自动合并 Toolbar、通用跨容器控件迁移、动态插件或新进程协议。第 3 节的 focus/others 上下布局及多容器 Tabs/List 是用户新增的设计目标；既有一至三列源码限制不是新范式的永久数量上限，也不能因文档更新声称这些能力已实现。后文历史协议的 panel_id、Panel/列及验收夹具名称保留来源含义，不构成新的公共分区层。
+本轮不扩展任意 docking、自动合并 Toolbar、通用跨容器控件迁移、动态插件或新进程协议。第 3 节的 focus/others 左右布局及多容器 Tabs/List 是用户新增的设计目标；既有一至三列源码限制不是新范式的永久数量上限，也不能因文档更新声称这些能力已实现。后文历史协议的 panel_id、Panel/列及验收夹具名称保留来源含义，不构成新的公共分区层。
 
 ## 既有设计与交付记录（按原日期保留）
 
@@ -186,24 +186,20 @@ examples/
 当前原型直接传递本地 `Scene`/`GlyphAtlas` 给 runtime；typed toolbar 描述跨 IPC 发送。首版实现 Layout、指针、Command、Cancel、viewport 与帧序号；后文完整几何代次、capture、IME 和联合切换仍是设计契约，不能误认为本次拆分已实现。
 
 <a id="apphost-focus-others"></a>
-## 3. AppHost 范式：可选 NavBar + focus / others（2026-11-05 确认）
+## 3. AppHost 范式：可选 NavBar + focus / others（2026-11-08 纠正）
 
 ```text
 Window
-┌────────────────────┬──────────────────────────────────────┐
-│ NavBar Container   │ focus：一个当前主展示 Container       │
-│ 可选，启动配置决定 │ 自己的可选 Toolbar / 标题 + Content    │
-│                    ├──────────────────────────────────────┤
-│                    │ others：可显示 / 隐藏，也可完全不配置 │
-│                    │ [Container A] [Container B] [List]    │
-│                    │ 当前 Tab 的内容                       │
-└────────────────────┴──────────────────────────────────────┘
-
-List Tab：others 中支持 List 展示的容器纵向排列
-  Container C（自己的可选 Toolbar / 标题 + Content）
-  Container D（自己的可选 Toolbar / 标题 + Content）
-  ...（可调整上下顺序，具体交互另议）
+┌──────────────────┬────────────────────────┬────────────────────────┐
+│ NavBar Container │ focus：单个 Container  │ others：Tabs / List     │
+│ 可选             │ 可选 Toolbar + Content │ 可选 Toolbar + Content │
+│                  │                        │                        │
+└──────────────────┴────────────────────────┴────────────────────────┘
+List Tab 内的单个容器仍纵向排列，可上下调序。
 ```
+
+本节当前布局以 2026-11-08 用户纠正为准：focus 在左、others 在右，按宽度分配；可选 NavBar 在更左侧。原 2026-11-05 上下堆叠示意及 v0.2.0/v0.2.1 实现为历史设计/交付记录，不再作为当前布局。顶部 Container 从窗口内容坐标 y=0 分配，Toolbar 与系统红绿灯所在原生行对齐，不再整体预扣标题栏高度后又扣一行 Toolbar。仅与红绿灯相交的 Toolbar 应用原生左侧 safe area；对应无 Toolbar 内容仅避让系统保留高度，其他无 Toolbar 容器不预留空行。List 内部 Toolbar 使用普通行。
+
 
 这是一套 AppHost 装配范式，不是每个基础 Window/组件消费者都必须采用的布局。Window 仍直接组织容器；NavBar 是左侧容器的用途，focus/others 是展示角色与布局状态，不新增 Column、Pane、FocusContainer 或 OthersContainer 类型。每个实际 Container 仍可采用本地或进程承载方式，并拥有自己的可选 Toolbar/标题和 Content。
 
@@ -213,7 +209,7 @@ List Tab：others 中支持 List 展示的容器纵向排列
 |---|---|---|
 | 左侧 NavBar Container | 可配置一个，也可以完全不配置 | 提供应用自己的导航内容；缺省不自动生成导航容器或占位 |
 | focus | 应用从右侧可用容器中指定初始主展示者 | 当前展示一个容器，可与 others 中的单个容器互换 |
-| others | 可配置，也可完全没有；配置时可给初始显隐状态 | 开启时展示下半区 Tabs；关闭时隐藏，保留已打开容器、选择与顺序 |
+| others | 可配置，也可完全没有；配置时可给初始显隐状态 | 开启时展示右侧 Tabs；关闭时隐藏，保留已打开容器、选择与顺序 |
 | 普通 Tab | 应用装配可打开的容器 | 打开/切换一个容器；可将该容器与 focus 互换 |
 | List Tab | 由容器是否支持 List 展示决定参与集合 | 一个聚合 Tab，纵向展示 others 中所有支持 List 的容器；各 item 可上下调序 |
 
@@ -221,9 +217,9 @@ NavBar 与 others 的配置相互独立，支持“NavBar + focus + others”“
 
 这里的 `focus` 表示**主展示位置**，不是键盘输入焦点。用户可以在 others 中输入，而不自动将该容器提升为 focus。键盘/IME/AX 焦点仍沿原输入协议管理。
 
-### 3.2 focus 与普通 Tab 互换
+### 3.2 focus 与 others 任意单容器互换
 
-用户已明确选择：**两者交换位置，原 focus 回到 others。** 例如 focus=A，others 的普通 Tab=B；提升 B 后 focus=B，A 回到 B 原普通 Tab 的位置，不复制 A/B 的业务状态或新建进程。只切换 others 的当前 Tab 不改变 focus；提升为 focus 是另一项操作。
+用户已明确选择：**focus 可与 others 任意单个容器交换位置，原 focus 回到该容器的原位。** 目标无需是当前选中 Tab，也可以是 List 的一个成员；List 聚合整体不可提升。 例如 focus=A，others 的普通 Tab=B；提升 B 后 focus=B，A 回到 B 原普通 Tab 的位置，不复制 A/B 的业务状态或新建进程。只切换 others 的当前 Tab 不改变 focus；提升为 focus 是另一项操作。
 
 切换位置保留原容器身份与业务状态，Toolbar/标题随容器移动。旧几何的按压/capture/菜单和原输入焦点按既有生命周期处理，不把主展示切换当作无条件转移键盘焦点或业务导航。切换不更改应用为容器配置的导航响应关系。
 

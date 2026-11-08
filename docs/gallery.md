@@ -263,3 +263,7 @@ This mapping records renderer ownership, not maturity. Existing `experimental` s
 ### AppHost launcher (#229, v0.2.1)
 
 The final **Applications → AppHost** entry is a launcher, not a component capability. Mouse activation, Enter/Space, accessibility Press and the Pages menu each open one new AppHost window; arrow navigation only selects the item. Repeated activation opens independent windows. The local-only assembly uses the public `AppWindow::open(&Window, WindowConfig)` API and the existing application event loop. Each window owns its focus/NavBar/Others containers and toolbars; Containers menu commands follow the current key window. Closing a child leaves Gallery and other AppHost windows alive.
+
+### v0.2.2 AppHost layout correction (#229)
+
+AppHost places focus on the left and Others on the right (optional NavBar farther left). Top container toolbars share the native traffic-light row; no additional full titlebar gap precedes them. A single Others container, including a non-selected tab or List member, can swap with focus; the List aggregate cannot. v0.2.1's stacked layout is retained only as historical evidence.

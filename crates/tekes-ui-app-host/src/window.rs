@@ -56,6 +56,29 @@ fn window_toolbar_geometry(
     let allocation = (native_height.max(measured).max(row_y + measured) * scale).ceil() / scale;
     (allocation, row_y, measured)
 }
+// Only top native rows use the native allocation. A toolbar-free container
+// reserves system controls only when they actually intersect it.
+fn presentation_content_inset(
+    measured: f32,
+    native_allocation: f32,
+    native_height: f32,
+    native_row: bool,
+    intersects_controls: bool,
+) -> f32 {
+    if measured > 0. {
+        if native_row {
+            native_allocation
+        } else if intersects_controls {
+            measured.max(native_height)
+        } else {
+            measured
+        }
+    } else if intersects_controls {
+        native_height
+    } else {
+        0.
+    }
+}
 fn toolbar_divider_frame(divider: Rect, row_y: f32) -> Rect {
     let top = divider.min_y().max(row_y);
     Rect::new(
@@ -612,7 +635,7 @@ impl Host {
             host.leading_visible = true;
         }
         if state.is_some() {
-            host.inner_view = SplitViewView::new(Axis::Vertical);
+            host.inner_view = SplitViewView::new(Axis::Horizontal);
         }
         host.presentation = state;
         host
@@ -881,7 +904,23 @@ impl Host {
             if bounds.size.width > 0. {
                 let index = self.order[slot];
                 self.panels[index].start(w.wake_proxy());
-                let height = self.container_toolbar_height(index, toolbar_height);
+                let measured = self.container_toolbar_height(index, toolbar_height);
+                let height = if self.presentation.is_some() {
+                    let native_row = bounds.min_y() == whole.min_y()
+                        && self.panels[index].clip.min_y() == whole.min_y();
+                    let intersects_controls = self.panels[index].clip.min_y()
+                        < native_height as f32
+                        && bounds.min_x() < whole.min_x() + leading as f32;
+                    presentation_content_inset(
+                        measured,
+                        toolbar_height,
+                        (native_height as f32 - bounds.min_y()).max(0.),
+                        native_row,
+                        intersects_controls,
+                    )
+                } else {
+                    measured
+                };
                 self.panel_geometry(index, *bounds, scale, height)?;
             }
         }
@@ -2050,6 +2089,19 @@ fn toolbar_key(k: KeyEvent) -> ContentKeyEvent {
 #[cfg(test)]
 mod toolbar_geometry_tests {
     use super::*;
+    #[test]
+    fn compact_presentation_reserves_native_controls_once_and_no_empty_toolbar_rows() {
+        assert_eq!(presentation_content_inset(48., 56., 40., true, true), 56.);
+        assert_eq!(presentation_content_inset(48., 56., 40., true, false), 56.);
+        assert_eq!(presentation_content_inset(0., 56., 40., true, true), 40.);
+        assert_eq!(presentation_content_inset(0., 56., 40., true, false), 0.);
+        assert_eq!(presentation_content_inset(0., 56., 40., false, false), 0.);
+        assert_eq!(
+            presentation_content_inset(48., 56., 40., false, false),
+            48.,
+            "List/internal rows use ordinary measured height"
+        );
+    }
     #[test]
     fn dormant_panel_has_no_process_and_drops_pre_mount_input() {
         let mut p = Panel::new(0, "demo-first".into());

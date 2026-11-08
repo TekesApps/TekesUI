@@ -126,3 +126,9 @@ if the process exits normally. Raw `PRESENTATION_ACCEPTANCE_INPUT`, `_STEP`, `_G
 `_HIDDEN_NAV` records identify the actual events, frames, original owner identities/PIDs and
 command/reply sequences. Evidence is **automated native**, not human input, OS Pinyin/Japanese
 IME, pixel readback, screen-scale matrix or a system-menu acceptance.
+
+For v0.2.2, focus and Others are side by side (focus left, Others right),
+with the optional NavBar farther left. Top toolbars align with the native
+traffic-light row. Any single Others container may swap with focus,
+including a non-selected tab or a List member; the List aggregate cannot.
+Previous stacked-layout receipts retain their original historical identity.

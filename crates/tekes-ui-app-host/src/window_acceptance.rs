@@ -720,14 +720,51 @@ impl super::Host {
                     w.size().width == 1180. && w.size().height == 760.,
                     "native resize did not settle"
                 );
-                let (safe, _) = w.titlebar_safe_area();
+                let (safe, leading) = w.titlebar_safe_area();
+                let focus = self.presentation.as_ref().unwrap().focus_id();
+                let focus_frame = self
+                    .presentation_layout
+                    .frames
+                    .iter()
+                    .find(|(id, _)| id == focus)
+                    .unwrap()
+                    .1;
                 ensure!(
-                    self.presentation_layout
-                        .frames
-                        .iter()
-                        .all(|(_, frame)| frame.min_y() >= safe as f32),
-                    "container crossed native safe area"
+                    focus_frame.min_y() == 0.,
+                    "top focus retained an extra titlebar gap"
                 );
+                for panel in &self.panels {
+                    if panel.bounds.min_y() == 0.
+                        && panel.clip.min_y() == 0.
+                        && panel.bounds.size.width > 0.
+                    {
+                        if panel.bounds.min_x() < leading as f32 {
+                            ensure!(
+                                panel.toolbar_height >= safe as f32,
+                                "content overlaps native controls"
+                            );
+                        }
+                        for (_, part) in panel
+                            .mounted_toolbar
+                            .host
+                            .semantics()
+                            .into_iter()
+                            .flat_map(|node| node.parts)
+                        {
+                            ensure!(
+                                part.frame.min_x() >= leading as f32
+                                    || part.frame.min_y() >= safe as f32,
+                                "Toolbar hit target overlaps native controls"
+                            );
+                        }
+                    }
+                }
+                if let Some(tabs) = self.presentation_layout.tabs {
+                    ensure!(
+                        tabs.min_x() > focus_frame.max_x(),
+                        "Others is not to the right of focus"
+                    );
+                }
                 ensure!(
                     self.acceptance_text("tools")? == ("リスト".into(), None),
                     "resize changed editor state"

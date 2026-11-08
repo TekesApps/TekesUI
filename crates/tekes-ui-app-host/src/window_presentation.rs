@@ -12,6 +12,31 @@ use tekes_ui_controls::composition::{
 use tekes_ui_platform_macos::{CommandId, Menu, MenuCommand, MenuItem};
 const COMMAND_BASE: u32 = 0x4300_0000;
 const TABS_OWNER: u64 = u64::MAX - 1;
+#[cfg(test)]
+fn test_band() -> window_toolbar_mount::ToolbarBand {
+    window_toolbar_mount::ToolbarBand {
+        y: 0.,
+        height: 48.,
+        native_leading: 0.,
+    }
+}
+// Use this same adjusted frame for Tabs rendering, pointer routing and AX.
+fn avoid_native_controls(frame: Rect, reserved: Rect) -> Rect {
+    if frame.min_y() < reserved.max_y()
+        && frame.max_y() > reserved.min_y()
+        && frame.min_x() < reserved.max_x()
+    {
+        let left = frame.min_x().max(reserved.max_x()).min(frame.max_x());
+        Rect::new(
+            left,
+            frame.min_y(),
+            (frame.max_x() - left).max(0.),
+            frame.size.height,
+        )
+    } else {
+        frame
+    }
+}
 impl Host {
     pub(super) fn presentation_menu(&self) -> Menu {
         let mut entries = Vec::new();
@@ -62,14 +87,19 @@ impl Host {
         ToolbarControl::window().row_height(&mut self.text)
     }
     pub(super) fn presentation_frames(&mut self, whole: Rect, w: &Window) -> Result<Vec<Rect>> {
-        let (native_height, _) = w.titlebar_safe_area();
-        let area = Rect::new(
-            whole.min_x(),
-            whole.min_y() + native_height as f32,
-            whole.size.width,
-            (whole.size.height - native_height as f32).max(0.),
-        );
-        let layout = self.presentation.as_ref().unwrap().layout(area);
+        let (native_height, leading) = w.titlebar_safe_area();
+        let mut layout = self.presentation.as_ref().unwrap().layout(whole);
+        layout.tabs = layout.tabs.map(|frame| {
+            avoid_native_controls(
+                frame,
+                Rect::new(
+                    whole.min_x(),
+                    whole.min_y(),
+                    leading as f32,
+                    native_height as f32,
+                ),
+            )
+        });
         self.apply_presentation_layout(layout)
     }
     fn apply_presentation_layout(
@@ -237,7 +267,7 @@ impl Host {
         }
         if self.presentation.as_ref().unwrap().others_visible() {
             self.inner
-                .set_ratio(focus.size.height / (right.size.height - 6.).max(1.));
+                .set_ratio(focus.size.width / (right.size.width - 6.).max(1.));
             let layout = self.inner_view.arrange(&mut self.inner, right, None);
             self.inner_view.paint_presented_divider(
                 scene,
@@ -266,6 +296,26 @@ impl Host {
             regions.extend(self.inner_view.resize_regions(&self.inner));
         }
         regions
+    }
+    fn move_presentation_split(&mut self, point: Point) -> Result<()> {
+        if self.drag_split == Some(2) {
+            if !self.outer_view.pointer_move(point, &mut self.outer) {
+                return Ok(());
+            }
+            let area = self.outer_view.layout().frame.frame();
+            self.presentation.as_mut().unwrap().set_nav_width(
+                (area.size.width - self.outer.divider).max(0.) * self.outer.ratio(),
+            )?;
+        } else {
+            if !self.inner_view.pointer_move(point, &mut self.inner) {
+                return Ok(());
+            }
+            self.presentation
+                .as_mut()
+                .unwrap()
+                .set_focus_fraction(self.inner.ratio().clamp(0.01, 0.99))?;
+        }
+        Ok(())
     }
     fn composition_in_progress(&mut self) -> bool {
         self.panels.iter_mut().any(|panel| {
@@ -377,19 +427,7 @@ impl Host {
                 MouseEventKind::Dragged {
                     button: MouseButton::Left,
                 } if self.drag_split == Some(2) || self.drag_split == Some(3) => {
-                    if self.drag_split == Some(2) {
-                        self.outer_view.pointer_move(point, &mut self.outer);
-                        let area = self.outer_view.layout().frame.frame();
-                        self.presentation.as_mut().unwrap().set_nav_width(
-                            (area.size.width - self.outer.divider).max(0.) * self.outer.ratio(),
-                        )?;
-                    } else {
-                        self.inner_view.pointer_move(point, &mut self.inner);
-                        self.presentation
-                            .as_mut()
-                            .unwrap()
-                            .set_focus_fraction(self.inner.ratio().clamp(0.01, 0.99))?;
-                    }
+                    self.move_presentation_split(point)?;
                     return Ok(true);
                 }
                 MouseEventKind::Up {
@@ -519,7 +557,13 @@ impl Host {
             ContentAccessibilitySnapshot::from_host(self.presentation_tabs.as_ref()?)?,
         ))
     }
-    pub(super) fn sync_container_toolbars(&mut self, active: bool, whole: Rect) -> Result<()> {
+    pub(super) fn sync_container_toolbars(
+        &mut self,
+        active: bool,
+        whole: Rect,
+        band: window_toolbar_mount::ToolbarBand,
+        native_height: f32,
+    ) -> Result<()> {
         let input_open = self
             .navigation
             .as_ref()
@@ -643,11 +687,17 @@ impl Host {
             panel.mounted_toolbar.retain_groups(&keep)?;
         }
         for (index, panel) in self.panels.iter_mut().enumerate() {
+            let native_row =
+                panel.bounds.min_y() == whole.min_y() && panel.clip.min_y() == whole.min_y();
             let toolbar = Rect::new(
                 panel.bounds.min_x(),
-                panel.bounds.min_y(),
+                panel.bounds.min_y() + if native_row { band.y } else { 0. },
                 panel.bounds.size.width,
-                panel.toolbar_height,
+                if native_row {
+                    band.height.min(panel.toolbar_height)
+                } else {
+                    panel.toolbar_height
+                },
             );
             let top = toolbar.min_y().max(panel.clip.min_y());
             let bottom = toolbar.max_y().min(panel.clip.max_y());
@@ -665,10 +715,13 @@ impl Host {
             panel.mounted_toolbar.sync(
                 viewport,
                 if visible {
-                    vec![ToolbarRegion::new(
-                        ComponentId(91000 + index as u64),
-                        toolbar,
-                    )]
+                    let mut region = ToolbarRegion::new(ComponentId(91000 + index as u64), toolbar);
+                    if toolbar.min_y().max(panel.clip.min_y()) < whole.min_y() + native_height {
+                        region.native_safe_area.left = (whole.min_x() + band.native_leading
+                            - toolbar.min_x())
+                        .clamp(0., toolbar.size.width);
+                    }
+                    vec![region]
                 } else {
                     Vec::new()
                 },
@@ -729,7 +782,7 @@ mod tests {
         (host, calls)
     }
     fn paint(host: &mut Host) {
-        host.sync_container_toolbars(true, Rect::new(0., 0., 600., 600.))
+        host.sync_container_toolbars(true, Rect::new(0., 0., 600., 600.), test_band(), 40.)
             .unwrap();
         for panel in &mut host.panels {
             panel
@@ -737,6 +790,231 @@ mod tests {
                 .host
                 .render(&mut Scene::new(), &mut host.text, Theme::LIGHT.into())
                 .unwrap();
+        }
+    }
+    #[test]
+    fn narrow_focus_tabs_and_internal_rows_exclude_actual_native_controls() {
+        let reserved = Rect::new(0., 0., 100., 56.);
+        let tabs = avoid_native_controls(Rect::new(9., 0., 591., 36.), reserved);
+        assert_eq!(tabs, Rect::new(100., 0., 500., 36.));
+        assert!(
+            !tabs.contains(Point::new(12., 12.)),
+            "paint/hit/AX use this same frame"
+        );
+        let below = Rect::new(9., 60., 591., 36.);
+        assert_eq!(avoid_native_controls(below, reserved), below);
+        let (mut host, _) = fixture();
+        host.panels[0].bounds = Rect::new(9., 36., 591., 250.);
+        host.panels[0].clip = host.panels[0].bounds;
+        host.panels[0].toolbar_height = 48.;
+        host.sync_container_toolbars(
+            true,
+            Rect::new(0., 0., 600., 600.),
+            window_toolbar_mount::ToolbarBand {
+                y: 4.,
+                height: 48.,
+                native_leading: 100.,
+            },
+            56.,
+        )
+        .unwrap();
+        host.panels[0]
+            .mounted_toolbar
+            .host
+            .render(&mut Scene::new(), &mut host.text, Theme::LIGHT.into())
+            .unwrap();
+        for (_, part) in host.panels[0]
+            .mounted_toolbar
+            .host
+            .semantics()
+            .into_iter()
+            .flat_map(|node| node.parts)
+        {
+            assert!(part.frame.min_x() >= 100.);
+        }
+    }
+    #[test]
+    fn horizontal_split_deadzone_and_real_drag_keep_model_and_rendered_ratio_equal() {
+        let (mut host, _) = fixture();
+        host.presentation.as_mut().unwrap().toggle_others().unwrap();
+        let area = Rect::new(0., 0., 600., 600.);
+        let layout = host.presentation.as_ref().unwrap().layout(area);
+        host.apply_presentation_layout(layout).unwrap();
+        host.paint_presentation(&mut Scene::new(), area, Theme::LIGHT.into())
+            .unwrap();
+        let divider = host.inner_view.layout().divider.frame();
+        let down = divider.center();
+        assert!(host.inner_view.pointer_down(down, &mut host.inner));
+        host.drag_split = Some(3);
+        let original = host.presentation.as_ref().unwrap().layout(area).frames;
+        host.move_presentation_split(Point::new(down.x + 1., down.y))
+            .unwrap();
+        assert_eq!(
+            host.presentation.as_ref().unwrap().layout(area).frames,
+            original
+        );
+        host.move_presentation_split(Point::new(down.x + 60., down.y))
+            .unwrap();
+        let frame = host.presentation.as_ref().unwrap().layout(area).frames[0].1;
+        assert!((frame.size.width - host.inner.ratio() * (area.size.width - 6.)).abs() < 0.01);
+        assert!(frame.size.width > original[0].1.size.width + 40.);
+        assert!(
+            host.presentation_resize_regions()
+                .iter()
+                .all(|(_, axis)| *axis == Axis::Horizontal)
+        );
+    }
+    #[test]
+    fn nonselected_and_list_member_swap_preserves_original_hosts_and_toolbar_routes() {
+        let counts = [
+            Rc::new(Cell::new(0)),
+            Rc::new(Cell::new(0)),
+            Rc::new(Cell::new(0)),
+        ];
+        let members = ["focus", "first", "second"]
+            .iter()
+            .enumerate()
+            .map(|(index, id)| {
+                local(id, index as u64 + 1, counts[index].clone())
+                    .list_height(240.)
+                    .into()
+            })
+            .collect();
+        let mut host = Host::from_containers(
+            members,
+            false,
+            None,
+            Some(
+                PresentationOptions::new("focus")
+                    .others(OthersOptions::new(vec!["first".into(), "second".into()])),
+            ),
+        );
+        host.mount_columns();
+        let original: Vec<_> = host
+            .panels
+            .iter_mut()
+            .map(|panel| {
+                let mut address = 0;
+                panel
+                    .local
+                    .as_mut()
+                    .unwrap()
+                    .with_host(&mut |content| address = content as *mut ContentHost as usize);
+                (panel.module_id.clone(), panel.instance, address)
+            })
+            .collect();
+        host.presentation
+            .as_mut()
+            .unwrap()
+            .promote("second")
+            .unwrap();
+        assert_eq!(
+            host.presentation.as_ref().unwrap().others_ids(),
+            &["first", "focus"]
+        );
+        assert_eq!(
+            host.presentation.as_ref().unwrap().selected_tab(),
+            Some(&OthersTab::Container("first".into()))
+        );
+        host.presentation
+            .as_mut()
+            .unwrap()
+            .select_tab(OthersTab::List)
+            .unwrap();
+        host.presentation
+            .as_mut()
+            .unwrap()
+            .promote("first")
+            .unwrap();
+        let area = Rect::new(0., 0., 900., 600.);
+        let layout = host.presentation.as_ref().unwrap().layout(area);
+        let frames = host.apply_presentation_layout(layout).unwrap();
+        for (panel, frame) in host.panels.iter_mut().zip(frames) {
+            panel.bounds = frame;
+            panel.toolbar_height = 48.;
+        }
+        host.sync_container_toolbars(true, area, test_band(), 40.)
+            .unwrap();
+        for (index, panel) in host.panels.iter_mut().enumerate() {
+            let mut address = 0;
+            panel
+                .local
+                .as_mut()
+                .unwrap()
+                .with_host(&mut |content| address = content as *mut ContentHost as usize);
+            assert_eq!(
+                (panel.module_id.clone(), panel.instance, address),
+                original[index]
+            );
+            panel
+                .mounted_toolbar
+                .host
+                .render(&mut Scene::new(), &mut host.text, Theme::LIGHT.into())
+                .unwrap();
+        }
+        let point = host.panels[1]
+            .mounted_toolbar
+            .host
+            .semantics()
+            .into_iter()
+            .flat_map(|node| node.parts)
+            .find(|(_, part)| part.semantics.name == "Run first")
+            .unwrap()
+            .1
+            .frame
+            .center();
+        let target = host.toolbar_target_at(point).unwrap();
+        host.dispatch_toolbar(target, &ContentEvent::PointerDown(point))
+            .unwrap();
+        host.dispatch_toolbar(target, &ContentEvent::PointerUp(point))
+            .unwrap();
+        assert_eq!(
+            [counts[0].get(), counts[1].get(), counts[2].get()],
+            [0, 1, 0]
+        );
+    }
+    #[test]
+    fn native_top_toolbar_uses_original_row_center_and_excludes_traffic_lights() {
+        let (mut host, _) = fixture();
+        let area = Rect::new(0., 0., 600., 600.);
+        host.panels[0].bounds = area;
+        host.panels[0].clip = area;
+        host.panels[0].toolbar_height = 56.;
+        host.sync_container_toolbars(
+            true,
+            area,
+            window_toolbar_mount::ToolbarBand {
+                y: 4.,
+                height: 48.,
+                native_leading: 100.,
+            },
+            40.,
+        )
+        .unwrap();
+        host.panels[0]
+            .mounted_toolbar
+            .host
+            .render(&mut Scene::new(), &mut host.text, Theme::LIGHT.into())
+            .unwrap();
+        let parts: Vec<_> = host.panels[0]
+            .mounted_toolbar
+            .host
+            .semantics()
+            .into_iter()
+            .flat_map(|node| node.parts)
+            .collect();
+        assert!(!parts.is_empty());
+        for (_, part) in parts {
+            assert!(
+                part.frame.min_x() >= 100.,
+                "native reserved area must not contain an engine hit target: {:?}",
+                part.frame
+            );
+            assert!(
+                part.frame.min_y() >= 4. && part.frame.max_y() <= 52.,
+                "toolbar stays on original native row: {:?}",
+                part.frame
+            );
         }
     }
     #[test]
@@ -928,8 +1206,9 @@ mod input_regressions {
             Some(PresentationOptions::new("focus").others(others)),
         );
         host.mount_columns();
-        let area = Rect::new(0., 0., 600., 600.);
+        let area = Rect::new(0., 0., 600., 300.);
         render_layout(&mut host, area);
+        let viewport_height = host.presentation_layout.list_viewport.unwrap().size.height;
         host.panels[1]
             .local
             .as_mut()
@@ -944,7 +1223,10 @@ mod input_regressions {
                 });
             });
         host.focused = 1;
-        host.presentation.as_mut().unwrap().scroll_list(36., 200.);
+        host.presentation
+            .as_mut()
+            .unwrap()
+            .scroll_list(36., viewport_height);
         render_layout(&mut host, area);
         host.panels[1]
             .local
@@ -957,7 +1239,10 @@ mod input_regressions {
                 assert_eq!(text.input.text, "かな");
                 content.event(&ContentEvent::Unmark);
             });
-        host.presentation.as_mut().unwrap().scroll_list(400., 200.);
+        host.presentation
+            .as_mut()
+            .unwrap()
+            .scroll_list(400., viewport_height);
         render_layout(&mut host, area);
         assert_eq!(host.panels[1].bounds, Rect::default());
         host.panels[1]
@@ -1015,7 +1300,8 @@ mod input_regressions {
         for panel in &mut host.panels {
             panel.toolbar_height = 48.;
         }
-        host.sync_container_toolbars(true, area).unwrap();
+        host.sync_container_toolbars(true, area, test_band(), 40.)
+            .unwrap();
         for panel in &mut host.panels {
             panel
                 .mounted_toolbar
@@ -1106,7 +1392,8 @@ mod input_regressions {
         let area = Rect::new(0., 0., 180., 700.);
         render_layout(&mut host, area);
         host.panels[0].toolbar_height = 48.;
-        host.sync_container_toolbars(true, area).unwrap();
+        host.sync_container_toolbars(true, area, test_band(), 40.)
+            .unwrap();
         for panel in &mut host.panels {
             panel
                 .mounted_toolbar

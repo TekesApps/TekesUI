@@ -23,7 +23,12 @@ impl Host {
         title: String,
     ) -> Result<()> {
         if self.presentation.is_some() {
-            return self.sync_container_toolbars(w.is_active(), whole);
+            return self.sync_container_toolbars(
+                w.is_active(),
+                whole,
+                band,
+                w.titlebar_safe_area().0 as f32,
+            );
         }
         let ToolbarBand {
             y,
