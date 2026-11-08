@@ -569,6 +569,9 @@ enum ToolbarTarget {
 }
 
 pub struct Host {
+    draw_diagnostic: bool,
+    diagnostic_event: u64,
+    diagnostic_draw: u64,
     presentation_icons: tekes_ui_controls::composition::SvgIconCache,
     presentation_chrome_edges: [Rect; 2],
     native_toolbar_geometry: Option<(f32, f32, f32, f32)>,
@@ -638,6 +641,9 @@ impl Host {
     ) -> Self {
         let n = module_ids.len();
         Self {
+            draw_diagnostic: std::env::var("TEKESUI_APPHOST_DRAW_DIAGNOSTIC").as_deref() == Ok("1"),
+            diagnostic_event: 0,
+            diagnostic_draw: 0,
             presentation_icons: Default::default(),
             presentation_chrome_edges: [Rect::default(); 2],
             native_toolbar_geometry: None,
@@ -815,6 +821,16 @@ impl Host {
         Ok(())
     }
     fn draw(&mut self, w: &Window) -> Result<()> {
+        // One opt-in summary at the end avoids synchronous stage logging inside
+        // the measured layout path. These are CPU boundaries, not presentation.
+        let diagnostic = self.draw_diagnostic.then(|| {
+            self.diagnostic_draw += 1;
+            (
+                std::time::Instant::now(),
+                self.diagnostic_event,
+                self.diagnostic_draw,
+            )
+        });
         self.init(w)?;
         if !self.is_settings_window {
             self.poll_settings_open(w)?;
@@ -822,8 +838,11 @@ impl Host {
         self.text
             .begin_frame(self.motion_epoch.elapsed(), self.reduced_motion);
         if self.is_settings_window {
+            // This probe covers the ordinary AppHost draw below, not Settings'
+            // separate renderer. Event timing still bounds the delegated call.
             return self.draw_settings(w);
         }
+        let initialized = diagnostic.map(|_| std::time::Instant::now());
         let progress = self.sidebar_motion.sample(
             self.motion_epoch.elapsed(),
             self.reduced_motion,
@@ -1073,6 +1092,7 @@ impl Host {
                 self.panel_geometry(index, *bounds, scale, height, extra)?;
             }
         }
+        let geometry_ready = diagnostic.map(|_| std::time::Instant::now());
         let renderer = self.renderer.as_mut().unwrap();
         for (slot, bounds) in frames.iter().enumerate() {
             let index = self.order[slot];
@@ -1139,6 +1159,7 @@ impl Host {
             }
         }
         let _ = renderer;
+        let body_scene_ready = diagnostic.map(|_| std::time::Instant::now());
         if self.presentation.is_some() {
             scene.push_quad(Quad::new(
                 Rect::new(
@@ -1212,6 +1233,7 @@ impl Host {
                 )?;
             }
         }
+        let toolbar_scene_ready = diagnostic.map(|_| std::time::Instant::now());
         let mut toolbar_controls = Vec::new();
         for panel in &self.panels {
             toolbar_controls.extend(panel.mounted_toolbar.host.content_host().pointer_regions());
@@ -1330,9 +1352,11 @@ impl Host {
         for primitive in toolbar_scene.primitives() {
             scene.push(primitive.clone());
         }
+        let renderer_begin = diagnostic.map(|_| std::time::Instant::now());
         let renderer = self.renderer.as_mut().unwrap();
         renderer.resize(w.drawable_size(), w.scale() as f32);
         renderer.render(&scene, &mut self.text.atlas, Rgba::gray(1.))?;
+        let renderer_return = diagnostic.map(|_| std::time::Instant::now());
         if self.acceptance {
             self.acceptance_draws += 1;
         }
@@ -1452,6 +1476,26 @@ impl Host {
             && w.is_active();
         if !w.set_animating(animate) && animate {
             w.request_redraw();
+        }
+        if let Some((begin, event, draw)) = diagnostic {
+            let end = std::time::Instant::now();
+            let offset = |boundary: Option<std::time::Instant>| {
+                boundary.map(|at| at.duration_since(begin).as_nanos())
+            };
+            eprintln!(
+                "APPHOST_DRAW_DIAGNOSTIC pid={} window={} event={} draw={} begin_monotonic={begin:?} end_monotonic={end:?} initialized_ns={:?} geometry_ready_ns={:?} body_scene_ready_ns={:?} toolbar_scene_ready_ns={:?} renderer_begin_ns={:?} renderer_return_ns={:?} total_ns={} cpu_only=true",
+                std::process::id(),
+                w.native_window_number(),
+                event,
+                draw,
+                offset(initialized),
+                offset(geometry_ready),
+                offset(body_scene_ready),
+                offset(toolbar_scene_ready),
+                offset(renderer_begin),
+                offset(renderer_return),
+                end.duration_since(begin).as_nanos(),
+            );
         }
         Ok(())
     }
@@ -2051,6 +2095,25 @@ impl WindowHandler for Host {
     }
 
     fn handle(&mut self, event: Event, w: &mut Window) {
+        let diagnostic = self.draw_diagnostic.then(|| {
+            self.diagnostic_event += 1;
+            let begin = std::time::Instant::now();
+            // MouseEvent does not expose NSEvent.timestamp. This marks receipt
+            // at the Host handler, after the platform's event queue.
+            let kind = match &event {
+                Event::Mouse(mouse) => format!(
+                    "Mouse::{:?}@{},{}",
+                    mouse.kind, mouse.position.x, mouse.position.y
+                ),
+                Event::Created => "Created".into(),
+                Event::Resized { .. } => "Resized".into(),
+                Event::Redraw => "Redraw".into(),
+                Event::Wake => "Wake".into(),
+                Event::AnimationFrame(_) => "AnimationFrame".into(),
+                _ => "Other".into(),
+            };
+            (begin, self.diagnostic_event, self.diagnostic_draw, kind)
+        });
         let acceptance_tick = matches!(
             &event,
             Event::Created
@@ -2066,6 +2129,19 @@ impl WindowHandler for Host {
                 Ok(())
             }
         });
+        if let Some((begin, event, draws_before, kind)) = diagnostic {
+            let end = std::time::Instant::now();
+            eprintln!(
+                "APPHOST_EVENT_DIAGNOSTIC pid={} window={} event={} kind={kind:?} begin_monotonic={begin:?} end_monotonic={end:?} draws_before={} draws_after={} elapsed_ns={} ok={} native_input_timestamp=unavailable",
+                std::process::id(),
+                w.native_window_number(),
+                event,
+                draws_before,
+                self.diagnostic_draw,
+                end.duration_since(begin).as_nanos(),
+                result.is_ok(),
+            );
+        }
         if let Err(e) = result {
             eprintln!("HOST_ERROR {e:#}");
             if let Some(shared) = &self.acceptance_shared {

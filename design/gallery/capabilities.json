@@ -68122,7 +68122,7 @@
     "crates/tekes-ui-app-host/src/sidebar_motion.rs": "26a26e146502520ceec897c1282294e189794834d49d63787dea6264b347a8e2",
     "crates/tekes-ui-app-host/src/text.rs": "92f527d1c4b6524edf9cd17cde6d1cd99a2cb2c01452aed820aa650f778e3e22",
     "crates/tekes-ui-app-host/src/toolbar_source.rs": "32ca789466235c78cbe2244a396c7c0f9037ef722684374809f8e8e6838e33bb",
-    "crates/tekes-ui-app-host/src/window.rs": "e3618ec4825c792158f82e4a8a4bf58f2fef00e32579dce921987e4d70889c82",
+    "crates/tekes-ui-app-host/src/window.rs": "261339fb6a928c6e927f239f85541730925737165c12e0459b8ba71161e5eeec",
     "crates/tekes-ui-app-host/src/window_acceptance.rs": "3b26f1a0b220007702fee35a6510020b1e1a5b632c09c8df63da742dfc583960",
     "crates/tekes-ui-app-host/src/window_accessibility.rs": "1cc24d10cd5c08ba65d950fd876de0e7cba33b595a0dd0e8e8fdae11df7c966f",
     "crates/tekes-ui-app-host/src/window_columns.rs": "2aa13f97614869b6de8f4fa7fcd1f441ff01d81e23849e4ddd030fcd40260456",
