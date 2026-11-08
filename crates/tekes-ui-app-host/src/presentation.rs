@@ -399,30 +399,32 @@ impl PresentationState {
                 area.size.height,
             );
         }
-        let others_height = if self.others_visible() {
-            (right.size.height * (1. - self.options.focus_fraction) - SPLITTER * 0.5).max(0.)
+        // SplitView ratios describe the usable span, excluding the divider.
+        let usable_width = (right.size.width - SPLITTER).max(0.);
+        let focus_width = if self.others_visible() {
+            usable_width * self.options.focus_fraction
+        } else {
+            right.size.width
+        };
+        let others_width = if self.others_visible() {
+            usable_width - focus_width
         } else {
             0.
         };
-        let focus_height = if self.others_visible() {
-            (right.size.height - others_height - SPLITTER).max(0.)
-        } else {
-            right.size.height
-        };
-        let focus = Rect::new(right.min_x(), right.min_y(), right.size.width, focus_height);
+        let focus = Rect::new(right.min_x(), right.min_y(), focus_width, right.size.height);
         layout.frames.push((self.focus_id().into(), focus));
         layout.clips.push((self.focus_id().into(), focus));
         if !self.others_visible() {
             return layout;
         }
-        let y = right.min_y() + focus_height + SPLITTER.min(right.size.height);
-        let tabs_height = TABS.min(others_height);
-        layout.tabs = Some(Rect::new(right.min_x(), y, right.size.width, tabs_height));
+        let x = right.min_x() + focus_width + SPLITTER.min(right.size.width);
+        let tabs_height = TABS.min(right.size.height);
+        layout.tabs = Some(Rect::new(x, right.min_y(), others_width, tabs_height));
         let viewport = Rect::new(
-            right.min_x(),
-            y + tabs_height,
-            right.size.width,
-            (others_height - tabs_height).max(0.),
+            x,
+            right.min_y() + tabs_height,
+            others_width,
+            (right.size.height - tabs_height).max(0.),
         );
         match self.selected_tab() {
             Some(OthersTab::Container(id)) => {
@@ -502,6 +504,42 @@ mod tests {
         .unwrap()
     }
     #[test]
+    fn focus_and_others_split_width_and_any_single_member_can_swap() {
+        let mut state = configured();
+        for area in [
+            Rect::new(0., 0., 1100., 640.),
+            Rect::new(0., 0., 650., 300.),
+        ] {
+            let layout = state.layout(area);
+            let focus = layout.frames.iter().find(|(id, _)| id == "a").unwrap().1;
+            let tabs = layout.tabs.unwrap();
+            assert_eq!(focus.min_y(), area.min_y());
+            assert_eq!(focus.size.height, area.size.height);
+            assert!(tabs.min_x() > focus.max_x());
+            assert_eq!(tabs.min_y(), area.min_y());
+            assert_eq!(tabs.max_x(), area.max_x());
+        }
+        assert_eq!(
+            state.selected_tab(),
+            Some(&OthersTab::Container("b".into()))
+        );
+        state.promote("remote").unwrap();
+        assert_eq!(state.focus_id(), "remote");
+        assert_eq!(
+            state.selected_tab(),
+            Some(&OthersTab::Container("b".into())),
+            "non-selected target does not change the selected Tab"
+        );
+        assert_eq!(state.others_ids(), &["b", "c", "a"]);
+        state.select_tab(OthersTab::List).unwrap();
+        state.promote("b").unwrap();
+        assert_eq!(state.focus_id(), "b");
+        assert_eq!(state.others_ids(), &["remote", "c", "a"]);
+        assert_eq!(state.selected_tab(), Some(&OthersTab::List));
+        assert!(state.promote_tab(&OthersTab::List).is_err());
+        assert_eq!(state.navigation_targets(), &["c", "remote"]);
+    }
+    #[test]
     fn four_startup_combinations_and_off_keep_identity_and_selection() {
         let area = Rect::new(10., 20., 800., 600.);
         for nav in [false, true] {
@@ -573,7 +611,7 @@ mod tests {
         assert_eq!(state.list_ids(), ["remote", "b"]);
         assert_eq!(state.others_ids(), tabs);
         state.select_tab(OthersTab::List).unwrap();
-        let area = Rect::new(0., 0., 900., 600.);
+        let area = Rect::new(0., 0., 900., 300.);
         let before = state.layout(area);
         let viewport = before.list_viewport.unwrap();
         state.scroll_list(10000., viewport.size.height);
