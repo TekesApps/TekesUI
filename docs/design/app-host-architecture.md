@@ -684,3 +684,11 @@ live resize 的测试分别记录 splitter 自身帧表现、content 尺寸跟�
 ### Embedded application windows (#229, v0.2.1)
 
 `AppWindow::open(&Window, WindowConfig)` creates a window in the caller's existing native application loop. It uses the same initial container mount, settings provider and Host event/render routes as `run`; it does not re-enter `App::run`. Process-backed consumers must retain the executable's existing worker dispatch. Gallery uses only local containers. Engine menu contributions are installed for the actual key window on focus; standard App/Window menu objects and AppKit's window list remain intact. A queued stale focus event cannot replace another key window's menus. Window closure relies on native key-window changes to restore the next window's contributions.
+
+### Local text and native window movement (#247, v0.3.2)
+
+The local AppHost text service reuses exact paragraph results within one draw only. The key includes full text, semantic role, type scale and exact width; the next `begin_frame` or a type-size change clears it. Draw position, color, clip, glyph raster scale and Scene construction remain per-call. Calls without an explicit frame lifecycle retain no paragraph table. Editable TextSurface paths are unchanged.
+
+After a successful native titlebar handoff, uncaptured left-drag samples belong to the native window move and must not invalidate ContentHost geometry or schedule body paints. This does not suppress explicit redraws, content updates, animation, resize, hover enter/leave, or real component captures. New down/up/move and focus loss terminate that ownership, including AppKit moves that omit mouse-up.
+
+See [the scoped native review](../../design/reviews/apphost-flicker-20261108/README.md) for measured improvements and remaining frame-interval variation; these rules do not promise every frame at 120Hz.
