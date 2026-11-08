@@ -174,11 +174,26 @@ fn input_states_preserve_draft_selection_geometry_and_editability() {
                             palette
                                 .color(if surface.error {
                                     "status-failed"
+                                } else if focused && !disabled {
+                                    "border-focused"
                                 } else {
                                     proposal::control_boundary("required-input", theme).unwrap()
                                 })
                                 .unwrap()
                         );
+                        assert_eq!(
+                            boundary.border_width,
+                            proposal::metric(
+                                "stroke",
+                                if focused && !disabled {
+                                    "c-focus-width"
+                                } else {
+                                    "stroke-rule"
+                                }
+                            )
+                            .unwrap()
+                        );
+                        assert!(!blink_on.primitives().iter().any(|p| matches!(p, Primitive::Quad(q) if q.fill.a == 0. && q.border_width > 0. && q.rect.center() == frame.center())), "Field focus has no separate outer contour");
                         assert_eq!(surface.input.text, draft);
                         assert_eq!(surface.input.selection(), selection);
                         assert_eq!(surface.visible_frame(), Some(frame));

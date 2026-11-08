@@ -41,7 +41,7 @@ impl Status {
 }
 #[derive(Debug)]
 enum HeaderView {
-    Tabs(TabsView),
+    Tabs(Box<TabsView>),
     Disclosure {
         model: Disclosure,
         view: Box<DisclosureView>,
@@ -439,7 +439,7 @@ impl Scenario {
         let header = Header {
             tabs_layout: Default::default(),
             view: match kind {
-                Kind::Tabs => HeaderView::Tabs(TabsView::new(3)),
+                Kind::Tabs => HeaderView::Tabs(Box::new(TabsView::new(3))),
                 Kind::Disclosure => HeaderView::Disclosure {
                     model: Disclosure::default(),
                     view: Box::new(DisclosureView::default()),

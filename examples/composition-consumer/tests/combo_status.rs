@@ -272,16 +272,16 @@ fn combo_async_and_validation_states_use_original_field_and_actual_tokens() {
                     })
                     .unwrap();
                 assert_eq!(q.fill, p.color("transcript-input").unwrap());
-                let boundary = proposal::control_boundary(
-                    if case == "validation" {
-                        "error"
-                    } else {
-                        "required-input"
-                    },
-                    theme,
-                )
-                .unwrap();
+                let boundary = if case == "validation" {
+                    proposal::control_boundary("error", theme).unwrap()
+                } else {
+                    "border-focused"
+                };
                 assert_eq!(q.border_color, p.color(boundary).unwrap());
+                assert_eq!(
+                    q.border_width,
+                    proposal::metric("stroke", "c-focus-width").unwrap()
+                );
                 if case != "validation" {
                     assert!(t.labels.iter().any(|s| s == s_from_status(case)));
                 }

@@ -156,8 +156,8 @@ fn text_surface_retained_themes_preserve_readonly_source_selection_copy_and_real
             initial = Some((surface.outer, surface.inner));
         }
         assert_readonly_scene(&scene, &surface, palette, text.backing);
-        assert!(scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q)if q.fill.a==0. && q.border_width>0.
-            && q.rect.center()==surface.outer.center() && q.border_color==palette.color("border-focused").unwrap())));
+        assert!(scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q)if q.rect == surface.outer && q.border_width == proposal::metric("stroke", "c-focus-width").unwrap()
+            && q.border_color==palette.color("border-focused").unwrap())));
     }
     let before = surface.paragraph.as_ref().unwrap().height;
     text.scale = 1.5;

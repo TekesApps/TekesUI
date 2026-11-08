@@ -288,10 +288,10 @@ fn command_loading_and_failure_keep_actual_query_tokens_for_cached_and_empty_dat
                         })
                         .unwrap();
                     assert_eq!(q.fill, p.color("transcript-input").unwrap());
+                    assert_eq!(q.border_color, p.color("border-focused").unwrap());
                     assert_eq!(
-                        q.border_color,
-                        p.color(proposal::control_boundary("required-input", theme).unwrap())
-                            .unwrap()
+                        q.border_width,
+                        proposal::metric("stroke", "c-focus-width").unwrap()
                     );
                     assert!(t.labels.iter().any(|s| s == status.label()));
                     let feedback = s

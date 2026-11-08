@@ -11028,9 +11028,9 @@ mod interaction_tests {
                     text.scale(),
                 );
                 let palette = Palette::from(theme);
-                let ring=scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q) if q.fill.a==0.&&q.rect.center()==frame.center()&&q.border_color==palette.color("border-focused").unwrap()));
+                let attached_focus=scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q) if q.rect==frame && q.border_width == proposal::metric("stroke", "c-focus-width").unwrap() && q.border_color==palette.color("border-focused").unwrap()));
                 assert_eq!(
-                    ring, !placeholder,
+                    attached_focus, !placeholder,
                     "real query focus vs original unfocused placeholder"
                 );
             }
@@ -16892,7 +16892,7 @@ mod interaction_tests {
                     .primitives()
                     .iter()
                     .any(|p| matches!(p, Primitive::Quad(q)
-                if q.fill.a == 0. && q.border_width > 0. && q.rect.center() == initial_query.center()
+                if q.rect == initial_query && q.border_width == proposal::metric("stroke", "c-focus-width").unwrap()
                 && q.border_color == palette.color("border-focused").unwrap()))
             );
             assert!(

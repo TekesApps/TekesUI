@@ -2304,7 +2304,7 @@ mod tests {
     }
 
     #[test]
-    fn navigation_search_uses_independent_json_focus_ring_and_window_focus_lifecycle() {
+    fn navigation_search_uses_attached_field_edge_and_window_focus_lifecycle() {
         let mut g = Gallery::new();
         let rect = navigation::search_rect();
         let border = |g: &mut Gallery| {
@@ -2314,7 +2314,9 @@ mod tests {
                 .primitives()
                 .iter()
                 .find_map(|p| match p {
-                    tekes_ui_scene::Primitive::Quad(q) if q.rect == rect => Some(q.border_color),
+                    tekes_ui_scene::Primitive::Quad(q) if q.rect == rect => {
+                        Some((q.border_color, q.border_width))
+                    }
                     _ => None,
                 })
                 .unwrap();
@@ -2330,18 +2332,20 @@ mod tests {
         };
         let normal = tekes_ui_tokens::proposal::render_color("border", g.theme()).unwrap();
         let focused = tekes_ui_tokens::proposal::render_color("border-focused", g.theme()).unwrap();
-        assert_eq!(border(&mut g), (normal, None));
+        let rule = tekes_ui_tokens::proposal::metric("stroke", "stroke-rule").unwrap();
+        let focus_width = tekes_ui_tokens::proposal::metric("stroke", "c-focus-width").unwrap();
+        assert_eq!(border(&mut g), ((normal, rule), None));
         let point = rect.center();
         g.handle_input(&click(point.x.into(), point.y.into()));
-        assert_eq!(border(&mut g), (normal, Some(focused)));
+        assert_eq!(border(&mut g), ((focused, focus_width), None));
         assert!(g.navigation_search.state().is_some());
         g.handle_input(&Event::Focus(false));
-        assert_eq!(border(&mut g), (normal, None));
+        assert_eq!(border(&mut g), ((normal, rule), None));
         assert!(g.navigation_search.state().is_none());
         g.handle_input(&Event::Focus(true));
-        assert_eq!(border(&mut g), (normal, Some(focused)));
+        assert_eq!(border(&mut g), ((focused, focus_width), None));
         g.handle_input(&click(600., 300.));
-        assert_eq!(border(&mut g), (normal, None));
+        assert_eq!(border(&mut g), ((normal, rule), None));
     }
 
     #[test]
