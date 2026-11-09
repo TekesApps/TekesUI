@@ -818,6 +818,7 @@ impl Host {
             .as_ref()
             .is_none_or(|nav| nav.host.input_open && !nav.busy && nav.error.is_none());
         let mut declarations = vec![Vec::new(); self.panels.len()];
+        let mut templates = vec![Vec::new(); self.panels.len()];
         for (index, panel) in self.panels.iter().enumerate() {
             let visible = panel.bounds.size.width > 0. && panel.bounds.size.height > 0.;
             let in_others = self.presentation.as_ref().is_some_and(|state|
@@ -871,21 +872,9 @@ impl Host {
                     } else {
                         action.title.as_str()
                     };
-                    let icon = if switch {
-                        self.renderer
-                            .as_mut()
-                            .map(|renderer| {
-                                crate::window_toolbar::icon_image(
-                                    &mut self.toolbar_images,
-                                    renderer,
-                                    "tekes-swap-horizontal",
-                                    self.text.scale * self.text.type_scale(),
-                                )
-                            })
-                            .transpose()?
-                    } else {
-                        None
-                    };
+                    if switch && self.renderer.is_some() {
+                        templates[target].push((action.id, "tekes-swap-horizontal".to_owned()));
+                    }
                     let hint = if switch {
                         switch_target.map_or_else(
                             || "Select an ordinary container Tab to exchange".to_owned(),
@@ -899,7 +888,7 @@ impl Host {
                         .or_default()
                         .push(ToolbarButtonDeclaration {
                             id: action.id,
-                            icon,
+                            icon: None,
                             text: title.to_owned(),
                             hint: Some(hint),
                             enabled: input_open
@@ -917,7 +906,11 @@ impl Host {
                     region: ComponentId(91000 + target as u64),
                     placement: ToolbarPlacement::PrimaryAction,
                     order: index as i32,
-                    contents: Contents::Commands(buttons, ToolbarGroupOverflow::Split),
+                    contents: Contents::TemplateCommands(
+                        buttons,
+                        ToolbarGroupOverflow::Split,
+                        std::mem::take(&mut templates[target]),
+                    ),
                     source: Source::Panel {
                         instance: panel.instance,
                         index,
@@ -951,22 +944,10 @@ impl Host {
             if available && self.container_has_toolbar(focus) {
                 let glyph = match (side, visible) {
                     (0, true) => "tekes-side-bar",
-                    (0, false) => "apphost-leading-collapsed",
+                    (0, false) => "tekes-side-bar-collapsed",
                     (_, true) => "tekes-side-panel",
-                    (_, false) => "apphost-trailing-collapsed",
+                    (_, false) => "tekes-side-panel-collapsed",
                 };
-                let image = self
-                    .renderer
-                    .as_mut()
-                    .map(|renderer| {
-                        crate::window_toolbar::icon_image(
-                            &mut self.toolbar_images,
-                            renderer,
-                            glyph,
-                            self.text.scale * self.text.type_scale(),
-                        )
-                    })
-                    .transpose()?;
                 declarations[focus].push(Declaration {
                     id: ComponentId(92000 + side as u64 * 10),
                     region: if side == 0 {
@@ -980,15 +961,20 @@ impl Host {
                         ToolbarPlacement::PrimaryAction
                     },
                     order: side as i32,
-                    contents: Contents::Commands(
+                    contents: Contents::TemplateCommands(
                         vec![ToolbarButtonDeclaration {
                             id: 0x5601 + side as u64,
-                            icon: image,
+                            icon: None,
                             text: format!("{} {name}", if visible { "Hide" } else { "Show" }),
                             hint: Some(format!("{} {name}", if visible { "Hide" } else { "Show" })),
                             enabled: input_open,
                         }],
                         ToolbarGroupOverflow::Together,
+                        if self.renderer.is_some() {
+                            vec![(0x5601 + side as u64, glyph.to_owned())]
+                        } else {
+                            Vec::new()
+                        },
                     ),
                     source: Source::Visibility(side),
                 });
@@ -1006,22 +992,14 @@ impl Host {
             && self.panels[index].bounds.size.height > 0.
         {
             let mut buttons = Vec::new();
+            let mut templates = Vec::new();
             for action in &nav.actions {
-                let icon = action
-                    .icon
-                    .as_deref()
-                    .map(|name| {
-                        crate::window_toolbar::icon_image(
-                            &mut self.toolbar_images,
-                            self.renderer.as_mut().unwrap(),
-                            name,
-                            self.text.scale * self.text.type_scale(),
-                        )
-                    })
-                    .transpose()?;
+                if let Some(name) = &action.icon {
+                    templates.push((action.command.id, name.clone()));
+                }
                 buttons.push(ToolbarButtonDeclaration {
                     id: action.command.id,
-                    icon,
+                    icon: None,
                     text: action
                         .accessible_name
                         .clone()
@@ -1047,7 +1025,11 @@ impl Host {
                 },
                 placement: ToolbarPlacement::Navigation,
                 order: 10,
-                contents: Contents::Commands(buttons, ToolbarGroupOverflow::Together),
+                contents: Contents::TemplateCommands(
+                    buttons,
+                    ToolbarGroupOverflow::Together,
+                    templates,
+                ),
                 source: Source::Navigation(source),
             });
         }
@@ -1070,12 +1052,20 @@ impl Host {
             // business Toolbar. If constrained, its original More menu remains
             // responsible for overflow; Tabs retain the other half of the row.
             for declaration in &declarations[index] {
-                if let Contents::Commands(buttons, overflow) = &declaration.contents {
+                if let Contents::Commands(buttons, overflow)
+                | Contents::TemplateCommands(buttons, overflow, _) = &declaration.contents
+                {
                     let mut commands = tekes_ui_controls::composition::toolbar_commands(
                         ComponentId(1),
                         buttons.clone(),
                         *overflow,
                     );
+                    let control = commands.component_mut::<ToolbarControl>().unwrap();
+                    for (id, name) in declaration.contents.templates() {
+                        control
+                            .set_action_template_icon(*id, Some(name))
+                            .map_err(|error| anyhow::anyhow!("toolbar measure icon: {error:?}"))?;
+                    }
                     other_width += commands.measure(&mut self.text, available).size.width;
                 }
             }
@@ -1160,19 +1150,20 @@ impl Host {
         // Measure the original fixed-edge groups, then give their actual reserved
         // geometry to sibling hosts. Cache geometry, never controls or actions,
         // so unchanged redraws do not cancel a held sibling button.
+        let palette = self.palette();
         let toolbar = &mut self.panels[focus].mounted_toolbar;
         let mut measure = Scene::new();
         if let Some(renderer) = &mut self.renderer {
             with_content_icons(renderer, &mut toolbar.icons, &mut self.text, |text| {
                 toolbar
                     .host
-                    .render(&mut measure, text, Theme::LIGHT.into())
+                    .render(&mut measure, text, palette)
                     .map_err(|error| anyhow::anyhow!("window toolbar measure: {error:?}"))
             })?;
         } else {
             toolbar
                 .host
-                .render(&mut measure, &mut self.text, Theme::LIGHT.into())
+                .render(&mut measure, &mut self.text, palette)
                 .map_err(|error| anyhow::anyhow!("window toolbar measure: {error:?}"))?;
         }
         let edges = [WINDOW_LEADING, WINDOW_TRAILING].map(|id| {
@@ -1278,6 +1269,67 @@ mod tests {
                 .render(&mut Scene::new(), &mut host.text, Theme::LIGHT.into())
                 .unwrap();
         }
+    }
+    #[test]
+    fn dark_toolbar_measurement_keeps_original_hover_transition_palette() {
+        use std::time::Duration;
+        use tekes_ui_scene::Primitive;
+        let (mut host, _) = fixture();
+        host = host.with_theme(Theme::DARK);
+        let palette = host.palette();
+        let whole = Rect::new(0., 0., 600., 600.);
+        host.text.begin_frame(Duration::ZERO, false);
+        host.sync_container_toolbars(true, whole, test_band(), 40.)
+            .unwrap();
+        host.panels[0]
+            .mounted_toolbar
+            .host
+            .render(&mut Scene::new(), &mut host.text, palette)
+            .unwrap();
+        let target = host.panels[0]
+            .mounted_toolbar
+            .host
+            .semantics()
+            .into_iter()
+            .flat_map(|node| node.parts)
+            .find(|(_, part)| part.semantics.name == "Run focus")
+            .unwrap()
+            .1
+            .frame;
+        host.panels[0]
+            .mounted_toolbar
+            .host
+            .event(&ContentEvent::PointerMove(target.center()));
+        host.text.begin_frame(Duration::from_millis(10), false);
+        host.sync_container_toolbars(true, whole, test_band(), 40.)
+            .unwrap();
+        let mut scene = Scene::new();
+        host.panels[0]
+            .mounted_toolbar
+            .host
+            .render(&mut scene, &mut host.text, palette)
+            .unwrap();
+        let rest = tekes_ui_tokens::surface_palette::resolve_surface(
+            palette,
+            "toolbar",
+            "action-quiet",
+            "rest",
+        )
+        .unwrap();
+        let hover = tekes_ui_tokens::surface_palette::resolve_surface(
+            palette,
+            "toolbar",
+            "action-quiet",
+            "hover",
+        )
+        .unwrap();
+        assert_ne!(rest.background, hover.background);
+        assert!(
+            scene.primitives().iter().any(|p| matches!(p,
+                Primitive::Quad(quad) if quad.rect == target && quad.fill == rest.background
+            )),
+            "the measurement pass must not snap hover by switching LIGHT/DARK"
+        );
     }
     #[test]
     fn window_edge_reservations_keep_sibling_toolbar_and_tab_hits_outside_original_icons() {

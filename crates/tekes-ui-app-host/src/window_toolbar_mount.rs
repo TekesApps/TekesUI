@@ -37,8 +37,6 @@ impl Host {
         } = band;
         let center = usize::from(frames.len() >= 2);
         let mut declarations = vec![];
-        let renderer = self.renderer.as_mut().unwrap();
-        let scale = w.scale() as f32 * self.text.type_scale();
         let mut add = |id, region: ComponentId, placement, order, contents, source| {
             declarations.push(Declaration {
                 id: ComponentId(id),
@@ -55,7 +53,7 @@ impl Host {
                 self.leading_visible,
                 ComponentId(91020),
                 "tekes-side-bar",
-                "apphost-leading-collapsed",
+                "tekes-side-bar-collapsed",
                 "leading",
             ),
             (
@@ -63,7 +61,7 @@ impl Host {
                 self.trailing_visible,
                 ComponentId(91021),
                 "tekes-side-panel",
-                "apphost-trailing-collapsed",
+                "tekes-side-panel-collapsed",
                 "trailing",
             ),
         ]
@@ -75,12 +73,7 @@ impl Host {
         } else {
             0
         }) {
-            let image = crate::window_toolbar::icon_image(
-                &mut self.toolbar_images,
-                renderer,
-                if on { icon } else { collapsed },
-                scale,
-            )?;
+            let icon = if on { icon } else { collapsed };
             let hint = format!("{} {label} panel", if on { "Hide" } else { "Show" });
             add(
                 92000 + side as u64 * 10,
@@ -91,15 +84,16 @@ impl Host {
                     Placement::PrimaryAction
                 },
                 0,
-                Contents::Commands(
+                Contents::TemplateCommands(
                     vec![ButtonDecl {
                         id: 0x5601 + side as u64,
-                        icon: Some(image),
+                        icon: None,
                         text: hint.clone(),
                         hint: Some(hint),
                         enabled: true,
                     }],
                     Overflow::Together,
+                    vec![(0x5601 + side as u64, icon.to_owned())],
                 ),
                 Source::Visibility(side),
             );
@@ -112,22 +106,14 @@ impl Host {
             && let Some(source) = ComponentSource::current(&nav.process)
         {
             let mut buttons = vec![];
+            let mut templates = vec![];
             for action in &nav.actions {
-                let icon = action
-                    .icon
-                    .as_deref()
-                    .map(|name| {
-                        crate::window_toolbar::icon_image(
-                            &mut self.toolbar_images,
-                            renderer,
-                            name,
-                            scale,
-                        )
-                    })
-                    .transpose()?;
+                if let Some(name) = &action.icon {
+                    templates.push((action.command.id, name.clone()));
+                }
                 buttons.push(ButtonDecl {
                     id: action.command.id,
-                    icon,
+                    icon: None,
                     text: action
                         .accessible_name
                         .clone()
@@ -141,7 +127,7 @@ impl Host {
                 ComponentId(91020),
                 Placement::Navigation,
                 10,
-                Contents::Commands(buttons, Overflow::Together),
+                Contents::TemplateCommands(buttons, Overflow::Together, templates),
                 Source::Navigation(source),
             );
         }
@@ -158,22 +144,14 @@ impl Host {
             let state = state.borrow();
             if let Some(source) = &state.toolbar_source {
                 let mut buttons = vec![];
+                let mut templates = vec![];
                 for action in state.toolbar_actions() {
-                    let icon = action
-                        .icon
-                        .as_deref()
-                        .map(|name| {
-                            crate::window_toolbar::icon_image(
-                                &mut self.toolbar_images,
-                                renderer,
-                                name,
-                                scale,
-                            )
-                        })
-                        .transpose()?;
+                    if let Some(name) = &action.icon {
+                        templates.push((action.command.id, name.clone()));
+                    }
                     buttons.push(ButtonDecl {
                         id: action.command.id,
-                        icon,
+                        icon: None,
                         text: action.accessible_name.unwrap_or(action.command.title),
                         hint: action.tooltip,
                         enabled: action.command.enabled,
@@ -184,7 +162,7 @@ impl Host {
                     ComponentId(91000 + center as u64),
                     Placement::SecondaryAction,
                     0,
-                    Contents::Commands(buttons, Overflow::Together),
+                    Contents::TemplateCommands(buttons, Overflow::Together, templates),
                     Source::Undo(source.clone()),
                 );
             }

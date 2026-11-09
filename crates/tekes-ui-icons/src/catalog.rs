@@ -563,12 +563,20 @@ impl Glyph {
             svg: include_str!("../assets/tekes-side-bar.svg"),
         },
         Self {
+            name: "tekes-side-bar-collapsed",
+            svg: include_str!("../assets/tekes-side-bar-collapsed.svg"),
+        },
+        Self {
             name: "tekes-side-chat",
             svg: include_str!("../assets/tekes-side-chat.svg"),
         },
         Self {
             name: "tekes-side-panel",
             svg: include_str!("../assets/tekes-side-panel.svg"),
+        },
+        Self {
+            name: "tekes-side-panel-collapsed",
+            svg: include_str!("../assets/tekes-side-panel-collapsed.svg"),
         },
         Self {
             name: "tekes-skill",
@@ -725,7 +733,7 @@ mod tests {
     #[test]
     fn full_catalog_is_unique_self_contained_and_tintable() {
         let mut names = std::collections::HashSet::new();
-        assert_eq!(Glyph::ALL.len(), 177);
+        assert_eq!(Glyph::ALL.len(), 179);
         for icon in Glyph::ALL {
             assert!(names.insert(icon.name));
             assert_eq!(Glyph::named(icon.name), Some(*icon));

@@ -994,6 +994,13 @@
       "designRevision": "window-toolbar-optical-20261021"
     },
     {
+      "name": "tekes-side-bar-collapsed",
+      "file": "assets/tekes-side-bar-collapsed.svg",
+      "sha256": "026436e005ed43c911b22a4ad7055ae37ae0af8f3a2403029e8ba12a640e4cf8",
+      "origin": "published-apphost",
+      "sourceSha256": "026436e005ed43c911b22a4ad7055ae37ae0af8f3a2403029e8ba12a640e4cf8"
+    },
+    {
       "name": "tekes-side-chat",
       "file": "assets/tekes-side-chat.svg",
       "sha256": "7e86a00b8d0e0869c1c2f23e9bf5f7782b8dc0508fb242bbca5758bf64a6192b",
@@ -1007,6 +1014,13 @@
       "origin": "promoted-catalog",
       "sourceSha256": "68a7a8894929128a52975b3d3f44b2a4872e353ed8ea6060ef17e767ca70b992",
       "designRevision": "window-toolbar-optical-20261021"
+    },
+    {
+      "name": "tekes-side-panel-collapsed",
+      "file": "assets/tekes-side-panel-collapsed.svg",
+      "sha256": "86e3a168cfbfa398ee35a8c773913af5f88fbee6deadff90b6b0701f77abfe3a",
+      "origin": "published-apphost",
+      "sourceSha256": "86e3a168cfbfa398ee35a8c773913af5f88fbee6deadff90b6b0701f77abfe3a"
     },
     {
       "name": "tekes-skill",

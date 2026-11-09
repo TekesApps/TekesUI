@@ -2041,16 +2041,16 @@
   ],
   "source_sha256": {
     "DESIGN.md": "0085e260e7f5e511470dc90a2a7ae1d91671b92b7c928864ff160d0bd0a6167b",
-    "crates/tekes-ui-app-host/src/lib.rs": "80374f39d64ec8afc8def826eafdbe1877cd4519c6f07d31c21c95c96b9b296d",
-    "crates/tekes-ui-app-host/src/window.rs": "130f8618a91599f49927ee83ecdb5146ad0dfb78dcf206edd62a0bded36d3e22",
-    "crates/tekes-ui-app-host/src/window_toolbar.rs": "059d17831e04f076d4231001e71c1c626709b7153a92991fb0e24589bdc9c745",
+    "crates/tekes-ui-app-host/src/lib.rs": "50cca2f2a992c044b5a6ab0a3e956bfbeb624338bb39c0b4ea98aa2d9bccd292",
+    "crates/tekes-ui-app-host/src/window.rs": "2eeba3e4578836924b1693debf32c05dfcf1fd9847e2853d2db01606d9637c56",
+    "crates/tekes-ui-app-host/src/window_toolbar.rs": "b53606f753c0d8f7b2b568947e2c736327cc72e9e186c480627cb783ff334245",
     "crates/tekes-ui-controls/src/chart.rs": "9e3e5dd1e9d62f358cb74201a254f4165b81e4b79c3a97f0a74bde6f591e983c",
     "crates/tekes-ui-controls/src/collections_view.rs": "cffc6d19dc3732226ff9f1584e86cba343015d3bc371ebc5f8d27dca717c92ed",
     "crates/tekes-ui-controls/src/composite.rs": "4da278577efef0df305e345bcb48c02b6b6853338aaeea78ccf00f4c7f9d8556",
     "crates/tekes-ui-controls/src/composition.rs": "ede44b6ab5350105b9c2d6c05507d53f5ee8174b2737bf151f2b55765cf45cf9",
     "crates/tekes-ui-controls/src/composition/actions.rs": "9482a123a439867105198ce977611a8e94cffd608c8249b3206a2bf84996cb0a",
     "crates/tekes-ui-controls/src/composition/adapters.rs": "64c59aa37d84550148630f26693008a8c20e378ba846e5e2148afed057893bbb",
-    "crates/tekes-ui-controls/src/composition/button.rs": "0a168f44280df2c4f615c243a32e4c8987fb526c8708e2b571d7f88b96f96f0e",
+    "crates/tekes-ui-controls/src/composition/button.rs": "526921ce2ae5a8fbd9f633784249f69c4c01f5813b63c66b341f04ed73b7abf3",
     "crates/tekes-ui-controls/src/composition/chart_content.rs": "dc3b686d0b7c84e9e44cc3e0ee54c2e040204b141ee10b6970f2f6c88ea8cff4",
     "crates/tekes-ui-controls/src/composition/checkbox.rs": "1529f88b17492441c19430de0761e4452b6cc283e3bc9cc0a2cbd637a20d6914",
     "crates/tekes-ui-controls/src/composition/combobox.rs": "29d825cc459bef202edec0fc59bed240a25a2a3a40deddc012a772a8c9247154",
@@ -2094,7 +2094,7 @@
     "crates/tekes-ui-controls/src/text_input.rs": "fb413cea76491b4a7cc11383dd2426ea6740860c4d660517dc50df4904f8639b",
     "crates/tekes-ui-controls/src/text_input/external.rs": "872c6a58fc112c17f7711ce3fe88c868a6ecb0e2ee32fc394ed8877fa30626ca",
     "crates/tekes-ui-controls/src/text_surface.rs": "769d12c162d528743c1b85f305d09fa5d36e5c389098277b791ba0c9e2742505",
-    "crates/tekes-ui-controls/src/toolbar.rs": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+    "crates/tekes-ui-controls/src/toolbar.rs": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
     "crates/tekes-ui-controls/src/widgets.rs": "64f4d85e7b741116e512acea5ecdf0ddd14de090a05c2d0d2ce1b5379354845a",
     "crates/tekes-ui-controls/tests/choice_contract.rs": "4ee09801a24dd52ffc229e45c7ed7adbb2e5ad25b61fea71fb233ec63787a564",
     "crates/tekes-ui-controls/tests/choice_selection_states.rs": "e2ad48728b9c2dc38214baa2693dde465262d04cffe85f6c9629c36c246e1422",
@@ -2134,7 +2134,7 @@
     "crates/tekes-ui-gallery/src/gallery/workbench/extended/collections_adapter.rs": "90216f944b5224905e8658bc90d2a9457db2f4fe89dce215b6034b7f8e10edea",
     "crates/tekes-ui-gallery/src/gallery/workbench/extended/feedback_adapter.rs": "632635143cefc7531cba5f88e92e6d2d9939534f5217a3183a7d57ee434b3144",
     "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs": "0a5548b1ab977b94976826f0b82a5c0f30c3af2a379b985853cf0f38bdd7aa5d",
-    "crates/tekes-ui-gallery/src/host.rs": "a14a37dd1b5e8db9607a95f06bb1ccfe2c58894362456b00a356dbeb0c43fabc",
+    "crates/tekes-ui-gallery/src/host.rs": "ebf360cc339be1591cd2ad0a67f0206ed8a51a7bead543fd630cf019cc41378c",
     "crates/tekes-ui-gallery/src/reading_key.rs": "6932a589bce50e2f4365c780c67ab0c467a126c9a4677ad23eeda132f146adae",
     "crates/tekes-ui-gallery/src/viewport_acceptance.rs": "4087d2370154069e4b5dd4864425ef620327a6782a848643922f5be303abffad",
     "crates/tekes-ui-platform-macos/src/accessibility.rs": "4c87b3cf122400c3720d723b0a040f18aa95ff17e4d751396f4c1ab55a17d851",
@@ -2227,7 +2227,7 @@
     "docs/design/media-viewer-design-20261031.md": "1b3205a11b7d11f67c8d628e9a7c684283ddfea46a1fb5c54097d86ab11d52b0",
     "crates/tekes-ui-app-host/src/columns.rs": "bd25d92dd257dbcc91cdf7abc391045969e59ab3871034778c22dc08cf70e2c1",
     "crates/tekes-ui-app-host/src/presentation.rs": "d2888dcbcb8ada478e889712faf3b6558ad12454bab00dc1d9c09d78eeee057c",
-    "crates/tekes-ui-app-host/src/window_presentation.rs": "94cdd624649168cb481715a11179ab282870410a3938fc9e1ae47ab3c9ca5583",
+    "crates/tekes-ui-app-host/src/window_presentation.rs": "30674e8845a792f6e78d423428b81a2d99f8f5509e57c33d86fab80164fc217b",
     "crates/tekes-ui-controls/src/composition/toolbar_host.rs": "0897d520403ca049d13a695debfa6bc5835b260ded244f1a26be9701acd7d44d"
   },
   "remaining": [
@@ -2638,7 +2638,7 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/toolbar.rs",
-      "line": 588,
+      "line": 632,
       "anchor": "impl crate::composition::Component for ToolbarControl {"
     },
     {
@@ -2648,22 +2648,22 @@
     },
     {
       "path": "crates/tekes-ui-app-host/src/lib.rs",
-      "line": 109,
+      "line": 112,
       "anchor": "pub fn from_containers("
     },
     {
       "path": "crates/tekes-ui-app-host/src/window_toolbar.rs",
-      "line": 70,
+      "line": 48,
       "anchor": "pub(crate) struct MountedToolbar {"
     },
     {
       "path": "crates/tekes-ui-app-host/src/window.rs",
-      "line": 1215,
-      "anchor": ".render(&mut toolbar_scene, text, Theme::LIGHT.into())"
+      "line": 1224,
+      "anchor": ".render(&mut toolbar_scene, text, palette)"
     },
     {
       "path": "crates/tekes-ui-app-host/src/window.rs",
-      "line": 273,
+      "line": 275,
       "anchor": "mounted_toolbar: crate::window_toolbar::MountedToolbar,"
     },
     {
@@ -4238,5 +4238,24 @@
       "crates/tekes-ui-controls/src/toolbar.rs"
     ],
     "scope": "Toolbar real focus transition preserves independent hover through repaint; whole-toolbar blur still clears interaction. No public API or capability promotion. Related Theme ordinary-dark tertiary reduction retains original contrast gates."
+  },
+  "apphost_theme_review_20261109": {
+    "issue": 245,
+    "files": [
+      "crates/tekes-ui-app-host/src/lib.rs",
+      "crates/tekes-ui-app-host/src/window.rs",
+      "crates/tekes-ui-gallery/src/host.rs"
+    ],
+    "scope": "Existing Theme reaches local AppHost and Settings paint; default LIGHT, no process protocol changes. Content ownership, component capability and native claims unchanged.",
+    "template_icon_followup": {
+      "files": [
+        "crates/tekes-ui-app-host/src/window.rs",
+        "crates/tekes-ui-app-host/src/window_toolbar.rs",
+        "crates/tekes-ui-controls/src/composition/button.rs",
+        "crates/tekes-ui-controls/src/toolbar.rs",
+        "crates/tekes-ui-app-host/src/window_presentation.rs"
+      ],
+      "scope": "Host monochrome glyphs now consume existing Button child_theme and IconContent; original ImageId semantics preserved. Measure prepass uses same Palette. No broader capability/native promotion."
+    }
   }
 }

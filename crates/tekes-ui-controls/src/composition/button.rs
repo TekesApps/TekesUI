@@ -119,6 +119,33 @@ impl Button {
     pub(crate) fn set_toolbar_presentation(&mut self, toolbar: bool) {
         self.toolbar_presentation = toolbar;
     }
+    pub(crate) fn set_toolbar_template_icon(&mut self, name: &str) {
+        if self.content.first().is_some_and(|content| {
+            content
+                .component::<IconContent>()
+                .is_some_and(|icon| icon.glyph().name == name)
+        }) {
+            return;
+        }
+        self.set_contents(Content::new(
+            ComponentId(0),
+            IconContent::new(name).expect("Toolbar validates canonical template artwork"),
+        ));
+    }
+    // ToolbarControl retains its original Button owners rather than mounting
+    // another action tree. Paint only this passive child after its owner chrome
+    // has advanced the original hover/press channels.
+    pub(crate) fn paint_toolbar_template_icon(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut dyn ButtonTextRenderer,
+        theme: ContentTheme,
+    ) {
+        let child_theme = action_child_theme(self, theme);
+        if let Some(content) = self.content.first_mut() {
+            content.paint(scene, text, child_theme);
+        }
+    }
     fn presentation_variant(&self) -> ButtonVariant {
         if self.toolbar_presentation && self.variant != ButtonVariant::Primary {
             ButtonVariant::Toolbar

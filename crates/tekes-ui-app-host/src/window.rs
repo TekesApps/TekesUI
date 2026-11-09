@@ -27,7 +27,9 @@ use tekes_ui_platform_macos::{
 };
 use tekes_ui_render::Renderer;
 use tekes_ui_scene::{ImageId, ImageQuad, Point, Quad, Rect, Scene};
-use tekes_ui_tokens::{Palette, Rgba, Theme};
+#[cfg(test)]
+use tekes_ui_tokens::Rgba;
+use tekes_ui_tokens::{Palette, Theme};
 const MIN_COLUMN: f32 = 120.;
 #[path = "window_acceptance.rs"]
 mod window_acceptance;
@@ -569,6 +571,7 @@ enum ToolbarTarget {
 }
 
 pub struct Host {
+    theme: Theme,
     draw_diagnostic: bool,
     diagnostic_event: u64,
     diagnostic_draw: u64,
@@ -617,7 +620,6 @@ pub struct Host {
     panels: Vec<Panel>,
     renderer: Option<Renderer>,
     text: Text,
-    toolbar_images: std::collections::HashMap<(String, u32), tekes_ui_scene::ImageId>,
     outer: SplitView,
     inner: SplitView,
     outer_view: SplitViewView,
@@ -637,6 +639,13 @@ pub struct Host {
     step: u32,
 }
 impl Host {
+    pub(crate) fn with_theme(mut self, theme: Theme) -> Self {
+        self.theme = theme;
+        self
+    }
+    fn palette(&self) -> Palette {
+        self.theme.into()
+    }
     pub(crate) fn new(
         module_ids: Vec<String>,
         acceptance: bool,
@@ -644,6 +653,7 @@ impl Host {
     ) -> Self {
         let n = module_ids.len();
         Self {
+            theme: Theme::LIGHT,
             draw_diagnostic: std::env::var("TEKESUI_APPHOST_DRAW_DIAGNOSTIC").as_deref() == Ok("1"),
             diagnostic_event: 0,
             diagnostic_draw: 0,
@@ -688,7 +698,6 @@ impl Host {
             panels: Vec::new(),
             renderer: None,
             text: Text::new(),
-            toolbar_images: std::collections::HashMap::new(),
             outer: SplitView::new(1. / 3.),
             inner: SplitView::new(2. / 3.),
             outer_view: SplitViewView::new(Axis::Horizontal),
@@ -962,7 +971,7 @@ impl Host {
         }
         // Workspace panes are flat layout regions, not decorated Panel cards.
         // Keep component defaults intact; the consumer chooses no frame/shadow.
-        let palette = Palette::from(Theme::LIGHT);
+        let palette = self.palette();
         scene.push_quad(Quad::new(whole, palette.color("surface-1").unwrap()));
         let mut frames = if self.panels.len() == 1 {
             vec![whole]
@@ -1212,7 +1221,7 @@ impl Host {
                     panel
                         .mounted_toolbar
                         .host
-                        .render(&mut toolbar_scene, text, Theme::LIGHT.into())
+                        .render(&mut toolbar_scene, text, palette)
                         .map_err(|e| anyhow::anyhow!("container toolbar paint: {e:?}"))
                 },
             )?;
@@ -1234,7 +1243,7 @@ impl Host {
                         panel
                             .mounted_toolbar
                             .host
-                            .render(&mut toolbar_scene, text, Theme::LIGHT.into())
+                            .render(&mut toolbar_scene, text, palette)
                             .map_err(|e| anyhow::anyhow!("container toolbar focus paint: {e:?}"))
                     },
                 )?;
@@ -1363,7 +1372,11 @@ impl Host {
         let drawable_before = diagnostic.map(|_| w.drawable_serial());
         let renderer = self.renderer.as_mut().unwrap();
         renderer.resize(w.drawable_size(), w.scale() as f32);
-        renderer.render(&scene, &mut self.text.atlas, Rgba::gray(1.))?;
+        renderer.render(
+            &scene,
+            &mut self.text.atlas,
+            palette.color("surface-1").unwrap(),
+        )?;
         let renderer_return = diagnostic.map(|_| std::time::Instant::now());
         let drawable_after = diagnostic.map(|_| w.drawable_serial());
         if self.acceptance {
@@ -2288,6 +2301,7 @@ pub fn run(
     navigation: Option<NavigationOptions>,
     settings: Option<crate::settings::SettingsOptions>,
     presentation: Option<crate::PresentationOptions>,
+    theme: Theme,
 ) -> Result<()> {
     ensure!(
         presentation.is_some()
@@ -2307,7 +2321,8 @@ pub fn run(
         }
     } else {
         Host::new(module_ids, acceptance, navigation)
-    };
+    }
+    .with_theme(theme);
     host.mount_initial_containers();
     let has_settings = settings.is_some();
     let settings_window_acceptance = acceptance
@@ -2734,11 +2749,12 @@ mod window_focus_tests {
         },
     };
     fn render(h: &mut Host) {
+        let palette = h.palette();
         for panel in &mut h.panels {
             panel
                 .mounted_toolbar
                 .host
-                .render(&mut Scene::new(), &mut h.text, Theme::LIGHT.into())
+                .render(&mut Scene::new(), &mut h.text, palette)
                 .unwrap();
         }
     }
@@ -2865,6 +2881,63 @@ mod window_focus_tests {
         }
         refresh(&mut h, None);
         h
+    }
+    #[test]
+    fn appwindow_theme_reaches_local_body_and_original_toolbar_paint() {
+        use tekes_ui_controls::composition::{Content, TextContent};
+        use tekes_ui_scene::Primitive;
+        let default = crate::AppWindow::new(crate::AppProfile { modules: vec![] }).into_host(false);
+        assert_eq!(default.palette(), Theme::LIGHT.into());
+        for theme in Theme::ALL {
+            let local = crate::LocalContainer::new(
+                "theme-body",
+                Content::new(ComponentId(1), TextContent::new("Themed body")),
+            )
+            .unwrap();
+            let mut host = crate::AppWindow::from_columns(vec![local.into()])
+                .unwrap()
+                .theme(theme)
+                .into_host(false);
+            let palette = host.palette();
+            assert_eq!(palette, Palette::from(theme));
+            host.mount_columns();
+            let mut body = Scene::new();
+            let frame = Rect::new(0., 0., 300., 100.);
+            host.panels[0]
+                .local
+                .as_mut()
+                .unwrap()
+                .render(&mut body, &mut host.text, frame, frame, palette)
+                .unwrap();
+            assert!(
+                body.primitives().iter().any(|p| matches!(
+                    p, Primitive::Glyphs(run) if run.color == palette.color("primary-text").unwrap()
+                )),
+                "real local content uses {theme:?}"
+            );
+            let mut toolbar = fixture().with_theme(theme);
+            let mut scene = Scene::new();
+            for panel in &mut toolbar.panels {
+                panel
+                    .mounted_toolbar
+                    .host
+                    .render(&mut scene, &mut toolbar.text, palette)
+                    .unwrap();
+            }
+            let expected = tekes_ui_tokens::surface_palette::resolve_surface(
+                palette,
+                "toolbar",
+                "action-quiet",
+                "rest",
+            )
+            .unwrap();
+            assert!(
+                scene.primitives().iter().any(|p| matches!(
+                    p, Primitive::Glyphs(run) if run.color == expected.text
+                )),
+                "real ToolbarHost uses {theme:?}"
+            );
+        }
     }
     fn key(h: &mut Host, key: ControlKey, down: bool) {
         h.toolbar_key_input(ContentKeyEvent {

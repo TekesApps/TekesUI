@@ -432,8 +432,8 @@ impl WindowHandler for Host {
             _ => {}
         }
         for _ in 0..self.gallery.take_apphost_open_requests() {
-            match crate::gallery::apphost::open(window) {
-                Ok(_) => eprintln!("GALLERY_APPHOST_OPENED"),
+            match crate::gallery::apphost::open(window, self.gallery.theme()) {
+                Ok(_) => eprintln!("GALLERY_APPHOST_OPENED theme={:?}", self.gallery.theme()),
                 Err(error) => eprintln!("GALLERY_APPHOST_OPEN_FAILED {error:#}"),
             }
         }

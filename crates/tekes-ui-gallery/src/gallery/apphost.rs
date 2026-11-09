@@ -23,7 +23,7 @@ use tekes_ui_controls::{
     extended::{Axis, Slider, Stack},
 };
 use tekes_ui_platform_macos::{Size as WindowSize, Window, WindowConfig, WindowHandle};
-use tekes_ui_tokens::{Spacing, proposal::TextRole};
+use tekes_ui_tokens::{Spacing, Theme, proposal::TextRole};
 const DOCUMENT_TITLES: [&str; 4] = [
     "A quieter workspace",
     "Notes on responsive reading",
@@ -361,7 +361,7 @@ fn switch_toolbar() -> Vec<ToolbarItem> {
         geometry_dependent: false,
     }]
 }
-fn assemble() -> anyhow::Result<AppWindow> {
+fn assemble(theme: Theme) -> anyhow::Result<AppWindow> {
     let documents = Rc::new(RefCell::new(documents()));
     let document = Rc::new(RefCell::new(
         ContentHost::new(document_content(&documents.borrow().items[0]))
@@ -561,10 +561,11 @@ fn assemble() -> anyhow::Result<AppWindow> {
         vec![nav.into(), focus.into(), inspector.into(), reading.into()],
         presentation,
     )?
+    .theme(theme)
     .navigation(history_options()?))
 }
-pub fn open(parent: &Window) -> anyhow::Result<WindowHandle> {
-    assemble()?.open(
+pub fn open(parent: &Window, theme: Theme) -> anyhow::Result<WindowHandle> {
+    assemble(theme)?.open(
         parent,
         WindowConfig {
             title: "TekesUI AppHost".into(),
@@ -590,7 +591,6 @@ pub fn open(parent: &Window) -> anyhow::Result<WindowHandle> {
 mod tests {
     use super::*;
     use tekes_ui_scene::{Rect, Scene};
-    use tekes_ui_tokens::Theme;
 
     #[test]
     fn inspector_disclosure_expands_and_collapses_without_submitting_properties() {

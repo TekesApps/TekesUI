@@ -70,6 +70,7 @@ fn validate(profile: &AppProfile) -> anyhow::Result<()> {
 /// Fixed local/process column assembly over the shared native window shell.
 #[cfg(target_os = "macos")]
 pub struct AppWindow {
+    theme: tekes_ui_tokens::Theme,
     profile: AppProfile,
     columns: Option<Vec<Column>>,
     navigation: Option<NavigationOptions>,
@@ -80,6 +81,7 @@ pub struct AppWindow {
 impl AppWindow {
     pub fn new(profile: AppProfile) -> Self {
         Self {
+            theme: tekes_ui_tokens::Theme::LIGHT,
             profile,
             columns: None,
             navigation: None,
@@ -97,6 +99,7 @@ impl AppWindow {
             })
             .collect();
         Ok(Self {
+            theme: tekes_ui_tokens::Theme::LIGHT,
             profile: AppProfile { modules },
             columns: Some(columns),
             navigation: None,
@@ -120,6 +123,7 @@ impl AppWindow {
             })
             .collect();
         Ok(Self {
+            theme: tekes_ui_tokens::Theme::LIGHT,
             profile: AppProfile { modules },
             columns: Some(columns),
             navigation: None,
@@ -128,7 +132,8 @@ impl AppWindow {
         })
     }
     pub(crate) fn into_host(self, acceptance: bool) -> window::Host {
-        match self.columns {
+        let theme = self.theme;
+        let host = match self.columns {
             Some(columns) if self.presentation.is_some() => window::Host::from_containers(
                 columns.into_iter().map(Container::from).collect(),
                 acceptance,
@@ -145,7 +150,15 @@ impl AppWindow {
                 acceptance,
                 self.navigation,
             ),
-        }
+        };
+        host.with_theme(theme)
+    }
+    /// Initial appearance and contrast for this window and its local content.
+    /// The default remains LIGHT; existing windows do not follow later changes
+    /// in an embedding window's Theme selection.
+    pub fn theme(mut self, theme: tekes_ui_tokens::Theme) -> Self {
+        self.theme = theme;
+        self
     }
     pub fn navigation(mut self, navigation: NavigationOptions) -> Self {
         self.navigation = Some(navigation);
@@ -180,6 +193,7 @@ impl AppWindow {
             self.navigation,
             self.settings,
             self.presentation,
+            self.theme,
         )
     }
 }
@@ -222,7 +236,14 @@ fn run_internal(
     navigation: Option<NavigationOptions>,
     settings: Option<SettingsOptions>,
 ) -> anyhow::Result<()> {
-    run_columns(profile, None, navigation, settings, None)
+    run_columns(
+        profile,
+        None,
+        navigation,
+        settings,
+        None,
+        tekes_ui_tokens::Theme::LIGHT,
+    )
 }
 #[cfg(target_os = "macos")]
 fn validate_assembly(
@@ -256,6 +277,7 @@ fn run_columns(
     navigation: Option<NavigationOptions>,
     settings: Option<SettingsOptions>,
     presentation: Option<PresentationOptions>,
+    theme: tekes_ui_tokens::Theme,
 ) -> anyhow::Result<()> {
     validate_assembly(
         &profile,
@@ -282,10 +304,24 @@ fn run_columns(
         .map(|m| m.id.to_owned())
         .collect::<Vec<_>>();
     match args.get(1).map(String::as_str) {
-        None => window::run(ids, columns, false, navigation, settings, presentation),
-        Some("--window-acceptance") if args.len() == 2 => {
-            window::run(ids, columns, true, navigation, settings, presentation)
-        }
+        None => window::run(
+            ids,
+            columns,
+            false,
+            navigation,
+            settings,
+            presentation,
+            theme,
+        ),
+        Some("--window-acceptance") if args.len() == 2 => window::run(
+            ids,
+            columns,
+            true,
+            navigation,
+            settings,
+            presentation,
+            theme,
+        ),
         _ => anyhow::bail!("fixed-profile app accepts no runtime module discovery or selection"),
     }
 }
