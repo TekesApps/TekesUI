@@ -8,7 +8,7 @@ pub mod navigation;
 mod settings;
 pub mod settings_undo;
 #[cfg(target_os = "macos")]
-pub use settings::{SettingsDisplayMode, SettingsOptions, SettingsWindow};
+pub use settings::{SettingsDisplayMode, SettingsOptions, SettingsOwner, SettingsWindow};
 #[cfg(target_os = "macos")]
 mod columns;
 #[cfg(target_os = "macos")]
@@ -74,7 +74,7 @@ pub struct AppWindow {
     profile: AppProfile,
     columns: Option<Vec<Column>>,
     navigation: Option<NavigationOptions>,
-    settings: Option<SettingsWindow>,
+    settings: Option<settings::SettingsConfiguration>,
     presentation: Option<PresentationOptions>,
 }
 #[cfg(target_os = "macos")]
@@ -166,7 +166,13 @@ impl AppWindow {
     }
 
     pub fn settings(mut self, settings: SettingsWindow) -> Self {
-        self.settings = Some(settings);
+        self.settings = Some(settings::SettingsConfiguration::Window(settings));
+        self
+    }
+    /// Reuse one explicitly owned Settings window and persistence service across
+    /// AppWindows. Closing an opener does not close Independent Settings.
+    pub fn shared_settings(mut self, owner: SettingsOwner) -> Self {
+        self.settings = Some(settings::SettingsConfiguration::Shared(owner));
         self
     }
     /// Open a native window in an existing application event loop.
@@ -228,13 +234,17 @@ pub fn run_with_settings(
     navigation: Option<NavigationOptions>,
     settings: SettingsOptions,
 ) -> anyhow::Result<()> {
-    run_internal(profile, navigation, Some(settings))
+    run_internal(
+        profile,
+        navigation,
+        Some(settings::SettingsConfiguration::Window(settings)),
+    )
 }
 #[cfg(target_os = "macos")]
 fn run_internal(
     profile: AppProfile,
     navigation: Option<NavigationOptions>,
-    settings: Option<SettingsOptions>,
+    settings: Option<settings::SettingsConfiguration>,
 ) -> anyhow::Result<()> {
     run_columns(
         profile,
@@ -275,7 +285,7 @@ fn run_columns(
     profile: AppProfile,
     columns: Option<Vec<Column>>,
     navigation: Option<NavigationOptions>,
-    settings: Option<SettingsOptions>,
+    settings: Option<settings::SettingsConfiguration>,
     presentation: Option<PresentationOptions>,
     theme: tekes_ui_tokens::Theme,
 ) -> anyhow::Result<()> {

@@ -562,3 +562,43 @@ Master旧001仅定位后超时退出124；002轮值过小，仅初始可见阅�
   仍以各公开交付收据为准。本节不新增Release、部署或消费方采用声明。
 
 Refs #1 #12 #55 #56。
+
+
+## 2026-11-09 当前 Theme / spacing 增量审查（52 根，源码范围）
+
+本次以现有 Workbench 的 45 components、5 patterns、2 examples（52 根）作差异核对；登记入口及原 ID 不变。PR154 / `checkpoint-20261028-14` 的实用 Theme 接收继续有效于原来源和范围；2026-10-17 的 269 状态/231 未核夹具是历史记录，不能转换为当前失败数。源码哈希变化也不等于功能失败。本次未运行构建、GUI、GPU 或原生验收，以下“已查”仅表示当前共享消费/绘制/组合路径和适用规范已读，不表示每个状态、分配尺寸、品牌、倍率都重验通过。
+
+现行规则按 `design/system.json` 的 Theme 输入合同、`design/theme/theme.schema.json`、rules、`design/source/layout.json` 及后续明确设计决定解释。Palette 仍是合法语义入口，不要求为了形式改写 Surface。2026-11-08 输入框附着式焦点边界覆盖 Gold7 早期独立 2+2 描绘；保留的安全 focus bleed 不等于实际双边框。普通场景几何、数据索引、Scene3D 材质颜色不因数字/RGB 字面量出现而自动成为样式缺陷。
+
+| 已查共享路径 | 现有登记根（合计 52） | 当前源码检查边界 |
+|---|---|---|
+| layout | `tui.stack`, `tui.grid`, `tui.separator`, `tui.split-view`, `tui.scroll-area`, `tui.disclosure`, `tui.surface`, `tui.icon`, `tui.link`, `tui.breadcrumb` | Theme/Palette/Surface 消费、适用 spacing/边界与状态绘制路径；原共享子组件证据复用，不重复 52 套验证。 |
+| actions | `tui.toolbar`, `tui.button`, `tui.icon-button` | Theme/Palette/Surface 消费、适用 spacing/边界与状态绘制路径；原共享子组件证据复用，不重复 52 套验证。 |
+| input | `tui.text`, `tui.text-field`, `tui.text-area`, `tui.search-field`, `tui.combo-box`, `tui.field`, `tui.select`, `tui.number-field`, `tui.command-palette` | Theme/Palette/Surface 消费、适用 spacing/边界与状态绘制路径；原共享子组件证据复用，不重复 52 套验证。 |
+| selection | `tui.slider`, `tui.checkbox`, `tui.radio-group`, `tui.switch`, `tui.segmented-control` | Theme/Palette/Surface 消费、适用 spacing/边界与状态绘制路径；原共享子组件证据复用，不重复 52 套验证。 |
+| composite | `tui.tabs`, `tui.menu`, `tui.dialog` | Theme/Palette/Surface 消费、适用 spacing/边界与状态绘制路径；原共享子组件证据复用，不重复 52 套验证。 |
+| collections | `tui.list`, `tui.tree`, `tui.data-table`, `tui.chart`, `tui.markdown`, `tui.code-block`, `tui.diff-view` | Theme/Palette/Surface 消费、适用 spacing/边界与状态绘制路径；原共享子组件证据复用，不重复 52 套验证。 |
+| feedback | `tui.tooltip`, `tui.popover`, `tui.toast`, `tui.banner`, `tui.status-badge`, `tui.progress`, `tui.empty-state`, `tui.skeleton` | Theme/Palette/Surface 消费、适用 spacing/边界与状态绘制路径；原共享子组件证据复用，不重复 52 套验证。 |
+| compositions | `pattern-form`, `pattern-filter`, `pattern-master`, `pattern-async`, `pattern-danger`, `example-settings` | Theme/Palette/Surface 消费、适用 spacing/边界与状态绘制路径；原共享子组件证据复用，不重复 52 套验证。 |
+| scene | `component-scene3d` | Theme/Palette/Surface 消费、适用 spacing/边界与状态绘制路径；原共享子组件证据复用，不重复 52 套验证。 |
+
+### 根因去重与当前处理
+
+| 状态 | 独立根因或已修事项 | 证据与最小处理 |
+|---|---|---|
+| 在修 F1 | AppHost pane 外 padding 与 ScrollContent focus gutter 叠加，Nav/Focus/Others 不同，溢出条还额外挤右距 | `window.rs` Panel::content_frame / mount_columns，`composition.rs` ScrollContent::arrange；旧 pane/focus 叠加使 Focus/Others 在 1x 为 16+5pt、Nav 为 5pt；另加 8pt 仅指 #251 最初共享 scrollbar 候选，037 原发布没有该共享条，不能算作旧发布缺陷。当前在途源采用 Container 外距 0、原 ScrollContent 单层请求 Loose16、focus bleed 取最小安全值，滚动条复用已留空隙。只称源码已接入，真实验收由原批次承担。 |
+| 在修 F2 | AppHost 导航原普通 List 36/4 与 Gallery 32/2 不同，扁平组间 Regular8 不等于 Gallery section label16+8 / row32+2 | `gallery/layout.rs:22–30`、`gallery/navigation.rs`、`gallery/apphost.rs` 的 WRITING/PROJECT、`collections_view.rs` ListView::metrics。当前在途源显式 navigation layout 32/2、label→rows Regular8、组间 Micro2；不更改普通 List 默认或已有 ID。 |
+| 本批源码已修 F3 | Settings sidebar 仍走普通 List selected 边框，与当前导航纯填充契约不一致 | `tekes-ui-settings/src/sidebar.rs:50` 显式复用 `set_navigation_selection_fill_only(true)`，共享 `collections_view.rs:617` 传原 Button paint；保持独立键盘焦点。038 回归待运行，不提前称通过。 |
+| 本批源码已修 F4 | AppHost 原四个文本 shaping 入口使用 system font，忽略 Code 的 mono family，与 Gallery 不一致 | `tekes-ui-app-host/src/text.rs:61` 新 role_style 按 `proposal::text_family(role.id())` 复用既有 Menlo/system 策略；四入口统一消费。根因及原对照见本次 `schema-settings-audit.md`；新增真实文字宽度/字体回归 038 待运行。此项由主协调独立核查并修复，本表不冒称已运行。 |
+| 已修，复用 | 普通 dark tertiary 过重、Quiet disabled 校验缺口、v0.3.4 AppHost 初始 mode 继承、透明 Tab × 等前批独立问题 | 保留 #245 原源码/发布收据；不是新增审计失败。当前新 Settings 保存/字号/主题绑定仍待 038/原生验证且未发布，不归前批复用。共享 List scrollbar 是已分配的相邻修复，继续原批次验收，不重复开任务。 |
+| 待证，非新增缺陷 | 任意组件状态/布局全排列、在途 padding 的真实绘制和原生观察 | 本次不执行上述观察；由已准备批次补受影响验证，不恢复历史全闭包门槛。未发现有证据支持的额外 Theme schema 缺色或独立组件外观根因。 |
+
+本次合并独立审查确认 **4 个去重根因**：spacing 2 个、Settings 导航选中描边 1 个、AppHost Code 字体族 1 个；均已在本批源码接入，038 受影响验证待运行。除此之外，本次未确认新的 Theme 缺色根因。这不是“零潜在缺陷”证明，也不把未执行 GUI 记成失败。结构只读检查显示现有 4 实例 × 4 mode × 7 Surface × 44 purpose 共 22,512 state packets 维度齐全；此检查不替代编译、对比度及真实组件验收。
+
+`layout.scroll_area.content_padding=12` 和 single-line y8 属于 TextSurface Field 内部排版，sidebar16 / AppHost pane16 属于外层内容留白，不能为了对齐全局把 12 改为 16。pane 单层负责已同步 [AppHost 现行契约](app-host-architecture.md)。普通 List36/4、RadioGroup 行几何6、文档局部排版等字面量是后续维护观察；没有具体违反适用合同或可达故障证据，不当作新阻塞，不擅自统一改变所有几何。
+
+详细来源 SHA、52 根逐项 scope/未查维度及结构统计保存在协调工作区 `outputs/theme-consistency-audit-20261109/{REPORT.md,CHECKLIST.json,SOURCE-SNAPSHOT.json,THEME-STRUCTURE.json}`。这些是本次审查产物，不是第二套产品登记；每根仍引用原 Workbench route。构建、原生行为、源码交付、公开发布及消费方采用继续分别记录。
+
+### 本轮受影响验证结果
+
+039 使用冻结候选执行：共享 List/组合/Panel/选择列表公开回归 59 项、AppHost 104 项、Gallery AppHost 5 项全部通过，受影响 crates all-targets strict 检查通过。038 的 Controls 457 项在后续只改测试和 AppHost Settings 消费调用后保持适用；038 新夹具错误与 Settings 短 ID 的真实集成失败均保留，后者已按 canonical ID 修复并用真实 Gallery schema 构造 owner/双窗口装配验证。生成一致性、composition audit、格式通过。以上为本地源码/真实文字服务及布局回归，不代签新原生窗口、公开发布或消费方采用。收据位于协调工作区 work/apphost-interaction-039/release.json。

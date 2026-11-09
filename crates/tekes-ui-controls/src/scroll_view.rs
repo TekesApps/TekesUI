@@ -107,6 +107,13 @@ impl ScrollView {
         };
         !hidden && limit > 0.0
     }
+    pub(crate) fn scrollbar_requested(&self, vertical: bool) -> bool {
+        if vertical {
+            !self.hidden_scrollbars.1
+        } else {
+            !self.hidden_scrollbars.0
+        }
+    }
     pub fn axis_enabled(&self, vertical: bool) -> bool {
         let (policy, document, viewport) = if vertical {
             (self.vertical, self.document.height, self.viewport.height)

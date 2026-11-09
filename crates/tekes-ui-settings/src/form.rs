@@ -1,4 +1,4 @@
-use crate::{Draft, FieldType, Schema};
+use crate::{Draft, FieldPresentation, FieldType, Schema};
 #[path = "form_row.rs"]
 mod form_row;
 use anyhow::Result;
@@ -8,7 +8,8 @@ use tekes_ui_controls::{
     composition::{
         ComponentId, Content, ContentActionPayload, ContentEvent, ContentHost, DecimalNumberFormat,
         MenuContent, MenuEntry, NumberCommitReason, NumberFieldContent, NumberValidation,
-        ScrollContent, StackContent, SwitchContent, TextContent, TextFieldContent,
+        RadioGroupContent, ScrollContent, StackContent, SwitchContent, TextContent,
+        TextFieldContent,
     },
     extended::{Axis, Stack},
 };
@@ -77,6 +78,16 @@ impl SettingsForm {
                     let control = match f.kind {
                         FieldType::Boolean => {
                             Content::new(ids[index], SwitchContent::new("", raw == "true"))
+                        }
+                        FieldType::Enum if f.presentation == FieldPresentation::Radio => {
+                            let mut radio = RadioGroupContent::new(
+                                &f.label,
+                                f.options.iter().map(|o| o.label.clone()).collect(),
+                            );
+                            radio
+                                .set_selected(f.options.iter().position(|o| o.value == raw))
+                                .expect("validated enum selection");
+                            Content::new(ids[index], radio)
                         }
                         FieldType::Enum => {
                             let selected = f
@@ -225,6 +236,17 @@ impl SettingsForm {
                     .label = label.into();
             }
         }
+        for record in &records {
+            if let Some(ContentActionPayload::RadioSelection(selection)) = &record.payload
+                && let Some(index) = self
+                    .field_ids
+                    .iter()
+                    .position(|id| *id == record.action.target)
+            {
+                let field = &schema.settings[index];
+                draft.edit(field, field.options[selection.index()].value.clone());
+            }
+        }
         self.collect_number_changes(schema, draft);
         for (index, f) in schema.settings.iter().enumerate() {
             let node = self.host.get(self.field_ids[index]).unwrap();
@@ -335,6 +357,10 @@ impl SettingsForm {
                 let _ = number.set_value(raw.parse().expect("validated numeric snapshot"));
             } else if let Some(switch) = node.component_mut::<SwitchContent>() {
                 switch.model.checked = raw == "true";
+            } else if let Some(radio) = node.component_mut::<RadioGroupContent>() {
+                radio
+                    .set_selected(f.options.iter().position(|o| o.value == raw))
+                    .expect("validated enum snapshot");
             } else if let Some(menu) = node.component_mut::<MenuContent>() {
                 let label = f
                     .options

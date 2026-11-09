@@ -534,6 +534,16 @@ pub(crate) fn restore_windows(owner: &Shared) {
     NSAnimationContext::beginGrouping();
     NSAnimationContext::currentContext().setDuration(0.);
     NSAnimationContext::currentContext().setAllowsImplicitAnimation(false);
+    // Returning from Settings keeps the current cover's frame on its original
+    // Main window, including a move or resize made while Settings was visible.
+    if let Some(anchor) = key.as_ref().filter(|shared| !shared.closed.get())
+        && let Some(original) = anchor.objects.get()
+        && let Some(cover) = owner.objects.get()
+    {
+        original
+            .window
+            .setFrame_display(cover.window.frame(), false);
+    }
     for shared in hidden
         .into_iter()
         .filter_map(|w| w.upgrade())

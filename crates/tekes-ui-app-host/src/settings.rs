@@ -2,14 +2,18 @@
 use crate::settings_undo::client::{Client, Job};
 use anyhow::Result;
 use std::{
+    cell::RefCell,
     path::PathBuf,
+    rc::{Rc, Weak},
     time::{Duration, Instant},
 };
 use tekes_ui_module_runtime::component::ToolbarAction;
 use tekes_ui_platform_macos::{TextInputState, WindowWake};
 use tekes_ui_settings::{
-    Draft, FileProvider, FormIntent, Schema, SettingsForm, SettingsSidebar, Snapshot, Submission,
+    Draft, Field, FieldType, FileProvider, FormIntent, Schema, SettingsForm, SettingsSidebar,
+    Snapshot, Submission,
 };
+use tekes_ui_tokens::Appearance;
 
 /// Consumer supplies a fixed TOML definition and its own storage location.
 #[derive(Clone, Debug)]
@@ -40,6 +44,153 @@ impl SettingsWindow {
         self
     }
 }
+
+/// Explicit application-owned Settings service. Clone this owner into each
+/// AppWindow to share one configuration writer, history service and native child.
+/// Separate owners remain independent and obey the provider's single-writer lock.
+#[derive(Clone, Debug)]
+pub struct SettingsOwner(pub(crate) Rc<RefCell<SettingsOwnerState>>);
+#[derive(Debug)]
+pub(crate) struct SettingsOwnerState {
+    pub options: SettingsWindow,
+    pub provider: FileProvider,
+    pub child: Option<tekes_ui_platform_macos::WindowHandle>,
+    loading: Weak<()>,
+    pub display: Option<Rc<RefCell<SettingsDisplayState>>>,
+}
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct DisplayPreferences {
+    /// None means follow this window's real system appearance.
+    pub appearance: Option<Appearance>,
+    pub text_size_percent: f32,
+}
+/// Display values/subscribers have no reference to the owner or native child.
+/// Independent Settings can keep this state after its final opener closes.
+#[derive(Debug)]
+pub(crate) struct SettingsDisplayState {
+    schema: Schema,
+    fields: (Field, Field),
+    pub preferences: Option<DisplayPreferences>,
+    revision: Option<u64>,
+    pub wakes: Vec<Weak<WindowWake>>,
+}
+impl SettingsDisplayState {
+    pub(crate) fn publish(display: &Rc<RefCell<Self>>, snapshot: &Snapshot) -> Result<()> {
+        let wakes = {
+            let mut state = display.borrow_mut();
+            if state
+                .revision
+                .is_some_and(|revision| snapshot.revision <= revision)
+            {
+                return Ok(());
+            }
+            state.schema.validate_snapshot(snapshot)?;
+            let draft = Draft::new(snapshot.clone());
+            let appearance = match draft.display(&state.fields.0).as_str() {
+                "system" => None,
+                "light" => Some(Appearance::Light),
+                "dark" => Some(Appearance::Dark),
+                value => anyhow::bail!("unsupported appearance preference {value}"),
+            };
+            let percent: f32 = draft.display(&state.fields.1).parse()?;
+            anyhow::ensure!(
+                percent.is_finite() && percent > 0.,
+                "text size percentage must be positive"
+            );
+            state.preferences = Some(DisplayPreferences {
+                appearance,
+                text_size_percent: percent,
+            });
+            state.revision = Some(snapshot.revision);
+            state.wakes.retain(|wake| wake.strong_count() > 0);
+            state
+                .wakes
+                .iter()
+                .filter_map(Weak::upgrade)
+                .collect::<Vec<_>>()
+        };
+        for wake in wakes {
+            wake.wake();
+        }
+        Ok(())
+    }
+}
+impl SettingsOwner {
+    pub fn new(options: SettingsWindow) -> Result<Self> {
+        let provider = FileProvider::open(options.file.clone(), options.schema.namespace.clone())?;
+        Ok(Self(Rc::new(RefCell::new(SettingsOwnerState {
+            options,
+            provider,
+            child: None,
+            loading: Weak::new(),
+            display: None,
+        }))))
+    }
+    /// Bind consumer-defined enum (system/light/dark) and positive integer
+    /// percentage fields to AppHost and Settings display. Only acknowledged
+    /// snapshots change display; pending/invalid drafts keep their current style.
+    /// Configure this binding before attaching the owner to AppWindows.
+    pub fn with_display_preferences(self, appearance: &str, text_size: &str) -> Result<Self> {
+        {
+            let mut state = self.0.borrow_mut();
+            let find = |id: &str| {
+                state
+                    .options
+                    .schema
+                    .settings
+                    .iter()
+                    .find(|field| field.id == id)
+                    .cloned()
+                    .ok_or_else(|| anyhow::anyhow!("unknown display preference {id}"))
+            };
+            let appearance = find(appearance)?;
+            let text_size = find(text_size)?;
+            anyhow::ensure!(
+                appearance.kind == FieldType::Enum
+                    && appearance
+                        .options
+                        .iter()
+                        .all(|option| matches!(option.value.as_str(), "system" | "light" | "dark")),
+                "appearance preference requires system/light/dark enum values"
+            );
+            anyhow::ensure!(
+                text_size.kind == FieldType::Integer && text_size.min.is_some_and(|min| min > 0.),
+                "text size preference requires a positive integer percentage"
+            );
+            state.display = Some(Rc::new(RefCell::new(SettingsDisplayState {
+                schema: state.options.schema.clone(),
+                fields: (appearance, text_size),
+                preferences: None,
+                revision: None,
+                wakes: vec![],
+            })));
+        }
+        Ok(self)
+    }
+    /// Publish actual loaded/acknowledged snapshots; never reread disk after a save.
+    pub(crate) fn publish_display(&self, snapshot: &Snapshot) -> Result<()> {
+        let display = self.0.borrow().display.clone();
+        if let Some(display) = display {
+            SettingsDisplayState::publish(&display, snapshot)?;
+        }
+        Ok(())
+    }
+    /// The requesting Host alone retains the ticket. If it closes before a
+    /// background read finishes, another window can request a fresh read.
+    pub(crate) fn begin_load(&self) -> Option<Rc<()>> {
+        let mut state = self.0.borrow_mut();
+        if state.loading.upgrade().is_some() {
+            return None;
+        }
+        let ticket = Rc::new(());
+        state.loading = Rc::downgrade(&ticket);
+        Some(ticket)
+    }
+}
+pub(crate) enum SettingsConfiguration {
+    Window(SettingsWindow),
+    Shared(SettingsOwner),
+}
 pub(crate) struct SettingsSurface {
     pub form: SettingsForm,
     pub schema: Schema,
@@ -64,6 +215,7 @@ pub(crate) struct SettingsSurface {
     message: String,
     serial: u64,
     last_edit_generation: u64,
+    pub display: Option<Rc<RefCell<SettingsDisplayState>>>,
 }
 impl SettingsSurface {
     pub fn new(
@@ -114,6 +266,7 @@ impl SettingsSurface {
             message: String::new(),
             serial: 0,
             last_edit_generation: 0,
+            display: None,
         })
     }
     pub fn navigation_input_ready(&self) -> bool {
@@ -471,6 +624,9 @@ impl SettingsSurface {
                     }
                     if self.close_after_save && self.clean_for_close() {
                         self.open = false;
+                    }
+                    if let Some(display) = &self.display {
+                        SettingsDisplayState::publish(display, &self.draft.base)?;
                     }
                 }
                 Err(error) => {

@@ -165,3 +165,67 @@ pass. No production or palette change was made for these test repairs; the accep
 native program remains the same. AppKit Menu/Tab reference records from the original
 Issue scope remain separate outstanding work; the existing native Field comparison
 and all prior artifacts remain retained.
+
+
+## Transparent Tab close cross — 2026-11-09
+
+New user decision under #245 supersedes the earlier circle-and-cross artwork
+choice recorded in `tabs-close-20261108.md`. That historical decision and its
+original evidence remain preserved. A Tab close affordance now uses the existing
+canonical `tekes-remove-one` plain cross, centered at the same standard icon size
+inside its original independent close hit target.
+
+The original ButtonModel prepares the same layout, pointer capture, motion and
+keyboard activation. A crate-private transparent content-frame paint entry skips
+only the close button's Surface background and boundary; no Scene primitives are
+removed after rendering. Hover/pressed/disabled foreground continues to resolve
+from the existing Quiet Surface packet. Independent visible keyboard focus is
+still painted. The enclosing Tab retains its own fill and selected state.
+Ordinary Button entry points keep their existing background painting.
+
+The original independent `tabs_close` consumer now checks a plain canonical
+cross, its unchanged centered artboard and larger hit target, no close-frame
+background in rest/hover/pressed/disabled across all four Themes, retained Tab
+selection fill, exact semantic foreground, and visible close keyboard focus.
+Original once-only pointer/AX/keyboard, disabled, IME, reorder, close/reopen and
+resource-failure checks remain. Execution/native review is recorded separately
+against the frozen candidate; source changes alone do not claim those results.
+
+## Cross-container Toolbar hover — 2026-11-09
+
+Pointer hover ownership is independent of the toolbar selected for keyboard routing.
+When a plain pointer move crosses container toolbars, the previous hover owner
+receives the same outside point before the new owner receives it. Only that prior
+host is notified; unrelated or hidden toolbars do not receive a broadcast. Existing
+menu, pointer-capture and body/splitter drag ownership stays authoritative. A hover
+exit clears pointer presentation without blurring keyboard focus; whole-input
+cancel retains its original focus-clearing contract.
+
+Both ordinary A-to-B movement and a keyboard-routing interleave reproduced the
+stale hover in the original Host render path. These are distinct from v0.3.4
+semantic icon tint and its same-container native leave observation. Raw failures
+and the corrected test fixture prerequisites remain recorded separately.
+
+## 2026-11-09：普通主题边界降噪与实际画面验收
+
+用户反馈实际 Light AppHost 仍显强对比；此前候选只改布局/交互，没有调整 Light 配色。共享普通主题的必要边界从 Light #737370 调为 #7C7C79、Dark #A3A39E 调为 #7E7E7A；焦点从 Light #42423F 调为 #5E5E5B、Dark #EEEEEA 调为 #B0B0AC。必要边界仍需对全部已声明相邻背景达到 3:1，焦点保持可辨；文字、选中/hover/pressed 绑定及 Increased Contrast 不变。装饰性分隔线继续使用 separator，不能拿必要控件边界角色画每个装饰框。
+
+颜色选择须通过原品牌/Theme 对比度门槛，并在同一 AppHost 的主题、字体、点尺寸、backing scale 下比较原生前后画面。静态 token 完整、生成一致或测试通过均不代签视觉效果；公开发布/Dock 更新单独确认。
+
+Settings 原生 Theme 首次鼠标点击的 Down/Up 已到达 Form 却未打开菜单，作为 #229/#245 的真实行为缺陷处理；配色变更不代签此修复。
+
+### Settings MenuButton 首击修复
+
+`MenuContent` 原 prepared-pointer hook 对 Down 返回 no-op，跳过内部 Button 的真实按下状态。现在由 MenuContent 通过既有 `prepare_original` 包装原 ButtonModel 决策，在 Host 的动作/焦点准入全部通过后提交；保留 Press/Release 激活阶段及原 Up 打开菜单路径，不采用绕过原子准入的 legacy fallback。真实 ContentHost Down→Up 红例已转绿；组字 owner 拒绝转移时，菜单不得进入 pressed/capture 或打开。对应 #229/#245。
+
+本地 20 项菜单回归、457 项 Controls 原有回归及新准入回归、32 项 tokens、110 项 AppHost 和 affected strict 已通过。历史24图只还原明确批准的普通边界/焦点色和此前 tertiary 修订后比较，原PNG、几何/文本及误差门槛保留。原生首击/主题切换和视觉效果由最终候选独立验收。
+
+## 2026-11-09 用户修订：Theme 单选与菜单自然宽度
+
+General 的 Theme 直接展示 System／Light／Dark 单选组，复用原 RadioGroupContent，三个选项互斥；TOML 的 enum 字符串及选项值、保存/Undo/Redo/加载合同不变。字段可声明 `presentation = "radio"`；未声明时保留原自动选择（enum仍Menu），不按字段ID硬编码、不改变其他消费者的枚举呈现。Radio组选中与历史恢复必须通过原组件及既有草稿/存储链；标签对齐首个选项。
+
+共享弹出菜单默认宽度由最长实际行内容、Body按钮token内边距、check/submenu列和focus gutter决定；280pt是上限，不是默认填满宽度。长文本按最终可用宽度重测行高，保留viewport clamp、header约束和原命中/滚动。原native004菜单程序/源及Dark保存证据冻结保留，不能代签新Radio界面。
+
+自然宽度下，首次声明 `checked: Some(false)` 会预留真实check列，允许比无列菜单更宽；同一列 `false/true` 切换必须保持尺寸与位置。旧固定宽度断言不能继续要求新列占零空间；原CI失败保留，新消费者回归分别覆盖列声明和勾选切换。
+
+Radio的prepared pointer入口按现有事件合同归一化原生Primary Down，保持原model/view和焦点事务；Secondary不选项。实际SettingsColumn/LocalContainer回归覆盖原生Down/Up，不用旧式事件代签。

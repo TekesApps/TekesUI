@@ -53,6 +53,8 @@ pub struct Field {
     pub description: String,
     #[serde(rename = "type")]
     pub kind: FieldType,
+    #[serde(default)]
+    pub presentation: FieldPresentation,
     pub default: Value,
     pub min: Option<f64>,
     pub max: Option<f64>,
@@ -61,6 +63,14 @@ pub struct Field {
     pub suffix: String,
     #[serde(default)]
     pub options: Vec<OptionValue>,
+}
+/// Optional UI choice; values and persistence retain their original field type.
+#[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum FieldPresentation {
+    #[default]
+    Auto,
+    Radio,
 }
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
@@ -244,6 +254,11 @@ impl Schema {
                     "integer step must be integral"
                 );
             }
+            ensure!(
+                field.presentation != FieldPresentation::Radio || field.kind == FieldType::Enum,
+                "radio presentation requires enum field: {}",
+                field.id
+            );
             let mut options = BTreeSet::new();
             ensure!(
                 field.options.iter().all(|o| !o.value.is_empty()

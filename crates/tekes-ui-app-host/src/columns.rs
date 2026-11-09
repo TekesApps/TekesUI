@@ -64,6 +64,11 @@ impl LocalContainer {
         self.options.list_height = Some(height);
         self
     }
+    /// Override the window's default outer content padding for this container.
+    pub fn content_padding(mut self, padding: f32) -> Self {
+        self.options.content_padding = Some(padding);
+        self
+    }
     /// Route this explicitly declared toolbar command through the window's
     /// current focus/ordinary-Others exchange instead of business dispatch.
     pub fn focus_switch(mut self, command: u64) -> Self {
@@ -180,6 +185,8 @@ pub struct ContainerOptions {
     pub focus_switch_command: Option<u64>,
     /// Opt in to List with this content allocation (including its Toolbar).
     pub list_height: Option<f32>,
+    /// None retains the existing default; zero lets local Content own padding.
+    pub content_padding: Option<f32>,
     /// Explicit destinations; there is no automatic first-visible fallback.
     pub retained_buttons: Vec<RetainedButton>,
 }
@@ -328,6 +335,12 @@ pub(crate) fn validate_ids<'a>(
         anyhow::ensure!(
             options.list_height.is_none_or(|h| h.is_finite() && h > 0.),
             "invalid List height for {id}"
+        );
+        anyhow::ensure!(
+            options
+                .content_padding
+                .is_none_or(|p| p.is_finite() && p >= 0.),
+            "invalid content padding for {id}"
         );
         let mut commands = std::collections::HashSet::new();
         for button in &options.retained_buttons {

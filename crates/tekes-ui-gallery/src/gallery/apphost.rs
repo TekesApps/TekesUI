@@ -9,14 +9,14 @@ use std::{
 };
 use tekes_ui_app_host::{
     AppWindow, ContainerContent, LocalContainer, NavigationOptions, OthersOptions,
-    PresentationOptions,
+    PresentationOptions, SettingsDisplayMode, SettingsOwner, SettingsWindow,
 };
 use tekes_ui_app_protocol::ToolbarItem;
 use tekes_ui_controls::{
     CheckState, ScrollArea, TextInput,
     composition::{
         CheckboxContent, Component, ComponentId, Content, ContentActionPayload,
-        ContentActionRecord, ContentHost, DecimalNumberFormat, DisclosureContent,
+        ContentActionRecord, ContentHost, DecimalNumberFormat, DisclosureContent, ListContent,
         NumberFieldContent, ScrollContent, SelectContent, SelectableListContent, SliderContent,
         StackContent, TextContent, TextFieldContent, TextSubmitPolicy,
     },
@@ -105,8 +105,7 @@ fn update_navigation(host: &mut ContentHost, documents: &Documents) {
         };
     }
 }
-fn history_options() -> anyhow::Result<NavigationOptions> {
-    static NEXT: AtomicU64 = AtomicU64::new(1);
+fn data_root() -> anyhow::Result<std::path::PathBuf> {
     let root = if let Some(root) = std::env::var_os("TEKESUI_APPHOST_DATA_DIR") {
         std::path::PathBuf::from(root)
     } else {
@@ -115,6 +114,29 @@ fn history_options() -> anyhow::Result<NavigationOptions> {
         )
         .join("Library/Application Support/TekesUI Gallery/AppHost")
     };
+    Ok(root)
+}
+/// Consumer-owned definition and storage; the shared owner is held by Gallery.
+/// General preferences apply to all AppHosts sharing this owner and Settings.
+pub fn settings_owner() -> anyhow::Result<SettingsOwner> {
+    settings_owner_in(data_root()?)
+}
+fn settings_owner_in(root: std::path::PathBuf) -> anyhow::Result<SettingsOwner> {
+    SettingsOwner::new(
+        SettingsWindow::from_toml(
+            include_str!("apphost.settings.toml"),
+            root.join("settings/general/settings.toml"),
+        )?
+        .display_mode(SettingsDisplayMode::Exclusive),
+    )?
+    .with_display_preferences(
+        "general/appearance/appearance",
+        "general/appearance/text-size",
+    )
+}
+fn history_options() -> anyhow::Result<NavigationOptions> {
+    static NEXT: AtomicU64 = AtomicU64::new(1);
+    let root = data_root()?;
     let history_id = format!(
         "gallery-window-{}-{}",
         std::process::id(),
@@ -157,7 +179,7 @@ fn stack(id: u64, children: Vec<Content>) -> Content {
 fn scroll(id: u64, child: Content) -> Content {
     Content::new(
         ComponentId(id),
-        ScrollContent::new(ScrollArea::default(), child),
+        ScrollContent::new(ScrollArea::default(), child).content_padding(Spacing::Loose.value()),
     )
 }
 fn documents() -> Documents {
@@ -283,10 +305,11 @@ fn inspector_content(document: &Document) -> Content {
             true,
         ),
     );
-    scroll(
-        7000,
-        stack(
-            7005,
+    Content::new(
+        ComponentId(7000),
+        ListContent::scrollable(
+            "Document properties",
+            ComponentId(7005),
             vec![
                 text(7006, "Inspector", TextRole::UiHeading),
                 text(
@@ -296,7 +319,8 @@ fn inspector_content(document: &Document) -> Content {
                 ),
                 disclosure,
             ],
-        ),
+        )
+        .content_padding(Spacing::Loose.value()),
     )
 }
 fn update_inspector(host: &mut ContentHost, document: &Document) {
@@ -361,7 +385,7 @@ fn switch_toolbar() -> Vec<ToolbarItem> {
         geometry_dependent: false,
     }]
 }
-fn assemble(theme: Theme) -> anyhow::Result<AppWindow> {
+fn assemble(theme: Theme, settings: SettingsOwner) -> anyhow::Result<AppWindow> {
     let documents = Rc::new(RefCell::new(documents()));
     let document = Rc::new(RefCell::new(
         ContentHost::new(document_content(&documents.borrow().items[0]))
@@ -381,6 +405,7 @@ fn assemble(theme: Theme) -> anyhow::Result<AppWindow> {
     );
     writing.model.selected = Some(0);
     writing.view.set_navigation_selection_fill_only(true);
+    writing.view.set_navigation_layout(true);
     let mut resources = SelectableListContent::new(
         "Project",
         documents.borrow().items[2..]
@@ -389,18 +414,57 @@ fn assemble(theme: Theme) -> anyhow::Result<AppWindow> {
             .collect(),
     );
     resources.view.set_navigation_selection_fill_only(true);
-    let navigation = scroll(
-        8000,
-        stack(
-            8001,
+    resources.view.set_navigation_layout(true);
+    let navigation = Content::new(
+        ComponentId(8000),
+        ListContent::scrollable(
+            "Workspace",
+            ComponentId(8001),
             vec![
                 text(8002, "Workspace", TextRole::UiHeading),
-                text(8003, "WRITING", TextRole::UiCaption),
-                Content::new(ComponentId(8004), writing),
-                text(8005, "PROJECT", TextRole::UiCaption),
-                Content::new(ComponentId(8006), resources),
+                Content::new(
+                    ComponentId(8007),
+                    StackContent {
+                        model: Stack {
+                            axis: Axis::Vertical,
+                            gap: Spacing::Micro.value(),
+                        },
+                        flexible_child: None,
+                        children: vec![
+                            Content::new(
+                                ComponentId(8008),
+                                StackContent {
+                                    model: Stack {
+                                        axis: Axis::Vertical,
+                                        gap: Spacing::Regular.value(),
+                                    },
+                                    flexible_child: None,
+                                    children: vec![
+                                        text(8003, "WRITING", TextRole::UiCaption),
+                                        Content::new(ComponentId(8004), writing),
+                                    ],
+                                },
+                            ),
+                            Content::new(
+                                ComponentId(8009),
+                                StackContent {
+                                    model: Stack {
+                                        axis: Axis::Vertical,
+                                        gap: Spacing::Regular.value(),
+                                    },
+                                    flexible_child: None,
+                                    children: vec![
+                                        text(8005, "PROJECT", TextRole::UiCaption),
+                                        Content::new(ComponentId(8006), resources),
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                ),
             ],
-        ),
+        )
+        .content_padding(Spacing::Loose.value()),
     );
     let navigation = Rc::new(RefCell::new(
         ContentHost::new(navigation).map_err(|error| anyhow::anyhow!("navigation: {error:?}"))?,
@@ -418,6 +482,7 @@ fn assemble(theme: Theme) -> anyhow::Result<AppWindow> {
         },
     )
     .title("Workspace")
+    .content_padding(0.)
     .on_action(move |host, records| {
         for record in records {
             let (id, offset) = if record.action.target == ComponentId(8004) {
@@ -455,6 +520,7 @@ fn assemble(theme: Theme) -> anyhow::Result<AppWindow> {
     let inspector_document = document.clone();
     let inspector = LocalContainer::from_source("gallery-detail", SharedContent(inspector))
         .title("Inspector")
+        .content_padding(0.)
         .list_height(640.)
         .toolbar(switch_toolbar())
         .focus_switch(SWITCH)
@@ -525,6 +591,7 @@ fn assemble(theme: Theme) -> anyhow::Result<AppWindow> {
         });
     let focus = LocalContainer::from_source("gallery-focus", SharedContent(document))
         .title("Document")
+        .content_padding(0.)
         .list_height(700.)
         .toolbar(switch_toolbar())
         .focus_switch(SWITCH)
@@ -545,7 +612,8 @@ fn assemble(theme: Theme) -> anyhow::Result<AppWindow> {
             );
             Ok(())
         });
-    let reading = LocalContainer::new("gallery-list", scroll(6000, stack(6001, vec![text(6002, "Reading notes", TextRole::UiHeading), field(ComponentId(6003), "Notes", "Keep a short note beside the current document."), text(6004, "Capture a question, an idea or a useful reference before the next meeting.", TextRole::UiBody)])))?.title("Notes").list_height(320.).toolbar(switch_toolbar()).focus_switch(SWITCH);
+    let reading = LocalContainer::new("gallery-list", scroll(6000, stack(6001, vec![text(6002, "Reading notes", TextRole::UiHeading), field(ComponentId(6003), "Notes", "Keep a short note beside the current document."), text(6004, "Capture a question, an idea or a useful reference before the next meeting.", TextRole::UiBody)])))?.title("Notes")
+    .content_padding(0.).list_height(320.).toolbar(switch_toolbar()).focus_switch(SWITCH);
     let mut presentation = PresentationOptions::new("gallery-focus")
         .nav_bar("gallery-nav")
         .nav_fraction(1. / 3.)
@@ -562,10 +630,15 @@ fn assemble(theme: Theme) -> anyhow::Result<AppWindow> {
         presentation,
     )?
     .theme(theme)
-    .navigation(history_options()?))
+    .navigation(history_options()?)
+    .shared_settings(settings))
 }
-pub fn open(parent: &Window, theme: Theme) -> anyhow::Result<WindowHandle> {
-    assemble(theme)?.open(
+pub fn open(
+    parent: &Window,
+    theme: Theme,
+    settings: SettingsOwner,
+) -> anyhow::Result<WindowHandle> {
+    assemble(theme, settings)?.open(
         parent,
         WindowConfig {
             title: "TekesUI AppHost".into(),
@@ -591,6 +664,45 @@ pub fn open(parent: &Window, theme: Theme) -> anyhow::Result<WindowHandle> {
 mod tests {
     use super::*;
     use tekes_ui_scene::{Rect, Scene};
+
+    #[test]
+    fn gallery_settings_owner_binds_real_schema_before_apphost_assembly() {
+        let root = std::env::temp_dir().join(format!(
+            "gallery-general-owner-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos(),
+        ));
+        // Same production helper, including actual TOML, storage suffix and
+        // canonical display binding; no environment or user preference changes.
+        let owner = settings_owner_in(root.clone()).unwrap();
+        let first = assemble(Theme::LIGHT, owner.clone()).unwrap();
+        let second = assemble(Theme::DARK, owner.clone()).unwrap();
+        assert!(root.join("settings/general/settings.lock").is_file());
+        drop(first);
+        drop(second);
+        drop(owner);
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn settings_template_declares_valid_item_routes() {
+        let options = SettingsWindow::from_toml(
+            include_str!("apphost.settings.toml"),
+            std::path::PathBuf::from("unused/settings.toml"),
+        )
+        .unwrap()
+        .display_mode(SettingsDisplayMode::Exclusive);
+        assert_eq!(options.schema.namespace, "gallery.apphost.general");
+        assert_eq!(options.display_mode, SettingsDisplayMode::Exclusive);
+        // Each declared navigation target must yield a real form schema, not
+        // merely TOML that parses but cannot open through the Settings service.
+        for (id, _) in options.schema.items() {
+            assert!(!options.schema.for_item(&id).unwrap().settings.is_empty());
+        }
+    }
 
     #[test]
     fn inspector_disclosure_expands_and_collapses_without_submitting_properties() {

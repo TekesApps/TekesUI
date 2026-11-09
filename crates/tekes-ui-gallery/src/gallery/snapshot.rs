@@ -548,6 +548,8 @@ mod tests {
 
     #[test]
     fn original_three_page_content_matches_the_committed_proposal_review() {
+        use tekes_ui_scene::Quad;
+        use tekes_ui_tokens::{ColorRole, Rgba};
         // CoreText's automatic CJK cascade depends on preferred languages.
         // Run this historical fixture in its own process: changing defaults in
         // the parallel test process would also change unrelated text tests.
@@ -630,8 +632,105 @@ mod tests {
                         },
                         &mut original_scene,
                     );
+                    // Reconstruct only #245's declared ordinary boundary/focus
+                    // colors for the immutable historical PNG. Keep geometry,
+                    // opacity, primitive order and every other color unchanged.
+                    let boundary_revision = if theme == Theme::LIGHT {
+                        Some([
+                            (
+                                ColorRole::Border,
+                                Rgba::rgb8(124, 124, 121),
+                                Rgba::rgb8(115, 115, 112),
+                            ),
+                            (
+                                ColorRole::BorderFocused,
+                                Rgba::rgb8(94, 94, 91),
+                                Rgba::rgb8(66, 66, 63),
+                            ),
+                        ])
+                    } else if theme == Theme::DARK {
+                        Some([
+                            (
+                                ColorRole::Border,
+                                Rgba::rgb8(126, 126, 122),
+                                Rgba::rgb8(163, 163, 158),
+                            ),
+                            (
+                                ColorRole::BorderFocused,
+                                Rgba::rgb8(176, 176, 172),
+                                Rgba::rgb8(238, 238, 234),
+                            ),
+                        ])
+                    } else {
+                        None
+                    };
+                    let restore_boundary = |ink: Rgba| {
+                        if let Some(revision) = boundary_revision {
+                            for (_, current, historical) in revision {
+                                if ink.r == current.r && ink.g == current.g && ink.b == current.b {
+                                    return Rgba {
+                                        a: ink.a,
+                                        ..historical
+                                    };
+                                }
+                            }
+                        }
+                        ink
+                    };
+                    if let Some(revision) = boundary_revision {
+                        for (role, current, _) in revision {
+                            assert_eq!(role.resolve(theme), current);
+                            for other in ColorRole::ALL {
+                                if !matches!(
+                                    other,
+                                    ColorRole::Border
+                                        | ColorRole::FloatingPanelBorder
+                                        | ColorRole::BorderFocused
+                                ) {
+                                    assert_ne!(
+                                        other.resolve(theme),
+                                        current,
+                                        "unique declared boundary role"
+                                    );
+                                }
+                            }
+                        }
+                    }
+                    let mut boundary_reference_scene = Scene::new();
+                    let mut changed_boundary_channels = 0;
+                    for primitive in original_scene.primitives() {
+                        match primitive {
+                            tekes_ui_scene::Primitive::Quad(quad) => {
+                                let mut reference = *quad;
+                                reference.fill = restore_boundary(quad.fill);
+                                reference.border_color = restore_boundary(quad.border_color);
+                                changed_boundary_channels +=
+                                    usize::from(reference.fill != quad.fill)
+                                        + usize::from(reference.border_color != quad.border_color);
+                                assert_eq!(
+                                    Quad {
+                                        fill: quad.fill,
+                                        border_color: quad.border_color,
+                                        ..reference
+                                    },
+                                    *quad
+                                );
+                                boundary_reference_scene.push_quad(reference);
+                            }
+                            tekes_ui_scene::Primitive::Glyphs(run) => {
+                                assert_eq!(
+                                    restore_boundary(run.color),
+                                    run.color,
+                                    "boundary revision must not recolor text"
+                                );
+                                boundary_reference_scene.push(primitive.clone());
+                            }
+                            other => boundary_reference_scene.push(other.clone()),
+                        }
+                    }
+                    eprintln!("boundary revision {name}: {changed_boundary_channels} channels");
                     // Preserve the historical PNG's exact Theme while validating
-                    // #245's one approved ordinary-dark tertiary input separately.
+                    // the prior ordinary-dark tertiary input separately.
                     // This is a semantic reference reconstruction, not a pixel mask.
                     let mut reference_color_scene = Scene::new();
                     let tertiary = tekes_ui_tokens::ColorRole::TertiaryText.resolve(theme);
@@ -658,7 +757,7 @@ mod tests {
                     .inset(tekes_ui_tokens::Spacing::Tight.value());
                     let mut changed_tertiary_swatches = 0;
                     let mut changed_tertiary_notes = 0;
-                    for primitive in original_scene.primitives() {
+                    for primitive in boundary_reference_scene.primitives() {
                         match primitive {
                             tekes_ui_scene::Primitive::Quad(quad)
                                 if ordinary_dark
@@ -717,8 +816,8 @@ mod tests {
                         "primitive order/count retained"
                     );
                     let mut legacy_scene = Scene::new();
-                    let mut colors =
-                        tekes_ui_tokens::ColorRole::ALL.map(|role| role.resolve(theme));
+                    let mut colors = tekes_ui_tokens::ColorRole::ALL
+                        .map(|role| restore_boundary(role.resolve(theme)));
                     if ordinary_dark {
                         colors[tertiary_index] = old_tertiary;
                     }
@@ -794,18 +893,19 @@ mod tests {
                         after.len(),
                         "{name} current image dimensions"
                     );
-                    if changed_tertiary_swatches + changed_tertiary_notes == 0 {
+                    if changed_tertiary_swatches
+                        + changed_tertiary_notes
+                        + changed_boundary_channels
+                        == 0
+                    {
                         assert_eq!(current, after, "{name} unchanged Theme render");
                     } else {
-                        assert_ne!(
-                            current, after,
-                            "{name} approved tertiary change is rendered"
-                        );
+                        assert_ne!(current, after, "{name} approved Theme changes are rendered");
                     }
                     assert_eq!(before.len(), after.len(), "{name} image dimensions");
                     assert_eq!(before.len(), legacy.len(), "{name} legacy image dimensions");
-                    // Existing goldens stay unchanged. With the one approved Theme
-                    // channel restored, the sole remaining intentional pixel change
+                    // Existing goldens stay unchanged. With only the declared Theme
+                    // channels restored, the sole remaining intentional pixel change
                     // is the deliberate concentric-radius correction on the 27 Tokens swatches,
                     // plus overlapping inner/outer AA on hairline borders. The legacy render
                     // changes only those 27 inner radii back to the historical badge floor.

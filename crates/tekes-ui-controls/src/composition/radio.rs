@@ -96,7 +96,14 @@ impl RadioGroupContent {
             return Some(d);
         }
         match request {
-            Pointer(ContentEvent::PointerDown(p)) => {
+            Pointer(event) => {
+                if matches!(event, ContentEvent::Pointer(pointer) if !pointer.is_primary()) {
+                    return None;
+                }
+                let routed = event.routing_event();
+                let ContentEvent::PointerDown(p) = routed.as_ref() else {
+                    return None;
+                };
                 let Some((i, row)) = self.view.layout().rows.iter().enumerate().find(|(i, r)| {
                     self.exposures[*i].is_some() && self.exposable(*i) && r.contains(*p)
                 }) else {
@@ -140,7 +147,6 @@ impl RadioGroupContent {
                 d.rect = self.view.layout().rows[i].visible_frame();
                 d.receipt = true;
             }
-            _ => return None,
         }
         Some(d)
     }

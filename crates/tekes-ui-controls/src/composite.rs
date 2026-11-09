@@ -12,6 +12,16 @@ use crate::{
 use tekes_ui_scene::{Point, Quad, Rect, Scene, Size};
 use tekes_ui_tokens::{Palette, proposal};
 
+const MENU_MAX_WIDTH: f32 = 280.0;
+
+fn menu_width_limit(max_width: f32) -> f32 {
+    if max_width.is_nan() {
+        0.0
+    } else {
+        max_width.clamp(0.0, MENU_MAX_WIDTH)
+    }
+}
+
 fn clip_rect(frame: Rect, clip: Option<Rect>) -> Option<Rect> {
     ContainerLayout::new(frame, Insets::ZERO, Insets::ZERO, clip).visible_clip()
 }
@@ -658,7 +668,7 @@ impl TabsView {
                     self.disabled || self.disabled_items[index],
                     false,
                 );
-                let close_layout = close.render_content_frame(
+                let close_layout = close.render_transparent_content_frame(
                     scene,
                     text,
                     Size::default(),
@@ -689,7 +699,7 @@ impl TabsView {
                         .icon_renderer()
                         .ok_or(crate::composition::IconRenderError::UnsupportedRenderer)
                         .and_then(|icons| {
-                            icons.prepare_icon("tekes-clear-group", side, backing, tint)
+                            icons.prepare_icon("tekes-remove-one", side, backing, tint)
                         });
                     match image {
                         Ok(image) => {
@@ -1162,6 +1172,13 @@ fn menu_surface_height(content: f32, inset: f32) -> f32 {
     (content + inset * 2.0).max(132.0)
 }
 
+fn menu_surface_height_for_rows(rows: &[f32], inset: f32) -> f32 {
+    menu_surface_height(
+        rows.iter().sum::<f32>() + rows.len().saturating_sub(1) as f32 * inset.max(4.0),
+        inset,
+    )
+}
+
 // Optional header geometry belongs to the existing popup and shares its inset,
 // placement, clipping, and scrolling viewport.
 pub(crate) type MenuHeader<'a> = (
@@ -1300,32 +1317,54 @@ impl MenuView {
         role: proposal::TextRole,
         compact: bool,
     ) -> (Size, Vec<f32>) {
-        let width = if max_width.is_nan() {
-            0.0
-        } else {
-            max_width.clamp(0.0, 280.0)
-        };
         let inset = focus_reveal_outset(text.backing_scale());
+        let width = Self::preferred_menu_width(text, labels, max_width, role, compact);
         let inner_width = (width - inset * 2.0).max(0.0);
-        let heights: Vec<f32> = labels
+        let heights = Self::measure_row_heights(text, labels, inner_width, role, compact);
+        (
+            Size::new(width, menu_surface_height_for_rows(&heights, inset)),
+            heights,
+        )
+    }
+    fn preferred_menu_width(
+        text: &mut impl ButtonTextRenderer,
+        labels: &[&str],
+        max_width: f32,
+        role: proposal::TextRole,
+        compact: bool,
+    ) -> f32 {
+        let max_width = menu_width_limit(max_width);
+        let inset = focus_reveal_outset(text.backing_scale());
+        if labels.is_empty() {
+            return max_width;
+        }
+        let max_inner_width = (max_width - inset * 2.0).max(0.0);
+        let preferred_width = labels
+            .iter()
+            .map(|label| {
+                ButtonModel::measure(text, label, max_inner_width, size_role(compact), role).width
+            })
+            .fold(0.0, f32::max);
+        (preferred_width + inset * 2.0).min(max_width)
+    }
+    fn measure_row_heights(
+        text: &mut impl ButtonTextRenderer,
+        labels: &[&str],
+        inner_width: f32,
+        role: proposal::TextRole,
+        compact: bool,
+    ) -> Vec<f32> {
+        labels
             .iter()
             .map(|label| {
                 ButtonModel::measure(text, label, inner_width, size_role(compact), role)
                     .height
                     .max(36.0)
             })
-            .collect();
-        let content =
-            heights.iter().sum::<f32>() + labels.len().saturating_sub(1) as f32 * inset.max(4.0);
-        (
-            Size::new(width, menu_surface_height(content, inset)),
-            heights,
-        )
+            .collect()
     }
     pub(crate) fn header_content_width(text: &mut impl ButtonTextRenderer, width: f32) -> f32 {
-        (Self::measure(text, &[], width, proposal::TextRole::UiBody, false).width
-            - focus_reveal_outset(text.backing_scale()) * 2.0)
-            .max(0.0)
+        (menu_width_limit(width) - focus_reveal_outset(text.backing_scale()) * 2.0).max(0.0)
     }
 
     pub(crate) fn header_frame(
@@ -1337,17 +1376,13 @@ impl MenuView {
         role: proposal::TextRole,
         compact: bool,
     ) -> Rect {
-        let (natural, rows) = Self::measured_rows(text, labels, viewport.size.width, role, compact);
-        menu_popup_geometry(
-            anchor,
-            natural,
-            viewport,
-            focus_reveal_outset(text.backing_scale()),
-            &rows,
-            false,
-            Some(header),
-        )
-        .1
+        let inset = focus_reveal_outset(text.backing_scale());
+        let width = Self::preferred_menu_width(text, labels, viewport.size.width, role, compact)
+            .max((header.width + inset * 2.0).min(menu_width_limit(viewport.size.width)));
+        let rows =
+            Self::measure_row_heights(text, labels, (width - inset * 2.0).max(0.0), role, compact);
+        let natural = Size::new(width, menu_surface_height_for_rows(&rows, inset));
+        menu_popup_geometry(anchor, natural, viewport, inset, &rows, false, Some(header)).1
     }
 
     pub(crate) fn render_with_header(
@@ -2106,6 +2141,30 @@ impl MenuRuntime {
             role,
             compact,
         );
+        if let Some(header) = header_size {
+            let header_width = natural_size.width.max(
+                (header.width + self.focus_outset * 2.0)
+                    .min(menu_width_limit(visible_bounds.size.width)),
+            );
+            if header_width > natural_size.width {
+                natural_size.width = header_width;
+                let mut row_text = MenuRowText {
+                    text,
+                    leading,
+                    trailing,
+                    gap: indicator_gap,
+                    style: MenuRowStyle::default(),
+                };
+                heights = MenuView::measure_row_heights(
+                    &mut row_text,
+                    &labels[..count],
+                    (natural_size.width - self.focus_outset * 2.0).max(0.0),
+                    role,
+                    compact,
+                );
+                natural_size.height = menu_surface_height_for_rows(&heights, self.focus_outset);
+            }
+        }
         for (index, height) in heights.iter_mut().enumerate() {
             if self.row_style(index).separator {
                 *height = proposal::metric("spacing", "space-regular")
@@ -3251,6 +3310,10 @@ mod tests {
         wraps_below: f32,
     }
 
+    struct IntrinsicWrappingText {
+        wraps_below: f32,
+    }
+
     impl ButtonTextRenderer for WrappingText {
         fn measure(&mut self, _text: &str, _role: proposal::TextRole, max_width: f32) -> Size {
             let line_count = if max_width < self.wraps_below {
@@ -3259,6 +3322,31 @@ mod tests {
                 1.0
             };
             Size::new(max_width.max(0.0), line_count * 20.0)
+        }
+
+        fn draw(
+            &mut self,
+            _scene: &mut Scene,
+            _text: &str,
+            _role: proposal::TextRole,
+            _rect: Rect,
+            _align: ButtonTextAlign,
+            _ink: Rgba,
+        ) {
+        }
+    }
+
+    impl ButtonTextRenderer for IntrinsicWrappingText {
+        fn measure(&mut self, text: &str, _role: proposal::TextRole, max_width: f32) -> Size {
+            let natural_width = text.chars().count() as f32 * 7.0;
+            Size::new(
+                natural_width.min(max_width.max(0.0)),
+                if max_width < self.wraps_below {
+                    40.0
+                } else {
+                    20.0
+                },
+            )
         }
 
         fn draw(
@@ -3943,6 +4031,233 @@ mod tests {
             .expect("open menu layout");
         assert_eq!(layout.items[0].frame.size.height, 48.0);
         assert_eq!(layout.items[0].content.size.width, current_label_width);
+    }
+
+    #[test]
+    fn short_menu_shrinks_to_its_widest_button_row_and_focus_gutters() {
+        let labels = ["System", "Light", "Dark"];
+        let max_width = 420.0;
+        let inset = focus_reveal_outset(1.0);
+        let max_inner_width = (MENU_MAX_WIDTH - inset * 2.0).max(0.0);
+        let mut text = FixedText;
+        let preferred_row_width = labels
+            .iter()
+            .map(|label| {
+                ButtonModel::measure(
+                    &mut text,
+                    label,
+                    max_inner_width,
+                    size_role(false),
+                    proposal::TextRole::UiBody,
+                )
+                .width
+            })
+            .fold(0.0, f32::max);
+        let expected_width = preferred_row_width + inset * 2.0;
+        let measured = MenuView::measure(
+            &mut FixedText,
+            &labels,
+            max_width,
+            proposal::TextRole::UiBody,
+            false,
+        );
+
+        assert_eq!(measured.width, expected_width);
+        assert!(measured.width < MENU_MAX_WIDTH);
+
+        let mut view = MenuView::new(labels.len());
+        view.show(0);
+        let layout = view
+            .render(
+                &mut Scene::new(),
+                &mut FixedText,
+                &labels,
+                Rect::new(20.0, 20.0, 80.0, 34.0),
+                Rect::new(0.0, 0.0, max_width, 300.0),
+                None,
+                palette(),
+                proposal::TextRole::UiBody,
+                false,
+            )
+            .expect("open menu layout");
+        assert_eq!(layout.popup.size.width, measured.width);
+    }
+
+    #[test]
+    fn menu_natural_width_includes_checked_and_submenu_indicator_columns() {
+        let labels = ["Choice"];
+        let width = |style: Option<MenuRowStyle>| {
+            let mut view = MenuView::new(1);
+            if let Some(style) = style {
+                view.set_row_styles(vec![style]);
+            }
+            view.show(0);
+            view.render(
+                &mut Scene::new(),
+                &mut FixedText,
+                &labels,
+                Rect::new(20.0, 20.0, 80.0, 34.0),
+                Rect::new(0.0, 0.0, 360.0, 300.0),
+                None,
+                palette(),
+                proposal::TextRole::UiBody,
+                false,
+            )
+            .expect("open menu layout")
+            .popup
+            .size
+            .width
+        };
+        let plain = width(None);
+        let checked = width(Some(MenuRowStyle {
+            checked: Some(false),
+            ..Default::default()
+        }));
+        let submenu = width(Some(MenuRowStyle {
+            submenu: true,
+            ..Default::default()
+        }));
+        let both = width(Some(MenuRowStyle {
+            checked: Some(false),
+            submenu: true,
+            ..Default::default()
+        }));
+
+        assert!(checked > plain);
+        assert!(submenu > plain);
+        assert!(both > checked && both > submenu);
+        assert!(both < MENU_MAX_WIDTH);
+    }
+
+    #[test]
+    fn menu_header_keeps_its_allocated_width_when_rows_are_short() {
+        let inset = focus_reveal_outset(1.0);
+        assert_eq!(
+            MenuView::header_content_width(&mut FixedText, 420.0),
+            MENU_MAX_WIDTH - inset * 2.0,
+            "header width is a content-space upper bound, including for empty rows"
+        );
+
+        let header = Size::new(180.0, 32.0);
+        let anchor = Rect::new(20.0, 20.0, 80.0, 34.0);
+        let viewport = Rect::new(0.0, 0.0, 360.0, 320.0);
+        let frame = MenuView::header_frame(
+            &mut FixedText,
+            &["A"],
+            header,
+            anchor,
+            viewport,
+            proposal::TextRole::UiBody,
+            false,
+        );
+        assert_eq!(frame.size.width, header.width);
+
+        let mut view = MenuView::new_external();
+        let mut model = Menu::new(1);
+        model.open = true;
+        let mut scene = Scene::new();
+        let mut painted_header = None;
+        let mut paint_header = |_: &mut Scene, _: &mut dyn ButtonTextRenderer, frame: Rect| {
+            painted_header = Some(frame);
+        };
+        let layout = view
+            .render_with_header(
+                &mut model,
+                &["A"],
+                MenuRenderContext {
+                    scene: &mut scene,
+                    text: &mut FixedText,
+                    anchor,
+                    visible: viewport,
+                    clip: Some(viewport),
+                    palette: palette(),
+                    role: proposal::TextRole::UiBody,
+                    compact: false,
+                },
+                header,
+                &mut paint_header,
+            )
+            .expect("header menu layout");
+        assert_eq!(layout.popup.size.width, header.width + inset * 2.0);
+        assert_eq!(painted_header.unwrap().size.width, header.width);
+    }
+
+    #[test]
+    fn wider_header_remeasures_long_menu_row_at_final_popup_width() {
+        let label = "Long option label for Theme";
+        let wraps_below = 200.0;
+        let header = Size::new(250.0, 32.0);
+        let anchor = Rect::new(20.0, 20.0, 80.0, 34.0);
+        let viewport = Rect::new(0.0, 0.0, 360.0, 320.0);
+        let inset = focus_reveal_outset(1.0);
+
+        let mut natural_text = IntrinsicWrappingText { wraps_below };
+        let natural = MenuView::measure(
+            &mut natural_text,
+            &[label],
+            viewport.size.width,
+            proposal::TextRole::UiBody,
+            false,
+        );
+        assert!(natural.width - inset * 2.0 < header.width);
+        assert!(
+            natural.width
+                - inset * 2.0
+                - proposal::metric("spacing", "space-relaxed").unwrap() * 2.0
+                < wraps_below
+        );
+        let natural_row_height = ButtonModel::measure(
+            &mut natural_text,
+            label,
+            natural.width - inset * 2.0,
+            size_role(false),
+            proposal::TextRole::UiBody,
+        )
+        .height
+        .max(36.0);
+
+        let mut text = IntrinsicWrappingText { wraps_below };
+        let mut view = MenuView::new_external();
+        let mut model = Menu::new(1);
+        model.open = true;
+        let mut scene = Scene::new();
+        let mut paint_header = |_: &mut Scene, _: &mut dyn ButtonTextRenderer, _: Rect| {};
+        let layout = view
+            .render_with_header(
+                &mut model,
+                &[label],
+                MenuRenderContext {
+                    scene: &mut scene,
+                    text: &mut text,
+                    anchor,
+                    visible: viewport,
+                    clip: Some(viewport),
+                    palette: palette(),
+                    role: proposal::TextRole::UiBody,
+                    compact: false,
+                },
+                header,
+                &mut paint_header,
+            )
+            .expect("header menu layout");
+
+        let final_inner_width = (layout.popup.size.width - inset * 2.0).max(0.0);
+        let expected_height = ButtonModel::measure(
+            &mut text,
+            label,
+            final_inner_width,
+            size_role(false),
+            proposal::TextRole::UiBody,
+        )
+        .height
+        .max(36.0);
+        assert!(
+            natural_row_height > expected_height,
+            "label wraps at natural width"
+        );
+        assert_eq!(layout.popup.size.width, header.width + inset * 2.0);
+        assert_eq!(layout.items[0].frame.size.height, expected_height);
+        assert_eq!(layout.items[0].frame.size.height, 36.0);
     }
 
     #[test]

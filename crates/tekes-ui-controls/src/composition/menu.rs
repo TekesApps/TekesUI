@@ -187,6 +187,17 @@ impl MenuContentState {
         Some(entries)
     }
 }
+#[derive(Clone, Debug, PartialEq)]
+struct PreparedMenuTriggerAction {
+    point: Point,
+    activate_on_press: bool,
+    button: crate::widgets::ButtonActionDecision,
+    activations: usize,
+    menu_open: bool,
+    response: ContentResponse,
+    focus: PreparedActionFocus,
+}
+impl action_preparation::OriginalActionDecision for PreparedMenuTriggerAction {}
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum MenuValuesError {
     Count,
@@ -513,6 +524,88 @@ impl MenuContent {
             changed: !matches!(e, ContentEvent::Scroll { .. }) || wheel,
             activated: matches!(result, MenuEvent::Activated { .. }),
             capture_pointer: false,
+        }
+    }
+    fn decide_trigger_pointer(
+        &self,
+        request: &action_preparation::OwnedActionRequest,
+    ) -> Option<PreparedMenuTriggerAction> {
+        let action_preparation::OwnedActionRequest::Pointer(event) = request else {
+            return None;
+        };
+        if matches!(event, ContentEvent::Pointer(pointer) if !pointer.is_primary()) {
+            return None;
+        }
+        let routed = event.routing_event();
+        let ContentEvent::PointerDown(point) = routed.as_ref() else {
+            return None;
+        };
+        if self.context().is_some() || !self.trigger.focusable() {
+            return None;
+        }
+        let activate_on_press =
+            self.trigger.pointer_activation_phase == crate::ButtonActivationPhase::Press;
+        let button = self
+            .trigger
+            .button
+            .prepare_content_down(*point, activate_on_press);
+        if button.activated && self.trigger.activations == usize::MAX {
+            return None;
+        }
+        let response = ContentResponse {
+            consumed: button.consumed,
+            changed: button.consumed,
+            capture_pointer: button.consumed,
+            // Opening the menu consumes Button activation; it is not a menu action.
+            activated: false,
+            text_key: None,
+        };
+        Some(PreparedMenuTriggerAction {
+            point: *point,
+            activate_on_press,
+            button,
+            activations: self.trigger.activations,
+            menu_open: self.menu.is_open(),
+            response,
+            focus: if response.consumed {
+                PreparedActionFocus::Owner
+            } else {
+                PreparedActionFocus::None
+            },
+        })
+    }
+    fn prepare_trigger_pointer(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
+        let owned = action_preparation::OwnedActionRequest::read(request);
+        let known_pointer_down = matches!(
+            &owned,
+            action_preparation::OwnedActionRequest::Pointer(event)
+                if event.is_primary_pointer()
+                    && matches!(event.routing_event().as_ref(), ContentEvent::PointerDown(_))
+        );
+        if !known_pointer_down {
+            return ActionPreparation::Unsupported;
+        }
+        if self.decide_trigger_pointer(&owned).is_none() {
+            return action_preparation::rejected();
+        }
+        action_preparation::prepare_original(
+            self,
+            request,
+            Self::decide_trigger_pointer,
+            Self::apply_trigger_pointer,
+            |decision| (decision.response, decision.focus),
+        )
+    }
+    fn apply_trigger_pointer(&mut self, decision: PreparedMenuTriggerAction) {
+        let activated = decision.button.activated;
+        self.trigger.button.apply_content_action(decision.button);
+        if activated {
+            self.trigger.activations = self
+                .trigger
+                .activations
+                .checked_add(1)
+                .expect("prepared Menu activation counter");
+            self.show_menu();
         }
     }
 }
@@ -1084,6 +1177,142 @@ fn render_menu_panel(
         text.request_animation_frame();
     }
 }
+
+#[cfg(test)]
+mod trigger_focus_admission_tests {
+    use super::*;
+    use crate::extended::{Axis, Stack};
+    use crate::layout::MeasuredChild;
+    use std::time::Duration;
+    use tekes_ui_scene::{Scene, Size};
+    use tekes_ui_tokens::{Palette, Rgba, Theme, proposal};
+
+    const ROOT: ComponentId = ComponentId(7420);
+    const BODY: ComponentId = ComponentId(7421);
+    const EDITOR: ComponentId = ComponentId(7422);
+    const MENU: ComponentId = ComponentId(7423);
+
+    #[derive(Debug)]
+    struct ComposingDelegate {
+        composing: bool,
+    }
+    impl Component for ComposingDelegate {
+        fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
+            CurveSubtreeCapability::Recursive
+        }
+        fn measure(&mut self, _: &mut dyn ButtonTextRenderer, _: Size) -> MeasuredChild {
+            MeasuredChild::new(Size::new(180., 32.))
+        }
+        fn focusable(&self) -> bool {
+            true
+        }
+        fn composing(&self) -> bool {
+            self.composing
+        }
+        fn delegates_text_keys(&self) -> bool {
+            true
+        }
+    }
+
+    struct Text;
+    impl ButtonTextRenderer for Text {
+        fn motion_context(&self) -> Option<crate::ControlMotionContext> {
+            Some(crate::ControlMotionContext {
+                now: Duration::ZERO,
+                reduced_motion: true,
+            })
+        }
+        fn measure(&mut self, value: &str, role: proposal::TextRole, width: f32) -> Size {
+            Size::new(
+                (value.chars().count() as f32 * 8.).min(width),
+                role.style().line_height,
+            )
+        }
+        fn draw(
+            &mut self,
+            _: &mut Scene,
+            _: &str,
+            _: proposal::TextRole,
+            _: Rect,
+            _: crate::ButtonTextAlign,
+            _: Rgba,
+        ) {
+        }
+    }
+
+    #[test]
+    fn composing_delegated_owner_refuses_menu_pointer_before_trigger_mutation() {
+        let body = Content::new(
+            BODY,
+            StackContent {
+                model: Stack {
+                    axis: Axis::Vertical,
+                    gap: 8.,
+                },
+                children: vec![
+                    Content::new(EDITOR, ComposingDelegate { composing: false }),
+                    Content::new(MENU, MenuContent::new("Theme", vec!["System".into()])),
+                ],
+                flexible_child: None,
+            },
+        );
+        let mut panel = PanelContent::new(body).unwrap();
+        panel.set_padding(Some(crate::Insets::default())).unwrap();
+        let mut host = ContentHost::new(Content::new(ROOT, panel)).unwrap();
+        let frame = Rect::new(0., 0., 280., 120.);
+        let mut text = Text;
+        host.render(
+            &mut Scene::new(),
+            &mut text,
+            frame,
+            frame,
+            Palette::from(Theme::LIGHT),
+        )
+        .unwrap();
+        // Match the existing delegated-composition admission fixture: establish
+        // the mounted owner first, then model its active composition. A direct
+        // focus transfer here would additionally demand this synthetic
+        // component's curved reveal geometry, which is outside this test.
+        host.focused = Some(EDITOR);
+        host.get_mut(EDITOR)
+            .unwrap()
+            .component_mut::<ComposingDelegate>()
+            .unwrap()
+            .set_focus(true, false);
+        host.get_mut(EDITOR)
+            .unwrap()
+            .component_mut::<ComposingDelegate>()
+            .unwrap()
+            .composing = true;
+        host.render(
+            &mut Scene::new(),
+            &mut text,
+            frame,
+            frame,
+            Palette::from(Theme::LIGHT),
+        )
+        .unwrap();
+        assert!(host.is_composing());
+        assert!(
+            !host.focus(Some(MENU), false),
+            "the existing delegated-composition focus admission must refuse this transfer"
+        );
+        let point = host.get(MENU).unwrap().frame().center();
+
+        let down = host.event(&ContentEvent::PointerDown(point));
+        assert!(!down.consumed && !down.capture_pointer);
+        assert_eq!(host.focused(), Some(EDITOR));
+        assert!(host.pointer_capture().is_none());
+        let menu = host.get(MENU).unwrap().component::<MenuContent>().unwrap();
+        assert!(!menu.trigger.button.state.pressed);
+        assert!(!menu.menu.is_open());
+
+        host.event(&ContentEvent::PointerUp(point));
+        let menu = host.get(MENU).unwrap().component::<MenuContent>().unwrap();
+        assert!(!menu.menu.is_open());
+        assert_eq!(host.focused(), Some(EDITOR));
+    }
+}
 fn deliver_menu_input(view: &mut MenuView, event: &ContentEvent) -> (MenuEvent, bool) {
     let mut wheel = false;
     let result = match event {
@@ -1132,7 +1361,7 @@ impl Component for MenuContent {
         ActionTransactionCompatibility::StableHooks
     }
     fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
-        action_preparation::ignored_pointer(request)
+        self.prepare_trigger_pointer(request)
     }
     fn fixed_slots(&self) -> bool {
         true

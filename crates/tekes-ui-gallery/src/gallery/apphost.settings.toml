@@ -1,0 +1,42 @@
+# Consumer-owned General preferences. SettingsOwner explicitly binds these two
+# fields to the display of its AppHost windows and Settings window.
+schema_version = 1
+namespace = "gallery.apphost.general"
+provider = "gallery.settings"
+
+[[pages]]
+id = "general"
+label = "General"
+
+[[groups]]
+id = "general"
+page = "general"
+label = "General"
+
+[[groups.items]]
+id = "appearance"
+label = "Appearance"
+
+[[groups.items.fields]]
+id = "appearance"
+path = ["general", "appearance"]
+label = "Theme"
+type = "enum"
+presentation = "radio"
+default = "system"
+options = [
+  { value = "system", label = "System" },
+  { value = "light", label = "Light" },
+  { value = "dark", label = "Dark" },
+]
+
+[[groups.items.fields]]
+id = "text-size"
+path = ["general", "text_size_percent"]
+label = "Font size"
+type = "integer"
+default = 100
+min = 50
+max = 300
+step = 10
+suffix = "%"

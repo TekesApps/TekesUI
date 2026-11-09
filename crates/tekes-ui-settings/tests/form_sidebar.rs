@@ -269,7 +269,7 @@ fn descriptions_use_original_help_and_accessibility_without_extra_label_rows() {
 #[test]
 fn pinned_header_composes_original_back_and_editor_outside_scroll_owner() {
     use tekes_ui_controls::composition::{
-        Button, Component, ComponentId, ScrollContent, StackContent, TextFieldContent,
+        Button, Component, ComponentId, GridContent, ScrollContent, StackContent, TextFieldContent,
     };
     let sidebar = tekes_ui_settings::SettingsSidebar::new_with_back(&schema()).unwrap();
     let root = sidebar
@@ -280,12 +280,27 @@ fn pinned_header_composes_original_back_and_editor_outside_scroll_owner() {
         .unwrap();
     assert_eq!(root.children().len(), 2);
     assert!(root.children()[1].component::<ScrollContent>().is_some());
-    let header = root.children()[0].component::<StackContent>().unwrap();
+    let header = root.children()[0].component::<GridContent>().unwrap();
+    assert_eq!(header.model.columns, 1);
     assert_eq!(header.children().len(), 2);
     assert!(header.children()[0].component::<Button>().is_some());
     assert!(
         header.children()[1]
             .component::<TextFieldContent>()
             .is_some()
+    );
+}
+
+#[test]
+fn radio_presentation_rejects_non_enum_fields_at_schema_boundary() {
+    let source = include_str!("fixtures/layout.schema.toml").replace(
+        "type = \"string\"",
+        "type = \"string\"\npresentation = \"radio\"",
+    );
+    assert!(
+        Schema::parse(&source)
+            .unwrap_err()
+            .to_string()
+            .contains("radio presentation requires enum")
     );
 }

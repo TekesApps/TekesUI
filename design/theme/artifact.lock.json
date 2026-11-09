@@ -1,9 +1,9 @@
 {
-  "contract_sha256": "c9e80293930d0f67a98cf731270ef9d51f1f5a38ab78d26a0d1361e6fa93b1fd",
+  "contract_sha256": "dd01426d1f28d9d38adb44f5578c854b2e620e951efbecbe598dc545635d5979",
   "definition_source_sha256": "96865f75bda0471e2b6d618966068de5bddf9feb73ce565f98a6753114c520ae",
   "format": "tekesui.theme-artifact-lock/1",
   "instance_format": "tekesui.theme-instances/2",
-  "instances_sha256": "d50701818287e921d717b0eee200d572322585cdb994de303299e006ca286ad6",
+  "instances_sha256": "3cac2ee56cd171ad4d7db65a81fa1df8cbbfe62b4afd38460e5027d6dbf203b0",
   "source_inputs_sha256": {
     "design/brand/config.json": "155eceec64c3aa33f4bc6b58a6ef7a1b071384b1dbbb55075a223e460d16e8a8",
     "design/brand/policy.json": "8ab0d7c6c9605a72ace5af335cf90ffa8abe3243534ac9c4ca68f3fc39bf488c",
@@ -17,9 +17,9 @@
     "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/brand.py": "3da13fcc221ed488d383af75dc84f77930306368632b7f48fb38476dc78f6586",
     "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/brand_color.py": "f7395f04cbd8cf0215326345929d76f6d8e263bdff69c6aede1a417bccc82516",
     "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/validate.py": "f48e97e00a0f8da9d0b373d4636da251c35cbdc667b33a03b9679e00460e1acc",
-    "design/source/base.tokens.json": "c59bb5dbbc102c89132f3791c38774a56570cbb344ea0231cc791af7d0f32e04",
+    "design/source/base.tokens.json": "31cc9bed6d9efbff8ff1aa407b40c4ad7a777e0414ead78161282f1b48092af0",
     "design/source/token-metadata.json": "53db464280f6d381cf108cb78c1f894a1dd31d780a5045145d31e6bd925e637b",
-    "design/system.json": "b9842bde3d6c07493cbba23c3db3b7042b8ec657c93979919cba4c734e301661",
+    "design/system.json": "15ebe5dd0f6fc79628ba6a08234d19ce0bb390428119a1554efe0239dd1beec2",
     "design/system.schema.json": "af11f7ef0f9f4b495181d72f0b8b4a3cb274e79fe3ce9e98d4d82b6aaa396393",
     "design/theme/artifact-lock.schema.json": "642653ddc482c053402ad6abe2f14c6d836ea282e16c709ca85792f8a435b32a",
     "design/theme/data-plot-pairs.json": "b75e6e57c155d596ba60a086406aa91cfa087009e6200847db1bbd25c2d442c7",
@@ -30,7 +30,7 @@
     "scripts/generate-theme-system.py": "98697ce1e383fb2aafc557f2b196d770bded49430b700e3d0d742c8a85e64297",
     "scripts/merge-design-system.py": "46831d8a089c1dfc06012b78a23025293bb4e2010100e0a4ce93c137b30b6ba2"
   },
-  "source_inputs_sha256_digest": "591d33f1cc88034da756d2587559ee41d55ac1868a6499fe3264fd0c39a5ce1d",
+  "source_inputs_sha256_digest": "e8e982c2e71565c43fee1ce38588bd62fb53e65832422e952cc2320950bec83b",
   "surface_rules_sha256": "424aeb451b710391e2938d2e5a8ee90c547e4396c33608784c5bf60006d87400",
   "themes": [
     {

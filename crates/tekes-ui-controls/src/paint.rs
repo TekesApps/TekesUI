@@ -886,6 +886,7 @@ pub(crate) fn button_variant_on_surface(
     pressed: f32,
     surface: &str,
     selection_fill_only: bool,
+    transparent_background: bool,
 ) -> tekes_ui_tokens::surface_palette::SurfaceColors {
     let mut colors = button_surface_colors(palette, surface, state, variant, hover, pressed);
     if selection_fill_only && state.selected && !state.error {
@@ -898,7 +899,9 @@ pub(crate) fn button_variant_on_surface(
             boundary,
         );
     }
-    scene.push_quad(quad);
+    if !transparent_background {
+        scene.push_quad(quad);
+    }
     if state.focused
         && state.focus_visible
         && !state.disabled
@@ -1238,6 +1241,7 @@ mod focus_tests {
                     0.,
                     "popover",
                     fill_only,
+                    false,
                 );
                 assert_eq!(colors.boundary.is_none(), fill_only && !error);
                 if error {

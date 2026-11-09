@@ -182,7 +182,9 @@ fn declaration_update_cancels_old_popup_and_held_input_without_rebinding_queued_
     assert!(!menu(&mut h).menu.is_open());
     let r = h.drain_action_records();
     assert_eq!(r.len(), 1);
-    let ContentActionPayload::MenuSelection(s) = r[0].payload.as_ref().unwrap() else { panic!("expected original MenuSelection payload"); };
+    let ContentActionPayload::MenuSelection(s) = r[0].payload.as_ref().unwrap() else {
+        panic!("expected original MenuSelection payload");
+    };
     assert_eq!(s.value_path().unwrap(), ["checked"]);
     assert!(!menu(&mut h).set_item_disabled(3, true));
     assert!(!menu(&mut h).set_item_separator(99, true));
@@ -239,17 +241,28 @@ fn an_all_unavailable_menu_has_no_selection_or_fake_focused_row() {
 }
 
 #[test]
-fn adding_short_item_state_does_not_change_original_popup_minimum_geometry() {
+fn toggling_declared_check_state_keeps_content_sized_popup_geometry() {
     let mut m = MenuContent::new("Options", vec!["A".into(), "B".into()]);
     m.set_values(vec!["a".into(), "b".into()]).unwrap();
     let mut h = ContentHost::new(Content::new(MENU, m)).unwrap();
     open(&mut h, Theme::LIGHT);
-    let before = menu(&mut h).popup.as_ref().unwrap().popup;
+    let plain = menu(&mut h).popup.as_ref().unwrap().popup;
+    // Declaring a check column adds real content width. Its checked value must
+    // not change that allocation or move the popup when it toggles.
     menu(&mut h).set_item_checked(0, false);
     open(&mut h, Theme::LIGHT);
-    assert_eq!(
-        menu(&mut h).popup.as_ref().unwrap().popup,
-        before,
-        "item state must reuse the same original popup minimum/placement rule"
-    );
+    let declared = menu(&mut h).popup.as_ref().unwrap().popup;
+    assert_eq!(declared.origin, plain.origin);
+    assert_eq!(declared.size.height, plain.size.height);
+    assert!(declared.size.width > plain.size.width);
+    assert!(declared.size.width < 280.0);
+    for checked in [true, false] {
+        menu(&mut h).set_item_checked(0, checked);
+        open(&mut h, Theme::LIGHT);
+        assert_eq!(
+            menu(&mut h).popup.as_ref().unwrap().popup,
+            declared,
+            "toggling a declared check column must preserve popup geometry"
+        );
+    }
 }

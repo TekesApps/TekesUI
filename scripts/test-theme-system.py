@@ -302,6 +302,28 @@ class ThemeSystemTests(unittest.TestCase):
                         packet[surface][usage][state][channel]=old_tertiary
                         restored+=1
                 self.assertGreater(restored,0)
+            # #245 softens only the declared ordinary boundary/focus roles.
+            # Undo those exact bindings to prove all other historic channels;
+            # preserve explicit consumer overrides and the immutable fixture.
+            boundary_revision = {
+                'light': {'border': ('#7C7C79', '#737370'), 'border-focused': ('#5E5E5B', '#42423F')},
+                'dark': {'border': ('#7E7E7A', '#A3A39E'), 'border-focused': ('#B0B0AC', '#EEEEEA')},
+            }.get(record['mode'], {})
+            overrides = instance['inputs']['overrides']['neutral_base']
+            for role, (new_color, historic_color) in boundary_revision.items():
+                if 'p-' + role in overrides:
+                    self.assertEqual(instance['compiled_color_roles'][record['mode']][role], overrides['p-' + role][record['mode']])
+                    continue
+                self.assertEqual(instance['compiled_color_roles'][record['mode']][role], new_color)
+                restored = 0
+                for surface, usage, state, roles in g.bindings(self.rules()):
+                    if usage not in packet[surface]: continue
+                    for channel, binding in roles.items():
+                        if binding != role: continue
+                        self.assertEqual(packet[surface][usage][state][channel], new_color)
+                        packet[surface][usage][state][channel] = historic_color
+                        restored += 1
+                self.assertGreater(restored, 0)
             self.assertEqual(hashlib.sha256(canonical(packet)).hexdigest(),record['canonical_sha256'],(record['theme_id'],record['mode']))
         for mode in g.MODES:
             default=instances[0]['modes'][mode]

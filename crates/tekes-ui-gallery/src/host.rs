@@ -19,6 +19,7 @@ pub struct Host {
     #[cfg(feature = "composition-review")]
     wake_acceptance: Option<crate::wake_acceptance::WakeAcceptance>,
     gallery: Gallery,
+    apphost_settings: Option<tekes_ui_app_host::SettingsOwner>,
     scene: Scene,
     renderer: Option<Renderer>,
     /// `TEKES_LOG_EVENTS` 设了就把事件和重绘次数打到 stderr，用来核对空闲时不重绘。
@@ -41,6 +42,7 @@ impl Host {
             #[cfg(feature = "composition-review")]
             wake_acceptance: crate::wake_acceptance::WakeAcceptance::from_env(),
             gallery,
+            apphost_settings: None,
             scene: Scene::new(),
             renderer: None,
             log: std::env::var("TEKES_LOG_EVENTS").is_ok()
@@ -432,7 +434,17 @@ impl WindowHandler for Host {
             _ => {}
         }
         for _ in 0..self.gallery.take_apphost_open_requests() {
-            match crate::gallery::apphost::open(window, self.gallery.theme()) {
+            let result = (|| {
+                if self.apphost_settings.is_none() {
+                    self.apphost_settings = Some(crate::gallery::apphost::settings_owner()?);
+                }
+                crate::gallery::apphost::open(
+                    window,
+                    self.gallery.theme(),
+                    self.apphost_settings.as_ref().unwrap().clone(),
+                )
+            })();
+            match result {
                 Ok(_) => eprintln!("GALLERY_APPHOST_OPENED theme={:?}", self.gallery.theme()),
                 Err(error) => eprintln!("GALLERY_APPHOST_OPEN_FAILED {error:#}"),
             }

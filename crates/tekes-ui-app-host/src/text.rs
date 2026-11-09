@@ -58,6 +58,16 @@ impl Text {
             .then(ParagraphLayoutDiagnostic::default),
         }
     }
+    fn role_style(&self, role: proposal::TextRole) -> TextStyle {
+        let metrics = role.style();
+        let size = metrics.size * self.type_scale;
+        let style = if proposal::text_family(role.id()) == Some("mono") {
+            TextStyle::named("Menlo", size)
+        } else {
+            TextStyle::system(size)
+        };
+        style.with_weight(metrics.weight)
+    }
     fn trimmed_advance(paragraph: &tekes_ui_text::Paragraph) -> f32 {
         paragraph
             .lines
@@ -96,8 +106,7 @@ impl Text {
         if let Some(stats) = &mut self.paragraph_diagnostic {
             stats.misses += 1;
         }
-        let metrics = role.style();
-        let style = TextStyle::system(metrics.size * self.type_scale).with_weight(metrics.weight);
+        let style = self.role_style(role);
         let begin = self.paragraph_diagnostic.map(|_| std::time::Instant::now());
         // Both width queries describe the same text/style. Keep its native
         // attributed string and typesetter for this miss only; retain just the layout.
@@ -264,11 +273,12 @@ impl tekes_ui_controls::TextSurfaceHost for Text {
         options: tekes_ui_text::LabelOptions,
     ) -> Option<std::rc::Rc<tekes_ui_text::LabelLayout>> {
         let metrics = role.style();
+        let style = self.role_style(role);
         Some(std::rc::Rc::new(
             self.shaper
                 .shape_label(
                     value,
-                    &TextStyle::system(metrics.size * self.type_scale).with_weight(metrics.weight),
+                    &style,
                     &ShapeOptions::with_width(f64::from(width)),
                     options,
                 )
@@ -283,11 +293,12 @@ impl tekes_ui_controls::TextSurfaceHost for Text {
         options: tekes_ui_text::LabelOptions,
     ) -> Option<std::rc::Rc<tekes_ui_text::LabelLayout>> {
         let metrics = role.style();
+        let style = self.role_style(role);
         Some(std::rc::Rc::new(
             self.shaper
                 .shape_semantic_label(
                     value,
-                    &TextStyle::system(metrics.size * self.type_scale).with_weight(metrics.weight),
+                    &style,
                     &ShapeOptions::with_width(f64::from(width)),
                     options,
                 )
@@ -305,9 +316,10 @@ impl tekes_ui_controls::TextSurfaceHost for Text {
         width: Option<f32>,
     ) -> std::rc::Rc<tekes_ui_text::Paragraph> {
         let metrics = role.style();
+        let style = self.role_style(role);
         let mut paragraph = self.shaper.shape(
             value,
-            &TextStyle::system(metrics.size * self.type_scale).with_weight(metrics.weight),
+            &style,
             &ShapeOptions {
                 width: width.map(f64::from),
                 line_spacing: 0.,
@@ -337,6 +349,62 @@ mod tests {
         layout_view::IconRenderer,
     };
     use tekes_ui_tokens::Theme;
+
+    #[test]
+    fn actual_apphost_text_respects_code_family_and_ui_glyph_widths() {
+        use tekes_ui_controls::TextSurfaceHost;
+        use tekes_ui_text::{LabelSourceVersion, SemanticLabel};
+        let mut text = Text::new();
+        let semantic = SemanticLabel::new(
+            LabelSourceVersion {
+                source: 1,
+                revision: 1,
+            },
+            "iiiiWWWW",
+            vec![],
+        )
+        .unwrap();
+        for scale in [1., 1.5] {
+            text.set_body_size(proposal::TextRole::UiBody.style().size * scale);
+            for role in [proposal::TextRole::Code, proposal::TextRole::UiBody] {
+                let (narrow, narrow_width) = text.paragraph_layout("iiii", role, f32::INFINITY);
+                let (wide, wide_width) = text.paragraph_layout("WWWW", role, f32::INFINITY);
+                let family = &narrow.fonts[0].post_script_name;
+                assert_eq!(family.contains("Menlo"), role == proposal::TextRole::Code);
+                assert_eq!(&wide.fonts[0].post_script_name, family);
+                assert!(narrow_width > 0. && wide_width > 0.);
+                assert!(!narrow.lines[0].runs[0].glyphs.is_empty());
+                if role == proposal::TextRole::Code {
+                    assert!(
+                        (narrow_width - wide_width).abs() < 1. / 64.,
+                        "equal character counts keep equal mono advances"
+                    );
+                } else {
+                    assert!(
+                        wide_width - narrow_width > 1.,
+                        "ordinary UI text retains proportional glyph advances"
+                    );
+                }
+                let label = text
+                    .shape_label("iiiiWWWW", role, 400., Default::default())
+                    .unwrap();
+                let styled = text
+                    .shape_semantic_label(&semantic, role, 400., Default::default())
+                    .unwrap();
+                let surface = text.shape_surface("iiiiWWWW", role, Some(400.));
+                for paragraph in [label.paragraph(), styled.paragraph(), surface.as_ref()] {
+                    assert_eq!(
+                        &paragraph.fonts[0].post_script_name, family,
+                        "every original text entry point consumes the role family"
+                    );
+                    assert!(
+                        (paragraph.fonts[0].size - f64::from(role.style().size * scale)).abs()
+                            < 1e-6
+                    );
+                }
+            }
+        }
+    }
 
     #[derive(Default)]
     struct Icons(Vec<String>);

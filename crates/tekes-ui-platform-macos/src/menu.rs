@@ -2,7 +2,7 @@
 //!
 //! 标准的应用菜单（关于、隐藏、退出）和窗口菜单（最小化、缩放、关闭、全屏）由平台层
 //! 自动生成，使用 AppKit 标准 selector，不需要引擎参与；这里只描述引擎自己的菜单，
-//! 它们会被放在应用菜单与窗口菜单之间。
+//! 默认放在应用菜单与窗口菜单之间；显式应用贡献放入标准应用菜单。
 
 use std::collections::HashSet;
 use std::fmt;
@@ -79,6 +79,9 @@ pub enum MenuItem {
 pub struct Menu {
     pub title: String,
     pub items: Vec<MenuItem>,
+    /// Contribute items after About in the standard application menu instead
+    /// of creating a top-level menu. Its title does not rename the app menu.
+    pub application_menu: bool,
 }
 
 impl Menu {
@@ -86,7 +89,12 @@ impl Menu {
         Menu {
             title: title.into(),
             items,
+            application_menu: false,
         }
+    }
+    pub fn in_application_menu(mut self) -> Self {
+        self.application_menu = true;
+        self
     }
 }
 
@@ -189,6 +197,36 @@ mod tests {
         assert_eq!(
             bar.validate(),
             Err(MenuError::DuplicateCommand(CommandId(2)))
+        );
+    }
+
+    #[test]
+    fn application_contribution_keeps_shortcut_and_checks_ids_across_placements() {
+        let mut bar = sample();
+        assert!(!bar.menus[0].application_menu);
+        bar.menus.push(
+            Menu::new(
+                "Preferences",
+                vec![MenuItem::Command(
+                    MenuCommand::new("Settings…", CommandId(4)).key(KeyEquivalent::command(',')),
+                )],
+            )
+            .in_application_menu(),
+        );
+        assert_eq!(bar.validate(), Ok(()));
+        assert!(bar.menus[1].application_menu);
+        let settings = bar
+            .commands()
+            .find(|command| command.command == CommandId(4))
+            .unwrap();
+        assert_eq!(settings.key_equivalent, Some(KeyEquivalent::command(',')));
+        bar.menus[1].items.push(MenuItem::Command(MenuCommand::new(
+            "Duplicate",
+            CommandId(1),
+        )));
+        assert_eq!(
+            bar.validate(),
+            Err(MenuError::DuplicateCommand(CommandId(1)))
         );
     }
 

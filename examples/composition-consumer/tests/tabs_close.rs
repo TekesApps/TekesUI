@@ -23,8 +23,8 @@ impl IconRenderer for Icons {
         tint: Rgba,
     ) -> Result<IconImage, IconRenderError> {
         let glyph = tekes_ui_icons::Glyph::named(name).expect("existing canonical close asset");
-        assert_eq!(glyph.name, "tekes-clear-group");
-        assert!(glyph.svg.contains("<circle") && glyph.svg.contains("<path"));
+        assert_eq!(glyph.name, "tekes-remove-one");
+        assert!(!glyph.svg.contains("<circle") && glyph.svg.contains("<path"));
         self.requests.push((name.into(), size, tint));
         if self.fail {
             return Err(IconRenderError::Upload);
@@ -63,8 +63,12 @@ fn render(host: &mut ContentHost) {
     render_icons(host, &mut Icons::default());
 }
 fn render_icons(host: &mut ContentHost, icons: &mut Icons) -> Scene {
+    render_icons_on_theme(host, icons, Theme::LIGHT)
+}
+fn render_icons_on_theme(host: &mut ContentHost, icons: &mut Icons, theme: Theme) -> Scene {
     let mut text = coretext::Text::new(1.);
     text.services = true;
+    text.reduced_motion = true;
     let frame = Rect::new(10., 10., 460., 200.);
     let mut scene = Scene::new();
     host.render(
@@ -72,7 +76,7 @@ fn render_icons(host: &mut ContentHost, icons: &mut Icons) -> Scene {
         &mut WithIconRenderer::new(&mut text, icons),
         frame,
         frame,
-        Theme::LIGHT.into(),
+        theme.into(),
     )
     .unwrap();
     scene
@@ -101,7 +105,7 @@ fn expected_close(index: usize) -> Option<ContentActionPayload> {
 }
 
 #[test]
-fn circled_close_uses_canonical_artwork_centered_inside_the_original_hit_target() {
+fn transparent_cross_uses_canonical_artwork_centered_inside_the_original_hit_target() {
     let mut h = host(0);
     let mut icons = Icons::default();
     let scene = render_icons(&mut h, &mut icons);
@@ -110,7 +114,7 @@ fn circled_close_uses_canonical_artwork_centered_inside_the_original_hit_target(
         icons
             .requests
             .iter()
-            .all(|(name, size, _)| name == "tekes-clear-group"
+            .all(|(name, size, _)| name == "tekes-remove-one"
                 && *size == proposal::metric("size", "size-icon-standard").unwrap())
     );
     let frames: Vec<_> = scene
@@ -155,6 +159,79 @@ fn circled_close_uses_canonical_artwork_centered_inside_the_original_hit_target(
     let mut disabled_icons = Icons::default();
     render_icons(&mut h, &mut disabled_icons);
     assert_ne!(icons.requests[1].2, disabled_icons.requests[1].2);
+}
+
+#[test]
+fn close_cross_has_no_background_in_pointer_states_and_keeps_keyboard_focus() {
+    use tekes_ui_tokens::{Palette, surface_palette::resolve_surface};
+    for theme in Theme::ALL {
+        let palette = Palette::from(theme);
+        for state in ["rest", "hover", "pressed", "disabled"] {
+            let mut h = host(0);
+            render_icons_on_theme(&mut h, &mut Icons::default(), theme);
+            let point = close_point(&h, 1);
+            match state {
+                "hover" => {
+                    h.event(&ContentEvent::PointerMove(point));
+                }
+                "pressed" => {
+                    h.event(&ContentEvent::PointerDown(point));
+                }
+                "disabled" => {
+                    tabs(&mut h).set_tab_disabled(1, true);
+                }
+                _ => {}
+            }
+            let mut icons = Icons::default();
+            let scene = render_icons_on_theme(&mut h, &mut icons, theme);
+            let hit = h
+                .semantics()
+                .into_iter()
+                .find(|node| node.id == TABS)
+                .unwrap()
+                .parts
+                .into_iter()
+                .find(|part| part.index == 4)
+                .unwrap()
+                .frame;
+            assert!(
+                !scene.primitives().iter().any(|p| matches!(p,
+                    Primitive::Quad(q) if q.rect == hit
+                )),
+                "close has no frame background or border: {theme:?}/{state}"
+            );
+            assert!(
+                scene.primitives().iter().any(|p| matches!(p,
+                    Primitive::Quad(q) if q.fill == palette.color("row-selection").unwrap()
+                        && q.rect.contains(close_point(&h, 0))
+                )),
+                "the selected Tab still owns its fill: {theme:?}/{state}"
+            );
+            assert_eq!(
+                icons.requests[1].2,
+                resolve_surface(palette, "canvas", "action-quiet", state)
+                    .unwrap()
+                    .icon,
+                "close retains its original semantic foreground: {theme:?}/{state}"
+            );
+        }
+        let mut h = host(0);
+        render_icons_on_theme(&mut h, &mut Icons::default(), theme);
+        assert!(
+            h.accessibility_action(TABS, Some(4), AccessibilityAction::Focus)
+                .consumed
+        );
+        let scene = render_icons_on_theme(&mut h, &mut Icons::default(), theme);
+        let point = close_point(&h, 1);
+        assert!(
+            scene.primitives().iter().any(|p| matches!(p,
+                Primitive::Quad(q) if q.rect.contains(point) && q.fill.a == 0.
+                    && q.border_color == palette.color("border-focused").unwrap()
+                    && q.border_width == proposal::metric("stroke", "c-focus-width").unwrap()
+            )),
+            "the transparent close keeps a visible keyboard focus: {theme:?}"
+        );
+    }
 }
 
 #[test]

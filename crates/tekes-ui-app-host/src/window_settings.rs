@@ -1,5 +1,109 @@
 use super::*;
 use tekes_ui_settings::FormIntent;
+/// The ticket and receiver have the same requesting-Host lifetime. The worker
+/// never owns the ticket, so closing that Host releases the owner's load gate.
+pub(super) struct SettingsLoad {
+    pub(super) _ticket: std::rc::Rc<()>,
+    pub(super) receiver: Receiver<Result<tekes_ui_settings::Snapshot, String>>,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum SettingsFocusScope {
+    Toolbar(ToolbarTarget),
+    Sidebar,
+    Form,
+}
+pub(super) struct SettingsDisplayBinding {
+    owner: std::rc::Weak<std::cell::RefCell<crate::settings::SettingsOwnerState>>,
+    display: std::rc::Rc<std::cell::RefCell<crate::settings::SettingsDisplayState>>,
+    wake: Option<std::rc::Rc<WindowWake>>,
+    loading: Option<Receiver<Result<tekes_ui_settings::Snapshot, String>>>,
+    applied: Option<(Theme, f32)>,
+    pub(super) system_theme: Theme,
+}
+impl SettingsDisplayBinding {
+    pub(super) fn new(owner: &crate::SettingsOwner, system_theme: Theme) -> Option<Self> {
+        let display = owner.0.borrow().display.clone()?;
+        Some(Self {
+            display,
+            owner: std::rc::Rc::downgrade(&owner.0),
+            wake: None,
+            loading: None,
+            applied: None,
+            system_theme,
+        })
+    }
+    fn poll(&mut self, w: &Window) -> Result<()> {
+        if self.wake.is_none() {
+            let wake = std::rc::Rc::new(w.wake_proxy());
+            let mut state = self.display.borrow_mut();
+            state.wakes.retain(|wake| wake.strong_count() > 0);
+            state.wakes.push(std::rc::Rc::downgrade(&wake));
+            // Each newly attached window can finish its own startup read even
+            // if another opener closes. Reads share the original provider.
+            if state.preferences.is_none()
+                && let Some(owner) = self.owner.upgrade()
+            {
+                let provider = owner.borrow().provider.clone();
+                let (sender, receiver) = mpsc::channel();
+                let read_wake = (*wake).clone();
+                std::thread::spawn(move || {
+                    let _ = sender.send(provider.load().map_err(|error| format!("{error:#}")));
+                    read_wake.wake();
+                });
+                self.loading = Some(receiver);
+            }
+            self.wake = Some(wake);
+        }
+        if let Some(result) = self
+            .loading
+            .as_ref()
+            .and_then(|receiver| match receiver.try_recv() {
+                Ok(result) => Some(result),
+                Err(mpsc::TryRecvError::Empty) => None,
+                Err(mpsc::TryRecvError::Disconnected) => {
+                    Some(Err("Settings display load worker disconnected".into()))
+                }
+            })
+        {
+            self.loading = None;
+            let snapshot = result.map_err(anyhow::Error::msg)?;
+            crate::settings::SettingsDisplayState::publish(&self.display, &snapshot)?;
+        }
+        Ok(())
+    }
+    fn apply(&mut self, theme: &mut Theme, text: &mut crate::text::Text) -> bool {
+        let Some(preferences) = self.display.borrow().preferences else {
+            return false;
+        };
+        let Some((next_theme, percent)) = self.resolve(preferences) else {
+            return false;
+        };
+        *theme = next_theme;
+        text.set_body_size(
+            tekes_ui_tokens::proposal::TextRole::UiBody.style().size * percent / 100.,
+        );
+        true
+    }
+    fn resolve(
+        &mut self,
+        preferences: crate::settings::DisplayPreferences,
+    ) -> Option<(Theme, f32)> {
+        let desired = (
+            Theme {
+                appearance: preferences
+                    .appearance
+                    .unwrap_or(self.system_theme.appearance),
+                contrast: self.system_theme.contrast,
+            },
+            preferences.text_size_percent,
+        );
+        if self.applied == Some(desired) {
+            return None;
+        }
+        self.applied = Some(desired);
+        Some(desired)
+    }
+}
 struct SettingsColumn {
     state: std::rc::Rc<std::cell::RefCell<crate::settings::SettingsSurface>>,
     sidebar: bool,
@@ -35,6 +139,182 @@ fn settings_columns(
     ]
 }
 impl Host {
+    pub(super) fn sync_settings_display(&mut self, w: &Window) -> Result<()> {
+        if let Some(binding) = &mut self.settings_display {
+            binding.poll(w)?;
+            if binding.apply(&mut self.theme, &mut self.text) {
+                w.request_redraw();
+            }
+        }
+        Ok(())
+    }
+    // Original form input boundary, kept separate from native Window access so
+    // ownership regressions exercise the same mounted Host path as production.
+    fn settings_form_input(&mut self, event: &ContentEvent) -> Result<Vec<FormIntent>> {
+        // Opt-in diagnosis of the observed native menu click. Do not log text
+        // input or settings values; pointer delivery and overlay ownership are
+        // sufficient to distinguish routing from menu activation.
+        let trace_pointer = matches!(
+            event,
+            ContentEvent::Pointer(_) | ContentEvent::PointerDown(_) | ContentEvent::PointerUp(_)
+        ) && std::env::var_os("TEKESUI_SETTINGS_INPUT_TRACE").is_some();
+        if trace_pointer {
+            eprintln!("SETTINGS_FORM_POINTER before event={event:?}");
+        }
+        self.panels[1]
+            .local
+            .as_mut()
+            .unwrap()
+            .event(event, &mut self.text)?;
+        let shared = self.settings.as_ref().unwrap().clone();
+        let mut state = shared.borrow_mut();
+        let settings = &mut *state;
+        let intents = settings
+            .form
+            .collect(&settings.view_schema, &mut settings.draft);
+        let form_focused = settings.form.host.focused().is_some();
+        if trace_pointer {
+            eprintln!(
+                "SETTINGS_FORM_POINTER after focus={:?} overlay={:?} bubbled={}",
+                settings.form.host.focused(),
+                settings.form.host.input_overlay_owner(),
+                settings.form.host.event_bubbled()
+            );
+        }
+        if form_focused {
+            settings.sidebar.host.focus(None, false);
+        }
+        drop(state);
+        if form_focused {
+            self.set_toolbar_focus(None, false);
+            self.focused = 1;
+        }
+        Ok(intents)
+    }
+    /// Settings embeds the original keyboard scopes in window order. Other
+    /// AppHosts retain their original toolbar traversal contract.
+    pub(super) fn settings_tab_input(&mut self, key: &ContentKeyEvent) -> Result<Option<bool>> {
+        let Some(ControlKey::Tab { reverse }) = key.key else {
+            return Ok(None);
+        };
+        if !self.is_settings_window
+            || !key.down
+            || key.modifiers.command
+            || key.modifiers.control
+            || key.modifiers.alt
+            || self.open_toolbar().is_some()
+        {
+            return Ok(None);
+        }
+        self.settings_scope_tab(reverse, &ContentEvent::KeyInput(key.clone()))?;
+        Ok(Some(true))
+    }
+    fn settings_scope_tab(&mut self, reverse: bool, event: &ContentEvent) -> Result<()> {
+        let shared = self.settings.as_ref().unwrap().clone();
+        if self
+            .navigation
+            .as_ref()
+            .is_some_and(|nav| nav.busy || !nav.host.input_open)
+            || shared.borrow().restoring()
+        {
+            return Ok(());
+        }
+        {
+            let mut state = shared.borrow_mut();
+            // Selection/navigation can replace a form Host. Configure the
+            // current original hosts, rather than relying on an old mount.
+            state.sidebar.host.set_focus_wrap(false);
+            state.form.host.set_focus_wrap(false);
+            if state.sidebar.host.is_composing() || state.form.host.is_composing() {
+                return Ok(());
+            }
+        }
+        let mut scopes: Vec<_> = self
+            .toolbar_focus_targets()
+            .into_iter()
+            .map(SettingsFocusScope::Toolbar)
+            .collect();
+        if self.leading_visible {
+            scopes.push(SettingsFocusScope::Sidebar);
+        }
+        scopes.push(SettingsFocusScope::Form);
+        let current = self
+            .actual_toolbar_owner()
+            .map(SettingsFocusScope::Toolbar)
+            .or_else(|| {
+                let state = shared.borrow();
+                if self.leading_visible && state.sidebar.host.focused().is_some() {
+                    Some(SettingsFocusScope::Sidebar)
+                } else if state.form.host.focused().is_some() {
+                    Some(SettingsFocusScope::Form)
+                } else {
+                    None
+                }
+            });
+        if let Some(scope @ (SettingsFocusScope::Sidebar | SettingsFocusScope::Form)) = current {
+            if scope == SettingsFocusScope::Sidebar {
+                self.panels[0]
+                    .local
+                    .as_mut()
+                    .unwrap()
+                    .event(event, &mut self.text)?;
+            } else {
+                // Plain autosave-form Tab changes focus/edits, not Apply/Cancel.
+                self.settings_form_input(event)?;
+            }
+            let mut state = shared.borrow_mut();
+            let bubbles = if scope == SettingsFocusScope::Sidebar {
+                state.sidebar.host.event_bubbled()
+            } else {
+                state.form.host.event_bubbled()
+            };
+            state.edited();
+            if !bubbles {
+                return Ok(());
+            }
+            if scope == SettingsFocusScope::Form && !state.prepare_item_navigation() {
+                return Ok(());
+            }
+        }
+        let start =
+            current.and_then(|scope| scopes.iter().position(|candidate| *candidate == scope));
+        for step in 1..=scopes.len() {
+            let index = match start {
+                Some(index) if reverse => (index + scopes.len() - step) % scopes.len(),
+                Some(index) => (index + step) % scopes.len(),
+                None if reverse => scopes.len() - step,
+                None => step - 1,
+            };
+            let target = scopes[index];
+            let accepted = match target {
+                SettingsFocusScope::Toolbar(target) => {
+                    self.set_toolbar_focus(Some(target), true);
+                    self.actual_toolbar_owner() == Some(target)
+                }
+                SettingsFocusScope::Sidebar => {
+                    shared.borrow_mut().sidebar.host.enter_focus(reverse)
+                }
+                SettingsFocusScope::Form => shared.borrow_mut().form.host.enter_focus(reverse),
+            };
+            if !accepted {
+                continue;
+            }
+            let mut state = shared.borrow_mut();
+            if target != SettingsFocusScope::Sidebar {
+                state.sidebar.host.focus(None, false);
+            }
+            if target != SettingsFocusScope::Form {
+                state.form.host.focus(None, false);
+            }
+            drop(state);
+            if !matches!(target, SettingsFocusScope::Toolbar(_)) {
+                self.set_toolbar_focus(None, false);
+                self.focused = usize::from(target == SettingsFocusScope::Form);
+            }
+            return Ok(());
+        }
+        Ok(())
+    }
     pub(super) fn prepare_settings_item_navigation(&mut self) -> bool {
         let allowed = self
             .settings
@@ -213,26 +493,37 @@ impl Host {
             .take_item_navigation()
     }
     pub(super) fn open_settings(&mut self, w: &Window) -> Result<()> {
-        if let Some(child) = &self.settings_child
-            && !child.is_closed()
-        {
-            child.show();
-            return Ok(());
-        }
-        self.settings_child.take();
-        if self.settings_loading.is_some() {
-            return Ok(());
-        }
-        let Some(provider) = self.settings_provider.clone() else {
+        let Some(owner) = self.settings_owner.clone() else {
             return Ok(());
         };
+        // Never retain a RefCell borrow across native presentation (which can
+        // synchronously deliver focus events).
+        let child = owner.0.borrow().child.clone();
+        if let Some(child) = child.filter(|child| !child.is_closed()) {
+            let mode = owner.0.borrow().options.display_mode;
+            if mode == crate::SettingsDisplayMode::Exclusive {
+                w.present_exclusive(&child);
+            } else {
+                child.show();
+            }
+            return Ok(());
+        }
+        let retired = owner.0.borrow_mut().child.take();
+        drop(retired);
+        let Some(ticket) = owner.begin_load() else {
+            return Ok(());
+        };
+        let provider = owner.0.borrow().provider.clone();
         let (tx, rx) = mpsc::channel();
         let wake = w.wake_proxy();
         std::thread::spawn(move || {
             let _ = tx.send(provider.load().map_err(|e| format!("{e:#}")));
             wake.wake();
         });
-        self.settings_loading = Some(rx);
+        self.settings_loading = Some(SettingsLoad {
+            _ticket: ticket,
+            receiver: rx,
+        });
         Ok(())
     }
     /// Complete the cold child assembly before native Window creation. Both
@@ -248,6 +539,14 @@ impl Host {
         let mut host = app.into_host(false);
         host.mount_initial_containers();
         host.is_settings_window = true;
+        host.settings_display = self.settings_owner.as_ref().and_then(|owner| {
+            SettingsDisplayBinding::new(
+                owner,
+                self.settings_display
+                    .as_ref()
+                    .map_or(self.theme, |binding| binding.system_theme),
+            )
+        });
         host.acceptance_shared = self.acceptance_shared.clone();
         if self.acceptance_shared.is_some() {
             host.settings_options = self.settings_options.clone();
@@ -263,20 +562,21 @@ impl Host {
         Ok(host)
     }
     pub(super) fn poll_settings_open(&mut self, w: &Window) -> Result<()> {
-        let Some(result) = self
-            .settings_loading
-            .as_ref()
-            .and_then(|r| match r.try_recv() {
-                Ok(value) => Some(value),
-                Err(mpsc::TryRecvError::Empty) => None,
-                Err(mpsc::TryRecvError::Disconnected) => {
-                    Some(Err("Settings load worker disconnected".into()))
-                }
-            })
+        let Some(result) =
+            self.settings_loading
+                .as_ref()
+                .and_then(|load| match load.receiver.try_recv() {
+                    Ok(value) => Some(value),
+                    Err(mpsc::TryRecvError::Empty) => None,
+                    Err(mpsc::TryRecvError::Disconnected) => {
+                        Some(Err("Settings load worker disconnected".into()))
+                    }
+                })
         else {
             return Ok(());
         };
-        self.settings_loading = None;
+        // Keep the strong ticket until native launch and owner publication finish.
+        let _loading = self.settings_loading.take();
         let snapshot = match result {
             Ok(snapshot) => snapshot,
             Err(e) => {
@@ -284,13 +584,15 @@ impl Host {
                 return Ok(());
             }
         };
-        let options = self.settings_options.clone().unwrap();
+        let owner = self.settings_owner.as_ref().unwrap().clone();
+        let (options, provider) = {
+            let state = owner.0.borrow();
+            (state.options.clone(), state.provider.clone())
+        };
         let mode = options.display_mode;
-        let mut surface = crate::settings::SettingsSurface::new(
-            options,
-            self.settings_provider.clone().unwrap(),
-            snapshot,
-        )?;
+        let mut surface = crate::settings::SettingsSurface::new(options, provider, snapshot)?;
+        owner.publish_display(&surface.draft.base)?;
+        surface.display = owner.0.borrow().display.clone();
         surface.show();
         let surface = std::rc::Rc::new(std::cell::RefCell::new(surface));
         let host = self.create_settings_host(surface)?;
@@ -316,7 +618,12 @@ impl Host {
         } else {
             w.open_window(config, host)
         };
-        self.settings_child = Some(child);
+        owner.0.borrow_mut().child = Some(child.clone());
+        // Only the original finite acceptance harness needs a parent-local
+        // observation handle; the shared owner is the runtime authority.
+        if self.acceptance_shared.is_some() {
+            self.settings_child = Some(child);
+        }
         Ok(())
     }
     /// Observe the enabled control on its actual container, authenticated by the
@@ -766,6 +1073,7 @@ impl Host {
         let mut state = shared_settings.borrow_mut();
         let settings = &mut *state;
         settings.poll(w.wake_proxy())?;
+        self.sync_settings_display(w)?;
         if !settings.open {
             w.close();
             return Ok(());
@@ -1107,6 +1415,18 @@ impl Host {
         {
             return Ok(true);
         }
+        if let Event::TextCommand(command) = event
+            && matches!(command.as_str(), "insertTab:" | "insertBacktab:")
+            && self.open_toolbar().is_none()
+        {
+            self.settings_scope_tab(
+                command == "insertBacktab:",
+                &ContentEvent::TextCommand(command.clone()),
+            )?;
+            w.set_text_input_state(self.settings.as_ref().unwrap().borrow().text_state());
+            w.request_redraw();
+            return Ok(true);
+        }
         // Header search is an original local editor, using the same text/IME
         // and clipboard adapter as every ordinary Container, not the form draft.
         let sidebar_editor = self
@@ -1417,21 +1737,8 @@ impl Host {
         }
         if let Some(event) = routed {
             drop(state);
-            self.panels[1]
-                .local
-                .as_mut()
-                .unwrap()
-                .event(&event, &mut self.text)?;
+            intents.extend(self.settings_form_input(&event)?);
             state = shared_settings.borrow_mut();
-            let settings = &mut *state;
-            intents.extend(
-                settings
-                    .form
-                    .collect(&settings.view_schema, &mut settings.draft),
-            );
-            if settings.form.host.focused().is_some() {
-                settings.sidebar.host.focus(None, false);
-            }
         }
         let settings = &mut *state;
         settings.edited();
@@ -1471,7 +1778,9 @@ mod pinned_header_tests {
         let back = sidebar.host.get(ComponentId(4)).unwrap().frame();
         let search = sidebar.host.get(ComponentId(6)).unwrap().frame();
         let scroll = sidebar.host.get(ComponentId(1)).unwrap().frame();
-        assert!(back.max_x() < search.min_x());
+        assert_eq!(back.min_x(), search.min_x());
+        assert_eq!(back.size.width, search.size.width);
+        assert!(back.max_y() < search.min_y());
         assert!(search.max_y() < scroll.min_y());
         assert!(
             sidebar
@@ -2452,5 +2761,786 @@ mod cold_settings_host_tests {
         assert!(host.panels.iter().all(|panel| panel.local.is_none()
             && panel.launch_tx.is_some()
             && panel.pid.is_none()));
+    }
+}
+
+#[cfg(test)]
+mod display_preferences_tests {
+    use super::*;
+    use crate::{SettingsOwner, SettingsWindow, settings::SettingsConfiguration};
+    use std::rc::Rc;
+    use tekes_ui_settings::{Draft, Snapshot, Submission};
+
+    #[test]
+    fn loaded_saved_and_undo_snapshots_update_original_hosts_and_independent_settings() {
+        let path = std::env::temp_dir()
+            .join(format!(
+                "settings-display-{}-{}",
+                std::process::id(),
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_nanos()
+            ))
+            .join("settings.toml");
+        let owner = SettingsOwner::new(
+            SettingsWindow::from_toml(
+                include_str!("../../tekes-ui-gallery/src/gallery/apphost.settings.toml"),
+                path.clone(),
+            )
+            .unwrap(),
+        )
+        .unwrap()
+        .with_display_preferences(
+            "general/appearance/appearance",
+            "general/appearance/text-size",
+        )
+        .unwrap();
+        let provider = owner.0.borrow().provider.clone();
+        let schema = owner.0.borrow().options.schema.clone();
+        let initial = provider.load().unwrap();
+        let mut draft = Draft::new(initial.clone());
+        draft.edit(&schema.settings[0], "dark".into());
+        draft.edit(&schema.settings[1], "120".into());
+        let saved = provider
+            .commit(&draft.submit(&schema, "display-save".into()).unwrap())
+            .unwrap();
+        let editor = crate::LocalContainer::new(
+            "editor",
+            tekes_ui_controls::composition::Content::new(
+                ComponentId(1),
+                tekes_ui_controls::composition::TextFieldContent::new("Title", "Unsubmitted text"),
+            ),
+        )
+        .unwrap();
+        let mut first =
+            Host::from_columns(vec![editor.into()], false, None).with_theme(Theme::LIGHT_INCREASED);
+        first.mount_initial_containers();
+        let mut input_before = None;
+        first.panels[0]
+            .local
+            .as_mut()
+            .unwrap()
+            .with_host(&mut |host| {
+                assert!(host.focus(Some(ComponentId(1)), true));
+                host.event(&ContentEvent::Preedit {
+                    text: "中文".into(),
+                    selection: 0..2,
+                    clauses: std::iter::once(0..2).collect(),
+                    replacement: None,
+                });
+                let input = &host.focused_text().unwrap().input;
+                input_before = Some((input.text.clone(), input.marked.clone()));
+            });
+        let mut second = Host::new(vec![], false, None).with_theme(Theme::LIGHT);
+        first
+            .configure_settings(Some(SettingsConfiguration::Shared(owner.clone())))
+            .unwrap();
+        second
+            .configure_settings(Some(SettingsConfiguration::Shared(owner.clone())))
+            .unwrap();
+        // Same admission called by the startup worker completion, before any
+        // Settings window opens. These are actual on-disk effective values.
+        owner.publish_display(&provider.load().unwrap()).unwrap();
+        assert!(
+            first
+                .settings_display
+                .as_mut()
+                .unwrap()
+                .apply(&mut first.theme, &mut first.text)
+        );
+        assert!(
+            second
+                .settings_display
+                .as_mut()
+                .unwrap()
+                .apply(&mut second.theme, &mut second.text)
+        );
+        first.panels[0]
+            .local
+            .as_mut()
+            .unwrap()
+            .with_host(&mut |host| {
+                assert_eq!(host.focused(), Some(ComponentId(1)));
+                assert!(
+                    host.is_composing(),
+                    "style changes preserve original composition"
+                );
+                let input = &host.focused_text().unwrap().input;
+                assert_eq!(
+                    (input.text.clone(), input.marked.clone()),
+                    input_before.clone().unwrap()
+                );
+            });
+        assert_eq!(first.theme, Theme::DARK_INCREASED);
+        assert_eq!(second.theme, Theme::DARK);
+        assert!((first.text.type_scale() - 1.2).abs() < 1e-6);
+        assert!((second.text.type_scale() - 1.2).abs() < 1e-6);
+        owner.publish_display(&initial).unwrap(); // Real late-startup-read scenario.
+        assert!(
+            !first
+                .settings_display
+                .as_mut()
+                .unwrap()
+                .apply(&mut first.theme, &mut first.text)
+        );
+
+        let mut surface = crate::settings::SettingsSurface::new(
+            owner.0.borrow().options.clone(),
+            provider.clone(),
+            saved.clone(),
+        )
+        .unwrap();
+        surface.display = owner.0.borrow().display.clone();
+        let shared = Rc::new(std::cell::RefCell::new(surface));
+        let mut child = first.create_settings_host(shared.clone()).unwrap();
+        assert!(child.settings_owner.is_none());
+        child
+            .settings_display
+            .as_mut()
+            .unwrap()
+            .apply(&mut child.theme, &mut child.text);
+        assert_eq!(child.theme, Theme::DARK_INCREASED);
+        // Undo's provider receipt advances revision and restores effective defaults.
+        let target = Snapshot {
+            revision: saved.revision + 1,
+            last_commit_id: "display-undo".into(),
+            overrides: initial.overrides,
+        };
+        let undone = provider
+            .commit(&Submission::replacement(&saved, &target).unwrap())
+            .unwrap();
+        crate::settings::SettingsDisplayState::publish(
+            shared.borrow().display.as_ref().unwrap(),
+            &undone,
+        )
+        .unwrap();
+        first.settings_display.as_mut().unwrap().system_theme = Theme::LIGHT_INCREASED;
+        second.settings_display.as_mut().unwrap().system_theme = Theme::DARK;
+        child.settings_display.as_mut().unwrap().system_theme = Theme::DARK_INCREASED;
+        first
+            .settings_display
+            .as_mut()
+            .unwrap()
+            .apply(&mut first.theme, &mut first.text);
+        second
+            .settings_display
+            .as_mut()
+            .unwrap()
+            .apply(&mut second.theme, &mut second.text);
+        child
+            .settings_display
+            .as_mut()
+            .unwrap()
+            .apply(&mut child.theme, &mut child.text);
+        assert_eq!(first.theme, Theme::LIGHT_INCREASED);
+        assert_eq!(second.theme, Theme::DARK);
+        assert_eq!(child.theme, Theme::DARK_INCREASED);
+        assert_eq!(first.text.type_scale(), 1.);
+        assert_eq!(child.text.type_scale(), 1.);
+        drop(first);
+        drop(second);
+        drop(owner);
+        // Independent Settings retains display values, not its original owner.
+        assert!(
+            child
+                .settings_display
+                .as_ref()
+                .unwrap()
+                .owner
+                .upgrade()
+                .is_none()
+        );
+        let redo = Snapshot {
+            revision: undone.revision + 1,
+            last_commit_id: "display-redo".into(),
+            overrides: saved.overrides,
+        };
+        let redone = provider
+            .commit(&Submission::replacement(&undone, &redo).unwrap())
+            .unwrap();
+        crate::settings::SettingsDisplayState::publish(
+            shared.borrow().display.as_ref().unwrap(),
+            &redone,
+        )
+        .unwrap();
+        assert!(
+            child
+                .settings_display
+                .as_mut()
+                .unwrap()
+                .apply(&mut child.theme, &mut child.text)
+        );
+        assert!((child.text.type_scale() - 1.2).abs() < 1e-6);
+        drop(child);
+        drop(shared);
+        drop(provider);
+        std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
+    }
+
+    #[test]
+    fn display_binding_rejects_unrelated_fields_and_invalid_loaded_values() {
+        let path = std::env::temp_dir()
+            .join(format!(
+                "settings-display-invalid-{}-{}",
+                std::process::id(),
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_nanos()
+            ))
+            .join("settings.toml");
+        let options = SettingsWindow::from_toml(
+            include_str!("../../tekes-ui-gallery/src/gallery/apphost.settings.toml"),
+            path.clone(),
+        )
+        .unwrap();
+        let field = options
+            .schema
+            .settings
+            .iter()
+            .find(|f| f.id == "general/appearance/appearance")
+            .unwrap();
+        assert_eq!(
+            field.presentation,
+            tekes_ui_settings::FieldPresentation::Radio
+        );
+        let form_schema = options.schema.for_item("general/appearance").unwrap();
+        let form = tekes_ui_settings::SettingsForm::new(
+            &form_schema,
+            &tekes_ui_settings::Draft::new(Snapshot::default()),
+        )
+        .unwrap();
+        assert!(
+            form.host
+                .get(ComponentId(100))
+                .unwrap()
+                .component::<tekes_ui_controls::composition::RadioGroupContent>()
+                .is_some()
+        );
+        let owner = SettingsOwner::new(options).unwrap();
+        let wrong_kind = owner
+            .clone()
+            .with_display_preferences(
+                "general/appearance/text-size",
+                "general/appearance/appearance",
+            )
+            .unwrap_err();
+        assert!(
+            wrong_kind
+                .to_string()
+                .contains("appearance preference requires system/light/dark enum values")
+        );
+        let short_id = owner
+            .clone()
+            .with_display_preferences("appearance", "text-size")
+            .unwrap_err();
+        assert!(
+            short_id
+                .to_string()
+                .contains("unknown display preference appearance")
+        );
+        let owner = owner
+            .with_display_preferences(
+                "general/appearance/appearance",
+                "general/appearance/text-size",
+            )
+            .unwrap();
+        let mut invalid = Snapshot::default();
+        let mut values = tekes_ui_settings::Value::Table(Default::default());
+        values.as_table_mut().unwrap().insert(
+            "appearance".into(),
+            tekes_ui_settings::Value::String("unknown".into()),
+        );
+        invalid.overrides.insert("general".into(), values);
+        assert!(owner.publish_display(&invalid).is_err());
+        assert!(
+            owner
+                .0
+                .borrow()
+                .display
+                .as_ref()
+                .unwrap()
+                .borrow()
+                .preferences
+                .is_none()
+        );
+        drop(owner);
+        std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
+    }
+}
+
+#[cfg(test)]
+mod form_keyboard_owner_tests {
+    use super::*;
+    use crate::window_toolbar::{Contents, Declaration, Source};
+    use crate::{SettingsDisplayMode, SettingsWindow, settings::SettingsSurface};
+    use std::{cell::RefCell, rc::Rc};
+    use tekes_ui_controls::composition::{
+        RadioGroupContent, ToolbarButtonDeclaration, ToolbarGroupOverflow, ToolbarPlacement,
+        ToolbarRegion,
+    };
+    use tekes_ui_platform_macos::Modifiers;
+    use tekes_ui_settings::{FileProvider, Snapshot};
+
+    fn key(code: u16, down: bool) -> ContentKeyEvent {
+        toolbar_key(KeyEvent {
+            kind: if down {
+                KeyEventKind::Down
+            } else {
+                KeyEventKind::Up
+            },
+            key_code: code,
+            modifiers: Modifiers::NONE,
+            is_repeat: false,
+            characters: if code == 48 { "\t" } else { " " }.into(),
+            characters_ignoring_modifiers: if code == 48 { "\t" } else { " " }.into(),
+        })
+    }
+
+    fn fixture() -> (Host, Rc<RefCell<SettingsSurface>>, std::path::PathBuf) {
+        fixture_source(include_str!(
+            "../../tekes-ui-gallery/src/gallery/apphost.settings.toml"
+        ))
+    }
+    fn fixture_source(source: &str) -> (Host, Rc<RefCell<SettingsSurface>>, std::path::PathBuf) {
+        static NEXT_FIXTURE: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+        let fixture_id = NEXT_FIXTURE.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let path = std::env::temp_dir()
+            .join(format!(
+                "settings-keyboard-owner-{}-{}-{}",
+                std::process::id(),
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_nanos(),
+                fixture_id
+            ))
+            .join("settings.toml");
+        let options = SettingsWindow::from_toml(source, path.clone())
+            .unwrap()
+            .display_mode(SettingsDisplayMode::Independent);
+        let provider = FileProvider::open(path.clone(), options.schema.namespace.clone()).unwrap();
+        let mut surface = SettingsSurface::new(options, provider, Snapshot::default()).unwrap();
+        surface.show();
+        let surface = Rc::new(RefCell::new(surface));
+        let parent = Host::new(vec![], false, None);
+        let mut host = parent.create_settings_host(surface.clone()).unwrap();
+        let frames = [
+            Rect::new(0., 42., 225., 598.),
+            Rect::new(225., 42., 675., 598.),
+        ];
+        for (panel, frame) in host.panels.iter_mut().zip(frames) {
+            panel.bounds = frame;
+            panel
+                .local
+                .as_mut()
+                .unwrap()
+                .render(
+                    &mut Scene::new(),
+                    &mut host.text,
+                    frame,
+                    frame,
+                    Theme::LIGHT.into(),
+                )
+                .unwrap();
+        }
+        // Mount the real visibility contribution used by production Settings.
+        // Focus is acquired by the original Tab producer, never assigned here.
+        host.panels[0]
+            .mounted_toolbar
+            .sync(
+                Rect::new(0., 0., 900., 640.),
+                vec![ToolbarRegion::new(
+                    ComponentId(91020),
+                    Rect::new(0., 0., 225., 42.),
+                )],
+                vec![Declaration {
+                    id: Host::toolbar_group(ToolbarTarget::Visibility(0)),
+                    region: ComponentId(91020),
+                    placement: ToolbarPlacement::Navigation,
+                    order: 0,
+                    contents: Contents::Commands(
+                        vec![ToolbarButtonDeclaration {
+                            id: 0x5601,
+                            icon: None,
+                            text: "Hide leading panel".into(),
+                            hint: None,
+                            enabled: true,
+                        }],
+                        ToolbarGroupOverflow::Together,
+                    ),
+                    source: Source::Visibility(0),
+                }],
+            )
+            .unwrap();
+        host.panels[0]
+            .mounted_toolbar
+            .host
+            .render(&mut Scene::new(), &mut host.text, Theme::LIGHT.into())
+            .unwrap();
+        (host, surface, path)
+    }
+
+    fn render_original_panels(host: &mut Host) {
+        for panel in &mut host.panels {
+            let frame = panel.bounds;
+            panel
+                .local
+                .as_mut()
+                .unwrap()
+                .render(
+                    &mut Scene::new(),
+                    &mut host.text,
+                    frame,
+                    frame,
+                    Theme::LIGHT.into(),
+                )
+                .unwrap();
+        }
+    }
+
+    #[test]
+    fn original_settings_keyboard_route_traverses_scopes_and_space_selects_form_radio() {
+        let (mut host, surface, path) = fixture();
+        // This same key entry point is called by the actual native toolbar
+        // route; no test injects Tab directly into the form helper.
+        assert!(host.toolbar_key_input(key(48, true)).unwrap());
+        assert_eq!(
+            host.actual_toolbar_owner(),
+            Some(ToolbarTarget::Visibility(0))
+        );
+        assert!(host.toolbar_key_input(key(48, true)).unwrap());
+        assert!(surface.borrow().sidebar.host.focused().is_some());
+        assert!(surface.borrow().form.host.focused().is_none());
+        assert!(host.actual_toolbar_owner().is_none());
+        assert!(host.toolbar_key_input(key(48, true)).unwrap());
+        assert_eq!(surface.borrow().form.host.focused(), Some(ComponentId(100)));
+        assert!(surface.borrow().sidebar.host.focused().is_none());
+        assert!(host.actual_toolbar_owner().is_none());
+        assert!(host.toolbar_focus_lease.is_none());
+        let mut modified = key(48, true);
+        modified.modifiers.command = true;
+        assert!(!host.toolbar_key_input(modified).unwrap());
+        assert_eq!(surface.borrow().form.host.focused(), Some(ComponentId(100)));
+        for down in [true, false] {
+            assert!(!host.toolbar_key_input(key(49, down)).unwrap());
+            host.settings_form_input(&ContentEvent::KeyInput(key(49, down)))
+                .unwrap();
+        }
+        assert!(!surface.borrow().form.has_open_menu());
+        assert!(host.leading_visible);
+        render_original_panels(&mut host);
+        assert!(host.toolbar_key_input(key(48, true)).unwrap());
+        assert_eq!(surface.borrow().form.host.focused(), Some(ComponentId(101)));
+        assert!(host.actual_toolbar_owner().is_none());
+        assert!(surface.borrow().sidebar.host.focused().is_none());
+        drop(host);
+        drop(surface);
+        std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
+    }
+
+    #[test]
+    fn original_settings_keyboard_route_reverses_scopes_and_wraps_the_window() {
+        let (mut host, surface, path) = fixture();
+        for _ in 0..3 {
+            assert!(host.toolbar_key_input(key(48, true)).unwrap());
+            // Native input requests a redraw; the next native key is routed
+            // against geometry from the resulting original panel render.
+            render_original_panels(&mut host);
+        }
+        assert_eq!(surface.borrow().form.host.focused(), Some(ComponentId(100)));
+        let mut reverse = key(48, true);
+        reverse.key = Some(ControlKey::Tab { reverse: true });
+        reverse.modifiers.shift = true;
+        assert!(host.toolbar_key_input(reverse.clone()).unwrap());
+        render_original_panels(&mut host);
+        assert!(surface.borrow().sidebar.host.focused().is_some());
+        assert!(surface.borrow().form.host.focused().is_none());
+        assert!(host.toolbar_key_input(reverse.clone()).unwrap());
+        render_original_panels(&mut host);
+        assert_eq!(
+            host.actual_toolbar_owner(),
+            Some(ToolbarTarget::Visibility(0))
+        );
+        assert!(host.toolbar_key_input(reverse).unwrap());
+        render_original_panels(&mut host);
+        assert!(surface.borrow().form.host.focused().is_some());
+        assert!(host.actual_toolbar_owner().is_none());
+        assert!(host.leading_visible);
+        drop(host);
+        drop(surface);
+        std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
+    }
+
+    #[test]
+    fn original_settings_scope_tab_keeps_invalid_number_and_composition_in_their_owner() {
+        let (mut host, surface, path) = fixture();
+        for _ in 0..4 {
+            assert!(host.toolbar_key_input(key(48, true)).unwrap());
+        }
+        assert_eq!(surface.borrow().form.host.focused(), Some(ComponentId(101)));
+        host.settings_form_input(&ContentEvent::TextCommand("selectAll:".into()))
+            .unwrap();
+        host.settings_form_input(&ContentEvent::Commit {
+            text: "999".into(),
+            replacement: None,
+        })
+        .unwrap();
+        assert!(surface.borrow().form.has_number_draft());
+        let invalid = surface
+            .borrow()
+            .form
+            .host
+            .focused_text()
+            .unwrap()
+            .input
+            .text
+            .clone();
+        assert!(host.toolbar_key_input(key(48, true)).unwrap());
+        assert_eq!(surface.borrow().form.host.focused(), Some(ComponentId(101)));
+        assert!(host.actual_toolbar_owner().is_none());
+        assert_eq!(
+            surface
+                .borrow()
+                .form
+                .host
+                .focused_text()
+                .unwrap()
+                .input
+                .text,
+            invalid
+        );
+        // Correct/discard through the original editor, not a focus reset.
+        host.settings_form_input(&ContentEvent::Key {
+            key: ControlKey::Escape,
+            down: true,
+        })
+        .unwrap();
+        host.settings_form_input(&ContentEvent::Preedit {
+            text: "1".into(),
+            selection: 0..1,
+            clauses: std::iter::once(0..1).collect(),
+            replacement: None,
+        })
+        .unwrap();
+        assert!(surface.borrow().form.host.is_composing());
+        let marked = surface
+            .borrow()
+            .form
+            .host
+            .focused_text()
+            .unwrap()
+            .input
+            .marked
+            .clone();
+        assert!(host.toolbar_key_input(key(48, true)).unwrap());
+        assert_eq!(surface.borrow().form.host.focused(), Some(ComponentId(101)));
+        assert_eq!(
+            surface
+                .borrow()
+                .form
+                .host
+                .focused_text()
+                .unwrap()
+                .input
+                .marked,
+            marked
+        );
+        assert!(surface.borrow().sidebar.host.focused().is_none());
+        assert!(host.actual_toolbar_owner().is_none());
+        assert!(host.leading_visible);
+        drop(host);
+        drop(surface);
+        std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
+    }
+
+    #[test]
+    fn original_settings_form_tab_retires_toolbar_owner_before_space_selects_theme_radio() {
+        let (mut host, surface, path) = fixture();
+        host.toolbar_key_input(key(48, true)).unwrap();
+        assert_eq!(
+            host.actual_toolbar_owner(),
+            Some(ToolbarTarget::Visibility(0))
+        );
+        assert!(host.leading_visible);
+        // This is the original mounted form-input boundary when a Tab reaches
+        // form navigation; the outer toolbar consumed decision has its own test.
+        host.settings_form_input(&ContentEvent::KeyInput(key(48, true)))
+            .unwrap();
+        assert_eq!(surface.borrow().form.host.focused(), Some(ComponentId(100)));
+        assert!(
+            host.panels.iter().all(|panel| panel
+                .mounted_toolbar
+                .host
+                .content_host()
+                .focused()
+                .is_none()),
+            "form Tab must retire every toolbar keyboard owner"
+        );
+        assert!(host.toolbar_focus.is_none());
+        assert!(host.toolbar_focus_lease.is_none());
+        for down in [true, false] {
+            let consumed = host.toolbar_key_input(key(49, down)).unwrap();
+            assert!(
+                !consumed,
+                "an unfocused toolbar must let Space reach the form"
+            );
+            host.settings_form_input(&ContentEvent::KeyInput(key(49, down)))
+                .unwrap();
+        }
+        assert_eq!(
+            surface
+                .borrow()
+                .form
+                .host
+                .get(ComponentId(100))
+                .unwrap()
+                .component::<RadioGroupContent>()
+                .unwrap()
+                .model()
+                .selected,
+            Some(0),
+            "Space stays with the original selected Theme radio option"
+        );
+        assert!(surface.borrow().form.host.input_overlay_owner().is_none());
+        assert!(
+            host.leading_visible,
+            "Space must not invoke the old toolbar visibility command"
+        );
+        drop(host);
+        drop(surface);
+        std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
+    }
+    #[test]
+    fn actual_general_radio_raw_pointer_selection_updates_draft_without_remount() {
+        let (mut host, surface, path) = fixture();
+        render_original_panels(&mut host);
+        let id = ComponentId(100);
+        let (mount, point, selected) = {
+            let state = surface.borrow();
+            let radio = state
+                .form
+                .host
+                .get(id)
+                .unwrap()
+                .component::<RadioGroupContent>()
+                .unwrap();
+            (
+                state.form.host.semantic_mount(id),
+                radio.view().layout().rows[2].frame().center(),
+                radio.model().selected,
+            )
+        };
+        assert_eq!(selected, Some(0));
+        for phase in [PointerPhase::Down, PointerPhase::Up] {
+            host.settings_form_input(&ContentEvent::Pointer(PointerEvent {
+                position: point,
+                phase,
+                button: Some(PointerButton::Secondary),
+                modifiers: PointerModifiers::default(),
+                click_count: 1,
+            }))
+            .unwrap();
+        }
+        assert_eq!(
+            surface
+                .borrow()
+                .draft
+                .display(&surface.borrow().view_schema.settings[0]),
+            "system",
+            "secondary clicks must not select a radio option"
+        );
+        // Collection mutably visits the original field nodes. Republish layout
+        // as the native render loop does before the next independent gesture.
+        render_original_panels(&mut host);
+        for phase in [PointerPhase::Down, PointerPhase::Up] {
+            host.settings_form_input(&ContentEvent::Pointer(PointerEvent {
+                position: point,
+                phase,
+                button: Some(PointerButton::Primary),
+                modifiers: PointerModifiers::default(),
+                click_count: 1,
+            }))
+            .unwrap();
+            if phase == PointerPhase::Down {
+                assert!(
+                    !surface.borrow().form.host.event_bubbled(),
+                    "native Primary PointerDown on an exposed radio row is handled"
+                );
+            }
+        }
+        {
+            let state = surface.borrow();
+            assert_eq!(state.draft.display(&state.view_schema.settings[0]), "dark");
+        }
+        assert_eq!(
+            surface
+                .borrow()
+                .form
+                .host
+                .get(id)
+                .unwrap()
+                .component::<RadioGroupContent>()
+                .unwrap()
+                .model()
+                .selected,
+            Some(2)
+        );
+        assert!(
+            surface.borrow().form.host.input_overlay_owner().is_none(),
+            "radio choice never creates a popup"
+        );
+        {
+            let mut state = surface.borrow_mut();
+            let schema = state.view_schema.clone();
+            state.draft.edit(&schema.settings[0], "light".into());
+            let draft = state.draft.clone();
+            state.form.replace_values(&schema, &draft);
+        }
+        assert_eq!(surface.borrow().form.host.semantic_mount(id), mount);
+        assert_eq!(
+            surface
+                .borrow()
+                .form
+                .host
+                .get(id)
+                .unwrap()
+                .component::<RadioGroupContent>()
+                .unwrap()
+                .model()
+                .selected,
+            Some(1)
+        );
+        drop(host);
+        drop(surface);
+        std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
+    }
+    #[test]
+    fn default_enum_menu_tab_stays_in_the_form_scope() {
+        let source = include_str!("../../tekes-ui-gallery/src/gallery/apphost.settings.toml")
+            .replace("presentation = \"radio\"\n", "");
+        let (mut host, surface, path) = fixture_source(&source);
+        for _ in 0..3 {
+            assert!(host.toolbar_key_input(key(48, true)).unwrap());
+            render_original_panels(&mut host);
+        }
+        for down in [true, false] {
+            assert!(!host.toolbar_key_input(key(49, down)).unwrap());
+            host.settings_form_input(&ContentEvent::KeyInput(key(49, down)))
+                .unwrap();
+        }
+        assert!(surface.borrow().form.has_open_menu());
+        render_original_panels(&mut host);
+        assert!(host.toolbar_key_input(key(48, true)).unwrap());
+        // The original Menu closes and advances once within the form. The
+        // same Tab must not also escape to sidebar/toolbar scope navigation.
+        assert!(!surface.borrow().form.has_open_menu());
+        assert_eq!(surface.borrow().form.host.focused(), Some(ComponentId(101)));
+        assert!(host.actual_toolbar_owner().is_none());
+        assert!(surface.borrow().sidebar.host.focused().is_none());
+        drop(host);
+        drop(surface);
+        std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
     }
 }
