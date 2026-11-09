@@ -1,7 +1,7 @@
 {
   "format": "tekesui-reference-alignment-report/1",
   "date": "2026-10-16",
-  "source_commit": "470c7912227424706bdfa294e5167b36c46a8df8",
+  "source_commit": "7d1c6204ea5c904dfb20305d8f958357917ac066",
   "source_state": "working-tree; hashes identify audited inputs, not a clean commit",
   "inputs_sha256": {
     "design/behavior/reference-alignment.json": "ab611945579b71db47e5cab3d3f9a67a89216fffd50f6f1f640a2e9e8e98f318",
@@ -18,7 +18,7 @@
     "design/brand/warm-stone.json": "39dd02e76b0617babeef0f89081ea94536f1d3b13466370978b5201f8c18df5c",
     "design/brand/warm-taupe.json": "e4ee17d8634f49c2e8f78c33df87d6048a604023e32d1e8eb98dabafb440cd10",
     "design/brand/wheat.json": "a998867d0ea6926465d7f82a3e0e03239ac358b93a76e5edadc51a8ad672b11a",
-    "design/gallery/brands.json": "afe6c6b1567c00101f9bbcb217e04814be672132ad1becd45e51636478dd1417",
+    "design/gallery/brands.json": "bd81fa6ae69b8c7f63a1d22e19e45b1b42d1108407b424e254de41d3cac2f6e8",
     "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/examples/example-blue.json": "e89eb95c16e4e2c964588b2a7eab7e24364e183b493cf3859f7bc7da7ab230bd",
     "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/examples/example-clay.json": "c5a2160d582d90e0488810e66a6b7185c6bb3ff84876eed468c84a1d7e85ca52",
     "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/quality/contrast-pairs.json": "fdfdf581d0ab0fc83a5d6bceab4dd8bcfe725f5c16b1a4a849d9a9fd26b9fa15",
@@ -27,10 +27,10 @@
     "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/brand.py": "3da13fcc221ed488d383af75dc84f77930306368632b7f48fb38476dc78f6586",
     "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/brand_color.py": "f7395f04cbd8cf0215326345929d76f6d8e263bdff69c6aede1a417bccc82516",
     "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/validate.py": "f48e97e00a0f8da9d0b373d4636da251c35cbdc667b33a03b9679e00460e1acc",
-    "design/source/base.tokens.json": "16215625e85017b393a096046c37849315d7c473d87e8c15c52fe8db887abf87",
+    "design/source/base.tokens.json": "c59bb5dbbc102c89132f3791c38774a56570cbb344ea0231cc791af7d0f32e04",
     "design/source/layout.json": "43630b9b5f498605291e50060c075a798017bffc5afded4f2599ee7a6220923f",
     "design/source/token-metadata.json": "53db464280f6d381cf108cb78c1f894a1dd31d780a5045145d31e6bd925e637b",
-    "design/tokens.json": "c2454d51396cfb3d7168a40865ad25fd52baa3f4fb4dee2d97cc4907c18b10c1",
+    "design/tokens.json": "bbffc8dc3590c2b25e269435628173e7f682bf69bc0cb08f06d4ff6967638a19",
     "docs/design/reference-alignment-20261016.md": "7d3da18b3656794b1025966ecd1a71dce943eca58aaa26e5bf6e567f14561cb8",
     "scripts/check-reference-alignment.py": "714c42e1f03f3fe7e7492efe95fd6af4b23f8b2fcaa98e46efab63b589903914"
   },
@@ -1522,7 +1522,7 @@
       "foreground": "tertiary-text",
       "background": "document-canvas",
       "overlay": null,
-      "ratio": 8.779348484668379,
+      "ratio": 6.875552302666155,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -1562,7 +1562,7 @@
       "foreground": "tertiary-text",
       "background": "surface-panel",
       "overlay": null,
-      "ratio": 8.373503474202181,
+      "ratio": 6.557714526764058,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -1602,7 +1602,7 @@
       "foreground": "tertiary-text",
       "background": "surface-sidebar",
       "overlay": null,
-      "ratio": 9.466721353560054,
+      "ratio": 7.413868798446185,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -1642,7 +1642,7 @@
       "foreground": "tertiary-text",
       "background": "transcript-input",
       "overlay": null,
-      "ratio": 7.846080280173484,
+      "ratio": 6.144662719728912,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -1682,7 +1682,7 @@
       "foreground": "tertiary-text",
       "background": "button-hover",
       "overlay": null,
-      "ratio": 7.188571657093419,
+      "ratio": 5.629734426890818,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -1722,7 +1722,7 @@
       "foreground": "tertiary-text",
       "background": "button-pressed",
       "overlay": null,
-      "ratio": 6.170395163486928,
+      "ratio": 4.832348863786463,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -1762,7 +1762,7 @@
       "foreground": "tertiary-text",
       "background": "row-selection",
       "overlay": null,
-      "ratio": 6.907303665962345,
+      "ratio": 5.409459222248387,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -1802,7 +1802,7 @@
       "foreground": "tertiary-text",
       "background": "row-selection-hover",
       "overlay": null,
-      "ratio": 5.991694049941908,
+      "ratio": 4.692398974011712,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -1842,7 +1842,7 @@
       "foreground": "tertiary-text",
       "background": "code-surface",
       "overlay": null,
-      "ratio": 8.373503474202181,
+      "ratio": 6.557714526764058,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -1882,7 +1882,7 @@
       "foreground": "tertiary-text",
       "background": "diff-added-surface",
       "overlay": null,
-      "ratio": 6.184182589046713,
+      "ratio": 4.843146494808966,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -1922,7 +1922,7 @@
       "foreground": "tertiary-text",
       "background": "diff-removed-surface",
       "overlay": null,
-      "ratio": 6.694179060550528,
+      "ratio": 5.242550553108187,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -4766,7 +4766,7 @@
       "foreground": "tertiary-text",
       "background": "surface-0",
       "overlay": null,
-      "ratio": 9.466721353560054,
+      "ratio": 7.413868798446185,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -5238,7 +5238,7 @@
       "foreground": "tertiary-text",
       "background": "surface-1",
       "overlay": null,
-      "ratio": 8.779348484668379,
+      "ratio": 6.875552302666155,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -5710,7 +5710,7 @@
       "foreground": "tertiary-text",
       "background": "surface-2",
       "overlay": null,
-      "ratio": 8.373503474202181,
+      "ratio": 6.557714526764058,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -6182,7 +6182,7 @@
       "foreground": "tertiary-text",
       "background": "surface-3",
       "overlay": null,
-      "ratio": 7.846080280173484,
+      "ratio": 6.144662719728912,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -6654,7 +6654,7 @@
       "foreground": "tertiary-text",
       "background": "surface-popover",
       "overlay": null,
-      "ratio": 7.6619886117727445,
+      "ratio": 6.0004912135192265,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -7126,7 +7126,7 @@
       "foreground": "tertiary-text",
       "background": "user-message-surface",
       "overlay": null,
-      "ratio": 7.56274152982008,
+      "ratio": 5.922765798695543,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -7598,7 +7598,7 @@
       "foreground": "tertiary-text",
       "background": "segmented-track",
       "overlay": null,
-      "ratio": 7.094744085777511,
+      "ratio": 5.556253305240248,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -8070,7 +8070,7 @@
       "foreground": "tertiary-text",
       "background": "segmented-thumb",
       "overlay": null,
-      "ratio": 6.727129015635183,
+      "ratio": 5.268355331213382,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -11902,7 +11902,7 @@
       "foreground": "tertiary-text",
       "background": "document-canvas",
       "overlay": null,
-      "ratio": 8.779348484668379,
+      "ratio": 6.875552302666155,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -11942,7 +11942,7 @@
       "foreground": "tertiary-text",
       "background": "surface-panel",
       "overlay": null,
-      "ratio": 8.373503474202181,
+      "ratio": 6.557714526764058,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -11982,7 +11982,7 @@
       "foreground": "tertiary-text",
       "background": "surface-sidebar",
       "overlay": null,
-      "ratio": 9.466721353560054,
+      "ratio": 7.413868798446185,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -12022,7 +12022,7 @@
       "foreground": "tertiary-text",
       "background": "transcript-input",
       "overlay": null,
-      "ratio": 7.846080280173484,
+      "ratio": 6.144662719728912,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -12062,7 +12062,7 @@
       "foreground": "tertiary-text",
       "background": "button-hover",
       "overlay": null,
-      "ratio": 7.188571657093419,
+      "ratio": 5.629734426890818,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -12102,7 +12102,7 @@
       "foreground": "tertiary-text",
       "background": "button-pressed",
       "overlay": null,
-      "ratio": 6.170395163486928,
+      "ratio": 4.832348863786463,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -12142,7 +12142,7 @@
       "foreground": "tertiary-text",
       "background": "row-selection",
       "overlay": null,
-      "ratio": 6.907303665962345,
+      "ratio": 5.409459222248387,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -12182,7 +12182,7 @@
       "foreground": "tertiary-text",
       "background": "row-selection-hover",
       "overlay": null,
-      "ratio": 5.991694049941908,
+      "ratio": 4.692398974011712,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -12222,7 +12222,7 @@
       "foreground": "tertiary-text",
       "background": "code-surface",
       "overlay": null,
-      "ratio": 8.373503474202181,
+      "ratio": 6.557714526764058,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -12262,7 +12262,7 @@
       "foreground": "tertiary-text",
       "background": "diff-added-surface",
       "overlay": null,
-      "ratio": 6.184182589046713,
+      "ratio": 4.843146494808966,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -12302,7 +12302,7 @@
       "foreground": "tertiary-text",
       "background": "diff-removed-surface",
       "overlay": null,
-      "ratio": 6.694179060550528,
+      "ratio": 5.242550553108187,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -15146,7 +15146,7 @@
       "foreground": "tertiary-text",
       "background": "surface-0",
       "overlay": null,
-      "ratio": 9.466721353560054,
+      "ratio": 7.413868798446185,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -15618,7 +15618,7 @@
       "foreground": "tertiary-text",
       "background": "surface-1",
       "overlay": null,
-      "ratio": 8.779348484668379,
+      "ratio": 6.875552302666155,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -16090,7 +16090,7 @@
       "foreground": "tertiary-text",
       "background": "surface-2",
       "overlay": null,
-      "ratio": 8.373503474202181,
+      "ratio": 6.557714526764058,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -16562,7 +16562,7 @@
       "foreground": "tertiary-text",
       "background": "surface-3",
       "overlay": null,
-      "ratio": 7.846080280173484,
+      "ratio": 6.144662719728912,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -17034,7 +17034,7 @@
       "foreground": "tertiary-text",
       "background": "surface-popover",
       "overlay": null,
-      "ratio": 7.6619886117727445,
+      "ratio": 6.0004912135192265,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -17506,7 +17506,7 @@
       "foreground": "tertiary-text",
       "background": "user-message-surface",
       "overlay": null,
-      "ratio": 7.56274152982008,
+      "ratio": 5.922765798695543,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -17978,7 +17978,7 @@
       "foreground": "tertiary-text",
       "background": "segmented-track",
       "overlay": null,
-      "ratio": 7.094744085777511,
+      "ratio": 5.556253305240248,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -18450,7 +18450,7 @@
       "foreground": "tertiary-text",
       "background": "segmented-thumb",
       "overlay": null,
-      "ratio": 6.727129015635183,
+      "ratio": 5.268355331213382,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -22282,7 +22282,7 @@
       "foreground": "tertiary-text",
       "background": "document-canvas",
       "overlay": null,
-      "ratio": 8.779348484668379,
+      "ratio": 6.875552302666155,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -22322,7 +22322,7 @@
       "foreground": "tertiary-text",
       "background": "surface-panel",
       "overlay": null,
-      "ratio": 8.373503474202181,
+      "ratio": 6.557714526764058,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -22362,7 +22362,7 @@
       "foreground": "tertiary-text",
       "background": "surface-sidebar",
       "overlay": null,
-      "ratio": 9.466721353560054,
+      "ratio": 7.413868798446185,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -22402,7 +22402,7 @@
       "foreground": "tertiary-text",
       "background": "transcript-input",
       "overlay": null,
-      "ratio": 7.846080280173484,
+      "ratio": 6.144662719728912,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -22442,7 +22442,7 @@
       "foreground": "tertiary-text",
       "background": "button-hover",
       "overlay": null,
-      "ratio": 7.188571657093419,
+      "ratio": 5.629734426890818,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -22482,7 +22482,7 @@
       "foreground": "tertiary-text",
       "background": "button-pressed",
       "overlay": null,
-      "ratio": 6.170395163486928,
+      "ratio": 4.832348863786463,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -22522,7 +22522,7 @@
       "foreground": "tertiary-text",
       "background": "row-selection",
       "overlay": null,
-      "ratio": 6.907303665962345,
+      "ratio": 5.409459222248387,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -22562,7 +22562,7 @@
       "foreground": "tertiary-text",
       "background": "row-selection-hover",
       "overlay": null,
-      "ratio": 5.991694049941908,
+      "ratio": 4.692398974011712,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -22602,7 +22602,7 @@
       "foreground": "tertiary-text",
       "background": "code-surface",
       "overlay": null,
-      "ratio": 8.373503474202181,
+      "ratio": 6.557714526764058,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -22642,7 +22642,7 @@
       "foreground": "tertiary-text",
       "background": "diff-added-surface",
       "overlay": null,
-      "ratio": 6.184182589046713,
+      "ratio": 4.843146494808966,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -22682,7 +22682,7 @@
       "foreground": "tertiary-text",
       "background": "diff-removed-surface",
       "overlay": null,
-      "ratio": 6.694179060550528,
+      "ratio": 5.242550553108187,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -25526,7 +25526,7 @@
       "foreground": "tertiary-text",
       "background": "surface-0",
       "overlay": null,
-      "ratio": 9.466721353560054,
+      "ratio": 7.413868798446185,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -25998,7 +25998,7 @@
       "foreground": "tertiary-text",
       "background": "surface-1",
       "overlay": null,
-      "ratio": 8.779348484668379,
+      "ratio": 6.875552302666155,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -26470,7 +26470,7 @@
       "foreground": "tertiary-text",
       "background": "surface-2",
       "overlay": null,
-      "ratio": 8.373503474202181,
+      "ratio": 6.557714526764058,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -26942,7 +26942,7 @@
       "foreground": "tertiary-text",
       "background": "surface-3",
       "overlay": null,
-      "ratio": 7.846080280173484,
+      "ratio": 6.144662719728912,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -27414,7 +27414,7 @@
       "foreground": "tertiary-text",
       "background": "surface-popover",
       "overlay": null,
-      "ratio": 7.6619886117727445,
+      "ratio": 6.0004912135192265,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -27886,7 +27886,7 @@
       "foreground": "tertiary-text",
       "background": "user-message-surface",
       "overlay": null,
-      "ratio": 7.56274152982008,
+      "ratio": 5.922765798695543,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -28358,7 +28358,7 @@
       "foreground": "tertiary-text",
       "background": "segmented-track",
       "overlay": null,
-      "ratio": 7.094744085777511,
+      "ratio": 5.556253305240248,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -28830,7 +28830,7 @@
       "foreground": "tertiary-text",
       "background": "segmented-thumb",
       "overlay": null,
-      "ratio": 6.727129015635183,
+      "ratio": 5.268355331213382,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -32662,7 +32662,7 @@
       "foreground": "tertiary-text",
       "background": "document-canvas",
       "overlay": null,
-      "ratio": 8.779348484668379,
+      "ratio": 6.875552302666155,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -32702,7 +32702,7 @@
       "foreground": "tertiary-text",
       "background": "surface-panel",
       "overlay": null,
-      "ratio": 8.373503474202181,
+      "ratio": 6.557714526764058,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -32742,7 +32742,7 @@
       "foreground": "tertiary-text",
       "background": "surface-sidebar",
       "overlay": null,
-      "ratio": 9.466721353560054,
+      "ratio": 7.413868798446185,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -32782,7 +32782,7 @@
       "foreground": "tertiary-text",
       "background": "transcript-input",
       "overlay": null,
-      "ratio": 7.846080280173484,
+      "ratio": 6.144662719728912,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -32822,7 +32822,7 @@
       "foreground": "tertiary-text",
       "background": "button-hover",
       "overlay": null,
-      "ratio": 7.188571657093419,
+      "ratio": 5.629734426890818,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -32862,7 +32862,7 @@
       "foreground": "tertiary-text",
       "background": "button-pressed",
       "overlay": null,
-      "ratio": 6.170395163486928,
+      "ratio": 4.832348863786463,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -32902,7 +32902,7 @@
       "foreground": "tertiary-text",
       "background": "row-selection",
       "overlay": null,
-      "ratio": 6.907303665962345,
+      "ratio": 5.409459222248387,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -32942,7 +32942,7 @@
       "foreground": "tertiary-text",
       "background": "row-selection-hover",
       "overlay": null,
-      "ratio": 5.991694049941908,
+      "ratio": 4.692398974011712,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -32982,7 +32982,7 @@
       "foreground": "tertiary-text",
       "background": "code-surface",
       "overlay": null,
-      "ratio": 8.373503474202181,
+      "ratio": 6.557714526764058,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -33022,7 +33022,7 @@
       "foreground": "tertiary-text",
       "background": "diff-added-surface",
       "overlay": null,
-      "ratio": 6.184182589046713,
+      "ratio": 4.843146494808966,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -33062,7 +33062,7 @@
       "foreground": "tertiary-text",
       "background": "diff-removed-surface",
       "overlay": null,
-      "ratio": 6.694179060550528,
+      "ratio": 5.242550553108187,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -35906,7 +35906,7 @@
       "foreground": "tertiary-text",
       "background": "surface-0",
       "overlay": null,
-      "ratio": 9.466721353560054,
+      "ratio": 7.413868798446185,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -36378,7 +36378,7 @@
       "foreground": "tertiary-text",
       "background": "surface-1",
       "overlay": null,
-      "ratio": 8.779348484668379,
+      "ratio": 6.875552302666155,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -36850,7 +36850,7 @@
       "foreground": "tertiary-text",
       "background": "surface-2",
       "overlay": null,
-      "ratio": 8.373503474202181,
+      "ratio": 6.557714526764058,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -37322,7 +37322,7 @@
       "foreground": "tertiary-text",
       "background": "surface-3",
       "overlay": null,
-      "ratio": 7.846080280173484,
+      "ratio": 6.144662719728912,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -37794,7 +37794,7 @@
       "foreground": "tertiary-text",
       "background": "surface-popover",
       "overlay": null,
-      "ratio": 7.6619886117727445,
+      "ratio": 6.0004912135192265,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -38266,7 +38266,7 @@
       "foreground": "tertiary-text",
       "background": "user-message-surface",
       "overlay": null,
-      "ratio": 7.56274152982008,
+      "ratio": 5.922765798695543,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -38738,7 +38738,7 @@
       "foreground": "tertiary-text",
       "background": "segmented-track",
       "overlay": null,
-      "ratio": 7.094744085777511,
+      "ratio": 5.556253305240248,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -39210,7 +39210,7 @@
       "foreground": "tertiary-text",
       "background": "segmented-thumb",
       "overlay": null,
-      "ratio": 6.727129015635183,
+      "ratio": 5.268355331213382,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -43042,7 +43042,7 @@
       "foreground": "tertiary-text",
       "background": "document-canvas",
       "overlay": null,
-      "ratio": 8.779348484668379,
+      "ratio": 6.875552302666155,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -43082,7 +43082,7 @@
       "foreground": "tertiary-text",
       "background": "surface-panel",
       "overlay": null,
-      "ratio": 8.373503474202181,
+      "ratio": 6.557714526764058,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -43122,7 +43122,7 @@
       "foreground": "tertiary-text",
       "background": "surface-sidebar",
       "overlay": null,
-      "ratio": 9.466721353560054,
+      "ratio": 7.413868798446185,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -43162,7 +43162,7 @@
       "foreground": "tertiary-text",
       "background": "transcript-input",
       "overlay": null,
-      "ratio": 7.846080280173484,
+      "ratio": 6.144662719728912,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -43202,7 +43202,7 @@
       "foreground": "tertiary-text",
       "background": "button-hover",
       "overlay": null,
-      "ratio": 7.188571657093419,
+      "ratio": 5.629734426890818,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -43242,7 +43242,7 @@
       "foreground": "tertiary-text",
       "background": "button-pressed",
       "overlay": null,
-      "ratio": 6.170395163486928,
+      "ratio": 4.832348863786463,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -43282,7 +43282,7 @@
       "foreground": "tertiary-text",
       "background": "row-selection",
       "overlay": null,
-      "ratio": 6.907303665962345,
+      "ratio": 5.409459222248387,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -43322,7 +43322,7 @@
       "foreground": "tertiary-text",
       "background": "row-selection-hover",
       "overlay": null,
-      "ratio": 5.991694049941908,
+      "ratio": 4.692398974011712,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -43362,7 +43362,7 @@
       "foreground": "tertiary-text",
       "background": "code-surface",
       "overlay": null,
-      "ratio": 8.373503474202181,
+      "ratio": 6.557714526764058,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -43402,7 +43402,7 @@
       "foreground": "tertiary-text",
       "background": "diff-added-surface",
       "overlay": null,
-      "ratio": 6.184182589046713,
+      "ratio": 4.843146494808966,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -43442,7 +43442,7 @@
       "foreground": "tertiary-text",
       "background": "diff-removed-surface",
       "overlay": null,
-      "ratio": 6.694179060550528,
+      "ratio": 5.242550553108187,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -46286,7 +46286,7 @@
       "foreground": "tertiary-text",
       "background": "surface-0",
       "overlay": null,
-      "ratio": 9.466721353560054,
+      "ratio": 7.413868798446185,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -46758,7 +46758,7 @@
       "foreground": "tertiary-text",
       "background": "surface-1",
       "overlay": null,
-      "ratio": 8.779348484668379,
+      "ratio": 6.875552302666155,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -47230,7 +47230,7 @@
       "foreground": "tertiary-text",
       "background": "surface-2",
       "overlay": null,
-      "ratio": 8.373503474202181,
+      "ratio": 6.557714526764058,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -47702,7 +47702,7 @@
       "foreground": "tertiary-text",
       "background": "surface-3",
       "overlay": null,
-      "ratio": 7.846080280173484,
+      "ratio": 6.144662719728912,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -48174,7 +48174,7 @@
       "foreground": "tertiary-text",
       "background": "surface-popover",
       "overlay": null,
-      "ratio": 7.6619886117727445,
+      "ratio": 6.0004912135192265,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -48646,7 +48646,7 @@
       "foreground": "tertiary-text",
       "background": "user-message-surface",
       "overlay": null,
-      "ratio": 7.56274152982008,
+      "ratio": 5.922765798695543,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -49118,7 +49118,7 @@
       "foreground": "tertiary-text",
       "background": "segmented-track",
       "overlay": null,
-      "ratio": 7.094744085777511,
+      "ratio": 5.556253305240248,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -49590,7 +49590,7 @@
       "foreground": "tertiary-text",
       "background": "segmented-thumb",
       "overlay": null,
-      "ratio": 6.727129015635183,
+      "ratio": 5.268355331213382,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -53422,7 +53422,7 @@
       "foreground": "tertiary-text",
       "background": "document-canvas",
       "overlay": null,
-      "ratio": 8.779348484668379,
+      "ratio": 6.875552302666155,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -53462,7 +53462,7 @@
       "foreground": "tertiary-text",
       "background": "surface-panel",
       "overlay": null,
-      "ratio": 8.373503474202181,
+      "ratio": 6.557714526764058,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -53502,7 +53502,7 @@
       "foreground": "tertiary-text",
       "background": "surface-sidebar",
       "overlay": null,
-      "ratio": 9.466721353560054,
+      "ratio": 7.413868798446185,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -53542,7 +53542,7 @@
       "foreground": "tertiary-text",
       "background": "transcript-input",
       "overlay": null,
-      "ratio": 7.846080280173484,
+      "ratio": 6.144662719728912,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -53582,7 +53582,7 @@
       "foreground": "tertiary-text",
       "background": "button-hover",
       "overlay": null,
-      "ratio": 7.188571657093419,
+      "ratio": 5.629734426890818,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -53622,7 +53622,7 @@
       "foreground": "tertiary-text",
       "background": "button-pressed",
       "overlay": null,
-      "ratio": 6.170395163486928,
+      "ratio": 4.832348863786463,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -53662,7 +53662,7 @@
       "foreground": "tertiary-text",
       "background": "row-selection",
       "overlay": null,
-      "ratio": 6.907303665962345,
+      "ratio": 5.409459222248387,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -53702,7 +53702,7 @@
       "foreground": "tertiary-text",
       "background": "row-selection-hover",
       "overlay": null,
-      "ratio": 5.991694049941908,
+      "ratio": 4.692398974011712,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -53742,7 +53742,7 @@
       "foreground": "tertiary-text",
       "background": "code-surface",
       "overlay": null,
-      "ratio": 8.373503474202181,
+      "ratio": 6.557714526764058,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -53782,7 +53782,7 @@
       "foreground": "tertiary-text",
       "background": "diff-added-surface",
       "overlay": null,
-      "ratio": 6.184182589046713,
+      "ratio": 4.843146494808966,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -53822,7 +53822,7 @@
       "foreground": "tertiary-text",
       "background": "diff-removed-surface",
       "overlay": null,
-      "ratio": 6.694179060550528,
+      "ratio": 5.242550553108187,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -56666,7 +56666,7 @@
       "foreground": "tertiary-text",
       "background": "surface-0",
       "overlay": null,
-      "ratio": 9.466721353560054,
+      "ratio": 7.413868798446185,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -57138,7 +57138,7 @@
       "foreground": "tertiary-text",
       "background": "surface-1",
       "overlay": null,
-      "ratio": 8.779348484668379,
+      "ratio": 6.875552302666155,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -57610,7 +57610,7 @@
       "foreground": "tertiary-text",
       "background": "surface-2",
       "overlay": null,
-      "ratio": 8.373503474202181,
+      "ratio": 6.557714526764058,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -58082,7 +58082,7 @@
       "foreground": "tertiary-text",
       "background": "surface-3",
       "overlay": null,
-      "ratio": 7.846080280173484,
+      "ratio": 6.144662719728912,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -58554,7 +58554,7 @@
       "foreground": "tertiary-text",
       "background": "surface-popover",
       "overlay": null,
-      "ratio": 7.6619886117727445,
+      "ratio": 6.0004912135192265,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -59026,7 +59026,7 @@
       "foreground": "tertiary-text",
       "background": "user-message-surface",
       "overlay": null,
-      "ratio": 7.56274152982008,
+      "ratio": 5.922765798695543,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -59498,7 +59498,7 @@
       "foreground": "tertiary-text",
       "background": "segmented-track",
       "overlay": null,
-      "ratio": 7.094744085777511,
+      "ratio": 5.556253305240248,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -59970,7 +59970,7 @@
       "foreground": "tertiary-text",
       "background": "segmented-thumb",
       "overlay": null,
-      "ratio": 6.727129015635183,
+      "ratio": 5.268355331213382,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -63802,7 +63802,7 @@
       "foreground": "tertiary-text",
       "background": "document-canvas",
       "overlay": null,
-      "ratio": 8.779348484668379,
+      "ratio": 6.875552302666155,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -63842,7 +63842,7 @@
       "foreground": "tertiary-text",
       "background": "surface-panel",
       "overlay": null,
-      "ratio": 8.373503474202181,
+      "ratio": 6.557714526764058,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -63882,7 +63882,7 @@
       "foreground": "tertiary-text",
       "background": "surface-sidebar",
       "overlay": null,
-      "ratio": 9.466721353560054,
+      "ratio": 7.413868798446185,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -63922,7 +63922,7 @@
       "foreground": "tertiary-text",
       "background": "transcript-input",
       "overlay": null,
-      "ratio": 7.846080280173484,
+      "ratio": 6.144662719728912,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -63962,7 +63962,7 @@
       "foreground": "tertiary-text",
       "background": "button-hover",
       "overlay": null,
-      "ratio": 7.188571657093419,
+      "ratio": 5.629734426890818,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -64002,7 +64002,7 @@
       "foreground": "tertiary-text",
       "background": "button-pressed",
       "overlay": null,
-      "ratio": 6.170395163486928,
+      "ratio": 4.832348863786463,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -64042,7 +64042,7 @@
       "foreground": "tertiary-text",
       "background": "row-selection",
       "overlay": null,
-      "ratio": 6.907303665962345,
+      "ratio": 5.409459222248387,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -64082,7 +64082,7 @@
       "foreground": "tertiary-text",
       "background": "row-selection-hover",
       "overlay": null,
-      "ratio": 5.991694049941908,
+      "ratio": 4.692398974011712,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -64122,7 +64122,7 @@
       "foreground": "tertiary-text",
       "background": "code-surface",
       "overlay": null,
-      "ratio": 8.373503474202181,
+      "ratio": 6.557714526764058,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -64162,7 +64162,7 @@
       "foreground": "tertiary-text",
       "background": "diff-added-surface",
       "overlay": null,
-      "ratio": 6.184182589046713,
+      "ratio": 4.843146494808966,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -64202,7 +64202,7 @@
       "foreground": "tertiary-text",
       "background": "diff-removed-surface",
       "overlay": null,
-      "ratio": 6.694179060550528,
+      "ratio": 5.242550553108187,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -67046,7 +67046,7 @@
       "foreground": "tertiary-text",
       "background": "surface-0",
       "overlay": null,
-      "ratio": 9.466721353560054,
+      "ratio": 7.413868798446185,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -67518,7 +67518,7 @@
       "foreground": "tertiary-text",
       "background": "surface-1",
       "overlay": null,
-      "ratio": 8.779348484668379,
+      "ratio": 6.875552302666155,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -67990,7 +67990,7 @@
       "foreground": "tertiary-text",
       "background": "surface-2",
       "overlay": null,
-      "ratio": 8.373503474202181,
+      "ratio": 6.557714526764058,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -68462,7 +68462,7 @@
       "foreground": "tertiary-text",
       "background": "surface-3",
       "overlay": null,
-      "ratio": 7.846080280173484,
+      "ratio": 6.144662719728912,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -68934,7 +68934,7 @@
       "foreground": "tertiary-text",
       "background": "surface-popover",
       "overlay": null,
-      "ratio": 7.6619886117727445,
+      "ratio": 6.0004912135192265,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -69406,7 +69406,7 @@
       "foreground": "tertiary-text",
       "background": "user-message-surface",
       "overlay": null,
-      "ratio": 7.56274152982008,
+      "ratio": 5.922765798695543,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -69878,7 +69878,7 @@
       "foreground": "tertiary-text",
       "background": "segmented-track",
       "overlay": null,
-      "ratio": 7.094744085777511,
+      "ratio": 5.556253305240248,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -70350,7 +70350,7 @@
       "foreground": "tertiary-text",
       "background": "segmented-thumb",
       "overlay": null,
-      "ratio": 6.727129015635183,
+      "ratio": 5.268355331213382,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -74182,7 +74182,7 @@
       "foreground": "tertiary-text",
       "background": "document-canvas",
       "overlay": null,
-      "ratio": 8.779348484668379,
+      "ratio": 6.875552302666155,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -74222,7 +74222,7 @@
       "foreground": "tertiary-text",
       "background": "surface-panel",
       "overlay": null,
-      "ratio": 8.373503474202181,
+      "ratio": 6.557714526764058,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -74262,7 +74262,7 @@
       "foreground": "tertiary-text",
       "background": "surface-sidebar",
       "overlay": null,
-      "ratio": 9.466721353560054,
+      "ratio": 7.413868798446185,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -74302,7 +74302,7 @@
       "foreground": "tertiary-text",
       "background": "transcript-input",
       "overlay": null,
-      "ratio": 7.846080280173484,
+      "ratio": 6.144662719728912,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -74342,7 +74342,7 @@
       "foreground": "tertiary-text",
       "background": "button-hover",
       "overlay": null,
-      "ratio": 7.188571657093419,
+      "ratio": 5.629734426890818,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -74382,7 +74382,7 @@
       "foreground": "tertiary-text",
       "background": "button-pressed",
       "overlay": null,
-      "ratio": 6.170395163486928,
+      "ratio": 4.832348863786463,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -74422,7 +74422,7 @@
       "foreground": "tertiary-text",
       "background": "row-selection",
       "overlay": null,
-      "ratio": 6.907303665962345,
+      "ratio": 5.409459222248387,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -74462,7 +74462,7 @@
       "foreground": "tertiary-text",
       "background": "row-selection-hover",
       "overlay": null,
-      "ratio": 5.991694049941908,
+      "ratio": 4.692398974011712,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -74502,7 +74502,7 @@
       "foreground": "tertiary-text",
       "background": "code-surface",
       "overlay": null,
-      "ratio": 8.373503474202181,
+      "ratio": 6.557714526764058,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -74542,7 +74542,7 @@
       "foreground": "tertiary-text",
       "background": "diff-added-surface",
       "overlay": null,
-      "ratio": 6.184182589046713,
+      "ratio": 4.843146494808966,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -74582,7 +74582,7 @@
       "foreground": "tertiary-text",
       "background": "diff-removed-surface",
       "overlay": null,
-      "ratio": 6.694179060550528,
+      "ratio": 5.242550553108187,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -77426,7 +77426,7 @@
       "foreground": "tertiary-text",
       "background": "surface-0",
       "overlay": null,
-      "ratio": 9.466721353560054,
+      "ratio": 7.413868798446185,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -77898,7 +77898,7 @@
       "foreground": "tertiary-text",
       "background": "surface-1",
       "overlay": null,
-      "ratio": 8.779348484668379,
+      "ratio": 6.875552302666155,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -78370,7 +78370,7 @@
       "foreground": "tertiary-text",
       "background": "surface-2",
       "overlay": null,
-      "ratio": 8.373503474202181,
+      "ratio": 6.557714526764058,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -78842,7 +78842,7 @@
       "foreground": "tertiary-text",
       "background": "surface-3",
       "overlay": null,
-      "ratio": 7.846080280173484,
+      "ratio": 6.144662719728912,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -79314,7 +79314,7 @@
       "foreground": "tertiary-text",
       "background": "surface-popover",
       "overlay": null,
-      "ratio": 7.6619886117727445,
+      "ratio": 6.0004912135192265,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -79786,7 +79786,7 @@
       "foreground": "tertiary-text",
       "background": "user-message-surface",
       "overlay": null,
-      "ratio": 7.56274152982008,
+      "ratio": 5.922765798695543,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -80258,7 +80258,7 @@
       "foreground": "tertiary-text",
       "background": "segmented-track",
       "overlay": null,
-      "ratio": 7.094744085777511,
+      "ratio": 5.556253305240248,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -80730,7 +80730,7 @@
       "foreground": "tertiary-text",
       "background": "segmented-thumb",
       "overlay": null,
-      "ratio": 6.727129015635183,
+      "ratio": 5.268355331213382,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -84562,7 +84562,7 @@
       "foreground": "tertiary-text",
       "background": "document-canvas",
       "overlay": null,
-      "ratio": 8.779348484668379,
+      "ratio": 6.875552302666155,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -84602,7 +84602,7 @@
       "foreground": "tertiary-text",
       "background": "surface-panel",
       "overlay": null,
-      "ratio": 8.373503474202181,
+      "ratio": 6.557714526764058,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -84642,7 +84642,7 @@
       "foreground": "tertiary-text",
       "background": "surface-sidebar",
       "overlay": null,
-      "ratio": 9.466721353560054,
+      "ratio": 7.413868798446185,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -84682,7 +84682,7 @@
       "foreground": "tertiary-text",
       "background": "transcript-input",
       "overlay": null,
-      "ratio": 7.846080280173484,
+      "ratio": 6.144662719728912,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -84722,7 +84722,7 @@
       "foreground": "tertiary-text",
       "background": "button-hover",
       "overlay": null,
-      "ratio": 7.188571657093419,
+      "ratio": 5.629734426890818,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -84762,7 +84762,7 @@
       "foreground": "tertiary-text",
       "background": "button-pressed",
       "overlay": null,
-      "ratio": 6.170395163486928,
+      "ratio": 4.832348863786463,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -84802,7 +84802,7 @@
       "foreground": "tertiary-text",
       "background": "row-selection",
       "overlay": null,
-      "ratio": 6.907303665962345,
+      "ratio": 5.409459222248387,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -84842,7 +84842,7 @@
       "foreground": "tertiary-text",
       "background": "row-selection-hover",
       "overlay": null,
-      "ratio": 5.991694049941908,
+      "ratio": 4.692398974011712,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -84882,7 +84882,7 @@
       "foreground": "tertiary-text",
       "background": "code-surface",
       "overlay": null,
-      "ratio": 8.373503474202181,
+      "ratio": 6.557714526764058,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -84922,7 +84922,7 @@
       "foreground": "tertiary-text",
       "background": "diff-added-surface",
       "overlay": null,
-      "ratio": 6.184182589046713,
+      "ratio": 4.843146494808966,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -84962,7 +84962,7 @@
       "foreground": "tertiary-text",
       "background": "diff-removed-surface",
       "overlay": null,
-      "ratio": 6.694179060550528,
+      "ratio": 5.242550553108187,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -87806,7 +87806,7 @@
       "foreground": "tertiary-text",
       "background": "surface-0",
       "overlay": null,
-      "ratio": 9.466721353560054,
+      "ratio": 7.413868798446185,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -88278,7 +88278,7 @@
       "foreground": "tertiary-text",
       "background": "surface-1",
       "overlay": null,
-      "ratio": 8.779348484668379,
+      "ratio": 6.875552302666155,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -88750,7 +88750,7 @@
       "foreground": "tertiary-text",
       "background": "surface-2",
       "overlay": null,
-      "ratio": 8.373503474202181,
+      "ratio": 6.557714526764058,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -89222,7 +89222,7 @@
       "foreground": "tertiary-text",
       "background": "surface-3",
       "overlay": null,
-      "ratio": 7.846080280173484,
+      "ratio": 6.144662719728912,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -89694,7 +89694,7 @@
       "foreground": "tertiary-text",
       "background": "surface-popover",
       "overlay": null,
-      "ratio": 7.6619886117727445,
+      "ratio": 6.0004912135192265,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -90166,7 +90166,7 @@
       "foreground": "tertiary-text",
       "background": "user-message-surface",
       "overlay": null,
-      "ratio": 7.56274152982008,
+      "ratio": 5.922765798695543,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -90638,7 +90638,7 @@
       "foreground": "tertiary-text",
       "background": "segmented-track",
       "overlay": null,
-      "ratio": 7.094744085777511,
+      "ratio": 5.556253305240248,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -91110,7 +91110,7 @@
       "foreground": "tertiary-text",
       "background": "segmented-thumb",
       "overlay": null,
-      "ratio": 6.727129015635183,
+      "ratio": 5.268355331213382,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -94942,7 +94942,7 @@
       "foreground": "tertiary-text",
       "background": "document-canvas",
       "overlay": null,
-      "ratio": 8.779348484668379,
+      "ratio": 6.875552302666155,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -94982,7 +94982,7 @@
       "foreground": "tertiary-text",
       "background": "surface-panel",
       "overlay": null,
-      "ratio": 8.373503474202181,
+      "ratio": 6.557714526764058,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -95022,7 +95022,7 @@
       "foreground": "tertiary-text",
       "background": "surface-sidebar",
       "overlay": null,
-      "ratio": 9.466721353560054,
+      "ratio": 7.413868798446185,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -95062,7 +95062,7 @@
       "foreground": "tertiary-text",
       "background": "transcript-input",
       "overlay": null,
-      "ratio": 7.846080280173484,
+      "ratio": 6.144662719728912,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -95102,7 +95102,7 @@
       "foreground": "tertiary-text",
       "background": "button-hover",
       "overlay": null,
-      "ratio": 7.188571657093419,
+      "ratio": 5.629734426890818,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -95142,7 +95142,7 @@
       "foreground": "tertiary-text",
       "background": "button-pressed",
       "overlay": null,
-      "ratio": 6.170395163486928,
+      "ratio": 4.832348863786463,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -95182,7 +95182,7 @@
       "foreground": "tertiary-text",
       "background": "row-selection",
       "overlay": null,
-      "ratio": 6.907303665962345,
+      "ratio": 5.409459222248387,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -95222,7 +95222,7 @@
       "foreground": "tertiary-text",
       "background": "row-selection-hover",
       "overlay": null,
-      "ratio": 5.991694049941908,
+      "ratio": 4.692398974011712,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -95262,7 +95262,7 @@
       "foreground": "tertiary-text",
       "background": "code-surface",
       "overlay": null,
-      "ratio": 8.373503474202181,
+      "ratio": 6.557714526764058,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -95302,7 +95302,7 @@
       "foreground": "tertiary-text",
       "background": "diff-added-surface",
       "overlay": null,
-      "ratio": 6.184182589046713,
+      "ratio": 4.843146494808966,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -95342,7 +95342,7 @@
       "foreground": "tertiary-text",
       "background": "diff-removed-surface",
       "overlay": null,
-      "ratio": 6.694179060550528,
+      "ratio": 5.242550553108187,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -98186,7 +98186,7 @@
       "foreground": "tertiary-text",
       "background": "surface-0",
       "overlay": null,
-      "ratio": 9.466721353560054,
+      "ratio": 7.413868798446185,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -98658,7 +98658,7 @@
       "foreground": "tertiary-text",
       "background": "surface-1",
       "overlay": null,
-      "ratio": 8.779348484668379,
+      "ratio": 6.875552302666155,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -99130,7 +99130,7 @@
       "foreground": "tertiary-text",
       "background": "surface-2",
       "overlay": null,
-      "ratio": 8.373503474202181,
+      "ratio": 6.557714526764058,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -99602,7 +99602,7 @@
       "foreground": "tertiary-text",
       "background": "surface-3",
       "overlay": null,
-      "ratio": 7.846080280173484,
+      "ratio": 6.144662719728912,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -100074,7 +100074,7 @@
       "foreground": "tertiary-text",
       "background": "surface-popover",
       "overlay": null,
-      "ratio": 7.6619886117727445,
+      "ratio": 6.0004912135192265,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -100546,7 +100546,7 @@
       "foreground": "tertiary-text",
       "background": "user-message-surface",
       "overlay": null,
-      "ratio": 7.56274152982008,
+      "ratio": 5.922765798695543,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -101018,7 +101018,7 @@
       "foreground": "tertiary-text",
       "background": "segmented-track",
       "overlay": null,
-      "ratio": 7.094744085777511,
+      "ratio": 5.556253305240248,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -101490,7 +101490,7 @@
       "foreground": "tertiary-text",
       "background": "segmented-thumb",
       "overlay": null,
-      "ratio": 6.727129015635183,
+      "ratio": 5.268355331213382,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -105322,7 +105322,7 @@
       "foreground": "tertiary-text",
       "background": "document-canvas",
       "overlay": null,
-      "ratio": 8.779348484668379,
+      "ratio": 6.875552302666155,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -105362,7 +105362,7 @@
       "foreground": "tertiary-text",
       "background": "surface-panel",
       "overlay": null,
-      "ratio": 8.373503474202181,
+      "ratio": 6.557714526764058,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -105402,7 +105402,7 @@
       "foreground": "tertiary-text",
       "background": "surface-sidebar",
       "overlay": null,
-      "ratio": 9.466721353560054,
+      "ratio": 7.413868798446185,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -105442,7 +105442,7 @@
       "foreground": "tertiary-text",
       "background": "transcript-input",
       "overlay": null,
-      "ratio": 7.846080280173484,
+      "ratio": 6.144662719728912,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -105482,7 +105482,7 @@
       "foreground": "tertiary-text",
       "background": "button-hover",
       "overlay": null,
-      "ratio": 7.188571657093419,
+      "ratio": 5.629734426890818,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -105522,7 +105522,7 @@
       "foreground": "tertiary-text",
       "background": "button-pressed",
       "overlay": null,
-      "ratio": 6.170395163486928,
+      "ratio": 4.832348863786463,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -105562,7 +105562,7 @@
       "foreground": "tertiary-text",
       "background": "row-selection",
       "overlay": null,
-      "ratio": 6.907303665962345,
+      "ratio": 5.409459222248387,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -105602,7 +105602,7 @@
       "foreground": "tertiary-text",
       "background": "row-selection-hover",
       "overlay": null,
-      "ratio": 5.991694049941908,
+      "ratio": 4.692398974011712,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -105642,7 +105642,7 @@
       "foreground": "tertiary-text",
       "background": "code-surface",
       "overlay": null,
-      "ratio": 8.373503474202181,
+      "ratio": 6.557714526764058,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -105682,7 +105682,7 @@
       "foreground": "tertiary-text",
       "background": "diff-added-surface",
       "overlay": null,
-      "ratio": 6.184182589046713,
+      "ratio": 4.843146494808966,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -105722,7 +105722,7 @@
       "foreground": "tertiary-text",
       "background": "diff-removed-surface",
       "overlay": null,
-      "ratio": 6.694179060550528,
+      "ratio": 5.242550553108187,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -108566,7 +108566,7 @@
       "foreground": "tertiary-text",
       "background": "surface-0",
       "overlay": null,
-      "ratio": 9.466721353560054,
+      "ratio": 7.413868798446185,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -109038,7 +109038,7 @@
       "foreground": "tertiary-text",
       "background": "surface-1",
       "overlay": null,
-      "ratio": 8.779348484668379,
+      "ratio": 6.875552302666155,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -109510,7 +109510,7 @@
       "foreground": "tertiary-text",
       "background": "surface-2",
       "overlay": null,
-      "ratio": 8.373503474202181,
+      "ratio": 6.557714526764058,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -109982,7 +109982,7 @@
       "foreground": "tertiary-text",
       "background": "surface-3",
       "overlay": null,
-      "ratio": 7.846080280173484,
+      "ratio": 6.144662719728912,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -110454,7 +110454,7 @@
       "foreground": "tertiary-text",
       "background": "surface-popover",
       "overlay": null,
-      "ratio": 7.6619886117727445,
+      "ratio": 6.0004912135192265,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -110926,7 +110926,7 @@
       "foreground": "tertiary-text",
       "background": "user-message-surface",
       "overlay": null,
-      "ratio": 7.56274152982008,
+      "ratio": 5.922765798695543,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -111398,7 +111398,7 @@
       "foreground": "tertiary-text",
       "background": "segmented-track",
       "overlay": null,
-      "ratio": 7.094744085777511,
+      "ratio": 5.556253305240248,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -111870,7 +111870,7 @@
       "foreground": "tertiary-text",
       "background": "segmented-thumb",
       "overlay": null,
-      "ratio": 6.727129015635183,
+      "ratio": 5.268355331213382,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -115702,7 +115702,7 @@
       "foreground": "tertiary-text",
       "background": "document-canvas",
       "overlay": null,
-      "ratio": 8.779348484668379,
+      "ratio": 6.875552302666155,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -115742,7 +115742,7 @@
       "foreground": "tertiary-text",
       "background": "surface-panel",
       "overlay": null,
-      "ratio": 8.373503474202181,
+      "ratio": 6.557714526764058,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -115782,7 +115782,7 @@
       "foreground": "tertiary-text",
       "background": "surface-sidebar",
       "overlay": null,
-      "ratio": 9.466721353560054,
+      "ratio": 7.413868798446185,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -115822,7 +115822,7 @@
       "foreground": "tertiary-text",
       "background": "transcript-input",
       "overlay": null,
-      "ratio": 7.846080280173484,
+      "ratio": 6.144662719728912,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -115862,7 +115862,7 @@
       "foreground": "tertiary-text",
       "background": "button-hover",
       "overlay": null,
-      "ratio": 7.188571657093419,
+      "ratio": 5.629734426890818,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -115902,7 +115902,7 @@
       "foreground": "tertiary-text",
       "background": "button-pressed",
       "overlay": null,
-      "ratio": 6.170395163486928,
+      "ratio": 4.832348863786463,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -115942,7 +115942,7 @@
       "foreground": "tertiary-text",
       "background": "row-selection",
       "overlay": null,
-      "ratio": 6.907303665962345,
+      "ratio": 5.409459222248387,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -115982,7 +115982,7 @@
       "foreground": "tertiary-text",
       "background": "row-selection-hover",
       "overlay": null,
-      "ratio": 5.991694049941908,
+      "ratio": 4.692398974011712,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -116022,7 +116022,7 @@
       "foreground": "tertiary-text",
       "background": "code-surface",
       "overlay": null,
-      "ratio": 8.373503474202181,
+      "ratio": 6.557714526764058,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -116062,7 +116062,7 @@
       "foreground": "tertiary-text",
       "background": "diff-added-surface",
       "overlay": null,
-      "ratio": 6.184182589046713,
+      "ratio": 4.843146494808966,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -116102,7 +116102,7 @@
       "foreground": "tertiary-text",
       "background": "diff-removed-surface",
       "overlay": null,
-      "ratio": 6.694179060550528,
+      "ratio": 5.242550553108187,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -118946,7 +118946,7 @@
       "foreground": "tertiary-text",
       "background": "surface-0",
       "overlay": null,
-      "ratio": 9.466721353560054,
+      "ratio": 7.413868798446185,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -119418,7 +119418,7 @@
       "foreground": "tertiary-text",
       "background": "surface-1",
       "overlay": null,
-      "ratio": 8.779348484668379,
+      "ratio": 6.875552302666155,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -119890,7 +119890,7 @@
       "foreground": "tertiary-text",
       "background": "surface-2",
       "overlay": null,
-      "ratio": 8.373503474202181,
+      "ratio": 6.557714526764058,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -120362,7 +120362,7 @@
       "foreground": "tertiary-text",
       "background": "surface-3",
       "overlay": null,
-      "ratio": 7.846080280173484,
+      "ratio": 6.144662719728912,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -120834,7 +120834,7 @@
       "foreground": "tertiary-text",
       "background": "surface-popover",
       "overlay": null,
-      "ratio": 7.6619886117727445,
+      "ratio": 6.0004912135192265,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -121306,7 +121306,7 @@
       "foreground": "tertiary-text",
       "background": "user-message-surface",
       "overlay": null,
-      "ratio": 7.56274152982008,
+      "ratio": 5.922765798695543,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -121778,7 +121778,7 @@
       "foreground": "tertiary-text",
       "background": "segmented-track",
       "overlay": null,
-      "ratio": 7.094744085777511,
+      "ratio": 5.556253305240248,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -122250,7 +122250,7 @@
       "foreground": "tertiary-text",
       "background": "segmented-thumb",
       "overlay": null,
-      "ratio": 6.727129015635183,
+      "ratio": 5.268355331213382,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -126082,7 +126082,7 @@
       "foreground": "tertiary-text",
       "background": "document-canvas",
       "overlay": null,
-      "ratio": 8.779348484668379,
+      "ratio": 6.875552302666155,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -126122,7 +126122,7 @@
       "foreground": "tertiary-text",
       "background": "surface-panel",
       "overlay": null,
-      "ratio": 8.373503474202181,
+      "ratio": 6.557714526764058,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -126162,7 +126162,7 @@
       "foreground": "tertiary-text",
       "background": "surface-sidebar",
       "overlay": null,
-      "ratio": 9.466721353560054,
+      "ratio": 7.413868798446185,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -126202,7 +126202,7 @@
       "foreground": "tertiary-text",
       "background": "transcript-input",
       "overlay": null,
-      "ratio": 7.846080280173484,
+      "ratio": 6.144662719728912,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -126242,7 +126242,7 @@
       "foreground": "tertiary-text",
       "background": "button-hover",
       "overlay": null,
-      "ratio": 7.188571657093419,
+      "ratio": 5.629734426890818,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -126282,7 +126282,7 @@
       "foreground": "tertiary-text",
       "background": "button-pressed",
       "overlay": null,
-      "ratio": 6.170395163486928,
+      "ratio": 4.832348863786463,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -126322,7 +126322,7 @@
       "foreground": "tertiary-text",
       "background": "row-selection",
       "overlay": null,
-      "ratio": 6.907303665962345,
+      "ratio": 5.409459222248387,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -126362,7 +126362,7 @@
       "foreground": "tertiary-text",
       "background": "row-selection-hover",
       "overlay": null,
-      "ratio": 5.991694049941908,
+      "ratio": 4.692398974011712,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -126402,7 +126402,7 @@
       "foreground": "tertiary-text",
       "background": "code-surface",
       "overlay": null,
-      "ratio": 8.373503474202181,
+      "ratio": 6.557714526764058,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -126442,7 +126442,7 @@
       "foreground": "tertiary-text",
       "background": "diff-added-surface",
       "overlay": null,
-      "ratio": 6.184182589046713,
+      "ratio": 4.843146494808966,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -126482,7 +126482,7 @@
       "foreground": "tertiary-text",
       "background": "diff-removed-surface",
       "overlay": null,
-      "ratio": 6.694179060550528,
+      "ratio": 5.242550553108187,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -129326,7 +129326,7 @@
       "foreground": "tertiary-text",
       "background": "surface-0",
       "overlay": null,
-      "ratio": 9.466721353560054,
+      "ratio": 7.413868798446185,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -129798,7 +129798,7 @@
       "foreground": "tertiary-text",
       "background": "surface-1",
       "overlay": null,
-      "ratio": 8.779348484668379,
+      "ratio": 6.875552302666155,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -130270,7 +130270,7 @@
       "foreground": "tertiary-text",
       "background": "surface-2",
       "overlay": null,
-      "ratio": 8.373503474202181,
+      "ratio": 6.557714526764058,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -130742,7 +130742,7 @@
       "foreground": "tertiary-text",
       "background": "surface-3",
       "overlay": null,
-      "ratio": 7.846080280173484,
+      "ratio": 6.144662719728912,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -131214,7 +131214,7 @@
       "foreground": "tertiary-text",
       "background": "surface-popover",
       "overlay": null,
-      "ratio": 7.6619886117727445,
+      "ratio": 6.0004912135192265,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -131686,7 +131686,7 @@
       "foreground": "tertiary-text",
       "background": "user-message-surface",
       "overlay": null,
-      "ratio": 7.56274152982008,
+      "ratio": 5.922765798695543,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -132158,7 +132158,7 @@
       "foreground": "tertiary-text",
       "background": "segmented-track",
       "overlay": null,
-      "ratio": 7.094744085777511,
+      "ratio": 5.556253305240248,
       "minimum": 4.5,
       "status": "pass"
     },
@@ -132630,7 +132630,7 @@
       "foreground": "tertiary-text",
       "background": "segmented-thumb",
       "overlay": null,
-      "ratio": 6.727129015635183,
+      "ratio": 5.268355331213382,
       "minimum": 4.5,
       "status": "pass"
     },
