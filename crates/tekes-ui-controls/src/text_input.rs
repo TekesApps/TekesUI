@@ -3,6 +3,7 @@ pub use external::{
     ExternalSelection, ExternalUndo, ExternalValueConflict, ExternalValueResult, TextEditBaseline,
 };
 use std::ops::Range;
+use unicode_normalization::UnicodeNormalization;
 use unicode_segmentation::UnicodeSegmentation;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -42,7 +43,7 @@ pub(crate) struct PreparedTextInsert {
     changed: bool,
 }
 /// Selection and replacement ranges use UTF-16, matching native text services.
-/// Edits and arrow/delete movement preserve extended grapheme clusters.
+/// Ordinary edits preserve graphemes; explicit decomposing deletion removes one scalar.
 #[derive(Debug)]
 pub struct TextInput {
     pub text: String,
@@ -273,6 +274,17 @@ impl TextInput {
         value: &str,
         replacement: Option<Range<usize>>,
     ) -> Option<PreparedTextInsert> {
+        self.prepare_insert_value(value, replacement, false)
+    }
+    fn prepare_kill_insert(&self, value: &str) -> Option<PreparedTextInsert> {
+        self.prepare_insert_value(value, None, self.multiline)
+    }
+    fn prepare_insert_value(
+        &self,
+        value: &str,
+        replacement: Option<Range<usize>>,
+        preserve_trusted_multiline: bool,
+    ) -> Option<PreparedTextInsert> {
         if self.read_only || self.disabled {
             return None;
         }
@@ -298,7 +310,11 @@ impl TextInput {
         } else {
             self.normalized(range)
         };
-        let value = self.normalize_value(value);
+        let value = if preserve_trusted_multiline {
+            value.to_owned()
+        } else {
+            self.normalize_value(value)
+        };
         let mut text = self.text.clone();
         text.replace_range(self.byte(range.start)..self.byte(range.end), &value);
         let inserted_end = range.start + value.encode_utf16().count();
@@ -322,6 +338,15 @@ impl TextInput {
             epoch,
             changed,
         })
+    }
+    pub(crate) fn insert_kill_value(&mut self, value: &str) -> bool {
+        if value.is_empty() {
+            return false;
+        }
+        let Some(prepared) = self.prepare_kill_insert(value) else {
+            return false;
+        };
+        self.apply_insert(prepared)
     }
     pub(crate) fn insert_current(&self, prepared: &PreparedTextInsert) -> bool {
         !self.disabled
@@ -462,6 +487,28 @@ impl TextInput {
         }
         start..self.len()
     }
+    /// Paragraph contents without the terminating line-break grapheme.
+    /// `paragraph_range_at` remains inclusive for selection; visual caret and
+    /// deletion commands use this content boundary and handle a break at the
+    /// exact end position according to the native command's behavior.
+    pub(crate) fn paragraph_content_range_at(&self, index: usize) -> Range<usize> {
+        let range = self.paragraph_range_at(index);
+        if range.is_empty() {
+            return range;
+        }
+        let mut offset = 0;
+        for grapheme in self.text.graphemes(true) {
+            let next = offset + grapheme.encode_utf16().count();
+            if next == range.end
+                && offset >= range.start
+                && matches!(grapheme, "\r\n" | "\r" | "\n" | "\u{2028}" | "\u{2029}")
+            {
+                return range.start..offset;
+            }
+            offset = next;
+        }
+        range
+    }
     pub(crate) fn point_selection(&self, index: usize, extend: bool) -> (usize, usize) {
         let caret = self.boundary(index.min(self.len()));
         (if extend { self.anchor } else { caret }, caret)
@@ -533,6 +580,114 @@ impl TextInput {
             *last = original;
         }
         changed
+    }
+    /// Delete an explicit UTF-16 range as one ordinary editor transaction.
+    /// The existing insert path records the pre-edit text and selection for
+    /// Undo, and normalization keeps range endpoints on grapheme boundaries.
+    pub(crate) fn delete_range(&mut self, range: Range<usize>) -> bool {
+        if self.read_only || self.disabled || self.marked.is_some() || range.is_empty() {
+            return false;
+        }
+        self.insert("", Some(range))
+    }
+    pub(crate) fn text_in_range(&self, range: Range<usize>) -> Option<String> {
+        if range.start > range.end || range.end > self.len() {
+            return None;
+        }
+        let range = self.normalized(range);
+        Some(self.text[self.byte(range.start)..self.byte(range.end)].to_owned())
+    }
+    /// AppKit's decomposing backward delete removes the final scalar of the
+    /// canonical NFD form of the previous grapheme. CRLF remains one atomic
+    /// line break. Replacing through the existing insert transaction keeps
+    /// the original range and selection in Undo.
+    pub(crate) fn delete_backward_by_decomposing_previous(&mut self) -> bool {
+        if self.read_only || self.disabled || self.marked.is_some() {
+            return false;
+        }
+        if !self.selection().is_empty() {
+            return self.insert("", None);
+        }
+        let caret = self.boundary(self.caret);
+        let Some(start) = self
+            .boundaries()
+            .into_iter()
+            .rev()
+            .find(|index| *index < caret)
+        else {
+            return false;
+        };
+        let range = start..caret;
+        let Some(previous) = self.text_in_range(range.clone()) else {
+            return false;
+        };
+        let replacement = if previous == "\r\n" {
+            String::new()
+        } else {
+            let mut decomposed: String = previous.nfd().collect();
+            decomposed.pop();
+            decomposed
+        };
+        self.insert(&replacement, Some(range))
+    }
+    /// Transpose adjacent extended graphemes as one undoable edit. A caret at
+    /// the end swaps the final pair; a caret within text swaps the graphemes on
+    /// either side. Direct range replacement preserves existing CRLF bytes.
+    pub(crate) fn transpose(&mut self) -> bool {
+        if self.read_only || self.disabled || self.marked.is_some() || !self.selection().is_empty()
+        {
+            return false;
+        }
+        let boundaries = self.boundaries();
+        let caret = self.boundary(self.caret);
+        let Some(position) = boundaries.iter().position(|boundary| *boundary == caret) else {
+            return false;
+        };
+        let paragraph = self.paragraph_range_at(caret);
+        let contents = self.paragraph_content_range_at(caret);
+        let at_terminated_paragraph_end = caret == contents.end && paragraph.end > contents.end;
+        let (start, middle, end) =
+            if position + 1 == boundaries.len() || at_terminated_paragraph_end {
+                if position < 2 {
+                    return false;
+                }
+                (
+                    boundaries[position - 2],
+                    boundaries[position - 1],
+                    boundaries[position],
+                )
+            } else {
+                if position == 0 {
+                    return false;
+                }
+                (
+                    boundaries[position - 1],
+                    boundaries[position],
+                    boundaries[position + 1],
+                )
+            };
+        if start == middle || middle == end {
+            return false;
+        }
+        let left_start = self.byte(start);
+        let split = self.byte(middle);
+        let right_end = self.byte(end);
+        let left = self.text[left_start..split].to_owned();
+        let right = self.text[split..right_end].to_owned();
+        let original = self.snapshot();
+        self.text
+            .replace_range(left_start..right_end, &(right + &left));
+        self.advance_edit_epoch();
+        self.anchor = end;
+        self.caret = end;
+        self.marked = None;
+        self.composition = None;
+        if self.snapshot() != original {
+            self.remember(original);
+            true
+        } else {
+            false
+        }
     }
     pub fn undo(&mut self) -> bool {
         if self.read_only || self.disabled {

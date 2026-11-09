@@ -15,6 +15,20 @@ use crate::{
     ContainerLayout, ControlState, Insets, ScrollArea, ScrollGeometry, ScrollPolicy, TextInput,
 };
 
+#[derive(Clone)]
+struct KillBuffer {
+    text: String,
+    owner: u64,
+    after_epoch: u64,
+    selector: Option<&'static str>,
+}
+fn with_kill_buffer<T>(f: impl FnOnce(&RefCell<Option<KillBuffer>>) -> T) -> T {
+    thread_local! {
+        static KILL_BUFFER: RefCell<Option<KillBuffer>> = const { RefCell::new(None) };
+    }
+    KILL_BUFFER.with(f)
+}
+
 /// Gallery or application adapter for shaping paragraphs and placing glyphs.
 pub trait TextSurfaceTextRenderer {
     fn push_visible(
@@ -499,6 +513,135 @@ impl TextSurface {
             })
             .or_else(|| p.lines.len().checked_sub(1))
     }
+    fn visual_line_content_end(&self, line_index: usize) -> Option<usize> {
+        let line = self.paragraph.as_ref()?.lines.get(line_index)?;
+        if line.has_newline {
+            Some(
+                self.input
+                    .boundaries()
+                    .into_iter()
+                    .rev()
+                    .find(|index| *index >= line.utf16.start && *index < line.utf16.end)
+                    .unwrap_or(line.utf16.start),
+            )
+        } else {
+            Some(line.utf16.end)
+        }
+    }
+    fn visual_line_bounds(&self) -> Option<(usize, usize, usize)> {
+        let line_index = self.navigation_line()?;
+        let line = self.paragraph.as_ref()?.lines.get(line_index)?;
+        Some((
+            line.utf16.start,
+            self.visual_line_content_end(line_index)?,
+            line.utf16.end,
+        ))
+    }
+    fn paragraph_backward_target(&self) -> usize {
+        let caret = self.input.caret;
+        let range = self.input.paragraph_content_range_at(caret);
+        if caret > range.start {
+            range.start
+        } else if range.start == 0 {
+            0
+        } else {
+            self.input.paragraph_content_range_at(range.start - 1).start
+        }
+    }
+    fn rebase_kill_after_ordinary_edit(&self, before: (u64, u64)) {
+        let after = self.input.edit_revision();
+        if before.0 == after.0 && before.1 != after.1 {
+            with_kill_buffer(|buffer| {
+                if let Some(buffer) = buffer.borrow_mut().as_mut()
+                    && buffer.owner == before.0
+                    && buffer.after_epoch == before.1
+                {
+                    buffer.after_epoch = after.1;
+                }
+            });
+        }
+    }
+    fn kill_command_range(&mut self, range: Range<usize>, selector: &'static str) -> bool {
+        if self.input.read_only || self.input.disabled || self.input.marked.is_some() {
+            return false;
+        }
+        let selection = self.input.selection();
+        let range = if selection.is_empty() {
+            range
+        } else {
+            selection
+        };
+        if range.is_empty() {
+            return false;
+        }
+        let Some(removed) = self.input.text_in_range(range.clone()) else {
+            return false;
+        };
+        let before = self.input.edit_revision();
+        let previous = with_kill_buffer(|buffer| buffer.borrow().clone());
+        let coalesces = previous.as_ref().is_some_and(|previous| {
+            previous.owner == before.0
+                && previous.after_epoch == before.1
+                && previous.selector == Some(selector)
+        });
+        if !self.input.delete_range(range) {
+            return false;
+        }
+        let text = if let Some(previous) = previous.filter(|_| coalesces) {
+            match selector {
+                "deleteToEndOfLine:"
+                | "deleteToBeginningOfLine:"
+                | "deleteToBeginningOfParagraph:" => removed + &previous.text,
+                _ => previous.text + &removed,
+            }
+        } else {
+            removed
+        };
+        let after = self.input.edit_revision();
+        with_kill_buffer(|buffer| {
+            *buffer.borrow_mut() = Some(KillBuffer {
+                text,
+                owner: after.0,
+                after_epoch: after.1,
+                selector: Some(selector),
+            });
+        });
+        true
+    }
+    /// End one editor's consecutive-kill chain without discarding the shared
+    /// yank value. The TextField owner calls this only on a real blur edge.
+    pub(crate) fn break_kill_sequence(&self) {
+        let owner = self.input.edit_revision().0;
+        with_kill_buffer(|buffer| {
+            if let Some(buffer) = buffer.borrow_mut().as_mut()
+                && buffer.owner == owner
+            {
+                buffer.selector = None;
+            }
+        });
+    }
+    fn ordinary_delete(&mut self, backward: bool, word: bool) {
+        let before = self.input.edit_revision();
+        self.input.delete(backward, word);
+        self.rebase_kill_after_ordinary_edit(before);
+    }
+    fn yank(&mut self) -> bool {
+        let value = with_kill_buffer(|buffer| {
+            buffer
+                .borrow()
+                .as_ref()
+                .map(|buffer| buffer.text.clone())
+                .unwrap_or_default()
+        });
+        self.input.insert_kill_value(&value)
+    }
+    fn delete_selection(&mut self) {
+        if !self.input.selection().is_empty() {
+            let before = self.input.edit_revision();
+            self.input.delete(true, false);
+            self.rebase_kill_after_ordinary_edit(before);
+        }
+    }
     fn move_visual(&mut self, direction: isize, edge: bool, extend: bool) -> Option<()> {
         if !self.input.multiline && !edge {
             return None;
@@ -529,15 +672,8 @@ impl TextSurface {
         let target = if edge {
             if direction < 0 {
                 line.utf16.start
-            } else if line.has_newline {
-                self.input
-                    .boundaries()
-                    .into_iter()
-                    .rev()
-                    .find(|i| *i >= line.utf16.start && *i < line.utf16.end)
-                    .unwrap_or(line.utf16.start)
             } else {
-                line.utf16.end
+                self.visual_line_content_end(line_index)?
             }
         } else {
             p.hit_test(Point::new(x, (line.top + line.height / 2.) as f32))
@@ -614,11 +750,37 @@ impl TextSurface {
         let caret = self.caret();
         let extend = command.contains("AndModifySelection");
         match command {
-            "moveToBeginningOfLine:" | "moveToBeginningOfLineAndModifySelection:" => {
+            "moveToBeginningOfLine:"
+            | "moveToBeginningOfLineAndModifySelection:"
+            | "moveToLeftEndOfLine:"
+            | "moveToLeftEndOfLineAndModifySelection:" => {
                 self.move_visual(-1, true, extend)?;
             }
-            "moveToEndOfLine:" | "moveToEndOfLineAndModifySelection:" => {
+            "moveToEndOfLine:"
+            | "moveToEndOfLineAndModifySelection:"
+            | "moveToRightEndOfLine:"
+            | "moveToRightEndOfLineAndModifySelection:" => {
                 self.move_visual(1, true, extend)?;
+            }
+            "moveToBeginningOfParagraph:" | "moveToBeginningOfParagraphAndModifySelection:" => {
+                self.navigation = None;
+                let range = self.input.paragraph_content_range_at(self.input.caret);
+                self.input.select(range.start, extend);
+            }
+            "moveToEndOfParagraph:" | "moveToEndOfParagraphAndModifySelection:" => {
+                self.navigation = None;
+                let range = self.input.paragraph_content_range_at(self.input.caret);
+                self.input.select(range.end, extend);
+            }
+            "moveParagraphBackwardAndModifySelection:" => {
+                self.navigation = None;
+                let target = self.paragraph_backward_target();
+                self.input.select(target, extend);
+            }
+            "moveParagraphForwardAndModifySelection:" => {
+                self.navigation = None;
+                let target = self.input.paragraph_range_at(self.input.caret).end;
+                self.input.select(target, extend);
             }
             "moveUp:" | "moveUpAndModifySelection:" => {
                 self.move_visual(-1, false, extend)?;
@@ -629,6 +791,16 @@ impl TextSurface {
             "selectAll:" => {
                 self.navigation = None;
                 self.input.select_all();
+            }
+            "selectLine:" => {
+                let (start, _, end) = self.visual_line_bounds()?;
+                self.navigation = None;
+                self.input.select_range(start..end);
+            }
+            "selectParagraph:" => {
+                self.navigation = None;
+                let range = self.input.paragraph_range_at(self.input.caret);
+                self.input.select_range(range);
             }
             "moveToBeginningOfDocument:" | "moveToBeginningOfDocumentAndModifySelection:" => {
                 self.navigation = None;
@@ -668,19 +840,85 @@ impl TextSurface {
             }
             "deleteBackward:" => {
                 self.navigation = None;
-                self.input.delete(true, false);
+                self.ordinary_delete(true, false);
+            }
+            "deleteBackwardByDecomposingPreviousCharacter:" => {
+                self.navigation = None;
+                let before = self.input.edit_revision();
+                self.input.delete_backward_by_decomposing_previous();
+                self.rebase_kill_after_ordinary_edit(before);
             }
             "deleteForward:" => {
                 self.navigation = None;
-                self.input.delete(false, false);
+                self.ordinary_delete(false, false);
+            }
+            "delete:" => {
+                self.navigation = None;
+                self.delete_selection();
+            }
+            "transpose:" => {
+                self.navigation = None;
+                self.input.transpose();
+            }
+            "deleteToBeginningOfLine:" => {
+                if self.input.selection().is_empty() {
+                    let (start, _, _) = self.visual_line_bounds()?;
+                    self.navigation = None;
+                    self.kill_command_range(start..self.input.caret, "deleteToBeginningOfLine:");
+                } else {
+                    self.navigation = None;
+                    self.kill_command_range(0..0, "deleteToBeginningOfLine:");
+                }
+            }
+            "deleteToEndOfLine:" => {
+                if self.input.selection().is_empty() {
+                    let (_, content_end, native_end) = self.visual_line_bounds()?;
+                    let paragraph = self.input.paragraph_range_at(self.input.caret);
+                    let paragraph_contents =
+                        self.input.paragraph_content_range_at(self.input.caret);
+                    let crlf_terminated_hard_line = native_end > content_end
+                        && paragraph.end.saturating_sub(paragraph_contents.end) == 2;
+                    let end = if self.input.caret == content_end || crlf_terminated_hard_line {
+                        native_end
+                    } else {
+                        content_end
+                    };
+                    self.navigation = None;
+                    self.kill_command_range(self.input.caret..end, "deleteToEndOfLine:");
+                } else {
+                    self.navigation = None;
+                    self.kill_command_range(0..0, "deleteToEndOfLine:");
+                }
+            }
+            "deleteToBeginningOfParagraph:" => {
+                let range = self.input.paragraph_content_range_at(self.input.caret);
+                self.navigation = None;
+                self.kill_command_range(
+                    range.start..self.input.caret,
+                    "deleteToBeginningOfParagraph:",
+                );
+            }
+            "deleteToEndOfParagraph:" => {
+                let contents = self.input.paragraph_content_range_at(self.input.caret);
+                let paragraph = self.input.paragraph_range_at(self.input.caret);
+                let separator_len = paragraph.end.saturating_sub(contents.end);
+                let end = if self.input.caret == contents.end && separator_len == 2 {
+                    self.input.caret
+                } else if self.input.caret == contents.end {
+                    paragraph.end
+                } else {
+                    contents.end
+                };
+                self.navigation = None;
+                self.kill_command_range(self.input.caret..end, "deleteToEndOfParagraph:");
             }
             "deleteWordBackward:" => {
                 self.navigation = None;
-                self.input.delete(true, true);
+                self.ordinary_delete(true, true);
             }
             "deleteWordForward:" => {
                 self.navigation = None;
-                self.input.delete(false, true);
+                self.ordinary_delete(false, true);
             }
             "undo:" => {
                 self.navigation = None;
@@ -694,11 +932,21 @@ impl TextSurface {
                 self.navigation = None;
                 self.input.cancel_composition();
             }
-            "insertNewline:" | "insertLineBreak:" => {
+            "insertNewline:" | "insertLineBreak:" | "insertNewlineIgnoringFieldEditor:" => {
                 self.navigation = None;
                 if self.input.multiline {
                     self.input.insert("\n", None);
                 }
+            }
+            "insertTabIgnoringFieldEditor:" => {
+                self.navigation = None;
+                if self.input.multiline {
+                    self.input.insert("\t", None);
+                }
+            }
+            "yank:" => {
+                self.navigation = None;
+                self.yank();
             }
             _ => return None,
         }

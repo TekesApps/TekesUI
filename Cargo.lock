@@ -1044,7 +1044,7 @@ dependencies = [
 
 [[package]]
 name = "tekes-ui-3d"
-version = "0.3.6"
+version = "0.3.7"
 dependencies = [
  "png 0.17.16",
  "serde_json",
@@ -1059,7 +1059,7 @@ dependencies = [
 
 [[package]]
 name = "tekes-ui-app-host"
-version = "0.3.6"
+version = "0.3.7"
 dependencies = [
  "anyhow",
  "resvg",
@@ -1081,7 +1081,7 @@ dependencies = [
 
 [[package]]
 name = "tekes-ui-app-protocol"
-version = "0.3.6"
+version = "0.3.7"
 dependencies = [
  "serde",
  "serde_json",
@@ -1089,7 +1089,7 @@ dependencies = [
 
 [[package]]
 name = "tekes-ui-city"
-version = "0.3.6"
+version = "0.3.7"
 dependencies = [
  "serde",
  "serde_json",
@@ -1097,7 +1097,7 @@ dependencies = [
 
 [[package]]
 name = "tekes-ui-compare"
-version = "0.3.6"
+version = "0.3.7"
 dependencies = [
  "png 0.17.16",
  "serde",
@@ -1122,7 +1122,7 @@ dependencies = [
 
 [[package]]
 name = "tekes-ui-controls"
-version = "0.3.6"
+version = "0.3.7"
 dependencies = [
  "resvg",
  "serde_json",
@@ -1132,12 +1132,13 @@ dependencies = [
  "tekes-ui-scene",
  "tekes-ui-text",
  "tekes-ui-tokens",
+ "unicode-normalization",
  "unicode-segmentation",
 ]
 
 [[package]]
 name = "tekes-ui-design-export"
-version = "0.3.6"
+version = "0.3.7"
 dependencies = [
  "serde_json",
  "sha2",
@@ -1145,7 +1146,7 @@ dependencies = [
 
 [[package]]
 name = "tekes-ui-gallery"
-version = "0.3.6"
+version = "0.3.7"
 dependencies = [
  "anyhow",
  "tekes-ui-app-host",
@@ -1169,11 +1170,11 @@ dependencies = [
 
 [[package]]
 name = "tekes-ui-icons"
-version = "0.3.6"
+version = "0.3.7"
 
 [[package]]
 name = "tekes-ui-module-runtime"
-version = "0.3.6"
+version = "0.3.7"
 dependencies = [
  "anyhow",
  "mach2",
@@ -1193,11 +1194,11 @@ dependencies = [
 
 [[package]]
 name = "tekes-ui-motion"
-version = "0.3.6"
+version = "0.3.7"
 
 [[package]]
 name = "tekes-ui-platform-macos"
-version = "0.3.6"
+version = "0.3.7"
 dependencies = [
  "block2",
  "objc2",
@@ -1216,7 +1217,7 @@ dependencies = [
 
 [[package]]
 name = "tekes-ui-render"
-version = "0.3.6"
+version = "0.3.7"
 dependencies = [
  "anyhow",
  "bytemuck",
@@ -1236,14 +1237,14 @@ dependencies = [
 
 [[package]]
 name = "tekes-ui-scene"
-version = "0.3.6"
+version = "0.3.7"
 dependencies = [
  "tekes-ui-tokens",
 ]
 
 [[package]]
 name = "tekes-ui-scene3d"
-version = "0.3.6"
+version = "0.3.7"
 dependencies = [
  "bytemuck",
  "glam",
@@ -1258,7 +1259,7 @@ dependencies = [
 
 [[package]]
 name = "tekes-ui-settings"
-version = "0.3.6"
+version = "0.3.7"
 dependencies = [
  "anyhow",
  "serde",
@@ -1270,7 +1271,7 @@ dependencies = [
 
 [[package]]
 name = "tekes-ui-text"
-version = "0.3.6"
+version = "0.3.7"
 dependencies = [
  "objc2-core-foundation",
  "objc2-core-graphics",
@@ -1286,7 +1287,7 @@ dependencies = [
 
 [[package]]
 name = "tekes-ui-tokens"
-version = "0.3.6"
+version = "0.3.7"
 dependencies = [
  "serde_json",
  "sha2",
@@ -1338,6 +1339,12 @@ dependencies = [
  "bytemuck",
  "strict-num",
 ]
+
+[[package]]
+name = "tinyvec"
+version = "1.13.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fd3ca314f692efd6c868f8408f53fe444634a845f96c028b97d35f6a1f79f0ee"
 
 [[package]]
 name = "tokio"
@@ -1400,6 +1407,15 @@ name = "unicode-ident"
 version = "1.0.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2c754d6c33795a1c324727428e5a7dedb5b06195f9890bdbcba760d3e246563"
+
+[[package]]
+name = "unicode-normalization"
+version = "0.1.25"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5fd4f6878c9cb28d874b009da9e8d183b5abc80117c40bbd187a1fde336be6e8"
+dependencies = [
+ "tinyvec",
+]
 
 [[package]]
 name = "unicode-segmentation"

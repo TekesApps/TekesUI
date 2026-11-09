@@ -598,6 +598,7 @@ impl Component for TextFieldContent {
     }
     fn set_focus(&mut self, f: bool, _: bool) {
         if self.focused && !f {
+            self.surface.break_kill_sequence();
             // Blur finalizes the visible draft using the existing TextInput
             // transaction; only explicit cancellation restores preedit text.
             self.surface.input.unmark();

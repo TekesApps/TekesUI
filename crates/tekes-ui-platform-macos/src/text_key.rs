@@ -22,7 +22,7 @@ pub enum TextKeyDisposition {
     InputContextConsumed,
     /// handleEvent returned false with no callbacks.
     Unhandled,
-    /// Command keys or a missing input context were not offered to the input system.
+    /// Host Command shortcuts or a missing input context were not offered to the input system.
     NotOffered,
 }
 /// Started and Finished enclose the ordinary TextCommit/TextPreedit/TextUnmark/
