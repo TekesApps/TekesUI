@@ -1,5 +1,17 @@
 # 共享文本导航与动作声明修复（2026-10-18）
 
+## 2026-11-10 新增反馈与修复边界（#17）
+
+v0.3.6 的可编辑文本在系统命令上有两个真实缺口：平台把所有 Command 组合交给 raw-key fallback，导致没有 ControlKey 枚举的 Cmd+Delete 丢失；共享 TextSurface 也缺少行/段删除及部分段导航 selector。修复继续使用原 NSTextInputClient → TextKey → TextSurface/TextInput，不在 Gallery、Settings 或各消费者复制快捷键。
+
+Command 修饰的物理后退/前向删除键交还原 AppKit inputContext，由系统解析绑定；其他宿主 Command 快捷键和原按键链单次分发保持。行/段命令按本机隐藏 NSTextView 的公开命令参照核对：视觉软换行与逻辑段分别计算，已选文字优先；删除至行/段尾在内部保留分隔符，恰在内容末尾时删除下一分隔符。选中整行/段包含其分隔符。UTF-16、CRLF、组合字素、Undo/Redo、只读/禁用和 marked text 继续使用原模型合同。
+
+共享 kill/yank 命令历史与文档分离：同一 UI 线程的普通编辑器共享当前被 kill 的文本；只有行/段范围 kill 更新它，普通字符/词删除不覆盖。同一编辑器的同一 kill selector 连续调用才拼接，拼接顺序以 AppKit 参照为准；普通字符/词/分解删除不覆盖 kill 文本且保留连续性，插入、转置、导航/显式选区改变或失焦打断拼接。buffer 本身仍可在另一编辑器 yank，另一编辑器新 kill 则替换当前值。复用原 editor_id/edit_epoch 和插入/撤销事务；不使用系统剪贴板、不创建第二文档或隐藏原生编辑器、不把 kill 历史塞入文档 Undo。
+
+`deleteBackwardByDecomposingPreviousCharacter:` 是明确的系统例外：对前一个扩展字素作 canonical decomposition 后删除最后一个 scalar，再通过原替换事务写回；CRLF 作为原子分隔符整体删除。参照已包括预组合/分解重音、canonical reordering、Hangul/Jamo、modifier emoji/ZWJ/flag/keycap与已选文字，不能把整字素普通 Backspace 冒充该命令；普通箭头/删除仍沿用原字素边界。规范化采用现成 Unicode 实现，仅增加其必要依赖闭包，不刷新无关锁版本。
+
+现成单行、多行、Combo/Search 等包装器复用共享修复；新系统命令支持清单按实际实现和测试填写，不把富文本格式、拼写/服务或未核实命令统称已支持。原历史验收和失败保留原身份，CU2 自动原生输入与人类输入分列。最终本地、原生、CI 和 vX.Y.Z/Dock 交付结果回填 #17；下文是原导航批次的历史范围。
+
 根因属于基础文本交互和公共组件契约。TextFieldContent 把行首/行尾别名实现成文档首尾，没有共享的垂直导航；Gallery 已有 Paragraph 导航，但消费者未复用。受控草稿 ACK、软换行行尾和短行会暴露光标亲和、目标列及段落刷新问题。Combo 的 native selector-only 路由和文本输入 AX 角色推断又分别丢失菜单导航与动作种类。
 
 ## 共享位置与使用

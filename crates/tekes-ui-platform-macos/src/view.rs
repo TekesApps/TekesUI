@@ -525,19 +525,23 @@ define_class!(
         // ---- 键盘 ----
         //
         // An active Rust text owner supplies NSTextInputClient state. AppKit
-        // interprets editing keys/IME; non-editing and command keys stay on the
-        // host's ordinary key route.
+        // interprets editing keys/IME, including Command-modified deletion.
+        // Other Command shortcuts stay on the host's ordinary key route.
 
         #[unsafe(method(keyDown:))]
         fn key_down(&self, e: &NSEvent) {
             let editing = self.ivars().shared.text_input.borrow().is_some();
             let key = self.key_data(e, KeyEventKind::Down);
+            // Delete and forward-delete have no raw ControlKey equivalent.
+            // Let AppKit resolve their modified bindings instead of losing
+            // Cmd+Delete or guessing a selector in each editor/consumer.
+            let text_binding = !key.modifiers.command || matches!(key.key_code, 51 | 117);
             if editing {
                 let composing = self.ivars().shared.text_input.borrow().as_ref().is_some_and(|s|s.marked.is_some());
                 let started = self.ivars().text_keys.borrow_mut().begin(key.clone(),composing);
                 if let Some(crate::TextKeyEvent::Started(context)) = started {
                     self.ivars().shared.dispatch(Event::TextKey(crate::TextKeyEvent::Started(context.clone())));
-                    let handled = if key.modifiers.command {None}
+                    let handled = if !text_binding {None}
                         else {self.inputContext().map(|input|input.handleEvent(e))};
                     // Never offer the same physical key to the input system twice.
                     // Only a definite unhandled key (or deliberate Command route)
@@ -550,7 +554,7 @@ define_class!(
                     return;
                 }
             }
-            if editing && !key.modifiers.command {
+            if editing && text_binding {
                 self.interpretKeyEvents(&NSArray::from_slice(&[e]));
             } else {self.ivars().shared.dispatch(Event::Key(key));}
         }

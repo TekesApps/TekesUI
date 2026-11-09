@@ -83,6 +83,11 @@ fn field_mut(h: &mut ContentHost) -> &mut TextFieldContent {
         .component_mut::<TextFieldContent>()
         .unwrap()
 }
+fn text_command(h: &mut ContentHost, command: &str) -> bool {
+    h.event_with_text(&ContentEvent::TextCommand(command.into()), &mut Text)
+        .unwrap()
+        .consumed
+}
 #[test]
 fn multiline_line_edge_is_not_document_edge() {
     let mut h = host("first\nsecond\nlast", 500.);
@@ -129,6 +134,511 @@ fn soft_line_end_keeps_caret_on_that_visual_line_and_preserves_affinity() {
     h.event(&ContentEvent::TextCommand("moveDown:".into()));
     let s = &field(&h).surface;
     assert!(s.caret_doc(s.input.caret).min_y() > line.top as f32);
+}
+
+#[test]
+fn delete_to_visual_line_start_preserves_soft_wrap_prefix_and_undo_selection() {
+    let value = "one two three four five six seven eight";
+    let mut h = host(value, 128.);
+    let paragraph = field(&h).surface.paragraph.as_ref().unwrap();
+    assert!(paragraph.lines.len() > 1, "fixture must soft-wrap");
+    let line = paragraph.lines[1].clone();
+    assert!(!line.has_newline, "the target is a soft-wrapped line");
+
+    // Starting from a caret at the end of the visual line deletes that line's
+    // visible text back to its visual start, without crossing the wrap.
+    field_mut(&mut h)
+        .surface
+        .input
+        .select(line.utf16.start + 1, false);
+    assert!(h.event(&ContentEvent::TextCommand("moveToEndOfLine:".into())).consumed);
+    assert_eq!(field(&h).surface.caret_doc(line.utf16.end).min_y(), line.top as f32);
+    let start = line.utf16.start;
+    let end = line.utf16.end;
+    let expected = format!("{}{}", &value[..start], &value[end..]);
+    assert!(
+        h.event(&ContentEvent::TextCommand(
+            "deleteToBeginningOfLine:".into()
+        ))
+        .consumed
+    );
+    assert_eq!(field(&h).surface.input.text, expected);
+    assert!(field_mut(&mut h).surface.input.undo());
+    assert_eq!(field(&h).surface.input.text, value);
+    assert_eq!(field(&h).surface.input.selection(), end..end);
+
+    // A pre-existing selection wins over the line boundary and Undo restores
+    // that original selection, not an expanded temporary deletion range.
+    field_mut(&mut h).surface.input.select_range(1..4);
+    assert!(
+        h.event(&ContentEvent::TextCommand(
+            "deleteToBeginningOfLine:".into()
+        ))
+        .consumed
+    );
+    assert_eq!(
+        field(&h).surface.input.text,
+        format!("{}{}", &value[..1], &value[4..])
+    );
+    assert!(field_mut(&mut h).surface.input.undo());
+    assert_eq!(field(&h).surface.input.text, value);
+    assert_eq!(field(&h).surface.input.selection(), 1..4);
+}
+
+#[test]
+fn paragraph_navigation_selection_and_delete_use_logical_crlf_boundaries() {
+    let value = "first\r\n😀second\r\nlast";
+    let mut h = host(value, 500.);
+
+    // UTF-16 caret 11 is inside the second paragraph (emoji occupies two
+    // UTF-16 code units); paragraph navigation must not land inside CRLF.
+    field_mut(&mut h).surface.input.select(11, false);
+    assert!(
+        h.event(&ContentEvent::TextCommand(
+            "moveToBeginningOfParagraph:".into()
+        ))
+        .consumed
+    );
+    assert_eq!(field(&h).surface.input.caret, 7);
+    assert!(
+        h.event(&ContentEvent::TextCommand("moveToEndOfParagraph:".into()))
+            .consumed
+    );
+    assert_eq!(field(&h).surface.input.caret, 15);
+
+    field_mut(&mut h).surface.input.select(11, false);
+    assert!(
+        h.event(&ContentEvent::TextCommand("selectLine:".into()))
+            .consumed
+    );
+    assert_eq!(field(&h).surface.input.selected_text(), "😀second\r\n");
+
+    field_mut(&mut h).surface.input.select(11, false);
+    assert!(
+        h.event(&ContentEvent::TextCommand("selectParagraph:".into()))
+            .consumed
+    );
+    assert_eq!(field(&h).surface.input.selected_text(), "😀second\r\n");
+
+    field_mut(&mut h).surface.input.select(11, false);
+    assert!(
+        h.event(&ContentEvent::TextCommand("deleteToEndOfParagraph:".into()))
+            .consumed
+    );
+    assert_eq!(field(&h).surface.input.text, "first\r\n😀se\r\nlast");
+    assert!(field_mut(&mut h).surface.input.undo());
+    assert_eq!(field(&h).surface.input.text, value);
+    assert_eq!(field(&h).surface.input.selection(), 11..11);
+}
+
+#[test]
+fn line_deletion_respects_hard_break_read_only_and_marked_text() {
+    let mut h = host("ab\ncd\nef", 500.);
+    field_mut(&mut h).surface.input.select(3, false);
+    assert!(
+        h.event(&ContentEvent::TextCommand(
+            "deleteToBeginningOfLine:".into()
+        ))
+        .consumed
+    );
+    assert_eq!(field(&h).surface.input.text, "ab\ncd\nef");
+
+    assert!(
+        h.event(&ContentEvent::TextCommand("deleteToEndOfLine:".into()))
+            .consumed
+    );
+    assert_eq!(field(&h).surface.input.text, "ab\n\nef");
+
+    field_mut(&mut h).surface.input.select(1, false);
+    field_mut(&mut h).surface.input.read_only = true;
+    let before = field(&h).surface.input.text.clone();
+    h.event(&ContentEvent::TextCommand(
+        "deleteToBeginningOfLine:".into(),
+    ));
+    assert_eq!(field(&h).surface.input.text, before);
+
+    field_mut(&mut h).surface.input.read_only = false;
+    field_mut(&mut h).surface.input.preedit("mark", 4..4, None);
+    let before = field(&h).surface.input.text.clone();
+    let marked = field(&h).surface.input.marked.clone();
+    h.event(&ContentEvent::TextCommand("deleteToEndOfLine:".into()));
+    assert_eq!(field(&h).surface.input.text, before);
+    assert_eq!(field(&h).surface.input.marked, marked);
+}
+
+#[test]
+fn crlf_line_end_command_matches_native_selection_and_line_boundary() {
+    let mut h = host("first\r\nsecond\r\nlast", 500.);
+    field_mut(&mut h).surface.input.select(10, false);
+    assert!(
+        h.event(&ContentEvent::TextCommand("deleteToEndOfLine:".into()))
+            .consumed
+    );
+    assert_eq!(field(&h).surface.input.text, "first\r\nseclast");
+    assert!(field_mut(&mut h).surface.input.undo());
+    assert_eq!(field(&h).surface.input.text, "first\r\nsecond\r\nlast");
+    assert_eq!(field(&h).surface.input.selection(), 10..10);
+}
+
+#[test]
+fn delete_to_line_or_paragraph_end_at_boundary_removes_the_terminating_break() {
+    for command in ["deleteToEndOfLine:", "deleteToEndOfParagraph:"] {
+        let mut h = host("ab\ncd\nef", 500.);
+        // Position exactly at the content end, before its line/paragraph break.
+        field_mut(&mut h).surface.input.select(5, false);
+        assert!(h.event(&ContentEvent::TextCommand(command.into())).consumed);
+        assert_eq!(field(&h).surface.input.text, "ab\ncdef", "{command}");
+        assert!(field_mut(&mut h).surface.input.undo());
+        assert_eq!(field(&h).surface.input.text, "ab\ncd\nef");
+        assert_eq!(field(&h).surface.input.selection(), 5..5);
+    }
+}
+
+#[test]
+fn paragraph_backward_forward_selection_and_native_line_edge_aliases() {
+    let mut h = host("first\r\nsecond\r\nlast", 500.);
+    field_mut(&mut h).surface.input.select(9, false);
+    assert!(
+        h.event(&ContentEvent::TextCommand(
+            "moveParagraphBackwardAndModifySelection:".into()
+        ))
+        .consumed
+    );
+    assert_eq!(field(&h).surface.input.anchor, 9);
+    assert_eq!(field(&h).surface.input.caret, 7);
+    assert!(
+        h.event(&ContentEvent::TextCommand(
+            "moveParagraphForwardAndModifySelection:".into()
+        ))
+        .consumed
+    );
+    assert_eq!(field(&h).surface.input.anchor, 9);
+    assert_eq!(field(&h).surface.input.caret, 15);
+
+    // At the paragraph start, backward selection reaches the previous
+    // paragraph start and includes the intervening CRLF.
+    field_mut(&mut h).surface.input.select(7, false);
+    assert!(
+        h.event(&ContentEvent::TextCommand(
+            "moveParagraphBackwardAndModifySelection:".into()
+        ))
+        .consumed
+    );
+    assert_eq!(field(&h).surface.input.anchor, 7);
+    assert_eq!(field(&h).surface.input.caret, 0);
+
+    field_mut(&mut h).surface.input.select(9, false);
+    assert!(
+        h.event(&ContentEvent::TextCommand("moveToLeftEndOfLine:".into()))
+            .consumed
+    );
+    assert_eq!(field(&h).surface.input.caret, 7);
+    assert!(
+        h.event(&ContentEvent::TextCommand("moveToRightEndOfLine:".into()))
+            .consumed
+    );
+    assert_eq!(field(&h).surface.input.caret, 13);
+}
+
+#[test]
+fn transpose_swaps_whole_graphemes_and_is_one_undo_transaction() {
+    for (value, caret, expected, expected_caret) in [
+        ("alpha beta gamma", 10, "alpha bet agamma", 11),
+        (
+            "first line\nsecond word\nlast",
+            11,
+            "first lines\necond word\nlast",
+            12,
+        ),
+        (
+            "first line\nsecond word\nlast",
+            22,
+            "first line\nsecond wodr\nlast",
+            22,
+        ),
+        ("first\r\nsecond\r\nlast", 13, "first\r\nsecodn\r\nlast", 13),
+        ("A👨‍👩‍👧‍👦B", 1, "👨‍👩‍👧‍👦AB", 12),
+    ] {
+        let mut h = host(value, 500.);
+        field_mut(&mut h).surface.input.select(caret, false);
+        assert!(
+            h.event(&ContentEvent::TextCommand("transpose:".into()))
+                .consumed
+        );
+        assert_eq!(field(&h).surface.input.text, expected);
+        assert_eq!(field(&h).surface.input.caret, expected_caret);
+        assert!(field_mut(&mut h).surface.input.undo());
+        assert_eq!(field(&h).surface.input.text, value);
+        assert_eq!(field(&h).surface.input.selection(), caret..caret);
+    }
+
+    let mut h = host("alpha beta gamma", 500.);
+    field_mut(&mut h).surface.input.select_range(3..7);
+    assert!(
+        h.event(&ContentEvent::TextCommand("transpose:".into()))
+            .consumed
+    );
+    assert_eq!(field(&h).surface.input.text, "alpha beta gamma");
+    assert_eq!(field(&h).surface.input.selection(), 3..7);
+}
+
+#[test]
+fn decomposing_backward_delete_removes_the_final_nfd_scalar_and_undoes() {
+    let cases = [
+        ("é", "e"),
+        ("e\u{301}", "e"),
+        ("a\u{301}\u{327}", "a\u{327}"),
+        ("각", "가"),
+        ("👍🏽", "👍"),
+        ("👩‍👩‍👧‍👦", "👩‍👩‍👧‍"),
+        ("🇨🇳", "🇨"),
+        ("ﬁ", ""),
+        ("1️⃣", "1️"),
+    ];
+    for (value, after_one) in cases {
+        let mut h = host(value, 500.);
+        let end = value.encode_utf16().count();
+        field_mut(&mut h).surface.input.select(end, false);
+        assert!(
+            h.event(&ContentEvent::TextCommand(
+                "deleteBackwardByDecomposingPreviousCharacter:".into()
+            ))
+            .consumed
+        );
+        assert_eq!(field(&h).surface.input.text, after_one, "{value:?}");
+        assert_eq!(
+            field(&h).surface.input.caret,
+            after_one.encode_utf16().count()
+        );
+        assert!(field_mut(&mut h).surface.input.undo());
+        assert_eq!(field(&h).surface.input.text, value);
+        assert_eq!(field(&h).surface.input.selection(), end..end);
+        assert!(field_mut(&mut h).surface.input.redo());
+        assert_eq!(field(&h).surface.input.text, after_one);
+    }
+}
+
+#[test]
+fn decomposing_delete_treats_crlf_atomically_and_selection_as_one_range() {
+    let mut h = host("a\r\nb", 500.);
+    field_mut(&mut h).surface.input.select(4, false);
+    assert!(
+        h.event(&ContentEvent::TextCommand(
+            "deleteBackwardByDecomposingPreviousCharacter:".into()
+        ))
+        .consumed
+    );
+    assert_eq!(field(&h).surface.input.text, "a\r\n");
+    assert!(
+        h.event(&ContentEvent::TextCommand(
+            "deleteBackwardByDecomposingPreviousCharacter:".into()
+        ))
+        .consumed
+    );
+    assert_eq!(field(&h).surface.input.text, "a");
+    assert!(field_mut(&mut h).surface.input.undo());
+    assert_eq!(field(&h).surface.input.text, "a\r\n");
+    assert!(field_mut(&mut h).surface.input.redo());
+    assert_eq!(field(&h).surface.input.text, "a");
+
+    let mut h = host("éabc", 500.);
+    field_mut(&mut h).surface.input.select_range(0..2);
+    assert!(
+        h.event(&ContentEvent::TextCommand(
+            "deleteBackwardByDecomposingPreviousCharacter:".into()
+        ))
+        .consumed
+    );
+    assert_eq!(field(&h).surface.input.text, "bc");
+    assert_eq!(field(&h).surface.input.caret, 0);
+}
+
+#[test]
+fn paragraph_kill_appends_and_repeated_yank_reuses_the_shared_value() {
+    let mut h = host("alpha beta\ngamma delta\nomega", 500.);
+    field_mut(&mut h).surface.input.select(6, false);
+    assert!(text_command(&mut h, "deleteToEndOfParagraph:"));
+    assert_eq!(field(&h).surface.input.text, "alpha \ngamma delta\nomega");
+    assert!(text_command(&mut h, "deleteToEndOfParagraph:"));
+    assert_eq!(field(&h).surface.input.text, "alpha gamma delta\nomega");
+    assert!(text_command(&mut h, "deleteToEndOfParagraph:"));
+    assert_eq!(field(&h).surface.input.text, "alpha \nomega");
+
+    assert!(text_command(&mut h, "yank:"));
+    assert_eq!(
+        field(&h).surface.input.text,
+        "alpha beta\ngamma delta\nomega"
+    );
+    assert!(text_command(&mut h, "yank:"));
+    assert_eq!(
+        field(&h).surface.input.text,
+        "alpha beta\ngamma deltabeta\ngamma delta\nomega"
+    );
+}
+
+#[test]
+fn line_kill_prepends_and_switching_kill_selector_resets_coalescing() {
+    let mut h = host("alpha beta\ngamma delta\nomega", 500.);
+    field_mut(&mut h).surface.input.select(6, false);
+    assert!(text_command(&mut h, "deleteToEndOfLine:"));
+    assert!(text_command(&mut h, "deleteToEndOfLine:"));
+    assert!(text_command(&mut h, "deleteToEndOfLine:"));
+    assert_eq!(field(&h).surface.input.text, "alpha \nomega");
+    assert!(text_command(&mut h, "yank:"));
+    assert_eq!(
+        field(&h).surface.input.text,
+        "alpha gamma delta\nbeta\nomega"
+    );
+
+    let mut h = host("alpha beta\ngamma delta\nomega", 500.);
+    field_mut(&mut h).surface.input.select(6, false);
+    assert!(text_command(&mut h, "deleteToEndOfParagraph:"));
+    assert!(text_command(&mut h, "deleteToEndOfLine:"));
+    assert!(text_command(&mut h, "yank:"));
+    assert_eq!(field(&h).surface.input.text, "alpha \ngamma delta\nomega");
+}
+
+#[test]
+fn ordinary_deletes_rebase_kill_chain_but_insert_and_move_break_it() {
+    let mut h = host("alpha beta\ngamma delta\nomega", 500.);
+    field_mut(&mut h).surface.input.select(6, false);
+    assert!(text_command(&mut h, "deleteToEndOfParagraph:"));
+    assert!(text_command(&mut h, "deleteBackward:"));
+    assert!(text_command(&mut h, "deleteToEndOfParagraph:"));
+    assert!(text_command(&mut h, "yank:"));
+    assert_eq!(
+        field(&h).surface.input.text,
+        "alphabeta\ngamma delta\nomega"
+    );
+
+    let mut h = host("alpha beta\ngamma delta\nomega", 500.);
+    field_mut(&mut h).surface.input.select(6, false);
+    assert!(text_command(&mut h, "deleteToEndOfParagraph:"));
+    assert!(
+        h.event(&ContentEvent::Commit {
+            text: "X".into(),
+            replacement: None,
+        })
+        .consumed
+    );
+    assert!(text_command(&mut h, "deleteToEndOfParagraph:"));
+    assert!(text_command(&mut h, "yank:"));
+    assert_eq!(field(&h).surface.input.text, "alpha X\ngamma delta\nomega");
+
+    let mut h = host("alpha beta\ngamma delta\nomega", 500.);
+    field_mut(&mut h).surface.input.select(6, false);
+    assert!(text_command(&mut h, "deleteToEndOfParagraph:"));
+    assert!(text_command(&mut h, "moveToEndOfParagraph:"));
+    assert!(text_command(&mut h, "deleteToEndOfParagraph:"));
+    assert!(text_command(&mut h, "yank:"));
+    assert_eq!(field(&h).surface.input.text, "alpha \ngamma delta\nomega");
+}
+
+#[test]
+fn kill_value_is_shared_across_editors_but_new_owner_kill_replaces_it() {
+    let mut owner = host("alpha beta\ngamma", 500.);
+    field_mut(&mut owner).surface.input.select(6, false);
+    assert!(text_command(&mut owner, "deleteToEndOfParagraph:"));
+
+    let mut other = host("target ", 500.);
+    field_mut(&mut other).surface.input.select(7, false);
+    assert!(text_command(&mut other, "yank:"));
+    assert_eq!(field(&other).surface.input.text, "target beta");
+
+    let mut other = host("target ", 500.);
+    field_mut(&mut other).surface.input.select(7, false);
+    assert!(text_command(&mut other, "deleteToBeginningOfParagraph:"));
+    assert_eq!(field(&other).surface.input.text, "");
+    assert!(text_command(&mut other, "yank:"));
+    assert_eq!(field(&other).surface.input.text, "target ");
+}
+
+#[test]
+fn another_editors_move_does_not_break_the_original_owner_kill_chain() {
+    let mut owner = host("alpha beta\ngamma", 500.);
+    field_mut(&mut owner).surface.input.select(6, false);
+    assert!(text_command(&mut owner, "deleteToEndOfParagraph:"));
+
+    let mut other = host("target ", 500.);
+    field_mut(&mut other).surface.input.select(7, false);
+    assert!(text_command(&mut other, "moveLeft:"));
+
+    assert!(text_command(&mut owner, "deleteToEndOfParagraph:"));
+    assert!(text_command(&mut owner, "yank:"));
+    assert_eq!(field(&owner).surface.input.text, "alpha beta\ngamma");
+}
+
+#[test]
+fn crlf_kill_yank_preserves_bytes_and_crlf_paragraph_tail_is_noop() {
+    let mut h = host("first\r\nsecond\r\nlast", 500.);
+    field_mut(&mut h).surface.input.select(3, false);
+    assert!(text_command(&mut h, "deleteToEndOfParagraph:"));
+    assert_eq!(field(&h).surface.input.text, "fir\r\nsecond\r\nlast");
+    assert!(text_command(&mut h, "deleteToEndOfParagraph:"));
+    assert_eq!(field(&h).surface.input.text, "fir\r\nsecond\r\nlast");
+    assert!(text_command(&mut h, "yank:"));
+    assert_eq!(field(&h).surface.input.text, "first\r\nsecond\r\nlast");
+
+    let mut h = host("first\r\nsecond\r\nlast", 500.);
+    field_mut(&mut h).surface.input.select_range(3..9);
+    assert!(text_command(&mut h, "deleteToEndOfParagraph:"));
+    assert_eq!(field(&h).surface.input.text, "fircond\r\nlast");
+    assert!(text_command(&mut h, "yank:"));
+    assert_eq!(field(&h).surface.input.text, "first\r\nsecond\r\nlast");
+}
+
+#[test]
+fn delete_selector_only_deletes_a_selection_and_ignoring_field_editor_aliases_work() {
+    let mut h = host("alpha beta gamma", 500.);
+    field_mut(&mut h).surface.input.select(10, false);
+    assert!(text_command(&mut h, "delete:"));
+    assert_eq!(field(&h).surface.input.text, "alpha beta gamma");
+    field_mut(&mut h).surface.input.select_range(3..10);
+    assert!(text_command(&mut h, "delete:"));
+    assert_eq!(field(&h).surface.input.text, "alp gamma");
+    assert!(field_mut(&mut h).surface.input.undo());
+    assert_eq!(field(&h).surface.input.selection(), 3..10);
+
+    let mut h = host("ab", 500.);
+    field_mut(&mut h).surface.input.select(1, false);
+    assert!(text_command(&mut h, "insertNewlineIgnoringFieldEditor:"));
+    assert!(text_command(&mut h, "moveBackward:"));
+    assert_eq!(field(&h).surface.input.text, "a\nb");
+    assert_eq!(field(&h).surface.input.caret, 1);
+    assert!(text_command(&mut h, "insertTabIgnoringFieldEditor:"));
+    assert_eq!(field(&h).surface.input.text, "a\t\nb");
+}
+
+#[test]
+fn empty_paragraph_edges_remain_on_the_break_and_delete_as_one_transaction() {
+    let mut h = host("first\n\nlast", 500.);
+    field_mut(&mut h).surface.input.select(6, false);
+    assert!(
+        h.event(&ContentEvent::TextCommand(
+            "moveToBeginningOfParagraph:".into()
+        ))
+        .consumed
+    );
+    assert_eq!(field(&h).surface.input.caret, 6);
+    assert!(
+        h.event(&ContentEvent::TextCommand("moveToEndOfParagraph:".into()))
+            .consumed
+    );
+    assert_eq!(field(&h).surface.input.caret, 6);
+    assert!(
+        h.event(&ContentEvent::TextCommand("selectParagraph:".into()))
+            .consumed
+    );
+    assert_eq!(field(&h).surface.input.selected_text(), "\n");
+
+    field_mut(&mut h).surface.input.select(6, false);
+    assert!(
+        h.event(&ContentEvent::TextCommand("deleteToEndOfParagraph:".into()))
+            .consumed
+    );
+    assert_eq!(field(&h).surface.input.text, "first\nlast");
+    assert!(field_mut(&mut h).surface.input.undo());
+    assert_eq!(field(&h).surface.input.text, "first\n\nlast");
 }
 
 fn key(control: tekes_ui_controls::ControlKey) -> ContentKeyEvent {
@@ -557,4 +1067,30 @@ fn navigation_uses_original_field_tokens_in_all_themes_and_brands() {
     if let Some(path) = std::env::var_os("TEKESUI_EDITOR_NAVIGATION_TOKEN_AUDIT_OUT") {
         std::fs::write(path,serde_json::to_vec_pretty(&serde_json::json!({"format":"tekesui-runtime-token-observation/1","complete":false,"scope":"public multiline Field navigation, editable/readonly,4themes3brands,CoreText and no-op glyph painter","excluded":["physicalIME/VoiceOver","complete dependency extraction","compiled style constants"],"cases":cases})).unwrap()).unwrap();
     }
+}
+
+#[test]
+fn empty_line_kill_keeps_the_existing_shared_yank_value() {
+    let mut source = host("KNOWN-SEED", 500.);
+    assert!(
+        source
+            .event(&ContentEvent::TextCommand("deleteToEndOfParagraph:".into()))
+            .consumed
+    );
+    assert_eq!(field(&source).surface.input.text, "");
+    let mut target = host("target", 500.);
+    assert!(
+        target
+            .event(&ContentEvent::TextCommand(
+                "deleteToBeginningOfLine:".into()
+            ))
+            .consumed
+    );
+    assert_eq!(field(&target).surface.input.text, "target");
+    assert!(
+        target
+            .event(&ContentEvent::TextCommand("yank:".into()))
+            .consumed
+    );
+    assert_eq!(field(&target).surface.input.text, "KNOWN-SEEDtarget");
 }
