@@ -1287,7 +1287,11 @@ fn verify_surface_foregrounds(rules: &Value, palette: &Value) -> Result<(), Stri
                     .as_object()
                     .ok_or("missing profile")?;
                 for (state, pair) in states {
-                    if state.contains("disabled") {
+                    // Quiet disabled labels remain readable (#206), matching
+                    // the shared generator and external Theme input contract.
+                    let readable_disabled_quiet = state.contains("disabled")
+                        && matches!(usage.as_str(), "action-quiet" | "action-quiet-error");
+                    if state.contains("disabled") && !readable_disabled_quiet {
                         continue;
                     }
                     let role = |channel: &str| -> Result<&str, String> {
@@ -1300,7 +1304,9 @@ fn verify_surface_foregrounds(rules: &Value, palette: &Value) -> Result<(), Stri
                     };
                     let background = luminance(role("background")?)?;
                     for channel in ["text", "icon", "marker", "helper", "focus"] {
-                        if pair[channel].is_null() {
+                        if pair[channel].is_null()
+                            || (readable_disabled_quiet && matches!(channel, "helper" | "focus"))
+                        {
                             continue;
                         }
                         let ink = luminance(role(channel)?)?;
@@ -1309,7 +1315,9 @@ fn verify_surface_foregrounds(rules: &Value, palette: &Value) -> Result<(), Stri
                         } else {
                             background
                         };
-                        let minimum = if channel == "marker" || channel == "focus" {
+                        let minimum = if readable_disabled_quiet && mode.ends_with("-ic") {
+                            7.0
+                        } else if channel == "marker" || channel == "focus" {
                             3.0
                         } else {
                             4.5
@@ -2249,6 +2257,48 @@ mod foreground_gate_tests {
                 .unwrap_err()
                 .ends_with("/helper")
         );
+    }
+    #[test]
+    fn quiet_disabled_text_and_icons_keep_generator_readability_in_every_mode() {
+        for usage in ["action-quiet", "action-quiet-error"] {
+            for state in ["disabled", "selected-disabled"] {
+                for channel in ["text", "icon"] {
+                    for (mode, low_ink) in [
+                        ("light", "#888888"),
+                        ("dark", "#888888"),
+                        ("light-ic", "#666666"),
+                        ("dark-ic", "#666666"),
+                    ] {
+                        let mut r = rules();
+                        let pair = r["profiles"]["input"]["rest"].clone();
+                        r["profiles"]["quiet"] = serde_json::json!({"rest": pair.clone()});
+                        r["profiles"]["quiet"][state] = pair;
+                        r["profiles"]["quiet"][state][channel] = Value::from("low-ink");
+                        r["surfaces"]["canvas"]["usages"] = serde_json::json!({usage: "quiet"});
+                        let mut p = palette("#FFFFFF", "#111111");
+                        let mut values = serde_json::json!({
+                            "light":"#111111", "dark":"#111111",
+                            "light-ic":"#111111", "dark-ic":"#111111"
+                        });
+                        values[mode] = Value::from(low_ink);
+                        p["color"]["tokens"]
+                            .as_array_mut()
+                            .unwrap()
+                            .push(serde_json::json!({"name":"low-ink","value":values}));
+                        let error = verify_surface_foregrounds(&r, &p).unwrap_err();
+                        assert!(
+                            error.contains(&format!("{mode}/canvas/{usage}/{state}/{channel}"))
+                        );
+                        p["color"]["tokens"]
+                            .as_array_mut()
+                            .unwrap()
+                            .last_mut()
+                            .unwrap()["value"][mode] = Value::from("#111111");
+                        assert!(verify_surface_foregrounds(&r, &p).is_ok());
+                    }
+                }
+            }
+        }
     }
     #[test]
     fn valid_active_foregrounds_and_existing_disabled_exception_pass() {

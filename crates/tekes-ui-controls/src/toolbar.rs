@@ -706,10 +706,18 @@ impl crate::composition::Component for ToolbarControl {
         self.has_focus = focused;
         self.focus_visible = visible;
         for (i, button) in self.buttons.iter_mut().enumerate() {
-            button.set_focus(focused && self.focused == Some(i), visible);
+            let owns_focus = focused && self.focused == Some(i);
+            // Repainting a focused Toolbar also synchronizes its focus. Only
+            // blur the previous owner: blurring an already-unfocused Button
+            // would discard its independent pointer hover before painting.
+            if !focused || owns_focus || button.button.state.focused {
+                button.set_focus(owns_focus, visible);
+            }
         }
-        self.trigger
-            .set_focus(focused && self.focused == Some(self.actions.len()), visible);
+        let trigger_focus = focused && self.focused == Some(self.actions.len());
+        if !focused || trigger_focus || self.trigger.button.state.focused {
+            self.trigger.set_focus(trigger_focus, visible);
+        }
     }
     fn set_focus_from_traversal(&mut self, reverse: bool) {
         self.cancel();
@@ -1291,6 +1299,85 @@ mod tests {
                 .activated
         );
         assert_eq!(toolbar.take_action(), Some(11));
+    }
+    #[test]
+    fn focused_toolbar_preserves_other_buttons_hover_through_repaint() {
+        for theme in tekes_ui_tokens::Theme::ALL {
+            for icon in [false, true] {
+                let mut toolbar = toolbar();
+                if icon {
+                    toolbar.set_action_icon(33, Some(ImageId(1)));
+                }
+                let palette: Palette = theme.into();
+                let mut text = Text { height: 16. };
+                let frame = Rect::new(0., 0., 600., 48.);
+                toolbar.render(&mut Scene::new(), &mut text, frame, palette);
+                toolbar.set_focus(true, true);
+                assert_eq!(toolbar.focused, Some(0));
+                let target = toolbar.buttons[2].button.layout().unwrap().frame;
+                let mut hover = pointer(target.center(), PointerPhase::Move);
+                hover.button = None;
+                assert!(toolbar.pointer_event(&hover).changed);
+                let mut scene = Scene::new();
+                toolbar.render(&mut scene, &mut text, frame, palette);
+                assert!(toolbar.buttons[2].button.state.hovered);
+                assert!(!toolbar.buttons[2].button.state.focused);
+                assert!(toolbar.buttons[0].button.state.focused);
+                let expected = tekes_ui_tokens::surface_palette::resolve_surface(
+                    palette,
+                    "toolbar",
+                    "action-quiet",
+                    "hover",
+                )
+                .unwrap();
+                assert!(scene.primitives().iter().any(|primitive| {
+                    matches!(primitive, tekes_ui_scene::Primitive::Quad(quad)
+                        if quad.rect == target && quad.fill == expected.background)
+                }));
+                assert_eq!(toolbar.take_action(), None);
+                hover.position = Point::new(900., 900.);
+                assert!(toolbar.pointer_event(&hover).changed);
+                toolbar.render(&mut Scene::new(), &mut text, frame, palette);
+                assert!(!toolbar.buttons[2].button.state.hovered);
+                assert_eq!(toolbar.focused, Some(0));
+                hover.position = target.center();
+                toolbar.pointer_event(&hover);
+                assert!(toolbar.buttons[2].button.state.hovered);
+                toolbar.set_focus(false, false);
+                assert!(toolbar.buttons.iter().all(|button| {
+                    !button.button.state.hovered
+                        && !button.button.state.focused
+                        && !button.button.state.pressed
+                }));
+            }
+        }
+    }
+    #[test]
+    fn focused_toolbar_repaint_preserves_press_and_disabled_button_state() {
+        let mut toolbar = toolbar();
+        let palette = tekes_ui_tokens::Theme::LIGHT.into();
+        let mut text = Text { height: 16. };
+        let frame = Rect::new(0., 0., 600., 48.);
+        toolbar.render(&mut Scene::new(), &mut text, frame, palette);
+        toolbar.set_focus(true, true);
+        let disabled = toolbar.buttons[1].button.layout().unwrap().frame.center();
+        toolbar.pointer_event(&pointer(disabled, PointerPhase::Move));
+        toolbar.render(&mut Scene::new(), &mut text, frame, palette);
+        assert!(toolbar.buttons[1].button.state.disabled);
+        assert!(!toolbar.buttons[1].button.state.hovered);
+        assert!(!toolbar.buttons[1].button.state.pressed);
+        let enabled = toolbar.buttons[2].button.layout().unwrap().frame.center();
+        toolbar.pointer_event(&pointer(enabled, PointerPhase::Down));
+        toolbar.render(&mut Scene::new(), &mut text, frame, palette);
+        assert!(toolbar.buttons[2].button.state.pressed);
+        assert!(toolbar.buttons[2].button.state.focused);
+        assert!(
+            toolbar
+                .pointer_event(&pointer(enabled, PointerPhase::Up))
+                .activated
+        );
+        assert_eq!(toolbar.take_action(), Some(33));
+        assert!(!toolbar.buttons[2].button.state.pressed);
     }
     #[test]
     fn pure_icon_toolbar_uses_square_hits_original_ids_and_named_overflow() {

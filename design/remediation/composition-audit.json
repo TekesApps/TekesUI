@@ -2094,7 +2094,7 @@
     "crates/tekes-ui-controls/src/text_input.rs": "fb413cea76491b4a7cc11383dd2426ea6740860c4d660517dc50df4904f8639b",
     "crates/tekes-ui-controls/src/text_input/external.rs": "872c6a58fc112c17f7711ce3fe88c868a6ecb0e2ee32fc394ed8877fa30626ca",
     "crates/tekes-ui-controls/src/text_surface.rs": "769d12c162d528743c1b85f305d09fa5d36e5c389098277b791ba0c9e2742505",
-    "crates/tekes-ui-controls/src/toolbar.rs": "ebb1e0678cedf656af14a99d48a5eb77e4778e4db1dcb7e3f316856b012793f5",
+    "crates/tekes-ui-controls/src/toolbar.rs": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
     "crates/tekes-ui-controls/src/widgets.rs": "64f4d85e7b741116e512acea5ecdf0ddd14de090a05c2d0d2ce1b5379354845a",
     "crates/tekes-ui-controls/tests/choice_contract.rs": "4ee09801a24dd52ffc229e45c7ed7adbb2e5ad25b61fea71fb233ec63787a564",
     "crates/tekes-ui-controls/tests/choice_selection_states.rs": "e2ad48728b9c2dc38214baa2693dde465262d04cffe85f6c9629c36c246e1422",
@@ -4231,5 +4231,12 @@
   "historical_apphost_scope_before_229": {
     "issue14_scope_current": "Composition audit/planning only; current accepted AppWindow toolbar contribution is bounded to one shared ToolbarHost across its columns, stable declarations/groups, edge regions, placement/order, supported command overflow, and bounded real-window owner/focus routing. General multi-window lifecycle, arbitrary content overflow and complete per-action native semantics remain unverified; no component expansion is inferred.",
     "review_note": "Current review: composition/button.rs deliberately consolidates image/text/custom-content presentation into one Button over the original ButtonModel action state; obsolete ButtonContent/CompoundButton/IconButton entry points have no aliases. AppHost now contributes one shared ToolbarHost to each accepted AppWindow across its columns with stable declarations, placement, supported command overflow and bounded real-window owner/focus evidence. General multi-window lifecycle, arbitrary-content overflow, full per-action native semantics and VoiceOver remain unverified. ContentTheme passes Palette and canonical Surface through the mounted tree while foreground forwarding is explicit. No family native status is promoted. Coordinator review also reconciles the already accepted checked SplitViewContent panes and local PanelContent body, and pins the AppWindow constructor/mounted shared toolbar/actual toolbar render path. B2 remains open; no native promotion or new implementation is inferred."
+  },
+  "theme_state_review_20261109": {
+    "issue": 245,
+    "source": [
+      "crates/tekes-ui-controls/src/toolbar.rs"
+    ],
+    "scope": "Toolbar real focus transition preserves independent hover through repaint; whole-toolbar blur still clears interaction. No public API or capability promotion. Related Theme ordinary-dark tertiary reduction retains original contrast gates."
   }
 }
