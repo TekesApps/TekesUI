@@ -97,6 +97,116 @@ fn controlled_none_some_noop_and_invalid_preserve_original_gesture_and_delivery(
     assert_eq!(intent(&mut h).index(), 0);
     assert!(h.drain_action_records().is_empty());
 }
+
+#[test]
+fn horizontal_radio_layout_keeps_semantics_hits_and_keyboard_on_the_original_view() {
+    let mut h = host();
+    let mut t = coretext::Text::new(1.);
+    let clip = Rect::new(0., 0., 300., 160.);
+    render(&mut h, &mut t, clip);
+    edit(&mut h).set_axis(tekes_ui_controls::extended::Axis::Horizontal);
+    assert!(edit(&mut h).part_token(1).is_none());
+    render(&mut h, &mut t, clip);
+    edit(&mut h).set_selected(None).unwrap();
+    render(&mut h, &mut t, clip);
+
+    let parts = parts(&h);
+    assert_eq!(parts.len(), 3);
+    assert!(
+        parts
+            .windows(2)
+            .all(|pair| pair[0].frame.max_x() < pair[1].frame.min_x())
+    );
+    assert!(
+        parts
+            .iter()
+            .all(|part| part.frame.origin.y == parts[0].frame.origin.y)
+    );
+    for (index, part) in parts.iter().enumerate() {
+        assert_eq!(
+            part.frame,
+            get(&h).view().layout().rows[index].visible_frame().unwrap()
+        );
+        let point = part.frame.center();
+        assert!(h.event(&ContentEvent::PointerDown(point)).capture_pointer);
+        assert!(h.event(&ContentEvent::PointerUp(point)).activated);
+        assert_eq!(get(&h).model().selected, Some(index));
+        assert_eq!(intent(&mut h).index(), index);
+    }
+    h.focus(Some(RADIO), true);
+    assert_eq!(h.focused(), Some(RADIO));
+    assert!(key(&mut h, ControlKey::Right, true).consumed);
+    assert_eq!(get(&h).model().selected, Some(0));
+    assert!(!key(&mut h, ControlKey::Up, true).consumed);
+}
+
+#[test]
+fn changing_radio_axis_invalidates_pressed_geometry_and_old_part_tokens() {
+    let mut h = host();
+    let mut t = coretext::Text::new(1.);
+    let clip = Rect::new(0., 0., 300., 160.);
+    edit(&mut h).set_axis(tekes_ui_controls::extended::Axis::Horizontal);
+    render(&mut h, &mut t, clip);
+    let (old_token, point) = parts(&h)
+        .get(2)
+        .map(|part| (part.index, part.frame.center()))
+        .unwrap();
+    assert!(h.event(&ContentEvent::PointerDown(point)).capture_pointer);
+    edit(&mut h).set_axis(tekes_ui_controls::extended::Axis::Vertical);
+    assert!(edit(&mut h).part_token(2).is_none());
+    assert!(
+        !h.accessibility_action(RADIO, Some(old_token), AccessibilityAction::Press)
+            .consumed
+    );
+    h.event(&ContentEvent::PointerUp(point));
+    assert_ne!(get(&h).model().selected, Some(2));
+    render(&mut h, &mut t, clip);
+    assert_eq!(
+        get(&h).view().axis(),
+        tekes_ui_controls::extended::Axis::Vertical
+    );
+    assert!(
+        parts(&h)
+            .windows(2)
+            .all(|pair| pair[0].frame.min_y() < pair[1].frame.min_y())
+    );
+}
+
+#[test]
+fn horizontal_radio_narrow_width_wraps_labels_inside_the_allocated_row() {
+    let labels = vec![
+        "First option with a longer explanation".into(),
+        "Second option with a longer explanation".into(),
+        "Third option with a longer explanation".into(),
+    ];
+    let mut h = ContentHost::new(Content::new(
+        RADIO,
+        RadioGroupContent::new("Choice", labels),
+    ))
+    .unwrap();
+    h.set_action_events(true);
+    edit(&mut h).set_axis(tekes_ui_controls::extended::Axis::Horizontal);
+    let mut t = coretext::Text::new(1.);
+    let frame = Rect::new(0., 0., 200., 160.);
+    h.render(&mut Scene::new(), &mut t, frame, frame, Theme::LIGHT.into())
+        .unwrap();
+    let layout = get(&h).view().layout();
+    assert!(layout.rows.iter().all(|row| {
+        row.frame().size.width >= 0.
+            && row.frame().size.height >= 0.
+            && row.frame().min_y() == layout.rows[0].frame().min_y()
+    }));
+    assert!(layout.frame.max_x() <= frame.max_x());
+    assert!(layout.labels.iter().all(|label| label.size.width >= 0.));
+    let semantic = parts(&h);
+    assert_eq!(semantic.len(), layout.rows.len());
+    assert!(
+        semantic
+            .iter()
+            .enumerate()
+            .all(|(i, part)| { Some(part.frame) == layout.rows[i].visible_frame() })
+    );
+}
 #[test]
 fn original_roving_focus_differs_from_selection_and_space_uses_key_down() {
     let mut h = host();

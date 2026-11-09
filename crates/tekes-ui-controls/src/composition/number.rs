@@ -3,6 +3,7 @@
 use super::*;
 use crate::{NumberField, TextSurface, TextSurfaceAlignment, TextSurfacePresentation};
 use std::collections::VecDeque;
+use tekes_ui_tokens::Spacing;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum NumberParseError {
@@ -528,15 +529,19 @@ impl Component for NumberFieldContent {
     fn measure(&mut self, t: &mut dyn ButtonTextRenderer, a: Size) -> MeasuredChild {
         let minus = self.buttons[0].measure(t, a).size;
         let plus = self.buttons[1].measure(t, a).size;
+        let gap = Spacing::Tight.value().min(a.width.max(0.) / 4.);
         let field = self
             .editor
             .measure(
                 t,
-                Size::new((a.width - minus.width - plus.width).max(0.), a.height),
+                Size::new(
+                    (a.width - minus.width - plus.width - 2. * gap).max(0.),
+                    a.height,
+                ),
             )
             .size;
         MeasuredChild::new(Size::new(
-            (self.input_width(t) + minus.width + plus.width).min(a.width),
+            (self.input_width(t) + minus.width + plus.width + 2. * gap).min(a.width),
             field
                 .height
                 .max(minus.height)
@@ -549,27 +554,30 @@ impl Component for NumberFieldContent {
         let width = self.input_width(t);
         let minus = self.buttons[0].measure(t, f.size).size.width;
         let plus = self.buttons[1].measure(t, f.size).size.width;
-        f.size.width = (width + minus + plus).min(f.size.width);
+        f.size.width = (width + minus + plus + 2. * Spacing::Tight.value()).min(f.size.width);
+        let gap = Spacing::Tight.value().min(f.size.width.max(0.) / 4.);
+        let button_limit = ((f.size.width - 2. * gap).max(0.) / 3.).max(0.);
         let w0 = self.buttons[0]
             .measure(t, f.size)
             .size
             .width
-            .min(f.size.width / 3.);
+            .min(button_limit);
         let w1 = self.buttons[1]
             .measure(t, f.size)
             .size
             .width
-            .min(f.size.width / 3.);
+            .min(button_limit);
+        let editor_width = (f.size.width - w0 - w1 - 2. * gap).max(0.);
+        self.editor_frame = Rect::new(f.min_x() + w0 + gap, f.min_y(), editor_width, f.size.height);
         self.frames = [
             Rect::new(f.min_x(), f.min_y(), w0, f.size.height),
-            Rect::new(f.max_x() - w1, f.min_y(), w1, f.size.height),
+            Rect::new(
+                self.editor_frame.max_x() + gap,
+                f.min_y(),
+                w1,
+                f.size.height,
+            ),
         ];
-        self.editor_frame = Rect::new(
-            f.min_x() + w0,
-            f.min_y(),
-            (f.size.width - w0 - w1).max(0.),
-            f.size.height,
-        );
         let height = self.editor.measure(t, self.editor_frame.size).size.height;
         self.editor_frame.origin.y += (f.size.height - height).max(0.) * 0.5;
         self.editor_frame.size.height = height;
@@ -725,5 +733,52 @@ impl Component for NumberFieldContent {
         }
         let r = self.editor.event(e);
         self.finish_edit_event(r)
+    }
+}
+
+#[cfg(test)]
+mod geometry_tests {
+    use super::*;
+
+    #[derive(Debug)]
+    struct Text;
+    impl ButtonTextRenderer for Text {
+        fn measure(&mut self, text: &str, _: proposal::TextRole, _: f32) -> Size {
+            Size::new(text.chars().count() as f32 * 7., 18.)
+        }
+        fn draw(
+            &mut self,
+            _: &mut Scene,
+            _: &str,
+            _: proposal::TextRole,
+            _: Rect,
+            _: crate::ButtonTextAlign,
+            _: tekes_ui_tokens::Rgba,
+        ) {
+        }
+    }
+
+    #[test]
+    fn number_field_spacing_is_shared_by_editor_layout_and_semantics_at_narrow_widths() {
+        for width in [320., 28., 5.] {
+            let mut field =
+                NumberFieldContent::new("Count", 2., 0., 9., 1., DecimalNumberFormat::default())
+                    .unwrap();
+            let frame = Rect::new(0., 0., width, 32.);
+            field.arrange(&mut Text, frame, frame);
+            let parts = field.semantic_parts();
+            let editor = field.editor_frame;
+            assert!(
+                parts
+                    .iter()
+                    .all(|part| { part.frame.size.width >= 0. && part.frame.size.height >= 0. })
+            );
+            assert!(editor.size.width >= 0. && editor.size.height >= 0.);
+            if width >= 100. {
+                let gap = Spacing::Tight.value();
+                assert_eq!(parts[0].frame.max_x() + gap, editor.min_x());
+                assert_eq!(editor.max_x() + gap, parts[1].frame.min_x());
+            }
+        }
     }
 }

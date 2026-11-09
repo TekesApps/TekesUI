@@ -765,3 +765,13 @@ all-theme native Gold7 certification. The process exited and input was released.
 Gallery AppHost 的 Settings 使用既有 Exclusive 模式：先在 Main 的实际原生 frame 完成 Settings 呈现，再无动画隐藏 Main；返回时恢复原 Main 实例、文档和容器布局。两种画面的窗口尺寸与位置一致，不能以居中独立小窗替代。消费者仍可显式选择 Independent，未删除原能力。Settings 导航首项为与导航内容等宽的“〈 返回”（共享 Back 图标加文字），独占首行，Search 保留下一行；原焦点/组字/无效草稿离开门禁继续适用。
 
 若在 Settings 中移动或缩放窗口，返回时原 Main 采用 Settings 当前的原生 frame；其他被暂时隐藏的窗口保留各自原 frame。沿既有非动画窗口组先显示目标再隐藏遮盖层，不销毁/重建 Main 内容。
+
+## 2026-11-09 后续内容交互与 Settings 一致性
+
+用户在 v0.3.5 实际使用后要求：Focus 正文须可选择/复制并保持只读，复用原文本服务与 selection owner，不能用静态 TextContent 代替；整段跨段选择沿同一只读 TextSurface，不新建文本选择引擎。AppHost 导航 List 原 scrollbar=true，指示条按真实溢出显示；需核实短窗与 Dark 的实际绘制，不为凑出滚动条增加伪条目或强造溢出。
+
+Settings 内容边界复用主 AppHost 的可见且避让原生控件的 Toolbar 边界；正文与导航使用同一现有 spacing token 单一留白 owner，移除完整 titlebar allocation 带来的额外顶部空区。导航项使用共享 navigation List 行高/组距和填充选中态；Back/Search保持原稳定实例与全宽，Back仍为第一项。Theme三个Radio保持单一原RadioGroup model/view，在右侧同一行排布；默认竖排API保持兼容，新增原Radio横排布局，不拆成三个状态源。过窄窗口保持同一行的几何/命中/AX一致，文字可在各自项内换行。
+
+字号NumberField两按钮与编辑器之间留同一spacing token的空隙；测量、绘制、命中与AX共用一份布局。单行TextField水平滚动条缺省关闭、提供显式开关，滚动/reveal/IME继续沿原策略，不能把隐藏指示条等同禁用滚动；多行默认行为保留。
+
+本批分别验收源码、受影响自动回归、原生选择/复制和输入/布局、公开发布及Gallery Dock采用；原通过证据按不变条件复用。v0.3.5和其原程序证据保留，后续改动不改签。

@@ -12,6 +12,26 @@ enum SettingsFocusScope {
     Sidebar,
     Form,
 }
+fn settings_content_inset(
+    bounds: Rect,
+    window: Rect,
+    measured: f32,
+    row_y: f32,
+    row_height: f32,
+    controls_floor: f32,
+    leading: f32,
+) -> f32 {
+    let native_row = bounds.min_y() == window.min_y();
+    let intersects_controls =
+        bounds.min_y() < controls_floor && bounds.min_x() < window.min_x() + leading;
+    presentation_content_inset(
+        measured,
+        (row_y + row_height).max(controls_floor),
+        (controls_floor - bounds.min_y()).max(0.),
+        native_row,
+        intersects_controls,
+    )
+}
 pub(super) struct SettingsDisplayBinding {
     owner: std::rc::Weak<std::cell::RefCell<crate::settings::SettingsOwnerState>>,
     display: std::rc::Rc<std::cell::RefCell<crate::settings::SettingsDisplayState>>,
@@ -1135,22 +1155,38 @@ impl Host {
             w.scale() as f32,
         );
         self.settings_top = top;
+        let controls_floor = native_center.map_or(0., |center| 2. * center as f32);
         if self.settings_back {
             settings.sidebar.set_back_template_icon("tekes-back")?;
         }
         let breadcrumb = settings.breadcrumb();
         let _ = navigation;
         let _ = renderer;
-        let form_content = content_geometry(frames[1], top);
-        let pad = 24.;
-        let top_gap = tekes_ui_tokens::proposal::metric("spacing", "space-regular").unwrap()
-            * self.text.type_scale();
-        let width = (form_content.size.width - 2. * pad).clamp(100., 620.);
+        let pad = tekes_ui_tokens::Spacing::Loose.value();
+        let form_content = content_geometry(
+            frames[1],
+            settings_content_inset(
+                frames[1],
+                whole,
+                measured,
+                row_y,
+                paint,
+                controls_floor,
+                leading as f32,
+            ),
+        );
+        let form_content = Rect::new(
+            form_content.min_x() + pad,
+            form_content.min_y() + pad,
+            (form_content.size.width - 2. * pad).max(1.),
+            (form_content.size.height - 2. * pad).max(1.),
+        );
+        let width = form_content.size.width.clamp(1., 620.);
         let form_frame = Rect::new(
             form_content.min_x() + (form_content.size.width - width) * 0.5,
-            form_content.min_y() + top_gap,
+            form_content.min_y(),
             width,
-            (form_content.size.height - top_gap - pad).max(80.),
+            form_content.size.height,
         );
         let _ = settings;
         drop(state);
@@ -1194,13 +1230,23 @@ impl Host {
             },
         )?;
         if frames[0].size.width > 32. {
-            let left = content_geometry(frames[0], top);
-            let list_top = left.min_y() + top_gap;
+            let left = content_geometry(
+                frames[0],
+                settings_content_inset(
+                    frames[0],
+                    whole,
+                    measured,
+                    row_y,
+                    paint,
+                    controls_floor,
+                    leading as f32,
+                ),
+            );
             let rect = Rect::new(
-                left.min_x() + 16.,
-                list_top,
-                (left.size.width - 32.).max(1.),
-                (left.max_y() - 24. - list_top).max(1.),
+                left.min_x() + pad,
+                left.min_y() + pad,
+                (left.size.width - 2. * pad).max(1.),
+                (left.size.height - 2. * pad).max(1.),
             );
             self.panels[0].bounds = frames[0];
             let panel = &mut self.panels[0];
@@ -1757,9 +1803,51 @@ impl Host {
 }
 
 #[cfg(test)]
+mod settings_geometry_tests {
+    use super::*;
+
+    #[test]
+    fn settings_columns_start_after_visible_toolbar_and_native_control_floor() {
+        let window = Rect::new(0., 0., 900., 640.);
+        let (allocation, row_y, row_height) = window_toolbar_geometry(66., 42., Some(24.), 2.);
+        let controls_floor = 48.;
+        let sidebar = Rect::new(0., 0., 220., 640.);
+        let form = Rect::new(220., 0., 680., 640.);
+
+        assert_eq!(allocation, 66.);
+        assert_eq!(
+            settings_content_inset(
+                sidebar,
+                window,
+                row_height,
+                row_y,
+                row_height,
+                controls_floor,
+                80.,
+            ),
+            controls_floor,
+            "the sidebar clears native titlebar controls"
+        );
+        assert_eq!(
+            settings_content_inset(
+                form,
+                window,
+                row_height,
+                row_y,
+                row_height,
+                controls_floor,
+                80.,
+            ),
+            controls_floor,
+            "both columns share the main AppHost control-safe boundary"
+        );
+    }
+}
+
+#[cfg(test)]
 mod pinned_header_tests {
     use super::*;
-    use tekes_ui_controls::composition::TextFieldContent;
+    use tekes_ui_controls::composition::{ListContent, TextContent, TextFieldContent};
     #[test]
     fn header_uses_toolkit_icon_and_fixed_original_editor_with_scrolling_list() {
         let schema = tekes_ui_settings::Schema::parse(include_str!(
@@ -1782,6 +1870,32 @@ mod pinned_header_tests {
         assert_eq!(back.size.width, search.size.width);
         assert!(back.max_y() < search.min_y());
         assert!(search.max_y() < scroll.min_y());
+        assert!(
+            sidebar
+                .host
+                .get(ComponentId(2))
+                .unwrap()
+                .component::<ListContent>()
+                .is_some()
+        );
+        let list = sidebar
+            .host
+            .get(ComponentId(101))
+            .unwrap()
+            .component::<tekes_ui_settings::SelectableListContent>()
+            .unwrap();
+        let items = &list.view.layout().items;
+        assert!(!items.is_empty());
+        assert_eq!(
+            items[0].frame.size.height,
+            tekes_ui_tokens::ControlSize::RowHeight.value()
+        );
+        if items.len() > 1 {
+            assert_eq!(
+                items[1].frame.min_y() - items[0].frame.max_y(),
+                tekes_ui_tokens::Spacing::Micro.value()
+            );
+        }
         assert!(
             sidebar
                 .host
@@ -1843,6 +1957,49 @@ mod pinned_header_tests {
         sidebar.event(&ContentEvent::PointerUp(back.center()));
         assert!(sidebar.take_back());
         assert!(!sidebar.take_back());
+    }
+
+    #[test]
+    fn group_headers_match_gallery_caption_and_spacing_hierarchy() {
+        let schema = tekes_ui_settings::Schema::parse(include_str!(
+            "../../tekes-ui-settings/tests/fixtures/layout.schema.toml"
+        ))
+        .unwrap();
+        let mut sidebar = tekes_ui_settings::SettingsSidebar::new(&schema).unwrap();
+        sidebar
+            .render(
+                &mut Scene::new(),
+                &mut crate::text::Text::new(),
+                Rect::new(0., 0., 260., 500.),
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
+
+        let first_heading = sidebar.host.get(ComponentId(100)).unwrap();
+        let first_list = sidebar.host.get(ComponentId(101)).unwrap();
+        let second_heading = sidebar.host.get(ComponentId(102)).unwrap();
+        let second_list = sidebar.host.get(ComponentId(103)).unwrap();
+        assert_eq!(
+            first_heading.component::<TextContent>().unwrap().role,
+            tekes_ui_tokens::proposal::TextRole::UiCaption
+        );
+        assert_eq!(
+            second_heading.component::<TextContent>().unwrap().role,
+            tekes_ui_tokens::proposal::TextRole::UiCaption
+        );
+        assert_eq!(
+            first_list.frame().min_y() - first_heading.frame().max_y(),
+            tekes_ui_tokens::Spacing::Regular.value()
+        );
+        assert_eq!(
+            second_heading.frame().min_y() - first_list.frame().max_y(),
+            tekes_ui_tokens::Spacing::Micro.value()
+        );
+        assert!(
+            second_list
+                .component::<tekes_ui_settings::SelectableListContent>()
+                .is_some()
+        );
     }
 }
 
@@ -3417,7 +3574,7 @@ mod form_keyboard_owner_tests {
         let (mut host, surface, path) = fixture();
         render_original_panels(&mut host);
         let id = ComponentId(100);
-        let (mount, point, selected) = {
+        let (mount, point, selected, radio_layout, radio_frame, row_frame) = {
             let state = surface.borrow();
             let radio = state
                 .form
@@ -3430,8 +3587,30 @@ mod form_keyboard_owner_tests {
                 state.form.host.semantic_mount(id),
                 radio.view().layout().rows[2].frame().center(),
                 radio.model().selected,
+                radio.view().layout().clone(),
+                state.form.host.get(id).unwrap().frame(),
+                state
+                    .form
+                    .host
+                    .get(ComponentId(1_u64 << 32))
+                    .unwrap()
+                    .frame(),
             )
         };
+        assert_eq!(radio_layout.rows.len(), 3);
+        assert!(
+            radio_layout
+                .rows
+                .iter()
+                .all(|row| row.frame().center().y == radio_layout.rows[0].frame().center().y)
+        );
+        assert!(
+            radio_layout
+                .rows
+                .windows(2)
+                .all(|rows| { rows[0].frame().min_x() < rows[1].frame().min_x() })
+        );
+        assert_eq!(radio_frame.max_x(), row_frame.max_x());
         assert_eq!(selected, Some(0));
         for phase in [PointerPhase::Down, PointerPhase::Up] {
             host.settings_form_input(&ContentEvent::Pointer(PointerEvent {

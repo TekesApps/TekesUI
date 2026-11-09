@@ -602,3 +602,7 @@ Refs #1 #12 #55 #56。
 ### 本轮受影响验证结果
 
 039 使用冻结候选执行：共享 List/组合/Panel/选择列表公开回归 59 项、AppHost 104 项、Gallery AppHost 5 项全部通过，受影响 crates all-targets strict 检查通过。038 的 Controls 457 项在后续只改测试和 AppHost Settings 消费调用后保持适用；038 新夹具错误与 Settings 短 ID 的真实集成失败均保留，后者已按 canonical ID 修复并用真实 Gallery schema 构造 owner/双窗口装配验证。生成一致性、composition audit、格式通过。以上为本地源码/真实文字服务及布局回归，不代签新原生窗口、公开发布或消费方采用。收据位于协调工作区 work/apphost-interaction-039/release.json。
+
+### 2026-11-09 输入与方向增量
+
+`TextFieldContent::new` 的单行水平指示条默认隐藏，`.scrollbar(bool)` 显式控制显示；保留原水平 Auto 滚动/插入点 reveal 和多行默认。`RadioGroupContent::set_axis(Axis::Horizontal)` 在原模型/View内横排，默认仍Vertical；变更方向撤销旧几何与part授权，下一次原Host布局再发布。NumberField按钮与原编辑器之间使用Spacing::Tight，绘制/输入/AX复用相同source frames。Gallery Focus正文使用现成只读TextSurface，跨段选择及Copy沿原文本服务，不新增选择引擎。

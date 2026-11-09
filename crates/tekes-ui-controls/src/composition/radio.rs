@@ -2,7 +2,7 @@
 use super::*;
 use crate::{
     RadioGroupView, SelectionEvent,
-    extended::{RadioGroup, RadioSelectionError},
+    extended::{Axis, RadioGroup, RadioSelectionError},
 };
 use std::sync::Arc;
 
@@ -205,6 +205,18 @@ impl RadioGroupContent {
     pub fn model(&self) -> &RadioGroup {
         &self.model
     }
+    /// Change the arrangement direction and invalidate geometry-bound input
+    /// and accessibility authority until the next original layout publication.
+    pub fn set_axis(&mut self, axis: Axis) {
+        if self.view.axis() == axis {
+            return;
+        }
+        self.view.set_axis(axis);
+        self.runnable = false;
+        self.last_intent = None;
+        self.focus_receipt = false;
+        self.revoke();
+    }
     pub fn view(&self) -> &RadioGroupView {
         &self.view
     }
@@ -367,6 +379,7 @@ impl Component for RadioGroupContent {
             &self.model,
             available.width,
             &labels,
+            self.view.axis(),
         ))
     }
     fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {

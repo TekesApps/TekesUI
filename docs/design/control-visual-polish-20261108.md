@@ -229,3 +229,7 @@ General 的 Theme 直接展示 System／Light／Dark 单选组，复用原 Radio
 自然宽度下，首次声明 `checked: Some(false)` 会预留真实check列，允许比无列菜单更宽；同一列 `false/true` 切换必须保持尺寸与位置。旧固定宽度断言不能继续要求新列占零空间；原CI失败保留，新消费者回归分别覆盖列声明和勾选切换。
 
 Radio的prepared pointer入口按现有事件合同归一化原生Primary Down，保持原model/view和焦点事务；Secondary不选项。实际SettingsColumn/LocalContainer回归覆盖原生Down/Up，不用旧式事件代签。
+
+## 2026-11-09 后续共享控件布局修正
+
+单行TextField显式 `.scrollbar(true/false)` 控制水平指示条，缺省false；实际水平滚动及插入点reveal仍采用原Auto策略，多行垂直策略不改变。NumberField在减号/原编辑器/加号之间使用Spacing::Tight，两侧一致；狭窄分配下按可用空间收缩，不改变数值/保存/输入语义。RadioGroupContent增加基于原RadioGroupView的Axis选项，默认Vertical，Settings选择Horizontal并沿原value列右对齐。所有新方向几何共用原rows/indicator/label与输入和AX投影，不能只改画面。
