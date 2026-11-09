@@ -533,7 +533,8 @@ impl Window {
     }
 
     /// Match this window's frame, show the cover, then hide other app windows.
-    /// Closing the auxiliary window restores only those previously visible windows.
+    /// Closing the auxiliary window restores only those previously visible windows;
+    /// its original anchor adopts the cover's current frame.
     pub fn present_exclusive(&self, child: &crate::WindowHandle) {
         crate::app::present_exclusive(&child.shared, &self.shared);
     }

@@ -593,6 +593,40 @@ impl ButtonModel {
             Some(content_size),
             None,
             None,
+            false,
+        )
+    }
+
+    // Tabs close retains the original geometry, motion and focus path while
+    // its declared Surface paints only semantic foreground and keyboard focus.
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn render_transparent_content_frame(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        content_size: Size,
+        frame: Rect,
+        clip: Option<Rect>,
+        palette: impl Into<Palette>,
+        variant: crate::paint::ButtonVariant,
+    ) -> ButtonLayout {
+        let context = text.motion_context();
+        self.render_with_motion_context(
+            scene,
+            text,
+            "",
+            frame,
+            clip,
+            palette,
+            variant,
+            ButtonSize::Body,
+            proposal::TextRole::UiBody,
+            ButtonTextAlign::Leading,
+            context,
+            Some(content_size),
+            None,
+            None,
+            true,
         )
     }
 
@@ -638,7 +672,7 @@ impl ButtonModel {
         let context = text.motion_context();
         self.render_with_motion_context(
             scene, text, label, frame, clip, palette, variant, size, role, align, context, None,
-            radius, None,
+            radius, None, false,
         )
     }
 
@@ -676,6 +710,7 @@ impl ButtonModel {
             None,
             None,
             None,
+            false,
         )
     }
 
@@ -696,6 +731,7 @@ impl ButtonModel {
         measured_content: Option<Size>,
         radius: Option<f32>,
         prepared: Option<ButtonLayout>,
+        transparent_background: bool,
     ) -> ButtonLayout {
         // Pointer capture survives focus changes; only a keyboard Space arm
         // is canceled when focus leaves between key-down and key-up.
@@ -845,6 +881,7 @@ impl ButtonModel {
                     pressed,
                     surface,
                     self.selection_fill_only,
+                    transparent_background,
                 )
                 .text
             } else {
@@ -978,6 +1015,7 @@ impl ButtonModel {
             None,
             None,
             Some(layout),
+            false,
         );
     }
 
@@ -1059,6 +1097,7 @@ impl ButtonModel {
             None,
             None,
             Some(layout),
+            false,
         );
     }
 

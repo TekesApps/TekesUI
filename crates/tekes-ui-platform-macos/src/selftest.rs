@@ -1749,6 +1749,11 @@ pub fn exclusive_reentry_contract() {
             assert!(!hidden_window.isVisible());
             let cover = window.open_exclusive_window(config("cover"), Noop);
             let cover_window = &cover.shared.objects.get().unwrap().window;
+            assert_eq!(
+                cover_window.frame(),
+                anchor_window.frame(),
+                "Settings starts at Main's exact frame"
+            );
             assert!(
                 cover_window.isKeyWindow(),
                 "Exclusive cover must actually own native key focus"
@@ -1787,7 +1792,24 @@ pub fn exclusive_reentry_contract() {
             assert!(cover_window.isVisible());
             assert!(!anchor_window.isVisible() && !other_window.isVisible());
             assert!(!hidden_window.isVisible());
+            let other_frame = other_window.frame();
+            let mut moved = cover_window.frame();
+            moved.origin.x += 40.;
+            moved.origin.y += 20.;
+            moved.size.width += 60.;
+            moved.size.height += 30.;
+            cover_window.setFrame_display(moved, true);
             cover_window.close();
+            assert_eq!(
+                anchor_window.frame(),
+                moved,
+                "Main returns at Settings' current frame"
+            );
+            assert_eq!(
+                other_window.frame(),
+                other_frame,
+                "other restored windows keep their frame"
+            );
             println!(
                 "EXCLUSIVE_FOCUS stage=after-close app_active={} app_running={} actual_key={:?} target={} target_key={}",
                 app.isActive(),

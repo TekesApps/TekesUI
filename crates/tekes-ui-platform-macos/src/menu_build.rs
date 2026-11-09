@@ -162,14 +162,58 @@ fn window_menu(mtm: MainThreadMarker) -> Retained<NSMenu> {
 
 const ENGINE_MENU_TAG: isize = -0x544b;
 
+/// Only our command action and tagged separators belong to engine contributions;
+/// standard About/Hide/Quit items retain their identity and responder-chain actions.
+fn replace_application_items(
+    mtm: MainThreadMarker,
+    menu: &NSMenu,
+    bar: &MenuBar,
+    target: &AnyObject,
+) {
+    let old: Vec<_> = menu
+        .itemArray()
+        .iter()
+        .filter(|item| item.action() == Some(command_action()) || item.tag() == ENGINE_MENU_TAG)
+        .collect();
+    for item in old {
+        menu.removeItem(&item);
+    }
+    // Standard About and its separator occupy positions zero and one.
+    let mut index = 2;
+    for item in bar
+        .menus
+        .iter()
+        .filter(|menu| menu.application_menu)
+        .flat_map(|menu| &menu.items)
+    {
+        let item = match item {
+            MenuItem::Command(command) => command_item(mtm, target, command),
+            MenuItem::Separator => {
+                let item = NSMenuItem::separatorItem(mtm);
+                item.setTag(ENGINE_MENU_TAG);
+                item
+            }
+        };
+        menu.insertItem_atIndex(&item, index);
+        index += 1;
+    }
+    if index > 2 {
+        let separator = NSMenuItem::separatorItem(mtm);
+        separator.setTag(ENGINE_MENU_TAG);
+        menu.insertItem_atIndex(&separator, index);
+    }
+}
+
 /// 构建整条菜单栏并安装到 NSApplication。
 pub(crate) fn install(mtm: MainThreadMarker, app_name: &str, bar: &MenuBar, target: &AnyObject) {
     let app = NSApplication::sharedApplication(mtm);
     let main = new_menu(mtm, "MainMenu");
 
-    main.addItem(&top_level(mtm, &app_menu(mtm, app_name)));
+    let application = app_menu(mtm, app_name);
+    replace_application_items(mtm, &application, bar, target);
+    main.addItem(&top_level(mtm, &application));
 
-    for m in &bar.menus {
+    for m in bar.menus.iter().filter(|menu| !menu.application_menu) {
         let submenu = new_menu(mtm, &m.title);
         for item in &m.items {
             match item {
@@ -210,7 +254,17 @@ pub(crate) fn replace_engine_menus(
     for item in old {
         main.removeItem(&item);
     }
-    for (index, menu) in bar.menus.iter().enumerate() {
+    let application = main
+        .itemAtIndex(0)
+        .and_then(|item| item.submenu())
+        .ok_or("standard application submenu is unavailable")?;
+    replace_application_items(mtm, &application, bar, target);
+    for (index, menu) in bar
+        .menus
+        .iter()
+        .filter(|menu| !menu.application_menu)
+        .enumerate()
+    {
         let submenu = new_menu(mtm, &menu.title);
         for item in &menu.items {
             match item {
@@ -281,7 +335,7 @@ pub(crate) fn update_titles(mtm: MainThreadMarker, bar: &MenuBar) {
                 None
             }
         });
-        if let Some(anchor) = anchor {
+        if let Some(anchor) = anchor.filter(|_| !menu.application_menu) {
             for root in main.itemArray() {
                 if let Some(submenu) = root.submenu()
                     && find_command(&submenu, anchor).is_some()

@@ -4386,21 +4386,106 @@ pub struct ScrollContent {
     backing_scale: f32,
     children: Vec<Content>,
     viewport: Rect,
+    clip: Rect,
+    scrollbar_pointer: Option<bool>,
+    content_padding: f32,
     last_frame: Option<std::time::Duration>,
     reading: Option<content_reading::ContentReadingState>,
     reading_mounted: bool,
 }
 impl ScrollContent {
-    pub fn new(scroll: ScrollArea, child: Content) -> Self {
+    pub fn new(mut scroll: ScrollArea, child: Content) -> Self {
+        // Preserve the existing adapter's effective no-bar presentation.
+        // The standalone ScrollArea default is unchanged; Lists opt in below.
+        scroll.set_scrollbar_visibility(false, false);
         Self {
             scroll,
             viewport_height: None,
             backing_scale: 1.,
             children: vec![child],
             viewport: Rect::default(),
+            clip: Rect::default(),
+            scrollbar_pointer: None,
+            content_padding: 0.,
             last_frame: None,
             reading: None,
             reading_mounted: false,
+        }
+    }
+    /// Show overflow bars without changing wheel, axis policy or reveal range.
+    pub fn scrollbar(mut self, visible: bool) -> Self {
+        self.scroll.set_scrollbar_visibility(visible, visible);
+        if !visible {
+            self.scrollbar_pointer = None;
+        }
+        self
+    }
+    /// Symmetric document padding; the original focus bleed remains a minimum.
+    pub fn content_padding(mut self, padding: f32) -> Self {
+        self.content_padding = finite(padding);
+        self
+    }
+    fn scrollbar_track(&self, vertical: bool) -> Rect {
+        if vertical {
+            Rect::new(
+                self.viewport.max_x() - proposal::SCROLLBAR_WIDTH - proposal::SCROLLBAR_INSET,
+                self.viewport.min_y(),
+                proposal::SCROLLBAR_WIDTH,
+                self.viewport.size.height,
+            )
+        } else {
+            Rect::new(
+                self.viewport.min_x(),
+                self.viewport.max_y() - proposal::SCROLLBAR_WIDTH - proposal::SCROLLBAR_INSET,
+                self.viewport.size.width,
+                proposal::SCROLLBAR_WIDTH,
+            )
+        }
+    }
+    fn scrollbar_hit_track(&self, vertical: bool) -> Rect {
+        self.scrollbar_track(vertical)
+            .inset(-tekes_ui_tokens::Spacing::Micro.value())
+            .intersection(&self.clip)
+            .unwrap_or_default()
+    }
+    fn minimum_thumb() -> f32 {
+        proposal::metric("size", "size-row-height").expect("existing scrollbar minimum")
+    }
+    fn decide_scroll_pointer(
+        &self,
+        request: &action_preparation::OwnedActionRequest,
+    ) -> Option<PreparedScrollContentPointer> {
+        let action_preparation::OwnedActionRequest::Pointer(event) = request else {
+            return None;
+        };
+        let routed = event.routing_event();
+        let ContentEvent::PointerDown(point) = routed.as_ref() else {
+            return None;
+        };
+        if !event.is_primary_pointer() || !self.clip.contains(*point) {
+            return None;
+        }
+        [true, false].into_iter().find_map(|vertical| {
+            self.scroll
+                .prepare_pointer_down(
+                    *point,
+                    vertical,
+                    self.scrollbar_hit_track(vertical),
+                    Self::minimum_thumb(),
+                )
+                .map(|scroll| PreparedScrollContentPointer {
+                    scroll,
+                    vertical,
+                    viewport: self.viewport,
+                    clip: self.clip,
+                })
+        })
+    }
+    fn apply_scroll_pointer(&mut self, decision: PreparedScrollContentPointer) {
+        self.scroll.apply_pointer_down(decision.scroll);
+        self.scrollbar_pointer = Some(decision.vertical);
+        if let Some(reading) = &mut self.reading {
+            reading.observe_manual_history();
         }
     }
     fn arrange_content(
@@ -4413,7 +4498,14 @@ impl ScrollContent {
     ) -> Rect {
         let geometry = self.scroll.geometry(frame, Some(clip));
         let origin = geometry.content_origin();
-        let child_clip = geometry.visible_viewport_rect().unwrap_or_default();
+        let mut child_clip = geometry.visible_viewport_rect().unwrap_or_default();
+        if self.scroll.scrollbar_visible(true) {
+            let edge = self
+                .scrollbar_track(true)
+                .inset(-tekes_ui_tokens::Spacing::Micro.value())
+                .min_x();
+            child_clip.size.width = (child_clip.max_x().min(edge) - child_clip.min_x()).max(0.);
+        }
         let mut y = origin.y + gutter;
         for c in &mut self.children {
             let h = c.measure(text, Size::new(width, 1e8)).size.height;
@@ -4423,6 +4515,14 @@ impl ScrollContent {
         child_clip
     }
 }
+#[derive(Debug, PartialEq)]
+struct PreparedScrollContentPointer {
+    scroll: crate::scroll_view::ScrollPointerDecision,
+    vertical: bool,
+    viewport: Rect,
+    clip: Rect,
+}
+impl action_preparation::OriginalActionDecision for PreparedScrollContentPointer {}
 impl Component for ScrollContent {
     fn reading_scroll_source(&self) -> bool {
         true
@@ -4456,7 +4556,27 @@ impl Component for ScrollContent {
         ActionTransactionCompatibility::StableHooks
     }
     fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
-        action_preparation::ignored_pointer(request)
+        let prepared = action_preparation::prepare_original(
+            self,
+            request,
+            Self::decide_scroll_pointer,
+            Self::apply_scroll_pointer,
+            |_| {
+                (
+                    ContentResponse {
+                        consumed: true,
+                        changed: true,
+                        capture_pointer: true,
+                        ..Default::default()
+                    },
+                    PreparedActionFocus::Preserve,
+                )
+            },
+        );
+        match prepared {
+            ActionPreparation::Unsupported => action_preparation::ignored_pointer(request),
+            ready => ready,
+        }
     }
     fn interactive(&self) -> bool {
         true
@@ -4475,6 +4595,10 @@ impl Component for ScrollContent {
         ))
     }
     fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
+        if self.viewport != frame || self.clip != frame.intersection(&clip).unwrap_or_default() {
+            self.scroll.pointer_up();
+            self.scrollbar_pointer = None;
+        }
         self.backing_scale = text.backing_scale();
         if let Some(m) = text.motion_context() {
             self.scroll.set_reduced_motion(m.reduced_motion);
@@ -4489,19 +4613,45 @@ impl Component for ScrollContent {
         }
         let reading_anchor = self.reading.as_ref().and_then(|s| s.capture(&self.scroll));
         self.viewport = frame;
+        self.clip = frame.intersection(&clip).unwrap_or_default();
         // Scroll is a viewport: reserve the existing ControlFrame focus bleed
         // in document geometry, rather than relaxing the ancestor clip.
         let focus_bounds =
             crate::extended::ControlFrame::new(frame, None).focus_bounds(self.backing_scale);
-        let gutter = (frame.min_x() - focus_bounds.min_x()).max(0.0);
-        let width = (frame.size.width - 2.0 * gutter).max(0.0);
+        let bleed = (frame.min_x() - focus_bounds.min_x()).max(0.0);
+        let gutter = bleed.max(self.content_padding);
+        let mut width = (frame.size.width - 2.0 * gutter).max(0.0);
         let available = Size::new(width, 1e8);
         let mut height = 2.0 * gutter;
         for c in &mut self.children {
             height += c.measure(text, available).size.height;
         }
-        self.scroll
-            .layout(frame.size, Size::new(frame.size.width, height));
+        if self.scroll.scrollbar_requested(true)
+            && self.scroll.scroll_policy().1 != crate::ScrollPolicy::Disabled
+            && height > frame.size.height
+        {
+            let band = proposal::SCROLLBAR_WIDTH
+                + proposal::SCROLLBAR_INSET
+                + tekes_ui_tokens::Spacing::Micro.value();
+            let extra = (band + bleed - gutter).max(0.);
+            width = (width - extra).max(0.);
+            height = 2. * gutter;
+            for child in &mut self.children {
+                height += child.measure(text, Size::new(width, 1e8)).size.height;
+            }
+        }
+        let document = Size::new(frame.size.width, height);
+        if document != self.scroll.document_size() {
+            self.scrollbar_pointer = None;
+        }
+        self.scroll.layout(frame.size, document);
+        if self
+            .scrollbar_pointer
+            .is_some_and(|vertical| !self.scroll.scrollbar_visible(vertical))
+        {
+            self.scroll.pointer_up();
+            self.scrollbar_pointer = None;
+        }
         if let Some(reading) = &mut self.reading {
             reading.prepare(&mut self.scroll);
         }
@@ -4516,8 +4666,70 @@ impl Component for ScrollContent {
             reading.record(&self.scroll, &self.children, visible);
         }
     }
+    fn paint(
+        &mut self,
+        scene: &mut Scene,
+        _: &mut dyn ButtonTextRenderer,
+        _: Rect,
+        _: Rect,
+        theme: ContentTheme,
+    ) {
+        for vertical in [true, false] {
+            if self.scroll.scrollbar_visible(vertical) {
+                let thumb = self.scroll.thumb(
+                    vertical,
+                    self.scrollbar_track(vertical),
+                    Self::minimum_thumb(),
+                );
+                if let Some(thumb) = thumb.intersection(&self.clip) {
+                    scene.push_quad(
+                        tekes_ui_scene::Quad::new(
+                            thumb,
+                            theme
+                                .palette
+                                .color("secondary-text")
+                                .expect("scrollbar Theme ink"),
+                        )
+                        .with_corner_radius(proposal::SCROLLBAR_WIDTH * 0.5),
+                    );
+                }
+            }
+        }
+    }
     fn event(&mut self, event: &ContentEvent) -> ContentResponse {
         match event {
+            ContentEvent::PointerDown(_) => {
+                if let Some(decision) = self.decide_scroll_pointer(
+                    &action_preparation::OwnedActionRequest::Pointer(event.clone()),
+                ) {
+                    self.apply_scroll_pointer(decision);
+                    ContentResponse {
+                        consumed: true,
+                        changed: true,
+                        capture_pointer: true,
+                        ..Default::default()
+                    }
+                } else {
+                    ContentResponse::default()
+                }
+            }
+            ContentEvent::PointerMove(point) if self.scrollbar_pointer.is_some() => {
+                let vertical = self.scrollbar_pointer.unwrap();
+                let track = self.scrollbar_hit_track(vertical);
+                let changed = self
+                    .scroll
+                    .pointer_drag(*point, track, Self::minimum_thumb());
+                ContentResponse {
+                    consumed: true,
+                    changed,
+                    ..Default::default()
+                }
+            }
+            ContentEvent::PointerUp(_) if self.scrollbar_pointer.is_some() => {
+                self.scroll.pointer_up();
+                self.scrollbar_pointer = None;
+                ContentResponse::consumed(true)
+            }
             ContentEvent::Scroll {
                 delta,
                 precise,
@@ -4545,6 +4757,7 @@ impl Component for ScrollContent {
             }
             ContentEvent::Cancel => {
                 self.scroll.cancel();
+                self.scrollbar_pointer = None;
                 self.last_frame = None;
                 if let Some(reading) = &mut self.reading {
                     reading.fence_momentum();

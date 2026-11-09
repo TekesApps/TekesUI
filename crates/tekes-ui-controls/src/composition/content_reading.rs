@@ -161,7 +161,7 @@ fn frames(children: &[Content], items: &[ComponentId]) -> Vec<(ComponentId, Rect
 }
 
 impl ContentReadingState {
-    fn observe_manual_history(&mut self) -> bool {
+    pub(super) fn observe_manual_history(&mut self) -> bool {
         self.intent = Rc::new(());
         let changed = self.following
             || !self.user_input

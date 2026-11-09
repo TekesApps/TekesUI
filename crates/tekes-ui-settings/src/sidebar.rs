@@ -7,8 +7,8 @@ use std::collections::BTreeMap;
 use tekes_ui_controls::{
     ButtonTextRenderer, ScrollArea,
     composition::{
-        Button, ComponentId, Content, ContentEvent, ContentHost, IconContent, ScrollContent,
-        StackContent, TextContent, TextFieldContent,
+        Button, ComponentId, Content, ContentEvent, ContentHost, GridContent, IconContent,
+        ScrollContent, StackContent, TextContent, TextFieldContent,
     },
     extended::{Axis, Stack},
 };
@@ -43,13 +43,12 @@ impl SettingsSidebar {
             next += 1;
             let id = ComponentId(next);
             next += 1;
-            children.push(Content::new(
-                id,
-                SelectableListContent::new(
-                    &group.label,
-                    group.items.iter().map(|item| item.label.clone()).collect(),
-                ),
-            ));
+            let mut list = SelectableListContent::new(
+                &group.label,
+                group.items.iter().map(|item| item.label.clone()).collect(),
+            );
+            list.view.set_navigation_selection_fill_only(true);
+            children.push(Content::new(id, list));
             items.insert(
                 id,
                 group
@@ -75,6 +74,11 @@ impl SettingsSidebar {
             ScrollContent::new(ScrollArea::default(), rows),
         );
         let root = if back {
+            let mut back_button = Button::new("〈 返回")
+                .with_accessible_name("返回主窗口")
+                .with_help("返回主窗口");
+            back_button.content_alignment =
+                tekes_ui_tokens::proposal::layout::MainAxisDistribution::Start;
             Content::new(
                 ComponentId(3),
                 StackContent {
@@ -85,25 +89,20 @@ impl SettingsSidebar {
                     children: vec![
                         Content::new(
                             ComponentId(5),
-                            StackContent {
-                                model: Stack {
-                                    axis: Axis::Horizontal,
-                                    gap: 12.,
+                            GridContent {
+                                model: tekes_ui_controls::extended::Grid {
+                                    columns: 1,
+                                    gap_x: 0.,
+                                    gap_y: tekes_ui_tokens::Spacing::Relaxed.value(),
                                 },
                                 children: vec![
-                                    Content::new(
-                                        ComponentId(4),
-                                        Button::new("Back")
-                                            .with_accessible_name("Back")
-                                            .with_help("返回主窗口"),
-                                    ),
+                                    Content::new(ComponentId(4), back_button),
                                     Content::new(
                                         ComponentId(6),
                                         TextFieldContent::inline("Search", "", 20.),
                                     )
                                     .with_help("Search"),
                                 ],
-                                flexible_child: Some(ComponentId(6)),
                             },
                         ),
                         scroll,
@@ -149,7 +148,20 @@ impl SettingsSidebar {
             .get_mut(ComponentId(4))
             .and_then(|node| node.component_mut::<Button>())
         {
-            button.set_contents(Content::new(ComponentId(7), icon));
+            button.set_contents(Content::new(
+                ComponentId(7),
+                StackContent {
+                    model: Stack {
+                        axis: Axis::Horizontal,
+                        gap: tekes_ui_tokens::Spacing::Tight.value(),
+                    },
+                    children: vec![
+                        Content::new(ComponentId(8), icon),
+                        Content::new(ComponentId(9), TextContent::new("返回")),
+                    ],
+                    flexible_child: None,
+                },
+            ));
             self.back_template = Some(name);
         }
         Ok(())

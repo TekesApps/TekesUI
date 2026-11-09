@@ -99,6 +99,12 @@ impl Component for SettingsRow {
         let value_center = self.children[1]
             .component::<tekes_ui_controls::composition::TextFieldContent>()
             .map(|field| field.surface.outer.center().y)
+            .or_else(|| {
+                self.children[1]
+                    .component::<tekes_ui_controls::composition::RadioGroupContent>()
+                    .and_then(|radio| radio.view().layout().rows.first())
+                    .map(|row| row.frame().center().y)
+            })
             .unwrap_or_else(|| self.children[1].frame().center().y);
         let label_y = (value_center - labels.height * 0.5).clamp(
             frame.min_y(),

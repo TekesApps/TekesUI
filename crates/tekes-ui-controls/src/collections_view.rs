@@ -272,6 +272,7 @@ pub struct ListView {
     state: CollectionInteraction,
     disabled: bool,
     navigation_selection_fill_only: bool,
+    navigation_layout: bool,
     buttons: Vec<ButtonModel>,
     keyed: Option<ListViewIdentity>,
     row_placements: Vec<crate::ButtonLayout>,
@@ -289,6 +290,7 @@ impl Default for ListView {
             },
             disabled: false,
             navigation_selection_fill_only: false,
+            navigation_layout: false,
             buttons: Vec::new(),
             keyed: None,
             row_placements: Vec::new(),
@@ -313,6 +315,41 @@ impl ListView {
     /// remain unchanged; this does not change row state, layout or hit targets.
     pub fn set_navigation_selection_fill_only(&mut self, fill_only: bool) {
         self.navigation_selection_fill_only = fill_only;
+    }
+    /// Use the existing Gallery sidebar row-height and gap tokens explicitly.
+    /// Ordinary List metrics remain unchanged until this navigation opt-in.
+    pub fn set_navigation_layout(&mut self, navigation: bool) {
+        if self.navigation_layout != navigation {
+            self.cancel();
+            self.navigation_layout = navigation;
+        }
+    }
+    fn metrics(&self) -> (f32, f32) {
+        if self.navigation_layout {
+            (
+                tekes_ui_tokens::ControlSize::RowHeight.value(),
+                tekes_ui_tokens::Spacing::Micro.value(),
+            )
+        } else {
+            (row_height(), row_gap())
+        }
+    }
+    pub fn measure_rows(
+        &self,
+        text: &mut impl ButtonTextRenderer,
+        labels: &[String],
+        width: f32,
+    ) -> tekes_ui_scene::Size {
+        let (height, gap) = self.metrics();
+        Self::measure_content_rows_with_metrics(
+            text,
+            labels,
+            &(0..labels.len()).collect::<Vec<_>>(),
+            width,
+            &[],
+            height,
+            gap,
+        )
     }
     /// Intrinsic height using the same default row metrics as painting.
     pub fn measure(
@@ -445,15 +482,34 @@ impl ListView {
         width: f32,
         sizes: &[Option<tekes_ui_scene::Size>],
     ) -> tekes_ui_scene::Size {
+        Self::measure_content_rows_with_metrics(
+            text,
+            labels,
+            ids,
+            width,
+            sizes,
+            row_height(),
+            row_gap(),
+        )
+    }
+    fn measure_content_rows_with_metrics(
+        text: &mut impl ButtonTextRenderer,
+        labels: &[String],
+        ids: &[usize],
+        width: f32,
+        sizes: &[Option<tekes_ui_scene::Size>],
+        minimum: f32,
+        gap: f32,
+    ) -> tekes_ui_scene::Size {
         let h = ids
             .iter()
             .map(|i| {
                 Self::row_size(text, &labels[*i], sizes.get(*i).copied().flatten(), width)
                     .height
-                    .max(row_height())
+                    .max(minimum)
             })
             .sum::<f32>()
-            + row_gap() * ids.len().saturating_sub(1) as f32;
+            + gap * ids.len().saturating_sub(1) as f32;
         tekes_ui_scene::Size::new(width, h)
     }
     fn arrange_rows(
@@ -470,7 +526,8 @@ impl ListView {
         self.state.retain_ids(ids);
         self.row_placements.clear();
         self.row_custom.clear();
-        let rh = row_height()
+        let (minimum, gap) = self.metrics();
+        let rh = minimum
             * if scale.is_finite() && scale > 0. {
                 scale
             } else {
@@ -492,8 +549,7 @@ impl ListView {
         self.layout = CollectionLayout {
             frame,
             visible: own_clip(frame, clip),
-            content_height: heights.iter().sum::<f32>()
-                + row_gap() * ids.len().saturating_sub(1) as f32,
+            content_height: heights.iter().sum::<f32>() + gap * ids.len().saturating_sub(1) as f32,
             items: Vec::with_capacity(ids.len()),
         };
         if !mounted_bounds(frame, clip) {
@@ -538,7 +594,7 @@ impl ListView {
             });
             self.row_placements.push(layout);
             self.row_custom.push(custom.is_some());
-            y += heights[ordinal] + row_gap();
+            y += heights[ordinal] + gap;
         }
     }
     fn paint_rows(

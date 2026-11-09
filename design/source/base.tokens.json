@@ -186,9 +186,9 @@
         "name": "p-border",
         "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
         "value": {
-          "dark": "#A3A39E",
+          "dark": "#7E7E7A",
           "dark-ic": "#C8C0B4",
-          "light": "#737370",
+          "light": "#7C7C79",
           "light-ic": "#4E4A41"
         }
       },
@@ -201,9 +201,9 @@
         "name": "p-border-focused",
         "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
         "value": {
-          "dark": "#EEEEEA",
+          "dark": "#B0B0AC",
           "dark-ic": "#FFFFFF",
-          "light": "#42423F",
+          "light": "#5E5E5B",
           "light-ic": "#111111"
         }
       },

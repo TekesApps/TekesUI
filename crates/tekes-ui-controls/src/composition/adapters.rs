@@ -16,6 +16,20 @@ pub struct ListContent {
     pub rows: StackContent,
 }
 impl ListContent {
+    /// One original scrolling owner around this List's grouped Items and Model.
+    /// `items_id` and the outer Content ID are explicit caller-owned identities.
+    /// Headers, items and their existing selection reducers keep their own IDs.
+    pub fn scrollable(
+        name: impl Into<String>,
+        items_id: ComponentId,
+        children: Vec<Content>,
+    ) -> ScrollContent {
+        ScrollContent::new(
+            ScrollArea::default(),
+            Content::new(items_id, Self::new(name, children)),
+        )
+        .scrollbar(true)
+    }
     pub fn new(name: impl Into<String>, children: Vec<Content>) -> Self {
         Self {
             name: name.into(),

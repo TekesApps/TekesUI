@@ -163,6 +163,12 @@ impl Component for SelectableListContent {
                 result
             }
             ContentEvent::PointerUp(point) => self.view.pointer_up(*point, &mut self.model),
+            // The embedded ContentHost owns Tab traversal between scopes.
+            // ListView's legacy catch-all key handling must not trap it here.
+            ContentEvent::Key {
+                key: tekes_ui_controls::ControlKey::Tab { .. },
+                ..
+            } => return response,
             ContentEvent::Key { key, down } => self.view.key(*key, *down, &mut self.model),
             ContentEvent::Cancel => {
                 self.view.cancel();

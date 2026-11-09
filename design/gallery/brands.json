@@ -55,7 +55,7 @@
     "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/examples/example-clay.json": "c5a2160d582d90e0488810e66a6b7185c6bb3ff84876eed468c84a1d7e85ca52",
     "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/brand.py": "3da13fcc221ed488d383af75dc84f77930306368632b7f48fb38476dc78f6586",
     "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/brand_color.py": "f7395f04cbd8cf0215326345929d76f6d8e263bdff69c6aede1a417bccc82516",
-    "design/source/base.tokens.json": "c59bb5dbbc102c89132f3791c38774a56570cbb344ea0231cc791af7d0f32e04",
+    "design/source/base.tokens.json": "31cc9bed6d9efbff8ff1aa407b40c4ad7a777e0414ead78161282f1b48092af0",
     "design/source/token-metadata.json": "53db464280f6d381cf108cb78c1f894a1dd31d780a5045145d31e6bd925e637b",
     "scripts/generate-gallery-brands.py": "0a169997cc3edca32aa93d7a3f089e66c7f5a5b2ba2acce272b07a5d44013497"
   },
@@ -249,9 +249,9 @@
             "name": "p-border",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#A3A39E",
+              "dark": "#7E7E7A",
               "dark-ic": "#C8C0B4",
-              "light": "#737370",
+              "light": "#7C7C79",
               "light-ic": "#4E4A41"
             }
           },
@@ -264,9 +264,9 @@
             "name": "p-border-focused",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#EEEEEA",
+              "dark": "#B0B0AC",
               "dark-ic": "#FFFFFF",
-              "light": "#42423F",
+              "light": "#5E5E5B",
               "light-ic": "#111111"
             }
           },
@@ -1295,9 +1295,9 @@
             "name": "p-border",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#A3A39E",
+              "dark": "#7E7E7A",
               "dark-ic": "#C8C0B4",
-              "light": "#737370",
+              "light": "#7C7C79",
               "light-ic": "#4E4A41"
             }
           },
@@ -1310,9 +1310,9 @@
             "name": "p-border-focused",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#EEEEEA",
+              "dark": "#B0B0AC",
               "dark-ic": "#FFFFFF",
-              "light": "#42423F",
+              "light": "#5E5E5B",
               "light-ic": "#111111"
             }
           },
@@ -2341,9 +2341,9 @@
             "name": "p-border",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#A3A39E",
+              "dark": "#7E7E7A",
               "dark-ic": "#C8C0B4",
-              "light": "#737370",
+              "light": "#7C7C79",
               "light-ic": "#4E4A41"
             }
           },
@@ -2356,9 +2356,9 @@
             "name": "p-border-focused",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#EEEEEA",
+              "dark": "#B0B0AC",
               "dark-ic": "#FFFFFF",
-              "light": "#42423F",
+              "light": "#5E5E5B",
               "light-ic": "#111111"
             }
           },
@@ -3387,9 +3387,9 @@
             "name": "p-border",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#A3A39E",
+              "dark": "#7E7E7A",
               "dark-ic": "#C8C0B4",
-              "light": "#737370",
+              "light": "#7C7C79",
               "light-ic": "#4E4A41"
             }
           },
@@ -3402,9 +3402,9 @@
             "name": "p-border-focused",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#EEEEEA",
+              "dark": "#B0B0AC",
               "dark-ic": "#FFFFFF",
-              "light": "#42423F",
+              "light": "#5E5E5B",
               "light-ic": "#111111"
             }
           },
@@ -4433,9 +4433,9 @@
             "name": "p-border",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#A3A39E",
+              "dark": "#7E7E7A",
               "dark-ic": "#C8C0B4",
-              "light": "#737370",
+              "light": "#7C7C79",
               "light-ic": "#4E4A41"
             }
           },
@@ -4448,9 +4448,9 @@
             "name": "p-border-focused",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#EEEEEA",
+              "dark": "#B0B0AC",
               "dark-ic": "#FFFFFF",
-              "light": "#42423F",
+              "light": "#5E5E5B",
               "light-ic": "#111111"
             }
           },
@@ -5479,9 +5479,9 @@
             "name": "p-border",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#A3A39E",
+              "dark": "#7E7E7A",
               "dark-ic": "#C8C0B4",
-              "light": "#737370",
+              "light": "#7C7C79",
               "light-ic": "#4E4A41"
             }
           },
@@ -5494,9 +5494,9 @@
             "name": "p-border-focused",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#EEEEEA",
+              "dark": "#B0B0AC",
               "dark-ic": "#FFFFFF",
-              "light": "#42423F",
+              "light": "#5E5E5B",
               "light-ic": "#111111"
             }
           },
@@ -6525,9 +6525,9 @@
             "name": "p-border",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#A3A39E",
+              "dark": "#7E7E7A",
               "dark-ic": "#C8C0B4",
-              "light": "#737370",
+              "light": "#7C7C79",
               "light-ic": "#4E4A41"
             }
           },
@@ -6540,9 +6540,9 @@
             "name": "p-border-focused",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#EEEEEA",
+              "dark": "#B0B0AC",
               "dark-ic": "#FFFFFF",
-              "light": "#42423F",
+              "light": "#5E5E5B",
               "light-ic": "#111111"
             }
           },
@@ -7573,9 +7573,9 @@
             "name": "p-border",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#A3A39E",
+              "dark": "#7E7E7A",
               "dark-ic": "#C8C0B4",
-              "light": "#737370",
+              "light": "#7C7C79",
               "light-ic": "#4E4A41"
             }
           },
@@ -7588,9 +7588,9 @@
             "name": "p-border-focused",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#EEEEEA",
+              "dark": "#B0B0AC",
               "dark-ic": "#FFFFFF",
-              "light": "#42423F",
+              "light": "#5E5E5B",
               "light-ic": "#111111"
             }
           },
@@ -8621,9 +8621,9 @@
             "name": "p-border",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#A3A39E",
+              "dark": "#7E7E7A",
               "dark-ic": "#C8C0B4",
-              "light": "#737370",
+              "light": "#7C7C79",
               "light-ic": "#4E4A41"
             }
           },
@@ -8636,9 +8636,9 @@
             "name": "p-border-focused",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#EEEEEA",
+              "dark": "#B0B0AC",
               "dark-ic": "#FFFFFF",
-              "light": "#42423F",
+              "light": "#5E5E5B",
               "light-ic": "#111111"
             }
           },
@@ -9669,9 +9669,9 @@
             "name": "p-border",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#A3A39E",
+              "dark": "#7E7E7A",
               "dark-ic": "#C8C0B4",
-              "light": "#737370",
+              "light": "#7C7C79",
               "light-ic": "#4E4A41"
             }
           },
@@ -9684,9 +9684,9 @@
             "name": "p-border-focused",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#EEEEEA",
+              "dark": "#B0B0AC",
               "dark-ic": "#FFFFFF",
-              "light": "#42423F",
+              "light": "#5E5E5B",
               "light-ic": "#111111"
             }
           },
@@ -10717,9 +10717,9 @@
             "name": "p-border",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#A3A39E",
+              "dark": "#7E7E7A",
               "dark-ic": "#C8C0B4",
-              "light": "#737370",
+              "light": "#7C7C79",
               "light-ic": "#4E4A41"
             }
           },
@@ -10732,9 +10732,9 @@
             "name": "p-border-focused",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#EEEEEA",
+              "dark": "#B0B0AC",
               "dark-ic": "#FFFFFF",
-              "light": "#42423F",
+              "light": "#5E5E5B",
               "light-ic": "#111111"
             }
           },
@@ -11765,9 +11765,9 @@
             "name": "p-border",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#A3A39E",
+              "dark": "#7E7E7A",
               "dark-ic": "#C8C0B4",
-              "light": "#737370",
+              "light": "#7C7C79",
               "light-ic": "#4E4A41"
             }
           },
@@ -11780,9 +11780,9 @@
             "name": "p-border-focused",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#EEEEEA",
+              "dark": "#B0B0AC",
               "dark-ic": "#FFFFFF",
-              "light": "#42423F",
+              "light": "#5E5E5B",
               "light-ic": "#111111"
             }
           },
@@ -12813,9 +12813,9 @@
             "name": "p-border",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#A3A39E",
+              "dark": "#7E7E7A",
               "dark-ic": "#C8C0B4",
-              "light": "#737370",
+              "light": "#7C7C79",
               "light-ic": "#4E4A41"
             }
           },
@@ -12828,9 +12828,9 @@
             "name": "p-border-focused",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#EEEEEA",
+              "dark": "#B0B0AC",
               "dark-ic": "#FFFFFF",
-              "light": "#42423F",
+              "light": "#5E5E5B",
               "light-ic": "#111111"
             }
           },

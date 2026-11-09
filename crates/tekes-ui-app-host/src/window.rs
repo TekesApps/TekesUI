@@ -58,29 +58,29 @@ fn window_toolbar_geometry(
     let allocation = (native_height.max(measured).max(row_y + measured) * scale).ceil() / scale;
     (allocation, row_y, measured)
 }
-// Only top native rows use the native allocation. A toolbar-free container
-// reserves system controls only when they actually intersect it.
+// Top rows share their measured, control-safe boundary, not AppKit's potentially
+// larger titlebar allocation. Toolbar-free containers only avoid actual controls.
 fn presentation_content_inset(
     measured: f32,
-    native_allocation: f32,
-    native_height: f32,
+    row_boundary: f32,
+    controls_exclusion: f32,
     native_row: bool,
     intersects_controls: bool,
 ) -> f32 {
     if measured > 0. {
         if native_row {
-            native_allocation.max(if intersects_controls {
-                native_height
+            row_boundary.max(if intersects_controls {
+                controls_exclusion
             } else {
                 0.
             })
         } else if intersects_controls {
-            measured.max(native_height)
+            measured.max(controls_exclusion)
         } else {
             measured
         }
     } else if intersects_controls {
-        native_height
+        controls_exclusion
     } else {
         0.
     }
@@ -586,14 +586,16 @@ pub struct Host {
     settings_frames: Vec<Rect>,
     settings_top: f32,
     settings_pointer: Option<bool>,
-    settings_provider: Option<tekes_ui_settings::FileProvider>,
-    settings_loading: Option<Receiver<Result<tekes_ui_settings::Snapshot, String>>>,
+    settings_owner: Option<crate::settings::SettingsOwner>,
+    settings_display: Option<window_settings::SettingsDisplayBinding>,
+    settings_loading: Option<window_settings::SettingsLoad>,
     leading_visible: bool,
     sidebar_motion: crate::sidebar_motion::SidebarMotion,
     motion_epoch: std::time::Instant,
     reduced_motion: bool,
     trailing_visible: bool,
     toolbar_index: usize,
+    toolbar_hover_index: Option<usize>,
     presentation: Option<crate::PresentationState>,
     presentation_layout: crate::PresentationLayout,
     presentation_tabs: Option<tekes_ui_controls::composition::ToolbarHost<()>>,
@@ -668,7 +670,8 @@ impl Host {
             settings_frames: Vec::new(),
             settings_top: 0.,
             settings_pointer: None,
-            settings_provider: None,
+            settings_owner: None,
+            settings_display: None,
             settings_loading: None,
             leading_visible: n != 3,
             sidebar_motion: crate::sidebar_motion::SidebarMotion::new(n != 3, true),
@@ -676,6 +679,7 @@ impl Host {
             reduced_motion: false,
             trailing_visible: true,
             toolbar_index: 0,
+            toolbar_hover_index: None,
             presentation: None,
             presentation_layout: crate::PresentationLayout::default(),
             presentation_tabs: None,
@@ -765,6 +769,9 @@ impl Host {
                         }) {
                             panel.content_padding = tekes_ui_tokens::Spacing::Loose.value();
                         }
+                        if let Some(padding) = panel.options.content_padding {
+                            panel.content_padding = padding;
+                        }
                         if let crate::Column::Container(container) = c {
                             panel.toolbar = container.toolbar.clone();
                             panel.local = Some(container);
@@ -848,6 +855,7 @@ impl Host {
             )
         });
         self.init(w)?;
+        self.sync_settings_display(w)?;
         if !self.is_settings_window {
             self.poll_settings_open(w)?;
         }
@@ -951,6 +959,11 @@ impl Host {
             native_center.map(|y| y as f32),
             scale,
         );
+        // The platform aligned genuine controls around this center, with their
+        // own height as the floor. AppKit's full titlebar allocation can grow
+        // during resize and must not become extra padding on the leading pane.
+        let controls_floor = native_center.map_or(0., |center| 2. * center as f32);
+        let content_boundary = (toolbar_y + toolbar_paint_height).max(controls_floor);
 
         let native_geometry = (
             native_height as f32,
@@ -966,7 +979,7 @@ impl Host {
                 native_geometry.1,
                 native_geometry.2,
                 native_geometry.3,
-                toolbar_y + toolbar_paint_height
+                content_boundary
             );
         }
         // Workspace panes are flat layout regions, not decorated Panel cards.
@@ -1076,13 +1089,12 @@ impl Host {
                 let height = if self.presentation.is_some() {
                     let native_row = bounds.min_y() == whole.min_y()
                         && self.panels[index].clip.min_y() == whole.min_y();
-                    let intersects_controls = self.panels[index].clip.min_y()
-                        < native_height as f32
+                    let intersects_controls = self.panels[index].clip.min_y() < controls_floor
                         && bounds.min_x() < whole.min_x() + leading as f32;
                     presentation_content_inset(
                         measured,
-                        toolbar_y + toolbar_paint_height,
-                        (native_height as f32 - bounds.min_y()).max(0.),
+                        content_boundary,
+                        (controls_floor - bounds.min_y()).max(0.),
                         native_row,
                         intersects_controls,
                     )
@@ -1788,6 +1800,28 @@ impl Host {
         false
     }
     fn event(&mut self, event: Event, w: &mut Window) -> Result<()> {
+        if let Event::SystemAppearanceChanged {
+            dark,
+            increase_contrast,
+        } = &event
+            && let Some(binding) = &mut self.settings_display
+        {
+            binding.system_theme = Theme {
+                appearance: if *dark {
+                    tekes_ui_tokens::Appearance::Dark
+                } else {
+                    tekes_ui_tokens::Appearance::Light
+                },
+                contrast: if *increase_contrast {
+                    tekes_ui_tokens::Contrast::Increased
+                } else {
+                    tekes_ui_tokens::Contrast::Standard
+                },
+            };
+            self.sync_settings_display(w)?;
+            w.request_redraw();
+            return Ok(());
+        }
         if self.owns_native_titlebar_drag_event(&event) {
             return Ok(());
         }
@@ -2251,30 +2285,38 @@ impl WindowHandler for Host {
 impl Host {
     fn configure_settings(
         &mut self,
-        settings: Option<crate::settings::SettingsOptions>,
+        settings: Option<crate::settings::SettingsConfiguration>,
     ) -> Result<()> {
-        self.settings_provider = settings
+        let owner = match settings {
+            Some(crate::settings::SettingsConfiguration::Window(options)) => {
+                Some(crate::settings::SettingsOwner::new(options)?)
+            }
+            Some(crate::settings::SettingsConfiguration::Shared(owner)) => Some(owner),
+            None => None,
+        };
+        self.settings_options = owner.as_ref().map(|owner| owner.0.borrow().options.clone());
+        self.settings_display = owner
             .as_ref()
-            .map(|s| {
-                tekes_ui_settings::FileProvider::open(s.file.clone(), s.schema.namespace.clone())
-            })
-            .transpose()?;
-        self.settings_options = settings;
+            .and_then(|owner| window_settings::SettingsDisplayBinding::new(owner, self.theme));
+        self.settings_owner = owner;
         Ok(())
     }
     fn menu_bar(&self) -> MenuBar {
         let mut menus = MenuBar::default();
-        if self.settings_options.is_some() {
-            menus.menus.push(tekes_ui_platform_macos::Menu::new(
-                "Settings",
-                vec![tekes_ui_platform_macos::MenuItem::Command(
-                    tekes_ui_platform_macos::MenuCommand::new(
-                        "Settings…",
-                        tekes_ui_platform_macos::CommandId(0x534554),
-                    )
-                    .key(tekes_ui_platform_macos::KeyEquivalent::command(',')),
-                )],
-            ));
+        if self.settings_options.is_some() || self.is_settings_window {
+            menus.menus.push(
+                tekes_ui_platform_macos::Menu::new(
+                    "Settings",
+                    vec![tekes_ui_platform_macos::MenuItem::Command(
+                        tekes_ui_platform_macos::MenuCommand::new(
+                            "Settings…",
+                            tekes_ui_platform_macos::CommandId(0x534554),
+                        )
+                        .key(tekes_ui_platform_macos::KeyEquivalent::command(',')),
+                    )],
+                )
+                .in_application_menu(),
+            );
         }
         if self.presentation.is_some() {
             menus.menus.push(self.presentation_menu());
@@ -2285,7 +2327,7 @@ impl Host {
         mut self,
         parent: &Window,
         config: WindowConfig,
-        settings: Option<crate::settings::SettingsOptions>,
+        settings: Option<crate::settings::SettingsConfiguration>,
     ) -> Result<tekes_ui_platform_macos::WindowHandle> {
         self.mount_initial_containers();
         self.configure_settings(settings)?;
@@ -2294,12 +2336,12 @@ impl Host {
     }
 }
 
-pub fn run(
+pub(crate) fn run(
     module_ids: Vec<String>,
     columns: Option<Vec<crate::Column>>,
     acceptance: bool,
     navigation: Option<NavigationOptions>,
-    settings: Option<crate::settings::SettingsOptions>,
+    settings: Option<crate::settings::SettingsConfiguration>,
     presentation: Option<crate::PresentationOptions>,
     theme: Theme,
 ) -> Result<()> {
@@ -2448,6 +2490,65 @@ fn toolbar_key(k: KeyEvent) -> ContentKeyEvent {
 mod toolbar_geometry_tests {
     use super::*;
     #[test]
+    fn explicit_zero_container_padding_leaves_one_real_content_padding_owner() {
+        use tekes_ui_controls::composition::{Content, ListContent, TextContent};
+        let padding = tekes_ui_tokens::Spacing::Loose.value();
+        let local = crate::LocalContainer::new(
+            "pane",
+            Content::new(
+                ComponentId(40),
+                ListContent::scrollable(
+                    "Body",
+                    ComponentId(41),
+                    vec![Content::new(
+                        ComponentId(42),
+                        TextContent::new("Actual body"),
+                    )],
+                )
+                .content_padding(padding),
+            ),
+        )
+        .unwrap()
+        .content_padding(0.);
+        let mut host = crate::AppWindow::from_containers(
+            vec![local.into()],
+            crate::PresentationOptions::new("pane"),
+        )
+        .unwrap()
+        .into_host(false);
+        host.mount_columns();
+        assert_eq!(host.panels[0].content_padding, 0.);
+        let bounds = Rect::new(0., 0., 300., 260.);
+        host.panel_geometry(0, bounds, 1., 48., 0.).unwrap();
+        let frame = host.panels[0].content_frame();
+        host.panels[0]
+            .local
+            .as_mut()
+            .unwrap()
+            .render(
+                &mut Scene::new(),
+                &mut host.text,
+                frame,
+                frame,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
+        host.panels[0]
+            .local
+            .as_mut()
+            .unwrap()
+            .with_host(&mut |content| {
+                let items = content.get(ComponentId(41)).unwrap().frame();
+                assert_eq!(items.min_x() - bounds.min_x(), padding);
+                assert_eq!(bounds.max_x() - items.max_x(), padding);
+                assert_eq!(items.min_y() - frame.min_y(), padding);
+                let actual = content.get(ComponentId(42)).unwrap().frame();
+                assert_eq!(actual.min_x(), items.min_x());
+                assert_eq!(actual.min_y(), items.min_y());
+                assert!(actual.max_x() <= items.max_x());
+            });
+    }
+    #[test]
     fn ordinary_others_uses_one_row_and_one_padding_for_local_and_wire_geometry() {
         let mut panel = Panel::new(0, "hidden-worker".into());
         panel.content_padding = tekes_ui_tokens::Spacing::Loose.value();
@@ -2514,21 +2615,40 @@ mod toolbar_geometry_tests {
         assert_eq!(legacy.content_padding, 0.);
     }
     #[test]
-    fn native_safety_allocation_does_not_add_blank_space_below_focus_or_others_toolbar() {
+    fn native_safety_allocation_does_not_add_blank_space_below_any_top_toolbar() {
         let (allocation, y, paint) = window_toolbar_geometry(66., 42., Some(24.), 2.);
         assert_eq!(allocation, 66.);
         assert_eq!(y + paint, 45.);
-        let boundary = presentation_content_inset(42., y + paint, 66., true, false);
-        assert_eq!(boundary, 45.);
+        let controls_floor: f32 = 2. * 24.;
+        let row_boundary = (y + paint).max(controls_floor);
+        let boundary = presentation_content_inset(42., row_boundary, controls_floor, true, false);
+        assert_eq!(boundary, 48.);
         assert_eq!(
-            presentation_content_inset(42., y + paint, 66., true, true),
-            66.
+            presentation_content_inset(42., row_boundary, controls_floor, true, true),
+            boundary
         );
         let mut panel = Panel::new(0, "focus".into());
         panel.bounds = Rect::new(300., 0., 400., 640.);
         panel.toolbar_height = boundary;
         panel.content_padding = tekes_ui_tokens::Spacing::Loose.value();
-        assert_eq!(panel.content_frame().min_y() - (y + paint), 16.);
+        assert_eq!(panel.content_frame().min_y() - row_boundary, 16.);
+        // Reproduce the observed 120% typography while AppKit changes only its
+        // total allocation: Nav, Focus and Others keep the same content origin.
+        for native_height in [51., 62., 66.] {
+            let (allocation, y, paint) =
+                window_toolbar_geometry(native_height, 50.4, Some(25.2), 2.);
+            assert_eq!(allocation, native_height);
+            let boundary = (y + paint).max(2. * 25.2);
+            for intersects in [false, true] {
+                assert_eq!(
+                    presentation_content_inset(50.4, boundary, 50.4, true, intersects),
+                    50.4
+                );
+            }
+        }
+        assert_eq!(presentation_content_inset(0., 48., 48., true, true), 48.);
+        assert_eq!(presentation_content_inset(0., 48., 48., true, false), 0.);
+        assert_eq!(presentation_content_inset(0., 0., 0., true, false), 0.);
     }
     #[test]
     fn navigation_gate_preserves_rapid_consumer_requests_and_original_wire_geometry() {
@@ -3290,6 +3410,71 @@ mod window_focus_tests {
         h.reconcile_toolbar_focus(true);
         assert_eq!(focused_groups(&h), vec![ToolbarTarget::Visibility(1)]);
     }
+    fn native_tab(reverse: bool) -> ContentKeyEvent {
+        ContentKeyEvent {
+            key: Some(ControlKey::Tab { reverse }),
+            down: true,
+            repeat: false,
+            modifiers: Default::default(),
+            native_code: 48,
+            characters: "\t".into(),
+            characters_ignoring_modifiers: "\t".into(),
+        }
+    }
+    #[test]
+    fn native_toolbar_tab_consumption_does_not_reuse_previous_pointer_bubbling() {
+        for reverse in [false, true] {
+            let mut h = fixture();
+            h.set_toolbar_focus(None, false);
+            for panel in &mut h.panels {
+                panel
+                    .mounted_toolbar
+                    .host
+                    .event_with_text(
+                        &ContentEvent::PointerMove(Point::new(-100., -100.)),
+                        &mut h.text,
+                    )
+                    .unwrap();
+                assert!(
+                    panel.mounted_toolbar.host.event_bubbled(),
+                    "real prior pointer event must bubble"
+                );
+            }
+            // This is the same consumption result used by route_toolbar_event
+            // before the original Settings/body fallback receives this key.
+            let consumed = h.toolbar_key_input(native_tab(reverse)).unwrap();
+            assert_eq!(
+                focused_groups(&h).len(),
+                1,
+                "Tab really focused one Toolbar"
+            );
+            assert!(consumed, "that same Tab must not also enter the body Form");
+            let focused = focused_groups(&h);
+            let mut modified = native_tab(reverse);
+            modified.modifiers.command = true;
+            assert!(!h.toolbar_key_input(modified).unwrap());
+            assert_eq!(focused_groups(&h), focused);
+        }
+    }
+    #[test]
+    fn native_toolbar_tab_without_an_actual_focus_target_bubbles_to_body() {
+        let local = crate::LocalContainer::new(
+            "body-only",
+            tekes_ui_controls::composition::Content::new(
+                ComponentId(1),
+                tekes_ui_controls::composition::TextContent::new("Body without toolbar actions"),
+            ),
+        )
+        .unwrap();
+        let mut h = crate::AppWindow::from_columns(vec![local.into()])
+            .unwrap()
+            .into_host(false);
+        h.mount_initial_containers();
+        assert_eq!(h.panels.len(), 1, "legal public local Container is mounted");
+        assert!(h.toolbar_focus_targets().is_empty());
+        assert!(!h.toolbar_key_input(native_tab(false)).unwrap());
+        assert!(focused_groups(&h).is_empty());
+    }
     #[test]
     fn modified_system_tab_does_not_enter_or_restyle_a_toolbar_focus_scope() {
         let mut h = fixture();
@@ -3814,5 +3999,114 @@ mod settings_close_input_tests {
         ));
         assert!(!unknown.focus(Some(ComponentId(3)), true));
         assert_eq!(unknown.focused(), None);
+    }
+}
+
+#[cfg(test)]
+mod shared_settings_owner_tests {
+    use super::*;
+    use crate::settings::{
+        SettingsConfiguration, SettingsDisplayMode, SettingsOwner, SettingsWindow,
+    };
+    use std::rc::Rc;
+    use tekes_ui_settings::Draft;
+
+    #[test]
+    fn shared_owner_keeps_one_writer_and_releases_abandoned_host_load() {
+        let path = std::env::temp_dir()
+            .join(format!(
+                "shared-settings-{}-{}",
+                std::process::id(),
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_nanos()
+            ))
+            .join("settings.toml");
+        let options = SettingsWindow::from_toml(
+            include_str!("../../tekes-ui-settings/tests/fixtures/layout.schema.toml"),
+            path.clone(),
+        )
+        .unwrap()
+        .display_mode(SettingsDisplayMode::Independent);
+        let owner = SettingsOwner::new(options.clone()).unwrap();
+        let mut first = Host::new(vec![], false, None);
+        let mut second = Host::new(vec![], false, None);
+        first
+            .configure_settings(Some(SettingsConfiguration::Shared(owner.clone())))
+            .unwrap();
+        second
+            .configure_settings(Some(SettingsConfiguration::Shared(owner.clone())))
+            .unwrap();
+        assert!(Rc::ptr_eq(
+            &first.settings_owner.as_ref().unwrap().0,
+            &second.settings_owner.as_ref().unwrap().0
+        ));
+        assert!(
+            SettingsOwner::new(options.clone()).is_err(),
+            "separate owners must respect the existing writer lock"
+        );
+
+        let ticket = first.settings_owner.as_ref().unwrap().begin_load().unwrap();
+        let (_sender, receiver) = mpsc::channel();
+        first.settings_loading = Some(window_settings::SettingsLoad {
+            _ticket: ticket,
+            receiver,
+        });
+        assert!(
+            second
+                .settings_owner
+                .as_ref()
+                .unwrap()
+                .begin_load()
+                .is_none(),
+            "only one live opener may load"
+        );
+        drop(first); // Equivalent owner/receiver release to native Shared::finish.
+        let next = second
+            .settings_owner
+            .as_ref()
+            .unwrap()
+            .begin_load()
+            .expect("a closed requester must not strand pending state");
+        drop(next);
+        let saved = {
+            let state = owner.0.borrow();
+            let mut draft = Draft::new(state.provider.load().unwrap());
+            draft.edit(&state.options.schema.settings[0], "Shared sample".into());
+            state
+                .provider
+                .commit(
+                    &draft
+                        .submit(&state.options.schema, "shared-save".into())
+                        .unwrap(),
+                )
+                .unwrap()
+        };
+        drop(second);
+        drop(owner);
+        let reopened = SettingsOwner::new(options).unwrap();
+        assert_eq!(reopened.0.borrow().provider.load().unwrap(), saved);
+        drop(reopened);
+        std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
+    }
+
+    #[test]
+    fn settings_child_keeps_standard_application_settings_command_without_owner_cycle() {
+        let mut child = Host::new(vec![], false, None);
+        child.is_settings_window = true;
+        assert!(child.settings_owner.is_none());
+        let bar = child.menu_bar();
+        assert_eq!(bar.menus.len(), 1);
+        assert!(bar.menus[0].application_menu);
+        let command = bar.commands().next().unwrap();
+        assert_eq!(
+            command.command,
+            tekes_ui_platform_macos::CommandId(0x534554)
+        );
+        assert_eq!(
+            command.key_equivalent,
+            Some(tekes_ui_platform_macos::KeyEquivalent::command(','))
+        );
     }
 }

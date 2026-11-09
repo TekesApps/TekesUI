@@ -340,6 +340,9 @@ impl Host {
     /// Single shared event entry before any body fallback. Existing body/splitter
     /// captures keep their original owner, including when crossing toolbar chrome.
     pub(super) fn route_toolbar_event(&mut self, event: &Event, w: &Window) -> Result<bool> {
+        if matches!(event, Event::Focus(false) | Event::CloseRequested) {
+            self.clear_toolbar_hover();
+        }
         if self.panels.is_empty() {
             return Ok(false);
         }
@@ -418,8 +421,14 @@ impl Host {
         {
             return Ok(false);
         }
-        // An original body editor owns its complete native key/IME sequence.
-        // A toolbar without keyboard focus must not consume its key markers.
+        // An original body control owns its complete key/IME sequence, even
+        // when it is not a text editor (for example a Settings MenuButton).
+        // Settings plain Tab first visits its existing cross-scope coordinator.
+        let settings_tab = self.is_settings_window
+            && matches!(event, Event::Key(key)
+                if key.kind == KeyEventKind::Down && key.key_code == 48
+                    && !key.modifiers.command && !key.modifiers.control
+                    && !key.modifiers.alt);
         if self.panels[self.toolbar_index]
             .mounted_toolbar
             .host
@@ -427,6 +436,7 @@ impl Host {
             .focused()
             .is_none()
             && !self.panels[self.toolbar_index].mounted_toolbar.modal()
+            && !settings_tab
             && matches!(
                 event,
                 Event::Key(_)
@@ -437,13 +447,13 @@ impl Host {
                     | Event::TextCommand(_)
             )
         {
-            let mut body_editor = false;
+            let mut body_focus = false;
             for panel in &mut self.panels {
                 if let Some(local) = &mut panel.local {
-                    local.with_host(&mut |h| body_editor |= h.focused_text().is_some());
+                    local.with_host(&mut |h| body_focus |= h.focused().is_some());
                 }
             }
-            if body_editor {
+            if body_focus {
                 return Ok(false);
             }
         }
@@ -456,11 +466,7 @@ impl Host {
             .content_host()
             .focused();
         let blocked = if let Event::Key(key) = event {
-            self.toolbar_key_input(toolbar_key(key.clone()))?;
-            !self.panels[self.toolbar_index]
-                .mounted_toolbar
-                .host
-                .event_bubbled()
+            self.toolbar_key_input(toolbar_key(key.clone()))?
         } else if let Some(owner) = self.open_toolbar().or_else(|| {
             if let Event::Mouse(mouse) = event {
                 self.toolbar_target_at(Point::new(mouse.position.x as f32, mouse.position.y as f32))
@@ -470,6 +476,7 @@ impl Host {
         }) {
             !self.dispatch_toolbar(owner, &input)?
         } else {
+            self.update_toolbar_hover(None, &input)?;
             self.panels[self.toolbar_index]
                 .mounted_toolbar
                 .host
@@ -991,7 +998,52 @@ impl Host {
                 })
         })
     }
+    fn clear_toolbar_hover(&mut self) {
+        if let Some(index) = self.toolbar_hover_index.take() {
+            // A hover exit does not revoke the original keyboard focus owner.
+            self.panels[index]
+                .mounted_toolbar
+                .host
+                .event(&ContentEvent::PointerMove(Point::new(f32::MIN, f32::MIN)));
+        }
+    }
+    fn update_toolbar_hover(&mut self, target: Option<usize>, event: &ContentEvent) -> Result<()> {
+        let hover = matches!(event, ContentEvent::Pointer(pointer)
+            if pointer.button.is_none()
+                && matches!(pointer.phase, PointerPhase::Move | PointerPhase::Enter | PointerPhase::Exit))
+            || matches!(event, ContentEvent::PointerMove(_));
+        if !hover
+            || self.open_toolbar().is_some()
+            || self.pressed.is_some()
+            || self.drag_split.is_some()
+            || self.settings_pointer.is_some()
+            || self.panels.iter().any(|panel| {
+                panel
+                    .mounted_toolbar
+                    .host
+                    .content_host()
+                    .pointer_capture()
+                    .is_some()
+            })
+        {
+            return Ok(());
+        }
+        if self.toolbar_hover_index != target {
+            if let Some(index) = self.toolbar_hover_index.take() {
+                // Container and keyboard routes are independent. Deliver the
+                // real outside point only to the previous hover owner.
+                self.panels[index]
+                    .mounted_toolbar
+                    .host
+                    .event_with_text(event, &mut self.text)
+                    .map_err(|error| anyhow::anyhow!("toolbar hover leave: {error:?}"))?;
+            }
+            self.toolbar_hover_index = target;
+        }
+        Ok(())
+    }
     pub(super) fn cancel_toolbar_input(&mut self) {
+        self.clear_toolbar_hover();
         self.remember_toolbar_focus(None);
         self.panels[self.toolbar_index]
             .mounted_toolbar
@@ -1003,10 +1055,10 @@ impl Host {
         owner: ToolbarTarget,
         event: &ContentEvent,
     ) -> Result<bool> {
-        if !self.toolbar_available(owner) {
-            return Ok(true);
-        }
-        let Some(index) = self.toolbar_container(owner) else {
+        let available = self.toolbar_available(owner);
+        let target = self.toolbar_container(owner).filter(|_| available);
+        self.update_toolbar_hover(target, event)?;
+        let Some(index) = target else {
             return Ok(true);
         };
         self.select_toolbar_container(index);
@@ -1041,11 +1093,14 @@ impl Host {
         }
         Ok(bubbles)
     }
-    pub(super) fn toolbar_key_input(&mut self, key: ContentKeyEvent) -> Result<()> {
+    pub(super) fn toolbar_key_input(&mut self, key: ContentKeyEvent) -> Result<bool> {
         if matches!(key.key, Some(ControlKey::Tab { .. }))
             && (key.modifiers.command || key.modifiers.control || key.modifiers.alt)
         {
-            return Ok(());
+            return Ok(false);
+        }
+        if let Some(consumed) = self.settings_tab_input(&key)? {
+            return Ok(consumed);
         }
         if key.down
             && let Some(ControlKey::Tab { reverse }) = key.key
@@ -1075,7 +1130,15 @@ impl Host {
                     }
                 });
             self.set_toolbar_focus(next, true);
-            return Ok(());
+            // Cross-group traversal does not dispatch to ContentHost: report
+            // this Tab's actual admission, not the previous event's bubbling.
+            return Ok(next.is_some()
+                && self.panels[self.toolbar_index]
+                    .mounted_toolbar
+                    .host
+                    .content_host()
+                    .focused()
+                    .is_some());
         }
         if key.down
             && key.key == Some(ControlKey::Escape)
@@ -1083,7 +1146,10 @@ impl Host {
         {
             self.cancel_toolbar_input();
             self.reconcile_toolbar_focus(true);
-            return Ok(());
+            return Ok(!self.panels[self.toolbar_index]
+                .mounted_toolbar
+                .host
+                .event_bubbled());
         }
         let previous = self.panels[self.toolbar_index]
             .mounted_toolbar
@@ -1107,7 +1173,10 @@ impl Host {
                     != previous)
                 .then_some(true),
         );
-        Ok(())
+        Ok(!self.panels[self.toolbar_index]
+            .mounted_toolbar
+            .host
+            .event_bubbled())
     }
     pub(super) fn toolbar_target_at(&self, point: Point) -> Option<ToolbarTarget> {
         if let Some(owner) = self.open_toolbar() {
@@ -1301,6 +1370,219 @@ mod integration_tests {
             .1
             .frame
             .center()
+    }
+    fn crossing_container_hover_case(keyboard_interleave: bool) {
+        use tekes_ui_scene::Primitive;
+        for theme in Theme::ALL {
+            let (mut host, declaration, calls) = mounted_contribution_fixture(false);
+            host = host.with_theme(theme);
+            host.panels[0]
+                .mounted_toolbar
+                .sync(
+                    Rect::new(0., 0., 1000., 200.),
+                    vec![ToolbarRegion::new(
+                        ComponentId(93001),
+                        Rect::new(0., 0., 280., 48.),
+                    )],
+                    vec![Declaration {
+                        id: Host::toolbar_group(ToolbarTarget::Panel(0)),
+                        region: ComponentId(93001),
+                        placement: Placement::PrimaryAction,
+                        order: 0,
+                        contents: Contents::Commands(
+                            vec![ButtonDecl {
+                                id: 7,
+                                icon: None,
+                                text: "Owner A".into(),
+                                hint: None,
+                                enabled: true,
+                            }],
+                            Overflow::Together,
+                        ),
+                        source: declaration.source,
+                    }],
+                )
+                .unwrap();
+            let palette = host.palette();
+            let paint = |host: &mut Host| {
+                std::array::from_fn::<_, 2, _>(|index| {
+                    let mut scene = Scene::new();
+                    host.panels[index]
+                        .mounted_toolbar
+                        .host
+                        .render(&mut scene, &mut host.text, palette)
+                        .unwrap();
+                    scene
+                })
+            };
+            paint(&mut host);
+            let frame = |host: &Host, index: usize, name: &str| {
+                host.panels[index]
+                    .mounted_toolbar
+                    .host
+                    .semantics()
+                    .into_iter()
+                    .flat_map(|node| node.parts)
+                    .find(|(_, part)| part.semantics.name == name)
+                    .unwrap()
+                    .1
+                    .frame
+            };
+            let a = frame(&host, 0, "Owner A");
+            let b = frame(&host, 1, "Undo");
+            let hover = |point| {
+                ContentEvent::Pointer(PointerEvent {
+                    position: point,
+                    phase: PointerPhase::Move,
+                    button: None,
+                    modifiers: Default::default(),
+                    click_count: 0,
+                })
+            };
+            let colors = |state| {
+                tekes_ui_tokens::surface_palette::resolve_surface(
+                    palette,
+                    "toolbar",
+                    "action-quiet",
+                    state,
+                )
+                .unwrap()
+                .background
+            };
+            let has_fill = |scene: &Scene, frame, fill| {
+                scene.primitives().iter().any(|primitive| {
+                    matches!(primitive,
+                        Primitive::Quad(quad) if quad.rect == frame && quad.fill == fill
+                    )
+                })
+            };
+            if keyboard_interleave {
+                let target = host.panels[1]
+                    .mounted_toolbar
+                    .host
+                    .semantics()
+                    .into_iter()
+                    .find(|node| {
+                        node.parts
+                            .iter()
+                            .any(|(_, part)| part.semantics.name == "Undo")
+                    })
+                    .unwrap()
+                    .target;
+                assert!(
+                    host.panels[1]
+                        .mounted_toolbar
+                        .host
+                        .restore_focus(target, true)
+                );
+            }
+            let focus_before: Vec<_> = host
+                .panels
+                .iter()
+                .map(|panel| panel.mounted_toolbar.host.content_host().focused())
+                .collect();
+            let owner_a = host.toolbar_target_at(a.center()).unwrap();
+            host.dispatch_toolbar(owner_a, &hover(a.center())).unwrap();
+            let scenes = paint(&mut host);
+            assert!(has_fill(&scenes[0], a, colors("hover")));
+            assert!(has_fill(&scenes[1], b, colors("rest")));
+
+            if keyboard_interleave {
+                // The native key route chooses the actual focused ToolbarHost
+                // before calling this original key dispatcher. Pointer hover
+                // must retain its own owner through that keyboard selection.
+                let focused = host
+                    .panels
+                    .iter()
+                    .position(|panel| {
+                        panel
+                            .mounted_toolbar
+                            .host
+                            .content_host()
+                            .focused()
+                            .is_some()
+                    })
+                    .unwrap();
+                host.select_toolbar_container(focused);
+                host.toolbar_key_input(ContentKeyEvent {
+                    key: Some(ControlKey::Left),
+                    down: true,
+                    repeat: false,
+                    modifiers: Default::default(),
+                    native_code: 123,
+                    characters: String::new(),
+                    characters_ignoring_modifiers: String::new(),
+                })
+                .unwrap();
+                assert_eq!(host.toolbar_index, 1);
+            }
+            let owner_b = host.toolbar_target_at(b.center()).unwrap();
+            host.dispatch_toolbar(owner_b, &hover(b.center())).unwrap();
+            let scenes = paint(&mut host);
+            assert!(
+                has_fill(&scenes[0], a, colors("rest")),
+                "moving directly to another container must clear the old Toolbar hover"
+            );
+            assert!(has_fill(&scenes[1], b, colors("hover")));
+            assert_eq!(
+                host.panels
+                    .iter()
+                    .map(|panel| { panel.mounted_toolbar.host.content_host().focused() })
+                    .collect::<Vec<_>>(),
+                focus_before
+            );
+            assert_eq!(calls.get(), 0);
+
+            // This is route_toolbar_event's no-target body fallback: deliver
+            // the real outside point to the last container, without Cancel.
+            let outside = hover(Point::new(500., 150.));
+            assert!(host.toolbar_target_at(Point::new(500., 150.)).is_none());
+            host.panels[host.toolbar_index]
+                .mounted_toolbar
+                .host
+                .event_with_text(&outside, &mut host.text)
+                .unwrap();
+            let scenes = paint(&mut host);
+            assert!(has_fill(&scenes[1], b, colors("rest")));
+            host.dispatch_toolbar(owner_a, &hover(a.center())).unwrap();
+            host.select_toolbar_container(1);
+            host.clear_toolbar_hover();
+            let scenes = paint(&mut host);
+            assert!(has_fill(&scenes[0], a, colors("rest")));
+            assert_eq!(
+                host.panels
+                    .iter()
+                    .map(|panel| { panel.mounted_toolbar.host.content_host().focused() })
+                    .collect::<Vec<_>>(),
+                focus_before,
+                "hover-only cleanup must not blur the keyboard owner"
+            );
+            assert_eq!(host.toolbar_hover_index, None);
+            // Whole-input cancellation retains its existing ContentHost
+            // contract: unlike a pointer-only exit, it also clears focus.
+            host.cancel_toolbar_input();
+            assert_eq!(
+                host.panels[1].mounted_toolbar.host.content_host().focused(),
+                None
+            );
+            host.dispatch_toolbar(owner_b, &ContentEvent::PointerDown(b.center()))
+                .unwrap();
+            host.dispatch_toolbar(owner_b, &ContentEvent::PointerUp(b.center()))
+                .unwrap();
+            assert_eq!(
+                calls.get(),
+                1,
+                "the original source still receives one activation"
+            );
+        }
+    }
+    #[test]
+    fn pointer_crossing_container_toolbars_clears_previous_hover_without_changing_focus() {
+        crossing_container_hover_case(false);
+    }
+    #[test]
+    fn pointer_crossing_container_toolbars_after_keyboard_route_clears_actual_hover_owner() {
+        crossing_container_hover_case(true);
     }
     #[test]
     fn mounted_undo_pointer_routes_to_its_actual_container_from_leading_route() {

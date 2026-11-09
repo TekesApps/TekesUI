@@ -1,8 +1,36 @@
 # TekesUI AppHost 框架设计
 
-## 2026-11-08 最新修正：Others 工具栏内 Tabs 与等距正文留白
+## 2026-11-09：Gallery 的共享 Settings 与显示偏好契约（#229 / #245 / #56）
 
-用户在恢复旧视觉后的实际试用提出：Others 的 Tabs 是工具栏组成部分，必须在该工具栏同一行完成选择，不另占正文上方一行；关闭 affordance 使用圆圈内叉，保留独立关闭语义与原命中/键盘/AX。Focus 和 Others 正文使用已有 `Spacing::Loose`（16pt）四边一致留白，Toolbar 高度不算作正文 padding，不在内容树和宿主重复叠加。现有 token 表是尺寸真源，不新增任意常量。此修正明确取代上一批“Tabs在Toolbar下方”和“撤回正文padding”的安排；旧窗口尺寸、边缘图标及导航功能继续保留。通过受影响验证后安装并更新 Dock，源码交付、原生验收及公开 Release 分列。
+Gallery 每次激活 AppHost item 仍创建新的 AppHost 窗口；各窗口保留自己的文档、Container 和导航。Gallery Host 从消费者 TOML 与独立持久目录创建一次 `SettingsOwner::new(SettingsWindow)`，在装配前显式 `.with_display_preferences("general/appearance/appearance", "general/appearance/text-size")` 绑定两个字段，然后每个 AppWindow 使用 `.shared_settings(owner.clone())`。绑定参数是 Schema 归一化后的 `group/item/field` 完整 ID，不是 TOML 局部字段名或持久路径；保持精确匹配，不猜测短名。原 `.settings(SettingsWindow)` API 仍创建单独 owner，默认 Exclusive 模式保持；未绑定显示偏好的旧消费者继续沿原 `.theme` 和窗口内字号契约，不读取 Gallery 偏好。
+
+一个 owner 持设置定义、一个 FileProvider、一个 Settings 子窗口及 Weak 加载票据。请求 Host 持 receiver 和唯一强票据直到 native child 发布完成；它在读取完成前关闭会释放票据，其他窗口可以重新申请。子 Settings Host 不强持 owner，复用原表单、历史 Client 和导航服务，不另开 undo.json writer。Independent Settings 可在发起窗口关闭后继续使用；原 Exclusive 模式沿平台原 present/restore 策略。保存、错误重试、Undo/Redo、无效数字/IME 保护和关闭等待均沿用原 SettingsSurface。
+
+通用 TOML 定义字体大小（50–300%，默认 100%）和主题（System / Light / Dark，默认 System），本批已连接实际显示效果。新 AppHost 在首次显示阶段后台读取有效 Snapshot，不必先打开 Settings；已有 owner 的有效值可直接用于新窗口。保存及 Undo/Redo 只发布原 Client 成功确认的 Snapshot，不在 UI 线程重新读盘，不让尚未保存或无效的编辑影响样式。迟到的初始读取不能覆盖较新已确认 revision。加载值经原 Schema 校验，无效值报错，不静默退回默认值。
+
+显示值和弱 wake 订阅存于一个不引用 owner、provider 或 native child 的小型共享状态。各 Host 保留自己的订阅票据，关闭窗口即释放；成功确认后唤醒仍存活的窗口。Settings 原 Surface 同样保留此显示状态，所以即使最后一个 owner 持有者关闭，Independent Settings 的保存/Undo 仍能修改自身显示，且没有 owner → child → owner 强环。
+
+AppHost 和 Settings 使用现成 `Text::set_body_size` 更新原文字服务，重新排版内容及工具栏，不重建 ContentHost、不重置焦点、组字或编辑。System 跟随各窗口实际收到的 `SystemAppearanceChanged`；显式 Light/Dark 只覆盖 appearance，仍保留系统 contrast。共享侧栏 ListView 使用与 Gallery 导航相同的 `set_navigation_selection_fill_only(true)`，不添加主题特例。绑定范围是 AppHost 的本地文字服务与界面；独立进程组件自行绘制的业务内容仍遵循其既有消费者协议，本批没有扩充进程协议。
+
+Settings 的普通 Tab 使用窗口级顺序：可见且可用的原 Toolbar groups → 可见 sidebar → form，并在这些 scope 整体回绕；Shift-Tab 反向。两个当前原 ContentHost 设置 `set_focus_wrap(false)`，先让当前 scope 处理原事件，只有其真实 `event_bubbled()` 才跨 scope，以原 `enter_focus` 进入目标。新 scope 成功接纳后清除旧 keyboard owner，不用 Cancel 强制迁移，hover 所有权保持独立。原 native `insertTab:` / `insertBacktab:` 与普通 Tab 使用相同协调核心；菜单/modal、组字、非法数值及导航恢复门禁保持原拒绝行为，modified Tab 继续原系统路径。此规则仅适用于 Settings；其他 AppHost/remote Toolbar 的原循环范围保留。实际首击 mouse 未出现菜单仍作为独立未定因项，不以键盘路径修复代签。
+
+`Settings…` 以显式 application placement 贡献到原生应用菜单 About 之后，快捷键 Command-comma；默认 Menu 仍为顶层菜单。焦点切换只替换框架贡献，保留标准 About/Hide/Quit/Window 菜单身份及响应链动作，贡献标题不重命名应用菜单。Settings 自身保留该命令而不强持 owner。
+
+TOML 位于 `crates/tekes-ui-gallery/src/gallery/apphost.settings.toml`；存储根为既有 `TEKESUI_APPHOST_DATA_DIR`，未设置时使用 `~/Library/Application Support/TekesUI Gallery/AppHost`，本配置在 `settings/general/settings.toml`。先前 sample 目录保留、不迁移覆盖，Gallery 自身偏好不读写。这里绑定实际 General 字段，没有通用配置框架或新 apply callback。
+
+验收分列：源级 owner/menu/TOML 与已保存显示值回归、受控构建测试、真实多 AppHost + Settings 保存/Undo/重开/重启及系统外观变化。早先仅 sample 字段的 native 保存/Undo 证据不能代签新显示绑定；本节不是原生、物理 IME、VoiceOver 或发布通过声明。
+
+## 2026-11-09 当前修正：单层正文留白、导航 List 与透明关闭叉
+
+NavBar、Focus、Others 正文到 Toolbar 下缘和相邻 splitter/窗边统一使用 `Spacing::Loose`（16pt）四边留白，且只由一层拥有。Gallery 四个 Container 显式选择零外 padding，原 ScrollContent 通过 token 请求 16pt 内 padding；focus bleed 是这个内距的最小安全值，滚动条只占用已有内距中必要的区域，不再在右侧额外叠一层间距。其他消费者未指定 ContainerOptions.content_padding 时沿用原默认。TextSurface Field 的 `layout.scroll_area.content_padding` 12pt 和 Button/List 标签内距属于控件内部层级，保持原值，不用 pane 16pt 替换。
+
+导航的原 ListView 显式采用 Gallery 左导航的 `ControlSize::RowHeight`（32pt）与 `Spacing::Micro`（2pt）节奏，分组仍由原 Items/Model 和 Stack 组织，保留 Workspace 标题、原 item IDs 和唯一 ScrollArea。普通 List 默认行高/行距不变。
+
+**当前 Tab 关闭样式为透明底的单个 ×**，保留独立关闭命中、键盘和 AX 语义；此项按用户 2026-11-09 决定取代下节历史“圆圈内叉”。不得再把圆圈要求作为当前验收条件。相关实现、原生行为和发布证据分别记录，不因文档修订冒称通过。
+
+## 2026-11-08 修正记录：Others 工具栏内 Tabs 与等距正文留白（关闭样式已被上节取代）
+
+用户在恢复旧视觉后的实际试用提出：Others 的 Tabs 是工具栏组成部分，必须在该工具栏同一行完成选择，不另占正文上方一行；关闭 affordance 当时要求使用圆圈内叉（历史，现行样式见 2026-11-09 节），保留独立关闭语义与原命中/键盘/AX。Focus 和 Others 正文使用已有 `Spacing::Loose`（16pt）四边一致留白，Toolbar 高度不算作正文 padding，不在内容树和宿主重复叠加。现有 token 表是尺寸真源，不新增任意常量。此修正明确取代上一批“Tabs在Toolbar下方”和“撤回正文padding”的安排；旧窗口尺寸、边缘图标及导航功能继续保留。通过受影响验证后安装并更新 Dock，源码交付、原生验收及公开 Release 分列。
 
 
 ## 2026-11-08 最新纠偏：保留原视觉与功能，只迁移容器关系
@@ -727,3 +755,13 @@ Toolbar rest/hover/held press/leave, actual Focus/Others exchange, both sidebars
 collapse/expand artwork, selected Tabs, the filled Draft menu and attached Field
 focus. Evidence is recorded in Issue #245; this is not an all-component or
 all-theme native Gold7 certification. The process exited and input was released.
+
+### 2026-11-09 原生标题栏分配与正文起点
+
+原生窗口验证发现缩窗时 AppKit 总标题栏 allocation 从51增到66pt，而实际 Toolbar paint 仍是50.4pt；旧实现只对含红绿灯的Nav把总allocation加进正文起点，造成三列不齐。本批将 AppKit 总allocation与内容安全边界分开：有Toolbar的顶行共享 max(paint_end, 已对齐原生控件中心的两倍)；极小字体仍以真实原生按钮高度为安全下限。无Toolbar的容器仅在真实原生控件相交时避让。原生按钮位置、尺寸与系统总allocation不改；正文的单层Spacing::Loose16不变，不添加负margin或额外padding补偿。此项仍须修复后原生缩窗验证。
+
+### 2026-11-09：Gallery 模板 Main／Settings 原框切换
+
+Gallery AppHost 的 Settings 使用既有 Exclusive 模式：先在 Main 的实际原生 frame 完成 Settings 呈现，再无动画隐藏 Main；返回时恢复原 Main 实例、文档和容器布局。两种画面的窗口尺寸与位置一致，不能以居中独立小窗替代。消费者仍可显式选择 Independent，未删除原能力。Settings 导航首项为与导航内容等宽的“〈 返回”（共享 Back 图标加文字），独占首行，Search 保留下一行；原焦点/组字/无效草稿离开门禁继续适用。
+
+若在 Settings 中移动或缩放窗口，返回时原 Main 采用 Settings 当前的原生 frame；其他被暂时隐藏的窗口保留各自原 frame。沿既有非动画窗口组先显示目标再隐藏遮盖层，不销毁/重建 Main 内容。

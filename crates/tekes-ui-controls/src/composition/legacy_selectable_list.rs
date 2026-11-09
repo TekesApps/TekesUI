@@ -26,7 +26,7 @@ impl Component for SelectableListContent {
         true
     }
     fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
-        MeasuredChild::new(crate::collections_view::ListView::measure(
+        MeasuredChild::new(self.view.measure_rows(
             &mut TextAdapter(text),
             &self.labels,
             available.width,

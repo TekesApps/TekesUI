@@ -2,12 +2,12 @@ use std::time::Duration;
 use tekes_ui_controls::{
     ButtonTextAlign, ButtonTextRenderer, ControlKey, ControlMotionContext,
     composition::{
-        AccessibilityAction, Component, ContentEvent, ContentRole, ContentTheme, Lifecycle,
-        MenuContent,
+        AccessibilityAction, Component, ComponentId, Content, ContentEvent, ContentHost,
+        ContentRole, ContentTheme, Lifecycle, MenuContent,
     },
 };
 use tekes_ui_scene::{Rect, Scene, Size};
-use tekes_ui_tokens::{Rgba, Theme, proposal};
+use tekes_ui_tokens::{Palette, Rgba, Theme, proposal};
 
 #[derive(Default)]
 struct Text(u64);
@@ -137,6 +137,67 @@ fn held_menu_pointer_is_cancelled_when_trigger_becomes_unavailable() {
         );
         assert_eq!(menu.selected, Some(1));
     }
+}
+
+#[test]
+fn content_host_menu_trigger_pointer_down_and_up_open_original_overlay() {
+    let id = ComponentId(7400);
+    let frame = Rect::new(20., 20., 180., 36.);
+    let mut host = ContentHost::new(Content::new(id, menu())).unwrap();
+    let mut text = Text::default();
+    host.render(
+        &mut Scene::new(),
+        &mut text,
+        frame,
+        frame,
+        Palette::from(Theme::LIGHT),
+    )
+    .unwrap();
+    let point = host.get(id).unwrap().frame().center();
+    assert!(
+        !host
+            .get(id)
+            .unwrap()
+            .component::<MenuContent>()
+            .unwrap()
+            .menu
+            .is_open()
+    );
+
+    let down = host.event(&ContentEvent::PointerDown(point));
+    assert!(
+        host.get(id)
+            .unwrap()
+            .component::<MenuContent>()
+            .unwrap()
+            .trigger
+            .button
+            .state
+            .pressed,
+        "ContentHost must run the original MenuButton trigger PointerDown reducer"
+    );
+    assert!(down.consumed && down.capture_pointer);
+    assert_eq!(host.focused(), Some(id));
+
+    let up = host.event(&ContentEvent::PointerUp(point));
+    assert!(up.consumed && !up.activated);
+    assert!(
+        host.get(id)
+            .unwrap()
+            .component::<MenuContent>()
+            .unwrap()
+            .menu
+            .is_open()
+    );
+    host.render(
+        &mut Scene::new(),
+        &mut text,
+        frame,
+        frame,
+        Palette::from(Theme::LIGHT),
+    )
+    .unwrap();
+    assert_eq!(host.input_overlay_owner().map(|(owner, _)| owner), Some(id));
 }
 
 #[test]
