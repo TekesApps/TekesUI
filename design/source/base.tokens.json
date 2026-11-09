@@ -71,7 +71,7 @@
         "name": "p-tertiary-text",
         "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
         "value": {
-          "dark": "#B4B4B0",
+          "dark": "#9F9F9B",
           "dark-ic": "#F4EEE2",
           "light": "#606060",
           "light-ic": "#37352F"

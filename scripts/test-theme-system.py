@@ -285,6 +285,23 @@ class ThemeSystemTests(unittest.TestCase):
                         for channel in ['text','icon']:
                             self.assertEqual(uses[usage][state][channel],instance['compiled_color_roles'][record['mode']]['tertiary-text'])
                             uses[usage][state][channel]=instance['compiled_color_roles'][record['mode']]['disabled-text']
+            # #245 changes only the ordinary dark default tertiary input. Undo
+            # its exact declared references after the independent #206 undo;
+            # preserve the frozen fixture and reject unrelated packet changes.
+            if record['theme_id'] in ['default','blue','clay'] and record['mode']=='dark':
+                current_tertiary='#9F9F9B'
+                old_tertiary='#B4B4B0'
+                self.assertEqual(instance['compiled_color_roles'][record['mode']]['tertiary-text'],current_tertiary)
+                restored=0
+                for surface,usage,state,roles in g.bindings(self.rules()):
+                    if usage not in packet[surface]: continue
+                    for channel,role in roles.items():
+                        if role != 'tertiary-text': continue
+                        if usage in ['action-quiet','action-quiet-error'] and state in ['disabled','selected-disabled'] and channel in ['text','icon']: continue
+                        self.assertEqual(packet[surface][usage][state][channel],current_tertiary)
+                        packet[surface][usage][state][channel]=old_tertiary
+                        restored+=1
+                self.assertGreater(restored,0)
             self.assertEqual(hashlib.sha256(canonical(packet)).hexdigest(),record['canonical_sha256'],(record['theme_id'],record['mode']))
         for mode in g.MODES:
             default=instances[0]['modes'][mode]
@@ -304,6 +321,36 @@ class ThemeSystemTests(unittest.TestCase):
                 self.assertNotEqual(changed['compiled_color_roles'][mode]['p-status-info'],instances[1]['compiled_color_roles'][mode]['p-status-info'])
                 self.assertNotEqual(changed['modes'][mode],instances[1]['modes'][mode])
         self.assertNotEqual(instances[3]['compiled_color_roles']['light']['p-accent'],instances[1]['compiled_color_roles']['light']['p-accent'])
+
+    def test_quiet_disabled_readability_and_ordinary_emphasis_across_instances(self):
+        instances=json.loads(g.generate()['design/theme/generated/instances.json'])['instances']
+        expected={'light':'#606060','dark':'#9F9F9B','light-ic':'#37352F','dark-ic':'#F4EEE2'}
+        for instance in instances:
+            for mode,surfaces in instance['modes'].items():
+                tertiary=instance['compiled_color_roles'][mode]['tertiary-text']
+                self.assertEqual(tertiary,({'light':'#111111','dark':'#B4B4B0'}.get(mode,expected[mode]) if instance['id']=='blue-inputs' else expected[mode]))
+                for uses in surfaces.values():
+                    for usage in ['action-quiet','action-quiet-error']:
+                        states=uses[usage]
+                        for state in ['disabled','selected-disabled']:
+                            colors=states[state]
+                            for channel in ['text','icon']:
+                                self.assertGreaterEqual(g.contrast(colors[channel],colors['background']),7.0 if mode.endswith('-ic') else 4.5,(instance['id'],mode,usage,state,channel))
+                        if instance['id']!='blue-inputs' and not mode.endswith('-ic'):
+                            # Compare the same resting ground; selection fill has
+                            # its own persistent emphasis and is tested above.
+                            ground=states['rest']['background']
+                            for channel in ['text','icon']:
+                                self.assertLess(g.contrast(states['disabled'][channel],ground),g.contrast(states['rest'][channel],ground),(instance['id'],mode,usage,channel))
+
+    def test_tertiary_adjustment_preserves_every_registered_brand_contrast_contract(self):
+        # The brand compiler covers additional pressed/selection/diff grounds
+        # beyond the Surface packets. Exercise that actual rejecting boundary.
+        spec=importlib.util.spec_from_file_location('gallery_brands',ROOT/'scripts/generate-gallery-brands.py')
+        gallery=importlib.util.module_from_spec(spec);spec.loader.exec_module(gallery)
+        compiled=gallery.generate()
+        registry=g.merge.load(ROOT/'design/brand/gallery.json')
+        self.assertEqual([p['id'] for p in compiled['presets']],[p['id'] for p in registry['presets']])
 
     def test_invalid_root_contract_and_contrast_rejection_leave_generated_files_unchanged(self):
         original_load=g.merge.load

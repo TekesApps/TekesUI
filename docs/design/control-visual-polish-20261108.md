@@ -89,3 +89,47 @@ consumer runs its original selection/value/hover/disabled/contrast/keyboard
 checks with both the default and opted-in view and checks the exact row-border
 contract in each case. The option changes neither row geometry nor command
 identity.
+
+## Unified interaction states — 2026-11-09
+
+User-authorized continuation of #245: keep the existing Theme schema, generated
+Surface/use/state packets and all registered component consumers. Diagnose the
+Toolbar pointer-to-state-to-paint path before changing colors. No Gallery-only
+color overrides or parallel theme tables.
+
+Normal decoration should recede behind content; hover and pressed must remain
+visibly distinct, selection persists independently, and keyboard focus remains
+independent. Checked/selected is applicable only to controls that own selection.
+Disabled controls remain noninteractive. Existing ordinary and increased-contrast
+readability thresholds, including #206 Quiet disabled labels, remain unchanged.
+Shared palette adjustments must enumerate changed roles/modes and affected
+consumers; historical fixtures and prior native evidence remain immutable.
+
+Source coverage, rendered state tests, native observation and publication are
+separate results. This section records the intended contract; completed checks
+and the exact candidate will be added after verification.
+
+The Toolbar defect is repeated focus synchronization during paint: sending
+`set_focus(false)` to an already-unfocused Button calls `blur()` and destroys
+its independent pointer hover. Synchronization now blurs only the actual former
+focus owner; it still updates the current owner's keyboard-focus visibility.
+Hover/pressed colors continue to come from the existing Surface packet.
+
+Ordinary dark `p-tertiary-text` changes from #B4B4B0 to #9F9F9B.
+Light stays #606060: a lighter meaningful adjustment fails the existing
+tertiary/pressed and selection-hover contrast contract. This reduces dark
+auxiliary/disabled emphasis; the old
+dark disabled ink was brighter than normal secondary text. Increased-contrast
+values and explicit per-theme overrides are unchanged. Quiet disabled labels
+still meet 4.5:1, or 7:1 in increased contrast. The immutable v1.6.1 fixture is
+retained; only precisely mapped ordinary-dark tertiary channels receive the documented delta.
+The Rust external-theme acceptance boundary is aligned with the same existing
+Python Quiet-disabled contrast rule, including rejection of an invalid packet.
+
+Local batch 023 passed 9 Toolbar tests (including the new actual Scene
+regressions), 55 design-export tests, 32 token tests, strict clippy for the five
+affected crates, and the versioned Gallery release build. Python Theme tests
+passed 51 cases; the full 13-brand compiler, generated artifacts, historical
+package/goldens, composition audit and formatting were checked. Native results
+are recorded separately in Issue #245; these checks do not certify every
+component's visual appearance.
