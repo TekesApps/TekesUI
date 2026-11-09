@@ -1,43 +1,8 @@
 //! Container-owned shared Toolbar instances and original command bindings.
 use crate::toolbar_source::ComponentSource;
 use anyhow::{Context, Result};
-use std::collections::HashMap;
 use tekes_ui_controls::composition::*;
-use tekes_ui_render::Renderer;
-use tekes_ui_scene::{ImageId, Rect};
-pub(crate) fn icon_image(
-    images: &mut HashMap<(String, u32), ImageId>,
-    renderer: &mut Renderer,
-    name: &str,
-    scale: f32,
-) -> Result<ImageId> {
-    let key = (name.to_owned(), (scale * 1000.).round() as u32);
-    if let std::collections::hash_map::Entry::Vacant(slot) = images.entry(key.clone()) {
-        // Visibility artwork is a Host presentation choice, not a shared toggle style.
-        let svg = match name {
-            "apphost-leading-collapsed" => include_str!("../assets/leading-collapsed.svg"),
-            "apphost-trailing-collapsed" => include_str!("../assets/trailing-collapsed.svg"),
-            _ => {
-                tekes_ui_icons::Glyph::ALL
-                    .iter()
-                    .find(|g| g.name == name)
-                    .context("unknown toolkit icon")?
-                    .svg
-            }
-        };
-        let tree = resvg::usvg::Tree::from_str(svg, &resvg::usvg::Options::default())?;
-        let pixels = (24. * scale).ceil().max(1.) as u32;
-        let mut pixmap =
-            resvg::tiny_skia::Pixmap::new(pixels, pixels).context("icon allocation")?;
-        resvg::render(
-            &tree,
-            resvg::tiny_skia::Transform::from_scale(pixels as f32 / 24., pixels as f32 / 24.),
-            &mut pixmap.as_mut(),
-        );
-        slot.insert(renderer.register_image(pixmap.data(), pixels, pixels)?);
-    }
-    Ok(images[&key])
-}
+use tekes_ui_scene::Rect;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) enum Source {
@@ -56,7 +21,20 @@ pub(crate) enum Source {
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) enum Contents {
     Commands(Vec<ToolbarButtonDeclaration>, ToolbarGroupOverflow),
+    TemplateCommands(
+        Vec<ToolbarButtonDeclaration>,
+        ToolbarGroupOverflow,
+        Vec<(u64, String)>,
+    ),
     Title(String),
+}
+impl Contents {
+    pub(super) fn templates(&self) -> &[(u64, String)] {
+        match self {
+            Self::TemplateCommands(_, _, icons) => icons,
+            _ => &[],
+        }
+    }
 }
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct Declaration {
@@ -110,6 +88,11 @@ impl MountedToolbar {
         regions: Vec<ToolbarRegion>,
         declarations: Vec<Declaration>,
     ) -> Result<()> {
+        for declaration in &declarations {
+            for (_, name) in declaration.contents.templates() {
+                tekes_ui_icons::Glyph::named(name).context("unknown toolkit template icon")?;
+            }
+        }
         self.host
             .set_regions(self.window, viewport, regions)
             .map_err(|e| anyhow::anyhow!("toolbar regions: {e:?}"))?;
@@ -132,9 +115,10 @@ impl MountedToolbar {
             {
                 let target = ComponentId(d.id.0 + 1);
                 let compatible = match (&old.contents, &d.contents) {
-                    (Contents::Commands(a, _), Contents::Commands(b, _)) => {
-                        a.iter().map(|b| b.id).eq(b.iter().map(|b| b.id))
-                    }
+                    (
+                        Contents::Commands(a, _) | Contents::TemplateCommands(a, _, _),
+                        Contents::Commands(b, _) | Contents::TemplateCommands(b, _, _),
+                    ) => a.iter().map(|b| b.id).eq(b.iter().map(|b| b.id)),
                     (Contents::Title(_), Contents::Title(_)) => true,
                     _ => false,
                 };
@@ -149,7 +133,8 @@ impl MountedToolbar {
                     }
                     if old.contents != d.contents {
                         let result = match &d.contents {
-                            Contents::Commands(buttons, overflow) => {
+                            Contents::Commands(buttons, overflow)
+                            | Contents::TemplateCommands(buttons, overflow, _) => {
                                 self.host
                                     .update_component::<tekes_ui_controls::ToolbarControl>(
                                         d.id,
@@ -172,6 +157,11 @@ impl MountedToolbar {
                                                 control.set_action_icon(b.id, b.icon);
                                                 control.set_action_help(b.id, b.hint.clone());
                                             }
+                                            for (id, name) in d.contents.templates() {
+                                                control
+                                                    .set_action_template_icon(*id, Some(name))
+                                                    .expect("template names validated before sync");
+                                            }
                                         },
                                     )
                             }
@@ -188,8 +178,9 @@ impl MountedToolbar {
                 }
             }
             let target = ComponentId(d.id.0 + 1);
-            let (child, bindings) = match &d.contents {
-                Contents::Commands(buttons, overflow) => (
+            let (mut child, bindings) = match &d.contents {
+                Contents::Commands(buttons, overflow)
+                | Contents::TemplateCommands(buttons, overflow, _) => (
                     toolbar_commands(target, buttons.clone(), *overflow),
                     buttons
                         .iter()
@@ -206,6 +197,13 @@ impl MountedToolbar {
                     vec![],
                 ),
             };
+            if let Some(control) = child.component_mut::<tekes_ui_controls::ToolbarControl>() {
+                for (id, name) in d.contents.templates() {
+                    control
+                        .set_action_template_icon(*id, Some(name))
+                        .expect("template names validated before sync");
+                }
+            }
             self.host
                 .register(ToolbarRegistration {
                     region: d.region,

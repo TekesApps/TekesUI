@@ -243,6 +243,7 @@ impl Host {
     ) -> Result<Self> {
         let columns = settings_columns(&surface);
         let app = crate::AppWindow::from_columns(columns)?
+            .theme(self.theme)
             .navigation(surface.borrow().navigation_options());
         let mut host = app.into_host(false);
         host.mount_initial_containers();
@@ -800,7 +801,7 @@ impl Host {
         self.text.scale = w.scale() as f32;
         let size = w.size();
         let whole = Rect::new(0., 0., size.width as f32, size.height as f32);
-        let palette = Palette::from(Theme::LIGHT);
+        let palette = Palette::from(self.theme);
         let mut scene = Scene::new();
         let mut toolbar_scene = Scene::new();
         scene.push_quad(Quad::new(whole, palette.color("surface-panel").unwrap()));
@@ -827,13 +828,7 @@ impl Host {
         );
         self.settings_top = top;
         if self.settings_back {
-            let image = crate::window_toolbar::icon_image(
-                &mut self.toolbar_images,
-                renderer,
-                "tekes-back",
-                w.scale() as f32 * self.text.type_scale(),
-            )?;
-            settings.sidebar.set_back_icon(image);
+            settings.sidebar.set_back_template_icon("tekes-back")?;
         }
         let breadcrumb = settings.breadcrumb();
         let _ = navigation;
@@ -871,7 +866,7 @@ impl Host {
                     panel
                         .mounted_toolbar
                         .host
-                        .render(&mut toolbar_scene, text, Theme::LIGHT.into())
+                        .render(&mut toolbar_scene, text, palette)
                         .map_err(|e| anyhow::anyhow!("settings container toolbar: {e:?}"))
                 },
             )?;
@@ -942,7 +937,11 @@ impl Host {
 
         let renderer = self.renderer.as_mut().unwrap();
         renderer.resize(w.drawable_size(), w.scale() as f32);
-        renderer.render(&scene, &mut self.text.atlas, Rgba::gray(1.))?;
+        renderer.render(
+            &scene,
+            &mut self.text.atlas,
+            palette.color("surface-panel").unwrap(),
+        )?;
         if self.navigation_order.is_some() && self.navigation_ack.is_none() {
             let (tx, rx) = mpsc::sync_channel(1);
             self.completion
@@ -2383,10 +2382,16 @@ mod cold_settings_host_tests {
                     &mut state.form.host as *mut ContentHost as usize,
                 ]
             };
-            let parent = Host::new(vec!["parent".into()], false, None);
+            let parent =
+                Host::new(vec!["parent".into()], false, None).with_theme(Theme::DARK_INCREASED);
             // This is the exact production helper called by poll_settings_open;
             // no test-side mount or native/GPU initialization masks cold state.
             let mut child = parent.create_settings_host(surface.clone()).unwrap();
+            assert_eq!(
+                child.palette(),
+                parent.palette(),
+                "Settings inherits the selected Theme"
+            );
             assert!(child.is_settings_window);
             assert_eq!(child.settings_back, mode == SettingsDisplayMode::Exclusive);
             assert!(Rc::ptr_eq(child.settings.as_ref().unwrap(), &surface));

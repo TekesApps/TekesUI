@@ -123,7 +123,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "3f092e2445fb0842ce7fb5d1b181ef6e1c489b481410952aec765ba4e47ba213",
+                "actual_sha256": "d662d44aee0ab520bfb8cdb6252bd4aa90dc5423973b827ab310222be7044388",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -263,7 +263,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -318,7 +318,7 @@
         ],
         "runtime_identity_differences": [
           {
-            "actual_sha256": "3f092e2445fb0842ce7fb5d1b181ef6e1c489b481410952aec765ba4e47ba213",
+            "actual_sha256": "d662d44aee0ab520bfb8cdb6252bd4aa90dc5423973b827ab310222be7044388",
             "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
             "path": "Cargo.lock"
           },
@@ -458,7 +458,7 @@
             "path": "crates/tekes-ui-controls/src/text_surface.rs"
           },
           {
-            "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+            "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
             "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
             "path": "crates/tekes-ui-controls/src/toolbar.rs"
           },
@@ -536,7 +536,7 @@
           ],
           "identity_differences": [
             {
-              "actual_sha256": "3f092e2445fb0842ce7fb5d1b181ef6e1c489b481410952aec765ba4e47ba213",
+              "actual_sha256": "d662d44aee0ab520bfb8cdb6252bd4aa90dc5423973b827ab310222be7044388",
               "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
               "path": "Cargo.lock"
             },
@@ -676,7 +676,7 @@
               "path": "crates/tekes-ui-controls/src/text_surface.rs"
             },
             {
-              "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+              "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
               "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
               "path": "crates/tekes-ui-controls/src/toolbar.rs"
             },
@@ -940,7 +940,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "3f092e2445fb0842ce7fb5d1b181ef6e1c489b481410952aec765ba4e47ba213",
+                "actual_sha256": "d662d44aee0ab520bfb8cdb6252bd4aa90dc5423973b827ab310222be7044388",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -1080,7 +1080,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -1135,7 +1135,7 @@
         ],
         "runtime_identity_differences": [
           {
-            "actual_sha256": "3f092e2445fb0842ce7fb5d1b181ef6e1c489b481410952aec765ba4e47ba213",
+            "actual_sha256": "d662d44aee0ab520bfb8cdb6252bd4aa90dc5423973b827ab310222be7044388",
             "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
             "path": "Cargo.lock"
           },
@@ -1275,7 +1275,7 @@
             "path": "crates/tekes-ui-controls/src/text_surface.rs"
           },
           {
-            "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+            "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
             "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
             "path": "crates/tekes-ui-controls/src/toolbar.rs"
           },
@@ -1353,7 +1353,7 @@
           ],
           "identity_differences": [
             {
-              "actual_sha256": "3f092e2445fb0842ce7fb5d1b181ef6e1c489b481410952aec765ba4e47ba213",
+              "actual_sha256": "d662d44aee0ab520bfb8cdb6252bd4aa90dc5423973b827ab310222be7044388",
               "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
               "path": "Cargo.lock"
             },
@@ -1493,7 +1493,7 @@
               "path": "crates/tekes-ui-controls/src/text_surface.rs"
             },
             {
-              "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+              "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
               "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
               "path": "crates/tekes-ui-controls/src/toolbar.rs"
             },
@@ -1790,7 +1790,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "3f092e2445fb0842ce7fb5d1b181ef6e1c489b481410952aec765ba4e47ba213",
+                "actual_sha256": "d662d44aee0ab520bfb8cdb6252bd4aa90dc5423973b827ab310222be7044388",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -1930,7 +1930,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -1990,7 +1990,7 @@
         ],
         "runtime_identity_differences": [
           {
-            "actual_sha256": "3f092e2445fb0842ce7fb5d1b181ef6e1c489b481410952aec765ba4e47ba213",
+            "actual_sha256": "d662d44aee0ab520bfb8cdb6252bd4aa90dc5423973b827ab310222be7044388",
             "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
             "path": "Cargo.lock"
           },
@@ -2130,7 +2130,7 @@
             "path": "crates/tekes-ui-controls/src/text_surface.rs"
           },
           {
-            "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+            "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
             "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
             "path": "crates/tekes-ui-controls/src/toolbar.rs"
           },
@@ -2213,7 +2213,7 @@
           ],
           "identity_differences": [
             {
-              "actual_sha256": "3f092e2445fb0842ce7fb5d1b181ef6e1c489b481410952aec765ba4e47ba213",
+              "actual_sha256": "d662d44aee0ab520bfb8cdb6252bd4aa90dc5423973b827ab310222be7044388",
               "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
               "path": "Cargo.lock"
             },
@@ -2353,7 +2353,7 @@
               "path": "crates/tekes-ui-controls/src/text_surface.rs"
             },
             {
-              "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+              "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
               "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
               "path": "crates/tekes-ui-controls/src/toolbar.rs"
             },
@@ -3199,7 +3199,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -3526,7 +3526,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -3853,7 +3853,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -4180,7 +4180,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -4507,7 +4507,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -4834,7 +4834,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -5161,7 +5161,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -5488,7 +5488,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -5815,7 +5815,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -6130,7 +6130,7 @@
             "path": "crates/tekes-ui-controls/src/text_surface.rs"
           },
           {
-            "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+            "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
             "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
             "path": "crates/tekes-ui-controls/src/toolbar.rs"
           },
@@ -6481,7 +6481,7 @@
               "path": "crates/tekes-ui-controls/src/text_surface.rs"
             },
             {
-              "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+              "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
               "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
               "path": "crates/tekes-ui-controls/src/toolbar.rs"
             },
@@ -6917,7 +6917,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "3f092e2445fb0842ce7fb5d1b181ef6e1c489b481410952aec765ba4e47ba213",
+                "actual_sha256": "d662d44aee0ab520bfb8cdb6252bd4aa90dc5423973b827ab310222be7044388",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -7057,7 +7057,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -7112,7 +7112,7 @@
         ],
         "runtime_identity_differences": [
           {
-            "actual_sha256": "3f092e2445fb0842ce7fb5d1b181ef6e1c489b481410952aec765ba4e47ba213",
+            "actual_sha256": "d662d44aee0ab520bfb8cdb6252bd4aa90dc5423973b827ab310222be7044388",
             "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
             "path": "Cargo.lock"
           },
@@ -7252,7 +7252,7 @@
             "path": "crates/tekes-ui-controls/src/text_surface.rs"
           },
           {
-            "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+            "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
             "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
             "path": "crates/tekes-ui-controls/src/toolbar.rs"
           },
@@ -7330,7 +7330,7 @@
           ],
           "identity_differences": [
             {
-              "actual_sha256": "3f092e2445fb0842ce7fb5d1b181ef6e1c489b481410952aec765ba4e47ba213",
+              "actual_sha256": "d662d44aee0ab520bfb8cdb6252bd4aa90dc5423973b827ab310222be7044388",
               "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
               "path": "Cargo.lock"
             },
@@ -7470,7 +7470,7 @@
               "path": "crates/tekes-ui-controls/src/text_surface.rs"
             },
             {
-              "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+              "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
               "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
               "path": "crates/tekes-ui-controls/src/toolbar.rs"
             },
@@ -7721,7 +7721,7 @@
                 "expected": "d29800770a0ea12e6189607726318bad33fe798a35d76b92f3fcfde7fe291236"
               },
               "crates/tekes-ui-controls/src/toolbar.rs": {
-                "actual": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected": "ebb1e0678cedf656af14a99d48a5eb77e4778e4db1dcb7e3f316856b012793f5"
               },
               "crates/tekes-ui-gallery/src/gallery/workbench.rs": {
@@ -7952,7 +7952,7 @@
             "path": "crates/tekes-ui-controls/src/text_surface.rs"
           },
           {
-            "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+            "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
             "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
             "path": "crates/tekes-ui-controls/src/toolbar.rs"
           },
@@ -8163,7 +8163,7 @@
               "path": "crates/tekes-ui-controls/src/text_surface.rs"
             },
             {
-              "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+              "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
               "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
               "path": "crates/tekes-ui-controls/src/toolbar.rs"
             },
@@ -8861,7 +8861,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -9063,7 +9063,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -9265,7 +9265,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -9467,7 +9467,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -9669,7 +9669,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -9871,7 +9871,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -10061,7 +10061,7 @@
             "path": "crates/tekes-ui-controls/src/text_surface.rs"
           },
           {
-            "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+            "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
             "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
             "path": "crates/tekes-ui-controls/src/toolbar.rs"
           },
@@ -10483,7 +10483,7 @@
               "path": "crates/tekes-ui-controls/src/text_surface.rs"
             },
             {
-              "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+              "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
               "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
               "path": "crates/tekes-ui-controls/src/toolbar.rs"
             },
@@ -10713,6 +10713,10 @@
           "scope": "Existing public unified Button image path and actual Gallery original decorative icon action, no separate IconButton API.",
           "source_identity": {
             "differences": {
+              "crates/tekes-ui-controls/src/composition/button.rs": {
+                "actual": "526921ce2ae5a8fbd9f633784249f69c4c01f5813b63c66b341f04ed73b7abf3",
+                "expected": "0a168f44280df2c4f615c243a32e4c8987fb526c8708e2b571d7f88b96f96f0e"
+              },
               "crates/tekes-ui-controls/src/paint.rs": {
                 "actual": "2a9cde15ec94a2ed9103cb997e08319bd749e386552218971c01003fa13e78ee",
                 "expected": "0c6ef421cbd4f082cf999ce0e56448c43b32cd117dbd7e3cb015447313653968"
@@ -10896,7 +10900,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -11098,7 +11102,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -11300,7 +11304,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -11502,7 +11506,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -11704,7 +11708,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -11906,7 +11910,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -12096,7 +12100,7 @@
             "path": "crates/tekes-ui-controls/src/text_surface.rs"
           },
           {
-            "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+            "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
             "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
             "path": "crates/tekes-ui-controls/src/toolbar.rs"
           },
@@ -12349,7 +12353,7 @@
               "path": "crates/tekes-ui-controls/src/text_surface.rs"
             },
             {
-              "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+              "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
               "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
               "path": "crates/tekes-ui-controls/src/toolbar.rs"
             },
@@ -12771,7 +12775,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -12973,7 +12977,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -13175,7 +13179,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -13377,7 +13381,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -13579,7 +13583,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -13769,7 +13773,7 @@
             "path": "crates/tekes-ui-controls/src/text_surface.rs"
           },
           {
-            "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+            "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
             "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
             "path": "crates/tekes-ui-controls/src/toolbar.rs"
           },
@@ -14025,7 +14029,7 @@
               "path": "crates/tekes-ui-controls/src/text_surface.rs"
             },
             {
-              "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+              "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
               "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
               "path": "crates/tekes-ui-controls/src/toolbar.rs"
             },
@@ -14448,7 +14452,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -14649,7 +14653,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -14850,7 +14854,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -15051,7 +15055,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -15252,7 +15256,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -15453,7 +15457,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -15654,7 +15658,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -15855,7 +15859,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -16056,7 +16060,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -16246,7 +16250,7 @@
             "path": "crates/tekes-ui-controls/src/text_surface.rs"
           },
           {
-            "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+            "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
             "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
             "path": "crates/tekes-ui-controls/src/toolbar.rs"
           },
@@ -16492,7 +16496,7 @@
               "path": "crates/tekes-ui-controls/src/text_surface.rs"
             },
             {
-              "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+              "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
               "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
               "path": "crates/tekes-ui-controls/src/toolbar.rs"
             },
@@ -16912,7 +16916,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -17113,7 +17117,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -17314,7 +17318,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -17515,7 +17519,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -17716,7 +17720,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -17917,7 +17921,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -18118,7 +18122,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -18319,7 +18323,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -18520,7 +18524,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -18710,7 +18714,7 @@
             "path": "crates/tekes-ui-controls/src/text_surface.rs"
           },
           {
-            "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+            "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
             "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
             "path": "crates/tekes-ui-controls/src/toolbar.rs"
           },
@@ -18956,7 +18960,7 @@
               "path": "crates/tekes-ui-controls/src/text_surface.rs"
             },
             {
-              "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+              "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
               "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
               "path": "crates/tekes-ui-controls/src/toolbar.rs"
             },
@@ -19373,7 +19377,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -19574,7 +19578,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -19775,7 +19779,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -19976,7 +19980,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -20177,7 +20181,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -20378,7 +20382,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -20579,7 +20583,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -20780,7 +20784,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -20981,7 +20985,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -21171,7 +21175,7 @@
             "path": "crates/tekes-ui-controls/src/text_surface.rs"
           },
           {
-            "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+            "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
             "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
             "path": "crates/tekes-ui-controls/src/toolbar.rs"
           },
@@ -21417,7 +21421,7 @@
               "path": "crates/tekes-ui-controls/src/text_surface.rs"
             },
             {
-              "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+              "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
               "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
               "path": "crates/tekes-ui-controls/src/toolbar.rs"
             },
@@ -21843,7 +21847,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -22175,7 +22179,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -22507,7 +22511,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -22839,7 +22843,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -23171,7 +23175,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -23503,7 +23507,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -23835,7 +23839,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -24167,7 +24171,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -24499,7 +24503,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -24831,7 +24835,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -25151,7 +25155,7 @@
             "path": "crates/tekes-ui-controls/src/text_surface.rs"
           },
           {
-            "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+            "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
             "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
             "path": "crates/tekes-ui-controls/src/toolbar.rs"
           },
@@ -25495,7 +25499,7 @@
               "path": "crates/tekes-ui-controls/src/text_surface.rs"
             },
             {
-              "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+              "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
               "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
               "path": "crates/tekes-ui-controls/src/toolbar.rs"
             },
@@ -26102,7 +26106,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -26434,7 +26438,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -26766,7 +26770,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -27098,7 +27102,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -27430,7 +27434,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -27762,7 +27766,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -28082,7 +28086,7 @@
             "path": "crates/tekes-ui-controls/src/text_surface.rs"
           },
           {
-            "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+            "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
             "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
             "path": "crates/tekes-ui-controls/src/toolbar.rs"
           },
@@ -28426,7 +28430,7 @@
               "path": "crates/tekes-ui-controls/src/text_surface.rs"
             },
             {
-              "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+              "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
               "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
               "path": "crates/tekes-ui-controls/src/toolbar.rs"
             },
@@ -29017,7 +29021,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -29218,7 +29222,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -29419,7 +29423,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -29620,7 +29624,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -29821,7 +29825,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -30022,7 +30026,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -30223,7 +30227,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -30424,7 +30428,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -30614,7 +30618,7 @@
             "path": "crates/tekes-ui-controls/src/text_surface.rs"
           },
           {
-            "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+            "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
             "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
             "path": "crates/tekes-ui-controls/src/toolbar.rs"
           },
@@ -30876,7 +30880,7 @@
               "path": "crates/tekes-ui-controls/src/text_surface.rs"
             },
             {
-              "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+              "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
               "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
               "path": "crates/tekes-ui-controls/src/toolbar.rs"
             },
@@ -31308,7 +31312,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -31509,7 +31513,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -31710,7 +31714,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -31911,7 +31915,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -32112,7 +32116,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -32313,7 +32317,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -32514,7 +32518,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -32704,7 +32708,7 @@
             "path": "crates/tekes-ui-controls/src/text_surface.rs"
           },
           {
-            "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+            "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
             "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
             "path": "crates/tekes-ui-controls/src/toolbar.rs"
           },
@@ -32966,7 +32970,7 @@
               "path": "crates/tekes-ui-controls/src/text_surface.rs"
             },
             {
-              "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+              "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
               "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
               "path": "crates/tekes-ui-controls/src/toolbar.rs"
             },
@@ -33395,7 +33399,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -33596,7 +33600,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -33797,7 +33801,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -33998,7 +34002,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -34199,7 +34203,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -34400,7 +34404,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -34601,7 +34605,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -34791,7 +34795,7 @@
             "path": "crates/tekes-ui-controls/src/text_surface.rs"
           },
           {
-            "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+            "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
             "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
             "path": "crates/tekes-ui-controls/src/toolbar.rs"
           },
@@ -35053,7 +35057,7 @@
               "path": "crates/tekes-ui-controls/src/text_surface.rs"
             },
             {
-              "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+              "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
               "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
               "path": "crates/tekes-ui-controls/src/toolbar.rs"
             },
@@ -35485,7 +35489,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -35687,7 +35691,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -35889,7 +35893,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -36091,7 +36095,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -36293,7 +36297,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -36495,7 +36499,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -36685,7 +36689,7 @@
             "path": "crates/tekes-ui-controls/src/text_surface.rs"
           },
           {
-            "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+            "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
             "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
             "path": "crates/tekes-ui-controls/src/toolbar.rs"
           },
@@ -36940,7 +36944,7 @@
               "path": "crates/tekes-ui-controls/src/text_surface.rs"
             },
             {
-              "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+              "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
               "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
               "path": "crates/tekes-ui-controls/src/toolbar.rs"
             },
@@ -37360,7 +37364,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -37566,7 +37570,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -37761,7 +37765,7 @@
             "path": "crates/tekes-ui-controls/src/text_surface.rs"
           },
           {
-            "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+            "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
             "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
             "path": "crates/tekes-ui-controls/src/toolbar.rs"
           },
@@ -37981,7 +37985,7 @@
               "path": "crates/tekes-ui-controls/src/text_surface.rs"
             },
             {
-              "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+              "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
               "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
               "path": "crates/tekes-ui-controls/src/toolbar.rs"
             },
@@ -38432,7 +38436,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -38764,7 +38768,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -39096,7 +39100,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -39428,7 +39432,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -39760,7 +39764,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -40092,7 +40096,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -40424,7 +40428,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -40756,7 +40760,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -41088,7 +41092,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -41420,7 +41424,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -41740,7 +41744,7 @@
             "path": "crates/tekes-ui-controls/src/text_surface.rs"
           },
           {
-            "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+            "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
             "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
             "path": "crates/tekes-ui-controls/src/toolbar.rs"
           },
@@ -42084,7 +42088,7 @@
               "path": "crates/tekes-ui-controls/src/text_surface.rs"
             },
             {
-              "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+              "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
               "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
               "path": "crates/tekes-ui-controls/src/toolbar.rs"
             },
@@ -42690,7 +42694,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -42896,7 +42900,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -43102,7 +43106,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -43308,7 +43312,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -43514,7 +43518,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -43709,7 +43713,7 @@
             "path": "crates/tekes-ui-controls/src/text_surface.rs"
           },
           {
-            "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+            "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
             "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
             "path": "crates/tekes-ui-controls/src/toolbar.rs"
           },
@@ -43928,7 +43932,7 @@
               "path": "crates/tekes-ui-controls/src/text_surface.rs"
             },
             {
-              "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+              "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
               "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
               "path": "crates/tekes-ui-controls/src/toolbar.rs"
             },
@@ -44386,7 +44390,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -44713,7 +44717,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -45040,7 +45044,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -45367,7 +45371,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -45694,7 +45698,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -46021,7 +46025,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -46348,7 +46352,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -46675,7 +46679,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -47002,7 +47006,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -47317,7 +47321,7 @@
             "path": "crates/tekes-ui-controls/src/text_surface.rs"
           },
           {
-            "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+            "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
             "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
             "path": "crates/tekes-ui-controls/src/toolbar.rs"
           },
@@ -47725,7 +47729,7 @@
               "path": "crates/tekes-ui-controls/src/text_surface.rs"
             },
             {
-              "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+              "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
               "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
               "path": "crates/tekes-ui-controls/src/toolbar.rs"
             },
@@ -48321,7 +48325,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -48648,7 +48652,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -48975,7 +48979,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -49302,7 +49306,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -49629,7 +49633,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -49944,7 +49948,7 @@
             "path": "crates/tekes-ui-controls/src/text_surface.rs"
           },
           {
-            "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+            "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
             "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
             "path": "crates/tekes-ui-controls/src/toolbar.rs"
           },
@@ -50284,7 +50288,7 @@
               "path": "crates/tekes-ui-controls/src/text_surface.rs"
             },
             {
-              "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+              "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
               "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
               "path": "crates/tekes-ui-controls/src/toolbar.rs"
             },
@@ -50880,7 +50884,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -51212,7 +51216,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -51544,7 +51548,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -51876,7 +51880,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -52208,7 +52212,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -52540,7 +52544,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -52872,7 +52876,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -53204,7 +53208,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -53536,7 +53540,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -53868,7 +53872,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -54188,7 +54192,7 @@
             "path": "crates/tekes-ui-controls/src/text_surface.rs"
           },
           {
-            "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+            "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
             "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
             "path": "crates/tekes-ui-controls/src/toolbar.rs"
           },
@@ -54531,7 +54535,7 @@
               "path": "crates/tekes-ui-controls/src/text_surface.rs"
             },
             {
-              "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+              "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
               "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
               "path": "crates/tekes-ui-controls/src/toolbar.rs"
             },
@@ -55015,7 +55019,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "3f092e2445fb0842ce7fb5d1b181ef6e1c489b481410952aec765ba4e47ba213",
+                "actual_sha256": "d662d44aee0ab520bfb8cdb6252bd4aa90dc5423973b827ab310222be7044388",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -55155,7 +55159,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -55230,7 +55234,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "3f092e2445fb0842ce7fb5d1b181ef6e1c489b481410952aec765ba4e47ba213",
+                "actual_sha256": "d662d44aee0ab520bfb8cdb6252bd4aa90dc5423973b827ab310222be7044388",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -55370,7 +55374,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -55431,7 +55435,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "3f092e2445fb0842ce7fb5d1b181ef6e1c489b481410952aec765ba4e47ba213",
+                "actual_sha256": "d662d44aee0ab520bfb8cdb6252bd4aa90dc5423973b827ab310222be7044388",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -55571,7 +55575,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -55632,7 +55636,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "3f092e2445fb0842ce7fb5d1b181ef6e1c489b481410952aec765ba4e47ba213",
+                "actual_sha256": "d662d44aee0ab520bfb8cdb6252bd4aa90dc5423973b827ab310222be7044388",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -55772,7 +55776,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -55848,7 +55852,7 @@
         ],
         "runtime_identity_differences": [
           {
-            "actual_sha256": "3f092e2445fb0842ce7fb5d1b181ef6e1c489b481410952aec765ba4e47ba213",
+            "actual_sha256": "d662d44aee0ab520bfb8cdb6252bd4aa90dc5423973b827ab310222be7044388",
             "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
             "path": "Cargo.lock"
           },
@@ -55988,7 +55992,7 @@
             "path": "crates/tekes-ui-controls/src/text_surface.rs"
           },
           {
-            "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+            "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
             "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
             "path": "crates/tekes-ui-controls/src/toolbar.rs"
           },
@@ -56135,7 +56139,7 @@
           ],
           "identity_differences": [
             {
-              "actual_sha256": "3f092e2445fb0842ce7fb5d1b181ef6e1c489b481410952aec765ba4e47ba213",
+              "actual_sha256": "d662d44aee0ab520bfb8cdb6252bd4aa90dc5423973b827ab310222be7044388",
               "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
               "path": "Cargo.lock"
             },
@@ -56275,7 +56279,7 @@
               "path": "crates/tekes-ui-controls/src/text_surface.rs"
             },
             {
-              "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+              "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
               "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
               "path": "crates/tekes-ui-controls/src/toolbar.rs"
             },
@@ -56590,7 +56594,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "3f092e2445fb0842ce7fb5d1b181ef6e1c489b481410952aec765ba4e47ba213",
+                "actual_sha256": "d662d44aee0ab520bfb8cdb6252bd4aa90dc5423973b827ab310222be7044388",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -56730,7 +56734,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -56805,7 +56809,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "3f092e2445fb0842ce7fb5d1b181ef6e1c489b481410952aec765ba4e47ba213",
+                "actual_sha256": "d662d44aee0ab520bfb8cdb6252bd4aa90dc5423973b827ab310222be7044388",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -56945,7 +56949,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -57006,7 +57010,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "3f092e2445fb0842ce7fb5d1b181ef6e1c489b481410952aec765ba4e47ba213",
+                "actual_sha256": "d662d44aee0ab520bfb8cdb6252bd4aa90dc5423973b827ab310222be7044388",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -57146,7 +57150,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -57207,7 +57211,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "3f092e2445fb0842ce7fb5d1b181ef6e1c489b481410952aec765ba4e47ba213",
+                "actual_sha256": "d662d44aee0ab520bfb8cdb6252bd4aa90dc5423973b827ab310222be7044388",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -57347,7 +57351,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -57430,7 +57434,7 @@
         ],
         "runtime_identity_differences": [
           {
-            "actual_sha256": "3f092e2445fb0842ce7fb5d1b181ef6e1c489b481410952aec765ba4e47ba213",
+            "actual_sha256": "d662d44aee0ab520bfb8cdb6252bd4aa90dc5423973b827ab310222be7044388",
             "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
             "path": "Cargo.lock"
           },
@@ -57570,7 +57574,7 @@
             "path": "crates/tekes-ui-controls/src/text_surface.rs"
           },
           {
-            "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+            "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
             "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
             "path": "crates/tekes-ui-controls/src/toolbar.rs"
           },
@@ -57717,7 +57721,7 @@
           ],
           "identity_differences": [
             {
-              "actual_sha256": "3f092e2445fb0842ce7fb5d1b181ef6e1c489b481410952aec765ba4e47ba213",
+              "actual_sha256": "d662d44aee0ab520bfb8cdb6252bd4aa90dc5423973b827ab310222be7044388",
               "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
               "path": "Cargo.lock"
             },
@@ -57857,7 +57861,7 @@
               "path": "crates/tekes-ui-controls/src/text_surface.rs"
             },
             {
-              "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+              "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
               "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
               "path": "crates/tekes-ui-controls/src/toolbar.rs"
             },
@@ -58172,7 +58176,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "3f092e2445fb0842ce7fb5d1b181ef6e1c489b481410952aec765ba4e47ba213",
+                "actual_sha256": "d662d44aee0ab520bfb8cdb6252bd4aa90dc5423973b827ab310222be7044388",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -58312,7 +58316,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -58387,7 +58391,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "3f092e2445fb0842ce7fb5d1b181ef6e1c489b481410952aec765ba4e47ba213",
+                "actual_sha256": "d662d44aee0ab520bfb8cdb6252bd4aa90dc5423973b827ab310222be7044388",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -58527,7 +58531,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -58588,7 +58592,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "3f092e2445fb0842ce7fb5d1b181ef6e1c489b481410952aec765ba4e47ba213",
+                "actual_sha256": "d662d44aee0ab520bfb8cdb6252bd4aa90dc5423973b827ab310222be7044388",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -58728,7 +58732,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -58789,7 +58793,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "3f092e2445fb0842ce7fb5d1b181ef6e1c489b481410952aec765ba4e47ba213",
+                "actual_sha256": "d662d44aee0ab520bfb8cdb6252bd4aa90dc5423973b827ab310222be7044388",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -58929,7 +58933,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -59005,7 +59009,7 @@
         ],
         "runtime_identity_differences": [
           {
-            "actual_sha256": "3f092e2445fb0842ce7fb5d1b181ef6e1c489b481410952aec765ba4e47ba213",
+            "actual_sha256": "d662d44aee0ab520bfb8cdb6252bd4aa90dc5423973b827ab310222be7044388",
             "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
             "path": "Cargo.lock"
           },
@@ -59145,7 +59149,7 @@
             "path": "crates/tekes-ui-controls/src/text_surface.rs"
           },
           {
-            "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+            "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
             "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
             "path": "crates/tekes-ui-controls/src/toolbar.rs"
           },
@@ -59224,7 +59228,7 @@
           ],
           "identity_differences": [
             {
-              "actual_sha256": "3f092e2445fb0842ce7fb5d1b181ef6e1c489b481410952aec765ba4e47ba213",
+              "actual_sha256": "d662d44aee0ab520bfb8cdb6252bd4aa90dc5423973b827ab310222be7044388",
               "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
               "path": "Cargo.lock"
             },
@@ -59364,7 +59368,7 @@
               "path": "crates/tekes-ui-controls/src/text_surface.rs"
             },
             {
-              "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+              "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
               "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
               "path": "crates/tekes-ui-controls/src/toolbar.rs"
             },
@@ -59712,7 +59716,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "3f092e2445fb0842ce7fb5d1b181ef6e1c489b481410952aec765ba4e47ba213",
+                "actual_sha256": "d662d44aee0ab520bfb8cdb6252bd4aa90dc5423973b827ab310222be7044388",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -59852,7 +59856,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -59927,7 +59931,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "3f092e2445fb0842ce7fb5d1b181ef6e1c489b481410952aec765ba4e47ba213",
+                "actual_sha256": "d662d44aee0ab520bfb8cdb6252bd4aa90dc5423973b827ab310222be7044388",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -60067,7 +60071,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -60128,7 +60132,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "3f092e2445fb0842ce7fb5d1b181ef6e1c489b481410952aec765ba4e47ba213",
+                "actual_sha256": "d662d44aee0ab520bfb8cdb6252bd4aa90dc5423973b827ab310222be7044388",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -60268,7 +60272,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -60344,7 +60348,7 @@
         ],
         "runtime_identity_differences": [
           {
-            "actual_sha256": "3f092e2445fb0842ce7fb5d1b181ef6e1c489b481410952aec765ba4e47ba213",
+            "actual_sha256": "d662d44aee0ab520bfb8cdb6252bd4aa90dc5423973b827ab310222be7044388",
             "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
             "path": "Cargo.lock"
           },
@@ -60484,7 +60488,7 @@
             "path": "crates/tekes-ui-controls/src/text_surface.rs"
           },
           {
-            "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+            "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
             "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
             "path": "crates/tekes-ui-controls/src/toolbar.rs"
           },
@@ -60563,7 +60567,7 @@
           ],
           "identity_differences": [
             {
-              "actual_sha256": "3f092e2445fb0842ce7fb5d1b181ef6e1c489b481410952aec765ba4e47ba213",
+              "actual_sha256": "d662d44aee0ab520bfb8cdb6252bd4aa90dc5423973b827ab310222be7044388",
               "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
               "path": "Cargo.lock"
             },
@@ -60703,7 +60707,7 @@
               "path": "crates/tekes-ui-controls/src/text_surface.rs"
             },
             {
-              "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+              "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
               "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
               "path": "crates/tekes-ui-controls/src/toolbar.rs"
             },
@@ -61208,7 +61212,7 @@
             "path": "crates/tekes-ui-controls/src/text_surface.rs"
           },
           {
-            "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+            "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
             "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
             "path": "crates/tekes-ui-controls/src/toolbar.rs"
           },
@@ -61253,7 +61257,7 @@
             "path": "design/tokens.json"
           },
           {
-            "actual_sha256": "22e7a8d741ece63c09e7c52688f63efd8e82ae59a301219f2c180dd81120daf4",
+            "actual_sha256": "c7c16f1ff972b4988308a6ff365cc5c757a6e35fd2e895b02bf08d4c7a582adf",
             "expected_sha256": "e9c265f2daf3476b3dbf05f8c2d2d34ff9ac515c5cfa9fbd40729ea78324f0f2",
             "path": "examples/composition-consumer/Cargo.lock"
           },
@@ -61553,7 +61557,7 @@
               "path": "crates/tekes-ui-controls/src/text_surface.rs"
             },
             {
-              "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+              "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
               "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
               "path": "crates/tekes-ui-controls/src/toolbar.rs"
             },
@@ -61598,7 +61602,7 @@
               "path": "design/tokens.json"
             },
             {
-              "actual_sha256": "22e7a8d741ece63c09e7c52688f63efd8e82ae59a301219f2c180dd81120daf4",
+              "actual_sha256": "c7c16f1ff972b4988308a6ff365cc5c757a6e35fd2e895b02bf08d4c7a582adf",
               "expected_sha256": "e9c265f2daf3476b3dbf05f8c2d2d34ff9ac515c5cfa9fbd40729ea78324f0f2",
               "path": "examples/composition-consumer/Cargo.lock"
             },
@@ -62136,7 +62140,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -62181,7 +62185,7 @@
                 "path": "design/tokens.json"
               },
               {
-                "actual_sha256": "22e7a8d741ece63c09e7c52688f63efd8e82ae59a301219f2c180dd81120daf4",
+                "actual_sha256": "c7c16f1ff972b4988308a6ff365cc5c757a6e35fd2e895b02bf08d4c7a582adf",
                 "expected_sha256": "e9c265f2daf3476b3dbf05f8c2d2d34ff9ac515c5cfa9fbd40729ea78324f0f2",
                 "path": "examples/composition-consumer/Cargo.lock"
               },
@@ -62347,7 +62351,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -62392,7 +62396,7 @@
                 "path": "design/tokens.json"
               },
               {
-                "actual_sha256": "22e7a8d741ece63c09e7c52688f63efd8e82ae59a301219f2c180dd81120daf4",
+                "actual_sha256": "c7c16f1ff972b4988308a6ff365cc5c757a6e35fd2e895b02bf08d4c7a582adf",
                 "expected_sha256": "e9c265f2daf3476b3dbf05f8c2d2d34ff9ac515c5cfa9fbd40729ea78324f0f2",
                 "path": "examples/composition-consumer/Cargo.lock"
               },
@@ -62552,7 +62556,7 @@
             "path": "crates/tekes-ui-controls/src/text_surface.rs"
           },
           {
-            "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+            "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
             "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
             "path": "crates/tekes-ui-controls/src/toolbar.rs"
           },
@@ -62597,7 +62601,7 @@
             "path": "design/tokens.json"
           },
           {
-            "actual_sha256": "22e7a8d741ece63c09e7c52688f63efd8e82ae59a301219f2c180dd81120daf4",
+            "actual_sha256": "c7c16f1ff972b4988308a6ff365cc5c757a6e35fd2e895b02bf08d4c7a582adf",
             "expected_sha256": "e9c265f2daf3476b3dbf05f8c2d2d34ff9ac515c5cfa9fbd40729ea78324f0f2",
             "path": "examples/composition-consumer/Cargo.lock"
           },
@@ -62781,7 +62785,7 @@
               "path": "crates/tekes-ui-controls/src/text_surface.rs"
             },
             {
-              "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+              "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
               "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
               "path": "crates/tekes-ui-controls/src/toolbar.rs"
             },
@@ -62826,7 +62830,7 @@
               "path": "design/tokens.json"
             },
             {
-              "actual_sha256": "22e7a8d741ece63c09e7c52688f63efd8e82ae59a301219f2c180dd81120daf4",
+              "actual_sha256": "c7c16f1ff972b4988308a6ff365cc5c757a6e35fd2e895b02bf08d4c7a582adf",
               "expected_sha256": "e9c265f2daf3476b3dbf05f8c2d2d34ff9ac515c5cfa9fbd40729ea78324f0f2",
               "path": "examples/composition-consumer/Cargo.lock"
             },
@@ -63215,7 +63219,7 @@
             "path": "crates/tekes-ui-controls/src/text_surface.rs"
           },
           {
-            "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+            "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
             "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
             "path": "crates/tekes-ui-controls/src/toolbar.rs"
           },
@@ -63260,7 +63264,7 @@
             "path": "design/tokens.json"
           },
           {
-            "actual_sha256": "22e7a8d741ece63c09e7c52688f63efd8e82ae59a301219f2c180dd81120daf4",
+            "actual_sha256": "c7c16f1ff972b4988308a6ff365cc5c757a6e35fd2e895b02bf08d4c7a582adf",
             "expected_sha256": "e9c265f2daf3476b3dbf05f8c2d2d34ff9ac515c5cfa9fbd40729ea78324f0f2",
             "path": "examples/composition-consumer/Cargo.lock"
           },
@@ -63591,7 +63595,7 @@
               "path": "crates/tekes-ui-controls/src/text_surface.rs"
             },
             {
-              "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+              "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
               "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
               "path": "crates/tekes-ui-controls/src/toolbar.rs"
             },
@@ -63636,7 +63640,7 @@
               "path": "design/tokens.json"
             },
             {
-              "actual_sha256": "22e7a8d741ece63c09e7c52688f63efd8e82ae59a301219f2c180dd81120daf4",
+              "actual_sha256": "c7c16f1ff972b4988308a6ff365cc5c757a6e35fd2e895b02bf08d4c7a582adf",
               "expected_sha256": "e9c265f2daf3476b3dbf05f8c2d2d34ff9ac515c5cfa9fbd40729ea78324f0f2",
               "path": "examples/composition-consumer/Cargo.lock"
             },
@@ -64751,7 +64755,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "3f092e2445fb0842ce7fb5d1b181ef6e1c489b481410952aec765ba4e47ba213",
+                "actual_sha256": "d662d44aee0ab520bfb8cdb6252bd4aa90dc5423973b827ab310222be7044388",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -64891,7 +64895,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -64952,7 +64956,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "3f092e2445fb0842ce7fb5d1b181ef6e1c489b481410952aec765ba4e47ba213",
+                "actual_sha256": "d662d44aee0ab520bfb8cdb6252bd4aa90dc5423973b827ab310222be7044388",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -65092,7 +65096,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -65153,7 +65157,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "3f092e2445fb0842ce7fb5d1b181ef6e1c489b481410952aec765ba4e47ba213",
+                "actual_sha256": "d662d44aee0ab520bfb8cdb6252bd4aa90dc5423973b827ab310222be7044388",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -65293,7 +65297,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -65354,7 +65358,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "3f092e2445fb0842ce7fb5d1b181ef6e1c489b481410952aec765ba4e47ba213",
+                "actual_sha256": "d662d44aee0ab520bfb8cdb6252bd4aa90dc5423973b827ab310222be7044388",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -65494,7 +65498,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -65563,7 +65567,7 @@
         ],
         "runtime_identity_differences": [
           {
-            "actual_sha256": "3f092e2445fb0842ce7fb5d1b181ef6e1c489b481410952aec765ba4e47ba213",
+            "actual_sha256": "d662d44aee0ab520bfb8cdb6252bd4aa90dc5423973b827ab310222be7044388",
             "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
             "path": "Cargo.lock"
           },
@@ -65703,7 +65707,7 @@
             "path": "crates/tekes-ui-controls/src/text_surface.rs"
           },
           {
-            "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+            "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
             "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
             "path": "crates/tekes-ui-controls/src/toolbar.rs"
           },
@@ -65782,7 +65786,7 @@
           ],
           "identity_differences": [
             {
-              "actual_sha256": "3f092e2445fb0842ce7fb5d1b181ef6e1c489b481410952aec765ba4e47ba213",
+              "actual_sha256": "d662d44aee0ab520bfb8cdb6252bd4aa90dc5423973b827ab310222be7044388",
               "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
               "path": "Cargo.lock"
             },
@@ -65922,7 +65926,7 @@
               "path": "crates/tekes-ui-controls/src/text_surface.rs"
             },
             {
-              "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+              "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
               "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
               "path": "crates/tekes-ui-controls/src/toolbar.rs"
             },
@@ -66220,7 +66224,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "3f092e2445fb0842ce7fb5d1b181ef6e1c489b481410952aec765ba4e47ba213",
+                "actual_sha256": "d662d44aee0ab520bfb8cdb6252bd4aa90dc5423973b827ab310222be7044388",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -66360,7 +66364,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -66442,7 +66446,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "3f092e2445fb0842ce7fb5d1b181ef6e1c489b481410952aec765ba4e47ba213",
+                "actual_sha256": "d662d44aee0ab520bfb8cdb6252bd4aa90dc5423973b827ab310222be7044388",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -66582,7 +66586,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -66637,7 +66641,7 @@
         ],
         "runtime_identity_differences": [
           {
-            "actual_sha256": "3f092e2445fb0842ce7fb5d1b181ef6e1c489b481410952aec765ba4e47ba213",
+            "actual_sha256": "d662d44aee0ab520bfb8cdb6252bd4aa90dc5423973b827ab310222be7044388",
             "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
             "path": "Cargo.lock"
           },
@@ -66777,7 +66781,7 @@
             "path": "crates/tekes-ui-controls/src/text_surface.rs"
           },
           {
-            "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+            "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
             "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
             "path": "crates/tekes-ui-controls/src/toolbar.rs"
           },
@@ -66869,7 +66873,7 @@
           ],
           "identity_differences": [
             {
-              "actual_sha256": "3f092e2445fb0842ce7fb5d1b181ef6e1c489b481410952aec765ba4e47ba213",
+              "actual_sha256": "d662d44aee0ab520bfb8cdb6252bd4aa90dc5423973b827ab310222be7044388",
               "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
               "path": "Cargo.lock"
             },
@@ -67009,7 +67013,7 @@
               "path": "crates/tekes-ui-controls/src/text_surface.rs"
             },
             {
-              "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+              "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
               "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
               "path": "crates/tekes-ui-controls/src/toolbar.rs"
             },
@@ -67509,7 +67513,7 @@
             "runtime_evidence_status": "stale-historical",
             "runtime_identity_differences": [
               {
-                "actual_sha256": "3f092e2445fb0842ce7fb5d1b181ef6e1c489b481410952aec765ba4e47ba213",
+                "actual_sha256": "d662d44aee0ab520bfb8cdb6252bd4aa90dc5423973b827ab310222be7044388",
                 "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
                 "path": "Cargo.lock"
               },
@@ -67649,7 +67653,7 @@
                 "path": "crates/tekes-ui-controls/src/text_surface.rs"
               },
               {
-                "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+                "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
                 "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
                 "path": "crates/tekes-ui-controls/src/toolbar.rs"
               },
@@ -67704,7 +67708,7 @@
         ],
         "runtime_identity_differences": [
           {
-            "actual_sha256": "3f092e2445fb0842ce7fb5d1b181ef6e1c489b481410952aec765ba4e47ba213",
+            "actual_sha256": "d662d44aee0ab520bfb8cdb6252bd4aa90dc5423973b827ab310222be7044388",
             "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
             "path": "Cargo.lock"
           },
@@ -67844,7 +67848,7 @@
             "path": "crates/tekes-ui-controls/src/text_surface.rs"
           },
           {
-            "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+            "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
             "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
             "path": "crates/tekes-ui-controls/src/toolbar.rs"
           },
@@ -67923,7 +67927,7 @@
           ],
           "identity_differences": [
             {
-              "actual_sha256": "3f092e2445fb0842ce7fb5d1b181ef6e1c489b481410952aec765ba4e47ba213",
+              "actual_sha256": "d662d44aee0ab520bfb8cdb6252bd4aa90dc5423973b827ab310222be7044388",
               "expected_sha256": "17da24f785cf5847374067c06ae3bac2cc76f2af130f94637ed278d71d5cf5b5",
               "path": "Cargo.lock"
             },
@@ -68063,7 +68067,7 @@
               "path": "crates/tekes-ui-controls/src/text_surface.rs"
             },
             {
-              "actual_sha256": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+              "actual_sha256": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
               "expected_sha256": "df3f2eb4172754ed53d97d84658ff63dc0d17e9ee6f6e478fcfda91b58851fe3",
               "path": "crates/tekes-ui-controls/src/toolbar.rs"
             },
@@ -69282,7 +69286,7 @@
     "crates/tekes-ui-app-host/examples/toolbar_artwork_metrics.rs": "105082460111126efbd6a232cb4d8cc4c73ade89f7be054213cdd203a4c5ce03",
     "crates/tekes-ui-app-host/src/columns.rs": "bd25d92dd257dbcc91cdf7abc391045969e59ab3871034778c22dc08cf70e2c1",
     "crates/tekes-ui-app-host/src/gpu.rs": "7c06c1e8eb52319ba8c2211bff31bf7f5819ac02328992e74837631334371111",
-    "crates/tekes-ui-app-host/src/lib.rs": "80374f39d64ec8afc8def826eafdbe1877cd4519c6f07d31c21c95c96b9b296d",
+    "crates/tekes-ui-app-host/src/lib.rs": "50cca2f2a992c044b5a6ab0a3e956bfbeb624338bb39c0b4ea98aa2d9bccd292",
     "crates/tekes-ui-app-host/src/module_process.rs": "6f052cb33081edad27cd901f1c493ddc7da22dcd1a10a07718b8866f2244782d",
     "crates/tekes-ui-app-host/src/navigation/host.rs": "356fd20b80140bc4b2fc719cd37223067a0456c8c8c93837b686086fe9934725",
     "crates/tekes-ui-app-host/src/navigation/mod.rs": "f7ac122be60332b8a14310d74120c96ed3152c0efbb9d1ef76f41ad92cad996f",
@@ -69296,14 +69300,14 @@
     "crates/tekes-ui-app-host/src/sidebar_motion.rs": "26a26e146502520ceec897c1282294e189794834d49d63787dea6264b347a8e2",
     "crates/tekes-ui-app-host/src/text.rs": "6347f34d78b5dc02dbccc2ca7bbfb951b7b6fd781b5e00ba0f576c9a0088655c",
     "crates/tekes-ui-app-host/src/toolbar_source.rs": "32ca789466235c78cbe2244a396c7c0f9037ef722684374809f8e8e6838e33bb",
-    "crates/tekes-ui-app-host/src/window.rs": "130f8618a91599f49927ee83ecdb5146ad0dfb78dcf206edd62a0bded36d3e22",
+    "crates/tekes-ui-app-host/src/window.rs": "2eeba3e4578836924b1693debf32c05dfcf1fd9847e2853d2db01606d9637c56",
     "crates/tekes-ui-app-host/src/window_acceptance.rs": "3b26f1a0b220007702fee35a6510020b1e1a5b632c09c8df63da742dfc583960",
     "crates/tekes-ui-app-host/src/window_accessibility.rs": "1cc24d10cd5c08ba65d950fd876de0e7cba33b595a0dd0e8e8fdae11df7c966f",
     "crates/tekes-ui-app-host/src/window_columns.rs": "2aa13f97614869b6de8f4fa7fcd1f441ff01d81e23849e4ddd030fcd40260456",
-    "crates/tekes-ui-app-host/src/window_presentation.rs": "94cdd624649168cb481715a11179ab282870410a3938fc9e1ae47ab3c9ca5583",
-    "crates/tekes-ui-app-host/src/window_settings.rs": "0a922476a168b2f6ea15b1aca0b5aacffe84cca2bdc0ec2ab87e319939d94664",
-    "crates/tekes-ui-app-host/src/window_toolbar.rs": "059d17831e04f076d4231001e71c1c626709b7153a92991fb0e24589bdc9c745",
-    "crates/tekes-ui-app-host/src/window_toolbar_mount.rs": "a3c0a5d83ddcada4e5359824e6e7c9f546ed6a17e40f1d2d41c4338b9276f11f",
+    "crates/tekes-ui-app-host/src/window_presentation.rs": "30674e8845a792f6e78d423428b81a2d99f8f5509e57c33d86fab80164fc217b",
+    "crates/tekes-ui-app-host/src/window_settings.rs": "6bc98a1a75351648a4cb0132b17c169c2c2f88c59c8470c3febc87058b584073",
+    "crates/tekes-ui-app-host/src/window_toolbar.rs": "b53606f753c0d8f7b2b568947e2c736327cc72e9e186c480627cb783ff334245",
+    "crates/tekes-ui-app-host/src/window_toolbar_mount.rs": "3f559c0901d2170e3560513d878cc305eb96f91b1ba5af1f3c484688d475e314",
     "crates/tekes-ui-app-host/tests/selection_text_capability.rs": "6048cfc8b9cec243546076d85ae2f5bff39006a6eb5382d95b25dfed8979e9e9",
     "crates/tekes-ui-app-protocol/src/component.rs": "47f1947ffea7e1fd137771669e69feb09443ab773d48684736fb1a9a6dc173d5",
     "crates/tekes-ui-app-protocol/src/component/content.rs": "8d2f1e7f9c753f13b71c921214f79dda3b4ae46bf8bafd30293236d064ecf255",
@@ -69351,7 +69355,7 @@
     "crates/tekes-ui-controls/src/composition/actions.rs": "9482a123a439867105198ce977611a8e94cffd608c8249b3206a2bf84996cb0a",
     "crates/tekes-ui-controls/src/composition/adapters.rs": "64c59aa37d84550148630f26693008a8c20e378ba846e5e2148afed057893bbb",
     "crates/tekes-ui-controls/src/composition/bitmap.rs": "8c0838c1fbdaceb6688be9c3bf92c767c0233dc91c9cb243614b7ee80457fed0",
-    "crates/tekes-ui-controls/src/composition/button.rs": "0a168f44280df2c4f615c243a32e4c8987fb526c8708e2b571d7f88b96f96f0e",
+    "crates/tekes-ui-controls/src/composition/button.rs": "526921ce2ae5a8fbd9f633784249f69c4c01f5813b63c66b341f04ed73b7abf3",
     "crates/tekes-ui-controls/src/composition/chart_content.rs": "dc3b686d0b7c84e9e44cc3e0ee54c2e040204b141ee10b6970f2f6c88ea8cff4",
     "crates/tekes-ui-controls/src/composition/checkbox.rs": "1529f88b17492441c19430de0761e4452b6cc283e3bc9cc0a2cbd637a20d6914",
     "crates/tekes-ui-controls/src/composition/collection_transaction.rs": "0b16e6d97db9e6d1cc2a07c367f6d654c21e9e52c5278eed363608551acafea2",
@@ -69416,7 +69420,7 @@
     "crates/tekes-ui-controls/src/text_input/external.rs": "872c6a58fc112c17f7711ce3fe88c868a6ecb0e2ee32fc394ed8877fa30626ca",
     "crates/tekes-ui-controls/src/text_surface.rs": "769d12c162d528743c1b85f305d09fa5d36e5c389098277b791ba0c9e2742505",
     "crates/tekes-ui-controls/src/ticking_number.rs": "a3801f24c525cd31de4807260b6b53a28b49e344b02c991d7c93631972f37b3b",
-    "crates/tekes-ui-controls/src/toolbar.rs": "f9fcd6c1f3bfe65392bf292e1e85f976e2c8089130f53d8c9dda5f6a0ebbaacd",
+    "crates/tekes-ui-controls/src/toolbar.rs": "8190a4a7eb198035269e08493cc3885c5750af6ace81166f35766b100cffd04e",
     "crates/tekes-ui-controls/src/widgets.rs": "64f4d85e7b741116e512acea5ecdf0ddd14de090a05c2d0d2ce1b5379354845a",
     "crates/tekes-ui-controls/tests/action_contract.rs": "3de76a8c69434ddf274b362bf557833dea2e4f498141064a18bda07bde8dd99e",
     "crates/tekes-ui-controls/tests/bitmap_content_consumer.rs": "c683d9c4bf918dee05f376602432f9086e23062c10db872dfa211191f2a558ec",
@@ -69489,13 +69493,13 @@
     "crates/tekes-ui-gallery/src/actions_acceptance.rs": "38f48c5a5490c58292cc5b371e3a4305cd9b24dafa199e4bbaa3b6b45c65e3d1",
     "crates/tekes-ui-gallery/src/controlled_acceptance.rs": "ce1776aecc775f77ff5ed53bbf51f55fcfc93a7857a4d2395470fccf051fc15c",
     "crates/tekes-ui-gallery/src/gallery/accessibility.rs": "32dcac224ea80fc8708e28691c65fdd01f936758d8801b86e2d794ec54bf0f8f",
-    "crates/tekes-ui-gallery/src/gallery/apphost.rs": "6b778990de4935e9f9cb237f13f17abfc382bf4274192b5ae20f4fcf9eece363",
+    "crates/tekes-ui-gallery/src/gallery/apphost.rs": "5e1dfaac7c6d2b695d9c50441db9f1f159c70d094d7122669d015a29b2bd9652",
     "crates/tekes-ui-gallery/src/gallery/catalog.rs": "a092bab9bc4ee821175f5763aef51abb8af8b2d2fe9a45ebe5fc68270f69692c",
     "crates/tekes-ui-gallery/src/gallery/chrome.rs": "006b31ce3737bd6fcf6dfb61d5ed0c559f5ea5a2318dbb615020ec9bdbe1229e",
     "crates/tekes-ui-gallery/src/gallery/commands.rs": "1abb762b587964297e4ddd058f844c8cedbccec50b7eccc22850f469998c28b0",
     "crates/tekes-ui-gallery/src/gallery/composition_acceptance.rs": "5bbc61015f089f43d9173c42c852de5fb471109cb66c8c2ab622939af7dab582",
     "crates/tekes-ui-gallery/src/gallery/containers.rs": "c88375c84ba9308878baa55877b2528b64869b01546c2717f6c4eb726e92f047",
-    "crates/tekes-ui-gallery/src/gallery/icon_catalog.rs": "7ec0c62335f230984fd4d8bce1a145f82db09080468eec82d8752a547b2a6b27",
+    "crates/tekes-ui-gallery/src/gallery/icon_catalog.rs": "3530a1ef70ab1d8f5be1abc2068a2e925a949b846ac1caa6d5453eac6127a713",
     "crates/tekes-ui-gallery/src/gallery/layout.rs": "ac347805f4a687ef6e3bbced72fa2d274d905ae159bde01b2c51c296aa6ddea2",
     "crates/tekes-ui-gallery/src/gallery/locale.rs": "b8c429ecdad2c265cd61ccd4f7b5e4e69e17cc2f1618492fb23246dcf426a285",
     "crates/tekes-ui-gallery/src/gallery/mod.rs": "4665fe30357072099858a53cff451c290313873335296e4c95726fa0435038fe",
@@ -69542,7 +69546,7 @@
     "crates/tekes-ui-gallery/src/gallery/workbench/settings_phase_capture.rs": "b79e54f2b3d22f54651b1f8dedbdae56f50f08fa0919d56abca7831bb9bc0684",
     "crates/tekes-ui-gallery/src/gallery/workbench/state_capture.rs": "1d8654afbda24240b835070963ef710c0813dd9573691c5379451c1a1817d169",
     "crates/tekes-ui-gallery/src/gallery/workbench/visual_remainder.rs": "e42df9340b0ff042cdcb383c39569c8827a8a531ecc5787eefe0de47d9d8fe89",
-    "crates/tekes-ui-gallery/src/host.rs": "a14a37dd1b5e8db9607a95f06bb1ccfe2c58894362456b00a356dbeb0c43fabc",
+    "crates/tekes-ui-gallery/src/host.rs": "ebf360cc339be1591cd2ad0a67f0206ed8a51a7bead543fd630cf019cc41378c",
     "crates/tekes-ui-gallery/src/main.rs": "2b62a0262c98298f222aba2a1f982435f052576781fd91b0990ebe3ec1be936a",
     "crates/tekes-ui-gallery/src/perf.rs": "7ec90cd9e6569ad91b13940dce9f4fee5dc4e775583cf3da7bf7d6d09643c33a",
     "crates/tekes-ui-gallery/src/reading_acceptance.rs": "bb99bf643bb132690e17d1612d2b2ccabb37ac914e103883786c5738ba79244d",
@@ -69553,7 +69557,7 @@
     "crates/tekes-ui-gallery/src/viewport_acceptance.rs": "4087d2370154069e4b5dd4864425ef620327a6782a848643922f5be303abffad",
     "crates/tekes-ui-gallery/src/wake_acceptance.rs": "a2c6600900c0054893b53cffeb0ad7c3ee209e4192cc9de3a4375f28968dc5e3",
     "crates/tekes-ui-icons/src/animation.rs": "ce1223acc6f0f285f0f77ff5b6284f6d00922b479e11f012dcbf11274ba1136f",
-    "crates/tekes-ui-icons/src/catalog.rs": "7f0b2df889f86ec015f2fde8356c5be04d07b3ca8be5fa749e84bd17229849d3",
+    "crates/tekes-ui-icons/src/catalog.rs": "212460037bbb830b9ea284879ef68f6022b10e0fd0dfb1c263b6e2ef10003465",
     "crates/tekes-ui-icons/src/lib.rs": "08e2db461bc69d764a304c39dc08a1b68e495b0be436794fa38cfa1e683a6712",
     "crates/tekes-ui-icons/src/style.rs": "e932b5ed64a98f88c77d6b2b36c98024f31b52ab5a74d06096e3892c92a2d1e4",
     "crates/tekes-ui-module-runtime/examples/list_gpu.rs": "953a7adc2e144114058355a1613500f89b7b5b876552960dac1ee6ba750acbf7",
@@ -69713,7 +69717,7 @@
     "crates/tekes-ui-settings/src/form_row.rs": "562bf4f3ba7aac777ed978d9904f9940bd3f79d5616d20e7b14f6d2f197d8f4f",
     "crates/tekes-ui-settings/src/lib.rs": "54c7d28fb594c167091185347a465699b15965bad3a233db30bc2888a49080cc",
     "crates/tekes-ui-settings/src/model.rs": "e64389cef82a9bc83670ebb38ee5627cf6f3a533a382e39292a6faa2adf71eed",
-    "crates/tekes-ui-settings/src/sidebar.rs": "2f722baaf18650a8fdf4dd8863eab017aac1dc0e0dfe3d242aa9e370b45450ed",
+    "crates/tekes-ui-settings/src/sidebar.rs": "ff3b4015a537f9467de09a7de32f3803faacf88493a2bebbcedb340936cb568d",
     "crates/tekes-ui-settings/src/sidebar_list.rs": "aef9a7f9d92eacb51767ae8545ac1bec6db969df2b0054bd0528f790ef3436b4",
     "crates/tekes-ui-settings/src/store.rs": "26fa3944b0040cf7894e31f17b74bbec79c41036fd43aebeea835cc06483169e",
     "crates/tekes-ui-settings/tests/form_sidebar.rs": "da82bdc51489f3f3e375c47fa19ab8d76e854aa8e5a13660ba9de86203366d67",

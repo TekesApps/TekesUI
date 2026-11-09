@@ -106,8 +106,8 @@ Shared palette adjustments must enumerate changed roles/modes and affected
 consumers; historical fixtures and prior native evidence remain immutable.
 
 Source coverage, rendered state tests, native observation and publication are
-separate results. This section records the intended contract; completed checks
-and the exact candidate will be added after verification.
+separate results. This section records the intended contract; completed checks are recorded below
+and exact program identities are retained with the Issue #245 receipts.
 
 The Toolbar defect is repeated focus synchronization during paint: sending
 `set_focus(false)` to an already-unfocused Button calls `blur()` and destroys
@@ -143,3 +143,25 @@ channels. Geometry, primitive ordering, historical PNGs and the original
 radius/AA pixel tolerances are retained. The 24-image regression and strict
 Gallery clippy pass; the other 511 Gallery tests and all 456 Controls tests
 passed on the same product sources and are reused.
+
+## AppHost standard-dark follow-up — 2026-11-09
+
+The former fixed-Light AppHost limitation is resolved by initial Theme inheritance
+from Gallery. Host-owned glyphs use the original Button/IconContent state-color
+path and toolbar measurement uses the same Palette as final paint. Palette values,
+arbitrary image colors and the two existing collapsed-panel shapes are unchanged.
+Native CU2 standard-dark review at real 2x covered the complete AppHost page,
+Toolbar hover/held press/release/leave, Focus/Others exchange, sidebar collapse and
+expand glyphs, selected Tabs, filled Menu rows and attached Field focus. This is
+scoped native acceptance, not a whole-Gold7 or all-theme certification.
+
+The first publication CI exposed three stale 177-icon assertions (the canonical
+catalog now has 179) and a deferred-help test that conflated button hover animation
+with help timing. The repairs preserve all 51 historical proposals and 29 distinct
+historical artwork comparisons, explicitly leave the two new templates without a
+fabricated historical baseline, and settle the real hover animation before asserting
+that deferred help does not replay buttons. All 10 catalog and 22 content-help tests
+pass. No production or palette change was made for these test repairs; the accepted
+native program remains the same. AppKit Menu/Tab reference records from the original
+Issue scope remain separate outstanding work; the existing native Field comparison
+and all prior artifacts remain retained.

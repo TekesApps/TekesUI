@@ -57,6 +57,7 @@ pub struct ToolbarControl {
     popup: Option<crate::MenuLayout>,
     text_role: proposal::TextRole,
     icons: std::collections::HashMap<u64, ImageId>,
+    template_icons: std::collections::HashMap<u64, &'static str>,
     selected: std::collections::HashSet<u64>,
     action_help: std::collections::HashMap<u64, (String, u64)>,
     help_revision: u64,
@@ -87,6 +88,7 @@ impl Default for ToolbarControl {
             popup: None,
             text_role: proposal::TextRole::UiBody,
             icons: Default::default(),
+            template_icons: Default::default(),
             selected: Default::default(),
             action_help: Default::default(),
             help_revision: 0,
@@ -137,7 +139,9 @@ impl ToolbarControl {
     }
     fn item_size(&self, text: &mut impl ButtonTextRenderer, action: &ToolbarAction) -> Size {
         let m = metrics(text, self.text_role);
-        let width = if self.icons.contains_key(&action.id) {
+        let width = if self.icons.contains_key(&action.id)
+            || self.template_icons.contains_key(&action.id)
+        {
             m.box_size
         } else {
             text.measure(&action.title, self.text_role, f32::MAX).width + m.inset * 2.
@@ -173,6 +177,10 @@ impl ToolbarControl {
         self.selected = ids.iter().copied().collect();
     }
     pub fn set_icon_actions(&mut self, actions: Vec<ToolbarIconAction>) {
+        if !self.template_icons.is_empty() {
+            self.cancel();
+            self.template_icons.clear();
+        }
         self.icons = actions.iter().map(|a| (a.id, a.image)).collect();
         self.update_actions(
             actions
@@ -189,17 +197,46 @@ impl ToolbarControl {
     /// other actions remain text. Geometry changes cancel an old input arm.
     pub fn set_action_icon(&mut self, id: u64, image: Option<ImageId>) -> bool {
         if !self.actions.iter().any(|action| action.id == id)
-            || self.icons.get(&id).copied() == image
+            || self.icons.get(&id).copied() == image && !self.template_icons.contains_key(&id)
         {
             return false;
         }
         self.cancel();
+        self.template_icons.remove(&id);
         if let Some(image) = image {
             self.icons.insert(id, image);
         } else {
             self.icons.remove(&id);
         }
         true
+    }
+    /// Canonical monochrome artwork follows the original Button's Theme state.
+    /// Caller-owned ImageId artwork retains its original colors and opacity.
+    pub fn set_action_template_icon(
+        &mut self,
+        id: u64,
+        name: Option<&str>,
+    ) -> Result<bool, crate::composition::IconRenderError> {
+        let name = name
+            .map(|name| {
+                tekes_ui_icons::Glyph::named(name)
+                    .map(|glyph| glyph.name)
+                    .ok_or(crate::composition::IconRenderError::UnknownIcon)
+            })
+            .transpose()?;
+        if !self.actions.iter().any(|action| action.id == id)
+            || self.template_icons.get(&id).copied() == name && !self.icons.contains_key(&id)
+        {
+            return Ok(false);
+        }
+        self.cancel();
+        self.icons.remove(&id);
+        if let Some(name) = name {
+            self.template_icons.insert(id, name);
+        } else {
+            self.template_icons.remove(&id);
+        }
+        Ok(true)
     }
     /// Keep a logical command group in one presentation: all buttons or one
     /// original More menu. The same menu/action identities are retained.
@@ -249,6 +286,8 @@ impl ToolbarControl {
             self.semantic_ids
                 .retain(|id, _| actions.iter().any(|a| a.id == *id));
             self.action_help
+                .retain(|id, _| actions.iter().any(|a| a.id == *id));
+            self.template_icons
                 .retain(|id, _| actions.iter().any(|a| a.id == *id));
             for action in &actions {
                 if !self.semantic_ids.contains_key(&action.id) {
@@ -419,11 +458,15 @@ impl ToolbarControl {
             self.buttons[i].button.chrome_height = None;
             self.buttons[i].button.state.disabled = !self.actions[i].enabled;
             self.buttons[i].button.state.selected = self.selected.contains(&self.actions[i].id);
-            let content = match self.icons.get(&self.actions[i].id) {
-                Some(&image) => crate::composition::ButtonContents::Image(image),
-                None => crate::composition::ButtonContents::Text(self.actions[i].title.clone()),
-            };
-            self.buttons[i].set_contents(content);
+            if let Some(name) = self.template_icons.get(&self.actions[i].id) {
+                self.buttons[i].set_toolbar_template_icon(name);
+            } else {
+                let content = match self.icons.get(&self.actions[i].id) {
+                    Some(&image) => crate::composition::ButtonContents::Image(image),
+                    None => crate::composition::ButtonContents::Text(self.actions[i].title.clone()),
+                };
+                self.buttons[i].set_contents(content);
+            }
             self.buttons[i].set_accessible_name(Some(self.actions[i].title.clone()));
             crate::composition::Component::arrange(&mut self.buttons[i], text, rect, clip);
             crate::composition::Component::paint(
@@ -434,6 +477,7 @@ impl ToolbarControl {
                 clip,
                 palette.into(),
             );
+            self.buttons[i].paint_toolbar_template_icon(scene, text, palette.into());
             x += size.width + pad;
         }
         self.trigger_rect = Rect::default();
@@ -586,6 +630,9 @@ impl ToolbarControl {
 // The composition wrapper keeps the real Button input contract,
 // including explicit drag propagation, modifiers and primary-button ownership.
 impl crate::composition::Component for ToolbarControl {
+    fn requires_icon_services(&self) -> bool {
+        !self.template_icons.is_empty()
+    }
     fn validate(&self) -> Result<(), crate::composition::CompositionError> {
         let mut ids = std::collections::BTreeSet::new();
         for action in &self.actions {
@@ -1104,6 +1151,18 @@ impl crate::composition::Component for ToolbarControl {
 }
 struct ToolbarText<'a>(&'a mut dyn ButtonTextRenderer);
 impl ButtonTextRenderer for ToolbarText<'_> {
+    fn icon_renderer(&mut self) -> Option<&mut dyn crate::layout_view::IconRenderer> {
+        self.0.icon_renderer()
+    }
+    fn motion_context(&self) -> Option<crate::ControlMotionContext> {
+        self.0.motion_context()
+    }
+    fn animation_frames_allowed(&self) -> bool {
+        self.0.animation_frames_allowed()
+    }
+    fn request_animation_frame(&mut self) {
+        self.0.request_animation_frame();
+    }
     fn resolved_font_size(&mut self, role: proposal::TextRole) -> f32 {
         self.0.resolved_font_size(role)
     }
@@ -1540,6 +1599,152 @@ mod composition_tests {
             _: ButtonTextAlign,
             _: tekes_ui_tokens::Rgba,
         ) {
+        }
+    }
+    #[test]
+    fn template_toolbar_icons_use_each_button_state_and_preserve_image_artwork() {
+        use std::rc::Rc;
+        use tekes_ui_scene::Primitive;
+        use tekes_ui_tokens::{Rgba, Theme};
+        #[derive(Default)]
+        struct Icons(Vec<(String, Rgba)>);
+        impl crate::layout_view::IconRenderer for Icons {
+            fn prepare_icon(
+                &mut self,
+                name: &str,
+                _: f32,
+                _: f32,
+                tint: Rgba,
+            ) -> Result<IconImage, IconRenderError> {
+                self.0.push((name.into(), tint));
+                Ok(IconImage::new(ImageId(77), Rc::new(())))
+            }
+            fn draw_icon(&mut self, _: &mut Scene, _: &str, _: Rect, _: Rgba) {
+                panic!("IconContent retains its prepared resource");
+            }
+        }
+        for theme in Theme::ALL {
+            let mut toolbar = ToolbarControl::window();
+            let actions = |enabled| {
+                vec![
+                    ToolbarAction {
+                        id: 1,
+                        title: "Back".into(),
+                        enabled,
+                    },
+                    ToolbarAction {
+                        id: 2,
+                        title: "Original artwork".into(),
+                        enabled: true,
+                    },
+                ]
+            };
+            toolbar.set_actions(actions(true));
+            toolbar.set_action_icon(2, Some(ImageId(99)));
+            toolbar
+                .set_action_template_icon(1, Some("tekes-back"))
+                .unwrap();
+            let mut host = ContentHost::new(Content::new(ComponentId(1), toolbar)).unwrap();
+            host.set_action_events(true);
+            let frame = Rect::new(0., 0., 300., 48.);
+            let palette = theme.into();
+            let mut icons = Icons::default();
+            let paint = |host: &mut ContentHost, icons: &mut Icons, state| {
+                icons.0.clear();
+                let mut scene = Scene::new();
+                host.render(
+                    &mut scene,
+                    &mut WithIconRenderer::new(&mut Text, icons),
+                    frame,
+                    frame,
+                    palette,
+                )
+                .unwrap();
+                let expected = tekes_ui_tokens::surface_palette::resolve_surface(
+                    palette,
+                    "toolbar",
+                    "action-quiet",
+                    state,
+                )
+                .unwrap()
+                .icon;
+                assert_eq!(icons.0, vec![("tekes-back".into(), expected)]);
+                assert!(scene.primitives().iter().any(|p| matches!(p,
+                    Primitive::Image(image) if image.image == ImageId(77) && image.opacity == 1.
+                )));
+                // Arbitrary ImageId artwork never enters the template renderer.
+                assert!(scene.primitives().iter().any(|p| matches!(p,
+                    Primitive::Image(image) if image.image == ImageId(99) && image.opacity == 1.
+                )));
+            };
+            paint(&mut host, &mut icons, "rest");
+            let point = host
+                .get(ComponentId(1))
+                .unwrap()
+                .component::<ToolbarControl>()
+                .unwrap()
+                .buttons[0]
+                .button
+                .layout()
+                .unwrap()
+                .frame
+                .center();
+            let event = |phase, button| {
+                ContentEvent::Pointer(PointerEvent {
+                    position: point,
+                    phase,
+                    button,
+                    modifiers: Default::default(),
+                    click_count: 0,
+                })
+            };
+            host.event(&event(PointerPhase::Move, None));
+            paint(&mut host, &mut icons, "hover");
+            host.event(&event(PointerPhase::Down, Some(PointerButton::Primary)));
+            let control = host
+                .get_mut(ComponentId(1))
+                .unwrap()
+                .component_mut::<ToolbarControl>()
+                .unwrap();
+            assert!(
+                !control
+                    .set_action_template_icon(1, Some("tekes-back"))
+                    .unwrap()
+            );
+            assert!(control.buttons[0].button.state.pressed);
+            paint(&mut host, &mut icons, "pressed");
+            host.event(&event(PointerPhase::Up, Some(PointerButton::Primary)));
+            assert_eq!(host.drain_actions().len(), 1);
+            let control = host
+                .get_mut(ComponentId(1))
+                .unwrap()
+                .component_mut::<ToolbarControl>()
+                .unwrap();
+            control.set_actions(actions(false));
+            control.set_action_icon(2, Some(ImageId(99)));
+            control
+                .set_action_template_icon(1, Some("tekes-back"))
+                .unwrap();
+            paint(&mut host, &mut icons, "disabled");
+            let control = host
+                .get_mut(ComponentId(1))
+                .unwrap()
+                .component_mut::<ToolbarControl>()
+                .unwrap();
+            control.set_actions(actions(true));
+            control.set_action_icon(2, Some(ImageId(99)));
+            control
+                .set_action_template_icon(1, Some("tekes-back"))
+                .unwrap();
+            control.set_selected_ids(&[1]);
+            host.event(&ContentEvent::PointerMove(Point::new(-100., -100.)));
+            paint(&mut host, &mut icons, "selected");
+            host.event(&event(PointerPhase::Move, None));
+            paint(&mut host, &mut icons, "selected-hover");
+            host.event(&event(PointerPhase::Down, Some(PointerButton::Primary)));
+            paint(&mut host, &mut icons, "selected-pressed");
+            host.event(&event(PointerPhase::Up, Some(PointerButton::Primary)));
+            assert_eq!(host.drain_actions().len(), 1);
         }
     }
     #[test]

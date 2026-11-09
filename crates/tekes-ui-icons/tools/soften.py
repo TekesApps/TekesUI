@@ -195,6 +195,18 @@ def main():
     if not args.check:catalog['strokeWidth']=1.25
     assert catalog['strokeWidth']==1.25
     expected={r['name']:r['after_sha256']for r in rows}
+    # Later canonical additions retain the exact already-shipped AppHost artwork.
+    # They were not part of the historical #57 optical redesign: do not rewrite
+    # its frozen coverage or apply its 1.25pt transformation to these shapes.
+    retained_apphost = {
+        'tekes-side-bar-collapsed': ('leading-collapsed.svg', '026436e005ed43c911b22a4ad7055ae37ae0af8f3a2403029e8ba12a640e4cf8'),
+        'tekes-side-panel-collapsed': ('trailing-collapsed.svg', '86e3a168cfbfa398ee35a8c773913af5f88fbee6deadff90b6b0701f77abfe3a'),
+    }
+    for name, (source, digest) in retained_apphost.items():
+        original = (ROOT/'crates/tekes-ui-app-host/assets'/source).read_text()
+        assert sha(original) == digest, name
+        assert (ASSETS/f'{name}.svg').read_text() == original, name
+        expected[name] = digest
     assert {i['name']for i in catalog['icons']}==set(expected)
     for icon in catalog['icons']:
         if args.check:assert icon['sha256']==expected[icon['name']],icon['name']

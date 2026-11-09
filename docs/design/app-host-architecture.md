@@ -692,3 +692,38 @@ The local AppHost text service reuses exact paragraph results within one draw on
 After a successful native titlebar handoff, uncaptured left-drag samples belong to the native window move and must not invalidate ContentHost geometry or schedule body paints. This does not suppress explicit redraws, content updates, animation, resize, hover enter/leave, or real component captures. New down/up/move and focus loss terminate that ownership, including AppKit moves that omit mouse-up.
 
 See [the scoped native review](../../design/reviews/apphost-flicker-20261108/README.md) for measured improvements and remaining frame-interval variation; these rules do not promise every frame at 120Hz.
+
+
+### Initial Theme inheritance for embedded windows — 2026-11-09
+
+Refs #245 / #229. `AppWindow::theme(Theme)` selects the initial appearance and
+contrast using the existing shared Theme type; all constructors retain LIGHT as
+their default. Embedded and standalone run paths carry this same value into the
+original Host. Its window ground, local content, mounted Toolbars, Others Tabs,
+presentation chrome and render clear consume one matching Palette. An AppHost
+Settings child inherits its parent's selected Theme through its original cold
+assembly path.
+
+The Gallery launcher passes its effective `gallery.theme()` when opening the
+AppHost item, including increased-contrast modes. Select Appearance → Dark in
+Gallery (Control-Command-3), then activate AppHost. The new window snapshots that
+selection; this change adds no live synchronization, system listener, runtime
+Theme registry or environment override. Process-rendered module interiors retain
+their existing protocol and are not claimed to inherit new Theme data.
+
+Host-owned monochrome toolbar artwork uses the existing Button state foreground,
+IconContent and SvgIconCache pipeline; arbitrary ImageId content keeps its original
+colors. Toolbar measurement and final paint use the same Palette so measurement
+does not reset a dark button's motion channels. The original two collapsed-panel
+SVGs are copied unchanged into the canonical icon catalog; the historical #57
+artwork and coverage remain immutable. Settings Back uses the same semantic icon
+path. The Toolbar text adapter forwards the existing icon and motion services.
+
+Verification: 96 AppHost tests, 10 Toolbar tests (including four-mode semantic
+icon state coverage), 4 Settings tests, 2 icon tests and strict clippy passed.
+The three unchanged Gallery document/navigation tests are reused from the first
+candidate. Native CU2 standard-dark review on a real 2x external screen verified
+Toolbar rest/hover/held press/leave, actual Focus/Others exchange, both sidebars'
+collapse/expand artwork, selected Tabs, the filled Draft menu and attached Field
+focus. Evidence is recorded in Issue #245; this is not an all-component or
+all-theme native Gold7 certification. The process exited and input was released.

@@ -7,8 +7,8 @@ use std::collections::BTreeMap;
 use tekes_ui_controls::{
     ButtonTextRenderer, ScrollArea,
     composition::{
-        Button, ComponentId, Content, ContentEvent, ContentHost, ScrollContent, StackContent,
-        TextContent, TextFieldContent,
+        Button, ComponentId, Content, ContentEvent, ContentHost, IconContent, ScrollContent,
+        StackContent, TextContent, TextFieldContent,
     },
     extended::{Axis, Stack},
 };
@@ -21,6 +21,7 @@ pub struct SettingsSidebar {
     items: BTreeMap<ComponentId, Vec<String>>,
     selected_item: Option<String>,
     back_requested: bool,
+    back_template: Option<&'static str>,
 }
 impl SettingsSidebar {
     pub fn new(schema: &Schema) -> Result<Self> {
@@ -121,9 +122,11 @@ impl SettingsSidebar {
             items,
             selected_item: None,
             back_requested: false,
+            back_template: None,
         })
     }
     pub fn set_back_icon(&mut self, image: tekes_ui_scene::ImageId) {
+        self.back_template = None;
         if let Some(button) = self
             .host
             .get_mut(ComponentId(4))
@@ -131,6 +134,25 @@ impl SettingsSidebar {
         {
             button.set_contents(image);
         }
+    }
+    /// A canonical monochrome Back icon inherits its original Button's state ink.
+    /// Repeated declarations retain the same passive content and image lease.
+    pub fn set_back_template_icon(&mut self, name: &str) -> Result<()> {
+        let icon = IconContent::new(name)
+            .map_err(|error| anyhow::anyhow!("Settings Back icon: {error:?}"))?;
+        let name = icon.glyph().name;
+        if self.back_template == Some(name) {
+            return Ok(());
+        }
+        if let Some(button) = self
+            .host
+            .get_mut(ComponentId(4))
+            .and_then(|node| node.component_mut::<Button>())
+        {
+            button.set_contents(Content::new(ComponentId(7), icon));
+            self.back_template = Some(name);
+        }
+        Ok(())
     }
     pub fn take_back(&mut self) -> bool {
         std::mem::take(&mut self.back_requested)
