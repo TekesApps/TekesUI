@@ -2188,7 +2188,7 @@
     "examples/composition-consumer/tests/combo_status.rs": "a7b712aea9f551160a51cc1fff7591a19b78ca6cacc14f385ffe954873b7e17b",
     "examples/composition-consumer/tests/command_status.rs": "9f030a0e1af4e0859daf7e33e15d64213dc5181cd032b808d3f8830e6c6c419d",
     "examples/composition-consumer/tests/compact_actions.rs": "eb15748e26dbac876820c2db572af0a35e23ada5fb21808fce052a0bc7583c67",
-    "examples/composition-consumer/tests/content_help.rs": "022fecc27b0743eabba44d0a2c2e02bc961f00b63ce6b942703765bad20c1024",
+    "examples/composition-consumer/tests/content_help.rs": "08ef57ff1d1380691c3c5929f9e2df6af3cc9ab8df840e9d89f17f0c8d5bfefb",
     "examples/composition-consumer/tests/controlled_reading.rs": "b6328a88559f196d90e34d2e63181efcea29a154f339c0919b2e6d6da4474620",
     "examples/composition-consumer/tests/dialog_accessibility.rs": "154568d070669e1f388af1b84a4c48d50918f1dd902cc5db860071b76dffc7d2",
     "examples/composition-consumer/tests/editable_number.rs": "637055472100f4df5fec209e74b1e92ef42fe94128f76c2153dcc07f054c1598",
@@ -4256,6 +4256,13 @@
         "crates/tekes-ui-app-host/src/window_presentation.rs"
       ],
       "scope": "Host monochrome glyphs now consume existing Button child_theme and IconContent; original ImageId semantics preserved. Measure prepass uses same Palette. No broader capability/native promotion."
+    },
+    "ci_test_repair": {
+      "files": [
+        "examples/composition-consumer/tests/content_help.rs",
+        "crates/tekes-ui-gallery/src/gallery/icon_catalog.rs"
+      ],
+      "scope": "Tests only: settle original button hover animation before testing deferred help timing; preserve no-replay assertions. Current icon count179 with old51 historical proposals and29 artwork differences unchanged; two new canonical-only glyphs have no invented history. Production/native candidate unchanged."
     }
   }
 }

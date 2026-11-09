@@ -899,12 +899,28 @@ fn deferred_toolbar_help_paints_once_after_content_without_replaying_buttons() {
     let first = help_part(&h, "One").frame.center();
     h.event(&ContentEvent::PointerMove(first));
     draw_toolbar_help(&mut h, &mut t, false);
+    // The Toolbar forwards its original Button motion clock. Its hover tween
+    // may request content frames independently of the deferred help pass.
+    assert!(t.requested);
+    assert!(h.help_tooltip().is_none());
+    assert!(
+        !h.needs_render(),
+        "the first content pass must not start help dwell"
+    );
+    t.now += (proposal::control_duration("button_hover").unwrap() * 1000.).ceil() as u64 + 1;
+    t.requested = false;
+    draw_toolbar_help(&mut h, &mut t, false);
     assert!(!t.requested);
+    assert!(h.help_tooltip().is_none());
+    assert!(
+        !h.needs_render(),
+        "content must not start deferred help dwell"
+    );
     let viewport = Rect::new(0., 0., 400., 260.);
     h.paint_help_overlay(&mut Scene::new(), &mut t, viewport, Theme::LIGHT.into());
     assert!(t.requested);
     assert!(h.needs_render());
-    t.now = 500;
+    t.now += 500;
     draw_toolbar_help(&mut h, &mut t, false);
     t.drawn.clear();
     t.requested = false;

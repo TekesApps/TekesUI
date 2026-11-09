@@ -399,7 +399,7 @@ mod tests {
     fn canonical_catalog_uses_every_published_svg_byte_without_a_source_directory() {
         let catalog = IconCatalog::canonical();
         assert_eq!(catalog.entries.len(), tekes_ui_icons::Glyph::ALL.len());
-        assert_eq!(catalog.entries.len(), 177);
+        assert_eq!(catalog.entries.len(), 179);
         assert!(catalog.notices.is_empty());
         for (entry, glyph) in catalog.entries.iter().zip(tekes_ui_icons::Glyph::ALL) {
             assert_eq!(entry.name, glyph.name);
@@ -445,6 +445,26 @@ mod tests {
             }
         }
         assert_eq!(different_artwork_count, 29);
+        // These two published templates were added after the historical proposal
+        // set. They remain canonical-only; never invent a proposal baseline.
+        for name in ["tekes-side-bar-collapsed", "tekes-side-panel-collapsed"] {
+            assert!(!proposal_assets::ASSETS.iter().any(|asset| asset.0 == name));
+            let entry = catalog
+                .entries
+                .iter()
+                .find(|entry| entry.name == name)
+                .unwrap();
+            let glyph = tekes_ui_icons::Glyph::ALL
+                .iter()
+                .find(|glyph| glyph.name == name)
+                .unwrap();
+            assert_eq!(entry.svg, glyph.svg, "new canonical artwork: {name}");
+            assert!(
+                entry.before.is_none(),
+                "no historical proposal exists: {name}"
+            );
+            assert!(entry.label.is_empty() && entry.kind.is_empty());
+        }
         let zoom_in = catalog
             .entries
             .iter()
@@ -459,7 +479,7 @@ mod tests {
                 .svg
                 .contains("stroke-width=\"1.5\"")
         );
-        assert_eq!(catalog.entries.len(), 177);
+        assert_eq!(catalog.entries.len(), 179);
     }
 
     #[test]
@@ -517,8 +537,8 @@ mod tests {
         let report = canonical.catalog_report("canonical");
         assert_eq!(report["schema"], "tekesui-icon-catalog/1");
         assert_eq!(report["mode"], "canonical");
-        assert_eq!(report["count"], 177);
-        assert_eq!(report["entries"].as_array().unwrap().len(), 177);
+        assert_eq!(report["count"], 179);
+        assert_eq!(report["entries"].as_array().unwrap().len(), 179);
         for (entry, glyph) in report["entries"]
             .as_array()
             .unwrap()

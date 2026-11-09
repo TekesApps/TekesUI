@@ -69499,7 +69499,7 @@
     "crates/tekes-ui-gallery/src/gallery/commands.rs": "1abb762b587964297e4ddd058f844c8cedbccec50b7eccc22850f469998c28b0",
     "crates/tekes-ui-gallery/src/gallery/composition_acceptance.rs": "5bbc61015f089f43d9173c42c852de5fb471109cb66c8c2ab622939af7dab582",
     "crates/tekes-ui-gallery/src/gallery/containers.rs": "c88375c84ba9308878baa55877b2528b64869b01546c2717f6c4eb726e92f047",
-    "crates/tekes-ui-gallery/src/gallery/icon_catalog.rs": "7ec0c62335f230984fd4d8bce1a145f82db09080468eec82d8752a547b2a6b27",
+    "crates/tekes-ui-gallery/src/gallery/icon_catalog.rs": "3530a1ef70ab1d8f5be1abc2068a2e925a949b846ac1caa6d5453eac6127a713",
     "crates/tekes-ui-gallery/src/gallery/layout.rs": "ac347805f4a687ef6e3bbced72fa2d274d905ae159bde01b2c51c296aa6ddea2",
     "crates/tekes-ui-gallery/src/gallery/locale.rs": "b8c429ecdad2c265cd61ccd4f7b5e4e69e17cc2f1618492fb23246dcf426a285",
     "crates/tekes-ui-gallery/src/gallery/mod.rs": "4665fe30357072099858a53cff451c290313873335296e4c95726fa0435038fe",
