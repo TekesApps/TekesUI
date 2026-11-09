@@ -225,3 +225,7 @@ Settings 原生 Theme 首次鼠标点击的 Down/Up 已到达 Form 却未打开�
 General 的 Theme 直接展示 System／Light／Dark 单选组，复用原 RadioGroupContent，三个选项互斥；TOML 的 enum 字符串及选项值、保存/Undo/Redo/加载合同不变。字段可声明 `presentation = "radio"`；未声明时保留原自动选择（enum仍Menu），不按字段ID硬编码、不改变其他消费者的枚举呈现。Radio组选中与历史恢复必须通过原组件及既有草稿/存储链；标签对齐首个选项。
 
 共享弹出菜单默认宽度由最长实际行内容、Body按钮token内边距、check/submenu列和focus gutter决定；280pt是上限，不是默认填满宽度。长文本按最终可用宽度重测行高，保留viewport clamp、header约束和原命中/滚动。原native004菜单程序/源及Dark保存证据冻结保留，不能代签新Radio界面。
+
+自然宽度下，首次声明 `checked: Some(false)` 会预留真实check列，允许比无列菜单更宽；同一列 `false/true` 切换必须保持尺寸与位置。旧固定宽度断言不能继续要求新列占零空间；原CI失败保留，新消费者回归分别覆盖列声明和勾选切换。
+
+Radio的prepared pointer入口按现有事件合同归一化原生Primary Down，保持原model/view和焦点事务；Secondary不选项。实际SettingsColumn/LocalContainer回归覆盖原生Down/Up，不用旧式事件代签。

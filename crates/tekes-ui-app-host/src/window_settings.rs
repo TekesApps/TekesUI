@@ -3104,14 +3104,17 @@ mod form_keyboard_owner_tests {
         ))
     }
     fn fixture_source(source: &str) -> (Host, Rc<RefCell<SettingsSurface>>, std::path::PathBuf) {
+        static NEXT_FIXTURE: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+        let fixture_id = NEXT_FIXTURE.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         let path = std::env::temp_dir()
             .join(format!(
-                "settings-keyboard-owner-{}-{}",
+                "settings-keyboard-owner-{}-{}-{}",
                 std::process::id(),
                 std::time::SystemTime::now()
                     .duration_since(std::time::UNIX_EPOCH)
                     .unwrap()
-                    .as_nanos()
+                    .as_nanos(),
+                fixture_id
             ))
             .join("settings.toml");
         let options = SettingsWindow::from_toml(source, path.clone())
@@ -3410,50 +3413,72 @@ mod form_keyboard_owner_tests {
         std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
     }
     #[test]
-    fn actual_general_radio_selection_updates_draft_and_history_without_remount() {
-        let schema = tekes_ui_settings::Schema::parse(include_str!(
-            "../../tekes-ui-gallery/src/gallery/apphost.settings.toml"
-        ))
-        .unwrap()
-        .for_item("general/appearance")
-        .unwrap();
-        let mut draft = tekes_ui_settings::Draft::new(tekes_ui_settings::Snapshot::default());
-        let mut form = tekes_ui_settings::SettingsForm::new_autosave(&schema, &draft).unwrap();
-        let mut text = crate::text::Text::new();
-        form.render(
-            &mut Scene::new(),
-            &mut text,
-            Rect::new(0., 0., 720., 600.),
-            Theme::LIGHT.into(),
-        )
-        .unwrap();
+    fn actual_general_radio_raw_pointer_selection_updates_draft_without_remount() {
+        let (mut host, surface, path) = fixture();
+        render_original_panels(&mut host);
         let id = ComponentId(100);
-        let mount = form.host.semantic_mount(id);
-        let radio = form
-            .host
-            .get(id)
-            .unwrap()
-            .component::<RadioGroupContent>()
+        let (mount, point, selected) = {
+            let state = surface.borrow();
+            let radio = state
+                .form
+                .host
+                .get(id)
+                .unwrap()
+                .component::<RadioGroupContent>()
+                .unwrap();
+            (
+                state.form.host.semantic_mount(id),
+                radio.view().layout().rows[2].frame().center(),
+                radio.model().selected,
+            )
+        };
+        assert_eq!(selected, Some(0));
+        for phase in [PointerPhase::Down, PointerPhase::Up] {
+            host.settings_form_input(&ContentEvent::Pointer(PointerEvent {
+                position: point,
+                phase,
+                button: Some(PointerButton::Secondary),
+                modifiers: PointerModifiers::default(),
+                click_count: 1,
+            }))
             .unwrap();
-        assert_eq!(radio.model().selected, Some(0));
-        let point = radio.view().layout().rows[2].frame().center();
-        form.event(
-            &ContentEvent::PointerDown(point),
-            &mut text,
-            &schema,
-            &mut draft,
-        )
-        .unwrap();
-        form.event(
-            &ContentEvent::PointerUp(point),
-            &mut text,
-            &schema,
-            &mut draft,
-        )
-        .unwrap();
-        assert_eq!(draft.display(&schema.settings[0]), "dark");
+        }
         assert_eq!(
-            form.host
+            surface
+                .borrow()
+                .draft
+                .display(&surface.borrow().view_schema.settings[0]),
+            "system",
+            "secondary clicks must not select a radio option"
+        );
+        // Collection mutably visits the original field nodes. Republish layout
+        // as the native render loop does before the next independent gesture.
+        render_original_panels(&mut host);
+        for phase in [PointerPhase::Down, PointerPhase::Up] {
+            host.settings_form_input(&ContentEvent::Pointer(PointerEvent {
+                position: point,
+                phase,
+                button: Some(PointerButton::Primary),
+                modifiers: PointerModifiers::default(),
+                click_count: 1,
+            }))
+            .unwrap();
+            if phase == PointerPhase::Down {
+                assert!(
+                    !surface.borrow().form.host.event_bubbled(),
+                    "native Primary PointerDown on an exposed radio row is handled"
+                );
+            }
+        }
+        {
+            let state = surface.borrow();
+            assert_eq!(state.draft.display(&state.view_schema.settings[0]), "dark");
+        }
+        assert_eq!(
+            surface
+                .borrow()
+                .form
+                .host
                 .get(id)
                 .unwrap()
                 .component::<RadioGroupContent>()
@@ -3463,14 +3488,22 @@ mod form_keyboard_owner_tests {
             Some(2)
         );
         assert!(
-            form.host.input_overlay_owner().is_none(),
+            surface.borrow().form.host.input_overlay_owner().is_none(),
             "radio choice never creates a popup"
         );
-        draft.edit(&schema.settings[0], "light".into());
-        form.replace_values(&schema, &draft);
-        assert_eq!(form.host.semantic_mount(id), mount);
+        {
+            let mut state = surface.borrow_mut();
+            let schema = state.view_schema.clone();
+            state.draft.edit(&schema.settings[0], "light".into());
+            let draft = state.draft.clone();
+            state.form.replace_values(&schema, &draft);
+        }
+        assert_eq!(surface.borrow().form.host.semantic_mount(id), mount);
         assert_eq!(
-            form.host
+            surface
+                .borrow()
+                .form
+                .host
                 .get(id)
                 .unwrap()
                 .component::<RadioGroupContent>()
@@ -3479,6 +3512,9 @@ mod form_keyboard_owner_tests {
                 .selected,
             Some(1)
         );
+        drop(host);
+        drop(surface);
+        std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
     }
     #[test]
     fn default_enum_menu_tab_stays_in_the_form_scope() {
