@@ -215,13 +215,14 @@ fn document_content(document: &Document) -> Content {
         text(1, &document.title, TextRole::UiHeading),
         text(2, summary(document), TextRole::UiCaption),
     ];
-    children.extend(
-        document
-            .paragraphs
-            .iter()
-            .enumerate()
-            .map(|(index, value)| text(10 + index as u64, value, TextRole::UiBody)),
-    );
+    children.push(Content::new(
+        ComponentId(10),
+        TextFieldContent::read_only_content(
+            "Document body",
+            &document.paragraphs.join("\n\n"),
+            TextRole::UiBody,
+        ),
+    ));
     scroll(9000, stack(9001, children))
 }
 fn summary(document: &Document) -> String {
@@ -246,13 +247,37 @@ fn update_document(host: &mut ContentHost, document: &Document) {
         .component_mut::<TextContent>()
         .unwrap()
         .text = summary(document);
-    for (index, value) in document.paragraphs.iter().enumerate() {
-        host.get_mut(ComponentId(10 + index as u64))
-            .unwrap()
-            .component_mut::<TextContent>()
-            .unwrap()
-            .text
-            .clone_from(value);
+    let value = document.paragraphs.join("\n\n");
+    let field = host
+        .get_mut(ComponentId(10))
+        .unwrap()
+        .component_mut::<TextFieldContent>()
+        .unwrap();
+    // Inspector updates that leave the body unchanged must retain selection.
+    if field.surface.input.text != value {
+        let baseline = field.surface.input.external_baseline();
+        let revision = tekes_ui_controls::DraftRevision {
+            identity: "gallery-apphost-document-body".into(),
+            version: field
+                .surface
+                .input
+                .external_value()
+                .map_or(1, |current| current.version + 1),
+            payload: value,
+        };
+        let result = field.surface.apply_external_value(
+            &baseline,
+            &revision,
+            tekes_ui_controls::ExternalSelection::Set(0..0),
+            tekes_ui_controls::ExternalUndo::Reset,
+        );
+        assert!(
+            matches!(
+                result,
+                tekes_ui_controls::ExternalValueResult::Applied { .. }
+            ),
+            "the synchronous Gallery body update must be accepted: {result:?}"
+        );
     }
 }
 fn field(id: ComponentId, label: &str, value: &str) -> Content {
@@ -811,11 +836,117 @@ mod tests {
             Theme::LIGHT.into(),
         )
         .unwrap();
+        let field = host
+            .get(ComponentId(10))
+            .unwrap()
+            .component::<TextFieldContent>()
+            .unwrap();
+        let origin = field.surface.origin();
+        let end = field
+            .surface
+            .caret_doc(field.surface.input.len())
+            .offset(origin.x, origin.y);
         assert!(
-            host.get(ComponentId(13)).unwrap().visible().is_some(),
-            "last paragraph is reachable at narrow width"
+            end.min_y() >= narrow.min_y() && end.max_y() <= narrow.max_y(),
+            "the last text line is reachable at narrow width: {end:?}"
         );
     }
+    #[test]
+    fn apphost_body_selects_across_paragraphs_stays_readonly_and_keeps_selection_on_inspector_update()
+     {
+        use tekes_ui_controls::composition::{
+            ContentEvent, PointerButton, PointerEvent, PointerModifiers, PointerPhase,
+        };
+        let state = documents();
+        let mut host = ContentHost::new(document_content(&state.items[0])).unwrap();
+        let mut text = super::super::text::TextEngine::new();
+        let frame = Rect::new(0., 0., 740., 900.);
+        host.render(
+            &mut Scene::new(),
+            &mut text,
+            frame,
+            frame,
+            Theme::LIGHT.into(),
+        )
+        .unwrap();
+        let end = state.items[0].paragraphs[0].encode_utf16().count() + 2 + 12;
+        let (start_point, end_point, original) = {
+            let field = host
+                .get(ComponentId(10))
+                .unwrap()
+                .component::<TextFieldContent>()
+                .unwrap();
+            let origin = field.surface.origin();
+            let point = |index| {
+                field
+                    .surface
+                    .caret_doc(index)
+                    .offset(origin.x, origin.y)
+                    .center()
+            };
+            (point(0), point(end), field.surface.input.text.clone())
+        };
+        for (phase, position) in [
+            (PointerPhase::Down, start_point),
+            (PointerPhase::Move, end_point),
+            (PointerPhase::Up, end_point),
+        ] {
+            host.event(&ContentEvent::Pointer(PointerEvent {
+                position,
+                phase,
+                button: Some(PointerButton::Primary),
+                modifiers: PointerModifiers::default(),
+                click_count: 1,
+            }));
+            host.render(
+                &mut Scene::new(),
+                &mut text,
+                frame,
+                frame,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
+        }
+        let field = host
+            .get(ComponentId(10))
+            .unwrap()
+            .component::<TextFieldContent>()
+            .unwrap();
+        assert!(field.surface.input.read_only);
+        let selection = field.surface.input.selection();
+        assert_eq!(selection, 0..end);
+        assert_eq!(
+            field.surface.input.selected_text(),
+            String::from_utf16(&original.encode_utf16().take(end).collect::<Vec<_>>()).unwrap()
+        );
+        host.event(&ContentEvent::Commit {
+            text: "overwrite".into(),
+            replacement: None,
+        });
+        update_document(&mut host, &state.items[0]);
+        let field = host
+            .get(ComponentId(10))
+            .unwrap()
+            .component::<TextFieldContent>()
+            .unwrap();
+        assert_eq!(field.surface.input.text, original);
+        assert_eq!(
+            field.surface.input.selection(),
+            selection,
+            "unrelated Inspector updates retain the original selection"
+        );
+        update_document(&mut host, &state.items[1]);
+        let field = host
+            .get(ComponentId(10))
+            .unwrap()
+            .component::<TextFieldContent>()
+            .unwrap();
+        assert_eq!(
+            field.surface.input.text,
+            state.items[1].paragraphs.join("\n\n")
+        );
+    }
+
     #[test]
     fn apphost_navigation_requests_are_not_reemitted_by_publication_or_inspector_updates() {
         let state = documents();

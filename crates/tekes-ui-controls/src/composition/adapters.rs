@@ -258,7 +258,7 @@ impl TextFieldContent {
     }
 
     pub fn new(label: impl Into<String>, value: &str) -> Self {
-        Self {
+        let mut content = Self {
             field: Field {
                 label: label.into(),
                 ..Default::default()
@@ -273,7 +273,18 @@ impl TextFieldContent {
             inline_width_em: None,
             focused: false,
             backing_scale: 1.,
-        }
+        };
+        content.surface.scroll.set_scrollbar_visibility(false, true);
+        content
+    }
+    /// Show or hide the horizontal overflow indicator without changing text
+    /// scrolling or insertion-point reveal. Vertical visibility is preserved.
+    pub fn scrollbar(mut self, visible: bool) -> Self {
+        let vertical = self.surface.scroll.scrollbar_requested(true);
+        self.surface
+            .scroll
+            .set_scrollbar_visibility(visible, vertical);
+        self
     }
     /// A single-line original editor for compact rows. Width follows body
     /// typography and the receiving allocation; editing/IME stay in TextSurface.
@@ -1424,7 +1435,7 @@ mod prepared_field_tests {
     #[test]
     fn prepared_field_selection_focus_rect_matches_actual_scrollbar_reveal_gates() {
         for gate in [0, 1, 2] {
-            let mut field = TextFieldContent::new("Content", "ab");
+            let mut field = TextFieldContent::new("Content", "ab").scrollbar(true);
             field.surface.presentation = TextSurfacePresentation::Content;
             field
                 .surface
@@ -1482,6 +1493,44 @@ mod prepared_field_tests {
                 assert_eq!(field.surface.scroll.offset, before);
             }
         }
+    }
+
+    #[test]
+    fn single_line_horizontal_scrollbar_defaults_hidden_and_can_be_enabled_without_disabling_reveal()
+     {
+        let mut hidden = TextFieldContent::new("Draft", "a long single-line value");
+        assert_eq!(
+            hidden.surface.scroll.scroll_policy(),
+            (crate::ScrollPolicy::Auto, crate::ScrollPolicy::Disabled)
+        );
+        hidden
+            .surface
+            .scroll
+            .layout(Size::new(48., 24.), Size::new(240., 24.));
+        assert!(!hidden.surface.scroll.scrollbar_visible(false));
+        assert!(hidden.surface.scroll.axis_enabled(false));
+        assert!(hidden.surface.scroll.reveal(Rect::new(230., 0., 2., 18.)));
+        assert!(
+            hidden.surface.scroll.offset.x > 0.,
+            "hidden indicators must not prevent revealing the far insertion point"
+        );
+
+        let mut visible =
+            TextFieldContent::new("Draft", "a long single-line value").scrollbar(true);
+        visible
+            .surface
+            .scroll
+            .layout(Size::new(48., 24.), Size::new(240., 24.));
+        assert!(visible.surface.scroll.scrollbar_visible(false));
+        assert_eq!(
+            visible.surface.scroll.scroll_policy(),
+            (crate::ScrollPolicy::Auto, crate::ScrollPolicy::Disabled)
+        );
+
+        let multiline =
+            TextFieldContent::read_only_content("Document", "content", proposal::TextRole::UiBody);
+        assert!(multiline.surface.scroll.scrollbar_requested(false));
+        assert!(multiline.surface.scroll.scrollbar_requested(true));
     }
 
     #[test]

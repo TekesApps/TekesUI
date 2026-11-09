@@ -5,6 +5,7 @@ use tekes_ui_controls::{
     layout::MeasuredChild,
 };
 use tekes_ui_scene::{Rect, Size};
+use tekes_ui_tokens::Spacing;
 #[derive(Debug)]
 pub(super) struct SettingsRow {
     name: String,
@@ -24,27 +25,61 @@ impl SettingsRow {
         }
     }
     fn widths(width: f32) -> (f32, f32) {
-        let gap = 12_f32.min(width.max(0.));
+        let gap = Spacing::Relaxed.value().min(width.max(0.));
         let usable = (width - gap).max(0.);
         let values = (usable * 0.42).max(120.).min(usable * 0.6).min(300.);
         ((usable - values).max(0.), values)
     }
-    fn measured(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> [Size; 2] {
-        let (labels, values) = Self::widths(available.width);
-        [
-            self.children[0]
-                .measure(text, Size::new(labels, available.height))
-                .size,
-            self.children[1]
+    fn widths_for(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> (f32, f32) {
+        let (mut labels, mut values) = Self::widths(available.width);
+        let horizontal_radio = !self.switch
+            && self.children[1]
+                .component::<tekes_ui_controls::composition::RadioGroupContent>()
+                .is_some_and(|radio| {
+                    radio.view().axis() == tekes_ui_controls::extended::Axis::Horizontal
+                });
+        if horizontal_radio {
+            let usable = labels + values;
+            let title_natural = text
                 .measure(
-                    text,
-                    Size::new(
-                        if self.switch { values.min(48.) } else { values },
-                        available.height,
-                    ),
+                    &self.name,
+                    tekes_ui_tokens::proposal::TextRole::UiBody,
+                    f32::INFINITY,
                 )
-                .size,
-        ]
+                .width;
+            let label_min = title_natural.max(0.).min(labels);
+            let radio_natural = self.children[1]
+                .measure(text, Size::new(usable, available.height))
+                .size
+                .width;
+            values = values.max(radio_natural).min((usable - label_min).max(0.));
+            labels = usable - values;
+        }
+        (labels, values)
+    }
+    fn measured(
+        &mut self,
+        text: &mut dyn ButtonTextRenderer,
+        available: Size,
+    ) -> ([Size; 2], (f32, f32)) {
+        let (labels, values) = self.widths_for(text, available);
+        (
+            [
+                self.children[0]
+                    .measure(text, Size::new(labels, available.height))
+                    .size,
+                self.children[1]
+                    .measure(
+                        text,
+                        Size::new(
+                            if self.switch { values.min(48.) } else { values },
+                            available.height,
+                        ),
+                    )
+                    .size,
+            ],
+            (labels, values),
+        )
     }
 }
 impl Component for SettingsRow {
@@ -71,13 +106,12 @@ impl Component for SettingsRow {
     }
     fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
         self.arranged_mounts = None;
-        let [labels, value] = self.measured(text, available);
+        let ([labels, value], _) = self.measured(text, available);
         MeasuredChild::new(Size::new(available.width, labels.height.max(value.height)))
     }
     fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
         self.arranged_mounts = None;
-        let [labels, value] = self.measured(text, frame.size);
-        let (label_width, value_width) = Self::widths(frame.size.width);
+        let ([labels, value], (label_width, value_width)) = self.measured(text, frame.size);
         let control_width = if self.switch {
             value_width.min(48.)
         } else {

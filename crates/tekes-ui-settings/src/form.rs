@@ -84,6 +84,7 @@ impl SettingsForm {
                                 &f.label,
                                 f.options.iter().map(|o| o.label.clone()).collect(),
                             );
+                            radio.set_axis(Axis::Horizontal);
                             radio
                                 .set_selected(f.options.iter().position(|o| o.value == raw))
                                 .expect("validated enum selection");

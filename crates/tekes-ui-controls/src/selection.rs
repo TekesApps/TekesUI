@@ -7,8 +7,8 @@ use crate::control_motion::{ProgressTransition, motion_for};
 use crate::{
     ButtonTextAlign, ButtonTextRenderer, ControlKey, ControlMotionContext, ControlState,
     extended::{
-        ControlFrame, RadioGroup, Slider, Switch, radio_on_surface, slider, switch_with_state,
-        switch_with_state_and_thumb_progress,
+        Axis, ControlFrame, RadioGroup, Slider, Switch, radio_on_surface, slider,
+        switch_with_state, switch_with_state_and_thumb_progress,
     },
 };
 use std::time::Duration;
@@ -288,6 +288,7 @@ pub struct SwitchLayout {
 pub struct RadioGroupView {
     surface: &'static str,
     layout: RadioGroupLayout,
+    axis: Axis,
     focused: Option<usize>,
     focus_visible: bool,
     hovered: Option<usize>,
@@ -298,6 +299,7 @@ pub struct RadioGroupView {
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 struct RadioActionState {
+    axis: Axis,
     focused: Option<usize>,
     focus_visible: bool,
     pressed: Option<usize>,
@@ -333,12 +335,24 @@ impl RadioGroupView {
     pub fn new() -> Self {
         Self::default()
     }
+    /// Change the layout direction and discard geometry and gesture state from
+    /// the previous arrangement. Selection remains in the original model.
+    pub fn set_axis(&mut self, axis: Axis) {
+        if self.axis != axis {
+            self.axis = axis;
+            self.clear_content_layout();
+        }
+    }
+    pub fn axis(&self) -> Axis {
+        self.axis
+    }
     fn measured_layout(
         text: &mut impl ButtonTextRenderer,
         model: &RadioGroup,
         bounds: Rect,
         clip: Option<Rect>,
         labels: &[&str],
+        axis: Axis,
     ) -> RadioGroupLayout {
         if invalid_rect(bounds) || invalid_clip(clip) {
             return RadioGroupLayout::default();
@@ -346,40 +360,104 @@ impl RadioGroupView {
         let normalized = ControlFrame::new(bounds, clip).frame();
         let minimum = proposal::metric("size", "size-comfortable-row")
             .expect("design system comfortable row");
-        let row_gap = 6.0;
-        let label_width = (normalized.size.width - 40.).max(0.);
-        let labels_metrics: Vec<_> = (0..model.len())
-            .map(|index| {
-                let label = labels.get(index).copied().unwrap_or("");
-                let measured = text
-                    .measure(label, proposal::TextRole::UiBody, label_width)
-                    .height;
-                let first_line =
-                    text.first_line_height(label, proposal::TextRole::UiBody, label_width);
-                let measured = measured.max(first_line).max(0.0);
-                (minimum.max(measured + 8.), measured, first_line.max(0.0))
-            })
-            .collect();
-        let mut total = 0.;
-        let rows: Vec<_> = labels_metrics
-            .iter()
-            .map(|(height, _, _)| *height)
-            .scan(normalized.min_y(), |y, height| {
-                let row = ControlFrame::new(
-                    Rect::new(normalized.min_x(), *y, normalized.size.width, height),
-                    clip,
-                );
-                total += height;
-                *y += height + row_gap;
-                Some(row)
-            })
-            .collect();
-        let frame = Rect::new(
-            normalized.min_x(),
-            normalized.min_y(),
-            normalized.size.width,
-            total + row_gap * rows.len().saturating_sub(1) as f32,
-        );
+        let row_gap = tekes_ui_tokens::Spacing::Snug.value();
+        let intrinsic_widths: Vec<f32> = if axis == Axis::Horizontal {
+            (0..model.len())
+                .map(|index| {
+                    let label = labels.get(index).copied().unwrap_or("");
+                    (text
+                        .measure(label, proposal::TextRole::UiBody, f32::MAX)
+                        .width
+                        .max(0.)
+                        + 40.)
+                        .max(56.)
+                })
+                .collect()
+        } else {
+            Vec::new()
+        };
+        let intrinsic_total =
+            intrinsic_widths.iter().sum::<f32>() + row_gap * model.len().saturating_sub(1) as f32;
+        let horizontal_gap = if axis == Axis::Horizontal && model.len() > 1 {
+            row_gap.min(normalized.size.width.max(0.) / (model.len() - 1) as f32)
+        } else {
+            row_gap
+        };
+        let item_widths = if axis == Axis::Horizontal {
+            let available = normalized.size.width.max(0.);
+            if intrinsic_total <= available {
+                intrinsic_widths.clone()
+            } else {
+                let gap_total = horizontal_gap * model.len().saturating_sub(1) as f32;
+                vec![(available - gap_total).max(0.) / model.len() as f32; model.len()]
+            }
+        } else {
+            vec![normalized.size.width; model.len()]
+        };
+        let mut labels_metrics = Vec::with_capacity(model.len());
+        for (index, item_width) in item_widths.iter().enumerate() {
+            let label = labels.get(index).copied().unwrap_or("");
+            let width = (*item_width - 40.).max(0.);
+            let measured = text
+                .measure(label, proposal::TextRole::UiBody, width)
+                .height;
+            let first_line = text.first_line_height(label, proposal::TextRole::UiBody, width);
+            let measured = measured.max(first_line).max(0.0);
+            labels_metrics.push((minimum.max(measured + 8.), measured, first_line.max(0.0)));
+        }
+        let rows = match axis {
+            Axis::Vertical => {
+                let mut y = normalized.min_y();
+                labels_metrics
+                    .iter()
+                    .map(|(height, _, _)| {
+                        let row = ControlFrame::new(
+                            Rect::new(normalized.min_x(), y, normalized.size.width, *height),
+                            clip,
+                        );
+                        y += *height + row_gap;
+                        row
+                    })
+                    .collect::<Vec<_>>()
+            }
+            Axis::Horizontal => {
+                let mut x = normalized.min_x();
+                item_widths
+                    .iter()
+                    .zip(&labels_metrics)
+                    .map(|(width, (height, _, _))| {
+                        let row = ControlFrame::new(
+                            Rect::new(x, normalized.min_y(), *width, *height),
+                            clip,
+                        );
+                        x += *width + horizontal_gap;
+                        row
+                    })
+                    .collect::<Vec<_>>()
+            }
+        };
+        let frame = match axis {
+            Axis::Vertical => Rect::new(
+                normalized.min_x(),
+                normalized.min_y(),
+                normalized.size.width,
+                labels_metrics
+                    .iter()
+                    .map(|(height, _, _)| *height)
+                    .sum::<f32>()
+                    + row_gap * rows.len().saturating_sub(1) as f32,
+            ),
+            Axis::Horizontal => Rect::new(
+                normalized.min_x(),
+                normalized.min_y(),
+                rows.iter().map(|row| row.frame().size.width).sum::<f32>()
+                    + horizontal_gap * rows.len().saturating_sub(1) as f32,
+                labels_metrics
+                    .iter()
+                    .map(|(height, _, _)| *height)
+                    .fold(0., f32::max),
+            ),
+        };
         let mut indicators = Vec::with_capacity(rows.len());
         let mut label_slots = Vec::with_capacity(rows.len());
         for (index, row) in rows.iter().enumerate() {
@@ -388,9 +466,17 @@ impl RadioGroupView {
             // Text is vertically centered as a paragraph in its row. Align
             // the control to the first line box, not the paragraph midpoint.
             let first_line_center = r.min_y() + (r.size.height - measured) * 0.5 + first_line * 0.5;
-            let indicator = Rect::new(r.min_x() + 8., first_line_center - 9., 18., 18.);
+            let indicator_size = 18_f32.min(r.size.width.max(0.));
+            let indicator_x = r.min_x() + 8_f32.min((r.size.width - indicator_size).max(0.) * 0.5);
+            let indicator = Rect::new(
+                indicator_x,
+                first_line_center - indicator_size * 0.5,
+                indicator_size,
+                indicator_size,
+            );
+            let label_start = 36_f32.min(r.size.width.max(0.));
             let label = Rect::new(
-                r.min_x() + 36.,
+                r.min_x() + label_start,
                 r.min_y(),
                 (r.size.width - 40.).max(0.),
                 r.size.height,
@@ -410,10 +496,18 @@ impl RadioGroupView {
         model: &RadioGroup,
         width: f32,
         labels: &[&str],
+        axis: Axis,
     ) -> Size {
-        Self::measured_layout(text, model, Rect::new(0., 0., width, 0.), None, labels)
-            .frame
-            .size
+        Self::measured_layout(
+            text,
+            model,
+            Rect::new(0., 0., width, 0.),
+            None,
+            labels,
+            axis,
+        )
+        .frame
+        .size
     }
     pub(crate) fn arrange_content(
         &mut self,
@@ -423,7 +517,7 @@ impl RadioGroupView {
         clip: Option<Rect>,
         labels: &[&str],
     ) -> RadioGroupLayout {
-        self.layout = Self::measured_layout(text, model, bounds, clip, labels);
+        self.layout = Self::measured_layout(text, model, bounds, clip, labels, self.axis);
         if self
             .focused
             .is_some_and(|i| i >= model.len() || !model.is_enabled(i))
@@ -528,6 +622,7 @@ impl RadioGroupView {
     }
     fn action_state(&self) -> RadioActionState {
         RadioActionState {
+            axis: self.axis,
             focused: self.focused,
             focus_visible: self.focus_visible,
             pressed: self.pressed,
@@ -718,6 +813,13 @@ impl RadioGroupView {
                 | ControlKey::Home
                 | ControlKey::End
         );
+        let navigation = match self.axis {
+            Axis::Vertical => navigation,
+            Axis::Horizontal => matches!(
+                key,
+                ControlKey::Left | ControlKey::Right | ControlKey::Home | ControlKey::End
+            ),
+        };
         if !down {
             return if navigation || key == ControlKey::Space {
                 SelectionEvent::Handled
@@ -769,6 +871,7 @@ impl Default for RadioGroupView {
         Self {
             surface: "canvas",
             layout: RadioGroupLayout::default(),
+            axis: Axis::Vertical,
             focused: None,
             focus_visible: false,
             hovered: None,

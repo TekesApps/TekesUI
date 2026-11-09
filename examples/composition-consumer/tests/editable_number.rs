@@ -242,6 +242,40 @@ fn pointer_buttons_boundaries_and_accessibility_share_value_and_geometry() {
     assert!(!field(&h).focusable());
     assert!(!field_mut(&mut h).step(true));
 }
+
+#[test]
+fn real_host_editor_surface_button_parts_and_pointer_ax_gaps_share_geometry() {
+    let mut h = fixture();
+    let gap = tekes_ui_tokens::Spacing::Tight.value();
+    let parts = field(&h).semantic_parts();
+    let editor = field(&h).text_surface().unwrap().outer;
+    assert_eq!(parts[0].frame.max_x() + gap, editor.min_x());
+    assert_eq!(editor.max_x() + gap, parts[1].frame.min_x());
+
+    let initial = field(&h).value();
+    let decrement = parts[0].frame.center();
+    assert!(
+        h.event(&ContentEvent::PointerDown(decrement))
+            .capture_pointer
+    );
+    assert!(h.event(&ContentEvent::PointerUp(decrement)).activated);
+    assert_eq!(field(&h).value(), initial - 10.);
+
+    render(&mut h, 300.);
+    let increment = field(&h).semantic_parts()[1].frame.center();
+    assert!(
+        h.event(&ContentEvent::PointerDown(increment))
+            .capture_pointer
+    );
+    assert!(h.event(&ContentEvent::PointerUp(increment)).activated);
+    assert_eq!(field(&h).value(), initial);
+
+    assert!(
+        h.accessibility_action(PERCENT, Some(0), AccessibilityAction::Press)
+            .consumed
+    );
+    assert_eq!(field(&h).value(), initial - 10.);
+}
 #[test]
 fn ime_blocks_numeric_operations_and_native_key_chain_cannot_commit_candidate() {
     let mut h = fixture();

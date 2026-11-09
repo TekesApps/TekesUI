@@ -5,10 +5,10 @@ use anyhow::Result;
 pub use sidebar_list::SelectableListContent;
 use std::collections::BTreeMap;
 use tekes_ui_controls::{
-    ButtonTextRenderer, ScrollArea,
+    ButtonTextRenderer,
     composition::{
         Button, ComponentId, Content, ContentEvent, ContentHost, GridContent, IconContent,
-        ScrollContent, StackContent, TextContent, TextFieldContent,
+        ListContent, StackContent, TextContent, TextFieldContent,
     },
     extended::{Axis, Stack},
 };
@@ -32,14 +32,13 @@ impl SettingsSidebar {
         Self::build(schema, true)
     }
     fn build(schema: &Schema, back: bool) -> Result<Self> {
-        let mut children = vec![];
+        let mut group_children = vec![];
         let mut items = BTreeMap::new();
         let mut next = 100;
         for group in &schema.groups {
-            children.push(Content::new(
-                ComponentId(next),
-                TextContent::new(&group.label),
-            ));
+            let mut heading = TextContent::new(&group.label);
+            heading.role = tekes_ui_tokens::proposal::TextRole::UiCaption;
+            let heading = Content::new(ComponentId(next), heading);
             next += 1;
             let id = ComponentId(next);
             next += 1;
@@ -48,7 +47,8 @@ impl SettingsSidebar {
                 group.items.iter().map(|item| item.label.clone()).collect(),
             );
             list.view.set_navigation_selection_fill_only(true);
-            children.push(Content::new(id, list));
+            list.view.set_navigation_layout(true);
+            group_children.push((heading, Content::new(id, list)));
             items.insert(
                 id,
                 group
@@ -58,20 +58,36 @@ impl SettingsSidebar {
                     .collect(),
             );
         }
-        let rows = Content::new(
-            ComponentId(2),
+        let mut groups = Vec::with_capacity(group_children.len());
+        for (heading, list) in group_children {
+            let id = ComponentId(next);
+            next += 1;
+            groups.push(Content::new(
+                id,
+                StackContent {
+                    model: Stack {
+                        axis: Axis::Vertical,
+                        gap: tekes_ui_tokens::Spacing::Regular.value(),
+                    },
+                    children: vec![heading, list],
+                    flexible_child: None,
+                },
+            ));
+        }
+        let groups = Content::new(
+            ComponentId(next),
             StackContent {
                 model: Stack {
                     axis: Axis::Vertical,
-                    gap: 12.,
+                    gap: tekes_ui_tokens::Spacing::Micro.value(),
                 },
-                children,
+                children: groups,
                 flexible_child: None,
             },
         );
         let scroll = Content::new(
             ComponentId(1),
-            ScrollContent::new(ScrollArea::default(), rows),
+            ListContent::scrollable("Settings", ComponentId(2), vec![groups]),
         );
         let root = if back {
             let mut back_button = Button::new("〈 返回")
@@ -84,7 +100,7 @@ impl SettingsSidebar {
                 StackContent {
                     model: Stack {
                         axis: Axis::Vertical,
-                        gap: 12.,
+                        gap: tekes_ui_tokens::Spacing::Relaxed.value(),
                     },
                     children: vec![
                         Content::new(
