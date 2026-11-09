@@ -133,3 +133,13 @@ passed 51 cases; the full 13-brand compiler, generated artifacts, historical
 package/goldens, composition audit and formatting were checked. Native results
 are recorded separately in Issue #245; these checks do not certify every
 component's visual appearance.
+
+The broader Gallery regression found the unchanged historical Tokens dark
+snapshot expected the previous tertiary swatch. The historical test now builds
+a separate reference-color Scene: exactly one known Tertiary swatch and three
+NOTE_STYLE glyph runs in ordinary Dark recover the old color. Actual current
+Scene is also rendered and must differ only through those asserted semantic
+channels. Geometry, primitive ordering, historical PNGs and the original
+radius/AA pixel tolerances are retained. The 24-image regression and strict
+Gallery clippy pass; the other 511 Gallery tests and all 456 Controls tests
+passed on the same product sources and are reused.

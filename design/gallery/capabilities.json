@@ -69511,7 +69511,7 @@
     "crates/tekes-ui-gallery/src/gallery/proposal_assets.rs": "47ab3a31a1eb91f7b2d215ddd7ec173c5e48108c0ad9617e8883136c986a9b03",
     "crates/tekes-ui-gallery/src/gallery/quality_effects.rs": "b99730312721bf8eec15f3b10255c977ba444c4ea064fdb8537186f3271e7d85",
     "crates/tekes-ui-gallery/src/gallery/scene3d_preview.rs": "9e0efed5e04f97fc22ce538f47ca75ce353c1257f16b57bb505592d0e79962a6",
-    "crates/tekes-ui-gallery/src/gallery/snapshot.rs": "8f819ca3b1388abce76c4b0736498489188f4ea46d9cfadb7c6a163db3cb2d98",
+    "crates/tekes-ui-gallery/src/gallery/snapshot.rs": "28b95fd960b0cd048badc6beec649ab04ff32a109d742fdedce3bc50482a4cc0",
     "crates/tekes-ui-gallery/src/gallery/static_text.rs": "69f07a0fbf1fbbb1d88bf9f024f03f9dd2c92dd517f5b0eab477cc6d8270cf5c",
     "crates/tekes-ui-gallery/src/gallery/symbol_assets.rs": "69163eaa0b5a993bd019ade551767e4db66bc1d460fc724c5eed037b256e44b9",
     "crates/tekes-ui-gallery/src/gallery/text.rs": "0861f4087a60f10bdf3d7c6697cb97e3513b2b6890fcc8984dd8ea966cbad13d",

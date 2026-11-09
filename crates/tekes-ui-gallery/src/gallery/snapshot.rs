@@ -630,8 +630,98 @@ mod tests {
                         },
                         &mut original_scene,
                     );
+                    // Preserve the historical PNG's exact Theme while validating
+                    // #245's one approved ordinary-dark tertiary input separately.
+                    // This is a semantic reference reconstruction, not a pixel mask.
+                    let mut reference_color_scene = Scene::new();
+                    let tertiary = tekes_ui_tokens::ColorRole::TertiaryText.resolve(theme);
+                    let old_tertiary = tekes_ui_tokens::Rgba::rgb8(180, 180, 176);
+                    let ordinary_dark = theme == Theme::DARK;
+                    if ordinary_dark {
+                        assert_eq!(tertiary, tekes_ui_tokens::Rgba::rgb8(159, 159, 155));
+                        for role in tekes_ui_tokens::ColorRole::ALL {
+                            if role != tekes_ui_tokens::ColorRole::TertiaryText {
+                                assert_ne!(role.resolve(theme), tertiary, "unique changed role");
+                            }
+                        }
+                    }
+                    let tertiary_index = tekes_ui_tokens::ColorRole::ALL
+                        .iter()
+                        .position(|role| *role == tekes_ui_tokens::ColorRole::TertiaryText)
+                        .unwrap();
+                    let tertiary_swatch = super::super::pages::tokens::swatch_rect(
+                        super::super::layout::PAGE_CONTENT.min_x(),
+                        super::super::layout::PAGE_CONTENT.min_y()
+                            + super::super::containers::SECTION_HEADER_H,
+                        tertiary_index,
+                    )
+                    .inset(tekes_ui_tokens::Spacing::Tight.value());
+                    let mut changed_tertiary_swatches = 0;
+                    let mut changed_tertiary_notes = 0;
+                    for primitive in original_scene.primitives() {
+                        match primitive {
+                            tekes_ui_scene::Primitive::Quad(quad)
+                                if ordinary_dark
+                                    && page == Page::Tokens
+                                    && quad.rect == tertiary_swatch =>
+                            {
+                                assert_eq!(quad.fill, tertiary);
+                                let mut reference = *quad;
+                                reference.fill = old_tertiary;
+                                assert_eq!(
+                                    tekes_ui_scene::Quad {
+                                        fill: tertiary,
+                                        ..reference
+                                    },
+                                    *quad,
+                                    "only the declared swatch fill may change"
+                                );
+                                reference_color_scene.push_quad(reference);
+                                changed_tertiary_swatches += 1;
+                            }
+                            tekes_ui_scene::Primitive::Glyphs(run)
+                                if ordinary_dark
+                                    && page == Page::StaticText
+                                    && run.color == tertiary =>
+                            {
+                                // In this fixed no-reference fixture, NOTE_STYLE
+                                // paints crop count, heatmap placeholder and verdict.
+                                assert!(run.glyphs.iter().all(|glyph| {
+                                    glyph.origin.x >= super::super::layout::PAGE_CONTENT.min_x()
+                                        && glyph.origin.y
+                                            >= super::super::layout::PAGE_CONTENT.min_y()
+                                }));
+                                let mut reference = run.clone();
+                                reference.color = old_tertiary;
+                                assert_eq!(reference.glyphs, run.glyphs, "glyph identity/position");
+                                reference_color_scene.push_glyphs(reference);
+                                changed_tertiary_notes += 1;
+                            }
+                            other => reference_color_scene.push(other.clone()),
+                        }
+                    }
+                    assert_eq!(
+                        (changed_tertiary_swatches, changed_tertiary_notes),
+                        if ordinary_dark && page == Page::Tokens {
+                            (1, 0)
+                        } else if ordinary_dark && page == Page::StaticText {
+                            (0, 3)
+                        } else {
+                            (0, 0)
+                        },
+                        "exact approved tertiary primitive count: {name}"
+                    );
+                    assert_eq!(
+                        reference_color_scene.primitives().len(),
+                        original_scene.primitives().len(),
+                        "primitive order/count retained"
+                    );
                     let mut legacy_scene = Scene::new();
-                    let colors = tekes_ui_tokens::ColorRole::ALL.map(|role| role.resolve(theme));
+                    let mut colors =
+                        tekes_ui_tokens::ColorRole::ALL.map(|role| role.resolve(theme));
+                    if ordinary_dark {
+                        colors[tertiary_index] = old_tertiary;
+                    }
                     let current_radius = tekes_ui_tokens::CornerRadius::concentric(
                         tekes_ui_tokens::CornerRadius::Row.value(),
                         tekes_ui_tokens::Spacing::Tight.value(),
@@ -641,7 +731,7 @@ mod tests {
                     assert_eq!(legacy_radius, 4.0, "historical badge-floor radius");
                     let mut concentric_swatches = 0;
                     let mut concentric_swatch_quads = Vec::new();
-                    for primitive in original_scene.primitives() {
+                    for primitive in reference_color_scene.primitives() {
                         match primitive {
                             tekes_ui_scene::Primitive::Quad(quad)
                                 if quad.rect.size.width == 80.0
@@ -668,9 +758,20 @@ mod tests {
                         assert_eq!(concentric_swatches, 0, "non-token page swatch match");
                     }
                     let size = (FRAME_W as u32 * scale, FRAME_H as u32 * scale);
-                    let after = renderer
+                    // Still render the actual current scene. The historical
+                    // comparison below restores only the asserted Theme channel.
+                    let current = renderer
                         .render_to_rgba8(
                             &original_scene,
+                            text.atlas_mut(),
+                            size,
+                            scale as f32,
+                            Gallery::background(theme),
+                        )
+                        .unwrap();
+                    let after = renderer
+                        .render_to_rgba8(
+                            &reference_color_scene,
                             text.atlas_mut(),
                             size,
                             scale as f32,
@@ -688,9 +789,23 @@ mod tests {
                         .unwrap();
                     let new_width = size.0;
                     assert_eq!(width, new_width);
+                    assert_eq!(
+                        current.len(),
+                        after.len(),
+                        "{name} current image dimensions"
+                    );
+                    if changed_tertiary_swatches + changed_tertiary_notes == 0 {
+                        assert_eq!(current, after, "{name} unchanged Theme render");
+                    } else {
+                        assert_ne!(
+                            current, after,
+                            "{name} approved tertiary change is rendered"
+                        );
+                    }
                     assert_eq!(before.len(), after.len(), "{name} image dimensions");
                     assert_eq!(before.len(), legacy.len(), "{name} legacy image dimensions");
-                    // Existing goldens stay unchanged. The sole intentional pixel change
+                    // Existing goldens stay unchanged. With the one approved Theme
+                    // channel restored, the sole remaining intentional pixel change
                     // is the deliberate concentric-radius correction on the 27 Tokens swatches,
                     // plus overlapping inner/outer AA on hairline borders. The legacy render
                     // changes only those 27 inner radii back to the historical badge floor.
