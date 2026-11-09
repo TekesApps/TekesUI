@@ -770,7 +770,7 @@ Gallery AppHost 的 Settings 使用既有 Exclusive 模式：先在 Main 的实�
 
 用户在 v0.3.5 实际使用后要求：Focus 正文须可选择/复制并保持只读，复用原文本服务与 selection owner，不能用静态 TextContent 代替；整段跨段选择沿同一只读 TextSurface，不新建文本选择引擎。AppHost 导航 List 原 scrollbar=true，指示条按真实溢出显示；需核实短窗与 Dark 的实际绘制，不为凑出滚动条增加伪条目或强造溢出。
 
-Settings 内容边界复用主 AppHost 的可见且避让原生控件的 Toolbar 边界；正文与导航使用同一现有 spacing token 单一留白 owner，移除完整 titlebar allocation 带来的额外顶部空区。导航项使用共享 navigation List 行高/组距和填充选中态；Back/Search保持原稳定实例与全宽，Back仍为第一项。Theme三个Radio保持单一原RadioGroup model/view，在右侧同一行排布；默认竖排API保持兼容，新增原Radio横排布局，不拆成三个状态源。过窄窗口保持同一行的几何/命中/AX一致，文字可在各自项内换行。
+Settings 内容边界复用主 AppHost 的可见且避让原生控件的 Toolbar 边界；正文与导航使用同一现有 spacing token 单一留白 owner，移除完整 titlebar allocation 带来的额外顶部空区。导航项使用共享 navigation List 行高/组距和填充选中态；Back/Search保持原稳定实例与全宽，Back仍为第一项。Theme三个Radio保持单一原RadioGroup model/view，在右侧同一行排布；默认竖排API保持兼容，新增原Radio横排布局，不拆成三个状态源。横排 Radio 按原文字渲染器测得的自然宽度借用行内剩余空间，左侧标题至少保留其可用的自然宽度，保持整组右对齐；测量和布局使用同一列宽，避免正常宽度下因旧固定值列上限而拆词。物理空间不足的过窄窗口保持同一行的几何/命中/AX一致，文字可在各自项内换行。
 
 字号NumberField两按钮与编辑器之间留同一spacing token的空隙；测量、绘制、命中与AX共用一份布局。单行TextField水平滚动条缺省关闭、提供显式开关，滚动/reveal/IME继续沿原策略，不能把隐藏指示条等同禁用滚动；多行默认行为保留。
 

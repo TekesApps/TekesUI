@@ -1845,6 +1845,78 @@ mod settings_geometry_tests {
 }
 
 #[cfg(test)]
+mod settings_theme_radio_width_tests {
+    use super::*;
+    use tekes_ui_controls::{TextSurfaceHost, composition::RadioGroupContent};
+
+    #[test]
+    fn actual_core_text_theme_words_fit_their_slots_in_a_620_point_form() {
+        let schema = tekes_ui_settings::Schema::parse(include_str!(
+            "../../tekes-ui-gallery/src/gallery/apphost.settings.toml"
+        ))
+        .unwrap()
+        .for_item("general/appearance")
+        .unwrap();
+        let field = schema
+            .settings
+            .iter()
+            .find(|field| field.presentation == tekes_ui_settings::FieldPresentation::Radio)
+            .unwrap();
+
+        for scale in [1.0, 1.5, 3.0] {
+            let mut text = crate::text::Text::new();
+            text.set_body_size(tekes_ui_tokens::proposal::TextRole::UiBody.style().size * scale);
+            let mut form = tekes_ui_settings::SettingsForm::new(
+                &schema,
+                &tekes_ui_settings::Draft::new(tekes_ui_settings::Snapshot::default()),
+            )
+            .unwrap();
+            let frame = Rect::new(0., 0., 620., 500.);
+            form.host
+                .render(
+                    &mut Scene::new(),
+                    &mut text,
+                    frame,
+                    frame,
+                    Theme::LIGHT.into(),
+                )
+                .unwrap();
+
+            let radio = form
+                .host
+                .get(ComponentId(100))
+                .unwrap()
+                .component::<RadioGroupContent>()
+                .unwrap();
+            let layout = radio.view().layout();
+            assert_eq!(layout.labels.len(), field.options.len());
+            for (index, option) in field.options.iter().enumerate() {
+                let natural = text
+                    .shape_label(
+                        &option.label,
+                        tekes_ui_tokens::proposal::TextRole::UiBody,
+                        frame.size.width,
+                        Default::default(),
+                    )
+                    .unwrap()
+                    .paragraph()
+                    .lines
+                    .iter()
+                    .map(|line| line.width_trimmed as f32)
+                    .fold(0., f32::max);
+                assert!(
+                    layout.labels[index].size.width + 1. / 64. >= natural,
+                    "at {:.0}% type scale, option {:?} needs {natural:.2}pt but its label slot is {:.2}pt",
+                    scale * 100.,
+                    option.label,
+                    layout.labels[index].size.width
+                );
+            }
+        }
+    }
+}
+
+#[cfg(test)]
 mod pinned_header_tests {
     use super::*;
     use tekes_ui_controls::composition::{ListContent, TextContent, TextFieldContent};
