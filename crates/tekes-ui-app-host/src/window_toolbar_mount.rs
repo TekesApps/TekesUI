@@ -668,8 +668,13 @@ impl Host {
         if self.presentation.is_some() {
             let mut groups = Vec::new();
             for (presenter, panel) in self.panels.iter().enumerate() {
-                for source in panel.mounted_toolbar.sources() {
+                for (group, source) in panel.mounted_toolbar.contributions() {
                     let target = match source {
+                        Source::Panel { index, .. }
+                            if group != Self::toolbar_group(ToolbarTarget::Panel(*index)) =>
+                        {
+                            Some(ToolbarTarget::Contribution { presenter, group })
+                        }
                         Source::Panel { index, .. } if *index == presenter => {
                             Some(ToolbarTarget::Panel(*index))
                         }
@@ -677,10 +682,7 @@ impl Host {
                             owner: *index,
                             presenter,
                         }),
-                        Source::Close(_) => Some(ToolbarTarget::Contribution {
-                            presenter,
-                            group: ComponentId(3_000_000 + presenter as u64 * 10),
-                        }),
+                        Source::Close(_) => Some(ToolbarTarget::Contribution { presenter, group }),
                         Source::Navigation(_) => Some(ToolbarTarget::Navigation),
                         Source::Visibility(side) => Some(ToolbarTarget::Visibility(*side)),
                         _ => None,
@@ -778,24 +780,32 @@ impl Host {
             self.toolbar_focus_visible = visible;
         }
     }
+    fn original_panel_binding(&self, target: ToolbarTarget) -> Option<(usize, usize)> {
+        let presenter = self.toolbar_container(target)?;
+        let Source::Panel { index, .. } = self.panels[presenter]
+            .mounted_toolbar
+            .source(Self::toolbar_group(target))?
+        else {
+            return None;
+        };
+        Some((*index, presenter))
+    }
     pub(super) fn toolbar_available(&self, target: ToolbarTarget) -> bool {
-        if let ToolbarTarget::Contribution { presenter, group } = target {
-            return self.panels.get(presenter).is_some_and(|panel| {
-                panel.bounds.size.width > 0. && panel.mounted_toolbar.source(group).is_some()
-            });
-        }
-        if self.presentation.is_some() {
+        if self.presentation.is_some() || matches!(target, ToolbarTarget::Contribution { .. }) {
+            if let Some((owner, presenter)) = self.original_panel_binding(target) {
+                return self.panels[owner].failed.is_none()
+                    && self.panels[presenter].bounds.size.width > 0.
+                    && self.panels[presenter].bounds.size.height > 0.
+                    && self
+                        .navigation
+                        .as_ref()
+                        .is_none_or(|nav| nav.host.input_open && !nav.busy && nav.error.is_none());
+            }
             return match target {
-                ToolbarTarget::Panel(index) | ToolbarTarget::Retained { owner: index, .. } => {
-                    self.toolbar_container(target).is_some_and(|presenter| {
-                        let panel = &self.panels[index];
-                        let target = &self.panels[presenter];
-                        panel.failed.is_none()
-                            && self.navigation.as_ref().is_none_or(|nav| {
-                                nav.host.input_open && !nav.busy && nav.error.is_none()
-                            })
-                            && target.bounds.size.width > 0.
-                            && target.bounds.size.height > 0.
+                ToolbarTarget::Contribution { presenter, group } => {
+                    self.panels.get(presenter).is_some_and(|panel| {
+                        panel.bounds.size.width > 0.
+                            && panel.mounted_toolbar.source(group).is_some()
                     })
                 }
                 ToolbarTarget::Navigation => self
@@ -814,7 +824,7 @@ impl Host {
                         .as_ref()
                         .is_none_or(|nav| nav.host.input_open && !nav.busy && nav.error.is_none())
                 }
-                ToolbarTarget::Contribution { .. } => false,
+                _ => false,
             };
         }
         match target {
@@ -844,24 +854,21 @@ impl Host {
         }
     }
     pub(super) fn toolbar_temporarily_blocked(&self, target: ToolbarTarget) -> bool {
-        if self.presentation.is_some() {
-            return match target {
-                ToolbarTarget::Panel(index) | ToolbarTarget::Retained { owner: index, .. } => {
-                    self.toolbar_container(target).is_some_and(|presenter| {
-                        let panel = &self.panels[index];
-                        let visible = &self.panels[presenter];
-                        panel.failed.is_none()
-                            && visible.bounds.size.width > 0.
-                            && visible.bounds.size.height > 0.
-                            && (self
-                                .navigation
-                                .as_ref()
-                                .is_some_and(|nav| nav.busy && nav.error.is_none())
-                                || panel.frame_viewport != panel.viewport)
-                    })
-                }
-                _ => false,
-            };
+        if self.presentation.is_some() || matches!(target, ToolbarTarget::Contribution { .. }) {
+            return self
+                .original_panel_binding(target)
+                .is_some_and(|(owner, presenter)| {
+                    let panel = &self.panels[owner];
+                    let visible = &self.panels[presenter];
+                    panel.failed.is_none()
+                        && visible.bounds.size.width > 0.
+                        && visible.bounds.size.height > 0.
+                        && (self
+                            .navigation
+                            .as_ref()
+                            .is_some_and(|nav| nav.busy && nav.error.is_none())
+                            || panel.frame_viewport != panel.viewport)
+                });
         }
         let navigating = self
             .navigation
@@ -950,8 +957,8 @@ impl Host {
             .restore_focus(target, visible)
         {
             self.remember_toolbar_focus(Some(visible));
-            if let ToolbarTarget::Panel(i) | ToolbarTarget::Retained { owner: i, .. } = owner {
-                self.focused = i;
+            if let Some((original, _)) = self.original_panel_binding(owner) {
+                self.focused = original;
             }
         }
     }

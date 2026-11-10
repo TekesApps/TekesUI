@@ -175,11 +175,10 @@ impl Host {
         } else {
             Vec::new()
         };
-        let position =
-            (!internal.is_empty()).then_some(match self.panels[index].options.toolbar_host {
-                Host::Container { position } => position,
-                Host::Window => Position::Top, // explicit retained target replaces a hidden owner's default location
-            });
+        let position = match self.panels[index].options.toolbar_host {
+            Host::Container { position } if !internal.is_empty() => Some(position),
+            Host::Window | Host::Container { .. } => None,
+        };
         let axis = if matches!(position, Some(Position::Leading | Position::Trailing)) {
             Axis::Vertical
         } else {
@@ -664,8 +663,8 @@ mod tests {
             1
         );
         assert!(
-            host.panels[0].geometry.toolbar.is_some(),
-            "explicit retained target supplies an internal replacement, never a second window copy"
+            host.panels[0].geometry.toolbar.is_none(),
+            "an undeclared host remains Window when it receives retained actions"
         );
         assert!(
             !host.panels[0]
@@ -683,6 +682,208 @@ mod tests {
         host.dispatch_toolbar(target, &ContentEvent::PointerUp(retained))
             .unwrap();
         assert_eq!(calls.get(), 2);
+    }
+    #[test]
+    fn retained_default_and_explicit_window_targets_never_create_an_internal_bar() {
+        for explicit in [false, true] {
+            let (mut host, calls) = fixture(None);
+            if explicit {
+                host.panels[0].options.toolbar_host = ToolbarHost::Window;
+            }
+            host.panels[1].options.retained_buttons = vec![
+                crate::RetainedButton {
+                    command: 1,
+                    target: "focus".into(),
+                },
+                crate::RetainedButton {
+                    command: 2,
+                    target: "focus".into(),
+                },
+            ];
+            paint(&mut host);
+            let content = host.panels[0].content_frame();
+            let source_generation = host.panels[1].toolbar_generation;
+            host.presentation.as_mut().unwrap().close("owner").unwrap();
+            paint(&mut host);
+            assert!(
+                host.panels[0].geometry.toolbar.is_none(),
+                "retained target default/explicit Window must not invent internal Top"
+            );
+            assert_eq!(
+                host.panels[0].content_frame(),
+                content,
+                "Window retention must not consume internal body space"
+            );
+            assert_eq!(host.panels[1].toolbar_generation, source_generation);
+            let point = point(&host, "One");
+            let target = host.toolbar_target_at(point).unwrap();
+            host.dispatch_toolbar(target, &ContentEvent::PointerDown(point))
+                .unwrap();
+            paint(&mut host);
+            host.dispatch_toolbar(target, &ContentEvent::PointerUp(point))
+                .unwrap();
+            assert_eq!(calls.get(), 1);
+        }
+    }
+    #[test]
+    fn retained_window_rebinding_retires_old_press_and_ax_even_without_physical_move() {
+        let (mut host, calls) = fixture(None);
+        host.panels[1].options.retained_buttons = vec![
+            crate::RetainedButton {
+                command: 1,
+                target: "focus".into(),
+            },
+            crate::RetainedButton {
+                command: 2,
+                target: "focus".into(),
+            },
+        ];
+        paint(&mut host);
+        let source = host.panels[0]
+            .mounted_toolbar
+            .source(ComponentId(92410))
+            .unwrap()
+            .clone();
+        let generation = host.panels[1].toolbar_generation;
+        for hide in [true, false] {
+            let old_point = point(&host, "One");
+            let target = host.toolbar_target_at(old_point).unwrap();
+            let old_ax = host.panels[0]
+                .mounted_toolbar
+                .host
+                .semantics()
+                .into_iter()
+                .flat_map(|node| node.parts)
+                .find(|(_, part)| part.semantics.name == "One")
+                .unwrap()
+                .0;
+            host.dispatch_toolbar(target, &ContentEvent::PointerDown(old_point))
+                .unwrap();
+            assert!(
+                host.panels[0]
+                    .mounted_toolbar
+                    .host
+                    .content_host()
+                    .pointer_capture()
+                    .is_some()
+            );
+            if hide {
+                host.presentation.as_mut().unwrap().close("owner").unwrap();
+            } else {
+                host.presentation.as_mut().unwrap().open("owner").unwrap();
+            }
+            paint(&mut host);
+            assert_eq!(
+                point(&host, "One"),
+                old_point,
+                "Window-to-Window rebind preserves the physical action location"
+            );
+            assert!(
+                host.panels[0]
+                    .mounted_toolbar
+                    .host
+                    .content_host()
+                    .pointer_capture()
+                    .is_none(),
+                "logical retention rebind must revoke a held original press even in the same region"
+            );
+            assert!(
+                !host.panels[0]
+                    .mounted_toolbar
+                    .host
+                    .accessibility_action(
+                        old_ax,
+                        tekes_ui_controls::composition::AccessibilityAction::Press
+                    )
+                    .consumed,
+                "old AX target must not execute after logical rebind"
+            );
+            let rebound = host.toolbar_target_at(old_point).unwrap();
+            host.dispatch_toolbar(rebound, &ContentEvent::PointerUp(old_point))
+                .unwrap();
+            assert_eq!(calls.get(), if hide { 0 } else { 1 });
+            assert_eq!(
+                host.panels[0]
+                    .mounted_toolbar
+                    .source(Host::toolbar_group(rebound)),
+                Some(&source)
+            );
+            assert_eq!(host.panels[1].toolbar_generation, generation);
+            assert_eq!(
+                host.panels
+                    .iter()
+                    .flat_map(|panel| panel.mounted_toolbar.sources())
+                    .filter(|source| matches!(
+                        source,
+                        crate::window_toolbar::Source::Panel { index: 1, .. }
+                    ))
+                    .count(),
+                1
+            );
+            let current = host.toolbar_target_at(old_point).unwrap();
+            host.dispatch_toolbar(current, &ContentEvent::PointerDown(old_point))
+                .unwrap();
+            paint(&mut host);
+            host.dispatch_toolbar(current, &ContentEvent::PointerUp(old_point))
+                .unwrap();
+            assert_eq!(calls.get(), if hide { 1 } else { 2 });
+        }
+    }
+    #[test]
+    fn retained_explicit_container_target_uses_each_declared_edge() {
+        for position in [
+            Position::Top,
+            Position::Bottom,
+            Position::Leading,
+            Position::Trailing,
+        ] {
+            let (mut host, calls) = fixture(None);
+            host.panels[0].options.toolbar_host = ToolbarHost::Container { position };
+            host.panels[1].options.retained_buttons = vec![
+                crate::RetainedButton {
+                    command: 1,
+                    target: "focus".into(),
+                },
+                crate::RetainedButton {
+                    command: 2,
+                    target: "focus".into(),
+                },
+            ];
+            host.presentation.as_mut().unwrap().close("owner").unwrap();
+            paint(&mut host);
+            let bar = host.panels[0]
+                .geometry
+                .toolbar
+                .expect("explicit Container target mounts its retained business bar");
+            let body = host.panels[0].content_frame();
+            assert!(!overlap(bar, body));
+            assert!(
+                host.panels[0].geometry.close.is_none(),
+                "retention never gives Focus a Close action"
+            );
+            let first = point(&host, "One");
+            let second = point(&host, "Two");
+            match position {
+                Position::Top => assert!(bar.max_y() <= body.min_y()),
+                Position::Bottom => assert!(bar.min_y() >= body.max_y()),
+                Position::Leading => assert!(bar.max_x() <= body.min_x()),
+                Position::Trailing => assert!(bar.min_x() >= body.max_x()),
+            }
+            if matches!(position, Position::Leading | Position::Trailing) {
+                assert_eq!(first.x, second.x);
+                assert!(first.y < second.y);
+            } else {
+                assert_eq!(first.y, second.y);
+                assert!(first.x < second.x);
+            }
+            let target = host.toolbar_target_at(first).unwrap();
+            host.dispatch_toolbar(target, &ContentEvent::PointerDown(first))
+                .unwrap();
+            paint(&mut host);
+            host.dispatch_toolbar(target, &ContentEvent::PointerUp(first))
+                .unwrap();
+            assert_eq!(calls.get(), 1);
+        }
     }
     #[test]
     fn partially_scrolled_list_keeps_member_allocation_and_process_viewport_and_clips_chrome() {

@@ -73,10 +73,14 @@ impl MountedToolbar {
             .filter(|frame| frame.size.width > 0. && frame.size.height > 0.)
             .collect()
     }
-    pub(crate) fn sources(&self) -> impl Iterator<Item = &Source> {
+    pub(crate) fn contributions(&self) -> impl Iterator<Item = (ComponentId, &Source)> {
         self.declarations
             .iter()
-            .map(|declaration| &declaration.source)
+            .map(|declaration| (declaration.id, &declaration.source))
+    }
+    #[cfg(test)]
+    pub(crate) fn sources(&self) -> impl Iterator<Item = &Source> {
+        self.contributions().map(|(_, source)| source)
     }
     pub fn source(&self, group: ComponentId) -> Option<&Source> {
         self.declarations
