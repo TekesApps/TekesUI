@@ -76,6 +76,7 @@ fn local(id: &str, toolbar: bool) -> Result<LocalContainer> {
             ),
         ),
     )?
+    .toolbar_host(tekes_ui_app_host::ContainerToolbarHost::Container { position: tekes_ui_app_host::ContainerToolbarPosition::Top })
     .on_command(move |host, command| {
         command_count.set(command_count.get() + 1);
         let text = host
@@ -101,7 +102,7 @@ fn local(id: &str, toolbar: bool) -> Result<LocalContainer> {
         }
     });
     if toolbar {
-        container = container.title(format!("{id} · own Toolbar")).toolbar(vec![
+        container = container.toolbar_host(tekes_ui_app_host::ContainerToolbarHost::Container { position: tekes_ui_app_host::ContainerToolbarPosition::Top }).title(format!("{id} · own Toolbar")).toolbar(vec![
             toolbar_item(RETAIN_FIRST, "Owner command A"),
             toolbar_item(RETAIN_SECOND, "Owner command B"),
             toolbar_item(103, "Owner only"),
@@ -116,7 +117,7 @@ fn assembly(layout: Layout, backing: Backing) -> Result<(Vec<Container>, Present
         let nav = definitions[2].id;
         let mut containers = vec![
             ProcessContainer::new(definitions[0])
-                .title("Process focus")
+                .toolbar_host(tekes_ui_app_host::ContainerToolbarHost::Container { position: tekes_ui_app_host::ContainerToolbarPosition::Top }).title("Process focus")
                 .list_height(260.)
                 .into(),
         ];
@@ -124,7 +125,7 @@ fn assembly(layout: Layout, backing: Backing) -> Result<(Vec<Container>, Present
         if layout.nav() {
             containers.push(
                 ProcessContainer::new(definitions[2])
-                    .title("Process NavBar")
+                    .toolbar_host(tekes_ui_app_host::ContainerToolbarHost::Container { position: tekes_ui_app_host::ContainerToolbarPosition::Top }).title("Process NavBar")
                     .into(),
             );
             options = options.nav_bar(nav);
@@ -133,7 +134,7 @@ fn assembly(layout: Layout, backing: Backing) -> Result<(Vec<Container>, Present
             let mut ids = vec![definitions[1].id.to_owned()];
             containers.push(
                 ProcessContainer::new(definitions[1])
-                    .title("Process second")
+                    .toolbar_host(tekes_ui_app_host::ContainerToolbarHost::Container { position: tekes_ui_app_host::ContainerToolbarPosition::Top }).title("Process second")
                     .list_height(260.)
                     .retain_button(1, focus)
                     .into(),
@@ -141,7 +142,7 @@ fn assembly(layout: Layout, backing: Backing) -> Result<(Vec<Container>, Present
             if !layout.nav() {
                 containers.push(
                     ProcessContainer::new(definitions[2])
-                        .title("Process third")
+                        .toolbar_host(tekes_ui_app_host::ContainerToolbarHost::Container { position: tekes_ui_app_host::ContainerToolbarPosition::Top }).title("Process third")
                         .list_height(260.)
                         .into(),
                 );
@@ -179,7 +180,7 @@ fn assembly(layout: Layout, backing: Backing) -> Result<(Vec<Container>, Present
         containers.push(local("plain", false)?.into());
         containers.push(if matches!(backing, Backing::Mixed) {
             ProcessContainer::new(definitions[0])
-                .title("Remote · own Toolbar")
+                .toolbar_host(tekes_ui_app_host::ContainerToolbarHost::Container { position: tekes_ui_app_host::ContainerToolbarPosition::Top }).title("Remote · own Toolbar")
                 .list_height(280.)
                 .into()
         } else {

@@ -10,6 +10,7 @@ pub(crate) enum Source {
     Navigation(ComponentSource),
     Undo(ComponentSource),
     Title,
+    Close(String),
     Panel {
         instance: u64,
         index: usize,
@@ -27,6 +28,7 @@ pub(crate) enum Contents {
         Vec<(u64, String)>,
     ),
     Title(String),
+    Close(String),
 }
 impl Contents {
     pub(super) fn templates(&self) -> &[(u64, String)] {
@@ -66,7 +68,7 @@ impl MountedToolbar {
     pub(crate) fn occupied_frames(&self) -> Vec<Rect> {
         self.declarations
             .iter()
-            .filter_map(|declaration| self.host.content_host().get(declaration.region))
+            .filter_map(|declaration| self.host.content_host().get(declaration.id))
             .map(|region| region.frame())
             .filter(|frame| frame.size.width > 0. && frame.size.height > 0.)
             .collect()
@@ -165,6 +167,9 @@ impl MountedToolbar {
                                         },
                                     )
                             }
+                            Contents::Close(_) => {
+                                unreachable!("close changes replace its original declaration")
+                            }
                             Contents::Title(title) => {
                                 self.host
                                     .update_component::<TextContent>(d.id, target, |label| {
@@ -196,6 +201,18 @@ impl MountedToolbar {
                     Content::new(target, TextContent::new(title.clone())),
                     vec![],
                 ),
+                Contents::Close(title) => {
+                    let button = close_button(target, title);
+                    (
+                        button,
+                        vec![ToolbarCommandBinding {
+                            target,
+                            action: None,
+                            command: 0,
+                            source: d.source.clone(),
+                        }],
+                    )
+                }
             };
             if let Some(control) = child.component_mut::<tekes_ui_controls::ToolbarControl>() {
                 for (id, name) in d.contents.templates() {
@@ -511,4 +528,14 @@ mod region_lifecycle_tests {
         toolbar.sync(viewport, vec![], vec![]).unwrap();
         assert!(toolbar.host.content_host().get(d.id).is_none());
     }
+}
+
+pub(crate) fn close_button(target: ComponentId, title: &str) -> Content {
+    let icon = IconContent::new("tekes-remove-one").expect("canonical close icon");
+    let mut button = Button::new(Content::new(ComponentId(target.0 + 1), icon))
+        .with_accessible_name(format!("Close {title}"))
+        .with_help(format!("Close {title}"));
+    button.variant = tekes_ui_controls::paint::ButtonVariant::Toolbar;
+    button.set_transparent_chrome(true);
+    Content::new(target, button)
 }

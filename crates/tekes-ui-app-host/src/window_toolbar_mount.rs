@@ -35,7 +35,8 @@ impl Host {
             height: row,
             native_leading: safe,
         } = band;
-        let center = usize::from(frames.len() >= 2);
+        let center_slot = usize::from(frames.len() >= 2);
+        let center = self.order[center_slot];
         let mut declarations = vec![];
         let mut add = |id, region: ComponentId, placement, order, contents, source| {
             declarations.push(Declaration {
@@ -211,56 +212,67 @@ impl Host {
                 .position(|&i| i == index)
                 .is_some_and(|slot| frames[slot].size.width > 0.)
         };
-        let fallback = self.order.iter().copied().find(|&i| visible(i));
         let mut owned = vec![Vec::new(); self.panels.len()];
         for mut declaration in declarations {
-            let owner = match declaration.source {
-                Source::Panel { index, .. } => Some(index),
-                Source::Visibility(0) => self
-                    .order
-                    .first()
-                    .copied()
-                    .filter(|&i| visible(i))
-                    .or(fallback),
-                Source::Visibility(_) => self
-                    .order
-                    .last()
-                    .copied()
-                    .filter(|&i| visible(i))
-                    .or(fallback),
-                Source::Navigation(_) => fallback,
-                Source::Undo(_) | Source::Title => self
-                    .order
-                    .get(center)
-                    .copied()
-                    .filter(|&i| visible(i))
-                    .or(fallback),
+            let (owner, region) = match &declaration.source {
+                Source::Panel { index, .. } if visible(*index) => {
+                    match self.panels[*index].options.toolbar_host {
+                        crate::ContainerToolbarHost::Window => (center, ComponentId(u64::MAX - 18)),
+                        crate::ContainerToolbarHost::Container { .. } => {
+                            (*index, ComponentId(91000 + *index as u64))
+                        }
+                    }
+                }
+                Source::Panel { .. } => continue,
+                Source::Close(id) => {
+                    let owner = self
+                        .panels
+                        .iter()
+                        .position(|panel| panel.module_id == *id)
+                        .unwrap();
+                    (owner, ComponentId(95000 + owner as u64))
+                }
+                _ => (center, ComponentId(u64::MAX - 18)),
             };
-            if let Some(owner) = owner {
-                declaration.region = ComponentId(91000 + owner as u64);
-                owned[owner].push(declaration);
-            }
+            declaration.region = region;
+            owned[owner].push(declaration);
         }
         for (index, panel) in self.panels.iter_mut().enumerate() {
-            let slot = self.order.iter().position(|&i| i == index);
-            let frame = slot.map(|slot| frames[slot]).unwrap_or_default();
-            let mut region = ToolbarRegion::new(
-                ComponentId(91000 + index as u64),
-                Rect::new(frame.min_x(), y, frame.size.width, row),
-            );
-            if frame.min_x() == whole.min_x() {
-                region.native_safe_area.left = safe;
+            let mut regions = Vec::new();
+            // Settings syncs its native-top toolbar before publishing panel
+            // bounds. The current allocation, not last draw's bounds, owns it.
+            let frame = self
+                .order
+                .iter()
+                .position(|&owner| owner == index)
+                .map(|slot| frames[slot])
+                .unwrap_or_default();
+            if frame.size.width > 0. {
+                if let Some(frame) = panel.geometry.toolbar {
+                    let mut region = ToolbarRegion::new(ComponentId(91000 + index as u64), frame);
+                    if matches!(
+                        panel.options.toolbar_host,
+                        crate::ContainerToolbarHost::Container {
+                            position: crate::ContainerToolbarPosition::Leading
+                                | crate::ContainerToolbarPosition::Trailing
+                        }
+                    ) {
+                        region.axis = Axis::Vertical;
+                    }
+                    regions.push(region);
+                }
+                if index == center {
+                    let mut region = ToolbarRegion::new(
+                        ComponentId(u64::MAX - 18),
+                        Rect::new(whole.min_x(), y, whole.size.width, row),
+                    );
+                    region.native_safe_area.left = safe;
+                    regions.push(region);
+                }
             }
-            let declarations = std::mem::take(&mut owned[index]);
-            panel.mounted_toolbar.sync(
-                whole,
-                if frame.size.width > 0. {
-                    vec![region]
-                } else {
-                    Vec::new()
-                },
-                declarations,
-            )?;
+            panel
+                .mounted_toolbar
+                .sync(whole, regions, std::mem::take(&mut owned[index]))?;
             panel.mounted_toolbar.host.set_window_active(w.is_active());
         }
         Ok(())
@@ -293,6 +305,15 @@ impl Host {
                         }
                     }
                     Source::Title => Err(anyhow::anyhow!("title has no command binding")),
+                    Source::Close(id) => {
+                        if self.composition_in_progress() {
+                            Err(anyhow::anyhow!("composition-in-progress"))
+                        } else if let Some(state) = &mut self.presentation {
+                            state.close(&id)
+                        } else {
+                            Err(anyhow::anyhow!("container close requires presentation"))
+                        }
+                    }
                     Source::Undo(source) => self.settings.as_ref().map_or(Ok(()), |s| {
                         s.borrow_mut().undo_action(invocation.command, &source)
                     }),
@@ -622,13 +643,6 @@ impl Host {
                 .filter(|panel| panel.mounted_toolbar.source(group).is_some())
                 .map(|_| presenter);
         }
-        if let ToolbarTarget::Panel(index) = target {
-            return self
-                .panels
-                .get(index)
-                .filter(|panel| panel.mounted_toolbar.source(group).is_some())
-                .map(|_| index);
-        }
         self.panels
             .iter()
             .position(|p| p.mounted_toolbar.source(group).is_some())
@@ -662,6 +676,10 @@ impl Host {
                         Source::Panel { index, .. } => Some(ToolbarTarget::Retained {
                             owner: *index,
                             presenter,
+                        }),
+                        Source::Close(_) => Some(ToolbarTarget::Contribution {
+                            presenter,
+                            group: ComponentId(3_000_000 + presenter as u64 * 10),
                         }),
                         Source::Navigation(_) => Some(ToolbarTarget::Navigation),
                         Source::Visibility(side) => Some(ToolbarTarget::Visibility(*side)),
@@ -882,7 +900,16 @@ impl Host {
                             .is_some_and(|n| {
                                 n.component::<ToolbarControl>().is_some_and(
                                     tekes_ui_controls::composition::Component::focusable,
-                                )
+                                ) || matches!(
+                                    self.panels[index]
+                                        .mounted_toolbar
+                                        .source(Self::toolbar_group(owner)),
+                                    Some(Source::Close(_))
+                                ) && n
+                                    .component::<tekes_ui_controls::composition::Button>()
+                                    .is_some_and(
+                                        tekes_ui_controls::composition::Component::focusable,
+                                    )
                             })
                     })
             })
@@ -1192,7 +1219,10 @@ impl Host {
                             .host
                             .content_host()
                             .get(Self::toolbar_control(owner))
-                            .is_some_and(|n| n.frame().contains(point))
+                            .is_some_and(|n| {
+                                n.frame().contains(point)
+                                    && n.visible().is_some_and(|clip| clip.contains(point))
+                            })
                     })
             })
             .or_else(|| {
@@ -1208,11 +1238,19 @@ impl Host {
                             .semantics()
                             .into_iter()
                             .find_map(|node| {
-                                if !node.node.visible.is_some_and(|clip| clip.contains(point))
-                                    || !node
+                                if !node.node.visible.is_some_and(|clip| clip.contains(point)) {
+                                    return None;
+                                }
+                                let group = ComponentId(node.node.id.0.checked_sub(1)?);
+                                let close = matches!(
+                                    panel.mounted_toolbar.source(group),
+                                    Some(Source::Close(_))
+                                );
+                                if !(close && node.node.frame.contains(point)
+                                    || node
                                         .parts
                                         .iter()
-                                        .any(|(_, part)| part.frame.contains(point))
+                                        .any(|(_, part)| part.frame.contains(point)))
                                 {
                                     return None;
                                 }
@@ -1226,6 +1264,7 @@ impl Host {
                     })
             })
     }
+    #[cfg(test)]
     pub(super) fn panel_geometry(
         &mut self,
         index: usize,
@@ -1234,12 +1273,24 @@ impl Host {
         toolbar_height: f32,
         header_extra: f32,
     ) -> Result<()> {
-        self.remember_toolbar_focus(None);
+        let geometry = window_container_geometry::ContainerGeometry::legacy(
+            bounds,
+            toolbar_height + header_extra,
+        );
+        self.panel_geometry_layout(index, bounds, scale, geometry)
+    }
+    pub(super) fn panel_geometry_layout(
+        &mut self,
+        index: usize,
+        bounds: Rect,
+        scale: f32,
+        geometry: window_container_geometry::ContainerGeometry,
+    ) -> Result<()> {
         let toolbar_index = self
             .toolbar_container(ToolbarTarget::Panel(index))
             .unwrap_or(index);
         let previous = self.panels[index].viewport;
-        self.panels[index].geometry_with_header(bounds, scale, toolbar_height, header_extra)?;
+        self.panels[index].geometry_with_layout(bounds, scale, geometry)?;
         if self.panels[index].viewport != previous {
             let owner = ToolbarTarget::Panel(index);
             if self.panels[toolbar_index]
@@ -1279,6 +1330,9 @@ mod integration_tests {
             Content::new(ComponentId(1), TextContent::new("Owner")),
         )
         .unwrap()
+        .toolbar_host(crate::ContainerToolbarHost::Container {
+            position: crate::ContainerToolbarPosition::Top,
+        })
         .toolbar(vec![ToolbarItem {
             id: 7,
             title: "Undo".into(),
@@ -1691,6 +1745,9 @@ mod integration_tests {
                     Content::new(ComponentId(1), TextContent::new("Body")),
                 )
                 .unwrap()
+                .toolbar_host(crate::ContainerToolbarHost::Container {
+                    position: crate::ContainerToolbarPosition::Top,
+                })
                 .toolbar(vec![ToolbarItem {
                     id: 7,
                     title: "Do work".into(),

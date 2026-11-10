@@ -37,10 +37,14 @@ mod window_acceptance;
 mod window_accessibility;
 #[path = "window_columns.rs"]
 mod window_columns;
+#[path = "window_container_geometry.rs"]
+mod window_container_geometry;
 #[path = "window_presentation.rs"]
 mod window_presentation;
 #[path = "window_settings.rs"]
 mod window_settings;
+#[path = "window_switcher.rs"]
+mod window_switcher;
 #[path = "window_toolbar_mount.rs"]
 mod window_toolbar_mount;
 /// Same allocation used by the accepted public toolbar-split consumer:
@@ -60,6 +64,8 @@ fn window_toolbar_geometry(
 }
 // Top rows share their measured, control-safe boundary, not AppKit's potentially
 // larger titlebar allocation. Toolbar-free containers only avoid actual controls.
+// Settings retains its existing native-top chrome contract. General container
+// layout uses ContainerGeometry and never derives four-edge content from this.
 fn presentation_content_inset(
     measured: f32,
     row_boundary: f32,
@@ -95,6 +101,8 @@ fn toolbar_divider_frame(divider: Rect, row_y: f32) -> Rect {
     )
 }
 
+// Top-only allocation for the existing Settings drawing path and legacy tests.
+// Local/Process containers use Panel::content_frame's canonical four-edge result.
 fn content_geometry(bounds: Rect, toolbar_height: f32) -> Rect {
     Rect::new(
         bounds.min_x(),
@@ -277,8 +285,7 @@ struct Panel {
     clip: Rect,
     logically_visible: bool,
     toolbar_generation: u64,
-    toolbar_height: f32,
-    content_header_extra: f32,
+    geometry: window_container_geometry::ContainerGeometry,
     content_padding: f32,
     toolbar: Vec<ToolbarItem>,
     seq: u64,
@@ -323,8 +330,7 @@ impl Panel {
             clip: Rect::default(),
             logically_visible: true,
             toolbar_generation: 0,
-            toolbar_height: 0.,
-            content_header_extra: 0.,
+            geometry: Default::default(),
             content_padding: 0.,
             toolbar: Vec::new(),
             seq: 0,
@@ -477,7 +483,7 @@ impl Panel {
         }
     }
     fn content_frame(&self) -> Rect {
-        let body = content_geometry(self.bounds, self.content_inset());
+        let body = self.geometry.content;
         let inset = self.content_padding;
         Rect::new(
             body.min_x() + inset,
@@ -498,8 +504,9 @@ impl Panel {
         Point::new(point.x - content.min_x(), point.y - content.min_y())
     }
     fn content_inset(&self) -> f32 {
-        self.toolbar_height + self.content_header_extra
+        self.geometry.insets.top
     }
+    #[cfg(test)]
     fn geometry_with_header(
         &mut self,
         bounds: Rect,
@@ -507,19 +514,27 @@ impl Panel {
         toolbar_height: f32,
         header_extra: f32,
     ) -> Result<()> {
-        // The wire viewport currently uses whole logical points. Don't render
-        // another identical texture for fractional pointer motion within one pt.
-        let changed = (
-            self.bounds.size.width as u32,
-            self.bounds.size.height as u32,
-        ) != (bounds.size.width as u32, bounds.size.height as u32)
-            || self.scale != scale
-            || self.toolbar_height != toolbar_height
-            || self.content_header_extra != header_extra;
-        self.content_header_extra = header_extra;
+        self.geometry_with_layout(
+            bounds,
+            scale,
+            window_container_geometry::ContainerGeometry::legacy(
+                bounds,
+                toolbar_height + header_extra,
+            ),
+        )
+    }
+    fn geometry_with_layout(
+        &mut self,
+        bounds: Rect,
+        scale: f32,
+        geometry: window_container_geometry::ContainerGeometry,
+    ) -> Result<()> {
+        let previous = self.content_size();
+        let scale_changed = self.scale != scale;
         self.bounds = bounds;
         self.scale = scale;
-        self.toolbar_height = toolbar_height;
+        self.geometry = geometry;
+        let changed = previous != self.content_size() || scale_changed;
         if changed {
             // A height-only content resize can leave the toolbar paint frame
             // unchanged. Revoke old arms before advancing viewport ownership.
@@ -531,7 +546,7 @@ impl Panel {
                 self.viewport,
                 bounds.size.width,
                 bounds.size.height,
-                toolbar_height,
+                self.geometry.insets.top,
                 scale
             );
             eprintln!(
@@ -598,9 +613,10 @@ pub struct Host {
     toolbar_hover_index: Option<usize>,
     presentation: Option<crate::PresentationState>,
     presentation_layout: crate::PresentationLayout,
-    presentation_tabs: Option<tekes_ui_controls::composition::ToolbarHost<()>>,
-    presentation_tab_keys: Vec<crate::OthersTab>,
-    presentation_selected: Option<crate::OthersTab>,
+    presentation_tabs:
+        Option<tekes_ui_controls::composition::ToolbarHost<window_switcher::SwitcherAction>>,
+    presentation_switcher: window_switcher::SwitcherState,
+    container_window_boundary: Option<f32>,
     toolbar_ax: Vec<(
         tekes_ui_platform_macos::AccessibilityKey,
         usize,
@@ -683,8 +699,8 @@ impl Host {
             presentation: None,
             presentation_layout: crate::PresentationLayout::default(),
             presentation_tabs: None,
-            presentation_tab_keys: Vec::new(),
-            presentation_selected: None,
+            presentation_switcher: window_switcher::SwitcherState::default(),
+            container_window_boundary: None,
             toolbar_ax: vec![],
             toolbar_ax_next: 1 << 63,
             toolbar_focus: None,
@@ -946,6 +962,7 @@ impl Host {
         self.inner.min_pane = MIN_COLUMN;
         let mut scene = Scene::new();
         let mut toolbar_scene = Scene::new();
+        let mut presentation_scene = Scene::new();
         let size = w.size();
         let whole = Rect::new(0., 0., size.width as f32, size.height as f32);
         let row_height = tekes_ui_controls::ToolbarControl::window().row_height(&mut self.text);
@@ -964,6 +981,7 @@ impl Host {
         // during resize and must not become extra padding on the leading pane.
         let controls_floor = native_center.map_or(0., |center| 2. * center as f32);
         let content_boundary = (toolbar_y + toolbar_paint_height).max(controls_floor);
+        self.container_window_boundary = Some(content_boundary);
 
         let native_geometry = (
             native_height as f32,
@@ -1085,39 +1103,8 @@ impl Host {
             if bounds.size.width > 0. {
                 let index = self.order[slot];
                 self.panels[index].start(w.wake_proxy());
-                let measured = self.container_toolbar_height(index, toolbar_height);
-                let height = if self.presentation.is_some() {
-                    let native_row = bounds.min_y() == whole.min_y()
-                        && self.panels[index].clip.min_y() == whole.min_y();
-                    let intersects_controls = self.panels[index].clip.min_y() < controls_floor
-                        && bounds.min_x() < whole.min_x() + leading as f32;
-                    presentation_content_inset(
-                        measured,
-                        content_boundary,
-                        (controls_floor - bounds.min_y()).max(0.),
-                        native_row,
-                        intersects_controls,
-                    )
-                } else {
-                    measured
-                };
-                // Tabs and the selected container share one native row. A
-                // toolbar-free selected container still clears the Tabs row,
-                // without inventing a business Toolbar for that container.
-                let extra = self
-                    .presentation
-                    .as_ref()
-                    .filter(|state| state.others_visible())
-                    .and_then(|state| match state.selected_tab() {
-                        Some(crate::OthersTab::Container(id))
-                            if id == &self.panels[index].module_id =>
-                        {
-                            Some((toolbar_y + toolbar_paint_height - height).max(0.))
-                        }
-                        _ => None,
-                    })
-                    .unwrap_or(0.);
-                self.panel_geometry(index, *bounds, scale, height, extra)?;
+                let geometry = self.container_geometry(index, *bounds, content_boundary)?;
+                self.panel_geometry_layout(index, *bounds, scale, geometry)?;
             }
         }
         let geometry_ready = diagnostic.map(|_| std::time::Instant::now());
@@ -1138,18 +1125,12 @@ impl Host {
                 continue;
             }
             let p = &mut self.panels[index];
-            let height = if self.presentation.is_some() {
-                p.toolbar_height
-            } else {
-                toolbar_height
-            };
-            p.geometry_with_header(*bounds, scale, height, p.content_header_extra)?;
             let content = p.content_frame();
             if self.presentation.is_some() {
                 scene.push_clip(p.clip);
             }
             scene.push_quad(Quad::new(
-                content_geometry(p.bounds, p.content_inset()),
+                p.geometry.content,
                 palette.color("surface-panel").unwrap(),
             ));
             if self.presentation.is_some() {
@@ -1157,7 +1138,7 @@ impl Host {
             }
             if let Some(local) = &mut p.local {
                 let clip = if self.presentation.is_some() {
-                    p.clip
+                    content.intersection(&p.clip).unwrap_or_default()
                 } else {
                     content
                 };
@@ -1170,7 +1151,7 @@ impl Host {
             }
             if let Some(id) = p.image {
                 scene.push_clip(if self.presentation.is_some() {
-                    p.clip
+                    content.intersection(&p.clip).unwrap_or_default()
                 } else {
                     content
                 });
@@ -1338,7 +1319,7 @@ impl Host {
             }
         }
         if self.presentation.is_some() {
-            self.paint_presentation(&mut scene, whole, palette)?;
+            self.paint_presentation(&mut presentation_scene, whole, palette)?;
         }
         let mut resize_regions = Vec::new();
         if self.presentation.is_none()
@@ -1377,8 +1358,19 @@ impl Host {
                 })
                 .collect(),
         );
-        for primitive in toolbar_scene.primitives() {
-            scene.push(primitive.clone());
+        let switcher_modal = self
+            .presentation_tabs
+            .as_ref()
+            .is_some_and(|host| host.content_host().input_overlay_owner().is_some());
+        let layers = if switcher_modal {
+            [&toolbar_scene, &presentation_scene]
+        } else {
+            [&presentation_scene, &toolbar_scene]
+        };
+        for layer in layers {
+            for primitive in layer.primitives() {
+                scene.push(primitive.clone());
+            }
         }
         let renderer_begin = diagnostic.map(|_| std::time::Instant::now());
         let drawable_before = diagnostic.map(|_| w.drawable_serial());
@@ -1966,6 +1958,9 @@ impl Host {
                 self.draw(w)?
             }
             Event::Resized { .. } => {
+                if let Some(header) = &mut self.presentation_tabs {
+                    header.event(&ContentEvent::Cancel);
+                }
                 self.cancel_toolbar_input();
                 self.draw(w)?;
             }
@@ -2032,15 +2027,16 @@ impl Host {
                         } else if p.y >= 0.
                             && self.panels.iter().any(|panel| {
                                 if self.presentation.is_some() {
-                                    Rect::new(
-                                        panel.bounds.min_x(),
-                                        panel.bounds.min_y(),
-                                        panel.bounds.size.width,
-                                        panel.toolbar_height,
-                                    )
-                                    .contains(p)
+                                    panel
+                                        .geometry
+                                        .toolbar
+                                        .is_some_and(|frame| frame.contains(p))
+                                        || panel
+                                            .geometry
+                                            .close
+                                            .is_some_and(|frame| frame.contains(p))
                                 } else {
-                                    p.y < panel.toolbar_height
+                                    p.y < panel.geometry.insets.top
                                 }
                             })
                         {
@@ -2137,6 +2133,9 @@ impl Host {
                 w.request_redraw();
             }
             Event::Focus(true) => {
+                if let Some(header) = &mut self.presentation_tabs {
+                    header.set_window_active(true);
+                }
                 w.set_menu_bar(&self.menu_bar())
                     .map_err(|error| anyhow::anyhow!("AppHost menu: {error}"))?;
                 eprintln!(
@@ -2152,6 +2151,9 @@ impl Host {
                 w.request_redraw();
             }
             Event::Focus(false) => {
+                if let Some(header) = &mut self.presentation_tabs {
+                    header.set_window_active(false);
+                }
                 eprintln!(
                     "TOOLBAR_WINDOW_ACTIVE window={} active=false",
                     self.panels[self.toolbar_index].mounted_toolbar.window
@@ -2629,7 +2631,8 @@ mod toolbar_geometry_tests {
         );
         let mut panel = Panel::new(0, "focus".into());
         panel.bounds = Rect::new(300., 0., 400., 640.);
-        panel.toolbar_height = boundary;
+        panel.geometry =
+            window_container_geometry::ContainerGeometry::legacy(panel.bounds, boundary);
         panel.content_padding = tekes_ui_tokens::Spacing::Loose.value();
         assert_eq!(panel.content_frame().min_y() - row_boundary, 16.);
         // Reproduce the observed 120% typography while AppKit changes only its
@@ -2983,7 +2986,7 @@ mod window_focus_tests {
         h.leading_visible = true;
         for (i, p) in h.panels.iter_mut().enumerate() {
             p.bounds = Rect::new(80. + i as f32 * 240., 0., 240., 300.);
-            p.toolbar_height = 66.;
+            p.geometry = window_container_geometry::ContainerGeometry::legacy(p.bounds, 66.);
             p.toolbar = vec![
                 ToolbarItem {
                     id: 7,

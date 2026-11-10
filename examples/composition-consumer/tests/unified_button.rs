@@ -1,7 +1,8 @@
+use std::rc::Rc;
 use std::time::Duration;
 use tekes_ui_controls::{
     Button, ButtonFramePolicy, ButtonTextAlign, ButtonTextRenderer, ControlKey,
-    ControlMotionContext, composition::*,
+    ControlMotionContext, composition::*, layout_view::IconRenderer,
 };
 use tekes_ui_scene::{ImageId, Primitive, Rect, Scene, Size};
 use tekes_ui_tokens::{Rgba, Theme, proposal};
@@ -76,6 +77,21 @@ fn render(h: &mut ContentHost, t: &mut Text, theme: Theme) -> Scene {
     .unwrap();
     s
 }
+fn render_surface(h: &mut ContentHost, t: &mut Text, theme: Theme, surface: &str) -> Scene {
+    let frame = Rect::new(20., 30., 320. * t.scale, 100. * t.scale);
+    let mut scene = Scene::new();
+    t.drawn.clear();
+    h.get_mut(ComponentId(1)).unwrap().set_surface(Some(surface)).unwrap();
+    h.render(
+        &mut scene,
+        t,
+        frame,
+        Rect::new(0., 0., 1000., 1000.),
+        theme.into(),
+    )
+    .unwrap();
+    scene
+}
 fn count(h: &ContentHost) -> usize {
     h.get(ComponentId(1))
         .unwrap()
@@ -88,6 +104,165 @@ fn key(h: &mut ContentHost, key: ControlKey, down: bool) {
 }
 fn near(a: f32, b: f32) {
     assert!((a - b).abs() < 0.6, "{a} != {b}");
+}
+
+#[test]
+fn selected_fill_only_uses_fill_without_a_boundary_on_the_original_surface() {
+    let mut button = Button::new("More");
+    button.set_selection_fill_only(true);
+    button.button.state.selected = true;
+    let mut h = ContentHost::new(Content::new(ComponentId(1), button)).unwrap();
+    let scene = render_surface(&mut h, &mut Text::new(1.), Theme::LIGHT, "toolbar");
+    let frame = h.semantics()[0].frame;
+    assert!(h.semantics()[0].semantics.selected);
+    let ground = scene
+        .primitives()
+        .iter()
+        .find_map(|primitive| match primitive {
+            Primitive::Quad(quad) if quad.rect == frame => Some(quad),
+            _ => None,
+        })
+        .expect("selected Button retains its original fill geometry");
+    assert_eq!(ground.border_width, 0.);
+    assert!(ground.fill.a > 0.);
+}
+
+#[test]
+fn transparent_chrome_keeps_focus_hover_press_and_single_action_delivery() {
+    let mut button = Button::new("Save");
+    button.set_transparent_chrome(true);
+    let mut h = ContentHost::new(Content::new(ComponentId(1), button)).unwrap();
+    h.set_action_events(true);
+    let mut t = Text::new(1.);
+    h.focus(Some(ComponentId(1)), true);
+    let scene = render(&mut h, &mut t, Theme::DARK_INCREASED);
+    let frame = h.semantics()[0].frame;
+    let has_background = |scene: &Scene| {
+        scene.primitives().iter().any(|primitive| {
+            matches!(primitive, Primitive::Quad(quad) if quad.rect == frame && quad.fill.a > 0.)
+        })
+    };
+    let has_focus_ring = |scene: &Scene| {
+        scene.primitives().iter().any(|primitive| {
+            matches!(primitive, Primitive::Quad(quad) if quad.fill.a == 0. && quad.border_width > 0.)
+        })
+    };
+    assert!(!has_background(&scene));
+    assert!(
+        has_focus_ring(&scene),
+        "transparent background keeps focus visible"
+    );
+
+    h.event(&ContentEvent::PointerMove(frame.center()));
+    render(&mut h, &mut t, Theme::DARK_INCREASED);
+    assert!(
+        h.get(ComponentId(1))
+            .unwrap()
+            .component::<Button>()
+            .unwrap()
+            .button
+            .state
+            .hovered
+    );
+    assert!(!has_background(&render(
+        &mut h,
+        &mut t,
+        Theme::DARK_INCREASED
+    )));
+    assert!(
+        h.event(&ContentEvent::PointerDown(frame.center()))
+            .capture_pointer
+    );
+    assert!(
+        h.get(ComponentId(1))
+            .unwrap()
+            .component::<Button>()
+            .unwrap()
+            .button
+            .state
+            .pressed
+    );
+    assert!(!has_background(&render(
+        &mut h,
+        &mut t,
+        Theme::DARK_INCREASED
+    )));
+    assert!(h.event(&ContentEvent::PointerUp(frame.center())).activated);
+    assert_eq!(count(&h), 1);
+    assert_eq!(h.drain_actions().len(), 1);
+
+    h.focus(Some(ComponentId(1)), true);
+    key(&mut h, ControlKey::Space, true);
+    key(&mut h, ControlKey::Space, false);
+    assert_eq!(count(&h), 2);
+    assert_eq!(h.drain_actions().len(), 1);
+    assert!(
+        h.accessibility_action(ComponentId(1), None, AccessibilityAction::Press)
+            .activated
+    );
+    assert_eq!(count(&h), 3);
+    assert_eq!(h.drain_actions().len(), 1);
+}
+
+#[derive(Default)]
+struct Icons {
+    tint: Option<Rgba>,
+}
+impl IconRenderer for Icons {
+    fn prepare_icon(
+        &mut self,
+        name: &str,
+        _: f32,
+        _: f32,
+        tint: Rgba,
+    ) -> Result<IconImage, IconRenderError> {
+        assert_eq!(name, "tekes-settings");
+        self.tint = Some(tint);
+        Ok(IconImage::new(ImageId(801), Rc::new(())))
+    }
+    fn draw_icon(&mut self, _: &mut Scene, _: &str, _: Rect, _: Rgba) {
+        panic!("IconContent retains its prepared image");
+    }
+}
+
+#[test]
+fn transparent_custom_icon_keeps_original_child_image_and_surface_tint() {
+    let content = Content::new(ComponentId(2), IconContent::new("tekes-settings").unwrap());
+    let mut button = Button::new(content).with_accessible_name("Settings");
+    button.set_transparent_chrome(true);
+    let mut h = ContentHost::new(
+        Content::new(ComponentId(1), button).with_surface("toolbar").unwrap(),
+    ).unwrap();
+    h.set_action_events(true);
+    let mut t = Text::new(1.);
+    let mut icons = Icons::default();
+    let frame = Rect::new(20., 30., 320., 100.);
+    let mut scene = Scene::new();
+    h.render(
+        &mut scene,
+        &mut tekes_ui_controls::composition::WithIconRenderer::new(&mut t, &mut icons),
+        frame,
+        Rect::new(0., 0., 1000., 1000.),
+        Theme::LIGHT.into(),
+    )
+    .unwrap();
+    let button_frame = h.semantics()[0].frame;
+    assert!(!scene.primitives().iter().any(|primitive| {
+        matches!(primitive, Primitive::Quad(quad) if quad.rect == button_frame && quad.fill.a > 0.)
+    }));
+    assert!(scene.primitives().iter().any(|primitive| {
+        matches!(primitive, Primitive::Image(image) if image.image == ImageId(801))
+    }));
+    let palette = tekes_ui_tokens::Palette::from(Theme::LIGHT);
+    let expected = tekes_ui_tokens::surface_palette::resolve_surface(
+        palette,
+        "toolbar",
+        "action-quiet",
+        "rest",
+    )
+    .unwrap()
+    .icon;
+    assert_eq!(icons.tint, Some(expected));
 }
 #[test]
 fn every_content_shape_has_one_original_action_and_one_accessibility_identity() {

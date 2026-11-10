@@ -40,7 +40,7 @@ fn main() -> anyhow::Result<()> {
     #[cfg(target_os = "macos")]
     let mut columns: Vec<tekes_ui_app_host::Column> = modules
         .into_iter()
-        .map(|module| tekes_ui_app_host::ProcessContainer::new(module).into())
+        .map(|module| tekes_ui_app_host::ProcessContainer::new(module).toolbar_host(tekes_ui_app_host::ContainerToolbarHost::Container { position: tekes_ui_app_host::ContainerToolbarPosition::Top }).into())
         .collect();
     #[cfg(target_os = "macos")]
     if cfg!(feature = "three-panels") {

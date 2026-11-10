@@ -9,9 +9,34 @@ pub enum OthersTab {
     Container(String),
     List,
 }
+/// A declared multi-instance destination. It remains a menu with one open member.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct OthersGroup {
+    pub id: String,
+    pub title: String,
+    pub icon: String,
+    /// Stable window identities, including currently closed or focused members.
+    pub containers: Vec<String>,
+}
+impl OthersGroup {
+    pub fn new(
+        id: impl Into<String>,
+        title: impl Into<String>,
+        icon: impl Into<String>,
+        containers: Vec<String>,
+    ) -> Self {
+        Self {
+            id: id.into(),
+            title: title.into(),
+            icon: icon.into(),
+            containers,
+        }
+    }
+}
 #[derive(Clone, Debug, PartialEq)]
 pub struct OthersOptions {
     pub containers: Vec<String>,
+    pub groups: Vec<OthersGroup>,
     pub visible: bool,
     pub selected: Option<OthersTab>,
 }
@@ -20,9 +45,14 @@ impl OthersOptions {
         let selected = containers.first().cloned().map(OthersTab::Container);
         Self {
             containers,
+            groups: Vec::new(),
             visible: true,
             selected,
         }
+    }
+    pub fn groups(mut self, groups: Vec<OthersGroup>) -> Self {
+        self.groups = groups;
+        self
     }
 }
 #[derive(Clone, Debug, PartialEq)]
@@ -174,6 +204,45 @@ impl PresentationState {
                     "container has two presentation roles: {id}"
                 );
                 ensure!(ids.insert(id), "duplicate others container: {id}");
+            }
+            let mut group_ids = std::collections::HashSet::new();
+            let mut grouped_members = std::collections::HashSet::new();
+            for group in &others.groups {
+                ensure!(
+                    !group.id.is_empty()
+                        && group
+                            .id
+                            .bytes()
+                            .all(|b| b.is_ascii_alphanumeric() || b"-_.".contains(&b)),
+                    "invalid Others group ID"
+                );
+                ensure!(
+                    group_ids.insert(&group.id),
+                    "duplicate Others group: {}",
+                    group.id
+                );
+                ensure!(!group.title.trim().is_empty(), "empty Others group title");
+                ensure!(
+                    tekes_ui_icons::Glyph::named(&group.icon).is_some(),
+                    "unknown Others group icon: {}",
+                    group.icon
+                );
+                ensure!(
+                    !group.containers.is_empty(),
+                    "empty Others group: {}",
+                    group.id
+                );
+                for id in &group.containers {
+                    ensure!(known(id), "unknown Others group member: {id}");
+                    ensure!(
+                        options.nav_bar.as_ref() != Some(id),
+                        "NavBar cannot be an Others group member: {id}"
+                    );
+                    ensure!(
+                        grouped_members.insert(id),
+                        "container assigned to multiple Others groups: {id}"
+                    );
+                }
             }
             if let Some(OthersTab::Container(id)) = &others.selected {
                 ensure!(

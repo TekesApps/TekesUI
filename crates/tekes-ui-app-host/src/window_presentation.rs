@@ -6,15 +6,18 @@ use crate::{
     window_toolbar::{Contents, Declaration, Source},
 };
 use tekes_ui_controls::composition::{
-    Content, ContentActionPayload, TabItem, TabsContent, TextContent, ToolbarButtonDeclaration,
-    ToolbarCommandBinding, ToolbarGroup, ToolbarGroupOverflow, ToolbarHost, ToolbarPlacement,
-    ToolbarRegion, ToolbarRegistration, ToolbarWindowEdge,
+    ContentActionPayload, ToolbarButtonDeclaration, ToolbarGroupOverflow, ToolbarPlacement,
+    ToolbarRegion, ToolbarWindowEdge,
 };
 use tekes_ui_platform_macos::{CommandId, Menu, MenuCommand, MenuItem};
 const COMMAND_BASE: u32 = 0x4300_0000;
 const WINDOW_LEADING: ComponentId = ComponentId(u64::MAX - 16);
 const WINDOW_TRAILING: ComponentId = ComponentId(u64::MAX - 17);
+const WINDOW_BUSINESS: ComponentId = ComponentId(u64::MAX - 18);
+const CLOSE_REGION_BASE: u64 = 95000;
 const TABS_OWNER: u64 = u64::MAX - 1;
+#[cfg(test)]
+use tekes_ui_controls::composition::{Content, TextContent, ToolbarHost};
 #[cfg(test)]
 fn test_band() -> window_toolbar_mount::ToolbarBand {
     window_toolbar_mount::ToolbarBand {
@@ -24,8 +27,8 @@ fn test_band() -> window_toolbar_mount::ToolbarBand {
     }
 }
 #[cfg(test)]
-fn render_test_tabs(
-    host: &mut ToolbarHost<()>,
+pub(super) fn render_test_tabs<B: Clone + std::fmt::Debug>(
+    host: &mut ToolbarHost<B>,
     scene: &mut Scene,
     text: &mut Text,
     palette: Palette,
@@ -93,17 +96,6 @@ fn reserve_window_edges(region: &mut ToolbarRegion, edges: [Rect; 2]) {
     region.native_safe_area.left = (left - frame.min_x()).max(0.);
     region.native_safe_area.right = (frame.max_x() - right).max(0.);
 }
-fn reserve_others_actions(region: &mut ToolbarRegion, width: f32) {
-    let right = region.available.max_x() - region.native_safe_area.right;
-    let left = (right - width).max(region.available.min_x() + region.native_safe_area.left);
-    region.available = Rect::new(
-        left,
-        region.available.min_y(),
-        (region.available.max_x() - left).max(0.),
-        region.available.size.height,
-    );
-    region.native_safe_area.left = 0.;
-}
 impl Host {
     pub(super) fn presentation_menu(&self) -> Menu {
         let mut entries = Vec::new();
@@ -147,26 +139,6 @@ impl Host {
         }
         Menu::new("Containers", entries)
     }
-    fn container_has_toolbar(&self, index: usize) -> bool {
-        let panel = &self.panels[index];
-        !panel.toolbar.is_empty()
-            || panel.options.title.is_some()
-            || self.navigation.is_some()
-                && self
-                    .presentation
-                    .as_ref()
-                    .and_then(|state| state.navigation_toolbar_presenter_id())
-                    == Some(panel.module_id.as_str())
-    }
-    pub(super) fn container_toolbar_height(&mut self, index: usize, legacy: f32) -> f32 {
-        if self.presentation.is_none() {
-            return legacy;
-        }
-        if !self.container_has_toolbar(index) {
-            return 0.;
-        }
-        ToolbarControl::window().row_height(&mut self.text)
-    }
     pub(super) fn presentation_frames(
         &mut self,
         whole: Rect,
@@ -193,7 +165,7 @@ impl Host {
         });
         self.apply_presentation_layout(layout)
     }
-    fn apply_presentation_layout(
+    pub(super) fn apply_presentation_layout(
         &mut self,
         layout: crate::PresentationLayout,
     ) -> Result<Vec<Rect>> {
@@ -254,6 +226,7 @@ impl Host {
                     self.pressed = None;
                 }
             }
+            panel.bounds = frame;
             frames[index] = frame;
         }
         if layout.tabs.is_none()
@@ -270,88 +243,6 @@ impl Host {
         whole: Rect,
         palette: Palette,
     ) -> Result<()> {
-        let state = self.presentation.as_ref().unwrap();
-        let keys = state.tabs();
-        let selected = state.selected_tab().cloned();
-        if self.presentation_tab_keys != keys || self.presentation_selected != selected {
-            self.presentation_tabs = if keys.is_empty() {
-                None
-            } else {
-                let items = keys
-                    .iter()
-                    .enumerate()
-                    .map(|(index, tab)| {
-                        let name = match tab {
-                            OthersTab::Container(id) => self
-                                .panels
-                                .iter()
-                                .find(|panel| &panel.module_id == id)
-                                .and_then(|panel| panel.options.title.as_deref())
-                                .unwrap_or(id.as_str()),
-                            OthersTab::List => "List",
-                        };
-                        TabItem::new(
-                            Content::new(
-                                ComponentId(1_000_001 + index as u64 * 2),
-                                TextContent::new(name),
-                            ),
-                            Content::new(
-                                ComponentId(1_000_002 + index as u64 * 2),
-                                tekes_ui_controls::composition::StackContent {
-                                    model: tekes_ui_controls::extended::Stack {
-                                        axis: Axis::Vertical,
-                                        gap: 0.,
-                                    },
-                                    children: Vec::new(),
-                                    flexible_child: None,
-                                },
-                            ),
-                        )
-                        .with_closable(matches!(tab, OthersTab::Container(_)))
-                    })
-                    .collect();
-                let selected = selected
-                    .as_ref()
-                    .and_then(|tab| keys.iter().position(|key| key == tab))
-                    .unwrap_or(0);
-                let mut host = ToolbarHost::new(ComponentId(999_998), TABS_OWNER, whole)
-                    .map_err(|e| anyhow::anyhow!("container tabs toolbar: {e:?}"))?;
-                host.set_regions(
-                    TABS_OWNER,
-                    whole,
-                    vec![ToolbarRegion::new(ComponentId(TABS_OWNER), whole)],
-                )
-                .map_err(|e| anyhow::anyhow!("container tabs region: {e:?}"))?;
-                host.register(ToolbarRegistration {
-                    region: ComponentId(TABS_OWNER),
-                    order: 0,
-                    group: Content::new(
-                        ComponentId(999_999),
-                        ToolbarGroup::new(
-                            ToolbarPlacement::Principal,
-                            vec![Content::new(ComponentId(1_000_000), {
-                                // This Toolbar contribution is only a compact
-                                // header; actual container bodies remain owned
-                                // by their original Local/Process containers.
-                                let mut tabs = TabsContent::new(items, selected);
-                                tabs.compact = true;
-                                tabs
-                            })],
-                        ),
-                    ),
-                    bindings: vec![ToolbarCommandBinding {
-                        target: ComponentId(1_000_000),
-                        action: None,
-                        command: 0,
-                        source: (),
-                    }],
-                })
-                .map_err(|e| anyhow::anyhow!("container tabs registration: {e:?}"))?;
-                Some(host)
-            };
-            self.presentation_tab_keys = keys;
-            self.presentation_selected = selected;
-        }
         if let Some(mut frame) = self.presentation_layout.tabs {
             // The selected container keeps its own business Toolbar. Its actual
             // mounted groups reserve their measured slots from the Others Tabs.
@@ -388,33 +279,6 @@ impl Host {
                     .max(0.),
                 frame.size.height,
             ));
-        }
-        if let (Some(host), Some(frame)) =
-            (&mut self.presentation_tabs, self.presentation_layout.tabs)
-        {
-            host.set_regions(
-                TABS_OWNER,
-                whole,
-                vec![ToolbarRegion::new(ComponentId(TABS_OWNER), frame)],
-            )
-            .map_err(|e| anyhow::anyhow!("container tabs region: {e:?}"))?;
-            if let Some(renderer) = &mut self.renderer {
-                with_content_icons(
-                    renderer,
-                    &mut self.presentation_icons,
-                    &mut self.text,
-                    |text| {
-                        host.render(scene, text, palette)
-                            .map_err(|e| anyhow::anyhow!("container tabs paint: {e:?}"))
-                    },
-                )?;
-            } else {
-                #[cfg(test)]
-                render_test_tabs(host, scene, &mut self.text, palette)?;
-                #[cfg(not(test))]
-                host.render(scene, &mut self.text, palette)
-                    .map_err(|e| anyhow::anyhow!("container tabs paint: {e:?}"))?;
-            }
         }
         let focus = self
             .presentation_layout
@@ -464,6 +328,34 @@ impl Host {
                 palette,
                 self.text.scale,
             );
+        }
+        self.sync_presentation_switcher(whole)?;
+        if let (Some(host), Some(frame)) =
+            (&mut self.presentation_tabs, self.presentation_layout.tabs)
+        {
+            host.set_regions(
+                TABS_OWNER,
+                whole,
+                vec![ToolbarRegion::new(ComponentId(TABS_OWNER), frame)],
+            )
+            .map_err(|e| anyhow::anyhow!("container tabs region: {e:?}"))?;
+            if let Some(renderer) = &mut self.renderer {
+                with_content_icons(
+                    renderer,
+                    &mut self.presentation_icons,
+                    &mut self.text,
+                    |text| {
+                        host.render(scene, text, palette)
+                            .map_err(|e| anyhow::anyhow!("container tabs paint: {e:?}"))
+                    },
+                )?;
+            } else {
+                #[cfg(test)]
+                render_test_tabs(host, scene, &mut self.text, palette)?;
+                #[cfg(not(test))]
+                host.render(scene, &mut self.text, palette)
+                    .map_err(|e| anyhow::anyhow!("container tabs paint: {e:?}"))?;
+            }
         }
         Ok(())
     }
@@ -532,7 +424,7 @@ impl Host {
         }
         Ok(())
     }
-    fn composition_in_progress(&mut self) -> bool {
+    pub(super) fn composition_in_progress(&mut self) -> bool {
         self.panels.iter_mut().any(|panel| {
             let mut marked = false;
             if let Some(local) = &mut panel.local {
@@ -600,6 +492,22 @@ impl Host {
                 );
             }
             return Ok(true);
+        }
+        let switcher_modal = self
+            .presentation_tabs
+            .as_ref()
+            .is_some_and(|host| host.content_host().input_overlay_owner().is_some());
+        if switcher_modal {
+            if let Some(input) = super::window_toolbar_mount::native_toolbar_event(event) {
+                self.presentation_tab_input(&input)?;
+                return Ok(true);
+            }
+            if let Event::Accessibility { target, .. } = event {
+                let owned = w.content_accessibility_publication().is_some_and(|publication| publication.owner(*target) == Some(tekes_ui_platform_macos::content_accessibility::ContentAccessibilityOwner(TABS_OWNER)));
+                if !owned {
+                    return Ok(true);
+                }
+            }
         }
         if self.open_toolbar().is_some() {
             return Ok(false);
@@ -740,7 +648,7 @@ impl Host {
         let consumed = self.presentation_tab_input(&input)?;
         Ok(consumed || matches!(event, Event::Key(_) | Event::TextKey(_)))
     }
-    fn presentation_tab_input(&mut self, input: &ContentEvent) -> Result<bool> {
+    pub(super) fn presentation_tab_input(&mut self, input: &ContentEvent) -> Result<bool> {
         if self.open_toolbar().is_some() {
             return Ok(false);
         }
@@ -756,36 +664,34 @@ impl Host {
         }
         Ok(consumed)
     }
-    fn apply_tab_selection(&mut self) -> Result<()> {
+    pub(super) fn apply_tab_selection(&mut self) -> Result<()> {
         let records = self.presentation_tabs.as_mut().unwrap().drain_commands();
         for record in records {
-            if let Some(ContentActionPayload::TabCloseRequest { index, .. }) = &record.payload {
-                if self.composition_in_progress() {
-                    eprintln!("PRESENTATION_REJECTED composition-in-progress");
-                    continue;
-                }
-                if let Some(OthersTab::Container(id)) =
-                    self.presentation_tab_keys.get(*index).cloned()
-                {
-                    self.presentation.as_mut().unwrap().close(&id)?;
-                }
+            if self.composition_in_progress() {
+                eprintln!("PRESENTATION_REJECTED composition-in-progress");
                 continue;
             }
-            if let Some(ContentActionPayload::TabSelection { index, .. }) = record.payload {
-                if self.composition_in_progress() {
-                    self.presentation_selected = None;
-                    eprintln!("PRESENTATION_REJECTED composition-in-progress");
-                    continue;
-                }
-                if let Some(tab) = self.presentation_tab_keys.get(index).cloned() {
-                    self.presentation.as_mut().unwrap().select_tab(tab)?;
-                    self.set_toolbar_focus(None, false);
-                    eprintln!(
-                        "PRESENTATION_TAB selected={:?}",
-                        self.presentation.as_ref().unwrap().selected_tab()
-                    );
+            use super::window_switcher::SwitcherAction;
+            let state = self.presentation.as_mut().unwrap();
+            match record.source {
+                SwitcherAction::Select(tab) => state.select_tab(tab)?,
+                SwitcherAction::Menu => {
+                    let Some(ContentActionPayload::MenuSelection(selection)) = record.payload
+                    else {
+                        continue;
+                    };
+                    let Some(value) = selection.value_path().and_then(|path| path.last()) else {
+                        continue;
+                    };
+                    let tab = if value == ":list" {
+                        OthersTab::List
+                    } else {
+                        OthersTab::Container(value.clone())
+                    };
+                    state.select_tab(tab)?;
                 }
             }
+            self.set_toolbar_focus(None, false);
         }
         Ok(())
     }
@@ -806,38 +712,78 @@ impl Host {
             )?,
         ))
     }
-    pub(super) fn sync_container_toolbars(
-        &mut self,
-        active: bool,
-        whole: Rect,
-        band: window_toolbar_mount::ToolbarBand,
-        native_height: f32,
-    ) -> Result<()> {
+    fn business_destination(
+        &self,
+        owner: usize,
+        retained: Option<usize>,
+        focus: usize,
+    ) -> (usize, ComponentId) {
+        if let Some(target) = retained {
+            return (target, ComponentId(91000 + target as u64));
+        }
+        match self.panels[owner].options.toolbar_host {
+            crate::ContainerToolbarHost::Window => (focus, WINDOW_BUSINESS),
+            crate::ContainerToolbarHost::Container { .. } => {
+                (owner, ComponentId(91000 + owner as u64))
+            }
+        }
+    }
+    pub(super) fn presentation_toolbar_declarations(&self) -> Vec<Vec<Declaration>> {
         let input_open = self
             .navigation
             .as_ref()
             .is_none_or(|nav| nav.host.input_open && !nav.busy && nav.error.is_none());
         let mut declarations = vec![Vec::new(); self.panels.len()];
         let mut templates = vec![Vec::new(); self.panels.len()];
+        let focus = self
+            .panels
+            .iter()
+            .position(|panel| panel.module_id == self.presentation.as_ref().unwrap().focus_id())
+            .unwrap();
         for (index, panel) in self.panels.iter().enumerate() {
             let visible = panel.bounds.size.width > 0. && panel.bounds.size.height > 0.;
-            let in_others = self.presentation.as_ref().is_some_and(|state|
-                matches!(state.selected_tab(), Some(OthersTab::Container(id)) if id == &panel.module_id));
+            let in_others = self
+                .presentation
+                .as_ref()
+                .is_some_and(|state| state.others_ids().contains(&panel.module_id));
+            if visible && in_others {
+                declarations[index].push(Declaration {
+                    id: ComponentId(3_000_000 + index as u64 * 10),
+                    region: ComponentId(CLOSE_REGION_BASE + index as u64),
+                    placement: ToolbarPlacement::SecondaryAction,
+                    order: 100,
+                    contents: Contents::Close(
+                        panel
+                            .options
+                            .title
+                            .clone()
+                            .unwrap_or_else(|| panel.module_id.clone()),
+                    ),
+                    source: Source::Close(panel.module_id.clone()),
+                });
+            }
             if visible
                 && !in_others
+                && matches!(
+                    panel.options.toolbar_host,
+                    crate::ContainerToolbarHost::Window
+                )
                 && let Some(title) = &panel.options.title
             {
-                declarations[index].push(Declaration {
+                let (presenter, region) = self.business_destination(index, None, focus);
+                declarations[presenter].push(Declaration {
                     id: ComponentId(2_000_000 + index as u64 * 10),
-                    region: ComponentId(91000 + index as u64),
+                    region,
                     placement: ToolbarPlacement::Navigation,
                     order: 0,
                     contents: Contents::Title(title.clone()),
                     source: Source::Title,
                 });
             }
-            let mut targets: std::collections::BTreeMap<usize, Vec<ToolbarButtonDeclaration>> =
-                std::collections::BTreeMap::new();
+            let mut targets: std::collections::BTreeMap<
+                (usize, u64),
+                Vec<ToolbarButtonDeclaration>,
+            > = std::collections::BTreeMap::new();
             for action in &panel.toolbar {
                 let target = if visible {
                     Some(index)
@@ -858,6 +804,8 @@ impl Host {
                         })
                 };
                 if let Some(target) = target {
+                    let (target, region) =
+                        self.business_destination(index, (!visible).then_some(target), focus);
                     let switch = panel.options.focus_switch_command == Some(action.id);
                     let state = self.presentation.as_ref().unwrap();
                     let switch_target = switch
@@ -884,7 +832,7 @@ impl Host {
                         action.title.clone()
                     };
                     targets
-                        .entry(target)
+                        .entry((target, region.0))
                         .or_default()
                         .push(ToolbarButtonDeclaration {
                             id: action.id,
@@ -900,11 +848,11 @@ impl Host {
                         });
                 }
             }
-            for (target, buttons) in targets {
+            for ((target, region), buttons) in targets {
                 declarations[target].push(Declaration {
                     id: ComponentId(92400 + index as u64 * 10),
-                    region: ComponentId(91000 + target as u64),
-                    placement: ToolbarPlacement::PrimaryAction,
+                    region: ComponentId(region),
+                    placement: ToolbarPlacement::Navigation,
                     order: index as i32,
                     contents: Contents::TemplateCommands(
                         buttons,
@@ -941,7 +889,7 @@ impl Host {
                 "Others",
             ),
         ] {
-            if available && self.container_has_toolbar(focus) {
+            if available {
                 let glyph = match (side, visible) {
                     (0, true) => "tekes-side-bar",
                     (0, false) => "tekes-side-bar-collapsed",
@@ -1011,7 +959,17 @@ impl Host {
                         && action.command.enabled,
                 });
             }
-            declarations[index].push(Declaration {
+            let (presenter, destination) = if self
+                .presentation
+                .as_ref()
+                .unwrap()
+                .navigation_uses_window_edge()
+            {
+                (focus, WINDOW_LEADING)
+            } else {
+                self.business_destination(index, None, focus)
+            };
+            declarations[presenter].push(Declaration {
                 id: ComponentId(92100),
                 region: if self
                     .presentation
@@ -1021,7 +979,7 @@ impl Host {
                 {
                     WINDOW_LEADING
                 } else {
-                    ComponentId(91000 + index as u64)
+                    destination
                 },
                 placement: ToolbarPlacement::Navigation,
                 order: 10,
@@ -1033,90 +991,81 @@ impl Host {
                 source: Source::Navigation(source),
             });
         }
-        // Revoke moved declarations in their old original hosts before binding
-        // another presentation. No stale release can invoke the new location.
+        declarations
+    }
+    pub(super) fn sync_container_toolbars(
+        &mut self,
+        active: bool,
+        whole: Rect,
+        band: window_toolbar_mount::ToolbarBand,
+        native_height: f32,
+    ) -> Result<()> {
+        let boundary = self
+            .container_window_boundary
+            .unwrap_or((band.y + band.height).max(native_height));
+        for index in 0..self.panels.len() {
+            let bounds = self.panels[index].bounds;
+            if bounds.size.width > 0. && bounds.size.height > 0. {
+                let geometry = self.container_geometry(index, bounds, boundary)?;
+                self.panel_geometry_layout(index, bounds, self.panels[index].scale, geometry)?;
+            }
+        }
+        let mut declarations = self.presentation_toolbar_declarations();
+        let focus = self
+            .panels
+            .iter()
+            .position(|panel| panel.module_id == self.presentation.as_ref().unwrap().focus_id())
+            .unwrap();
         for (index, panel) in self.panels.iter_mut().enumerate() {
-            let keep: Vec<_> = declarations[index].iter().map(|d| d.id).collect();
+            let keep: Vec<_> = declarations[index]
+                .iter()
+                .map(|declaration| declaration.id)
+                .collect();
             panel.mounted_toolbar.retain_groups(&keep)?;
         }
-        let other_index = match self.presentation.as_ref().unwrap().selected_tab() {
-            Some(OthersTab::Container(id)) => {
-                self.panels.iter().position(|panel| &panel.module_id == id)
-            }
-            _ => None,
-        };
-        let mut other_width = 0.;
-        if let Some(index) = other_index {
-            let available = self.panels[index].bounds.size;
-            // Measure the same shared command controls used by the original
-            // business Toolbar. If constrained, its original More menu remains
-            // responsible for overflow; Tabs retain the other half of the row.
-            for declaration in &declarations[index] {
-                if let Contents::Commands(buttons, overflow)
-                | Contents::TemplateCommands(buttons, overflow, _) = &declaration.contents
-                {
-                    let mut commands = tekes_ui_controls::composition::toolbar_commands(
-                        ComponentId(1),
-                        buttons.clone(),
-                        *overflow,
-                    );
-                    let control = commands.component_mut::<ToolbarControl>().unwrap();
-                    for (id, name) in declaration.contents.templates() {
-                        control
-                            .set_action_template_icon(*id, Some(name))
-                            .map_err(|error| anyhow::anyhow!("toolbar measure icon: {error:?}"))?;
-                    }
-                    other_width += commands.measure(&mut self.text, available).size.width;
-                }
-            }
-            if other_width > 0. {
-                other_width = (other_width + 3. * tekes_ui_tokens::Spacing::Regular.value())
-                    .min(available.width * 0.5);
-            }
-        }
-        let mut placements = Vec::with_capacity(self.panels.len());
+        let switcher_start = self
+            .presentation_layout
+            .tabs
+            .map_or(whole.max_x(), |frame| frame.min_x());
+        let list_members: Vec<_> = (0..self.panels.len())
+            .map(|index| self.is_list_member(index))
+            .collect();
         for (index, panel) in self.panels.iter_mut().enumerate() {
-            let native_row =
-                panel.bounds.min_y() == whole.min_y() && panel.clip.min_y() == whole.min_y();
-            let toolbar = Rect::new(
-                panel.bounds.min_x(),
-                panel.bounds.min_y() + if native_row { band.y } else { 0. },
-                panel.bounds.size.width,
-                if native_row {
-                    band.height.min(panel.toolbar_height)
-                } else {
-                    panel.toolbar_height
-                },
-            );
-            let top = toolbar.min_y().max(panel.clip.min_y());
-            let bottom = toolbar.max_y().min(panel.clip.max_y());
-            let visible = bottom > top && toolbar.size.width > 0.;
-            let viewport = if visible {
-                Rect::new(
-                    whole.min_x(),
-                    top,
-                    whole.size.width,
-                    (whole.max_y() - top).max(0.),
-                )
-            } else {
-                Rect::default()
-            };
             let mut regions = Vec::new();
-            if visible {
-                let mut region = ToolbarRegion::new(ComponentId(91000 + index as u64), toolbar);
-                if toolbar.min_y().max(panel.clip.min_y()) < whole.min_y() + native_height {
-                    region.native_safe_area.left = (whole.min_x() + band.native_leading
-                        - toolbar.min_x())
-                    .clamp(0., toolbar.size.width);
+            if panel.bounds.size.width > 0. && panel.bounds.size.height > 0. {
+                if let Some(frame) = panel.geometry.toolbar {
+                    let mut region = ToolbarRegion::new(ComponentId(91000 + index as u64), frame);
+                    if matches!(
+                        panel.options.toolbar_host,
+                        crate::ContainerToolbarHost::Container {
+                            position: crate::ContainerToolbarPosition::Leading
+                                | crate::ContainerToolbarPosition::Trailing
+                        }
+                    ) {
+                        region.axis = Axis::Vertical;
+                    }
+                    regions.push(region);
                 }
-                if index != focus {
-                    reserve_window_edges(&mut region, self.presentation_chrome_edges);
+                if let Some(frame) = panel.geometry.close {
+                    regions.push(ToolbarRegion::new(
+                        ComponentId(CLOSE_REGION_BASE + index as u64),
+                        frame,
+                    ));
                 }
-                if other_index == Some(index) {
-                    reserve_others_actions(&mut region, other_width);
-                }
-                regions.push(region);
                 if index == focus {
+                    let mut business = ToolbarRegion::new(
+                        WINDOW_BUSINESS,
+                        Rect::new(
+                            whole.min_x(),
+                            band.y,
+                            (switcher_start - whole.min_x()).max(0.),
+                            band.height,
+                        ),
+                    );
+                    business.native_safe_area.left =
+                        band.native_leading.min(business.available.size.width);
+                    reserve_window_edges(&mut business, self.presentation_chrome_edges);
+                    regions.push(business);
                     for (id, edge) in [
                         (WINDOW_LEADING, ToolbarWindowEdge::Leading),
                         (WINDOW_TRAILING, ToolbarWindowEdge::Trailing),
@@ -1127,29 +1076,23 @@ impl Host {
                             edge,
                         );
                         region.native_safe_area.left = band.native_leading;
-                        if edge == ToolbarWindowEdge::Leading {
-                            regions.insert(0, region);
-                        } else {
-                            regions.push(region);
-                        }
+                        regions.push(region);
                     }
                 }
             }
             panel.mounted_toolbar.sync(
-                viewport,
-                regions.clone(),
-                if visible {
-                    std::mem::take(&mut declarations[index])
+                if list_members[index] {
+                    panel.clip
                 } else {
-                    Vec::new()
+                    whole
                 },
+                regions,
+                std::mem::take(&mut declarations[index]),
             )?;
             panel.mounted_toolbar.host.set_window_active(active);
-            placements.push((viewport, regions));
         }
-        // Measure the original fixed-edge groups, then give their actual reserved
-        // geometry to sibling hosts. Cache geometry, never controls or actions,
-        // so unchanged redraws do not cancel a held sibling button.
+        // Window edge allocation is measured by its original host. The business
+        // region then reserves those actual groups, never a second estimate.
         let palette = self.palette();
         let toolbar = &mut self.panels[focus].mounted_toolbar;
         let mut measure = Scene::new();
@@ -1161,56 +1104,73 @@ impl Host {
                     .map_err(|error| anyhow::anyhow!("window toolbar measure: {error:?}"))
             })?;
         } else {
+            #[cfg(test)]
+            render_test_tabs(&mut toolbar.host, &mut measure, &mut self.text, palette)?;
+            #[cfg(not(test))]
             toolbar
                 .host
                 .render(&mut measure, &mut self.text, palette)
                 .map_err(|error| anyhow::anyhow!("window toolbar measure: {error:?}"))?;
         }
-        let edges = [WINDOW_LEADING, WINDOW_TRAILING].map(|id| {
+        self.presentation_chrome_edges = [WINDOW_LEADING, WINDOW_TRAILING].map(|id| {
             toolbar
                 .host
                 .content_host()
                 .get(id)
-                .map_or(Rect::default(), |content| content.frame())
+                .map_or(Rect::default(), |node| node.frame())
         });
-        let changed_edges = edges != self.presentation_chrome_edges;
-        self.presentation_chrome_edges = edges;
-        for (index, panel) in self.panels.iter_mut().enumerate() {
-            if index == focus || (!changed_edges && other_index != Some(index)) {
-                continue;
-            }
-            let (viewport, previous) = &placements[index];
-            let mut regions = previous.clone();
-            for region in &mut regions {
-                // Use the full original container row as the allocation source,
-                // not the preceding frame's reduced business slot.
-                if other_index == Some(index) {
-                    region.available = Rect::new(
-                        panel.bounds.min_x(),
-                        region.available.min_y(),
-                        panel.bounds.size.width,
-                        region.available.size.height,
-                    );
+        // A second identical sync is an original-host no-op; changed safe areas
+        // retire stale geometry before any pointer release can be delivered.
+        let mut regions = Vec::new();
+        if let Some(frame) = self.panels[focus].geometry.toolbar {
+            let mut region = ToolbarRegion::new(ComponentId(91000 + focus as u64), frame);
+            if matches!(
+                self.panels[focus].options.toolbar_host,
+                crate::ContainerToolbarHost::Container {
+                    position: crate::ContainerToolbarPosition::Leading
+                        | crate::ContainerToolbarPosition::Trailing
                 }
-                region.native_safe_area.left =
-                    if region.available.min_y() < whole.min_y() + native_height {
-                        (whole.min_x() + band.native_leading - region.available.min_x())
-                            .clamp(0., region.available.size.width)
-                    } else {
-                        0.
-                    };
-                region.native_safe_area.right = 0.;
-                reserve_window_edges(region, edges);
-                if other_index == Some(index) {
-                    reserve_others_actions(region, other_width);
-                }
+            ) {
+                region.axis = Axis::Vertical;
             }
-            panel
-                .mounted_toolbar
-                .host
-                .set_regions(panel.mounted_toolbar.window, *viewport, regions)
-                .map_err(|error| anyhow::anyhow!("window toolbar reservation: {error:?}"))?;
+            regions.push(region);
         }
+        if let Some(frame) = self.panels[focus].geometry.close {
+            regions.push(ToolbarRegion::new(
+                ComponentId(CLOSE_REGION_BASE + focus as u64),
+                frame,
+            ));
+        }
+        let mut business = ToolbarRegion::new(
+            WINDOW_BUSINESS,
+            Rect::new(
+                whole.min_x(),
+                band.y,
+                (switcher_start - whole.min_x()).max(0.),
+                band.height,
+            ),
+        );
+        business.native_safe_area.left = band.native_leading.min(business.available.size.width);
+        reserve_window_edges(&mut business, self.presentation_chrome_edges);
+        regions.push(business);
+        for (id, edge) in [
+            (WINDOW_LEADING, ToolbarWindowEdge::Leading),
+            (WINDOW_TRAILING, ToolbarWindowEdge::Trailing),
+        ] {
+            let mut region = ToolbarRegion::window(
+                id,
+                Rect::new(whole.min_x(), band.y, whole.size.width, band.height),
+                edge,
+            );
+            region.native_safe_area.left = band.native_leading;
+            regions.push(region);
+        }
+        let toolbar = &mut self.panels[focus].mounted_toolbar;
+        toolbar
+            .host
+            .set_regions(toolbar.window, whole, regions)
+            .map_err(|error| anyhow::anyhow!("window toolbar reservation: {error:?}"))?;
+        let _ = native_height;
         Ok(())
     }
 }
@@ -1220,10 +1180,13 @@ mod tests {
     use super::*;
     use crate::{Container, LocalContainer, OthersOptions, PresentationOptions};
     use std::{cell::Cell, rc::Rc};
-    use tekes_ui_controls::composition::AccessibilityAction;
+    use tekes_ui_controls::composition::{AccessibilityAction, TextContent};
     fn local(id: &str, command: u64, calls: Rc<Cell<u32>>) -> LocalContainer {
         LocalContainer::new(id, Content::new(ComponentId(1), TextContent::new(id)))
             .unwrap()
+            .toolbar_host(crate::ContainerToolbarHost::Container {
+                position: crate::ContainerToolbarPosition::Top,
+            })
             .toolbar(vec![ToolbarItem {
                 id: command,
                 title: format!("Run {id}"),
@@ -1256,18 +1219,20 @@ mod tests {
         assert!(host.mount_columns());
         host.panels[0].bounds = Rect::new(0., 0., 600., 300.);
         host.panels[0].clip = host.panels[0].bounds;
-        host.panels[0].toolbar_height = 48.;
+
         (host, calls)
     }
     fn paint(host: &mut Host) {
         host.sync_container_toolbars(true, Rect::new(0., 0., 600., 600.), test_band(), 40.)
             .unwrap();
         for panel in &mut host.panels {
-            panel
-                .mounted_toolbar
-                .host
-                .render(&mut Scene::new(), &mut host.text, Theme::LIGHT.into())
-                .unwrap();
+            render_test_tabs(
+                &mut panel.mounted_toolbar.host,
+                &mut Scene::new(),
+                &mut host.text,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
         }
     }
     #[test]
@@ -1281,11 +1246,13 @@ mod tests {
         host.text.begin_frame(Duration::ZERO, false);
         host.sync_container_toolbars(true, whole, test_band(), 40.)
             .unwrap();
-        host.panels[0]
-            .mounted_toolbar
-            .host
-            .render(&mut Scene::new(), &mut host.text, palette)
-            .unwrap();
+        render_test_tabs(
+            &mut host.panels[0].mounted_toolbar.host,
+            &mut Scene::new(),
+            &mut host.text,
+            palette,
+        )
+        .unwrap();
         let target = host.panels[0]
             .mounted_toolbar
             .host
@@ -1304,11 +1271,13 @@ mod tests {
         host.sync_container_toolbars(true, whole, test_band(), 40.)
             .unwrap();
         let mut scene = Scene::new();
-        host.panels[0]
-            .mounted_toolbar
-            .host
-            .render(&mut scene, &mut host.text, palette)
-            .unwrap();
+        render_test_tabs(
+            &mut host.panels[0].mounted_toolbar.host,
+            &mut scene,
+            &mut host.text,
+            palette,
+        )
+        .unwrap();
         let rest = tekes_ui_tokens::surface_palette::resolve_surface(
             palette,
             "toolbar",
@@ -1356,101 +1325,7 @@ mod tests {
         );
     }
     #[test]
-    fn others_tabs_are_original_toolbar_children_and_forward_owned_close_identity() {
-        let calls = Rc::new(Cell::new(0));
-        let members = vec![
-            local("focus", 1, calls.clone()).title("Document").into(),
-            local("detail", 2, calls.clone()).title("Inspector").into(),
-            local("notes", 3, calls).title("Notes").into(),
-        ];
-        let mut host = Host::from_containers(
-            members,
-            false,
-            None,
-            Some(
-                PresentationOptions::new("focus")
-                    .others(OthersOptions::new(vec!["detail".into(), "notes".into()])),
-            ),
-        );
-        host.mount_columns();
-        let area = Rect::new(0., 0., 1100., 640.);
-        let layout = host
-            .presentation
-            .as_ref()
-            .unwrap()
-            .layout_with_toolbar(area, 48.);
-        let frames = host.apply_presentation_layout(layout).unwrap();
-        for (panel, frame) in host.panels.iter_mut().zip(frames) {
-            panel.bounds = frame;
-            panel.toolbar_height = 48.;
-        }
-        host.sync_container_toolbars(true, area, test_band(), 40.)
-            .unwrap();
-        for panel in &mut host.panels {
-            panel
-                .mounted_toolbar
-                .host
-                .render(&mut Scene::new(), &mut host.text, Theme::LIGHT.into())
-                .unwrap();
-        }
-        host.paint_presentation(&mut Scene::new(), area, Theme::LIGHT.into())
-            .unwrap();
-        let tabs = host.presentation_tabs.as_mut().unwrap();
-        assert!(
-            tabs.content_host()
-                .get(ComponentId(999_999))
-                .unwrap()
-                .component::<ToolbarGroup>()
-                .is_some()
-        );
-        let frame = tabs
-            .content_host()
-            .get(ComponentId(1_000_000))
-            .unwrap()
-            .frame();
-        assert!(
-            frame.min_y() >= 0. && frame.max_y() <= 48.,
-            "Tabs must remain inside the actual native row: frame={frame:?}, region={:?}",
-            host.presentation_layout.tabs
-        );
-        for occupied in host.panels[1].mounted_toolbar.occupied_frames() {
-            assert!(frame.max_x() <= occupied.min_x());
-        }
-        assert!(
-            tabs.semantics()
-                .iter()
-                .flat_map(|node| &node.parts)
-                .any(|(_, part)| part.semantics.name == "Inspector")
-        );
-        let close = tabs
-            .semantics()
-            .into_iter()
-            .flat_map(|node| node.parts)
-            .find(|(_, part)| part.semantics.name == "Close Notes")
-            .unwrap()
-            .0;
-        assert!(
-            tabs.accessibility_action(close, AccessibilityAction::Press)
-                .consumed
-        );
-        let invocations = tabs.drain_commands();
-        assert_eq!(invocations.len(), 1);
-        assert_eq!(invocations[0].group, ComponentId(999_999));
-        assert!(matches!(
-            invocations[0].payload,
-            Some(ContentActionPayload::TabCloseRequest {
-                index: 1,
-                label: ComponentId(1_000_003),
-                panel: ComponentId(1_000_004)
-            })
-        ));
-        assert_eq!(
-            host.presentation.as_ref().unwrap().selected_tab(),
-            Some(&OthersTab::Container("detail".into()))
-        );
-    }
-    #[test]
-    fn tab_close_request_uses_original_container_key_and_keeps_its_host_for_reopen() {
+    fn switcher_close_uses_original_container_key_and_keeps_its_host_for_reopen() {
         let calls = Rc::new(Cell::new(0));
         let members = ["focus", "first", "second"]
             .into_iter()
@@ -1469,23 +1344,33 @@ mod tests {
         let original: Vec<_> = host.panels.iter().map(|panel| panel.instance).collect();
         let area = Rect::new(0., 0., 1200., 600.);
         let layout = host.presentation.as_ref().unwrap().layout(area);
-        host.apply_presentation_layout(layout).unwrap();
-        host.paint_presentation(&mut Scene::new(), area, Theme::LIGHT.into())
+        let frames = host.apply_presentation_layout(layout).unwrap();
+        for (panel, frame) in host.panels.iter_mut().zip(frames) {
+            panel.bounds = frame;
+        }
+        host.sync_container_toolbars(true, area, test_band(), 40.)
             .unwrap();
-        let header = host.presentation_tabs.as_mut().unwrap();
+        host.toolbar_index = 1;
+        let header = &mut host.panels[1].mounted_toolbar.host;
+        render_test_tabs(
+            header,
+            &mut Scene::new(),
+            &mut host.text,
+            Theme::LIGHT.into(),
+        )
+        .unwrap();
         let target = header
             .semantics()
             .into_iter()
-            .flat_map(|node| node.parts)
-            .find(|(_, part)| part.semantics.name == "Close first")
-            .map(|(target, _)| target)
+            .find(|node| node.node.semantics.name == "Close first")
+            .map(|node| node.target)
             .unwrap();
         assert!(
             header
                 .accessibility_action(target, AccessibilityAction::Press)
                 .consumed
         );
-        host.apply_tab_selection().unwrap();
+        host.drain_toolbar_commands().unwrap();
         assert_eq!(
             host.presentation.as_ref().unwrap().others_ids(),
             &["second"]
@@ -1530,16 +1415,17 @@ mod tests {
             let frames = host.apply_presentation_layout(layout).unwrap();
             for (panel, frame) in host.panels.iter_mut().zip(frames) {
                 panel.bounds = frame;
-                panel.toolbar_height = 48.;
             }
             host.sync_container_toolbars(true, area, test_band(), 40.)
                 .unwrap();
             for panel in &mut host.panels {
-                panel
-                    .mounted_toolbar
-                    .host
-                    .render(&mut Scene::new(), &mut host.text, Theme::LIGHT.into())
-                    .unwrap();
+                render_test_tabs(
+                    &mut panel.mounted_toolbar.host,
+                    &mut Scene::new(),
+                    &mut host.text,
+                    Theme::LIGHT.into(),
+                )
+                .unwrap();
             }
         };
         render(&mut host);
@@ -1632,7 +1518,7 @@ mod tests {
         let (mut host, _) = fixture();
         host.panels[0].bounds = Rect::new(9., 36., 591., 250.);
         host.panels[0].clip = host.panels[0].bounds;
-        host.panels[0].toolbar_height = 48.;
+
         host.sync_container_toolbars(
             true,
             Rect::new(0., 0., 600., 600.),
@@ -1644,11 +1530,13 @@ mod tests {
             56.,
         )
         .unwrap();
-        host.panels[0]
-            .mounted_toolbar
-            .host
-            .render(&mut Scene::new(), &mut host.text, Theme::LIGHT.into())
-            .unwrap();
+        render_test_tabs(
+            &mut host.panels[0].mounted_toolbar.host,
+            &mut Scene::new(),
+            &mut host.text,
+            Theme::LIGHT.into(),
+        )
+        .unwrap();
         for (_, part) in host.panels[0]
             .mounted_toolbar
             .host
@@ -1656,7 +1544,10 @@ mod tests {
             .into_iter()
             .flat_map(|node| node.parts)
         {
-            assert!(part.frame.min_x() >= 100.);
+            assert!(
+                part.frame.min_y() >= 56. || part.frame.min_x() >= 100.,
+                "only frames intersecting the native controls need horizontal exclusion"
+            );
         }
     }
     #[test]
@@ -1757,7 +1648,6 @@ mod tests {
         let frames = host.apply_presentation_layout(layout).unwrap();
         for (panel, frame) in host.panels.iter_mut().zip(frames) {
             panel.bounds = frame;
-            panel.toolbar_height = 48.;
         }
         host.sync_container_toolbars(true, area, test_band(), 40.)
             .unwrap();
@@ -1772,11 +1662,13 @@ mod tests {
                 (panel.module_id.clone(), panel.instance, address),
                 original[index]
             );
-            panel
-                .mounted_toolbar
-                .host
-                .render(&mut Scene::new(), &mut host.text, Theme::LIGHT.into())
-                .unwrap();
+            render_test_tabs(
+                &mut panel.mounted_toolbar.host,
+                &mut Scene::new(),
+                &mut host.text,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
         }
         let point = host.panels[1]
             .mounted_toolbar
@@ -1800,12 +1692,12 @@ mod tests {
         );
     }
     #[test]
-    fn native_top_toolbar_uses_original_row_center_and_excludes_traffic_lights() {
+    fn native_window_row_and_explicit_container_top_have_distinct_safe_regions() {
         let (mut host, _) = fixture();
         let area = Rect::new(0., 0., 600., 600.);
         host.panels[0].bounds = area;
         host.panels[0].clip = area;
-        host.panels[0].toolbar_height = 56.;
+
         host.sync_container_toolbars(
             true,
             area,
@@ -1817,11 +1709,13 @@ mod tests {
             40.,
         )
         .unwrap();
-        host.panels[0]
-            .mounted_toolbar
-            .host
-            .render(&mut Scene::new(), &mut host.text, Theme::LIGHT.into())
-            .unwrap();
+        render_test_tabs(
+            &mut host.panels[0].mounted_toolbar.host,
+            &mut Scene::new(),
+            &mut host.text,
+            Theme::LIGHT.into(),
+        )
+        .unwrap();
         let parts: Vec<_> = host.panels[0]
             .mounted_toolbar
             .host
@@ -1831,16 +1725,22 @@ mod tests {
             .collect();
         assert!(!parts.is_empty());
         for (_, part) in parts {
-            assert!(
-                part.frame.min_x() >= 100.,
-                "native reserved area must not contain an engine hit target: {:?}",
-                part.frame
-            );
-            assert!(
-                part.frame.min_y() >= 4. && part.frame.max_y() <= 52.,
-                "toolbar stays on original native row: {:?}",
-                part.frame
-            );
+            if part.frame.min_y() < 52. {
+                assert!(part.frame.min_x() >= 100.);
+                assert!(
+                    part.frame.min_y() >= 4. && part.frame.max_y() <= 52.,
+                    "window contributions retain the actual native row"
+                );
+            } else {
+                assert!(
+                    host.panels[0]
+                        .geometry
+                        .toolbar
+                        .unwrap()
+                        .contains(part.frame.center()),
+                    "explicit Container Top now uses its internal region below the window row"
+                );
+            }
         }
     }
     #[test]
@@ -1897,7 +1797,7 @@ mod tests {
             .event(&ContentEvent::PointerDown(old_point));
         host.panels[1].bounds = Rect::new(0., 320., 600., 200.);
         host.panels[1].clip = host.panels[1].bounds;
-        host.panels[1].toolbar_height = 48.;
+
         paint(&mut host);
         assert!(
             !host.panels[0]
@@ -1938,26 +1838,29 @@ mod tests {
         let (mut host, calls) = fixture();
         host.panels[0].toolbar.clear();
         host.panels[0].options.title = None;
-        host.panels[0].toolbar_height = 0.;
+
         paint(&mut host);
-        assert!(host.panels.iter().all(|panel| {
-            panel
-                .mounted_toolbar
-                .host
-                .semantics()
-                .iter()
-                .all(|node| node.parts.is_empty())
-        }));
-        assert_eq!(host.container_toolbar_height(0, 99.), 0.);
-        assert!(host.presentation_menu().items.iter().any(|item| matches!(item, MenuItem::Command(command) if command.command == CommandId(COMMAND_BASE))), "menu recovery remains available without inventing a toolbar row");
         assert!(
             !host.panels[0]
                 .mounted_toolbar
                 .sources()
-                .any(|source| matches!(source, Source::Visibility(_)))
+                .any(|source| matches!(source, Source::Panel { index: 0, .. })),
+            "removed business toolbar has no mounted original command source"
+        );
+        assert!(
+            host.panels[0].geometry.toolbar.is_none(),
+            "no business declaration adds an internal bar"
+        );
+        assert!(host.presentation_menu().items.iter().any(|item| matches!(item, MenuItem::Command(command) if command.command == CommandId(COMMAND_BASE))), "menu recovery remains available without inventing a toolbar row");
+        assert!(
+            host.panels[0]
+                .mounted_toolbar
+                .sources()
+                .any(|source| matches!(source, Source::Visibility(_))),
+            "window chrome remains available independently of an internal business bar"
         );
         host.panels[0].options.title = Some("Host".into());
-        host.panels[0].toolbar_height = 48.;
+
         host.panels[1].toolbar[0].enabled = false;
         paint(&mut host);
         let target = host.panels[0]
@@ -2122,6 +2025,9 @@ mod input_regressions {
             local("a").title("A").into(),
             local("b").title("B").into(),
             local("owner")
+                .toolbar_host(crate::ContainerToolbarHost::Container {
+                    position: crate::ContainerToolbarPosition::Top,
+                })
                 .toolbar(vec![toolbar(10, "To A"), toolbar(11, "To B")])
                 .retain_button(10, "a")
                 .retain_button(11, "b")
@@ -2140,17 +2046,16 @@ mod input_regressions {
         host.mount_columns();
         let area = Rect::new(0., 0., 700., 700.);
         render_layout(&mut host, area);
-        for panel in &mut host.panels {
-            panel.toolbar_height = 48.;
-        }
         host.sync_container_toolbars(true, area, test_band(), 40.)
             .unwrap();
         for panel in &mut host.panels {
-            panel
-                .mounted_toolbar
-                .host
-                .render(&mut Scene::new(), &mut host.text, Theme::LIGHT.into())
-                .unwrap();
+            render_test_tabs(
+                &mut panel.mounted_toolbar.host,
+                &mut Scene::new(),
+                &mut host.text,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
         }
         let point = host.panels[1]
             .mounted_toolbar
@@ -2212,6 +2117,9 @@ mod input_regressions {
         let members: Vec<Container> = vec![
             member("focus")
                 .title("Focus")
+                .toolbar_host(crate::ContainerToolbarHost::Container {
+                    position: crate::ContainerToolbarPosition::Top,
+                })
                 .toolbar(vec![ToolbarItem {
                     id: 1,
                     title: "Very long command that requires overflow".into(),
@@ -2247,15 +2155,17 @@ mod input_regressions {
             .unwrap()
             .layout_with_toolbar(area, 48.);
         host.apply_presentation_layout(layout).unwrap();
-        host.panels[0].toolbar_height = 48.;
+
         host.sync_container_toolbars(true, area, test_band(), 40.)
             .unwrap();
         for panel in &mut host.panels {
-            panel
-                .mounted_toolbar
-                .host
-                .render(&mut Scene::new(), &mut host.text, Theme::LIGHT.into())
-                .unwrap();
+            render_test_tabs(
+                &mut panel.mounted_toolbar.host,
+                &mut Scene::new(),
+                &mut host.text,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
         }
         host.paint_presentation(&mut Scene::new(), area, Theme::LIGHT.into())
             .unwrap();
@@ -2274,11 +2184,13 @@ mod input_regressions {
             .mounted_toolbar
             .host
             .accessibility_action(overflow, AccessibilityAction::Press);
-        host.panels[0]
-            .mounted_toolbar
-            .host
-            .render(&mut Scene::new(), &mut host.text, Theme::LIGHT.into())
-            .unwrap();
+        render_test_tabs(
+            &mut host.panels[0].mounted_toolbar.host,
+            &mut Scene::new(),
+            &mut host.text,
+            Theme::LIGHT.into(),
+        )
+        .unwrap();
         assert!(host.open_toolbar().is_some());
         let point = host
             .presentation_tabs
@@ -2286,10 +2198,9 @@ mod input_regressions {
             .unwrap()
             .semantics()
             .into_iter()
-            .flat_map(|node| node.parts)
-            .find(|(_, part)| part.semantics.name == "b")
+            .find(|node| node.node.semantics.name == "b")
             .unwrap()
-            .1
+            .node
             .frame
             .center();
         let selected = host.presentation.as_ref().unwrap().selected_tab().cloned();

@@ -740,7 +740,7 @@ impl super::Host {
                     {
                         if panel.bounds.min_x() < leading as f32 {
                             ensure!(
-                                panel.toolbar_height >= safe as f32,
+                                panel.geometry.insets.top >= safe as f32,
                                 "content overlaps native controls"
                             );
                         }
