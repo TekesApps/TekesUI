@@ -40,7 +40,7 @@ impl ContainerGeometry {
         );
         let close_width = close_size.width.min(inner.size.width).max(0.);
         let close_height = close_size.height.min(inner.size.height).max(0.);
-        let close = (close_width > 0. && close_height > 0.).then_some(Rect::new(
+        let mut close = (close_width > 0. && close_height > 0.).then_some(Rect::new(
             inner.max_x() - close_width,
             inner.min_y(),
             close_width,
@@ -66,6 +66,9 @@ impl ContainerGeometry {
             Position::Top => {
                 let height = thickness.max(close_height).min(inner.size.height);
                 insets.top += height;
+                if let Some(close) = &mut close {
+                    close.size.height = height;
+                }
                 Rect::new(
                     inner.min_x(),
                     inner.min_y(),
@@ -96,6 +99,10 @@ impl ContainerGeometry {
             Position::Trailing => {
                 let width = thickness.max(close_width).min(inner.size.width);
                 insets.right = width;
+                if let Some(close) = &mut close {
+                    close.origin.x = inner.max_x() - width;
+                    close.size.width = width;
+                }
                 Rect::new(
                     inner.max_x() - width,
                     inner.min_y() + close_height,
@@ -135,10 +142,7 @@ impl Host {
     ) -> Result<ContainerGeometry> {
         use crate::window_toolbar::Contents;
         use crate::{ContainerToolbarHost as Host, ContainerToolbarPosition as Position};
-        use tekes_ui_controls::{
-            ButtonTextRenderer,
-            composition::{ComponentId, Content},
-        };
+        use tekes_ui_controls::composition::{ComponentId, Content};
         let declarations = if self.presentation.is_some() {
             self.presentation_toolbar_declarations()
         } else {
@@ -237,20 +241,25 @@ impl Host {
                 .title
                 .as_deref()
                 .unwrap_or(&self.panels[index].module_id);
-            let mut button = crate::window_toolbar::close_button(ComponentId(1), title);
-            let measured = button
+            // Measure the same natural ToolbarContent/Group wrapper that is
+            // actually mounted; measuring the Button alone misses its row.
+            let button = crate::window_toolbar::close_button(ComponentId(1), title);
+            let mut content = Content::new(
+                ComponentId(0),
+                tekes_ui_controls::composition::ToolbarContent::new(vec![Content::new(
+                    ComponentId(3),
+                    tekes_ui_controls::composition::ToolbarGroup::new(
+                        tekes_ui_controls::composition::ToolbarPlacement::SecondaryAction,
+                        vec![button],
+                    ),
+                )]),
+            );
+            content
                 .measure(
                     &mut self.text,
                     tekes_ui_scene::Size::new(100_000., 100_000.),
                 )
-                .size;
-            let scale = self
-                .text
-                .resolved_font_size(tekes_ui_tokens::proposal::TextRole::UiBody)
-                / tekes_ui_tokens::proposal::TOOLBAR_REFERENCE_TITLE_SIZE;
-            let padding =
-                tekes_ui_tokens::proposal::metric("spacing", "space-regular").unwrap() * scale;
-            tekes_ui_scene::Size::new(measured.width + 2. * padding, measured.height)
+                .size
         } else {
             tekes_ui_scene::Size::default()
         };
@@ -727,17 +736,41 @@ mod tests {
     }
     #[test]
     fn retained_window_rebinding_retires_old_press_and_ax_even_without_physical_move() {
-        let (mut host, calls) = fixture(None);
-        host.panels[1].options.retained_buttons = vec![
-            crate::RetainedButton {
-                command: 1,
-                target: "focus".into(),
-            },
-            crate::RetainedButton {
-                command: 2,
-                target: "focus".into(),
-            },
-        ];
+        let calls = Rc::new(Cell::new(0));
+        let count = calls.clone();
+        let local = |id| {
+            LocalContainer::new(id, Content::new(ComponentId(1), Button::new(id)))
+                .unwrap()
+                .title(id)
+        };
+        // Both original and retained locations are now in the Others column.
+        // Rebinding to Focus must move under the corrected partition contract;
+        // a replacement Others instance preserves the genuine same-position case.
+        let owner = local("owner")
+            .toolbar(vec![item(1, "One"), item(2, "Two")])
+            .retain_button(1, "replacement")
+            .retain_button(2, "replacement")
+            .on_command(move |_, _| {
+                count.set(count.get() + 1);
+                Ok(())
+            });
+        let mut host = Host::from_containers(
+            vec![
+                local("focus").into(),
+                owner.into(),
+                local("replacement").into(),
+            ],
+            false,
+            None,
+            Some(
+                PresentationOptions::new("focus").others(OthersOptions::new(vec![
+                    "owner".into(),
+                    "replacement".into(),
+                ])),
+            ),
+        );
+        host.mount_columns();
+        host.container_window_boundary = Some(48.);
         paint(&mut host);
         let source = host.panels[0]
             .mounted_toolbar
@@ -770,7 +803,11 @@ mod tests {
             if hide {
                 host.presentation.as_mut().unwrap().close("owner").unwrap();
             } else {
-                host.presentation.as_mut().unwrap().open("owner").unwrap();
+                let state = host.presentation.as_mut().unwrap();
+                state.open("owner").unwrap();
+                state
+                    .select_tab(crate::OthersTab::Container("owner".into()))
+                    .unwrap();
             }
             paint(&mut host);
             assert_eq!(

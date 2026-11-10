@@ -5,9 +5,8 @@ use crate::OthersTab;
 use tekes_ui_controls::{
     ButtonTextRenderer,
     composition::{
-        Button, Content, IconContent, MenuContent, MenuEntry, StackContent, TextContent,
-        ToolbarCommandBinding, ToolbarGroup, ToolbarHost, ToolbarPlacement, ToolbarRegion,
-        ToolbarRegistration,
+        Button, Content, IconContent, MenuContent, MenuEntry, StackContent, ToolbarCommandBinding,
+        ToolbarGroup, ToolbarHost, ToolbarPlacement, ToolbarRegion, ToolbarRegistration,
     },
     paint::ButtonVariant,
 };
@@ -77,7 +76,10 @@ fn control(item: &Item, id: ComponentId, multiple: bool) -> Result<Content> {
                     },
                     children: vec![
                         icon(ComponentId(id.0 + 2), &item.icon)?,
-                        Content::new(ComponentId(id.0 + 3), TextContent::new("⌄")),
+                        Content::new(
+                            ComponentId(id.0 + 3),
+                            IconContent::new("tekes-expand").expect("canonical downward chevron"),
+                        ),
                     ],
                     flexible_child: None,
                 },
@@ -199,7 +201,7 @@ impl Host {
         items
     }
     pub(super) fn sync_presentation_switcher(&mut self, whole: Rect) -> Result<()> {
-        let Some(frame) = self.presentation_layout.tabs else {
+        let Some(frame) = self.presentation_switcher_frame() else {
             return Ok(());
         };
         let all = self.switcher_items();
@@ -287,7 +289,7 @@ impl Host {
                 order: 0,
                 group: Content::new(
                     GROUP,
-                    ToolbarGroup::new(ToolbarPlacement::Principal, children),
+                    ToolbarGroup::new(ToolbarPlacement::Navigation, children),
                 ),
                 bindings,
             })
@@ -328,7 +330,9 @@ impl Host {
 mod tests {
     use super::*;
     use crate::{Container, LocalContainer, OthersGroup, OthersOptions, PresentationOptions};
-    use tekes_ui_controls::composition::{AccessibilityAction, ToolbarAccessibilityTarget};
+    use tekes_ui_controls::composition::{
+        AccessibilityAction, TextContent, ToolbarAccessibilityTarget,
+    };
     fn members() -> Vec<Container> {
         ["focus", "inspector", "first", "second"]
             .into_iter()

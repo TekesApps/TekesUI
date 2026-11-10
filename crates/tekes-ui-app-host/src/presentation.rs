@@ -301,9 +301,6 @@ impl PresentationState {
     pub fn navigation_toolbar_id(&self) -> Option<&str> {
         self.options.navigation_toolbar.as_deref()
     }
-    pub(crate) fn navigation_uses_window_edge(&self) -> bool {
-        self.options.navigation_toolbar_follows_focus
-    }
     pub fn navigation_toolbar_presenter_id(&self) -> Option<&str> {
         self.navigation_toolbar_id().map(|configured| {
             if self.options.navigation_toolbar_follows_focus {

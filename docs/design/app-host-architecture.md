@@ -1,10 +1,16 @@
 # TekesUI AppHost 框架设计
 
+## 2026-11-10: Window Toolbar partition correction (#229)
+
+Window Toolbar keeps the actual Nav / Focus / Others column allocations. A Container's host=Window presents its title, navigation and business commands in its current column partition, never in a global mixed command pool. The partition follows splitter bounds, visibility and Focus exchange while original Source/command ownership stays unchanged. Host=Container continues to use its declared internal edge. Others single-instance icons and family icon menus start at the leading edge of the Others partition, to the right of its splitter; their measured width reserves space from business commands in that same partition. Hidden-column restore actions remain reachable at a visible partition edge.
+
+Switcher selection uses the existing fill-only style without vertical separators. Family dropdown decoration uses original icon content and an icon arrow. Close remains the original transparent X at the closable Container's internal top-right; Top business and Close share one chrome height and continuous background. Other edges retain only the established natural close-height top strip, without a new rail or patched color values.
+
 ## 2026-11-10：Toolbar host 与容器内部方向（#229）
 
-Container 始终拥有自己的 Toolbar 内容、业务状态与动作来源；`host` 只决定唯一呈现位置。`window` 将声明汇入窗口统一 Toolbar；`container` 在该 Container 内部呈现，并选择 `top`、`bottom`、`leading` 或 `trailing`。内部默认 `top`；top/bottom 横排，leading/trailing 真实竖排，不能只把横排条塞入狭窄 Rect。
+Container 始终拥有自己的 Toolbar 内容、业务状态与动作来源；`host` 只决定唯一呈现位置。`window` 将声明放入窗口统一 Toolbar 的对应 Container 分区；`container` 在该 Container 内部呈现，并选择 `top`、`bottom`、`leading` 或 `trailing`。内部默认 `top`；top/bottom 横排，leading/trailing 真实竖排，不能只把横排条塞入狭窄 Rect。
 
-类型契约采用 `ContainerToolbarHost::Window` 或 `ContainerToolbarHost::Container { position: ContainerToolbarPosition }`，避免 window 与无意义内部方向组合。未显式声明 host 的路径一律默认 Window，包括隐藏后保留按钮的目标；只有目标显式选择 Container 才采用内部方向，内部方向默认 Top。旧实现是各 Container 分区内的工具栏，不与新的 Window 聚合等价。依赖原内部顶部呈现的已有消费者／夹具须显式迁移为 Container/Top，保留原验收的适用范围，新 Window 模式另验。
+类型契约采用 `ContainerToolbarHost::Window` 或 `ContainerToolbarHost::Container { position: ContainerToolbarPosition }`，避免 window 与无意义内部方向组合。未显式声明 host 的路径一律默认 Window，包括隐藏后保留按钮的目标；只有目标显式选择 Container 才采用内部方向，内部方向默认 Top。Window 分区继续与各 Container 的实际列空间对齐，不合并成全窗业务池。依赖原内部顶部呈现的已有消费者／夹具须显式迁移为 Container/Top，保留原验收的适用范围，新 Window 模式另验。
 
 关闭是可关闭 Container 自己右上角的透明 ×，独立于内容切换组及业务 Toolbar 的 host/方向；不向不可关闭的 Focus/NavBar 或聚合 List 增加关闭语义。顶部业务条与关闭共用一次高度，右侧业务条为关闭留出顶部命中；其它方向用关闭按钮自然高度的最小顶部 chrome 保护正文，不为单个关闭按钮浪费一整条右侧空 rail，也不虚构标题。业务条若放在 top，leading 使用其业务内容；无业务项不预留业务条空行。正文 padding 继续只由既有一层 token 配置拥有。
 
@@ -799,3 +805,9 @@ Settings 内容边界复用主 AppHost 的可见且避让原生控件的 Toolbar
 字号NumberField两按钮与编辑器之间留同一spacing token的空隙；测量、绘制、命中与AX共用一份布局。单行TextField水平滚动条缺省关闭、提供显式开关，滚动/reveal/IME继续沿原策略，不能把隐藏指示条等同禁用滚动；多行默认行为保留。
 
 本批分别验收源码、受影响自动回归、原生选择/复制和输入/布局、公开发布及Gallery Dock采用；原通过证据按不变条件复用。v0.3.5和其原程序证据保留，后续改动不改签。
+
+### 2026-11-10：统一工具栏拖窗与 Gallery 滚动条回归
+
+Window host 的统一工具栏空白区域属于原生窗口 chrome。原控件、分割条及正文先处理输入，剩余空白区域再进入原生拖动／双击处理；不能仅以内嵌 Container toolbar 的 frame 判定。Nav／Others 显隐和 Focus 交换保持既有命令与实例身份，不因 host 迁移改变布局语义。
+
+Gallery 原左侧导航显式启用纵向滚动条，按真实溢出显示，保留共享 ScrollArea 的开关及无条滚动能力。AppHost 和 Settings 使用 ListContent::scrollable 的入口保持原行为。源码检查不替代准确打包程序的拖窗、布局按钮和滚动条原生验收。

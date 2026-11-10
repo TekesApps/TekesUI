@@ -1358,20 +1358,7 @@ impl Host {
                 })
                 .collect(),
         );
-        let switcher_modal = self
-            .presentation_tabs
-            .as_ref()
-            .is_some_and(|host| host.content_host().input_overlay_owner().is_some());
-        let layers = if switcher_modal {
-            [&toolbar_scene, &presentation_scene]
-        } else {
-            [&presentation_scene, &toolbar_scene]
-        };
-        for layer in layers {
-            for primitive in layer.primitives() {
-                scene.push(primitive.clone());
-            }
-        }
+        self.append_toolbar_layers(&mut scene, &toolbar_scene, &presentation_scene);
         let renderer_begin = diagnostic.map(|_| std::time::Instant::now());
         let drawable_before = diagnostic.map(|_| w.drawable_serial());
         let renderer = self.renderer.as_mut().unwrap();
@@ -1751,6 +1738,41 @@ impl Host {
         }
         Ok(())
     }
+    /// Append the original hosts in their final native renderer painter order.
+    fn append_toolbar_layers(&self, scene: &mut Scene, toolbar: &Scene, presentation: &Scene) {
+        // Ordinary switcher content must paint above the Window regions' ground.
+        // An open original business menu keeps its existing window-level priority.
+        let layers = if self.open_toolbar().is_some() {
+            [presentation, toolbar]
+        } else {
+            [toolbar, presentation]
+        };
+        for layer in layers {
+            for primitive in layer.primitives() {
+                scene.push(primitive.clone());
+            }
+        }
+    }
+    /// Blank toolbar chrome falls through to the native window only after
+    /// original controls, splitters and body input have had their turn.
+    pub(super) fn toolbar_chrome_at(&self, p: Point) -> bool {
+        p.y >= 0.
+            && (self.presentation.is_some()
+                && self
+                    .container_window_boundary
+                    .is_some_and(|boundary| p.y < boundary)
+                || self.panels.iter().any(|panel| {
+                    if self.presentation.is_some() {
+                        panel
+                            .geometry
+                            .toolbar
+                            .is_some_and(|frame| frame.contains(p))
+                            || panel.geometry.close.is_some_and(|frame| frame.contains(p))
+                    } else {
+                        p.y < panel.geometry.insets.top
+                    }
+                }))
+    }
     /// Consume only uncaptured drag samples belonging to our accepted native
     /// window handoff; all other events continue through their original routes.
     fn owns_native_titlebar_drag_event(&mut self, event: &Event) -> bool {
@@ -2024,22 +2046,7 @@ impl Host {
                                 let point = self.panels[i].content_point(p);
                                 self.panels[i].request(InputKind::PointerDown, point.x, point.y)?;
                             }
-                        } else if p.y >= 0.
-                            && self.panels.iter().any(|panel| {
-                                if self.presentation.is_some() {
-                                    panel
-                                        .geometry
-                                        .toolbar
-                                        .is_some_and(|frame| frame.contains(p))
-                                        || panel
-                                            .geometry
-                                            .close
-                                            .is_some_and(|frame| frame.contains(p))
-                                } else {
-                                    p.y < panel.geometry.insets.top
-                                }
-                            })
-                        {
+                        } else if self.toolbar_chrome_at(p) {
                             // Empty segmented toolbar chrome is not child
                             // content. Splitter seams were offered capture
                             // above; remaining blank chrome belongs to Window.
