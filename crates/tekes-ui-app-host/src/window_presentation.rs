@@ -14,6 +14,8 @@ const COMMAND_BASE: u32 = 0x4300_0000;
 const WINDOW_LEADING: ComponentId = ComponentId(u64::MAX - 16);
 const WINDOW_TRAILING: ComponentId = ComponentId(u64::MAX - 17);
 const WINDOW_BUSINESS: ComponentId = ComponentId(u64::MAX - 18);
+const WINDOW_NAV_BUSINESS: ComponentId = ComponentId(u64::MAX - 19);
+const WINDOW_OTHERS_BUSINESS: ComponentId = ComponentId(u64::MAX - 20);
 const CLOSE_REGION_BASE: u64 = 95000;
 const TABS_OWNER: u64 = u64::MAX - 1;
 #[cfg(test)]
@@ -243,43 +245,6 @@ impl Host {
         whole: Rect,
         palette: Palette,
     ) -> Result<()> {
-        if let Some(mut frame) = self.presentation_layout.tabs {
-            // The selected container keeps its own business Toolbar. Its actual
-            // mounted groups reserve their measured slots from the Others Tabs.
-            if let Some(OthersTab::Container(id)) =
-                self.presentation.as_ref().unwrap().selected_tab()
-                && let Some(panel) = self.panels.iter().find(|panel| &panel.module_id == id)
-            {
-                for occupied in panel.mounted_toolbar.occupied_frames() {
-                    if occupied.min_y() < frame.max_y()
-                        && occupied.max_y() > frame.min_y()
-                        && occupied.min_x() < frame.max_x()
-                        && occupied.max_x() > frame.min_x()
-                    {
-                        if occupied.min_x() <= frame.min_x() {
-                            let left = occupied.max_x().min(frame.max_x());
-                            frame = Rect::new(
-                                left,
-                                frame.min_y(),
-                                (frame.max_x() - left).max(0.),
-                                frame.size.height,
-                            );
-                        } else {
-                            frame.size.width = (occupied.min_x() - frame.min_x()).max(0.);
-                        }
-                    }
-                }
-            }
-            let mut region = ToolbarRegion::new(ComponentId(TABS_OWNER), frame);
-            reserve_window_edges(&mut region, self.presentation_chrome_edges);
-            self.presentation_layout.tabs = Some(Rect::new(
-                frame.min_x() + region.native_safe_area.left,
-                frame.min_y(),
-                (frame.size.width - region.native_safe_area.left - region.native_safe_area.right)
-                    .max(0.),
-                frame.size.height,
-            ));
-        }
         let focus = self
             .presentation_layout
             .frames
@@ -289,9 +254,9 @@ impl Host {
             .unwrap();
         let area = Rect::new(
             whole.min_x(),
-            focus.min_y(),
+            self.container_window_boundary.unwrap_or(focus.min_y()),
             whole.size.width,
-            (whole.max_y() - focus.min_y()).max(0.),
+            (whole.max_y() - self.container_window_boundary.unwrap_or(focus.min_y())).max(0.),
         );
         let mut right = area;
         self.outer.min_pane = MIN_COLUMN;
@@ -330,9 +295,8 @@ impl Host {
             );
         }
         self.sync_presentation_switcher(whole)?;
-        if let (Some(host), Some(frame)) =
-            (&mut self.presentation_tabs, self.presentation_layout.tabs)
-        {
+        let switcher_frame = self.presentation_switcher_frame();
+        if let (Some(host), Some(frame)) = (&mut self.presentation_tabs, switcher_frame) {
             host.set_regions(
                 TABS_OWNER,
                 whole,
@@ -720,11 +684,187 @@ impl Host {
     ) -> (usize, ComponentId) {
         let target = retained.unwrap_or(owner);
         match self.panels[target].options.toolbar_host {
-            crate::ContainerToolbarHost::Window => (focus, WINDOW_BUSINESS),
+            crate::ContainerToolbarHost::Window => (focus, self.window_business_region(target)),
             crate::ContainerToolbarHost::Container { .. } => {
                 (target, ComponentId(91000 + target as u64))
             }
         }
+    }
+    fn window_business_region(&self, target: usize) -> ComponentId {
+        let state = self.presentation.as_ref().unwrap();
+        let id = self.panels[target].module_id.as_str();
+        if state.nav_bar_id() == Some(id) {
+            WINDOW_NAV_BUSINESS
+        } else if state.focus_id() == id {
+            WINDOW_BUSINESS
+        } else {
+            WINDOW_OTHERS_BUSINESS
+        }
+    }
+    fn window_partition_frame(
+        &self,
+        region: ComponentId,
+        whole: Rect,
+        band: &window_toolbar_mount::ToolbarBand,
+    ) -> Rect {
+        let state = self.presentation.as_ref().unwrap();
+        let column = if region == WINDOW_OTHERS_BUSINESS {
+            self.presentation_layout.tabs.unwrap_or_default()
+        } else {
+            let id = if region == WINDOW_NAV_BUSINESS {
+                state.visible_nav_bar_id()
+            } else {
+                Some(state.focus_id())
+            };
+            id.and_then(|id| self.panels.iter().find(|panel| panel.module_id == id))
+                .map_or(Rect::default(), |panel| panel.bounds)
+        };
+        Rect::new(
+            column.min_x().max(whole.min_x()),
+            band.y,
+            column.size.width,
+            band.height,
+        )
+    }
+    pub(super) fn presentation_switcher_frame(&self) -> Option<Rect> {
+        let mut frame = self.presentation_layout.tabs?;
+        let mut region = ToolbarRegion::new(ComponentId(TABS_OWNER), frame);
+        reserve_window_edges(&mut region, self.presentation_chrome_edges);
+        frame = Rect::new(
+            frame.min_x() + region.native_safe_area.left,
+            frame.min_y(),
+            (frame.size.width - region.native_safe_area.left - region.native_safe_area.right)
+                .max(0.),
+            frame.size.height,
+        );
+        // Original mounted group measurements reserve this same column's business
+        // commands. Internal toolbars below the window band do not intersect it.
+        for occupied in self
+            .panels
+            .iter()
+            .flat_map(|panel| panel.mounted_toolbar.occupied_frames())
+        {
+            if occupied.min_y() < frame.max_y()
+                && occupied.max_y() > frame.min_y()
+                && occupied.min_x() < frame.max_x()
+                && occupied.max_x() > frame.min_x()
+                && occupied.min_x() > frame.min_x()
+            {
+                frame.size.width = (occupied.min_x() - frame.min_x()).max(0.);
+            }
+        }
+        Some(frame)
+    }
+    fn close_toolbar_region(&self, index: usize) -> Option<ToolbarRegion> {
+        let panel = &self.panels[index];
+        let close = panel.geometry.close?;
+        let frame = if panel.geometry.toolbar.is_some()
+            && matches!(
+                panel.options.toolbar_host,
+                crate::ContainerToolbarHost::Container {
+                    position: crate::ContainerToolbarPosition::Top
+                        | crate::ContainerToolbarPosition::Trailing
+                }
+            ) {
+            close
+        } else {
+            Rect::new(
+                panel.bounds.min_x(),
+                close.min_y(),
+                panel.bounds.size.width,
+                close.size.height,
+            )
+        };
+        Some(ToolbarRegion::new(
+            ComponentId(CLOSE_REGION_BASE + index as u64),
+            frame,
+        ))
+    }
+    fn container_toolbar_regions(
+        &self,
+        index: usize,
+        focus: usize,
+        whole: Rect,
+        band: &window_toolbar_mount::ToolbarBand,
+    ) -> Vec<ToolbarRegion> {
+        let panel = &self.panels[index];
+        let mut regions = Vec::new();
+        if panel.bounds.size.width <= 0. || panel.bounds.size.height <= 0. {
+            return regions;
+        }
+        if let Some(frame) = panel.geometry.toolbar {
+            let mut region = ToolbarRegion::new(ComponentId(91000 + index as u64), frame);
+            if matches!(
+                panel.options.toolbar_host,
+                crate::ContainerToolbarHost::Container {
+                    position: crate::ContainerToolbarPosition::Leading
+                        | crate::ContainerToolbarPosition::Trailing
+                }
+            ) {
+                region.axis = Axis::Vertical;
+            }
+            regions.push(region);
+        }
+        if let Some(region) = self.close_toolbar_region(index) {
+            regions.push(region);
+        }
+        if index == focus {
+            let frames = [WINDOW_NAV_BUSINESS, WINDOW_BUSINESS, WINDOW_OTHERS_BUSINESS]
+                .map(|id| (id, self.window_partition_frame(id, whole, band)));
+            for &(id, frame) in &frames {
+                let mut region = ToolbarRegion::new(id, frame);
+                region.native_safe_area.left =
+                    (band.native_leading - frame.min_x()).clamp(0., frame.size.width);
+                reserve_window_edges(&mut region, self.presentation_chrome_edges);
+                regions.push(region);
+            }
+            for (id, edge, column) in [
+                (WINDOW_LEADING, ToolbarWindowEdge::Leading, 0),
+                (WINDOW_TRAILING, ToolbarWindowEdge::Trailing, 2),
+            ] {
+                let frame = if frames[column].1.size.width > 0. {
+                    frames[column].1
+                } else {
+                    frames[1].1
+                };
+                let mut region = ToolbarRegion::window(id, frame, edge);
+                region.native_safe_area.left =
+                    (band.native_leading - frame.min_x()).clamp(0., frame.size.width);
+                regions.push(region);
+            }
+        }
+        regions
+    }
+    fn navigation_toolbar_declaration(
+        &self,
+        index: usize,
+        focus: usize,
+        source: crate::toolbar_source::ComponentSource,
+        buttons: Vec<ToolbarButtonDeclaration>,
+        templates: Vec<(u64, String)>,
+    ) -> (usize, Declaration) {
+        let (presenter, destination) = self.business_destination(index, None, focus);
+        (
+            presenter,
+            Declaration {
+                id: ComponentId(92100),
+                region: destination,
+                // Others content navigation owns leading; fixed history commands
+                // share this partition's trailing business space instead.
+                placement: if destination == WINDOW_OTHERS_BUSINESS {
+                    ToolbarPlacement::PrimaryAction
+                } else {
+                    ToolbarPlacement::Navigation
+                },
+                order: 10,
+                contents: Contents::TemplateCommands(
+                    buttons,
+                    ToolbarGroupOverflow::Together,
+                    templates,
+                ),
+                source: Source::Navigation(source),
+            },
+        )
     }
     pub(super) fn presentation_toolbar_declarations(&self) -> Vec<Vec<Declaration>> {
         self.presentation_toolbar_declarations_with_icons(self.renderer.is_some())
@@ -780,7 +920,7 @@ impl Host {
                     id: ComponentId(2_000_000 + index as u64 * 10),
                     region,
                     placement: ToolbarPlacement::Navigation,
-                    order: 0,
+                    order: 20,
                     contents: Contents::Title(title.clone()),
                     source: Source::Title,
                 });
@@ -853,11 +993,18 @@ impl Host {
                 }
             }
             for ((target, region), (buttons, retained, icons)) in targets {
-                // Fixed owner/role identities reserve ten IDs per group, as the
+                // Fixed owner/role identities reserve forty IDs per owner and ten per group, as the
                 // original groups do. A retained Window contribution may share
                 // its presenter with an internal retained group from this owner.
-                let id = if retained && region == WINDOW_BUSINESS.0 {
-                    ComponentId(4_000_000 + index as u64 * 10)
+                let window_region = [
+                    WINDOW_BUSINESS.0,
+                    WINDOW_NAV_BUSINESS.0,
+                    WINDOW_OTHERS_BUSINESS.0,
+                ]
+                .contains(&region);
+                let id = if retained && window_region {
+                    let role = u64::MAX - 18 - region;
+                    ComponentId(4_000_000 + index as u64 * 40 + role * 10)
                 } else {
                     ComponentId(92400 + index as u64 * 10)
                 };
@@ -866,7 +1013,11 @@ impl Host {
                 declarations[target].push(Declaration {
                     id,
                     region: ComponentId(region),
-                    placement: ToolbarPlacement::Navigation,
+                    placement: if window_region {
+                        ToolbarPlacement::PrimaryAction
+                    } else {
+                        ToolbarPlacement::Navigation
+                    },
                     order: index as i32,
                     contents,
                     source: Source::Panel {
@@ -969,37 +1120,9 @@ impl Host {
                         && action.command.enabled,
                 });
             }
-            let (presenter, destination) = if self
-                .presentation
-                .as_ref()
-                .unwrap()
-                .navigation_uses_window_edge()
-            {
-                (focus, WINDOW_LEADING)
-            } else {
-                self.business_destination(index, None, focus)
-            };
-            declarations[presenter].push(Declaration {
-                id: ComponentId(92100),
-                region: if self
-                    .presentation
-                    .as_ref()
-                    .unwrap()
-                    .navigation_uses_window_edge()
-                {
-                    WINDOW_LEADING
-                } else {
-                    destination
-                },
-                placement: ToolbarPlacement::Navigation,
-                order: 10,
-                contents: Contents::TemplateCommands(
-                    buttons,
-                    ToolbarGroupOverflow::Together,
-                    templates,
-                ),
-                source: Source::Navigation(source),
-            });
+            let (presenter, declaration) =
+                self.navigation_toolbar_declaration(index, focus, source, buttons, templates);
+            declarations[presenter].push(declaration);
         }
         declarations
     }
@@ -1033,70 +1156,20 @@ impl Host {
                 .collect();
             panel.mounted_toolbar.retain_groups(&keep)?;
         }
-        let switcher_start = self
-            .presentation_layout
-            .tabs
-            .map_or(whole.max_x(), |frame| frame.min_x());
         let list_members: Vec<_> = (0..self.panels.len())
             .map(|index| self.is_list_member(index))
             .collect();
+        let regions: Vec<_> = (0..self.panels.len())
+            .map(|index| self.container_toolbar_regions(index, focus, whole, &band))
+            .collect();
         for (index, panel) in self.panels.iter_mut().enumerate() {
-            let mut regions = Vec::new();
-            if panel.bounds.size.width > 0. && panel.bounds.size.height > 0. {
-                if let Some(frame) = panel.geometry.toolbar {
-                    let mut region = ToolbarRegion::new(ComponentId(91000 + index as u64), frame);
-                    if matches!(
-                        panel.options.toolbar_host,
-                        crate::ContainerToolbarHost::Container {
-                            position: crate::ContainerToolbarPosition::Leading
-                                | crate::ContainerToolbarPosition::Trailing
-                        }
-                    ) {
-                        region.axis = Axis::Vertical;
-                    }
-                    regions.push(region);
-                }
-                if let Some(frame) = panel.geometry.close {
-                    regions.push(ToolbarRegion::new(
-                        ComponentId(CLOSE_REGION_BASE + index as u64),
-                        frame,
-                    ));
-                }
-                if index == focus {
-                    let mut business = ToolbarRegion::new(
-                        WINDOW_BUSINESS,
-                        Rect::new(
-                            whole.min_x(),
-                            band.y,
-                            (switcher_start - whole.min_x()).max(0.),
-                            band.height,
-                        ),
-                    );
-                    business.native_safe_area.left =
-                        band.native_leading.min(business.available.size.width);
-                    reserve_window_edges(&mut business, self.presentation_chrome_edges);
-                    regions.push(business);
-                    for (id, edge) in [
-                        (WINDOW_LEADING, ToolbarWindowEdge::Leading),
-                        (WINDOW_TRAILING, ToolbarWindowEdge::Trailing),
-                    ] {
-                        let mut region = ToolbarRegion::window(
-                            id,
-                            Rect::new(whole.min_x(), band.y, whole.size.width, band.height),
-                            edge,
-                        );
-                        region.native_safe_area.left = band.native_leading;
-                        regions.push(region);
-                    }
-                }
-            }
             panel.mounted_toolbar.sync(
                 if list_members[index] {
                     panel.clip
                 } else {
                     whole
                 },
-                regions,
+                regions[index].clone(),
                 std::mem::take(&mut declarations[index]),
             )?;
             panel.mounted_toolbar.host.set_window_active(active);
@@ -1131,50 +1204,7 @@ impl Host {
         });
         // A second identical sync is an original-host no-op; changed safe areas
         // retire stale geometry before any pointer release can be delivered.
-        let mut regions = Vec::new();
-        if let Some(frame) = self.panels[focus].geometry.toolbar {
-            let mut region = ToolbarRegion::new(ComponentId(91000 + focus as u64), frame);
-            if matches!(
-                self.panels[focus].options.toolbar_host,
-                crate::ContainerToolbarHost::Container {
-                    position: crate::ContainerToolbarPosition::Leading
-                        | crate::ContainerToolbarPosition::Trailing
-                }
-            ) {
-                region.axis = Axis::Vertical;
-            }
-            regions.push(region);
-        }
-        if let Some(frame) = self.panels[focus].geometry.close {
-            regions.push(ToolbarRegion::new(
-                ComponentId(CLOSE_REGION_BASE + focus as u64),
-                frame,
-            ));
-        }
-        let mut business = ToolbarRegion::new(
-            WINDOW_BUSINESS,
-            Rect::new(
-                whole.min_x(),
-                band.y,
-                (switcher_start - whole.min_x()).max(0.),
-                band.height,
-            ),
-        );
-        business.native_safe_area.left = band.native_leading.min(business.available.size.width);
-        reserve_window_edges(&mut business, self.presentation_chrome_edges);
-        regions.push(business);
-        for (id, edge) in [
-            (WINDOW_LEADING, ToolbarWindowEdge::Leading),
-            (WINDOW_TRAILING, ToolbarWindowEdge::Trailing),
-        ] {
-            let mut region = ToolbarRegion::window(
-                id,
-                Rect::new(whole.min_x(), band.y, whole.size.width, band.height),
-                edge,
-            );
-            region.native_safe_area.left = band.native_leading;
-            regions.push(region);
-        }
+        let regions = self.container_toolbar_regions(focus, focus, whole, &band);
         let toolbar = &mut self.panels[focus].mounted_toolbar;
         toolbar
             .host
@@ -1943,6 +1973,7 @@ mod input_regressions {
             Some(
                 PresentationOptions::new("focus")
                     .nav_bar("nav")
+                    .navigation_toolbar("other")
                     .others(OthersOptions::new(vec!["other".into()])),
             ),
         );
@@ -1966,6 +1997,432 @@ mod input_regressions {
             .unwrap();
         }
         host.reconcile_toolbar_focus(true);
+    }
+    #[test]
+    fn partition_chrome_navigation_follows_identity_and_respects_declared_host() {
+        let local = |id| {
+            LocalContainer::new(id, Content::new(ComponentId(1), TextContent::new(id)))
+                .unwrap()
+                .into()
+        };
+        let mut host = Host::from_containers(
+            vec![local("nav"), local("focus"), local("other")],
+            false,
+            None,
+            Some(
+                PresentationOptions::new("focus")
+                    .nav_bar("nav")
+                    .navigation_toolbar("focus")
+                    .navigation_toolbar_follows_focus(true)
+                    .others(OthersOptions::new(vec!["other".into()])),
+            ),
+        );
+        host.mount_columns();
+        refresh_window_chrome(&mut host);
+        for index in [1, 2] {
+            let state = host.presentation.as_ref().unwrap();
+            let target = host
+                .panels
+                .iter()
+                .position(|panel| {
+                    Some(panel.module_id.as_str()) == state.navigation_toolbar_presenter_id()
+                })
+                .unwrap();
+            assert_eq!(
+                target, index,
+                "navigation follows original current Focus identity"
+            );
+            assert_eq!(
+                host.business_destination(target, None, index),
+                (index, WINDOW_BUSINESS)
+            );
+            host.panels[target].options.toolbar_host = crate::ContainerToolbarHost::Container {
+                position: crate::ContainerToolbarPosition::Bottom,
+            };
+            assert_eq!(
+                host.business_destination(target, None, index),
+                (target, ComponentId(91000 + target as u64)),
+                "follows-focus must not override explicit internal host"
+            );
+            host.presentation
+                .as_mut()
+                .unwrap()
+                .promote(if index == 1 { "other" } else { "focus" })
+                .unwrap();
+        }
+    }
+    #[test]
+    fn partition_chrome_actual_column_bounds_follow_resize_and_visibility() {
+        let mut host = window_chrome_fixture();
+        for _ in 0..2 {
+            for id in ["nav", "focus"] {
+                let expected = host
+                    .panels
+                    .iter()
+                    .find(|panel| panel.module_id == id)
+                    .unwrap()
+                    .bounds;
+                if expected.size.width > 0. {
+                    let title = host
+                        .panels
+                        .iter()
+                        .flat_map(|panel| panel.mounted_toolbar.host.semantics())
+                        .find(|node| node.node.semantics.name == id)
+                        .unwrap()
+                        .node
+                        .frame;
+                    assert!(title.min_x() >= expected.min_x() && title.max_x() <= expected.max_x());
+                }
+            }
+            host.presentation
+                .as_mut()
+                .unwrap()
+                .toggle_nav_bar()
+                .unwrap();
+            refresh_window_chrome(&mut host);
+            let expected = if host.presentation.as_ref().unwrap().nav_bar_visible() {
+                "Hide NavBar"
+            } else {
+                "Show NavBar"
+            };
+            assert!(
+                host.panels
+                    .iter()
+                    .flat_map(|panel| panel.mounted_toolbar.host.semantics())
+                    .flat_map(|node| node.parts)
+                    .any(|(_, part)| part.semantics.name == expected && part.frame.size.width > 0.)
+            );
+        }
+        host.presentation.as_mut().unwrap().resize_nav_width(
+            300.,
+            Rect::new(0., 0., 1200., 700.),
+            MIN_COLUMN,
+        );
+        host.presentation
+            .as_mut()
+            .unwrap()
+            .set_focus_fraction(0.6)
+            .unwrap();
+        refresh_window_chrome(&mut host);
+        let focus = host.panels[1].bounds;
+        let region = host.panels[1]
+            .mounted_toolbar
+            .host
+            .content_host()
+            .get(WINDOW_BUSINESS)
+            .unwrap()
+            .frame();
+        assert!(region.min_x() >= focus.min_x() && region.max_x() <= focus.max_x());
+        for _ in 0..2 {
+            host.presentation.as_mut().unwrap().toggle_others().unwrap();
+            refresh_window_chrome(&mut host);
+            let expected = if host.presentation.as_ref().unwrap().others_visible() {
+                "Hide Others"
+            } else {
+                "Show Others"
+            };
+            assert!(
+                host.panels
+                    .iter()
+                    .flat_map(|panel| panel.mounted_toolbar.host.semantics())
+                    .flat_map(|node| node.parts)
+                    .any(|(_, part)| part.semantics.name == expected && part.frame.size.width > 0.)
+            );
+        }
+    }
+    #[test]
+    fn partition_chrome_fixed_navigation_in_others_does_not_overlap_leading_switcher() {
+        let mut host = window_chrome_fixture();
+        assert_eq!(
+            host.presentation
+                .as_ref()
+                .unwrap()
+                .navigation_toolbar_presenter_id(),
+            Some("other")
+        );
+        let whole = Rect::new(0., 0., 1200., 700.);
+        let source = crate::toolbar_source::ComponentSource {
+            session: tekes_ui_module_runtime::component::Session {
+                module: "navigation".into(),
+                instance: 1,
+                host_epoch: 1,
+            },
+            registration: 1,
+            window: host.panels[1].mounted_toolbar.window,
+        };
+        let (presenter, declaration) = host.navigation_toolbar_declaration(
+            2,
+            1,
+            source,
+            vec![ToolbarButtonDeclaration {
+                id: 71,
+                icon: None,
+                text: "Back".into(),
+                hint: Some("Back".into()),
+                enabled: true,
+            }],
+            Vec::new(),
+        );
+        assert_eq!((presenter, declaration.region), (1, WINDOW_OTHERS_BUSINESS));
+        let mut declarations = host.presentation_toolbar_declarations();
+        declarations[presenter].push(declaration);
+        let regions = host.container_toolbar_regions(presenter, 1, whole, &test_band());
+        host.panels[presenter]
+            .mounted_toolbar
+            .sync(whole, regions, std::mem::take(&mut declarations[presenter]))
+            .unwrap();
+        render_test_tabs(
+            &mut host.panels[presenter].mounted_toolbar.host,
+            &mut Scene::new(),
+            &mut host.text,
+            Theme::LIGHT.into(),
+        )
+        .unwrap();
+        let palette = host.palette();
+        host.paint_presentation(&mut Scene::new(), whole, palette)
+            .unwrap();
+        let frame = host.panels[presenter]
+            .mounted_toolbar
+            .host
+            .semantics()
+            .into_iter()
+            .flat_map(|node| node.parts)
+            .find(|(_, part)| part.semantics.name == "Back")
+            .unwrap()
+            .1
+            .frame;
+        let switcher = host
+            .presentation_tabs
+            .as_ref()
+            .unwrap()
+            .content_host()
+            .get(ComponentId(999_999))
+            .unwrap()
+            .frame();
+        let others = host.panels[2].bounds;
+        assert!(
+            switcher.size.width > 0.,
+            "a fixed navigation source must not squeeze Others switcher away"
+        );
+        assert!(
+            switcher.min_x() >= others.min_x()
+                && switcher.min_x()
+                    <= others.min_x()
+                        + tekes_ui_tokens::proposal::metric("spacing", "space-regular").unwrap()
+        );
+        assert!(
+            switcher.max_x() <= frame.min_x() || frame.max_x() <= switcher.min_x(),
+            "original fixed navigation and switcher frames must not overlap: {switcher:?} {frame:?}"
+        );
+    }
+    #[test]
+    fn partition_chrome_window_titles_stay_in_their_container_columns() {
+        let host = window_chrome_fixture();
+        for (index, name) in [(0, "nav"), (1, "focus")] {
+            let frame = host
+                .panels
+                .iter()
+                .flat_map(|panel| panel.mounted_toolbar.host.semantics())
+                .find(|node| node.node.semantics.name == name)
+                .expect("original title")
+                .node
+                .frame;
+            let column = host.panels[index].bounds;
+            assert!(
+                frame.min_x() >= column.min_x() && frame.max_x() <= column.max_x(),
+                "title {name} must stay in its actual column: title={frame:?}, column={column:?}"
+            );
+        }
+    }
+    #[test]
+    fn partition_chrome_others_switcher_starts_at_its_own_leading_edge() {
+        let mut host = window_chrome_fixture();
+        let whole = Rect::new(0., 0., 1200., 700.);
+        let palette = host.palette();
+        host.paint_presentation(&mut Scene::new(), whole, palette)
+            .unwrap();
+        let column = host.panels[2].bounds;
+        let group = host
+            .presentation_tabs
+            .as_ref()
+            .unwrap()
+            .content_host()
+            .get(ComponentId(999_999))
+            .unwrap()
+            .frame();
+        let regular = tekes_ui_tokens::proposal::metric("spacing", "space-regular").unwrap();
+        assert!(
+            group.min_x() >= column.min_x() && group.min_x() <= column.min_x() + regular,
+            "Others navigation must be leading, not centered/trailing: {group:?}, {column:?}"
+        );
+    }
+    #[test]
+    fn partition_chrome_internal_business_keeps_its_leading_edge_in_all_four_directions() {
+        for position in [
+            crate::ContainerToolbarPosition::Top,
+            crate::ContainerToolbarPosition::Bottom,
+            crate::ContainerToolbarPosition::Leading,
+            crate::ContainerToolbarPosition::Trailing,
+        ] {
+            let mut host = window_chrome_fixture();
+            host.panels[2].options.toolbar_host =
+                crate::ContainerToolbarHost::Container { position };
+            host.panels[2].toolbar = vec![ToolbarItem {
+                id: 7,
+                title: "Business".into(),
+                enabled: true,
+                geometry_dependent: false,
+            }];
+            refresh_window_chrome(&mut host);
+            let bar = host.panels[2].geometry.toolbar.unwrap();
+            let frame = host.panels[2]
+                .mounted_toolbar
+                .host
+                .semantics()
+                .into_iter()
+                .flat_map(|node| node.parts)
+                .find(|(_, part)| part.semantics.name == "Business")
+                .unwrap()
+                .1
+                .frame;
+            let regular = tekes_ui_tokens::proposal::metric("spacing", "space-regular").unwrap();
+            if matches!(
+                position,
+                crate::ContainerToolbarPosition::Leading
+                    | crate::ContainerToolbarPosition::Trailing
+            ) {
+                assert!(
+                    frame.min_y() >= bar.min_y() && frame.min_y() <= bar.min_y() + regular * 2.,
+                    "vertical internal business starts at its top: {frame:?} {bar:?}"
+                );
+            } else {
+                assert!(
+                    frame.min_x() >= bar.min_x() && frame.min_x() <= bar.min_x() + regular * 2.,
+                    "horizontal internal business starts at its leading edge: {frame:?} {bar:?}"
+                );
+            }
+        }
+    }
+    #[test]
+    fn partition_chrome_no_business_bar_close_uses_one_natural_full_width_strip() {
+        for host_option in [
+            crate::ContainerToolbarHost::Window,
+            crate::ContainerToolbarHost::Container {
+                position: crate::ContainerToolbarPosition::Top,
+            },
+            crate::ContainerToolbarHost::Container {
+                position: crate::ContainerToolbarPosition::Trailing,
+            },
+        ] {
+            let mut host = window_chrome_fixture();
+            host.panels[2].options.toolbar_host = host_option;
+            refresh_window_chrome(&mut host);
+            let panel = &host.panels[2];
+            assert!(
+                panel.geometry.toolbar.is_none(),
+                "no business item creates no business bar"
+            );
+            let close = panel.geometry.close.unwrap();
+            let strip = panel
+                .mounted_toolbar
+                .host
+                .content_host()
+                .get(ComponentId(CLOSE_REGION_BASE + 2))
+                .unwrap()
+                .frame();
+            assert_eq!(strip.min_x(), panel.bounds.min_x());
+            assert_eq!(
+                strip.max_x(),
+                panel.bounds.max_x(),
+                "natural close strip has no disconnected right-hand painted box"
+            );
+            assert_eq!(strip.min_y(), close.min_y());
+            assert_eq!(
+                strip.size.height, close.size.height,
+                "no extra chrome height"
+            );
+        }
+    }
+    #[test]
+    fn partition_chrome_top_business_and_close_share_actual_height() {
+        use crate::ContainerToolbarPosition as Position;
+        let mut host = window_chrome_fixture();
+        host.panels[2].options.toolbar_host = crate::ContainerToolbarHost::Container {
+            position: Position::Top,
+        };
+        host.panels[2].toolbar = vec![ToolbarItem {
+            id: 1,
+            title: "Business".into(),
+            enabled: true,
+            geometry_dependent: false,
+        }];
+        refresh_window_chrome(&mut host);
+        let geometry = host.panels[2].geometry;
+        let bar = geometry.toolbar.unwrap();
+        let close = geometry.close.unwrap();
+        assert_eq!(close.min_y(), bar.min_y());
+        assert_eq!(
+            close.max_y(),
+            bar.max_y(),
+            "Top business and Close need a continuous actual-height chrome strip"
+        );
+        assert!(close.min_x() >= bar.max_x());
+        assert!(geometry.content.min_y() >= close.max_y());
+    }
+    #[test]
+    fn partition_chrome_repeated_exchange_uses_real_original_press_paint_release() {
+        let mut host = window_chrome_fixture();
+        for index in [1, 2] {
+            host.panels[index].toolbar = vec![ToolbarItem {
+                id: 1,
+                title: "Switch".into(),
+                enabled: true,
+                geometry_dependent: false,
+            }];
+            host.panels[index].options.focus_switch_command = Some(1);
+        }
+        for expected in ["other", "focus", "other", "focus"] {
+            refresh_window_chrome(&mut host);
+            let point = host
+                .panels
+                .iter()
+                .flat_map(|panel| panel.mounted_toolbar.host.semantics())
+                .flat_map(|node| node.parts)
+                .find(|(_, part)| part.semantics.name == "Switch to Others")
+                .expect("original Focus exchange button")
+                .1
+                .frame
+                .center();
+            let target = host
+                .toolbar_target_at(point)
+                .expect("real current pointer target");
+            host.dispatch_toolbar(target, &ContentEvent::PointerDown(point))
+                .unwrap();
+            refresh_window_chrome(&mut host);
+            assert!(host.panels.iter().any(|panel| {
+                panel
+                    .mounted_toolbar
+                    .host
+                    .content_host()
+                    .pointer_capture()
+                    .is_some()
+            }));
+            let target = host
+                .toolbar_target_at(point)
+                .expect("current target after paint");
+            host.dispatch_toolbar(target, &ContentEvent::PointerUp(point))
+                .unwrap();
+            assert_eq!(host.presentation.as_ref().unwrap().focus_id(), expected);
+            refresh_window_chrome(&mut host);
+            assert!(host.panels.iter().all(|panel| {
+                panel
+                    .mounted_toolbar
+                    .host
+                    .content_host()
+                    .pointer_capture()
+                    .is_none()
+            }));
+        }
     }
     #[test]
     fn window_chrome_unified_blank_reaches_native_drag_handoff() {
@@ -2242,7 +2699,7 @@ mod input_regressions {
         assert_eq!(*calls.borrow(), vec![11, 10]);
     }
     #[test]
-    fn two_default_window_retained_targets_share_one_original_owner_registration() {
+    fn two_default_window_retained_targets_keep_their_columns_and_one_dispatch_per_action() {
         let calls = Rc::new(RefCell::new(Vec::new()));
         let recorded = calls.clone();
         let local = |id| {
@@ -2296,52 +2753,81 @@ mod input_regressions {
                 .flat_map(|panel| panel.mounted_toolbar.sources())
                 .filter(|source| matches!(source, Source::Panel { index: 2, .. }))
                 .count(),
-            1,
-            "both retained actions share one window registration with the real original owner"
+            2,
+            "two column destinations retain two groups with the same real original owner"
         );
-        let point = host.panels[0]
-            .mounted_toolbar
-            .host
-            .semantics()
-            .into_iter()
-            .flat_map(|node| node.parts)
-            .find(|(_, part)| part.semantics.name == "To B")
-            .unwrap()
-            .1
-            .frame
-            .center();
-        let target = host.toolbar_target_at(point).unwrap();
-        assert_eq!(
-            target,
-            ToolbarTarget::Contribution {
-                presenter: 0,
-                group: ComponentId(4_000_020)
+        for (name, command, column) in [("To A", 10, 0), ("To B", 11, 1)] {
+            let frame = host.panels[0]
+                .mounted_toolbar
+                .host
+                .semantics()
+                .into_iter()
+                .flat_map(|node| node.parts)
+                .find(|(_, part)| part.semantics.name == name)
+                .unwrap()
+                .1
+                .frame;
+            let bounds = host.panels[column].bounds;
+            assert!(frame.min_x() >= bounds.min_x() && frame.max_x() <= bounds.max_x());
+            let point = frame.center();
+            let target = host.toolbar_target_at(point).unwrap();
+            assert!(matches!(
+                target,
+                ToolbarTarget::Contribution { presenter: 0, .. }
+            ));
+            assert!(matches!(
+                host.panels[0]
+                    .mounted_toolbar
+                    .source(Host::toolbar_group(target)),
+                Some(Source::Panel { index: 2, .. })
+            ));
+            host.dispatch_toolbar(target, &ContentEvent::PointerDown(point))
+                .unwrap();
+            host.sync_container_toolbars(true, area, test_band(), 40.)
+                .unwrap();
+            for panel in &mut host.panels {
+                render_test_tabs(
+                    &mut panel.mounted_toolbar.host,
+                    &mut Scene::new(),
+                    &mut host.text,
+                    Theme::LIGHT.into(),
+                )
+                .unwrap();
             }
-        );
-        host.dispatch_toolbar(target, &ContentEvent::PointerDown(point))
-            .unwrap();
-        host.dispatch_toolbar(target, &ContentEvent::PointerUp(point))
-            .unwrap();
-        assert_eq!(*calls.borrow(), vec![11]);
-        host.set_toolbar_focus(Some(target), true);
-        for (key, down) in [
-            (ControlKey::Home, true),
-            (ControlKey::Home, false),
-            (ControlKey::Space, true),
-            (ControlKey::Space, false),
-        ] {
-            host.toolbar_key_input(ContentKeyEvent {
-                key: Some(key),
-                down,
-                repeat: false,
-                modifiers: Default::default(),
-                native_code: 0,
-                characters: String::new(),
-                characters_ignoring_modifiers: String::new(),
-            })
-            .unwrap();
+            host.reconcile_toolbar_focus(true);
+            let target = host.toolbar_target_at(point).unwrap();
+            host.dispatch_toolbar(target, &ContentEvent::PointerUp(point))
+                .unwrap();
+            assert_eq!(calls.borrow().last(), Some(&command));
         }
-        assert_eq!(*calls.borrow(), vec![11, 10]);
+        for name in ["To A", "To B"] {
+            let point = host.panels[0]
+                .mounted_toolbar
+                .host
+                .semantics()
+                .into_iter()
+                .flat_map(|node| node.parts)
+                .find(|(_, part)| part.semantics.name == name)
+                .unwrap()
+                .1
+                .frame
+                .center();
+            let target = host.toolbar_target_at(point).unwrap();
+            host.set_toolbar_focus(Some(target), true);
+            for down in [true, false] {
+                host.toolbar_key_input(ContentKeyEvent {
+                    key: Some(ControlKey::Space),
+                    down,
+                    repeat: false,
+                    modifiers: Default::default(),
+                    native_code: 49,
+                    characters: " ".into(),
+                    characters_ignoring_modifiers: " ".into(),
+                })
+                .unwrap();
+            }
+        }
+        assert_eq!(*calls.borrow(), vec![10, 11, 10, 11]);
     }
     #[test]
     fn mixed_retained_hosts_in_one_presenter_keep_both_commands_and_original_owner() {
@@ -2514,7 +3000,7 @@ mod input_regressions {
                     assert_eq!(
                         declaration.region,
                         if switch == 11 {
-                            WINDOW_BUSINESS
+                            WINDOW_OTHERS_BUSINESS
                         } else {
                             ComponentId(91000)
                         }
