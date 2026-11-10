@@ -718,23 +718,28 @@ impl Host {
         retained: Option<usize>,
         focus: usize,
     ) -> (usize, ComponentId) {
-        if let Some(target) = retained {
-            return (target, ComponentId(91000 + target as u64));
-        }
-        match self.panels[owner].options.toolbar_host {
+        let target = retained.unwrap_or(owner);
+        match self.panels[target].options.toolbar_host {
             crate::ContainerToolbarHost::Window => (focus, WINDOW_BUSINESS),
             crate::ContainerToolbarHost::Container { .. } => {
-                (owner, ComponentId(91000 + owner as u64))
+                (target, ComponentId(91000 + target as u64))
             }
         }
     }
     pub(super) fn presentation_toolbar_declarations(&self) -> Vec<Vec<Declaration>> {
+        self.presentation_toolbar_declarations_with_icons(self.renderer.is_some())
+    }
+    // Projection depends on whether the receiving text service can prepare the
+    // original toolkit icons; it does not require constructing a GPU renderer.
+    fn presentation_toolbar_declarations_with_icons(
+        &self,
+        include_icons: bool,
+    ) -> Vec<Vec<Declaration>> {
         let input_open = self
             .navigation
             .as_ref()
             .is_none_or(|nav| nav.host.input_open && !nav.busy && nav.error.is_none());
         let mut declarations = vec![Vec::new(); self.panels.len()];
-        let mut templates = vec![Vec::new(); self.panels.len()];
         let focus = self
             .panels
             .iter()
@@ -780,10 +785,9 @@ impl Host {
                     source: Source::Title,
                 });
             }
-            let mut targets: std::collections::BTreeMap<
-                (usize, u64),
-                Vec<ToolbarButtonDeclaration>,
-            > = std::collections::BTreeMap::new();
+            type TargetCommands = (Vec<ToolbarButtonDeclaration>, bool, Vec<(u64, String)>);
+            let mut targets: std::collections::BTreeMap<(usize, u64), TargetCommands> =
+                std::collections::BTreeMap::new();
             for action in &panel.toolbar {
                 let target = if visible {
                     Some(index)
@@ -804,6 +808,7 @@ impl Host {
                         })
                 };
                 if let Some(target) = target {
+                    let retained_target = !visible;
                     let (target, region) =
                         self.business_destination(index, (!visible).then_some(target), focus);
                     let switch = panel.options.focus_switch_command == Some(action.id);
@@ -820,8 +825,10 @@ impl Host {
                     } else {
                         action.title.as_str()
                     };
-                    if switch && self.renderer.is_some() {
-                        templates[target].push((action.id, "tekes-swap-horizontal".to_owned()));
+                    let (buttons, retained, icons) = targets.entry((target, region.0)).or_default();
+                    *retained |= retained_target;
+                    if switch && include_icons {
+                        icons.push((action.id, "tekes-swap-horizontal".to_owned()));
                     }
                     let hint = if switch {
                         switch_target.map_or_else(
@@ -831,34 +838,37 @@ impl Host {
                     } else {
                         action.title.clone()
                     };
-                    targets
-                        .entry((target, region.0))
-                        .or_default()
-                        .push(ToolbarButtonDeclaration {
-                            id: action.id,
-                            icon: None,
-                            text: title.to_owned(),
-                            hint: Some(hint),
-                            enabled: input_open
-                                && (!switch || switch_target.is_some())
-                                && action.enabled
-                                && panel.failed.is_none()
-                                && (!action.geometry_dependent
-                                    || visible && panel.frame_viewport == panel.viewport),
-                        });
+                    buttons.push(ToolbarButtonDeclaration {
+                        id: action.id,
+                        icon: None,
+                        text: title.to_owned(),
+                        hint: Some(hint),
+                        enabled: input_open
+                            && (!switch || switch_target.is_some())
+                            && action.enabled
+                            && panel.failed.is_none()
+                            && (!action.geometry_dependent
+                                || visible && panel.frame_viewport == panel.viewport),
+                    });
                 }
             }
-            for ((target, region), buttons) in targets {
+            for ((target, region), (buttons, retained, icons)) in targets {
+                // Fixed owner/role identities reserve ten IDs per group, as the
+                // original groups do. A retained Window contribution may share
+                // its presenter with an internal retained group from this owner.
+                let id = if retained && region == WINDOW_BUSINESS.0 {
+                    ComponentId(4_000_000 + index as u64 * 10)
+                } else {
+                    ComponentId(92400 + index as u64 * 10)
+                };
+                let contents =
+                    Contents::TemplateCommands(buttons, ToolbarGroupOverflow::Split, icons);
                 declarations[target].push(Declaration {
-                    id: ComponentId(92400 + index as u64 * 10),
+                    id,
                     region: ComponentId(region),
                     placement: ToolbarPlacement::Navigation,
                     order: index as i32,
-                    contents: Contents::TemplateCommands(
-                        buttons,
-                        ToolbarGroupOverflow::Split,
-                        std::mem::take(&mut templates[target]),
-                    ),
+                    contents,
                     source: Source::Panel {
                         instance: panel.instance,
                         index,
@@ -918,7 +928,7 @@ impl Host {
                             enabled: input_open,
                         }],
                         ToolbarGroupOverflow::Together,
-                        if self.renderer.is_some() {
+                        if include_icons {
                             vec![(0x5601 + side as u64, glyph.to_owned())]
                         } else {
                             Vec::new()
@@ -2022,8 +2032,18 @@ mod input_regressions {
             LocalContainer::new(id, Content::new(ComponentId(1), TextContent::new(id))).unwrap()
         };
         let members: Vec<Container> = vec![
-            local("a").title("A").into(),
-            local("b").title("B").into(),
+            local("a")
+                .title("A")
+                .toolbar_host(crate::ContainerToolbarHost::Container {
+                    position: crate::ContainerToolbarPosition::Top,
+                })
+                .into(),
+            local("b")
+                .title("B")
+                .toolbar_host(crate::ContainerToolbarHost::Container {
+                    position: crate::ContainerToolbarPosition::Top,
+                })
+                .into(),
             local("owner")
                 .toolbar_host(crate::ContainerToolbarHost::Container {
                     position: crate::ContainerToolbarPosition::Top,
@@ -2108,6 +2128,304 @@ mod input_regressions {
         })
         .unwrap();
         assert_eq!(*calls.borrow(), vec![11, 10]);
+    }
+    #[test]
+    fn two_default_window_retained_targets_share_one_original_owner_registration() {
+        let calls = Rc::new(RefCell::new(Vec::new()));
+        let recorded = calls.clone();
+        let local = |id| {
+            LocalContainer::new(id, Content::new(ComponentId(1), TextContent::new(id))).unwrap()
+        };
+        let action = |id, title: &str| ToolbarItem {
+            id,
+            title: title.into(),
+            enabled: true,
+            geometry_dependent: false,
+        };
+        let members: Vec<Container> = vec![
+            local("a").title("A").into(),
+            local("b").title("B").into(),
+            local("owner")
+                .toolbar(vec![action(10, "To A"), action(11, "To B")])
+                .retain_button(10, "a")
+                .retain_button(11, "b")
+                .on_command(move |_, command| {
+                    recorded.borrow_mut().push(command);
+                    Ok(())
+                })
+                .into(),
+        ];
+        let mut host = Host::from_containers(
+            members,
+            false,
+            None,
+            Some(PresentationOptions::new("a").others(OthersOptions::new(vec!["b".into()]))),
+        );
+        host.mount_columns();
+        let area = Rect::new(0., 0., 700., 700.);
+        render_layout(&mut host, area);
+        host.sync_container_toolbars(true, area, test_band(), 40.)
+            .unwrap();
+        for panel in &mut host.panels {
+            render_test_tabs(
+                &mut panel.mounted_toolbar.host,
+                &mut Scene::new(),
+                &mut host.text,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
+        }
+        assert!(
+            host.panels[0].geometry.toolbar.is_none() && host.panels[1].geometry.toolbar.is_none()
+        );
+        assert_eq!(
+            host.panels
+                .iter()
+                .flat_map(|panel| panel.mounted_toolbar.sources())
+                .filter(|source| matches!(source, Source::Panel { index: 2, .. }))
+                .count(),
+            1,
+            "both retained actions share one window registration with the real original owner"
+        );
+        let point = host.panels[0]
+            .mounted_toolbar
+            .host
+            .semantics()
+            .into_iter()
+            .flat_map(|node| node.parts)
+            .find(|(_, part)| part.semantics.name == "To B")
+            .unwrap()
+            .1
+            .frame
+            .center();
+        let target = host.toolbar_target_at(point).unwrap();
+        assert_eq!(
+            target,
+            ToolbarTarget::Contribution {
+                presenter: 0,
+                group: ComponentId(4_000_020)
+            }
+        );
+        host.dispatch_toolbar(target, &ContentEvent::PointerDown(point))
+            .unwrap();
+        host.dispatch_toolbar(target, &ContentEvent::PointerUp(point))
+            .unwrap();
+        assert_eq!(*calls.borrow(), vec![11]);
+        host.set_toolbar_focus(Some(target), true);
+        for (key, down) in [
+            (ControlKey::Home, true),
+            (ControlKey::Home, false),
+            (ControlKey::Space, true),
+            (ControlKey::Space, false),
+        ] {
+            host.toolbar_key_input(ContentKeyEvent {
+                key: Some(key),
+                down,
+                repeat: false,
+                modifiers: Default::default(),
+                native_code: 0,
+                characters: String::new(),
+                characters_ignoring_modifiers: String::new(),
+            })
+            .unwrap();
+        }
+        assert_eq!(*calls.borrow(), vec![11, 10]);
+    }
+    #[test]
+    fn mixed_retained_hosts_in_one_presenter_keep_both_commands_and_original_owner() {
+        let calls = Rc::new(RefCell::new(Vec::new()));
+        let recorded = calls.clone();
+        let local = |id| {
+            LocalContainer::new(id, Content::new(ComponentId(1), TextContent::new(id))).unwrap()
+        };
+        let action = |id, title: &str| ToolbarItem {
+            id,
+            title: title.into(),
+            enabled: true,
+            geometry_dependent: false,
+        };
+        let members: Vec<Container> = vec![
+            local("a")
+                .title("A")
+                .toolbar_host(crate::ContainerToolbarHost::Container {
+                    position: crate::ContainerToolbarPosition::Top,
+                })
+                .into(),
+            local("b").title("B").into(),
+            local("owner")
+                .toolbar(vec![action(10, "To A"), action(11, "To B")])
+                .retain_button(10, "a")
+                .retain_button(11, "b")
+                .on_command(move |_, command| {
+                    recorded.borrow_mut().push(command);
+                    Ok(())
+                })
+                .into(),
+        ];
+        let mut host = Host::from_containers(
+            members,
+            false,
+            None,
+            Some(PresentationOptions::new("a").others(OthersOptions::new(vec!["b".into()]))),
+        );
+        host.mount_columns();
+        let area = Rect::new(0., 0., 700., 700.);
+        render_layout(&mut host, area);
+        host.sync_container_toolbars(true, area, test_band(), 40.)
+            .unwrap();
+        for panel in &mut host.panels {
+            render_test_tabs(
+                &mut panel.mounted_toolbar.host,
+                &mut Scene::new(),
+                &mut host.text,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
+        }
+        let parts = host.panels[0]
+            .mounted_toolbar
+            .host
+            .semantics()
+            .into_iter()
+            .flat_map(|node| node.parts)
+            .collect::<Vec<_>>();
+        for (name, command) in [("To A", 10), ("To B", 11)] {
+            let matches = parts
+                .iter()
+                .filter(|(_, part)| part.semantics.name == name)
+                .collect::<Vec<_>>();
+            assert_eq!(
+                matches.len(),
+                1,
+                "each mixed-host retained action must have one live original control: {name}"
+            );
+            let point = matches[0].1.frame.center();
+            if command == 10 {
+                assert!(host.panels[0].geometry.toolbar.unwrap().contains(point));
+            } else {
+                assert!(point.y < host.panels[0].geometry.toolbar.unwrap().min_y());
+            }
+            let target = host.toolbar_target_at(point).unwrap();
+            host.dispatch_toolbar(target, &ContentEvent::PointerDown(point))
+                .unwrap();
+            host.dispatch_toolbar(target, &ContentEvent::PointerUp(point))
+                .unwrap();
+        }
+        assert_eq!(*calls.borrow(), vec![10, 11]);
+        for name in ["To A", "To B"] {
+            let point = parts
+                .iter()
+                .find(|(_, part)| part.semantics.name == name)
+                .unwrap()
+                .1
+                .frame
+                .center();
+            let target = host.toolbar_target_at(point).unwrap();
+            host.set_toolbar_focus(Some(target), true);
+            assert_eq!(host.actual_toolbar_owner(), Some(target));
+            for down in [true, false] {
+                host.toolbar_key_input(ContentKeyEvent {
+                    key: Some(ControlKey::Space),
+                    down,
+                    repeat: false,
+                    modifiers: Default::default(),
+                    native_code: 49,
+                    characters: " ".into(),
+                    characters_ignoring_modifiers: " ".into(),
+                })
+                .unwrap();
+            }
+        }
+        assert_eq!(
+            *calls.borrow(),
+            vec![10, 11, 10, 11],
+            "both original groups preserve keyboard source ownership as well as pointer ownership"
+        );
+    }
+    #[test]
+    fn mixed_retained_icon_templates_belong_to_their_actual_command_group() {
+        for switch in [11, 10] {
+            let local = |id| {
+                LocalContainer::new(id, Content::new(ComponentId(1), TextContent::new(id))).unwrap()
+            };
+            let action = |id, title: &str| ToolbarItem {
+                id,
+                title: title.into(),
+                enabled: true,
+                geometry_dependent: false,
+            };
+            let members: Vec<Container> = vec![
+                local("a")
+                    .title("A")
+                    .toolbar_host(crate::ContainerToolbarHost::Container {
+                        position: crate::ContainerToolbarPosition::Top,
+                    })
+                    .into(),
+                local("b").title("B").into(),
+                local("owner")
+                    .toolbar(vec![action(10, "To A"), action(11, "To B")])
+                    .focus_switch(switch)
+                    .retain_button(10, "a")
+                    .retain_button(11, "b")
+                    .into(),
+            ];
+            let mut host = Host::from_containers(
+                members,
+                false,
+                None,
+                Some(PresentationOptions::new("a").others(OthersOptions::new(vec!["b".into()]))),
+            );
+            host.mount_columns();
+            render_layout(&mut host, Rect::new(0., 0., 700., 700.));
+            // Exercise the real production projection with icon capability,
+            // including the Container-before-Window region iteration order.
+            let projected = host.presentation_toolbar_declarations_with_icons(true);
+            let groups = projected[0]
+                .iter()
+                .filter(|declaration| matches!(declaration.source, Source::Panel { index: 2, .. }))
+                .collect::<Vec<_>>();
+            assert_eq!(groups.len(), 2);
+            let mut matched_switch = 0;
+            for declaration in groups {
+                let Contents::TemplateCommands(buttons, _, icons) = &declaration.contents else {
+                    panic!("expected original retained command declaration");
+                };
+                assert_eq!(buttons.len(), 1);
+                assert!(
+                    icons
+                        .iter()
+                        .all(|(id, _)| buttons.iter().any(|button| button.id == *id)),
+                    "a template must belong to an action in the same original group"
+                );
+                if buttons[0].id == switch {
+                    assert_eq!(icons, &vec![(switch, "tekes-swap-horizontal".to_owned())]);
+                    assert_eq!(
+                        declaration.region,
+                        if switch == 11 {
+                            WINDOW_BUSINESS
+                        } else {
+                            ComponentId(91000)
+                        }
+                    );
+                    matched_switch += 1;
+                } else {
+                    assert!(
+                        icons.is_empty(),
+                        "another retained group must not consume this switch icon"
+                    );
+                }
+            }
+            assert_eq!(matched_switch, 1);
+            assert!(
+                host.presentation_toolbar_declarations_with_icons(false)[0]
+                    .iter()
+                    .filter(|declaration| matches!(
+                        declaration.source,
+                        Source::Panel { index: 2, .. }
+                    ))
+                    .all(|declaration| declaration.contents.templates().is_empty())
+            );
+        }
     }
     #[test]
     fn original_overflow_blocks_background_tab_pointer_until_its_own_dismissal() {

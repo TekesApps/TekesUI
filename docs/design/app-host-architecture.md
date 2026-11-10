@@ -4,11 +4,11 @@
 
 Container 始终拥有自己的 Toolbar 内容、业务状态与动作来源；`host` 只决定唯一呈现位置。`window` 将声明汇入窗口统一 Toolbar；`container` 在该 Container 内部呈现，并选择 `top`、`bottom`、`leading` 或 `trailing`。内部默认 `top`；top/bottom 横排，leading/trailing 真实竖排，不能只把横排条塞入狭窄 Rect。
 
-类型契约采用 `ContainerToolbarHost::Window` 或 `ContainerToolbarHost::Container { position: ContainerToolbarPosition }`，避免 window 与无意义内部方向组合。新 host 默认 Window；旧实现是各 Container 分区内的工具栏，不与新的 Window 聚合等价。依赖原内部顶部呈现的已有消费者／夹具须显式迁移为 Container/Top，保留原验收的适用范围，新 Window 模式另验。
+类型契约采用 `ContainerToolbarHost::Window` 或 `ContainerToolbarHost::Container { position: ContainerToolbarPosition }`，避免 window 与无意义内部方向组合。未显式声明 host 的路径一律默认 Window，包括隐藏后保留按钮的目标；只有目标显式选择 Container 才采用内部方向，内部方向默认 Top。旧实现是各 Container 分区内的工具栏，不与新的 Window 聚合等价。依赖原内部顶部呈现的已有消费者／夹具须显式迁移为 Container/Top，保留原验收的适用范围，新 Window 模式另验。
 
 关闭是可关闭 Container 自己右上角的透明 ×，独立于内容切换组及业务 Toolbar 的 host/方向；不向不可关闭的 Focus/NavBar 或聚合 List 增加关闭语义。顶部业务条与关闭共用一次高度，右侧业务条为关闭留出顶部命中；其它方向用关闭按钮自然高度的最小顶部 chrome 保护正文，不为单个关闭按钮浪费一整条右侧空 rail，也不虚构标题。业务条若放在 top，leading 使用其业务内容；无业务项不预留业务条空行。正文 padding 继续只由既有一层 token 配置拥有。
 
-以一份四边 Insets、toolbar rect、close rect 和 content rect 同时决定 Local 绘制／clip、Process Layout 尺寸及输入坐标；`content_frame()` 保持正文真源，`content_point()` 沿原原点转换。不增加 IPC，不重复扣 Window 条和内部条。原 Source 保留 instance/module/pid/generation，每项只在一个位置有效。`retained_buttons` 仅在原 owner 隐藏时按既有显式目标替代默认呈现，不在 Window 和替代位置重复挂载。
+以一份四边 Insets、toolbar rect、close rect 和 content rect 同时决定 Local 绘制／clip、Process Layout 尺寸及输入坐标；`content_frame()` 保持正文真源，`content_point()` 沿原原点转换。不增加 IPC，不重复扣 Window 条和内部条。原 Source 保留 instance/module/pid/generation，每项只在一个位置有效。`retained_buttons` 仅在原 owner 隐藏时使用显式目标，呈现服从该目标 Toolbar 的 host：默认或显式 Window 汇入统一条，显式 Container 才进入目标内部声明的位置；保留配置本身不隐式创建内部 Top。不在原位置和替代位置重复挂载，重绑时通过原稳定角色身份撤销旧 capture/AX，不修改进程 generation。
 
 共享 ToolbarRegion 使用默认 Horizontal 的 `axis`，经原 ToolbarContent/ToolbarGroup/ToolbarControl 同步测量、布局、overflow、键盘及菜单定位；`ToolbarControl::set_axis` 供原声明在 mount 前测量真实侧栏宽度。新配置字段不等于功能通过：Window 聚合和四边呈现、单次原 owner 派发、正文原点/尺寸/点击、关闭不重叠、旧捕获退休都要有受影响回归及精确候选原生证据。
 
