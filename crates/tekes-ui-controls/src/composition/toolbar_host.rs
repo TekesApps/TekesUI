@@ -26,6 +26,8 @@ pub struct ToolbarRegion {
     pub id: ComponentId,
     pub available: Rect,
     pub native_safe_area: Insets,
+    /// Main-axis orientation inside this allocation. Window regions remain horizontal.
+    pub axis: Axis,
     pub scope: ToolbarRegionScope,
 }
 impl ToolbarRegion {
@@ -34,6 +36,7 @@ impl ToolbarRegion {
             id,
             available,
             native_safe_area: Insets::ZERO,
+            axis: Axis::Horizontal,
             scope: ToolbarRegionScope::Container,
         }
     }
@@ -283,13 +286,19 @@ impl Component for Regions {
                 Rect::new(left, base.min_y(), (right - left).max(0.), base.size.height)
             };
             let row = crate::toolbar::metrics(text, proposal::TextRole::UiBody).row;
-            let frame = Rect::new(
-                usable.min_x(),
-                usable.center().y - row * 0.5,
-                usable.size.width,
-                row,
-            );
-            let clip = usable.intersection(&clip).unwrap_or_default();
+            let frame = if region.axis == Axis::Horizontal {
+                Rect::new(
+                    usable.min_x(),
+                    usable.center().y - row * 0.5,
+                    usable.size.width,
+                    row,
+                )
+            } else {
+                usable
+            };
+            // The frame constrains normal toolbar layout and hits. Preserve the
+            // host clip here: original child overlays such as MenuContent use
+            // this ancestor clip as their viewport, outside the toolbar band.
             child.arrange(text, frame, clip);
         }
     }
@@ -346,6 +355,11 @@ impl<B: Clone + Debug> ToolbarHost<B> {
         for region in &regions {
             if region.id == self.root || !ids.insert(region.id) {
                 return Err(CompositionError::DuplicateId(region.id));
+            }
+            if matches!(region.scope, ToolbarRegionScope::Window(_))
+                && region.axis != Axis::Horizontal
+            {
+                return Err(CompositionError::InvalidSlotCount);
             }
             if self.registrations.contains_key(&region.id) {
                 return Err(CompositionError::DuplicateId(region.id));
@@ -430,6 +444,21 @@ impl<B: Clone + Debug> ToolbarHost<B> {
             .component_mut::<Regions>()
             .unwrap()
             .allocations = regions;
+        let allocations = self
+            .host
+            .get(self.root)
+            .unwrap()
+            .component::<Regions>()
+            .unwrap()
+            .allocations
+            .clone();
+        for region in allocations {
+            if let Some(content) = self.host.get_mut(region.id)
+                && let Some(toolbar) = content.component_mut::<ToolbarContent>()
+            {
+                toolbar.set_axis(region.axis);
+            }
+        }
         self.window = window;
         self.viewport = viewport;
         Ok(())
@@ -443,7 +472,7 @@ impl<B: Clone + Debug> ToolbarHost<B> {
         let ToolbarRegistration {
             region,
             order,
-            group,
+            mut group,
             bindings,
         } = declaration;
         if self
@@ -477,6 +506,20 @@ impl<B: Clone + Debug> ToolbarHost<B> {
         }
         let replacing = old.is_some();
         let old_region = self.registrations.get(&id).map(|r| r.region);
+        let axis = self
+            .host
+            .get(self.root)
+            .unwrap()
+            .component::<Regions>()
+            .unwrap()
+            .allocations
+            .iter()
+            .find(|allocation| allocation.id == region)
+            .map_or(Axis::Horizontal, |allocation| allocation.axis);
+        group
+            .component_mut::<ToolbarGroup>()
+            .unwrap()
+            .set_axis(axis);
         self.host.cancel_subtree(region);
         if let Some(old_region) = old_region.filter(|r| *r != region) {
             self.host.cancel_subtree(old_region);
@@ -597,6 +640,22 @@ impl<B: Clone + Debug> ToolbarHost<B> {
         self.host.cancel_subtree(self.registrations[&group].region);
         self.host.cancel_subtree(region);
         self.host.reparent(group, region)?;
+        let axis = self
+            .host
+            .get(self.root)
+            .unwrap()
+            .component::<Regions>()
+            .unwrap()
+            .allocations
+            .iter()
+            .find(|allocation| allocation.id == region)
+            .map_or(Axis::Horizontal, |allocation| allocation.axis);
+        self.host
+            .get_mut(group)
+            .unwrap()
+            .component_mut::<ToolbarGroup>()
+            .unwrap()
+            .set_axis(axis);
         self.host
             .get_mut(group)
             .unwrap()

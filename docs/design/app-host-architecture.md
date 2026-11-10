@@ -1,5 +1,29 @@
 # TekesUI AppHost 框架设计
 
+## 2026-11-10：Toolbar host 与容器内部方向（#229）
+
+Container 始终拥有自己的 Toolbar 内容、业务状态与动作来源；`host` 只决定唯一呈现位置。`window` 将声明汇入窗口统一 Toolbar；`container` 在该 Container 内部呈现，并选择 `top`、`bottom`、`leading` 或 `trailing`。内部默认 `top`；top/bottom 横排，leading/trailing 真实竖排，不能只把横排条塞入狭窄 Rect。
+
+类型契约采用 `ContainerToolbarHost::Window` 或 `ContainerToolbarHost::Container { position: ContainerToolbarPosition }`，避免 window 与无意义内部方向组合。新 host 默认 Window；旧实现是各 Container 分区内的工具栏，不与新的 Window 聚合等价。依赖原内部顶部呈现的已有消费者／夹具须显式迁移为 Container/Top，保留原验收的适用范围，新 Window 模式另验。
+
+关闭是可关闭 Container 自己右上角的透明 ×，独立于内容切换组及业务 Toolbar 的 host/方向；不向不可关闭的 Focus/NavBar 或聚合 List 增加关闭语义。顶部业务条与关闭共用一次高度，右侧业务条为关闭留出顶部命中；其它方向用关闭按钮自然高度的最小顶部 chrome 保护正文，不为单个关闭按钮浪费一整条右侧空 rail，也不虚构标题。业务条若放在 top，leading 使用其业务内容；无业务项不预留业务条空行。正文 padding 继续只由既有一层 token 配置拥有。
+
+以一份四边 Insets、toolbar rect、close rect 和 content rect 同时决定 Local 绘制／clip、Process Layout 尺寸及输入坐标；`content_frame()` 保持正文真源，`content_point()` 沿原原点转换。不增加 IPC，不重复扣 Window 条和内部条。原 Source 保留 instance/module/pid/generation，每项只在一个位置有效。`retained_buttons` 仅在原 owner 隐藏时按既有显式目标替代默认呈现，不在 Window 和替代位置重复挂载。
+
+共享 ToolbarRegion 使用默认 Horizontal 的 `axis`，经原 ToolbarContent/ToolbarGroup/ToolbarControl 同步测量、布局、overflow、键盘及菜单定位；`ToolbarControl::set_axis` 供原声明在 mount 前测量真实侧栏宽度。新配置字段不等于功能通过：Window 聚合和四边呈现、单次原 owner 派发、正文原点/尺寸/点击、关闭不重叠、旧捕获退休都要有受影响回归及精确候选原生证据。
+
+用户已说明本次没有 CU2；后续原生使用唯一 gpt-6.1-terra/medium 子代理的官方 Computer Use，分列为官方自动原生操作。已通过且条件不变的旧 CU2 证据保留原程序身份，不重新签为官方输入。本节定义已确认的接口与布局契约；源码、原生验收和公开交付状态分别记录在 #229 与权威清单 T50/T51。
+
+## 2026-11-10：内容组切换对照 Swift Tekes（#229）
+
+用户已明确参照项目是 Swift 版 Tekes。实际源码为 `Tekes/AppShell/MainWindowToolbar.swift`：`PanelTabFamily` 按内容类型声明分组；`makePanelNavigation` 组装普通图标和 family 下拉图标；`fill` 在菜单打开时读取实例并勾选当前项；`selectedPanelNavigationIdentifier` 将同一个当前实例映射回互斥图标组。参照源的精确提交、SHA 与摘录保存在协调输出 `outputs/tabs-overflow-20261110/TEKES-SWIFT-REFERENCE.json`，这是源码对照而非 Swift App 的新原生验收。
+
+单实例内容显示图标，原标题作为 helper／悬停提示。多实例内容类型显示图标加下拉，原实例标题作为菜单项，当前实例行带选中标记。多实例能力由类型分组声明决定，即使目前只有一个实例仍保持下拉；不根据当前数量猜类型。整组使用唯一当前内容身份保持互斥；仅打开或取消菜单不改变当前内容。Swift 对多个切换项使用 selectOne、仅一个切换项使用 momentary，这不改变原内容实例的身份。
+
+TekesUI 沿原 Container 和 Others 呈现配置声明通用图标／分组，复用共享 Button、MenuContent 和 ToolbarGroup；原 PresentationState 是唯一内容选择来源。单项和菜单选择都交回原容器身份，不重建内容、重绑导航或复制编辑状态。保留关闭当前普通容器的透明 ×、List 不可整体关闭、Focus/Others 交换及原 IME 屏障。主题状态、图标尺寸和间距沿既有 token；不照搬 Tekes 的业务类型或另造控件绘制。 共享 Button 公开最小的 selection-fill-only 与 transparent-chrome 配置，委托原模型／透明绘制路径；前者供互斥图标及菜单 trigger 使用，后者供当前项透明 × 使用，默认行为不变。
+
+原宽度可达性要求继续有效：图标组仍放不下时，优先显示当前组，隐藏组放入末尾“…”；隐藏多实例组通过原子菜单列出实例。关闭、交换、缩窗或菜单取消时撤销旧捕获，所有打开内容仍可达。实现与验收按本批最终候选进行；此前普通文本 Tabs overflow 修订仅为已冻结的未集成历史候选，不代签这套内容组切换。
+
 ## 2026-11-09：Gallery 的共享 Settings 与显示偏好契约（#229 / #245 / #56）
 
 Gallery 每次激活 AppHost item 仍创建新的 AppHost 窗口；各窗口保留自己的文档、Container 和导航。Gallery Host 从消费者 TOML 与独立持久目录创建一次 `SettingsOwner::new(SettingsWindow)`，在装配前显式 `.with_display_preferences("general/appearance/appearance", "general/appearance/text-size")` 绑定两个字段，然后每个 AppWindow 使用 `.shared_settings(owner.clone())`。绑定参数是 Schema 归一化后的 `group/item/field` 完整 ID，不是 TOML 局部字段名或持久路径；保持精确匹配，不猜测短名。原 `.settings(SettingsWindow)` API 仍创建单独 owner，默认 Exclusive 模式保持；未绑定显示偏好的旧消费者继续沿原 `.theme` 和窗口内字号契约，不读取 Gallery 偏好。

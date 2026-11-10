@@ -49,6 +49,7 @@ pub struct ToolbarIconAction {
 }
 #[derive(Debug)]
 pub struct ToolbarControl {
+    axis: crate::extended::Axis,
     keep_group_together: bool,
     embedded: bool,
     actions: Vec<ToolbarAction>,
@@ -80,6 +81,7 @@ pub struct ToolbarControl {
 impl Default for ToolbarControl {
     fn default() -> Self {
         Self {
+            axis: crate::extended::Axis::Horizontal,
             keep_group_together: false,
             embedded: false,
             actions: Vec::new(),
@@ -111,6 +113,27 @@ impl Default for ToolbarControl {
     }
 }
 impl ToolbarControl {
+    /// Set the original control's toolbar axis. The default remains horizontal.
+    /// Changing axes revokes held input and old menu geometry.
+    pub fn set_axis(&mut self, axis: crate::extended::Axis) {
+        if self.axis == axis {
+            return;
+        }
+        self.cancel();
+        self.axis = axis;
+        self.menu = MenuView::new(self.hidden.len());
+        if axis == crate::extended::Axis::Vertical {
+            self.menu.set_submenu_placement();
+        }
+        self.popup = None;
+        self.visible.clear();
+        self.hidden.clear();
+        self.trigger_rect = Rect::default();
+        for button in &mut self.buttons {
+            button.button.clear_layout();
+        }
+        self.trigger.button.clear_layout();
+    }
     pub(crate) fn set_embedded(&mut self, embedded: bool) {
         self.embedded = embedded;
     }
@@ -255,6 +278,16 @@ impl ToolbarControl {
             self.overflow_size(&mut ToolbarText(text)).width + self.edge_inset(m) * 2.
         }
     }
+    pub(crate) fn minimum_main(&self, text: &mut dyn ButtonTextRenderer) -> f32 {
+        if self.axis == crate::extended::Axis::Horizontal {
+            self.minimum_width(text)
+        } else if self.actions.is_empty() {
+            0.
+        } else {
+            let m = metrics(text, self.text_role);
+            self.overflow_size(&mut ToolbarText(text)).height + self.edge_inset(m) * 2.
+        }
+    }
     pub fn set_actions(&mut self, actions: Vec<ToolbarAction>) {
         self.icons.clear();
         self.update_actions(actions);
@@ -330,6 +363,19 @@ impl ToolbarControl {
         }
         let m = metrics(text, self.text_role);
         let pad = m.inset;
+        if self.axis == crate::extended::Axis::Vertical {
+            let sizes = self
+                .actions
+                .iter()
+                .map(|action| self.item_size(text, action))
+                .collect::<Vec<_>>();
+            return Size::new(
+                sizes.iter().map(|size| size.width).fold(0., f32::max) + self.edge_inset(m) * 2.,
+                sizes.iter().map(|size| size.height).sum::<f32>()
+                    + pad * self.actions.len().saturating_sub(1) as f32
+                    + self.edge_inset(m) * 2.,
+            );
+        }
         let mut size = self.overflow_size(text);
         size.width = 0.;
         for action in &self.actions {
@@ -365,7 +411,12 @@ impl ToolbarControl {
     ) {
         let m = metrics(text, self.text_role);
         let allocated = frame;
-        let frame = Rect::new(frame.min_x(), frame.min_y(), frame.size.width, m.row);
+        let horizontal = self.axis == crate::extended::Axis::Horizontal;
+        let frame = if horizontal {
+            Rect::new(frame.min_x(), frame.min_y(), frame.size.width, m.row)
+        } else {
+            frame
+        };
         let clip = clip
             .or(Some(allocated))
             .and_then(|clip| frame.intersection(&clip))
@@ -377,16 +428,31 @@ impl ToolbarControl {
                 }
             });
         if !self.embedded {
-            crate::paint::toolbar_background(scene, allocated, Some(clip), m.row, palette);
+            crate::paint::toolbar_background(
+                scene,
+                allocated,
+                Some(clip),
+                if horizontal { m.row } else { frame.size.height },
+                palette,
+            );
         }
         let pad = m.inset;
         let edge = self.edge_inset(m);
-        let inner = Rect::new(
-            frame.min_x() + edge,
-            frame.min_y(),
-            (frame.size.width - edge * 2.).max(0.),
-            frame.size.height,
-        );
+        let inner = if horizontal {
+            Rect::new(
+                frame.min_x() + edge,
+                frame.min_y(),
+                (frame.size.width - edge * 2.).max(0.),
+                frame.size.height,
+            )
+        } else {
+            Rect::new(
+                frame.min_x(),
+                frame.min_y() + edge,
+                frame.size.width,
+                (frame.size.height - edge * 2.).max(0.),
+            )
+        };
         let sizes: Vec<_> = self
             .actions
             .iter()
@@ -395,24 +461,43 @@ impl ToolbarControl {
         // Match measure() in outer-frame space. Subtracting the insets first
         // loses low bits under typography zoom and can invent overflow even
         // at the exact natural width returned to a host.
-        let natural_width = sizes.iter().map(|s| s.width).sum::<f32>()
-            + pad * sizes.len().saturating_sub(1) as f32
+        let natural_main = if horizontal {
+            sizes.iter().map(|s| s.width).sum::<f32>()
+        } else {
+            sizes.iter().map(|s| s.height).sum::<f32>()
+        } + pad * sizes.len().saturating_sub(1) as f32
             + edge * 2.;
-        let needs_overflow = natural_width > frame.size.width;
+        let available_main = if horizontal {
+            frame.size.width
+        } else {
+            frame.size.height
+        };
+        let needs_overflow = natural_main > available_main;
         let mut overflow = self.overflow_size(text);
-        overflow.height = overflow
-            .height
-            .max(sizes.iter().map(|s| s.height).fold(0., f32::max));
+        if horizontal {
+            overflow.height = overflow
+                .height
+                .max(sizes.iter().map(|s| s.height).fold(0., f32::max));
+        } else {
+            overflow.width = overflow
+                .width
+                .max(sizes.iter().map(|s| s.width).fold(0., f32::max));
+        }
         let mut visible = Vec::new();
         let mut used = 0.;
         for (i, s) in sizes.iter().enumerate() {
             if needs_overflow && self.keep_group_together {
                 break;
             }
-            let next = used + s.width;
-            let with_overflow =
-                next + overflow.width + pad * (visible.len() + 1) as f32 + edge * 2.;
-            if needs_overflow && with_overflow > frame.size.width {
+            let item_main = if horizontal { s.width } else { s.height };
+            let overflow_main = if horizontal {
+                overflow.width
+            } else {
+                overflow.height
+            };
+            let next = used + item_main;
+            let with_overflow = next + overflow_main + pad * (visible.len() + 1) as f32 + edge * 2.;
+            if needs_overflow && with_overflow > available_main {
                 break;
             }
             visible.push(i);
@@ -441,18 +526,35 @@ impl ToolbarControl {
             })
             .collect();
         self.menu.set_row_styles(styles);
-        let mut x = inner.min_x();
+        let mut cursor = if horizontal {
+            inner.min_x()
+        } else {
+            inner.min_y()
+        };
         for &i in &self.visible {
-            let size = Size::new(
-                sizes[i].width,
-                sizes.iter().map(|s| s.height).fold(0., f32::max),
-            );
-            let rect = Rect::new(
-                x,
-                frame.min_y() + (frame.size.height - size.height) * 0.5,
-                size.width,
-                size.height,
-            );
+            let size = if horizontal {
+                Size::new(
+                    sizes[i].width,
+                    sizes.iter().map(|s| s.height).fold(0., f32::max),
+                )
+            } else {
+                Size::new(sizes[i].width.min(inner.size.width), sizes[i].height)
+            };
+            let rect = if horizontal {
+                Rect::new(
+                    cursor,
+                    frame.min_y() + (frame.size.height - size.height) * 0.5,
+                    size.width,
+                    size.height,
+                )
+            } else {
+                Rect::new(
+                    inner.min_x() + (inner.size.width - size.width) * 0.5,
+                    cursor,
+                    size.width,
+                    size.height,
+                )
+            };
             self.buttons[i].set_toolbar_presentation(true);
             self.buttons[i].button.frame_policy = crate::ButtonFramePolicy::Exact;
             self.buttons[i].button.chrome_height = None;
@@ -478,16 +580,33 @@ impl ToolbarControl {
                 palette.into(),
             );
             self.buttons[i].paint_toolbar_template_icon(scene, text, palette.into());
-            x += size.width + pad;
+            cursor += (if horizontal { size.width } else { size.height }) + pad;
         }
         self.trigger_rect = Rect::default();
-        if !self.hidden.is_empty() && inner.size.width > 0. {
-            self.trigger_rect = Rect::new(
-                (inner.max_x() - overflow.width).max(inner.min_x()),
-                frame.min_y() + (frame.size.height - overflow.height) * 0.5,
-                overflow.width.min(inner.size.width),
-                overflow.height,
-            );
+        if !self.hidden.is_empty()
+            && if horizontal {
+                inner.size.width > 0.
+            } else {
+                inner.size.height > 0.
+            }
+        {
+            self.trigger_rect = if horizontal {
+                Rect::new(
+                    (inner.max_x() - overflow.width).max(inner.min_x()),
+                    frame.min_y() + (frame.size.height - overflow.height) * 0.5,
+                    overflow.width.min(inner.size.width),
+                    overflow.height,
+                )
+            } else {
+                let width = overflow.width.min(inner.size.width);
+                let height = overflow.height.min(inner.size.height);
+                Rect::new(
+                    inner.min_x() + (inner.size.width - width) * 0.5,
+                    (inner.max_y() - height).max(inner.min_y()),
+                    width,
+                    height,
+                )
+            };
             self.trigger.set_toolbar_presentation(true);
             self.trigger.button.frame_policy = crate::ButtonFramePolicy::Exact;
             self.trigger.button.chrome_height = None;
@@ -678,6 +797,9 @@ impl crate::composition::Component for ToolbarControl {
         // A toolbar owns overflow within its allocation; it must not ask a
         // measured parent to preserve the width of all hidden commands.
         size.width = size.width.min(available.width.max(0.));
+        if self.axis == crate::extended::Axis::Vertical {
+            size.height = size.height.min(available.height.max(0.));
+        }
         crate::layout::MeasuredChild::new(size)
     }
     fn paint(
@@ -792,15 +914,25 @@ impl crate::composition::Component for ToolbarControl {
         if !self.has_focus || self.visible.is_empty() && self.hidden.is_empty() {
             return ContentResponse::default();
         }
+        let horizontal = self.axis == crate::extended::Axis::Horizontal;
+        let backward = if horizontal {
+            ControlKey::Left
+        } else {
+            ControlKey::Up
+        };
+        let forward = if horizontal {
+            ControlKey::Right
+        } else {
+            ControlKey::Down
+        };
         if key.down
             && !key.modifiers.shift
             && !key.modifiers.control
             && !key.modifiers.alt
             && !key.modifiers.command
-            && matches!(
-                key.key,
-                Some(ControlKey::Left | ControlKey::Right | ControlKey::Home | ControlKey::End)
-            )
+            && (key.key == Some(backward)
+                || key.key == Some(forward)
+                || matches!(key.key, Some(ControlKey::Home | ControlKey::End)))
         {
             let stops = self.focus_stops();
             if let Some(index) = self
@@ -810,7 +942,7 @@ impl crate::composition::Component for ToolbarControl {
                 let target = match key.key {
                     Some(ControlKey::Home) => 0,
                     Some(ControlKey::End) => stops.len() - 1,
-                    Some(ControlKey::Left) => index.saturating_sub(1),
+                    Some(k) if k == backward => index.saturating_sub(1),
                     _ => (index + 1).min(stops.len() - 1),
                 };
                 self.cancel();

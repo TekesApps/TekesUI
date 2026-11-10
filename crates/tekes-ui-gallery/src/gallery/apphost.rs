@@ -8,8 +8,9 @@ use std::{
     sync::atomic::{AtomicU64, Ordering},
 };
 use tekes_ui_app_host::{
-    AppWindow, ContainerContent, LocalContainer, NavigationOptions, OthersOptions,
-    PresentationOptions, SettingsDisplayMode, SettingsOwner, SettingsWindow,
+    AppWindow, ContainerContent, ContainerToolbarHost, ContainerToolbarPosition, LocalContainer,
+    NavigationOptions, OthersGroup, OthersOptions, PresentationOptions, SettingsDisplayMode,
+    SettingsOwner, SettingsWindow,
 };
 use tekes_ui_app_protocol::ToolbarItem;
 use tekes_ui_controls::{
@@ -507,6 +508,9 @@ fn assemble(theme: Theme, settings: SettingsOwner) -> anyhow::Result<AppWindow> 
         },
     )
     .title("Workspace")
+    .toolbar_host(ContainerToolbarHost::Container {
+        position: ContainerToolbarPosition::Top,
+    })
     .content_padding(0.)
     .on_action(move |host, records| {
         for record in records {
@@ -545,6 +549,10 @@ fn assemble(theme: Theme, settings: SettingsOwner) -> anyhow::Result<AppWindow> 
     let inspector_document = document.clone();
     let inspector = LocalContainer::from_source("gallery-detail", SharedContent(inspector))
         .title("Inspector")
+        .toolbar_host(ContainerToolbarHost::Container {
+            position: ContainerToolbarPosition::Top,
+        })
+        .switcher_icon("tekes-side-panel")
         .content_padding(0.)
         .list_height(640.)
         .toolbar(switch_toolbar())
@@ -616,6 +624,7 @@ fn assemble(theme: Theme, settings: SettingsOwner) -> anyhow::Result<AppWindow> 
         });
     let focus = LocalContainer::from_source("gallery-focus", SharedContent(document))
         .title("Document")
+        .switcher_icon("tekes-file-text")
         .content_padding(0.)
         .list_height(700.)
         .toolbar(switch_toolbar())
@@ -637,21 +646,53 @@ fn assemble(theme: Theme, settings: SettingsOwner) -> anyhow::Result<AppWindow> 
             );
             Ok(())
         });
-    let reading = LocalContainer::new("gallery-list", scroll(6000, stack(6001, vec![text(6002, "Reading notes", TextRole::UiHeading), field(ComponentId(6003), "Notes", "Keep a short note beside the current document."), text(6004, "Capture a question, an idea or a useful reference before the next meeting.", TextRole::UiBody)])))?.title("Notes")
+    let reading = LocalContainer::new("gallery-list", scroll(6000, stack(6001, vec![text(6002, "Reading notes", TextRole::UiHeading), field(ComponentId(6003), "Notes", "Keep a short note beside the current document."), text(6004, "Capture a question, an idea or a useful reference before the next meeting.", TextRole::UiBody)])))?.title("Notes").toolbar_host(ContainerToolbarHost::Container { position: ContainerToolbarPosition::Leading }).switcher_icon("tekes-note")
     .content_padding(0.).list_height(320.).toolbar(switch_toolbar()).focus_switch(SWITCH);
+    let reference = LocalContainer::new("gallery-reference", scroll(6100, stack(6101, vec![
+        text(6102, "Reference", TextRole::UiHeading),
+        text(6103, "A second document instance. Switch between Notes and Reference from the Documents menu; each keeps its original content.", TextRole::UiBody),
+    ])))?.title("Reference").toolbar_host(ContainerToolbarHost::Container { position: ContainerToolbarPosition::Trailing }).switcher_icon("tekes-file-text").content_padding(0.).toolbar(switch_toolbar()).focus_switch(SWITCH);
+    let summary = LocalContainer::new("gallery-summary", scroll(6200, stack(6201, vec![
+        text(6202, "Summary", TextRole::UiHeading),
+        text(6203, "This document keeps its toolbar at the bottom. Use Documents to switch instances; use the swap action to exchange it with Focus.", TextRole::UiBody),
+    ])))?.title("Summary").switcher_icon("tekes-file-text")
+        .toolbar_host(ContainerToolbarHost::Container { position: ContainerToolbarPosition::Bottom })
+        .content_padding(0.).toolbar(switch_toolbar()).focus_switch(SWITCH);
     let mut presentation = PresentationOptions::new("gallery-focus")
         .nav_bar("gallery-nav")
         .nav_fraction(1. / 3.)
         .navigation_toolbar("gallery-focus")
         .navigation_toolbar_follows_focus(true)
         .navigation_targets(vec!["gallery-focus".into()])
-        .others(OthersOptions::new(vec![
-            "gallery-detail".into(),
-            "gallery-list".into(),
-        ]));
+        .others(
+            OthersOptions::new(vec![
+                "gallery-detail".into(),
+                "gallery-list".into(),
+                "gallery-reference".into(),
+                "gallery-summary".into(),
+            ])
+            .groups(vec![OthersGroup::new(
+                "documents",
+                "Documents",
+                "tekes-files",
+                vec![
+                    "gallery-focus".into(),
+                    "gallery-list".into(),
+                    "gallery-reference".into(),
+                    "gallery-summary".into(),
+                ],
+            )]),
+        );
     presentation.focus_fraction = 0.5;
     Ok(AppWindow::from_containers(
-        vec![nav.into(), focus.into(), inspector.into(), reading.into()],
+        vec![
+            nav.into(),
+            focus.into(),
+            inspector.into(),
+            reading.into(),
+            reference.into(),
+            summary.into(),
+        ],
         presentation,
     )?
     .theme(theme)

@@ -60,6 +60,14 @@ impl LocalContainer {
         self.options.title = Some(title.into());
         self
     }
+    pub fn toolbar_host(mut self, host: ContainerToolbarHost) -> Self {
+        self.options.toolbar_host = host;
+        self
+    }
+    pub fn switcher_icon(mut self, icon: impl Into<String>) -> Self {
+        self.options.switcher_icon = Some(icon.into());
+        self
+    }
     pub fn list_height(mut self, height: f32) -> Self {
         self.options.list_height = Some(height);
         self
@@ -178,10 +186,31 @@ impl LocalContainer {
         result
     }
 }
+/// Where one container's business toolbar is presented. Window is the default;
+/// applications relying on an internal bar explicitly choose Container.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum ContainerToolbarHost {
+    #[default]
+    Window,
+    Container {
+        position: ContainerToolbarPosition,
+    },
+}
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum ContainerToolbarPosition {
+    #[default]
+    Top,
+    Bottom,
+    Leading,
+    Trailing,
+}
 /// Presentation metadata belongs to the container, independently of its backing.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct ContainerOptions {
     pub title: Option<String>,
+    /// Canonical icon for this single-instance destination.
+    pub switcher_icon: Option<String>,
+    pub toolbar_host: ContainerToolbarHost,
     pub focus_switch_command: Option<u64>,
     /// Opt in to List with this content allocation (including its Toolbar).
     pub list_height: Option<f32>,
@@ -213,6 +242,14 @@ impl ProcessContainer {
     }
     pub fn title(mut self, title: impl Into<String>) -> Self {
         self.options.title = Some(title.into());
+        self
+    }
+    pub fn toolbar_host(mut self, host: ContainerToolbarHost) -> Self {
+        self.options.toolbar_host = host;
+        self
+    }
+    pub fn switcher_icon(mut self, icon: impl Into<String>) -> Self {
+        self.options.switcher_icon = Some(icon.into());
         self
     }
     pub fn list_height(mut self, height: f32) -> Self {
@@ -341,6 +378,13 @@ pub(crate) fn validate_ids<'a>(
                 .content_padding
                 .is_none_or(|p| p.is_finite() && p >= 0.),
             "invalid content padding for {id}"
+        );
+        anyhow::ensure!(
+            options
+                .switcher_icon
+                .as_deref()
+                .is_none_or(|icon| tekes_ui_icons::Glyph::named(icon).is_some()),
+            "unknown switcher icon for {id}"
         );
         let mut commands = std::collections::HashSet::new();
         for button in &options.retained_buttons {

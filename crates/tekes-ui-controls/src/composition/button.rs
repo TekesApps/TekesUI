@@ -93,6 +93,7 @@ pub struct Button {
     help: Option<String>,
     help_revision: u64,
     toolbar_presentation: bool,
+    transparent_chrome: bool,
 }
 impl Button {
     pub fn new(contents: impl Into<ButtonContents>) -> Self {
@@ -112,6 +113,7 @@ impl Button {
             help: None,
             help_revision: 0,
             toolbar_presentation: false,
+            transparent_chrome: false,
         };
         button.set_contents(contents);
         button
@@ -179,6 +181,16 @@ impl Button {
     }
     pub fn set_accessible_name(&mut self, name: Option<String>) {
         self.accessible_name = name;
+    }
+    /// Use fill-only chrome for selected states while retaining the original
+    /// ButtonModel colors, motion, geometry and focus treatment.
+    pub fn set_selection_fill_only(&mut self, fill_only: bool) {
+        self.button.set_selection_fill_only(fill_only);
+    }
+    /// Omit the Button background while preserving its interaction and focus
+    /// chrome. Decorative content remains painted by its original child.
+    pub fn set_transparent_chrome(&mut self, transparent: bool) {
+        self.transparent_chrome = transparent;
     }
     pub fn with_help(mut self, help: impl Into<String>) -> Self {
         self.set_help(Some(help.into()));
@@ -447,7 +459,7 @@ impl Component for Button {
         let variant = self.presentation_variant();
         if self.toolbar_presentation || variant == ButtonVariant::Toolbar {
             self.button.set_surface("toolbar");
-        } else if theme.surface_declared {
+        } else if theme.surface_declared || self.transparent_chrome {
             self.button.set_surface(theme.surface());
         } else {
             // Reused owners return to the original variant default after a
@@ -455,7 +467,7 @@ impl Component for Button {
             self.button.clear_surface();
         }
         // Plain labels keep their existing production Button rendering and label service.
-        if self.image.is_none() && self.content.is_empty() {
+        if self.image.is_none() && self.content.is_empty() && !self.transparent_chrome {
             let align = if self.content_alignment == MainAxisDistribution::Start {
                 ButtonTextAlign::Leading
             } else {
@@ -478,15 +490,27 @@ impl Component for Button {
             }
         }
         self.measure_button(text, frame.size);
-        let layout = self.button.render_content_frame(
-            scene,
-            &mut TextAdapter(text),
-            self.measured,
-            frame,
-            Some(clip),
-            theme.palette,
-            variant,
-        );
+        let layout = if self.transparent_chrome {
+            self.button.render_transparent_content_frame(
+                scene,
+                &mut TextAdapter(text),
+                self.measured,
+                frame,
+                Some(clip),
+                theme.palette,
+                variant,
+            )
+        } else {
+            self.button.render_content_frame(
+                scene,
+                &mut TextAdapter(text),
+                self.measured,
+                frame,
+                Some(clip),
+                theme.palette,
+                variant,
+            )
+        };
         if !self.content.is_empty() {
             return;
         } // Host paints the original decorative subtree once.
