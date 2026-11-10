@@ -87,7 +87,7 @@ impl Default for Navigation {
             query: String::new(),
             filtered: Vec::new(),
         };
-        n.scroll.set_scrollbar_visibility(false, false);
+        n.scroll.set_scrollbar_visibility(false, true);
         n.resize(layout::FRAME_H);
         n
     }
@@ -287,9 +287,11 @@ mod tests {
         assert!(n.scroll.limit().y > 0.);
     }
     #[test]
-    fn sidebar_padding_clears_optional_scrollbar_and_hidden_bar_still_scrolls() {
+    fn sidebar_shows_overflow_scrollbar_and_hidden_bar_still_scrolls() {
         let mut n = Navigation::default();
         n.resize(300.);
+        assert!(n.scroll.scrollbar_visible(true));
+        n.scroll.set_scrollbar_visibility(false, false);
         assert!(!n.scroll.scrollbar_visible(true));
         assert!(n.scroll.limit().y > 0.);
         n.scroll.scroll_by(0., 100.);

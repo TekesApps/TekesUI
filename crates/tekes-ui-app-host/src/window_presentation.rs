@@ -1929,6 +1929,118 @@ mod input_regressions {
             }
         }
     }
+    fn window_chrome_fixture() -> Host {
+        let local = |id| {
+            LocalContainer::new(id, Content::new(ComponentId(1), TextContent::new(id)))
+                .unwrap()
+                .title(id)
+                .into()
+        };
+        let mut host = Host::from_containers(
+            vec![local("nav"), local("focus"), local("other")],
+            false,
+            None,
+            Some(
+                PresentationOptions::new("focus")
+                    .nav_bar("nav")
+                    .others(OthersOptions::new(vec!["other".into()])),
+            ),
+        );
+        host.mount_columns();
+        host.container_window_boundary = Some(48.);
+        refresh_window_chrome(&mut host);
+        host
+    }
+    fn refresh_window_chrome(host: &mut Host) {
+        let whole = Rect::new(0., 0., 1200., 700.);
+        render_layout(host, whole);
+        host.sync_container_toolbars(true, whole, test_band(), 40.)
+            .unwrap();
+        for panel in &mut host.panels {
+            render_test_tabs(
+                &mut panel.mounted_toolbar.host,
+                &mut Scene::new(),
+                &mut host.text,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
+        }
+        host.reconcile_toolbar_focus(true);
+    }
+    #[test]
+    fn window_chrome_unified_blank_reaches_native_drag_handoff() {
+        let host = window_chrome_fixture();
+        assert!(
+            host.panels
+                .iter()
+                .all(|panel| panel.geometry.toolbar.is_none())
+        );
+        // Pick actual blank unified chrome, rather than pretending an internal
+        // toolbar exists. This is the production final native-down predicate.
+        let point = (0..1200)
+            .map(|x| Point::new(x as f32 + 0.5, 24.))
+            .find(|point| {
+                host.toolbar_target_at(*point).is_none()
+                    && host
+                        .panels
+                        .iter()
+                        .all(|panel| !panel.content_frame().contains(*point))
+            })
+            .expect("unified band has blank draggable chrome");
+        assert!(
+            host.toolbar_chrome_at(point),
+            "blank Window toolbar must reach native drag handoff"
+        );
+        assert!(!host.toolbar_chrome_at(Point::new(point.x, 100.)));
+        assert!(!host.toolbar_chrome_at(Point::new(point.x, -1.)));
+    }
+    #[test]
+    fn window_chrome_original_layout_visibility_buttons_survive_down_paint_up_and_restore() {
+        let mut host = window_chrome_fixture();
+        for (name, nav, others) in [
+            ("Hide NavBar", false, true),
+            ("Show NavBar", true, true),
+            ("Hide Others", true, false),
+            ("Show Others", true, true),
+        ] {
+            let point = host
+                .panels
+                .iter()
+                .flat_map(|panel| panel.mounted_toolbar.host.semantics())
+                .flat_map(|node| node.parts)
+                .find(|(_, part)| part.semantics.name == name)
+                .unwrap_or_else(|| panic!("original layout action {name} must be visible"))
+                .1
+                .frame
+                .center();
+            let target = host.toolbar_target_at(point).expect("real pointer target");
+            host.dispatch_toolbar(target, &ContentEvent::PointerDown(point))
+                .unwrap();
+            refresh_window_chrome(&mut host);
+            assert!(
+                host.panels.iter().any(|panel| panel
+                    .mounted_toolbar
+                    .host
+                    .content_host()
+                    .pointer_capture()
+                    .is_some()),
+                "draw must retain original layout-button capture"
+            );
+            let target = host
+                .toolbar_target_at(point)
+                .expect("same layout target after draw");
+            host.dispatch_toolbar(target, &ContentEvent::PointerUp(point))
+                .unwrap();
+            let state = host.presentation.as_ref().unwrap();
+            assert_eq!(
+                (state.nav_bar_visible(), state.others_visible()),
+                (nav, others),
+                "{name}"
+            );
+            assert_eq!(state.focus_id(), "focus");
+            refresh_window_chrome(&mut host);
+        }
+    }
     #[test]
     fn list_scroll_preserves_original_editor_and_logical_hide_revokes_offscreen_focus() {
         let members: Vec<Container> = vec![

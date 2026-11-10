@@ -799,3 +799,9 @@ Settings 内容边界复用主 AppHost 的可见且避让原生控件的 Toolbar
 字号NumberField两按钮与编辑器之间留同一spacing token的空隙；测量、绘制、命中与AX共用一份布局。单行TextField水平滚动条缺省关闭、提供显式开关，滚动/reveal/IME继续沿原策略，不能把隐藏指示条等同禁用滚动；多行默认行为保留。
 
 本批分别验收源码、受影响自动回归、原生选择/复制和输入/布局、公开发布及Gallery Dock采用；原通过证据按不变条件复用。v0.3.5和其原程序证据保留，后续改动不改签。
+
+### 2026-11-10：统一工具栏拖窗与 Gallery 滚动条回归
+
+Window host 的统一工具栏空白区域属于原生窗口 chrome。原控件、分割条及正文先处理输入，剩余空白区域再进入原生拖动／双击处理；不能仅以内嵌 Container toolbar 的 frame 判定。Nav／Others 显隐和 Focus 交换保持既有命令与实例身份，不因 host 迁移改变布局语义。
+
+Gallery 原左侧导航显式启用纵向滚动条，按真实溢出显示，保留共享 ScrollArea 的开关及无条滚动能力。AppHost 和 Settings 使用 ListContent::scrollable 的入口保持原行为。源码检查不替代准确打包程序的拖窗、布局按钮和滚动条原生验收。

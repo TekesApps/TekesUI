@@ -1751,6 +1751,26 @@ impl Host {
         }
         Ok(())
     }
+    /// Blank toolbar chrome falls through to the native window only after
+    /// original controls, splitters and body input have had their turn.
+    pub(super) fn toolbar_chrome_at(&self, p: Point) -> bool {
+        p.y >= 0.
+            && (self.presentation.is_some()
+                && self
+                    .container_window_boundary
+                    .is_some_and(|boundary| p.y < boundary)
+                || self.panels.iter().any(|panel| {
+                    if self.presentation.is_some() {
+                        panel
+                            .geometry
+                            .toolbar
+                            .is_some_and(|frame| frame.contains(p))
+                            || panel.geometry.close.is_some_and(|frame| frame.contains(p))
+                    } else {
+                        p.y < panel.geometry.insets.top
+                    }
+                }))
+    }
     /// Consume only uncaptured drag samples belonging to our accepted native
     /// window handoff; all other events continue through their original routes.
     fn owns_native_titlebar_drag_event(&mut self, event: &Event) -> bool {
@@ -2024,22 +2044,7 @@ impl Host {
                                 let point = self.panels[i].content_point(p);
                                 self.panels[i].request(InputKind::PointerDown, point.x, point.y)?;
                             }
-                        } else if p.y >= 0.
-                            && self.panels.iter().any(|panel| {
-                                if self.presentation.is_some() {
-                                    panel
-                                        .geometry
-                                        .toolbar
-                                        .is_some_and(|frame| frame.contains(p))
-                                        || panel
-                                            .geometry
-                                            .close
-                                            .is_some_and(|frame| frame.contains(p))
-                                } else {
-                                    p.y < panel.geometry.insets.top
-                                }
-                            })
-                        {
+                        } else if self.toolbar_chrome_at(p) {
                             // Empty segmented toolbar chrome is not child
                             // content. Splitter seams were offered capture
                             // above; remaining blank chrome belongs to Window.
