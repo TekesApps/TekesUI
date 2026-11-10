@@ -1358,20 +1358,7 @@ impl Host {
                 })
                 .collect(),
         );
-        let switcher_modal = self
-            .presentation_tabs
-            .as_ref()
-            .is_some_and(|host| host.content_host().input_overlay_owner().is_some());
-        let layers = if switcher_modal {
-            [&toolbar_scene, &presentation_scene]
-        } else {
-            [&presentation_scene, &toolbar_scene]
-        };
-        for layer in layers {
-            for primitive in layer.primitives() {
-                scene.push(primitive.clone());
-            }
-        }
+        self.append_toolbar_layers(&mut scene, &toolbar_scene, &presentation_scene);
         let renderer_begin = diagnostic.map(|_| std::time::Instant::now());
         let drawable_before = diagnostic.map(|_| w.drawable_serial());
         let renderer = self.renderer.as_mut().unwrap();
@@ -1750,6 +1737,21 @@ impl Host {
             );
         }
         Ok(())
+    }
+    /// Append the original hosts in their final native renderer painter order.
+    fn append_toolbar_layers(&self, scene: &mut Scene, toolbar: &Scene, presentation: &Scene) {
+        // Ordinary switcher content must paint above the Window regions' ground.
+        // An open original business menu keeps its existing window-level priority.
+        let layers = if self.open_toolbar().is_some() {
+            [presentation, toolbar]
+        } else {
+            [toolbar, presentation]
+        };
+        for layer in layers {
+            for primitive in layer.primitives() {
+                scene.push(primitive.clone());
+            }
+        }
     }
     /// Blank toolbar chrome falls through to the native window only after
     /// original controls, splitters and body input have had their turn.

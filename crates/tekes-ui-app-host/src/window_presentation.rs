@@ -2216,6 +2216,57 @@ mod input_regressions {
         );
     }
     #[test]
+    fn final_window_scene_keeps_others_icons_above_empty_business_chrome() {
+        use tekes_ui_scene::Primitive;
+        for theme in [Theme::LIGHT, Theme::DARK] {
+            let mut host = window_chrome_fixture().with_theme(theme);
+            let whole = Rect::new(0., 0., 1200., 700.);
+            let palette = host.palette();
+            let mut toolbar = Scene::new();
+            for panel in &mut host.panels {
+                render_test_tabs(
+                    &mut panel.mounted_toolbar.host,
+                    &mut toolbar,
+                    &mut host.text,
+                    palette,
+                )
+                .unwrap();
+            }
+            let mut presentation = Scene::new();
+            host.paint_presentation(&mut presentation, whole, palette)
+                .unwrap();
+            let others = host.panels[2].bounds;
+            let mut final_scene = Scene::new();
+            // The exact production native draw composition, after all original
+            // hosts have emitted their real ground and prepared-icon primitives.
+            host.append_toolbar_layers(&mut final_scene, &toolbar, &presentation);
+            let images: Vec<_> = final_scene
+                .primitives()
+                .iter()
+                .enumerate()
+                .filter_map(|(index, primitive)| match primitive {
+                    Primitive::Image(image)
+                        if image.rect.center().x >= others.min_x()
+                            && image.rect.center().y < 48. =>
+                    {
+                        Some((index, image.rect.center()))
+                    }
+                    _ => None,
+                })
+                .collect();
+            assert!(!images.is_empty(), "original Others icon must be emitted");
+            for (index, point) in images {
+                assert!(
+                    !final_scene.primitives()[index + 1..]
+                        .iter()
+                        .any(|primitive| matches!(primitive,
+                    Primitive::Quad(quad) if quad.fill.a == 1. && quad.rect.contains(point))),
+                    "later opaque toolbar ground must not erase the Others icon in the final native Scene"
+                );
+            }
+        }
+    }
+    #[test]
     fn partition_chrome_window_titles_stay_in_their_container_columns() {
         let host = window_chrome_fixture();
         for (index, name) in [(0, "nav"), (1, "focus")] {
