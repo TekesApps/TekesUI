@@ -1,5 +1,13 @@
 # TekesUI AppHost 框架设计
 
+## 2026-11-11：Workspace 交换与 Secondary actions（#229）
+
+Switch 是 Workspace（Focus + Others）的单一布局命令，不由每个 Container 重复声明；它交换当前 Focus 和当前选中的普通 Others Container。Others 隐藏、未配置或选中聚合 List 时不可用，不将 List 整体提升。动作执行仍保持原实例、导航绑定与输入取消规则。
+
+Secondary actions 通过三点图标菜单呈现，菜单项目沿原命令来源派发，不能因汇总丢失 Container 的实例/代际身份。Workspace 命令只注册一次；Container 的业务次要动作仍由 Container 声明，按它自己的 toolbar host 呈现，不迁移 Nav/Focus/Others 的列归属。前进后退、内容图标选择组及 Others 的展开/关闭/显隐保留直接导航按钮。菜单打开后若目标切换、关闭或失效，原捕获与旧动作必须撤销；不创建第二套菜单/焦点状态机。
+
+此节是本批追加设计，替代旧版每个 Container 的 Switch 注册示例；实现和验收状态以 #229 当前记录为准。
+
 ## 2026-11-11：图标组状态与 Others 展开导航（#229 / #245）
 
 本节为用户最新确认的增量，取代下方旧批次“Others Close 固定在内部右上”的位置规则；旧记录只保留设计沿革。源码与受影响验收按 #229 / #245 当前交付记录核对；设计声明不代替验收。

@@ -374,6 +374,36 @@ impl Host {
         self.inner_view.cancel(&mut self.inner);
         Ok(true)
     }
+    pub(super) fn switch_workspace_focus(
+        &mut self,
+        focus: u64,
+        other: Option<u64>,
+    ) -> Result<bool> {
+        let current = self
+            .presentation
+            .as_ref()
+            .filter(|state| state.workspace_switch_enabled() && state.others_visible());
+        let focus_index = current.and_then(|state| {
+            self.panels
+                .iter()
+                .position(|panel| panel.module_id == state.focus_id() && panel.instance == focus)
+        });
+        let target = current
+            .and_then(|state| state.focus_switch_target(state.focus_id()))
+            .and_then(|id| self.panels.iter().find(|panel| panel.module_id == id));
+        if self
+            .navigation
+            .as_ref()
+            .is_none_or(|nav| nav.host.input_open && !nav.busy && nav.error.is_none())
+            && other.is_some()
+            && target.map(|panel| panel.instance) == other
+            && let Some(index) = focus_index
+        {
+            self.switch_container_focus(index)
+        } else {
+            Ok(false)
+        }
+    }
     pub(super) fn switch_container_focus(&mut self, index: usize) -> Result<bool> {
         if self.composition_in_progress() {
             eprintln!("PRESENTATION_REJECTED composition-in-progress");
@@ -918,9 +948,19 @@ impl Host {
                 });
             }
             type TargetCommands = (Vec<ToolbarButtonDeclaration>, bool, Vec<(u64, String)>);
-            let mut targets: std::collections::BTreeMap<(usize, u64), TargetCommands> =
+            let mut targets: std::collections::BTreeMap<(usize, u64, bool), TargetCommands> =
                 std::collections::BTreeMap::new();
             for action in &panel.toolbar {
+                if self
+                    .presentation
+                    .as_ref()
+                    .unwrap()
+                    .workspace_switch_enabled()
+                    && panel.options.focus_switch_command == Some(action.id)
+                {
+                    continue;
+                }
+                let secondary = panel.options.secondary_commands.contains(&action.id);
                 let target = if visible {
                     Some(index)
                 } else {
@@ -957,7 +997,8 @@ impl Host {
                     } else {
                         action.title.as_str()
                     };
-                    let (buttons, retained, icons) = targets.entry((target, region.0)).or_default();
+                    let (buttons, retained, icons) =
+                        targets.entry((target, region.0, secondary)).or_default();
                     *retained |= retained_target;
                     if switch && include_icons {
                         icons.push((action.id, "tekes-swap-horizontal".to_owned()));
@@ -984,7 +1025,7 @@ impl Host {
                     });
                 }
             }
-            for ((target, region), (buttons, retained, icons)) in targets {
+            for ((target, region, secondary), (buttons, retained, icons)) in targets {
                 // Fixed owner/role identities reserve forty IDs per owner and ten per group, as the
                 // original groups do. A retained Window contribution may share
                 // its presenter with an internal retained group from this owner.
@@ -1000,12 +1041,26 @@ impl Host {
                 } else {
                     ComponentId(92400 + index as u64 * 10)
                 };
-                let contents =
-                    Contents::TemplateCommands(buttons, ToolbarGroupOverflow::Split, icons);
+                let id = if secondary {
+                    ComponentId(id.0 + 8_000_000)
+                } else {
+                    id
+                };
+                let contents = Contents::TemplateCommands(
+                    buttons,
+                    if secondary {
+                        ToolbarGroupOverflow::Menu
+                    } else {
+                        ToolbarGroupOverflow::Split
+                    },
+                    icons,
+                );
                 declarations[target].push(Declaration {
                     id,
                     region: ComponentId(region),
-                    placement: if window_region {
+                    placement: if secondary {
+                        ToolbarPlacement::SecondaryAction
+                    } else if window_region {
                         ToolbarPlacement::PrimaryAction
                     } else {
                         ToolbarPlacement::Navigation
@@ -1028,6 +1083,37 @@ impl Host {
             .iter()
             .position(|panel| panel.module_id == state.focus_id())
             .unwrap();
+        if state.workspace_switch_enabled() {
+            let other = state
+                .others_visible()
+                .then(|| state.focus_switch_target(state.focus_id()))
+                .flatten()
+                .and_then(|id| self.panels.iter().find(|panel| panel.module_id == id));
+            declarations[focus].push(Declaration {
+                id: ComponentId(92040),
+                region: if state.others_expanded() {
+                    WINDOW_OTHERS_BUSINESS
+                } else {
+                    WINDOW_BUSINESS
+                },
+                placement: ToolbarPlacement::SecondaryAction,
+                order: 100,
+                contents: Contents::Commands(
+                    vec![ToolbarButtonDeclaration {
+                        id: 0x5604,
+                        icon: None,
+                        text: "Switch Focus and Others".into(),
+                        hint: Some("Exchange the current Focus and Others containers".into()),
+                        enabled: input_open && other.is_some(),
+                    }],
+                    ToolbarGroupOverflow::Menu,
+                ),
+                source: Source::WorkspaceSwitch {
+                    focus: self.panels[focus].instance,
+                    other: other.map(|panel| panel.instance),
+                },
+            });
+        }
         if state.others_visible()
             && let Some(OthersTab::Container(id)) = state.selected_tab()
             && let Some(index) = self.panels.iter().position(|panel| &panel.module_id == id)
@@ -2015,6 +2101,97 @@ mod input_regressions {
                     .unwrap();
             }
         }
+    }
+    #[test]
+    fn workspace_secondary_is_single_and_container_commands_keep_their_owner() {
+        let local = |id: &str, command| {
+            LocalContainer::new(id, Content::new(ComponentId(1), TextContent::new(id)))
+                .unwrap()
+                .toolbar(vec![ToolbarItem {
+                    id: command,
+                    title: id.into(),
+                    enabled: true,
+                    geometry_dependent: false,
+                }])
+        };
+        let mut host = Host::from_containers(
+            vec![
+                local("focus", 1).focus_switch(1).into(),
+                local("other", 2).secondary_commands(vec![2]).into(),
+            ],
+            false,
+            None,
+            Some(
+                PresentationOptions::new("focus")
+                    .workspace_switch(true)
+                    .others(OthersOptions::new(vec!["other".into()])),
+            ),
+        );
+        assert!(host.mount_columns());
+        host.container_window_boundary = Some(48.);
+        refresh_window_chrome(&mut host);
+        let declarations = host.presentation_toolbar_declarations();
+        let groups: Vec<_> = declarations.iter().flatten().collect();
+        assert_eq!(
+            groups
+                .iter()
+                .filter(|d| matches!(d.source, Source::WorkspaceSwitch { .. }))
+                .count(),
+            1
+        );
+        let secondary = groups
+            .iter()
+            .find(|d| matches!(d.source, Source::Panel { index: 1, .. }))
+            .unwrap();
+        assert_eq!(secondary.placement, ToolbarPlacement::SecondaryAction);
+        assert!(
+            matches!(&secondary.contents, Contents::TemplateCommands(buttons, ToolbarGroupOverflow::Menu, _) if buttons.len() == 1 && buttons[0].id == 2)
+        );
+        assert!(
+            !groups
+                .iter()
+                .any(|d| matches!(d.source, Source::Panel { index: 0, .. }))
+        );
+        let original = groups
+            .iter()
+            .find(|d| matches!(d.source, Source::WorkspaceSwitch { .. }))
+            .unwrap()
+            .source
+            .clone();
+        let Source::WorkspaceSwitch { focus, other } = original.clone() else {
+            unreachable!()
+        };
+        host.presentation
+            .as_mut()
+            .unwrap()
+            .toggle_others_expanded()
+            .unwrap();
+        refresh_window_chrome(&mut host);
+        assert!(host.switch_workspace_focus(focus, other).unwrap());
+        assert!(!host.presentation.as_ref().unwrap().others_expanded());
+        assert_eq!(host.presentation.as_ref().unwrap().focus_id(), "other");
+        assert!(!host.switch_workspace_focus(focus, other).unwrap());
+
+        refresh_window_chrome(&mut host);
+        let changed = host.presentation_toolbar_declarations();
+        let switch: Vec<_> = changed
+            .iter()
+            .flatten()
+            .filter(|d| matches!(d.source, Source::WorkspaceSwitch { .. }))
+            .collect();
+        assert_eq!(switch.len(), 1);
+        assert_ne!(original, switch[0].source);
+        host.presentation.as_mut().unwrap().toggle_others().unwrap();
+        refresh_window_chrome(&mut host);
+        let hidden = host.presentation_toolbar_declarations();
+        let switch = hidden
+            .iter()
+            .flatten()
+            .find(|d| matches!(d.source, Source::WorkspaceSwitch { .. }))
+            .unwrap();
+        assert!(
+            matches!(&switch.contents, Contents::Commands(buttons, ToolbarGroupOverflow::Menu) if !buttons[0].enabled)
+        );
     }
     fn window_chrome_fixture() -> Host {
         let local = |id| {

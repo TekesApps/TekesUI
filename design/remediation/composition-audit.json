@@ -2043,7 +2043,7 @@
     "DESIGN.md": "0085e260e7f5e511470dc90a2a7ae1d91671b92b7c928864ff160d0bd0a6167b",
     "crates/tekes-ui-app-host/src/lib.rs": "70baa637cc8d474dfd46464db899da4323a6e0c9586c11e0a5d2f329a5d243c3",
     "crates/tekes-ui-app-host/src/window.rs": "ccc045ae33cc3a4c77fd44f2e0edef110d5a264f81dea378c26a7ec4aa554655",
-    "crates/tekes-ui-app-host/src/window_toolbar.rs": "1f793de372cfb0b998e845a04d0d4790d0b046b298993219ef545d53e91df45f",
+    "crates/tekes-ui-app-host/src/window_toolbar.rs": "3921e7753803170fe672fd859ede6046b0f8ab5a0bb506e4a3c3ba09729602a2",
     "crates/tekes-ui-controls/src/chart.rs": "9e3e5dd1e9d62f358cb74201a254f4165b81e4b79c3a97f0a74bde6f591e983c",
     "crates/tekes-ui-controls/src/collections_view.rs": "f00f22e614309f41cf3f611b5627ca28b92c03eadb43ab5b337fafcf2eff2d9c",
     "crates/tekes-ui-controls/src/composite.rs": "2cd3a31695695b3515e744ee083b2d72558addf5d5ea73bab54974094875147f",
@@ -2094,7 +2094,7 @@
     "crates/tekes-ui-controls/src/text_input.rs": "c6198a40cc2212298d2fa59648466ccec917b72a106d582ea6d0cc71a0032ccb",
     "crates/tekes-ui-controls/src/text_input/external.rs": "872c6a58fc112c17f7711ce3fe88c868a6ecb0e2ee32fc394ed8877fa30626ca",
     "crates/tekes-ui-controls/src/text_surface.rs": "29838c5fb5df655f30d0834a2d59b48dc2b39d8a1af5ed642bc3a516de49a3a0",
-    "crates/tekes-ui-controls/src/toolbar.rs": "4d619b88aaecf350b9191324e67f3ffb7ab8ce30f353b029e4fe9cf407bcaaf7",
+    "crates/tekes-ui-controls/src/toolbar.rs": "de27fdce83fdcb54c27604a7b82df2d63be64e8d2df3201b4e4422741d236d65",
     "crates/tekes-ui-controls/src/widgets.rs": "ee9d1c2f820af8d7aba5f3d8deb8c24c8b2251790a6639793961201bea0a13f3",
     "crates/tekes-ui-controls/tests/choice_contract.rs": "4ee09801a24dd52ffc229e45c7ed7adbb2e5ad25b61fea71fb233ec63787a564",
     "crates/tekes-ui-controls/tests/choice_selection_states.rs": "c7e6ebce60e7b35a5d5b551459f8145a51a3892c955c5579f25ee002ba75f972",
@@ -2216,7 +2216,7 @@
     "crates/tekes-ui-controls/src/composition/select.rs": "886d05299cf93b606c4e2dd5850f4170d06d956408c1ea4da8cb0ff2db63b03c",
     "crates/tekes-ui-controls/src/composition/search.rs": "0df6ed538f578de896ab5a7d01317cde4b36ab171e6668a2ddff2e648e370fef",
     "docs/design/navigation-content-combo17-recovery-20261031.md": "cab75179ffc5ed7be2ab4de95d3d43ed430c5195a0f5b2b7bf56ca215f454090",
-    "crates/tekes-ui-controls/src/composition/legacy_selectable_list.rs": "d4168c743699ac24029d8b1dc4c068e1bdf8dbbd5d61fe2a61ff8c942d37b71b",
+    "crates/tekes-ui-controls/src/composition/legacy_selectable_list.rs": "69e244976d28c82a4cdf6d53631bcb94d081bc597b7abbc19cb0a289de7c8bdf",
     "crates/tekes-ui-controls/src/composition/selectable_list.rs": "5d7e593f476fa72ead71a263a4552ab3cd4bb62367538ff788b247c326ca112c",
     "crates/tekes-ui-controls/src/composition/tree.rs": "d2a69f0ce142127c7a7ecc35bbb3eeafaba955afb585519dd608ec70b3777978",
     "crates/tekes-ui-controls/src/composition/datatable.rs": "1463e1cc08290d05f9769ed56b3abb95b07267df86150ab16bd9732403ec1045",
@@ -2225,10 +2225,10 @@
     "docs/design/datatable-public-content-20261024.md": "812988af6954e21b11d6aca4fe769bfb405f26f256685c400f88cc28ef377cf9",
     "docs/design/disclosure-public-content-20261024.md": "1d9a5e8149c04ab5320ffe8639026034b25dfdd267c38631dd8f9c3f2b078f39",
     "docs/design/media-viewer-design-20261031.md": "1b3205a11b7d11f67c8d628e9a7c684283ddfea46a1fb5c54097d86ab11d52b0",
-    "crates/tekes-ui-app-host/src/columns.rs": "5e93109faf088e27d8f7ea1e2860d6ae7be5f8b08b86d45e88a61e1cb6f30d51",
-    "crates/tekes-ui-app-host/src/presentation.rs": "0ff21d9553a92bd25b027e30ef0b831435a9ec8082d596d2e47b56def8a5891f",
-    "crates/tekes-ui-app-host/src/window_presentation.rs": "73e41cf8eebabca29e5fc777447302d4fe413726c17e56130143e83cae9a8a2f",
-    "crates/tekes-ui-controls/src/composition/toolbar_host.rs": "7447d5cce3b7271b2d5dbb388375243ab5e18114f38b971d5222d6c9765e0e8f"
+    "crates/tekes-ui-app-host/src/columns.rs": "962b01746d12fc01ef5f54ecd1fae8bb645084c68a1d635de1d08a5445fa7f3d",
+    "crates/tekes-ui-app-host/src/presentation.rs": "41530494e5f3a438fdc337e7fb6bb55d3204351e188f9363a70156414cbb1eb0",
+    "crates/tekes-ui-app-host/src/window_presentation.rs": "c3b5b093aab590ec1a673e8d18107a66650c5b02575b0d970c14c104996a0f1c",
+    "crates/tekes-ui-controls/src/composition/toolbar_host.rs": "dddb4bba2aaededd903830bdae6f6b8f3b5184bc2010ac4563396d5c0a765715"
   },
   "remaining": [
     "Collections49 public adapter/support paths recovered in thisf4df candidate; actual compatible compilation/consumer/IPC acceptance and publication remain Main gates. Tree/Table and keyed List slots remain finite passive contracts, not arbitrary interactive content or virtualization.",
@@ -2638,7 +2638,7 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/toolbar.rs",
-      "line": 751,
+      "line": 764,
       "anchor": "impl crate::composition::Component for ToolbarControl {"
     },
     {
@@ -2653,7 +2653,7 @@
     },
     {
       "path": "crates/tekes-ui-app-host/src/window_toolbar.rs",
-      "line": 54,
+      "line": 58,
       "anchor": "pub(crate) struct MountedToolbar {"
     },
     {
@@ -2673,17 +2673,17 @@
     },
     {
       "path": "crates/tekes-ui-app-host/src/presentation.rs",
-      "line": 122,
+      "line": 129,
       "anchor": "pub struct PresentationState {"
     },
     {
       "path": "crates/tekes-ui-app-host/src/window_presentation.rs",
-      "line": 1170,
+      "line": 1256,
       "anchor": "pub(super) fn sync_container_toolbars("
     },
     {
       "path": "crates/tekes-ui-controls/src/composition/toolbar_host.rs",
-      "line": 690,
+      "line": 693,
       "anchor": "pub fn blur(&mut self) {"
     }
   ],
@@ -4276,5 +4276,20 @@
     "scope": "Related source identities only: transparent Tab close with original focus; distinct Toolbar hover owner; explicit shared TOML Settings owner and standard application menu. Mis-scoped AppHost outer List scrollbar withdrawn, original source restored, historical candidate evidence retained. Native/experience separately verified.",
     "latest_scope": "Shared List checked scrollbar, single-owner pane padding, navigation metrics, Settings display binding and AppHost Code family. Source review only; native/experience status unchanged.",
     "native002_followup": "Settings keyboard scope/Tab consumption and control-safe native top-row boundary; original native failures retained. Local regressions and native recheck pending."
+  },
+  "workspace_secondary_review_20261111": {
+    "issue": 229,
+    "scope": "Workspace-owned single exchange; owner/host scoped secondary Menu presentation; legacy List ordinary rectangular admission only",
+    "reviewed_source_pins": [
+      "crates/tekes-ui-app-host/src/window_toolbar.rs",
+      "crates/tekes-ui-controls/src/toolbar.rs",
+      "crates/tekes-ui-controls/src/composition/legacy_selectable_list.rs",
+      "crates/tekes-ui-app-host/src/columns.rs",
+      "crates/tekes-ui-app-host/src/presentation.rs",
+      "crates/tekes-ui-app-host/src/window_presentation.rs",
+      "crates/tekes-ui-controls/src/composition/toolbar_host.rs"
+    ],
+    "verification": "145: public legacy List Pointer and AX plus compatibility 4; AppHost149; public assembly matrix; affected strict passed",
+    "limits": "Native replacement run and publication pending. No curve/prepared/IPC capability promotion. Existing legacy input failure preserved."
   }
 }

@@ -73,6 +73,8 @@ pub struct PresentationOptions {
     /// Explicitly keep window history controls in the current focus Toolbar.
     /// Business navigation_targets and the service identity remain unchanged.
     pub navigation_toolbar_follows_focus: bool,
+    /// One Workspace-owned exchange action, presented in its secondary menu.
+    pub workspace_switch: bool,
 }
 impl PresentationOptions {
     pub fn new(focus: impl Into<String>) -> Self {
@@ -86,7 +88,12 @@ impl PresentationOptions {
             navigation_targets: Vec::new(),
             navigation_toolbar: None,
             navigation_toolbar_follows_focus: false,
+            workspace_switch: false,
         }
+    }
+    pub fn workspace_switch(mut self, enabled: bool) -> Self {
+        self.workspace_switch = enabled;
+        self
     }
     pub fn nav_bar(mut self, id: impl Into<String>) -> Self {
         self.nav_bar = Some(id.into());
@@ -421,6 +428,9 @@ impl PresentationState {
     }
     /// A focus owner exchanges only with a selected ordinary Others tab.
     /// List aggregates and absent selections never imply a first-item fallback.
+    pub(crate) fn workspace_switch_enabled(&self) -> bool {
+        self.options.workspace_switch
+    }
     pub fn focus_switch_target(&self, owner: &str) -> Option<&str> {
         if owner == self.focus_id() {
             match self.selected_tab() {

@@ -121,7 +121,7 @@ fn assembly(layout: Layout, backing: Backing) -> Result<(Vec<Container>, Present
                 .list_height(260.)
                 .into(),
         ];
-        let mut options = PresentationOptions::new(focus);
+        let mut options = PresentationOptions::new(focus).workspace_switch(layout.others());
         if layout.nav() {
             containers.push(
                 ProcessContainer::new(definitions[2])
@@ -163,7 +163,7 @@ fn assembly(layout: Layout, backing: Backing) -> Result<(Vec<Container>, Present
         "preview"
     };
     let mut containers: Vec<Container> = vec![local("notes", true)?.list_height(260.).into()];
-    let mut options = PresentationOptions::new("notes").navigation_toolbar("notes");
+    let mut options = PresentationOptions::new("notes").navigation_toolbar("notes").workspace_switch(layout.others());
     if layout.nav() {
         containers.push(local("navbar", false)?.toolbar_host(tekes_ui_app_host::ContainerToolbarHost::Window).into());
         options = options.nav_bar("navbar").navigation_toolbar("navbar");

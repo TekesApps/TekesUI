@@ -83,6 +83,10 @@ impl LocalContainer {
         self.options.focus_switch_command = Some(command);
         self
     }
+    pub fn secondary_commands(mut self, commands: Vec<u64>) -> Self {
+        self.options.secondary_commands = commands;
+        self
+    }
     pub fn retain_button(mut self, command: u64, target: impl Into<String>) -> Self {
         self.options.retained_buttons.push(RetainedButton {
             command,
@@ -212,6 +216,8 @@ pub struct ContainerOptions {
     pub switcher_icon: Option<String>,
     pub toolbar_host: ContainerToolbarHost,
     pub focus_switch_command: Option<u64>,
+    /// Existing toolbar commands presented only in this owner's More menu.
+    pub secondary_commands: Vec<u64>,
     /// Opt in to List with this content allocation (including its Toolbar).
     pub list_height: Option<f32>,
     /// None retains the existing default; zero lets local Content own padding.
@@ -260,6 +266,10 @@ impl ProcessContainer {
     /// current focus/ordinary-Others exchange instead of business dispatch.
     pub fn focus_switch(mut self, command: u64) -> Self {
         self.options.focus_switch_command = Some(command);
+        self
+    }
+    pub fn secondary_commands(mut self, commands: Vec<u64>) -> Self {
+        self.options.secondary_commands = commands;
         self
     }
     pub fn retain_button(mut self, command: u64, target: impl Into<String>) -> Self {
@@ -386,6 +396,13 @@ pub(crate) fn validate_ids<'a>(
                 .is_none_or(|icon| tekes_ui_icons::Glyph::named(icon).is_some()),
             "unknown switcher icon for {id}"
         );
+        let mut secondary = std::collections::HashSet::new();
+        for command in &options.secondary_commands {
+            anyhow::ensure!(
+                secondary.insert(command),
+                "duplicate secondary command {command} for {id}"
+            );
+        }
         let mut commands = std::collections::HashSet::new();
         for button in &options.retained_buttons {
             anyhow::ensure!(

@@ -173,35 +173,52 @@ impl Host {
             if frames[slot].size.width <= 0. || p.toolbar.is_empty() {
                 continue;
             }
-            let buttons = p
-                .toolbar
-                .iter()
-                .map(|a| ButtonDecl {
-                    id: a.id,
-                    icon: None,
-                    text: a.title.clone(),
-                    hint: Some(a.title.clone()),
-                    enabled: open
-                        && !self.sidebar_motion.needs_frame()
-                        && p.failed.is_none()
-                        && a.enabled
-                        && (!a.geometry_dependent || p.frame_viewport == p.viewport),
-                })
-                .collect();
-            add(
-                92400 + index as u64 * 10,
-                ComponentId(91000 + slot as u64),
-                Placement::PrimaryAction,
-                10,
-                Contents::Commands(buttons, Overflow::Split),
-                Source::Panel {
-                    instance: p.instance,
-                    index,
-                    module: p.module_id.clone(),
-                    pid: p.pid,
-                    generation: p.toolbar_generation,
-                },
-            );
+            for secondary in [false, true] {
+                let buttons: Vec<_> = p
+                    .toolbar
+                    .iter()
+                    .filter(|a| p.options.secondary_commands.contains(&a.id) == secondary)
+                    .map(|a| ButtonDecl {
+                        id: a.id,
+                        icon: None,
+                        text: a.title.clone(),
+                        hint: Some(a.title.clone()),
+                        enabled: open
+                            && !self.sidebar_motion.needs_frame()
+                            && p.failed.is_none()
+                            && a.enabled
+                            && (!a.geometry_dependent || p.frame_viewport == p.viewport),
+                    })
+                    .collect();
+                if buttons.is_empty() {
+                    continue;
+                }
+                add(
+                    92400 + index as u64 * 10 + if secondary { 8_000_000 } else { 0 },
+                    ComponentId(91000 + slot as u64),
+                    if secondary {
+                        Placement::SecondaryAction
+                    } else {
+                        Placement::PrimaryAction
+                    },
+                    10,
+                    Contents::Commands(
+                        buttons,
+                        if secondary {
+                            Overflow::Menu
+                        } else {
+                            Overflow::Split
+                        },
+                    ),
+                    Source::Panel {
+                        instance: p.instance,
+                        index,
+                        module: p.module_id.clone(),
+                        pid: p.pid,
+                        generation: p.toolbar_generation,
+                    },
+                );
+            }
         }
         self.remember_toolbar_focus(None);
         // Containers own the shared Toolbar instances. Window contributes only
@@ -304,6 +321,9 @@ impl Host {
                             Ok(())
                         }
                     }
+                    Source::WorkspaceSwitch { focus, other } => self
+                        .switch_workspace_focus(focus, other)
+                        .map(|changed| exchanged = changed),
                     Source::Title => Err(anyhow::anyhow!("title has no command binding")),
                     Source::Expand {
                         container,
@@ -688,7 +708,9 @@ impl Host {
                             owner: *index,
                             presenter,
                         }),
-                        Source::Close(_) | Source::Expand { .. } => {
+                        Source::Close(_)
+                        | Source::Expand { .. }
+                        | Source::WorkspaceSwitch { .. } => {
                             Some(ToolbarTarget::Contribution { presenter, group })
                         }
                         Source::Navigation(_) => Some(ToolbarTarget::Navigation),
@@ -733,6 +755,15 @@ impl Host {
                 .filter(|&&i| i < self.panels.len())
                 .map(|&i| ToolbarTarget::Panel(i)),
         );
+        for (presenter, panel) in self.panels.iter().enumerate() {
+            for (group, source) in panel.mounted_toolbar.contributions() {
+                if let Source::Panel { index, .. } = source
+                    && group != Self::toolbar_group(ToolbarTarget::Panel(*index))
+                {
+                    groups.push(ToolbarTarget::Contribution { presenter, group });
+                }
+            }
+        }
         if self.presentation.is_none() && self.panels.len() == 3 {
             groups.push(ToolbarTarget::Visibility(1));
         }

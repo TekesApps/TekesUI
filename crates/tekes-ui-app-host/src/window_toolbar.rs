@@ -10,6 +10,10 @@ pub(crate) enum Source {
     Navigation(ComponentSource),
     Undo(ComponentSource),
     Title,
+    WorkspaceSwitch {
+        focus: u64,
+        other: Option<u64>,
+    },
     Close(String),
     Expand {
         container: String,
@@ -152,6 +156,9 @@ impl MountedToolbar {
                                         |control| {
                                             control.set_group_together(
                                                 *overflow == ToolbarGroupOverflow::Together,
+                                            );
+                                            control.set_menu_only(
+                                                *overflow == ToolbarGroupOverflow::Menu,
                                             );
                                             control.set_actions(
                                                 buttons

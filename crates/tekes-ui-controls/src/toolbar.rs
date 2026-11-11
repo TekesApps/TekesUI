@@ -51,6 +51,7 @@ pub struct ToolbarIconAction {
 pub struct ToolbarControl {
     axis: crate::extended::Axis,
     keep_group_together: bool,
+    menu_only: bool,
     embedded: bool,
     actions: Vec<ToolbarAction>,
     semantic_ids: std::collections::HashMap<u64, usize>,
@@ -83,6 +84,7 @@ impl Default for ToolbarControl {
         Self {
             axis: crate::extended::Axis::Horizontal,
             keep_group_together: false,
+            menu_only: false,
             embedded: false,
             actions: Vec::new(),
             semantic_ids: Default::default(),
@@ -269,6 +271,13 @@ impl ToolbarControl {
             self.keep_group_together = together;
         }
     }
+    /// Present every command in the original More menu, regardless of width.
+    pub fn set_menu_only(&mut self, menu_only: bool) {
+        if self.menu_only != menu_only {
+            self.cancel();
+            self.menu_only = menu_only;
+        }
+    }
     pub(crate) fn minimum_width(&self, text: &mut dyn ButtonTextRenderer) -> f32 {
         if self.actions.is_empty() {
             return 0.;
@@ -362,6 +371,10 @@ impl ToolbarControl {
             return Size::default();
         }
         let m = metrics(text, self.text_role);
+        if self.menu_only {
+            let trigger = self.overflow_size(text);
+            return Size::new(trigger.width + self.edge_inset(m) * 2., m.row);
+        }
         let pad = m.inset;
         if self.axis == crate::extended::Axis::Vertical {
             let sizes = self
@@ -486,7 +499,7 @@ impl ToolbarControl {
         let mut visible = Vec::new();
         let mut used = 0.;
         for (i, s) in sizes.iter().enumerate() {
-            if needs_overflow && self.keep_group_together {
+            if self.menu_only || needs_overflow && self.keep_group_together {
                 break;
             }
             let item_main = if horizontal { s.width } else { s.height };
@@ -1637,6 +1650,45 @@ mod tests {
         assert_eq!(toolbar.measure(&mut text).height, height);
         text.height = 60.;
         assert!(toolbar.measure(&mut text).height > height);
+    }
+    #[test]
+    fn secondary_menu_stays_compact_at_wide_width_and_keeps_original_actions() {
+        let mut toolbar = toolbar();
+        let mut text = Text { height: 16. };
+        let full = toolbar.measure(&mut text);
+        toolbar.set_menu_only(true);
+        let compact = toolbar.measure(&mut text);
+        assert!(compact.width < full.width);
+        let palette = tekes_ui_tokens::Theme::LIGHT.into();
+        toolbar.render(
+            &mut Scene::new(),
+            &mut text,
+            Rect::new(0., 0., 800., compact.height),
+            palette,
+        );
+        assert_eq!(toolbar.overflow_ids(), vec![11, 22, 33]);
+        let point = toolbar.trigger_rect.center();
+        toolbar.pointer_event(&pointer(point, PointerPhase::Down));
+        toolbar.pointer_event(&pointer(point, PointerPhase::Up));
+        assert!(toolbar.is_open());
+        toolbar.render_overlay(
+            &mut Scene::new(),
+            &mut text,
+            Rect::new(0., 0., 800., 400.),
+            palette,
+        );
+        assert_eq!(toolbar.menu.activate_item(1), MenuEvent::None);
+        let action = toolbar.menu.activate_item(2);
+        assert_eq!(toolbar.action_for(action), Some(33));
+        toolbar.set_menu_only(false);
+        assert!(!toolbar.is_open());
+        toolbar.render(
+            &mut Scene::new(),
+            &mut text,
+            Rect::new(0., 0., 800., full.height),
+            palette,
+        );
+        assert!(toolbar.overflow_ids().is_empty());
     }
     #[test]
     fn overflow_activates_registered_id_and_disables_unavailable_actions() {

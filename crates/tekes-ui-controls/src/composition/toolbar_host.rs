@@ -62,6 +62,8 @@ impl ToolbarRegion {
 }
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum ToolbarGroupOverflow {
+    /// Always use the original More menu for secondary commands.
+    Menu,
     /// All command buttons stay together, or share their original More menu.
     #[default]
     Together,
@@ -86,6 +88,7 @@ pub fn toolbar_commands(
 ) -> Content {
     let mut control = ToolbarControl::window();
     control.set_group_together(overflow == ToolbarGroupOverflow::Together);
+    control.set_menu_only(overflow == ToolbarGroupOverflow::Menu);
     control.set_actions(
         buttons
             .iter()

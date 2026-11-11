@@ -12,7 +12,6 @@ use tekes_ui_app_host::{
     NavigationOptions, OthersGroup, OthersOptions, PresentationOptions, SettingsDisplayMode,
     SettingsOwner, SettingsWindow,
 };
-use tekes_ui_app_protocol::ToolbarItem;
 use tekes_ui_controls::{
     CheckState, ScrollArea, TextInput,
     composition::{
@@ -31,7 +30,6 @@ const DOCUMENT_TITLES: [&str; 4] = [
     "Project overview",
     "Release checklist",
 ];
-const SWITCH: u64 = 1;
 const TITLE: ComponentId = ComponentId(100);
 const AUTHOR: ComponentId = ComponentId(101);
 const REVISION: ComponentId = ComponentId(102);
@@ -403,14 +401,6 @@ fn confirm_inspector_disclosures(host: &mut ContentHost, records: &[ContentActio
     }
     property_change
 }
-fn switch_toolbar() -> Vec<ToolbarItem> {
-    vec![ToolbarItem {
-        id: SWITCH,
-        title: "Switch".into(),
-        enabled: true,
-        geometry_dependent: false,
-    }]
-}
 fn assemble(theme: Theme, settings: SettingsOwner) -> anyhow::Result<AppWindow> {
     let documents = Rc::new(RefCell::new(documents()));
     let document = Rc::new(RefCell::new(
@@ -551,8 +541,6 @@ fn assemble(theme: Theme, settings: SettingsOwner) -> anyhow::Result<AppWindow> 
         .switcher_icon("tekes-side-panel")
         .content_padding(0.)
         .list_height(640.)
-        .toolbar(switch_toolbar())
-        .focus_switch(SWITCH)
         .on_action(move |host, records| {
             if !confirm_inspector_disclosures(host, &records) {
                 return;
@@ -623,8 +611,6 @@ fn assemble(theme: Theme, settings: SettingsOwner) -> anyhow::Result<AppWindow> 
         .switcher_icon("tekes-file-text")
         .content_padding(0.)
         .list_height(700.)
-        .toolbar(switch_toolbar())
-        .focus_switch(SWITCH)
         .on_command(move |host, command| {
             let index = command
                 .checked_sub(DOCUMENT_COMMAND)
@@ -643,18 +629,19 @@ fn assemble(theme: Theme, settings: SettingsOwner) -> anyhow::Result<AppWindow> 
             Ok(())
         });
     let reading = LocalContainer::new("gallery-list", scroll(6000, stack(6001, vec![text(6002, "Reading notes", TextRole::UiHeading), field(ComponentId(6003), "Notes", "Keep a short note beside the current document."), text(6004, "Capture a question, an idea or a useful reference before the next meeting.", TextRole::UiBody)])))?.title("Notes").toolbar_host(ContainerToolbarHost::Container { position: ContainerToolbarPosition::Leading }).switcher_icon("tekes-note")
-    .content_padding(0.).list_height(320.).toolbar(switch_toolbar()).focus_switch(SWITCH);
+    .content_padding(0.).list_height(320.);
     let reference = LocalContainer::new("gallery-reference", scroll(6100, stack(6101, vec![
         text(6102, "Reference", TextRole::UiHeading),
         text(6103, "A second document instance. Switch between Notes and Reference from the Documents menu; each keeps its original content.", TextRole::UiBody),
-    ])))?.title("Reference").toolbar_host(ContainerToolbarHost::Container { position: ContainerToolbarPosition::Trailing }).switcher_icon("tekes-file-text").content_padding(0.).toolbar(switch_toolbar()).focus_switch(SWITCH);
+    ])))?.title("Reference").toolbar_host(ContainerToolbarHost::Container { position: ContainerToolbarPosition::Trailing }).switcher_icon("tekes-file-text").content_padding(0.);
     let summary = LocalContainer::new("gallery-summary", scroll(6200, stack(6201, vec![
         text(6202, "Summary", TextRole::UiHeading),
         text(6203, "This document keeps its toolbar at the bottom. Use Documents to switch instances; use the swap action to exchange it with Focus.", TextRole::UiBody),
     ])))?.title("Summary").switcher_icon("tekes-file-text")
         .toolbar_host(ContainerToolbarHost::Container { position: ContainerToolbarPosition::Bottom })
-        .content_padding(0.).toolbar(switch_toolbar()).focus_switch(SWITCH);
+        .content_padding(0.);
     let mut presentation = PresentationOptions::new("gallery-focus")
+        .workspace_switch(true)
         .nav_bar("gallery-nav")
         .nav_fraction(1. / 3.)
         .navigation_toolbar("gallery-nav")
