@@ -644,7 +644,7 @@ mod tests {
                             ),
                             (
                                 ColorRole::BorderFocused,
-                                Rgba::rgb8(94, 94, 91),
+                                Rgba::rgb8(107, 107, 104),
                                 Rgba::rgb8(66, 66, 63),
                             ),
                         ])
@@ -657,7 +657,7 @@ mod tests {
                             ),
                             (
                                 ColorRole::BorderFocused,
-                                Rgba::rgb8(176, 176, 172),
+                                Rgba::rgb8(150, 150, 146),
                                 Rgba::rgb8(238, 238, 234),
                             ),
                         ])

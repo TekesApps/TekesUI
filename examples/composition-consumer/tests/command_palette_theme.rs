@@ -10,7 +10,7 @@ use tekes_ui_controls::{
     layout_view::CommandPaletteView,
 };
 use tekes_ui_scene::{Primitive, Quad, Rect, Scene};
-use tekes_ui_tokens::{Palette, Rgba, Theme, proposal, surface_palette::resolve_surface};
+use tekes_ui_tokens::{Palette, Rgba, Stroke, Theme, proposal, surface_palette::resolve_surface};
 
 fn assert_text_ground(
     scene: &Scene,
@@ -165,7 +165,7 @@ fn command_palette_same_instance_preserves_query_and_active_candidate_across_the
                 .primitives()
                 .iter()
                 .any(|p| matches!(p, Primitive::Quad(q)
-            if q.rect == initial_query && q.border_width == proposal::metric("stroke", "c-focus-width").unwrap()
+            if q.rect == initial_query && q.border_width == if theme.is_increased() { proposal::metric("stroke", "c-focus-width").unwrap() } else { Stroke::Rule.value() }
             && q.border_color == palette.color("border-focused").unwrap()))
         );
         let node = scenario

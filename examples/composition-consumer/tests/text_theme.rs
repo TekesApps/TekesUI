@@ -3,7 +3,7 @@
 mod coretext;
 use tekes_ui_controls::{TextSurface, TextSurfaceHost, TextSurfacePresentation, composition::*};
 use tekes_ui_scene::{Primitive, Quad, Rect, Scene};
-use tekes_ui_tokens::{Palette, Rgba, Theme, proposal};
+use tekes_ui_tokens::{Palette, Rgba, Stroke, Theme, proposal};
 fn contrast(a: Rgba, b: Rgba) -> f32 {
     let l = |c: Rgba| {
         let c = c.to_linear();
@@ -156,7 +156,7 @@ fn text_surface_retained_themes_preserve_readonly_source_selection_copy_and_real
             initial = Some((surface.outer, surface.inner));
         }
         assert_readonly_scene(&scene, &surface, palette, text.backing);
-        assert!(scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q)if q.rect == surface.outer && q.border_width == proposal::metric("stroke", "c-focus-width").unwrap()
+        assert!(scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q)if q.rect == surface.outer && q.border_width == if theme.is_increased() { proposal::metric("stroke", "c-focus-width").unwrap() } else { Stroke::Rule.value() }
             && q.border_color==palette.color("border-focused").unwrap())));
     }
     let before = surface.paragraph.as_ref().unwrap().height;

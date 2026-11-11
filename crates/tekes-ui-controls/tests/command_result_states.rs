@@ -198,7 +198,15 @@ fn command_results_use_the_production_query_and_menu_without_button_selected_pai
                     assert_eq!(query_quad.border_color, palette.color(boundary).unwrap());
                     assert_eq!(
                         query_quad.border_width,
-                        proposal::metric("stroke", "c-focus-width").unwrap()
+                        proposal::metric(
+                            "stroke",
+                            if theme.is_increased() {
+                                "c-focus-width"
+                            } else {
+                                "stroke-rule"
+                            }
+                        )
+                        .unwrap()
                     );
                 }
                 cases.push(serde_json::json!({"component":"tui.command-palette","choice_state":state,"state_asserted":true,"theme":format!("{theme:?}"),"brand":brand,"lookups":reads}));
