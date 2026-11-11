@@ -538,6 +538,84 @@ impl ButtonTextRenderer for Recording {
     }
 }
 #[test]
+fn list_rest_is_transparent_while_hover_selection_and_disabled_keep_surface_states() {
+    for theme in [Theme::LIGHT, Theme::DARK] {
+        for surface in [None, Some("panel")] {
+            let mut content = Content::new(ComponentId(10), list(&snapshot()));
+            content.set_surface(surface).unwrap();
+            let mut h = ContentHost::new(content).unwrap();
+            let frame = Rect::new(0., 0., 240., 220.);
+            let render = |h: &mut ContentHost| {
+                let mut scene = Scene::new();
+                let mut text = Recording::default();
+                h.render(&mut scene, &mut text, frame, frame, theme.into())
+                    .unwrap();
+                let quads = scene
+                    .primitives()
+                    .iter()
+                    .filter_map(|p| match p {
+                        tekes_ui_scene::Primitive::Quad(q) => Some(*q),
+                        _ => None,
+                    })
+                    .collect::<Vec<_>>();
+                (quads, text.ink)
+            };
+            assert!(render(&mut h).0.is_empty(), "rest must not draw row cards");
+            let target = current(&h).semantic_parts()[0].frame.center();
+            h.event(&ContentEvent::PointerMove(target));
+            let hover = render(&mut h).0;
+            let colors = tekes_ui_tokens::surface_palette::resolve_surface(
+                theme.into(),
+                surface.unwrap_or("canvas"),
+                "action-quiet",
+                "hover",
+            )
+            .unwrap();
+            assert_eq!(hover.len(), 1, "only the hovered row paints a fill");
+            assert_eq!(hover[0].fill, colors.background);
+            h.event(&ContentEvent::PointerMove(Point::new(300., 250.)));
+            assert!(
+                render(&mut h).0.is_empty(),
+                "leave restores transparent rest"
+            );
+
+            let part = current(&h).semantic_parts()[0].index;
+            h.accessibility_action(ComponentId(10), Some(part), AccessibilityAction::Press);
+            let selected = render(&mut h).0;
+            let selected_color = tekes_ui_tokens::surface_palette::resolve_surface(
+                theme.into(),
+                surface.unwrap_or("canvas"),
+                "action-quiet",
+                "selected",
+            )
+            .unwrap()
+            .background;
+            assert!(selected.iter().any(|q| q.fill == selected_color));
+            h.get_mut(ComponentId(10))
+                .unwrap()
+                .component_mut::<KeyedSelectableListContent>()
+                .unwrap()
+                .set_disabled(true)
+                .unwrap();
+            let (_, ink) = render(&mut h);
+            let disabled_color = tekes_ui_tokens::surface_palette::resolve_surface(
+                theme.into(),
+                surface.unwrap_or("canvas"),
+                "action-quiet",
+                "selected-disabled",
+            )
+            .unwrap()
+            .text;
+            assert!(
+                ink.iter()
+                    .any(|(label, c)| label == "row1" && *c == disabled_color)
+            );
+            assert_eq!(current(&h).selected_key(), Some(ListItemKey(1)));
+        }
+    }
+}
+
+#[test]
 fn passive_display_selected_disabled_ink_uses_original_surface_owner_and_clear() {
     let s = snapshot();
     let mut d = rows(&s);

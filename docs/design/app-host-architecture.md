@@ -856,3 +856,11 @@ Settings 内容边界复用主 AppHost 的可见且避让原生控件的 Toolbar
 Window host 的统一工具栏空白区域属于原生窗口 chrome。原控件、分割条及正文先处理输入，剩余空白区域再进入原生拖动／双击处理；不能仅以内嵌 Container toolbar 的 frame 判定。Nav／Others 显隐和 Focus 交换保持既有命令与实例身份，不因 host 迁移改变布局语义。
 
 Gallery 原左侧导航显式启用纵向滚动条，按真实溢出显示，保留共享 ScrollArea 的开关及无条滚动能力。AppHost 和 Settings 使用 ListContent::scrollable 的入口保持原行为。源码检查不替代准确打包程序的拖窗、布局按钮和滚动条原生验收。
+
+## 2026-11-12: navigation visits and compact Settings chrome
+
+Gallery document identity remains the stable gallery-document route and index. Navigation History entry identity represents an individual visit: returning to a previously viewed document must create a distinct visit ID without changing the document or Container identity. Back/Forward reuses stored entries and resolves the same document. The human-readable title remains separate from the visit ID.
+
+Settings keeps Back and Search in one sidebar header row. Back artwork starts at the same leading boundary as the sidebar controls while preserving its original action hit height. The search icon expands the original text editor in that row; committed text matches existing group/item labels and field labels/descriptions to the original item routes. Empty search restores the rows; Escape closes search, while an active marked composition keeps its original IME cancellation path. This follows the Swift Tekes compact-search interaction (ContentSidebarChrome and ClientSettingsController); it does not introduce a second editor or navigation model. Field highlighting and direct field scrolling are outside this bounded search change.
+
+Number steppers retain their original hit targets, bounds and keyboard/AX behavior. Their minus/plus actions paint only the existing action-quiet foreground states (secondary at rest, primary on hover/press, disabled foreground at limits), without rectangular hover backgrounds. Theme values are not overridden in Settings.

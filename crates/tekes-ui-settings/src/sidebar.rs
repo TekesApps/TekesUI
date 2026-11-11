@@ -7,8 +7,8 @@ use std::collections::BTreeMap;
 use tekes_ui_controls::{
     ButtonTextRenderer,
     composition::{
-        Button, ComponentId, Content, ContentEvent, ContentHost, GridContent, IconContent,
-        ListContent, StackContent, TextContent, TextFieldContent,
+        Button, ComponentId, Content, ContentEvent, ContentHost, IconContent, ListContent,
+        StackContent, TextContent, TextFieldContent,
     },
     extended::{Axis, Stack},
 };
@@ -22,6 +22,9 @@ pub struct SettingsSidebar {
     selected_item: Option<String>,
     back_requested: bool,
     back_template: Option<&'static str>,
+    search_button: Option<Content>,
+    search_entries: BTreeMap<ComponentId, Vec<(String, String, String)>>,
+    query: String,
 }
 impl SettingsSidebar {
     pub fn new(schema: &Schema) -> Result<Self> {
@@ -34,6 +37,7 @@ impl SettingsSidebar {
     fn build(schema: &Schema, back: bool) -> Result<Self> {
         let mut group_children = vec![];
         let mut items = BTreeMap::new();
+        let mut search_entries = BTreeMap::new();
         let mut next = 100;
         for group in &schema.groups {
             let mut heading = TextContent::new(&group.label);
@@ -49,6 +53,24 @@ impl SettingsSidebar {
             list.view.set_navigation_selection_fill_only(true);
             list.view.set_navigation_layout(true);
             group_children.push((heading, Content::new(id, list)));
+            search_entries.insert(
+                id,
+                group
+                    .items
+                    .iter()
+                    .map(|item| {
+                        let mut terms = format!("{} {}", group.label, item.label);
+                        for field in &item.fields {
+                            terms.push_str(&format!(" {} {}", field.label, field.description));
+                        }
+                        (
+                            format!("{}/{}", group.id, item.id),
+                            item.label.clone(),
+                            terms.to_lowercase(),
+                        )
+                    })
+                    .collect(),
+            );
             items.insert(
                 id,
                 group
@@ -93,6 +115,7 @@ impl SettingsSidebar {
             let mut back_button = Button::new("〈 返回")
                 .with_accessible_name("返回主窗口")
                 .with_help("返回主窗口");
+            back_button.leading_content_inset = Some(0.);
             back_button.content_alignment =
                 tekes_ui_tokens::proposal::layout::MainAxisDistribution::Start;
             Content::new(
@@ -105,20 +128,26 @@ impl SettingsSidebar {
                     children: vec![
                         Content::new(
                             ComponentId(5),
-                            GridContent {
-                                model: tekes_ui_controls::extended::Grid {
-                                    columns: 1,
-                                    gap_x: 0.,
-                                    gap_y: tekes_ui_tokens::Spacing::Relaxed.value(),
+                            StackContent {
+                                model: Stack {
+                                    axis: Axis::Horizontal,
+                                    gap: tekes_ui_tokens::Spacing::Regular.value(),
                                 },
                                 children: vec![
                                     Content::new(ComponentId(4), back_button),
                                     Content::new(
-                                        ComponentId(6),
-                                        TextFieldContent::inline("Search", "", 20.),
-                                    )
-                                    .with_help("Search"),
+                                        ComponentId(10),
+                                        Button::new(Content::new(
+                                            ComponentId(11),
+                                            IconContent::new("tekes-search").map_err(|error| {
+                                                anyhow::anyhow!("Settings search icon: {error:?}")
+                                            })?,
+                                        ))
+                                        .with_accessible_name("搜索设置")
+                                        .with_help("搜索设置"),
+                                    ),
                                 ],
+                                flexible_child: Some(ComponentId(4)),
                             },
                         ),
                         scroll,
@@ -138,6 +167,9 @@ impl SettingsSidebar {
             selected_item: None,
             back_requested: false,
             back_template: None,
+            search_button: None,
+            search_entries,
+            query: String::new(),
         })
     }
     pub fn set_back_icon(&mut self, image: tekes_ui_scene::ImageId) {
@@ -182,6 +214,101 @@ impl SettingsSidebar {
         }
         Ok(())
     }
+    fn open_search(&mut self) -> Result<()> {
+        self.search_button = Some(
+            self.host
+                .remove(ComponentId(10))
+                .map_err(|error| anyhow::anyhow!("Settings search: {error:?}"))?,
+        );
+        self.host
+            .insert(
+                ComponentId(5),
+                Content::new(
+                    ComponentId(6),
+                    TextFieldContent::inline("搜索设置", "", 20.),
+                )
+                .with_help("搜索设置"),
+            )
+            .map_err(|error| anyhow::anyhow!("Settings search: {error:?}"))?;
+        self.host
+            .get_mut(ComponentId(5))
+            .unwrap()
+            .component_mut::<StackContent>()
+            .unwrap()
+            .flexible_child = Some(ComponentId(6));
+        self.host.focus(Some(ComponentId(6)), true);
+        Ok(())
+    }
+    /// Escape belongs to the original search editor, before window Back/Cancel.
+    /// Marked text is left to the original IME cancellation path.
+    pub fn cancel_search(&mut self) -> Result<bool> {
+        if self.search_button.is_none() || self.host.is_composing() {
+            return Ok(false);
+        }
+        self.host
+            .remove(ComponentId(6))
+            .map_err(|error| anyhow::anyhow!("Settings search: {error:?}"))?;
+        self.host
+            .insert(ComponentId(5), self.search_button.take().unwrap())
+            .map_err(|error| anyhow::anyhow!("Settings search: {error:?}"))?;
+        self.host
+            .get_mut(ComponentId(5))
+            .unwrap()
+            .component_mut::<StackContent>()
+            .unwrap()
+            .flexible_child = Some(ComponentId(4));
+        self.host.focus(Some(ComponentId(10)), true);
+        self.sync_search()?;
+        Ok(true)
+    }
+    /// Update the original navigation rows from committed search text. Each
+    /// visible row retains its original route; searching never edits the draft.
+    pub fn sync_search(&mut self) -> Result<()> {
+        if self.host.is_composing() {
+            return Ok(());
+        }
+        let query = self
+            .host
+            .get(ComponentId(6))
+            .and_then(|node| node.component::<TextFieldContent>())
+            .map(|field| field.surface.input.text.trim().to_lowercase())
+            .unwrap_or_default();
+        if self.search_button.is_some()
+            && query.is_empty()
+            && self.host.focused() != Some(ComponentId(6))
+            && !self.host.is_composing()
+        {
+            self.cancel_search()?;
+            return Ok(());
+        }
+        if query == self.query {
+            return Ok(());
+        }
+        self.query = query;
+        for (id, entries) in &self.search_entries {
+            let matching: Vec<_> = entries
+                .iter()
+                .filter(|(_, _, terms)| terms.contains(&self.query))
+                .collect();
+            let list = self
+                .host
+                .get_mut(*id)
+                .unwrap()
+                .component_mut::<SelectableListContent>()
+                .unwrap();
+            list.view.cancel();
+            list.labels = matching.iter().map(|(_, label, _)| label.clone()).collect();
+            list.model.count = matching.len();
+            list.model.selected = matching
+                .iter()
+                .position(|(route, _, _)| self.selected_item.as_ref() == Some(route));
+            self.items.insert(
+                *id,
+                matching.iter().map(|(route, _, _)| route.clone()).collect(),
+            );
+        }
+        Ok(())
+    }
     pub fn take_back(&mut self) -> bool {
         std::mem::take(&mut self.back_requested)
     }
@@ -205,6 +332,7 @@ impl SettingsSidebar {
         frame: Rect,
         palette: Palette,
     ) -> Result<()> {
+        self.sync_search()?;
         self.host
             .render(scene, text, frame, frame, palette)
             .map_err(|e| anyhow::anyhow!("Settings sidebar: {e:?}"))
@@ -216,6 +344,10 @@ impl SettingsSidebar {
     pub fn take_selection(&mut self) -> Option<String> {
         let actions = self.host.drain_actions();
         self.back_requested |= actions.iter().any(|a| a.target == ComponentId(4));
+        if actions.iter().any(|a| a.target == ComponentId(10)) {
+            // Both nodes and their parent are owned by this fixed declaration.
+            self.open_search().expect("declared Settings search slots");
+        }
         actions.into_iter().find_map(|a| {
             let list = self
                 .host

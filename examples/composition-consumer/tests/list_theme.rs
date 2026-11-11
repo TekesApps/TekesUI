@@ -79,21 +79,31 @@ fn retained_list_theme_preserves_selection_and_real_text_through_hover_focus_and
                         _ => None,
                     })
                     .expect("original selected-row ground");
-                let ground_role = if disabled {
-                    "surface-2"
-                } else if hovered {
-                    "row-selection-hover"
-                } else {
-                    "row-selection"
-                };
-                assert_eq!(surface.fill, palette.color(ground_role).unwrap());
+                let colors = tekes_ui_tokens::surface_palette::resolve_surface(
+                    palette,
+                    "canvas",
+                    "action-quiet",
+                    if disabled {
+                        "selected-disabled"
+                    } else if hovered {
+                        "selected-hover"
+                    } else {
+                        "selected"
+                    },
+                )
+                .unwrap();
+                assert_eq!(surface.fill, colors.background);
+                for row in layout.items.iter().filter(|row| row.id != 1) {
+                    assert!(
+                        !scene.primitives().iter().any(|p| matches!(p,
+                            Primitive::Quad(q) if q.rect == row.frame && q.fill.a > 0.
+                        )),
+                        "unselected resting rows are transparent"
+                    );
+                }
                 assert_eq!(
                     surface.border_width,
-                    if navigation_fill_only || disabled {
-                        0.
-                    } else {
-                        1.
-                    },
+                    if navigation_fill_only { 0. } else { 1. },
                     "navigation opt-in removes the selected row stroke; the default List keeps it",
                 );
                 let copies: Vec<_> = scene.primitives()[surface_index + 1..]

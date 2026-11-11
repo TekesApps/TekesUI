@@ -622,11 +622,9 @@ impl ListView {
                 self.disabled,
                 self.state.captured == Some(row.id),
             );
-            if let Some(surface) = surface {
-                button.set_surface(surface);
-            } else {
-                button.clear_surface();
-            }
+            // A List row is content on its parent, not a separate Quiet-button
+            // card. Use the same Surface states for default and declared hosts.
+            button.set_surface(surface.unwrap_or("canvas"));
             button.paint_prepared_segment(
                 scene,
                 text,
@@ -640,6 +638,7 @@ impl ListView {
                 palette,
                 ButtonSize::Body,
                 proposal::TextRole::UiBody,
+                true,
             );
         }
         scene.pop_clip();

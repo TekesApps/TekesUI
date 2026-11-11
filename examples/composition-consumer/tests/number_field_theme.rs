@@ -116,19 +116,21 @@ fn number_field_retained_themes_keep_draft_committed_value_and_actual_numeric_in
             );
             assert!(!scene.primitives().iter().any(|p| matches!(p, Primitive::Quad(q) if q.fill.a == 0. && q.border_width > 0. && q.rect.center() == surface.outer.center())), "no duplicate outer contour");
             let regions = [
-                (surface.inner, false, background.fill),
+                (surface.inner, false, background.fill, "primary-text"),
                 (
                     parts[0].frame,
                     parts[0].semantics.disabled,
-                    palette.color("surface-2").unwrap(),
+                    palette.color("document-canvas").unwrap(),
+                    "secondary-text",
                 ),
                 (
                     parts[1].frame,
                     parts[1].semantics.disabled,
-                    palette.color("surface-2").unwrap(),
+                    palette.color("document-canvas").unwrap(),
+                    "secondary-text",
                 ),
             ];
-            for (region, disabled, ground) in regions {
+            for (region, disabled, ground, enabled_ink) in regions {
                 let labels: Vec<_> = scene
                     .primitives()
                     .iter()
@@ -152,7 +154,7 @@ fn number_field_retained_themes_keep_draft_committed_value_and_actual_numeric_in
                             .color(if disabled {
                                 "tertiary-text"
                             } else {
-                                "primary-text"
+                                enabled_ink
                             })
                             .unwrap()
                     );
@@ -168,7 +170,12 @@ fn number_field_retained_themes_keep_draft_committed_value_and_actual_numeric_in
             }
             for part in &parts {
                 assert_eq!(part.semantics.disabled, draft != "7");
-                assert!(scene.primitives().iter().any(|p| matches!(p, Primitive::Quad(q) if q.rect == part.frame && q.fill == palette.color("surface-2").unwrap())));
+                assert!(
+                    !scene.primitives().iter().any(|p| matches!(p,
+                        Primitive::Quad(q) if q.rect == part.frame && q.fill.a > 0.
+                    )),
+                    "step symbols retain their hit slots without a background"
+                );
             }
             observed.push(background.fill);
         }
