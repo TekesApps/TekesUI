@@ -507,10 +507,6 @@ fn assemble(theme: Theme, settings: SettingsOwner) -> anyhow::Result<AppWindow> 
             pending,
         },
     )
-    .title("Workspace")
-    .toolbar_host(ContainerToolbarHost::Container {
-        position: ContainerToolbarPosition::Top,
-    })
     .content_padding(0.)
     .on_action(move |host, records| {
         for record in records {
@@ -661,8 +657,7 @@ fn assemble(theme: Theme, settings: SettingsOwner) -> anyhow::Result<AppWindow> 
     let mut presentation = PresentationOptions::new("gallery-focus")
         .nav_bar("gallery-nav")
         .nav_fraction(1. / 3.)
-        .navigation_toolbar("gallery-focus")
-        .navigation_toolbar_follows_focus(true)
+        .navigation_toolbar("gallery-nav")
         .navigation_targets(vec!["gallery-focus".into()])
         .others(
             OthersOptions::new(vec![
