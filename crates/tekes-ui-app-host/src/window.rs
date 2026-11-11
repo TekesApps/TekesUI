@@ -1076,6 +1076,7 @@ impl Host {
         self.inner.min_pane = MIN_COLUMN;
         let mut scene = Scene::new();
         let mut toolbar_scene = Scene::new();
+        let mut toolbar_overlays = Scene::new();
         let mut presentation_scene = Scene::new();
         let size = w.size();
         let whole = Rect::new(0., 0., size.width as f32, size.height as f32);
@@ -1320,7 +1321,7 @@ impl Host {
                     panel
                         .mounted_toolbar
                         .host
-                        .render(&mut toolbar_scene, text, palette)
+                        .render_layers(&mut toolbar_scene, &mut toolbar_overlays, text, palette)
                         .map_err(|e| anyhow::anyhow!("container toolbar paint: {e:?}"))
                 },
             )?;
@@ -1332,6 +1333,7 @@ impl Host {
             .any(|panel| panel.mounted_toolbar.host.needs_render())
         {
             toolbar_scene = Scene::new();
+            toolbar_overlays = Scene::new();
             for &index in &toolbar_order {
                 let panel = &mut self.panels[index];
                 with_content_icons(
@@ -1342,7 +1344,7 @@ impl Host {
                         panel
                             .mounted_toolbar
                             .host
-                            .render(&mut toolbar_scene, text, palette)
+                            .render_layers(&mut toolbar_scene, &mut toolbar_overlays, text, palette)
                             .map_err(|e| anyhow::anyhow!("container toolbar focus paint: {e:?}"))
                     },
                 )?;
@@ -1478,7 +1480,12 @@ impl Host {
             }
         }));
         w.set_cursor_regions(cursor_regions);
-        self.append_toolbar_layers(&mut scene, &toolbar_scene, &presentation_scene);
+        self.append_toolbar_layers(
+            &mut scene,
+            &toolbar_scene,
+            &presentation_scene,
+            &toolbar_overlays,
+        );
         let renderer_begin = diagnostic.map(|_| std::time::Instant::now());
         let drawable_before = diagnostic.map(|_| w.drawable_serial());
         let renderer = self.renderer.as_mut().unwrap();
@@ -1859,15 +1866,16 @@ impl Host {
         Ok(())
     }
     /// Append the original hosts in their final native renderer painter order.
-    fn append_toolbar_layers(&self, scene: &mut Scene, toolbar: &Scene, presentation: &Scene) {
-        // Ordinary switcher content must paint above the Window regions' ground.
-        // An open original business menu keeps its existing window-level priority.
-        let layers = if self.open_toolbar().is_some() {
-            [presentation, toolbar]
-        } else {
-            [toolbar, presentation]
-        };
-        for layer in layers {
+    fn append_toolbar_layers(
+        &self,
+        scene: &mut Scene,
+        toolbar: &Scene,
+        presentation: &Scene,
+        overlays: &Scene,
+    ) {
+        // Region ground stays behind the selector even while a business menu is
+        // open. Only the original host overlay pass is promoted above it.
+        for layer in [toolbar, presentation, overlays] {
             for primitive in layer.primitives() {
                 scene.push(primitive.clone());
             }

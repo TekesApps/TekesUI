@@ -153,7 +153,8 @@ impl Host {
                 .to_owned()
         };
         let mut items: Vec<Item> = Vec::new();
-        for tab in state.tabs() {
+        let tabs = state.tabs();
+        for tab in tabs.iter().cloned() {
             match tab {
                 OthersTab::Container(ref id) => {
                     if let Some(group) = options
@@ -167,11 +168,11 @@ impl Host {
                         }
                         items.push(Item { key, title: group.title.clone(), icon: {
                             let current = selected.and_then(|tab| match tab { OthersTab::Container(id) if group.containers.contains(id) => Some(id.as_str()), _ => None })
-                                .or_else(|| group.containers.iter().find(|id| state.others_ids().contains(id)).map(String::as_str));
+                                .or_else(|| group.containers.iter().find(|id| tabs.contains(&OthersTab::Container((*id).clone()))).map(String::as_str));
                             current.and_then(|id| self.panels.iter().find(|panel| panel.module_id == id)).and_then(|panel| panel.options.switcher_icon.clone())
                                 .unwrap_or_else(|| "tekes-file-generic".into())
                         }, tab: None,
-                            entries: group.containers.iter().filter(|id| state.others_ids().contains(id))
+                            entries: group.containers.iter().filter(|id| tabs.contains(&OthersTab::Container((*id).clone())))
                                 .map(|id| entry(&OthersTab::Container(id.clone()), &title(id), selected)).collect(),
                             selected: selected.is_some_and(|tab| matches!(tab, OthersTab::Container(id) if group.containers.contains(id))),
                         });
@@ -504,7 +505,6 @@ mod tests {
                 .unwrap()
                 .title(id)
                 .switcher_icon("tekes-file-text")
-                .list_height(180.)
                 .into()
             })
             .collect()
@@ -803,7 +803,27 @@ mod tests {
     }
     #[test]
     fn narrow_slot_prefers_current_family_and_overflow_keeps_every_hidden_destination() {
-        let mut host = fixture();
+        // Keep three actual destinations: Inspector, Documents, and a distinct
+        // List-mode member. Two tab-only destinations now fit the 120pt slot.
+        let mut members = members();
+        members.push(
+            LocalContainer::new(
+                "reading",
+                Content::new(ComponentId(1), TextContent::new("Reading")),
+            )
+            .unwrap()
+            .presentation(crate::ContainerPresentation::List { height: 180. })
+            .into(),
+        );
+        let mut options = options();
+        options
+            .others
+            .as_mut()
+            .unwrap()
+            .containers
+            .push("reading".into());
+        let mut host = Host::from_containers(members, false, None, Some(options));
+        host.mount_columns();
         host.presentation
             .as_mut()
             .unwrap()
@@ -894,7 +914,17 @@ mod tests {
     }
     #[test]
     fn aggregate_list_has_no_close_all_or_internal_close_and_focus_is_not_closable() {
-        let mut host = fixture();
+        let members = members()
+            .into_iter()
+            .map(|member| match member {
+                Container::Local(container) if container.id() != "focus" => container
+                    .presentation(crate::ContainerPresentation::List { height: 180. })
+                    .into(),
+                member => member,
+            })
+            .collect();
+        let mut host = Host::from_containers(members, false, None, Some(options()));
+        host.mount_columns();
         host.presentation
             .as_mut()
             .unwrap()

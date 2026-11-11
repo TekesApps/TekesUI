@@ -27,6 +27,7 @@ pub const CATALOG_TOP: f32 = Spacing::Loose.value();
 /// 行距目录列左右边缘。
 pub const ROW_INSET_X: f32 = proposal::SIDEBAR_PADDING;
 /// 行内文字槽距行左缘（放页面名）。
+#[cfg(test)]
 pub const ROW_PAD_X: f32 = Spacing::Relaxed.value();
 /// 行内标签槽的尺寸；页面名排进这个槽。
 #[cfg(test)]

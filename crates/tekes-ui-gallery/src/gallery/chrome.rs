@@ -1,7 +1,7 @@
 //! 固定的外壳：目录列、页面标题槽、内容框的右下边线。
 
 use tekes_ui_scene::{Quad, Rect, Scene};
-use tekes_ui_tokens::{ColorRole, CornerRadius, Rgba, TextRole, Theme, proposal};
+use tekes_ui_tokens::{ColorRole, TextRole, Theme, proposal};
 
 use super::layout::{CATALOG_W, FRAME_H, FRAME_W, PAGE_TITLE_SLOT};
 use super::pages::Page;
@@ -13,20 +13,6 @@ pub const CATALOG_STYLE: LabelStyle = LabelStyle::new(TextRole::Body, ColorRole:
 pub const TITLE_STYLE: LabelStyle =
     LabelStyle::new(TextRole::BodyEmphasized, ColorRole::PrimaryText);
 
-/// 目录里某一行的底色：选中用 `RowSelection`，没选中但 hover 用 `ButtonHover`，否则没有底。
-/// 选中行 hover 使用提案的独立状态色，保留持久选中语义。
-pub fn row_fill(theme: Theme, selected: bool, hovered: bool) -> Option<Rgba> {
-    if selected && hovered {
-        Some(proposal::color("row-selection-hover", theme).expect("validated proposal role"))
-    } else if selected {
-        Some(ColorRole::RowSelection.resolve(theme))
-    } else if hovered {
-        Some(ColorRole::ButtonHover.resolve(theme))
-    } else {
-        None
-    }
-}
-
 pub fn draw(
     scene: &mut Scene,
     theme: Theme,
@@ -34,14 +20,8 @@ pub fn draw(
     page: Page,
     hover: Option<usize>,
 ) {
-    draw_with_navigation(
-        scene,
-        theme,
-        text,
-        page,
-        hover,
-        &super::navigation::Navigation::default(),
-    );
+    let mut navigation = super::navigation::Navigation::default();
+    draw_with_navigation(scene, theme, text, page, hover, &mut navigation);
 }
 pub fn draw_with_navigation(
     scene: &mut Scene,
@@ -49,7 +29,7 @@ pub fn draw_with_navigation(
     text: &mut TextEngine,
     page: Page,
     hover: Option<usize>,
-    navigation: &super::navigation::Navigation,
+    navigation: &mut super::navigation::Navigation,
 ) {
     draw_with_navigation_focus(scene, theme, text, page, hover, None, navigation);
 }
@@ -61,9 +41,9 @@ pub(super) fn draw_with_navigation_focus(
     page: Page,
     hover: Option<usize>,
     focus: Option<Page>,
-    navigation: &super::navigation::Navigation,
+    navigation: &mut super::navigation::Navigation,
 ) {
-    draw_navigation(scene, theme, text, page, (hover, focus), navigation, true);
+    draw_navigation(scene, theme, text, page, (hover, focus), navigation);
 }
 
 fn draw_navigation(
@@ -71,10 +51,10 @@ fn draw_navigation(
     theme: Theme,
     text: &mut TextEngine,
     page: Page,
-    interaction: (Option<usize>, Option<Page>),
-    navigation: &super::navigation::Navigation,
-    cull: bool,
+    _interaction: (Option<usize>, Option<Page>),
+    navigation: &mut super::navigation::Navigation,
 ) {
+    navigation.set_selected(page);
     let height = FRAME_H.max(navigation.bounds().size.height);
     scene.push_quad(Quad::new(
         Rect::new(0.0, 0.0, CATALOG_W, height),
@@ -84,67 +64,24 @@ fn draw_navigation(
         Rect::new(CATALOG_W - 1.0, 0.0, 1.0, height),
         ColorRole::Separator.resolve(theme),
     ));
-    let geometry = navigation.geometry();
-    let origin = geometry.content_origin();
-    let visible_document = geometry.visible_document_rect();
-    scene.push_clip(geometry.visible_viewport_rect().unwrap_or_default());
-    for section in navigation.sections() {
-        let header = section.rect.offset(origin.x, origin.y);
-        let header_visible =
-            visible_document.is_some_and(|visible| section.rect.intersection(&visible).is_some());
-        if !cull || header_visible {
-            text.proposal_label_in(
+    navigation.render(scene, text, theme);
+    let clip = navigation
+        .geometry()
+        .visible_viewport_rect()
+        .unwrap_or_default();
+    scene.push_clip(clip);
+    for (p, row) in navigation.row_frames() {
+        if matches!(p,Page::Workbench(i) if super::workbench::entry(i).planned()) {
+            text.label_in(
                 scene,
                 theme,
-                header,
-                &section.title,
-                proposal::TextRole::UiCaption,
-                ColorRole::SecondaryText.resolve(theme),
+                Rect::new(row.max_x() - 25.0, row.min_y(), 20.0, row.size.height),
+                "…",
+                CATALOG_STYLE,
             );
-        }
-        for (p, row) in &section.items {
-            let row_document = *row;
-            let row = row.offset(origin.x, origin.y);
-            if cull
-                && visible_document
-                    .is_none_or(|visible| row_document.intersection(&visible).is_none())
-            {
-                continue;
-            }
-            if let Some(fill) = row_fill(theme, *p == page, interaction.0 == Some(p.index())) {
-                scene.push_quad(Quad::new(row, fill).with_corner_radius(CornerRadius::Row.value()));
-            }
-            let label = tekes_ui_scene::Rect::new(
-                row.min_x() + super::layout::ROW_PAD_X,
-                row.min_y(),
-                row.size.width - 2.0 * super::layout::ROW_PAD_X,
-                row.size.height,
-            );
-            text.label_in(scene, theme, label, p.name(), CATALOG_STYLE);
-            if interaction.1 == Some(*p) {
-                tekes_ui_controls::paint::focus_ring(scene, row, theme, CornerRadius::Row.value());
-            }
-            if matches!(p,Page::Workbench(i) if super::workbench::entry(*i).planned()) {
-                text.label_in(
-                    scene,
-                    theme,
-                    Rect::new(row.max_x() - 25.0, row.min_y(), 20.0, row.size.height),
-                    "…",
-                    CATALOG_STYLE,
-                );
-            }
         }
     }
     scene.pop_clip();
-    if navigation.scroll.scrollbar_visible(true) {
-        let thumb = navigation
-            .scroll
-            .thumb(true, navigation.track(), super::layout::ROW_H);
-        scene.push_quad(
-            Quad::new(thumb, ColorRole::SecondaryText.resolve(theme))
-                .with_corner_radius(tekes_ui_tokens::Spacing::Micro.value()),
-        );
-    }
     text.label_in(
         scene,
         theme,
@@ -167,69 +104,38 @@ mod tests {
     use super::*;
 
     #[test]
-    fn viewport_culling_preserves_pixels_at_clip_edges_and_reduces_glyph_work() {
-        let mut renderer = tekes_ui_render::Renderer::new_headless().unwrap();
+    fn shared_navigation_host_paints_only_rows_in_its_visible_viewport() {
         for theme in Theme::ALL {
             for scale in [1., 2.] {
                 for offset in [0., 317.25, 1800.5] {
                     let mut navigation = super::super::navigation::Navigation::default();
                     navigation.resize(360.);
-                    navigation.scroll.scroll_by(0., offset);
+                    navigation.scroll_by(tekes_ui_scene::Point::new(0., offset));
                     let mut text = TextEngine::new();
                     text.set_scale(scale);
                     text.begin_frame();
                     let page = super::super::navigation::pages()[4];
-                    let mut reference = Scene::new();
+                    navigation.set_selected(page);
+                    let mut scene = Scene::new();
                     draw_navigation(
-                        &mut reference,
+                        &mut scene,
                         theme,
                         &mut text,
                         page,
                         (Some(page.index()), None),
-                        &navigation,
-                        false,
+                        &mut navigation,
                     );
-                    let size = (1440 * scale as u32, 360 * scale as u32);
-                    let before = renderer
-                        .render_to_rgba8(
-                            &reference,
-                            text.atlas_mut(),
-                            size,
-                            scale,
-                            ColorRole::DocumentCanvas.resolve(theme),
-                        )
-                        .unwrap();
-                    let mut culled = Scene::new();
-                    draw_navigation(
-                        &mut culled,
-                        theme,
-                        &mut text,
-                        page,
-                        (Some(page.index()), None),
-                        &navigation,
-                        true,
+                    let clip = navigation.geometry().visible_viewport_rect().unwrap();
+                    let rows = navigation.row_frames();
+                    assert!(!rows.is_empty(), "{theme:?}/{scale}x/offset {offset}");
+                    assert!(
+                        rows.iter()
+                            .all(|(_, frame)| clip.intersection(frame).is_some())
                     );
-                    let after = renderer
-                        .render_to_rgba8(
-                            &culled,
-                            text.atlas_mut(),
-                            size,
-                            scale,
-                            ColorRole::DocumentCanvas.resolve(theme),
-                        )
-                        .unwrap();
-                    assert_eq!(before, after, "{theme:?}/{scale}x/offset {offset}");
-                    let glyphs = |scene: &Scene| {
-                        scene
-                            .primitives()
-                            .iter()
-                            .map(|p| match p {
-                                tekes_ui_scene::Primitive::Glyphs(run) => run.glyphs.len(),
-                                _ => 0,
-                            })
-                            .sum::<usize>()
-                    };
-                    assert!(glyphs(&culled) * 2 < glyphs(&reference));
+                    if navigation.offset().y > 0. {
+                        assert!(rows.len() < super::super::navigation::pages().len());
+                    }
+                    assert!(!scene.primitives().is_empty());
                 }
             }
         }
@@ -248,24 +154,5 @@ mod tests {
             let t = text.label(p.name(), TITLE_STYLE.role, None).width as f32;
             assert!(t <= 600.0, "{}：{t}", p.name());
         }
-    }
-
-    #[test]
-    fn row_fill_priority() {
-        let t = Theme::LIGHT;
-        assert_eq!(row_fill(t, false, false), None);
-        assert_eq!(
-            row_fill(t, false, true),
-            Some(ColorRole::ButtonHover.resolve(t))
-        );
-        assert_eq!(
-            row_fill(t, true, false),
-            Some(ColorRole::RowSelection.resolve(t))
-        );
-        assert_eq!(
-            row_fill(t, true, true),
-            proposal::color("row-selection-hover", t)
-        );
-        assert_ne!(row_fill(t, true, true), row_fill(t, true, false));
     }
 }

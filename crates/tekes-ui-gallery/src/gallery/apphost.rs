@@ -8,9 +8,9 @@ use std::{
     sync::atomic::{AtomicU64, Ordering},
 };
 use tekes_ui_app_host::{
-    AppWindow, ContainerContent, ContainerFactory, ContainerMultiplicity, ContainerToolbarHost,
-    ContainerToolbarPosition, LocalContainer, NavigationOptions, OthersGroup, OthersOptions,
-    PresentationOptions, SettingsDisplayMode, SettingsOwner, SettingsWindow,
+    AppWindow, ContainerContent, ContainerFactory, ContainerMultiplicity, ContainerPresentation,
+    ContainerToolbarHost, ContainerToolbarPosition, LocalContainer, NavigationOptions, OthersGroup,
+    OthersOptions, PresentationOptions, SettingsDisplayMode, SettingsOwner, SettingsWindow,
 };
 use tekes_ui_controls::{
     CheckState, ScrollArea, TextInput,
@@ -540,7 +540,7 @@ fn assemble(theme: Theme, settings: SettingsOwner) -> anyhow::Result<AppWindow> 
         })
         .switcher_icon("tekes-side-panel")
         .content_padding(0.)
-        .list_height(640.)
+        .presentation(ContainerPresentation::Tab)
         .on_action(move |host, records| {
             if !confirm_inspector_disclosures(host, &records) {
                 return;
@@ -610,7 +610,7 @@ fn assemble(theme: Theme, settings: SettingsOwner) -> anyhow::Result<AppWindow> 
         .title("Document")
         .switcher_icon("tekes-file-text")
         .content_padding(0.)
-        .list_height(700.)
+        .presentation(ContainerPresentation::Tab)
         .on_command(move |host, command| {
             let index = command
                 .checked_sub(DOCUMENT_COMMAND)
@@ -629,10 +629,10 @@ fn assemble(theme: Theme, settings: SettingsOwner) -> anyhow::Result<AppWindow> 
             Ok(())
         });
     let reading = LocalContainer::new("gallery-list", scroll(6000, stack(6001, vec![text(6002, "Reading notes", TextRole::UiHeading), field(ComponentId(6003), "Notes", "Keep a short note beside the current document."), text(6004, "Capture a question, an idea or a useful reference before the next meeting.", TextRole::UiBody)])))?.title("Notes").toolbar_host(ContainerToolbarHost::Container { position: ContainerToolbarPosition::Leading }).switcher_icon("tekes-note")
-    .content_padding(0.).list_height(320.);
+    .content_padding(0.).presentation(ContainerPresentation::List { height: 320. });
     let reference = LocalContainer::new("gallery-reference", scroll(6100, stack(6101, vec![
         text(6102, "Reference", TextRole::UiHeading),
-        text(6103, "A second document instance. Switch between Notes and Reference from the Documents menu; each keeps its original content.", TextRole::UiBody),
+        text(6103, "Use List for Notes and Documents for Reference or Summary; each keeps its original content.", TextRole::UiBody),
     ])))?.title("Reference").toolbar_host(ContainerToolbarHost::Container { position: ContainerToolbarPosition::Trailing }).switcher_icon("tekes-file-text").content_padding(0.);
     let summary = LocalContainer::new("gallery-summary", scroll(6200, stack(6201, vec![
         text(6202, "Summary", TextRole::UiHeading),

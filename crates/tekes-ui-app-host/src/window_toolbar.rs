@@ -221,7 +221,7 @@ impl MountedToolbar {
                 Contents::CreationMenu(entries) => {
                     let trigger = Content::new(
                         ComponentId(target.0 + 1),
-                        IconContent::new("tekes-expand").expect("existing chevron"),
+                        IconContent::new("tekes-new").expect("existing plus icon"),
                     );
                     let mut menu = MenuContent::new("Create Container", Vec::new())
                         .with_trigger_content("Create Container", trigger)

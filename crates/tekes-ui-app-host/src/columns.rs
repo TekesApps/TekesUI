@@ -68,6 +68,14 @@ impl LocalContainer {
         self.options.switcher_icon = Some(icon.into());
         self
     }
+    pub fn presentation(mut self, mode: ContainerPresentation) -> Self {
+        self.options.list_height = match mode {
+            ContainerPresentation::Tab => None,
+            ContainerPresentation::List { height } => Some(height),
+        };
+        self
+    }
+    /// Compatibility shorthand for selecting List mode with this height.
     pub fn list_height(mut self, height: f32) -> Self {
         self.options.list_height = Some(height);
         self
@@ -208,6 +216,15 @@ pub enum ContainerToolbarPosition {
     Leading,
     Trailing,
 }
+/// One Others presentation per container, independent of toolbar mounting.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub enum ContainerPresentation {
+    #[default]
+    Tab,
+    List {
+        height: f32,
+    },
+}
 /// Presentation metadata belongs to the container, independently of its backing.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct ContainerOptions {
@@ -219,6 +236,7 @@ pub struct ContainerOptions {
     /// Existing toolbar commands presented only in this owner's More menu.
     pub secondary_commands: Vec<u64>,
     /// Opt in to List with this content allocation (including its Toolbar).
+    /// Canonical mode storage: None is Tab; Some(height) is List only.
     pub list_height: Option<f32>,
     /// None retains the existing default; zero lets local Content own padding.
     pub content_padding: Option<f32>,
@@ -265,6 +283,14 @@ impl ProcessContainer {
         self.options.switcher_icon = Some(icon.into());
         self
     }
+    pub fn presentation(mut self, mode: ContainerPresentation) -> Self {
+        self.options.list_height = match mode {
+            ContainerPresentation::Tab => None,
+            ContainerPresentation::List { height } => Some(height),
+        };
+        self
+    }
+    /// Compatibility shorthand for selecting List mode with this height.
     pub fn list_height(mut self, height: f32) -> Self {
         self.options.list_height = Some(height);
         self

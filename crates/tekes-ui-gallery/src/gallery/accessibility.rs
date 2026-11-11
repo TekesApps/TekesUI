@@ -44,7 +44,6 @@ impl Gallery {
             .navigation_search
             .accessibility_nodes(SEARCH, "Search components");
         let geometry = self.sidebar.geometry();
-        let origin = geometry.content_origin();
         if let Some(clip) = geometry.visible_viewport_rect() {
             nodes.push(node(
                 K {
@@ -55,27 +54,26 @@ impl Gallery {
                 "Components",
                 clip,
             ));
-            for section in self.sidebar.sections() {
-                for (page, frame) in &section.items {
-                    if let Some(frame) = frame.offset(origin.x, origin.y).intersection(&clip) {
-                        let mut n = node(
-                            K {
-                                component: NAV,
-                                part: Some(page.index()),
-                            },
-                            R::Button,
-                            page.name(),
-                            frame,
-                        );
-                        n.parent = Some(K {
-                            component: NAV,
-                            part: None,
-                        });
-                        n.selected = *page == self.page;
-                        n.focused = self.navigation_focus == Some(*page);
-                        nodes.push(n);
-                    }
-                }
+            for (page, frame) in self.sidebar.row_frames() {
+                let Some(frame) = frame.intersection(&clip) else {
+                    continue;
+                };
+                let mut n = node(
+                    K {
+                        component: NAV,
+                        part: Some(page.index()),
+                    },
+                    R::Button,
+                    page.name(),
+                    frame,
+                );
+                n.parent = Some(K {
+                    component: NAV,
+                    part: None,
+                });
+                n.selected = page == self.page;
+                n.focused = self.navigation_focus == Some(page);
+                nodes.push(n);
             }
         }
         if let Page::Workbench(i) = self.page {
@@ -192,13 +190,30 @@ impl Gallery {
                 return Change::NONE;
             };
             return match action {
-                A::Press => self.apply(Command::Page(page)),
+                A::Press => {
+                    let response = self.sidebar.accessibility_action(
+                        page,
+                        tekes_ui_controls::composition::AccessibilityAction::Press,
+                    );
+                    if response.activated {
+                        self.apply(Command::Page(page))
+                    } else {
+                        Change::NONE
+                    }
+                }
                 A::Focus => {
+                    let response = self.sidebar.accessibility_action(
+                        page,
+                        tekes_ui_controls::composition::AccessibilityAction::Focus,
+                    );
+                    if !response.consumed {
+                        return Change::NONE;
+                    }
                     self.navigation_search.blur();
                     if let Page::Workbench(i) = self.page {
                         self.workbench.clear_focus(i);
                     }
-                    self.navigation_focus = Some(page);
+                    self.set_navigation_focus(Some(page));
                     Change::REDRAW
                 }
                 _ => Change::NONE,
@@ -213,7 +228,7 @@ impl Gallery {
                 if let Page::Workbench(i) = self.page {
                     self.workbench.clear_focus(i);
                 }
-                self.navigation_focus = None;
+                self.set_navigation_focus(None);
             }
             self.navigation_search.refresh(&mut self.text);
             self.sidebar.set_query(self.navigation_search.query());
@@ -229,7 +244,7 @@ impl Gallery {
                 .accessibility_action(i, target, action, &mut self.text);
             if changed {
                 self.navigation_search.blur();
-                self.navigation_focus = None;
+                self.set_navigation_focus(None);
             }
             return if changed {
                 Change::REDRAW
@@ -255,7 +270,7 @@ impl Gallery {
         demo.refresh(&mut self.text);
         if changed {
             self.navigation_search.blur();
-            self.navigation_focus = None;
+            self.set_navigation_focus(None);
             Change::REDRAW
         } else {
             Change::NONE

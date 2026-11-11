@@ -717,6 +717,26 @@ impl<B: Clone + Debug> ToolbarHost<B> {
         text: &mut dyn ButtonTextRenderer,
         palette: Palette,
     ) -> Result<(), CompositionError> {
+        self.render_into(scene, None, text, palette)
+    }
+    /// Preserve the original one-pass host while allowing window composition to
+    /// place independent chrome between its normal content and window overlays.
+    pub fn render_layers(
+        &mut self,
+        scene: &mut Scene,
+        overlays: &mut Scene,
+        text: &mut dyn ButtonTextRenderer,
+        palette: Palette,
+    ) -> Result<(), CompositionError> {
+        self.render_into(scene, Some(overlays), text, palette)
+    }
+    fn render_into(
+        &mut self,
+        scene: &mut Scene,
+        mut overlays: Option<&mut Scene>,
+        text: &mut dyn ButtonTextRenderer,
+        palette: Palette,
+    ) -> Result<(), CompositionError> {
         let typography = (
             text.resolved_font_size(proposal::TextRole::UiBody),
             text.backing_scale(),
@@ -738,10 +758,21 @@ impl<B: Clone + Debug> ToolbarHost<B> {
         }
         viewports(&mut self.host.root, self.viewport);
         self.ready = false;
+        if let Some(overlays) = overlays.as_deref_mut() {
+            self.host.render_layers(
+                scene,
+                overlays,
+                text,
+                self.viewport,
+                self.viewport,
+                palette,
+            )?;
+        } else {
+            self.host
+                .render(scene, text, self.viewport, self.viewport, palette)?;
+        }
         self.host
-            .render(scene, text, self.viewport, self.viewport, palette)?;
-        self.host
-            .paint_help_overlay(scene, text, self.viewport, palette);
+            .paint_help_overlay(overlays.unwrap_or(scene), text, self.viewport, palette);
         self.ready = true;
         Ok(())
     }

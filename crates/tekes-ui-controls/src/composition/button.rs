@@ -207,6 +207,50 @@ impl Button {
     pub(super) fn uses_toolbar_icon_slot(&self) -> bool {
         self.toolbar_icon_slot
     }
+    // MenuContent supplies the exact child size published during arrange;
+    // unlike Button::paint, that measurement belongs to MenuContent's snapshot.
+    #[allow(clippy::too_many_arguments)]
+    pub(super) fn render_toolbar_icon_frame(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut dyn ButtonTextRenderer,
+        content_size: Size,
+        frame: Rect,
+        clip: Option<Rect>,
+        palette: impl Into<Palette>,
+        variant: ButtonVariant,
+    ) -> crate::ButtonLayout {
+        let focus_visible = self.button.state.focus_visible;
+        let suppress_focus_ink = self.toolbar_presentation || self.toolbar_icon_slot;
+        if suppress_focus_ink {
+            self.button.state.focus_visible = false;
+        }
+        let layout = if self.transparent_chrome {
+            self.button.render_transparent_content_frame(
+                scene,
+                &mut TextAdapter(text),
+                content_size,
+                frame,
+                clip,
+                palette,
+                variant,
+            )
+        } else {
+            self.button.render_content_frame(
+                scene,
+                &mut TextAdapter(text),
+                content_size,
+                frame,
+                clip,
+                palette,
+                variant,
+            )
+        };
+        if suppress_focus_ink && self.button.state.focused {
+            self.button.state.focus_visible = focus_visible;
+        }
+        layout
+    }
     pub(super) fn toolbar_icon_size(
         &self,
         text: &mut dyn ButtonTextRenderer,
@@ -364,7 +408,9 @@ impl Component for Button {
     }
 
     fn focus_boundary_visible(&self) -> bool {
-        self.button.state.focused && self.button.state.focus_visible
+        !(self.toolbar_presentation || self.toolbar_icon_slot)
+            && self.button.state.focused
+            && self.button.state.focus_visible
     }
     fn set_clip_region(&mut self, region: Option<tekes_ui_scene::ClipRegion>) {
         self.button.set_clip_region(region);
@@ -398,7 +444,8 @@ impl Component for Button {
     }
 
     fn focus_decoration_above_siblings(&self) -> bool {
-        self.button.frame_policy == crate::ButtonFramePolicy::Exact
+        !(self.toolbar_presentation || self.toolbar_icon_slot)
+            && self.button.frame_policy == crate::ButtonFramePolicy::Exact
             && self.button.state.focused
             && self.button.state.focus_visible
             && !self.button.state.disabled
@@ -490,6 +537,11 @@ impl Component for Button {
                 ButtonTextAlign::Center
             };
             if self.content_alignment != MainAxisDistribution::End {
+                let focus_visible = self.button.state.focus_visible;
+                let suppress_focus_ink = self.toolbar_presentation || self.toolbar_icon_slot;
+                if suppress_focus_ink {
+                    self.button.state.focus_visible = false;
+                }
                 self.button.render(
                     scene,
                     &mut TextAdapter(text),
@@ -502,31 +554,22 @@ impl Component for Button {
                     proposal::TextRole::UiBody,
                     align,
                 );
+                if suppress_focus_ink && self.button.state.focused {
+                    self.button.state.focus_visible = focus_visible;
+                }
                 return;
             }
         }
         self.measure_button(text, frame.size);
-        let layout = if self.transparent_chrome {
-            self.button.render_transparent_content_frame(
-                scene,
-                &mut TextAdapter(text),
-                self.measured,
-                frame,
-                Some(clip),
-                theme.palette,
-                variant,
-            )
-        } else {
-            self.button.render_content_frame(
-                scene,
-                &mut TextAdapter(text),
-                self.measured,
-                frame,
-                Some(clip),
-                theme.palette,
-                variant,
-            )
-        };
+        let layout = self.render_toolbar_icon_frame(
+            scene,
+            text,
+            self.measured,
+            frame,
+            Some(clip),
+            theme.palette,
+            variant,
+        );
         if !self.content.is_empty() {
             return;
         } // Host paints the original decorative subtree once.

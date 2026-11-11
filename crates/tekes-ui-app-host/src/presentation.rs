@@ -358,6 +358,7 @@ impl PresentationState {
         let mut tabs: Vec<_> = self
             .others_ids()
             .iter()
+            .filter(|id| !self.list_order.contains(id))
             .cloned()
             .map(OthersTab::Container)
             .collect();
@@ -440,6 +441,11 @@ impl PresentationState {
             id != self.focus_id() && self.nav_bar_id() != Some(id),
             "container already has a presentation role: {id}"
         );
+        let selected = if self.list_order.iter().any(|member| member == id) {
+            OthersTab::List
+        } else {
+            OthersTab::Container(id.into())
+        };
         let others = self
             .options
             .others
@@ -448,7 +454,7 @@ impl PresentationState {
         if !others.containers.iter().any(|i| i == id) {
             others.containers.push(id.into());
         }
-        others.selected = Some(OthersTab::Container(id.into()));
+        others.selected = Some(selected);
         Ok(())
     }
     /// Closing a tab only removes its presentation; its backing remains mounted.
@@ -557,16 +563,21 @@ impl PresentationState {
         Ok(())
     }
     fn reconcile_selection(&mut self) {
-        let list_available = !self.list_ids().is_empty();
-        if let Some(others) = &mut self.options.others {
-            let valid = match &others.selected {
-                Some(OthersTab::Container(id)) => others.containers.contains(id),
-                Some(OthersTab::List) => list_available,
-                None => false,
-            };
-            if !valid {
-                others.selected = others.containers.first().cloned().map(OthersTab::Container);
+        let available = self.tabs();
+        let project = |id: &String| {
+            if self.list_order.contains(id) {
+                OthersTab::List
+            } else {
+                OthersTab::Container(id.clone())
             }
+        };
+        let selected = self.others().and_then(|others| match &others.selected {
+            Some(OthersTab::Container(id)) if others.containers.contains(id) => Some(project(id)),
+            Some(tab) if available.contains(tab) => Some(tab.clone()),
+            _ => others.containers.first().map(project),
+        });
+        if let Some(others) = &mut self.options.others {
+            others.selected = selected;
         }
         if !matches!(self.selected_tab(), Some(OthersTab::Container(_))) {
             self.others_expanded = false;
@@ -781,6 +792,7 @@ mod tests {
     #[test]
     fn ordinary_toolbars_stay_on_native_row_and_list_content_uses_remaining_viewport() {
         let mut state = configured();
+        state.select_tab(OthersTab::Container("c".into())).unwrap();
         let area = Rect::new(0., 0., 1100., 300.);
         let ordinary = state.layout_with_toolbar(area, 52.);
         assert!(ordinary.frames.iter().all(|(_, frame)| frame.min_y() == 0.));
@@ -845,6 +857,7 @@ mod tests {
     #[test]
     fn nav_visibility_and_explicit_follow_focus_keep_business_binding_and_original_members() {
         let mut state = configured();
+        state.select_tab(OthersTab::Container("c".into())).unwrap();
         let before = state.layout(Rect::new(0., 0., 900., 600.));
         state.toggle_nav_bar().unwrap();
         assert_eq!(state.nav_bar_id(), Some("nav"));
@@ -864,7 +877,7 @@ mod tests {
         assert_eq!(state.navigation_toolbar_id(), Some("a"));
         assert_eq!(state.navigation_toolbar_presenter_id(), Some("remote"));
         assert_eq!(state.navigation_targets(), &["c", "remote"]);
-        assert_eq!(state.focus_switch_target("remote"), Some("b"));
+        assert_eq!(state.focus_switch_target("remote"), Some("c"));
         state.toggle_others().unwrap();
         state.select_tab(OthersTab::List).unwrap();
         assert_eq!(state.focus_switch_target("remote"), None);
@@ -874,6 +887,7 @@ mod tests {
     #[test]
     fn focus_and_others_split_width_and_any_single_member_can_swap() {
         let mut state = configured();
+        state.select_tab(OthersTab::Container("c".into())).unwrap();
         for area in [
             Rect::new(0., 0., 1100., 640.),
             Rect::new(0., 0., 650., 300.),
@@ -889,13 +903,13 @@ mod tests {
         }
         assert_eq!(
             state.selected_tab(),
-            Some(&OthersTab::Container("b".into()))
+            Some(&OthersTab::Container("c".into()))
         );
         state.promote("remote").unwrap();
         assert_eq!(state.focus_id(), "remote");
         assert_eq!(
             state.selected_tab(),
-            Some(&OthersTab::Container("b".into())),
+            Some(&OthersTab::Container("c".into())),
             "non-selected target does not change the selected Tab"
         );
         assert_eq!(state.others_ids(), &["b", "c", "a"]);
@@ -946,18 +960,13 @@ mod tests {
     #[test]
     fn switching_and_swapping_never_rebind_navigation_or_duplicate_focus() {
         let mut state = configured();
-        state
-            .select_tab(OthersTab::Container("remote".into()))
-            .unwrap();
+        state.select_tab(OthersTab::List).unwrap();
         assert_eq!(state.focus_id(), "a");
         state.promote("remote").unwrap();
         assert_eq!(state.focus_id(), "remote");
         assert_eq!(state.others_ids(), &["b", "c", "a"]);
         assert_eq!(state.navigation_targets(), &["c", "remote"]);
-        assert_eq!(
-            state.selected_tab(),
-            Some(&OthersTab::Container("a".into()))
-        );
+        assert_eq!(state.selected_tab(), Some(&OthersTab::List));
         assert!(state.promote_tab(&OthersTab::List).is_err());
         state.select_tab(OthersTab::List).unwrap();
         assert_eq!(state.list_ids(), ["a", "b"]);

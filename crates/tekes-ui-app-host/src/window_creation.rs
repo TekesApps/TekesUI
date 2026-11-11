@@ -665,6 +665,12 @@ mod tests {
         let reading = host.create_container("reading").unwrap();
         let state = host.presentation.as_mut().unwrap();
         assert!(state.tabs().contains(&crate::OthersTab::List));
+        assert!(
+            !state
+                .tabs()
+                .contains(&crate::OthersTab::Container(reading.clone()))
+        );
+        assert_eq!(state.selected_tab(), Some(&crate::OthersTab::List));
         assert_eq!(state.list_ids(), vec![reading.as_str()]);
         state.select_tab(crate::OthersTab::List).unwrap();
         let layout = state.layout_with_toolbar(whole, 48.);
@@ -683,5 +689,218 @@ mod tests {
         let frames = host.apply_presentation_layout(layout).unwrap();
         assert_eq!(frames[1], Rect::default());
         assert_eq!(frames[2].size.height, 240.);
+        host.close_container(&reading).unwrap();
+        assert_eq!(
+            host.presentation.as_ref().unwrap().tabs(),
+            vec![crate::OthersTab::Container(scratch)]
+        );
+    }
+    #[test]
+    fn container_modes_are_exclusive_and_last_list_close_preserves_original_tab_identity() {
+        use crate::{ContainerPresentation, OthersGroup, OthersTab};
+        let members = vec![
+            local("focus").into(),
+            local("inspector")
+                .title("Inspector")
+                .presentation(ContainerPresentation::Tab)
+                .into(),
+            local("reading")
+                .title("Reading")
+                .presentation(ContainerPresentation::List { height: 160. })
+                .into(),
+            local("reference")
+                .title("Reference")
+                .presentation(ContainerPresentation::List { height: 220. })
+                .into(),
+        ];
+        let options = PresentationOptions::new("focus").others(
+            OthersOptions::new(vec![
+                "inspector".into(),
+                "reading".into(),
+                "reference".into(),
+            ])
+            .groups(vec![OthersGroup::new(
+                "mixed",
+                "Documents",
+                "tekes-files",
+                vec!["inspector".into(), "reading".into(), "reference".into()],
+            )]),
+        );
+        let mut host = crate::AppWindow::from_containers(members, options)
+            .unwrap()
+            .into_host(false);
+        refresh(&mut host);
+        let instance = host.panels[1].instance;
+        assert_eq!(
+            host.presentation.as_ref().unwrap().tabs(),
+            vec![OthersTab::Container("inspector".into()), OthersTab::List]
+        );
+        assert!(
+            host.presentation
+                .as_mut()
+                .unwrap()
+                .select_tab(OthersTab::Container("reading".into()))
+                .is_err()
+        );
+        // A family may contain both declarations, but its menu only offers tabs.
+        let family = node(&host, "Documents", true).1.center();
+        click(&mut host, family, true);
+        let parts = host.presentation_tabs.as_ref().unwrap().semantics();
+        assert!(
+            parts
+                .iter()
+                .flat_map(|node| &node.parts)
+                .any(|(_, part)| part.semantics.name == "Inspector")
+        );
+        assert!(
+            !parts
+                .iter()
+                .flat_map(|node| &node.parts)
+                .any(|(_, part)| part.semantics.name == "Reading"
+                    || part.semantics.name == "Reference")
+        );
+        host.presentation_tab_input(&ContentEvent::Key {
+            key: ControlKey::Escape,
+            down: true,
+        })
+        .unwrap();
+        host.open_creation_choice("open:reading").unwrap();
+        refresh(&mut host);
+        assert_eq!(
+            host.presentation.as_ref().unwrap().selected_tab(),
+            Some(&OthersTab::List)
+        );
+        assert_eq!(
+            host.presentation.as_ref().unwrap().list_ids(),
+            vec!["reading", "reference"]
+        );
+        host.close_container("reading").unwrap();
+        refresh(&mut host);
+        assert!(
+            host.presentation
+                .as_ref()
+                .unwrap()
+                .tabs()
+                .contains(&OthersTab::List)
+        );
+        host.close_container("reference").unwrap();
+        refresh(&mut host);
+        assert_eq!(
+            host.presentation.as_ref().unwrap().tabs(),
+            vec![OthersTab::Container("inspector".into())]
+        );
+        assert_eq!(
+            host.presentation.as_ref().unwrap().selected_tab(),
+            Some(&OthersTab::Container("inspector".into()))
+        );
+        assert_eq!(host.panels[1].instance, instance);
+        assert!(
+            !host
+                .presentation_tabs
+                .as_ref()
+                .unwrap()
+                .semantics()
+                .iter()
+                .any(|node| node.node.semantics.name == "List")
+        );
+    }
+    #[test]
+    fn creation_popup_layers_preserve_type_icons_and_original_merged_render_compatibility() {
+        use super::super::window_presentation::{render_test_tabs, render_test_tabs_layers};
+        use tekes_ui_scene::Primitive;
+        let mut host = host(local_factories());
+        let scratch = host.create_container("scratch").unwrap();
+        refresh(&mut host);
+        let before = node(&host, "Scratchpad", true).0;
+        let trigger = node(&host, "Create Container", false).1.center();
+        click(&mut host, trigger, false);
+        let owner = host.open_toolbar().expect("original plus menu is open");
+        let presenter = host.toolbar_container(owner).unwrap();
+        let mut legacy = Scene::new();
+        render_test_tabs(
+            &mut host.panels[presenter].mounted_toolbar.host,
+            &mut legacy,
+            &mut host.text,
+            Theme::LIGHT.into(),
+        )
+        .unwrap();
+        let mut base = Scene::new();
+        let mut overlays = Scene::new();
+        render_test_tabs_layers(
+            &mut host.panels[presenter].mounted_toolbar.host,
+            &mut base,
+            &mut overlays,
+            &mut host.text,
+            Theme::LIGHT.into(),
+        )
+        .unwrap();
+        let mut merged = Scene::new();
+        for primitive in base.primitives().iter().chain(overlays.primitives()) {
+            merged.push(primitive.clone());
+        }
+        assert_eq!(
+            format!("{:?}", merged.primitives()),
+            format!("{:?}", legacy.primitives()),
+            "old render retains the identical original base+overlay painter"
+        );
+        assert!(
+            !overlays.primitives().is_empty(),
+            "the original open popup must have its own layer"
+        );
+        let mut presentation = Scene::new();
+        host.paint_presentation(
+            &mut presentation,
+            Rect::new(0., 0., 1200., 700.),
+            Theme::LIGHT.into(),
+        )
+        .unwrap();
+        assert_eq!(
+            node(&host, "Scratchpad", true).0,
+            before,
+            "opening plus must not retire or replace a type target"
+        );
+        let images: Vec<_> = presentation
+            .primitives()
+            .iter()
+            .enumerate()
+            .filter_map(|(index, primitive)| match primitive {
+                Primitive::Image(image) if image.rect.center().y < 48. => {
+                    Some((index, image.rect.center()))
+                }
+                _ => None,
+            })
+            .collect();
+        assert!(
+            !images.is_empty(),
+            "the original selected type icon is still painted"
+        );
+        let mut scene = Scene::new();
+        host.append_toolbar_layers(&mut scene, &base, &presentation, &overlays);
+        for (index, point) in images {
+            let start = base.primitives().len() + index + 1;
+            assert!(!scene.primitives()[start..].iter().any(|primitive| matches!(primitive, Primitive::Quad(quad) if quad.fill.a == 1. && quad.rect.contains(point))),
+                "opening plus must not lift window ground above an existing type icon");
+        }
+        let overlay_start = base.primitives().len() + presentation.primitives().len();
+        assert_eq!(
+            format!("{:?}", &scene.primitives()[overlay_start..]),
+            format!("{:?}", overlays.primitives()),
+            "original popup paints above both toolbar ground and selector"
+        );
+        host.dispatch_toolbar(
+            owner,
+            &ContentEvent::Key {
+                key: ControlKey::Escape,
+                down: true,
+            },
+        )
+        .unwrap();
+        refresh(&mut host);
+        assert!(host.open_toolbar().is_none());
+        assert_eq!(
+            host.presentation.as_ref().unwrap().selected_tab(),
+            Some(&crate::OthersTab::Container(scratch))
+        );
+        assert_eq!(node(&host, "Scratchpad", true).0, before);
     }
 }

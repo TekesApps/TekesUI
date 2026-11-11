@@ -1,8 +1,20 @@
+## 2026-11-11：Container 的 tab/list 互斥呈现（#229）
+
+LocalContainer 和 ProcessContainer 使用 `.presentation(ContainerPresentation::Tab)`（默认）或 `.presentation(ContainerPresentation::List { height })`；旧 `.list_height(height)` 保留为选择 List 的兼容写法，共用同一份模式存储。
+
+每个 Container 仅声明一种呈现模式：tab 或 list。此模式与 Toolbar 的 host=window/container 是两个独立概念。tab 模式进入内容类型图标组，不作为聚合 List 成员；list 模式仅进入聚合 List，不同时产生单独类型图标。当前没有打开的 list 模式 Container 时，不显示聚合 List 图标。Gallery 的 Inspector 示例使用 tab 模式，因此不重复出现在 List。
+
+工具栏背景、内容图标组与弹出菜单分别保持原层次；弹出菜单出现时只提升 popup，不连同整块 Toolbar 背景覆盖图标组。渲染沿原一次布局与绘制拆分 base/overlay，旧调用保留原合并行为。
+
+`+` 仅展开创建/打开菜单，菜单展开本身不改变 Container 的 opened/selected 状态或已有类型图标投影；只有实际选择创建/打开项、关闭实例等操作才更新成员。保留既有实例身份与输入撤销合同，不由菜单开关重建或隐藏原图标组。此节覆盖此前允许同一成员同时出现在 tab 与 List 的例子；具体实现和验证状态以 #229 当前记录为准。
+
 ## 2026-11-11: registered Others creation (#229)
 
-Others visibility and creation are separate actions: its main icon only hides/shows the existing selection; an adjacent chevron lists registered creatable types. An empty visible Others presents the same registrations as a creation grid. The same directory includes existing fixed containers as explicit Open entries which retain their original Content, navigation and identity; factory entries genuinely create according to their policy. Type radio icons project opened instances only; hiding preserves them, closing the last instance removes that type from the radio group. Cancel does not create or select anything.
+Others visibility and creation are separate actions: its main icon only hides/shows the existing selection; an adjacent `+` icon opens the menu of registered creatable types. An empty visible Others presents the same registrations as a creation grid. The same directory includes existing fixed containers as explicit Open entries which retain their original Content, navigation and identity; factory entries genuinely create according to their policy. Type radio icons project opened instances only; hiding preserves them, closing the last instance removes that type from the radio group. Cancel does not create or select anything.
 
 `ContainerFactory` explicitly declares Single or Multiple and constructs original local Containers, or names a compile-time Process ModuleDefinition registered before worker dispatch. Single reopens its retained mounted instance; Multiple creates a fresh stable instance and closing it cancels its worker and releases its local Content/Toolbar. A lightweight non-routable index tombstone preserves other original Source indices. Instance IDs never recycle. Process instance identity is separate from worker factory ID, which only selects the existing executable worker; IPC remains unchanged. Each Process worker ID is registered once; one Multiple factory covers all instances of that type. Duplicate worker IDs are rejected rather than comparing function addresses. Existing Vec<Container> assemblies remain supported. Creation appends original Panel records and PresentationState membership; it does not rebuild other containers, change Workspace Switch/Nav ownership, or introduce another selection state.
+
+Toolbar icon buttons, including menu triggers, do not paint a focus border. Logical focus, keyboard activation, and hover/pressed/checked fills remain; ordinary non-toolbar buttons retain their focus decoration. Family selection menus retain their icon-and-chevron presentation.
 
 # TekesUI AppHost 框架设计
 

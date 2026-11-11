@@ -2381,10 +2381,34 @@ impl ContentHost {
         clip: Rect,
         palette: Palette,
     ) -> Result<(), CompositionError> {
+        self.render_into(scene, None, text, frame, clip, palette)
+    }
+    /// Arrange once and paint the original body and overlays into separate layers.
+    pub fn render_layers(
+        &mut self,
+        scene: &mut Scene,
+        overlays: &mut Scene,
+        text: &mut dyn ButtonTextRenderer,
+        frame: Rect,
+        clip: Rect,
+        palette: Palette,
+    ) -> Result<(), CompositionError> {
+        self.render_into(scene, Some(overlays), text, frame, clip, palette)
+    }
+    fn render_into(
+        &mut self,
+        scene: &mut Scene,
+        overlays: Option<&mut Scene>,
+        text: &mut dyn ButtonTextRenderer,
+        frame: Rect,
+        clip: Rect,
+        palette: Palette,
+    ) -> Result<(), CompositionError> {
         let mut requested = false;
         let active = self.window_active;
         let result = self.render_frame(
             scene,
+            overlays,
             &mut FrameTextAdapter(text, Some(&mut requested), active),
             frame,
             clip,
@@ -2446,17 +2470,21 @@ impl ContentHost {
                 .try_import_clip_shapes(table, Default::default())
                 .map_err(CompositionError::SceneFragment)?;
         }
-        self.paint_current_frame(scene, text, frame, clip, palette)
+        self.paint_current_frame(scene, None, text, frame, clip, palette)
     }
     fn render_frame(
         &mut self,
         scene: &mut Scene,
+        mut overlays: Option<&mut Scene>,
         text: &mut dyn ButtonTextRenderer,
         frame: Rect,
         clip: Rect,
         palette: Palette,
     ) -> Result<(), CompositionError> {
         if let Some(error) = scene.composition_error() {
+            return Err(CompositionError::SceneFragment(error));
+        }
+        if let Some(error) = overlays.as_deref().and_then(Scene::composition_error) {
             return Err(CompositionError::SceneFragment(error));
         }
         if self.reading_transaction {
@@ -2485,6 +2513,11 @@ impl ContentHost {
             scene
                 .try_import_clip_shapes(table, Default::default())
                 .map_err(CompositionError::SceneFragment)?;
+            if let Some(overlays) = overlays.as_deref_mut() {
+                overlays
+                    .try_import_clip_shapes(table, Default::default())
+                    .map_err(CompositionError::SceneFragment)?;
+            }
         }
         self.reveal_clock.pending = false;
         self.observe_item_reveal();
@@ -2496,11 +2529,12 @@ impl ContentHost {
             self.scope().focus_ids(&mut ids);
             self.focus(ids.first().copied(), true);
         }
-        self.paint_current_frame(scene, text, frame, clip, palette)
+        self.paint_current_frame(scene, overlays, text, frame, clip, palette)
     }
     fn paint_current_frame(
         &mut self,
         scene: &mut Scene,
+        overlays: Option<&mut Scene>,
         text: &mut dyn ButtonTextRenderer,
         frame: Rect,
         clip: Rect,
@@ -2514,6 +2548,12 @@ impl ContentHost {
                 .expect("validated inherited Surface");
         }
         self.root.paint_except(scene, text, theme, paint_id);
+        if overlays.is_some()
+            && let Some(error) = scene.composition_error()
+        {
+            return Err(CompositionError::SceneFragment(error));
+        }
+        let scene = overlays.unwrap_or(scene);
         if self.modal.is_none() {
             self.root.paint_overlays(scene, text, theme);
         }
@@ -4547,6 +4587,21 @@ impl ScrollContent {
             reading.observe_manual_history();
         }
     }
+    fn content_clip(&self, frame: Rect, clip: Rect) -> Rect {
+        let mut child_clip = self
+            .scroll
+            .geometry(frame, Some(clip))
+            .visible_viewport_rect()
+            .unwrap_or_default();
+        if self.scroll.scrollbar_visible(true) {
+            let edge = self
+                .scrollbar_track(true)
+                .inset(-tekes_ui_tokens::Spacing::Micro.value())
+                .min_x();
+            child_clip.size.width = (child_clip.max_x().min(edge) - child_clip.min_x()).max(0.);
+        }
+        child_clip
+    }
     fn arrange_content(
         &mut self,
         text: &mut dyn ButtonTextRenderer,
@@ -4555,16 +4610,8 @@ impl ScrollContent {
         gutter: f32,
         width: f32,
     ) -> Rect {
-        let geometry = self.scroll.geometry(frame, Some(clip));
-        let origin = geometry.content_origin();
-        let mut child_clip = geometry.visible_viewport_rect().unwrap_or_default();
-        if self.scroll.scrollbar_visible(true) {
-            let edge = self
-                .scrollbar_track(true)
-                .inset(-tekes_ui_tokens::Spacing::Micro.value())
-                .min_x();
-            child_clip.size.width = (child_clip.max_x().min(edge) - child_clip.min_x()).max(0.);
-        }
+        let origin = self.scroll.geometry(frame, Some(clip)).content_origin();
+        let child_clip = self.content_clip(frame, clip);
         let mut y = origin.y + gutter;
         for c in &mut self.children {
             let h = c.measure(text, Size::new(width, 1e8)).size.height;
@@ -4583,6 +4630,12 @@ struct PreparedScrollContentPointer {
 }
 impl action_preparation::OriginalActionDecision for PreparedScrollContentPointer {}
 impl Component for ScrollContent {
+    fn host_reveal_local_clip(&self) -> Option<Rect> {
+        // Publish only the local boundary; the planner intersects the moving
+        // ancestor clip, just as arrange does. Freezing that ancestor here would
+        // prevent an initially clipped nested viewport from being revealed.
+        Some(self.content_clip(self.viewport, self.viewport))
+    }
     fn pointer_event_in_region(&mut self, event: &ContentEvent, inside: bool) -> ContentResponse {
         if !event.is_primary_pointer() {
             return event.deliver(self);

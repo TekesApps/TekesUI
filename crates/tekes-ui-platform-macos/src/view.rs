@@ -227,7 +227,8 @@ define_class!(
 
         #[unsafe(method_id(hitTest:))]
         fn hit_test(&self, point: NSPoint) -> Option<Retained<NSView>> {
-            self.toolbar_hit_target(point).or_else(|| {
+            let event = objc2_app_kit::NSApplication::sharedApplication(self.mtm()).currentEvent();
+            self.toolbar_hit_target(point, event.as_deref()).or_else(|| {
                 // SAFETY: unchanged native hit testing for every other point.
                 unsafe { msg_send![super(self), hitTest: point] }
             })
@@ -441,15 +442,23 @@ define_class!(
         #[unsafe(method(cursorUpdate:))]
         fn cursor_update(&self, event: &NSEvent) {
             let point = self.view_point(event);
-            let (kind, cursor) = self.cursor_for_point(point);
+            let (_, cursor) = self.cursor_for_point(point);
             cursor.set();
-            if cfg!(debug_assertions) && let Some(path) = std::env::var_os("TEKESUI_CURSOR_REVIEW") {
-                use std::io::Write;
-                if let Ok(mut file) = std::fs::OpenOptions::new().create(true).append(true).open(path) {
-                    let current = objc2_app_kit::NSCursor::currentCursor();
-                    let _ = writeln!(file,"CURSOR_UPDATE x={} y={} selected={kind:?} native_current_matches={}",
-                        point.x, point.y, std::ptr::eq(&*current, &*cursor));
+            if self.trace_cursor("cursor-update", point) {
+                // Diagnostic-only, read-only sample after AppKit finishes the event.
+                unsafe {
+                    self.performSelector_withObject_afterDelay_inModes(
+                        sel!(tekesReviewCursor), None, 0.0,
+                        &NSArray::from_slice(&[NSRunLoopCommonModes]));
                 }
+            }
+        }
+
+        #[unsafe(method(tekesReviewCursor))]
+        fn review_cursor_after_event(&self) {
+            if let Some(window) = self.window() {
+                let point = self.convertPoint_fromView(window.mouseLocationOutsideOfEventStream(), None);
+                self.trace_cursor("after-runloop", Point { x: point.x, y: point.y });
             }
         }
 
@@ -623,6 +632,36 @@ fn modifiers_of(e: &NSEvent) -> Modifiers {
 }
 
 impl TekesView {
+    fn trace_cursor(&self, stage: &str, point: Point) -> bool {
+        // Opt-in tracing must also work on the exact release candidate. Without
+        // this environment variable there is no file I/O or deferred sampling.
+        if let Some(path) = std::env::var_os("TEKESUI_CURSOR_REVIEW") {
+            use std::io::Write;
+            if let Ok(mut file) = std::fs::OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(path)
+            {
+                let (kind, cursor) = self.cursor_for_point(point);
+                let current = objc2_app_kit::NSCursor::currentCursor();
+                let arrow = objc2_app_kit::NSCursor::arrowCursor();
+                let regions = self.ivars().cursor_regions.borrow();
+                let _ = writeln!(
+                    file,
+                    "CURSOR_REVIEW stage={stage} time={:?} x={} y={} selected={kind:?} native_current_matches={} native_is_arrow={} key={} regions={regions:?}",
+                    std::time::Instant::now(),
+                    point.x,
+                    point.y,
+                    std::ptr::eq(&*current, &*cursor),
+                    std::ptr::eq(&*current, &*arrow),
+                    self.window().is_some_and(|window| window.isKeyWindow())
+                );
+                return true;
+            }
+        }
+        false
+    }
+
     pub(crate) fn cursor_for_point(
         &self,
         point: Point,
@@ -649,7 +688,25 @@ impl TekesView {
         (icon, cursor)
     }
 
-    fn toolbar_hit_target(&self, point: NSPoint) -> Option<Retained<NSView>> {
+    pub(crate) fn toolbar_hit_target(
+        &self,
+        point: NSPoint,
+        event: Option<&NSEvent>,
+    ) -> Option<Retained<NSView>> {
+        // Returning a native titlebar sibling during cursor routing creates a
+        // responder cycle: titlebar -> content hitTest -> titlebar button.
+        // This exception exists only to route actual traffic-light presses.
+        let event = event?;
+        if !matches!(
+            event.r#type(),
+            NSEventType::LeftMouseDown | NSEventType::LeftMouseUp | NSEventType::LeftMouseDragged
+        ) {
+            return None;
+        }
+        let window = self.window()?;
+        if event.windowNumber() != window.windowNumber() {
+            return None;
+        }
         let shared = &self.ivars().shared;
         if shared.toolbar_row_height.get().is_some()
             && let Some(objects) = shared.objects.get()
@@ -697,6 +754,19 @@ impl TekesView {
         }
         *self.ivars().cursor_regions.borrow_mut() = regions;
         self.updateTrackingAreas();
+        if cfg!(debug_assertions)
+            && let Some(window) = self.window()
+        {
+            let point =
+                self.convertPoint_fromView(window.mouseLocationOutsideOfEventStream(), None);
+            self.trace_cursor(
+                "regions-rebuilt",
+                Point {
+                    x: point.x,
+                    y: point.y,
+                },
+            );
+        }
     }
 
     pub(crate) fn accessibility_children_snapshot(&self) -> Retained<objc2_foundation::NSArray> {
@@ -1062,7 +1132,10 @@ impl TekesView {
             position: self.view_point(e),
             modifiers: modifiers_of(e),
         };
+        let point = ev.position;
+        self.trace_cursor("mouse-before-dispatch", point);
         self.ivars().shared.dispatch(Event::Mouse(ev));
+        self.trace_cursor("mouse-after-dispatch", point);
     }
 
     fn button_event(&self, e: &NSEvent, down: bool) {

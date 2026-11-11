@@ -31,8 +31,9 @@ mod window;
 mod window_toolbar;
 #[cfg(target_os = "macos")]
 pub use columns::{
-    Column, Container, ContainerContent, ContainerOptions, ContainerToolbarHost,
-    ContainerToolbarPosition, LocalContainer, ProcessContainer, RetainedButton,
+    Column, Container, ContainerContent, ContainerOptions, ContainerPresentation,
+    ContainerToolbarHost, ContainerToolbarPosition, LocalContainer, ProcessContainer,
+    RetainedButton,
 };
 #[cfg(target_os = "macos")]
 pub use presentation::{
