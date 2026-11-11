@@ -6,6 +6,8 @@ Switch 是 Workspace（Focus + Others）的单一布局命令，不由每个 Con
 
 Secondary actions 通过三点图标菜单呈现，菜单项目沿原命令来源派发，不能因汇总丢失 Container 的实例/代际身份。Workspace 命令只注册一次；Container 的业务次要动作仍由 Container 声明，按它自己的 toolbar host 呈现，不迁移 Nav/Focus/Others 的列归属。前进后退、内容图标选择组及 Others 的展开/关闭/显隐保留直接导航按钮。菜单打开后若目标切换、关闭或失效，原捕获与旧动作必须撤销；不创建第二套菜单/焦点状态机。
 
+展开时隐藏 Focus 仍承载原 Window Toolbar；绘制必须保留布局给出的零宽原始 frame，不能每帧改成不同的空 Rect，造成未变布局反复取消菜单。真实几何变化仍撤销旧输入。
+
 此节是本批追加设计，替代旧版每个 Container 的 Switch 注册示例；实现和验收状态以 #229 当前记录为准。
 
 ## 2026-11-11：图标组状态与 Others 展开导航（#229 / #245）

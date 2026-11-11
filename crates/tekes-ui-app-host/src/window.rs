@@ -908,6 +908,19 @@ impl Host {
         }
         Ok(())
     }
+    fn retire_hidden_content(&mut self, index: usize, bounds: Rect) {
+        // A hidden presentation frame can retain an origin and height. Keep
+        // that canonical allocation: replacing it with default would make the
+        // next identical layout cancel the still-visible Window toolbar again.
+        self.panels[index].bounds = bounds;
+        if self.focused == index && !self.panels[index].logically_visible {
+            self.focused = self
+                .presentation
+                .as_ref()
+                .and_then(|state| self.module_ids.iter().position(|id| id == state.focus_id()))
+                .unwrap_or_else(|| self.order[usize::from(self.order.len() >= 2)]);
+        }
+    }
     fn draw(&mut self, w: &Window) -> Result<()> {
         // One opt-in summary at the end avoids synchronous stage logging inside
         // the measured layout path. These are CPU boundaries, not presentation.
@@ -1157,20 +1170,10 @@ impl Host {
             }
         }
         let geometry_ready = diagnostic.map(|_| std::time::Instant::now());
-        let renderer = self.renderer.as_mut().unwrap();
         for (slot, bounds) in frames.iter().enumerate() {
             let index = self.order[slot];
             if bounds.size.width <= 0. {
-                self.panels[index].bounds = Rect::default();
-                if self.focused == index && !self.panels[index].logically_visible {
-                    self.focused = self
-                        .presentation
-                        .as_ref()
-                        .and_then(|state| {
-                            self.module_ids.iter().position(|id| id == state.focus_id())
-                        })
-                        .unwrap_or_else(|| self.order[usize::from(self.order.len() >= 2)]);
-                }
+                self.retire_hidden_content(index, *bounds);
                 continue;
             }
             let p = &mut self.panels[index];
@@ -1191,9 +1194,12 @@ impl Host {
                 } else {
                     content
                 };
-                with_content_icons(renderer, &mut p.content_icons, &mut self.text, |text| {
-                    local.render(&mut scene, text, content, clip, palette)
-                })?;
+                with_content_icons(
+                    self.renderer.as_mut().unwrap(),
+                    &mut p.content_icons,
+                    &mut self.text,
+                    |text| local.render(&mut scene, text, content, clip, palette),
+                )?;
                 p.frame_seq = p.seq;
                 p.frame_viewport = p.viewport;
                 p.frame_size = p.content_size();
@@ -1216,7 +1222,6 @@ impl Host {
                 scene.pop_clip();
             }
         }
-        let _ = renderer;
         let body_scene_ready = diagnostic.map(|_| std::time::Instant::now());
         if self.presentation.is_some() {
             scene.push_quad(Quad::new(

@@ -2102,8 +2102,7 @@ mod input_regressions {
             }
         }
     }
-    #[test]
-    fn workspace_secondary_is_single_and_container_commands_keep_their_owner() {
+    fn workspace_secondary_fixture() -> Host {
         let local = |id: &str, command| {
             LocalContainer::new(id, Content::new(ComponentId(1), TextContent::new(id)))
                 .unwrap()
@@ -2130,6 +2129,11 @@ mod input_regressions {
         assert!(host.mount_columns());
         host.container_window_boundary = Some(48.);
         refresh_window_chrome(&mut host);
+        host
+    }
+    #[test]
+    fn workspace_secondary_is_single_and_container_commands_keep_their_owner() {
+        let mut host = workspace_secondary_fixture();
         let declarations = host.presentation_toolbar_declarations();
         let groups: Vec<_> = declarations.iter().flatten().collect();
         assert_eq!(
@@ -2193,6 +2197,60 @@ mod input_regressions {
             matches!(&switch.contents, Contents::Commands(buttons, ToolbarGroupOverflow::Menu) if !buttons[0].enabled)
         );
     }
+    #[test]
+    fn expanded_workspace_menu_survives_real_hidden_draw_between_press_and_release() {
+        let mut host = workspace_secondary_fixture();
+        host.presentation
+            .as_mut()
+            .unwrap()
+            .toggle_others_expanded()
+            .unwrap();
+        refresh_window_chrome(&mut host);
+        let presenter = host
+            .panels
+            .iter()
+            .position(|panel| panel.module_id == "focus")
+            .unwrap();
+        let point = host.panels[presenter]
+            .mounted_toolbar
+            .host
+            .content_host()
+            .get(ComponentId(92041))
+            .unwrap()
+            .frame()
+            .center();
+        let target = host.toolbar_target_at(point).unwrap();
+        host.dispatch_toolbar(target, &ContentEvent::PointerDown(point))
+            .unwrap();
+        refresh_window_chrome(&mut host);
+        host.dispatch_toolbar(target, &ContentEvent::PointerUp(point))
+            .unwrap();
+        refresh_window_chrome(&mut host);
+        assert_eq!(
+            host.open_toolbar(),
+            Some(target),
+            "same hidden geometry must not cancel the original More menu"
+        );
+        let action = host.panels[presenter]
+            .mounted_toolbar
+            .host
+            .semantics()
+            .into_iter()
+            .flat_map(|node| node.parts)
+            .find(|(_, part)| part.semantics.name == "Switch Focus and Others")
+            .unwrap()
+            .0;
+        host.panels[presenter]
+            .mounted_toolbar
+            .host
+            .accessibility_action(action, AccessibilityAction::Press);
+        host.toolbar_index = presenter;
+        host.drain_toolbar_commands().unwrap();
+        assert_eq!(host.presentation.as_ref().unwrap().focus_id(), "other");
+        assert!(!host.presentation.as_ref().unwrap().others_expanded());
+        refresh_window_chrome(&mut host);
+        assert!(host.panels.iter().all(|panel| panel.bounds.size.width > 0.));
+    }
     fn window_chrome_fixture() -> Host {
         let local = |id| {
             LocalContainer::new(id, Content::new(ComponentId(1), TextContent::new(id)))
@@ -2219,6 +2277,12 @@ mod input_regressions {
     fn refresh_window_chrome(host: &mut Host) {
         let whole = Rect::new(0., 0., 1200., 700.);
         render_layout(host, whole);
+        for index in 0..host.panels.len() {
+            let bounds = host.panels[index].bounds;
+            if bounds.size.width <= 0. {
+                host.retire_hidden_content(index, bounds);
+            }
+        }
         host.sync_container_toolbars(true, whole, test_band(), 40.)
             .unwrap();
         for panel in &mut host.panels {
