@@ -651,6 +651,33 @@ impl ButtonModel {
         )
     }
 
+    /// Symbol actions keep the original hit, focus and motion paths but paint
+    /// only the foreground from the existing Surface state tokens.
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn render_transparent_label(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        label: &str,
+        frame: Rect,
+        clip: Option<Rect>,
+        palette: impl Into<Palette>,
+        variant: crate::paint::ButtonVariant,
+        size: ButtonSize,
+        role: proposal::TextRole,
+        align: ButtonTextAlign,
+    ) -> ButtonLayout {
+        let surface = self.surface;
+        self.surface = Some(surface.unwrap_or("canvas"));
+        let context = text.motion_context();
+        let layout = self.render_with_motion_context(
+            scene, text, label, frame, clip, palette, variant, size, role, align, context, None,
+            None, None, true,
+        );
+        self.surface = surface;
+        layout
+    }
+
     // Icon-only controls share ButtonModel's interaction/motion/clip machinery, but
     // resolve their own semantic radius. This is internal geometry plumbing;
     // public ButtonModel callers continue to use the size-specific ButtonModel token.
@@ -998,8 +1025,14 @@ impl ButtonModel {
         palette: Palette,
         size: ButtonSize,
         role: proposal::TextRole,
+        transparent_rest: bool,
     ) {
         let context = text.motion_context();
+        let transparent_background = transparent_rest
+            && !self.state.selected
+            && !self.state.error
+            && (self.state.disabled
+                || (!self.state.hovered && !self.state.pressed && !self.needs_animation()));
         self.render_with_motion_context(
             scene,
             text,
@@ -1015,7 +1048,7 @@ impl ButtonModel {
             None,
             None,
             Some(layout),
-            false,
+            transparent_background,
         );
     }
 

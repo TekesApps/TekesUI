@@ -1963,6 +1963,7 @@ impl SegmentedControlView {
                 palette,
                 size,
                 role,
+                false,
             );
         }
         if clipped {

@@ -1093,6 +1093,7 @@ impl Host {
         let mut state = shared_settings.borrow_mut();
         let settings = &mut *state;
         settings.poll(w.wake_proxy())?;
+        settings.sidebar.sync_search()?;
         self.sync_settings_display(w)?;
         if !settings.open {
             w.close();
@@ -1473,6 +1474,26 @@ impl Host {
             w.request_redraw();
             return Ok(true);
         }
+        let cancel_search = matches!(event, Event::Key(key)
+            if key.kind == KeyEventKind::Down && key.key_code == 53)
+            || matches!(event, Event::TextCommand(command) if command == "cancelOperation:");
+        if cancel_search
+            && self
+                .settings
+                .as_ref()
+                .is_some_and(|state| state.borrow().sidebar.host.focused() == Some(ComponentId(6)))
+            && self
+                .settings
+                .as_ref()
+                .unwrap()
+                .borrow_mut()
+                .sidebar
+                .cancel_search()?
+        {
+            w.set_text_input_state(None);
+            w.request_redraw();
+            return Ok(true);
+        }
         // Header search is an original local editor, using the same text/IME
         // and clipboard adapter as every ordinary Container, not the form draft.
         let sidebar_editor = self
@@ -1492,6 +1513,12 @@ impl Host {
         {
             self.focused = 0;
             if self.local_content_event(event, w)? {
+                self.settings
+                    .as_ref()
+                    .unwrap()
+                    .borrow_mut()
+                    .sidebar
+                    .sync_search()?;
                 self.draw(w)?;
                 return Ok(true);
             }
@@ -1920,8 +1947,50 @@ mod settings_theme_radio_width_tests {
 mod pinned_header_tests {
     use super::*;
     use tekes_ui_controls::composition::{ListContent, TextContent, TextFieldContent};
+
+    // Same original Text + prepared IconImage lease adapter used by the
+    // AppHost text/toolbar tests. Production supplies SvgIconCache's GPU service
+    // through with_content_icons; this headless fixture validates catalog names.
+    pub(super) struct HeaderIcons;
+    impl tekes_ui_controls::layout_view::IconRenderer for HeaderIcons {
+        fn prepare_icon(
+            &mut self,
+            name: &str,
+            _: f32,
+            _: f32,
+            _: Rgba,
+        ) -> std::result::Result<
+            tekes_ui_controls::composition::IconImage,
+            tekes_ui_controls::composition::IconRenderError,
+        > {
+            assert!(tekes_ui_icons::Glyph::named(name).is_some());
+            Ok(tekes_ui_controls::composition::IconImage::new(
+                ImageId(99),
+                std::rc::Rc::new(()),
+            ))
+        }
+        fn draw_icon(&mut self, _: &mut Scene, _: &str, _: Rect, _: Rgba) {
+            panic!("original Settings icons must retain their prepared image lease");
+        }
+    }
+    fn render_header(
+        sidebar: &mut tekes_ui_settings::SettingsSidebar,
+        text: &mut crate::text::Text,
+        frame: Rect,
+    ) -> Scene {
+        let mut scene = Scene::new();
+        sidebar
+            .render(
+                &mut scene,
+                &mut tekes_ui_controls::composition::WithIconRenderer::new(text, &mut HeaderIcons),
+                frame,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
+        scene
+    }
     #[test]
-    fn header_uses_toolkit_icon_and_fixed_original_editor_with_scrolling_list() {
+    fn header_search_expands_in_place_and_keeps_original_editor_with_scrolling_list() {
         let schema = tekes_ui_settings::Schema::parse(include_str!(
             "../../../examples/app-host-demo/settings.schema.toml"
         ))
@@ -1931,16 +2000,26 @@ mod pinned_header_tests {
         let mut text = crate::text::Text::new();
         let frame = Rect::new(0., 0., 260., 180.);
         let draw = |s: &mut tekes_ui_settings::SettingsSidebar, t: &mut crate::text::Text| {
-            s.render(&mut Scene::new(), t, frame, Theme::LIGHT.into())
-                .unwrap();
+            render_header(s, t, frame);
         };
         draw(&mut sidebar, &mut text);
         let back = sidebar.host.get(ComponentId(4)).unwrap().frame();
+        assert!(sidebar.host.get(ComponentId(6)).is_none());
+        let chip = sidebar.host.get(ComponentId(10)).unwrap().frame();
+        let scroll = sidebar.host.get(ComponentId(1)).unwrap().frame();
+        assert_eq!(back.min_x(), scroll.min_x());
+        assert_eq!(back.center().y, chip.center().y);
+        sidebar.event(&ContentEvent::PointerDown(chip.center()));
+        sidebar.event(&ContentEvent::PointerUp(chip.center()));
+        draw(&mut sidebar, &mut text);
+        // The editor changes the row's measured height; compare both controls
+        // from this same expanded layout, including the eventual Back hit.
+        let back = sidebar.host.get(ComponentId(4)).unwrap().frame();
         let search = sidebar.host.get(ComponentId(6)).unwrap().frame();
         let scroll = sidebar.host.get(ComponentId(1)).unwrap().frame();
-        assert_eq!(back.min_x(), search.min_x());
-        assert_eq!(back.size.width, search.size.width);
-        assert!(back.max_y() < search.min_y());
+        assert_eq!(sidebar.host.focused(), Some(ComponentId(6)));
+        assert!(sidebar.host.get(ComponentId(10)).is_none());
+        assert_eq!(back.center().y, search.center().y);
         assert!(search.max_y() < scroll.min_y());
         assert!(
             sidebar
@@ -1990,7 +2069,7 @@ mod pinned_header_tests {
             .host
             .event_with_text(
                 &ContentEvent::Commit {
-                    text: "搜索".into(),
+                    text: "文字大小".into(),
                     replacement: None,
                 },
                 &mut text,
@@ -2023,12 +2102,174 @@ mod pinned_header_tests {
                 .surface
                 .input
                 .text,
-            "搜索"
+            "文字大小"
         );
         sidebar.event(&ContentEvent::PointerDown(back.center()));
         sidebar.event(&ContentEvent::PointerUp(back.center()));
         assert!(sidebar.take_back());
         assert!(!sidebar.take_back());
+    }
+
+    #[test]
+    fn search_matches_field_routes_and_escape_restores_rows_without_losing_selection() {
+        let schema = tekes_ui_settings::Schema::parse(include_str!(
+            "../../tekes-ui-settings/tests/fixtures/layout.schema.toml"
+        ))
+        .unwrap();
+        let mut sidebar = tekes_ui_settings::SettingsSidebar::new_with_back(&schema).unwrap();
+        sidebar.set_back_template_icon("tekes-back").unwrap();
+        sidebar.select("reading/text");
+        let mut text = crate::text::Text::new();
+        let frame = Rect::new(0., 0., 260., 600.);
+        let draw = |s: &mut tekes_ui_settings::SettingsSidebar, t: &mut crate::text::Text| {
+            render_header(s, t, frame);
+        };
+        draw(&mut sidebar, &mut text);
+        let back = sidebar.host.get(ComponentId(4)).unwrap().frame();
+        let arrow = sidebar.host.get(ComponentId(8)).unwrap().frame();
+        let scroll = sidebar.host.get(ComponentId(1)).unwrap().frame();
+        assert_eq!(arrow.min_x(), scroll.min_x());
+        assert_eq!(arrow.center().y, back.center().y);
+        assert!(
+            back.size.height
+                >= tekes_ui_tokens::proposal::metric("size", "size-action-button").unwrap()
+        );
+        let chip = sidebar.host.get(ComponentId(10)).unwrap().frame().center();
+        sidebar.event(&ContentEvent::PointerDown(chip));
+        sidebar.event(&ContentEvent::PointerUp(chip));
+        draw(&mut sidebar, &mut text);
+        sidebar
+            .host
+            .event_with_text(
+                &ContentEvent::Commit {
+                    text: "行距倍数".into(),
+                    replacement: None,
+                },
+                &mut text,
+            )
+            .unwrap();
+        draw(&mut sidebar, &mut text);
+        let reading = sidebar
+            .host
+            .get(ComponentId(103))
+            .unwrap()
+            .component::<tekes_ui_settings::SelectableListContent>()
+            .unwrap();
+        assert_eq!(reading.labels, ["高级排版"]);
+        assert_eq!(reading.model.selected, None);
+        let target = reading.view.layout().items[0].frame.center();
+        assert_eq!(
+            sidebar.event(&ContentEvent::PointerDown(target)),
+            Some("reading/advanced".into())
+        );
+        sidebar.event(&ContentEvent::PointerUp(target));
+        // The original List emits selection on pointer down, and its visible
+        // index must map to advanced rather than the unfiltered text route.
+        sidebar.host.focus(Some(ComponentId(103)), true);
+        assert_eq!(
+            sidebar.event(&ContentEvent::Key {
+                key: ControlKey::Enter,
+                down: true,
+            }),
+            Some("reading/advanced".into())
+        );
+        assert!(sidebar.cancel_search().unwrap());
+        let collapsed = render_header(&mut sidebar, &mut text, frame);
+        let chip = sidebar.host.get(ComponentId(10)).unwrap();
+        let button = chip.component::<tekes_ui_controls::Button>().unwrap();
+        assert!(
+            button.button.state.focused && button.button.state.focus_visible,
+            "search keeps logical and keyboard focus after Escape"
+        );
+        let back = sidebar.host.get(ComponentId(4)).unwrap().frame();
+        let arrow = sidebar.host.get(ComponentId(8)).unwrap().frame();
+        assert_eq!(chip.frame().center().y, back.center().y);
+        assert_eq!(
+            arrow.min_x(),
+            sidebar.host.get(ComponentId(1)).unwrap().frame().min_x()
+        );
+        let focus_ink = Palette::from(Theme::LIGHT).color("border-focused").unwrap();
+        assert!(
+            !collapsed
+                .primitives()
+                .iter()
+                .any(|primitive| matches!(primitive,
+                tekes_ui_scene::Primitive::Quad(quad)
+                    if quad.border_width > 0. && quad.border_color == focus_ink)),
+            "the restored search icon must not paint a clipped focus border"
+        );
+        let reading = sidebar
+            .host
+            .get(ComponentId(103))
+            .unwrap()
+            .component::<tekes_ui_settings::SelectableListContent>()
+            .unwrap();
+        assert_eq!(reading.labels, ["文本与语言", "高级排版"]);
+        assert_eq!(reading.model.selected, Some(0));
+        assert!(sidebar.host.get(ComponentId(6)).is_none());
+        assert_eq!(sidebar.host.focused(), Some(ComponentId(10)));
+        assert!(!sidebar.take_back());
+        let chip = sidebar.host.get(ComponentId(10)).unwrap().frame().center();
+        sidebar.event(&ContentEvent::PointerDown(chip));
+        sidebar.event(&ContentEvent::PointerUp(chip));
+        draw(&mut sidebar, &mut text);
+        sidebar
+            .host
+            .event_with_text(
+                &ContentEvent::Preedit {
+                    text: "没有这样的设置".into(),
+                    selection: 0..0,
+                    clauses: vec![],
+                    replacement: None,
+                },
+                &mut text,
+            )
+            .unwrap();
+        assert!(
+            !sidebar.cancel_search().unwrap(),
+            "IME owns cancellation while marked"
+        );
+        sidebar.sync_search().unwrap();
+        assert_eq!(
+            sidebar
+                .host
+                .get(ComponentId(103))
+                .unwrap()
+                .component::<tekes_ui_settings::SelectableListContent>()
+                .unwrap()
+                .model
+                .count,
+            2
+        );
+        sidebar
+            .host
+            .event_with_text(&ContentEvent::Unmark, &mut text)
+            .unwrap();
+        draw(&mut sidebar, &mut text);
+        assert_eq!(
+            sidebar
+                .host
+                .get(ComponentId(103))
+                .unwrap()
+                .component::<tekes_ui_settings::SelectableListContent>()
+                .unwrap()
+                .model
+                .count,
+            0
+        );
+        assert!(sidebar.cancel_search().unwrap());
+        draw(&mut sidebar, &mut text);
+        assert_eq!(
+            sidebar
+                .host
+                .get(ComponentId(103))
+                .unwrap()
+                .component::<tekes_ui_settings::SelectableListContent>()
+                .unwrap()
+                .model
+                .count,
+            2
+        );
     }
 
     #[test]
@@ -2210,7 +2451,10 @@ mod navigation_input_tests {
                 .unwrap()
                 .render(
                     &mut Scene::new(),
-                    &mut host.text,
+                    &mut tekes_ui_controls::composition::WithIconRenderer::new(
+                        &mut host.text,
+                        &mut super::pinned_header_tests::HeaderIcons,
+                    ),
                     frame,
                     frame,
                     Theme::LIGHT.into(),

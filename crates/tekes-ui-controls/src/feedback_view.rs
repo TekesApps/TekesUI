@@ -705,7 +705,7 @@ impl NumberFieldView {
         // Do not apply ButtonModel's minimum/insets again after typography scales.
         self.minus.frame_policy = crate::ButtonFramePolicy::Exact;
         self.plus.frame_policy = crate::ButtonFramePolicy::Exact;
-        let d = self.minus.render(
+        let d = self.minus.render_transparent_label(
             scene,
             text,
             "−",
@@ -717,7 +717,7 @@ impl NumberFieldView {
             role,
             button_text_align(proposal::layout::BUTTON_CONTENT),
         );
-        let i = self.plus.render(
+        let i = self.plus.render_transparent_label(
             scene,
             text,
             "+",
@@ -3292,6 +3292,53 @@ mod tests {
             }));
         }
     }
+    #[test]
+    fn number_field_hover_and_press_keep_hit_slots_without_rectangular_backgrounds() {
+        let mut model = NumberField::new(100., 50., 300., 10.).unwrap();
+        let mut view = NumberFieldView::default();
+        let mut text = FixedText;
+        let frame = Rect::new(10., 20., 198., 36.);
+        let mut scene = Scene::new();
+        let layout = view.render(
+            &mut scene,
+            &mut text,
+            &model,
+            frame,
+            None,
+            palette(),
+            role(),
+        );
+        let point = layout.increment.frame.center();
+        view.pointer_move(point);
+        assert_eq!(view.pointer_down(point), Some(true));
+        let mut pressed = Scene::new();
+        let current = view.render(
+            &mut pressed,
+            &mut text,
+            &model,
+            frame,
+            None,
+            palette(),
+            role(),
+        );
+        assert_eq!(current.increment.frame, layout.increment.frame);
+        assert_eq!(current.decrement.frame, layout.decrement.frame);
+        for scene in [&scene, &pressed] {
+            assert!(
+                !scene
+                    .primitives()
+                    .iter()
+                    .any(|primitive| matches!(primitive, Primitive::Quad(_))),
+                "step symbols must not paint rectangular resting/hover/pressed chrome"
+            );
+        }
+        assert_eq!(
+            view.pointer_up(point, &mut model),
+            NumberFieldEvent::Changed
+        );
+        assert_eq!(model.value(), 110.);
+    }
+
     #[test]
     fn number_field_respects_model_limits_and_cancels_press_when_disabled() {
         let mut model = NumberField::new(2., 1., 3., 1.).unwrap();

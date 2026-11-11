@@ -133,6 +133,23 @@ fn an_own_activation_reaching_a_bound_also_invalidates_an_older_space_arm() {
 
 #[test]
 fn number_field_existing_states_use_real_view_tokens_without_changing_the_model() {
+    struct StateLabels(Vec<(String, Rgba)>);
+    impl ButtonTextRenderer for StateLabels {
+        fn measure(&mut self, text: &str, role: proposal::TextRole, width: f32) -> Size {
+            Labels.measure(text, role, width)
+        }
+        fn draw(
+            &mut self,
+            _: &mut Scene,
+            text: &str,
+            _: proposal::TextRole,
+            _: Rect,
+            _: ButtonTextAlign,
+            ink: Rgba,
+        ) {
+            self.0.push((text.into(), ink));
+        }
+    }
     let mut cases = Vec::new();
     for (theme_index, theme) in Theme::ALL.into_iter().enumerate() {
         for brand in 0..3 {
@@ -159,11 +176,12 @@ fn number_field_existing_states_use_real_view_tokens_without_changing_the_model(
                     _ => {}
                 }
                 let mut scene = Scene::new();
+                let mut labels = StateLabels(Vec::new());
                 #[cfg(feature = "token-audit")]
                 let (layout, reads) = tekes_ui_tokens::audit::capture(|| {
                     view.render(
                         &mut scene,
-                        &mut Labels,
+                        &mut labels,
                         &model,
                         frame,
                         None,
@@ -175,7 +193,7 @@ fn number_field_existing_states_use_real_view_tokens_without_changing_the_model(
                 let (layout, reads) = (
                     view.render(
                         &mut scene,
-                        &mut Labels,
+                        &mut labels,
                         &model,
                         frame,
                         None,
@@ -197,22 +215,31 @@ fn number_field_existing_states_use_real_view_tokens_without_changing_the_model(
                         }
                     })
                     .collect::<Vec<_>>();
-                let increment = quads
-                    .iter()
-                    .find(|q| q.rect == layout.increment.frame)
-                    .unwrap();
+                assert!(
+                    !quads.iter().any(|q| (q.rect == layout.increment.frame
+                        || q.rect == layout.decrement.frame)
+                        && q.fill.a > 0.),
+                    "step symbols have no rectangular chrome"
+                );
+                let ink = labels.0.iter().find(|(label, _)| label == "+").unwrap().1;
                 assert_eq!(
-                    increment.fill,
+                    ink,
                     palette
                         .color(match state {
-                            "hover" => "button-hover",
-                            "pressed" => "button-pressed",
-                            _ => "surface-2",
+                            "hover" | "pressed" => "primary-text",
+                            "disabled" => "tertiary-text",
+                            _ => "secondary-text",
                         })
                         .unwrap()
                 );
                 if state == "focus" {
-                    assert!(quads.len() > 2, "independent focus ink");
+                    assert!(
+                        quads.iter().any(|q| q.fill.a == 0.
+                            && q.border_width > 0.
+                            && q.border_color == palette.color("border-focused").unwrap()
+                            && q.rect.intersection(&layout.increment.frame).is_some()),
+                        "independent focus ink"
+                    );
                 }
                 if state == "disabled" {
                     assert_eq!(view.pointer_down(p), None);

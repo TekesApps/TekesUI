@@ -85,6 +85,9 @@ pub struct Button {
     pub pointer_activation_phase: ButtonActivationPhase,
     pub image_position: ButtonImagePosition,
     pub content_alignment: MainAxisDistribution,
+    /// Optional leading content inset; the original action frame and hit size
+    /// remain unchanged. None uses the standard Button inset.
+    pub leading_content_inset: Option<f32>,
     accessible_name: Option<String>,
     image: Option<ImageId>,
     content: Vec<Content>,
@@ -106,6 +109,7 @@ impl Button {
             pointer_activation_phase: ButtonActivationPhase::Release,
             image_position: ButtonImagePosition::default(),
             content_alignment: MainAxisDistribution::Center,
+            leading_content_inset: None,
             accessible_name: None,
             image: None,
             content: Vec::new(),
@@ -530,7 +534,11 @@ impl Component for Button {
             self.button.clear_surface();
         }
         // Plain labels keep their existing production Button rendering and label service.
-        if self.image.is_none() && self.content.is_empty() && !self.transparent_chrome {
+        if self.image.is_none()
+            && self.content.is_empty()
+            && !self.transparent_chrome
+            && self.leading_content_inset.is_none()
+        {
             let align = if self.content_alignment == MainAxisDistribution::Start {
                 ButtonTextAlign::Leading
             } else {
@@ -745,7 +753,17 @@ pub(super) fn action_content_frame(
     layout: crate::ButtonLayout,
     measured: Size,
 ) -> Rect {
-    let bounds = layout.content;
+    let bounds = if let Some(inset) = action.leading_content_inset {
+        let leading = (layout.frame.min_x() + inset).min(layout.content.max_x());
+        Rect::new(
+            leading,
+            layout.content.min_y(),
+            (layout.content.max_x() - leading).max(0.),
+            layout.content.size.height,
+        )
+    } else {
+        layout.content
+    };
     let width = measured.width.min(bounds.size.width).max(0.);
     let height = measured.height.min(bounds.size.height).max(0.);
     let offset = match action.content_alignment {
@@ -825,6 +843,7 @@ pub(super) fn action_child_theme(action: &Button, theme: ContentTheme) -> Conten
     // The original model already advanced its hover/press channels during paint.
     // Decorative text uses those same complete endpoints and inherited Surface.
     let (text, icon) = if action.toolbar_presentation
+        || action.transparent_chrome
         || action.variant == ButtonVariant::Toolbar
         || theme.surface_declared
     {

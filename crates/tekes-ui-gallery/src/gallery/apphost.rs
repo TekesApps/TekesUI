@@ -75,10 +75,16 @@ impl ContainerContent for NavigationContent {
 }
 const DOCUMENT_COMMAND: u64 = 0x4744_0000;
 fn entry(index: usize) -> tekes_ui_app_host::navigation::Entry {
+    static NEXT_VISIT: AtomicU64 = AtomicU64::new(1);
     tekes_ui_app_host::navigation::Entry {
-        id: DOCUMENT_TITLES[index].into(),
+        // History identifies visits; the route parameters identify the document.
+        id: format!(
+            "gallery-visit-{}-{}",
+            std::process::id(),
+            NEXT_VISIT.fetch_add(1, Ordering::Relaxed)
+        ),
         route: "gallery-document".into(),
-        params: serde_json::json!({"index":index}),
+        params: serde_json::json!({"index":index, "title":DOCUMENT_TITLES[index]}),
     }
 }
 fn update_navigation(host: &mut ContentHost, documents: &Documents) {
@@ -102,6 +108,41 @@ fn update_navigation(host: &mut ContentHost, documents: &Documents) {
         } else {
             None
         };
+    }
+}
+fn request_navigation(
+    host: &mut ContentHost,
+    records: Vec<ContentActionRecord>,
+    documents: &Documents,
+    inspector: &RefCell<ContentHost>,
+    pending: &RefCell<VecDeque<tekes_ui_app_host::navigation::Entry>>,
+) {
+    for record in records {
+        let (id, offset) = if record.action.target == ComponentId(8004) {
+            (ComponentId(8004), 0)
+        } else if record.action.target == ComponentId(8006) {
+            (ComponentId(8006), 2)
+        } else {
+            continue;
+        };
+        let Some(selected) = host
+            .get(id)
+            .and_then(|content| content.component::<SelectableListContent>())
+            .and_then(|list| list.model.selected)
+        else {
+            continue;
+        };
+        if inspector
+            .borrow()
+            .focused_text()
+            .is_some_and(|surface| surface.input.marked.is_some())
+        {
+            update_navigation(host, documents);
+            eprintln!("GALLERY_APPHOST_NAV_REJECTED composition-in-progress");
+            continue;
+        }
+        pending.borrow_mut().push_back(entry(selected + offset));
+        eprintln!("GALLERY_APPHOST_NAV_REQUEST selected={}", selected + offset);
     }
 }
 fn data_root() -> anyhow::Result<std::path::PathBuf> {
@@ -499,33 +540,13 @@ fn assemble(theme: Theme, settings: SettingsOwner) -> anyhow::Result<AppWindow> 
     )
     .content_padding(0.)
     .on_action(move |host, records| {
-        for record in records {
-            let (id, offset) = if record.action.target == ComponentId(8004) {
-                (ComponentId(8004), 0)
-            } else if record.action.target == ComponentId(8006) {
-                (ComponentId(8006), 2)
-            } else {
-                continue;
-            };
-            let Some(selected) = host
-                .get(id)
-                .and_then(|content| content.component::<SelectableListContent>())
-                .and_then(|list| list.model.selected)
-            else {
-                continue;
-            };
-            if nav_inspector
-                .borrow()
-                .focused_text()
-                .is_some_and(|surface| surface.input.marked.is_some())
-            {
-                update_navigation(host, &nav_documents.borrow());
-                eprintln!("GALLERY_APPHOST_NAV_REJECTED composition-in-progress");
-                continue;
-            }
-            nav_pending.borrow_mut().push_back(entry(selected + offset));
-            eprintln!("GALLERY_APPHOST_NAV_REQUEST selected={}", selected + offset);
-        }
+        request_navigation(
+            host,
+            records,
+            &nav_documents.borrow(),
+            &nav_inspector,
+            &nav_pending,
+        );
     });
     let focus_documents = documents.clone();
     let focus_inspector = inspector.clone();
@@ -1016,6 +1037,136 @@ mod tests {
             field.surface.input.text,
             state.items[1].paragraphs.join("\n\n")
         );
+    }
+
+    #[test]
+    fn apphost_navigation_revisit_preserves_route_with_distinct_history_identity() {
+        let visits = [entry(0), entry(1), entry(0)];
+        assert_ne!(
+            visits[0].id, visits[2].id,
+            "History requires unique visit ids for 0 -> 1 -> 0"
+        );
+        let route = history_options().unwrap().view_command.unwrap();
+        // Stored entries are reused by Back/Forward, so route identity must stay
+        // in the document parameters independently of the visit identity.
+        for position in [0, 1, 2, 1, 0, 1, 2] {
+            assert_eq!(
+                route(&visits[position]).unwrap(),
+                DOCUMENT_COMMAND + [0, 1, 0][position]
+            );
+        }
+    }
+
+    #[test]
+    fn apphost_navigation_round_trip_has_one_request_per_click_and_unique_visits() {
+        use tekes_ui_controls::composition::{
+            ContentEvent, PointerButton, PointerEvent, PointerModifiers, PointerPhase,
+        };
+        let mut state = documents();
+        let mut writing = SelectableListContent::new(
+            "Writing",
+            DOCUMENT_TITLES[..2].iter().map(|s| (*s).into()).collect(),
+        );
+        writing.model.selected = Some(0);
+        let mut nav = ContentHost::new(stack(
+            8000,
+            vec![
+                Content::new(ComponentId(8004), writing),
+                Content::new(
+                    ComponentId(8006),
+                    SelectableListContent::new(
+                        "Project",
+                        DOCUMENT_TITLES[2..].iter().map(|s| (*s).into()).collect(),
+                    ),
+                ),
+            ],
+        ))
+        .unwrap();
+        nav.set_action_events(true);
+        let inspector = RefCell::new(ContentHost::new(inspector_content(&state.items[0])).unwrap());
+        let mut document = ContentHost::new(document_content(&state.items[0])).unwrap();
+        let pending = RefCell::new(VecDeque::new());
+        let mut history = vec![entry(0)];
+        let mut text = super::super::text::TextEngine::new();
+        let frame = Rect::new(0., 0., 360., 600.);
+        for index in [1, 0, 1, 0] {
+            nav.render(
+                &mut Scene::new(),
+                &mut text,
+                frame,
+                frame,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
+            let point = nav
+                .get(ComponentId(8004))
+                .unwrap()
+                .component::<SelectableListContent>()
+                .unwrap()
+                .view
+                .layout()
+                .items[index]
+                .frame
+                .center();
+            for phase in [PointerPhase::Down, PointerPhase::Up] {
+                nav.event(&ContentEvent::Pointer(PointerEvent {
+                    position: point,
+                    phase,
+                    button: Some(PointerButton::Primary),
+                    modifiers: PointerModifiers::default(),
+                    click_count: 1,
+                }));
+                let records = nav.drain_action_records();
+                request_navigation(&mut nav, records, &state, &inspector, &pending);
+            }
+            assert_eq!(
+                pending.borrow().len(),
+                1,
+                "one physical click must enqueue one history visit"
+            );
+            let request = pending.borrow_mut().pop_front().unwrap();
+            assert_eq!(request.params["index"], index);
+            assert!(
+                history.iter().all(|old| old.id != request.id),
+                "revisiting a document needs a distinct history entry id"
+            );
+            let command = (history_options().unwrap().view_command.unwrap())(&request).unwrap();
+            state.selected = (command - DOCUMENT_COMMAND) as usize;
+            update_document(&mut document, &state.items[state.selected]);
+            update_inspector(&mut inspector.borrow_mut(), &state.items[state.selected]);
+            update_navigation(&mut nav, &state);
+            assert_eq!(
+                document
+                    .get(ComponentId(1))
+                    .unwrap()
+                    .component::<TextContent>()
+                    .unwrap()
+                    .text,
+                DOCUMENT_TITLES[index]
+            );
+            assert_eq!(
+                inspector
+                    .borrow()
+                    .get(TITLE)
+                    .unwrap()
+                    .component::<TextFieldContent>()
+                    .unwrap()
+                    .surface
+                    .input
+                    .text,
+                DOCUMENT_TITLES[index]
+            );
+            assert_eq!(
+                nav.get(ComponentId(8004))
+                    .unwrap()
+                    .component::<SelectableListContent>()
+                    .unwrap()
+                    .model
+                    .selected,
+                Some(index)
+            );
+            history.push(request);
+        }
     }
 
     #[test]

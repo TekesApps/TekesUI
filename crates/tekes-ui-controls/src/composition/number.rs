@@ -142,6 +142,7 @@ impl NumberFieldContent {
         let mut buttons = [Button::new("−"), Button::new("+")];
         for button in &mut buttons {
             button.button.frame_policy = crate::ButtonFramePolicy::Exact;
+            button.set_transparent_chrome(true);
         }
         Some(Self {
             editor,
@@ -756,6 +757,61 @@ mod geometry_tests {
             _: tekes_ui_tokens::Rgba,
         ) {
         }
+    }
+
+    #[test]
+    fn editable_number_step_symbols_use_state_ink_without_hover_background() {
+        struct InkText(Vec<tekes_ui_tokens::Rgba>);
+        impl ButtonTextRenderer for InkText {
+            fn measure(&mut self, text: &str, role: proposal::TextRole, width: f32) -> Size {
+                Text.measure(text, role, width)
+            }
+            fn draw(
+                &mut self,
+                _: &mut Scene,
+                _: &str,
+                _: proposal::TextRole,
+                _: Rect,
+                _: crate::ButtonTextAlign,
+                ink: tekes_ui_tokens::Rgba,
+            ) {
+                self.0.push(ink);
+            }
+        }
+        let mut field =
+            NumberFieldContent::new("Size", 100., 50., 300., 10., DecimalNumberFormat::default())
+                .unwrap();
+        let frame = Rect::new(0., 0., 160., 36.);
+        field.arrange(&mut Text, frame, frame);
+        let button_frame = field.frames[1];
+        let palette = Palette::from(tekes_ui_tokens::Theme::LIGHT);
+        let mut text = InkText(vec![]);
+        let mut scene = Scene::new();
+        field.buttons[1].paint(&mut scene, &mut text, button_frame, frame, palette.into());
+        let rest = *text.0.last().unwrap();
+        field.buttons[1]
+            .button
+            .pointer_move_at(button_frame.center());
+        field.buttons[1].paint(&mut scene, &mut text, button_frame, frame, palette.into());
+        let hover = *text.0.last().unwrap();
+        assert_ne!(
+            rest, hover,
+            "hover must be visible in the original semantic ink"
+        );
+        assert!(
+            !scene
+                .primitives()
+                .iter()
+                .any(|primitive| matches!(primitive, tekes_ui_scene::Primitive::Quad(_)))
+        );
+        assert_eq!(
+            field.buttons[1].button.layout().unwrap().frame,
+            button_frame
+        );
+        assert!(field.step(true));
+        assert_eq!(field.value(), 110.);
+        assert!(field.set_value(300.).is_ok());
+        assert!(!field.can_step(true));
     }
 
     #[test]

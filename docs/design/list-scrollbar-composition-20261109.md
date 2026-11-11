@@ -52,3 +52,7 @@ Gallery explicitly gives all four AppHost containers zero outer content padding 
 Navigation uses the existing Gallery `ControlSize::RowHeight` and `Spacing::Micro` row metrics through an explicit ListView opt-in; default ordinary List row metrics remain unchanged. Existing section headers and selectable models retain their IDs. Each header plus its items is an original Stack with Regular gap, and sections share an original Stack with Micro gap; the Workspace heading remains present.
 
 `layout.scroll_area.content_padding` 12pt is the existing TextSurface Field interior contract; Content text uses its existing zero interior padding. AppHost pane boundary spacing is a separate explicit `Spacing::Loose`16 request. Field padding and label insets are unchanged.
+
+## 2026-11-12: shared List resting rows
+
+An unselected row with no pointer interaction has no decorative background. This is the shared List behavior, including Gallery navigation, rather than a consumer color override. Hover and press use the existing parent Surface action-quiet state tokens; selected rows retain selection fill and disabled rows retain disabled foreground. Keyboard focus, clipping, original geometry and the hover/drag-only scrollbar contract are unchanged. Segmented controls keep their own resting chrome. No theme color values are added for this correction.
