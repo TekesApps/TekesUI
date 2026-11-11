@@ -1531,11 +1531,12 @@ impl Component for MenuContent {
             && let Some(content) = state.trigger_content.first_mut()
         {
             let layout = resolve_action_slot(&self.trigger, state.trigger_measured, frame, clip, t);
-            content.arrange(
-                t,
-                layout.content,
-                layout.content.intersection(&clip).unwrap_or_default(),
-            );
+            let body = if self.trigger.uses_toolbar_icon_slot() {
+                super::button::action_content_frame(&self.trigger, layout, state.trigger_measured)
+            } else {
+                layout.content
+            };
+            content.arrange(t, body, body.intersection(&clip).unwrap_or_default());
         }
     }
     fn paint(

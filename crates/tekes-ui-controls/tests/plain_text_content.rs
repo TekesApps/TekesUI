@@ -122,6 +122,116 @@ fn plain_document_has_no_form_geometry_and_parent_clipping_does_not_reshape_it()
 }
 
 #[test]
+fn text_cursor_regions_follow_visible_text_viewports_without_focusing_or_editing() {
+    let mut disabled = TextFieldContent::new("Disabled", "disabled value");
+    disabled.surface.input.disabled = true;
+    let root = Content::new(
+        ComponentId(200),
+        StackContent {
+            model: Stack {
+                axis: Axis::Vertical,
+                gap: 4.,
+            },
+            children: vec![
+                Content::new(ComponentId(201), TextFieldContent::new("Editable", "draft")),
+                Content::new(
+                    ComponentId(202),
+                    TextFieldContent::read_only_content(
+                        "Selectable document",
+                        "read only text",
+                        proposal::TextRole::UiBody,
+                    ),
+                ),
+                Content::new(ComponentId(203), disabled),
+            ],
+            flexible_child: None,
+        },
+    );
+    let mut host = ContentHost::new(root).unwrap();
+    let frame = Rect::new(0., 0., 280., 180.);
+    let clip = Rect::new(16., 8., 190., 92.);
+    host.render(
+        &mut Scene::new(),
+        &mut Text,
+        frame,
+        clip,
+        Theme::LIGHT.into(),
+    )
+    .unwrap();
+
+    let regions = host.text_cursor_regions();
+    let expected = [ComponentId(201), ComponentId(202)]
+        .into_iter()
+        .map(|id| {
+            host.get(id)
+                .unwrap()
+                .component::<TextFieldContent>()
+                .unwrap()
+                .surface
+                .inner
+                .intersection(&clip)
+                .unwrap()
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(regions, expected);
+    assert!(
+        regions
+            .iter()
+            .all(|region| region.intersection(&clip) == Some(*region))
+    );
+    assert!(
+        host.get(ComponentId(203))
+            .unwrap()
+            .component::<TextFieldContent>()
+            .is_some()
+    );
+
+    let before = [ComponentId(201), ComponentId(202)].map(|id| {
+        let input = &host
+            .get(id)
+            .unwrap()
+            .component::<TextFieldContent>()
+            .unwrap()
+            .surface
+            .input;
+        (
+            input.text.clone(),
+            input.anchor,
+            input.caret,
+            input.marked.clone(),
+        )
+    });
+    host.event(&ContentEvent::PointerMove(regions[0].center()));
+    assert_eq!(
+        host.focused(),
+        None,
+        "cursor hover must not acquire text focus"
+    );
+    for (index, id) in [ComponentId(201), ComponentId(202)].into_iter().enumerate() {
+        let input = &host
+            .get(id)
+            .unwrap()
+            .component::<TextFieldContent>()
+            .unwrap()
+            .surface
+            .input;
+        assert_eq!(
+            (
+                input.text.clone(),
+                input.anchor,
+                input.caret,
+                input.marked.clone(),
+            ),
+            before[index],
+            "cursor hover must preserve editor state"
+        );
+    }
+
+    host.set_window_active(false);
+    assert!(host.text_cursor_regions().is_empty());
+}
+
+#[test]
 fn plain_document_delegates_precise_and_wheel_scroll_to_its_single_parent() {
     let text = "History 中文😀 e\u{301}\n".repeat(100);
     let body = Content::new(

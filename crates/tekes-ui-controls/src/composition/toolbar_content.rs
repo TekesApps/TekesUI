@@ -44,6 +44,7 @@ pub struct ToolbarGroup {
     pub visible: bool,
     pub children: Vec<Content>,
     axis: Axis,
+    radio: bool,
 }
 impl ToolbarGroup {
     pub fn new(placement: ToolbarPlacement, children: Vec<Content>) -> Self {
@@ -52,7 +53,35 @@ impl ToolbarGroup {
             visible: true,
             children,
             axis: Axis::Horizontal,
+            radio: false,
         }
+    }
+    /// Declare one externally controlled choice group. The group never owns a
+    /// second selected ID; consumers project their committed source selection.
+    pub fn set_radio(&mut self, radio: bool) {
+        self.radio = radio;
+    }
+    pub fn is_radio(&self) -> bool {
+        self.radio
+    }
+    /// Project an original Button/Menu selection. Radio groups clear siblings;
+    /// non-radio groups preserve other independent checked states.
+    pub fn set_selected_id(&mut self, selected: Option<ComponentId>) -> bool {
+        let mut changed = false;
+        for child in &mut self.children {
+            let id = child.id;
+            if self.radio || selected == Some(id) {
+                let next = selected == Some(id);
+                if let Some(button) = child.component_mut::<Button>() {
+                    changed |= button.button.state.selected != next;
+                    button.button.state.selected = next;
+                } else if let Some(menu) = child.component_mut::<MenuContent>() {
+                    changed |= menu.trigger.button.state.selected != next;
+                    menu.trigger.button.state.selected = next;
+                }
+            }
+        }
+        changed
     }
     pub(super) fn set_axis(&mut self, axis: Axis) {
         self.axis = axis;
@@ -83,6 +112,16 @@ impl Component for ToolbarGroup {
     }
     fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
         action_preparation::ignored_pointer(request)
+    }
+    fn semantics(&self) -> ContentSemantics {
+        ContentSemantics::new(
+            if self.radio {
+                ContentRole::RadioGroup
+            } else {
+                ContentRole::Group
+            },
+            if self.radio { "Toolbar choices" } else { "" },
+        )
     }
     fn active(&self) -> bool {
         self.visible
@@ -565,5 +604,145 @@ impl ToolbarContent {
                 y += height + section_gap;
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod radio_projection_tests {
+    use super::*;
+    #[test]
+    fn radio_projection_has_no_second_selection_and_false_preserves_checked_siblings() {
+        let mut first = Button::new("First");
+        first.button.state.selected = true;
+        let mut menu = MenuContent::new("Family", vec!["Instance".into()]);
+        menu.trigger.button.state.selected = true;
+        let mut group = ToolbarGroup::new(
+            ToolbarPlacement::Navigation,
+            vec![
+                Content::new(ComponentId(1), first),
+                Content::new(ComponentId(2), menu),
+            ],
+        );
+        assert!(!group.is_radio());
+        group.set_selected_id(Some(ComponentId(2)));
+        assert!(
+            group.children[0]
+                .component::<Button>()
+                .unwrap()
+                .button
+                .state
+                .selected
+        );
+        assert!(
+            group.children[1]
+                .component::<MenuContent>()
+                .unwrap()
+                .trigger
+                .button
+                .state
+                .selected
+        );
+        group.set_radio(true);
+        assert!(group.set_selected_id(Some(ComponentId(1))));
+        assert!(
+            group.children[0]
+                .component::<Button>()
+                .unwrap()
+                .button
+                .state
+                .selected
+        );
+        assert!(
+            !group.children[1]
+                .component::<MenuContent>()
+                .unwrap()
+                .trigger
+                .button
+                .state
+                .selected
+        );
+        assert_eq!(group.semantics().role, ContentRole::RadioGroup);
+        group.set_selected_id(Some(ComponentId(2)));
+        assert!(
+            !group.children[0]
+                .component::<Button>()
+                .unwrap()
+                .button
+                .state
+                .selected
+        );
+        assert!(
+            group.children[1]
+                .component::<MenuContent>()
+                .unwrap()
+                .trigger
+                .button
+                .state
+                .selected
+        );
+        group.set_radio(false);
+        group.set_selected_id(Some(ComponentId(1)));
+        assert!(
+            group
+                .children
+                .iter()
+                .all(|child| child.component.semantics().selected)
+        );
+        group.set_selected_id(None);
+        assert!(
+            group
+                .children
+                .iter()
+                .all(|child| child.component.semantics().selected)
+        );
+    }
+    #[test]
+    fn icon_and_dropdown_use_original_toolbar_box_and_centered_decorative_row() {
+        struct Text;
+        impl ButtonTextRenderer for Text {
+            fn measure(&mut self, text: &str, _: proposal::TextRole, _: f32) -> Size {
+                Size::new(text.len() as f32 * 8., 16.)
+            }
+            fn draw(
+                &mut self,
+                _: &mut Scene,
+                _: &str,
+                _: proposal::TextRole,
+                _: Rect,
+                _: crate::ButtonTextAlign,
+                _: Rgba,
+            ) {
+            }
+        }
+        let mut text = Text;
+        let icon = |id, name| Content::new(ComponentId(id), IconContent::new(name).unwrap());
+        let mut single =
+            Button::new(icon(11, "tekes-file-generic")).with_accessible_name("Document");
+        single.variant = crate::paint::ButtonVariant::Toolbar;
+        single.set_toolbar_icon_slot(true);
+        let regular = crate::toolbar::metrics(&mut text, proposal::TextRole::UiBody).box_size;
+        let size = single.measure(&mut text, Size::new(400., 48.)).size;
+        assert_eq!(size, Size::new(regular, regular));
+        let content = Content::new(
+            ComponentId(20),
+            ToolbarGroup::new(
+                ToolbarPlacement::Navigation,
+                vec![icon(21, "tekes-file-generic"), icon(22, "tekes-expand")],
+            ),
+        );
+        let mut menu = MenuContent::new("Documents", Vec::new())
+            .with_trigger_content("Documents", content)
+            .unwrap();
+        menu.trigger.set_toolbar_icon_slot(true);
+        let natural = menu.measure(&mut text, Size::new(400., 48.)).size;
+        let icon_side = proposal::metric("size", "size-icon-standard").unwrap();
+        let gap = proposal::metric("spacing", "space-tight").unwrap();
+        assert_eq!(natural, Size::new(regular + icon_side + gap, regular));
+        let frame = Rect::new(30., 10., natural.width, natural.height);
+        menu.arrange(&mut text, frame, frame);
+        let row = menu.children()[0].component::<ToolbarGroup>().unwrap();
+        assert_eq!(row.children[0].frame().center().y, frame.center().y);
+        assert_eq!(row.children[1].frame().center().y, frame.center().y);
+        assert_eq!(row.children[0].frame().size, row.children[1].frame().size);
     }
 }

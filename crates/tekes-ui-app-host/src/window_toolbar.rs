@@ -11,6 +11,10 @@ pub(crate) enum Source {
     Undo(ComponentSource),
     Title,
     Close(String),
+    Expand {
+        container: String,
+        expanded: bool,
+    },
     Panel {
         instance: u64,
         index: usize,
@@ -540,6 +544,7 @@ pub(crate) fn close_button(target: ComponentId, title: &str) -> Content {
         .with_accessible_name(format!("Close {title}"))
         .with_help(format!("Close {title}"));
     button.variant = tekes_ui_controls::paint::ButtonVariant::Toolbar;
-    button.set_transparent_chrome(true);
+    button.set_selection_fill_only(true);
+    button.set_toolbar_icon_slot(true);
     Content::new(target, button)
 }

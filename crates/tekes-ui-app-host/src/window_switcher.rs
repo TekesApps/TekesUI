@@ -5,8 +5,8 @@ use crate::OthersTab;
 use tekes_ui_controls::{
     ButtonTextRenderer,
     composition::{
-        Button, Content, IconContent, MenuContent, MenuEntry, StackContent, ToolbarCommandBinding,
-        ToolbarGroup, ToolbarHost, ToolbarPlacement, ToolbarRegion, ToolbarRegistration,
+        Button, Content, IconContent, MenuContent, MenuEntry, ToolbarCommandBinding, ToolbarGroup,
+        ToolbarHost, ToolbarPlacement, ToolbarRegion, ToolbarRegistration,
     },
     paint::ButtonVariant,
 };
@@ -32,7 +32,6 @@ struct Item {
 #[derive(Default)]
 pub(super) struct SwitcherState {
     items: Vec<Item>,
-    multiple: bool,
 }
 fn entry(tab: &OthersTab, title: &str, selected: Option<&OthersTab>) -> MenuEntry {
     MenuEntry::Item {
@@ -54,14 +53,15 @@ fn icon(id: ComponentId, name: &str) -> Result<Content> {
         IconContent::new(name).map_err(|e| anyhow::anyhow!("switcher icon: {e:?}"))?,
     ))
 }
-fn control(item: &Item, id: ComponentId, multiple: bool) -> Result<Content> {
+fn control(item: &Item, id: ComponentId) -> Result<Content> {
     let mut button = if item.tab.is_some() {
         let mut button = Button::new(icon(ComponentId(id.0 + 1), &item.icon)?)
             .with_accessible_name(&item.title)
             .with_help(&item.title);
         button.variant = ButtonVariant::Toolbar;
         button.set_selection_fill_only(true);
-        button.button.state.selected = multiple && item.selected;
+        button.set_toolbar_icon_slot(true);
+        button.button.state.selected = item.selected;
         return Ok(Content::new(id, button));
     } else {
         let trigger = if item.key == MORE {
@@ -69,20 +69,13 @@ fn control(item: &Item, id: ComponentId, multiple: bool) -> Result<Content> {
         } else {
             Content::new(
                 ComponentId(id.0 + 1),
-                StackContent {
-                    model: tekes_ui_controls::extended::Stack {
-                        axis: Axis::Horizontal,
-                        gap: 0.,
-                    },
-                    children: vec![
+                ToolbarGroup::new(
+                    ToolbarPlacement::Navigation,
+                    vec![
                         icon(ComponentId(id.0 + 2), &item.icon)?,
-                        Content::new(
-                            ComponentId(id.0 + 3),
-                            IconContent::new("tekes-expand").expect("canonical downward chevron"),
-                        ),
+                        icon(ComponentId(id.0 + 3), "tekes-expand")?,
                     ],
-                    flexible_child: None,
-                },
+                ),
             )
         };
         MenuContent::new(&item.title, Vec::new())
@@ -91,8 +84,9 @@ fn control(item: &Item, id: ComponentId, multiple: bool) -> Result<Content> {
     };
     button.trigger.variant = ButtonVariant::Toolbar;
     button.trigger.set_selection_fill_only(true);
+    button.trigger.set_toolbar_icon_slot(true);
     button.trigger.set_help(Some(item.title.clone()));
-    button.trigger.button.state.selected = multiple && item.selected;
+    button.trigger.button.state.selected = item.selected;
     button
         .set_entries(item.entries.clone())
         .map_err(|e| anyhow::anyhow!("switcher menu: {e:?}"))?;
@@ -167,7 +161,12 @@ impl Host {
                         if items.iter().any(|item| item.key == key) {
                             continue;
                         }
-                        items.push(Item { key, title: group.title.clone(), icon: group.icon.clone(), tab: None,
+                        items.push(Item { key, title: group.title.clone(), icon: {
+                            let current = selected.and_then(|tab| match tab { OthersTab::Container(id) if group.containers.contains(id) => Some(id.as_str()), _ => None })
+                                .or_else(|| group.containers.iter().find(|id| state.others_ids().contains(id)).map(String::as_str));
+                            current.and_then(|id| self.panels.iter().find(|panel| panel.module_id == id)).and_then(|panel| panel.options.switcher_icon.clone())
+                                .unwrap_or_else(|| "tekes-file-generic".into())
+                        }, tab: None,
                             entries: group.containers.iter().filter(|id| state.others_ids().contains(id))
                                 .map(|id| entry(&OthersTab::Container(id.clone()), &title(id), selected)).collect(),
                             selected: selected.is_some_and(|tab| matches!(tab, OthersTab::Container(id) if group.containers.contains(id))),
@@ -181,7 +180,7 @@ impl Host {
                                 .iter()
                                 .find(|panel| panel.module_id == *id)
                                 .and_then(|panel| panel.options.switcher_icon.clone())
-                                .unwrap_or_else(|| "tekes-side-panel".into()),
+                                .unwrap_or_else(|| "tekes-file-generic".into()),
                             selected: selected == Some(&tab),
                             tab: Some(tab),
                             entries: Vec::new(),
@@ -218,7 +217,7 @@ impl Host {
         let mut widths = Vec::new();
         for (index, item) in all.iter().enumerate() {
             widths.push(
-                control(item, slot(index), all.len() > 1)?
+                control(item, slot(index))?
                     .measure(&mut self.text, available)
                     .size
                     .width,
@@ -226,7 +225,7 @@ impl Host {
         }
         // ToolbarContent owns its regular outer pads and its section gap.
         let width = (frame.size.width - regular * 2.).max(0.);
-        let more_width = control(&more(&all), slot(all.len()), true)?
+        let more_width = control(&more(&all), slot(all.len()))?
             .measure(&mut self.text, available)
             .size
             .width;
@@ -248,7 +247,6 @@ impl Host {
         if !hidden.is_empty() {
             visible.push(more(&hidden));
         }
-        let multiple = all.len() > 1;
         let structural = self.presentation_tabs.is_none()
             || self
                 .presentation_switcher
@@ -273,7 +271,7 @@ impl Host {
             let mut bindings = Vec::new();
             for (index, item) in visible.iter().enumerate() {
                 let id = slot(index);
-                children.push(control(item, id, multiple)?);
+                children.push(control(item, id)?);
                 bindings.push(ToolbarCommandBinding {
                     target: id,
                     action: None,
@@ -287,40 +285,72 @@ impl Host {
             host.register(ToolbarRegistration {
                 region: ComponentId(OWNER),
                 order: 0,
-                group: Content::new(
-                    GROUP,
-                    ToolbarGroup::new(ToolbarPlacement::Navigation, children),
-                ),
+                group: Content::new(GROUP, {
+                    let mut group = ToolbarGroup::new(ToolbarPlacement::Navigation, children);
+                    group.set_radio(true);
+                    group.set_selected_id(visible.iter().position(|item| item.selected).map(slot));
+                    group
+                }),
                 bindings,
             })
             .map_err(|e| anyhow::anyhow!("switcher group: {e:?}"))?;
         } else {
             for (index, item) in visible.iter().enumerate() {
-                if self.presentation_switcher.items[index] == *item
-                    && self.presentation_switcher.multiple == multiple
-                {
+                if self.presentation_switcher.items[index] == *item {
                     continue;
                 }
                 if item.tab.is_some() {
                     host.update_component::<Button>(GROUP, slot(index), |button| {
-                        button.button.state.selected = multiple && item.selected
+                        if let Some(image) =
+                            tekes_ui_controls::composition::Component::children_mut(button)
+                                .and_then(|children| children.first_mut())
+                                .and_then(|content| content.component_mut::<IconContent>())
+                        {
+                            image
+                                .set_glyph(&item.icon)
+                                .expect("Container icons validated before mount");
+                        }
                     })
-                    .map_err(|e| anyhow::anyhow!("switcher selection: {e:?}"))?;
+                    .map_err(|e| anyhow::anyhow!("switcher icon: {e:?}"))?;
                 } else {
                     let mut result = Ok(());
                     host.update_component::<MenuContent>(GROUP, slot(index), |menu| {
-                        menu.trigger.button.state.selected = multiple && item.selected;
-                        result = menu.set_entries(item.entries.clone());
+                        if let Some(group) =
+                            tekes_ui_controls::composition::Component::children_mut(menu)
+                                .and_then(|children| children.first_mut())
+                                .and_then(|content| content.component_mut::<ToolbarGroup>())
+                            && let Some(image) = group
+                                .children
+                                .first_mut()
+                                .and_then(|content| content.component_mut::<IconContent>())
+                        {
+                            image
+                                .set_glyph(&item.icon)
+                                .expect("Container icons validated before mount");
+                        }
+                        if result.is_ok() {
+                            result = menu.set_entries(item.entries.clone());
+                        }
                     })
                     .map_err(|e| anyhow::anyhow!("switcher menu update: {e:?}"))?;
                     result.map_err(|e| anyhow::anyhow!("switcher entries: {e:?}"))?;
                 }
             }
         }
-        self.presentation_switcher = SwitcherState {
-            items: visible,
-            multiple,
-        };
+        if !structural
+            && self
+                .presentation_switcher
+                .items
+                .iter()
+                .map(|item| item.selected)
+                .ne(visible.iter().map(|item| item.selected))
+        {
+            host.update_component::<ToolbarGroup>(GROUP, GROUP, |group| {
+                group.set_selected_id(visible.iter().position(|item| item.selected).map(slot));
+            })
+            .map_err(|e| anyhow::anyhow!("switcher radio selection: {e:?}"))?;
+        }
+        self.presentation_switcher = SwitcherState { items: visible };
 
         Ok(())
     }
@@ -467,6 +497,54 @@ mod tests {
         );
         native_pointer(host, point, false);
         paint(host, width);
+    }
+    #[test]
+    fn t52_container_icon_fallback_and_declared_icon_follow_identity_through_exchange() {
+        let local = |id| {
+            LocalContainer::new(id, Content::new(ComponentId(1), TextContent::new(id)))
+                .unwrap()
+                .title(id)
+        };
+        let members: Vec<Container> = vec![
+            local("focus").switcher_icon("tekes-note").into(),
+            local("other").into(),
+        ];
+        let mut host = Host::from_containers(
+            members,
+            false,
+            None,
+            Some(
+                PresentationOptions::new("focus").others(OthersOptions::new(vec!["other".into()])),
+            ),
+        );
+        host.mount_columns();
+        let before: Vec<_> = host
+            .panels
+            .iter()
+            .map(|panel| (panel.module_id.clone(), panel.instance))
+            .collect();
+        let items = host.switcher_items();
+        assert_eq!(
+            items[0].icon, "tekes-file-generic",
+            "undeclared container uses existing ordinary document fallback"
+        );
+        host.presentation
+            .as_mut()
+            .unwrap()
+            .promote("other")
+            .unwrap();
+        let items = host.switcher_items();
+        assert_eq!(
+            items[0].icon, "tekes-note",
+            "former Focus carries its own declaration into Others"
+        );
+        assert_eq!(
+            host.panels
+                .iter()
+                .map(|panel| (panel.module_id.clone(), panel.instance))
+                .collect::<Vec<_>>(),
+            before
+        );
     }
     #[test]
     fn first_family_click_paints_then_releases_selects_once_and_cancel_keeps_content() {
@@ -645,7 +723,7 @@ mod tests {
         assert!(host.presentation_switcher.items.iter().find(|item|item.key==MORE).unwrap().entries.iter().any(|entry|matches!(entry,MenuEntry::Submenu { label,entries,.. } if label=="Documents" && entries.len()==2)));
     }
     #[test]
-    fn one_declared_family_is_momentary_even_with_one_remaining_instance() {
+    fn one_declared_family_keeps_radio_selection_with_one_remaining_instance() {
         let members = ["focus", "first", "second"]
             .into_iter()
             .map(|id| {
@@ -682,14 +760,14 @@ mod tests {
             .component::<MenuContent>()
             .unwrap();
         assert!(
-            !menu.trigger.button.state.selected,
-            "single destination uses momentary presentation"
+            menu.trigger.button.state.selected,
+            "the current destination remains selected in its radio group"
         );
         click_with_paint(&mut host, "Documents", 600.);
         assert!(target(&host, "first").1.size.width > 0.);
     }
     #[test]
-    fn list_members_keep_their_own_close_toolbar_and_focus_is_not_closable() {
+    fn aggregate_list_has_no_close_all_or_internal_close_and_focus_is_not_closable() {
         let mut host = fixture();
         host.presentation
             .as_mut()
@@ -724,19 +802,15 @@ mod tests {
                 Theme::LIGHT.into(),
             )
             .unwrap();
-            let close = panel
-                .mounted_toolbar
-                .host
-                .semantics()
-                .into_iter()
-                .find(|node| node.node.semantics.name == format!("Close {}", panel.module_id))
-                .unwrap();
-            assert!(close.node.frame.min_y() >= panel.bounds.min_y());
-            assert!(close.node.frame.max_x() <= panel.bounds.max_x());
             assert!(
-                close.node.frame.center().x > panel.bounds.center().x,
-                "close belongs to its container's trailing corner"
+                panel
+                    .mounted_toolbar
+                    .host
+                    .semantics()
+                    .into_iter()
+                    .all(|node| node.node.semantics.name != format!("Close {}", panel.module_id))
             );
+            assert!(panel.geometry.close.is_none());
         }
     }
     #[test]

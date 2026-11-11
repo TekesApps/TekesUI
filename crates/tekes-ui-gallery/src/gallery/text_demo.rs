@@ -775,6 +775,16 @@ impl TextDemo {
     pub(crate) fn visible_frame_at(&self, index: usize) -> Option<Rect> {
         self.surfaces.get(index)?.visible_frame()
     }
+    pub(crate) fn text_cursor_frames(&self) -> Vec<Rect> {
+        if !self.window_active {
+            return Vec::new();
+        }
+        self.surfaces
+            .iter()
+            .filter(|surface| !surface.input.disabled)
+            .filter_map(|surface| surface.visible_frame())
+            .collect()
+    }
     pub fn measure_search_height(&mut self, text: &mut TextEngine) -> f32 {
         let Some(surface) = self.surfaces.first_mut() else {
             return 0.0;
@@ -1905,7 +1915,7 @@ mod tests {
                 .expect("real attached Field focus edge");
             assert_eq!(
                 edge.border_width,
-                proposal::metric("stroke", "c-focus-width").unwrap()
+                proposal::metric("stroke", "stroke-rule").unwrap()
             );
             let ring = edge.rect;
             assert_eq!(
@@ -2408,7 +2418,7 @@ mod tests {
                 initial = Some((surface.outer, surface.inner));
             }
             assert_readonly_scene(&scene, surface, theme.into(), gallery.text.scale());
-            assert!(scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q)if q.rect == surface.outer && q.border_width == proposal::metric("stroke", "c-focus-width").unwrap()
+            assert!(scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q)if q.rect == surface.outer && q.border_width == if theme.is_increased() { proposal::metric("stroke", "c-focus-width").unwrap() } else { proposal::metric("stroke", "stroke-rule").unwrap() }
                 && q.border_color==Palette::from(theme).color("border-focused").unwrap())));
             assert_eq!(gallery.text_view.clipboard_selection(), Some(copy.clone()));
             let native = gallery

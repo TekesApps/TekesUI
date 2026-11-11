@@ -16,6 +16,7 @@ pub struct Point {
 /// Native pointer shape, independent of AppKit types.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum CursorIcon {
+    IBeam,
     ResizeHorizontal,
     ResizeVertical,
 }

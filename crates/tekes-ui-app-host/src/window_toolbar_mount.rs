@@ -305,6 +305,12 @@ impl Host {
                         }
                     }
                     Source::Title => Err(anyhow::anyhow!("title has no command binding")),
+                    Source::Expand {
+                        container,
+                        expanded,
+                    } => self
+                        .toggle_others_expansion(&container, expanded)
+                        .map(|changed| exchanged = changed),
                     Source::Close(id) => {
                         if self.composition_in_progress() {
                             Err(anyhow::anyhow!("composition-in-progress"))
@@ -682,7 +688,9 @@ impl Host {
                             owner: *index,
                             presenter,
                         }),
-                        Source::Close(_) => Some(ToolbarTarget::Contribution { presenter, group }),
+                        Source::Close(_) | Source::Expand { .. } => {
+                            Some(ToolbarTarget::Contribution { presenter, group })
+                        }
                         Source::Navigation(_) => Some(ToolbarTarget::Navigation),
                         Source::Visibility(side) => Some(ToolbarTarget::Visibility(*side)),
                         _ => None,
@@ -790,12 +798,28 @@ impl Host {
         };
         Some((*index, presenter))
     }
+    fn toolbar_control_visible(&self, target: ToolbarTarget) -> bool {
+        self.toolbar_container(target)
+            .and_then(|index| {
+                self.panels[index]
+                    .mounted_toolbar
+                    .host
+                    .content_host()
+                    .get(Self::toolbar_control(target))
+            })
+            .is_some_and(|node| {
+                node.frame().size.width > 0.
+                    && node.frame().size.height > 0.
+                    && node
+                        .visible()
+                        .is_some_and(|clip| clip.size.width > 0. && clip.size.height > 0.)
+            })
+    }
     pub(super) fn toolbar_available(&self, target: ToolbarTarget) -> bool {
         if self.presentation.is_some() || matches!(target, ToolbarTarget::Contribution { .. }) {
-            if let Some((owner, presenter)) = self.original_panel_binding(target) {
+            if let Some((owner, _)) = self.original_panel_binding(target) {
                 return self.panels[owner].failed.is_none()
-                    && self.panels[presenter].bounds.size.width > 0.
-                    && self.panels[presenter].bounds.size.height > 0.
+                    && self.toolbar_control_visible(target)
                     && self
                         .navigation
                         .as_ref()
@@ -804,8 +828,8 @@ impl Host {
             return match target {
                 ToolbarTarget::Contribution { presenter, group } => {
                     self.panels.get(presenter).is_some_and(|panel| {
-                        panel.bounds.size.width > 0.
-                            && panel.mounted_toolbar.source(group).is_some()
+                        panel.mounted_toolbar.source(group).is_some()
+                            && self.toolbar_control_visible(target)
                     })
                 }
                 ToolbarTarget::Navigation => self
@@ -857,12 +881,10 @@ impl Host {
         if self.presentation.is_some() || matches!(target, ToolbarTarget::Contribution { .. }) {
             return self
                 .original_panel_binding(target)
-                .is_some_and(|(owner, presenter)| {
+                .is_some_and(|(owner, _)| {
                     let panel = &self.panels[owner];
-                    let visible = &self.panels[presenter];
                     panel.failed.is_none()
-                        && visible.bounds.size.width > 0.
-                        && visible.bounds.size.height > 0.
+                        && self.toolbar_control_visible(target)
                         && (self
                             .navigation
                             .as_ref()

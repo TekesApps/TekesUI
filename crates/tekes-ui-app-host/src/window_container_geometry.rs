@@ -142,7 +142,7 @@ impl Host {
     ) -> Result<ContainerGeometry> {
         use crate::window_toolbar::Contents;
         use crate::{ContainerToolbarHost as Host, ContainerToolbarPosition as Position};
-        use tekes_ui_controls::composition::{ComponentId, Content};
+        use tekes_ui_controls::composition::Content;
         let declarations = if self.presentation.is_some() {
             self.presentation_toolbar_declarations()
         } else {
@@ -231,38 +231,9 @@ impl Host {
         if position.is_some() && axis == Axis::Horizontal {
             thickness = ToolbarControl::window().row_height(&mut self.text);
         }
-        let closable = self
-            .presentation
-            .as_ref()
-            .is_some_and(|state| state.others_ids().contains(&self.panels[index].module_id));
-        let close = if closable {
-            let title = self.panels[index]
-                .options
-                .title
-                .as_deref()
-                .unwrap_or(&self.panels[index].module_id);
-            // Measure the same natural ToolbarContent/Group wrapper that is
-            // actually mounted; measuring the Button alone misses its row.
-            let button = crate::window_toolbar::close_button(ComponentId(1), title);
-            let mut content = Content::new(
-                ComponentId(0),
-                tekes_ui_controls::composition::ToolbarContent::new(vec![Content::new(
-                    ComponentId(3),
-                    tekes_ui_controls::composition::ToolbarGroup::new(
-                        tekes_ui_controls::composition::ToolbarPlacement::SecondaryAction,
-                        vec![button],
-                    ),
-                )]),
-            );
-            content
-                .measure(
-                    &mut self.text,
-                    tekes_ui_scene::Size::new(100_000., 100_000.),
-                )
-                .size
-        } else {
-            tekes_ui_scene::Size::default()
-        };
+        // Layout navigation Close lives in the Window toolbar, not the internal
+        // business allocation. No internal Close strip or extra body inset.
+        let close = tekes_ui_scene::Size::default();
         // List owns complete, translated member allocations. The window band
         // was already excluded by List's viewport; clipping must not resize a
         // partially scrolled member or make its chrome sticky.
@@ -499,7 +470,7 @@ mod tests {
                 assert!(first.x < second.x);
             }
             let geometry = host.panels[1].geometry;
-            assert!(!overlap(geometry.toolbar.unwrap(), geometry.close.unwrap()));
+            assert!(geometry.close.is_none());
             let owner = host.toolbar_target_at(first).unwrap();
             host.dispatch_toolbar(owner, &ContentEvent::PointerDown(first))
                 .unwrap();
@@ -522,11 +493,10 @@ mod tests {
                 .unwrap();
             assert_eq!(calls.get(), 1);
             // Close is a normal original Button, with no synthetic semantic parts.
-            let close = host.panels[1]
-                .mounted_toolbar
-                .host
-                .semantics()
-                .into_iter()
+            let close = host
+                .panels
+                .iter()
+                .flat_map(|panel| panel.mounted_toolbar.host.semantics())
                 .find(|node| node.node.semantics.name == "Close Owner")
                 .unwrap()
                 .node
@@ -571,7 +541,7 @@ mod tests {
         ] {
             let (mut host, calls) = fixture(Some(position));
             let target = ToolbarTarget::Contribution {
-                presenter: 1,
+                presenter: 0,
                 group: ComponentId(3_000_010),
             };
             let key = |key, down| ContentKeyEvent {
@@ -1029,10 +999,7 @@ mod tests {
             after.toolbar.unwrap().min_y(),
             before.toolbar.unwrap().min_y() - 20.
         );
-        assert_eq!(
-            after.close.unwrap().min_y(),
-            before.close.unwrap().min_y() - 20.
-        );
+        assert!(before.close.is_none() && after.close.is_none());
         assert_eq!(
             panel.viewport, viewport_before,
             "pure origin translation does not advance the Process Layout viewport"
@@ -1066,27 +1033,14 @@ mod tests {
             host.toolbar_target_at(outside).is_none(),
             "clipped part of the translated original toolbar is not a hit target"
         );
-        let close = panel
-            .mounted_toolbar
-            .host
-            .semantics()
-            .into_iter()
-            .find(|node| node.node.semantics.name == "Close Remote")
-            .unwrap();
-        let outside_close = Point::new(close.node.frame.center().x, panel.clip.min_y() - 1.);
         assert!(
-            !close
-                .node
-                .visible
-                .is_some_and(|visible| visible.contains(outside_close))
-        );
-        assert_ne!(
-            host.toolbar_target_at(outside_close),
-            Some(ToolbarTarget::Contribution {
-                presenter: 1,
-                group: ComponentId(3_000_010)
-            }),
-            "the window may own this location, but the clipped member's Close cannot"
+            panel
+                .mounted_toolbar
+                .host
+                .semantics()
+                .into_iter()
+                .all(|node| node.node.semantics.name != "Close Remote"),
+            "aggregate List members do not create an internal Close strip"
         );
         let visible = control.visible().unwrap().center();
         assert_eq!(

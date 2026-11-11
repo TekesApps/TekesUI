@@ -1,5 +1,22 @@
 # TekesUI AppHost 框架设计
 
+## 2026-11-11：图标组状态与 Others 展开导航（#229 / #245）
+
+本节为用户最新确认的增量，取代下方旧批次“Others Close 固定在内部右上”的位置规则；旧记录只保留设计沿革。实现和原生验收尚未完成，不能由设计声明推定通过。
+
+Window Toolbar 继续按 Nav / Focus / Others 实际区域组织。Others 的内容类型图标组成一个共享选择组：`radio=true` 表示同组互斥，`radio=false` 表示无该互斥约束；本场景使用 true，选中身份仍来自原当前内容，不复制第二份选中状态。普通单图标按钮使用与常规 icon button 相同的自然尺寸、hover/pressed/checked 状态和 token；family 图标与 chevron 水平居中，额外宽度只来自实际箭头和既有间距，不任意拉宽命中背景。
+
+每个 Container（包括当前 Focus 和 Others 成员）沿现有 `switcher_icon` 声明自己的图标；无声明统一采用现有图标库 `tekes-file-generic`。图标随稳定 Container 身份交换，不存储第二份角色图标；family trigger 采用该组当前实例（未选中组采用首个可见实例）的图标加 chevron，菜单仍使用原实例标题和 checked 身份。原 family 配置保留其分组身份，不覆盖实例图标。聚合 List 不提供一键 Close／Expand；其成员仍按单个 Container 合同处理。
+
+Others 布局导航独立于内容选择组，按 `[expand/collapse] [close] [on/off]` 排列在对应 Window 段。Close 为原当前可关闭的单个 Others Container 派发，Focus 不显示 Close；聚合 List 不凭一个 Close 关闭所有成员。业务 Toolbar 的 `.host` 仍只决定业务项呈现位置，不隐式把这些 Window 导航动作复制到内部 Toolbar。关闭按钮迁出后不保留空白内部 Close 条。
+
+Expand 将 Others 当前显示区域向左扩展到 Focus+Others 的总宽度，Nav 不受影响；Focus 隐藏而非关闭，保留内容实例、草稿、导航绑定和原布局比例。Collapse 恢复原 Focus/Other 列与 splitter 比例，不以重建组件实现恢复。显隐、关闭、交换和窄宽情况下保留可达的恢复入口，并按原协议撤销已失效的 capture/菜单/AX 目标；不得把原容器身份替换成一个新的聚合容器。具体状态转换复用既有 PresentationState，并对照 Swift Tekes 的实际 expand/collapse 实现。
+
+Window switch、内容图标与 dropdown 的 hover 必须沿原输入链到达控件并可见；不在 AppHost 单独补颜色。Textbox 的插入点、鼠标 IBeam 和焦点边框由 #245 单独核对：Gold7 G2 微对比、G3 精细且清晰的焦点边界、G5 输入保护分别留代码与实际体验证据。统一 Theme 契约继续作为状态色值真源。
+
+验收只覆盖本次受影响路径：选择组互斥与身份、普通 icon/dropdown 布局、hover/leave、展开收起/显示隐藏/单项关闭、splitter恢复与旧输入目标失效；复用未变输入和原生证据，保留真实失败，不启动 VoiceOver。
+
+
 ## 2026-11-10: Window Toolbar partition correction (#229)
 
 Window Toolbar keeps the actual Nav / Focus / Others column allocations. A Container's host=Window presents its title, navigation and business commands in its current column partition, never in a global mixed command pool. The partition follows splitter bounds, visibility and Focus exchange while original Source/command ownership stays unchanged. Host=Container continues to use its declared internal edge. Others single-instance icons and family icon menus start at the leading edge of the Others partition, to the right of its splitter; their measured width reserves space from business commands in that same partition. Hidden-column restore actions remain reachable at a visible partition edge.
