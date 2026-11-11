@@ -7727,6 +7727,10 @@
               "crates/tekes-ui-gallery/src/gallery/workbench.rs": {
                 "actual": "0186f4f73cf77781af44a2882dd72c9712249af8415871d24379500191176a98",
                 "expected": "f4694bbcb9c5f04176a70fb202dc8f30ec7b1198157bc04a3401c0eed100cbe0"
+              },
+              "examples/composition-consumer/tests/toolbar_theme.rs": {
+                "actual": "ca5d9222b9f0099148163e89708a368de062207dc0b5bf18324773fb40481736",
+                "expected": "b81542fc6e3891c430d4e54e0e69acd42e364a442840ac9898598e22f4407557"
               }
             },
             "scope": "Selected actual two visual toolbar paths and witnesses; corrected public and unchanged Gallery/strict retain separate actual run identities, not full Host/#127 proof",
@@ -69834,7 +69838,7 @@
     "examples/composition-consumer/tests/text_area_theme.rs": "42898d8e1e5c587c906b02ed4e43aae01e58b5948e42a433e8a810e29c5cc754",
     "examples/composition-consumer/tests/text_field_theme.rs": "d061b3d8f86d4100bdd27381ab7d26b53ea908d40509d71cb00515b26104a3f1",
     "examples/composition-consumer/tests/text_theme.rs": "ee5dc3e3a6051c56f59b5d990d30367c200e00fc8e754aa5e632a2c02f53a6ef",
-    "examples/composition-consumer/tests/toolbar_theme.rs": "b81542fc6e3891c430d4e54e0e69acd42e364a442840ac9898598e22f4407557",
+    "examples/composition-consumer/tests/toolbar_theme.rs": "ca5d9222b9f0099148163e89708a368de062207dc0b5bf18324773fb40481736",
     "examples/composition-consumer/tests/tree_theme.rs": "65b3de0d08a695de0a4bbeb4f7597e200410e93f4205e74254fcb3a1abf2d1a9",
     "scripts/component-context.py": "cf614906eb19f6e3ca176c4613107ea6fc8c16b8d31aeea0696ce292723a4c74",
     "scripts/generate-component-capabilities.py": "06d7ae778214e2b92036c61dcbf71c2ad641635adf8ad90cb0220a3095bb7088"

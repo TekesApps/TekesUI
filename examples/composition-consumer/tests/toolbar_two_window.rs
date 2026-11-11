@@ -127,8 +127,33 @@ fn original_owner_restore_authenticates_window_mount_and_visibility_without_part
     assert!(a.restore_focus(owner, true));
     let mut keyboard_focus = Scene::new();
     a.render(&mut keyboard_focus, &mut ta, Theme::LIGHT.into()).unwrap();
-    assert_ne!(pointer_focus, keyboard_focus, "restoration preserves original focus-visible presentation");
-    assert!(a.drain_commands().is_empty());
+    assert_eq!(
+        pointer_focus, keyboard_focus,
+        "toolbar focus modality does not add a visual border"
+    );
+    assert_eq!(a.content_host().focused(), Some(COMMAND));
+    assert!(
+        a.semantics()
+            .iter()
+            .find(|node| node.node.id == COMMAND)
+            .unwrap()
+            .parts
+            .iter()
+            .any(|(_, part)| part.semantics.name == "Execute" && part.focused)
+    );
+    assert!(
+        a.drain_commands().is_empty(),
+        "restoring focus must not invoke a command"
+    );
+    a.event(&ContentEvent::Key {
+        key: ControlKey::Enter,
+        down: true,
+    });
+    a.event(&ContentEvent::Key {
+        key: ControlKey::Enter,
+        down: false,
+    });
+    assert_command(&mut a, 101, 1);
     a.set_window_active(false);
     assert!(!a.restore_focus(owner, false));
     a.set_window_active(true);
