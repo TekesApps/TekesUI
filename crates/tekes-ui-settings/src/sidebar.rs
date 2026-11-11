@@ -118,6 +118,14 @@ impl SettingsSidebar {
             back_button.leading_content_inset = Some(0.);
             back_button.content_alignment =
                 tekes_ui_tokens::proposal::layout::MainAxisDistribution::Start;
+            let mut search_button = Button::new(Content::new(
+                ComponentId(11),
+                IconContent::new("tekes-search")
+                    .map_err(|error| anyhow::anyhow!("Settings search icon: {error:?}"))?,
+            ))
+            .with_accessible_name("搜索设置")
+            .with_help("搜索设置");
+            search_button.set_toolbar_icon_slot(true);
             Content::new(
                 ComponentId(3),
                 StackContent {
@@ -135,17 +143,7 @@ impl SettingsSidebar {
                                 },
                                 children: vec![
                                     Content::new(ComponentId(4), back_button),
-                                    Content::new(
-                                        ComponentId(10),
-                                        Button::new(Content::new(
-                                            ComponentId(11),
-                                            IconContent::new("tekes-search").map_err(|error| {
-                                                anyhow::anyhow!("Settings search icon: {error:?}")
-                                            })?,
-                                        ))
-                                        .with_accessible_name("搜索设置")
-                                        .with_help("搜索设置"),
-                                    ),
+                                    Content::new(ComponentId(10), search_button),
                                 ],
                                 flexible_child: Some(ComponentId(4)),
                             },

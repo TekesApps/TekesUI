@@ -1977,15 +1977,17 @@ mod pinned_header_tests {
         sidebar: &mut tekes_ui_settings::SettingsSidebar,
         text: &mut crate::text::Text,
         frame: Rect,
-    ) {
+    ) -> Scene {
+        let mut scene = Scene::new();
         sidebar
             .render(
-                &mut Scene::new(),
+                &mut scene,
                 &mut tekes_ui_controls::composition::WithIconRenderer::new(text, &mut HeaderIcons),
                 frame,
                 Theme::LIGHT.into(),
             )
             .unwrap();
+        scene
     }
     #[test]
     fn header_search_expands_in_place_and_keeps_original_editor_with_scrolling_list() {
@@ -2172,7 +2174,30 @@ mod pinned_header_tests {
             Some("reading/advanced".into())
         );
         assert!(sidebar.cancel_search().unwrap());
-        draw(&mut sidebar, &mut text);
+        let collapsed = render_header(&mut sidebar, &mut text, frame);
+        let chip = sidebar.host.get(ComponentId(10)).unwrap();
+        let button = chip.component::<tekes_ui_controls::Button>().unwrap();
+        assert!(
+            button.button.state.focused && button.button.state.focus_visible,
+            "search keeps logical and keyboard focus after Escape"
+        );
+        let back = sidebar.host.get(ComponentId(4)).unwrap().frame();
+        let arrow = sidebar.host.get(ComponentId(8)).unwrap().frame();
+        assert_eq!(chip.frame().center().y, back.center().y);
+        assert_eq!(
+            arrow.min_x(),
+            sidebar.host.get(ComponentId(1)).unwrap().frame().min_x()
+        );
+        let focus_ink = Palette::from(Theme::LIGHT).color("border-focused").unwrap();
+        assert!(
+            !collapsed
+                .primitives()
+                .iter()
+                .any(|primitive| matches!(primitive,
+                tekes_ui_scene::Primitive::Quad(quad)
+                    if quad.border_width > 0. && quad.border_color == focus_ink)),
+            "the restored search icon must not paint a clipped focus border"
+        );
         let reading = sidebar
             .host
             .get(ComponentId(103))
