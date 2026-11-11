@@ -39,6 +39,8 @@ mod window_accessibility;
 mod window_columns;
 #[path = "window_container_geometry.rs"]
 mod window_container_geometry;
+#[path = "window_creation.rs"]
+mod window_creation;
 #[path = "window_presentation.rs"]
 mod window_presentation;
 #[path = "window_settings.rs"]
@@ -292,6 +294,9 @@ struct Panel {
     failed: Option<String>,
     pid: Option<u32>,
     module_id: String,
+    worker_id: String,
+    dispose_when_closed: bool,
+    retired: bool,
     launch_tx: Option<SyncSender<Result<Pending, String>>>,
     acceptance_commands: Option<Vec<(u64, u64)>>,
 }
@@ -311,6 +316,9 @@ impl Panel {
             id,
             instance,
             local: None,
+            worker_id: module_id.clone(),
+            dispose_when_closed: false,
+            retired: false,
             module_id,
             launch_tx: Some(tx),
             acceptance_commands: None,
@@ -339,7 +347,7 @@ impl Panel {
         }
     }
     fn start(&mut self, wake: WindowWake) {
-        if self.local.is_some() {
+        if self.retired || self.local.is_some() {
             return;
         }
         let Some(tx) = self.launch_tx.take() else {
@@ -347,7 +355,7 @@ impl Panel {
         };
         let work = self.inbox.clone();
         let control = self.process.clone();
-        let module_id = self.module_id.clone();
+        let module_id = self.worker_id.clone();
         std::thread::spawn(move || {
             let run = || -> Result<()> {
                 let mut c = ModuleProcess::spawn_with_control(&module_id, control)?;
@@ -398,8 +406,40 @@ impl Panel {
             }
         });
     }
+    fn next_pending(&mut self) -> Option<Result<Pending, String>> {
+        if self.retired {
+            None
+        } else {
+            self.rx.try_recv().ok()
+        }
+    }
+    fn retire(&mut self, mut unregister: impl FnMut(ImageId)) {
+        self.retired = true;
+        self.mounted_toolbar.host.blur();
+        self.mounted_toolbar = crate::window_toolbar::MountedToolbar::new();
+        if let Some(local) = &mut self.local {
+            local.cancel();
+        }
+        self.local = None;
+        self.process.cancel();
+        self.inbox
+            .closed
+            .store(true, std::sync::atomic::Ordering::Release);
+        self.inbox.cv.notify_all();
+        self.inbox.queue.lock().unwrap().clear();
+        self.launch_tx = None;
+        // Dropping the original receiver releases already queued frame leases;
+        // a producer completing concurrently can only fail its original send.
+        self.rx = mpsc::sync_channel(1).1;
+        self.toolbar.clear();
+        if let Some(image) = self.image.take() {
+            unregister(image);
+        }
+        self.content_icons = Default::default();
+        self.logically_visible = false;
+    }
     fn request(&mut self, kind: InputKind, x: f32, y: f32) -> Result<()> {
-        if self.failed.is_some() || self.launch_tx.is_some() {
+        if self.retired || self.failed.is_some() || self.launch_tx.is_some() {
             return Ok(());
         }
         if kind == InputKind::Command {
@@ -423,6 +463,9 @@ impl Panel {
         self.enqueue(InputKind::Command, 0., 0., Some(id))
     }
     fn enqueue(&mut self, kind: InputKind, x: f32, y: f32, command: Option<u64>) -> Result<()> {
+        if self.retired {
+            return Ok(());
+        }
         if let Some(local) = &mut self.local {
             if let Some(command) = command {
                 local.command(command)?;
@@ -635,6 +678,7 @@ pub struct Host {
     navigation_title: Option<String>,
     module_ids: Vec<String>,
     column_definitions: Option<Vec<crate::Column>>,
+    container_factories: Vec<crate::container_factory::RegisteredFactory>,
     panels: Vec<Panel>,
     renderer: Option<Renderer>,
     text: Text,
@@ -764,6 +808,7 @@ impl Host {
             navigation_title: None,
             module_ids,
             column_definitions: None,
+            container_factories: Vec::new(),
             panels: Vec::new(),
             renderer: None,
             text: Text::new(),
@@ -820,31 +865,38 @@ impl Host {
         host.presentation = state;
         host
     }
+    fn mount_column(&self, index: usize, column: crate::Column) -> Panel {
+        let mut panel = Panel::new(index as u32, column.id().to_owned());
+        panel.options = column.options().clone();
+        if self
+            .presentation
+            .as_ref()
+            .is_some_and(|state| state.nav_bar_id() != Some(panel.module_id.as_str()))
+        {
+            panel.content_padding = tekes_ui_tokens::Spacing::Loose.value();
+        }
+        if let Some(padding) = panel.options.content_padding {
+            panel.content_padding = padding;
+        }
+        match column {
+            crate::Column::Container(container) => {
+                panel.toolbar = container.toolbar.clone();
+                panel.local = Some(container);
+                panel.launch_tx = None;
+            }
+            crate::Column::ProcessContainer(container) => {
+                panel.worker_id = container.definition.id.into()
+            }
+        }
+        panel
+    }
     pub(super) fn mount_columns(&mut self) -> bool {
         if let Some(columns) = self.column_definitions.take() {
-            self.panels =
-                columns
-                    .into_iter()
-                    .enumerate()
-                    .map(|(i, c)| {
-                        let mut panel = Panel::new(i as u32, c.id().to_owned());
-                        panel.options = c.options().clone();
-                        if self.presentation.as_ref().is_some_and(|state| {
-                            state.nav_bar_id() != Some(panel.module_id.as_str())
-                        }) {
-                            panel.content_padding = tekes_ui_tokens::Spacing::Loose.value();
-                        }
-                        if let Some(padding) = panel.options.content_padding {
-                            panel.content_padding = padding;
-                        }
-                        if let crate::Column::Container(container) = c {
-                            panel.toolbar = container.toolbar.clone();
-                            panel.local = Some(container);
-                            panel.launch_tx = None;
-                        }
-                        panel
-                    })
-                    .collect();
+            self.panels = columns
+                .into_iter()
+                .enumerate()
+                .map(|(i, column)| self.mount_column(i, column))
+                .collect();
             return true;
         }
         false
@@ -1024,6 +1076,7 @@ impl Host {
         self.inner.min_pane = MIN_COLUMN;
         let mut scene = Scene::new();
         let mut toolbar_scene = Scene::new();
+        let mut toolbar_overlays = Scene::new();
         let mut presentation_scene = Scene::new();
         let size = w.size();
         let whole = Rect::new(0., 0., size.width as f32, size.height as f32);
@@ -1104,7 +1157,7 @@ impl Host {
         let mut acks = Vec::new();
         let renderer = self.renderer.as_mut().unwrap();
         for p in &mut self.panels {
-            while let Ok(result) = p.rx.try_recv() {
+            while let Some(result) = p.next_pending() {
                 match result {
                     Err(e) => {
                         eprintln!("PANEL_FAILED id={} {e}", p.id);
@@ -1268,7 +1321,7 @@ impl Host {
                     panel
                         .mounted_toolbar
                         .host
-                        .render(&mut toolbar_scene, text, palette)
+                        .render_layers(&mut toolbar_scene, &mut toolbar_overlays, text, palette)
                         .map_err(|e| anyhow::anyhow!("container toolbar paint: {e:?}"))
                 },
             )?;
@@ -1280,6 +1333,7 @@ impl Host {
             .any(|panel| panel.mounted_toolbar.host.needs_render())
         {
             toolbar_scene = Scene::new();
+            toolbar_overlays = Scene::new();
             for &index in &toolbar_order {
                 let panel = &mut self.panels[index];
                 with_content_icons(
@@ -1290,7 +1344,7 @@ impl Host {
                         panel
                             .mounted_toolbar
                             .host
-                            .render(&mut toolbar_scene, text, palette)
+                            .render_layers(&mut toolbar_scene, &mut toolbar_overlays, text, palette)
                             .map_err(|e| anyhow::anyhow!("container toolbar focus paint: {e:?}"))
                     },
                 )?;
@@ -1426,7 +1480,12 @@ impl Host {
             }
         }));
         w.set_cursor_regions(cursor_regions);
-        self.append_toolbar_layers(&mut scene, &toolbar_scene, &presentation_scene);
+        self.append_toolbar_layers(
+            &mut scene,
+            &toolbar_scene,
+            &presentation_scene,
+            &toolbar_overlays,
+        );
         let renderer_begin = diagnostic.map(|_| std::time::Instant::now());
         let drawable_before = diagnostic.map(|_| w.drawable_serial());
         let renderer = self.renderer.as_mut().unwrap();
@@ -1807,15 +1866,16 @@ impl Host {
         Ok(())
     }
     /// Append the original hosts in their final native renderer painter order.
-    fn append_toolbar_layers(&self, scene: &mut Scene, toolbar: &Scene, presentation: &Scene) {
-        // Ordinary switcher content must paint above the Window regions' ground.
-        // An open original business menu keeps its existing window-level priority.
-        let layers = if self.open_toolbar().is_some() {
-            [presentation, toolbar]
-        } else {
-            [toolbar, presentation]
-        };
-        for layer in layers {
+    fn append_toolbar_layers(
+        &self,
+        scene: &mut Scene,
+        toolbar: &Scene,
+        presentation: &Scene,
+        overlays: &Scene,
+    ) {
+        // Region ground stays behind the selector even while a business menu is
+        // open. Only the original host overlay pass is promoted above it.
+        for layer in [toolbar, presentation, overlays] {
             for primitive in layer.primitives() {
                 scene.push(primitive.clone());
             }
@@ -2413,35 +2473,13 @@ impl Host {
     }
 }
 
-pub(crate) fn run(
-    module_ids: Vec<String>,
-    columns: Option<Vec<crate::Column>>,
-    acceptance: bool,
-    navigation: Option<NavigationOptions>,
-    settings: Option<crate::settings::SettingsConfiguration>,
-    presentation: Option<crate::PresentationOptions>,
-    theme: Theme,
-) -> Result<()> {
+pub(crate) fn run(mut app: crate::AppWindow, acceptance: bool) -> Result<()> {
+    let settings = app.settings.take();
+    let mut host = app.into_host(acceptance);
     ensure!(
-        presentation.is_some()
-            || (1..=3).contains(&columns.as_ref().map_or(module_ids.len(), Vec::len)),
+        host.presentation.is_some() || (1..=3).contains(&host.module_ids.len()),
         "expected one, two or three preselected modules"
     );
-    let mut host = if let Some(columns) = columns {
-        if presentation.is_some() {
-            Host::from_containers(
-                columns.into_iter().map(crate::Container::from).collect(),
-                acceptance,
-                navigation,
-                presentation,
-            )
-        } else {
-            Host::from_columns(columns, acceptance, navigation)
-        }
-    } else {
-        Host::new(module_ids, acceptance, navigation)
-    }
-    .with_theme(theme);
     host.mount_initial_containers();
     let has_settings = settings.is_some();
     let settings_window_acceptance = acceptance

@@ -2381,10 +2381,34 @@ impl ContentHost {
         clip: Rect,
         palette: Palette,
     ) -> Result<(), CompositionError> {
+        self.render_into(scene, None, text, frame, clip, palette)
+    }
+    /// Arrange once and paint the original body and overlays into separate layers.
+    pub fn render_layers(
+        &mut self,
+        scene: &mut Scene,
+        overlays: &mut Scene,
+        text: &mut dyn ButtonTextRenderer,
+        frame: Rect,
+        clip: Rect,
+        palette: Palette,
+    ) -> Result<(), CompositionError> {
+        self.render_into(scene, Some(overlays), text, frame, clip, palette)
+    }
+    fn render_into(
+        &mut self,
+        scene: &mut Scene,
+        overlays: Option<&mut Scene>,
+        text: &mut dyn ButtonTextRenderer,
+        frame: Rect,
+        clip: Rect,
+        palette: Palette,
+    ) -> Result<(), CompositionError> {
         let mut requested = false;
         let active = self.window_active;
         let result = self.render_frame(
             scene,
+            overlays,
             &mut FrameTextAdapter(text, Some(&mut requested), active),
             frame,
             clip,
@@ -2446,17 +2470,21 @@ impl ContentHost {
                 .try_import_clip_shapes(table, Default::default())
                 .map_err(CompositionError::SceneFragment)?;
         }
-        self.paint_current_frame(scene, text, frame, clip, palette)
+        self.paint_current_frame(scene, None, text, frame, clip, palette)
     }
     fn render_frame(
         &mut self,
         scene: &mut Scene,
+        mut overlays: Option<&mut Scene>,
         text: &mut dyn ButtonTextRenderer,
         frame: Rect,
         clip: Rect,
         palette: Palette,
     ) -> Result<(), CompositionError> {
         if let Some(error) = scene.composition_error() {
+            return Err(CompositionError::SceneFragment(error));
+        }
+        if let Some(error) = overlays.as_deref().and_then(Scene::composition_error) {
             return Err(CompositionError::SceneFragment(error));
         }
         if self.reading_transaction {
@@ -2485,6 +2513,11 @@ impl ContentHost {
             scene
                 .try_import_clip_shapes(table, Default::default())
                 .map_err(CompositionError::SceneFragment)?;
+            if let Some(overlays) = overlays.as_deref_mut() {
+                overlays
+                    .try_import_clip_shapes(table, Default::default())
+                    .map_err(CompositionError::SceneFragment)?;
+            }
         }
         self.reveal_clock.pending = false;
         self.observe_item_reveal();
@@ -2496,11 +2529,12 @@ impl ContentHost {
             self.scope().focus_ids(&mut ids);
             self.focus(ids.first().copied(), true);
         }
-        self.paint_current_frame(scene, text, frame, clip, palette)
+        self.paint_current_frame(scene, overlays, text, frame, clip, palette)
     }
     fn paint_current_frame(
         &mut self,
         scene: &mut Scene,
+        overlays: Option<&mut Scene>,
         text: &mut dyn ButtonTextRenderer,
         frame: Rect,
         clip: Rect,
@@ -2514,6 +2548,12 @@ impl ContentHost {
                 .expect("validated inherited Surface");
         }
         self.root.paint_except(scene, text, theme, paint_id);
+        if overlays.is_some()
+            && let Some(error) = scene.composition_error()
+        {
+            return Err(CompositionError::SceneFragment(error));
+        }
+        let scene = overlays.unwrap_or(scene);
         if self.modal.is_none() {
             self.root.paint_overlays(scene, text, theme);
         }
@@ -4415,6 +4455,7 @@ pub struct ScrollContent {
     viewport: Rect,
     clip: Rect,
     scrollbar_pointer: Option<bool>,
+    pointer_hovered: bool,
     content_padding: f32,
     last_frame: Option<std::time::Duration>,
     reading: Option<content_reading::ContentReadingState>,
@@ -4433,6 +4474,7 @@ impl ScrollContent {
             viewport: Rect::default(),
             clip: Rect::default(),
             scrollbar_pointer: None,
+            pointer_hovered: false,
             content_padding: 0.,
             last_frame: None,
             reading: None,
@@ -4444,6 +4486,7 @@ impl ScrollContent {
         self.scroll.set_scrollbar_visibility(visible, visible);
         if !visible {
             self.scrollbar_pointer = None;
+            self.pointer_hovered = false;
         }
         self
     }
@@ -4475,6 +4518,35 @@ impl ScrollContent {
             .intersection(&self.clip)
             .unwrap_or_default()
     }
+    fn scrollbar_presentation_visible(&self, vertical: bool) -> bool {
+        self.scroll.scrollbar_visible(vertical)
+            && (self.pointer_hovered || self.scrollbar_pointer == Some(vertical))
+    }
+    fn update_pointer_hover(&mut self, point: Point, in_curve: bool) -> bool {
+        let inside = in_curve && self.viewport.contains(point) && self.clip.contains(point);
+        let changed = self.pointer_hovered != inside;
+        self.pointer_hovered = inside;
+        changed
+    }
+    fn pointer_move(&mut self, point: Point, in_curve: bool) -> ContentResponse {
+        let hover_changed = self.update_pointer_hover(point, in_curve);
+        if let Some(vertical) = self.scrollbar_pointer {
+            let track = self.scrollbar_hit_track(vertical);
+            let moved = self
+                .scroll
+                .pointer_drag(point, track, Self::minimum_thumb());
+            ContentResponse {
+                consumed: true,
+                changed: moved || hover_changed,
+                ..Default::default()
+            }
+        } else {
+            ContentResponse {
+                changed: hover_changed,
+                ..Default::default()
+            }
+        }
+    }
     fn minimum_thumb() -> f32 {
         proposal::metric("size", "size-row-height").expect("existing scrollbar minimum")
     }
@@ -4489,7 +4561,7 @@ impl ScrollContent {
         let ContentEvent::PointerDown(point) = routed.as_ref() else {
             return None;
         };
-        if !event.is_primary_pointer() || !self.clip.contains(*point) {
+        if !event.is_primary_pointer() || !self.pointer_hovered || !self.clip.contains(*point) {
             return None;
         }
         [true, false].into_iter().find_map(|vertical| {
@@ -4515,6 +4587,21 @@ impl ScrollContent {
             reading.observe_manual_history();
         }
     }
+    fn content_clip(&self, frame: Rect, clip: Rect) -> Rect {
+        let mut child_clip = self
+            .scroll
+            .geometry(frame, Some(clip))
+            .visible_viewport_rect()
+            .unwrap_or_default();
+        if self.scroll.scrollbar_visible(true) {
+            let edge = self
+                .scrollbar_track(true)
+                .inset(-tekes_ui_tokens::Spacing::Micro.value())
+                .min_x();
+            child_clip.size.width = (child_clip.max_x().min(edge) - child_clip.min_x()).max(0.);
+        }
+        child_clip
+    }
     fn arrange_content(
         &mut self,
         text: &mut dyn ButtonTextRenderer,
@@ -4523,16 +4610,8 @@ impl ScrollContent {
         gutter: f32,
         width: f32,
     ) -> Rect {
-        let geometry = self.scroll.geometry(frame, Some(clip));
-        let origin = geometry.content_origin();
-        let mut child_clip = geometry.visible_viewport_rect().unwrap_or_default();
-        if self.scroll.scrollbar_visible(true) {
-            let edge = self
-                .scrollbar_track(true)
-                .inset(-tekes_ui_tokens::Spacing::Micro.value())
-                .min_x();
-            child_clip.size.width = (child_clip.max_x().min(edge) - child_clip.min_x()).max(0.);
-        }
+        let origin = self.scroll.geometry(frame, Some(clip)).content_origin();
+        let child_clip = self.content_clip(frame, clip);
         let mut y = origin.y + gutter;
         for c in &mut self.children {
             let h = c.measure(text, Size::new(width, 1e8)).size.height;
@@ -4551,6 +4630,27 @@ struct PreparedScrollContentPointer {
 }
 impl action_preparation::OriginalActionDecision for PreparedScrollContentPointer {}
 impl Component for ScrollContent {
+    fn host_reveal_local_clip(&self) -> Option<Rect> {
+        // Publish only the local boundary; the planner intersects the moving
+        // ancestor clip, just as arrange does. Freezing that ancestor here would
+        // prevent an initially clipped nested viewport from being revealed.
+        Some(self.content_clip(self.viewport, self.viewport))
+    }
+    fn pointer_event_in_region(&mut self, event: &ContentEvent, inside: bool) -> ContentResponse {
+        if !event.is_primary_pointer() {
+            return event.deliver(self);
+        }
+        match event.routing_event().as_ref() {
+            ContentEvent::PointerMove(point) => self.pointer_move(*point, inside),
+            ContentEvent::PointerUp(point) => {
+                let hover_changed = self.update_pointer_hover(*point, inside);
+                let mut response = event.deliver(self);
+                response.changed |= hover_changed;
+                response
+            }
+            _ => event.deliver(self),
+        }
+    }
     fn reading_scroll_source(&self) -> bool {
         true
     }
@@ -4625,6 +4725,7 @@ impl Component for ScrollContent {
         if self.viewport != frame || self.clip != frame.intersection(&clip).unwrap_or_default() {
             self.scroll.pointer_up();
             self.scrollbar_pointer = None;
+            self.pointer_hovered = false;
         }
         self.backing_scale = text.backing_scale();
         if let Some(m) = text.motion_context() {
@@ -4702,7 +4803,7 @@ impl Component for ScrollContent {
         theme: ContentTheme,
     ) {
         for vertical in [true, false] {
-            if self.scroll.scrollbar_visible(vertical) {
+            if self.scrollbar_presentation_visible(vertical) {
                 let thumb = self.scroll.thumb(
                     vertical,
                     self.scrollbar_track(vertical),
@@ -4740,18 +4841,7 @@ impl Component for ScrollContent {
                     ContentResponse::default()
                 }
             }
-            ContentEvent::PointerMove(point) if self.scrollbar_pointer.is_some() => {
-                let vertical = self.scrollbar_pointer.unwrap();
-                let track = self.scrollbar_hit_track(vertical);
-                let changed = self
-                    .scroll
-                    .pointer_drag(*point, track, Self::minimum_thumb());
-                ContentResponse {
-                    consumed: true,
-                    changed,
-                    ..Default::default()
-                }
-            }
+            ContentEvent::PointerMove(point) => self.pointer_move(*point, true),
             ContentEvent::PointerUp(_) if self.scrollbar_pointer.is_some() => {
                 self.scroll.pointer_up();
                 self.scrollbar_pointer = None;
@@ -4785,6 +4875,7 @@ impl Component for ScrollContent {
             ContentEvent::Cancel => {
                 self.scroll.cancel();
                 self.scrollbar_pointer = None;
+                self.pointer_hovered = false;
                 self.last_frame = None;
                 if let Some(reading) = &mut self.reading {
                     reading.fence_momentum();
@@ -5124,5 +5215,152 @@ mod shared_collection_seam_tests {
             nodes.iter().map(|n| n.id).collect::<Vec<_>>(),
             [ComponentId(1), ComponentId(3), ComponentId(4)]
         );
+    }
+}
+
+#[cfg(test)]
+mod list_scrollbar_hover_tests {
+    use super::*;
+
+    #[derive(Debug)]
+    struct TallItems;
+    impl Component for TallItems {
+        fn measure(&mut self, _: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
+            MeasuredChild::new(Size::new(available.width, 320.))
+        }
+    }
+
+    struct Text;
+    impl ButtonTextRenderer for Text {
+        fn measure(&mut self, _: &str, _: proposal::TextRole, width: f32) -> Size {
+            Size::new(width, 16.)
+        }
+        fn draw(
+            &mut self,
+            _: &mut Scene,
+            _: &str,
+            _: proposal::TextRole,
+            _: Rect,
+            _: ButtonTextAlign,
+            _: tekes_ui_tokens::Rgba,
+        ) {
+        }
+    }
+
+    const ROOT: ComponentId = ComponentId(8800);
+    const ITEMS: ComponentId = ComponentId(8801);
+    const ROW: ComponentId = ComponentId(8802);
+    const FRAME: Rect = Rect::new(0., 0., 120., 80.);
+
+    fn list(show_scrollbar: bool) -> ContentHost {
+        let mut scroll = ListContent::scrollable("List", ITEMS, vec![Content::new(ROW, TallItems)]);
+        if !show_scrollbar {
+            scroll = scroll.scrollbar(false);
+        }
+        let mut host = ContentHost::new(Content::new(ROOT, scroll)).unwrap();
+        host.set_action_events(true);
+        host
+    }
+
+    fn render(host: &mut ContentHost) -> Scene {
+        let mut scene = Scene::new();
+        host.render(
+            &mut scene,
+            &mut Text,
+            FRAME,
+            FRAME,
+            Palette::from(tekes_ui_tokens::Theme::LIGHT),
+        )
+        .unwrap();
+        scene
+    }
+
+    fn scrollbar_quads(scene: &Scene) -> usize {
+        scene
+            .primitives()
+            .iter()
+            .filter(|primitive| matches!(primitive, tekes_ui_scene::Primitive::Quad(_)))
+            .count()
+    }
+
+    fn point_in_items(host: &ContentHost) -> Point {
+        let frame = host.get(ROW).unwrap().frame();
+        Point::new(frame.min_x() + 2., frame.min_y() + 2.)
+    }
+
+    #[test]
+    fn list_scrollbar_shows_on_host_pointer_hover_and_hides_after_leave() {
+        let mut host = list(true);
+        assert_eq!(scrollbar_quads(&render(&mut host)), 0);
+        let track = host
+            .get(ROOT)
+            .unwrap()
+            .component::<ScrollContent>()
+            .unwrap()
+            .scrollbar_track(true);
+        assert!(
+            !host
+                .event(&ContentEvent::PointerDown(track.center()))
+                .consumed
+        );
+        let inside = point_in_items(&host);
+        assert!(host.event(&ContentEvent::PointerMove(inside)).changed);
+        assert_eq!(scrollbar_quads(&render(&mut host)), 1);
+        assert!(
+            host.event(&ContentEvent::PointerMove(Point::new(500., 500.)))
+                .changed
+        );
+        assert_eq!(scrollbar_quads(&render(&mut host)), 0);
+    }
+
+    #[test]
+    fn hidden_list_scrollbar_stays_hidden_even_when_pointer_hovers() {
+        let mut host = list(false);
+        assert_eq!(scrollbar_quads(&render(&mut host)), 0);
+        let inside = point_in_items(&host);
+        assert!(host.event(&ContentEvent::PointerMove(inside)).changed);
+        assert_eq!(scrollbar_quads(&render(&mut host)), 0);
+        let track = host
+            .get(ROOT)
+            .unwrap()
+            .component::<ScrollContent>()
+            .unwrap()
+            .scrollbar_track(true);
+        assert!(
+            !host
+                .event(&ContentEvent::PointerDown(track.center()))
+                .consumed
+        );
+    }
+
+    #[test]
+    fn list_scrollbar_stays_visible_for_captured_drag_outside_until_release() {
+        let mut host = list(true);
+        let _ = render(&mut host);
+        let inside = point_in_items(&host);
+        host.event(&ContentEvent::PointerMove(inside));
+        let _ = render(&mut host);
+        let thumb = {
+            let scroll = host
+                .get(ROOT)
+                .unwrap()
+                .component::<ScrollContent>()
+                .unwrap();
+            scroll.scroll.thumb(
+                true,
+                scroll.scrollbar_track(true),
+                ScrollContent::minimum_thumb(),
+            )
+        };
+        let down = host.event(&ContentEvent::PointerDown(thumb.center()));
+        assert!(down.capture_pointer);
+        assert_eq!(host.pointer_capture().unwrap().0, ROOT);
+        let outside = Point::new(500., 500.);
+        host.event(&ContentEvent::PointerMove(outside));
+        assert_eq!(scrollbar_quads(&render(&mut host)), 1);
+        host.event(&ContentEvent::PointerMove(inside));
+        host.event(&ContentEvent::PointerUp(outside));
+        assert!(host.pointer_capture().is_none());
+        assert_eq!(scrollbar_quads(&render(&mut host)), 0);
     }
 }

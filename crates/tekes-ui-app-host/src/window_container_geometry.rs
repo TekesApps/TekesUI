@@ -212,7 +212,7 @@ impl Host {
                     ComponentId(1),
                     tekes_ui_controls::composition::TextContent::new(title),
                 ),
-                Contents::Close(_) => continue,
+                Contents::Close(_) | Contents::CreationMenu(_) => continue,
             };
             // Use the original action geometry; constraints affect main-axis
             // overflow later, never an invented vertical cross-axis estimate.

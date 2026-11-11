@@ -139,7 +139,17 @@ fn retained_toolbar_control_themes_keep_surface_packets_and_original_command_ide
                 }
             }
             if state == "rest" {
-                assert!(scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q) if q.fill.a==0.&&q.border_color==palette.color("border-focused").unwrap())));
+                assert_eq!(host.focused(), Some(ROOT));
+                assert!(
+                    parts(&host)
+                        .iter()
+                        .any(|part| part.semantics.name == "Save" && part.focused)
+                );
+                assert!(
+                    !scene.primitives().iter().any(|p| matches!(p, Primitive::Quad(q)
+                        if q.fill.a == 0. && q.border_color == palette.color("border-focused").unwrap())),
+                    "toolbar focus retains its owner without drawing a focus border"
+                );
             }
             assert!(
                 host.drain_action_records().is_empty(),

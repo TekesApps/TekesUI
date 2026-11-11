@@ -332,7 +332,7 @@ impl Gallery {
             self.workbench.clear_focus(i);
             if reverse {
                 self.navigation_search.blur();
-                self.navigation_focus = Some(self.page);
+                self.set_navigation_focus(Some(self.page));
                 self.sidebar.reveal(self.page);
                 return Some(Change::REDRAW);
             }
@@ -359,14 +359,14 @@ impl Gallery {
                     self.reveal_focused_frame(frame);
                 } else {
                     self.navigation_search.blur();
-                    self.navigation_focus = Some(self.page);
+                    self.set_navigation_focus(Some(self.page));
                     self.sidebar.reveal(self.page);
                 }
             } else {
                 if let Page::Workbench(i) = self.page {
                     self.workbench.clear_focus(i);
                 }
-                self.navigation_focus = None;
+                self.set_navigation_focus(None);
                 self.navigation_search.focus_field();
             }
             return Some(Change::REDRAW);
@@ -712,7 +712,7 @@ impl Gallery {
                 self.page,
                 self.hover,
                 self.navigation_focus,
-                &self.sidebar,
+                &mut self.sidebar,
             );
             self.navigation_search.build_search_clipped(
                 &mut ctx,
@@ -858,7 +858,7 @@ impl Gallery {
             || self.viewport.needs_animation()
             || self.navigation_search.needs_animation()
             || (self.content_page() == Page::Icons && self.icon_search.needs_animation())
-            || self.sidebar.scroll.needs_animation()
+            || self.sidebar.needs_animation()
             || matches!(self.page,Page::Workbench(i) if self.workbench.needs_animation(i))
             || match self.content_page() {
                 Page::TextEditing => self.editor.needs_animation(),
@@ -879,9 +879,8 @@ impl Gallery {
         let scene3d_dirty =
             self.scene3d_visible() && self.scene3d.advance(dt, self.workbench.reduced);
         let component_frame_pending = self.text.motion_frame_requested();
-        let mut dirty = self.viewport.tick(dt)
-            | self.sidebar.scroll.tick(dt)
-            | self.navigation_search.animate(dt);
+        let mut dirty =
+            self.viewport.tick(dt) | self.sidebar.tick(dt) | self.navigation_search.animate(dt);
         if self.content_page() == Page::Icons {
             dirty |= self.icon_search.animate(dt);
         }
@@ -1047,7 +1046,7 @@ impl Gallery {
         self.workbench.apply_reduced_motion(reduced);
         let mut dirty = self.motion.set_system_reduced_motion(reduced);
         dirty |= self.viewport.set_reduced_motion(reduced);
-        dirty |= self.sidebar.scroll.set_reduced_motion(reduced);
+        dirty |= self.sidebar.set_reduced_motion(reduced);
         dirty |= self
             .editor
             .set_reduced_motion_with_time(reduced, self.motion_now);
@@ -1288,7 +1287,8 @@ impl Gallery {
         self.page_offsets[self.page.index()] = self.viewport.offset;
         self.viewport.cancel();
         self.page = p;
-        self.navigation_focus = None;
+        self.sidebar.set_selected(p);
+        self.set_navigation_focus(None);
         self.sidebar.reveal(p);
         self.layout_page_extent();
         self.viewport.offset = self.page_offsets[p.index()];
@@ -1308,7 +1308,7 @@ impl Gallery {
     }
 
     fn end_scroll_gestures(&mut self) {
-        self.sidebar.scroll.end_gesture();
+        self.sidebar.end_gesture();
         self.viewport.end_gesture();
         self.editor.end_scroll_gesture();
         self.text_view.end_scroll_gesture();
@@ -1382,19 +1382,28 @@ impl Gallery {
                     event.momentum_phase,
                     ScrollPhase::Ended | ScrollPhase::Cancelled
                 );
-            let area = if owner == ScrollOwner::Sidebar {
-                &mut self.sidebar.scroll
+            if owner == ScrollOwner::Sidebar {
+                self.sidebar
+                    .scroll_event(tekes_ui_controls::composition::ContentEvent::Scroll {
+                        position: point,
+                        delta: Point::new(x, y),
+                        precise: event.precise,
+                        begin: event.phase == ScrollPhase::Began,
+                        end,
+                        momentum: event.momentum_phase != ScrollPhase::None,
+                        time: event.timestamp,
+                    })
+                    .changed
             } else {
-                &mut *self.viewport
-            };
-            area.wheel_at(
-                Point::new(x, y),
-                event.precise,
-                event.phase == ScrollPhase::Began,
-                end,
-                event.momentum_phase != ScrollPhase::None,
-                event.timestamp,
-            )
+                self.viewport.wheel_at(
+                    Point::new(x, y),
+                    event.precise,
+                    event.phase == ScrollPhase::Began,
+                    end,
+                    event.momentum_phase != ScrollPhase::None,
+                    event.timestamp,
+                )
+            }
         };
         if matches!(
             event.momentum_phase,
@@ -1413,6 +1422,36 @@ impl Gallery {
         }
         self.hover = hover;
         true
+    }
+
+    fn set_navigation_focus(&mut self, page: Option<Page>) {
+        self.navigation_focus = page;
+        if let Some(page) = page {
+            self.sidebar.focus_page(page);
+        } else {
+            self.sidebar.clear_focus();
+        }
+    }
+
+    fn sync_sidebar_response(
+        &mut self,
+        response: tekes_ui_controls::composition::ContentResponse,
+        allow_activate: bool,
+    ) -> Change {
+        let selected = self.sidebar.selected_page();
+        if allow_activate
+            && response.activated
+            && let Some(page) = selected
+        {
+            return self.apply(Command::Page(page));
+        }
+        if response.changed
+            && let Some(page) = selected
+            && page != self.page
+        {
+            return self.select_page(page);
+        }
+        redraw_if(response.changed)
     }
 
     /// 处理输入事件。
@@ -1485,11 +1524,11 @@ impl Gallery {
             self.navigation_search.set_window_active(*active);
             if !active {
                 self.scene3d.blur();
-                self.navigation_focus = None;
+                self.set_navigation_focus(None);
                 self.end_scroll_gestures();
                 self.motion.deactivate();
                 self.static_text.blur();
-                self.sidebar.scroll.cancel();
+                self.sidebar.cancel();
                 self.viewport.cancel();
             }
             return Change::REDRAW;
@@ -1499,6 +1538,33 @@ impl Gallery {
             Event::Mouse(m) => Some(to_point(m.position)),
             _ => None,
         };
+        let mut sidebar_pointer_changed = false;
+        if let Event::Mouse(mouse) = event {
+            let point = to_point(mouse.position);
+            match mouse.kind {
+                MouseEventKind::Moved | MouseEventKind::Entered | MouseEventKind::Exited => {
+                    let response = self.sidebar.pointer_move(point);
+                    if self.sidebar.pointer_capture().is_some() {
+                        return self.sync_sidebar_response(response, false);
+                    }
+                    let hover = self
+                        .sidebar
+                        .row_frames()
+                        .into_iter()
+                        .find_map(|(page, frame)| frame.contains(point).then_some(page.index()));
+                    sidebar_pointer_changed = response.changed | self.set_hover(hover);
+                }
+                MouseEventKind::Dragged { .. } if self.sidebar.pointer_capture().is_some() => {
+                    let response = self.sidebar.pointer_move(point);
+                    return self.sync_sidebar_response(response, false);
+                }
+                MouseEventKind::Up { .. } if self.sidebar.pointer_capture().is_some() => {
+                    let response = self.sidebar.pointer_up(point);
+                    return self.sync_sidebar_response(response, true);
+                }
+                _ => {}
+            }
+        }
         let search_hit = point.is_some_and(|p| {
             self.sidebar.bounds().contains(p) && navigation::search_rect().contains(p)
         });
@@ -1527,14 +1593,14 @@ impl Gallery {
                     button.state.focus_visible = false;
                 }
             }
-            self.navigation_focus = None;
+            self.set_navigation_focus(None);
         }
         if let Event::Mouse(m) = event
             && matches!(m.kind, MouseEventKind::Down { .. })
             && !search_hit
         {
             self.navigation_search.blur();
-            self.navigation_focus = None;
+            self.set_navigation_focus(None);
         }
         if let Event::Key(key) = event
             && key.kind == KeyEventKind::Down
@@ -1555,7 +1621,7 @@ impl Gallery {
                 let target = current.or_else(|| visible_pages.first().copied());
                 if let Some(target) = target {
                     self.navigation_search.blur();
-                    self.navigation_focus = Some(target);
+                    self.set_navigation_focus(Some(target));
                     self.sidebar.reveal(target);
                     return Change::REDRAW;
                 }
@@ -1584,7 +1650,7 @@ impl Gallery {
                 && let Some(frame) = self.workbench.focus_edge(i, true)
             {
                 self.navigation_search.blur();
-                self.navigation_focus = None;
+                self.set_navigation_focus(None);
                 self.reveal_focused_frame(frame);
                 return Change::REDRAW;
             } else {
@@ -1598,7 +1664,7 @@ impl Gallery {
         {
             if key.key_code == 48 {
                 if key.modifiers.shift {
-                    self.navigation_focus = None;
+                    self.set_navigation_focus(None);
                     self.navigation_search.focus_field();
                     return Change::REDRAW;
                 }
@@ -1607,7 +1673,7 @@ impl Gallery {
                         self.select_page(focused_page);
                     }
                     if let Some(frame) = pages::motion::focus_edge(&mut self.motion, false) {
-                        self.navigation_focus = None;
+                        self.set_navigation_focus(None);
                         self.reveal_focused_frame(frame);
                         return Change::REDRAW;
                     }
@@ -1619,12 +1685,12 @@ impl Gallery {
                     if self.content_page() == Page::Motion
                         && let Some(frame) = pages::motion::focus_edge(&mut self.motion, false)
                     {
-                        self.navigation_focus = None;
+                        self.set_navigation_focus(None);
                         self.reveal_focused_frame(frame);
                         return Change::REDRAW;
                     }
                     if let Some(frame) = self.workbench.focus_edge(i, false) {
-                        self.navigation_focus = None;
+                        self.set_navigation_focus(None);
                         self.reveal_focused_frame(frame);
                         return Change::REDRAW;
                     }
@@ -1635,13 +1701,13 @@ impl Gallery {
                     Page::Text | Page::TextEditing | Page::ScrollArea | Page::Icons
                 ) && let Some(frame) = self.leaf_focus_edge(leaf_page, false)
                 {
-                    self.navigation_focus = None;
+                    self.set_navigation_focus(None);
                     self.reveal_focused_frame(frame);
                     return Change::REDRAW;
                 }
                 // Pages with no mounted keyboard targets are skipped cleanly
                 // instead of trapping Tab on the sidebar item.
-                self.navigation_focus = None;
+                self.set_navigation_focus(None);
                 self.navigation_search.focus_field();
                 return Change::REDRAW;
             } else if matches!(key.key_code, 125 | 126) {
@@ -1659,7 +1725,7 @@ impl Gallery {
                     };
                     if let Some(next_page) = next.and_then(|index| pages.get(index)).copied() {
                         self.select_page(next_page);
-                        self.navigation_focus = Some(next_page);
+                        self.set_navigation_focus(Some(next_page));
                         self.sidebar.reveal(next_page);
                         return Change::REDRAW;
                     }
@@ -1670,25 +1736,25 @@ impl Gallery {
                     if !key.is_repeat {
                         self.apply(Command::Page(focused_page));
                     }
-                    self.navigation_focus = Some(focused_page);
+                    self.set_navigation_focus(Some(focused_page));
                     return Change::REDRAW;
                 }
                 if self.page != focused_page {
                     self.apply(Command::Page(focused_page));
-                    self.navigation_focus = Some(focused_page);
+                    self.set_navigation_focus(Some(focused_page));
                     return Change::REDRAW;
                 }
                 if let Page::Workbench(i) = focused_page
                     && let Some(frame) = self.workbench.focus_edge(i, false)
                 {
-                    self.navigation_focus = None;
+                    self.set_navigation_focus(None);
                     self.reveal_focused_frame(frame);
                     return Change::REDRAW;
                 }
                 if self.content_page_for(focused_page) == Page::Motion
                     && let Some(frame) = pages::motion::focus_edge(&mut self.motion, false)
                 {
-                    self.navigation_focus = None;
+                    self.set_navigation_focus(None);
                     self.reveal_focused_frame(frame);
                     return Change::REDRAW;
                 }
@@ -1702,7 +1768,7 @@ impl Gallery {
         {
             self.navigation_search.refresh(&mut self.text);
             self.sidebar.set_query(self.navigation_search.query());
-            return redraw_if(changed);
+            return redraw_if(changed || sidebar_pointer_changed);
         }
         if let Some(change) = self.handle_leaf_tab(event) {
             return change;
@@ -1725,11 +1791,7 @@ impl Gallery {
                 }
             }
             if let Some(consumed) = self.handle_static_text_pointer(event) {
-                return if consumed {
-                    Change::REDRAW
-                } else {
-                    Change::NONE
-                };
+                return redraw_if(consumed || sidebar_pointer_changed);
             }
         }
         if self.scene3d_visible()
@@ -1772,10 +1834,10 @@ impl Gallery {
                     let reverse = matches!(event, Event::Key(key) if key.modifiers.shift);
                     if reverse {
                         self.navigation_search.blur();
-                        self.navigation_focus = Some(Page::Workbench(i));
+                        self.set_navigation_focus(Some(Page::Workbench(i)));
                         self.sidebar.reveal(Page::Workbench(i));
                     } else {
-                        self.navigation_focus = None;
+                        self.set_navigation_focus(None);
                         self.navigation_search.focus_field();
                     }
                     return Change::REDRAW;
@@ -1791,7 +1853,13 @@ impl Gallery {
                 MouseEventKind::Down {
                     button: MouseButton::Left,
                     ..
-                } if self.sidebar.pointer_down(p) => return Change::REDRAW,
+                } if self.sidebar.content_clip().contains(p) => {
+                    let response = self.sidebar.pointer_down(p);
+                    let change = self.sync_sidebar_response(response, true);
+                    if response.consumed || response.capture_pointer || change != Change::NONE {
+                        return change;
+                    }
+                }
                 MouseEventKind::Down {
                     button: MouseButton::Left,
                     ..
@@ -1802,9 +1870,6 @@ impl Gallery {
                     self.icon_search.blur();
                     return Change::REDRAW;
                 }
-                MouseEventKind::Dragged { .. } if self.sidebar.scroll.dragging_axis().is_some() => {
-                    return redraw_if(self.sidebar.pointer_drag(p));
-                }
                 MouseEventKind::Dragged { .. } if self.viewport.dragging_axis().is_some() => {
                     return redraw_if(self.viewport.pointer_drag(p));
                 }
@@ -1812,7 +1877,6 @@ impl Gallery {
                     self.viewport.pointer_up();
                     return Change::NONE;
                 }
-                MouseEventKind::Up { .. } => self.sidebar.scroll.pointer_up(),
                 _ => {}
             }
         }
@@ -1855,7 +1919,7 @@ impl Gallery {
             };
             if route && let Some(changed) = self.icon_search.handle(event, point) {
                 self.icon_search.refresh(&mut self.text);
-                return redraw_if(changed);
+                return redraw_if(changed || sidebar_pointer_changed);
             }
         }
         if matches!(
@@ -1889,7 +1953,7 @@ impl Gallery {
                 editor.refresh(&mut self.text);
                 let reveal = !matches!(event, Event::CaretBlink | Event::Mouse(_));
                 let revealed = changed && reveal && self.reveal_text_caret();
-                return redraw_if(changed || revealed);
+                return redraw_if(changed || revealed || sidebar_pointer_changed);
             }
         }
         if self.content_page() == Page::Motion {
@@ -1936,48 +2000,35 @@ impl Gallery {
                 let reverse = matches!(event, Event::Key(key) if key.modifiers.shift);
                 if reverse {
                     self.navigation_search.blur();
-                    self.navigation_focus = Some(self.page);
+                    self.set_navigation_focus(Some(self.page));
                     self.sidebar.reveal(self.page);
                 } else {
-                    self.navigation_focus = None;
+                    self.set_navigation_focus(None);
                     self.navigation_search.focus_field();
                 }
                 return Change::REDRAW;
             }
         }
         let mut change = match event {
-            Event::Mouse(m) => {
-                let hit = self.sidebar.hit(to_point(m.position));
-                match m.kind {
-                    MouseEventKind::Moved | MouseEventKind::Entered => {
-                        redraw_if(self.set_hover(hit))
-                    }
-                    MouseEventKind::Dragged { .. } => {
-                        redraw_if(self.viewport.pointer_drag(to_point(m.position)))
-                    }
-                    MouseEventKind::Up { .. } => {
-                        self.viewport.pointer_up();
-                        Change::NONE
-                    }
-                    MouseEventKind::Exited => redraw_if(self.set_hover(None)),
-                    MouseEventKind::Down {
-                        button: MouseButton::Left,
-                        ..
-                    } => {
-                        if self.viewport.pointer_down(to_point(m.position)) {
-                            return Change::REDRAW;
-                        }
-                        let hover_changed = self.set_hover(hit);
-                        let mut change = match hit {
-                            Some(i) => self.apply(Command::Page(Page::ALL[i])),
-                            None => self.click_in_page(m.position),
-                        };
-                        change.redraw |= hover_changed;
-                        change
-                    }
-                    _ => Change::NONE,
+            Event::Mouse(m) => match m.kind {
+                MouseEventKind::Dragged { .. } => {
+                    redraw_if(self.viewport.pointer_drag(to_point(m.position)))
                 }
-            }
+                MouseEventKind::Up { .. } => {
+                    self.viewport.pointer_up();
+                    Change::NONE
+                }
+                MouseEventKind::Down {
+                    button: MouseButton::Left,
+                    ..
+                } => {
+                    if self.viewport.pointer_down(to_point(m.position)) {
+                        return Change::REDRAW;
+                    }
+                    self.click_in_page(m.position)
+                }
+                _ => Change::NONE,
+            },
             Event::Key(k) if k.kind == KeyEventKind::Down => {
                 let m = k.modifiers;
                 if m.command || m.control || m.alt || m.shift {
@@ -2012,7 +2063,7 @@ impl Gallery {
             }
             _ => Change::NONE,
         };
-        change.redraw |= search_blurred;
+        change.redraw |= search_blurred || sidebar_pointer_changed;
         change
     }
 }
@@ -2180,6 +2231,7 @@ mod tests {
         g.step_page(1);
         assert_eq!(g.page(), page);
         assert_eq!(g.take_apphost_open_requests(), 0, "arrows only select");
+        g.build_scene(&mut Scene::new());
         g.apply(Command::Page(page));
         g.apply(Command::Page(page));
         assert_eq!(
@@ -2192,7 +2244,7 @@ mod tests {
             0,
             "requests are consumed once"
         );
-        g.navigation_focus = Some(page);
+        g.set_navigation_focus(Some(page));
         g.handle_input(&key(36, Modifiers::NONE));
         g.handle_input(&key(49, Modifiers::NONE));
         let mut repeat = key(49, Modifiers::NONE);
@@ -2214,6 +2266,7 @@ mod tests {
         assert_eq!(g.take_apphost_open_requests(), 0);
         g.select_page(navigation::pages()[0]);
         g.sidebar.reveal(page);
+        g.build_scene(&mut Scene::new());
         g.accessibility_action(target, &AccessibilityAction::Focus);
         assert_eq!(g.navigation_focus, Some(page));
         g.handle_input(&key(48, Modifiers::NONE));
@@ -2229,19 +2282,46 @@ mod tests {
         );
         g.accessibility_action(target, &AccessibilityAction::Press);
         assert_eq!(g.take_apphost_open_requests(), 1);
-        g.sidebar.reveal(page);
-        let frame = g
-            .sidebar
-            .geometry()
-            .document_to_viewport(navigation::row(page))
-            .unwrap();
+        g.build_scene(&mut Scene::new());
+        let frame = g.sidebar.row_frame(page).expect("visible shared List row");
         let point = frame.center();
-        g.handle_input(&click(point.x as f64, point.y as f64));
-        g.handle_input(&release(point.x as f64, point.y as f64));
+        for _ in 0..2 {
+            g.handle_input(&click(point.x as f64, point.y as f64));
+            assert_eq!(
+                g.take_apphost_open_requests(),
+                1,
+                "each pointer Down activates the currently selected AppHost row once"
+            );
+            g.handle_input(&release(point.x as f64, point.y as f64));
+            assert_eq!(
+                g.take_apphost_open_requests(),
+                0,
+                "PointerUp does not duplicate the Down activation"
+            );
+        }
+
+        g.handle_input(&mv(point.x as f64, point.y as f64));
+        let thumb = drawn_sidebar_scrollbar(&mut g).expect("hover reveals the shared thumb");
+        let thumb_center = thumb.center();
+        g.handle_input(&mv(thumb_center.x.into(), thumb_center.y.into()));
+        let before_drag = g.sidebar.offset().y;
+        g.handle_input(&click(thumb_center.x.into(), thumb_center.y.into()));
+        g.handle_input(&Event::Mouse(MouseEvent {
+            kind: MouseEventKind::Dragged {
+                button: MouseButton::Left,
+            },
+            position: PlatformPoint {
+                x: thumb_center.x.into(),
+                y: (thumb_center.y + 24.0).into(),
+            },
+            modifiers: Modifiers::NONE,
+        }));
+        assert!(g.sidebar.offset().y > before_drag);
+        g.handle_input(&release(-1.0, -1.0));
         assert_eq!(
             g.take_apphost_open_requests(),
-            1,
-            "mouse down/up generates one request"
+            0,
+            "shared scrollbar capture is not a navigation row activation"
         );
     }
 
@@ -2308,6 +2388,24 @@ mod tests {
             },
             position: PlatformPoint { x, y },
             modifiers: Modifiers::NONE,
+        })
+    }
+
+    fn drawn_sidebar_scrollbar(gallery: &mut Gallery) -> Option<Rect> {
+        let mut scene = Scene::new();
+        gallery.build_scene(&mut scene);
+        let viewport = gallery.sidebar.geometry().visible_viewport_rect()?;
+        scene.primitives().iter().find_map(|primitive| {
+            let tekes_ui_scene::Primitive::Quad(quad) = primitive else {
+                return None;
+            };
+            let rect = quad.rect;
+            (rect.size.width > 2.0
+                && rect.size.width <= tekes_ui_tokens::proposal::SCROLLBAR_WIDTH + 0.1
+                && rect.size.height > 20.0
+                && rect.min_x() >= viewport.max_x() - 10.0
+                && rect.intersection(&viewport).is_some())
+            .then_some(rect)
         })
     }
 
@@ -2545,10 +2643,7 @@ mod tests {
 
         let mut scene = Scene::new();
         g.build_scene(&mut scene);
-        let row = navigation::row(page).offset(
-            g.sidebar.geometry().content_origin().x,
-            g.sidebar.geometry().content_origin().y,
-        );
+        let row = g.sidebar.row_frame(page).expect("focused shared List row");
         let focus_outset = tekes_ui_tokens::proposal::metric("stroke", "c-focus-width").unwrap()
             + tekes_ui_tokens::proposal::metric("spacing", "c-focus-offset").unwrap();
         assert!(scene.primitives().iter().any(|primitive| matches!(
@@ -3135,6 +3230,7 @@ mod tests {
     #[test]
     fn hover_within_same_row_does_not_redraw() {
         let mut g = Gallery::new();
+        g.build_scene(&mut Scene::new());
         let (x, y) = row_center(1);
         // 进入第 1 行：变了，重绘。
         assert_eq!(g.handle_input(&mv(x, y)), Change::REDRAW);
@@ -3158,6 +3254,7 @@ mod tests {
     #[test]
     fn hover_moving_between_rows_redraws_each_time() {
         let mut g = Gallery::new();
+        g.build_scene(&mut Scene::new());
         let (x0, y0) = row_center(0);
         let (x1, y1) = row_center(1);
         assert!(g.handle_input(&mv(x0, y0)).redraw);
@@ -3168,6 +3265,7 @@ mod tests {
     #[test]
     fn exit_clears_hover() {
         let mut g = Gallery::new();
+        g.build_scene(&mut Scene::new());
         let (x, y) = row_center(0);
         g.handle_input(&mv(x, y));
         let exit = Event::Mouse(MouseEvent {
@@ -3182,25 +3280,30 @@ mod tests {
     #[test]
     fn click_selects_page_and_updates_chrome() {
         let mut g = Gallery::new();
+        g.build_scene(&mut Scene::new());
         let (x, y) = row_center(1);
         let c = g.handle_input(&click(x, y));
         assert_eq!(c, Change::BOTH);
         assert_eq!(g.page(), navigation::pages()[1]);
-        // 再点同一行：页没变，hover 也已经在这一行，什么都不用做。
+        g.handle_input(&release(x, y));
+        // 再点同一行：页没变，不重复切换。
         assert_eq!(g.handle_input(&click(x, y)), Change::NONE);
+        g.handle_input(&release(x, y));
         // 点页面区：无事发生。
         assert!(!g.handle_input(&click(700.0, 400.0)).chrome);
         assert_eq!(g.page(), navigation::pages()[1]);
     }
 
     #[test]
-    fn click_on_unhovered_row_redraws_even_if_page_same() {
-        // 鼠标没移动事件就直接按下（例如窗口刚激活）：hover 与选中都要更新。
+    fn clicking_the_current_shared_row_does_not_change_the_page() {
         let mut g = Gallery::new();
+        g.build_scene(&mut Scene::new());
         let (x, y) = row_center(0);
+        g.handle_input(&mv(x, y));
         let c = g.handle_input(&click(x, y));
-        assert!(c.redraw, "hover 从 None 变成 Some(0)");
+        assert!(!c.redraw);
         assert!(!c.chrome, "页面没变");
+        g.handle_input(&release(x, y));
     }
 
     #[test]
@@ -3419,6 +3522,7 @@ mod tests {
         assert_ne!(light, dark);
 
         let mut g2 = Gallery::new();
+        g2.build_scene(&mut Scene::new());
         let (x, y) = row_center(1);
         g2.handle_input(&mv(x, y));
         let mut hovered = Scene::new();
@@ -3606,13 +3710,94 @@ mod tests {
         assert!(!g.needs_animation());
         g.handle_input(&wheel(800.0, 350.0, P::Began, P::None));
         assert_eq!(g.scroll_owner, Some(ScrollOwner::Document));
-        let sidebar = g.sidebar.scroll.offset;
+        let sidebar = g.sidebar.offset();
         g.handle_input(&wheel(100.0, 300.0, P::Changed, P::None));
         g.handle_input(&wheel(100.0, 300.0, P::Ended, P::None));
-        assert_eq!(g.sidebar.scroll.offset, sidebar);
+        assert_eq!(g.sidebar.offset(), sidebar);
         g.handle_input(&Event::Focus(false));
         assert_eq!(g.scroll_owner, None);
         assert!(!g.needs_animation());
+    }
+
+    #[test]
+    fn gallery_sidebar_uses_shared_list_hover_and_wheel_routing() {
+        let mut g = Gallery::with_static_text(StaticText::new(None));
+        g.set_view_size(1000.0, 480.0);
+        assert!(drawn_sidebar_scrollbar(&mut g).is_none());
+        let row = g
+            .sidebar
+            .row_frame(navigation::pages()[0])
+            .expect("Gallery sidebar row is mounted through ListContent");
+        g.handle_input(&mv(row.center().x as f64, row.center().y as f64));
+        let thumb = drawn_sidebar_scrollbar(&mut g).expect("hover paints the shared thumb");
+        let start = thumb.center();
+        g.handle_input(&mv(start.x as f64, start.y as f64));
+        let before_drag = g.sidebar.offset().y;
+        g.handle_input(&click(start.x as f64, start.y as f64));
+        g.handle_input(&Event::Mouse(MouseEvent {
+            kind: MouseEventKind::Dragged {
+                button: MouseButton::Left,
+            },
+            position: PlatformPoint {
+                x: start.x as f64,
+                y: (start.y + 30.0) as f64,
+            },
+            modifiers: Modifiers::NONE,
+        }));
+        assert!(g.sidebar.offset().y > before_drag);
+        g.handle_input(&release(-1.0, -1.0));
+        assert!(drawn_sidebar_scrollbar(&mut g).is_none());
+
+        g.handle_input(&mv(-1.0, -1.0));
+        assert!(drawn_sidebar_scrollbar(&mut g).is_none());
+
+        let before = g.sidebar.offset().y;
+        g.handle_input(&wheel(
+            100.0,
+            300.0,
+            tekes_ui_platform_macos::ScrollPhase::Began,
+            tekes_ui_platform_macos::ScrollPhase::None,
+        ));
+        g.handle_input(&wheel(
+            100.0,
+            300.0,
+            tekes_ui_platform_macos::ScrollPhase::Ended,
+            tekes_ui_platform_macos::ScrollPhase::None,
+        ));
+        assert!(g.sidebar.offset().y > before);
+    }
+
+    #[test]
+    fn sidebar_hover_out_is_redrawn_when_body_control_consumes_pointer_move() {
+        let mut g = Gallery::with_static_text(StaticText::new(None));
+        assert!(g.open_route("lab-calibration/playground"));
+        g.set_view_size(1000.0, 520.0);
+        g.build_scene(&mut Scene::new());
+        let row = g
+            .sidebar
+            .row_frames()
+            .into_iter()
+            .find(|(_, row)| row.size.height >= layout::ROW_H)
+            .map(|(_, row)| row)
+            .expect("a complete shared sidebar row is visible after route reveal");
+        g.handle_input(&mv(row.center().x as f64, row.center().y as f64));
+        assert!(drawn_sidebar_scrollbar(&mut g).is_some());
+
+        let frame = g.static_text.fixture_buttons()[1]
+            .layout()
+            .expect("calibration body control was rendered")
+            .frame;
+        let point = Point::new(
+            frame.center().x - g.viewport.offset.x,
+            frame.center().y - g.viewport.offset.y,
+        );
+        assert!(g.viewport.bounds().contains(point));
+        assert_eq!(
+            g.handle_input(&mv(point.x.into(), point.y.into())),
+            Change::REDRAW,
+            "body hover handles this move while sidebar hover-out is also redrawn"
+        );
+        assert!(drawn_sidebar_scrollbar(&mut g).is_none());
     }
 
     #[test]

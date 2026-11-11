@@ -1,6 +1,6 @@
 use tekes_ui_controls::{ButtonTextAlign, ButtonTextRenderer, composition::*};
 use tekes_ui_scene::{Rect, Scene, Size};
-use tekes_ui_tokens::{Rgba, Theme, proposal};
+use tekes_ui_tokens::{Palette, Rgba, Theme, proposal};
 struct Text(f32);
 impl ButtonTextRenderer for Text {
     fn measure(&mut self, s: &str, role: proposal::TextRole, width: f32) -> Size {
@@ -129,6 +129,109 @@ fn original_toolbar_buttons_and_overflow_shield_full_hits_including_disabled() {
         }
     }
 }
+
+#[test]
+fn toolbar_focus_suppresses_overflow_trigger_ink_without_losing_keyboard_activation() {
+    const ROOT: ComponentId = ComponentId(18420);
+    for (menu_only, width) in [(true, 480.), (false, 132.)] {
+        let mut toolbar = ToolbarControl::window();
+        toolbar.set_actions(vec![
+            ToolbarAction {
+                id: 17,
+                title: "Save the current document".into(),
+                enabled: true,
+            },
+            ToolbarAction {
+                id: 23,
+                title: "Publish to workspace".into(),
+                enabled: true,
+            },
+            ToolbarAction {
+                id: 31,
+                title: "Export a copy".into(),
+                enabled: true,
+            },
+        ]);
+        toolbar.set_menu_only(menu_only);
+        let mut host = ContentHost::new(Content::new(ROOT, toolbar)).unwrap();
+        let frame = Rect::new(60., 24., width, 42.);
+        let viewport = Rect::new(0., 0., 800., 400.);
+        let render = |host: &mut ContentHost| {
+            let mut scene = Scene::new();
+            host.render(
+                &mut scene,
+                &mut Text(13.),
+                frame,
+                viewport,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
+            scene
+        };
+
+        render(&mut host);
+        let trigger = host
+            .semantics()
+            .into_iter()
+            .find(|node| node.id == ROOT)
+            .unwrap()
+            .parts
+            .into_iter()
+            .find(|part| part.semantics.name == "More options")
+            .expect("menu-only and narrow toolbars expose the overflow trigger");
+        assert_eq!(trigger.semantics.role, ContentRole::MenuButton);
+        assert!(
+            host.accessibility_action(ROOT, Some(trigger.index), AccessibilityAction::Focus)
+                .consumed
+        );
+        assert_eq!(host.focused(), Some(ROOT));
+
+        let focused_scene = render(&mut host);
+        let focused_trigger = host
+            .semantics()
+            .into_iter()
+            .find(|node| node.id == ROOT)
+            .unwrap()
+            .parts
+            .into_iter()
+            .find(|part| part.semantics.name == "More options")
+            .unwrap();
+        assert!(focused_trigger.focused);
+        assert!(
+            focused_scene.primitives().iter().any(|primitive| matches!(
+                primitive,
+                Primitive::Quad(quad) if quad.rect == focused_trigger.frame
+            )),
+            "the More actions Button was actually painted"
+        );
+        let focus_color = Palette::from(Theme::LIGHT).color("border-focused").unwrap();
+        assert!(
+            !focused_scene.primitives().iter().any(|primitive| matches!(
+                primitive,
+                Primitive::Quad(quad) if quad.fill.a == 0. && quad.border_color == focus_color
+            )),
+            "toolbar overflow focus does not paint a focus border"
+        );
+
+        host.event(&ContentEvent::Key {
+            key: ControlKey::Enter,
+            down: true,
+        });
+        host.event(&ContentEvent::Key {
+            key: ControlKey::Enter,
+            down: false,
+        });
+        render(&mut host);
+        assert!(
+            host.get_mut(ROOT)
+                .unwrap()
+                .component_mut::<ToolbarControl>()
+                .unwrap()
+                .is_open()
+        );
+    }
+}
+
 #[test]
 fn captured_drag_keeps_mark_in_blank_segment_seam_and_rechecks_occupied_geometry() {
     let (mut m, mut v) = setup(0.3);
@@ -240,10 +343,7 @@ fn segmented_original_toolbars_reflow_with_two_and_three_container_boundaries() 
                                     } else {
                                         ToolbarPlacement::Navigation
                                     },
-                                    vec![Content::new(
-                                        ComponentId(3),
-                                        Button::new("Action"),
-                                    )],
+                                    vec![Content::new(ComponentId(3), Button::new("Action"))],
                                 ),
                             )]),
                         ))

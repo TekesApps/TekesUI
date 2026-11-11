@@ -1587,7 +1587,19 @@ pub fn titlebar_contract() -> Vec<(bool, f64, f64)> {
                     // SAFETY: the retained original view remains attached to its native window.
                     let parent = unsafe { view.superview() };
                     let point = view.convertPoint_toView(local, parent.as_deref());
-                    let hit = view.hitTest(point).expect("native button hit");
+                    let press =
+                        mouse_event(&window, NSEventType::LeftMouseDown, local.x, local.y, 1)
+                            .unwrap();
+                    let hit = view
+                        .toolbar_hit_target(point, Some(&press))
+                        .expect("native button press target");
+                    let movement =
+                        mouse_event(&window, NSEventType::MouseMoved, local.x, local.y, 0).unwrap();
+                    assert!(
+                        view.toolbar_hit_target(point, Some(&movement)).is_none(),
+                        "cursor routing must not cross back into the titlebar"
+                    );
+                    assert!(view.toolbar_hit_target(point, None).is_none());
                     let expected: &objc2_app_kit::NSView = &button;
                     assert!(std::ptr::eq(&*hit, expected));
                 } else {

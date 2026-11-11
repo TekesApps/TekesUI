@@ -25,9 +25,11 @@ Existing `ScrollContent::new` preserves its effective no-bar presentation and ge
 
 `ScrollContent::scrollbar(bool)` is a consuming builder that delegates appearance/hit availability to its existing ScrollArea. `true` shows a bar only on an overflowing enabled axis. `false` removes the bar and its pointer targets while preserving scrolling range, wheel and programmatic/focus reveal. All sections share that one original ScrollArea.
 
+For the List factory's requested bars, an overflowing thumb is painted and accepts a new pointer Down while the pointer is inside the original ScrollArea viewport. Leaving the viewport hides it; an active thumb remains painted and captured until the original pointer-up/cancel path ends the drag. Pointer Up's own position updates hover, so a final Move callback is not required before release. `.scrollbar(false)` remains a permanent hide. The overflow gutter and child clip stay stable while the thumb is hidden, so entering/leaving does not reflow List items.
+
 ScrollContent gains original ScrollArea scrollbar paint and pointer input; it retains its existing wheel, clipping, reading and reveal responsibilities. There is no new momentum, offset, drag-physics or animation reducer.
 
-A visible bar's layout, hit track and paint track derive from the same original viewport geometry and proposal scrollbar metrics. The visible overflow bar gets an exclusive child-clip band so full-width child controls cannot steal its Down in the existing child-first routing. A no-overflow or hidden bar reserves no band. Reflow/layout must account for the receiving width and preserve the existing focus bleed and ancestor clipping contract.
+A requested overflowing bar's layout, hit track and paint track derive from the same original viewport geometry and proposal scrollbar metrics. Its exclusive child-clip band remains reserved while hover-hidden so full-width child controls cannot steal its Down when it appears; `.scrollbar(false)` and no-overflow reserve no band. Reflow/layout must account for the receiving width and preserve the existing focus bleed and ancestor clipping contract.
 
 ## Input and transaction behavior
 
@@ -41,7 +43,7 @@ Gallery AppHost navigation and property grouped Items adopt the List factory and
 
 ## Verification
 
-Use real ContentHost paths to verify: explicit List/Items identities; one ScrollContent owner for multiple groups; overflow/no-overflow and true/false paint/hit behavior; actual thumb drag and page scrolling with no item activation; wheel and reveal with bars hidden; preserved keyboard focus/marked input; pure/fenced preparation; cancellation; Theme and clipping; existing reading/reveal regressions affected by reserved viewport width. Retain unrelated WIP and reuse unchanged passed evidence. Native GUI acceptance is recorded separately from source/unit evidence.
+Use real ContentHost paths to verify: explicit List/Items identities; one ScrollContent owner for multiple groups; overflow/no-overflow and true/false paint/hit behavior; pointer entry/exit visibility over an item; active thumb drag visibility outside the viewport through release; actual thumb drag and page scrolling with no item activation; wheel and reveal with bars hidden; preserved keyboard focus/marked input; pure/fenced preparation; cancellation; Theme and clipping; existing reading/reveal regressions affected by reserved viewport width. Retain unrelated WIP and reuse unchanged passed evidence. Native GUI acceptance is recorded separately from source/unit evidence.
 
 ## AppHost Gallery spacing
 

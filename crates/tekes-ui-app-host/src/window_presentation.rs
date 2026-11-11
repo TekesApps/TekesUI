@@ -34,6 +34,28 @@ pub(super) fn render_test_tabs<B: Clone + std::fmt::Debug>(
     text: &mut Text,
     palette: Palette,
 ) -> Result<()> {
+    with_test_icons(text, |text| host.render(scene, text, palette))
+}
+#[cfg(test)]
+pub(super) fn render_test_tabs_layers<B: Clone + std::fmt::Debug>(
+    host: &mut ToolbarHost<B>,
+    scene: &mut Scene,
+    overlays: &mut Scene,
+    text: &mut Text,
+    palette: Palette,
+) -> Result<()> {
+    with_test_icons(text, |text| {
+        host.render_layers(scene, overlays, text, palette)
+    })
+}
+#[cfg(test)]
+fn with_test_icons(
+    text: &mut Text,
+    render: impl FnOnce(
+        &mut dyn tekes_ui_controls::ButtonTextRenderer,
+    )
+        -> std::result::Result<(), tekes_ui_controls::composition::CompositionError>,
+) -> Result<()> {
     struct Icons;
     impl tekes_ui_controls::layout_view::IconRenderer for Icons {
         fn prepare_icon(
@@ -56,11 +78,9 @@ pub(super) fn render_test_tabs<B: Clone + std::fmt::Debug>(
             panic!("Tabs must retain a prepared icon lease");
         }
     }
-    host.render(
-        scene,
-        &mut tekes_ui_controls::composition::WithIconRenderer::new(text, &mut Icons),
-        palette,
-    )
+    render(&mut tekes_ui_controls::composition::WithIconRenderer::new(
+        text, &mut Icons,
+    ))
     .map_err(|e| anyhow::anyhow!("test container tabs toolbar: {e:?}"))
 }
 // Use this same adjusted frame for Tabs rendering, pointer routing and AX.
@@ -301,13 +321,11 @@ impl Host {
         }
         self.sync_presentation_switcher(whole)?;
         let switcher_frame = self.presentation_switcher_frame();
-        if let (Some(host), Some(frame)) = (&mut self.presentation_tabs, switcher_frame) {
-            host.set_regions(
-                TABS_OWNER,
-                whole,
-                vec![ToolbarRegion::new(ComponentId(TABS_OWNER), frame)],
-            )
-            .map_err(|e| anyhow::anyhow!("container tabs region: {e:?}"))?;
+        let switcher_regions =
+            switcher_frame.map(|frame| self.presentation_switcher_regions(frame, whole));
+        if let (Some(host), Some(_frame)) = (&mut self.presentation_tabs, switcher_frame) {
+            host.set_regions(TABS_OWNER, whole, switcher_regions.unwrap())
+                .map_err(|e| anyhow::anyhow!("container tabs region: {e:?}"))?;
             if let Some(renderer) = &mut self.renderer {
                 with_content_icons(
                     renderer,
@@ -476,6 +494,16 @@ impl Host {
                 eprintln!("PRESENTATION_REJECTED composition-in-progress");
                 return Ok(true);
             }
+            if *command > COMMAND_BASE {
+                let value = (*command - COMMAND_BASE - 1) as usize;
+                if value % 6 == 3 {
+                    let id = self.module_ids[value / 6].clone();
+                    if let Err(error) = self.close_container(&id) {
+                        eprintln!("PRESENTATION_REJECTED {error:#}");
+                    }
+                    return Ok(true);
+                }
+            }
             let state = self.presentation.as_mut().unwrap();
             let result = if *command == COMMAND_BASE - 2 {
                 state.toggle_nav_bar()
@@ -488,10 +516,14 @@ impl Host {
                 let index = value / 6;
                 let id = &self.module_ids[index];
                 match value % 6 {
-                    0 => state.select_tab(OthersTab::Container(id.clone())),
+                    0 => state.select_tab(if state.list_ids().contains(&id.as_str()) {
+                        OthersTab::List
+                    } else {
+                        OthersTab::Container(id.clone())
+                    }),
                     1 => state.promote(id),
                     2 => state.open(id),
-                    3 => state.close(id),
+                    3 => unreachable!("close handled through Host lifecycle"),
                     direction => {
                         let items = state.list_ids();
                         let position = items.iter().position(|candidate| *candidate == id);
@@ -600,7 +632,8 @@ impl Host {
         if self.presentation_layout.tabs.is_none() {
             return Ok(false);
         }
-        if matches!(event, Event::Mouse(mouse) if matches!(mouse.kind, MouseEventKind::Down {..}) && self.presentation_layout.tabs.is_some_and(|frame| frame.contains(Point::new(mouse.position.x as f32, mouse.position.y as f32))))
+        let creation_frame = self.presentation_creation_frame();
+        if matches!(event, Event::Mouse(mouse) if matches!(mouse.kind, MouseEventKind::Down {..}) && (self.presentation_layout.tabs.is_some_and(|frame| frame.contains(Point::new(mouse.position.x as f32, mouse.position.y as f32))) || creation_frame.is_some_and(|frame| frame.contains(Point::new(mouse.position.x as f32, mouse.position.y as f32)))))
             && self.composition_in_progress()
         {
             eprintln!("PRESENTATION_REJECTED composition-in-progress");
@@ -659,6 +692,12 @@ impl Host {
             Event::Mouse(mouse) => {
                 self.pressed.is_none()
                     && (host.content_host().pointer_capture().is_some()
+                        || creation_frame.is_some_and(|frame| {
+                            frame.contains(Point::new(
+                                mouse.position.x as f32,
+                                mouse.position.y as f32,
+                            ))
+                        })
                         || self.presentation_layout.tabs.is_some_and(|frame| {
                             frame.contains(Point::new(
                                 mouse.position.x as f32,
@@ -702,9 +741,13 @@ impl Host {
                 continue;
             }
             use super::window_switcher::SwitcherAction;
-            let state = self.presentation.as_mut().unwrap();
             match record.source {
-                SwitcherAction::Select(tab) => state.select_tab(tab)?,
+                SwitcherAction::Create(id) => {
+                    self.open_creation_choice(&id)?;
+                }
+                SwitcherAction::Select(tab) => {
+                    self.presentation.as_mut().unwrap().select_tab(tab)?
+                }
                 SwitcherAction::Menu => {
                     let Some(ContentActionPayload::MenuSelection(selection)) = record.payload
                     else {
@@ -718,7 +761,7 @@ impl Host {
                     } else {
                         OthersTab::Container(value.clone())
                     };
-                    state.select_tab(tab)?;
+                    self.presentation.as_mut().unwrap().select_tab(tab)?;
                 }
             }
             self.set_toolbar_focus(None, false);
@@ -1216,6 +1259,16 @@ impl Host {
                 });
             }
         }
+        if state.others().is_some() && !self.creation_choices().is_empty() {
+            declarations[focus].push(Declaration {
+                id: ComponentId(92060),
+                region: WINDOW_TRAILING,
+                placement: ToolbarPlacement::PrimaryAction,
+                order: 3,
+                contents: Contents::CreationMenu(self.creation_entries()),
+                source: Source::CreationMenu,
+            });
+        }
         if let Some(nav) = &self.navigation
             && let Some(source) = crate::toolbar_source::ComponentSource::current(&nav.process)
             && let Some(id) = self
@@ -1512,7 +1565,7 @@ mod tests {
         let calls = Rc::new(Cell::new(0));
         let members = ["focus", "first", "second"]
             .into_iter()
-            .map(|id| local(id, 1, calls.clone()).list_height(200.).into())
+            .map(|id| local(id, 1, calls.clone()).into())
             .collect();
         let mut host = Host::from_containers(
             members,
@@ -1574,21 +1627,22 @@ mod tests {
     #[test]
     fn focus_switch_uses_original_button_and_selected_target_and_updates_revoke_old_press() {
         let calls = Rc::new(Cell::new(0));
-        let members = ["focus", "other"]
+        let mut members: Vec<Container> = ["focus", "other"]
             .into_iter()
-            .map(|id| {
-                local(id, 1, calls.clone())
-                    .focus_switch(1)
-                    .list_height(240.)
-                    .into()
-            })
+            .map(|id| local(id, 1, calls.clone()).focus_switch(1).into())
             .collect();
+        members.push(
+            local("reading", 2, Rc::new(Cell::new(0)))
+                .presentation(crate::ContainerPresentation::List { height: 240. })
+                .into(),
+        );
         let mut host = Host::from_containers(
             members,
             false,
             None,
             Some(
-                PresentationOptions::new("focus").others(OthersOptions::new(vec!["other".into()])),
+                PresentationOptions::new("focus")
+                    .others(OthersOptions::new(vec!["other".into(), "reading".into()])),
             ),
         );
         host.mount_columns();
@@ -1775,9 +1829,12 @@ mod tests {
             .iter()
             .enumerate()
             .map(|(index, id)| {
-                local(id, index as u64 + 1, counts[index].clone())
-                    .list_height(240.)
-                    .into()
+                let container = local(id, index as u64 + 1, counts[index].clone());
+                if *id == "first" {
+                    container.into()
+                } else {
+                    container.list_height(240.).into()
+                }
             })
             .collect();
         let mut host = Host::from_containers(
@@ -2537,7 +2594,7 @@ mod input_regressions {
             let mut final_scene = Scene::new();
             // The exact production native draw composition, after all original
             // hosts have emitted their real ground and prepared-icon primitives.
-            host.append_toolbar_layers(&mut final_scene, &toolbar, &presentation);
+            host.append_toolbar_layers(&mut final_scene, &toolbar, &presentation, &Scene::new());
             let images: Vec<_> = final_scene
                 .primitives()
                 .iter()
@@ -2673,7 +2730,7 @@ mod input_regressions {
             host.paint_presentation(&mut presentation, whole, palette)
                 .unwrap();
             let mut scene = Scene::new();
-            host.append_toolbar_layers(&mut scene, &toolbar, &presentation);
+            host.append_toolbar_layers(&mut scene, &toolbar, &presentation, &Scene::new());
             scene
         };
         paint_icons(&mut host, Duration::ZERO);
@@ -3168,11 +3225,7 @@ mod input_regressions {
             .as_mut()
             .unwrap()
             .with_host(&mut |content| assert_eq!(content.focused(), Some(ComponentId(1))));
-        host.presentation
-            .as_mut()
-            .unwrap()
-            .select_tab(OthersTab::Container("second".into()))
-            .unwrap();
+        host.presentation.as_mut().unwrap().toggle_others().unwrap();
         render_layout(&mut host, area);
         host.panels[1]
             .local

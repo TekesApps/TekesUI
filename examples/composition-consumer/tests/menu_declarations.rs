@@ -159,7 +159,9 @@ fn key(h: &mut ContentHost, k: ControlKey) {
     paint(h);
 }
 fn selection(record: &ContentActionRecord) -> &MenuSelection {
-    let ContentActionPayload::MenuSelection(s) = record.payload.as_ref().unwrap() else { panic!("expected original MenuSelection payload"); };
+    let ContentActionPayload::MenuSelection(s) = record.payload.as_ref().unwrap() else {
+        panic!("expected original MenuSelection payload");
+    };
     s
 }
 #[test]
@@ -366,6 +368,111 @@ fn interactive_trigger_body_uses_existing_action_owner_validation() {
             .is_err()
     );
 }
+
+#[test]
+fn toolbar_icon_menu_trigger_keeps_keyboard_focus_without_focus_border() {
+    let trigger = Content::new(ComponentId(18292), TextContent::new("v"));
+    let mut trigger_menu = MenuContent::new("Actions", Vec::new())
+        .with_trigger_content("Actions", trigger)
+        .unwrap();
+    trigger_menu.trigger.variant = tekes_ui_controls::paint::ButtonVariant::Toolbar;
+    trigger_menu.trigger.set_toolbar_icon_slot(true);
+    trigger_menu
+        .set_entries(vec![MenuEntry::item("create", "Create")])
+        .unwrap();
+    let mut host = ContentHost::new(Content::new(MENU, trigger_menu)).unwrap();
+    let frame = Rect::new(0., 0., 240., 80.);
+    let draw = |host: &mut ContentHost| {
+        let mut scene = Scene::new();
+        host.render(&mut scene, &mut Text, frame, frame, Theme::LIGHT.into())
+            .unwrap();
+        scene
+    };
+
+    draw(&mut host);
+    assert!(
+        host.accessibility_action(MENU, None, AccessibilityAction::Focus)
+            .consumed
+    );
+    assert_eq!(host.focused(), Some(MENU));
+    let focused_node = host
+        .semantics()
+        .into_iter()
+        .find(|node| node.id == MENU)
+        .unwrap();
+    assert!(focused_node.focused, "the MenuButton retains AX focus");
+    assert_eq!(focused_node.semantics.role, ContentRole::MenuButton);
+    let focused = draw(&mut host);
+    assert!(
+        focused_node.visible.is_some()
+            && focused.primitives().iter().any(|primitive| matches!(
+                primitive,
+                tekes_ui_scene::Primitive::Quad(quad) if quad.rect == focused_node.frame
+            )),
+        "the focused trigger is arranged and its Button background is painted"
+    );
+    let focus_color = tekes_ui_tokens::Palette::from(Theme::LIGHT)
+        .color("border-focused")
+        .unwrap();
+    assert!(
+        !focused.primitives().iter().any(|primitive| matches!(
+            primitive,
+            tekes_ui_scene::Primitive::Quad(quad) if quad.fill.a == 0. && quad.border_color == focus_color
+        )),
+        "toolbar icon trigger has no visual focus border"
+    );
+    assert!(menu(&mut host).trigger.button.state.focused);
+    assert!(menu(&mut host).trigger.button.state.focus_visible);
+
+    host.event(&ContentEvent::Key {
+        key: ControlKey::Enter,
+        down: true,
+    });
+    host.event(&ContentEvent::Key {
+        key: ControlKey::Enter,
+        down: false,
+    });
+    draw(&mut host);
+    assert_eq!(menu(&mut host).trigger.activations, 1);
+    assert_eq!(host.focused(), Some(MENU));
+    assert!(
+        host.semantics()
+            .into_iter()
+            .find(|node| node.id == MENU)
+            .unwrap()
+            .semantics
+            .expanded
+            == Some(true),
+        "keyboard activation still opens the original menu"
+    );
+
+    let mut ordinary = ContentHost::new(Content::new(
+        ComponentId(18293),
+        Button::new("Ordinary action"),
+    ))
+    .unwrap();
+    assert!(
+        ordinary
+            .accessibility_action(ComponentId(18293), None, AccessibilityAction::Focus)
+            .consumed
+    );
+    let ordinary_frame = Rect::new(0., 0., 240., 80.);
+    let mut ordinary_scene = Scene::new();
+    ordinary
+        .render(
+            &mut ordinary_scene,
+            &mut Text,
+            ordinary_frame,
+            ordinary_frame,
+            Theme::LIGHT.into(),
+        )
+        .unwrap();
+    assert!(ordinary_scene.primitives().iter().any(|primitive| matches!(
+        primitive,
+        tekes_ui_scene::Primitive::Quad(quad) if quad.fill.a == 0. && quad.border_color == focus_color
+    )), "ordinary Buttons retain their existing visible focus border");
+}
+
 #[test]
 fn compact_body_instance_survives_item_model_replacement() {
     use tekes_ui_composition_consumer::declared_menu as f;

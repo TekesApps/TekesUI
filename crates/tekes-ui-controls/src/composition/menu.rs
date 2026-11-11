@@ -1554,9 +1554,9 @@ impl Component for MenuContent {
         if let Some(state) = &self.menu.content_state
             && !state.trigger_content.is_empty()
         {
-            self.trigger.button.render_content_frame(
+            self.trigger.render_toolbar_icon_frame(
                 s,
-                &mut TextAdapter(t),
+                t,
                 state.trigger_measured,
                 f,
                 Some(c),

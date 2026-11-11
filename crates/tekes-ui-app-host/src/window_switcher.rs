@@ -15,10 +15,13 @@ use tekes_ui_tokens::proposal;
 const OWNER: u64 = u64::MAX - 1;
 const GROUP: ComponentId = ComponentId(999_999);
 const MORE: &str = ":more";
+const GRID_REGION: ComponentId = ComponentId(u64::MAX - 100);
+const GRID_GROUP: ComponentId = ComponentId(1_100_000);
 #[derive(Clone, Debug)]
 pub(super) enum SwitcherAction {
     Select(OthersTab),
     Menu,
+    Create(String),
 }
 #[derive(Clone, Debug, PartialEq)]
 struct Item {
@@ -32,6 +35,7 @@ struct Item {
 #[derive(Default)]
 pub(super) struct SwitcherState {
     items: Vec<Item>,
+    grid: Vec<MenuEntry>,
 }
 fn entry(tab: &OthersTab, title: &str, selected: Option<&OthersTab>) -> MenuEntry {
     MenuEntry::Item {
@@ -149,7 +153,8 @@ impl Host {
                 .to_owned()
         };
         let mut items: Vec<Item> = Vec::new();
-        for tab in state.tabs() {
+        let tabs = state.tabs();
+        for tab in tabs.iter().cloned() {
             match tab {
                 OthersTab::Container(ref id) => {
                     if let Some(group) = options
@@ -163,11 +168,11 @@ impl Host {
                         }
                         items.push(Item { key, title: group.title.clone(), icon: {
                             let current = selected.and_then(|tab| match tab { OthersTab::Container(id) if group.containers.contains(id) => Some(id.as_str()), _ => None })
-                                .or_else(|| group.containers.iter().find(|id| state.others_ids().contains(id)).map(String::as_str));
+                                .or_else(|| group.containers.iter().find(|id| tabs.contains(&OthersTab::Container((*id).clone()))).map(String::as_str));
                             current.and_then(|id| self.panels.iter().find(|panel| panel.module_id == id)).and_then(|panel| panel.options.switcher_icon.clone())
                                 .unwrap_or_else(|| "tekes-file-generic".into())
                         }, tab: None,
-                            entries: group.containers.iter().filter(|id| state.others_ids().contains(id))
+                            entries: group.containers.iter().filter(|id| tabs.contains(&OthersTab::Container((*id).clone())))
                                 .map(|id| entry(&OthersTab::Container(id.clone()), &title(id), selected)).collect(),
                             selected: selected.is_some_and(|tab| matches!(tab, OthersTab::Container(id) if group.containers.contains(id))),
                         });
@@ -199,12 +204,60 @@ impl Host {
         }
         items
     }
+    pub(super) fn presentation_creation_frame(&self) -> Option<Rect> {
+        let state = self.presentation.as_ref()?;
+        if !state.others_visible()
+            || !state.others_ids().is_empty()
+            || self.creation_choices().is_empty()
+        {
+            return None;
+        }
+        let tabs = self.presentation_layout.tabs?;
+        let height = self
+            .presentation_layout
+            .frames
+            .iter()
+            .map(|(_, frame)| frame.max_y())
+            .fold(tabs.max_y(), f32::max);
+        Some(Rect::new(
+            tabs.min_x(),
+            self.container_window_boundary.unwrap_or(tabs.max_y()),
+            tabs.size.width,
+            (height - self.container_window_boundary.unwrap_or(tabs.max_y())).max(0.),
+        ))
+    }
+    pub(super) fn presentation_switcher_regions(
+        &self,
+        frame: Rect,
+        whole: Rect,
+    ) -> Vec<ToolbarRegion> {
+        let mut regions = vec![ToolbarRegion::new(ComponentId(OWNER), frame)];
+        if let Some(mut frame) = self.presentation_creation_frame() {
+            frame.size.height = (whole.max_y() - frame.min_y()).max(0.);
+            let pad = tekes_ui_tokens::Spacing::Loose.value();
+            frame = Rect::new(
+                frame.min_x() + pad,
+                frame.min_y() + pad,
+                (frame.size.width - pad * 2.).max(0.),
+                (frame.size.height - pad * 2.).max(0.),
+            );
+            let mut region = ToolbarRegion::new(GRID_REGION, frame);
+            region.axis = Axis::Vertical;
+            regions.push(region);
+        }
+        regions
+    }
     pub(super) fn sync_presentation_switcher(&mut self, whole: Rect) -> Result<()> {
         let Some(frame) = self.presentation_switcher_frame() else {
             return Ok(());
         };
         let all = self.switcher_items();
-        if all.is_empty() {
+        let grid = if self.presentation_creation_frame().is_some() {
+            self.creation_entries()
+        } else {
+            Vec::new()
+        };
+        if all.is_empty() && grid.is_empty() {
             self.presentation_tabs = None;
             self.presentation_switcher = SwitcherState::default();
             return Ok(());
@@ -260,12 +313,16 @@ impl Host {
             host.set_regions(
                 OWNER,
                 whole,
-                vec![ToolbarRegion::new(ComponentId(OWNER), frame)],
+                self.presentation_switcher_regions(frame, whole),
             )
             .map_err(|e| anyhow::anyhow!("switcher region: {e:?}"))?;
             self.presentation_tabs = Some(host);
         }
+        let choices = self.creation_choices();
+        let regions = self.presentation_switcher_regions(frame, whole);
         let host = self.presentation_tabs.as_mut().unwrap();
+        host.set_regions(OWNER, whole, regions)
+            .map_err(|e| anyhow::anyhow!("creation regions: {e:?}"))?;
         if structural {
             let mut children = Vec::new();
             let mut bindings = Vec::new();
@@ -350,7 +407,77 @@ impl Host {
             })
             .map_err(|e| anyhow::anyhow!("switcher radio selection: {e:?}"))?;
         }
-        self.presentation_switcher = SwitcherState { items: visible };
+        if self.presentation_switcher.grid != grid {
+            if !grid.is_empty() {
+                let mut children = Vec::new();
+                let mut bindings = Vec::new();
+                for (index, entry) in grid.iter().enumerate() {
+                    let MenuEntry::Item {
+                        value,
+                        label,
+                        disabled,
+                        ..
+                    } = entry
+                    else {
+                        unreachable!()
+                    };
+                    let (_, _, image, _) =
+                        choices.iter().find(|(id, _, _, _)| id == value).unwrap();
+                    let id = ComponentId(GRID_GROUP.0 + 10 + index as u64 * 10);
+                    let body = Content::new(
+                        ComponentId(id.0 + 1),
+                        ToolbarGroup::new(
+                            ToolbarPlacement::Navigation,
+                            vec![
+                                icon(ComponentId(id.0 + 2), image)?,
+                                Content::new(
+                                    ComponentId(id.0 + 3),
+                                    tekes_ui_controls::composition::TextContent::new(label.clone()),
+                                ),
+                            ],
+                        ),
+                    );
+                    let mut button =
+                        Button::new(body).with_accessible_name(&if value.starts_with("open:") {
+                            label.clone()
+                        } else {
+                            format!("Create {label}")
+                        });
+                    button.button.state.disabled = *disabled;
+                    children.push(Content::new(id, button));
+                    bindings.push(ToolbarCommandBinding {
+                        target: id,
+                        action: None,
+                        command: 0,
+                        source: SwitcherAction::Create(value.clone()),
+                    });
+                }
+                let mut model = tekes_ui_controls::extended::Grid::new(2);
+                model.gap_x = regular;
+                model.gap_y = regular;
+                let grid_content = Content::new(
+                    ComponentId(GRID_GROUP.0 + 1),
+                    tekes_ui_controls::composition::GridContent { model, children },
+                );
+                host.register(ToolbarRegistration {
+                    region: GRID_REGION,
+                    order: 0,
+                    group: Content::new(
+                        GRID_GROUP,
+                        ToolbarGroup::new(ToolbarPlacement::Navigation, vec![grid_content]),
+                    ),
+                    bindings,
+                })
+                .map_err(|e| anyhow::anyhow!("creation grid: {e:?}"))?;
+            } else if host.content_host().get(GRID_GROUP).is_some() {
+                host.remove(GRID_GROUP)
+                    .map_err(|e| anyhow::anyhow!("creation grid remove: {e:?}"))?;
+            }
+        }
+        self.presentation_switcher = SwitcherState {
+            items: visible,
+            grid,
+        };
 
         Ok(())
     }
@@ -378,7 +505,6 @@ mod tests {
                 .unwrap()
                 .title(id)
                 .switcher_icon("tekes-file-text")
-                .list_height(180.)
                 .into()
             })
             .collect()
@@ -677,7 +803,27 @@ mod tests {
     }
     #[test]
     fn narrow_slot_prefers_current_family_and_overflow_keeps_every_hidden_destination() {
-        let mut host = fixture();
+        // Keep three actual destinations: Inspector, Documents, and a distinct
+        // List-mode member. Two tab-only destinations now fit the 120pt slot.
+        let mut members = members();
+        members.push(
+            LocalContainer::new(
+                "reading",
+                Content::new(ComponentId(1), TextContent::new("Reading")),
+            )
+            .unwrap()
+            .presentation(crate::ContainerPresentation::List { height: 180. })
+            .into(),
+        );
+        let mut options = options();
+        options
+            .others
+            .as_mut()
+            .unwrap()
+            .containers
+            .push("reading".into());
+        let mut host = Host::from_containers(members, false, None, Some(options));
+        host.mount_columns();
         host.presentation
             .as_mut()
             .unwrap()
@@ -768,7 +914,17 @@ mod tests {
     }
     #[test]
     fn aggregate_list_has_no_close_all_or_internal_close_and_focus_is_not_closable() {
-        let mut host = fixture();
+        let members = members()
+            .into_iter()
+            .map(|member| match member {
+                Container::Local(container) if container.id() != "focus" => container
+                    .presentation(crate::ContainerPresentation::List { height: 180. })
+                    .into(),
+                member => member,
+            })
+            .collect();
+        let mut host = Host::from_containers(members, false, None, Some(options()));
+        host.mount_columns();
         host.presentation
             .as_mut()
             .unwrap()
