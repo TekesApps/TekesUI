@@ -269,9 +269,28 @@ fn descriptions_use_original_help_and_accessibility_without_extra_label_rows() {
 #[test]
 fn pinned_header_composes_original_back_and_editor_outside_scroll_owner() {
     use tekes_ui_controls::composition::{
-        Button, Component, ComponentId, GridContent, ScrollContent, StackContent, TextFieldContent,
+        Button, Component, ComponentId, ContentEvent, IconImage, IconRenderError, ScrollContent,
+        StackContent, TextFieldContent, WithIconRenderer,
     };
-    let sidebar = tekes_ui_settings::SettingsSidebar::new_with_back(&schema()).unwrap();
+    use tekes_ui_scene::{ImageId, Rect, Scene};
+    use tekes_ui_tokens::{Rgba, Theme};
+    struct Icons;
+    impl tekes_ui_controls::layout_view::IconRenderer for Icons {
+        fn prepare_icon(
+            &mut self,
+            name: &str,
+            _: f32,
+            _: f32,
+            _: Rgba,
+        ) -> Result<IconImage, IconRenderError> {
+            assert_eq!(name, "tekes-search");
+            Ok(IconImage::new(ImageId(99), std::rc::Rc::new(())))
+        }
+        fn draw_icon(&mut self, _: &mut Scene, _: &str, _: Rect, _: Rgba) {
+            panic!("header icon must retain its prepared image lease");
+        }
+    }
+    let mut sidebar = tekes_ui_settings::SettingsSidebar::new_with_back(&schema()).unwrap();
     let root = sidebar
         .host
         .get(ComponentId(3))
@@ -280,8 +299,38 @@ fn pinned_header_composes_original_back_and_editor_outside_scroll_owner() {
         .unwrap();
     assert_eq!(root.children().len(), 2);
     assert!(root.children()[1].component::<ScrollContent>().is_some());
-    let header = root.children()[0].component::<GridContent>().unwrap();
-    assert_eq!(header.model.columns, 1);
+    let header = root.children()[0].component::<StackContent>().unwrap();
+    assert_eq!(
+        header.model.axis,
+        tekes_ui_controls::extended::Axis::Horizontal
+    );
+    assert_eq!(header.children().len(), 2);
+    assert!(header.children()[0].component::<Button>().is_some());
+    assert!(header.children()[1].component::<Button>().is_some());
+    assert!(sidebar.host.get(ComponentId(6)).is_none());
+    let frame = Rect::new(0., 0., 260., 500.);
+    sidebar
+        .render(
+            &mut Scene::new(),
+            &mut WithIconRenderer::new(&mut ListText, &mut Icons),
+            frame,
+            Theme::LIGHT.into(),
+        )
+        .unwrap();
+    let back_mount = sidebar.host.semantic_mount(ComponentId(4));
+    let scroll_mount = sidebar.host.semantic_mount(ComponentId(1));
+    assert!(back_mount.is_some() && scroll_mount.is_some());
+    let search = sidebar.host.get(ComponentId(10)).unwrap().frame();
+    let back = sidebar.host.get(ComponentId(4)).unwrap().frame();
+    assert_eq!(search.center().y, back.center().y);
+    sidebar.event(&ContentEvent::PointerDown(search.center()));
+    sidebar.event(&ContentEvent::PointerUp(search.center()));
+    let header = sidebar
+        .host
+        .get(ComponentId(5))
+        .unwrap()
+        .component::<StackContent>()
+        .unwrap();
     assert_eq!(header.children().len(), 2);
     assert!(header.children()[0].component::<Button>().is_some());
     assert!(
@@ -289,6 +338,14 @@ fn pinned_header_composes_original_back_and_editor_outside_scroll_owner() {
             .component::<TextFieldContent>()
             .is_some()
     );
+    assert!(sidebar.host.get(ComponentId(10)).is_none());
+    assert_eq!(sidebar.host.focused(), Some(ComponentId(6)));
+    assert_eq!(sidebar.host.semantic_mount(ComponentId(4)), back_mount);
+    assert_eq!(sidebar.host.semantic_mount(ComponentId(1)), scroll_mount);
+    assert!(sidebar.cancel_search().unwrap());
+    assert!(sidebar.host.get(ComponentId(6)).is_none());
+    assert_eq!(sidebar.host.focused(), Some(ComponentId(10)));
+    assert_eq!(sidebar.host.semantic_mount(ComponentId(1)), scroll_mount);
 }
 
 #[test]

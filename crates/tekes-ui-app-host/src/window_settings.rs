@@ -1951,7 +1951,7 @@ mod pinned_header_tests {
     // Same original Text + prepared IconImage lease adapter used by the
     // AppHost text/toolbar tests. Production supplies SvgIconCache's GPU service
     // through with_content_icons; this headless fixture validates catalog names.
-    struct HeaderIcons;
+    pub(super) struct HeaderIcons;
     impl tekes_ui_controls::layout_view::IconRenderer for HeaderIcons {
         fn prepare_icon(
             &mut self,
@@ -2451,7 +2451,10 @@ mod navigation_input_tests {
                 .unwrap()
                 .render(
                     &mut Scene::new(),
-                    &mut host.text,
+                    &mut tekes_ui_controls::composition::WithIconRenderer::new(
+                        &mut host.text,
+                        &mut super::pinned_header_tests::HeaderIcons,
+                    ),
                     frame,
                     frame,
                     Theme::LIGHT.into(),

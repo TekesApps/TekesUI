@@ -15527,18 +15527,18 @@ mod interaction_tests {
                         if state == "disabled" {
                             "tertiary-text"
                         } else {
-                            "primary-text"
+                            "secondary-text"
                         },
-                        palette.color("surface-2").unwrap(),
+                        background,
                     ),
                     (
                         layout.increment.content,
                         if state != "normal" {
                             "tertiary-text"
                         } else {
-                            "primary-text"
+                            "secondary-text"
                         },
-                        palette.color("surface-2").unwrap(),
+                        background,
                     ),
                 ] {
                     let labels: Vec<_> = scene
@@ -15563,7 +15563,7 @@ mod interaction_tests {
                             palette.color(role).unwrap(),
                             "{theme:?} {state} {region:?}"
                         );
-                        if role == "primary-text" {
+                        if matches!(role, "primary-text" | "secondary-text") {
                             let luminance = |c: tekes_ui_tokens::Rgba| {
                                 let c = c.to_linear();
                                 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
@@ -15577,7 +15577,7 @@ mod interaction_tests {
                     }
                 }
                 for button in [layout.decrement, layout.increment] {
-                    assert!(scene.primitives().iter().any(|p| matches!(p, Primitive::Quad(q) if q.rect == button.frame && q.fill == palette.color("surface-2").unwrap())));
+                    assert!(!scene.primitives().iter().any(|p| matches!(p, Primitive::Quad(q) if q.rect == button.frame && q.fill.a > 0.)), "transparent step symbols retain their hit frames");
                 }
                 if state != "disabled" {
                     assert!(scene.primitives().iter().any(|p| matches!(p, Primitive::Quad(q) if q.fill.a == 0. && q.border_color == palette.color("border-focused").unwrap() && q.rect.intersection(&layout.decrement.frame).is_some())));
