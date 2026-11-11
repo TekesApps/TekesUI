@@ -3595,21 +3595,50 @@ mod tests {
         gallery.set_view_size(1440., 1000.);
         gallery.build_scene(&mut Scene::new());
         let regions = gallery.cursor_regions();
-        assert_eq!(regions.len(), 1);
+        let resize: Vec<_> = regions
+            .iter()
+            .filter(|region| {
+                matches!(
+                    region.icon,
+                    tekes_ui_platform_macos::CursorIcon::ResizeHorizontal
+                        | tekes_ui_platform_macos::CursorIcon::ResizeVertical
+                )
+            })
+            .collect();
+        assert_eq!(resize.len(), 1);
         assert_eq!(
-            regions[0].icon,
+            resize[0].icon,
             tekes_ui_platform_macos::CursorIcon::ResizeHorizontal
         );
-        assert!(regions[0].size.width > 0. && regions[0].size.height > 0.);
+        assert!(resize[0].size.width > 0. && resize[0].size.height > 0.);
         gallery.handle_input(&Event::Focus(false));
         assert!(gallery.cursor_regions().is_empty());
         gallery.handle_input(&Event::Focus(true));
         gallery.build_scene(&mut Scene::new());
-        assert_eq!(gallery.cursor_regions().len(), 1);
+        assert_eq!(
+            gallery
+                .cursor_regions()
+                .iter()
+                .filter(|region| {
+                    matches!(
+                        region.icon,
+                        tekes_ui_platform_macos::CursorIcon::ResizeHorizontal
+                            | tekes_ui_platform_macos::CursorIcon::ResizeVertical
+                    )
+                })
+                .count(),
+            1
+        );
         gallery.apply(crate::gallery::Command::Page(
             crate::gallery::Page::Workbench(index("button")),
         ));
-        assert!(gallery.cursor_regions().is_empty());
+        assert!(gallery.cursor_regions().iter().all(|region| {
+            !matches!(
+                region.icon,
+                tekes_ui_platform_macos::CursorIcon::ResizeHorizontal
+                    | tekes_ui_platform_macos::CursorIcon::ResizeVertical
+            )
+        }));
     }
 
     #[test]

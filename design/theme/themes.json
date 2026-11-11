@@ -86,6 +86,12 @@
             "dark": "#A3A39E",
             "light-ic": "#4E4A41",
             "dark-ic": "#C8C0B4"
+          },
+          "p-border-focused": {
+            "light": "#5E5E5B",
+            "dark": "#B0B0AC",
+            "light-ic": "#111111",
+            "dark-ic": "#FFFFFF"
           }
         },
         "status_base": {

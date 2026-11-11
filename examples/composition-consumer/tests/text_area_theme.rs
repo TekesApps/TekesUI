@@ -3,7 +3,7 @@
 mod coretext;
 use tekes_ui_controls::{TextSurface, TextSurfaceHost, composition::*};
 use tekes_ui_scene::{Primitive, Quad, Rect, Scene};
-use tekes_ui_tokens::{Palette, Rgba, Theme, proposal};
+use tekes_ui_tokens::{Palette, Rgba, Stroke, Theme, proposal};
 fn contrast(a: Rgba, b: Rgba) -> f32 {
     let l = |c: Rgba| {
         let c = c.to_linear();
@@ -119,7 +119,7 @@ fn assert_input(scene: &Scene, frame: Rect, palette: Palette, backing: f32) -> u
 fn has_attached_focus(scene: &Scene, frame: Rect, palette: Palette) -> bool {
     // Both fixtures use decorated Field presentation, including the TextFieldContent adapter.
     assert!(!scene.primitives().iter().any(|p| matches!(p, Primitive::Quad(q) if q.fill.a == 0. && q.border_width > 0. && q.rect.center() == frame.center())));
-    scene.primitives().iter().any(|p| matches!(p, Primitive::Quad(q) if q.rect == frame && q.border_width == proposal::metric("stroke", "c-focus-width").unwrap() && q.border_color == palette.color("border-focused").unwrap()))
+    scene.primitives().iter().any(|p| matches!(p, Primitive::Quad(q) if q.rect == frame && q.border_width == if palette.theme.is_increased() { proposal::metric("stroke", "c-focus-width").unwrap() } else { Stroke::Rule.value() } && q.border_color == palette.color("border-focused").unwrap()))
 }
 
 fn assert_thumb(scene: &Scene, frame: Rect, palette: Palette) -> Rect {

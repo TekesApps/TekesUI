@@ -306,14 +306,19 @@ class ThemeSystemTests(unittest.TestCase):
             # Undo those exact bindings to prove all other historic channels;
             # preserve explicit consumer overrides and the immutable fixture.
             boundary_revision = {
-                'light': {'border': ('#7C7C79', '#737370'), 'border-focused': ('#5E5E5B', '#42423F')},
-                'dark': {'border': ('#7E7E7A', '#A3A39E'), 'border-focused': ('#B0B0AC', '#EEEEEA')},
+                'light': {'border': ('#7C7C79', '#737370'), 'border-focused': ('#6B6B68', '#42423F')},
+                'dark': {'border': ('#7E7E7A', '#A3A39E'), 'border-focused': ('#969692', '#EEEEEA')},
             }.get(record['mode'], {})
             overrides = instance['inputs']['overrides']['neutral_base']
             for role, (new_color, historic_color) in boundary_revision.items():
                 if 'p-' + role in overrides:
                     self.assertEqual(instance['compiled_color_roles'][record['mode']][role], overrides['p-' + role][record['mode']])
-                    continue
+                    if record['theme_id'] != 'blue-inputs' or role != 'border-focused':
+                        continue
+                    # This batch explicitly preserves blue-inputs' pre-change
+                    # focus on its custom surface. It still differs from the
+                    # immutable v1.6.1 fixture, so restore only that exact role.
+                    new_color = {'light': '#5E5E5B', 'dark': '#B0B0AC'}[record['mode']]
                 self.assertEqual(instance['compiled_color_roles'][record['mode']][role], new_color)
                 restored = 0
                 for surface, usage, state, roles in g.bindings(self.rules()):

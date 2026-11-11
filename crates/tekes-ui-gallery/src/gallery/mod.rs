@@ -130,12 +130,40 @@ impl Default for Gallery {
 
 impl Gallery {
     pub fn cursor_regions(&self) -> Vec<tekes_ui_platform_macos::CursorRegion> {
-        let Page::Workbench(i) = self.page else {
-            return Vec::new();
-        };
-        self.workbench
-            .resize_target(i)
-            .map(|(r, axis)| tekes_ui_platform_macos::CursorRegion {
+        use tekes_ui_platform_macos::{CursorIcon, CursorRegion};
+
+        fn text_regions(demo: &text_demo::TextDemo) -> Vec<CursorRegion> {
+            demo.text_cursor_frames()
+                .into_iter()
+                .map(|r| CursorRegion {
+                    origin: tekes_ui_platform_macos::Point {
+                        x: r.origin.x as f64,
+                        y: r.origin.y as f64,
+                    },
+                    size: tekes_ui_platform_macos::Size {
+                        width: r.size.width as f64,
+                        height: r.size.height as f64,
+                    },
+                    icon: CursorIcon::IBeam,
+                })
+                .collect()
+        }
+
+        let mut regions = text_regions(&self.navigation_search);
+        match self.content_page() {
+            Page::Text => regions.extend(text_regions(&self.text_view)),
+            Page::TextEditing => regions.extend(text_regions(&self.editor)),
+            Page::ScrollArea => regions.extend(text_regions(&self.scroll_demo)),
+            Page::Icons => regions.extend(text_regions(&self.icon_search)),
+            _ => {}
+        }
+
+        // Native cursor regions are checked in reverse order. Keep resize handles
+        // last so they retain priority when a text frame touches a splitter.
+        if let Page::Workbench(i) = self.page
+            && let Some((r, axis)) = self.workbench.resize_target(i)
+        {
+            regions.push(CursorRegion {
                 origin: tekes_ui_platform_macos::Point {
                     x: r.origin.x as f64,
                     y: r.origin.y as f64,
@@ -145,16 +173,12 @@ impl Gallery {
                     height: r.size.height as f64,
                 },
                 icon: match axis {
-                    tekes_ui_controls::extended::Axis::Horizontal => {
-                        tekes_ui_platform_macos::CursorIcon::ResizeHorizontal
-                    }
-                    tekes_ui_controls::extended::Axis::Vertical => {
-                        tekes_ui_platform_macos::CursorIcon::ResizeVertical
-                    }
+                    tekes_ui_controls::extended::Axis::Horizontal => CursorIcon::ResizeHorizontal,
+                    tekes_ui_controls::extended::Axis::Vertical => CursorIcon::ResizeVertical,
                 },
-            })
-            .into_iter()
-            .collect()
+            });
+        }
+        regions
     }
 
     /// 参照目录取自环境变量 `TEKESUI_REFERENCE_DIR`。
@@ -2333,7 +2357,7 @@ mod tests {
         let normal = tekes_ui_tokens::proposal::render_color("border", g.theme()).unwrap();
         let focused = tekes_ui_tokens::proposal::render_color("border-focused", g.theme()).unwrap();
         let rule = tekes_ui_tokens::proposal::metric("stroke", "stroke-rule").unwrap();
-        let focus_width = tekes_ui_tokens::proposal::metric("stroke", "c-focus-width").unwrap();
+        let focus_width = rule;
         assert_eq!(border(&mut g), ((normal, rule), None));
         let point = rect.center();
         g.handle_input(&click(point.x.into(), point.y.into()));
@@ -2346,6 +2370,61 @@ mod tests {
         assert_eq!(border(&mut g), ((focused, focus_width), None));
         g.handle_input(&click(600., 300.));
         assert_eq!(border(&mut g), ((normal, rule), None));
+    }
+
+    #[test]
+    fn native_text_cursor_tracks_navigation_and_visible_text_demo_only() {
+        let mut g = Gallery::new();
+        g.apply(Command::Page(Page::Text));
+        g.set_view_size(1440., 1000.);
+        g.build_scene(&mut Scene::new());
+
+        let nav = navigation::search_rect().center();
+        let text = g
+            .text_view
+            .visible_frame_at(0)
+            .expect("visible text surface")
+            .center();
+        let has_ibeam_at = |regions: &[tekes_ui_platform_macos::CursorRegion], point: Point| {
+            regions.iter().any(|region| {
+                region.icon == tekes_ui_platform_macos::CursorIcon::IBeam
+                    && point.x as f64 >= region.origin.x
+                    && point.x as f64 <= region.origin.x + region.size.width
+                    && point.y as f64 >= region.origin.y
+                    && point.y as f64 <= region.origin.y + region.size.height
+            })
+        };
+        let regions = g.cursor_regions();
+        assert!(has_ibeam_at(&regions, nav), "navigation search uses I-beam");
+        assert!(
+            has_ibeam_at(&regions, text),
+            "visible text surface uses I-beam"
+        );
+
+        g.text_view.set_disabled(true);
+        assert!(
+            !has_ibeam_at(&g.cursor_regions(), text),
+            "disabled text surface does not advertise I-beam"
+        );
+
+        g.text_view.set_disabled(false);
+        g.apply(Command::Page(Page::Tokens));
+        g.build_scene(&mut Scene::new());
+        let regions = g.cursor_regions();
+        assert!(
+            has_ibeam_at(&regions, nav),
+            "navigation search remains visible"
+        );
+        assert!(
+            !has_ibeam_at(&regions, text),
+            "off-page text surface is not advertised"
+        );
+
+        g.handle_input(&Event::Focus(false));
+        assert!(
+            g.cursor_regions().is_empty(),
+            "inactive window clears cursors"
+        );
     }
 
     #[test]

@@ -245,6 +245,9 @@ impl AppDelegate {
                 false,
             )
         };
+        // Let the window distribute the MouseMoved events requested by the
+        // content view's full-viewport hover tracking area.
+        window.setAcceptsMouseMovedEvents(true);
         // SAFETY: 窗口不是由窗口控制器创建的，必须关掉关闭时自动 release。
         unsafe { window.setReleasedWhenClosed(false) };
         window.setTitle(&NSString::from_str(&wc.title));

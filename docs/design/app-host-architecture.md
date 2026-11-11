@@ -1,5 +1,32 @@
 # TekesUI AppHost 框架设计
 
+## 2026-11-11：Workspace 交换与 Secondary actions（#229）
+
+Switch 是 Workspace（Focus + Others）的单一布局命令，不由每个 Container 重复声明；它交换当前 Focus 和当前选中的普通 Others Container。Others 隐藏、未配置或选中聚合 List 时不可用，不将 List 整体提升。动作执行仍保持原实例、导航绑定与输入取消规则。
+
+Secondary actions 通过三点图标菜单呈现，菜单项目沿原命令来源派发，不能因汇总丢失 Container 的实例/代际身份。Workspace 命令只注册一次；Container 的业务次要动作仍由 Container 声明，按它自己的 toolbar host 呈现，不迁移 Nav/Focus/Others 的列归属。前进后退、内容图标选择组及 Others 的展开/关闭/显隐保留直接导航按钮。菜单打开后若目标切换、关闭或失效，原捕获与旧动作必须撤销；不创建第二套菜单/焦点状态机。
+
+展开时隐藏 Focus 仍承载原 Window Toolbar；绘制必须保留布局给出的零宽原始 frame，不能每帧改成不同的空 Rect，造成未变布局反复取消菜单。真实几何变化仍撤销旧输入。
+
+此节是本批追加设计，替代旧版每个 Container 的 Switch 注册示例；实现和验收状态以 #229 当前记录为准。
+
+## 2026-11-11：图标组状态与 Others 展开导航（#229 / #245）
+
+本节为用户最新确认的增量，取代下方旧批次“Others Close 固定在内部右上”的位置规则；旧记录只保留设计沿革。源码与受影响验收按 #229 / #245 当前交付记录核对；设计声明不代替验收。
+
+Window Toolbar 继续按 Nav / Focus / Others 实际区域组织。 前进/后退是 NavContainer 注册的 icon button commands：Gallery 与带 Nav 的 AppHost 模板把导航 Toolbar 显式绑定 NavContainer，模板的 Nav Toolbar 使用 Window host，保持在导航区域，不随 Focus/Others 交换。导航命令的展示 owner 与业务 navigation_targets 独立，业务目标仍为原文档实例；Nav 隐藏时不把历史命令搬到 Focus。无 Nav 的显式消费者保留自己的 Toolbar 绑定。Others 的内容类型图标组成一个共享选择组：`radio=true` 表示同组互斥，`radio=false` 表示无该互斥约束；本场景使用 true，选中身份仍来自原当前内容，不复制第二份选中状态。普通单图标按钮使用与常规 icon button 相同的自然尺寸、hover/pressed/checked 状态和 token；family 图标与 chevron 水平居中，额外宽度只来自实际箭头和既有间距，不任意拉宽命中背景。
+
+每个 Container（包括当前 Focus 和 Others 成员）沿现有 `switcher_icon` 声明自己的图标；无声明统一采用现有图标库 `tekes-file-generic`。图标随稳定 Container 身份交换，不存储第二份角色图标；family trigger 采用该组当前实例（未选中组采用首个可见实例）的图标加 chevron，菜单仍使用原实例标题和 checked 身份。原 family 配置保留其分组身份，不覆盖实例图标。聚合 List 不提供一键 Close／Expand；其成员仍按单个 Container 合同处理。
+
+Others 布局导航独立于内容选择组，按 `[expand/collapse] [close] [on/off]` 排列在对应 Window 段。Close 为原当前可关闭的单个 Others Container 派发，Focus 不显示 Close；聚合 List 不凭一个 Close 关闭所有成员。业务 Toolbar 的 `.host` 仍只决定业务项呈现位置，不隐式把这些 Window 导航动作复制到内部 Toolbar。关闭按钮迁出后不保留空白内部 Close 条。
+
+Expand 将 Others 当前显示区域向左扩展到 Focus+Others 的总宽度，Nav 不受影响；Focus 隐藏而非关闭，保留内容实例、草稿、导航绑定和原布局比例。Collapse 恢复原 Focus/Other 列与 splitter 比例，不以重建组件实现恢复。显隐、关闭、交换和窄宽情况下保留可达的恢复入口，并按原协议撤销已失效的 capture/菜单/AX 目标；不得把原容器身份替换成一个新的聚合容器。具体状态转换复用既有 PresentationState，并对照 Swift Tekes 的实际 expand/collapse 实现。
+
+Window switch、内容图标与 dropdown 的 hover 必须沿原输入链到达控件并可见；不在 AppHost 单独补颜色。Textbox 的插入点、鼠标 IBeam 和焦点边框由 #245 单独核对：Gold7 G2 微对比、G3 精细且清晰的焦点边界、G5 输入保护分别留代码与实际体验证据。统一 Theme 契约继续作为状态色值真源。
+
+验收只覆盖本次受影响路径：选择组互斥与身份、普通 icon/dropdown 布局、hover/leave、展开收起/显示隐藏/单项关闭、splitter恢复与旧输入目标失效；复用未变输入和原生证据，保留真实失败，不启动 VoiceOver。
+
+
 ## 2026-11-10: Window Toolbar partition correction (#229)
 
 Window Toolbar keeps the actual Nav / Focus / Others column allocations. A Container's host=Window presents its title, navigation and business commands in its current column partition, never in a global mixed command pool. The partition follows splitter bounds, visibility and Focus exchange while original Source/command ownership stays unchanged. Host=Container continues to use its declared internal edge. Others single-instance icons and family icon menus start at the leading edge of the Others partition, to the right of its splitter; their measured width reserves space from business commands in that same partition. Hidden-column restore actions remain reachable at a visible partition edge.
@@ -80,7 +107,7 @@ NavBar、Focus、Others 正文到 Toolbar 下缘和相邻 splitter/窗边统一�
 - Container 正文四边使用现有 `Spacing::Loose`（16pt）token，测量、绘制、滚动、输入与 AX 几何必须一致；不把 padding 叠加到 Toolbar 外围。
 - 容器自有动作提供明确交换入口：others 单容器显示 `Switch to Focus`；focus 显示 `Switch to Others` 并与当前选中的普通 Container Tab 交换；当前为 List 或没有单容器目标时禁用，不自动选择第一项。实例、内容、命令来源保持；NavBar 不参与这两个展示位的交换。
 - Others 的普通 Tabs 提供真正关闭操作，关闭与选择分离；关闭后的选择、内容生命周期及恢复规则沿用容器模型，不仅绘制关闭图标。聚合 List 与单容器关闭语义分开，不能借关闭 List 删除所有成员。
-- Gallery 是可用的 AppHost 框架/模板，不能退化为静态组件拼盘。必须接回旧版已有前进/后退、NavBar 收起/展开、Others 收起/展开，并通过原导航服务维护历史与当前业务选择。收起后的恢复入口始终可达；恢复原容器实例、选中项及内容状态。导航列表选择、主内容与 Inspector 呈现一致，前进/后退真正恢复上下文。 `navigation_toolbar_follows_focus` 为显式选项，默认关闭保持既有消费者；Gallery启用后导航贡献只改变展示位置，业务 `navigation_targets` 仍绑定稳定文档容器。NavBar 的受控导航请求经过原服务 Push/publication，Back/Forward 的 publication 不再次 Push。
+- Gallery 是可用的 AppHost 框架/模板，不能退化为静态组件拼盘。必须接回旧版已有前进/后退、NavBar 收起/展开、Others 收起/展开，并通过原导航服务维护历史与当前业务选择。收起后的恢复入口始终可达；恢复原容器实例、选中项及内容状态。导航列表选择、主内容与 Inspector 呈现一致，前进/后退真正恢复上下文。 `navigation_toolbar_follows_focus` 为显式选项，默认关闭保持既有消费者；Gallery不启用该选项：Back/Forward 绑定 NavContainer；业务 `navigation_targets` 仍绑定稳定文档容器。NavBar 的受控导航请求经过原服务 Push/publication，Back/Forward 的 publication 不再次 Push。
 - Gallery AppHost 使用实际共享组件展示职责：分 section 的导航 List、多行主内容及换行、Inspector/Property 表单。使用有限真实示例，不新建演示框架。
 - AppHost 各原有内容根及 Toolbar/Tabs 使用现有 SVG 图标服务；正文排版由实际 AppHost Text 渲染器按有限宽度测量和绘制，不用 Gallery 的其他渲染器测试代签。换行布局宽度与 CoreText 尾部空白 advance 分别处理，保留输入系统原有排版契约。
 - 共享 TextField focus、菜单行和 Tabs 视觉另按关联组件工作项核对。对照 AppKit，优先去掉无意义逐项描边和重复焦点外框，保留清晰键盘焦点、选择、禁用和高对比度状态。以实际渲染及 token 读取判断原因，不能只换颜色掩盖几何问题。

@@ -1557,9 +1557,10 @@ impl TextSurface {
             scene.push_clip(background_clip);
         }
         if self.presentation == TextSurfacePresentation::Field {
-            // Fields express editing focus on their original edge. There is
-            // one contour, with no second outward ring or gap. Explicit error
-            // ink retains priority, while focus still increases that edge.
+            // Fields express editing focus on their original edge. Keep one
+            // contour; standard themes use the rule-width line and increased
+            // contrast retains the existing emphasis-width treatment. Explicit
+            // error ink retains priority over focus color.
             let editing_focus = focused && !self.input.disabled;
             let boundary = if self.error {
                 proposal::control_boundary("error", theme.theme).expect("JSON text error boundary")
@@ -1585,7 +1586,7 @@ impl TextSurface {
                     proposal::metric("radius", "radius-input").expect("JSON radius"),
                 )
                 .with_border(
-                    if editing_focus {
+                    if editing_focus && theme.theme.is_increased() {
                         proposal::metric("stroke", "c-focus-width").expect("input focus width")
                     } else {
                         Stroke::Rule.value()
@@ -1702,7 +1703,7 @@ impl TextSurface {
         self.scroll.geometry(self.inner, self.ancestor_clip)
     }
 
-    fn visible_content(&self) -> Option<Rect> {
+    pub(crate) fn visible_content(&self) -> Option<Rect> {
         self.geometry().visible_viewport_rect()
     }
 }
@@ -1810,7 +1811,7 @@ mod tests {
                             let editing_focus = focused && !disabled;
                             assert_eq!(
                                 quad.border_width,
-                                if editing_focus {
+                                if editing_focus && theme.is_increased() {
                                     proposal::metric("stroke", "c-focus-width").unwrap()
                                 } else {
                                     Stroke::Rule.value()

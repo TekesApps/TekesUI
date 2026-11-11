@@ -199,17 +199,17 @@
       },
       {
         "name": "p-border-focused",
-        "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
+        "usage": "中性焦点强调；普通主题保持必要对比并降低突出度，高对比主题保留",
         "value": {
-          "dark": "#B0B0AC",
+          "dark": "#969692",
           "dark-ic": "#FFFFFF",
-          "light": "#5E5E5B",
+          "light": "#6B6B68",
           "light-ic": "#111111"
         }
       },
       {
         "name": "border-focused",
-        "usage": "独立中性焦点外环；宽度和间隔由组件焦点 token 决定",
+        "usage": "统一中性焦点语义；Field使用原轮廓细边，其余焦点结构由对应组件token决定",
         "value": "{p-border-focused}"
       },
       {

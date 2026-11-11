@@ -641,6 +641,7 @@ impl TekesView {
             })
             .map(|r| r.icon);
         let cursor = match icon {
+            Some(crate::CursorIcon::IBeam) => objc2_app_kit::NSCursor::IBeamCursor(),
             Some(crate::CursorIcon::ResizeHorizontal) => resize_cursor(true),
             Some(crate::CursorIcon::ResizeVertical) => resize_cursor(false),
             None => objc2_app_kit::NSCursor::arrowCursor(),

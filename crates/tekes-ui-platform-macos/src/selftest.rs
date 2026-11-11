@@ -1444,6 +1444,14 @@ pub fn titlebar_contract() -> Vec<(bool, f64, f64)> {
                     crate::CursorRegion {
                         origin: crate::Point { x: 180., y: 100. },
                         size: crate::Size {
+                            width: 100.,
+                            height: 100.,
+                        },
+                        icon: crate::CursorIcon::IBeam,
+                    },
+                    crate::CursorRegion {
+                        origin: crate::Point { x: 180., y: 100. },
+                        size: crate::Size {
                             width: 9.,
                             height: 100.,
                         },
@@ -1495,6 +1503,8 @@ pub fn titlebar_contract() -> Vec<(bool, f64, f64)> {
                 false,
             )
         };
+        window.setAcceptsMouseMovedEvents(true);
+        assert!(window.acceptsMouseMovedEvents());
         unsafe { window.setReleasedWhenClosed(false) };
         window.setToolbarStyle(NSWindowToolbarStyle::Unified);
         if extended {
@@ -1593,6 +1603,10 @@ pub fn titlebar_contract() -> Vec<(bool, f64, f64)> {
             view.updateTrackingAreas();
         }
         let areas = view.trackingAreas();
+        assert!(areas.iter().any(|area| {
+            area.options()
+                .contains(objc2_app_kit::NSTrackingAreaOptions::MouseMoved)
+        }));
         assert_eq!(
             areas
                 .iter()
@@ -1600,12 +1614,13 @@ pub fn titlebar_contract() -> Vec<(bool, f64, f64)> {
                     .options()
                     .contains(objc2_app_kit::NSTrackingAreaOptions::CursorUpdate))
                 .count(),
-            3
+            4
         );
         for (x, y, expected) in [
             (184., 150., Some(crate::CursorIcon::ResizeHorizontal)),
             (350., 204., Some(crate::CursorIcon::ResizeVertical)),
-            (250., 150., None),
+            (205., 150., Some(crate::CursorIcon::IBeam)),
+            (500., 300., None),
         ] {
             let (icon, cursor) = view.cursor_for_point(crate::Point { x, y });
             assert_eq!(icon, expected);
@@ -1616,6 +1631,11 @@ pub fn titlebar_contract() -> Vec<(bool, f64, f64)> {
                 "actual native cursor target"
             );
         }
+        let (_, ibeam) = view.cursor_for_point(crate::Point { x: 205., y: 150. });
+        assert!(std::ptr::eq(
+            &*ibeam,
+            &*objc2_app_kit::NSCursor::IBeamCursor()
+        ));
         view.set_cursor_regions(Vec::new());
         assert_eq!(
             view.trackingAreas()
@@ -1633,7 +1653,7 @@ pub fn titlebar_contract() -> Vec<(bool, f64, f64)> {
             &*objc2_app_kit::NSCursor::arrowCursor()
         ));
         println!(
-            "NATIVE_CURSOR_CONTRACT extended={extended} interior_boundary_areas=2 rebuilds=3 native_horizontal_vertical_and_arrow=true removed_region_restores_arrow=true"
+            "NATIVE_CURSOR_CONTRACT extended={extended} interior_boundary_areas=3 rebuilds=3 native_ibeam_horizontal_vertical_and_arrow=true removed_region_restores_arrow=true mouse_moved_enabled=true"
         );
         let down = mouse_event(&window, NSEventType::LeftMouseDown, 100., 20., 1).unwrap();
         view.mouseDown(&down);

@@ -2162,6 +2162,33 @@ impl ContentHost {
         collect(self.scope(), &mut regions);
         Ok(regions)
     }
+    /// Visible text hit regions for the platform's native text cursor. Uses
+    /// each original TextSurface viewport, including ancestor and scroll clips;
+    /// it does not focus a field or modify its editing state.
+    pub fn text_cursor_regions(&self) -> Vec<Rect> {
+        if !self.window_active || self.requires_curve_geometry() {
+            return Vec::new();
+        }
+        fn collect(node: &Content, regions: &mut Vec<Rect>) {
+            if !node.active() {
+                return;
+            }
+            if node.component.semantics().role == ContentRole::TextInput
+                && let Some(surface) = node.component.text_surface()
+                && !surface.input.disabled
+                && let Some(region) = surface.visible_content()
+                && !region.is_empty()
+            {
+                regions.push(region);
+            }
+            for child in node.component.children() {
+                collect(child, regions);
+            }
+        }
+        let mut regions = Vec::new();
+        collect(self.scope(), &mut regions);
+        regions
+    }
     /// Current actual-layout focus result of the retained original owner.
     pub fn required_focus_result(&self, id: ComponentId) -> Option<RequiredFocusResult> {
         self.scope()

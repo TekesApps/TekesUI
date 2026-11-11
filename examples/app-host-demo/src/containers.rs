@@ -121,11 +121,11 @@ fn assembly(layout: Layout, backing: Backing) -> Result<(Vec<Container>, Present
                 .list_height(260.)
                 .into(),
         ];
-        let mut options = PresentationOptions::new(focus);
+        let mut options = PresentationOptions::new(focus).workspace_switch(layout.others());
         if layout.nav() {
             containers.push(
                 ProcessContainer::new(definitions[2])
-                    .toolbar_host(tekes_ui_app_host::ContainerToolbarHost::Container { position: tekes_ui_app_host::ContainerToolbarPosition::Top }).title("Process NavBar")
+                    .toolbar_host(tekes_ui_app_host::ContainerToolbarHost::Window).title("Process NavBar")
                     .into(),
             );
             options = options.nav_bar(nav);
@@ -154,7 +154,7 @@ fn assembly(layout: Layout, backing: Backing) -> Result<(Vec<Container>, Present
         } else {
             options = options.navigation_targets(vec![focus.into()]);
         }
-        options = options.navigation_toolbar(focus);
+        options = options.navigation_toolbar(if layout.nav() { nav } else { focus });
         return Ok((containers, options));
     }
     let remote = if matches!(backing, Backing::Mixed) {
@@ -163,10 +163,10 @@ fn assembly(layout: Layout, backing: Backing) -> Result<(Vec<Container>, Present
         "preview"
     };
     let mut containers: Vec<Container> = vec![local("notes", true)?.list_height(260.).into()];
-    let mut options = PresentationOptions::new("notes").navigation_toolbar("notes");
+    let mut options = PresentationOptions::new("notes").navigation_toolbar("notes").workspace_switch(layout.others());
     if layout.nav() {
-        containers.push(local("navbar", false)?.into());
-        options = options.nav_bar("navbar");
+        containers.push(local("navbar", false)?.toolbar_host(tekes_ui_app_host::ContainerToolbarHost::Window).into());
+        options = options.nav_bar("navbar").navigation_toolbar("navbar");
     }
     if layout.others() {
         containers.push(
@@ -280,9 +280,23 @@ mod tests {
         ] {
             for backing in [Backing::Mixed, Backing::Local, Backing::Process] {
                 let (containers, options) = assembly(layout, backing).unwrap();
-                let state = PresentationState::new(&containers, options.clone()).unwrap();
+                let mut state = PresentationState::new(&containers, options.clone()).unwrap();
                 assert_eq!(state.nav_bar_id().is_some(), layout.nav());
                 assert_eq!(state.others().is_some(), layout.others());
+                if layout.nav() {
+                    let owner = state.nav_bar_id().unwrap().to_owned();
+                    let targets = state.navigation_targets().to_vec();
+                    assert_eq!(state.navigation_toolbar_presenter_id(), Some(owner.as_str()));
+                    if let Some(other) = state.others_ids().first().cloned() {
+                        state.promote(&other).unwrap();
+                        assert_eq!(state.navigation_toolbar_presenter_id(), Some(owner.as_str()));
+                        assert_eq!(state.navigation_targets(), targets);
+                    }
+                    state.toggle_nav_bar().unwrap();
+                    assert_eq!(state.navigation_toolbar_presenter_id(), Some(owner.as_str()));
+                    state.toggle_nav_bar().unwrap();
+                    assert_eq!(state.navigation_toolbar_presenter_id(), Some(owner.as_str()));
+                }
                 AppWindow::from_containers(containers, options).unwrap();
             }
         }

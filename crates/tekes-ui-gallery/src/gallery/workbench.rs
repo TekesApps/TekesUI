@@ -11028,7 +11028,12 @@ mod interaction_tests {
                     text.scale(),
                 );
                 let palette = Palette::from(theme);
-                let attached_focus=scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q) if q.rect==frame && q.border_width == proposal::metric("stroke", "c-focus-width").unwrap() && q.border_color==palette.color("border-focused").unwrap()));
+                let focus_width = if theme.is_increased() {
+                    proposal::metric("stroke", "c-focus-width").unwrap()
+                } else {
+                    proposal::metric("stroke", "stroke-rule").unwrap()
+                };
+                let attached_focus=scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q) if q.rect==frame && q.border_width == focus_width && q.border_color==palette.color("border-focused").unwrap()));
                 assert_eq!(
                     attached_focus, !placeholder,
                     "real query focus vs original unfocused placeholder"
@@ -11280,7 +11285,7 @@ mod interaction_tests {
                 if q.fill.a == 0. && q.border_width > 0. && q.rect.center() == frame.center()))
             );
             scene.primitives().iter().any(|p| matches!(p, Primitive::Quad(q) if q.rect == frame
-                && q.border_width == proposal::metric("stroke", "c-focus-width").unwrap()
+                && q.border_width == if palette.theme.is_increased() { proposal::metric("stroke", "c-focus-width").unwrap() } else { proposal::metric("stroke", "stroke-rule").unwrap() }
                 && q.border_color == palette.color(if error { "status-failed" } else { "border-focused" }).unwrap()))
         }
 
@@ -11601,7 +11606,7 @@ mod interaction_tests {
             );
             scene.primitives().iter().any(|p| {
                 matches!(p, Primitive::Quad(q) if q.rect == frame
-                && q.border_width == proposal::metric("stroke", "c-focus-width").unwrap()
+                && q.border_width == if palette.theme.is_increased() { proposal::metric("stroke", "c-focus-width").unwrap() } else { proposal::metric("stroke", "stroke-rule").unwrap() }
                 && q.border_color == palette.color("border-focused").unwrap())
             })
         }
@@ -12668,7 +12673,12 @@ mod interaction_tests {
             );
             // The original Form editor has Field presentation: one attached
             // focus edge; document Content retains a separate scope elsewhere.
-            assert_eq!(scene.primitives().iter().filter(|p| matches!(p, Primitive::Quad(q) if q.rect == frame && q.border_width == proposal::metric("stroke", "c-focus-width").unwrap() && q.border_color == palette.color("border-focused").unwrap())).count(), 1);
+            let focus_width = if palette.theme.is_increased() {
+                proposal::metric("stroke", "c-focus-width").unwrap()
+            } else {
+                proposal::metric("stroke", "stroke-rule").unwrap()
+            };
+            assert_eq!(scene.primitives().iter().filter(|p| matches!(p, Primitive::Quad(q) if q.rect == frame && q.border_width == focus_width && q.border_color == palette.color("border-focused").unwrap())).count(), 1);
             assert!(!scene.primitives().iter().any(|p| matches!(p, Primitive::Quad(q) if q.fill.a == 0. && q.border_width > 0. && q.rect.center() == frame.center())));
             assert_label(
                 &scene,
@@ -16892,7 +16902,7 @@ mod interaction_tests {
                     .primitives()
                     .iter()
                     .any(|p| matches!(p, Primitive::Quad(q)
-                if q.rect == initial_query && q.border_width == proposal::metric("stroke", "c-focus-width").unwrap()
+                if q.rect == initial_query && q.border_width == if theme.is_increased() { proposal::metric("stroke", "c-focus-width").unwrap() } else { proposal::metric("stroke", "stroke-rule").unwrap() }
                 && q.border_color == palette.color("border-focused").unwrap()))
             );
             assert!(

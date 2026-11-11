@@ -10,7 +10,15 @@ pub(crate) enum Source {
     Navigation(ComponentSource),
     Undo(ComponentSource),
     Title,
+    WorkspaceSwitch {
+        focus: u64,
+        other: Option<u64>,
+    },
     Close(String),
+    Expand {
+        container: String,
+        expanded: bool,
+    },
     Panel {
         instance: u64,
         index: usize,
@@ -148,6 +156,9 @@ impl MountedToolbar {
                                         |control| {
                                             control.set_group_together(
                                                 *overflow == ToolbarGroupOverflow::Together,
+                                            );
+                                            control.set_menu_only(
+                                                *overflow == ToolbarGroupOverflow::Menu,
                                             );
                                             control.set_actions(
                                                 buttons
@@ -540,6 +551,7 @@ pub(crate) fn close_button(target: ComponentId, title: &str) -> Content {
         .with_accessible_name(format!("Close {title}"))
         .with_help(format!("Close {title}"));
     button.variant = tekes_ui_controls::paint::ButtonVariant::Toolbar;
-    button.set_transparent_chrome(true);
+    button.set_selection_fill_only(true);
+    button.set_toolbar_icon_slot(true);
     Content::new(target, button)
 }

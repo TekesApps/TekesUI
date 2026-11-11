@@ -297,7 +297,7 @@ fn existing_choice_states_preserve_values_and_use_actual_production_tokens() {
                         assert_eq!(base.border_color, palette.color(boundary).unwrap());
                         assert_eq!(
                             base.border_width,
-                            if focused {
+                            if focused && theme.is_increased() {
                                 proposal::metric("stroke", "c-focus-width").unwrap()
                             } else {
                                 proposal::metric("stroke", "stroke-rule").unwrap()

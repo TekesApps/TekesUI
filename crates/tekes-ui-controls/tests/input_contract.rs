@@ -185,7 +185,7 @@ fn input_states_preserve_draft_selection_geometry_and_editability() {
                             boundary.border_width,
                             proposal::metric(
                                 "stroke",
-                                if focused && !disabled {
+                                if focused && !disabled && theme.is_increased() {
                                     "c-focus-width"
                                 } else {
                                     "stroke-rule"

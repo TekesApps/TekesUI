@@ -73,6 +73,8 @@ pub struct PresentationOptions {
     /// Explicitly keep window history controls in the current focus Toolbar.
     /// Business navigation_targets and the service identity remain unchanged.
     pub navigation_toolbar_follows_focus: bool,
+    /// One Workspace-owned exchange action, presented in its secondary menu.
+    pub workspace_switch: bool,
 }
 impl PresentationOptions {
     pub fn new(focus: impl Into<String>) -> Self {
@@ -86,7 +88,12 @@ impl PresentationOptions {
             navigation_targets: Vec::new(),
             navigation_toolbar: None,
             navigation_toolbar_follows_focus: false,
+            workspace_switch: false,
         }
+    }
+    pub fn workspace_switch(mut self, enabled: bool) -> Self {
+        self.workspace_switch = enabled;
+        self
     }
     pub fn nav_bar(mut self, id: impl Into<String>) -> Self {
         self.nav_bar = Some(id.into());
@@ -125,6 +132,7 @@ pub struct PresentationState {
     members: Vec<Member>,
     list_order: Vec<String>,
     list_scroll: f32,
+    others_expanded: bool,
 }
 /// Container allocation and its visible clipping rectangle use the same IDs.
 /// A List item can extend beyond its viewport; its own layout keeps its height.
@@ -269,6 +277,7 @@ impl PresentationState {
             members,
             list_order,
             list_scroll: 0.,
+            others_expanded: false,
         };
         if state
             .options
@@ -322,6 +331,19 @@ impl PresentationState {
     pub fn others_visible(&self) -> bool {
         self.others().is_some_and(|o| o.visible)
     }
+    /// Expanding hides the original Focus allocation; it never promotes or
+    /// replaces either backing Container or changes the saved split ratios.
+    pub fn others_expanded(&self) -> bool {
+        self.others_expanded
+    }
+    pub fn toggle_others_expanded(&mut self) -> Result<()> {
+        ensure!(
+            self.others_visible() && matches!(self.selected_tab(), Some(OthersTab::Container(_))),
+            "expansion requires one visible Others container"
+        );
+        self.others_expanded = !self.others_expanded;
+        Ok(())
+    }
     pub fn selected_tab(&self) -> Option<&OthersTab> {
         self.others().and_then(|o| o.selected.as_ref())
     }
@@ -351,10 +373,16 @@ impl PresentationState {
             .as_mut()
             .ok_or_else(|| anyhow::anyhow!("others is not configured"))?;
         others.visible = !others.visible;
+        if !others.visible {
+            self.others_expanded = false;
+        }
         Ok(())
     }
     pub fn select_tab(&mut self, selected: OthersTab) -> Result<()> {
         ensure!(self.tabs().contains(&selected), "tab is not available");
+        if selected == OthersTab::List {
+            self.others_expanded = false;
+        }
         self.options
             .others
             .as_mut()
@@ -400,6 +428,9 @@ impl PresentationState {
     }
     /// A focus owner exchanges only with a selected ordinary Others tab.
     /// List aggregates and absent selections never imply a first-item fallback.
+    pub(crate) fn workspace_switch_enabled(&self) -> bool {
+        self.options.workspace_switch
+    }
     pub fn focus_switch_target(&self, owner: &str) -> Option<&str> {
         if owner == self.focus_id() {
             match self.selected_tab() {
@@ -430,6 +461,7 @@ impl PresentationState {
             .iter()
             .position(|i| i == id)
             .ok_or_else(|| anyhow::anyhow!("container is not in others: {id}"))?;
+        self.others_expanded = false;
         let old_focus = std::mem::replace(&mut self.options.focus, id.into());
         others.containers[index] = old_focus.clone();
         if others.selected == Some(OthersTab::Container(id.into())) {
@@ -494,6 +526,9 @@ impl PresentationState {
             if !valid {
                 others.selected = others.containers.first().cloned().map(OthersTab::Container);
             }
+        }
+        if !matches!(self.selected_tab(), Some(OthersTab::Container(_))) {
+            self.others_expanded = false;
         }
     }
     fn list_height(&self, id: &str) -> f32 {
@@ -581,12 +616,16 @@ impl PresentationState {
         }
         // Hiding NavBar expands focus only; the opposite Others allocation
         // retains the original AppHost width and reappears without a jump.
-        let others_width = if self.others_visible() {
+        let others_width = if self.others_expanded {
+            right.size.width
+        } else if self.others_visible() {
             self.reference_split_width(area) * (1. - self.options.focus_fraction)
         } else {
             0.
         };
-        let focus_width = if self.others_visible() {
+        let focus_width = if self.others_expanded {
+            0.
+        } else if self.others_visible() {
             (right.size.width - SPLITTER - others_width).max(0.)
         } else {
             right.size.width
@@ -600,7 +639,11 @@ impl PresentationState {
         // Anchor the unchanged opposite allocation to its original window edge.
         // Reconstructing x through focus introduces a different rounding path
         // when NavBar is hidden, although Others has not moved or resized.
-        let x = area.max_x() - others_width;
+        let x = if self.others_expanded {
+            right.min_x()
+        } else {
+            area.max_x() - others_width
+        };
         let header = if toolbar_height > 0. {
             toolbar_height
         } else {

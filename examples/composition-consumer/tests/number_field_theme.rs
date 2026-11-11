@@ -4,7 +4,7 @@
 mod coretext;
 use tekes_ui_controls::{ControlKey, composition::*};
 use tekes_ui_scene::{Primitive, Rect, Scene};
-use tekes_ui_tokens::{Palette, Rgba, Theme, proposal};
+use tekes_ui_tokens::{Palette, Rgba, Stroke, Theme, proposal};
 const NUMBER: ComponentId = ComponentId(122_030);
 fn field(host: &ContentHost) -> &NumberFieldContent {
     host.get(NUMBER)
@@ -107,7 +107,11 @@ fn number_field_retained_themes_keep_draft_committed_value_and_actual_numeric_in
             );
             assert_eq!(
                 background.border_width,
-                proposal::metric("stroke", "c-focus-width").unwrap(),
+                if theme.is_increased() {
+                    proposal::metric("stroke", "c-focus-width").unwrap()
+                } else {
+                    Stroke::Rule.value()
+                },
                 "the original numeric editor has one attached focus/error edge"
             );
             assert!(!scene.primitives().iter().any(|p| matches!(p, Primitive::Quad(q) if q.fill.a == 0. && q.border_width > 0. && q.rect.center() == surface.outer.center())), "no duplicate outer contour");

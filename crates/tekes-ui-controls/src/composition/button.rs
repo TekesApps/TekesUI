@@ -94,6 +94,7 @@ pub struct Button {
     help_revision: u64,
     toolbar_presentation: bool,
     transparent_chrome: bool,
+    toolbar_icon_slot: bool,
 }
 impl Button {
     pub fn new(contents: impl Into<ButtonContents>) -> Self {
@@ -114,6 +115,7 @@ impl Button {
             help_revision: 0,
             toolbar_presentation: false,
             transparent_chrome: false,
+            toolbar_icon_slot: false,
         };
         button.set_contents(contents);
         button
@@ -191,6 +193,31 @@ impl Button {
     /// chrome. Decorative content remains painted by its original child.
     pub fn set_transparent_chrome(&mut self, transparent: bool) {
         self.transparent_chrome = transparent;
+    }
+    /// Use the original ToolbarControl icon-button chrome metrics. Decorative
+    /// content can add its measured width (for example a menu chevron).
+    pub fn set_toolbar_icon_slot(&mut self, icon_slot: bool) {
+        self.toolbar_icon_slot = icon_slot;
+        self.button.frame_policy = if icon_slot {
+            crate::ButtonFramePolicy::Exact
+        } else {
+            crate::ButtonFramePolicy::Minimum
+        };
+    }
+    pub(super) fn uses_toolbar_icon_slot(&self) -> bool {
+        self.toolbar_icon_slot
+    }
+    pub(super) fn toolbar_icon_size(
+        &self,
+        text: &mut dyn ButtonTextRenderer,
+        measured: Size,
+        available: Size,
+    ) -> Size {
+        let box_size = crate::toolbar::metrics(text, proposal::TextRole::UiBody).box_size;
+        Size::new(
+            (box_size + (measured.width - Self::icon_side(text)).max(0.)).min(available.width),
+            box_size.max(measured.height),
+        )
     }
     pub fn with_help(mut self, help: impl Into<String>) -> Self {
         self.set_help(Some(help.into()));
@@ -273,21 +300,7 @@ impl Button {
         }
     }
     fn body_frame(&self, layout: crate::ButtonLayout) -> Rect {
-        // Exact is a compact chrome allocation, not a request to stretch its content.
-        let bounds = layout.content;
-        let width = self.measured.width.min(bounds.size.width).max(0.);
-        let height = self.measured.height.min(bounds.size.height).max(0.);
-        let offset = match self.content_alignment {
-            MainAxisDistribution::Start => 0.,
-            MainAxisDistribution::End => (bounds.size.width - width).max(0.),
-            _ => (bounds.size.width - width).max(0.) * 0.5,
-        };
-        Rect::new(
-            bounds.min_x() + offset,
-            bounds.center().y - height * 0.5,
-            width,
-            height,
-        )
+        action_content_frame(self, layout, self.measured)
     }
     fn measure_button(
         &mut self,
@@ -310,6 +323,9 @@ impl Button {
         // proposal; the measured body then determines the final Button slot.
         self.measured =
             self.measure_body(text, Size::new(empty.content.size.width, available.height));
+        if self.toolbar_icon_slot {
+            return MeasuredChild::new(self.toolbar_icon_size(text, self.measured, available));
+        }
         MeasuredChild::new(
             if self.button.frame_policy == crate::ButtonFramePolicy::Exact {
                 self.measured
@@ -681,6 +697,28 @@ impl Component for Button {
     }
 }
 
+pub(super) fn action_content_frame(
+    action: &Button,
+    layout: crate::ButtonLayout,
+    measured: Size,
+) -> Rect {
+    let bounds = layout.content;
+    let width = measured.width.min(bounds.size.width).max(0.);
+    let height = measured.height.min(bounds.size.height).max(0.);
+    let offset = match action.content_alignment {
+        MainAxisDistribution::Start => 0.,
+        MainAxisDistribution::Center | MainAxisDistribution::SpaceBetween => {
+            (bounds.size.width - width) * 0.5
+        }
+        MainAxisDistribution::End => bounds.size.width - width,
+    };
+    Rect::new(
+        bounds.min_x() + offset,
+        bounds.center().y - height * 0.5,
+        width,
+        height,
+    )
+}
 pub(super) fn resolve_action_slot(
     action: &Button,
     measured: Size,
@@ -706,6 +744,10 @@ pub(super) fn measure_action_slot(
     text: &mut dyn ButtonTextRenderer,
     available: Size,
 ) -> MeasuredChild {
+    if action.toolbar_icon_slot {
+        *measured = content.measure_intrinsic(text, available).size;
+        return MeasuredChild::new(action.toolbar_icon_size(text, *measured, available));
+    }
     if action.button.frame_policy == crate::ButtonFramePolicy::Exact {
         *measured = content.measure(text, available).size;
         return MeasuredChild::new(*measured);

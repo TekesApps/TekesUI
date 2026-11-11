@@ -25,6 +25,9 @@ impl Component for SelectableListContent {
     fn interactive(&self) -> bool {
         true
     }
+    fn rectangular_input_geometry(&self) -> bool {
+        true
+    }
     fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
         MeasuredChild::new(self.view.measure_rows(
             &mut TextAdapter(text),

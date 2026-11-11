@@ -657,6 +657,55 @@ pub struct Host {
     step: u32,
 }
 impl Host {
+    fn visible_text_cursor_regions(&mut self) -> Vec<Rect> {
+        if let Some(tabs) = &self.presentation_tabs
+            && tabs.content_host().input_overlay_owner().is_some()
+        {
+            return tabs.content_host().text_cursor_regions();
+        }
+        if let Some(target) = self.open_toolbar()
+            && let Some(index) = self.toolbar_container(target)
+        {
+            return self.panels[index]
+                .mounted_toolbar
+                .host
+                .content_host()
+                .text_cursor_regions();
+        }
+        let mut regions = Vec::new();
+        for panel in &mut self.panels {
+            if !panel.bounds.is_empty() {
+                let clip = if self.presentation.is_some() {
+                    panel
+                        .content_frame()
+                        .intersection(&panel.clip)
+                        .unwrap_or_default()
+                } else {
+                    panel.content_frame()
+                };
+                if let Some(local) = &mut panel.local {
+                    local.with_host(&mut |host| {
+                        regions.extend(
+                            host.text_cursor_regions()
+                                .into_iter()
+                                .filter_map(|region| region.intersection(&clip)),
+                        );
+                    });
+                }
+            }
+            // The original Focus presenter also owns Window controls when its
+            // body is hidden by expanded Others. Use mounted control geometry.
+            regions.extend(
+                panel
+                    .mounted_toolbar
+                    .host
+                    .content_host()
+                    .text_cursor_regions(),
+            );
+        }
+        regions
+    }
+
     pub(crate) fn with_theme(mut self, theme: Theme) -> Self {
         self.theme = theme;
         self
@@ -858,6 +907,19 @@ impl Host {
             )?);
         }
         Ok(())
+    }
+    fn retire_hidden_content(&mut self, index: usize, bounds: Rect) {
+        // A hidden presentation frame can retain an origin and height. Keep
+        // that canonical allocation: replacing it with default would make the
+        // next identical layout cancel the still-visible Window toolbar again.
+        self.panels[index].bounds = bounds;
+        if self.focused == index && !self.panels[index].logically_visible {
+            self.focused = self
+                .presentation
+                .as_ref()
+                .and_then(|state| self.module_ids.iter().position(|id| id == state.focus_id()))
+                .unwrap_or_else(|| self.order[usize::from(self.order.len() >= 2)]);
+        }
     }
     fn draw(&mut self, w: &Window) -> Result<()> {
         // One opt-in summary at the end avoids synchronous stage logging inside
@@ -1108,20 +1170,10 @@ impl Host {
             }
         }
         let geometry_ready = diagnostic.map(|_| std::time::Instant::now());
-        let renderer = self.renderer.as_mut().unwrap();
         for (slot, bounds) in frames.iter().enumerate() {
             let index = self.order[slot];
             if bounds.size.width <= 0. {
-                self.panels[index].bounds = Rect::default();
-                if self.focused == index && !self.panels[index].logically_visible {
-                    self.focused = self
-                        .presentation
-                        .as_ref()
-                        .and_then(|state| {
-                            self.module_ids.iter().position(|id| id == state.focus_id())
-                        })
-                        .unwrap_or_else(|| self.order[usize::from(self.order.len() >= 2)]);
-                }
+                self.retire_hidden_content(index, *bounds);
                 continue;
             }
             let p = &mut self.panels[index];
@@ -1142,9 +1194,12 @@ impl Host {
                 } else {
                     content
                 };
-                with_content_icons(renderer, &mut p.content_icons, &mut self.text, |text| {
-                    local.render(&mut scene, text, content, clip, palette)
-                })?;
+                with_content_icons(
+                    self.renderer.as_mut().unwrap(),
+                    &mut p.content_icons,
+                    &mut self.text,
+                    |text| local.render(&mut scene, text, content, clip, palette),
+                )?;
                 p.frame_seq = p.seq;
                 p.frame_viewport = p.viewport;
                 p.frame_size = p.content_size();
@@ -1167,7 +1222,6 @@ impl Host {
                 scene.pop_clip();
             }
         }
-        let _ = renderer;
         let body_scene_ready = diagnostic.map(|_| std::time::Instant::now());
         if self.presentation.is_some() {
             scene.push_quad(Quad::new(
@@ -1339,25 +1393,39 @@ impl Host {
         if self.presentation.is_some() {
             resize_regions.extend(self.presentation_resize_regions());
         }
-        w.set_cursor_regions(
-            resize_regions
-                .into_iter()
-                .map(|(r, axis)| tekes_ui_platform_macos::CursorRegion {
-                    origin: tekes_ui_platform_macos::Point {
-                        x: r.min_x() as f64,
-                        y: r.min_y() as f64,
-                    },
-                    size: tekes_ui_platform_macos::Size {
-                        width: r.size.width as f64,
-                        height: r.size.height as f64,
-                    },
-                    icon: match axis {
-                        Axis::Horizontal => tekes_ui_platform_macos::CursorIcon::ResizeHorizontal,
-                        Axis::Vertical => tekes_ui_platform_macos::CursorIcon::ResizeVertical,
-                    },
-                })
-                .collect(),
-        );
+        let mut cursor_regions: Vec<_> = self
+            .visible_text_cursor_regions()
+            .into_iter()
+            .map(|r| tekes_ui_platform_macos::CursorRegion {
+                origin: tekes_ui_platform_macos::Point {
+                    x: r.min_x() as f64,
+                    y: r.min_y() as f64,
+                },
+                size: tekes_ui_platform_macos::Size {
+                    width: r.size.width as f64,
+                    height: r.size.height as f64,
+                },
+                icon: tekes_ui_platform_macos::CursorIcon::IBeam,
+            })
+            .collect();
+        // Native lookup is back-to-front: splitters retain priority over text.
+        cursor_regions.extend(resize_regions.into_iter().map(|(r, axis)| {
+            tekes_ui_platform_macos::CursorRegion {
+                origin: tekes_ui_platform_macos::Point {
+                    x: r.min_x() as f64,
+                    y: r.min_y() as f64,
+                },
+                size: tekes_ui_platform_macos::Size {
+                    width: r.size.width as f64,
+                    height: r.size.height as f64,
+                },
+                icon: match axis {
+                    Axis::Horizontal => tekes_ui_platform_macos::CursorIcon::ResizeHorizontal,
+                    Axis::Vertical => tekes_ui_platform_macos::CursorIcon::ResizeVertical,
+                },
+            }
+        }));
+        w.set_cursor_regions(cursor_regions);
         self.append_toolbar_layers(&mut scene, &toolbar_scene, &presentation_scene);
         let renderer_begin = diagnostic.map(|_| std::time::Instant::now());
         let drawable_before = diagnostic.map(|_| w.drawable_serial());

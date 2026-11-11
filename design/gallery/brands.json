@@ -55,7 +55,7 @@
     "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/examples/example-clay.json": "c5a2160d582d90e0488810e66a6b7185c6bb3ff84876eed468c84a1d7e85ca52",
     "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/brand.py": "3da13fcc221ed488d383af75dc84f77930306368632b7f48fb38476dc78f6586",
     "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/brand_color.py": "f7395f04cbd8cf0215326345929d76f6d8e263bdff69c6aede1a417bccc82516",
-    "design/source/base.tokens.json": "31cc9bed6d9efbff8ff1aa407b40c4ad7a777e0414ead78161282f1b48092af0",
+    "design/source/base.tokens.json": "20e4c9aac39588785babbbab223ca01dcdaf47ec1d4191d8d7e413b00521fea5",
     "design/source/token-metadata.json": "53db464280f6d381cf108cb78c1f894a1dd31d780a5045145d31e6bd925e637b",
     "scripts/generate-gallery-brands.py": "0a169997cc3edca32aa93d7a3f089e66c7f5a5b2ba2acce272b07a5d44013497"
   },
@@ -262,17 +262,17 @@
           },
           {
             "name": "p-border-focused",
-            "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
+            "usage": "中性焦点强调；普通主题保持必要对比并降低突出度，高对比主题保留",
             "value": {
-              "dark": "#B0B0AC",
+              "dark": "#969692",
               "dark-ic": "#FFFFFF",
-              "light": "#5E5E5B",
+              "light": "#6B6B68",
               "light-ic": "#111111"
             }
           },
           {
             "name": "border-focused",
-            "usage": "独立中性焦点外环；宽度和间隔由组件焦点 token 决定",
+            "usage": "统一中性焦点语义；Field使用原轮廓细边，其余焦点结构由对应组件token决定",
             "value": "{p-border-focused}"
           },
           {
@@ -1308,17 +1308,17 @@
           },
           {
             "name": "p-border-focused",
-            "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
+            "usage": "中性焦点强调；普通主题保持必要对比并降低突出度，高对比主题保留",
             "value": {
-              "dark": "#B0B0AC",
+              "dark": "#969692",
               "dark-ic": "#FFFFFF",
-              "light": "#5E5E5B",
+              "light": "#6B6B68",
               "light-ic": "#111111"
             }
           },
           {
             "name": "border-focused",
-            "usage": "独立中性焦点外环；宽度和间隔由组件焦点 token 决定",
+            "usage": "统一中性焦点语义；Field使用原轮廓细边，其余焦点结构由对应组件token决定",
             "value": "{p-border-focused}"
           },
           {
@@ -2354,17 +2354,17 @@
           },
           {
             "name": "p-border-focused",
-            "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
+            "usage": "中性焦点强调；普通主题保持必要对比并降低突出度，高对比主题保留",
             "value": {
-              "dark": "#B0B0AC",
+              "dark": "#969692",
               "dark-ic": "#FFFFFF",
-              "light": "#5E5E5B",
+              "light": "#6B6B68",
               "light-ic": "#111111"
             }
           },
           {
             "name": "border-focused",
-            "usage": "独立中性焦点外环；宽度和间隔由组件焦点 token 决定",
+            "usage": "统一中性焦点语义；Field使用原轮廓细边，其余焦点结构由对应组件token决定",
             "value": "{p-border-focused}"
           },
           {
@@ -3400,17 +3400,17 @@
           },
           {
             "name": "p-border-focused",
-            "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
+            "usage": "中性焦点强调；普通主题保持必要对比并降低突出度，高对比主题保留",
             "value": {
-              "dark": "#B0B0AC",
+              "dark": "#969692",
               "dark-ic": "#FFFFFF",
-              "light": "#5E5E5B",
+              "light": "#6B6B68",
               "light-ic": "#111111"
             }
           },
           {
             "name": "border-focused",
-            "usage": "独立中性焦点外环；宽度和间隔由组件焦点 token 决定",
+            "usage": "统一中性焦点语义；Field使用原轮廓细边，其余焦点结构由对应组件token决定",
             "value": "{p-border-focused}"
           },
           {
@@ -4446,17 +4446,17 @@
           },
           {
             "name": "p-border-focused",
-            "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
+            "usage": "中性焦点强调；普通主题保持必要对比并降低突出度，高对比主题保留",
             "value": {
-              "dark": "#B0B0AC",
+              "dark": "#969692",
               "dark-ic": "#FFFFFF",
-              "light": "#5E5E5B",
+              "light": "#6B6B68",
               "light-ic": "#111111"
             }
           },
           {
             "name": "border-focused",
-            "usage": "独立中性焦点外环；宽度和间隔由组件焦点 token 决定",
+            "usage": "统一中性焦点语义；Field使用原轮廓细边，其余焦点结构由对应组件token决定",
             "value": "{p-border-focused}"
           },
           {
@@ -5492,17 +5492,17 @@
           },
           {
             "name": "p-border-focused",
-            "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
+            "usage": "中性焦点强调；普通主题保持必要对比并降低突出度，高对比主题保留",
             "value": {
-              "dark": "#B0B0AC",
+              "dark": "#969692",
               "dark-ic": "#FFFFFF",
-              "light": "#5E5E5B",
+              "light": "#6B6B68",
               "light-ic": "#111111"
             }
           },
           {
             "name": "border-focused",
-            "usage": "独立中性焦点外环；宽度和间隔由组件焦点 token 决定",
+            "usage": "统一中性焦点语义；Field使用原轮廓细边，其余焦点结构由对应组件token决定",
             "value": "{p-border-focused}"
           },
           {
@@ -6538,17 +6538,17 @@
           },
           {
             "name": "p-border-focused",
-            "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
+            "usage": "中性焦点强调；普通主题保持必要对比并降低突出度，高对比主题保留",
             "value": {
-              "dark": "#B0B0AC",
+              "dark": "#969692",
               "dark-ic": "#FFFFFF",
-              "light": "#5E5E5B",
+              "light": "#6B6B68",
               "light-ic": "#111111"
             }
           },
           {
             "name": "border-focused",
-            "usage": "独立中性焦点外环；宽度和间隔由组件焦点 token 决定",
+            "usage": "统一中性焦点语义；Field使用原轮廓细边，其余焦点结构由对应组件token决定",
             "value": "{p-border-focused}"
           },
           {
@@ -7586,17 +7586,17 @@
           },
           {
             "name": "p-border-focused",
-            "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
+            "usage": "中性焦点强调；普通主题保持必要对比并降低突出度，高对比主题保留",
             "value": {
-              "dark": "#B0B0AC",
+              "dark": "#969692",
               "dark-ic": "#FFFFFF",
-              "light": "#5E5E5B",
+              "light": "#6B6B68",
               "light-ic": "#111111"
             }
           },
           {
             "name": "border-focused",
-            "usage": "独立中性焦点外环；宽度和间隔由组件焦点 token 决定",
+            "usage": "统一中性焦点语义；Field使用原轮廓细边，其余焦点结构由对应组件token决定",
             "value": "{p-border-focused}"
           },
           {
@@ -8634,17 +8634,17 @@
           },
           {
             "name": "p-border-focused",
-            "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
+            "usage": "中性焦点强调；普通主题保持必要对比并降低突出度，高对比主题保留",
             "value": {
-              "dark": "#B0B0AC",
+              "dark": "#969692",
               "dark-ic": "#FFFFFF",
-              "light": "#5E5E5B",
+              "light": "#6B6B68",
               "light-ic": "#111111"
             }
           },
           {
             "name": "border-focused",
-            "usage": "独立中性焦点外环；宽度和间隔由组件焦点 token 决定",
+            "usage": "统一中性焦点语义；Field使用原轮廓细边，其余焦点结构由对应组件token决定",
             "value": "{p-border-focused}"
           },
           {
@@ -9682,17 +9682,17 @@
           },
           {
             "name": "p-border-focused",
-            "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
+            "usage": "中性焦点强调；普通主题保持必要对比并降低突出度，高对比主题保留",
             "value": {
-              "dark": "#B0B0AC",
+              "dark": "#969692",
               "dark-ic": "#FFFFFF",
-              "light": "#5E5E5B",
+              "light": "#6B6B68",
               "light-ic": "#111111"
             }
           },
           {
             "name": "border-focused",
-            "usage": "独立中性焦点外环；宽度和间隔由组件焦点 token 决定",
+            "usage": "统一中性焦点语义；Field使用原轮廓细边，其余焦点结构由对应组件token决定",
             "value": "{p-border-focused}"
           },
           {
@@ -10730,17 +10730,17 @@
           },
           {
             "name": "p-border-focused",
-            "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
+            "usage": "中性焦点强调；普通主题保持必要对比并降低突出度，高对比主题保留",
             "value": {
-              "dark": "#B0B0AC",
+              "dark": "#969692",
               "dark-ic": "#FFFFFF",
-              "light": "#5E5E5B",
+              "light": "#6B6B68",
               "light-ic": "#111111"
             }
           },
           {
             "name": "border-focused",
-            "usage": "独立中性焦点外环；宽度和间隔由组件焦点 token 决定",
+            "usage": "统一中性焦点语义；Field使用原轮廓细边，其余焦点结构由对应组件token决定",
             "value": "{p-border-focused}"
           },
           {
@@ -11778,17 +11778,17 @@
           },
           {
             "name": "p-border-focused",
-            "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
+            "usage": "中性焦点强调；普通主题保持必要对比并降低突出度，高对比主题保留",
             "value": {
-              "dark": "#B0B0AC",
+              "dark": "#969692",
               "dark-ic": "#FFFFFF",
-              "light": "#5E5E5B",
+              "light": "#6B6B68",
               "light-ic": "#111111"
             }
           },
           {
             "name": "border-focused",
-            "usage": "独立中性焦点外环；宽度和间隔由组件焦点 token 决定",
+            "usage": "统一中性焦点语义；Field使用原轮廓细边，其余焦点结构由对应组件token决定",
             "value": "{p-border-focused}"
           },
           {
@@ -12826,17 +12826,17 @@
           },
           {
             "name": "p-border-focused",
-            "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
+            "usage": "中性焦点强调；普通主题保持必要对比并降低突出度，高对比主题保留",
             "value": {
-              "dark": "#B0B0AC",
+              "dark": "#969692",
               "dark-ic": "#FFFFFF",
-              "light": "#5E5E5B",
+              "light": "#6B6B68",
               "light-ic": "#111111"
             }
           },
           {
             "name": "border-focused",
-            "usage": "独立中性焦点外环；宽度和间隔由组件焦点 token 决定",
+            "usage": "统一中性焦点语义；Field使用原轮廓细边，其余焦点结构由对应组件token决定",
             "value": "{p-border-focused}"
           },
           {
