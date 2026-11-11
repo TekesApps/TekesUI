@@ -438,7 +438,7 @@
         {
           "api": "tekes_ui_controls::composition::TextContent",
           "path": "crates/tekes-ui-controls/src/composition.rs",
-          "line": 4909,
+          "line": 4947,
           "anchor": "pub struct TextContent {"
         }
       ]
@@ -2047,7 +2047,7 @@
     "crates/tekes-ui-controls/src/chart.rs": "9e3e5dd1e9d62f358cb74201a254f4165b81e4b79c3a97f0a74bde6f591e983c",
     "crates/tekes-ui-controls/src/collections_view.rs": "f00f22e614309f41cf3f611b5627ca28b92c03eadb43ab5b337fafcf2eff2d9c",
     "crates/tekes-ui-controls/src/composite.rs": "2cd3a31695695b3515e744ee083b2d72558addf5d5ea73bab54974094875147f",
-    "crates/tekes-ui-controls/src/composition.rs": "2a04fdb2c48ec1d8960ae83f531b3b9de5bdd54a1e00519906e8b2035b2e6533",
+    "crates/tekes-ui-controls/src/composition.rs": "2e33307f5a2f028ce613b25672fb9e523040ce8ef7982035bc2efdacd861addc",
     "crates/tekes-ui-controls/src/composition/actions.rs": "9482a123a439867105198ce977611a8e94cffd608c8249b3206a2bf84996cb0a",
     "crates/tekes-ui-controls/src/composition/adapters.rs": "3528d69b2a2fa3e0f687067f7b545900121ef3620a7abf2a3a1a72586ea92d76",
     "crates/tekes-ui-controls/src/composition/button.rs": "1aad4b164fa9bab6cfecb8bd61be38faab5672b5d16c91949a4bc01f67648179",
@@ -2226,7 +2226,7 @@
     "docs/design/disclosure-public-content-20261024.md": "1d9a5e8149c04ab5320ffe8639026034b25dfdd267c38631dd8f9c3f2b078f39",
     "docs/design/media-viewer-design-20261031.md": "1b3205a11b7d11f67c8d628e9a7c684283ddfea46a1fb5c54097d86ab11d52b0",
     "crates/tekes-ui-app-host/src/columns.rs": "262fc66171a663bd28159889491ab895f2424e9ba3bb29a2b01151d8839ea773",
-    "crates/tekes-ui-app-host/src/presentation.rs": "578ada085891ce63e9a4e8671149e9bded5b3c1f7d352598e11304446a01980d",
+    "crates/tekes-ui-app-host/src/presentation.rs": "0414d01a2be7b65e268d27bd33b5f310446f2b996f56c82f5ac59ca5a0f7c1dd",
     "crates/tekes-ui-app-host/src/window_presentation.rs": "908ed49238163fe9fd1623e4186aac20a176243721f3bd75c7e018a2478c569f",
     "crates/tekes-ui-controls/src/composition/toolbar_host.rs": "dddb4bba2aaededd903830bdae6f6b8f3b5184bc2010ac4563396d5c0a765715"
   },

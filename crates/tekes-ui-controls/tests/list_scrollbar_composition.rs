@@ -85,6 +85,9 @@ fn pointer(position: Point, phase: PointerPhase) -> ContentEvent {
         click_count: 1,
     })
 }
+fn hover(host: &mut ContentHost, frame: Rect) {
+    host.event(&pointer(frame.center(), PointerPhase::Move));
+}
 
 #[test]
 fn grouped_list_uses_one_original_scroller_and_thumb_capture_never_activates_items() {
@@ -101,6 +104,8 @@ fn grouped_list_uses_one_original_scroller_and_thumb_capture_never_activates_ite
         let mut host = host(true);
         let palette = theme.into();
         let frame = Rect::new(0., 0., 240., 140.);
+        let _ = render(&mut host, frame, palette);
+        hover(&mut host, frame);
         let scene = render(&mut host, frame, palette);
         assert_eq!(owners(host.get(SCROLL).unwrap()), 1);
         assert!(
@@ -198,6 +203,8 @@ fn hidden_scrollbar_preserves_wheel_and_checked_focus_reveal() {
 fn track_paging_and_cancel_keep_items_unactivated_and_fitting_lists_have_no_hit() {
     let frame = Rect::new(0., 0., 240., 140.);
     let mut host = host(true);
+    let _ = render(&mut host, frame, Theme::LIGHT.into());
+    hover(&mut host, frame);
     let scene = render(&mut host, frame, Theme::LIGHT.into());
     let bar = thumb(&scene, Theme::LIGHT.into()).unwrap();
     let page = Point::new(bar.center().x, 125.);
@@ -248,6 +255,7 @@ fn admitted_thumb_navigation_stops_original_reading_follow_and_wins_reflow() {
         .component_mut::<ScrollContent>()
         .unwrap()
         .follow_latest();
+    hover(&mut host, frame);
     let scene = render(&mut host, frame, Theme::LIGHT.into());
     assert!(scroll(&host).is_following_latest());
     let bar = thumb(&scene, Theme::LIGHT.into()).unwrap();
@@ -275,6 +283,8 @@ fn explicit_pane_padding_stays_symmetric_with_a_real_overflow_scrollbar() {
     ))
     .unwrap();
     let frame = Rect::new(20., 40., 240., 140.);
+    let _ = render(&mut host, frame, Theme::LIGHT.into());
+    hover(&mut host, frame);
     let scene = render(&mut host, frame, Theme::LIGHT.into());
     assert!(thumb(&scene, Theme::LIGHT.into()).is_some());
     let items = host.get(ITEMS).unwrap().frame();
@@ -413,6 +423,8 @@ fn scrollbar_drag_preserves_real_sibling_editor_marked_input_and_focus() {
     let mut scene = Scene::new();
     host.render(&mut scene, &mut text, frame, frame, Theme::LIGHT.into())
         .unwrap();
+    let scroll_frame = host.get(SCROLL).unwrap().frame();
+    hover(&mut host, scroll_frame);
     assert!(host.focus(Some(EDITOR), true));
     host.event_with_text(
         &ContentEvent::Preedit {
@@ -424,14 +436,9 @@ fn scrollbar_drag_preserves_real_sibling_editor_marked_input_and_focus() {
         &mut text,
     )
     .unwrap();
-    host.render(
-        &mut Scene::new(),
-        &mut text,
-        frame,
-        frame,
-        Theme::LIGHT.into(),
-    )
-    .unwrap();
+    scene = Scene::new();
+    host.render(&mut scene, &mut text, frame, frame, Theme::LIGHT.into())
+        .unwrap();
     let before = host.text_input_snapshot().unwrap();
     let focus = host.focus_epoch();
     let bar = thumb(&scene, Theme::LIGHT.into()).unwrap();

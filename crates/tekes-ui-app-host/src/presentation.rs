@@ -410,7 +410,9 @@ impl PresentationState {
             id: id.clone(),
             list_height: container.container_options().list_height,
         });
-        self.list_order.push(id.clone());
+        if container.container_options().list_height.is_some() {
+            self.list_order.push(id.clone());
+        }
         if factory.multiplicity == crate::ContainerMultiplicity::Multiple {
             let others = self.options.others.as_mut().unwrap();
             if let Some(group) = others

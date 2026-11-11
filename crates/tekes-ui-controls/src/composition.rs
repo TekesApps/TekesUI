@@ -4415,6 +4415,7 @@ pub struct ScrollContent {
     viewport: Rect,
     clip: Rect,
     scrollbar_pointer: Option<bool>,
+    pointer_hovered: bool,
     content_padding: f32,
     last_frame: Option<std::time::Duration>,
     reading: Option<content_reading::ContentReadingState>,
@@ -4433,6 +4434,7 @@ impl ScrollContent {
             viewport: Rect::default(),
             clip: Rect::default(),
             scrollbar_pointer: None,
+            pointer_hovered: false,
             content_padding: 0.,
             last_frame: None,
             reading: None,
@@ -4444,6 +4446,7 @@ impl ScrollContent {
         self.scroll.set_scrollbar_visibility(visible, visible);
         if !visible {
             self.scrollbar_pointer = None;
+            self.pointer_hovered = false;
         }
         self
     }
@@ -4475,6 +4478,35 @@ impl ScrollContent {
             .intersection(&self.clip)
             .unwrap_or_default()
     }
+    fn scrollbar_presentation_visible(&self, vertical: bool) -> bool {
+        self.scroll.scrollbar_visible(vertical)
+            && (self.pointer_hovered || self.scrollbar_pointer == Some(vertical))
+    }
+    fn update_pointer_hover(&mut self, point: Point, in_curve: bool) -> bool {
+        let inside = in_curve && self.viewport.contains(point) && self.clip.contains(point);
+        let changed = self.pointer_hovered != inside;
+        self.pointer_hovered = inside;
+        changed
+    }
+    fn pointer_move(&mut self, point: Point, in_curve: bool) -> ContentResponse {
+        let hover_changed = self.update_pointer_hover(point, in_curve);
+        if let Some(vertical) = self.scrollbar_pointer {
+            let track = self.scrollbar_hit_track(vertical);
+            let moved = self
+                .scroll
+                .pointer_drag(point, track, Self::minimum_thumb());
+            ContentResponse {
+                consumed: true,
+                changed: moved || hover_changed,
+                ..Default::default()
+            }
+        } else {
+            ContentResponse {
+                changed: hover_changed,
+                ..Default::default()
+            }
+        }
+    }
     fn minimum_thumb() -> f32 {
         proposal::metric("size", "size-row-height").expect("existing scrollbar minimum")
     }
@@ -4489,7 +4521,7 @@ impl ScrollContent {
         let ContentEvent::PointerDown(point) = routed.as_ref() else {
             return None;
         };
-        if !event.is_primary_pointer() || !self.clip.contains(*point) {
+        if !event.is_primary_pointer() || !self.pointer_hovered || !self.clip.contains(*point) {
             return None;
         }
         [true, false].into_iter().find_map(|vertical| {
@@ -4551,6 +4583,21 @@ struct PreparedScrollContentPointer {
 }
 impl action_preparation::OriginalActionDecision for PreparedScrollContentPointer {}
 impl Component for ScrollContent {
+    fn pointer_event_in_region(&mut self, event: &ContentEvent, inside: bool) -> ContentResponse {
+        if !event.is_primary_pointer() {
+            return event.deliver(self);
+        }
+        match event.routing_event().as_ref() {
+            ContentEvent::PointerMove(point) => self.pointer_move(*point, inside),
+            ContentEvent::PointerUp(point) => {
+                let hover_changed = self.update_pointer_hover(*point, inside);
+                let mut response = event.deliver(self);
+                response.changed |= hover_changed;
+                response
+            }
+            _ => event.deliver(self),
+        }
+    }
     fn reading_scroll_source(&self) -> bool {
         true
     }
@@ -4625,6 +4672,7 @@ impl Component for ScrollContent {
         if self.viewport != frame || self.clip != frame.intersection(&clip).unwrap_or_default() {
             self.scroll.pointer_up();
             self.scrollbar_pointer = None;
+            self.pointer_hovered = false;
         }
         self.backing_scale = text.backing_scale();
         if let Some(m) = text.motion_context() {
@@ -4702,7 +4750,7 @@ impl Component for ScrollContent {
         theme: ContentTheme,
     ) {
         for vertical in [true, false] {
-            if self.scroll.scrollbar_visible(vertical) {
+            if self.scrollbar_presentation_visible(vertical) {
                 let thumb = self.scroll.thumb(
                     vertical,
                     self.scrollbar_track(vertical),
@@ -4740,18 +4788,7 @@ impl Component for ScrollContent {
                     ContentResponse::default()
                 }
             }
-            ContentEvent::PointerMove(point) if self.scrollbar_pointer.is_some() => {
-                let vertical = self.scrollbar_pointer.unwrap();
-                let track = self.scrollbar_hit_track(vertical);
-                let changed = self
-                    .scroll
-                    .pointer_drag(*point, track, Self::minimum_thumb());
-                ContentResponse {
-                    consumed: true,
-                    changed,
-                    ..Default::default()
-                }
-            }
+            ContentEvent::PointerMove(point) => self.pointer_move(*point, true),
             ContentEvent::PointerUp(_) if self.scrollbar_pointer.is_some() => {
                 self.scroll.pointer_up();
                 self.scrollbar_pointer = None;
@@ -4785,6 +4822,7 @@ impl Component for ScrollContent {
             ContentEvent::Cancel => {
                 self.scroll.cancel();
                 self.scrollbar_pointer = None;
+                self.pointer_hovered = false;
                 self.last_frame = None;
                 if let Some(reading) = &mut self.reading {
                     reading.fence_momentum();
@@ -5124,5 +5162,152 @@ mod shared_collection_seam_tests {
             nodes.iter().map(|n| n.id).collect::<Vec<_>>(),
             [ComponentId(1), ComponentId(3), ComponentId(4)]
         );
+    }
+}
+
+#[cfg(test)]
+mod list_scrollbar_hover_tests {
+    use super::*;
+
+    #[derive(Debug)]
+    struct TallItems;
+    impl Component for TallItems {
+        fn measure(&mut self, _: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
+            MeasuredChild::new(Size::new(available.width, 320.))
+        }
+    }
+
+    struct Text;
+    impl ButtonTextRenderer for Text {
+        fn measure(&mut self, _: &str, _: proposal::TextRole, width: f32) -> Size {
+            Size::new(width, 16.)
+        }
+        fn draw(
+            &mut self,
+            _: &mut Scene,
+            _: &str,
+            _: proposal::TextRole,
+            _: Rect,
+            _: ButtonTextAlign,
+            _: tekes_ui_tokens::Rgba,
+        ) {
+        }
+    }
+
+    const ROOT: ComponentId = ComponentId(8800);
+    const ITEMS: ComponentId = ComponentId(8801);
+    const ROW: ComponentId = ComponentId(8802);
+    const FRAME: Rect = Rect::new(0., 0., 120., 80.);
+
+    fn list(show_scrollbar: bool) -> ContentHost {
+        let mut scroll = ListContent::scrollable("List", ITEMS, vec![Content::new(ROW, TallItems)]);
+        if !show_scrollbar {
+            scroll = scroll.scrollbar(false);
+        }
+        let mut host = ContentHost::new(Content::new(ROOT, scroll)).unwrap();
+        host.set_action_events(true);
+        host
+    }
+
+    fn render(host: &mut ContentHost) -> Scene {
+        let mut scene = Scene::new();
+        host.render(
+            &mut scene,
+            &mut Text,
+            FRAME,
+            FRAME,
+            Palette::from(tekes_ui_tokens::Theme::LIGHT),
+        )
+        .unwrap();
+        scene
+    }
+
+    fn scrollbar_quads(scene: &Scene) -> usize {
+        scene
+            .primitives()
+            .iter()
+            .filter(|primitive| matches!(primitive, tekes_ui_scene::Primitive::Quad(_)))
+            .count()
+    }
+
+    fn point_in_items(host: &ContentHost) -> Point {
+        let frame = host.get(ROW).unwrap().frame();
+        Point::new(frame.min_x() + 2., frame.min_y() + 2.)
+    }
+
+    #[test]
+    fn list_scrollbar_shows_on_host_pointer_hover_and_hides_after_leave() {
+        let mut host = list(true);
+        assert_eq!(scrollbar_quads(&render(&mut host)), 0);
+        let track = host
+            .get(ROOT)
+            .unwrap()
+            .component::<ScrollContent>()
+            .unwrap()
+            .scrollbar_track(true);
+        assert!(
+            !host
+                .event(&ContentEvent::PointerDown(track.center()))
+                .consumed
+        );
+        let inside = point_in_items(&host);
+        assert!(host.event(&ContentEvent::PointerMove(inside)).changed);
+        assert_eq!(scrollbar_quads(&render(&mut host)), 1);
+        assert!(
+            host.event(&ContentEvent::PointerMove(Point::new(500., 500.)))
+                .changed
+        );
+        assert_eq!(scrollbar_quads(&render(&mut host)), 0);
+    }
+
+    #[test]
+    fn hidden_list_scrollbar_stays_hidden_even_when_pointer_hovers() {
+        let mut host = list(false);
+        assert_eq!(scrollbar_quads(&render(&mut host)), 0);
+        let inside = point_in_items(&host);
+        assert!(host.event(&ContentEvent::PointerMove(inside)).changed);
+        assert_eq!(scrollbar_quads(&render(&mut host)), 0);
+        let track = host
+            .get(ROOT)
+            .unwrap()
+            .component::<ScrollContent>()
+            .unwrap()
+            .scrollbar_track(true);
+        assert!(
+            !host
+                .event(&ContentEvent::PointerDown(track.center()))
+                .consumed
+        );
+    }
+
+    #[test]
+    fn list_scrollbar_stays_visible_for_captured_drag_outside_until_release() {
+        let mut host = list(true);
+        let _ = render(&mut host);
+        let inside = point_in_items(&host);
+        host.event(&ContentEvent::PointerMove(inside));
+        let _ = render(&mut host);
+        let thumb = {
+            let scroll = host
+                .get(ROOT)
+                .unwrap()
+                .component::<ScrollContent>()
+                .unwrap();
+            scroll.scroll.thumb(
+                true,
+                scroll.scrollbar_track(true),
+                ScrollContent::minimum_thumb(),
+            )
+        };
+        let down = host.event(&ContentEvent::PointerDown(thumb.center()));
+        assert!(down.capture_pointer);
+        assert_eq!(host.pointer_capture().unwrap().0, ROOT);
+        let outside = Point::new(500., 500.);
+        host.event(&ContentEvent::PointerMove(outside));
+        assert_eq!(scrollbar_quads(&render(&mut host)), 1);
+        host.event(&ContentEvent::PointerMove(inside));
+        host.event(&ContentEvent::PointerUp(outside));
+        assert!(host.pointer_capture().is_none());
+        assert_eq!(scrollbar_quads(&render(&mut host)), 0);
     }
 }

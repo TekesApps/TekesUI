@@ -628,4 +628,60 @@ mod tests {
         );
         assert_eq!(calls.borrow().len(), 2);
     }
+    #[test]
+    fn registered_creation_preserves_declared_list_eligibility_and_real_list_layout() {
+        let mut host = host(vec![
+            ContainerFactory::local(
+                "scratch",
+                "Scratchpad",
+                ContainerMultiplicity::Single,
+                |id| Ok(local(id)),
+            ),
+            ContainerFactory::local(
+                "reading",
+                "Reading",
+                ContainerMultiplicity::Multiple,
+                |id| Ok(local(id).list_height(240.)),
+            ),
+        ]);
+        let scratch = host.create_container("scratch").unwrap();
+        let state = host.presentation.as_mut().unwrap();
+        assert!(
+            !state.tabs().contains(&crate::OthersTab::List),
+            "creation without list_height must not invent aggregate eligibility"
+        );
+        assert!(state.list_ids().is_empty());
+        assert!(state.select_tab(crate::OthersTab::List).is_err());
+        let whole = Rect::new(0., 0., 1200., 700.);
+        let layout = state.layout_with_toolbar(whole, 48.);
+        assert!(
+            layout
+                .frames
+                .iter()
+                .any(|(id, frame)| id == &scratch && frame.size.height > 0.)
+        );
+        host.apply_presentation_layout(layout).unwrap();
+
+        let reading = host.create_container("reading").unwrap();
+        let state = host.presentation.as_mut().unwrap();
+        assert!(state.tabs().contains(&crate::OthersTab::List));
+        assert_eq!(state.list_ids(), vec![reading.as_str()]);
+        state.select_tab(crate::OthersTab::List).unwrap();
+        let layout = state.layout_with_toolbar(whole, 48.);
+        assert_eq!(
+            layout
+                .frames
+                .iter()
+                .find(|(id, _)| id == &reading)
+                .unwrap()
+                .1
+                .size
+                .height,
+            240.
+        );
+        assert!(!layout.frames.iter().any(|(id, _)| id == &scratch));
+        let frames = host.apply_presentation_layout(layout).unwrap();
+        assert_eq!(frames[1], Rect::default());
+        assert_eq!(frames[2].size.height, 240.);
+    }
 }
