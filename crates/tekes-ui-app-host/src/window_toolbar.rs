@@ -7,6 +7,7 @@ use tekes_ui_scene::Rect;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) enum Source {
     Visibility(usize),
+    CreationMenu,
     Navigation(ComponentSource),
     Undo(ComponentSource),
     Title,
@@ -36,6 +37,7 @@ pub(crate) enum Contents {
         Vec<(u64, String)>,
     ),
     Title(String),
+    CreationMenu(Vec<MenuEntry>),
     Close(String),
 }
 impl Contents {
@@ -182,7 +184,7 @@ impl MountedToolbar {
                                         },
                                     )
                             }
-                            Contents::Close(_) => {
+                            Contents::CreationMenu(_) | Contents::Close(_) => {
                                 unreachable!("close changes replace its original declaration")
                             }
                             Contents::Title(title) => {
@@ -216,6 +218,29 @@ impl MountedToolbar {
                     Content::new(target, TextContent::new(title.clone())),
                     vec![],
                 ),
+                Contents::CreationMenu(entries) => {
+                    let trigger = Content::new(
+                        ComponentId(target.0 + 1),
+                        IconContent::new("tekes-expand").expect("existing chevron"),
+                    );
+                    let mut menu = MenuContent::new("Create Container", Vec::new())
+                        .with_trigger_content("Create Container", trigger)
+                        .map_err(|e| anyhow::anyhow!("creation trigger: {e:?}"))?;
+                    menu.trigger.variant = tekes_ui_controls::paint::ButtonVariant::Toolbar;
+                    menu.trigger.set_selection_fill_only(true);
+                    menu.trigger.set_toolbar_icon_slot(true);
+                    menu.set_entries(entries.clone())
+                        .map_err(|e| anyhow::anyhow!("creation menu: {e:?}"))?;
+                    (
+                        Content::new(target, menu),
+                        vec![ToolbarCommandBinding {
+                            target,
+                            action: None,
+                            command: 0,
+                            source: d.source.clone(),
+                        }],
+                    )
+                }
                 Contents::Close(title) => {
                     let button = close_button(target, title);
                     (

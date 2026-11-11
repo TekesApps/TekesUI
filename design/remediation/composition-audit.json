@@ -2041,9 +2041,9 @@
   ],
   "source_sha256": {
     "DESIGN.md": "0085e260e7f5e511470dc90a2a7ae1d91671b92b7c928864ff160d0bd0a6167b",
-    "crates/tekes-ui-app-host/src/lib.rs": "70baa637cc8d474dfd46464db899da4323a6e0c9586c11e0a5d2f329a5d243c3",
-    "crates/tekes-ui-app-host/src/window.rs": "79e18142f475bdb6a9b5c7629c07a64c7f4aba9b09810c32e02cf29def026b91",
-    "crates/tekes-ui-app-host/src/window_toolbar.rs": "3921e7753803170fe672fd859ede6046b0f8ab5a0bb506e4a3c3ba09729602a2",
+    "crates/tekes-ui-app-host/src/lib.rs": "585bece22b180ba215e315a0ede99d09df3e71ff70825261594782560453d4e3",
+    "crates/tekes-ui-app-host/src/window.rs": "f2cc73d70b7e42d6181e11f95f3a2cff515482f7bb8e9dafa8c1d42c0a45999f",
+    "crates/tekes-ui-app-host/src/window_toolbar.rs": "757e41d33432c13b47686acf7ee22108b39d8334c01e4d77f3632683e041a688",
     "crates/tekes-ui-controls/src/chart.rs": "9e3e5dd1e9d62f358cb74201a254f4165b81e4b79c3a97f0a74bde6f591e983c",
     "crates/tekes-ui-controls/src/collections_view.rs": "f00f22e614309f41cf3f611b5627ca28b92c03eadb43ab5b337fafcf2eff2d9c",
     "crates/tekes-ui-controls/src/composite.rs": "2cd3a31695695b3515e744ee083b2d72558addf5d5ea73bab54974094875147f",
@@ -2225,9 +2225,9 @@
     "docs/design/datatable-public-content-20261024.md": "812988af6954e21b11d6aca4fe769bfb405f26f256685c400f88cc28ef377cf9",
     "docs/design/disclosure-public-content-20261024.md": "1d9a5e8149c04ab5320ffe8639026034b25dfdd267c38631dd8f9c3f2b078f39",
     "docs/design/media-viewer-design-20261031.md": "1b3205a11b7d11f67c8d628e9a7c684283ddfea46a1fb5c54097d86ab11d52b0",
-    "crates/tekes-ui-app-host/src/columns.rs": "962b01746d12fc01ef5f54ecd1fae8bb645084c68a1d635de1d08a5445fa7f3d",
-    "crates/tekes-ui-app-host/src/presentation.rs": "41530494e5f3a438fdc337e7fb6bb55d3204351e188f9363a70156414cbb1eb0",
-    "crates/tekes-ui-app-host/src/window_presentation.rs": "237ce372ddb7e9c5919f6503689834fcb7648079c57a6f3211d4be1b283de7f2",
+    "crates/tekes-ui-app-host/src/columns.rs": "262fc66171a663bd28159889491ab895f2424e9ba3bb29a2b01151d8839ea773",
+    "crates/tekes-ui-app-host/src/presentation.rs": "578ada085891ce63e9a4e8671149e9bded5b3c1f7d352598e11304446a01980d",
+    "crates/tekes-ui-app-host/src/window_presentation.rs": "908ed49238163fe9fd1623e4186aac20a176243721f3bd75c7e018a2478c569f",
     "crates/tekes-ui-controls/src/composition/toolbar_host.rs": "dddb4bba2aaededd903830bdae6f6b8f3b5184bc2010ac4563396d5c0a765715"
   },
   "remaining": [
@@ -2648,22 +2648,22 @@
     },
     {
       "path": "crates/tekes-ui-app-host/src/lib.rs",
-      "line": 113,
+      "line": 120,
       "anchor": "pub fn from_containers("
     },
     {
       "path": "crates/tekes-ui-app-host/src/window_toolbar.rs",
-      "line": 58,
+      "line": 60,
       "anchor": "pub(crate) struct MountedToolbar {"
     },
     {
       "path": "crates/tekes-ui-app-host/src/window.rs",
-      "line": 1271,
+      "line": 1323,
       "anchor": ".render(&mut toolbar_scene, text, palette)"
     },
     {
       "path": "crates/tekes-ui-app-host/src/window.rs",
-      "line": 283,
+      "line": 285,
       "anchor": "mounted_toolbar: crate::window_toolbar::MountedToolbar,"
     },
     {
@@ -2678,7 +2678,7 @@
     },
     {
       "path": "crates/tekes-ui-app-host/src/window_presentation.rs",
-      "line": 1256,
+      "line": 1285,
       "anchor": "pub(super) fn sync_container_toolbars("
     },
     {

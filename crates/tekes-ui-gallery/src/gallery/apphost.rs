@@ -8,9 +8,9 @@ use std::{
     sync::atomic::{AtomicU64, Ordering},
 };
 use tekes_ui_app_host::{
-    AppWindow, ContainerContent, ContainerToolbarHost, ContainerToolbarPosition, LocalContainer,
-    NavigationOptions, OthersGroup, OthersOptions, PresentationOptions, SettingsDisplayMode,
-    SettingsOwner, SettingsWindow,
+    AppWindow, ContainerContent, ContainerFactory, ContainerMultiplicity, ContainerToolbarHost,
+    ContainerToolbarPosition, LocalContainer, NavigationOptions, OthersGroup, OthersOptions,
+    PresentationOptions, SettingsDisplayMode, SettingsOwner, SettingsWindow,
 };
 use tekes_ui_controls::{
     CheckState, ScrollArea, TextInput,
@@ -677,6 +677,54 @@ fn assemble(theme: Theme, settings: SettingsOwner) -> anyhow::Result<AppWindow> 
         ],
         presentation,
     )?
+    .container_factories(vec![
+        ContainerFactory::local(
+            "scratchpad",
+            "Scratchpad",
+            ContainerMultiplicity::Single,
+            |id| {
+                LocalContainer::new(
+                    id,
+                    scroll(
+                        6300,
+                        stack(
+                            6301,
+                            vec![
+                                text(6302, "Scratchpad", TextRole::UiHeading),
+                                field(
+                                    ComponentId(6303),
+                                    "Notes",
+                                    "This scratchpad keeps your text when closed and reopened.",
+                                ),
+                            ],
+                        ),
+                    ),
+                )
+            },
+        )
+        .switcher_icon("tekes-note"),
+        ContainerFactory::local(
+            "work-notes",
+            "Working Notes",
+            ContainerMultiplicity::Multiple,
+            |id| {
+                LocalContainer::new(
+                    id,
+                    scroll(
+                        6400,
+                        stack(
+                            6401,
+                            vec![
+                                text(6402, "Working Notes", TextRole::UiHeading),
+                                field(ComponentId(6403), "Notes", ""),
+                            ],
+                        ),
+                    ),
+                )
+            },
+        )
+        .switcher_icon("tekes-file-text"),
+    ])?
     .theme(theme)
     .navigation(history_options()?)
     .shared_settings(settings))

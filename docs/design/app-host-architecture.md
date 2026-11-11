@@ -1,3 +1,9 @@
+## 2026-11-11: registered Others creation (#229)
+
+Others visibility and creation are separate actions: its main icon only hides/shows the existing selection; an adjacent chevron lists registered creatable types. An empty visible Others presents the same registrations as a creation grid. The same directory includes existing fixed containers as explicit Open entries which retain their original Content, navigation and identity; factory entries genuinely create according to their policy. Type radio icons project opened instances only; hiding preserves them, closing the last instance removes that type from the radio group. Cancel does not create or select anything.
+
+`ContainerFactory` explicitly declares Single or Multiple and constructs original local Containers, or names a compile-time Process ModuleDefinition registered before worker dispatch. Single reopens its retained mounted instance; Multiple creates a fresh stable instance and closing it cancels its worker and releases its local Content/Toolbar. A lightweight non-routable index tombstone preserves other original Source indices. Instance IDs never recycle. Process instance identity is separate from worker factory ID, which only selects the existing executable worker; IPC remains unchanged. Each Process worker ID is registered once; one Multiple factory covers all instances of that type. Duplicate worker IDs are rejected rather than comparing function addresses. Existing Vec<Container> assemblies remain supported. Creation appends original Panel records and PresentationState membership; it does not rebuild other containers, change Workspace Switch/Nav ownership, or introduce another selection state.
+
 # TekesUI AppHost 框架设计
 
 ## 2026-11-11：Workspace 交换与 Secondary actions（#229）

@@ -390,6 +390,45 @@ impl PresentationState {
             .selected = Some(selected);
         Ok(())
     }
+    pub(crate) fn retire_created(&mut self, id: &str) {
+        self.members.retain(|member| member.id != id);
+        self.list_order.retain(|member| member != id);
+        if let Some(others) = &mut self.options.others {
+            for group in &mut others.groups {
+                group.containers.retain(|member| member != id);
+            }
+            others.groups.retain(|group| !group.containers.is_empty());
+        }
+    }
+    pub(crate) fn register_created(
+        &mut self,
+        container: &Container,
+        factory: &crate::ContainerFactory,
+    ) {
+        let id = container.id().to_owned();
+        self.members.push(Member {
+            id: id.clone(),
+            list_height: container.container_options().list_height,
+        });
+        self.list_order.push(id.clone());
+        if factory.multiplicity == crate::ContainerMultiplicity::Multiple {
+            let others = self.options.others.as_mut().unwrap();
+            if let Some(group) = others
+                .groups
+                .iter_mut()
+                .find(|group| group.id == factory.id)
+            {
+                group.containers.push(id);
+            } else {
+                others.groups.push(OthersGroup {
+                    id: factory.id.clone(),
+                    title: factory.title.clone(),
+                    icon: factory.icon.clone(),
+                    containers: vec![id],
+                });
+            }
+        }
+    }
     pub fn open(&mut self, id: &str) -> Result<()> {
         ensure!(
             self.members.iter().any(|m| m.id == id),

@@ -311,6 +311,24 @@ impl Host {
             let result =
                 match invocation.source {
                     Source::Visibility(side) => self.toggle_visibility(side),
+                    Source::CreationMenu => {
+                        if self.composition_in_progress() {
+                            Err(anyhow::anyhow!("composition-in-progress"))
+                        } else if let Some(
+                            tekes_ui_controls::composition::ContentActionPayload::MenuSelection(
+                                selection,
+                            ),
+                        ) = invocation.payload
+                        {
+                            if let Some(id) = selection.value_path().and_then(|path| path.last()) {
+                                self.open_creation_choice(id)
+                            } else {
+                                Ok(())
+                            }
+                        } else {
+                            Ok(())
+                        }
+                    }
 
                     Source::Navigation(source) => {
                         if self.prepare_settings_item_navigation() {
@@ -334,10 +352,8 @@ impl Host {
                     Source::Close(id) => {
                         if self.composition_in_progress() {
                             Err(anyhow::anyhow!("composition-in-progress"))
-                        } else if let Some(state) = &mut self.presentation {
-                            state.close(&id)
                         } else {
-                            Err(anyhow::anyhow!("container close requires presentation"))
+                            self.close_container(&id)
                         }
                     }
                     Source::Undo(source) => self.settings.as_ref().map_or(Ok(()), |s| {
@@ -709,6 +725,7 @@ impl Host {
                             presenter,
                         }),
                         Source::Close(_)
+                        | Source::CreationMenu
                         | Source::Expand { .. }
                         | Source::WorkspaceSwitch { .. } => {
                             Some(ToolbarTarget::Contribution { presenter, group })
@@ -970,6 +987,16 @@ impl Host {
                                     .is_some_and(
                                         tekes_ui_controls::composition::Component::focusable,
                                     )
+                                    || matches!(
+                                        self.panels[index]
+                                            .mounted_toolbar
+                                            .source(Self::toolbar_group(owner)),
+                                        Some(Source::CreationMenu)
+                                    ) && n
+                                        .component::<tekes_ui_controls::composition::MenuContent>()
+                                        .is_some_and(
+                                            tekes_ui_controls::composition::Component::focusable,
+                                        )
                             })
                     })
             })

@@ -12,6 +12,10 @@ pub use settings::{SettingsDisplayMode, SettingsOptions, SettingsOwner, Settings
 #[cfg(target_os = "macos")]
 mod columns;
 #[cfg(target_os = "macos")]
+mod container_factory;
+#[cfg(target_os = "macos")]
+pub use container_factory::{ContainerFactory, ContainerMultiplicity};
+#[cfg(target_os = "macos")]
 mod navigation_window;
 #[cfg(target_os = "macos")]
 mod presentation;
@@ -77,6 +81,7 @@ pub struct AppWindow {
     navigation: Option<NavigationOptions>,
     settings: Option<settings::SettingsConfiguration>,
     presentation: Option<PresentationOptions>,
+    container_factories: Vec<ContainerFactory>,
 }
 #[cfg(target_os = "macos")]
 impl AppWindow {
@@ -88,6 +93,7 @@ impl AppWindow {
             navigation: None,
             settings: None,
             presentation: None,
+            container_factories: Vec::new(),
         }
     }
     pub fn from_columns(columns: Vec<Column>) -> anyhow::Result<Self> {
@@ -106,6 +112,7 @@ impl AppWindow {
             navigation: None,
             settings: None,
             presentation: None,
+            container_factories: Vec::new(),
         })
     }
     /// Assemble the optional NavBar and focus/others presentation from stable
@@ -130,6 +137,7 @@ impl AppWindow {
             navigation: None,
             settings: None,
             presentation: Some(presentation),
+            container_factories: Vec::new(),
         })
     }
     pub(crate) fn into_host(self, acceptance: bool) -> window::Host {
@@ -153,10 +161,38 @@ impl AppWindow {
             ),
         };
         host.with_theme(theme)
+            .with_container_factories(self.container_factories)
+    }
+    /// Register finite, consumer-defined creatable types before opening a window.
+    /// Process definitions use the executable's existing fixed worker dispatch.
+    pub fn container_factories(mut self, factories: Vec<ContainerFactory>) -> anyhow::Result<Self> {
+        container_factory::validate(&factories)?;
+        anyhow::ensure!(
+            self.presentation
+                .as_ref()
+                .is_some_and(|p| p.others.is_some()),
+            "container factories require Others"
+        );
+        let others = self.presentation.as_ref().unwrap().others.as_ref().unwrap();
+        anyhow::ensure!(
+            !factories
+                .iter()
+                .any(|factory| others.groups.iter().any(|group| group.id == factory.id)),
+            "factory ID conflicts with an existing Others group"
+        );
+        for definition in factories.iter().filter_map(ContainerFactory::definition) {
+            anyhow::ensure!(
+                !self.profile.modules.iter().any(|m| m.id == definition.id),
+                "worker factory registered more than once: {}",
+                definition.id
+            );
+            self.profile.modules.push(definition);
+        }
+        self.container_factories = factories;
+        Ok(self)
     }
     /// Initial appearance and contrast for this window and its local content.
-    /// The default remains LIGHT; existing windows do not follow later changes
-    /// in an embedding window's Theme selection.
+    /// Defaults to LIGHT; does not follow an embedding window's later Theme.
     pub fn theme(mut self, theme: tekes_ui_tokens::Theme) -> Self {
         self.theme = theme;
         self
@@ -201,6 +237,7 @@ impl AppWindow {
             self.settings,
             self.presentation,
             self.theme,
+            self.container_factories,
         )
     }
 }
@@ -254,6 +291,7 @@ fn run_internal(
         settings,
         None,
         tekes_ui_tokens::Theme::LIGHT,
+        Vec::new(),
     )
 }
 #[cfg(target_os = "macos")]
@@ -289,6 +327,7 @@ fn run_columns(
     settings: Option<settings::SettingsConfiguration>,
     presentation: Option<PresentationOptions>,
     theme: tekes_ui_tokens::Theme,
+    factories: Vec<ContainerFactory>,
 ) -> anyhow::Result<()> {
     validate_assembly(
         &profile,
@@ -309,32 +348,23 @@ fn run_columns(
             .ok_or_else(|| anyhow::anyhow!("worker module not in fixed profile"))?;
         return tekes_ui_module_runtime::run((definition.create)(), &args[3]);
     }
-    let ids = profile
-        .modules
-        .iter()
-        .map(|m| m.id.to_owned())
-        .collect::<Vec<_>>();
-    match args.get(1).map(String::as_str) {
-        None => window::run(
-            ids,
-            columns,
-            false,
-            navigation,
-            settings,
-            presentation,
-            theme,
-        ),
-        Some("--window-acceptance") if args.len() == 2 => window::run(
-            ids,
-            columns,
-            true,
-            navigation,
-            settings,
-            presentation,
-            theme,
-        ),
+    let acceptance = match args.get(1).map(String::as_str) {
+        None => false,
+        Some("--window-acceptance") if args.len() == 2 => true,
         _ => anyhow::bail!("fixed-profile app accepts no runtime module discovery or selection"),
-    }
+    };
+    window::run(
+        AppWindow {
+            profile,
+            columns,
+            navigation,
+            settings,
+            presentation,
+            theme,
+            container_factories: factories,
+        },
+        acceptance,
+    )
 }
 #[cfg(not(target_os = "macos"))]
 pub fn run(profile: AppProfile) -> anyhow::Result<()> {

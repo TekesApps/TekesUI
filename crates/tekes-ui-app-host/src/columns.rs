@@ -233,11 +233,18 @@ pub struct RetainedButton {
 /// The factory remains compiled into the consumer; no runtime module discovery.
 pub struct ProcessContainer {
     pub(crate) definition: crate::ModuleDefinition,
+    pub(crate) instance_id: String,
     pub(crate) options: ContainerOptions,
 }
 impl ProcessContainer {
+    /// Stable container identity; the compiled worker factory remains unchanged.
+    pub fn instance_id(mut self, id: impl Into<String>) -> Self {
+        self.instance_id = id.into();
+        self
+    }
     pub fn new(definition: crate::ModuleDefinition) -> Self {
         Self {
+            instance_id: definition.id.into(),
             definition,
             options: ContainerOptions::default(),
         }
@@ -289,7 +296,7 @@ impl Container {
     pub fn id(&self) -> &str {
         match self {
             Self::Local(c) => c.id(),
-            Self::Process(p) => p.definition.id,
+            Self::Process(p) => &p.instance_id,
         }
     }
     pub fn container_options(&self) -> &ContainerOptions {
@@ -319,7 +326,7 @@ impl Column {
     pub fn id(&self) -> &str {
         match self {
             Self::Container(c) => c.id(),
-            Self::ProcessContainer(p) => p.definition.id,
+            Self::ProcessContainer(p) => &p.instance_id,
         }
     }
     pub fn options(&self) -> &ContainerOptions {

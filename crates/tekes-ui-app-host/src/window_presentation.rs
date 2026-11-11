@@ -301,13 +301,11 @@ impl Host {
         }
         self.sync_presentation_switcher(whole)?;
         let switcher_frame = self.presentation_switcher_frame();
-        if let (Some(host), Some(frame)) = (&mut self.presentation_tabs, switcher_frame) {
-            host.set_regions(
-                TABS_OWNER,
-                whole,
-                vec![ToolbarRegion::new(ComponentId(TABS_OWNER), frame)],
-            )
-            .map_err(|e| anyhow::anyhow!("container tabs region: {e:?}"))?;
+        let switcher_regions =
+            switcher_frame.map(|frame| self.presentation_switcher_regions(frame, whole));
+        if let (Some(host), Some(_frame)) = (&mut self.presentation_tabs, switcher_frame) {
+            host.set_regions(TABS_OWNER, whole, switcher_regions.unwrap())
+                .map_err(|e| anyhow::anyhow!("container tabs region: {e:?}"))?;
             if let Some(renderer) = &mut self.renderer {
                 with_content_icons(
                     renderer,
@@ -476,6 +474,16 @@ impl Host {
                 eprintln!("PRESENTATION_REJECTED composition-in-progress");
                 return Ok(true);
             }
+            if *command > COMMAND_BASE {
+                let value = (*command - COMMAND_BASE - 1) as usize;
+                if value % 6 == 3 {
+                    let id = self.module_ids[value / 6].clone();
+                    if let Err(error) = self.close_container(&id) {
+                        eprintln!("PRESENTATION_REJECTED {error:#}");
+                    }
+                    return Ok(true);
+                }
+            }
             let state = self.presentation.as_mut().unwrap();
             let result = if *command == COMMAND_BASE - 2 {
                 state.toggle_nav_bar()
@@ -491,7 +499,7 @@ impl Host {
                     0 => state.select_tab(OthersTab::Container(id.clone())),
                     1 => state.promote(id),
                     2 => state.open(id),
-                    3 => state.close(id),
+                    3 => unreachable!("close handled through Host lifecycle"),
                     direction => {
                         let items = state.list_ids();
                         let position = items.iter().position(|candidate| *candidate == id);
@@ -600,7 +608,8 @@ impl Host {
         if self.presentation_layout.tabs.is_none() {
             return Ok(false);
         }
-        if matches!(event, Event::Mouse(mouse) if matches!(mouse.kind, MouseEventKind::Down {..}) && self.presentation_layout.tabs.is_some_and(|frame| frame.contains(Point::new(mouse.position.x as f32, mouse.position.y as f32))))
+        let creation_frame = self.presentation_creation_frame();
+        if matches!(event, Event::Mouse(mouse) if matches!(mouse.kind, MouseEventKind::Down {..}) && (self.presentation_layout.tabs.is_some_and(|frame| frame.contains(Point::new(mouse.position.x as f32, mouse.position.y as f32))) || creation_frame.is_some_and(|frame| frame.contains(Point::new(mouse.position.x as f32, mouse.position.y as f32)))))
             && self.composition_in_progress()
         {
             eprintln!("PRESENTATION_REJECTED composition-in-progress");
@@ -659,6 +668,12 @@ impl Host {
             Event::Mouse(mouse) => {
                 self.pressed.is_none()
                     && (host.content_host().pointer_capture().is_some()
+                        || creation_frame.is_some_and(|frame| {
+                            frame.contains(Point::new(
+                                mouse.position.x as f32,
+                                mouse.position.y as f32,
+                            ))
+                        })
                         || self.presentation_layout.tabs.is_some_and(|frame| {
                             frame.contains(Point::new(
                                 mouse.position.x as f32,
@@ -702,9 +717,13 @@ impl Host {
                 continue;
             }
             use super::window_switcher::SwitcherAction;
-            let state = self.presentation.as_mut().unwrap();
             match record.source {
-                SwitcherAction::Select(tab) => state.select_tab(tab)?,
+                SwitcherAction::Create(id) => {
+                    self.open_creation_choice(&id)?;
+                }
+                SwitcherAction::Select(tab) => {
+                    self.presentation.as_mut().unwrap().select_tab(tab)?
+                }
                 SwitcherAction::Menu => {
                     let Some(ContentActionPayload::MenuSelection(selection)) = record.payload
                     else {
@@ -718,7 +737,7 @@ impl Host {
                     } else {
                         OthersTab::Container(value.clone())
                     };
-                    state.select_tab(tab)?;
+                    self.presentation.as_mut().unwrap().select_tab(tab)?;
                 }
             }
             self.set_toolbar_focus(None, false);
@@ -1215,6 +1234,16 @@ impl Host {
                     source: Source::Visibility(side),
                 });
             }
+        }
+        if state.others().is_some() && !self.creation_choices().is_empty() {
+            declarations[focus].push(Declaration {
+                id: ComponentId(92060),
+                region: WINDOW_TRAILING,
+                placement: ToolbarPlacement::PrimaryAction,
+                order: 3,
+                contents: Contents::CreationMenu(self.creation_entries()),
+                source: Source::CreationMenu,
+            });
         }
         if let Some(nav) = &self.navigation
             && let Some(source) = crate::toolbar_source::ComponentSource::current(&nav.process)
