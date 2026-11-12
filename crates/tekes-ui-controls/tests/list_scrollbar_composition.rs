@@ -69,7 +69,7 @@ fn thumb(scene: &Scene, palette: Palette) -> Option<Rect> {
         .find_map(|primitive| match primitive {
             Primitive::Quad(quad)
                 if quad.rect.size.width == proposal::SCROLLBAR_WIDTH
-                    && quad.fill == palette.color("secondary-text").unwrap() =>
+                    && quad.fill == palette.color("border").unwrap() =>
             {
                 Some(quad.rect)
             }

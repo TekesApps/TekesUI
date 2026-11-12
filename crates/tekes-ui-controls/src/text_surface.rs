@@ -1690,7 +1690,7 @@ impl TextSurface {
                 );
                 if let Some(thumb) = thumb.intersection(&frame_clip) {
                     scene.push_quad(
-                        Quad::new(thumb, color("secondary-text", theme))
+                        Quad::new(thumb, color("border", theme))
                             .with_corner_radius(Spacing::Micro.value()),
                     );
                 }

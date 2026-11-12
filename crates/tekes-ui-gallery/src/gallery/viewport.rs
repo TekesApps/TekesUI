@@ -180,7 +180,7 @@ impl Viewport {
                     .scroll
                     .thumb(vertical, track, ControlSize::RowHeight.value());
                 target.push_quad(
-                    Quad::new(thumb, ColorRole::SecondaryText.resolve(theme))
+                    Quad::new(thumb, ColorRole::Border.resolve(theme))
                         .with_corner_radius(Spacing::Tight.value() * 0.5),
                 );
             }

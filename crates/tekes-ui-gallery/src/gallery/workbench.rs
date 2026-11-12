@@ -3930,8 +3930,7 @@ impl Workbench {
                     );
                     scene.push_clip(visible_list);
                     scene.push_quad(
-                        Quad::new(thumb, paint::color(ctx.theme, "secondary-text"))
-                            .with_corner_radius(2.),
+                        Quad::new(thumb, paint::color(ctx.theme, "border")).with_corner_radius(2.),
                     );
                     scene.pop_clip();
                 }
@@ -11637,7 +11636,7 @@ mod interaction_tests {
                     _ => None,
                 })
                 .expect("actual multiline viewport scrollbar thumb");
-            assert_eq!(thumb.fill, palette.color("secondary-text").unwrap());
+            assert_eq!(thumb.fill, palette.color("border").unwrap());
             assert!(contrast(thumb.fill, palette.color("transcript-input").unwrap()) >= 3.);
             thumb.rect
         }
