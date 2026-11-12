@@ -2145,12 +2145,12 @@
     "crates/tekes-ui-gallery/src/reading_key.rs": "6932a589bce50e2f4365c780c67ab0c467a126c9a4677ad23eeda132f146adae",
     "crates/tekes-ui-gallery/src/viewport_acceptance.rs": "4087d2370154069e4b5dd4864425ef620327a6782a848643922f5be303abffad",
     "crates/tekes-ui-platform-macos/src/accessibility.rs": "4c87b3cf122400c3720d723b0a040f18aa95ff17e4d751396f4c1ab55a17d851",
-    "crates/tekes-ui-platform-macos/src/app.rs": "b3c83e37f0a4e2107f0486d6d3d8f049dbfc1270a9d566435c4a8e93cccae4fe",
+    "crates/tekes-ui-platform-macos/src/app.rs": "340ca745fb5d9babc6a36ae9c14927a42c59bc1c6dcb504a8a51323553e20e37",
     "crates/tekes-ui-platform-macos/src/event.rs": "e3cbb4a7b0630bf91db44051e2f245fc01d41c441d8a76ea96c8692e93a4acdf",
     "crates/tekes-ui-platform-macos/src/lib.rs": "38b492134c3230dd8d23c56e2d7636180e098cb002f0c7a13bfa8f9b4b50066e",
-    "crates/tekes-ui-platform-macos/src/shared.rs": "b7345efca8dc5e92ef84e33a549dd78f4ab095e30a20ad759da43c8e1aedcf48",
+    "crates/tekes-ui-platform-macos/src/shared.rs": "e00ec022182fc964c1c298cb37649205f531be767fc165248bab996eb1c0304d",
     "crates/tekes-ui-platform-macos/src/text_key.rs": "2d17364ccd846719db6bba796959a3e58ce9cbe5def6b7c2c51929dc91274115",
-    "crates/tekes-ui-platform-macos/src/view.rs": "af03b9894d84e666cb2f2aa71f6f7ba2695284615ef1ff30c713d9f77dc3c94e",
+    "crates/tekes-ui-platform-macos/src/view.rs": "36f97f23967d86c52861383c58231d69760ce1a412cfa09ae0e3e378254d5ef1",
     "crates/tekes-ui-text/src/coretext/label.rs": "bc00cc86263847284b1b95ed4f2117faf6f2ec33316ad893e3b2d51b4d1b92f5",
     "crates/tekes-ui-text/src/coretext/mod.rs": "8313d43943f7b9718a792eec04234c30d53025fdfd724bba4fa052e128dd1d38",
     "crates/tekes-ui-text/src/coretext/shaper.rs": "a0ef69c825a3f82b8ebda7787c006b53605b50c5306139103a7c3d05447b4490",
@@ -2303,7 +2303,7 @@
     },
     {
       "path": "crates/tekes-ui-platform-macos/src/shared.rs",
-      "line": 706,
+      "line": 719,
       "anchor": "pub fn set_accessibility_nodes(&self, nodes: Vec<crate::accessibility::AccessibilityNode>) {"
     },
     {
@@ -2428,7 +2428,7 @@
     },
     {
       "path": "crates/tekes-ui-platform-macos/src/shared.rs",
-      "line": 725,
+      "line": 738,
       "anchor": "pub fn set_accessibility_text_layouts("
     },
     {
@@ -2651,7 +2651,7 @@
     },
     {
       "path": "crates/tekes-ui-platform-macos/src/shared.rs",
-      "line": 1009,
+      "line": 1026,
       "anchor": "pub fn try_begin_titlebar_drag(&self) -> bool {"
     },
     {
@@ -4389,5 +4389,32 @@
     ],
     "boundary": "T65 horizontal natural measurement, fixed creation sibling, coalesced header redraw and existing live title press focus preservation. Only opt-in diagnostics/probe added; no capability status uplift.",
     "relocated_final": []
+  },
+  "traffic_indicator_stability_review_20261112": {
+    "changed_sources": [
+      "crates/tekes-ui-platform-macos/Cargo.toml",
+      "crates/tekes-ui-platform-macos/src/app.rs",
+      "crates/tekes-ui-platform-macos/src/selftest.rs",
+      "crates/tekes-ui-platform-macos/src/shared.rs",
+      "crates/tekes-ui-platform-macos/src/view.rs"
+    ],
+    "boundary": "T66 exact native button frame notification and window update alignment, fixed target center, preserved native dimensions and actions, explicit observer cleanup; no capability status uplift.",
+    "relocated_final": [
+      [
+        "crates/tekes-ui-platform-macos/src/shared.rs",
+        706,
+        719
+      ],
+      [
+        "crates/tekes-ui-platform-macos/src/shared.rs",
+        725,
+        738
+      ],
+      [
+        "crates/tekes-ui-platform-macos/src/shared.rs",
+        1009,
+        1026
+      ]
+    ]
   }
 }

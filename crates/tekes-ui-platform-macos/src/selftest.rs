@@ -1526,6 +1526,29 @@ pub fn titlebar_contract() -> Vec<(bool, f64, f64)> {
             })
             .ok()
             .unwrap();
+        // Use the production delegate: update() must exercise the native
+        // notification boundary, not call the alignment helper directly.
+        let delegate = crate::app::AppDelegate::new(
+            mtm,
+            shared.clone(),
+            Default::default(),
+            Default::default(),
+            Default::default(),
+        );
+        window.setDelegate(Some(objc2::runtime::ProtocolObject::from_ref(&*delegate)));
+        let original_posts: Vec<_> = [
+            objc2_app_kit::NSWindowButton::CloseButton,
+            objc2_app_kit::NSWindowButton::MiniaturizeButton,
+            objc2_app_kit::NSWindowButton::ZoomButton,
+        ]
+        .into_iter()
+        .filter_map(|kind| window.standardWindowButton(kind))
+        .map(|button| {
+            let posts = button.postsFrameChangedNotifications();
+            (button, posts)
+        })
+        .collect();
+        delegate.observe_toolbar_controls();
         shared.ready.set(true);
         shared.dispatch(Event::Created);
         if extended {
@@ -1567,6 +1590,29 @@ pub fn titlebar_contract() -> Vec<(bool, f64, f64)> {
             view.layoutSubtreeIfNeeded();
             window.setContentSize(NSSize::new(720. + f64::from(row), 480.));
             view.layoutSubtreeIfNeeded();
+            window.update();
+            if extended {
+                // Capture reattachment was observed to reset these genuine
+                // buttons by 5pt. Model that reset without a content resize or
+                // new row measurement and require synchronous correction.
+                for (_, button, _) in &originals {
+                    let frame = button.frame();
+                    button.setFrameOrigin(NSPoint::new(frame.origin.x, frame.origin.y - 5.));
+                    assert_eq!(
+                        button.frame(),
+                        frame,
+                        "native reset must be corrected synchronously before window.update"
+                    );
+                }
+                let measured_center = center.get();
+                shared.dispatch(Event::Command(crate::CommandId(row)));
+                assert_eq!(
+                    center.get(),
+                    measured_center,
+                    "native reset must not move Toolbar target"
+                );
+                window.update();
+            }
             for (kind, original, before) in &originals {
                 let button = window.standardWindowButton(*kind).unwrap();
                 assert!(std::ptr::eq(&*button, &**original));
@@ -1701,6 +1747,18 @@ pub fn titlebar_contract() -> Vec<(bool, f64, f64)> {
         shared.dispatch(Event::Focus(false));
         assert!(shared.titlebar_drag_origin.borrow().is_none());
         view.mouseDown(&down);
+        delegate.stop_observing_toolbar_controls();
+        for (button, posts) in original_posts {
+            assert_eq!(button.postsFrameChangedNotifications(), posts);
+            let frame = button.frame();
+            let reset = NSPoint::new(frame.origin.x, frame.origin.y - 5.);
+            button.setFrameOrigin(reset);
+            assert_eq!(
+                button.frame().origin,
+                reset,
+                "detached observer must not correct button frames"
+            );
+        }
         shared.finish();
         assert!(shared.titlebar_drag_origin.borrow().is_none());
         window.close();

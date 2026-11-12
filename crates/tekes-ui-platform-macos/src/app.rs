@@ -19,15 +19,15 @@ use objc2::runtime::{AnyObject, ProtocolObject};
 use objc2::{DefinedClass, MainThreadOnly, define_class, msg_send, sel};
 use objc2_app_kit::{
     NSAnimationContext, NSApplication, NSApplicationActivationPolicy, NSApplicationDelegate,
-    NSApplicationTerminateReply, NSBackingStoreType, NSEvent, NSEventModifierFlags, NSEventType,
-    NSMenuItem, NSToolbar, NSWindow, NSWindowAnimationBehavior, NSWindowCollectionBehavior,
-    NSWindowDelegate, NSWindowOcclusionState, NSWindowOrderingMode, NSWindowStyleMask,
-    NSWindowTitleVisibility, NSWindowToolbarStyle, NSWorkspace,
-    NSWorkspaceAccessibilityDisplayOptionsDidChangeNotification,
+    NSApplicationTerminateReply, NSBackingStoreType, NSButton, NSEvent, NSEventModifierFlags,
+    NSEventType, NSMenuItem, NSToolbar, NSViewFrameDidChangeNotification, NSWindow,
+    NSWindowAnimationBehavior, NSWindowButton, NSWindowCollectionBehavior, NSWindowDelegate,
+    NSWindowOcclusionState, NSWindowOrderingMode, NSWindowStyleMask, NSWindowTitleVisibility,
+    NSWindowToolbarStyle, NSWorkspace, NSWorkspaceAccessibilityDisplayOptionsDidChangeNotification,
 };
 use objc2_foundation::{
-    MainThreadMarker, NSNotification, NSObject, NSObjectProtocol, NSPoint, NSProcessInfo, NSRect,
-    NSSize, NSString,
+    MainThreadMarker, NSNotification, NSNotificationCenter, NSObject, NSObjectProtocol, NSPoint,
+    NSProcessInfo, NSRect, NSSize, NSString,
 };
 
 use crate::config::{AppConfig, WindowConfig};
@@ -43,6 +43,7 @@ pub(crate) struct DelegateIvars {
     app_config: AppConfig,
     window_config: WindowConfig,
     menu_bar: MenuBar,
+    toolbar_observers: RefCell<Vec<(Retained<NSButton>, bool)>>,
 }
 
 define_class!(
@@ -112,6 +113,7 @@ define_class!(
         #[unsafe(method(windowWillClose:))]
         fn window_will_close(&self, _notification: &NSNotification) {
             // 之后不再投递事件。是否结束应用由 applicationShouldTerminateAfterLastWindowClosed: 决定。
+            self.stop_observing_toolbar_controls();
             let shared = &self.ivars().shared;
             crate::wake::native::unregister(&shared.wake_state);
             shared.closed.set(true);
@@ -148,6 +150,20 @@ define_class!(
             }
         }
 
+        // Apply initial and changed Toolbar measurements after native layout.
+        // Subsequent button-frame resets are corrected synchronously below.
+        #[unsafe(method(windowDidUpdate:))]
+        fn window_did_update(&self, _notification: &NSNotification) {
+            let shared = &self.ivars().shared;
+            if shared.closed.get() || shared.toolbar_row_height.get().is_none() {
+                return;
+            }
+            if let Some(objects) = shared.objects.get() {
+                objects.window.layoutIfNeeded();
+                shared.align_toolbar_controls();
+            }
+        }
+
         #[unsafe(method(windowDidBecomeKey:))]
         fn window_did_become_key(&self, _notification: &NSNotification) {
             let shared = &self.ivars().shared;
@@ -162,6 +178,11 @@ define_class!(
     }
 
     impl AppDelegate {
+        #[unsafe(method(toolbarControlFrameChanged:))]
+        fn toolbar_control_frame_changed(&self, _notification: &NSNotification) {
+            self.ivars().shared.align_toolbar_controls();
+        }
+
         /// 所有引擎命令菜单项的 action，`tag` 是 `CommandId`。
         #[unsafe(method(menuItemSelected:))]
         fn menu_item_selected(&self, sender: &NSMenuItem) {
@@ -181,7 +202,7 @@ define_class!(
 );
 
 impl AppDelegate {
-    fn new(
+    pub(crate) fn new(
         mtm: MainThreadMarker,
         shared: Rc<Shared>,
         app_config: AppConfig,
@@ -193,9 +214,65 @@ impl AppDelegate {
             app_config,
             window_config,
             menu_bar,
+            toolbar_observers: RefCell::new(Vec::new()),
         });
         // SAFETY: NSObject 的 init 签名正确。
         unsafe { msg_send![super(this), init] }
+    }
+
+    pub(crate) fn observe_toolbar_controls(&self) {
+        let shared = &self.ivars().shared;
+        let Some(objects) = shared.objects.get() else {
+            return;
+        };
+        if !objects
+            .window
+            .styleMask()
+            .contains(NSWindowStyleMask::FullSizeContentView)
+        {
+            return;
+        }
+        for kind in [
+            NSWindowButton::CloseButton,
+            NSWindowButton::MiniaturizeButton,
+            NSWindowButton::ZoomButton,
+        ] {
+            let Some(button) = objects.window.standardWindowButton(kind) else {
+                continue;
+            };
+            let posts = button.postsFrameChangedNotifications();
+            self.ivars()
+                .toolbar_observers
+                .borrow_mut()
+                .push((button.clone(), posts));
+            // SAFETY: main-thread delegate is retained by the window owner;
+            // registration is scoped to this exact native button and removed
+            // before close/owner destruction.
+            unsafe {
+                NSNotificationCenter::defaultCenter().addObserver_selector_name_object(
+                    self,
+                    sel!(toolbarControlFrameChanged:),
+                    Some(NSViewFrameDidChangeNotification),
+                    Some(&button),
+                );
+            }
+            button.setPostsFrameChangedNotifications(true);
+        }
+    }
+
+    pub(crate) fn stop_observing_toolbar_controls(&self) {
+        let buttons = std::mem::take(&mut *self.ivars().toolbar_observers.borrow_mut());
+        for (button, posts) in buttons {
+            // SAFETY: the observer and observed button are both still retained.
+            unsafe {
+                NSNotificationCenter::defaultCenter().removeObserver_name_object(
+                    self,
+                    Some(NSViewFrameDidChangeNotification),
+                    Some(&button),
+                );
+            }
+            button.setPostsFrameChangedNotifications(posts);
+        }
     }
 
     /// `applicationDidFinishLaunching:` 里做的全部事情：菜单、窗口、视图、起始事件。
@@ -296,6 +373,7 @@ impl AppDelegate {
             window: window.clone(),
             view: view.clone(),
         });
+        self.observe_toolbar_controls();
         // 强制创建背衬层，使 `Created` 时 `metal_layer()` 可用。
         let _ = view.metal_layer();
 
@@ -429,6 +507,7 @@ impl Drop for WindowOwner {
                 .notificationCenter()
                 .removeObserver(&self.delegate);
         }
+        self.delegate.stop_observing_toolbar_controls();
         if let Some(objects) = self.shared.objects.get() {
             objects.window.setDelegate(None);
             objects.window.close();

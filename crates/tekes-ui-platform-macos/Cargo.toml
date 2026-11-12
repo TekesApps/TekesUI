@@ -23,7 +23,7 @@ tekes-ui-scene = { workspace = true, optional = true }
 objc2.workspace = true
 objc2-foundation = { workspace = true, features = ["NSObject", "NSString", "NSGeometry", "NSNotification", "NSProcessInfo", "NSArray", "NSEnumerator", "NSThread", "NSRunLoop", "NSDictionary", "NSValue", "NSRange", "NSAttributedString"] }
 objc2-app-kit = { workspace = true, features = [
-    "NSCursor", "NSButton", "NSAttributedString", "NSTextInputClient", "NSTextInputContext", "NSPasteboard", "NSApplication", "NSResponder", "NSView", "NSWindow", "NSToolbar", "NSEvent", "NSMenu", "NSMenuItem",
+    "NSCursor", "NSButton", "NSLayoutConstraint", "NSAttributedString", "NSTextInputClient", "NSTextInputContext", "NSPasteboard", "NSApplication", "NSResponder", "NSView", "NSWindow", "NSToolbar", "NSEvent", "NSMenu", "NSMenuItem",
     "NSTrackingArea", "NSWorkspace", "NSAppearance", "NSScreen", "NSAccessibility", "NSAccessibilityElement", "NSAccessibilityProtocols", "NSAccessibilityConstants", "NSControl",
     "NSAnimationContext", "NSGraphics", "NSRunningApplication", "NSCell", "NSGraphicsContext", "objc2-quartz-core", "objc2-core-foundation", "objc2-core-graphics",
 ] }
