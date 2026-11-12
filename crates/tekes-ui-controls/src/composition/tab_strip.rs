@@ -202,6 +202,28 @@ impl Component for TabStripContent {
             self.view.clear_focus();
         }
     }
+    fn set_focus_from_traversal(&mut self, reverse: bool) {
+        let selected = self.selected();
+        if !reverse || !self.view.focus_close(selected, true) {
+            self.view.focus(selected, true);
+        }
+    }
+    fn focus_boundary(&mut self, reverse: bool) -> ContentResponse {
+        let changed = if reverse {
+            self.view
+                .close_focused_index()
+                .is_some_and(|index| self.view.focus(index, true))
+        } else {
+            self.view
+                .focused_index()
+                .is_some_and(|index| self.view.focus_close(index, true))
+        };
+        ContentResponse {
+            consumed: changed,
+            changed,
+            ..Default::default()
+        }
+    }
     fn semantics(&self) -> ContentSemantics {
         ContentSemantics::new(ContentRole::TabList, "Tabs")
     }
@@ -333,7 +355,15 @@ impl Component for TabStripContent {
             }
             ContentEvent::Key { key, down } => {
                 let selected = self.view.key(*key, *down);
-                self.snapshot(selected)
+                let mut response = self.snapshot(selected);
+                if matches!(key, ControlKey::Space | ControlKey::Enter)
+                    && (self.view.focused_index().is_some()
+                        || self.view.close_focused_index().is_some())
+                {
+                    response.consumed = true;
+                    response.changed = true;
+                }
+                response
             }
             ContentEvent::Cancel => {
                 self.view.cancel();

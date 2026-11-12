@@ -808,6 +808,10 @@ impl<B: Clone + Debug> ToolbarHost<B> {
     pub fn content_host(&self) -> &ContentHost {
         &self.host
     }
+    /// Allow an enclosing host to continue traversal at this toolbar's boundary.
+    pub fn set_focus_wrap(&mut self, wrap: bool) {
+        self.host.set_focus_wrap(wrap);
+    }
     pub fn event_bubbled(&self) -> bool {
         self.ready && self.active && self.host.event_bubbled()
     }

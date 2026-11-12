@@ -739,6 +739,9 @@ impl Host {
         let Some(input) = super::window_toolbar_mount::native_toolbar_event(event) else {
             return Ok(false);
         };
+        if let ContentEvent::KeyInput(key) = input {
+            return self.toolbar_key_input(key);
+        }
         let consumed = self.presentation_tab_input(&input)?;
         Ok(consumed || matches!(event, Event::Key(_) | Event::TextKey(_)))
     }
@@ -759,6 +762,9 @@ impl Host {
             .map_err(|e| anyhow::anyhow!("container tabs input: {e:?}"))?
             .consumed;
         if consumed {
+            if host.content_host().focused().is_some() {
+                self.set_toolbar_focus(None, false);
+            }
             self.apply_tab_selection()?;
         }
         if trace_scroll {

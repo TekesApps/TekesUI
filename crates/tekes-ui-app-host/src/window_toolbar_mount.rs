@@ -1160,13 +1160,50 @@ impl Host {
         if let Some(consumed) = self.settings_tab_input(&key)? {
             return Ok(consumed);
         }
+        let header_focused = self
+            .presentation_tabs
+            .as_ref()
+            .is_some_and(|header| header.content_host().focused().is_some());
         if key.down
             && let Some(ControlKey::Tab { reverse }) = key.key
             && self.open_toolbar().is_none()
         {
             let targets = self.toolbar_focus_targets();
+            if header_focused {
+                if self.presentation_tab_input(&ContentEvent::KeyInput(key.clone()))? {
+                    return Ok(true);
+                }
+                // The header uses non-wrapping original ContentHost traversal.
+                // Its boundary resumes the window's existing toolbar scope.
+                if targets.is_empty() {
+                    return Ok(false);
+                }
+                self.presentation_tabs.as_mut().unwrap().blur();
+                self.set_toolbar_focus(
+                    if reverse {
+                        targets.last()
+                    } else {
+                        targets.first()
+                    }
+                    .copied(),
+                    true,
+                );
+                return Ok(self.actual_toolbar_owner().is_some());
+            }
             let groups = self.toolbar_groups();
             let current = self.actual_toolbar_owner().or(self.toolbar_focus);
+            let crosses_header = self.presentation_layout.tabs.is_some()
+                && (if reverse {
+                    current.is_none() || current == targets.first().copied()
+                } else {
+                    current.is_some() && current == targets.last().copied()
+                });
+            if crosses_header {
+                self.set_toolbar_focus(None, false);
+                if self.presentation_tab_input(&ContentEvent::KeyInput(key.clone()))? {
+                    return Ok(true);
+                }
+            }
             let next = current
                 .and_then(|current| groups.iter().position(|&target| target == current))
                 .and_then(|index| {
@@ -1188,8 +1225,6 @@ impl Host {
                     }
                 });
             self.set_toolbar_focus(next, true);
-            // Cross-group traversal does not dispatch to ContentHost: report
-            // this Tab's actual admission, not the previous event's bubbling.
             return Ok(next.is_some()
                 && self.panels[self.toolbar_index]
                     .mounted_toolbar
@@ -1197,6 +1232,9 @@ impl Host {
                     .content_host()
                     .focused()
                     .is_some());
+        }
+        if header_focused {
+            return self.presentation_tab_input(&ContentEvent::KeyInput(key));
         }
         if key.down
             && key.key == Some(ControlKey::Escape)

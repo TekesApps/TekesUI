@@ -58,6 +58,7 @@ fn selection(record: &ContentActionRecord) -> &MenuSelection {
         | ContentActionPayload::SegmentSelection(_)
         | ContentActionPayload::TabSelection { .. }
         | ContentActionPayload::TabCloseRequest { .. }
+        | ContentActionPayload::TabStrip(_)
         | ContentActionPayload::BreadcrumbNavigation { .. }
         | ContentActionPayload::CommandSelection { .. }
         | ContentActionPayload::DisclosureExpansion(_) => {

@@ -193,6 +193,7 @@ impl Host {
         let choices = self.creation_choices();
         let regions = self.presentation_switcher_regions(frame, whole);
         let host = self.presentation_tabs.as_mut().unwrap();
+        host.set_focus_wrap(false);
         host.set_regions(OWNER, whole, regions)
             .map_err(|e| anyhow::anyhow!("switcher regions: {e:?}"))?;
         if structural {
