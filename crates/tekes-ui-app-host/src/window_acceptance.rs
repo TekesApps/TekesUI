@@ -269,6 +269,247 @@ impl super::Host {
         );
         self.event(event, w)
     }
+    /// Exercise queued header input through the real Window event reducer in
+    /// one callback, before the runloop can satisfy its pending redraw.
+    fn acceptance_switcher_scroll(&mut self, w: &mut super::Window) -> anyhow::Result<()> {
+        use super::window_switcher::{CREATE, SCROLL, STRIP};
+        use super::{Event, Point};
+        use anyhow::ensure;
+        use tekes_ui_controls::composition::ScrollContent;
+        use tekes_ui_platform_macos::{
+            KeyEvent, KeyEventKind, Modifiers, ScrollEvent, ScrollPhase, Vec2,
+        };
+
+        let original_size = w.size();
+        w.set_content_size(super::WindowSize {
+            // The demo has only plain + List. Use its declared native minimum
+            // width, not 900pt (which still fits that short document).
+            width: 600.,
+            height: original_size.height,
+        });
+        self.draw(w)?;
+        for action in ["Redraw", "Mouse", "Key", "AX"] {
+            let header = self.presentation_tabs.as_ref().unwrap().content_host();
+            // Authenticate the original native handle while its publication is
+            // current. The wheel burst below retires that geometry lease.
+            let ax_target = if action == "AX" {
+                let target = tekes_ui_platform_macos::content_accessibility::content_key(
+                    header, CREATE, None,
+                )
+                .ok_or_else(|| anyhow::anyhow!("creation trigger has no current AX identity"))?;
+                ensure!(
+                    w.content_accessibility_publication()
+                        .is_some_and(|publication| {
+                            publication.owner(target).is_some()
+                                && publication.nodes().iter().any(|node| {
+                                    node.key == target
+                                        && node.enabled
+                                        && node.frame.size.width > 0.
+                                        && node.frame.size.height > 0.
+                                })
+                        }),
+                    "creation trigger is not visibly published for AX input"
+                );
+                Some(target)
+            } else {
+                None
+            };
+            let node = header.get(SCROLL).unwrap();
+            let scroll = &node.component::<ScrollContent>().unwrap().scroll;
+            let limit = scroll.document_size().width - scroll.viewport_size().width;
+            ensure!(
+                limit > 6.,
+                "scroll acceptance requires real header overflow after native resize"
+            );
+            ensure!(
+                node.frame().size.width > 0.,
+                "scroll acceptance viewport is empty"
+            );
+            eprintln!(
+                "PRESENTATION_SCROLL_GEOMETRY action={action} window_width={} viewport={} document={} limit={limit}",
+                w.size().width,
+                scroll.viewport_size().width,
+                scroll.document_size().width
+            );
+            let before = scroll.offset.x;
+            let delta = if before + 3. < limit { 1. } else { -1. };
+            let point = node.frame().center();
+            let title = self.presentation_switcher.items[0].key;
+            let title_before = header.get(title).unwrap().frame();
+            let draws = self.acceptance_draws;
+            for sample in 0..3 {
+                self.acceptance_input(
+                    Event::Scroll(ScrollEvent {
+                        timestamp: self.motion_epoch.elapsed().as_secs_f64(),
+                        delta: Vec2 { x: -delta, y: 0. },
+                        precise: true,
+                        phase: if sample == 0 {
+                            ScrollPhase::Began
+                        } else {
+                            ScrollPhase::Changed
+                        },
+                        momentum_phase: ScrollPhase::None,
+                        inverted: false,
+                        position: tekes_ui_platform_macos::Point {
+                            x: point.x as f64,
+                            y: point.y as f64,
+                        },
+                        modifiers: Modifiers::NONE,
+                    }),
+                    w,
+                )?;
+            }
+            let header = self.presentation_tabs.as_ref().unwrap().content_host();
+            let offset = header
+                .get(SCROLL)
+                .unwrap()
+                .component::<ScrollContent>()
+                .unwrap()
+                .scroll
+                .offset
+                .x;
+            ensure!(
+                (offset - before - delta as f32 * 3.).abs() < 0.001,
+                "queued native samples lost or rescaled point deltas"
+            );
+            ensure!(
+                self.presentation_scroll_pending && self.acceptance_draws == draws,
+                "header burst synchronously drew before the queued callback"
+            );
+            ensure!(
+                header.get(title).unwrap().frame() == title_before,
+                "burst unexpectedly repainted title geometry"
+            );
+            match action {
+                "Redraw" => {
+                    self.acceptance_input(Event::Redraw, w)?;
+                    ensure!(
+                        self.acceptance_draws == draws + 1,
+                        "burst did not share one redraw"
+                    );
+                    let title_after = self
+                        .presentation_tabs
+                        .as_ref()
+                        .unwrap()
+                        .content_host()
+                        .get(title)
+                        .unwrap()
+                        .frame();
+                    ensure!(
+                        (title_after.min_x() - title_before.min_x() + delta as f32 * 3.).abs()
+                            < 0.001,
+                        "queued paint did not publish the accumulated translation"
+                    );
+                }
+                "Mouse" => {
+                    let point = self
+                        .presentation_tabs
+                        .as_ref()
+                        .unwrap()
+                        .content_host()
+                        .get(CREATE)
+                        .unwrap()
+                        .frame()
+                        .center();
+                    self.acceptance_click(Point::new(point.x, point.y), w)?;
+                    ensure!(
+                        self.presentation_tabs
+                            .as_ref()
+                            .unwrap()
+                            .content_host()
+                            .input_overlay_owner()
+                            .is_some(),
+                        "queued scroll followed by fixed + click did not open its menu"
+                    );
+                    self.acceptance_input(
+                        Event::Key(KeyEvent {
+                            kind: KeyEventKind::Down,
+                            key_code: 53,
+                            characters: "\u{1b}".into(),
+                            characters_ignoring_modifiers: "\u{1b}".into(),
+                            modifiers: Modifiers::NONE,
+                            is_repeat: false,
+                        }),
+                        w,
+                    )?;
+                    ensure!(
+                        self.presentation_tabs
+                            .as_ref()
+                            .unwrap()
+                            .content_host()
+                            .input_overlay_owner()
+                            .is_none(),
+                        "Escape did not close creation menu"
+                    );
+                }
+                "Key" => {
+                    ensure!(
+                        self.presentation_tabs
+                            .as_ref()
+                            .unwrap()
+                            .content_host()
+                            .focused()
+                            == Some(CREATE),
+                        "creation trigger lost keyboard focus before reverse traversal"
+                    );
+                    self.acceptance_input(
+                        Event::Key(KeyEvent {
+                            kind: KeyEventKind::Down,
+                            key_code: 48,
+                            characters: "\t".into(),
+                            characters_ignoring_modifiers: "\t".into(),
+                            modifiers: Modifiers {
+                                shift: true,
+                                ..Modifiers::NONE
+                            },
+                            is_repeat: false,
+                        }),
+                        w,
+                    )?;
+                    ensure!(
+                        self.presentation_tabs
+                            .as_ref()
+                            .unwrap()
+                            .content_host()
+                            .focused()
+                            == Some(STRIP),
+                        "queued scroll followed by ShiftTab did not reach original tabs"
+                    );
+                }
+                "AX" => {
+                    let target = ax_target.expect("AX target authenticated before the wheel burst");
+                    self.acceptance_input(
+                        Event::Accessibility {
+                            target,
+                            action: tekes_ui_platform_macos::AccessibilityAction::Focus,
+                        },
+                        w,
+                    )?;
+                    ensure!(
+                        self.presentation_tabs
+                            .as_ref()
+                            .unwrap()
+                            .content_host()
+                            .focused()
+                            == Some(CREATE),
+                        "queued scroll followed by AX Focus did not reach the original creation trigger"
+                    );
+                }
+                _ => unreachable!(),
+            }
+            ensure!(
+                !self.presentation_scroll_pending && self.acceptance_draws > draws,
+                "{action} did not flush pending header geometry"
+            );
+            eprintln!(
+                "PRESENTATION_SCROLL_QUEUE_PASS action={action} samples=3 offset_before={before} offset_after_input={offset} draws_before={draws} draws_after={} automated_native=true physical_input=false",
+                self.acceptance_draws
+            );
+        }
+        w.set_content_size(original_size);
+        self.draw(w)?;
+        Ok(())
+    }
     fn acceptance_menu(&mut self, title: &str, w: &mut super::Window) -> anyhow::Result<()> {
         let command = self
             .presentation_menu()
@@ -434,6 +675,25 @@ impl super::Host {
             });
         if !ready {
             w.request_redraw();
+            return Ok(());
+        }
+        // T65 has its own finite scope. The older 19-step presentation probe
+        // assumes an initially hidden remote; today's demo initially shows List.
+        // Do not weaken that probe's assertions or report its PASS for this run.
+        if std::env::var("TEKESUI_PRESENTATION_SCROLL_ACCEPTANCE").as_deref() == Ok("1") {
+            let state = self.presentation.as_ref().unwrap();
+            ensure!(
+                state.focus_id() == "notes"
+                    && state.nav_bar_id() == Some("navbar")
+                    && state.others_visible(),
+                "T65 requires the mixed nav-others demo"
+            );
+            self.acceptance_switcher_scroll(w)?;
+            probe.shared.transition(Stage::Done);
+            eprintln!(
+                "PRESENTATION_SCROLL_ACCEPTANCE_PASS scope=T65 groups=4 automated_native=true physical_input=false runloop_callback_injected=true timeout_seconds=30"
+            );
+            w.close();
             return Ok(());
         }
         let notes = self.acceptance_index("notes")?;

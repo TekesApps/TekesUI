@@ -193,6 +193,12 @@ impl Component for TabStripContent {
     }
     fn set_focus(&mut self, focused: bool, visible: bool) {
         if focused {
+            // PointerDown already focused the pressed title without selecting
+            // it. Restoring the old selected (possibly offscreen) tab here
+            // makes the next paint clear focus and cancel the live press.
+            if self.view.pointer_press_index().is_some() {
+                return;
+            }
             if let Some(index) = self.view.close_focused_index() {
                 self.view.focus_close(index, visible);
             } else {

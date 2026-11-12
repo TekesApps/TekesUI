@@ -4,17 +4,17 @@ use crate::OthersTab;
 use tekes_ui_controls::{
     ScrollArea,
     composition::{
-        Button, Content, IconContent, MenuContent, MenuEntry, ScrollContent, TabStripContent,
-        TabStripItem, TextContent, ToolbarCommandBinding, ToolbarGroup, ToolbarHost,
-        ToolbarPlacement, ToolbarRegion, ToolbarRegistration,
+        Button, Content, IconContent, MenuContent, MenuEntry, ScrollContent, StackContent,
+        TabStripContent, TabStripItem, TextContent, ToolbarCommandBinding, ToolbarGroup,
+        ToolbarHost, ToolbarPlacement, ToolbarRegion, ToolbarRegistration,
     },
 };
 const OWNER: u64 = u64::MAX - 1;
 const GROUP: ComponentId = ComponentId(999_999);
-const SCROLL: ComponentId = ComponentId(999_996);
-const STRIP: ComponentId = ComponentId(999_995);
+pub(super) const SCROLL: ComponentId = ComponentId(999_996);
+pub(super) const STRIP: ComponentId = ComponentId(999_995);
 const ROW: ComponentId = ComponentId(999_994);
-const CREATE: ComponentId = ComponentId(999_992);
+pub(super) const CREATE: ComponentId = ComponentId(999_992);
 const GRID_REGION: ComponentId = ComponentId(u64::MAX - 100);
 const GRID_GROUP: ComponentId = ComponentId(1_100_000);
 #[derive(Clone, Debug)]
@@ -213,7 +213,10 @@ impl Host {
                 frame.size,
             );
             let selected_rect = strip.selected_rect();
-            let mut children = vec![Content::new(STRIP, strip)];
+            let mut scroll = ScrollContent::new(ScrollArea::default(), Content::new(STRIP, strip))
+                .horizontal(true);
+            scroll.reveal_horizontal(selected_rect);
+            let mut children = vec![Content::new(SCROLL, scroll)];
             let mut bindings = vec![ToolbarCommandBinding {
                 target: STRIP,
                 action: None,
@@ -243,19 +246,18 @@ impl Host {
             }
             let row = Content::new(
                 ROW,
-                ToolbarGroup::new(ToolbarPlacement::Navigation, children),
+                StackContent {
+                    model: tekes_ui_controls::extended::Stack::new(Axis::Horizontal),
+                    children,
+                    flexible_child: Some(SCROLL),
+                },
             );
-            let mut scroll = ScrollContent::new(ScrollArea::default(), row).horizontal(true);
-            scroll.reveal_horizontal(selected_rect);
             host.register(ToolbarRegistration {
                 region: ComponentId(OWNER),
                 order: 0,
                 group: Content::new(
                     GROUP,
-                    ToolbarGroup::new(
-                        ToolbarPlacement::Navigation,
-                        vec![Content::new(SCROLL, scroll)],
-                    ),
+                    ToolbarGroup::new(ToolbarPlacement::Navigation, vec![row]),
                 ),
                 bindings,
             })
@@ -454,7 +456,11 @@ mod tests {
             modifiers: Default::default(),
         });
         let input = super::super::window_toolbar_mount::native_toolbar_event(&native).unwrap();
-        assert!(host.presentation_tab_input(&input).unwrap());
+        assert!(
+            host.presentation_tab_input(&input).unwrap(),
+            "native header Pointer{} must be consumed at {point:?}",
+            if down { "Down" } else { "Up" }
+        );
     }
     fn click_with_paint(host: &mut Host, name: &str, width: f32) {
         let point = target(host, name).1.center();
@@ -574,6 +580,179 @@ mod tests {
                 assert_eq!(title.min_x(), original_title.min_x());
             }
         }
+    }
+    #[test]
+    fn t65_batched_precise_scroll_keeps_fixed_create_hit_and_natural_trailing_space() {
+        let mut host = fixture();
+        paint(&mut host, 600.);
+        let wide_create = target(&host, "Create Container").1;
+        assert!(wide_create.max_x() < host.presentation_switcher_frame().unwrap().max_x());
+        paint(&mut host, 180.);
+        let create = target(&host, "Create Container").1;
+        let viewport = host
+            .presentation_tabs
+            .as_ref()
+            .unwrap()
+            .content_host()
+            .get(SCROLL)
+            .unwrap()
+            .frame();
+        assert!(viewport.max_x() <= create.min_x());
+        assert!(create.max_x() <= host.presentation_switcher_frame().unwrap().max_x());
+        let offset = |host: &Host| {
+            host.presentation_tabs
+                .as_ref()
+                .unwrap()
+                .content_host()
+                .get(SCROLL)
+                .unwrap()
+                .component::<ScrollContent>()
+                .unwrap()
+                .scroll
+                .offset
+                .x
+        };
+        let before = offset(&host);
+        let title_id = host.presentation_switcher.items[0].key;
+        let before_title = host
+            .presentation_tabs
+            .as_ref()
+            .unwrap()
+            .content_host()
+            .get(title_id)
+            .unwrap()
+            .frame();
+        // Native samples can arrive before the queued paint. Preserve point
+        // deltas and native momentum, including a reversal, without dropping
+        // samples or revealing the selected tab back into view.
+        for (index, delta) in [1.25, 2.5, 3.75, -0.5].into_iter().enumerate() {
+            assert!(
+                host.presentation_tab_input(&ContentEvent::Scroll {
+                    position: viewport.center(),
+                    delta: Point::new(delta, 0.),
+                    precise: true,
+                    begin: index == 0,
+                    end: index == 3,
+                    momentum: index >= 2,
+                    time: 1. + index as f64 * 0.008,
+                })
+                .unwrap()
+            );
+        }
+        assert_eq!(offset(&host), before + 7.);
+        paint(&mut host, 180.);
+        assert_eq!(offset(&host), before + 7.);
+        let after_title = host
+            .presentation_tabs
+            .as_ref()
+            .unwrap()
+            .content_host()
+            .get(title_id)
+            .unwrap()
+            .frame();
+        assert_eq!(after_title.min_x(), before_title.min_x() - 7.);
+        assert_eq!(target(&host, "Create Container").1, create);
+        assert!(
+            !host
+                .presentation_tab_input(&ContentEvent::Scroll {
+                    position: create.center(),
+                    delta: Point::new(20., 0.),
+                    precise: true,
+                    begin: true,
+                    end: true,
+                    momentum: false,
+                    time: 2.,
+                })
+                .unwrap()
+        );
+        assert_eq!(offset(&host), before + 7.);
+        // A press spanning paint retains the fixed original menu owner.
+        click_with_paint(&mut host, "Create Container", 180.);
+        assert!(
+            host.presentation_tabs
+                .as_ref()
+                .unwrap()
+                .content_host()
+                .input_overlay_owner()
+                .is_some()
+        );
+    }
+    #[test]
+    fn t65_visible_tab_press_survives_paint_when_selected_tab_is_scrolled_offscreen() {
+        let mut host = fixture();
+        host.presentation
+            .as_mut()
+            .unwrap()
+            .select_tab(OthersTab::Container("second".into()))
+            .unwrap();
+        paint(&mut host, 180.);
+        let node = host
+            .presentation_tabs
+            .as_ref()
+            .unwrap()
+            .content_host()
+            .get(SCROLL)
+            .unwrap();
+        let viewport = node.frame();
+        let offset = node.component::<ScrollContent>().unwrap().scroll.offset.x;
+        assert!(offset > 0.);
+        assert!(
+            host.presentation_tab_input(&ContentEvent::Scroll {
+                position: viewport.center(),
+                delta: Point::new(-offset, 0.),
+                precise: true,
+                begin: true,
+                end: true,
+                momentum: false,
+                time: 1.,
+            })
+            .unwrap()
+        );
+        paint(&mut host, 180.);
+        let selected_key = host.presentation_switcher.items.last().unwrap().key;
+        let selected_frame = host
+            .presentation_tabs
+            .as_ref()
+            .unwrap()
+            .content_host()
+            .get(selected_key)
+            .unwrap()
+            .frame();
+        assert!(
+            selected_frame.min_x() >= viewport.max_x(),
+            "selected tab must be offscreen"
+        );
+        let point = target(&host, "inspector").1.center();
+        native_pointer(&mut host, point, true);
+        let capture = host
+            .presentation_tabs
+            .as_ref()
+            .unwrap()
+            .content_host()
+            .pointer_capture()
+            .expect("pressed tab must own pointer capture");
+        assert_eq!(capture.0, STRIP);
+        paint(&mut host, 180.);
+        assert_eq!(
+            host.presentation.as_ref().unwrap().selected_tab(),
+            Some(&OthersTab::Container("second".into())),
+            "down must not commit selection"
+        );
+        assert_eq!(
+            host.presentation_tabs
+                .as_ref()
+                .unwrap()
+                .content_host()
+                .pointer_capture(),
+            Some(capture),
+            "paint must retain the same captured owner and epoch"
+        );
+        native_pointer(&mut host, point, false);
+        paint(&mut host, 180.);
+        assert_eq!(
+            host.presentation.as_ref().unwrap().selected_tab(),
+            Some(&OthersTab::Container("inspector".into()))
+        );
     }
     #[test]
     fn t64_each_instance_has_text_tab_and_close_does_not_select_sibling() {
