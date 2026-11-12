@@ -114,6 +114,7 @@ pub(crate) struct Shared {
     // Native zoom may run a nested resize loop. Release the Rust handler first.
     pending_titlebar_zoom: Cell<bool>,
     pub(crate) toolbar_row_height: Cell<Option<f64>>,
+    toolbar_aligning: Cell<bool>,
     pub redraw_pending: Cell<bool>,
     pub last_geometry: Cell<Option<GeometryState>>,
     pub last_motion: Cell<Option<bool>>,
@@ -171,6 +172,7 @@ impl Shared {
             titlebar_drag_origin: RefCell::new(None),
             pending_titlebar_zoom: Cell::new(false),
             toolbar_row_height: Cell::new(None),
+            toolbar_aligning: Cell::new(false),
             redraw_pending: Cell::new(false),
             last_geometry: Cell::new(None),
             last_motion: Cell::new(None),
@@ -350,40 +352,50 @@ impl Shared {
         }
     }
 
-    pub(crate) fn align_toolbar_controls(&self) {
+    fn toolbar_control_center(&self) -> Option<f64> {
+        use objc2_app_kit::NSWindowStyleMask;
         if self.closed.get() {
+            return None;
+        }
+        let height = self.toolbar_row_height.get()?;
+        let objects = self.objects.get()?;
+        let style = objects.window.styleMask();
+        if !style.contains(NSWindowStyleMask::FullSizeContentView)
+            || style.contains(NSWindowStyleMask::FullScreen)
+        {
+            return None;
+        }
+        let minimum = [
+            NSWindowButton::CloseButton,
+            NSWindowButton::MiniaturizeButton,
+            NSWindowButton::ZoomButton,
+        ]
+        .into_iter()
+        .filter_map(|kind| objects.window.standardWindowButton(kind))
+        .filter(|button| !button.isHiddenOrHasHiddenAncestor())
+        .map(|button| button.frame().size.height)
+        .reduce(f64::max)?;
+        Some(height.max(minimum) * 0.5)
+    }
+
+    pub(crate) fn align_toolbar_controls(&self) {
+        // Our own origin writes synchronously emit the same frame notification.
+        // The outer alignment owns all three buttons until its writes finish.
+        if self.toolbar_aligning.get() {
             return;
         }
-        use objc2_app_kit::NSWindowStyleMask;
-        let Some(height) = self.toolbar_row_height.get() else {
+        let Some(center) = self.toolbar_control_center() else {
             return;
         };
         let Some(objects) = self.objects.get() else {
             return;
         };
-        if !objects
-            .window
-            .styleMask()
-            .contains(NSWindowStyleMask::FullSizeContentView)
-            || objects
-                .window
-                .styleMask()
-                .contains(NSWindowStyleMask::FullScreen)
-        {
-            return;
-        }
         let controls = [
             NSWindowButton::CloseButton,
             NSWindowButton::MiniaturizeButton,
             NSWindowButton::ZoomButton,
         ];
-        let minimum = controls
-            .iter()
-            .filter_map(|kind| objects.window.standardWindowButton(*kind))
-            .filter(|button| !button.isHiddenOrHasHiddenAncestor())
-            .map(|button| button.frame().size.height)
-            .fold(0., f64::max);
-        let center = height.max(minimum) * 0.5;
+        self.toolbar_aligning.set(true);
         for kind in controls {
             let Some(button) = objects.window.standardWindowButton(kind) else {
                 continue;
@@ -413,6 +425,7 @@ impl Shared {
                 ));
             }
         }
+        self.toolbar_aligning.set(false);
     }
 
     /// 重新读取系统外观，变化了（或 `force`）就投递 `SystemAppearanceChanged`。
@@ -913,12 +926,15 @@ impl Window {
     /// Align genuine native traffic lights vertically with a measured Toolbar
     /// row. Supply the shared Toolbar measurement, never a separately tuned
     /// button size. Horizontal positions, size, hierarchy and actions stay native.
-    /// Reapplied after native layout/resize. Ordinary or fullscreen chrome is left
-    /// to AppKit. At very small text sizes, native button height is the floor;
+    /// Applied at native window update and preserved across button frame changes.
+    /// Ordinary or fullscreen chrome is left to AppKit. At very small text sizes, native button height is the floor;
     /// use the returned center to position the natural Toolbar row.
     pub fn set_toolbar_row_height(&self, height: f64) -> Option<f64> {
         if !height.is_finite() || height <= 0. {
-            return self.titlebar_control_center_y();
+            return self
+                .shared
+                .toolbar_control_center()
+                .or_else(|| self.titlebar_control_center_y());
         }
         self.shared.toolbar_row_height.set(Some(height));
         if !self
@@ -932,8 +948,9 @@ impl Window {
         {
             return None;
         }
-        self.shared.align_toolbar_controls();
-        self.titlebar_control_center_y()
+        // A native relayout may temporarily reset button origins. Keep the
+        // Toolbar on its measured target while native callbacks restore controls.
+        self.shared.toolbar_control_center()
     }
 
     /// `backingScaleFactor`。

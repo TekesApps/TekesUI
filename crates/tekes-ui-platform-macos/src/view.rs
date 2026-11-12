@@ -218,13 +218,6 @@ define_class!(
             true
         }
 
-        #[unsafe(method(layout))]
-        fn layout(&self) {
-            // SAFETY: exact NSView override; native layout runs first.
-            let () = unsafe { msg_send![super(self), layout] };
-            self.ivars().shared.align_toolbar_controls();
-        }
-
         #[unsafe(method_id(hitTest:))]
         fn hit_test(&self, point: NSPoint) -> Option<Retained<NSView>> {
             let event = objc2_app_kit::NSApplication::sharedApplication(self.mtm()).currentEvent();
@@ -1195,7 +1188,6 @@ impl TekesView {
     /// 层的更新总是做，投递才需要 `ready`：`Created` 之前 AppKit 的初始回调只更新层。
     pub(crate) fn sync_geometry(&self, force: bool) {
         let shared = &self.ivars().shared;
-        shared.align_toolbar_controls();
         let scale = self.scale_factor();
         let size = self.size_points();
         let drawable = size.to_drawable(scale);
