@@ -534,7 +534,7 @@
         "tekes_ui_controls::Tabs",
         "tekes_ui_controls::TabsView"
       ],
-      "api_notes": "Additive public Content: tekes_ui_controls::composition::TabsContent. TabsView owns selection/focus. Caller label is passive, semantics suppressed; caller panel keeps its original Content identity. No independent tab action owner. Retained caller TabItem panel Content with passive custom labels; only selected panel active. No interactive custom tab labels or automatic reconstruction. Disclosure-under-Tabs executable conditions are provided, but the additional regression has not been executed. Native/VoiceOver/performance remain unverified."
+      "api_notes": "Additive public Content: tekes_ui_controls::composition::TabsContent. TabsView owns selection/focus. Caller label is passive, semantics suppressed; caller panel keeps its original Content identity. No independent tab action owner. Retained caller TabItem panel Content with passive custom labels; only selected panel active. No interactive custom tab labels or automatic reconstruction. Disclosure-under-Tabs executable conditions are provided, but the additional regression has not been executed. Native/VoiceOver/performance remain unverified. T64 adds a header-only TabStripContent adapter using the same TabsView and stable keyed select/close intents. Natural title width is capped at 160 points by default; caller content remains outside the strip. This source registration does not establish native acceptance."
     },
     {
       "title": "Breadcrumb",

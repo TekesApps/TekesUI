@@ -45,6 +45,7 @@ pub struct ToolbarGroup {
     pub children: Vec<Content>,
     axis: Axis,
     radio: bool,
+    reveal_passthrough: bool,
 }
 impl ToolbarGroup {
     pub fn new(placement: ToolbarPlacement, children: Vec<Content>) -> Self {
@@ -54,6 +55,7 @@ impl ToolbarGroup {
             children,
             axis: Axis::Horizontal,
             radio: false,
+            reveal_passthrough: false,
         }
     }
     /// Declare one externally controlled choice group. The group never owns a
@@ -103,6 +105,9 @@ fn set_content_axis(children: &mut [Content], axis: Axis) {
     }
 }
 impl Component for ToolbarGroup {
+    fn host_reveal_passthrough(&self) -> bool {
+        self.reveal_passthrough
+    }
     fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
         CurveSubtreeCapability::Recursive
     }
@@ -188,6 +193,9 @@ impl Component for ToolbarGroup {
         } else {
             frame.size.height
         };
+        // Only an unclipped group is a translation-only ancestor. Overflow
+        // remains unavailable to the strict reveal planner.
+        self.reveal_passthrough = natural_main <= available_main;
         let clip = if natural_main > available_main {
             frame.intersection(&clip).unwrap_or_default()
         } else {
@@ -214,6 +222,7 @@ impl Component for ToolbarGroup {
 pub struct ToolbarContent {
     pub children: Vec<Content>,
     paint_ground: bool,
+    reveal_passthrough: bool,
     axis: Axis,
 }
 impl ToolbarContent {
@@ -221,6 +230,7 @@ impl ToolbarContent {
         Self {
             children,
             paint_ground: true,
+            reveal_passthrough: false,
             axis: Axis::Horizontal,
         }
     }
@@ -228,6 +238,7 @@ impl ToolbarContent {
         Self {
             children: vec![],
             paint_ground: false,
+            reveal_passthrough: false,
             axis: Axis::Horizontal,
         }
     }
@@ -244,6 +255,9 @@ impl ToolbarContent {
     }
 }
 impl Component for ToolbarContent {
+    fn host_reveal_passthrough(&self) -> bool {
+        self.reveal_passthrough
+    }
     fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
         CurveSubtreeCapability::Recursive
     }
@@ -349,6 +363,7 @@ impl Component for ToolbarContent {
         for child in &mut self.children {
             child.toolbar_label_layouts();
         }
+        self.reveal_passthrough = false;
         if self.axis == Axis::Vertical {
             self.arrange_vertical(text, frame, clip);
             return;
@@ -447,6 +462,7 @@ impl Component for ToolbarContent {
             Rect::new(center_x, inner.min_y(), center_width, row),
             Rect::new(inner.max_x() - right, inner.min_y(), right, row),
         ];
+        self.reveal_passthrough = true;
         for (section, (items, region)) in members.iter().zip(regions).enumerate() {
             let gap = section_gaps[section];
             let spaces = (gap * items.len().saturating_sub(1) as f32).min(region.size.width);
@@ -456,6 +472,7 @@ impl Component for ToolbarContent {
             } else {
                 0.
             };
+            self.reveal_passthrough &= factor >= 1. || items.is_empty();
             let group_clip = if factor < 1. {
                 region.intersection(&clip).unwrap_or_default()
             } else {

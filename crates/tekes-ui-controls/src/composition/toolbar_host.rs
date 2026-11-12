@@ -159,6 +159,12 @@ struct Regions {
     children: Vec<Content>,
 }
 impl Component for Regions {
+    // This private root is never a scroll descendant. It passes its original
+    // clip unchanged to each allocated toolbar; child layout owns clipping.
+    fn host_reveal_passthrough(&self) -> bool {
+        true
+    }
+
     fn children(&self) -> &[Content] {
         &self.children
     }

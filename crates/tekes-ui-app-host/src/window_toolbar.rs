@@ -7,7 +7,6 @@ use tekes_ui_scene::Rect;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) enum Source {
     Visibility(usize),
-    CreationMenu,
     Navigation(ComponentSource),
     Undo(ComponentSource),
     Title,
@@ -15,7 +14,6 @@ pub(crate) enum Source {
         focus: u64,
         other: Option<u64>,
     },
-    Close(String),
     Expand {
         container: String,
         expanded: bool,
@@ -37,8 +35,6 @@ pub(crate) enum Contents {
         Vec<(u64, String)>,
     ),
     Title(String),
-    CreationMenu(Vec<MenuEntry>),
-    Close(String),
 }
 impl Contents {
     pub(super) fn templates(&self) -> &[(u64, String)] {
@@ -184,9 +180,6 @@ impl MountedToolbar {
                                         },
                                     )
                             }
-                            Contents::CreationMenu(_) | Contents::Close(_) => {
-                                unreachable!("close changes replace its original declaration")
-                            }
                             Contents::Title(title) => {
                                 self.host
                                     .update_component::<TextContent>(d.id, target, |label| {
@@ -218,41 +211,6 @@ impl MountedToolbar {
                     Content::new(target, TextContent::new(title.clone())),
                     vec![],
                 ),
-                Contents::CreationMenu(entries) => {
-                    let trigger = Content::new(
-                        ComponentId(target.0 + 1),
-                        IconContent::new("tekes-new").expect("existing plus icon"),
-                    );
-                    let mut menu = MenuContent::new("Create Container", Vec::new())
-                        .with_trigger_content("Create Container", trigger)
-                        .map_err(|e| anyhow::anyhow!("creation trigger: {e:?}"))?;
-                    menu.trigger.variant = tekes_ui_controls::paint::ButtonVariant::Toolbar;
-                    menu.trigger.set_selection_fill_only(true);
-                    menu.trigger.set_toolbar_icon_slot(true);
-                    menu.set_entries(entries.clone())
-                        .map_err(|e| anyhow::anyhow!("creation menu: {e:?}"))?;
-                    (
-                        Content::new(target, menu),
-                        vec![ToolbarCommandBinding {
-                            target,
-                            action: None,
-                            command: 0,
-                            source: d.source.clone(),
-                        }],
-                    )
-                }
-                Contents::Close(title) => {
-                    let button = close_button(target, title);
-                    (
-                        button,
-                        vec![ToolbarCommandBinding {
-                            target,
-                            action: None,
-                            command: 0,
-                            source: d.source.clone(),
-                        }],
-                    )
-                }
             };
             if let Some(control) = child.component_mut::<tekes_ui_controls::ToolbarControl>() {
                 for (id, name) in d.contents.templates() {
@@ -568,15 +526,4 @@ mod region_lifecycle_tests {
         toolbar.sync(viewport, vec![], vec![]).unwrap();
         assert!(toolbar.host.content_host().get(d.id).is_none());
     }
-}
-
-pub(crate) fn close_button(target: ComponentId, title: &str) -> Content {
-    let icon = IconContent::new("tekes-remove-one").expect("canonical close icon");
-    let mut button = Button::new(Content::new(ComponentId(target.0 + 1), icon))
-        .with_accessible_name(format!("Close {title}"))
-        .with_help(format!("Close {title}"));
-    button.variant = tekes_ui_controls::paint::ButtonVariant::Toolbar;
-    button.set_selection_fill_only(true);
-    button.set_toolbar_icon_slot(true);
-    Content::new(target, button)
 }

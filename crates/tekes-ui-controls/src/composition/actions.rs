@@ -31,6 +31,8 @@ pub enum ContentActionPayload {
     /// Original toolbar command captured before menu-close focus cleanup.
     ToolbarCommand(u64),
     MenuSelection(MenuSelection),
+    /// A header-only Tabs request bound to the original label key.
+    TabStrip(TabStripIntent),
     TreeIntent(TreeIntent),
     TableIntent(TableIntent),
     ListIntent(ListIntent),

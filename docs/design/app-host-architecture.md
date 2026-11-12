@@ -871,3 +871,17 @@ AppHost/Gallery 的业务导航消费共享 List 的 `ListIntent`，以稳定 `L
 `SelectionChanged` 表示用户改变选择，`Activated` 表示显式激活；消费端根据意图携带的 key 映射自身导航目标。前进/后退或 Inspector 更新导致的程序化选择同步通过原 `select_key`/`clear_selection` 完成，不回发用户导航事件。文档 item ID、每次历史访问 ID 和 Container ID 分别保持原职责；重排、过滤、改名及相同标题不改变业务实体身份。
 
 有限检查覆盖 AppHost、Gallery 的实际选择消费者，并包含 AppHost 使用的 Settings sidebar。固定数组展示、控件内部合法索引运算和兼容 API 不因存在 index 就判错；只有把展示位置当业务身份或回读丢失事件身份的接入需要修正。保留原样式、滚动、IME 拒绝、历史和内容更新语义。实现、受影响验证和交付分别记录在 #229；本节定义接入契约，不代表验证已通过。
+
+## 2026-11-12：Others 文字 Tabs 与横向 ScrollArea（#229 / T64）
+
+用户本次将 Others 切换的类型图标组调整为文字 Tabs。当前目标布局为 `[[title ×][title ×][+]] <flex space> [expand/collapse][Others on/off]`：左侧 Tabs 与末尾创建入口在真实横向 ScrollArea 中，右侧两项保持可见且不随 Tabs 内容滚动。旧独立 Close 由各 Tab 内透明的关闭按钮替代；创建入口使用原 `+` 命令，不再附在 on/off 按钮旁。
+
+每个 Tab 以文本自然宽度、关闭按钮及统一 token 间距测量；标题有最大宽度，超限用省略号，完整标题保留为辅助文本。宽度不足时滚动这一个 Tabs 区域，不能以压缩所有 Tab、图标 family 下拉或隐藏菜单代替；当前选中项应能被 reveal。测量、绘制、clip、鼠标/滚轮/键盘与可访问性几何共用真实滚动偏移。
+
+默认标题区最大宽度复用现有 TabsView 的 160 点上限，关闭按钮和间距另计；实现时由共享组件统一提供，不在消费者重复该值。Tab/List 聚合保持原语义：聚合 List 是一个不可关闭的文字 Tab，不新增关闭全部动作；单独 Container Tab 的 × 只关闭自身。Others 关闭时 Tabs/+ 随区域隐藏，固定 on/off 保留恢复入口；重新打开后按原状态显示选中项或空态创建目录。
+
+Tab/Close/创建仍对应原 Container 稳定身份：相同标题及同类型多个实例不合并，点击关闭只关闭其目标，不额外激活它。现有 Tab/List 呈现声明互斥、聚合 List 的成员与关闭规则保持，不借此改为双重呈现；Focus/Others 交换、隐藏保留、展开覆盖 Focus、空态创建目录及恢复入口沿用原状态机。Container 的业务 Toolbar.host、Window 三列分区、Nav 前后命令、标题栏拖动与输入清理不因切换器换外观而改变。
+
+实现优先复用共享 Tabs 和 ScrollArea。标题上限与间距优先采用既有组件配置/token；若缺少所需配置，只补适用于组件的最小入口，不在 Gallery 私自覆盖样式。验证本批改变的横向溢出、选中 reveal、精确关闭/创建、窄宽固定按钮可达性与输入身份；既有未受影响证据复用。源码、原生验收、公开交付与 Gallery/Dock 采用在 #229/T64 分别记录，本节不是通过声明。
+
+ScrollContent 的原纵向默认布局保持；显式横向模式按子内容自然宽度计算 document 宽度，而非强制等于 viewport，继续使用原 ScrollArea 的滚动、裁剪、输入和 reveal。独立 tab strip 不能要求消费者挂载伪造内容面板，也不能在 AppHost 复制一套 Tabs 选择状态机；具体组件接线以实际共享实现为准。

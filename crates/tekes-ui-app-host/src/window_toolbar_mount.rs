@@ -241,14 +241,6 @@ impl Host {
                     }
                 }
                 Source::Panel { .. } => continue,
-                Source::Close(id) => {
-                    let owner = self
-                        .panels
-                        .iter()
-                        .position(|panel| panel.module_id == *id)
-                        .unwrap();
-                    (owner, ComponentId(95000 + owner as u64))
-                }
                 _ => (center, ComponentId(u64::MAX - 18)),
             };
             declaration.region = region;
@@ -311,25 +303,6 @@ impl Host {
             let result =
                 match invocation.source {
                     Source::Visibility(side) => self.toggle_visibility(side),
-                    Source::CreationMenu => {
-                        if self.composition_in_progress() {
-                            Err(anyhow::anyhow!("composition-in-progress"))
-                        } else if let Some(
-                            tekes_ui_controls::composition::ContentActionPayload::MenuSelection(
-                                selection,
-                            ),
-                        ) = invocation.payload
-                        {
-                            if let Some(id) = selection.value_path().and_then(|path| path.last()) {
-                                self.open_creation_choice(id)
-                            } else {
-                                Ok(())
-                            }
-                        } else {
-                            Ok(())
-                        }
-                    }
-
                     Source::Navigation(source) => {
                         if self.prepare_settings_item_navigation() {
                             self.navigation
@@ -349,13 +322,6 @@ impl Host {
                     } => self
                         .toggle_others_expansion(&container, expanded)
                         .map(|changed| exchanged = changed),
-                    Source::Close(id) => {
-                        if self.composition_in_progress() {
-                            Err(anyhow::anyhow!("composition-in-progress"))
-                        } else {
-                            self.close_container(&id)
-                        }
-                    }
                     Source::Undo(source) => self.settings.as_ref().map_or(Ok(()), |s| {
                         s.borrow_mut().undo_action(invocation.command, &source)
                     }),
@@ -724,10 +690,7 @@ impl Host {
                             owner: *index,
                             presenter,
                         }),
-                        Source::Close(_)
-                        | Source::CreationMenu
-                        | Source::Expand { .. }
-                        | Source::WorkspaceSwitch { .. } => {
+                        Source::Expand { .. } | Source::WorkspaceSwitch { .. } => {
                             Some(ToolbarTarget::Contribution { presenter, group })
                         }
                         Source::Navigation(_) => Some(ToolbarTarget::Navigation),
@@ -977,26 +940,7 @@ impl Host {
                             .is_some_and(|n| {
                                 n.component::<ToolbarControl>().is_some_and(
                                     tekes_ui_controls::composition::Component::focusable,
-                                ) || matches!(
-                                    self.panels[index]
-                                        .mounted_toolbar
-                                        .source(Self::toolbar_group(owner)),
-                                    Some(Source::Close(_))
-                                ) && n
-                                    .component::<tekes_ui_controls::composition::Button>()
-                                    .is_some_and(
-                                        tekes_ui_controls::composition::Component::focusable,
-                                    )
-                                    || matches!(
-                                        self.panels[index]
-                                            .mounted_toolbar
-                                            .source(Self::toolbar_group(owner)),
-                                        Some(Source::CreationMenu)
-                                    ) && n
-                                        .component::<tekes_ui_controls::composition::MenuContent>()
-                                        .is_some_and(
-                                            tekes_ui_controls::composition::Component::focusable,
-                                        )
+                                )
                             })
                     })
             })
@@ -1328,16 +1272,10 @@ impl Host {
                                 if !node.node.visible.is_some_and(|clip| clip.contains(point)) {
                                     return None;
                                 }
-                                let group = ComponentId(node.node.id.0.checked_sub(1)?);
-                                let close = matches!(
-                                    panel.mounted_toolbar.source(group),
-                                    Some(Source::Close(_))
-                                );
-                                if !(close && node.node.frame.contains(point)
-                                    || node
-                                        .parts
-                                        .iter()
-                                        .any(|(_, part)| part.frame.contains(point)))
+                                if !node
+                                    .parts
+                                    .iter()
+                                    .any(|(_, part)| part.frame.contains(point))
                                 {
                                     return None;
                                 }
