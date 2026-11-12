@@ -1025,14 +1025,9 @@ impl ButtonModel {
         palette: Palette,
         size: ButtonSize,
         role: proposal::TextRole,
-        transparent_rest: bool,
+        transparent_background: bool,
     ) {
         let context = text.motion_context();
-        let transparent_background = transparent_rest
-            && !self.state.selected
-            && !self.state.error
-            && (self.state.disabled
-                || (!self.state.hovered && !self.state.pressed && !self.needs_animation()));
         self.render_with_motion_context(
             scene,
             text,

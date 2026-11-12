@@ -1,3 +1,7 @@
+## 2026-11-12 单选 List 背景状态合同（#251 / T63）
+
+List 组件自身只为当前 selected 项及当前 hover=true 项绘制状态背景，两者相同则只有一项；非 selected 项在 hover=false 后立即透明，不保留退场背景动画。因此任一帧最多两项有状态背景，指针移到空白或离开后只保留选中项，无选中则全部透明。此规则由共享 ListView 执行，Gallery、AppHost、Settings 不额外覆盖；选择、输入、滚动及不影响本合同的其它动效保持。原录屏、动态红绿和实际发布状态由 #251/T63 单列，不提高其它能力声明。
+
 ## 2026-11-12 消费者接入增量（#229）
 
 AppHost 示例、Gallery 主导航和 AppHost SettingsSidebar 改为消费原 `KeyedSelectableListContent` 的 `ListIntent`。`SelectionChanged.selected_key` 与 `Activated.key` 承载稳定业务身份；`selected_key()` 为只读状态，程序化 `select_key`/`clear_selection` 不发用户动作。挂载后的消费者通过 `ContentHost::set_keyed_list_selection(id, Option<ListItemKey>)` 同步，原选择 owner 更新并废弃旧输入计划，但不把没有变化的几何误标成待布局；该方法也不能恢复已因其它变更失效的几何。动作经原 ContentHost 队列验证 mount、曝光及活动身份，消费者不重新读取可变索引。Settings schema 的 route 在 Sidebar 创建时登记为固定 key，查询只改变 `display_items`；原公开字符串适配器保留兼容，生产侧栏不再使用它。
