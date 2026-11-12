@@ -492,6 +492,18 @@ impl ListView {
             row_gap(),
         )
     }
+    /// Measure keyed rows with the same configured metrics as arrangement.
+    pub(crate) fn measure_current_content_rows(
+        &self,
+        text: &mut impl ButtonTextRenderer,
+        labels: &[String],
+        ids: &[usize],
+        width: f32,
+        sizes: &[Option<tekes_ui_scene::Size>],
+    ) -> tekes_ui_scene::Size {
+        let (height, gap) = self.metrics();
+        Self::measure_content_rows_with_metrics(text, labels, ids, width, sizes, height, gap)
+    }
     fn measure_content_rows_with_metrics(
         text: &mut impl ButtonTextRenderer,
         labels: &[String],
