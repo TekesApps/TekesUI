@@ -258,6 +258,9 @@ impl TabsView {
     pub(crate) fn close_press_index(&self) -> Option<usize> {
         self.close_press
     }
+    pub(crate) fn pointer_press_index(&self) -> Option<usize> {
+        self.press_target
+    }
     /// Latest explicit close artwork failure for direct View callers.
     pub fn close_icon_error(&self) -> Option<crate::composition::IconRenderError> {
         self.close_icon_error

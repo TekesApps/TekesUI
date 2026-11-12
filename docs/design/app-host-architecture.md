@@ -888,3 +888,13 @@ ScrollContent 的原纵向默认布局保持；显式横向模式按子内容自
 
 普通滚轮的非精确 delta 是行量，精确 delta 是点量；共享 ScrollContent 在消费时沿用 TextSurface 的 `size-row-height` token 换算一次。平台事件与直接消费空间位移的 ScrollView 不重复换算。Others 聚合 List 的独立滚轮入口采用同一策略；Gallery 侧栏向 ScrollContent 传原始行量，其直接 ScrollArea 分支保持原换算。原生诊断以收到的 delta、precision 和累计 offset 为准，工具请求数字不等于实际点数；不声明与 AppKit 水平滚动绝对距离相等。
 普通 Tab/Shift+Tab 必须接入现有窗口工具栏遍历：进入当前 Tab 标题，进入其可用的关闭按钮，继续到末尾 `+`，再离开条带；反向按同一真实焦点顺序返回。TabStrip 复用 TabsView 的 focus/focus_close 与按键状态机；Space 按下仅准备动作，实际绘制后松开才关闭，隐藏或关闭需清理按压和焦点。ToolbarHost 以 `set_focus_wrap(false)` 将边界交回外层，未设置的消费者维持原默认；不能以 AX 直接聚焦替代普通键盘可达性验证。
+
+## 2026-11-12：Tabs 连续滚动与固定创建入口（#229 / T65）
+
+用户在 v0.3.16 反馈左右滑动不顺畅，并明确创建 `+` 应固定在 Tabs 区域的 trailing。当前布局修订为 `[横向滚动的文字 Tabs][固定 +] <flex space> [expand/collapse][Others on/off]`；本条取代 T64 中把 `+` 放入滚动内容的安排。固定 `+` 占用同一 Others 区域的稳定空间，不随 tab offset 位移，菜单仍沿原 window overlay；右侧展开/显隐保持原行为。Tabs 文本自然宽、标题上限、逐项关闭、实例身份和创建语义不变。
+
+滑动问题先沿原始输入、单位与 phase、ScrollArea offset/动画、帧请求及每帧同步定位；连续输入不得被无关选中 reveal 或布局重同步回拉/跳变。复用现有 ScrollArea，不为视觉反馈新增平行滚动状态机或驱动。precise 点量与 nonprecise 行量在原消费边界只换算一次，真实惯性事件不重复合成。定位到的可达失败用定向回归保留红绿证据，实际流畅度与代码/CPU检查分开记录，不凭平均耗时或工具成功宣称原生体验通过。
+
+受影响验证包括连续双向滚动与停止/反向、选中项 reveal、固定 + 的位置/命中及窄宽弹出、Tab/Shift+Tab/Space与关闭/隐藏清理。已有未变行为和历史程序证据复用。由 root 统一记录源码、原生、required CI、Release 与 Gallery/Dock 采用；v0.3.16既有交付保持，本段不是修复通过声明。
+
+T65 原生验收另复现了选中 Tab 滚出视口后点击可见 Tab 无法切换：普通 focus 回投影覆盖 PointerDown 的焦点，重绘取消仍有效的 press。修复位于共享 TabStripContent，保留已有按压期间的焦点；未按压时仍按原 selected 恢复。新增回归覆盖 Down → paint → Up 与 capture 身份。旧 presentation fixture 的初始隐藏假设与当前 List 默认不符，T65 opt-in 独立验证 queue/flush，旧断言及失败记录保留。

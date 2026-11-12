@@ -4739,9 +4739,30 @@ impl Component for ScrollContent {
     fn children_mut(&mut self) -> Option<&mut Vec<Content>> {
         Some(&mut self.children)
     }
-    fn measure(&mut self, _text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
+    fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
+        // A horizontal document uses its natural width until it overflows.
+        // This lets a fixed sibling follow short tabs while a flexible viewport
+        // consumes only the space remaining beside that sibling on narrow rows.
+        let width = if self.horizontal {
+            let focus = crate::extended::ControlFrame::new(Rect::default(), None)
+                .focus_bounds(text.backing_scale());
+            let gutter = (-focus.min_x()).max(self.content_padding);
+            let document = self
+                .children
+                .iter_mut()
+                .map(|child| {
+                    child
+                        .measure_intrinsic(text, Size::new(1e8, available.height))
+                        .size
+                        .width
+                })
+                .fold(0., f32::max);
+            available.width.min(document + 2. * gutter)
+        } else {
+            available.width
+        };
         MeasuredChild::new(Size::new(
-            available.width,
+            width,
             self.viewport_height
                 .map_or(available.height, |h| finite(h).min(available.height)),
         ))

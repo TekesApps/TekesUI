@@ -659,6 +659,7 @@ pub struct Host {
     presentation_tabs:
         Option<tekes_ui_controls::composition::ToolbarHost<window_switcher::SwitcherAction>>,
     presentation_switcher: window_switcher::SwitcherState,
+    presentation_scroll_pending: bool,
     container_window_boundary: Option<f32>,
     toolbar_ax: Vec<(
         tekes_ui_platform_macos::AccessibilityKey,
@@ -793,6 +794,7 @@ impl Host {
             presentation_layout: crate::PresentationLayout::default(),
             presentation_tabs: None,
             presentation_switcher: window_switcher::SwitcherState::default(),
+            presentation_scroll_pending: false,
             container_window_boundary: None,
             toolbar_ax: vec![],
             toolbar_ax_next: 1 << 63,
@@ -1495,6 +1497,7 @@ impl Host {
             &mut self.text.atlas,
             palette.color("surface-1").unwrap(),
         )?;
+        self.presentation_scroll_pending = false;
         let renderer_return = diagnostic.map(|_| std::time::Instant::now());
         let drawable_after = diagnostic.map(|_| w.drawable_serial());
         if self.acceptance {
@@ -2030,6 +2033,19 @@ impl Host {
         {
             self.drive_settings_acceptance(w)?;
         }
+        // Wheel input retires the published geometry lease. Refresh a pending
+        // header before checking AX ownership, then apply the same rejection
+        // to the newly published identities (including retired targets).
+        if self.presentation_scroll_pending && matches!(&event, Event::Accessibility { .. }) {
+            if std::env::var_os("TEKESUI_OTHERS_SCROLL_TRACE").is_some() {
+                eprintln!(
+                    "OTHERS_SCROLL_FLUSH input=AX before_draw={}",
+                    self.diagnostic_draw
+                );
+            }
+            self.draw(w)?;
+            self.trace_presentation_scroll("flushed-before-input");
+        }
         if let Event::Accessibility { target, .. } = &event
             && w.content_accessibility_publication()
                 .and_then(|p| p.owner(*target))
@@ -2068,8 +2084,40 @@ impl Host {
             self.draw(w)?;
             return Ok(());
         }
-        if self.presentation_event(&event, w)? {
+        // A queued wheel paint can be overtaken by a click or key action.
+        // Publish the moved tab geometry before those inputs choose a target.
+        if self.presentation_scroll_pending
+            && matches!(&event, Event::Mouse(_) | Event::Key(_) | Event::TextKey(_))
+        {
+            if std::env::var_os("TEKESUI_OTHERS_SCROLL_TRACE").is_some() {
+                let input = match &event {
+                    Event::Mouse(_) => "Mouse",
+                    _ => "Key",
+                };
+                eprintln!(
+                    "OTHERS_SCROLL_FLUSH input={input} before_draw={}",
+                    self.diagnostic_draw
+                );
+            }
             self.draw(w)?;
+            self.trace_presentation_scroll("flushed-before-input");
+        }
+        if self.presentation_event(&event, w)? {
+            if matches!(&event, Event::Scroll(scroll) if self.presentation_layout.tabs.is_some_and(|frame| frame.contains(Point::new(scroll.position.x as f32, scroll.position.y as f32))))
+            {
+                // Apply every native delta immediately, but coalesce painting on
+                // the existing runloop redraw path. A header wheel must not
+                // synchronously render all containers and submit a GPU frame
+                // for every input sample. Pointer/selection geometry stays on
+                // the synchronous path below.
+                self.presentation_scroll_pending = true;
+                if std::env::var_os("TEKESUI_OTHERS_SCROLL_TRACE").is_some() {
+                    eprintln!("OTHERS_SCROLL_QUEUED draw={}", self.diagnostic_draw);
+                }
+                w.request_redraw();
+            } else {
+                self.draw(w)?;
+            }
             return Ok(());
         }
         if self.route_toolbar_event(&event, w)? {
@@ -2340,6 +2388,16 @@ impl WindowHandler for Host {
         // Flush outside a drag so copying receipts cannot perturb its timing.
         if self.draw_diagnostic && matches!(&event, Event::CloseRequested | Event::Focus(false)) {
             eprintln!(
+                "APPHOST_SCREEN_DIAGNOSTIC pid={} window={} native_frame={:?} screen_id={:?} screen_info={:?} scale={} size={:?}",
+                std::process::id(),
+                w.native_window_number(),
+                w.native_window_frame(),
+                w.native_screen_id(),
+                w.screen_info(),
+                w.scale(),
+                w.size(),
+            );
+            eprintln!(
                 "APPHOST_PRESENT_DIAGNOSTIC pid={} window={} clock=CACurrentMediaTime drawable_serial={} acquisition_counts={:?} frames={:?}",
                 std::process::id(),
                 w.native_window_number(),
@@ -2358,6 +2416,9 @@ impl WindowHandler for Host {
                     "Mouse::{:?}@{},{}",
                     mouse.kind, mouse.position.x, mouse.position.y
                 ),
+                Event::Scroll(_) => "Scroll".into(),
+                Event::Key(_) | Event::TextKey(_) => "Key".into(),
+                Event::Accessibility { .. } => "AX".into(),
                 Event::Created => "Created".into(),
                 Event::Resized { .. } => "Resized".into(),
                 Event::Redraw => "Redraw".into(),

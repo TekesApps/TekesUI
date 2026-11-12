@@ -438,7 +438,7 @@
         {
           "api": "tekes_ui_controls::composition::TextContent",
           "path": "crates/tekes-ui-controls/src/composition.rs",
-          "line": 5064,
+          "line": 5085,
           "anchor": "pub struct TextContent {"
         }
       ]
@@ -1473,7 +1473,7 @@
         {
           "api": "tekes_ui_controls::MenuView",
           "path": "crates/tekes-ui-controls/src/composite.rs",
-          "line": 1033,
+          "line": 1036,
           "anchor": "pub struct MenuView {"
         },
         {
@@ -1618,7 +1618,7 @@
         {
           "api": "tekes_ui_controls::DialogView",
           "path": "crates/tekes-ui-controls/src/composite.rs",
-          "line": 2648,
+          "line": 2651,
           "anchor": "pub struct DialogView {"
         },
         {
@@ -2049,12 +2049,12 @@
   "source_sha256": {
     "DESIGN.md": "0085e260e7f5e511470dc90a2a7ae1d91671b92b7c928864ff160d0bd0a6167b",
     "crates/tekes-ui-app-host/src/lib.rs": "fb7c136ea1f7a1e79839d8743df3d8b7953c24f9375505003c1b8c91bd21de66",
-    "crates/tekes-ui-app-host/src/window.rs": "17f1bbda6766fdc82eeb6572a3a7de50cba0ca543377ba4ed678211190909cb5",
+    "crates/tekes-ui-app-host/src/window.rs": "42b677a1602f37f8e5c5062bde2df33881ef0030d0641809344751bd9552044b",
     "crates/tekes-ui-app-host/src/window_toolbar.rs": "cce68a2c70994a98b941c7614f830f5222e4f0c1b68820eef09d20c22c8360ff",
     "crates/tekes-ui-controls/src/chart.rs": "9e3e5dd1e9d62f358cb74201a254f4165b81e4b79c3a97f0a74bde6f591e983c",
     "crates/tekes-ui-controls/src/collections_view.rs": "f44a0329b3d395a59b2849bab36ddcea71d366afeb7a6e6a5f6d42525f69eefe",
-    "crates/tekes-ui-controls/src/composite.rs": "5b694389e4c3561299cf4b5a18dba7d488c3c9e8a94896452222e3f1b432c076",
-    "crates/tekes-ui-controls/src/composition.rs": "e0d0b86f84af64670ebf97d9aa3d535ac09f0d6a55aad826e9a4ab87f591af1b",
+    "crates/tekes-ui-controls/src/composite.rs": "f0b79a8ab76c2a624db9a6a21a68722c44376ff8cd0dc4f873cc1367cd0f9abf",
+    "crates/tekes-ui-controls/src/composition.rs": "1bd5c5331ed4e3804de2fdd3b9548488560d0d9106dbc958e8dded9bb814c2dd",
     "crates/tekes-ui-controls/src/composition/actions.rs": "f8345217306f62f1b8bf9d01b0ab4d1537b7a3a7d885d2eb9a7770956d18b987",
     "crates/tekes-ui-controls/src/composition/adapters.rs": "3528d69b2a2fa3e0f687067f7b545900121ef3620a7abf2a3a1a72586ea92d76",
     "crates/tekes-ui-controls/src/composition/button.rs": "ad0eaa057fc181247ada55693ab57e25e0205ca9c020de2b421b2a771473e390",
@@ -2236,7 +2236,7 @@
     "crates/tekes-ui-app-host/src/presentation.rs": "da13e8499415fa4265bac9a565ef56b77f5030183b0206291fa549e05599e408",
     "crates/tekes-ui-app-host/src/window_presentation.rs": "2d07fdeb27d2c1a30ad4a63043a9ddab73a97bb1c1d240b2a03b98f2aecb9a7c",
     "crates/tekes-ui-controls/src/composition/toolbar_host.rs": "a37b32cde21b6f0f1971f0cb65597dd14f84397a7f95abf056f2680883f870b2",
-    "crates/tekes-ui-controls/src/composition/tab_strip.rs": "632f3c9b688cf4280c7a17b8870c1870b958ce09d5c53fc18a3afc4e85f84f1d"
+    "crates/tekes-ui-controls/src/composition/tab_strip.rs": "7c38cef65422e3f04ccd1f3e9c09045e7f9fd3645767b1ef00a359016bee4dd2"
   },
   "remaining": [
     "Collections49 public adapter/support paths recovered in thisf4df candidate; actual compatible compilation/consumer/IPC acceptance and publication remain Main gates. Tree/Table and keyed List slots remain finite passive contracts, not arbitrary interactive content or virtualization.",
@@ -2323,7 +2323,7 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/composite.rs",
-      "line": 1304,
+      "line": 1307,
       "anchor": "pub fn measure("
     },
     {
@@ -2666,7 +2666,7 @@
     },
     {
       "path": "crates/tekes-ui-app-host/src/window.rs",
-      "line": 1324,
+      "line": 1326,
       "anchor": ".render_layers(&mut toolbar_scene, &mut toolbar_overlays, text, palette)"
     },
     {
@@ -4375,5 +4375,19 @@
       "crates/tekes-ui-controls/src/composition/tab_strip.rs"
     ],
     "boundary": "Existing TabStrip/TabsView and ToolbarHost traversal plus explicit consumer enum adaptation only; set_focus_wrap delegates ContentHost. No capability status uplift."
+  },
+  "tabs_fixed_plus_review_20261112": {
+    "issue": 229,
+    "acceptance": "T65",
+    "changed_sources": [
+      "crates/tekes-ui-app-host/src/window.rs",
+      "crates/tekes-ui-app-host/src/window_acceptance.rs",
+      "crates/tekes-ui-app-host/src/window_switcher.rs",
+      "crates/tekes-ui-controls/src/composite.rs",
+      "crates/tekes-ui-controls/src/composition.rs",
+      "crates/tekes-ui-controls/src/composition/tab_strip.rs"
+    ],
+    "boundary": "T65 horizontal natural measurement, fixed creation sibling, coalesced header redraw and existing live title press focus preservation. Only opt-in diagnostics/probe added; no capability status uplift.",
+    "relocated_final": []
   }
 }
