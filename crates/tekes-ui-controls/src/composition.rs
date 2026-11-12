@@ -208,7 +208,8 @@ pub enum ContentEvent {
         key: ControlKey,
         down: bool,
     },
-    /// Delta is a document-space offset (positive moves toward later content).
+    /// Positive delta moves toward later content. Precise input uses logical
+    /// points; non-precise input uses lines, converted by the receiving viewport.
     Scroll {
         position: Point,
         delta: Point,
@@ -4911,16 +4912,24 @@ impl Component for ScrollContent {
                 time,
                 ..
             } => {
+                // Match the existing TextSurface wheel contract at this input
+                // boundary. ScrollArea itself consumes logical point offsets.
+                let step = if *precise {
+                    1.
+                } else {
+                    proposal::metric("size", "size-row-height").expect("JSON metric")
+                };
+                let delta = Point::new(delta.x * step, delta.y * step);
                 if self
                     .reading
                     .as_mut()
-                    .is_some_and(|reading| !reading.observe_scroll(*delta, *begin, *momentum))
+                    .is_some_and(|reading| !reading.observe_scroll(delta, *begin, *momentum))
                 {
                     return ContentResponse::default();
                 }
                 let changed = self
                     .scroll
-                    .wheel_at(*delta, *precise, *begin, *end, *momentum, *time);
+                    .wheel_at(delta, *precise, *begin, *end, *momentum, *time);
                 ContentResponse {
                     consumed: changed,
                     changed,

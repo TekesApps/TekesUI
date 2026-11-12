@@ -885,3 +885,5 @@ Tab/Close/创建仍对应原 Container 稳定身份：相同标题及同类型�
 实现优先复用共享 Tabs 和 ScrollArea。标题上限与间距优先采用既有组件配置/token；若缺少所需配置，只补适用于组件的最小入口，不在 Gallery 私自覆盖样式。验证本批改变的横向溢出、选中 reveal、精确关闭/创建、窄宽固定按钮可达性与输入身份；既有未受影响证据复用。源码、原生验收、公开交付与 Gallery/Dock 采用在 #229/T64 分别记录，本节不是通过声明。
 
 ScrollContent 的原纵向默认布局保持；显式横向模式按子内容自然宽度计算 document 宽度，而非强制等于 viewport，继续使用原 ScrollArea 的滚动、裁剪、输入和 reveal。独立 tab strip 不能要求消费者挂载伪造内容面板，也不能在 AppHost 复制一套 Tabs 选择状态机；具体组件接线以实际共享实现为准。
+
+普通滚轮的非精确 delta 是行量，精确 delta 是点量；共享 ScrollContent 在消费时沿用 TextSurface 的 `size-row-height` token 换算一次。平台事件与直接消费空间位移的 ScrollView 不重复换算。Others 聚合 List 的独立滚轮入口采用同一策略；Gallery 侧栏向 ScrollContent 传原始行量，其直接 ScrollArea 分支保持原换算。原生诊断以收到的 delta、precision 和累计 offset 为准，工具请求数字不等于实际点数；不声明与 AppKit 水平滚动绝对距离相等。

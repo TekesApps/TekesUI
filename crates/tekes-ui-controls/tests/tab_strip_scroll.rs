@@ -181,3 +181,71 @@ fn toolbar_scroll_admits_natural_group_and_rejects_clipped_group_focus() {
         assert_eq!(host.focused(), horizontal.then_some(ComponentId(10)));
     }
 }
+
+#[test]
+fn wheel_line_units_convert_once_on_both_axes_while_precise_points_stay_unchanged() {
+    for horizontal in [true, false] {
+        for precise in [false, true] {
+            let children = (0..12)
+                .map(|index| {
+                    Content::new(
+                        ComponentId(10 + index),
+                        TextContent::new("Long row for horizontal overflow"),
+                    )
+                })
+                .collect();
+            let body = if horizontal {
+                Content::new(
+                    ComponentId(2),
+                    ToolbarGroup::new(ToolbarPlacement::Navigation, children),
+                )
+            } else {
+                Content::new(ComponentId(2), ListContent::new("Rows", children))
+            };
+            let mut host = ContentHost::new(Content::new(
+                ComponentId(1),
+                ScrollContent::new(ScrollArea::default(), body).horizontal(horizontal),
+            ))
+            .unwrap();
+            render(&mut host);
+            let delta = if horizontal {
+                Point::new(0.1, 0.)
+            } else {
+                Point::new(0., 0.1)
+            };
+            assert!(
+                host.event(&ContentEvent::Scroll {
+                    position: Point::new(60., 20.),
+                    delta,
+                    precise,
+                    begin: false,
+                    end: false,
+                    momentum: false,
+                    time: 1.
+                })
+                .consumed
+            );
+            render(&mut host);
+            let scroll = &host
+                .get(ComponentId(1))
+                .unwrap()
+                .component::<ScrollContent>()
+                .unwrap()
+                .scroll;
+            let offset = if horizontal {
+                scroll.offset.x
+            } else {
+                scroll.offset.y
+            };
+            let expected = if precise {
+                0.1
+            } else {
+                0.1 * proposal::metric("size", "size-row-height").unwrap()
+            };
+            assert!(
+                (offset - expected).abs() < 0.0001,
+                "horizontal={horizontal}, precise={precise}, offset={offset}"
+            );
+        }
+    }
+}

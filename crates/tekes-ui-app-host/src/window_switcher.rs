@@ -45,6 +45,37 @@ fn icon(id: ComponentId, name: &str) -> Result<Content> {
     ))
 }
 impl Host {
+    /// Opt-in evidence for the native header scroll path; never logs labels or text.
+    pub(super) fn trace_presentation_scroll(&self, stage: &str) {
+        if std::env::var_os("TEKESUI_OTHERS_SCROLL_TRACE").is_none() {
+            return;
+        }
+        let Some(host) = &self.presentation_tabs else {
+            eprintln!("OTHERS_SCROLL_STATE stage={stage} mounted=false");
+            return;
+        };
+        let Some(node) = host.content_host().get(SCROLL) else {
+            return;
+        };
+        let Some(scroll) = node.component::<ScrollContent>() else {
+            return;
+        };
+        let selected = host
+            .content_host()
+            .get(STRIP)
+            .and_then(|node| node.component::<TabStripContent>())
+            .map(TabStripContent::selected);
+        eprintln!(
+            "OTHERS_SCROLL_STATE stage={stage} offset={:?} visual={:?} viewport={:?} document={:?} frame={:?} selected={selected:?} capture={} overlay={}",
+            scroll.scroll.offset,
+            scroll.scroll.visual_offset(),
+            scroll.scroll.viewport_size(),
+            scroll.scroll.document_size(),
+            node.frame(),
+            host.content_host().pointer_capture().is_some(),
+            host.content_host().input_overlay_owner().is_some()
+        );
+    }
     fn switcher_items(&self) -> Vec<Item> {
         let state = self.presentation.as_ref().unwrap();
         state
@@ -464,6 +495,84 @@ mod tests {
         );
         native_pointer(host, point, false);
         paint(host, width);
+    }
+    #[test]
+    fn t64_native_horizontal_wheel_survives_header_repaint_in_both_directions() {
+        use tekes_ui_platform_macos::{ScrollEvent, ScrollPhase, Vec2};
+        let mut host = fixture();
+        paint(&mut host, 180.);
+        let scroll_offset = |host: &Host| {
+            host.presentation_tabs
+                .as_ref()
+                .unwrap()
+                .content_host()
+                .get(SCROLL)
+                .unwrap()
+                .component::<ScrollContent>()
+                .unwrap()
+                .scroll
+                .offset
+                .x
+        };
+        let initial = scroll_offset(&host);
+        let original_title = host
+            .presentation_tabs
+            .as_ref()
+            .unwrap()
+            .content_host()
+            .get(host.presentation_switcher.items[0].key)
+            .unwrap()
+            .frame();
+        let point = host
+            .presentation_tabs
+            .as_ref()
+            .unwrap()
+            .content_host()
+            .get(SCROLL)
+            .unwrap()
+            .frame()
+            .center();
+        for (delta, timestamp) in [(-0.1, 1.), (0.1, 2.)] {
+            let event = Event::Scroll(ScrollEvent {
+                timestamp,
+                delta: Vec2 { x: delta, y: 0. },
+                precise: false,
+                phase: ScrollPhase::None,
+                momentum_phase: ScrollPhase::None,
+                inverted: false,
+                position: tekes_ui_platform_macos::Point {
+                    x: point.x as f64,
+                    y: point.y as f64,
+                },
+                modifiers: Default::default(),
+            });
+            assert!(host.presentation_layout.tabs.unwrap().contains(point));
+            let input = super::super::window_toolbar_mount::native_toolbar_event(&event).unwrap();
+            assert!(host.presentation_tab_input(&input).unwrap());
+            let after_input = scroll_offset(&host);
+            paint(&mut host, 180.);
+            assert_eq!(
+                scroll_offset(&host),
+                after_input,
+                "draw must not reveal the selected tab over a user wheel"
+            );
+            let title = host
+                .presentation_tabs
+                .as_ref()
+                .unwrap()
+                .content_host()
+                .get(host.presentation_switcher.items[0].key)
+                .unwrap()
+                .frame();
+            if delta < 0. {
+                let step = tekes_ui_tokens::proposal::metric("size", "size-row-height").unwrap();
+                assert!((after_input - initial - 0.1 * step).abs() < 0.0001);
+                assert!(title.min_x() < original_title.min_x());
+            } else {
+                assert_eq!(after_input, initial);
+                assert_eq!(title.min_x(), original_title.min_x());
+            }
+        }
     }
     #[test]
     fn t64_each_instance_has_text_tab_and_close_does_not_select_sibling() {

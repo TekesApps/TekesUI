@@ -344,6 +344,7 @@ impl Host {
                     .map_err(|e| anyhow::anyhow!("container tabs paint: {e:?}"))?;
             }
         }
+        self.trace_presentation_scroll("after-paint");
         Ok(())
     }
     pub(super) fn presentation_resize_regions(&self) -> Vec<(Rect, Axis)> {
@@ -483,6 +484,23 @@ impl Host {
         })
     }
     pub(super) fn presentation_event(&mut self, event: &Event, w: &Window) -> Result<bool> {
+        if let Event::Scroll(scroll) = event
+            && std::env::var_os("TEKESUI_OTHERS_SCROLL_TRACE").is_some()
+        {
+            let point = Point::new(scroll.position.x as f32, scroll.position.y as f32);
+            eprintln!(
+                "OTHERS_SCROLL_ROUTE point={point:?} delta={:?} tabs={:?} in_tabs={} list={:?} pressed={} toolbar_overlay={}",
+                scroll.delta,
+                self.presentation_layout.tabs,
+                self.presentation_layout
+                    .tabs
+                    .is_some_and(|frame| frame.contains(point)),
+                self.presentation_layout.list_viewport,
+                self.pressed.is_some(),
+                self.open_toolbar().is_some()
+            );
+            self.trace_presentation_scroll("host-route");
+        }
         if self.presentation.is_none() {
             return Ok(false);
         }
@@ -582,10 +600,11 @@ impl Host {
             })
         {
             let height = self.presentation_layout.list_viewport.unwrap().size.height;
-            self.presentation
-                .as_mut()
-                .unwrap()
-                .scroll_list(-scroll.delta.y as f32, height);
+            self.presentation.as_mut().unwrap().scroll_list_wheel(
+                -scroll.delta.y as f32,
+                scroll.precise,
+                height,
+            );
             return Ok(true);
         }
         if let Event::Mouse(mouse) = event {
@@ -724,6 +743,11 @@ impl Host {
         Ok(consumed || matches!(event, Event::Key(_) | Event::TextKey(_)))
     }
     pub(super) fn presentation_tab_input(&mut self, input: &ContentEvent) -> Result<bool> {
+        let trace_scroll = matches!(input, ContentEvent::Scroll { .. })
+            && std::env::var_os("TEKESUI_OTHERS_SCROLL_TRACE").is_some();
+        if trace_scroll {
+            self.trace_presentation_scroll("before-input");
+        }
         if self.open_toolbar().is_some() {
             return Ok(false);
         }
@@ -736,6 +760,10 @@ impl Host {
             .consumed;
         if consumed {
             self.apply_tab_selection()?;
+        }
+        if trace_scroll {
+            eprintln!("OTHERS_SCROLL_HEADER consumed={consumed}");
+            self.trace_presentation_scroll("after-input");
         }
         Ok(consumed)
     }

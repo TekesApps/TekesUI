@@ -538,6 +538,15 @@ impl PresentationState {
         self.list_order.insert(destination, id.into());
         Ok(())
     }
+    /// Native wheel admission; programmatic scroll_list offsets remain points.
+    pub(crate) fn scroll_list_wheel(&mut self, delta: f32, precise: bool, viewport_height: f32) {
+        let step = if precise {
+            1.
+        } else {
+            tekes_ui_tokens::proposal::metric("size", "size-row-height").expect("JSON metric")
+        };
+        self.scroll_list(delta * step, viewport_height);
+    }
     pub fn scroll_list(&mut self, delta: f32, viewport_height: f32) {
         if !delta.is_finite() || !viewport_height.is_finite() {
             return;
@@ -788,6 +797,27 @@ mod tests {
                 .navigation_targets(vec!["c".into(), "remote".into()]),
         )
         .unwrap()
+    }
+    #[test]
+    fn aggregate_list_wheel_converts_lines_once_and_keeps_precise_points_and_bounds() {
+        let mut state = configured();
+        state.select_tab(OthersTab::List).unwrap();
+        let height = 100.;
+        let step = tekes_ui_tokens::proposal::metric("size", "size-row-height").unwrap();
+        state.scroll_list_wheel(0.1, false, height);
+        assert!((state.list_scroll() - 0.1 * step).abs() < 0.0001);
+        state.scroll_list_wheel(0.1, true, height);
+        assert!((state.list_scroll() - (0.1 * step + 0.1)).abs() < 0.0001);
+        state.scroll_list_wheel(10000., false, height);
+        let maximum = state
+            .list_ids()
+            .iter()
+            .map(|id| state.list_height(id))
+            .sum::<f32>()
+            - height;
+        assert_eq!(state.list_scroll(), maximum);
+        state.scroll_list_wheel(-10000., false, height);
+        assert_eq!(state.list_scroll(), 0.);
     }
     #[test]
     fn ordinary_toolbars_stay_on_native_row_and_list_content_uses_remaining_viewport() {
