@@ -4890,10 +4890,7 @@ impl Component for ScrollContent {
                     scene.push_quad(
                         tekes_ui_scene::Quad::new(
                             thumb,
-                            theme
-                                .palette
-                                .color("secondary-text")
-                                .expect("scrollbar Theme ink"),
+                            theme.palette.color("border").expect("scrollbar Theme ink"),
                         )
                         .with_corner_radius(proposal::SCROLLBAR_WIDTH * 0.5),
                     );

@@ -1513,7 +1513,7 @@ mod tests {
                 })
                 .expect("actual visible ScrollArea fixture thumb");
             assert_eq!(background.fill, palette.color("surface-1").unwrap());
-            assert_eq!(painted_thumb.fill, palette.color("secondary-text").unwrap());
+            assert_eq!(painted_thumb.fill, palette.color("border").unwrap());
             assert!(
                 contrast(painted_thumb.fill, background.fill) >= 3.,
                 "{theme:?}: actual thumb/parent contrast"

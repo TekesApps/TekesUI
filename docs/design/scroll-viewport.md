@@ -62,3 +62,10 @@
 Gallery 页面 viewport 通过同一个 `ScrollGeometry` 快照完成 viewport/document 坐标转换、可见矩形计算和祖先裁切；文字表面的绘制、光标、选择、滚动条与指针命中共用该可见范围。Workbench 预览在 Gallery 页面 viewport 上再提供一层裁切，输入框按当前 `TextEngine` 的实际段落高度分配行高，输入框下方内容跟随实际高度排布。ComboBox / CommandPalette 的候选浮层允许越过输入框边界，但仍被预览和窗口 viewport 限制。点击不可见的裁切部分不会获取文字焦点。
 
 ScrollArea Story 页面直接将 ScrollArea 放入预览剩余区域，Gallery 外层 viewport 没有额外文档滚动；TextEditor 的多行编辑区也使用其容器剩余高度。上述宿主集成解决裁切与布局几何一致性，不表示长文档已做分块虚拟化，也不代表独立的 120Hz、掉帧或 CPU 验收已通过。
+
+
+## 2026-11-13 滚动条中性图形颜色（#121）
+
+滚动条属于可操作的图形指示，不复用要求正文可读性的 `secondary-text`，也不使用仅供装饰的 `separator`。共享 ScrollContent、TextSurface 及 Gallery 的直接 ScrollArea 视口绘制统一消费现有 `border` token：普通浅色 `#7C7C79`、深色 `#7E7E7A`；增强对比度继续使用该 token 已有的独立主题值。色值来自 `design/source/base.tokens.json`，消费者不加透明度或自定义灰色。
+
+此变更仅调整绘制角色；轨道/滑块几何、滚动状态、拖动命中和 List 默认 hover 显隐不变。保留现有真实 Scene 断言对滚动位置、选择、主题切换及滑块与实际背景至少 3:1 的检查，不把颜色变更标为新的原生/性能验收。
