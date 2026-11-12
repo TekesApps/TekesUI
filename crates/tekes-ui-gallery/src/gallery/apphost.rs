@@ -16,11 +16,15 @@ use tekes_ui_controls::{
     CheckState, ScrollArea, TextInput,
     composition::{
         CheckboxContent, Component, ComponentId, Content, ContentActionPayload,
-        ContentActionRecord, ContentHost, DecimalNumberFormat, DisclosureContent, ListContent,
-        NumberFieldContent, ScrollContent, SelectContent, SelectableListContent, SliderContent,
-        StackContent, TextContent, TextFieldContent, TextSubmitPolicy,
+        ContentActionRecord, ContentHost, DecimalNumberFormat, DisclosureContent,
+        KeyedSelectableListContent, ListContent, ListDisplayUpdate, ListIntentKind, ListRowDisplay,
+        NumberFieldContent, ScrollContent, SelectContent, SliderContent, StackContent, TextContent,
+        TextFieldContent, TextSubmitPolicy,
     },
-    extended::{Axis, Slider, Stack},
+    extended::{
+        Axis, KeyedListItem, KeyedListSnapshot, ListBudget, ListDatasetKey, ListItemKey, Slider,
+        Stack,
+    },
 };
 use tekes_ui_platform_macos::{Size as WindowSize, Window, WindowConfig, WindowHandle};
 use tekes_ui_tokens::{Spacing, Theme, proposal::TextRole};
@@ -43,6 +47,7 @@ pub fn is_page(page: Page) -> bool {
 }
 #[derive(Clone)]
 struct Document {
+    key: ListItemKey,
     title: String,
     author: String,
     revision: f64,
@@ -87,27 +92,83 @@ fn entry(index: usize) -> tekes_ui_app_host::navigation::Entry {
         params: serde_json::json!({"index":index, "title":DOCUMENT_TITLES[index]}),
     }
 }
-fn update_navigation(host: &mut ContentHost, documents: &Documents) {
-    let selected = documents.selected;
-    for (id, base) in [(ComponentId(8004), 0), (ComponentId(8006), 2)] {
-        host.get_mut(id)
-            .unwrap()
-            .component_mut::<SelectableListContent>()
-            .unwrap()
-            .labels = documents.items[base..base + 2]
+const NAVIGATION_GROUPS: [(ComponentId, [ListItemKey; 2]); 2] = [
+    (ComponentId(8004), [ListItemKey(1), ListItemKey(2)]),
+    (ComponentId(8006), [ListItemKey(3), ListItemKey(4)]),
+];
+fn navigation_snapshot(
+    id: ComponentId,
+    keys: &[ListItemKey],
+    documents: &Documents,
+) -> KeyedListSnapshot {
+    KeyedListSnapshot {
+        dataset: ListDatasetKey(id.0),
+        items: keys
             .iter()
-            .map(|item| item.title.clone())
-            .collect();
-        host.get_mut(id)
+            .map(|key| KeyedListItem {
+                key: *key,
+                name: documents
+                    .items
+                    .iter()
+                    .find(|item| item.key == *key)
+                    .expect("document group key exists")
+                    .title
+                    .clone(),
+            })
+            .collect(),
+        display_items: keys.to_vec(),
+    }
+}
+fn navigation_rows(snapshot: &KeyedListSnapshot) -> Vec<ListRowDisplay> {
+    snapshot
+        .items
+        .iter()
+        .map(|item| ListRowDisplay {
+            key: item.key,
+            row_id: ComponentId(8100 + item.key.0),
+            display: ListDisplayUpdate::Keep,
+        })
+        .collect()
+}
+fn navigation_list(name: &str, group: usize, documents: &Documents) -> KeyedSelectableListContent {
+    let (id, keys) = NAVIGATION_GROUPS[group];
+    let snapshot = navigation_snapshot(id, &keys, documents);
+    let mut list = KeyedSelectableListContent::new(
+        name,
+        &snapshot,
+        &mut navigation_rows(&snapshot),
+        ListBudget {
+            max_items: 4,
+            max_display_items: 4,
+            max_utf8_bytes: 1_000_000,
+            max_staging_units: 100_000,
+        },
+    )
+    .expect("bounded Gallery document navigation");
+    list.select_key(documents.items[documents.selected].key)
+        .unwrap();
+    list.set_navigation_selection_fill_only(true);
+    list.set_navigation_layout(true);
+    list
+}
+fn update_navigation(host: &mut ContentHost, documents: &Documents) {
+    let selected = documents.items[documents.selected].key;
+    for (id, keys) in NAVIGATION_GROUPS {
+        let snapshot = navigation_snapshot(id, &keys, documents);
+        if host
+            .get(id)
             .unwrap()
-            .component_mut::<SelectableListContent>()
+            .component::<KeyedSelectableListContent>()
             .unwrap()
-            .model
-            .selected = if selected / 2 == base / 2 {
-            Some(selected % 2)
-        } else {
-            None
-        };
+            .model()
+            .snapshot()
+            != &snapshot
+        {
+            host.replace_keyed_list(id, &snapshot, &mut navigation_rows(&snapshot), None)
+                .expect("document title update retains navigation identities");
+        }
+        host.set_keyed_list_selection(id, keys.contains(&selected).then_some(selected))
+            .unwrap();
     }
 }
 fn request_navigation(
@@ -118,18 +179,22 @@ fn request_navigation(
     pending: &RefCell<VecDeque<tekes_ui_app_host::navigation::Entry>>,
 ) {
     for record in records {
-        let (id, offset) = if record.action.target == ComponentId(8004) {
-            (ComponentId(8004), 0)
-        } else if record.action.target == ComponentId(8006) {
-            (ComponentId(8006), 2)
-        } else {
+        if !NAVIGATION_GROUPS
+            .iter()
+            .any(|(id, _)| *id == record.action.target)
+        {
+            continue;
+        }
+        let Some(ContentActionPayload::ListIntent(intent)) = record.payload else {
             continue;
         };
-        let Some(selected) = host
-            .get(id)
-            .and_then(|content| content.component::<SelectableListContent>())
-            .and_then(|list| list.model.selected)
-        else {
+        let key = match intent.kind {
+            ListIntentKind::SelectionChanged => intent.selected_key,
+            ListIntentKind::Activated => Some(intent.key),
+        };
+        // Existing persisted routes number documents from zero. This is an
+        // identity adapter, independent of source or visible row position.
+        let Some(selected) = key.map(|key| key.0 as usize - 1) else {
             continue;
         };
         if inspector
@@ -141,8 +206,8 @@ fn request_navigation(
             eprintln!("GALLERY_APPHOST_NAV_REJECTED composition-in-progress");
             continue;
         }
-        pending.borrow_mut().push_back(entry(selected + offset));
-        eprintln!("GALLERY_APPHOST_NAV_REQUEST selected={}", selected + offset);
+        pending.borrow_mut().push_back(entry(selected));
+        eprintln!("GALLERY_APPHOST_NAV_REQUEST selected={}", selected);
     }
 }
 fn data_root() -> anyhow::Result<std::path::PathBuf> {
@@ -235,6 +300,7 @@ fn documents() -> Documents {
             .into_iter()
             .enumerate()
             .map(|(index, title)| Document {
+                key: ListItemKey(index as u64 + 1),
                 title: title.into(),
                 author: "TekesUI team".into(),
                 revision: (index + 1) as f64,
@@ -453,25 +519,8 @@ fn assemble(theme: Theme, settings: SettingsOwner) -> anyhow::Result<AppWindow> 
             .map_err(|e| anyhow::anyhow!("inspector: {e:?}"))?,
     ));
     inspector.borrow_mut().set_action_events(true);
-    let mut writing = SelectableListContent::new(
-        "Writing",
-        documents.borrow().items[..2]
-            .iter()
-            .map(|d| d.title.clone())
-            .collect(),
-    );
-    writing.model.selected = Some(0);
-    writing.view.set_navigation_selection_fill_only(true);
-    writing.view.set_navigation_layout(true);
-    let mut resources = SelectableListContent::new(
-        "Project",
-        documents.borrow().items[2..]
-            .iter()
-            .map(|d| d.title.clone())
-            .collect(),
-    );
-    resources.view.set_navigation_selection_fill_only(true);
-    resources.view.set_navigation_layout(true);
+    let writing = navigation_list("Writing", 0, &documents.borrow());
+    let resources = navigation_list("Project", 1, &documents.borrow());
     let navigation = Content::new(
         ComponentId(8000),
         ListContent::scrollable(
@@ -639,6 +688,11 @@ fn assemble(theme: Theme, settings: SettingsOwner) -> anyhow::Result<AppWindow> 
                 .ok_or_else(|| anyhow::anyhow!("unknown Gallery document command"))?
                 as usize;
             let mut state = focus_documents.borrow_mut();
+            let index = state
+                .items
+                .iter()
+                .position(|document| document.key == ListItemKey(index as u64 + 1))
+                .ok_or_else(|| anyhow::anyhow!("Gallery document is missing"))?;
             state.selected = index;
             update_document(host, &state.items[index]);
             update_inspector(&mut focus_inspector.borrow_mut(), &state.items[index]);
@@ -1063,22 +1117,11 @@ mod tests {
             ContentEvent, PointerButton, PointerEvent, PointerModifiers, PointerPhase,
         };
         let mut state = documents();
-        let mut writing = SelectableListContent::new(
-            "Writing",
-            DOCUMENT_TITLES[..2].iter().map(|s| (*s).into()).collect(),
-        );
-        writing.model.selected = Some(0);
         let mut nav = ContentHost::new(stack(
             8000,
             vec![
-                Content::new(ComponentId(8004), writing),
-                Content::new(
-                    ComponentId(8006),
-                    SelectableListContent::new(
-                        "Project",
-                        DOCUMENT_TITLES[2..].iter().map(|s| (*s).into()).collect(),
-                    ),
-                ),
+                Content::new(ComponentId(8004), navigation_list("Writing", 0, &state)),
+                Content::new(ComponentId(8006), navigation_list("Project", 1, &state)),
             ],
         ))
         .unwrap();
@@ -1101,11 +1144,9 @@ mod tests {
             let point = nav
                 .get(ComponentId(8004))
                 .unwrap()
-                .component::<SelectableListContent>()
+                .component::<KeyedSelectableListContent>()
                 .unwrap()
-                .view
-                .layout()
-                .items[index]
+                .semantic_parts()[index]
                 .frame
                 .center();
             for phase in [PointerPhase::Down, PointerPhase::Up] {
@@ -1159,14 +1200,111 @@ mod tests {
             assert_eq!(
                 nav.get(ComponentId(8004))
                     .unwrap()
-                    .component::<SelectableListContent>()
+                    .component::<KeyedSelectableListContent>()
                     .unwrap()
-                    .model
-                    .selected,
-                Some(index)
+                    .selected_key(),
+                Some(ListItemKey(index as u64 + 1))
             );
             history.push(request);
         }
+    }
+
+    #[test]
+    fn apphost_navigation_consumes_event_keys_across_reorder_and_programmatic_sync() {
+        use tekes_ui_controls::{ControlKey, composition::ContentEvent};
+        let mut state = documents();
+        state.items[0].title = "Same title".into();
+        state.items[1].title = "Same title".into();
+        state.items.swap(0, 1);
+        state.selected = 1; // Document key 1 remains selected after source reorder.
+        let mut nav = ContentHost::new(stack(
+            8000,
+            vec![
+                Content::new(ComponentId(8004), navigation_list("Writing", 0, &state)),
+                Content::new(ComponentId(8006), navigation_list("Project", 1, &state)),
+            ],
+        ))
+        .unwrap();
+        nav.set_action_events(true);
+        let inspector = RefCell::new(ContentHost::new(inspector_content(&state.items[0])).unwrap());
+        let pending = RefCell::new(VecDeque::new());
+        let mut snapshot =
+            navigation_snapshot(ComponentId(8004), &[ListItemKey(1), ListItemKey(2)], &state);
+        snapshot.items.reverse();
+        snapshot.display_items = vec![ListItemKey(2)];
+        nav.replace_keyed_list(
+            ComponentId(8004),
+            &snapshot,
+            &mut navigation_rows(&snapshot),
+            None,
+        )
+        .unwrap();
+        let mut text = super::super::text::TextEngine::new();
+        let frame = Rect::new(0., 0., 360., 600.);
+        nav.render(
+            &mut Scene::new(),
+            &mut text,
+            frame,
+            frame,
+            Theme::LIGHT.into(),
+        )
+        .unwrap();
+        let point = nav
+            .get(ComponentId(8004))
+            .unwrap()
+            .component::<KeyedSelectableListContent>()
+            .unwrap()
+            .semantic_parts()[0]
+            .frame
+            .center();
+        nav.event(&ContentEvent::PointerDown(point));
+        nav.event(&ContentEvent::PointerUp(point));
+        let records = nav.drain_action_records();
+        // Publication changes current selection before the callback: the queued
+        // event must still navigate to document 2, not the newly selected row.
+        update_navigation(&mut nav, &state);
+        assert!(nav.drain_action_records().is_empty());
+        request_navigation(&mut nav, records, &state, &inspector, &pending);
+        assert_eq!(pending.borrow_mut().pop_front().unwrap().params["index"], 1);
+        assert!(pending.borrow().is_empty());
+        nav.render(
+            &mut Scene::new(),
+            &mut text,
+            frame,
+            frame,
+            Theme::LIGHT.into(),
+        )
+        .unwrap();
+        nav.focus(Some(ComponentId(8004)), true);
+        assert_eq!(nav.focused(), Some(ComponentId(8004)));
+        nav.event(&ContentEvent::Key {
+            key: ControlKey::Down,
+            down: true,
+        });
+        let records = nav.drain_action_records();
+        request_navigation(&mut nav, records, &state, &inspector, &pending);
+        assert_eq!(pending.borrow_mut().pop_front().unwrap().params["index"], 1);
+        let mut visits = Vec::new();
+        for _ in 0..2 {
+            nav.event(&ContentEvent::Key {
+                key: ControlKey::Enter,
+                down: true,
+            });
+            let records = nav.drain_action_records();
+            request_navigation(&mut nav, records, &state, &inspector, &pending);
+            assert_eq!(
+                pending.borrow().len(),
+                1,
+                "one explicit activation is one visit"
+            );
+            visits.push(pending.borrow_mut().pop_front().unwrap());
+            nav.event(&ContentEvent::Key {
+                key: ControlKey::Enter,
+                down: false,
+            });
+        }
+        assert_ne!(visits[0].id, visits[1].id);
+        assert!(visits.iter().all(|visit| visit.params["index"] == 1));
     }
 
     #[test]

@@ -1308,7 +1308,11 @@ impl Gallery {
     }
 
     fn end_scroll_gestures(&mut self) {
-        self.sidebar.end_gesture();
+        // End the sidebar's actual gesture owner; an idle sidebar must retain
+        // its valid layout when a selection/focus-only page change occurs.
+        if self.scroll_owner == Some(ScrollOwner::Sidebar) {
+            self.sidebar.end_gesture();
+        }
         self.viewport.end_gesture();
         self.editor.end_scroll_gesture();
         self.text_view.end_scroll_gesture();

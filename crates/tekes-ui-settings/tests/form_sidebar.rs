@@ -112,10 +112,22 @@ fn sidebar_uses_standard_list_paint_and_selection_routes_without_button_styles()
         .host
         .get(ComponentId(103))
         .unwrap()
-        .component::<SelectableListContent>()
+        .component::<tekes_ui_controls::composition::KeyedSelectableListContent>()
         .unwrap();
-    assert_eq!(group.model.selected, Some(0));
-    let labels = group.labels.clone();
+    assert_eq!(
+        group.selected_key(),
+        Some(tekes_ui_controls::extended::ListItemKey(2))
+    );
+    let labels: Vec<_> = group
+        .model()
+        .snapshot()
+        .items
+        .iter()
+        .map(|item| item.name.clone())
+        .collect();
+    let selected_part = group
+        .semantic_part_for_key(tekes_ui_controls::extended::ListItemKey(2))
+        .unwrap();
     let mut adapted = SelectableListContent::new("阅读", labels.clone());
     adapted.model.selected = Some(1);
     let mut painted = Scene::new();
@@ -144,7 +156,7 @@ fn sidebar_uses_standard_list_paint_and_selection_routes_without_button_styles()
     );
     sidebar.host.accessibility_action(
         ComponentId(103),
-        Some(0),
+        Some(selected_part),
         tekes_ui_controls::composition::AccessibilityAction::Press,
     );
     assert_eq!(
@@ -173,10 +185,9 @@ fn sidebar_uses_standard_list_paint_and_selection_routes_without_button_styles()
             .host
             .get(ComponentId(103))
             .unwrap()
-            .component::<SelectableListContent>()
+            .component::<tekes_ui_controls::composition::KeyedSelectableListContent>()
             .unwrap()
-            .model
-            .selected,
+            .selected_key(),
         None
     );
     assert_eq!(
@@ -184,11 +195,10 @@ fn sidebar_uses_standard_list_paint_and_selection_routes_without_button_styles()
             .host
             .get(ComponentId(101))
             .unwrap()
-            .component::<SelectableListContent>()
+            .component::<tekes_ui_controls::composition::KeyedSelectableListContent>()
             .unwrap()
-            .model
-            .selected,
-        Some(0)
+            .selected_key(),
+        Some(tekes_ui_controls::extended::ListItemKey(1))
     );
 }
 
@@ -359,5 +369,111 @@ fn radio_presentation_rejects_non_enum_fields_at_schema_boundary() {
             .unwrap_err()
             .to_string()
             .contains("radio presentation requires enum")
+    );
+}
+
+#[test]
+fn sidebar_queued_selection_keeps_business_key_after_programmatic_sync() {
+    use tekes_ui_controls::composition::{ComponentId, ContentEvent, KeyedSelectableListContent};
+    use tekes_ui_controls::extended::ListItemKey;
+    use tekes_ui_scene::{Rect, Scene};
+    use tekes_ui_tokens::Theme;
+    let mut definition = schema();
+    // Labels are presentation only, including duplicate labels in one group.
+    definition.groups[1].items[0].label = "Same".into();
+    definition.groups[1].items[1].label = "Same".into();
+    let mut sidebar = tekes_ui_settings::SettingsSidebar::new(&definition).unwrap();
+    sidebar.select("reading/text");
+    sidebar
+        .render(
+            &mut Scene::new(),
+            &mut ListText,
+            Rect::new(0., 0., 260., 500.),
+            Theme::LIGHT.into(),
+        )
+        .unwrap();
+    let list = sidebar
+        .host
+        .get(ComponentId(103))
+        .unwrap()
+        .component::<KeyedSelectableListContent>()
+        .unwrap();
+    let part = list.semantic_part_for_key(ListItemKey(3)).unwrap();
+    use tekes_ui_controls::composition::Component;
+    let point = list
+        .semantic_parts()
+        .into_iter()
+        .find(|row| row.index == part)
+        .unwrap()
+        .frame
+        .center();
+    sidebar.host.event(&ContentEvent::PointerDown(point));
+    sidebar.host.event(&ContentEvent::PointerUp(point));
+    sidebar.select("workspace/general");
+    assert_eq!(
+        sidebar.take_selection().as_deref(),
+        Some("reading/advanced"),
+        "queued intent retains its original key, not the later selected index"
+    );
+    assert_eq!(sidebar.take_selection(), None);
+    sidebar.select("reading/text");
+    assert_eq!(
+        sidebar.take_selection(),
+        None,
+        "programmatic publication is not user navigation"
+    );
+}
+
+#[test]
+fn sidebar_hidden_item_revokes_queued_selection_instead_of_retargeting() {
+    use tekes_ui_controls::composition::{
+        AccessibilityAction, ComponentId, KeyedSelectableListContent, ListDisplayUpdate,
+        ListRowDisplay,
+    };
+    use tekes_ui_controls::extended::ListItemKey;
+    use tekes_ui_scene::{Rect, Scene};
+    use tekes_ui_tokens::Theme;
+    let mut sidebar = tekes_ui_settings::SettingsSidebar::new(&schema()).unwrap();
+    sidebar.select("workspace/general");
+    sidebar
+        .render(
+            &mut Scene::new(),
+            &mut ListText,
+            Rect::new(0., 0., 260., 500.),
+            Theme::LIGHT.into(),
+        )
+        .unwrap();
+    let list = sidebar
+        .host
+        .get(ComponentId(103))
+        .unwrap()
+        .component::<KeyedSelectableListContent>()
+        .unwrap();
+    let part = list.semantic_part_for_key(ListItemKey(2)).unwrap();
+    let mut snapshot = list.model().snapshot().clone();
+    use tekes_ui_controls::composition::Component;
+    let ids: Vec<_> = list.children().iter().map(|row| row.id()).collect();
+    let mut rows: Vec<_> = snapshot
+        .items
+        .iter()
+        .zip(ids)
+        .map(|(item, row_id)| ListRowDisplay {
+            key: item.key,
+            row_id,
+            display: ListDisplayUpdate::Keep,
+        })
+        .collect();
+    sidebar
+        .host
+        .accessibility_action(ComponentId(103), Some(part), AccessibilityAction::Press);
+    snapshot.display_items = vec![ListItemKey(3)];
+    sidebar
+        .host
+        .replace_keyed_list(ComponentId(103), &snapshot, &mut rows, None)
+        .unwrap();
+    assert_eq!(
+        sidebar.take_selection(),
+        None,
+        "hidden route cannot become the item now at its old display position"
     );
 }

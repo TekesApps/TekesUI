@@ -864,3 +864,10 @@ Gallery document identity remains the stable gallery-document route and index. N
 Settings keeps Back and Search in one sidebar header row. Back artwork starts at the same leading boundary as the sidebar controls while preserving its original action hit height. The search icon expands the original text editor in that row; committed text matches existing group/item labels and field labels/descriptions to the original item routes. Empty search restores the rows; Escape closes search, while an active marked composition keeps its original IME cancellation path. This follows the Swift Tekes compact-search interaction (ContentSidebarChrome and ClientSettingsController); it does not introduce a second editor or navigation model. Field highlighting and direct field scrolling are outside this bounded search change.
 
 Number steppers retain their original hit targets, bounds and keyboard/AX behavior. Their minus/plus actions paint only the existing action-quiet foreground states (secondary at rest, primary on hover/press, disabled foreground at limits), without rectangular hover backgrounds. Theme values are not overridden in Settings.
+## 2026-11-12：消费者以选择事件和稳定 item ID 导航（#229）
+
+AppHost/Gallery 的业务导航消费共享 List 的 `ListIntent`，以稳定 `ListItemKey` 表示业务项；`selected_key()` 是选择状态的公开读取入口。消费者不得在动作到达后回读可变的显示索引、按分组偏移计算业务项，或用显示标题恢复身份。现有统一 action 通道承担事件传递，不增加全局通知、第二个选择 reducer 或框架对 Gallery 文档的依赖。
+
+`SelectionChanged` 表示用户改变选择，`Activated` 表示显式激活；消费端根据意图携带的 key 映射自身导航目标。前进/后退或 Inspector 更新导致的程序化选择同步通过原 `select_key`/`clear_selection` 完成，不回发用户导航事件。文档 item ID、每次历史访问 ID 和 Container ID 分别保持原职责；重排、过滤、改名及相同标题不改变业务实体身份。
+
+有限检查覆盖 AppHost、Gallery 的实际选择消费者，并包含 AppHost 使用的 Settings sidebar。固定数组展示、控件内部合法索引运算和兼容 API 不因存在 index 就判错；只有把展示位置当业务身份或回读丢失事件身份的接入需要修正。保留原样式、滚动、IME 拒绝、历史和内容更新语义。实现、受影响验证和交付分别记录在 #229；本节定义接入契约，不代表验证已通过。

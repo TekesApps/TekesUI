@@ -302,7 +302,7 @@ impl SettingsSurface {
                     && let Some(id) = self.sidebar.host.semantics().iter().find_map(|node| {
                         (self.sidebar.host.semantic_mount(node.id) == Some(target.component)
                             && self.sidebar.host.get(node.id).is_some_and(|n| {
-                                n.component::<tekes_ui_settings::SelectableListContent>()
+                                n.component::<tekes_ui_controls::composition::KeyedSelectableListContent>()
                                     .is_some()
                             }))
                         .then_some(node.id)

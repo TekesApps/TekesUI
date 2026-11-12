@@ -4,11 +4,14 @@ use std::sync::OnceLock;
 use tekes_ui_controls::{
     ButtonTextAlign, ButtonTextRenderer, ScrollArea,
     composition::{
-        AccessibilityAction, Component, ComponentId, Content, ContentEvent, ContentHost,
-        ContentResponse, ContentSemantics, ContentTheme, ListContent, ScrollContent,
-        SelectableListContent, StackContent,
+        AccessibilityAction, Component, ComponentId, Content, ContentActionPayload, ContentEvent,
+        ContentHost, ContentResponse, ContentSemantics, ContentTheme, KeyedSelectableListContent,
+        ListContent, ListDisplayUpdate, ListIntentKind, ListRowDisplay, ScrollContent,
+        StackContent,
     },
-    extended::{Axis, Stack},
+    extended::{
+        Axis, KeyedListItem, KeyedListSnapshot, ListBudget, ListDatasetKey, ListItemKey, Stack,
+    },
     layout::MeasuredChild,
 };
 use tekes_ui_scene::{Point, Rect, Scene, Size};
@@ -273,11 +276,21 @@ impl Navigation {
                     .map(|node| node.parts.as_slice())
                     .unwrap_or_default();
                 parts.iter().filter_map(move |part| {
-                    section.items.get(part.index).and_then(|(page, _)| {
-                        part.frame
-                            .intersection(&clip)
-                            .map(|visible| (*page, visible))
-                    })
+                    self.host
+                        .get(id)
+                        .and_then(|content| content.component::<KeyedSelectableListContent>())
+                        .and_then(|list| list.key_for_semantic_part(part.index))
+                        .and_then(|key| {
+                            section
+                                .items
+                                .iter()
+                                .find(|(page, _)| page_key(*page) == key)
+                        })
+                        .and_then(|(page, _)| {
+                            part.frame
+                                .intersection(&clip)
+                                .map(|visible| (*page, visible))
+                        })
                 })
             })
             .collect()
@@ -303,12 +316,15 @@ impl Navigation {
     }
     pub fn selected_page(&self) -> Option<Page> {
         self.sections().iter().find_map(|section| {
-            let list = self
+            let key = self
                 .host
                 .get(Self::list_id(section))?
-                .component::<SelectableListContent>()?;
-            let index = list.model.selected?;
-            section.items.get(index).map(|(page, _)| *page)
+                .component::<KeyedSelectableListContent>()?
+                .selected_key()?;
+            section
+                .items
+                .iter()
+                .find_map(|(page, _)| (page_key(*page) == key).then_some(*page))
         })
     }
     pub fn set_selected(&mut self, page: Page) {
@@ -318,28 +334,56 @@ impl Navigation {
             let selected = section
                 .items
                 .iter()
-                .position(|(candidate, _)| *candidate == page);
+                .any(|(candidate, _)| *candidate == page)
+                .then(|| page_key(page));
             let id = Self::list_id(section);
-            let current = self
+            if self
                 .host
                 .get(id)
-                .and_then(|content| content.component::<SelectableListContent>())
-                .and_then(|list| list.model.selected);
-            if current == selected {
+                .unwrap()
+                .component::<KeyedSelectableListContent>()
+                .unwrap()
+                .selected_key()
+                == selected
+            {
                 continue;
             }
-            let Some(content) = self.host.get_mut(id) else {
+            self.host.set_keyed_list_selection(id, selected).unwrap();
+        }
+    }
+    fn consume_selection(&mut self) -> bool {
+        let mut selected = None;
+        for record in self.host.drain_action_records() {
+            let Some(ContentActionPayload::ListIntent(intent)) = record.payload else {
                 continue;
             };
-            if let Some(list) = content.component_mut::<SelectableListContent>()
-                && list.model.selected != selected
-            {
-                list.model.selected = selected;
-            }
+            let key = match intent.kind {
+                ListIntentKind::SelectionChanged => intent.selected_key,
+                ListIntentKind::Activated => Some(intent.key),
+            };
+            selected = self
+                .sections()
+                .iter()
+                .find(|section| Self::list_id(section) == record.action.target)
+                .and_then(|section| {
+                    section
+                        .items
+                        .iter()
+                        .find_map(|(page, _)| (Some(page_key(*page)) == key).then_some(*page))
+                })
+                .or(selected);
+        }
+        if let Some(page) = selected {
+            self.set_selected(page);
+            true
+        } else {
+            false
         }
     }
     pub fn event(&mut self, event: &ContentEvent) -> ContentResponse {
-        self.host.event(event)
+        let response = self.host.event(event);
+        self.consume_selection();
+        response
     }
     pub fn pointer_capture(&self) -> Option<(ComponentId, u64)> {
         self.host.pointer_capture()
@@ -349,17 +393,25 @@ impl Navigation {
         page: Page,
         action: AccessibilityAction,
     ) -> ContentResponse {
-        let Some((section, index)) = self.section_for_page(page) else {
+        let Some((section, _)) = self.section_for_page(page) else {
             return ContentResponse::default();
         };
         let list = Self::list_id(section);
         if matches!(action, AccessibilityAction::Focus) {
             return ContentResponse::consumed(self.focus_page(page));
         }
-        let response = self.host.accessibility_action(list, Some(index), action);
-        if response.changed {
-            self.set_selected(page);
-        }
+        let part = self
+            .host
+            .get(list)
+            .unwrap()
+            .component::<KeyedSelectableListContent>()
+            .unwrap()
+            .semantic_part_for_key(page_key(page));
+        let Some(part) = part else {
+            return ContentResponse::default();
+        };
+        let response = self.host.accessibility_action(list, Some(part), action);
+        self.consume_selection();
         response
     }
     pub fn needs_animation(&self) -> bool {
@@ -496,27 +548,29 @@ impl Navigation {
             } else {
                 (focus_bounds.max_y() - visible.max_y()).max(0.0)
             };
-            self.scroll_mut().scroll_by(dx, dy);
+            if dx != 0. || dy != 0. {
+                self.scroll_mut().scroll_by(dx, dy);
+            }
         }
     }
 
     pub fn pointer_down(&mut self, p: Point) -> ContentResponse {
+        // Gallery activates on Down, including the already selected page.
+        // Capture the current exposed hit identity before delivering the event;
+        // selection callbacks can mutate the host's layout and selection.
+        let hit = self
+            .row_frames()
+            .into_iter()
+            .find_map(|(page, frame)| frame.contains(p).then_some(page));
         let response = self.event(&ContentEvent::PointerDown(p));
         if response.consumed
             && response.capture_pointer
+            && let Some(page) = hit
             && let Some((owner, _)) = self.pointer_capture()
-            && let Some(section) = self
-                .sections()
-                .iter()
-                .find(|section| Self::list_id(section) == owner)
-            && let Some(index) = self
-                .host
-                .get(owner)
-                .and_then(|content| content.component::<SelectableListContent>())
-                .and_then(|list| list.model.selected)
-            && let Some((page, _)) = section.items.get(index)
+            && self
+                .section_for_page(page)
+                .is_some_and(|(section, _)| Self::list_id(section) == owner)
         {
-            let page = *page;
             self.set_selected(page);
             return ContentResponse {
                 activated: true,
@@ -542,19 +596,54 @@ fn section_slot(title: &str) -> usize {
         .position(|section| section.title == title)
         .expect("Gallery section has stable identity")
 }
+fn page_key(page: Page) -> ListItemKey {
+    let Page::Workbench(index) = page else {
+        unreachable!("catalog contains Workbench pages")
+    };
+    ListItemKey(index as u64 + 1)
+}
 fn section_content(section: &Section, selected: Page) -> Content {
     let slot = section_slot(&section.title) as u64;
-    let mut list = SelectableListContent::new(
-        section.title.clone(),
-        section
+    let snapshot = KeyedListSnapshot {
+        dataset: ListDatasetKey(ITEMS_BASE + slot),
+        items: section
             .items
             .iter()
-            .map(|(page, _)| page.name().to_owned())
+            .map(|(page, _)| KeyedListItem {
+                key: page_key(*page),
+                name: page.name().to_owned(),
+            })
             .collect(),
-    );
-    list.view.set_navigation_selection_fill_only(true);
-    list.view.set_navigation_layout(true);
-    list.model.selected = section.items.iter().position(|(page, _)| *page == selected);
+        display_items: section
+            .items
+            .iter()
+            .map(|(page, _)| page_key(*page))
+            .collect(),
+    };
+    let mut rows = snapshot
+        .items
+        .iter()
+        .map(|item| ListRowDisplay {
+            key: item.key,
+            row_id: ComponentId(0x0047_414d_0000 + item.key.0),
+            display: ListDisplayUpdate::Keep,
+        })
+        .collect();
+    let mut list = KeyedSelectableListContent::new(
+        &section.title,
+        &snapshot,
+        &mut rows,
+        ListBudget {
+            max_items: Page::ALL.len(),
+            max_display_items: Page::ALL.len(),
+            max_utf8_bytes: 1_000_000,
+            max_staging_units: 100_000,
+        },
+    )
+    .expect("bounded Gallery catalog navigation");
+    list.set_navigation_selection_fill_only(true);
+    list.set_navigation_layout(true);
+    list.select_key(page_key(selected)).unwrap();
     Content::new(
         ComponentId(GROUP_BASE + slot),
         StackContent {
@@ -819,6 +908,86 @@ mod tests {
                 .is_some_and(|visible| visible.contains(point))
         );
         assert_eq!(filtered_row, n.row_frame(filtered_page).unwrap());
+    }
+
+    #[test]
+    fn navigation_events_keep_page_identity_with_duplicate_labels_reorder_and_filter() {
+        use tekes_ui_controls::ControlKey;
+        let mut n = Navigation::default();
+        n.resize(2400.);
+        let section = n
+            .sections()
+            .iter()
+            .find(|section| section.items.len() >= 2)
+            .unwrap()
+            .clone();
+        let first = section.items[0].0;
+        let second = section.items[1].0;
+        let id = Navigation::list_id(&section);
+        let mut snapshot = n
+            .host
+            .get(id)
+            .unwrap()
+            .component::<KeyedSelectableListContent>()
+            .unwrap()
+            .model()
+            .snapshot()
+            .clone();
+        for item in &mut snapshot.items {
+            item.name = "Duplicate label".into();
+        }
+        snapshot.items.reverse();
+        snapshot.display_items = vec![page_key(second), page_key(first)];
+        let mut rows = snapshot
+            .items
+            .iter()
+            .map(|item| ListRowDisplay {
+                key: item.key,
+                row_id: ComponentId(0x0047_414d_0000 + item.key.0),
+                display: ListDisplayUpdate::Keep,
+            })
+            .collect();
+        n.host
+            .replace_keyed_list(id, &snapshot, &mut rows, None)
+            .unwrap();
+        n.set_selected(first);
+        let _ = render(&mut n);
+        let first_frame = n.row_frame(first).unwrap();
+        let second_frame = n.row_frame(second).unwrap();
+        assert!(second_frame.min_y() < first_frame.min_y());
+        assert!(n.pointer_down(second_frame.center()).activated);
+        n.pointer_up(second_frame.center());
+        assert_eq!(n.selected_page(), Some(second));
+        n.set_selected(first);
+        assert!(
+            n.host.drain_action_records().is_empty(),
+            "programmatic synchronization emits no user action"
+        );
+        let _ = render(&mut n);
+        n.host.focus(Some(id), true);
+        assert_eq!(n.host.focused(), Some(id));
+        assert!(
+            n.event(&ContentEvent::Key {
+                key: ControlKey::Home,
+                down: true
+            })
+            .changed
+        );
+        assert_eq!(
+            n.selected_page(),
+            Some(second),
+            "keyboard follows display order, then resolves page identity"
+        );
+        let _ = render(&mut n);
+        assert!(
+            n.accessibility_action(first, AccessibilityAction::Press)
+                .activated
+        );
+        assert_eq!(
+            n.selected_page(),
+            Some(first),
+            "AX uses the current key exposure, not source ordinal"
+        );
     }
 
     #[test]

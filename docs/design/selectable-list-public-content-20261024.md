@@ -1,3 +1,11 @@
+## 2026-11-12 消费者接入增量（#229）
+
+AppHost 示例、Gallery 主导航和 AppHost SettingsSidebar 改为消费原 `KeyedSelectableListContent` 的 `ListIntent`。`SelectionChanged.selected_key` 与 `Activated.key` 承载稳定业务身份；`selected_key()` 为只读状态，程序化 `select_key`/`clear_selection` 不发用户动作。挂载后的消费者通过 `ContentHost::set_keyed_list_selection(id, Option<ListItemKey>)` 同步，原选择 owner 更新并废弃旧输入计划，但不把没有变化的几何误标成待布局；该方法也不能恢复已因其它变更失效的几何。动作经原 ContentHost 队列验证 mount、曝光及活动身份，消费者不重新读取可变索引。Settings schema 的 route 在 Sidebar 创建时登记为固定 key，查询只改变 `display_items`；原公开字符串适配器保留兼容，生产侧栏不再使用它。
+
+新增有限公开适配方法沿用原 ListView：`set_navigation_layout`、`set_navigation_selection_fill_only`；`semantic_part_for_key`/`key_for_semantic_part` 只解析当前可见曝光，供实际消费者的 AX/行几何接入。Tab/Shift+Tab 交给 ContentHost 焦点遍历，方向键/Enter 保留原 List 行为；这是实际 Settings 消费者回归发现并验证的边界，不引入第二套导航 reducer。选择与显式激活分开：Gallery AppHost item 的重复点击打开窗口继续按实际命中稳定身份处理。
+
+原 #68/#94–96 已交付范围与历史证据保留；本次实现、验证及发布状态由 #229 和权威清单 T62 分列，不回签原证据或提升原生/VO 能力声明。
+
 > 2026-10-30 #198 恢复候选：下文原设计及历史接收身份保留。当前 4815c5a 兼容适配尚未编译；历史 pass 不等于当前主线/候选通过。公共交付由唯一集成批次完成。
 
 主协调2026-10-24正式接收 amendment-1 设计。A可实施；B依赖A及#85实际reading接缝接收，C依赖B。下文候选来源保留时间身份，均不代表实现验收。

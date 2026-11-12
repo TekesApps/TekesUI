@@ -230,6 +230,35 @@ impl KeyedSelectableListContent {
         c.commit(p, std::mem::take(rows), &mut range);
         Ok(c)
     }
+    /// Use the shared navigation row geometry without exposing collection state.
+    pub fn set_navigation_layout(&mut self, value: bool) {
+        self.view.set_navigation_layout(value);
+    }
+    /// Use the shared navigation selection treatment.
+    pub fn set_navigation_selection_fill_only(&mut self, value: bool) {
+        self.view.set_navigation_selection_fill_only(value);
+    }
+    /// Current exposed semantic identity for a visible row key.
+    pub fn semantic_part_for_key(&self, key: K) -> Option<usize> {
+        let token = self.exposures.get(&key)?.token;
+        self.semantic_parts()
+            .iter()
+            .any(|part| part.index == token)
+            .then_some(token)
+    }
+    /// Resolve a current exposed semantic identity without assuming row order.
+    pub fn key_for_semantic_part(&self, part: usize) -> Option<K> {
+        if !self
+            .semantic_parts()
+            .iter()
+            .any(|current| current.index == part)
+        {
+            return None;
+        }
+        self.exposures
+            .iter()
+            .find_map(|(key, exposure)| (exposure.token == part).then_some(*key))
+    }
     pub fn model(&self) -> &KeyedList {
         &self.model
     }
@@ -863,7 +892,7 @@ impl Component for KeyedSelectableListContent {
             .iter()
             .map(|i| i.name.clone())
             .collect::<Vec<_>>();
-        MeasuredChild::new(ListView::measure_content_rows(
+        MeasuredChild::new(self.view.measure_current_content_rows(
             &mut TextAdapter(text),
             &labels,
             self.model.display_indices(),
@@ -1019,6 +1048,12 @@ impl Component for KeyedSelectableListContent {
                 };
             }
             ContentEvent::PointerUp(p) => self.view.pointer_up_keyed(*p, &mut self.model),
+            // The owning ContentHost moves focus between components on Tab.
+            // ListView's catch-all key handling must not consume that traversal.
+            ContentEvent::Key {
+                key: ControlKey::Tab { .. },
+                ..
+            } => return ContentResponse::default(),
             ContentEvent::Key { key, down } => self.view.key_keyed(*key, *down, &mut self.model),
             _ => CollectionEvent::Ignored,
         };
@@ -1030,6 +1065,28 @@ impl Component for KeyedSelectableListContent {
 
 use super::collection_transaction::*;
 impl ContentHost {
+    /// Publish selection without emitting an action or invalidating unchanged row
+    /// geometry. Existing input plans are retired when the selection changes.
+    pub fn set_keyed_list_selection(
+        &mut self,
+        id: ComponentId,
+        selected: Option<K>,
+    ) -> Result<bool, ListContentError> {
+        let list = self
+            .root
+            .find_mut(id)
+            .and_then(|node| node.component_mut::<KeyedSelectableListContent>())
+            .ok_or(ListContentError::InvalidTarget(id))?;
+        let changed = match selected {
+            Some(key) => list.select_key(key)?,
+            None => list.clear_selection()?,
+        };
+        if changed {
+            self.reveal_clock.invalidate_input();
+            self.dirty = true;
+        }
+        Ok(changed)
+    }
     /// One synchronous typed update: the full target and reader are staged before
     /// borrowing the original disjoint fields, and neither commit can fail.
     /// All inputs are borrowed through staging. Any Err leaves snapshot, displays
@@ -1701,6 +1758,61 @@ mod tests {
         assert!(c.exhausted);
         assert!(!c.available());
     }
+    #[test]
+    fn selection_publication_preserves_layout_but_does_not_restore_stale_geometry() {
+        let mut h = host(false);
+        let part = list_ref(&h).semantic_part_for_key(K(1)).unwrap();
+        assert!(
+            h.set_keyed_list_selection(ComponentId(10), Some(K(2)))
+                .unwrap()
+        );
+        assert!(h.drain_action_records().is_empty());
+        assert!(
+            h.accessibility_action(ComponentId(10), Some(part), AccessibilityAction::Press)
+                .activated
+        );
+        assert_eq!(list_ref(&h).selected_key(), Some(K(1)));
+        // A separate structural/geometry mutation still needs layout. A later
+        // selection-only publication must not renew that withdrawn authority.
+        let _ = h.get_mut(ComponentId(10)).unwrap();
+        h.set_keyed_list_selection(ComponentId(10), Some(K(2)))
+            .unwrap();
+        assert!(
+            !h.accessibility_action(ComponentId(10), Some(part), AccessibilityAction::Press)
+                .consumed
+        );
+        assert_eq!(list_ref(&h).selected_key(), Some(K(2)));
+    }
+
+    #[test]
+    fn semantic_keys_follow_exposure_across_reorder_filter_and_remount() {
+        let mut h = host(false);
+        let token = list_ref(&h).semantic_part_for_key(K(2)).unwrap();
+        assert_eq!(list_ref(&h).key_for_semantic_part(token), Some(K(2)));
+        let mut snap = s();
+        snap.items.reverse();
+        snap.display_items.reverse();
+        h.replace_keyed_list(ComponentId(10), &snap, &mut d(&snap), None)
+            .unwrap();
+        paint(&mut h);
+        assert_eq!(list_ref(&h).semantic_part_for_key(K(2)), Some(token));
+        assert_eq!(list_ref(&h).key_for_semantic_part(token), Some(K(2)));
+        snap.display_items.retain(|key| *key != K(2));
+        h.replace_keyed_list(ComponentId(10), &snap, &mut d(&snap), None)
+            .unwrap();
+        paint(&mut h);
+        assert_eq!(list_ref(&h).semantic_part_for_key(K(2)), None);
+        assert_eq!(list_ref(&h).key_for_semantic_part(token), None);
+        snap.display_items.push(K(2));
+        h.replace_keyed_list(ComponentId(10), &snap, &mut d(&snap), None)
+            .unwrap();
+        paint(&mut h);
+        let current = list_ref(&h).semantic_part_for_key(K(2)).unwrap();
+        assert_ne!(current, token);
+        assert_eq!(list_ref(&h).key_for_semantic_part(token), None);
+        assert_eq!(list_ref(&h).key_for_semantic_part(current), Some(K(2)));
+    }
+
     #[test]
     fn queued_and_drained_intents_are_once_only_and_follow_identity_not_revision() {
         let mut h = host(false);

@@ -7,23 +7,69 @@ use std::collections::BTreeMap;
 use tekes_ui_controls::{
     ButtonTextRenderer,
     composition::{
-        Button, ComponentId, Content, ContentEvent, ContentHost, IconContent, ListContent,
+        Button, ComponentId, Content, ContentActionPayload, ContentEvent, ContentHost, IconContent,
+        KeyedSelectableListContent, ListContent, ListDisplayUpdate, ListIntentKind, ListRowDisplay,
         StackContent, TextContent, TextFieldContent,
     },
-    extended::{Axis, Stack},
+    extended::{
+        Axis, KeyedListItem, KeyedListSnapshot, ListBudget, ListDatasetKey, ListItemKey, Stack,
+    },
 };
 use tekes_ui_scene::{Rect, Scene};
 use tekes_ui_tokens::Palette;
+#[derive(Debug)]
+struct SidebarItem {
+    key: ListItemKey,
+    row_id: ComponentId,
+    route: String,
+    label: String,
+    terms: String,
+}
+#[derive(Debug)]
+struct SidebarGroup {
+    dataset: ListDatasetKey,
+    items: Vec<SidebarItem>,
+}
+impl SidebarGroup {
+    fn snapshot(&self, query: &str) -> KeyedListSnapshot {
+        KeyedListSnapshot {
+            dataset: self.dataset,
+            items: self
+                .items
+                .iter()
+                .map(|item| KeyedListItem {
+                    key: item.key,
+                    name: item.label.clone(),
+                })
+                .collect(),
+            display_items: self
+                .items
+                .iter()
+                .filter(|item| item.terms.contains(query))
+                .map(|item| item.key)
+                .collect(),
+        }
+    }
+    fn rows(&self) -> Vec<ListRowDisplay> {
+        self.items
+            .iter()
+            .map(|item| ListRowDisplay {
+                key: item.key,
+                row_id: item.row_id,
+                display: ListDisplayUpdate::Keep,
+            })
+            .collect()
+    }
+}
 /// Definition-driven Group -> Item navigation. History remains owned by the Host service.
 #[derive(Debug)]
 pub struct SettingsSidebar {
     pub host: ContentHost,
-    items: BTreeMap<ComponentId, Vec<String>>,
+    items: BTreeMap<ComponentId, SidebarGroup>,
     selected_item: Option<String>,
     back_requested: bool,
     back_template: Option<&'static str>,
     search_button: Option<Content>,
-    search_entries: BTreeMap<ComponentId, Vec<(String, String, String)>>,
     query: String,
 }
 impl SettingsSidebar {
@@ -35,66 +81,77 @@ impl SettingsSidebar {
         Self::build(schema, true)
     }
     fn build(schema: &Schema, back: bool) -> Result<Self> {
-        let mut group_children = vec![];
         let mut items = BTreeMap::new();
-        let mut search_entries = BTreeMap::new();
+        // IDs are registered once for this immutable schema, never reconstructed
+        // from a filtered row ordinal or its display label.
         let mut next = 100;
-        for group in &schema.groups {
+        let mut next_key = 1;
+        let mut declarations = Vec::new();
+        for (dataset, group) in schema.groups.iter().enumerate() {
+            let heading_id = ComponentId(next);
+            let list_id = ComponentId(next + 1);
+            next += 2;
+            declarations.push((
+                heading_id,
+                list_id,
+                ListDatasetKey(dataset as u64 + 1),
+                group,
+            ));
+        }
+        let mut groups = Vec::new();
+        for (heading_id, id, dataset, group) in declarations {
             let mut heading = TextContent::new(&group.label);
             heading.role = tekes_ui_tokens::proposal::TextRole::UiCaption;
-            let heading = Content::new(ComponentId(next), heading);
-            next += 1;
-            let id = ComponentId(next);
-            next += 1;
-            let mut list = SelectableListContent::new(
+            let mut entries = Vec::new();
+            for item in &group.items {
+                let mut terms = format!("{} {}", group.label, item.label);
+                for field in &item.fields {
+                    terms.push_str(&format!(" {} {}", field.label, field.description));
+                }
+                entries.push(SidebarItem {
+                    key: ListItemKey(next_key),
+                    row_id: ComponentId(next),
+                    route: format!("{}/{}", group.id, item.id),
+                    label: item.label.clone(),
+                    terms: terms.to_lowercase(),
+                });
+                next_key += 1;
+                next += 1;
+            }
+            let group_model = SidebarGroup {
+                dataset,
+                items: entries,
+            };
+            let snapshot = group_model.snapshot("");
+            let mut list = KeyedSelectableListContent::new(
                 &group.label,
-                group.items.iter().map(|item| item.label.clone()).collect(),
-            );
-            list.view.set_navigation_selection_fill_only(true);
-            list.view.set_navigation_layout(true);
-            group_children.push((heading, Content::new(id, list)));
-            search_entries.insert(
-                id,
-                group
-                    .items
-                    .iter()
-                    .map(|item| {
-                        let mut terms = format!("{} {}", group.label, item.label);
-                        for field in &item.fields {
-                            terms.push_str(&format!(" {} {}", field.label, field.description));
-                        }
-                        (
-                            format!("{}/{}", group.id, item.id),
-                            item.label.clone(),
-                            terms.to_lowercase(),
-                        )
-                    })
-                    .collect(),
-            );
-            items.insert(
-                id,
-                group
-                    .items
-                    .iter()
-                    .map(|item| format!("{}/{}", group.id, item.id))
-                    .collect(),
-            );
-        }
-        let mut groups = Vec::with_capacity(group_children.len());
-        for (heading, list) in group_children {
-            let id = ComponentId(next);
-            next += 1;
+                &snapshot,
+                &mut group_model.rows(),
+                ListBudget {
+                    max_items: snapshot.items.len().max(1),
+                    max_display_items: snapshot.items.len().max(1),
+                    // Collection transactions include the surrounding sidebar
+                    // and retained/staged text, not just visible row labels.
+                    max_utf8_bytes: 1_000_000,
+                    max_staging_units: 100_000,
+                },
+            )
+            .map_err(|error| anyhow::anyhow!("Settings list: {error:?}"))?;
+            list.set_navigation_selection_fill_only(true);
+            list.set_navigation_layout(true);
+            items.insert(id, group_model);
             groups.push(Content::new(
-                id,
+                ComponentId(next),
                 StackContent {
                     model: Stack {
                         axis: Axis::Vertical,
                         gap: tekes_ui_tokens::Spacing::Regular.value(),
                     },
-                    children: vec![heading, list],
+                    children: vec![Content::new(heading_id, heading), Content::new(id, list)],
                     flexible_child: None,
                 },
             ));
+            next += 1;
         }
         let groups = Content::new(
             ComponentId(next),
@@ -166,7 +223,6 @@ impl SettingsSidebar {
             back_requested: false,
             back_template: None,
             search_button: None,
-            search_entries,
             query: String::new(),
         })
     }
@@ -283,27 +339,13 @@ impl SettingsSidebar {
             return Ok(());
         }
         self.query = query;
-        for (id, entries) in &self.search_entries {
-            let matching: Vec<_> = entries
-                .iter()
-                .filter(|(_, _, terms)| terms.contains(&self.query))
-                .collect();
-            let list = self
-                .host
-                .get_mut(*id)
-                .unwrap()
-                .component_mut::<SelectableListContent>()
-                .unwrap();
-            list.view.cancel();
-            list.labels = matching.iter().map(|(_, label, _)| label.clone()).collect();
-            list.model.count = matching.len();
-            list.model.selected = matching
-                .iter()
-                .position(|(route, _, _)| self.selected_item.as_ref() == Some(route));
-            self.items.insert(
-                *id,
-                matching.iter().map(|(route, _, _)| route.clone()).collect(),
-            );
+        for (id, group) in &self.items {
+            self.host
+                .replace_keyed_list(*id, &group.snapshot(&self.query), &mut group.rows(), None)
+                .map_err(|error| anyhow::anyhow!("Settings search rows: {error:?}"))?;
+        }
+        if let Some(selected) = self.selected_item.clone() {
+            self.select(&selected);
         }
         Ok(())
     }
@@ -312,14 +354,15 @@ impl SettingsSidebar {
     }
     pub fn select(&mut self, item: &str) {
         self.selected_item = Some(item.into());
-        for (id, values) in &self.items {
-            let list = self
-                .host
-                .get_mut(*id)
-                .unwrap()
-                .component_mut::<SelectableListContent>()
-                .unwrap();
-            list.model.selected = values.iter().position(|value| value == item);
+        for (id, group) in &self.items {
+            let key = group
+                .items
+                .iter()
+                .find(|entry| entry.route == item)
+                .map(|entry| entry.key);
+            self.host
+                .set_keyed_list_selection(*id, key)
+                .expect("declared Settings list");
         }
     }
 
@@ -340,21 +383,27 @@ impl SettingsSidebar {
         self.take_selection()
     }
     pub fn take_selection(&mut self) -> Option<String> {
-        let actions = self.host.drain_actions();
-        self.back_requested |= actions.iter().any(|a| a.target == ComponentId(4));
-        if actions.iter().any(|a| a.target == ComponentId(10)) {
+        let actions = self.host.drain_action_records();
+        self.back_requested |= actions.iter().any(|a| a.action.target == ComponentId(4));
+        if actions.iter().any(|a| a.action.target == ComponentId(10)) {
             // Both nodes and their parent are owned by this fixed declaration.
             self.open_search().expect("declared Settings search slots");
         }
-        actions.into_iter().find_map(|a| {
-            let list = self
-                .host
-                .get(a.target)?
-                .component::<SelectableListContent>()?;
+        actions.into_iter().find_map(|record| {
+            let Some(ContentActionPayload::ListIntent(intent)) = record.payload else {
+                return None;
+            };
+            let key = match intent.kind {
+                ListIntentKind::SelectionChanged => intent.selected_key?,
+                ListIntentKind::Activated => intent.key,
+            };
             self.items
-                .get(&a.target)?
-                .get(list.model.selected?)
-                .filter(|item| self.selected_item.as_ref() != Some(item))
+                .get(&record.action.target)?
+                .items
+                .iter()
+                .find(|item| item.key == key)
+                .map(|item| &item.route)
+                .filter(|route| self.selected_item.as_ref() != Some(route))
                 .cloned()
         })
     }

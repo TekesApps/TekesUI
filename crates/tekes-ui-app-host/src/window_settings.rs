@@ -1,4 +1,5 @@
 use super::*;
+use tekes_ui_controls::composition::Component;
 use tekes_ui_settings::FormIntent;
 /// The ticket and receiver have the same requesting-Host lifetime. The worker
 /// never owns the ticket, so closing that Host releases the owner's load gate.
@@ -355,13 +356,13 @@ impl Host {
                     .sidebar
                     .host
                     .get(node.id)
-                    .and_then(|n| n.component::<tekes_ui_settings::SelectableListContent>())
+                    .and_then(|n| {
+                        n.component::<tekes_ui_controls::composition::KeyedSelectableListContent>()
+                    })
                     .is_some_and(|list| {
-                        list.view
-                            .layout()
-                            .items
+                        list.semantic_parts()
                             .iter()
-                            .any(|row| row.visible.is_some_and(|visible| visible.contains(point)))
+                            .any(|row| row.frame.contains(point))
                     })
             })
         })
@@ -433,7 +434,7 @@ impl Host {
                     .focused()
                     .and_then(|id| sidebar.sidebar.host.get(id))
                     .is_some_and(|node| {
-                        node.component::<tekes_ui_settings::SelectableListContent>()
+                        node.component::<tekes_ui_controls::composition::KeyedSelectableListContent>()
                             .is_some()
                     });
                 back = self.leading_visible
@@ -476,7 +477,7 @@ impl Host {
                     back = state.sidebar.host.semantic_mount(ComponentId(4)) == Some(target.component)
                         && state.sidebar.host.get(ComponentId(4)).is_some();
                     back || state.sidebar.host.semantics().iter().any(|node| state.sidebar.host.semantic_mount(node.id) == Some(target.component)
-                        && state.sidebar.host.get(node.id).is_some_and(|n| n.component::<tekes_ui_settings::SelectableListContent>().is_some()))
+                        && state.sidebar.host.get(node.id).is_some_and(|n| n.component::<tekes_ui_controls::composition::KeyedSelectableListContent>().is_some()))
                 } else { false }
             }
             _ => false,
@@ -2033,9 +2034,9 @@ mod pinned_header_tests {
             .host
             .get(ComponentId(101))
             .unwrap()
-            .component::<tekes_ui_settings::SelectableListContent>()
+            .component::<tekes_ui_controls::composition::KeyedSelectableListContent>()
             .unwrap();
-        let items = &list.view.layout().items;
+        let items = list.semantic_parts();
         assert!(!items.is_empty());
         assert_eq!(
             items[0].frame.size.height,
@@ -2153,11 +2154,18 @@ mod pinned_header_tests {
             .host
             .get(ComponentId(103))
             .unwrap()
-            .component::<tekes_ui_settings::SelectableListContent>()
+            .component::<tekes_ui_controls::composition::KeyedSelectableListContent>()
             .unwrap();
-        assert_eq!(reading.labels, ["高级排版"]);
-        assert_eq!(reading.model.selected, None);
-        let target = reading.view.layout().items[0].frame.center();
+        assert_eq!(
+            reading
+                .semantic_parts()
+                .iter()
+                .map(|part| part.semantics.name.as_str())
+                .collect::<Vec<_>>(),
+            ["高级排版"]
+        );
+        assert_eq!(reading.selected_key(), None);
+        let target = reading.semantic_parts()[0].frame.center();
         assert_eq!(
             sidebar.event(&ContentEvent::PointerDown(target)),
             Some("reading/advanced".into())
@@ -2202,10 +2210,20 @@ mod pinned_header_tests {
             .host
             .get(ComponentId(103))
             .unwrap()
-            .component::<tekes_ui_settings::SelectableListContent>()
+            .component::<tekes_ui_controls::composition::KeyedSelectableListContent>()
             .unwrap();
-        assert_eq!(reading.labels, ["文本与语言", "高级排版"]);
-        assert_eq!(reading.model.selected, Some(0));
+        assert_eq!(
+            reading
+                .semantic_parts()
+                .iter()
+                .map(|part| part.semantics.name.as_str())
+                .collect::<Vec<_>>(),
+            ["文本与语言", "高级排版"]
+        );
+        assert_eq!(
+            reading.selected_key(),
+            Some(tekes_ui_controls::extended::ListItemKey(2))
+        );
         assert!(sidebar.host.get(ComponentId(6)).is_none());
         assert_eq!(sidebar.host.focused(), Some(ComponentId(10)));
         assert!(!sidebar.take_back());
@@ -2235,10 +2253,11 @@ mod pinned_header_tests {
                 .host
                 .get(ComponentId(103))
                 .unwrap()
-                .component::<tekes_ui_settings::SelectableListContent>()
+                .component::<tekes_ui_controls::composition::KeyedSelectableListContent>()
                 .unwrap()
-                .model
-                .count,
+                .model()
+                .display_indices()
+                .len(),
             2
         );
         sidebar
@@ -2251,10 +2270,11 @@ mod pinned_header_tests {
                 .host
                 .get(ComponentId(103))
                 .unwrap()
-                .component::<tekes_ui_settings::SelectableListContent>()
+                .component::<tekes_ui_controls::composition::KeyedSelectableListContent>()
                 .unwrap()
-                .model
-                .count,
+                .model()
+                .display_indices()
+                .len(),
             0
         );
         assert!(sidebar.cancel_search().unwrap());
@@ -2264,10 +2284,11 @@ mod pinned_header_tests {
                 .host
                 .get(ComponentId(103))
                 .unwrap()
-                .component::<tekes_ui_settings::SelectableListContent>()
+                .component::<tekes_ui_controls::composition::KeyedSelectableListContent>()
                 .unwrap()
-                .model
-                .count,
+                .model()
+                .display_indices()
+                .len(),
             2
         );
     }
@@ -2310,7 +2331,7 @@ mod pinned_header_tests {
         );
         assert!(
             second_list
-                .component::<tekes_ui_settings::SelectableListContent>()
+                .component::<tekes_ui_controls::composition::KeyedSelectableListContent>()
                 .is_some()
         );
     }
@@ -2322,6 +2343,7 @@ mod navigation_input_tests {
     use crate::settings::{SettingsDisplayMode, SettingsSurface, SettingsWindow};
     use crate::toolbar_source::ComponentSource;
     use crate::window_toolbar::{Contents, Declaration, Source};
+    use tekes_ui_controls::composition::KeyedSelectableListContent;
     use tekes_ui_controls::composition::{
         AccessibilityAction as ContentAction, ToolbarButtonDeclaration, ToolbarGroupOverflow,
         ToolbarPlacement, ToolbarRegion,
@@ -2329,7 +2351,7 @@ mod navigation_input_tests {
     use tekes_ui_platform_macos::{
         AccessibilityAction, Modifiers, content_accessibility::ContentAccessibilityOwner,
     };
-    use tekes_ui_settings::{FileProvider, SelectableListContent, Snapshot};
+    use tekes_ui_settings::{FileProvider, Snapshot};
     fn fixture(marked: bool) -> (Host, std::path::PathBuf) {
         fixture_mode(marked, SettingsDisplayMode::Independent)
     }
@@ -2498,19 +2520,13 @@ mod navigation_input_tests {
                 .sidebar
                 .host
                 .get(node.id)
-                .and_then(|n| n.component::<SelectableListContent>())
-                && let Some(index) = list.labels.iter().position(|s| s == label)
+                .and_then(|n| n.component::<KeyedSelectableListContent>())
+                && let Some(part) = list
+                    .semantic_parts()
+                    .into_iter()
+                    .find(|part| part.semantics.name == label)
             {
-                let point = list
-                    .view
-                    .layout()
-                    .items
-                    .iter()
-                    .find(|r| r.id == index)
-                    .unwrap()
-                    .visible
-                    .unwrap()
-                    .center();
+                let point = part.frame.center();
                 return (node.id, point, label.into());
             }
         }
