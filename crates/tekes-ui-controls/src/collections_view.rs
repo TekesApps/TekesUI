@@ -650,7 +650,9 @@ impl ListView {
                 palette,
                 ButtonSize::Body,
                 proposal::TextRole::UiBody,
-                true,
+                // List backgrounds belong only to selection and current hover.
+                // Exit motion may continue for ink, but must not paint old rows.
+                !button.state.selected && !button.state.hovered,
             );
         }
         scene.pop_clip();
@@ -4814,6 +4816,112 @@ mod tests {
         );
         assert_eq!(model.selected_row, Some(2));
         assert_eq!(view.state.focused, Some(2));
+    }
+
+    #[test]
+    fn list_hover_exit_immediately_restores_transparent_rows_during_motion() {
+        use crate::ControlMotionContext;
+        use crate::extended::{
+            KeyedList, KeyedListItem, KeyedListSnapshot, ListBudget, ListDatasetKey, ListItemKey,
+        };
+        use std::time::Duration;
+
+        struct MovingText(Duration);
+        impl ButtonTextRenderer for MovingText {
+            fn motion_context(&self) -> Option<ControlMotionContext> {
+                Some(ControlMotionContext {
+                    now: self.0,
+                    reduced_motion: false,
+                })
+            }
+            fn measure(&mut self, _: &str, _: proposal::TextRole, _: f32) -> Size {
+                Size::new(40., 14.)
+            }
+            fn draw(
+                &mut self,
+                _: &mut Scene,
+                _: &str,
+                _: proposal::TextRole,
+                _: Rect,
+                _: ButtonTextAlign,
+                _: Rgba,
+            ) {
+            }
+        }
+        for theme in [Theme::LIGHT, Theme::DARK] {
+            for selected in [None, Some(3)] {
+                let mut model = KeyedList::new(
+                    KeyedListSnapshot {
+                        dataset: ListDatasetKey(1),
+                        items: (0..4)
+                            .map(|i| KeyedListItem {
+                                key: ListItemKey(i),
+                                name: format!("row {i}"),
+                            })
+                            .collect(),
+                        display_items: (0..4).map(ListItemKey).collect(),
+                    },
+                    ListBudget {
+                        max_items: 4,
+                        max_display_items: 4,
+                        max_utf8_bytes: 1000,
+                        max_staging_units: 1000,
+                    },
+                )
+                .unwrap();
+                if let Some(i) = selected {
+                    model.select_key(ListItemKey(i));
+                }
+                let mut view = ListView::new();
+                let mut text = MovingText(Duration::ZERO);
+                let frame = Rect::new(0., 0., 240., 400.);
+                let layout = view.render_keyed(
+                    &mut Scene::new(),
+                    &mut text,
+                    &model,
+                    frame,
+                    Some(frame),
+                    theme.into(),
+                );
+                // Cross A -> B -> C while earlier hover animations are active,
+                // then hover the selected row, leave the rows, and leave the host.
+                for (step, current) in [Some(0), Some(1), Some(2), Some(3), None, None]
+                    .into_iter()
+                    .enumerate()
+                {
+                    let point =
+                        current
+                            .map(|i| layout.items[i].frame.center())
+                            .unwrap_or(if step == 4 {
+                                Point::new(10., 390.)
+                            } else {
+                                Point::new(f32::MIN, f32::MIN)
+                            });
+                    view.pointer_move_keyed(point, &model);
+                    for offset in [0, 10, 30] {
+                        text.0 = Duration::from_millis(1 + step as u64 * 40 + offset);
+                        let mut scene = Scene::new();
+                        view.render_keyed(
+                            &mut scene,
+                            &mut text,
+                            &model,
+                            frame,
+                            Some(frame),
+                            theme.into(),
+                        );
+                        let painted = layout.items.iter().enumerate().filter_map(|(i, row)| {
+                            scene.primitives().iter().any(|p| matches!(p,
+                                Primitive::Quad(q) if q.fill.a > 0. && q.rect.contains(row.frame.center())
+                            )).then_some(i)
+                        }).collect::<Vec<_>>();
+                        let expected = (0..4)
+                            .filter(|i| Some(*i) == current || Some(*i as u64) == selected)
+                            .collect::<Vec<_>>();
+                        assert_eq!(painted, expected, "step {step}, offset {offset}, {theme:?}");
+                    }
+                }
+            }
+        }
     }
 
     #[test]
