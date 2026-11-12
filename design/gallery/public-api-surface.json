@@ -2181,6 +2181,30 @@
       "reason": "Original navigation Content input or adapter, also reachable through its explicit root reexport; belongs to the existing registered family and route."
     },
     {
+      "api": "tekes_ui_controls::composition::TabStripContent",
+      "category": "component-adapter",
+      "components": [
+        "tui.tabs"
+      ],
+      "reason": "Header-only adapter of existing TabsView; caller owns destination content and receives keyed intents. No new component family."
+    },
+    {
+      "api": "tekes_ui_controls::composition::TabStripIntent",
+      "category": "component-support",
+      "components": [
+        "tui.tabs"
+      ],
+      "reason": "Delivery-time stable item key and select/close intent for the existing Tabs action channel."
+    },
+    {
+      "api": "tekes_ui_controls::composition::TabStripItem",
+      "category": "component-support",
+      "components": [
+        "tui.tabs"
+      ],
+      "reason": "Stable label Content identity, accessible title and closability for the existing Tabs strip."
+    },
+    {
       "api": "tekes_ui_controls::composition::TableCellDisplay",
       "category": "component-support",
       "components": [

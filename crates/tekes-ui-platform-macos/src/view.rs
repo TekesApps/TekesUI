@@ -528,6 +528,10 @@ define_class!(
                 position: self.view_point(e),
                 modifiers: modifiers_of(e),
             };
+            // Bounded native Others-scroll diagnosis: geometry/deltas only.
+            if std::env::var_os("TEKESUI_OTHERS_SCROLL_TRACE").is_some() {
+                eprintln!("OTHERS_SCROLL_NATIVE window={} event={ev:?}", e.windowNumber());
+            }
             self.ivars().shared.dispatch(Event::Scroll(ev));
         }
 

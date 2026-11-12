@@ -241,14 +241,6 @@ impl Host {
                     }
                 }
                 Source::Panel { .. } => continue,
-                Source::Close(id) => {
-                    let owner = self
-                        .panels
-                        .iter()
-                        .position(|panel| panel.module_id == *id)
-                        .unwrap();
-                    (owner, ComponentId(95000 + owner as u64))
-                }
                 _ => (center, ComponentId(u64::MAX - 18)),
             };
             declaration.region = region;
@@ -311,25 +303,6 @@ impl Host {
             let result =
                 match invocation.source {
                     Source::Visibility(side) => self.toggle_visibility(side),
-                    Source::CreationMenu => {
-                        if self.composition_in_progress() {
-                            Err(anyhow::anyhow!("composition-in-progress"))
-                        } else if let Some(
-                            tekes_ui_controls::composition::ContentActionPayload::MenuSelection(
-                                selection,
-                            ),
-                        ) = invocation.payload
-                        {
-                            if let Some(id) = selection.value_path().and_then(|path| path.last()) {
-                                self.open_creation_choice(id)
-                            } else {
-                                Ok(())
-                            }
-                        } else {
-                            Ok(())
-                        }
-                    }
-
                     Source::Navigation(source) => {
                         if self.prepare_settings_item_navigation() {
                             self.navigation
@@ -349,13 +322,6 @@ impl Host {
                     } => self
                         .toggle_others_expansion(&container, expanded)
                         .map(|changed| exchanged = changed),
-                    Source::Close(id) => {
-                        if self.composition_in_progress() {
-                            Err(anyhow::anyhow!("composition-in-progress"))
-                        } else {
-                            self.close_container(&id)
-                        }
-                    }
                     Source::Undo(source) => self.settings.as_ref().map_or(Ok(()), |s| {
                         s.borrow_mut().undo_action(invocation.command, &source)
                     }),
@@ -724,10 +690,7 @@ impl Host {
                             owner: *index,
                             presenter,
                         }),
-                        Source::Close(_)
-                        | Source::CreationMenu
-                        | Source::Expand { .. }
-                        | Source::WorkspaceSwitch { .. } => {
+                        Source::Expand { .. } | Source::WorkspaceSwitch { .. } => {
                             Some(ToolbarTarget::Contribution { presenter, group })
                         }
                         Source::Navigation(_) => Some(ToolbarTarget::Navigation),
@@ -977,26 +940,7 @@ impl Host {
                             .is_some_and(|n| {
                                 n.component::<ToolbarControl>().is_some_and(
                                     tekes_ui_controls::composition::Component::focusable,
-                                ) || matches!(
-                                    self.panels[index]
-                                        .mounted_toolbar
-                                        .source(Self::toolbar_group(owner)),
-                                    Some(Source::Close(_))
-                                ) && n
-                                    .component::<tekes_ui_controls::composition::Button>()
-                                    .is_some_and(
-                                        tekes_ui_controls::composition::Component::focusable,
-                                    )
-                                    || matches!(
-                                        self.panels[index]
-                                            .mounted_toolbar
-                                            .source(Self::toolbar_group(owner)),
-                                        Some(Source::CreationMenu)
-                                    ) && n
-                                        .component::<tekes_ui_controls::composition::MenuContent>()
-                                        .is_some_and(
-                                            tekes_ui_controls::composition::Component::focusable,
-                                        )
+                                )
                             })
                     })
             })
@@ -1216,13 +1160,50 @@ impl Host {
         if let Some(consumed) = self.settings_tab_input(&key)? {
             return Ok(consumed);
         }
+        let header_focused = self
+            .presentation_tabs
+            .as_ref()
+            .is_some_and(|header| header.content_host().focused().is_some());
         if key.down
             && let Some(ControlKey::Tab { reverse }) = key.key
             && self.open_toolbar().is_none()
         {
             let targets = self.toolbar_focus_targets();
+            if header_focused {
+                if self.presentation_tab_input(&ContentEvent::KeyInput(key.clone()))? {
+                    return Ok(true);
+                }
+                // The header uses non-wrapping original ContentHost traversal.
+                // Its boundary resumes the window's existing toolbar scope.
+                if targets.is_empty() {
+                    return Ok(false);
+                }
+                self.presentation_tabs.as_mut().unwrap().blur();
+                self.set_toolbar_focus(
+                    if reverse {
+                        targets.last()
+                    } else {
+                        targets.first()
+                    }
+                    .copied(),
+                    true,
+                );
+                return Ok(self.actual_toolbar_owner().is_some());
+            }
             let groups = self.toolbar_groups();
             let current = self.actual_toolbar_owner().or(self.toolbar_focus);
+            let crosses_header = self.presentation_layout.tabs.is_some()
+                && (if reverse {
+                    current.is_none() || current == targets.first().copied()
+                } else {
+                    current.is_some() && current == targets.last().copied()
+                });
+            if crosses_header {
+                self.set_toolbar_focus(None, false);
+                if self.presentation_tab_input(&ContentEvent::KeyInput(key.clone()))? {
+                    return Ok(true);
+                }
+            }
             let next = current
                 .and_then(|current| groups.iter().position(|&target| target == current))
                 .and_then(|index| {
@@ -1244,8 +1225,6 @@ impl Host {
                     }
                 });
             self.set_toolbar_focus(next, true);
-            // Cross-group traversal does not dispatch to ContentHost: report
-            // this Tab's actual admission, not the previous event's bubbling.
             return Ok(next.is_some()
                 && self.panels[self.toolbar_index]
                     .mounted_toolbar
@@ -1253,6 +1232,9 @@ impl Host {
                     .content_host()
                     .focused()
                     .is_some());
+        }
+        if header_focused {
+            return self.presentation_tab_input(&ContentEvent::KeyInput(key));
         }
         if key.down
             && key.key == Some(ControlKey::Escape)
@@ -1328,16 +1310,10 @@ impl Host {
                                 if !node.node.visible.is_some_and(|clip| clip.contains(point)) {
                                     return None;
                                 }
-                                let group = ComponentId(node.node.id.0.checked_sub(1)?);
-                                let close = matches!(
-                                    panel.mounted_toolbar.source(group),
-                                    Some(Source::Close(_))
-                                );
-                                if !(close && node.node.frame.contains(point)
-                                    || node
-                                        .parts
-                                        .iter()
-                                        .any(|(_, part)| part.frame.contains(point)))
+                                if !node
+                                    .parts
+                                    .iter()
+                                    .any(|(_, part)| part.frame.contains(point))
                                 {
                                     return None;
                                 }

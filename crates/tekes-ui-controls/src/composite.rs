@@ -43,7 +43,7 @@ fn explicit_visible_clip(visible: Option<Rect>) -> Option<Rect> {
     Some(visible.unwrap_or_default())
 }
 
-fn focus_reveal_outset(backing_scale: f32) -> f32 {
+pub(crate) fn focus_reveal_outset(backing_scale: f32) -> f32 {
     let ring_width = proposal::metric("stroke", "c-focus-width").expect("focus width token");
     let ring_gap = proposal::metric("spacing", "c-focus-offset").expect("focus offset token");
     let scale = if backing_scale.is_finite() && backing_scale > 0.0 {

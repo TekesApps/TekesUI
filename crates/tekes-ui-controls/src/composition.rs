@@ -110,6 +110,8 @@ pub use tekes_ui_text::{
 };
 mod link;
 pub use link::LinkContent;
+mod tab_strip;
+pub use tab_strip::{TAB_TITLE_MAX_WIDTH, TabStripContent, TabStripIntent, TabStripItem};
 mod navigation;
 pub use navigation::{BreadcrumbContent, CommandPaletteContent, TabItem, TabsContent};
 mod menu;
@@ -206,7 +208,8 @@ pub enum ContentEvent {
         key: ControlKey,
         down: bool,
     },
-    /// Delta is a document-space offset (positive moves toward later content).
+    /// Positive delta moves toward later content. Precise input uses logical
+    /// points; non-precise input uses lines, converted by the receiving viewport.
     Scroll {
         position: Point,
         delta: Point,
@@ -4448,6 +4451,8 @@ impl Component for GridContent {
 }
 #[derive(Debug)]
 pub struct ScrollContent {
+    horizontal: bool,
+    reveal_horizontal: Option<Rect>,
     pub scroll: ScrollArea,
     pub viewport_height: Option<f32>,
     backing_scale: f32,
@@ -4468,6 +4473,8 @@ impl ScrollContent {
         scroll.set_scrollbar_visibility(false, false);
         Self {
             scroll,
+            horizontal: false,
+            reveal_horizontal: None,
             viewport_height: None,
             backing_scale: 1.,
             children: vec![child],
@@ -4480,6 +4487,24 @@ impl ScrollContent {
             reading: None,
             reading_mounted: false,
         }
+    }
+    /// Use natural document width and disable the vertical scrolling axis.
+    /// The default remains the existing vertically flowing viewport.
+    pub fn horizontal(mut self, horizontal: bool) -> Self {
+        self.horizontal = horizontal;
+        self.scroll.set_scroll_policy(
+            crate::ScrollPolicy::Auto,
+            if horizontal {
+                crate::ScrollPolicy::Disabled
+            } else {
+                crate::ScrollPolicy::Auto
+            },
+        );
+        self
+    }
+    /// Reveal a document-local horizontal range on the next layout.
+    pub fn reveal_horizontal(&mut self, rect: Rect) {
+        self.reveal_horizontal = Some(rect);
     }
     /// Show overflow bars without changing wheel, axis policy or reveal range.
     pub fn scrollbar(mut self, visible: bool) -> Self {
@@ -4749,6 +4774,18 @@ impl Component for ScrollContent {
         let bleed = (frame.min_x() - focus_bounds.min_x()).max(0.0);
         let gutter = bleed.max(self.content_padding);
         let mut width = (frame.size.width - 2.0 * gutter).max(0.0);
+        if self.horizontal {
+            width = self
+                .children
+                .iter_mut()
+                .map(|child| {
+                    child
+                        .measure_intrinsic(text, Size::new(1e8, frame.size.height))
+                        .size
+                        .width
+                })
+                .fold(width, f32::max);
+        }
         let available = Size::new(width, 1e8);
         let mut height = 2.0 * gutter;
         for c in &mut self.children {
@@ -4768,11 +4805,30 @@ impl Component for ScrollContent {
                 height += child.measure(text, Size::new(width, 1e8)).size.height;
             }
         }
-        let document = Size::new(frame.size.width, height);
+        let document = Size::new(
+            if self.horizontal {
+                width + 2. * gutter
+            } else {
+                frame.size.width
+            },
+            height,
+        );
         if document != self.scroll.document_size() {
             self.scrollbar_pointer = None;
         }
         self.scroll.layout(frame.size, document);
+        if let Some(rect) = self.reveal_horizontal.take() {
+            let left = rect.min_x() + gutter;
+            let right = rect.max_x() + gutter;
+            let target = if left < self.scroll.offset.x {
+                left
+            } else if right > self.scroll.offset.x + frame.size.width {
+                right - frame.size.width
+            } else {
+                self.scroll.offset.x
+            };
+            self.scroll.scroll_by(target - self.scroll.offset.x, 0.);
+        }
         if self
             .scrollbar_pointer
             .is_some_and(|vertical| !self.scroll.scrollbar_visible(vertical))
@@ -4856,16 +4912,24 @@ impl Component for ScrollContent {
                 time,
                 ..
             } => {
+                // Match the existing TextSurface wheel contract at this input
+                // boundary. ScrollArea itself consumes logical point offsets.
+                let step = if *precise {
+                    1.
+                } else {
+                    proposal::metric("size", "size-row-height").expect("JSON metric")
+                };
+                let delta = Point::new(delta.x * step, delta.y * step);
                 if self
                     .reading
                     .as_mut()
-                    .is_some_and(|reading| !reading.observe_scroll(*delta, *begin, *momentum))
+                    .is_some_and(|reading| !reading.observe_scroll(delta, *begin, *momentum))
                 {
                     return ContentResponse::default();
                 }
                 let changed = self
                     .scroll
-                    .wheel_at(*delta, *precise, *begin, *end, *momentum, *time);
+                    .wheel_at(delta, *precise, *begin, *end, *momentum, *time);
                 ContentResponse {
                     consumed: changed,
                     changed,

@@ -450,17 +450,20 @@ mod tests {
         let mut host = host(local_factories());
         let first = host.create_container("notes").unwrap();
         refresh(&mut host);
-        let menu = node(&host, "Create Container", false).1.center();
-        click(&mut host, menu, false);
-        assert!(host.open_toolbar().is_some());
-        let target = host.toolbar_focus.unwrap();
-        host.dispatch_toolbar(
-            target,
-            &ContentEvent::Key {
-                key: ControlKey::Escape,
-                down: true,
-            },
-        )
+        let menu = node(&host, "Create Container", true).1.center();
+        click(&mut host, menu, true);
+        assert!(
+            host.presentation_tabs
+                .as_ref()
+                .unwrap()
+                .content_host()
+                .input_overlay_owner()
+                .is_some()
+        );
+        host.presentation_tab_input(&ContentEvent::Key {
+            key: ControlKey::Escape,
+            down: true,
+        })
         .unwrap();
         refresh(&mut host);
         assert_eq!(host.panels.len(), 2);
@@ -468,9 +471,13 @@ mod tests {
             host.presentation.as_ref().unwrap().selected_tab(),
             Some(&crate::OthersTab::Container(first.clone()))
         );
-        click(&mut host, menu, false);
-        let row = node(&host, "Working Notes", false).1.center();
-        click(&mut host, row, false);
+        click(&mut host, menu, true);
+        let row = node(&host, "Working Notes", true).1;
+        assert!(
+            row.min_y() >= 48.,
+            "popup rows escape the tab strip viewport"
+        );
+        click(&mut host, row.center(), true);
         assert_eq!(host.panels.len(), 3);
         let second = host.presentation.as_ref().unwrap().others_ids()[1].clone();
         assert_ne!(first, second);
@@ -478,8 +485,6 @@ mod tests {
             host.presentation.as_ref().unwrap().selected_tab(),
             Some(&crate::OthersTab::Container(second.clone()))
         );
-        let family = node(&host, "Working Notes", true).1.center();
-        click(&mut host, family, true);
         let old = node(&host, "Working Notes 1", true).0;
         host.close_container(&first).unwrap();
         let third = host.create_container("notes").unwrap();
@@ -742,9 +747,7 @@ mod tests {
                 .select_tab(OthersTab::Container("reading".into()))
                 .is_err()
         );
-        // A family may contain both declarations, but its menu only offers tabs.
-        let family = node(&host, "Documents", true).1.center();
-        click(&mut host, family, true);
+        // Per-instance tabs never expose List members as separate destinations.
         let parts = host.presentation_tabs.as_ref().unwrap().semantics();
         assert!(
             parts
@@ -805,20 +808,25 @@ mod tests {
         );
     }
     #[test]
-    fn creation_popup_layers_preserve_type_icons_and_original_merged_render_compatibility() {
+    fn creation_popup_layers_preserve_tabs_and_original_merged_render_compatibility() {
         use super::super::window_presentation::{render_test_tabs, render_test_tabs_layers};
-        use tekes_ui_scene::Primitive;
         let mut host = host(local_factories());
         let scratch = host.create_container("scratch").unwrap();
         refresh(&mut host);
         let before = node(&host, "Scratchpad", true).0;
-        let trigger = node(&host, "Create Container", false).1.center();
-        click(&mut host, trigger, false);
-        let owner = host.open_toolbar().expect("original plus menu is open");
-        let presenter = host.toolbar_container(owner).unwrap();
+        let trigger = node(&host, "Create Container", true).1.center();
+        click(&mut host, trigger, true);
+        assert!(
+            host.presentation_tabs
+                .as_ref()
+                .unwrap()
+                .content_host()
+                .input_overlay_owner()
+                .is_some()
+        );
         let mut legacy = Scene::new();
         render_test_tabs(
-            &mut host.panels[presenter].mounted_toolbar.host,
+            host.presentation_tabs.as_mut().unwrap(),
             &mut legacy,
             &mut host.text,
             Theme::LIGHT.into(),
@@ -827,7 +835,7 @@ mod tests {
         let mut base = Scene::new();
         let mut overlays = Scene::new();
         render_test_tabs_layers(
-            &mut host.panels[presenter].mounted_toolbar.host,
+            host.presentation_tabs.as_mut().unwrap(),
             &mut base,
             &mut overlays,
             &mut host.text,
@@ -840,63 +848,24 @@ mod tests {
         }
         assert_eq!(
             format!("{:?}", merged.primitives()),
-            format!("{:?}", legacy.primitives()),
-            "old render retains the identical original base+overlay painter"
+            format!("{:?}", legacy.primitives())
         );
-        assert!(
-            !overlays.primitives().is_empty(),
-            "the original open popup must have its own layer"
-        );
-        let mut presentation = Scene::new();
-        host.paint_presentation(
-            &mut presentation,
-            Rect::new(0., 0., 1200., 700.),
-            Theme::LIGHT.into(),
-        )
-        .unwrap();
-        assert_eq!(
-            node(&host, "Scratchpad", true).0,
-            before,
-            "opening plus must not retire or replace a type target"
-        );
-        let images: Vec<_> = presentation
-            .primitives()
-            .iter()
-            .enumerate()
-            .filter_map(|(index, primitive)| match primitive {
-                Primitive::Image(image) if image.rect.center().y < 48. => {
-                    Some((index, image.rect.center()))
-                }
-                _ => None,
-            })
-            .collect();
-        assert!(
-            !images.is_empty(),
-            "the original selected type icon is still painted"
-        );
-        let mut scene = Scene::new();
-        host.append_toolbar_layers(&mut scene, &base, &presentation, &overlays);
-        for (index, point) in images {
-            let start = base.primitives().len() + index + 1;
-            assert!(!scene.primitives()[start..].iter().any(|primitive| matches!(primitive, Primitive::Quad(quad) if quad.fill.a == 1. && quad.rect.contains(point))),
-                "opening plus must not lift window ground above an existing type icon");
-        }
-        let overlay_start = base.primitives().len() + presentation.primitives().len();
-        assert_eq!(
-            format!("{:?}", &scene.primitives()[overlay_start..]),
-            format!("{:?}", overlays.primitives()),
-            "original popup paints above both toolbar ground and selector"
-        );
-        host.dispatch_toolbar(
-            owner,
-            &ContentEvent::Key {
-                key: ControlKey::Escape,
-                down: true,
-            },
-        )
+        assert!(!overlays.primitives().is_empty());
+        assert_eq!(node(&host, "Scratchpad", true).0, before);
+        host.presentation_tab_input(&ContentEvent::Key {
+            key: ControlKey::Escape,
+            down: true,
+        })
         .unwrap();
         refresh(&mut host);
-        assert!(host.open_toolbar().is_none());
+        assert!(
+            host.presentation_tabs
+                .as_ref()
+                .unwrap()
+                .content_host()
+                .input_overlay_owner()
+                .is_none()
+        );
         assert_eq!(
             host.presentation.as_ref().unwrap().selected_tab(),
             Some(&crate::OthersTab::Container(scratch))

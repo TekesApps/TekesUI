@@ -159,6 +159,12 @@ struct Regions {
     children: Vec<Content>,
 }
 impl Component for Regions {
+    // This private root is never a scroll descendant. It passes its original
+    // clip unchanged to each allocated toolbar; child layout owns clipping.
+    fn host_reveal_passthrough(&self) -> bool {
+        true
+    }
+
     fn children(&self) -> &[Content] {
         &self.children
     }
@@ -801,6 +807,10 @@ impl<B: Clone + Debug> ToolbarHost<B> {
     /// semantic part hierarchy). Input and overlays still go through this host.
     pub fn content_host(&self) -> &ContentHost {
         &self.host
+    }
+    /// Allow an enclosing host to continue traversal at this toolbar's boundary.
+    pub fn set_focus_wrap(&mut self, wrap: bool) {
+        self.host.set_focus_wrap(wrap);
     }
     pub fn event_bubbled(&self) -> bool {
         self.ready && self.active && self.host.event_bubbled()

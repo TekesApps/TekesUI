@@ -1666,6 +1666,18 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         &mut actual,
         "tekes_ui_controls::composition::TabItem",
     );
+    public_type::<tekes_ui_controls::composition::TabStripContent>(
+        &mut actual,
+        "tekes_ui_controls::composition::TabStripContent",
+    );
+    public_type::<tekes_ui_controls::composition::TabStripIntent>(
+        &mut actual,
+        "tekes_ui_controls::composition::TabStripIntent",
+    );
+    public_type::<tekes_ui_controls::composition::TabStripItem>(
+        &mut actual,
+        "tekes_ui_controls::composition::TabStripItem",
+    );
     public_type::<tekes_ui_controls::composition::TableCellDisplay>(
         &mut actual,
         "tekes_ui_controls::composition::TableCellDisplay",
@@ -2235,7 +2247,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::layout_view::IconLayout",
     );
     #[allow(dead_code)]
-    fn public_trait_431<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
+    fn public_trait_434<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
     actual.push("tekes_ui_controls::layout_view::IconRenderer");
     public_type::<tekes_ui_controls::layout_view::IconView>(
         &mut actual,

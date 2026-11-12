@@ -1373,9 +1373,8 @@ impl Gallery {
         let changed = if let Some(changed) = handled {
             changed
         } else {
-            let step = if event.precise { 1.0 } else { layout::ROW_H };
-            let x = -(event.delta.x as f32) * step;
-            let y = -(event.delta.y as f32) * step;
+            let x = -(event.delta.x as f32);
+            let y = -(event.delta.y as f32);
             let (x, y) = if event.modifiers.shift {
                 (x + y, 0.0)
             } else {
@@ -1399,8 +1398,11 @@ impl Gallery {
                     })
                     .changed
             } else {
+                // The shared sidebar admits line units itself; this direct
+                // ScrollArea consumer still converts at its original boundary.
+                let step = if event.precise { 1.0 } else { layout::ROW_H };
                 self.viewport.wheel_at(
-                    Point::new(x, y),
+                    Point::new(x * step, y * step),
                     event.precise,
                     event.phase == ScrollPhase::Began,
                     end,
@@ -3692,6 +3694,58 @@ mod tests {
             position: PlatformPoint { x, y },
             modifiers: Modifiers::NONE,
         })
+    }
+    #[test]
+    fn gallery_sidebar_and_direct_viewport_convert_nonprecise_wheel_once() {
+        use tekes_ui_platform_macos::{ScrollEvent, ScrollPhase, Vec2};
+        for precise in [false, true] {
+            let mut g = Gallery::with_static_text(StaticText::new(None));
+            g.set_view_size(1000., 480.);
+            g.build_scene(&mut Scene::new());
+            g.viewport.set_document_extent(Size::new(2000., 2000.));
+            for (point, sidebar) in [
+                (Point::new(100., 300.), true),
+                (Point::new(800., 350.), false),
+            ] {
+                let before = if sidebar {
+                    g.sidebar.offset().y
+                } else {
+                    g.viewport.offset.y
+                };
+                let event = ScrollEvent {
+                    timestamp: 1.,
+                    delta: Vec2 { x: 0., y: -0.1 },
+                    precise,
+                    phase: ScrollPhase::None,
+                    momentum_phase: ScrollPhase::None,
+                    inverted: false,
+                    position: PlatformPoint {
+                        x: point.x as f64,
+                        y: point.y as f64,
+                    },
+                    modifiers: Modifiers::NONE,
+                };
+                assert_eq!(
+                    g.scroll_target_at(point),
+                    Some(if sidebar {
+                        ScrollOwner::Sidebar
+                    } else {
+                        ScrollOwner::Document
+                    })
+                );
+                g.handle_scroll(&event);
+                let after = if sidebar {
+                    g.sidebar.offset().y
+                } else {
+                    g.viewport.offset.y
+                };
+                let expected = if precise { 0.1 } else { 0.1 * layout::ROW_H };
+                assert!(
+                    (after - before - expected).abs() < 0.0001,
+                    "sidebar={sidebar}, precise={precise}, before={before}, after={after}"
+                );
+            }
+        }
     }
     #[test]
     fn scroll_gesture_keeps_its_owner_across_regions_and_momentum() {

@@ -344,6 +344,7 @@ impl Host {
                     .map_err(|e| anyhow::anyhow!("container tabs paint: {e:?}"))?;
             }
         }
+        self.trace_presentation_scroll("after-paint");
         Ok(())
     }
     pub(super) fn presentation_resize_regions(&self) -> Vec<(Rect, Axis)> {
@@ -483,6 +484,23 @@ impl Host {
         })
     }
     pub(super) fn presentation_event(&mut self, event: &Event, w: &Window) -> Result<bool> {
+        if let Event::Scroll(scroll) = event
+            && std::env::var_os("TEKESUI_OTHERS_SCROLL_TRACE").is_some()
+        {
+            let point = Point::new(scroll.position.x as f32, scroll.position.y as f32);
+            eprintln!(
+                "OTHERS_SCROLL_ROUTE point={point:?} delta={:?} tabs={:?} in_tabs={} list={:?} pressed={} toolbar_overlay={}",
+                scroll.delta,
+                self.presentation_layout.tabs,
+                self.presentation_layout
+                    .tabs
+                    .is_some_and(|frame| frame.contains(point)),
+                self.presentation_layout.list_viewport,
+                self.pressed.is_some(),
+                self.open_toolbar().is_some()
+            );
+            self.trace_presentation_scroll("host-route");
+        }
         if self.presentation.is_none() {
             return Ok(false);
         }
@@ -582,10 +600,11 @@ impl Host {
             })
         {
             let height = self.presentation_layout.list_viewport.unwrap().size.height;
-            self.presentation
-                .as_mut()
-                .unwrap()
-                .scroll_list(-scroll.delta.y as f32, height);
+            self.presentation.as_mut().unwrap().scroll_list_wheel(
+                -scroll.delta.y as f32,
+                scroll.precise,
+                height,
+            );
             return Ok(true);
         }
         if let Event::Mouse(mouse) = event {
@@ -705,6 +724,12 @@ impl Host {
                             ))
                         }))
             }
+            Event::Scroll(scroll) => self.presentation_layout.tabs.is_some_and(|frame| {
+                frame.contains(Point::new(
+                    scroll.position.x as f32,
+                    scroll.position.y as f32,
+                ))
+            }),
             Event::Key(_) | Event::TextKey(_) => host.content_host().focused().is_some(),
             _ => false,
         };
@@ -714,10 +739,18 @@ impl Host {
         let Some(input) = super::window_toolbar_mount::native_toolbar_event(event) else {
             return Ok(false);
         };
+        if let ContentEvent::KeyInput(key) = input {
+            return self.toolbar_key_input(key);
+        }
         let consumed = self.presentation_tab_input(&input)?;
         Ok(consumed || matches!(event, Event::Key(_) | Event::TextKey(_)))
     }
     pub(super) fn presentation_tab_input(&mut self, input: &ContentEvent) -> Result<bool> {
+        let trace_scroll = matches!(input, ContentEvent::Scroll { .. })
+            && std::env::var_os("TEKESUI_OTHERS_SCROLL_TRACE").is_some();
+        if trace_scroll {
+            self.trace_presentation_scroll("before-input");
+        }
         if self.open_toolbar().is_some() {
             return Ok(false);
         }
@@ -729,7 +762,14 @@ impl Host {
             .map_err(|e| anyhow::anyhow!("container tabs input: {e:?}"))?
             .consumed;
         if consumed {
+            if host.content_host().focused().is_some() {
+                self.set_toolbar_focus(None, false);
+            }
             self.apply_tab_selection()?;
+        }
+        if trace_scroll {
+            eprintln!("OTHERS_SCROLL_HEADER consumed={consumed}");
+            self.trace_presentation_scroll("after-input");
         }
         Ok(consumed)
     }
@@ -745,8 +785,26 @@ impl Host {
                 SwitcherAction::Create(id) => {
                     self.open_creation_choice(&id)?;
                 }
-                SwitcherAction::Select(tab) => {
-                    self.presentation.as_mut().unwrap().select_tab(tab)?
+                SwitcherAction::Tabs => {
+                    let Some(ContentActionPayload::TabStrip(intent)) = record.payload else {
+                        continue;
+                    };
+                    let Some(tab) = self
+                        .presentation_switcher
+                        .items
+                        .iter()
+                        .find(|item| item.key == intent.key)
+                        .map(|item| item.tab.clone())
+                    else {
+                        continue;
+                    };
+                    if intent.close {
+                        if let OthersTab::Container(id) = tab {
+                            self.close_container(&id)?;
+                        }
+                    } else {
+                        self.presentation.as_mut().unwrap().select_tab(tab)?;
+                    }
                 }
                 SwitcherAction::Menu => {
                     let Some(ContentActionPayload::MenuSelection(selection)) = record.payload
@@ -756,12 +814,7 @@ impl Host {
                     let Some(value) = selection.value_path().and_then(|path| path.last()) else {
                         continue;
                     };
-                    let tab = if value == ":list" {
-                        OthersTab::List
-                    } else {
-                        OthersTab::Container(value.clone())
-                    };
-                    self.presentation.as_mut().unwrap().select_tab(tab)?;
+                    self.open_creation_choice(value)?;
                 }
             }
             self.set_toolbar_focus(None, false);
@@ -1159,7 +1212,6 @@ impl Host {
         }
         if state.others_visible()
             && let Some(OthersTab::Container(id)) = state.selected_tab()
-            && let Some(index) = self.panels.iter().position(|panel| &panel.module_id == id)
         {
             let name = if state.others_expanded() {
                 "Collapse Others"
@@ -1190,20 +1242,6 @@ impl Host {
                     container: id.clone(),
                     expanded: state.others_expanded(),
                 },
-            });
-            declarations[focus].push(Declaration {
-                id: ComponentId(3_000_000 + index as u64 * 10),
-                region: WINDOW_TRAILING,
-                placement: ToolbarPlacement::PrimaryAction,
-                order: 1,
-                contents: Contents::Close(
-                    self.panels[index]
-                        .options
-                        .title
-                        .clone()
-                        .unwrap_or_else(|| id.clone()),
-                ),
-                source: Source::Close(id.clone()),
             });
         }
         for (side, available, visible, name) in [
@@ -1258,16 +1296,6 @@ impl Host {
                     source: Source::Visibility(side),
                 });
             }
-        }
-        if state.others().is_some() && !self.creation_choices().is_empty() {
-            declarations[focus].push(Declaration {
-                id: ComponentId(92060),
-                region: WINDOW_TRAILING,
-                placement: ToolbarPlacement::PrimaryAction,
-                order: 3,
-                contents: Contents::CreationMenu(self.creation_entries()),
-                source: Source::CreationMenu,
-            });
         }
         if let Some(nav) = &self.navigation
             && let Some(source) = crate::toolbar_source::ComponentSource::current(&nav.process)
@@ -1587,26 +1615,22 @@ mod tests {
         host.sync_container_toolbars(true, area, test_band(), 40.)
             .unwrap();
         host.toolbar_index = 0;
-        let header = &mut host.panels[0].mounted_toolbar.host;
-        render_test_tabs(
-            header,
-            &mut Scene::new(),
-            &mut host.text,
-            Theme::LIGHT.into(),
-        )
-        .unwrap();
+        host.paint_presentation(&mut Scene::new(), area, Theme::LIGHT.into())
+            .unwrap();
+        let header = host.presentation_tabs.as_mut().unwrap();
         let target = header
             .semantics()
             .into_iter()
-            .find(|node| node.node.semantics.name == "Close first")
-            .map(|node| node.target)
-            .unwrap();
+            .flat_map(|node| node.parts)
+            .find(|(_, part)| part.semantics.name == "Close first")
+            .unwrap()
+            .0;
         assert!(
             header
                 .accessibility_action(target, AccessibilityAction::Press)
                 .consumed
         );
-        host.drain_toolbar_commands().unwrap();
+        host.apply_tab_selection().unwrap();
         assert_eq!(
             host.presentation.as_ref().unwrap().others_ids(),
             &["second"]
@@ -2649,6 +2673,11 @@ mod input_regressions {
         host.panels
             .iter()
             .flat_map(|panel| panel.mounted_toolbar.host.semantics())
+            .chain(
+                host.presentation_tabs
+                    .iter()
+                    .flat_map(|header| header.semantics()),
+            )
             .find_map(|node| {
                 if node.node.semantics.name == name {
                     Some(node.node.frame)
@@ -2663,6 +2692,21 @@ mod input_regressions {
     }
     fn t52_click(host: &mut Host, name: &str) {
         let point = t52_button(host, name).center();
+        if host.presentation_tabs.as_ref().is_some_and(|header| {
+            header.semantics().iter().any(|node| {
+                node.parts
+                    .iter()
+                    .any(|(_, part)| part.semantics.name == name)
+            })
+        }) {
+            host.presentation_tab_input(&ContentEvent::PointerDown(point))
+                .unwrap();
+            t52_refresh(host);
+            host.presentation_tab_input(&ContentEvent::PointerUp(point))
+                .unwrap();
+            t52_refresh(host);
+            return;
+        }
         let target = host
             .toolbar_target_at(point)
             .expect("original navigation pointer target");
@@ -2790,7 +2834,7 @@ mod input_regressions {
         let expand = t52_button(&host, "Expand Others");
         let close = t52_button(&host, "Close other");
         let toggle = t52_button(&host, "Hide Others");
-        assert!(expand.max_x() <= close.min_x() && close.max_x() <= toggle.min_x());
+        assert!(close.max_x() <= expand.min_x() && expand.max_x() <= toggle.min_x());
         assert!(expand.max_y() <= 48. && close.max_y() <= 48. && toggle.max_y() <= 48.);
         assert!(
             host.panels[2].geometry.close.is_none(),
@@ -2855,7 +2899,7 @@ mod input_regressions {
         }
     }
     #[test]
-    fn t52_content_switcher_is_one_radio_group_with_authoritative_selection() {
+    fn t64_content_switcher_is_one_tab_list_with_authoritative_selection() {
         use tekes_ui_controls::composition::ContentRole;
         let mut host = window_chrome_fixture();
         t52_refresh(&mut host);
@@ -2863,9 +2907,9 @@ mod input_regressions {
         let group = header
             .semantics()
             .into_iter()
-            .find(|node| node.node.id == ComponentId(999_999))
+            .find(|node| node.node.semantics.role == ContentRole::TabList)
             .unwrap();
-        assert_eq!(group.node.semantics.role, ContentRole::RadioGroup);
+        assert_eq!(group.node.semantics.role, ContentRole::TabList);
         assert_eq!(
             host.presentation.as_ref().unwrap().selected_tab(),
             Some(&OthersTab::Container("other".into()))
@@ -2874,7 +2918,8 @@ mod input_regressions {
             header
                 .semantics()
                 .iter()
-                .filter(|node| node.node.semantics.selected)
+                .flat_map(|node| &node.parts)
+                .filter(|(_, part)| part.semantics.selected)
                 .count(),
             1,
             "even a sole current destination reflects the source selection"
@@ -2981,7 +3026,7 @@ mod input_regressions {
         ] {
             let mut host = window_chrome_fixture();
             host.panels[2].options.toolbar_host = host_option;
-            refresh_window_chrome(&mut host);
+            t52_refresh(&mut host);
             let panel = &host.panels[2];
             assert!(
                 panel.geometry.toolbar.is_none(),
@@ -3012,7 +3057,7 @@ mod input_regressions {
             enabled: true,
             geometry_dependent: false,
         }];
-        refresh_window_chrome(&mut host);
+        t52_refresh(&mut host);
         let geometry = host.panels[2].geometry;
         let bar = geometry.toolbar.unwrap();
         assert!(geometry.close.is_none());
@@ -3760,9 +3805,10 @@ mod input_regressions {
             .unwrap()
             .semantics()
             .into_iter()
-            .find(|node| node.node.semantics.name == "b")
+            .flat_map(|node| node.parts)
+            .find(|(_, part)| part.semantics.name == "b")
             .unwrap()
-            .node
+            .1
             .frame
             .center();
         let selected = host.presentation.as_ref().unwrap().selected_tab().cloned();

@@ -212,7 +212,6 @@ impl Host {
                     ComponentId(1),
                     tekes_ui_controls::composition::TextContent::new(title),
                 ),
-                Contents::Close(_) | Contents::CreationMenu(_) => continue,
             };
             // Use the original action geometry; constraints affect main-axis
             // overflow later, never an invented vertical cross-axis estimate.
@@ -421,6 +420,8 @@ mod tests {
             )
             .unwrap();
         }
+        host.paint_presentation(&mut Scene::new(), area, Theme::LIGHT.into())
+            .unwrap();
         // The real native draw reconciles logical toolbar ownership after the
         // original host render, and repaints if that changed focus geometry.
         host.reconcile_toolbar_focus(true);
@@ -452,7 +453,7 @@ mod tests {
             .center()
     }
     #[test]
-    fn original_four_edge_buttons_and_independent_close_keep_capture_through_paint() {
+    fn original_four_edge_buttons_and_tab_close_keep_capture_through_paint() {
         for position in [
             Position::Top,
             Position::Bottom,
@@ -492,42 +493,50 @@ mod tests {
             host.dispatch_toolbar(owner, &ContentEvent::PointerUp(first))
                 .unwrap();
             assert_eq!(calls.get(), 1);
-            // Close is a normal original Button, with no synthetic semantic parts.
-            let close = host
-                .panels
-                .iter()
-                .flat_map(|panel| panel.mounted_toolbar.host.semantics())
-                .find(|node| node.node.semantics.name == "Close Owner")
+            let (target, close) = host
+                .presentation_tabs
+                .as_ref()
                 .unwrap()
-                .node
-                .frame
-                .center();
-            let target = host
-                .toolbar_target_at(close)
-                .expect("original close Button is a real pointer target");
-            host.dispatch_toolbar(target, &ContentEvent::PointerDown(close))
+                .semantics()
+                .into_iter()
+                .flat_map(|node| node.parts)
+                .find(|(_, part)| part.semantics.name == "Close Owner")
+                .map(|(target, part)| (target, part.frame.center()))
                 .unwrap();
-            let presenter = host.toolbar_container(target).unwrap();
-            let capture = host.panels[presenter]
-                .mounted_toolbar
-                .host
-                .content_host()
-                .pointer_capture();
-            assert!(capture.is_some(), "Close Down must arm the original Button");
-            assert_eq!(host.actual_toolbar_owner(), Some(target));
-            paint(&mut host);
-            assert_eq!(
-                host.panels[presenter]
-                    .mounted_toolbar
-                    .host
-                    .content_host()
-                    .pointer_capture(),
-                capture,
-                "the real draw focus reconciliation must preserve the original Close press"
+            assert!(
+                host.presentation_tab_input(&ContentEvent::PointerDown(close))
+                    .unwrap()
             );
-            assert_eq!(host.actual_toolbar_owner(), Some(target));
-            host.dispatch_toolbar(target, &ContentEvent::PointerUp(close))
-                .unwrap();
+            let header = host.presentation_tabs.as_ref().unwrap().content_host();
+            let capture = header.pointer_capture();
+            let focused = header.focused();
+            assert!(
+                capture.is_some(),
+                "Close Down must arm the original TabsView Button"
+            );
+            assert!(focused.is_some());
+            assert!(host.actual_toolbar_owner().is_none());
+            paint(&mut host);
+            let header = host.presentation_tabs.as_ref().unwrap();
+            assert_eq!(
+                header.content_host().pointer_capture(),
+                capture,
+                "real draw reconciliation must preserve the original close press"
+            );
+            assert_eq!(header.content_host().focused(), focused);
+            assert!(
+                header
+                    .semantics()
+                    .iter()
+                    .flat_map(|node| &node.parts)
+                    .any(|(current, part)| *current == target
+                        && part.semantics.name == "Close Owner"),
+                "close retains its exact Container target through paint"
+            );
+            assert!(
+                host.presentation_tab_input(&ContentEvent::PointerUp(close))
+                    .unwrap()
+            );
             assert!(host.presentation.as_ref().unwrap().others_ids().is_empty());
         }
     }
@@ -540,10 +549,6 @@ mod tests {
             Position::Trailing,
         ] {
             let (mut host, calls) = fixture(Some(position));
-            let target = ToolbarTarget::Contribution {
-                presenter: 0,
-                group: ComponentId(3_000_010),
-            };
             let key = |key, down| ContentKeyEvent {
                 key: Some(key),
                 down,
@@ -553,39 +558,156 @@ mod tests {
                 characters: String::new(),
                 characters_ignoring_modifiers: String::new(),
             };
-            assert!(host.toolbar_focus_targets().contains(&target));
-            for _ in 0..host.toolbar_groups().len() {
+            for _ in 0..host.toolbar_groups().len() + 3 {
                 assert!(
                     host.toolbar_key_input(key(ControlKey::Tab { reverse: false }, true))
                         .unwrap()
                 );
                 paint(&mut host);
-                if host.actual_toolbar_owner() == Some(target) {
+                if close_focused(&host) {
                     break;
                 }
             }
-            assert_eq!(
-                host.actual_toolbar_owner(),
-                Some(target),
-                "unmodified Tab reaches the original Close Button"
+            assert!(
+                close_focused(&host),
+                "unmodified Tab reaches the real Tab close"
             );
+            assert!(
+                host.toolbar_key_input(key(ControlKey::Tab { reverse: false }, true))
+                    .unwrap()
+            );
+            paint(&mut host);
+            assert!(host.presentation_tabs.as_ref().unwrap().semantics().iter()
+                .any(|node| node.node.focused && node.node.semantics.name == "Create Container"),
+                "Tab advances from close to the real + menu trigger");
+            assert!(
+                host.toolbar_key_input(key(ControlKey::Tab { reverse: false }, true))
+                    .unwrap()
+            );
+            paint(&mut host);
+            assert!(
+                host.actual_toolbar_owner().is_some(),
+                "Tab leaves the header"
+            );
+            assert!(
+                host.toolbar_key_input(key(ControlKey::Tab { reverse: true }, true))
+                    .unwrap()
+            );
+            paint(&mut host);
+            assert!(host.presentation_tabs.as_ref().unwrap().semantics().iter()
+                .any(|node| node.node.focused && node.node.semantics.name == "Create Container"),
+                "Shift+Tab enters the header at its real + menu trigger");
+            assert!(
+                host.toolbar_key_input(key(ControlKey::Tab { reverse: true }, true))
+                    .unwrap()
+            );
+            paint(&mut host);
+            assert!(close_focused(&host), "Shift+Tab returns to the close stop");
+            assert!(
+                host.toolbar_key_input(key(ControlKey::Tab { reverse: true }, true))
+                    .unwrap()
+            );
+            paint(&mut host);
+            assert!(!close_focused(&host));
+            assert!(
+                host.presentation_tabs
+                    .as_ref()
+                    .unwrap()
+                    .content_host()
+                    .focused()
+                    .is_some()
+            );
+            assert!(
+                host.toolbar_key_input(key(ControlKey::Tab { reverse: true }, true))
+                    .unwrap()
+            );
+            paint(&mut host);
+            assert!(
+                host.actual_toolbar_owner().is_some(),
+                "Shift+Tab leaves the header"
+            );
+            for _ in 0..2 {
+                assert!(
+                    host.toolbar_key_input(key(ControlKey::Tab { reverse: false }, true))
+                        .unwrap()
+                );
+                paint(&mut host);
+            }
+            assert!(close_focused(&host), "forward traversal returns to close");
             assert!(
                 host.toolbar_key_input(key(ControlKey::Space, true))
                     .unwrap()
             );
             assert_eq!(host.presentation.as_ref().unwrap().others_ids(), &["owner"]);
             paint(&mut host);
-            assert_eq!(host.actual_toolbar_owner(), Some(target));
+            assert!(close_focused(&host));
             assert!(
                 host.toolbar_key_input(key(ControlKey::Space, false))
                     .unwrap()
             );
             assert!(
                 host.presentation.as_ref().unwrap().others_ids().is_empty(),
-                "Space release invokes the original Close source"
+                "Space release invokes the original TabsView close request"
+            );
+            paint(&mut host);
+            assert!(!close_focused(&host));
+            assert!(
+                host.presentation_tabs
+                    .as_ref()
+                    .unwrap()
+                    .content_host()
+                    .pointer_capture()
+                    .is_none()
             );
             assert_eq!(calls.get(), 0, "Close never dispatches a business command");
         }
+    }
+    fn close_focused(host: &Host) -> bool {
+        host.presentation_tabs
+            .as_ref()
+            .unwrap()
+            .semantics()
+            .iter()
+            .flat_map(|node| &node.parts)
+            .any(|(_, part)| part.semantics.name == "Close Owner" && part.focused)
+    }
+    #[test]
+    fn hiding_others_cancels_armed_tab_close_before_restore() {
+        let (mut host, calls) = fixture(Some(Position::Top));
+        let key = |key, down| ContentKeyEvent {
+            key: Some(key),
+            down,
+            repeat: false,
+            modifiers: Default::default(),
+            native_code: 0,
+            characters: String::new(),
+            characters_ignoring_modifiers: String::new(),
+        };
+        for _ in 0..host.toolbar_groups().len() + 3 {
+            host.toolbar_key_input(key(ControlKey::Tab { reverse: false }, true))
+                .unwrap();
+            paint(&mut host);
+            if close_focused(&host) {
+                break;
+            }
+        }
+        assert!(close_focused(&host));
+        assert!(
+            host.toolbar_key_input(key(ControlKey::Space, true))
+                .unwrap()
+        );
+        host.presentation.as_mut().unwrap().toggle_others().unwrap();
+        paint(&mut host);
+        let header = host.presentation_tabs.as_ref().unwrap().content_host();
+        assert!(header.focused().is_none());
+        assert!(header.pointer_capture().is_none());
+        host.presentation.as_mut().unwrap().toggle_others().unwrap();
+        paint(&mut host);
+        host.presentation_tab_input(&ContentEvent::KeyInput(key(ControlKey::Space, false)))
+            .unwrap();
+        assert_eq!(host.presentation.as_ref().unwrap().others_ids(), &["owner"]);
+        assert!(!close_focused(&host));
+        assert_eq!(calls.get(), 0);
     }
     #[test]
     fn window_business_is_aggregated_once_and_retained_replaces_it_when_owner_hides() {

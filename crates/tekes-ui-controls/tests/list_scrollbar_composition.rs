@@ -179,7 +179,7 @@ fn hidden_scrollbar_preserves_wheel_and_checked_focus_reveal() {
     let wheel = ContentEvent::Scroll {
         position: Point::new(80., 70.),
         delta: Point::new(0., 35.),
-        precise: false,
+        precise: true,
         begin: true,
         end: true,
         momentum: false,

@@ -141,6 +141,7 @@ pub(crate) struct MenuContentState {
     trigger_measured: Size,
     last_frame: Option<std::time::Duration>,
     context: Option<ContextMenuState>,
+    popup_viewport: Option<Rect>,
 }
 impl MenuContentState {
     fn new(labels: &[String]) -> Self {
@@ -159,6 +160,7 @@ impl MenuContentState {
             trigger_measured: Size::default(),
             last_frame: None,
             context: None,
+            popup_viewport: None,
         }
     }
     fn reset(&mut self, labels: &[String]) {
@@ -168,7 +170,9 @@ impl MenuContentState {
         }
         let content = std::mem::take(&mut self.trigger_content);
         let measured = self.trigger_measured;
+        let popup_viewport = self.popup_viewport;
         *self = Self::new(labels);
+        self.popup_viewport = popup_viewport;
         self.context = context;
         self.trigger_content = content;
         self.trigger_measured = measured;
@@ -260,6 +264,12 @@ impl MenuContent {
             selected: None,
             popup: None,
         }
+    }
+    /// Override only the popup allocation in this host's overlay pass.
+    /// The trigger retains its original ancestor clip and hit geometry.
+    pub fn set_popup_viewport(&mut self, viewport: Option<Rect>) {
+        self.reconcile_trigger();
+        self.menu.content_state.as_mut().unwrap().popup_viewport = viewport;
     }
     /// One original trigger action with arbitrary decorative Content, using
     /// CompoundButton's same slot geometry/chrome. Call before mounting; host
@@ -1600,9 +1610,15 @@ impl Component for MenuContent {
                 }
             }
         }
-        let (f, c) = self
-            .context()
-            .map_or((f, c), |context| (context.anchor, context.viewport));
+        let popup_viewport = self
+            .menu
+            .content_state
+            .as_ref()
+            .and_then(|state| state.popup_viewport)
+            .unwrap_or(c);
+        let (f, c) = self.context().map_or((f, popup_viewport), |context| {
+            (context.anchor, context.viewport)
+        });
         let labels = self.labels.iter().map(String::as_str).collect::<Vec<_>>();
         self.popup = self.menu.render(
             s,
