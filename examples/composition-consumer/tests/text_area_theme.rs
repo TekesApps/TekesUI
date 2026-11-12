@@ -148,7 +148,7 @@ fn assert_thumb(scene: &Scene, frame: Rect, palette: Palette) -> Rect {
             _ => None,
         })
         .expect("actual multiline viewport scrollbar thumb");
-    assert_eq!(thumb.fill, palette.color("secondary-text").unwrap());
+    assert_eq!(thumb.fill, palette.color("border").unwrap());
     assert!(contrast(thumb.fill, palette.color("transcript-input").unwrap()) >= 3.);
     thumb.rect
 }

@@ -16741,7 +16741,7 @@
                 "expected": "043c46f6746522b6f6d3feb6a895e914a465d867e9ac2a3f18e8be43d1d26e25"
               },
               "examples/composition-consumer/tests/text_area_theme.rs": {
-                "actual": "42898d8e1e5c587c906b02ed4e43aae01e58b5948e42a433e8a810e29c5cc754",
+                "actual": "802ebe02c209d3950dd9099bef40870a42fca11255ffcc2c0a5fc939999eb4af",
                 "expected": "cf7792f60f0ccf11c7a675c44a1d13a5d5d165615d0aae25a7fa89caee2b558f"
               }
             },
@@ -69892,7 +69892,7 @@
     "examples/composition-consumer/tests/surface_theme.rs": "ea80660bf10c7af0092bf43ff8dca05c3414eedb21452e40be5c80b83aa9edbf",
     "examples/composition-consumer/tests/switch_theme.rs": "b3fabfc1f6340fa76148ed194787db52ba10ef36397994b8b1d90c4fcab27c9a",
     "examples/composition-consumer/tests/tabs_theme.rs": "64f4e4338c5b74c25f83f6a10ce30ed6504a211401bb51acd5f2a57edfd91ebb",
-    "examples/composition-consumer/tests/text_area_theme.rs": "42898d8e1e5c587c906b02ed4e43aae01e58b5948e42a433e8a810e29c5cc754",
+    "examples/composition-consumer/tests/text_area_theme.rs": "802ebe02c209d3950dd9099bef40870a42fca11255ffcc2c0a5fc939999eb4af",
     "examples/composition-consumer/tests/text_field_theme.rs": "d061b3d8f86d4100bdd27381ab7d26b53ea908d40509d71cb00515b26104a3f1",
     "examples/composition-consumer/tests/text_theme.rs": "ee5dc3e3a6051c56f59b5d990d30367c200e00fc8e754aa5e632a2c02f53a6ef",
     "examples/composition-consumer/tests/toolbar_theme.rs": "ca5d9222b9f0099148163e89708a368de062207dc0b5bf18324773fb40481736",
