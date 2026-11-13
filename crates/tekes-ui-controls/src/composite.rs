@@ -1169,10 +1169,10 @@ impl<T: ButtonTextRenderer> ButtonTextRenderer for MenuRowText<'_, T> {
     }
 }
 
-// Retain the existing legacy surface minimum in one production rule. Item
-// metadata changes row content; it must not silently change this minimum.
+// Popup height follows measured rows and surface insets. Placement bounds
+// this intrinsic height to the available viewport and retains scrolling.
 fn menu_surface_height(content: f32, inset: f32) -> f32 {
-    (content + inset * 2.0).max(132.0)
+    content + inset * 2.0
 }
 
 fn menu_surface_height_for_rows(rows: &[f32], inset: f32) -> f32 {
