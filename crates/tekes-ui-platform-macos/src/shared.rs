@@ -848,7 +848,14 @@ impl Window {
     }
 
     pub fn set_title(&self, title: &str) {
-        self.window.setTitle(&NSString::from_str(title));
+        let title = NSString::from_str(title);
+        if self.window.title() == title {
+            return;
+        }
+        self.window.setTitle(&title);
+        // Title layout can reset the native buttons while its frame callbacks
+        // are still active. Correct the final geometry after that layout returns.
+        self.shared.align_toolbar_controls();
     }
 
     /// 视图尺寸，单位 pt。
