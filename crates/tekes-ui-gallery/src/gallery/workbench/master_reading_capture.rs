@@ -49,7 +49,7 @@ fn master_detail_narrow_reading_captures_real_page_and_nested_viewports() {
                 let state = gallery.workbench.state(index);
                 let list = state.list_bounds;
                 let detail = state.detail.frame_at(0);
-                let list_offset = state.list_scroll.offset.y;
+                let list_offset = state.master().scroll().offset.y;
                 assert_eq!(state.selected, 0, "initial selection remains unchanged");
                 let width = (720.0 * scale) as u32;
                 let height = (512.0 * scale) as u32;

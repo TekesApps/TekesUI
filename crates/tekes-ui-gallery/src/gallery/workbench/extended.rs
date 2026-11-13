@@ -15,7 +15,7 @@ use tekes_ui_controls::{
     BarChart, ButtonModel, ButtonSize, ButtonTextRenderer, ChartDatum, ControlKey, ControlState,
     RadioGroupView, SelectionEvent, SliderView, SwitchView, extended as controls,
     layout_view::{
-        BreadcrumbView, ComboBoxView, CommandPaletteView, DisclosureView, GridView, LinkView,
+        BreadcrumbView, CommandPaletteView, DisclosureView, GridView, LinkView,
         SegmentedControlView, SeparatorView, SplitViewView, StackView,
     },
     paint,
@@ -229,12 +229,11 @@ pub(super) fn handles_key(
     if renderer == "command-palette" && focus == Some(20) {
         return matches!(key, ControlKey::Enter | ControlKey::Space);
     }
-    if matches!(renderer, "combo-box" | "command-palette") {
-        let (open, has_candidates) = if renderer == "combo-box" {
-            (s.combo.open, !s.combo.filtered().is_empty())
-        } else {
-            (s.command.combo.open, !s.command.combo.filtered().is_empty())
-        };
+    if renderer == "combo-box" {
+        return false;
+    }
+    if renderer == "command-palette" {
+        let (open, has_candidates) = (s.command.combo.open, !s.command.combo.filtered().is_empty());
         let list_key = matches!(key, ControlKey::Up | ControlKey::Down | ControlKey::Enter);
         return focus == Some(1000)
             && (key == ControlKey::Escape && open || list_key && has_candidates);
@@ -266,7 +265,6 @@ pub(super) struct ExtendedStory {
     pub link_view: LinkView,
     pub segmented_view: SegmentedControlView,
     pub breadcrumb_view: BreadcrumbView,
-    pub combo_view: ComboBoxView,
     pub command_view: CommandPaletteView,
     collections_views: CollectionsViews,
     feedback_views: FeedbackViews,
@@ -284,7 +282,6 @@ pub(super) struct ExtendedStory {
     pub segmented: controls::SegmentedControl,
     pub breadcrumb: controls::Breadcrumb,
     pub command: controls::CommandPalette,
-    pub combo: controls::ComboBox,
     pub list: controls::List,
     pub tree: controls::Tree,
     pub table: controls::DataTable,
@@ -330,7 +327,6 @@ impl Default for ExtendedStory {
             link_view: LinkView::default(),
             segmented_view: SegmentedControlView::new(3),
             breadcrumb_view: BreadcrumbView::default(),
-            combo_view: ComboBoxView::default(),
             command_view: CommandPaletteView::default(),
             collections_views: CollectionsViews::default(),
             feedback_views: FeedbackViews::default(),
@@ -353,13 +349,6 @@ impl Default for ExtendedStory {
                     .collect(),
             },
             command,
-            combo: controls::ComboBox {
-                items: ["Automatic", "Compact", "Comfortable"]
-                    .into_iter()
-                    .map(str::to_owned)
-                    .collect(),
-                ..Default::default()
-            },
             list: controls::List::new(5),
             tree,
             table: controls::DataTable::new(5, 3),
@@ -614,9 +603,6 @@ impl ExtendedStory {
         self.segmented_view.set_window_active(active);
         self.command_view
             .set_window_active(active, &mut self.command);
-        if !active {
-            self.combo_view.options.cancel();
-        }
         for renderer in ["list", "tree", "data-table", "chart"] {
             collections_adapter::window_active(self, renderer, active);
         }
@@ -1765,13 +1751,6 @@ impl ExtendedStory {
                 log(format!("command: {index}"));
                 true
             }
-            ("combo-box", 40..=42) => {
-                let Some(i) = self.combo_view.activate_option(id - 40, &mut self.combo) else {
-                    return false;
-                };
-                log(format!("combo selection: {i}"));
-                true
-            }
             _ => false,
         }
     }
@@ -1858,11 +1837,6 @@ impl ExtendedStory {
                     self.switch_view.key(key, false, &mut self.switch),
                     SelectionEvent::Ignored
                 ),
-                "combo-box" => {
-                    self.combo_view
-                        .key_event(key, false, &mut self.combo)
-                        .consumed
-                }
                 "command-palette" if self.focused == Some(20) => {
                     self.command_view
                         .trigger_key(key, false, &mut self.command)
@@ -1894,16 +1868,6 @@ impl ExtendedStory {
             }
             "segmented-control" => self.segmented_view.key(key, true, &mut self.segmented),
             "split-view" => self.split_view.key(key, &mut self.split),
-            "combo-box" => {
-                let event = self.combo_view.key_event(key, true, &mut self.combo);
-                if key == ControlKey::Enter && event.changed && !self.combo.open {
-                    log(format!(
-                        "combo selection: {}",
-                        self.combo.selected.unwrap_or_default()
-                    ));
-                }
-                event.consumed
-            }
             "command-palette" => {
                 if self.focused == Some(20) {
                     self.command_view
@@ -2408,42 +2372,23 @@ impl ExtendedStory {
                     let input_height = 38.0_f32.max(s.input.measure_search_height(ctx.text));
                     let input = Rect::new(bx, by + 8., bw.min(440.), input_height);
                     s.input.set_disabled(self.disabled);
-                    s.input
-                        .build_search_clipped(ctx, input, s.button_clip, scene);
+                    s.input.build_search_clipped_with_brand(
+                        ctx,
+                        input,
+                        Some(control_clip),
+                        scene,
+                        s.brand,
+                    );
                     if let Some(frame) = s.input.frame_at(0) {
                         s.register_logical_focus(1000, frame, !self.disabled, true, None, true);
                     }
-                    self.combo.disabled = self.disabled;
-                    if self.combo.query != s.input.query() {
-                        self.combo.set_query(s.input.query());
-                    }
-                    self.query = self.combo.query.clone();
+                    self.query = s.input.query().into();
                     if let Some(visible) = s.input.visible_frame() {
                         self.hits.push((1000, visible));
                         s.hits.push((1000, visible));
                     }
-                    let options = self.combo_view.render(
-                        scene,
-                        ctx.text,
-                        &mut self.combo,
-                        input,
-                        body,
-                        Some(control_clip),
-                        palette,
-                        proposal::TextRole::UiBody,
-                        false,
-                    );
-                    if let Some(options) = options {
-                        for (filtered_index, item) in options.items.iter().enumerate() {
-                            if let Some(index) =
-                                self.combo_view.options.original_index(filtered_index)
-                                && let Some(hit) = item.visible
-                            {
-                                s.hits.push((40 + index, hit));
-                            }
-                        }
-                    }
-                    if self.combo.open && self.combo.filtered().is_empty() {
+                    if s.input.combo().model().open && s.input.combo().model().filtered().is_empty()
+                    {
                         wrapped_caption(
                             ctx,
                             scene,
@@ -2690,10 +2635,6 @@ impl ExtendedStory {
                 .is_some_and(|result| result.consumed);
         }
         match renderer {
-            "combo-box" if id >= 40 => {
-                let _ = self.combo_view.pointer_down(point);
-                return self.combo.open;
-            }
             "command-palette" if id == 20 => {
                 return self.command_view.pointer_down_trigger(point);
             }
@@ -2798,9 +2739,6 @@ impl ExtendedStory {
             "breadcrumb" => self.breadcrumb_view.pointer_move(point),
             _ => {}
         }
-        if renderer == "combo-box" {
-            self.combo_view.pointer_move(point, &mut self.combo);
-        }
         if renderer == "command-palette" {
             self.command_view.pointer_move(point, &mut self.command);
         }
@@ -2829,12 +2767,6 @@ impl ExtendedStory {
                 .is_some_and(|result| result.consumed);
         }
         match renderer {
-            "combo-box" => {
-                if let Some(index) = self.combo_view.pointer_up(point, &mut self.combo) {
-                    log(format!("combo selection: {index}"));
-                }
-                return self.combo.open || hit.is_some_and(|id| id >= 40);
-            }
             "command-palette" if hit == Some(20) => {
                 let opened = self
                     .command_view

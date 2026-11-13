@@ -212,27 +212,31 @@ impl Host {
         {
             return Ok(false);
         }
-        let input = match event {
+        match event {
             Event::Key(_)
             | Event::TextKey(_)
             | Event::TextCommit { .. }
             | Event::TextPreedit { .. }
             | Event::TextUnmark
-            | Event::TextCommand(_) => return local.window_event(event, w, &mut self.text),
-            Event::Scroll(s) => ContentEvent::Scroll {
-                position: Point::new(s.position.x as f32, s.position.y as f32),
-                delta: Point::new(-s.delta.x as f32, -s.delta.y as f32),
-                precise: s.precise,
-                begin: false,
-                end: false,
-                momentum: false,
-                time: self.motion_epoch.elapsed().as_secs_f64(),
-            },
-            Event::CaretBlink => return Ok(true),
-            _ => return Ok(false),
-        };
-        local.event(&input, &mut self.text)?;
-        Ok(true)
+            | Event::TextCommand(_) => local.window_event(event, w, &mut self.text),
+            Event::Scroll(s) => {
+                if std::env::var_os("TEKESUI_APPHOST_BODY_SCROLL_TRACE").is_some() {
+                    eprintln!(
+                        "APPHOST_BODY_SCROLL owner={} position={:?} delta={:?} precise={} phase={:?} momentum={:?} timestamp={}",
+                        local.id(),
+                        s.position,
+                        s.delta,
+                        s.precise,
+                        s.phase,
+                        s.momentum_phase,
+                        s.timestamp
+                    );
+                }
+                local.window_event(event, w, &mut self.text)
+            }
+            Event::CaretBlink => Ok(true),
+            _ => Ok(false),
+        }
     }
 }
 
@@ -725,5 +729,353 @@ mod local_clipboard_tests {
                 4
             );
         });
+    }
+}
+
+#[cfg(test)]
+mod local_scroll_tests {
+    use super::*;
+    use crate::{AppWindow, LocalContainer};
+    use std::{cell::RefCell, rc::Rc};
+    use tekes_ui_controls::{
+        ButtonTextRenderer, ScrollArea,
+        composition::{Component, Content, ContentResponse, ScrollContent},
+        layout::MeasuredChild,
+    };
+    use tekes_ui_module_runtime::ContentClipboard;
+    use tekes_ui_platform_macos::{ScrollEvent, ScrollPhase, Vec2};
+    use tekes_ui_scene::Size;
+    use tekes_ui_tokens::Theme;
+
+    struct NoClipboard;
+    impl ContentClipboard for NoClipboard {
+        fn clipboard_text(&self) -> Option<String> {
+            None
+        }
+        fn set_clipboard_text(&self, _: &str) {
+            panic!("scroll must not write clipboard")
+        }
+    }
+    #[derive(Debug)]
+    struct Document(Rc<RefCell<Vec<ContentEvent>>>);
+    impl Component for Document {
+        fn measure(&mut self, _: &mut dyn ButtonTextRenderer, _: Size) -> MeasuredChild {
+            MeasuredChild::new(Size::new(300., 1200.))
+        }
+        fn interactive(&self) -> bool {
+            true
+        }
+        fn event(&mut self, event: &ContentEvent) -> ContentResponse {
+            if matches!(event, ContentEvent::Scroll { .. }) {
+                self.0.borrow_mut().push(event.clone());
+            }
+            ContentResponse::default() // bubble to the original ScrollContent
+        }
+    }
+    fn host() -> (Host, Rc<RefCell<Vec<ContentEvent>>>) {
+        let events = Rc::new(RefCell::new(Vec::new()));
+        let local = LocalContainer::new(
+            "reader",
+            Content::new(
+                ComponentId(1),
+                ScrollContent::new(
+                    ScrollArea::default(),
+                    Content::new(ComponentId(2), Document(events.clone())),
+                ),
+            ),
+        )
+        .unwrap();
+        let mut host = AppWindow::from_columns(vec![local.into()])
+            .unwrap()
+            .into_host(false);
+        assert!(host.mount_columns());
+        let frame = Rect::new(0., 40., 300., 160.);
+        let panel = &mut host.panels[0];
+        panel.bounds = frame;
+        panel.geometry.content = frame;
+        panel.content_padding = 0.;
+        panel
+            .local
+            .as_mut()
+            .unwrap()
+            .render(
+                &mut Scene::new(),
+                &mut host.text,
+                frame,
+                frame,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
+        (host, events)
+    }
+    fn scroll(host: &mut Host, mut visit: impl FnMut(&mut ScrollContent)) {
+        host.panels[0].local.as_mut().unwrap().with_host(&mut |h| {
+            visit(
+                h.get_mut(ComponentId(1))
+                    .unwrap()
+                    .component_mut::<ScrollContent>()
+                    .unwrap(),
+            );
+        });
+    }
+    fn native(phase: ScrollPhase, momentum_phase: ScrollPhase, y: f64) -> ScrollEvent {
+        ScrollEvent {
+            timestamp: 123.5,
+            delta: Vec2 { x: 0., y },
+            precise: true,
+            phase,
+            momentum_phase,
+            inverted: true,
+            position: tekes_ui_platform_macos::Point { x: 100., y: 100. },
+            modifiers: tekes_ui_platform_macos::Modifiers::NONE,
+        }
+    }
+    fn send(host: &mut Host, event: ScrollEvent) {
+        assert!(
+            host.local_content_input(&Event::Scroll(event), &NoClipboard)
+                .unwrap()
+        );
+    }
+    #[test]
+    fn local_body_area_native_gesture_keeps_owner_inside_same_container() {
+        use tekes_ui_controls::composition::{TextFieldContent, TextViewport};
+        let mut field = TextFieldContent::new("Area", "");
+        field.show_metadata = false;
+        field.viewport = TextViewport::Fixed(90.);
+        field.surface =
+            tekes_ui_controls::TextSurface::new(&"editable line\n".repeat(80), true, false);
+        let local = LocalContainer::new("area", Content::new(ComponentId(1), field)).unwrap();
+        let mut host = AppWindow::from_columns(vec![local.into()])
+            .unwrap()
+            .into_host(false);
+        assert!(host.mount_columns());
+        let frame = Rect::new(0., 40., 300., 160.);
+        let panel = &mut host.panels[0];
+        panel.bounds = frame;
+        panel.geometry.content = frame;
+        panel.content_padding = 0.;
+        panel
+            .local
+            .as_mut()
+            .unwrap()
+            .render(
+                &mut Scene::new(),
+                &mut host.text,
+                frame,
+                frame,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
+        panel.local.as_mut().unwrap().with_host(&mut |h| {
+            h.focus(Some(ComponentId(1)), true);
+        });
+        let offset = |host: &mut Host| {
+            let mut y = 0.;
+            host.panels[0].local.as_mut().unwrap().with_host(&mut |h| {
+                y = h.text_surface(ComponentId(1)).unwrap().scroll.offset.y;
+            });
+            y
+        };
+        send(&mut host, native(ScrollPhase::Began, ScrollPhase::None, 0.));
+        assert_eq!(offset(&mut host), 0.);
+        let mut event = native(ScrollPhase::Changed, ScrollPhase::None, -20.);
+        event.position.y = 145.; // Outside the 90pt editor, inside the same 160pt container.
+        host.panels[0].local.as_mut().unwrap().with_host(&mut |h| {
+            assert!(
+                !h.text_surface(ComponentId(1))
+                    .unwrap()
+                    .outer
+                    .contains(Point::new(100., 145.))
+            );
+        });
+        assert!(
+            host.panels[0]
+                .content_frame()
+                .contains(Point::new(100., 145.))
+        );
+        send(&mut host, event);
+        let changed = offset(&mut host);
+        assert!(changed > 0.);
+        event.phase = ScrollPhase::Ended;
+        event.delta.y = 0.;
+        send(&mut host, event);
+        event.phase = ScrollPhase::None;
+        event.momentum_phase = ScrollPhase::Changed;
+        event.delta.y = -20.;
+        send(&mut host, event);
+        assert!(offset(&mut host) > changed);
+        event.momentum_phase = ScrollPhase::Ended;
+        event.delta.y = 0.;
+        send(&mut host, event);
+        let ended = offset(&mut host);
+        event.momentum_phase = ScrollPhase::Changed;
+        event.delta.y = -20.;
+        send(&mut host, event);
+        assert_eq!(
+            offset(&mut host),
+            ended,
+            "local native tail cannot revive the retired owner"
+        );
+    }
+
+    #[test]
+    fn body_scroll_preserves_native_phases_momentum_time_and_zero_end_packets() {
+        let (mut host, events) = host();
+        for (phase, momentum, begin, end, delta) in [
+            (ScrollPhase::MayBegin, ScrollPhase::None, true, false, 0.),
+            (ScrollPhase::Began, ScrollPhase::None, true, false, -3.),
+            (ScrollPhase::Changed, ScrollPhase::None, false, false, -4.),
+            (ScrollPhase::Ended, ScrollPhase::None, false, true, 0.),
+            (ScrollPhase::None, ScrollPhase::Began, false, false, -5.),
+            (ScrollPhase::None, ScrollPhase::Changed, false, false, -6.),
+            (ScrollPhase::None, ScrollPhase::Ended, false, true, 0.),
+            (ScrollPhase::Cancelled, ScrollPhase::None, false, true, 0.),
+        ] {
+            send(&mut host, native(phase, momentum, delta));
+            let seen = events.borrow();
+            let ContentEvent::Scroll {
+                position,
+                delta: mapped,
+                precise,
+                begin: b,
+                end: e,
+                momentum: m,
+                time,
+            } = seen
+                .last()
+                .expect("body receives even zero-delta terminal packets")
+            else {
+                panic!("scroll")
+            };
+            assert_eq!(*position, Point::new(100., 100.));
+            assert_eq!(*mapped, Point::new(0., -delta as f32));
+            assert!(*precise);
+            assert_eq!(
+                (*b, *e, *m, *time),
+                (begin, end, momentum != ScrollPhase::None, 123.5)
+            );
+        }
+        assert_eq!(events.borrow().len(), 8);
+    }
+    #[test]
+    fn body_scroll_original_owner_ends_gestures_and_applies_line_units_once() {
+        for terminal in [ScrollPhase::Ended, ScrollPhase::Cancelled] {
+            let (mut host, _) = host();
+            send(
+                &mut host,
+                native(ScrollPhase::Began, ScrollPhase::None, -20.),
+            );
+            scroll(&mut host, |s| {
+                assert!(s.scroll.needs_animation(), "Began establishes the gesture")
+            });
+            send(&mut host, native(terminal, ScrollPhase::None, 0.));
+            scroll(&mut host, |s| {
+                assert!(
+                    !s.scroll.needs_animation(),
+                    "zero-delta terminal ends the gesture"
+                )
+            });
+            let mut wheel = native(ScrollPhase::None, ScrollPhase::None, -2.);
+            wheel.precise = false;
+            send(&mut host, wheel);
+            let line = tekes_ui_tokens::proposal::metric("size", "size-row-height").unwrap();
+            scroll(&mut host, |s| {
+                assert_eq!(s.scroll.offset.y, 20. + 2. * line)
+            });
+        }
+    }
+    #[test]
+    fn body_scroll_reveal_and_reading_fences_reject_old_momentum_but_allow_new_fingers() {
+        for reading in [false, true] {
+            let (mut host, _) = host();
+            if !reading {
+                scroll(&mut host, |s| {
+                    assert!(
+                        s.scroll
+                            .reveal_with(Rect::new(0., 600., 10., 20.), Default::default())
+                            .unwrap()
+                            .animated
+                    );
+                });
+            }
+            if reading {
+                host.panels[0].local.as_mut().unwrap().with_host(&mut |h| {
+                    h.set_scroll_reading_document(
+                        ComponentId(1),
+                        "reader",
+                        1,
+                        vec![ComponentId(2)],
+                        |_| (),
+                    )
+                    .unwrap();
+                });
+                scroll(&mut host, |s| {
+                    assert!(s.follow_latest());
+                });
+            }
+            let mut before = Point::default();
+            scroll(&mut host, |s| before = s.scroll.offset);
+            send(
+                &mut host,
+                native(ScrollPhase::None, ScrollPhase::Changed, 15.),
+            );
+            scroll(&mut host, |s| {
+                assert_eq!(
+                    s.scroll.offset, before,
+                    "old OS momentum cannot take over navigation"
+                );
+                if reading {
+                    assert!(s.is_following_latest());
+                } else {
+                    assert!(s.scroll.needs_animation());
+                }
+            });
+            // Zero-delta Began itself releases the fence before a new delta.
+            send(&mut host, native(ScrollPhase::Began, ScrollPhase::None, 0.));
+            send(
+                &mut host,
+                native(
+                    ScrollPhase::Changed,
+                    ScrollPhase::None,
+                    if reading { 10. } else { -10. },
+                ),
+            );
+            scroll(&mut host, |s| {
+                assert_eq!(
+                    s.scroll.offset.y,
+                    before.y + if reading { -10. } else { 10. }
+                );
+                if reading {
+                    assert!(!s.is_following_latest());
+                }
+            });
+        }
+    }
+    #[test]
+    fn body_scroll_boundary_rebound_respects_original_reduced_motion() {
+        for reduced in [false, true] {
+            let (mut host, _) = host();
+            scroll(&mut host, |s| {
+                s.scroll.set_reduced_motion(reduced);
+            });
+            send(
+                &mut host,
+                native(ScrollPhase::Began, ScrollPhase::None, 60.),
+            );
+            send(&mut host, native(ScrollPhase::Ended, ScrollPhase::None, 0.));
+            scroll(&mut host, |s| {
+                assert_eq!(s.scroll.offset.y, 0.);
+                if reduced {
+                    assert_eq!(s.scroll.overscroll.y, 0.);
+                } else {
+                    assert!(s.scroll.overscroll.y < 0.);
+                    assert!(s.scroll.needs_animation());
+                    for _ in 0..120 {
+                        s.scroll.tick(1. / 60.);
+                    }
+                    assert!(s.scroll.overscroll.y.abs() < 0.01);
+                }
+            });
+        }
     }
 }

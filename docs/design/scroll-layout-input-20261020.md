@@ -11,3 +11,16 @@
 用户指出当前压力夹具与 ClientKit 差异明显。该夹具不作为视觉达标证明：ClientKit 对照和 Gold7 的视觉部分未验收。后续应以相同内容、主题、尺寸、倍率和字号对照；共性缺口在共享定义与实现修复。此项也不等于 #22 的结构化 item 锚点／版本事务已经实现。
 
 证据位于 `design/reviews/scroll-layout-input-20261020/acceptance.json`。记录构建之后的并行 renderer 改动未由该二进制认证，最终组合候选必须复验。全部 WIP 保留；小宿主已关闭，确认无占用后清理本轮约 280 MB 运行／测试产物，保留公共缓存和证据。未测性能，未提交、推送或关闭 Issue。
+
+
+## #275 原文本滚动手势归属（2026-11-13，本批验收中）
+
+Gallery Field/Area 迁移暴露了真实消费回归：同一 precise 手势在 Area 内 Began，后续 Changed 的位置离开编辑视口时，逐包命中会丢失原 TextSurface 的滚动归属。Check243 的真实 Gallery 用例保留该失败；不以旧选错导航 owner 的 Check241 红例作证。
+
+本地正式接线使用 `ContentWheelEvent` / `ContentWheelPhase`，完整保留普通 phase 与 momentum phase，避免三个布尔值不能区分 Changed、无 phase 独立包和 momentum Ended。runtime 的有限 native 转换由其公共 dispatch、AppHost 本地正文和 Gallery 共同消费。原 `ContentEvent::Scroll` 兼容调用仍保留，不因本地增强扩展 wire/IPC。
+
+Host 只为实际接受 phased precise 输入的原 TextFieldContent 保存独立、mount-scoped wheel 归属；续包仍走原 owner 及其祖先冒泡路径，TextField 调用已有 `TextSurface::wheel_captured_at`。偏移、方向锁、回弹和动量由原 ScrollArea 管理。零 delta Began 也可获得归属；非 precise、禁用滚动轴及边缘冒泡保留原行为，不统一捕获所有 ScrollContent。
+
+finger Ended 可等待同手势 momentum；Cancelled、momentum 终止、失活、blur、卸载/同ID重挂载和换父节点撤销旧归属，旧尾包不得命中新实例。普通重排或 Theme/Surface 更新不单独撤销有效手势。wheel 终止只结束原滚动手势，不清 pointer capture、焦点、selection 或 marked text。
+
+该保证限于续包被投递给同一 ContentHost；AppHost 跨 Container/Toolbar 的窗口级目标仲裁、远端 IPC 和其他自定义滚轮适配不随本批增强。CPU阶段序列、自动原生普通滚动和物理触控板阶段分别记录，禁止由 CPU 结果代签物理输入。

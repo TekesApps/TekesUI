@@ -1,20 +1,22 @@
-//! Actual Workbench Search route. The original ContentHost owns every edit,
+//! Workbench Search, Field/Area and Combo transport. The original ContentHost owns every edit,
 //! native key frame, focus/capture and action; this adapter supplies transport.
 use super::super::{PageCtx, text::TextEngine};
 use tekes_ui_controls::{
-    DraftRevision, ExternalSelection, ExternalUndo, ExternalValueResult, composition::*,
+    DraftRevision, ExternalSelection, ExternalUndo, ExternalValueResult, TextSurfaceHost,
+    composition::*,
 };
 use tekes_ui_platform_macos::{Event, TextInputState};
 use tekes_ui_scene::{Point, Rect, Scene, Size};
 use tekes_ui_tokens::Palette;
 
-mod native_projection;
+pub(super) mod native_projection;
 use native_projection::NativeProjection;
 
 pub(super) const SEARCH: ComponentId = ComponentId(8801);
 #[derive(Debug)]
-pub(super) struct SearchHost {
+pub(super) struct StoryTextHost {
     pub(super) host: ContentHost,
+    id: ComponentId,
     frame: Option<Rect>,
     clip: Option<Rect>,
     publication: u64,
@@ -25,19 +27,71 @@ pub(super) struct SearchHost {
     pub(super) last_redraw: bool,
     projection: std::cell::RefCell<NativeProjection>,
 }
-impl SearchHost {
+impl StoryTextHost {
     pub(super) fn new() -> Self {
         let mut search = SearchFieldContent::new("Search by name", "");
         search.set_submit_policy(TextSubmitPolicy::Enter);
         let host =
             ContentHost::new(Content::new(SEARCH, search)).expect("fixed Search story structure");
-        Self::from_host(host)
+        Self::from_host(host, SEARCH)
     }
-    fn from_host(mut host: ContentHost) -> Self {
+    pub(super) fn text_field(value: &str, multiline: bool) -> Self {
+        let id = ComponentId(if multiline { 27502 } else { 27501 });
+        let mut field = TextFieldContent::new("Project name", value);
+        field.show_metadata = false;
+        field.viewport = TextViewport::Fill;
+        field.surface = tekes_ui_controls::TextSurface::new(value, multiline, false);
+        let host =
+            ContentHost::new(Content::new(id, field)).expect("fixed Field/Area story structure");
+        Self::from_host(host, id)
+    }
+    pub(super) fn combo_box() -> Self {
+        let id = ComponentId(27601);
+        let combo = ComboBoxContent::new(
+            "Combo options",
+            ["Automatic", "Compact", "Comfortable"]
+                .into_iter()
+                .map(str::to_owned)
+                .collect(),
+        );
+        Self::from_host(
+            ContentHost::new(Content::new(id, combo)).expect("fixed Combo story structure"),
+            id,
+        )
+    }
+    pub(super) fn is_combo(&self) -> bool {
+        self.id == ComponentId(27601)
+    }
+    pub(super) fn combo(&self) -> &ComboBoxContent {
+        self.host
+            .get(self.id)
+            .unwrap()
+            .component::<ComboBoxContent>()
+            .unwrap()
+    }
+    pub(super) fn combo_mut(&mut self) -> &mut ComboBoxContent {
+        self.host
+            .get_mut(self.id)
+            .unwrap()
+            .component_mut::<ComboBoxContent>()
+            .unwrap()
+    }
+    pub(super) fn is_search(&self) -> bool {
+        self.id == SEARCH
+    }
+    fn text_field_mut(&mut self) -> &mut TextFieldContent {
+        self.host
+            .get_mut(self.id)
+            .unwrap()
+            .component_mut::<TextFieldContent>()
+            .unwrap()
+    }
+    fn from_host(mut host: ContentHost, id: ComponentId) -> Self {
         host.set_action_events(true);
         host.set_focus_wrap(false);
         Self {
             host,
+            id,
             frame: None,
             clip: None,
             publication: 0,
@@ -52,7 +106,7 @@ impl SearchHost {
     fn original_input(&self) -> &tekes_ui_controls::TextInput {
         &self
             .host
-            .text_surface(SEARCH)
+            .text_surface(self.id)
             .expect("retained original text owner")
             .input
     }
@@ -74,21 +128,21 @@ impl SearchHost {
         &self.original_input().text
     }
     pub(super) fn focus_field(&mut self) {
-        self.host.focus(Some(SEARCH), true);
+        self.host.focus(Some(self.id), true);
     }
     pub(super) fn blur(&mut self) {
         self.host.cancel();
         self.host.focus(None, false);
     }
     pub(super) fn focused(&self) -> bool {
-        self.host.focused() == Some(SEARCH)
+        self.host.focused() == Some(self.id)
     }
     pub(super) fn has_pointer_capture(&self) -> bool {
         self.host.pointer_capture().is_some()
     }
     pub(super) fn frame_at(&self, index: usize) -> Option<Rect> {
         self.host
-            .text_surface(SEARCH)
+            .text_surface(self.id)
             .filter(|_| index == 0)
             .map(|surface| surface.outer)
     }
@@ -102,7 +156,7 @@ impl SearchHost {
             return None;
         }
         let key =
-            tekes_ui_platform_macos::content_accessibility::content_key(&self.host, SEARCH, None)?;
+            tekes_ui_platform_macos::content_accessibility::content_key(&self.host, self.id, None)?;
         tekes_ui_platform_macos::content_accessibility::content_text_layouts(&self.host)
             .remove(&key)
             .map(|layout| layout.state)
@@ -114,15 +168,38 @@ impl SearchHost {
         self.host.set_window_active(active);
     }
     pub(super) fn set_disabled(&mut self, disabled: bool) {
-        if self.field().input().disabled != disabled {
-            self.field_mut().set_availability(false, disabled);
+        if self.is_combo() {
+            self.combo_mut().set_disabled(disabled);
+        } else if self.is_search() {
+            if self.field().input().disabled != disabled {
+                self.field_mut().set_availability(false, disabled);
+            }
+        } else {
+            self.text_field_mut().surface.input.disabled = disabled;
+            if disabled {
+                self.blur();
+            }
         }
     }
     pub(super) fn set_error(&mut self, error: bool) {
-        self.field_mut()
-            .set_error(error.then(|| "Validation: name is required (fixture)".into()));
+        let message = error.then(|| "Validation: name is required (fixture)".into());
+        if self.is_combo() {
+            self.combo_mut().set_error(message);
+        } else if self.is_search() {
+            self.field_mut().set_error(message);
+        } else {
+            let field = self.text_field_mut();
+            field.field.error = message;
+            field.surface.error = error;
+        }
     }
     pub(super) fn set_value(&mut self, value: &str) {
+        if self.is_combo() {
+            if let Err(error) = self.combo_mut().set_query(value) {
+                self.error = Some(format!("combo query: {error:?}"));
+            }
+            return;
+        }
         if self.query() == value {
             return;
         }
@@ -130,18 +207,33 @@ impl SearchHost {
             self.error = Some("search: external revision capacity exhausted".into());
             return;
         };
-        let baseline = self.field().input().external_baseline();
+        let baseline = self.original_input().external_baseline();
         let revision = DraftRevision {
-            identity: "workbench-search".into(),
+            identity: if self.is_search() {
+                "workbench-search"
+            } else {
+                "workbench-field-area"
+            }
+            .into(),
             version,
             payload: value.into(),
         };
-        match self.field_mut().apply_query(
-            &baseline,
-            &revision,
-            ExternalSelection::Reset,
-            ExternalUndo::Reset,
-        ) {
+        let result = if self.is_search() {
+            self.field_mut().apply_query(
+                &baseline,
+                &revision,
+                ExternalSelection::Reset,
+                ExternalUndo::Reset,
+            )
+        } else {
+            self.text_field_mut().surface.apply_external_value(
+                &baseline,
+                &revision,
+                ExternalSelection::Reset,
+                ExternalUndo::Reset,
+            )
+        };
+        match result {
             ExternalValueResult::Applied { .. } | ExternalValueResult::Unchanged => {
                 self.publication = version
             }
@@ -154,21 +246,69 @@ impl SearchHost {
     pub(super) fn use_fixture_cache(&mut self) {
         self.fixture = true;
     }
-    pub(super) fn set_reduced_motion(&mut self, _reduced: bool) -> bool {
-        false
+    pub(super) fn set_reduced_motion(&mut self, reduced: bool) -> bool {
+        if self.is_search() || self.is_combo() {
+            false
+        } else {
+            self.text_field_mut()
+                .surface
+                .scroll
+                .set_reduced_motion(reduced)
+        }
     }
     pub(super) fn needs_animation(&self) -> bool {
         self.host.animation_frame_requested()
+            || (!self.is_search()
+                && !self.is_combo()
+                && self
+                    .host
+                    .text_surface(self.id)
+                    .unwrap()
+                    .scroll
+                    .needs_animation())
     }
-    pub(super) fn animate(&mut self, _: f32) -> bool {
-        self.needs_animation()
+    pub(super) fn animate(&mut self, dt: f32) -> bool {
+        if self.is_search() || self.is_combo() {
+            self.needs_animation()
+        } else {
+            self.text_field_mut().surface.scroll.tick(dt)
+        }
     }
     pub(super) fn refresh(&mut self, text: &mut TextEngine) {
         if let (Some(frame), Some(clip)) = (self.frame, self.clip) {
-            self.field_mut().prepare_text_input(text, frame, clip);
+            if self.is_combo() {
+                self.combo_mut().prepare_text_input(text, frame, clip);
+            } else if self.is_search() {
+                self.field_mut().prepare_text_input(text, frame, clip);
+            } else {
+                self.text_field_mut().prepare_text_input(text, frame, clip);
+            }
         }
     }
     pub(super) fn measure_search_height(&mut self, text: &mut TextEngine) -> f32 {
+        if self.is_combo() {
+            let previous = text.replace_fixture_surface_cache(self.fixture);
+            let height = self
+                .combo_mut()
+                .measure(text, Size::new(650., 1000.))
+                .size
+                .height;
+            text.replace_fixture_surface_cache(previous);
+            return height;
+        }
+        if !self.is_search() {
+            let previous = text.replace_fixture_surface_cache(self.fixture);
+            let surface = &self.text_field_mut().surface;
+            let role = surface.role;
+            let height = surface.measured_outer_height(
+                650.,
+                text.scale(),
+                text.type_scale(),
+                |source, width| text.shape_surface(source, role, width),
+            );
+            text.replace_fixture_surface_cache(previous);
+            return height;
+        }
         let previous = text.replace_fixture_surface_cache(self.fixture);
         let height = self
             .field_mut()
@@ -186,15 +326,17 @@ impl SearchHost {
         scene: &mut Scene,
         brand: usize,
     ) {
-        let locale = ctx.text.locale();
-        let placeholder = locale
-            .text("\u{6309}\u{540d}\u{79f0}\u{641c}\u{7d22}\u{2026}")
-            .into_owned();
-        self.field_mut().set_placeholder(Some(placeholder));
-        // Existing Gallery story copy; accessible clear is owned by this Button.
-        self.field_mut()
-            .set_clear_label("Clear query")
-            .expect("fixed nonempty story copy");
+        if self.is_search() {
+            let locale = ctx.text.locale();
+            let placeholder = locale
+                .text("\u{6309}\u{540d}\u{79f0}\u{641c}\u{7d22}\u{2026}")
+                .into_owned();
+            self.field_mut().set_placeholder(Some(placeholder));
+            // Existing Gallery story copy; accessible clear is owned by this Button.
+            self.field_mut()
+                .set_clear_label("Clear query")
+                .expect("fixed nonempty story copy");
+        }
         let clip = clip.unwrap_or(frame);
         self.frame = Some(frame);
         self.clip = Some(clip);
@@ -209,6 +351,23 @@ impl SearchHost {
         ctx.text.replace_fixture_surface_cache(previous);
         if let Err(e) = result {
             self.error = Some(format!("search layout: {e:?}"));
+        }
+        // Retain the existing empty/unfocused Gallery fixture copy, outside the editor value.
+        if !self.is_search() && !self.is_combo() && self.query().is_empty() && !self.focused() {
+            let surface = self.host.text_surface(self.id).unwrap();
+            if let Some(visible) = surface.inner.intersection(&clip) {
+                scene.push_clip(visible);
+                ctx.text.proposal_label_in(
+                    scene,
+                    ctx.theme,
+                    surface.inner,
+                    "按名称搜索…",
+                    tekes_ui_tokens::proposal::TextRole::UiBody,
+                    tekes_ui_tokens::proposal::render_color("secondary-text", ctx.theme)
+                        .expect("JSON text role"),
+                );
+                scene.pop_clip();
+            }
         }
     }
     pub(super) fn command(
@@ -282,7 +441,9 @@ impl SearchHost {
             Event::Mouse(m) => {
                 let p = Point::new(m.position.x as f32, m.position.y as f32);
                 let inside = self.visible_frame().is_some_and(|r| r.contains(p));
+                let overlay = self.is_combo() && self.combo().overlay_open();
                 if !inside
+                    && !overlay
                     && !captured
                     && !matches!(
                         m.kind,
@@ -290,9 +451,40 @@ impl SearchHost {
                             | tekes_ui_platform_macos::MouseEventKind::Exited
                     )
                 {
+                    // Field/Area background clicks retain the original Gallery blur
+                    // behavior, using the formal Host to release the editor focus.
+                    if !self.is_search()
+                        && focused
+                        && matches!(
+                            m.kind,
+                            tekes_ui_platform_macos::MouseEventKind::Down {
+                                button: tekes_ui_platform_macos::MouseButton::Left,
+                                ..
+                            }
+                        )
+                    {
+                        self.blur();
+                        self.last_redraw = true;
+                        return Some(true);
+                    }
                     return None;
                 }
                 crate::reading_pointer::translate(*m)
+            }
+            Event::Scroll(s) if !self.is_search() => {
+                let wheel = tekes_ui_module_runtime::content_wheel_event(s)?;
+                let result = self.host.wheel_event_with_text(&wheel, text);
+                return match result {
+                    Ok(response) => {
+                        self.last_consumed = response.consumed;
+                        self.last_redraw = response.changed;
+                        Some(response.consumed)
+                    }
+                    Err(error) => {
+                        self.error = Some(format!("field/area wheel: {error:?}"));
+                        None
+                    }
+                };
             }
             Event::TextKey(k) => crate::reading_key::translate(k.clone()),
             Event::Key(k) if focused => ContentEvent::KeyInput(crate::reading_key::key(k.clone())),
@@ -321,12 +513,27 @@ impl SearchHost {
         self.last_redraw = r.changed;
         Some(r.consumed)
     }
+    #[cfg(test)]
+    pub(super) fn scroll_metrics(&self) -> (f32, f32) {
+        let surface = self.host.text_surface(self.id).unwrap();
+        (surface.scroll.limit().y, surface.inner.size.height)
+    }
+    #[cfg(test)]
+    pub(super) fn scroll_to(&mut self, offset: f32) {
+        let surface = &mut self.text_field_mut().surface;
+        surface
+            .scroll
+            .scroll_by(0., offset - surface.scroll.offset.y);
+    }
     pub(super) fn drain_logs(&mut self) -> Vec<String> {
         let mut logs = Vec::new();
         if let Some(error) = self.error.take() {
             logs.push(error);
         }
         for record in self.host.drain_action_records() {
+            if let Some(ContentActionPayload::ComboBoxSelection(selection)) = &record.payload {
+                logs.push(format!("combo selection: {}", selection.index()));
+            }
             if let Some(ContentActionPayload::Search(action)) = record.payload {
                 match action.kind {
                     SearchCommandKind::Submit => {

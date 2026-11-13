@@ -1703,6 +1703,48 @@ impl Content {
         let response = self.deliver_actions(event, false, actions);
         Some(self.finish_bubble(event, Some(child), response))
     }
+    fn text_wheel_path(&self, target: ComponentId) -> Option<Vec<(ComponentId, u64)>> {
+        if !self.active() {
+            return None;
+        }
+        if self.id == target {
+            return Some(vec![(self.id, self.mount)]);
+        }
+        let mut path = self
+            .component
+            .children()
+            .iter()
+            .find_map(|child| child.text_wheel_path(target))?;
+        path.insert(0, (self.id, self.mount));
+        Some(path)
+    }
+    fn route_text_wheel_from(
+        &mut self,
+        id: ComponentId,
+        event: &ContentEvent,
+        actions: &mut Option<Vec<actions::PendingAction>>,
+    ) -> Option<(ComponentId, ContentResponse, bool)> {
+        if !self.active() {
+            return None;
+        }
+        if self.id == id {
+            let field = self.component_mut::<TextFieldContent>()?;
+            let response = field.captured_wheel_event(event);
+            let allowed = actions.is_some() && !self.component.semantics().disabled;
+            self.record_actions(&response, event.action_source(), allowed, actions);
+            return Some((id, response, self.bubbles(event, &response)));
+        }
+        let child = self
+            .component
+            .children_mut()?
+            .iter_mut()
+            .find_map(|child| child.route_text_wheel_from(id, event, actions))?;
+        if !child.2 {
+            return Some(child);
+        }
+        let response = self.deliver_actions(event, false, actions);
+        Some(self.finish_bubble(event, Some(child), response))
+    }
     // Hit classification is independent of event consumption: even a disabled
     // or currently unhandled real control shields its bounds from a parent's
     // decorative focus area. No coordinates are forwarded to the editor.
@@ -1940,6 +1982,41 @@ enum PaddingFocusHit {
     Blocked,
     Focus(ComponentId),
 }
+/// Local native wheel facts. Unlike ContentEvent's compatibility booleans,
+/// these distinguish an independent precise packet from a gesture continuation.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum ContentWheelPhase {
+    #[default]
+    None,
+    MayBegin,
+    Began,
+    Changed,
+    Ended,
+    Cancelled,
+}
+#[derive(Clone, Copy, Debug)]
+pub struct ContentWheelEvent {
+    pub position: Point,
+    /// Logical document direction, in points for precise packets and lines otherwise.
+    pub delta: Point,
+    pub precise: bool,
+    pub phase: ContentWheelPhase,
+    pub momentum_phase: ContentWheelPhase,
+    pub time: f64,
+}
+#[derive(Debug)]
+struct TextWheelLease {
+    target: ComponentId,
+    path: Vec<(ComponentId, u64)>,
+    focus_epoch: u64,
+    awaiting_momentum: bool,
+}
+#[derive(Clone, Copy, Debug)]
+enum TextWheelDispatch {
+    Start,
+    Continue,
+}
+
 #[derive(Debug)]
 pub struct ContentHost {
     root: Content,
@@ -1953,6 +2030,9 @@ pub struct ContentHost {
     overlay_scopes: Vec<overlay_scope::ScopedOverlay>,
     popover_order: Vec<PopoverSession>,
     captured: Option<ComponentId>,
+    text_wheel: Option<TextWheelLease>,
+    text_wheel_retired: bool,
+    text_wheel_dispatch: Option<TextWheelDispatch>,
     captured_overlay: bool,
     // Capture source, distinct from merely being inside an overlay scope.
     // Meaningful only while captured is Some; set at every acquisition.
@@ -1981,6 +2061,7 @@ pub struct ContentHost {
     last_palette: Option<Palette>,
     last_surface: Option<(&'static str, bool)>,
     item_reveal: Option<content_reveal::ItemReveal>,
+    list_navigation_reveal: Option<selectable_list::ListNavigationReveal>,
     reading_scroll_source: Option<(ComponentId, u64)>,
     help: help::HelpState,
     help_overlay_deferred: bool,
@@ -2005,6 +2086,9 @@ impl ContentHost {
             overlay_scopes: Vec::new(),
             popover_order: Vec::new(),
             captured: None,
+            text_wheel: None,
+            text_wheel_retired: false,
+            text_wheel_dispatch: None,
             captured_overlay: false,
             captured_overlay_handler: false,
             retired_combo_release: false,
@@ -2030,6 +2114,7 @@ impl ContentHost {
             last_palette: None,
             last_surface: None,
             item_reveal: None,
+            list_navigation_reveal: None,
             reading_scroll_source: None,
             help: Default::default(),
             help_overlay_deferred: false,
@@ -2512,6 +2597,21 @@ impl ContentHost {
         // parent mask. Lifecycle and actual removal still publish None.
         self.layout_preflighted(text, frame, clip)?;
         self.freeze_curve_geometry()?;
+        self.reveal_clock.pending = false;
+        if let Some(result) = self.apply_list_navigation_reveal() {
+            if result.is_ok_and(|outcome| outcome.changed) {
+                self.reveal_clock.invalidate_geometry();
+                self.layout_preflighted(text, frame, clip)?;
+            }
+            if result.is_ok() {
+                // Even a stationary accepted commit retires the old geometry
+                // lease; publish the final geometry before importing/painting.
+                self.freeze_curve_geometry()?;
+                self.reveal_clock.pending = false;
+            }
+            // Planner refusals are recorded on the original List. They do not
+            // turn a valid clipped/unsupported presentation into a render error.
+        }
         if let Some(table) = &self.curve_shapes {
             scene
                 .try_import_clip_shapes(table, Default::default())
@@ -2733,12 +2833,17 @@ impl ContentHost {
             }
         }
         self.reconcile_deferred_text_key();
+        self.reconcile_text_wheel();
+        self.reconcile_list_navigation_reveal();
     }
     pub fn focus(&mut self, id: Option<ComponentId>, visible: bool) -> bool {
-        matches!(
+        let changed = matches!(
             self.admit_ordinary_focus(id, visible, None, action_preparation::FocusOrigin::Direct),
             action_preparation::FocusAdmission::Accepted { changed: true }
-        )
+        );
+        self.reconcile_text_wheel();
+        self.reconcile_list_navigation_reveal();
+        changed
     }
     /// Disable ordinary boundary wrapping for an embedded host. Modal and
     /// interactive overlay scopes still keep traversal inside their owner.
@@ -2810,6 +2915,10 @@ impl ContentHost {
         }
     }
     pub fn event(&mut self, event: &ContentEvent) -> ContentResponse {
+        if matches!(event, ContentEvent::Scroll { .. }) && self.text_wheel_dispatch.is_none() {
+            // Compatibility packets carry no gesture provenance and cannot continue a lease.
+            self.retire_text_wheel();
+        }
         self.reading_scroll_source = None;
         self.pointer_focus_requested = false;
         if !self.window_active {
@@ -2946,6 +3055,96 @@ impl ContentHost {
             Some(self.modal.is_none() && self.event_bubbled.unwrap_or(!result.consumed));
         result
     }
+    fn retire_text_wheel(&mut self) {
+        if let Some(lease) = self.text_wheel.take() {
+            // End only the original mount's wheel physics, never pointer/IME/focus.
+            if let Some(node) = self.root.find_mut(lease.target)
+                && lease.path.last() == Some(&(node.id, node.mount))
+                && let Some(field) = node.component_mut::<TextFieldContent>()
+            {
+                field.surface.scroll.end_gesture();
+            }
+            self.text_wheel_retired = true;
+        }
+    }
+    fn reconcile_text_wheel(&mut self) {
+        if self.text_wheel.as_ref().is_some_and(|lease| {
+            !self.window_active
+                || lease.focus_epoch != self.focus_epoch
+                || self.scope().text_wheel_path(lease.target).as_ref() != Some(&lease.path)
+                || self.scope().find_active(lease.target).is_none_or(|node| {
+                    node.visible().is_none()
+                        || node.component.semantics().disabled
+                        || node.component::<TextFieldContent>().is_none()
+                })
+        }) {
+            self.retire_text_wheel();
+        }
+    }
+    /// Native phased wheel transport for the original TextField owner. Ordinary
+    /// ContentEvent::Scroll and non-TextField consumers retain hit routing.
+    pub fn wheel_event(&mut self, wheel: &ContentWheelEvent) -> ContentResponse {
+        use ContentWheelPhase as P;
+        self.reading_scroll_source = None;
+        self.event_bubbled = Some(false);
+        self.pointer_focus_requested = false;
+        self.reconcile_active_inputs();
+        let phased = wheel.precise && (wheel.phase != P::None || wheel.momentum_phase != P::None);
+        let starts = phased && matches!(wheel.phase, P::MayBegin | P::Began);
+        if starts || !phased {
+            self.retire_text_wheel();
+            self.text_wheel_retired = false;
+        } else if self.text_wheel_retired {
+            // Tail packets from a retired mount/blur must not acquire a new owner.
+            return ContentResponse::consumed(false);
+        }
+        if self
+            .text_wheel
+            .as_ref()
+            .is_some_and(|lease| lease.awaiting_momentum)
+            && wheel.momentum_phase == P::None
+            && wheel.phase == P::Changed
+        {
+            return ContentResponse::consumed(false);
+        }
+        self.text_wheel_dispatch = phased.then_some(if starts {
+            TextWheelDispatch::Start
+        } else {
+            TextWheelDispatch::Continue
+        });
+        let result = self.event(&ContentEvent::Scroll {
+            position: wheel.position,
+            delta: wheel.delta,
+            precise: wheel.precise,
+            begin: starts,
+            end: matches!(wheel.phase, P::Ended | P::Cancelled)
+                || matches!(wheel.momentum_phase, P::Ended | P::Cancelled),
+            momentum: wheel.momentum_phase != P::None,
+            time: wheel.time,
+        });
+        self.text_wheel_dispatch = None;
+        if wheel.phase == P::Cancelled || matches!(wheel.momentum_phase, P::Ended | P::Cancelled) {
+            self.retire_text_wheel();
+        } else if wheel.phase == P::Ended
+            && wheel.momentum_phase == P::None
+            && let Some(lease) = &mut self.text_wheel
+        {
+            // A finger Ended can be followed by native momentum outside the frame.
+            lease.awaiting_momentum = true;
+        } else if wheel.momentum_phase != P::None
+            && let Some(lease) = &mut self.text_wheel
+        {
+            lease.awaiting_momentum = false;
+        }
+        result
+    }
+    pub fn wheel_event_with_text(
+        &mut self,
+        wheel: &ContentWheelEvent,
+        text: &mut dyn ButtonTextRenderer,
+    ) -> Result<ContentResponse, CompositionError> {
+        self.with_text_input(text, |host| host.wheel_event(wheel))
+    }
     /// Use the caller's existing font backend before/after an input callback.
     /// This keeps back-to-back commands and native text queries on the current
     /// paragraph without rendering a GPU frame or inventing a text backend.
@@ -2992,6 +3191,16 @@ impl ContentHost {
         }
     }
     fn dispatch(&mut self, event: &ContentEvent) -> ContentResponse {
+        if matches!(
+            event.routing_event().as_ref(),
+            ContentEvent::PointerDown(_)
+                | ContentEvent::PointerMove(_)
+                | ContentEvent::PointerUp(_)
+                | ContentEvent::Scroll { .. }
+                | ContentEvent::Cancel
+        ) {
+            self.list_navigation_reveal = None;
+        }
         if !self.split_structures_intact() {
             return ContentResponse::default();
         }
@@ -3268,9 +3477,18 @@ impl ContentHost {
             return ContentResponse::consumed(changed);
         }
         let result = match routed {
-            ContentEvent::PointerUp(p)
-            | ContentEvent::PointerDown(p)
-            | ContentEvent::Scroll { position: p, .. } => {
+            ContentEvent::Scroll { position, .. } => {
+                let target = self
+                    .text_wheel_dispatch
+                    .and(self.text_wheel.as_ref().map(|lease| lease.target));
+                let (scope, actions) = self.scope_with_actions();
+                if let Some(target) = target {
+                    scope.route_text_wheel_from(target, event, actions)
+                } else {
+                    scope.route(event, *position, actions)
+                }
+            }
+            ContentEvent::PointerUp(p) | ContentEvent::PointerDown(p) => {
                 let (scope, actions) = self.scope_with_actions();
                 scope.route(event, *p, actions)
             }
@@ -3279,7 +3497,35 @@ impl ContentHost {
                 scope.route_from(id, event, actions)
             }),
         };
-        if let Some((id, r, bubbles)) = result {
+        if let Some((id, mut r, bubbles)) = result {
+            if r.consumed
+                && matches!(
+                    routed,
+                    ContentEvent::Key {
+                        key: ControlKey::Up | ControlKey::Down | ControlKey::Home | ControlKey::End,
+                        down: true,
+                    }
+                )
+                && self.queue_list_navigation_reveal(id)
+            {
+                // At a logical boundary the reducer can be unchanged while wheel
+                // input has moved that row offscreen. Request its normal layout.
+                r.changed = true;
+            }
+            if matches!(self.text_wheel_dispatch, Some(TextWheelDispatch::Start))
+                && r.consumed
+                && self
+                    .scope()
+                    .find_active(id)
+                    .is_some_and(|node| node.component::<TextFieldContent>().is_some())
+            {
+                self.text_wheel = self.scope().text_wheel_path(id).map(|path| TextWheelLease {
+                    target: id,
+                    path,
+                    focus_epoch: self.focus_epoch,
+                    awaiting_momentum: false,
+                });
+            }
             self.record_reading_scroll(event, id, &r);
             self.event_bubbled = Some(bubbles);
             if matches!(routed, ContentEvent::PointerDown(_)) && event.is_primary_pointer() {
@@ -3536,6 +3782,10 @@ impl ContentHost {
         };
         let focus = self.focused.is_some_and(|id| node.find(id).is_some());
         let capture = self.captured.is_some_and(|id| node.find(id).is_some());
+        let wheel = self
+            .text_wheel
+            .as_ref()
+            .is_some_and(|lease| node.find(lease.target).is_some());
         for scope in &mut self.overlay_scopes {
             if node.find(scope.id).is_some() {
                 scope.restore = None;
@@ -3551,6 +3801,9 @@ impl ContentHost {
                     cancel(child);
                 }
             }
+        }
+        if wheel {
+            self.retire_text_wheel();
         }
         cancel(self.root.find_mut(id).unwrap());
         if capture {
@@ -3923,6 +4176,8 @@ impl ContentHost {
         true
     }
     pub fn cancel(&mut self) {
+        self.list_navigation_reveal = None;
+        self.retire_text_wheel();
         self.text_keys.clear();
         self.deferred_text_key = None;
         self.completed_text_key = None;
@@ -4092,6 +4347,13 @@ impl ContentHost {
                 return Some(children.remove(i));
             }
             children.iter_mut().find_map(|c| remove(c, id))
+        }
+        if self.text_wheel.as_ref().is_some_and(|lease| {
+            self.root
+                .find(id)
+                .is_some_and(|node| node.find(lease.target).is_some())
+        }) {
+            self.retire_text_wheel();
         }
         let mut child = remove(&mut self.root, id).ok_or(CompositionError::MissingId(id))?;
         if self.focused.is_some_and(|id| child.find(id).is_some()) {

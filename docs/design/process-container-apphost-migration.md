@@ -1,5 +1,17 @@
 # ProcessComponent / ProcessContainer / AppHost migration boundary
 
+## Local text snapshot consumption — 2026-11-13 (#273)
+
+Local Container, Toolbar and Settings text queries share `columns::text_state`, which directly consumes `tekes_ui_module_runtime::content_text_input_state(host)`. The original `ContentHost::text_input_snapshot` owns active/disabled owner eligibility, delegated text identity and zero Split pane geometry withdrawal; the existing runtime conversion preserves legal UTF-16 boundaries and visible clipped geometry. AppHost does not enumerate UTF-16 offsets, shape text or require a local `TextSurface`. Logical text, selection and marked ranges remain those of the original owner even when geometry is unavailable.
+
+Existing window activity, input-open, animation, Toolbar modal/focus and Settings lifecycle gates remain at their current callers. Five helper-consumer regressions cover shaped `A😀B` boundaries and editing state, partial/full clip, disabled/inactive owners, zero Split panes and snapshot-only delegated owners. Their pre-fix failures are retained in `work/architecture-snapshot-menu-239/00-snapshot-red`; post-fix execution and the separate limited native geometry check are tracked in [#273](https://github.com/TekesApps/TekesUI/issues/273). These CPU cases do not certify native candidate placement, physical IME, VoiceOver or performance.
+
+## Local body scroll ownership — 2026-11-13 (#271)
+
+The local AppWindow body route uses `LocalContainer::window_event` and the shared runtime dispatch. Its `content_wheel_event` projects the native wheel lifecycle into the original Host, retaining finger and momentum termination separately; the older three-boolean `content_event` remains a compatibility projection. AppHost selects the visible local body and preserves the existing activity, modal/navigation and toolbar gates; LocalContainer dispatches to its original ContentHost. Native finger begin/end/cancel, momentum, timestamp, precision and raw delta units reach the existing ScrollContent/TextSurface owners. The shared native adapter applies the document-direction sign; ScrollContent alone converts nonprecise lines to points. AppHost adds no scroll offset, smoothing or inertia state.
+
+The original ScrollArea remains responsible for gesture lifetime, axis lock, elasticity, Reduced Motion and reveal interruption; the original reading state fences old momentum after navigation while admitting fresh finger input. Zero-delta terminal packets still reach that owner. The opt-in `TEKESUI_APPHOST_BODY_SCROLL_TRACE` diagnostic records only native scroll metadata and the selected local owner; demo snapshots and native input remain distinct from CPU-injected events. Affected tests and native acceptance are tracked in [#271](https://github.com/TekesApps/TekesUI/issues/271); earlier header/List receipts do not certify local body scrolling.
+
 ## Local clipboard ownership — 2026-11-13 (#270)
 
 The local AppWindow → LocalContainer route uses the module-runtime's shared native Content dispatcher for clipboard commands. Window supplies only the clipboard transport; the original ContentHost claims the native key span and supplies the current UTF-16 text selection. Empty Cut and a clipboard without text are no-ops, Cut uses the exact claimed replacement range, and read-only, disabled and marked owners retain their existing edit gates. Raw shortcut and selector callbacks in one native key span cannot apply the same operation twice.

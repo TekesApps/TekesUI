@@ -12,6 +12,7 @@ publish = false
 composition-review = ["dep:tekes-ui-composition-consumer"]
 
 [target.'cfg(target_os = "macos")'.dependencies]
+tekes-ui-module-runtime = { path = "../tekes-ui-module-runtime" }
 anyhow = "1"
 tekes-ui-app-host = { path = "../tekes-ui-app-host" }
 tekes-ui-app-protocol = { path = "../tekes-ui-app-protocol" }

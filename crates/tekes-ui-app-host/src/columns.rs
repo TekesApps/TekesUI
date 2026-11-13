@@ -478,42 +478,7 @@ pub(crate) fn validate_ids<'a>(
 }
 
 pub(crate) fn text_state(host: &ContentHost) -> Option<tekes_ui_platform_macos::TextInputState> {
-    use tekes_ui_platform_macos::{Point, Size, TextInputState};
-    let surface = host.focused_text()?;
-    let caret = surface.caret();
-    let len = surface.input.len();
-    Some(TextInputState {
-        caret_index: surface.input.caret,
-        text: surface.input.text.clone(),
-        selection: surface.input.selection(),
-        marked: surface.input.marked.clone(),
-        read_only: surface.input.read_only,
-        caret_origin: Point {
-            x: f64::from(caret.min_x()),
-            y: f64::from(caret.min_y()),
-        },
-        caret_size: Size {
-            width: f64::from(caret.size.width),
-            height: f64::from(caret.size.height),
-        },
-        carets: (0..=len)
-            .map(|i| {
-                let r = surface.caret_doc(i);
-                let o = surface.origin();
-                (
-                    i,
-                    Point {
-                        x: f64::from(o.x + r.min_x()),
-                        y: f64::from(o.y + r.min_y()),
-                    },
-                    Size {
-                        width: f64::from(r.size.width),
-                        height: f64::from(r.size.height),
-                    },
-                )
-            })
-            .collect(),
-    })
+    tekes_ui_module_runtime::content_text_input_state(host)
 }
 
 #[cfg(test)]
@@ -652,5 +617,185 @@ mod tests {
         c.command(42).unwrap();
         assert_eq!(count.get(), 1);
         assert!(local("unbound").command(42).is_err());
+    }
+}
+
+#[cfg(test)]
+mod text_state_tests {
+    use super::*;
+    use tekes_ui_controls::composition::*;
+    use tekes_ui_scene::Size;
+    use tekes_ui_tokens::Theme;
+
+    const FIELD: ComponentId = ComponentId(27301);
+
+    fn field() -> Content {
+        Content::new(FIELD, TextFieldContent::new("Editor", "A😀B"))
+    }
+
+    fn render(host: &mut ContentHost, frame: Rect, clip: Rect) {
+        host.render(
+            &mut Scene::new(),
+            &mut crate::text::Text::new(),
+            frame,
+            clip,
+            Theme::LIGHT.into(),
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn local_shaped_boundaries_and_editing_state_reach_platform_unchanged() {
+        let mut host = ContentHost::new(field()).unwrap();
+        let frame = Rect::new(0., 0., 300., 80.);
+        render(&mut host, frame, frame);
+        host.focus(Some(FIELD), true);
+        let input = &mut host
+            .get_mut(FIELD)
+            .unwrap()
+            .component_mut::<TextFieldContent>()
+            .unwrap()
+            .surface
+            .input;
+        input.select(1, false);
+        input.select(3, true);
+        input.marked = Some(1..3);
+        let state = text_state(&host).unwrap();
+        assert_eq!(state.text, "A😀B");
+        assert_eq!(state.caret_index, 3);
+        assert_eq!(state.selection, 1..3);
+        assert_eq!(state.marked, Some(1..3));
+        assert_eq!(
+            state.carets.iter().map(|(i, _, _)| *i).collect::<Vec<_>>(),
+            vec![0, 1, 3, 4]
+        );
+    }
+
+    #[test]
+    fn local_clip_withdraws_old_geometry_without_losing_text() {
+        let mut host = ContentHost::new(field()).unwrap();
+        let frame = Rect::new(0., 0., 300., 80.);
+        render(&mut host, frame, frame);
+        host.focus(Some(FIELD), true);
+        let initial = text_state(&host).unwrap();
+        assert!(!initial.carets.is_empty());
+        let clip = Rect::new(0., initial.caret_origin.y as f32 + 2., 300., 3.);
+        render(&mut host, frame, clip);
+        let partial = text_state(&host).unwrap();
+        assert!(!partial.carets.is_empty());
+        assert_eq!(partial.caret_size.height, 3.);
+        assert!(
+            partial
+                .carets
+                .iter()
+                .all(|(_, p, s)| p.y >= f64::from(clip.min_y())
+                    && p.y + s.height <= f64::from(clip.max_y()))
+        );
+        render(&mut host, frame, Rect::new(400., 400., 10., 10.));
+        let hidden = text_state(&host).unwrap();
+        assert_eq!(hidden.text, "A😀B");
+        assert_eq!(hidden.caret_size.height, 0.);
+        assert!(hidden.carets.is_empty());
+    }
+
+    #[test]
+    fn disabled_and_inactive_owner_cannot_publish_retained_geometry() {
+        let mut host = ContentHost::new(field()).unwrap();
+        let frame = Rect::new(0., 0., 300., 80.);
+        render(&mut host, frame, frame);
+        host.focus(Some(FIELD), true);
+        assert!(!text_state(&host).unwrap().carets.is_empty());
+        host.get_mut(FIELD)
+            .unwrap()
+            .component_mut::<TextFieldContent>()
+            .unwrap()
+            .surface
+            .input
+            .disabled = true;
+        assert!(text_state(&host).is_none());
+        host.get_mut(FIELD)
+            .unwrap()
+            .component_mut::<TextFieldContent>()
+            .unwrap()
+            .surface
+            .input
+            .disabled = false;
+        host.set_window_active(false);
+        assert!(text_state(&host).is_none());
+    }
+
+    #[test]
+    fn zero_split_pane_revokes_retained_geometry() {
+        let split = SplitViewContent::try_new(SplitViewConstruction {
+            config: SplitViewConfig::default(),
+            slots: SplitViewSlotIds {
+                leading: ComponentId(27302),
+                trailing: ComponentId(27303),
+                divider: ComponentId(27304),
+            },
+            leading: field(),
+            trailing: Content::new(ComponentId(27305), Button::new("Other")),
+            budget: 64 * 1024 * 1024,
+        })
+        .unwrap();
+        let mut host = ContentHost::try_new_prepared(
+            Content::new(ComponentId(27300), split),
+            64 * 1024 * 1024,
+        )
+        .unwrap();
+        let frame = Rect::new(0., 0., 600., 200.);
+        render(&mut host, frame, frame);
+        host.focus(Some(FIELD), true);
+        assert!(!text_state(&host).unwrap().carets.is_empty());
+        render(&mut host, Rect::default(), Rect::default());
+        let state = text_state(&host).unwrap();
+        assert_eq!(state.text, "A😀B");
+        assert_eq!(state.caret_size.height, 0.);
+        assert!(state.carets.is_empty());
+    }
+
+    #[derive(Debug)]
+    struct SnapshotOnly;
+    impl Component for SnapshotOnly {
+        fn measure(
+            &mut self,
+            _: &mut dyn ButtonTextRenderer,
+            _: Size,
+        ) -> tekes_ui_controls::layout::MeasuredChild {
+            tekes_ui_controls::layout::MeasuredChild::new(Size::new(100., 60.))
+        }
+        fn focusable(&self) -> bool {
+            true
+        }
+        fn text_input_snapshot(&self) -> Option<ContentTextInput> {
+            Some(ContentTextInput {
+                binding: vec![1],
+                text: "A😀B".into(),
+                caret_index: 3,
+                selection: 1..3,
+                marked: Some(1..3),
+                read_only: true,
+                caret: Some(Rect::new(10., 5., 1., 20.)),
+                clip: Some(Rect::new(0., 10., 100., 10.)),
+                carets: vec![(3, Rect::new(10., 5., 1., 20.))],
+            })
+        }
+    }
+
+    #[test]
+    fn delegated_snapshot_without_text_surface_reaches_platform() {
+        let mut host = ContentHost::new(Content::new(FIELD, SnapshotOnly)).unwrap();
+        host.focus(Some(FIELD), true);
+        assert!(host.focused_text().is_none());
+        let state = text_state(&host).expect("snapshot-only owner must reach native queries");
+        assert_eq!(state.text, "A😀B");
+        assert_eq!(state.caret_index, 3);
+        assert_eq!(state.selection, 1..3);
+        assert_eq!(state.marked, Some(1..3));
+        assert!(state.read_only);
+        assert_eq!(state.caret_origin.y, 10.);
+        assert_eq!(state.caret_size.height, 10.);
+        assert_eq!(state.carets.len(), 1);
+        assert_eq!(state.carets[0].0, 3);
     }
 }

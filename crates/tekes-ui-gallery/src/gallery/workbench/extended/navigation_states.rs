@@ -1,4 +1,5 @@
 use super::*;
+use tekes_ui_controls::layout_view::ComboBoxView;
 
 const BODY: proposal::TextRole = proposal::TextRole::UiBody;
 const HELP: &str =
@@ -763,10 +764,11 @@ mod tests {
                     static_text: &mut static_text,
                 };
                 let viewport = Rect::new(0., 0., 360., 4000.);
-                let mut state = StoryState::default();
+                let mut state = StoryState::for_entry_renderer(renderer);
                 state.input.set_value("preserve playground input");
                 let input_before = state.input.query().to_owned();
-                let combo_before = state.extended.combo.query.clone();
+                let combo_before =
+                    (renderer == "combo-box").then(|| state.input.combo().model().query.clone());
                 let mut scene = Scene::new();
                 matrix(entry, &mut state, &mut ctx, &mut scene, viewport);
                 assert!(
@@ -776,7 +778,9 @@ mod tests {
                 assert!(state.document_bottom > 0. && state.document_bottom < 4000.);
                 assert!(state.document_bottom.is_finite());
                 assert_eq!(state.input.query(), input_before);
-                assert_eq!(state.extended.combo.query, combo_before);
+                if let Some(before) = combo_before {
+                    assert_eq!(state.input.combo().model().query, before);
+                }
             }
         }
     }

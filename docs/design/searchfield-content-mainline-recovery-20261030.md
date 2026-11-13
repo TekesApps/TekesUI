@@ -80,3 +80,12 @@ GPU23 explicitly used jobs2, original registered MAIN/helper/cache/build+GPU gua
 Shown native windows, OS input, physical IME, VoiceOver, performance, live-child IPC, full Gold7 and combined CI/publication are not established by this domain packet. Optional r18 positive-role fixture work is separate, not silently counted as run. #199 AC4 still requires Main's compatible metadata/PR/CI/public delivery and links; #199 stays open until that authorized handoff is completed. This addendum is a doc-only successor proposal to the actual db97 runtime source; admitting it does not re-sign runtime programs as its later commit. Original historical sections and failures above are unchanged.
 
 Main subsequently recorded formal finite acceptance of this db97 candidate for **one public PR plus required CI** at `/Volumes/HP P900/DEV/TekesUI/artifacts/delivery/integration-executor-20261030-09/search-settings-key-visual-review01/acceptance.json` (status `FINITE_SEARCH_SETTINGS_CANDIDATE_ACCEPTED_FOR_ONE_PUBLIC_PR_REQUIRED_CI`). That receipt independently pins both actual GPU executable hashes and selected default/external build-script inputs, retains the original external-review limitation and partial-Clear NOT_RUN, and does not accept general narrow-width usability, physical IME, VoiceOver, performance, full Gold7, release/deployment or broader issue closure. Public CI and delivery remain pending; admitting this doc-only successor preserves the accepted runtime source/program identities.
+
+
+## #275 限定消费迁移（2026-11-13）
+
+本批仅将交互式 Gallery Field/Area 接入既有 TextFieldContent/ContentHost；Gallery 保留 fixture 值、业务动作、日志和外层布局，正式 owner 管编辑、native key span、受控更新及 mount 身份。复用原 Search transport 的公共编辑 owner 与原生投影，不声称等同于 module-runtime 的完整 clipboard adapter。Search 的既有验收身份保持。Combo 已按独立批准的 #276 限定迁移；filter、command/global/icon Search 与静态 specimens 不随本批迁移。CPU、GPU、native、物理 IME 和性能证据分别记录；#275 未验项与历史红例归因更正见该票。
+
+## #276 Combo story 范围决定（2026-11-13）
+
+用户已批准只将交互 Combo story 接回既有 ComboBoxContent，并复用 StoryTextHost / NativeProjection 的薄运输。保留原 fixture 的 query/filter、空结果说明、选择日志及候选原始 source index，尤其不以 label 文本推导重复或空 label 的身份；确认、撤销、IME 和 undo 由原组件/编辑器拥有。移除该 story 的旧私有 Combo 确认 reducer，不扩展 command palette、其他 TextDemo 或静态 specimens。#194 历史关闭范围保持；本票实际实现和各类验证由 #276 记录。

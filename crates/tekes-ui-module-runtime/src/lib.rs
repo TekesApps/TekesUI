@@ -88,7 +88,7 @@ mod native_content;
 #[cfg(target_os = "macos")]
 pub use native_content::{
     ContentClipboard, ProcessContentBridge, ProcessContentSnapshot, content_event,
-    content_text_input_state, dispatch_content_window_event,
+    content_text_input_state, content_wheel_event, dispatch_content_window_event,
     dispatch_content_window_event_with_text,
 };
 

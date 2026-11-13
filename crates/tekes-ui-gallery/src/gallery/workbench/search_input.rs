@@ -1,13 +1,15 @@
-//! Workbench-only facade: Search uses ContentHost while all other editors stay on TextDemo.
+//! Workbench-only facade: Search, Field/Area and Combo use ContentHost; other editors stay on TextDemo.
 use super::super::{PageCtx, text::TextEngine, text_demo::TextDemo};
-use super::search_host::SearchHost;
+use super::search_host::StoryTextHost;
 use tekes_ui_platform_macos::{Event, TextInputState};
 use tekes_ui_scene::{Point, Rect, Scene};
 
 #[derive(Debug)]
 pub(super) enum StoryInput {
     Legacy(Box<TextDemo>),
-    Search(Box<SearchHost>),
+    Search(Box<StoryTextHost>),
+    Field(Box<StoryTextHost>),
+    Combo(Box<StoryTextHost>),
 }
 
 impl From<TextDemo> for StoryInput {
@@ -18,34 +20,50 @@ impl From<TextDemo> for StoryInput {
 
 impl StoryInput {
     pub(super) fn search() -> Self {
-        Self::Search(Box::new(SearchHost::new()))
+        Self::Search(Box::new(StoryTextHost::new()))
     }
 
+    pub(super) fn combo_box() -> Self {
+        Self::Combo(Box::new(StoryTextHost::combo_box()))
+    }
+    pub(super) fn combo(&self) -> &tekes_ui_controls::composition::ComboBoxContent {
+        self.hosted().expect("Combo host").combo()
+    }
+    #[cfg(test)]
+    pub(super) fn combo_mut(&mut self) -> &mut tekes_ui_controls::composition::ComboBoxContent {
+        self.hosted_mut().expect("Combo host").combo_mut()
+    }
+    pub(super) fn field(value: &str, multiline: bool) -> Self {
+        Self::Field(Box::new(StoryTextHost::text_field(value, multiline)))
+    }
+    pub(super) fn hosted(&self) -> Option<&StoryTextHost> {
+        match self {
+            Self::Search(host) | Self::Field(host) | Self::Combo(host) => Some(host),
+            Self::Legacy(_) => None,
+        }
+    }
+    pub(super) fn hosted_mut(&mut self) -> Option<&mut StoryTextHost> {
+        match self {
+            Self::Search(host) | Self::Field(host) | Self::Combo(host) => Some(host),
+            Self::Legacy(_) => None,
+        }
+    }
     pub(super) fn legacy_mut(&mut self) -> Option<&mut TextDemo> {
         match self {
             Self::Legacy(demo) => Some(demo.as_mut()),
-            Self::Search(_) => None,
+            Self::Search(_) | Self::Field(_) | Self::Combo(_) => None,
         }
     }
 
-    pub(super) fn search_host(&self) -> Option<&SearchHost> {
-        match self {
-            Self::Search(host) => Some(host),
-            Self::Legacy(_) => None,
-        }
-    }
-
-    pub(super) fn search_host_mut(&mut self) -> Option<&mut SearchHost> {
-        match self {
-            Self::Search(host) => Some(host),
-            Self::Legacy(_) => None,
-        }
+    #[cfg(test)]
+    pub(super) fn search_host(&self) -> Option<&StoryTextHost> {
+        self.hosted().filter(|host| host.is_search())
     }
 
     pub(super) fn owns_native_key(&self, key: tekes_ui_platform_macos::AccessibilityKey) -> bool {
         match self {
             Self::Legacy(_) => false,
-            Self::Search(host) => host.owns_native_key(key),
+            Self::Search(host) | Self::Field(host) | Self::Combo(host) => host.owns_native_key(key),
         }
     }
 
@@ -56,119 +74,131 @@ impl StoryInput {
     ) -> tekes_ui_controls::composition::ContentResponse {
         match self {
             Self::Legacy(_) => Default::default(),
-            Self::Search(host) => host.native_action(key, action),
+            Self::Search(host) | Self::Field(host) | Self::Combo(host) => {
+                host.native_action(key, action)
+            }
         }
     }
 
     pub(super) fn query(&self) -> &str {
         match self {
             Self::Legacy(demo) => demo.query(),
-            Self::Search(host) => host.query(),
+            Self::Search(host) | Self::Field(host) | Self::Combo(host) => host.query(),
         }
     }
 
     pub(super) fn focus_field(&mut self) {
         match self {
             Self::Legacy(demo) => demo.focus_field(),
-            Self::Search(host) => host.focus_field(),
+            Self::Search(host) | Self::Field(host) | Self::Combo(host) => host.focus_field(),
         }
     }
 
     pub(super) fn blur(&mut self) {
         match self {
             Self::Legacy(demo) => demo.blur(),
-            Self::Search(host) => host.blur(),
+            Self::Search(host) | Self::Field(host) | Self::Combo(host) => host.blur(),
         }
     }
 
     pub(super) fn frame_at(&self, index: usize) -> Option<Rect> {
         match self {
             Self::Legacy(demo) => demo.frame_at(index),
-            Self::Search(host) => (index == 0).then(|| host.frame_at(0)).flatten(),
+            Self::Search(host) | Self::Field(host) | Self::Combo(host) => {
+                (index == 0).then(|| host.frame_at(0)).flatten()
+            }
         }
     }
 
     pub(super) fn visible_frame(&self) -> Option<Rect> {
         match self {
             Self::Legacy(demo) => demo.visible_frame(),
-            Self::Search(host) => host.visible_frame(),
+            Self::Search(host) | Self::Field(host) | Self::Combo(host) => host.visible_frame(),
         }
     }
 
     pub(super) fn state(&self) -> Option<TextInputState> {
         match self {
             Self::Legacy(demo) => demo.state(),
-            Self::Search(host) => host.state(),
+            Self::Search(host) | Self::Field(host) | Self::Combo(host) => host.state(),
         }
     }
 
     pub(super) fn set_window_active(&mut self, active: bool) {
         match self {
             Self::Legacy(demo) => demo.set_window_active(active),
-            Self::Search(host) => host.set_window_active(active),
+            Self::Search(host) | Self::Field(host) | Self::Combo(host) => {
+                host.set_window_active(active)
+            }
         }
     }
 
     pub(super) fn set_disabled(&mut self, disabled: bool) {
         match self {
             Self::Legacy(demo) => demo.set_disabled(disabled),
-            Self::Search(host) => host.set_disabled(disabled),
+            Self::Search(host) | Self::Field(host) | Self::Combo(host) => {
+                host.set_disabled(disabled)
+            }
         }
     }
 
     pub(super) fn set_error(&mut self, error: bool) {
         match self {
             Self::Legacy(demo) => demo.set_error(error),
-            Self::Search(host) => host.set_error(error),
+            Self::Search(host) | Self::Field(host) | Self::Combo(host) => host.set_error(error),
         }
     }
 
     pub(super) fn set_value(&mut self, value: &str) {
         match self {
             Self::Legacy(demo) => demo.set_value(value),
-            Self::Search(host) => host.set_value(value),
+            Self::Search(host) | Self::Field(host) | Self::Combo(host) => host.set_value(value),
         }
     }
 
     pub(super) fn use_fixture_cache(&mut self) {
         match self {
             Self::Legacy(demo) => demo.use_fixture_cache(),
-            Self::Search(host) => host.use_fixture_cache(),
+            Self::Search(host) | Self::Field(host) | Self::Combo(host) => host.use_fixture_cache(),
         }
     }
 
     pub(super) fn set_reduced_motion(&mut self, reduced: bool) -> bool {
         match self {
             Self::Legacy(demo) => demo.set_reduced_motion(reduced),
-            Self::Search(host) => host.set_reduced_motion(reduced),
+            Self::Search(host) | Self::Field(host) | Self::Combo(host) => {
+                host.set_reduced_motion(reduced)
+            }
         }
     }
 
     pub(super) fn needs_animation(&self) -> bool {
         match self {
             Self::Legacy(demo) => demo.needs_animation(),
-            Self::Search(host) => host.needs_animation(),
+            Self::Search(host) | Self::Field(host) | Self::Combo(host) => host.needs_animation(),
         }
     }
 
     pub(super) fn animate(&mut self, dt: f32) -> bool {
         match self {
             Self::Legacy(demo) => demo.animate(dt),
-            Self::Search(host) => host.animate(dt),
+            Self::Search(host) | Self::Field(host) | Self::Combo(host) => host.animate(dt),
         }
     }
 
     pub(super) fn refresh(&mut self, text: &mut TextEngine) {
         match self {
             Self::Legacy(demo) => demo.refresh(text),
-            Self::Search(host) => host.refresh(text),
+            Self::Search(host) | Self::Field(host) | Self::Combo(host) => host.refresh(text),
         }
     }
 
     pub(super) fn measure_search_height(&mut self, text: &mut TextEngine) -> f32 {
         match self {
             Self::Legacy(demo) => demo.measure_search_height(text),
-            Self::Search(host) => host.measure_search_height(text),
+            Self::Search(host) | Self::Field(host) | Self::Combo(host) => {
+                host.measure_search_height(text)
+            }
         }
     }
 
@@ -192,7 +222,9 @@ impl StoryInput {
     ) {
         match self {
             Self::Legacy(demo) => demo.build_search_clipped(ctx, rect, clip, scene),
-            Self::Search(host) => host.build_search_clipped(ctx, rect, clip, scene, brand),
+            Self::Search(host) | Self::Field(host) | Self::Combo(host) => {
+                host.build_search_clipped(ctx, rect, clip, scene, brand)
+            }
         }
     }
 
@@ -200,7 +232,7 @@ impl StoryInput {
     pub(super) fn handle(&mut self, event: &Event, point: Option<Point>) -> Option<bool> {
         match self {
             Self::Legacy(demo) => demo.handle(event, point),
-            Self::Search(_) => None,
+            Self::Search(_) | Self::Field(_) | Self::Combo(_) => None,
         }
     }
 
@@ -212,7 +244,9 @@ impl StoryInput {
     ) -> Option<bool> {
         match self {
             Self::Legacy(demo) => demo.handle(event, point),
-            Self::Search(host) => host.handle(event, point, text),
+            Self::Search(host) | Self::Field(host) | Self::Combo(host) => {
+                host.handle(event, point, text)
+            }
         }
     }
 
@@ -223,7 +257,7 @@ impl StoryInput {
     ) -> Vec<tekes_ui_platform_macos::AccessibilityNode> {
         match self {
             Self::Legacy(demo) => demo.accessibility_nodes(owner, label),
-            Self::Search(host) => host.native_nodes(),
+            Self::Search(host) | Self::Field(host) | Self::Combo(host) => host.native_nodes(),
         }
     }
 
@@ -234,7 +268,7 @@ impl StoryInput {
     ) -> bool {
         match self {
             Self::Legacy(demo) => demo.accessibility_action(id, action),
-            Self::Search(_) => false,
+            Self::Search(_) | Self::Field(_) | Self::Combo(_) => false,
         }
     }
 
@@ -242,21 +276,24 @@ impl StoryInput {
     pub(super) fn scroll_metrics(&self) -> (f32, f32) {
         match self {
             Self::Legacy(demo) => demo.scroll_metrics(),
-            Self::Search(_) => (0., 0.),
+            Self::Search(_) | Self::Combo(_) => (0., 0.),
+            Self::Field(host) => host.scroll_metrics(),
         }
     }
 
     #[cfg(test)]
     pub(super) fn scroll_to(&mut self, offset: f32) {
-        if let Self::Legacy(demo) = self {
-            demo.scroll_to(offset);
+        match self {
+            Self::Legacy(demo) => demo.scroll_to(offset),
+            Self::Field(host) => host.scroll_to(offset),
+            Self::Search(_) | Self::Combo(_) => {}
         }
     }
 
     pub(super) fn drain_search_logs(&mut self) -> Vec<String> {
         match self {
             Self::Legacy(_) => Vec::new(),
-            Self::Search(host) => host.drain_logs(),
+            Self::Search(host) | Self::Field(host) | Self::Combo(host) => host.drain_logs(),
         }
     }
 }
