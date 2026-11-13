@@ -2057,7 +2057,7 @@
     "crates/tekes-ui-controls/src/composition.rs": "ea01523cacb840b0780a951321baf1800c4248448d8bf8e43a097f8eba53fef2",
     "crates/tekes-ui-controls/src/composition/actions.rs": "f8345217306f62f1b8bf9d01b0ab4d1537b7a3a7d885d2eb9a7770956d18b987",
     "crates/tekes-ui-controls/src/composition/adapters.rs": "c27cbea70d622e8247f539f63610ac3d62270e1f24d3c5621824f4af29d20f82",
-    "crates/tekes-ui-controls/src/composition/button.rs": "ad0eaa057fc181247ada55693ab57e25e0205ca9c020de2b421b2a771473e390",
+    "crates/tekes-ui-controls/src/composition/button.rs": "447925b4c58d6a58c07afa2afe82b8a3b87c5da84344ab4a5b3e165fb6d762f1",
     "crates/tekes-ui-controls/src/composition/chart_content.rs": "dc3b686d0b7c84e9e44cc3e0ee54c2e040204b141ee10b6970f2f6c88ea8cff4",
     "crates/tekes-ui-controls/src/composition/checkbox.rs": "1529f88b17492441c19430de0761e4452b6cc283e3bc9cc0a2cbd637a20d6914",
     "crates/tekes-ui-controls/src/composition/combobox.rs": "29d825cc459bef202edec0fc59bed240a25a2a3a40deddc012a772a8c9247154",
@@ -2101,7 +2101,7 @@
     "crates/tekes-ui-controls/src/text_input.rs": "c6198a40cc2212298d2fa59648466ccec917b72a106d582ea6d0cc71a0032ccb",
     "crates/tekes-ui-controls/src/text_input/external.rs": "872c6a58fc112c17f7711ce3fe88c868a6ecb0e2ee32fc394ed8877fa30626ca",
     "crates/tekes-ui-controls/src/text_surface.rs": "7bd4812b096fd70d9f674c6741d8b950cb2c3bd881a2b8b06b6ad666e5d1490f",
-    "crates/tekes-ui-controls/src/toolbar.rs": "8e5132ec02da861822085949d586da5134d488b269ce61cfdb6f649486045424",
+    "crates/tekes-ui-controls/src/toolbar.rs": "f74843e5f00a198f53330040ab20413b1264ef28dbb4f310723ada77a4d63df6",
     "crates/tekes-ui-controls/src/widgets.rs": "475602a24734eb1ec25ae0cdddaa857deeb85d485042a5178715d29ad0adc2cb",
     "crates/tekes-ui-controls/tests/choice_contract.rs": "4ee09801a24dd52ffc229e45c7ed7adbb2e5ad25b61fea71fb233ec63787a564",
     "crates/tekes-ui-controls/tests/choice_selection_states.rs": "c7e6ebce60e7b35a5d5b551459f8145a51a3892c955c5579f25ee002ba75f972",
@@ -2123,7 +2123,7 @@
     "crates/tekes-ui-controls/tests/popup_placement.rs": "150ba2bb1e3840626326f3d0d3d906772a63716ce06e8a8cff11d3d0a014b267",
     "crates/tekes-ui-controls/tests/selection_availability.rs": "c8e9b61598c97ae64c5d58a8545f7067148235f6bf4291f53ecea031219942da",
     "crates/tekes-ui-controls/tests/separator_scale.rs": "8391916da3f98b9aa57d7c1960a3c9f3eb1d9c84008b7663acf47b5d92923117",
-    "crates/tekes-ui-controls/tests/toolbar_contract.rs": "a5e3c521611586b4df5fb671c230768c9edb4d6b7e72573c485eb82a22dc6e8b",
+    "crates/tekes-ui-controls/tests/toolbar_contract.rs": "60dbdbfc9c8b13237b1b0c819f84df12c067b820399cde51b3cc0ba3a684783b",
     "crates/tekes-ui-design-export/src/effects.rs": "e0b75279195f9f04cc0cf91a178855f06aafd2e7420b5cdcc2daff50482e0bda",
     "crates/tekes-ui-gallery/Cargo.toml": "9476b4aeb4e0d5ac371594f934ff2d083a6e12d8ffcb5afe26bffd3ab720281e",
     "crates/tekes-ui-gallery/src/actions_acceptance.rs": "38f48c5a5490c58292cc5b371e3a4305cd9b24dafa199e4bbaa3b6b45c65e3d1",
@@ -2646,7 +2646,7 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/toolbar.rs",
-      "line": 793,
+      "line": 806,
       "anchor": "impl crate::composition::Component for ToolbarControl {"
     },
     {
@@ -4721,5 +4721,15 @@
       "crates/tekes-ui-app-host/src/window_settings.rs"
     ],
     "boundary": "Settings collapsed search is trailing via opt-in Stack distribution. Expanded editor retains original Regular gap, focus, mount and IME/Esc behavior. No default Stack/ROW policy change, wrapper, or native capability uplift."
+  },
+  "toolbar_more_alignment_review_20261113": {
+    "issue": 245,
+    "changed_sources": [
+      "crates/tekes-ui-controls/src/toolbar.rs",
+      "crates/tekes-ui-controls/src/composition/button.rs",
+      "crates/tekes-ui-controls/tests/toolbar_contract.rs",
+      "docs/design/app-host-architecture.md"
+    ],
+    "boundary": "Canonical centered More artwork when optional icon service is present; caller image override and text-only legacy contract retained. Original toolbar geometry, input, menu and command identities unchanged. Template errors propagate through the existing IconResource contract. No native capability uplift."
   }
 }

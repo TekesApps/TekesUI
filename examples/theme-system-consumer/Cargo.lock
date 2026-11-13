@@ -163,7 +163,7 @@ dependencies = [
 
 [[package]]
 name = "tekes-ui-design-export"
-version = "0.3.25"
+version = "0.3.26"
 dependencies = [
  "serde_json",
  "sha2",
@@ -181,7 +181,7 @@ dependencies = [
 
 [[package]]
 name = "tekes-ui-tokens"
-version = "0.3.25"
+version = "0.3.26"
 dependencies = [
  "serde_json",
  "sha2",

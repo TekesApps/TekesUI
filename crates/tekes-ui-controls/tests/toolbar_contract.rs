@@ -779,3 +779,147 @@ fn natural_icon_width_survives_repeated_font_zoom_and_translated_hosts() {
         effective = base * ((effective + 1.) / base);
     }
 }
+
+#[test]
+fn more_trigger_uses_centered_canonical_artwork_when_icons_are_available() {
+    use std::rc::Rc;
+    use tekes_ui_scene::{ImageId, Primitive};
+    #[derive(Default)]
+    struct Icons {
+        names: Vec<String>,
+        fail: bool,
+    }
+    impl tekes_ui_controls::layout_view::IconRenderer for Icons {
+        fn prepare_icon(
+            &mut self,
+            name: &str,
+            _: f32,
+            _: f32,
+            _: Rgba,
+        ) -> Result<IconImage, IconRenderError> {
+            self.names.push(name.into());
+            if self.fail {
+                return Err(IconRenderError::Upload);
+            }
+            Ok(IconImage::new(ImageId(77), Rc::new(())))
+        }
+        fn draw_icon(&mut self, _: &mut Scene, _: &str, _: Rect, _: Rgba) {
+            panic!("the original IconContent retains the prepared image");
+        }
+    }
+    for menu_only in [false, true] {
+        let mut host = host();
+        host.get_mut(ComponentId(1))
+            .unwrap()
+            .component_mut::<ToolbarControl>()
+            .unwrap()
+            .set_menu_only(menu_only);
+        let height = host
+            .get(ComponentId(1))
+            .unwrap()
+            .component::<ToolbarControl>()
+            .unwrap()
+            .measure(&mut Text)
+            .height;
+        let frame = Rect::new(12., 17., 80., height);
+        let mut icons = Icons::default();
+        let mut scene = Scene::new();
+        host.render(
+            &mut scene,
+            &mut WithIconRenderer::new(&mut Text, &mut icons),
+            frame,
+            frame,
+            Theme::LIGHT.into(),
+        )
+        .unwrap();
+        assert_eq!(icons.names, ["tekes-more"]);
+        let control = host
+            .get(ComponentId(1))
+            .unwrap()
+            .component::<ToolbarControl>()
+            .unwrap();
+        let trigger = control
+            .semantic_parts()
+            .into_iter()
+            .find(|part| part.semantics.role == ContentRole::MenuButton)
+            .unwrap();
+        let image = scene
+            .primitives()
+            .iter()
+            .find_map(|primitive| match primitive {
+                Primitive::Image(image) if image.image == ImageId(77) => Some(image),
+                _ => None,
+            })
+            .expect("More must be artwork, not a baseline-aligned text ellipsis");
+        assert!(
+            (image.rect.center().y - frame.center().y).abs() <= 0.5,
+            "image={:?} trigger={:?} frame={frame:?}",
+            image.rect,
+            trigger.frame
+        );
+        assert!((image.rect.center().y - trigger.frame.center().y).abs() <= 0.5);
+        assert!((image.rect.center().x - trigger.frame.center().x).abs() <= 0.5);
+        // The visual replacement preserves the original menu owner and input.
+        let point = trigger.frame.center();
+        host.event(&ContentEvent::PointerDown(point));
+        host.event(&ContentEvent::PointerUp(point));
+        assert!(
+            host.get(ComponentId(1))
+                .unwrap()
+                .component::<ToolbarControl>()
+                .unwrap()
+                .is_open()
+        );
+        assert!(host.drain_actions().is_empty());
+        host.event(&ContentEvent::Cancel);
+
+        // A real renderer failure must be reported, never hidden by a text fallback.
+        icons.fail = true;
+        assert_eq!(
+            host.render(
+                &mut Scene::new(),
+                &mut WithIconRenderer::new(&mut Text, &mut icons),
+                frame,
+                frame,
+                Theme::LIGHT.into(),
+            ),
+            Err(CompositionError::IconResource {
+                owner: ComponentId(1),
+                reason: IconRenderError::Upload
+            })
+        );
+        // Caller-owned artwork still takes precedence and clears the old frame error.
+        host.get_mut(ComponentId(1))
+            .unwrap()
+            .component_mut::<ToolbarControl>()
+            .unwrap()
+            .set_overflow_icon(Some(ImageId(99)));
+        icons.names.clear();
+        let mut scene = Scene::new();
+        host.render(
+            &mut scene,
+            &mut WithIconRenderer::new(&mut Text, &mut icons),
+            frame,
+            frame,
+            Theme::LIGHT.into(),
+        )
+        .unwrap();
+        assert!(icons.names.is_empty());
+        assert!(scene.primitives().iter().any(|p| matches!(p,
+            Primitive::Image(image) if image.image == ImageId(99))));
+        // Explicitly text-only renderers retain the existing legacy contract.
+        host.get_mut(ComponentId(1))
+            .unwrap()
+            .component_mut::<ToolbarControl>()
+            .unwrap()
+            .set_overflow_icon(None);
+        host.render(
+            &mut Scene::new(),
+            &mut Text,
+            frame,
+            frame,
+            Theme::LIGHT.into(),
+        )
+        .unwrap();
+    }
+}

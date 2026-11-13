@@ -1,3 +1,7 @@
+## 2026-11-13：Toolbar More 图标垂直对齐（#245）
+
+共享 ToolbarControl 的 Secondary/overflow 入口在已有图标服务时使用标准 `tekes-more`，沿原 Button 的图标布局与状态取色，避免文本省略号基线造成视觉下沉。外部 ImageId 覆盖仍优先；明确无图标服务的旧文本宿主保留文本呈现，不增加强制服务依赖。图标服务绘制失败通过既有 icon_error 合同上报，不以文字替代隐藏失败。按钮尺寸、区域、命中、菜单及命令身份不变，AppHost 不添加专用坐标补偿。
+
 ## 2026-11-11：Container 的 tab/list 互斥呈现（#229）
 
 LocalContainer 和 ProcessContainer 使用 `.presentation(ContainerPresentation::Tab)`（默认）或 `.presentation(ContainerPresentation::List { height })`；旧 `.list_height(height)` 保留为选择 List 的兼容写法，共用同一份模式存储。

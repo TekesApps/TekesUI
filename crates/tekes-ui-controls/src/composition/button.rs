@@ -148,11 +148,14 @@ impl Button {
         scene: &mut Scene,
         text: &mut dyn ButtonTextRenderer,
         theme: ContentTheme,
-    ) {
+    ) -> Option<IconRenderError> {
         let child_theme = action_child_theme(self, theme);
-        if let Some(content) = self.content.first_mut() {
+        self.content.first_mut().and_then(|content| {
             content.paint(scene, text, child_theme);
-        }
+            content
+                .component::<IconContent>()
+                .and_then(Component::icon_error)
+        })
     }
     fn presentation_variant(&self) -> ButtonVariant {
         if self.toolbar_presentation && self.variant != ButtonVariant::Primary {
