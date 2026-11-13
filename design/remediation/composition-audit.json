@@ -2233,8 +2233,8 @@
     "docs/design/disclosure-public-content-20261024.md": "1d9a5e8149c04ab5320ffe8639026034b25dfdd267c38631dd8f9c3f2b078f39",
     "docs/design/media-viewer-design-20261031.md": "1b3205a11b7d11f67c8d628e9a7c684283ddfea46a1fb5c54097d86ab11d52b0",
     "crates/tekes-ui-app-host/src/columns.rs": "3f5ad4a4577534b35864b6f846fb5d787d2c919d67f774f7bef47b3e35be2086",
-    "crates/tekes-ui-app-host/src/presentation.rs": "da13e8499415fa4265bac9a565ef56b77f5030183b0206291fa549e05599e408",
-    "crates/tekes-ui-app-host/src/window_presentation.rs": "c6b4cea74b5b77fe5e3ae3084923763dbb04957b7afad2dc2a3c26c069a99390",
+    "crates/tekes-ui-app-host/src/presentation.rs": "c2de5c8778fc3e17d8ffb74cbb99229ed0f038075600c87482ad014032f6c9bf",
+    "crates/tekes-ui-app-host/src/window_presentation.rs": "a36b03f15ddc5f8bd2e38646eeb677869f99518adefc26ca9f7123e4d4c54c1c",
     "crates/tekes-ui-controls/src/composition/toolbar_host.rs": "00bae218b96330f113bf3f19d7f5642d99c2751bdda73fdb68c26cd9a1be0eb4",
     "crates/tekes-ui-controls/src/composition/tab_strip.rs": "4add005d907baa98192cfe199730d74697bf72d8906c6b1024c8afb0aff980bb"
   },
@@ -4731,5 +4731,11 @@
       "docs/design/app-host-architecture.md"
     ],
     "boundary": "Canonical centered More artwork when optional icon service is present; caller image override and text-only legacy contract retained. Original toolbar geometry, input, menu and command identities unchanged. Template errors propagate through the existing IconResource contract. No native capability uplift."
+  },
+  "expanded_workspace_focus_review_20261113": {
+    "issue": 285,
+    "scope": "Expanded Others exposes existing Focus as first non-closable Tab; preserve roles/instance and collapsed Others selection. Shared Tabs/ScrollArea reused.",
+    "validation": "Check286 three targeted; Check287 AppHost187 and affected strict pass. Native separately not run.",
+    "capability_promotion": false
   }
 }
