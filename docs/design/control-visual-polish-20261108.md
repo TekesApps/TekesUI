@@ -43,8 +43,9 @@ existing background and selection capability. Disabled inputs retain the
 ordinary edge and do not gain a focus indication. The original radius, hit
 geometry, content, caret and ancestor clipping remain.
 
-Undecorated document Content and all non-input controls retain their original
-independent focus rings. Global focus tokens and global Quiet rules are unchanged.
+Undecorated document Content and other controls retain their original
+independent focus rings, except the later Radio-specific contract below.
+Global focus tokens and global Quiet rules are unchanged.
 The existing conservative field focus-space admission/reservation remains for
 this finite batch; it can require more space than the new attached ink and is
 not a claim that the attached border paints outside its frame.
@@ -233,3 +234,20 @@ Radio的prepared pointer入口按现有事件合同归一化原生Primary Down�
 ## 2026-11-09 后续共享控件布局修正
 
 单行TextField显式 `.scrollbar(true/false)` 控制水平指示条，缺省false；实际水平滚动及插入点reveal仍采用原Auto策略，多行垂直策略不改变。NumberField在减号/原编辑器/加号之间使用Spacing::Tight，两侧一致；狭窄分配下按可用空间收缩，不改变数值/保存/输入语义。RadioGroupContent增加基于原RadioGroupView的Axis选项，默认Vertical，Settings选择Horizontal并沿原value列右对齐。所有新方向几何共用原rows/indicator/label与输入和AX投影，不能只改画面。
+
+## Radio attached focus — 2026-11-13 (#245, T82)
+
+The Radio indicator retains its original circle and selected dot. Keyboard-visible
+focus changes that circle's existing inward border to `c-focus-width` and the
+existing focus ink, without drawing a detached outer ring or gap. Error ink keeps
+priority on the same contour; disabled indicators retain their original ordinary
+border and marker. Pointer-only focus does not add keyboard decoration. Light,
+Dark and increased-contrast themes use the same component-owned geometry and
+existing theme values. Layout, hit targets, selection and roving keyboard focus
+are unchanged; Settings does not override the shared component.
+
+Both the public Radio primitive and the Surface-aware RadioGroupView follow this
+contract. Scene tests verify actual indicator/marker geometry and enabled,
+disabled, error and keyboard-focus states; original selection/input checks remain.
+Native appearance and input observations are recorded separately, not inferred
+from CPU results. The original detached-ring failure is retained.

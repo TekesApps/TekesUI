@@ -37,6 +37,8 @@ fn assert_radio(
         palette
             .color(if state.disabled {
                 "disabled-text"
+            } else if state.focused && state.focus_visible {
+                "border-focused"
             } else {
                 "border"
             })
@@ -199,6 +201,8 @@ fn radio_group_same_instance_repaints_theme_and_preserves_selection_availability
                 ControlState {
                     selected: i == 0,
                     disabled: i == 1,
+                    focused: i == 0,
+                    focus_visible: i == 0,
                     ..Default::default()
                 },
                 if i == 0 {
@@ -212,8 +216,17 @@ fn radio_group_same_instance_repaints_theme_and_preserves_selection_availability
                 palette.color("surface-1").unwrap(),
             );
         }
-        assert!(scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q)if q.fill.a==0. && q.border_width>0.
-            && q.rect.center()==layout.indicators[0].center() && q.border_color==palette.color("border-focused").unwrap())));
+        assert!(scene.primitives().iter().any(
+            |p| matches!(p,Primitive::Quad(q)if q.rect==layout.indicators[0]
+            && q.border_width==tekes_ui_tokens::proposal::metric("stroke", "c-focus-width").unwrap()
+            && q.border_color==palette.color("border-focused").unwrap())
+        ));
+        assert!(
+            !scene
+                .primitives()
+                .iter()
+                .any(|p| matches!(p,Primitive::Quad(q)if q.fill.a==0. && q.border_width>0.))
+        );
     }
     let theme = Theme::DARK_INCREASED;
     let palette: Palette = theme.into();
@@ -299,6 +312,8 @@ fn radio_group_same_instance_repaints_theme_and_preserves_selection_availability
         palette,
         ControlState {
             selected: true,
+            focused: true,
+            focus_visible: true,
             ..Default::default()
         },
         "c-radio-checked-ground",

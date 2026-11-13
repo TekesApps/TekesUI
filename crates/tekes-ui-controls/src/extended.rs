@@ -2776,6 +2776,7 @@ pub fn radio_with_state(
 ) {
     let theme = theme.into();
     let checked = state.selected;
+    let focused = state.focused && state.focus_visible && !state.disabled;
     let size = rect.size.width.min(rect.size.height).max(0.);
     let frame = Rect::new(
         rect.center().x - size * 0.5,
@@ -2802,13 +2803,23 @@ pub fn radio_with_state(
         Quad::new(frame, fill)
             .with_corner_radius(size * 0.5)
             .with_border(
-                proposal::metric("stroke", "stroke-rule").expect("Design System control stroke"),
+                proposal::metric(
+                    "stroke",
+                    if focused {
+                        "c-focus-width"
+                    } else {
+                        "stroke-rule"
+                    },
+                )
+                .expect("Design System control stroke"),
                 paint_color(
                     theme,
                     if state.error {
                         "status-failed"
                     } else if state.disabled {
                         "disabled-text"
+                    } else if focused {
+                        "border-focused"
                     } else {
                         "border"
                     },
@@ -2831,9 +2842,6 @@ pub fn radio_with_state(
             )
             .with_corner_radius(size * 0.5),
         );
-    }
-    if state.focused && state.focus_visible && !state.disabled {
-        focus_outline(scene, frame, theme);
     }
 }
 
@@ -2875,27 +2883,31 @@ pub(crate) fn radio_on_surface(
     let disabled_ink = state
         .disabled
         .then(|| paint_color(palette, "disabled-text"));
+    let focused = state.focused && state.focus_visible && !state.disabled;
     let boundary = if state.error {
         colors.boundary
+    } else if focused {
+        colors.focus
     } else {
         disabled_ink.or(colors.boundary)
     };
     if let Some(boundary) = boundary {
         quad = quad.with_border(
-            proposal::metric("stroke", "stroke-rule").expect("control stroke"),
+            proposal::metric(
+                "stroke",
+                if focused {
+                    "c-focus-width"
+                } else {
+                    "stroke-rule"
+                },
+            )
+            .expect("control stroke"),
             boundary,
         );
     }
     scene.push_quad(quad);
     if checked && let Some(marker) = disabled_ink.or(colors.marker) {
         scene.push_quad(Quad::new(frame.inset(size * 0.28), marker).with_corner_radius(size * 0.5));
-    }
-    if state.focused
-        && state.focus_visible
-        && !state.disabled
-        && let Some(focus) = colors.focus
-    {
-        crate::paint::focus_ring_with_color(scene, frame, focus, size * 0.5);
     }
 }
 
