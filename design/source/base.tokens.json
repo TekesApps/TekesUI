@@ -116,9 +116,9 @@
         "name": "p-row-selection",
         "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
         "value": {
-          "dark": "#2A2A29",
+          "dark": "#282827",
           "dark-ic": "#414C4C",
-          "light": "#E6E6E4",
+          "light": "#EAEAE8",
           "light-ic": "#D8DEDE"
         }
       },
@@ -131,9 +131,9 @@
         "name": "p-row-selection-hover",
         "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
         "value": {
-          "dark": "#343433",
+          "dark": "#2C2C2B",
           "dark-ic": "#465151",
-          "light": "#DCDCD9",
+          "light": "#E6E6E3",
           "light-ic": "#CCD5D5"
         }
       },
@@ -146,9 +146,9 @@
         "name": "p-button-hover",
         "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
         "value": {
-          "dark": "#272726",
+          "dark": "#252524",
           "dark-ic": "#36332D",
-          "light": "#E9E9E7",
+          "light": "#EDEDEB",
           "light-ic": "#DEDDD7"
         }
       },
@@ -161,9 +161,9 @@
         "name": "p-button-pressed",
         "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
         "value": {
-          "dark": "#323231",
+          "dark": "#2B2B2A",
           "dark-ic": "#4C4740",
-          "light": "#DDDDDA",
+          "light": "#E7E7E4",
           "light-ic": "#D0CEC8"
         }
       },
@@ -186,9 +186,9 @@
         "name": "p-border",
         "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
         "value": {
-          "dark": "#7E7E7A",
+          "dark": "#767673",
           "dark-ic": "#C8C0B4",
-          "light": "#7C7C79",
+          "light": "#82827F",
           "light-ic": "#4E4A41"
         }
       },
@@ -201,9 +201,9 @@
         "name": "p-border-focused",
         "usage": "中性焦点强调；普通主题保持必要对比并降低突出度，高对比主题保留",
         "value": {
-          "dark": "#969692",
+          "dark": "#8C8C88",
           "dark-ic": "#FFFFFF",
-          "light": "#6B6B68",
+          "light": "#747471",
           "light-ic": "#111111"
         }
       },
@@ -216,9 +216,9 @@
         "name": "p-separator",
         "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
         "value": {
-          "dark": "#353533",
+          "dark": "#30302E",
           "dark-ic": "#9C9488",
-          "light": "#DFDFDD",
+          "light": "#E4E4E2",
           "light-ic": "#8C867D"
         }
       },

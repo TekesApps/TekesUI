@@ -251,3 +251,8 @@ contract. Scene tests verify actual indicator/marker geometry and enabled,
 disabled, error and keyboard-focus states; original selection/input checks remain.
 Native appearance and input observations are recorded separately, not inferred
 from CPU results. The original detached-ring failure is retained.
+
+
+### 普通主题共享中性色值微调（2026-11-14，#245）
+
+按用户要求，本批只修改既有 token 值，不改变角色、组件逻辑、状态合同或对比度门槛。`border`、`border-focused`、`separator` 与按钮/选中底色联动减弱普通 Light/Dark 的装饰分量；ScrollContent、TextSurface 和输入框沿原共享映射自动继承。表面阶梯、文字、错误/状态色、品牌覆盖和增强对比主题保持原值。普通边界最差声明配对仍至少 3:1。仅检查生成一致性及配色关系，构建外观候选；不重复功能测试、不新增 CI；不据静态检查宣称实际 Gold7 体验通过。精确旧/新值及候选证据保存在协调目录 `outputs/quiet-neutral-palette-20261114/`。
