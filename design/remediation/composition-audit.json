@@ -2090,7 +2090,7 @@
     "crates/tekes-ui-controls/src/composition/status_badge.rs": "55160ac8e5f901e644b09dcedb11f5b227e36a6aec7ff91706e6d3b422007f41",
     "crates/tekes-ui-controls/src/composition/toolbar_content.rs": "299f68c30e17665d305e4b1fc4e3eb9ce0cdde13c7e61bc6c0f9169dd3d7dc88",
     "crates/tekes-ui-controls/src/control_motion.rs": "0301717c307ba6bdc2b91085c9e1995e6ca74391c7bbda9168af2c042a52a788",
-    "crates/tekes-ui-controls/src/extended.rs": "0002259dbec953f75607c6416ed0758d905f3b6d9486cdb496a2517cf14ada3a",
+    "crates/tekes-ui-controls/src/extended.rs": "a68aa6531d8b4bde89017562987404760e80dd30bc43243988e8cfa2f3fb5f42",
     "crates/tekes-ui-controls/src/feedback_view.rs": "b0ac9827fbbc3fc1bdf3b393faa573d1d3f1f0f75419cb043d1d2941e571f56c",
     "crates/tekes-ui-controls/src/layout_view.rs": "041a05e23b98c6d2499fef90fa9e19c0f86d30a05f49011b22a366855cd2e989",
     "crates/tekes-ui-controls/src/lib.rs": "7c02ead867e15b5149dd5216b04b021d0ef4205ff2b6603835f3ada967074698",
@@ -2134,7 +2134,7 @@
     "crates/tekes-ui-gallery/src/gallery/quality_effects.rs": "b99730312721bf8eec15f3b10255c977ba444c4ea064fdb8537186f3271e7d85",
     "crates/tekes-ui-gallery/src/gallery/text.rs": "0861f4087a60f10bdf3d7c6697cb97e3513b2b6890fcc8984dd8ea966cbad13d",
     "crates/tekes-ui-gallery/src/gallery/text_demo.rs": "4881d0cbde521b2c3159f8dfd71107e4e9862fc05bd45156fe88d08fb582cd4b",
-    "crates/tekes-ui-gallery/src/gallery/workbench.rs": "1787360099f994e99af177c6c3447c363f104a85d2773da36bbde6d036786bb0",
+    "crates/tekes-ui-gallery/src/gallery/workbench.rs": "d0e216466356e1a4119bcf42dec79f575ca75f88587ba6283e189b1b193e7479",
     "crates/tekes-ui-gallery/src/gallery/workbench/accessibility.rs": "140c2dfc32ee3b5cb430ce3372632e491d94f1c387f9d93f30860cc397aed033",
     "crates/tekes-ui-gallery/src/gallery/workbench/content_status.rs": "2b3262d539c063b91493ee29db9aa13c8cdefacb3259c2efb6cdded337120588",
     "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs": "ec0409a3abdb57ff98e42b0ff1f3598ed7657235a524a199c59c46f8e6abe732",
@@ -4749,5 +4749,12 @@
     "scope": "Existing Settings search replaces Back/Search header while expanded, uses existing full-width TextField allocation; blur restores controls without stealing destination focus, clearing filter not draft/section.",
     "validation": "Check293 Settings25 and final AppHost23/local clipboard8/strict pass; first new fixture failure retained. Native separately not run.",
     "capability_promotion": false
+  },
+  "radio_attached_focus_ci_review_20261114": {
+    "scope": "Only two cfg(test) Radio assertions updated for the accepted attached-focus contract; no runtime changes or capability promotion. Original CI43453198376 failures preserved.",
+    "paths": [
+      "crates/tekes-ui-controls/src/extended.rs",
+      "crates/tekes-ui-gallery/src/gallery/workbench.rs"
+    ]
   }
 }

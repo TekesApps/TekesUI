@@ -9258,6 +9258,7 @@ mod interaction_tests {
             clear: Rgba,
         ) {
             let (indicator, label) = geometry;
+            let focused = state.focused && state.focus_visible && !state.disabled;
             let (index, outer) = scene
                 .primitives()
                 .iter()
@@ -9278,10 +9279,31 @@ mod interaction_tests {
                 palette
                     .color(if state.disabled {
                         "disabled-text"
+                    } else if focused {
+                        "border-focused"
                     } else {
                         "border"
                     })
                     .unwrap()
+            );
+            assert_eq!(
+                outer.border_width,
+                tekes_ui_tokens::proposal::metric(
+                    "stroke",
+                    if focused {
+                        "c-focus-width"
+                    } else {
+                        "stroke-rule"
+                    },
+                )
+                .unwrap()
+            );
+            assert!(
+                !scene.primitives().iter().any(|p| matches!(p,
+                    Primitive::Quad(q) if q.fill.a == 0. && q.border_width > 0.
+                        && q.rect.center() == indicator.center()
+                )),
+                "Radio focus remains on the indicator, without a detached ring"
             );
             let marks: Vec<_> = scene.primitives()[index + 1..]
                 .iter()
@@ -9494,14 +9516,16 @@ mod interaction_tests {
             palette,
             ControlState {
                 selected: true,
+                focused: true,
+                focus_visible: true,
                 ..Default::default()
             },
             "c-radio-checked-ground",
             gallery.text.scale(),
             clear,
         );
-        assert!(scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q)if q.fill.a==0. && q.border_width>0.
-            && q.rect.center()==initial.indicators[2].center() && q.border_color==palette.color("border-focused").unwrap())));
+        assert!(scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q)if q.fill.a>0. && q.border_width>0.
+            && q.rect==initial.indicators[2] && q.border_color==palette.color("border-focused").unwrap())));
         let disabled = initial.rows[1].frame().center();
         gallery.handle_input(&mouse(disabled, true));
         gallery.handle_input(&mouse(disabled, false));

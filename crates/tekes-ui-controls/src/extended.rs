@@ -3657,9 +3657,16 @@ mod tests {
                         && q.border_width == proposal::metric("stroke", "c-focus-width").unwrap()
                 )).count();
                 assert_eq!(
-                    focus_rings, 2,
-                    "Switch and Radio keep independent focus rings"
+                    focus_rings, 1,
+                    "Switch keeps its independent ring; Radio uses its indicator border"
                 );
+                assert!(scene.primitives().iter().any(|p| matches!(p,
+                    tekes_ui_scene::Primitive::Quad(q)
+                        if q.rect == Rect::new(50., 0., 24., 24.)
+                            && q.fill == palette.color("c-radio-checked-ground").unwrap()
+                            && q.border_color == palette.color("border-focused").unwrap()
+                            && q.border_width == proposal::metric("stroke", "c-focus-width").unwrap()
+                )));
 
                 for (state, role) in [
                     (
