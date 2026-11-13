@@ -87,8 +87,9 @@ mod container_toolbar;
 mod native_content;
 #[cfg(target_os = "macos")]
 pub use native_content::{
-    ProcessContentBridge, ProcessContentSnapshot, content_event, content_text_input_state,
-    dispatch_content_window_event,
+    ContentClipboard, ProcessContentBridge, ProcessContentSnapshot, content_event,
+    content_text_input_state, dispatch_content_window_event,
+    dispatch_content_window_event_with_text,
 };
 
 #[cfg(target_os = "macos")]

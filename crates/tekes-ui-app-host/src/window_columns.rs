@@ -165,6 +165,14 @@ impl Host {
             }
             return Ok(consumed);
         }
+        self.local_content_input(event, w)
+    }
+    // Called after window activity, modal/navigation and accessibility routing.
+    fn local_content_input(
+        &mut self,
+        event: &Event,
+        w: &dyn tekes_ui_module_runtime::ContentClipboard,
+    ) -> Result<bool> {
         let index = if let Event::Scroll(s) = event {
             let point = Point::new(s.position.x as f32, s.position.y as f32);
             self.panels.iter().position(|p| {
@@ -189,67 +197,28 @@ impl Host {
         else {
             return Ok(false);
         };
+        // Unclaimed application/window shortcuts must retain the outer fallback.
+        if let Event::Key(key) = event
+            && key.kind == KeyEventKind::Down
+            && key.modifiers.command
+            && (key.modifiers.control
+                || key.modifiers.alt
+                || !matches!(
+                    key.characters_ignoring_modifiers
+                        .to_ascii_lowercase()
+                        .as_str(),
+                    "a" | "z" | "c" | "x" | "v"
+                ))
+        {
+            return Ok(false);
+        }
         let input = match event {
-            Event::Key(k) if k.modifiers.command && k.kind == KeyEventKind::Down => {
-                match k.characters_ignoring_modifiers.to_lowercase().as_str() {
-                    "a" => ContentEvent::TextCommand("selectAll:".into()),
-                    "z" => ContentEvent::TextCommand(
-                        if k.modifiers.shift { "redo:" } else { "undo:" }.into(),
-                    ),
-                    "c" | "x" => {
-                        local.with_host(&mut |h| {
-                            if let Some(s) = h.focused_text() {
-                                w.set_clipboard_text(&s.input.selected_text());
-                            }
-                        });
-                        if k.characters_ignoring_modifiers == "c" {
-                            return Ok(true);
-                        }
-                        ContentEvent::TextCommand("deleteBackward:".into())
-                    }
-                    "v" => ContentEvent::Commit {
-                        text: w.clipboard_text().unwrap_or_default(),
-                        replacement: None,
-                    },
-                    _ => return Ok(false),
-                }
-            }
-            Event::TextKey(marker) => {
-                window_toolbar_mount::native_toolbar_event(&Event::TextKey(marker.clone())).unwrap()
-            }
-            Event::Key(k) => ContentEvent::KeyInput(toolbar_key(k.clone())),
-            Event::TextCommit { text, replacement } => ContentEvent::Commit {
-                text: text.clone(),
-                replacement: replacement.clone(),
-            },
-            Event::TextPreedit {
-                text,
-                selection,
-                clauses,
-                replacement,
-            } => ContentEvent::Preedit {
-                text: text.clone(),
-                selection: selection.clone(),
-                clauses: clauses.clone(),
-                replacement: replacement.clone(),
-            },
-            Event::TextUnmark => ContentEvent::Unmark,
-            Event::TextCommand(command) if command == "copy:" || command == "cut:" => {
-                local.with_host(&mut |h| {
-                    if let Some(s) = h.focused_text() {
-                        w.set_clipboard_text(&s.input.selected_text());
-                    }
-                });
-                if command == "copy:" {
-                    return Ok(true);
-                }
-                ContentEvent::TextCommand("deleteBackward:".into())
-            }
-            Event::TextCommand(command) if command == "paste:" => ContentEvent::Commit {
-                text: w.clipboard_text().unwrap_or_default(),
-                replacement: None,
-            },
-            Event::TextCommand(command) => ContentEvent::TextCommand(command.clone()),
+            Event::Key(_)
+            | Event::TextKey(_)
+            | Event::TextCommit { .. }
+            | Event::TextPreedit { .. }
+            | Event::TextUnmark
+            | Event::TextCommand(_) => return local.window_event(event, w, &mut self.text),
             Event::Scroll(s) => ContentEvent::Scroll {
                 position: Point::new(s.position.x as f32, s.position.y as f32),
                 delta: Point::new(-s.delta.x as f32, -s.delta.y as f32),
@@ -452,5 +421,309 @@ mod window_publication_tests {
                 .nodes()
                 .is_empty()
         );
+    }
+}
+
+#[cfg(test)]
+mod local_clipboard_tests {
+    use super::*;
+    use crate::{AppWindow, LocalContainer};
+    use std::cell::RefCell;
+    use tekes_ui_controls::composition::{Content, TextFieldContent};
+    use tekes_ui_module_runtime::ContentClipboard;
+    use tekes_ui_tokens::Theme;
+
+    struct Clipboard {
+        text: RefCell<Option<String>>,
+        writes: RefCell<Vec<String>>,
+    }
+    impl Clipboard {
+        fn new(text: Option<&str>) -> Self {
+            Self {
+                text: RefCell::new(text.map(str::to_owned)),
+                writes: RefCell::new(vec![]),
+            }
+        }
+    }
+    impl ContentClipboard for Clipboard {
+        fn clipboard_text(&self) -> Option<String> {
+            self.text.borrow().clone()
+        }
+        fn set_clipboard_text(&self, text: &str) {
+            self.writes.borrow_mut().push(text.into());
+            *self.text.borrow_mut() = Some(text.into());
+        }
+    }
+    fn host(selection: std::ops::Range<usize>) -> Host {
+        let local = LocalContainer::new(
+            "editor",
+            Content::new(ComponentId(1), TextFieldContent::new("Notes", "abc")),
+        )
+        .unwrap();
+        let mut host = AppWindow::from_columns(vec![local.into()])
+            .unwrap()
+            .into_host(false);
+        assert!(host.mount_columns());
+        let local = host.panels[0].local.as_mut().unwrap();
+        let frame = Rect::new(0., 40., 300., 160.);
+        local
+            .render(
+                &mut Scene::new(),
+                &mut host.text,
+                frame,
+                frame,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
+        local.with_host(&mut |h| {
+            h.focus(Some(ComponentId(1)), true);
+            assert!(
+                h.get_mut(ComponentId(1))
+                    .unwrap()
+                    .component_mut::<TextFieldContent>()
+                    .unwrap()
+                    .surface
+                    .input
+                    .select_range(selection.clone())
+            );
+        });
+        host
+    }
+    fn value(host: &mut Host) -> String {
+        let mut value = String::new();
+        host.panels[0].local.as_mut().unwrap().with_host(&mut |h| {
+            value = h
+                .get(ComponentId(1))
+                .unwrap()
+                .component::<TextFieldContent>()
+                .unwrap()
+                .surface
+                .input
+                .text
+                .clone();
+        });
+        value
+    }
+    #[test]
+    fn local_clipboard_empty_cut_preserves_text_and_clipboard() {
+        let mut host = host(3..3);
+        let clipboard = Clipboard::new(Some("keep"));
+        assert!(
+            host.local_content_input(&Event::TextCommand("cut:".into()), &clipboard)
+                .unwrap()
+        );
+        assert_eq!(value(&mut host), "abc");
+        assert_eq!(clipboard.clipboard_text().as_deref(), Some("keep"));
+        assert!(clipboard.writes.borrow().is_empty());
+    }
+    #[test]
+    fn local_clipboard_no_text_paste_preserves_selection_and_clipboard() {
+        let mut host = host(1..3);
+        let clipboard = Clipboard::new(None);
+        assert!(
+            host.local_content_input(&Event::TextCommand("paste:".into()), &clipboard)
+                .unwrap()
+        );
+        assert_eq!(value(&mut host), "abc");
+        assert_eq!(clipboard.clipboard_text(), None);
+        assert!(clipboard.writes.borrow().is_empty());
+    }
+    fn shortcut(letter: &str) -> Event {
+        Event::Key(tekes_ui_platform_macos::KeyEvent {
+            kind: KeyEventKind::Down,
+            key_code: if letter == "x" { 7 } else { 9 },
+            characters: letter.into(),
+            characters_ignoring_modifiers: letter.into(),
+            modifiers: tekes_ui_platform_macos::Modifiers {
+                command: true,
+                ..Default::default()
+            },
+            is_repeat: false,
+        })
+    }
+    #[test]
+    fn local_clipboard_raw_empty_cut_and_no_text_paste_are_noops() {
+        for (letter, selection) in [("x", 3..3), ("v", 1..3)] {
+            let mut host = host(selection.clone());
+            let clipboard = Clipboard::new(if letter == "x" { Some("keep") } else { None });
+            let before = clipboard.clipboard_text();
+            assert!(
+                host.local_content_input(&shortcut(letter), &clipboard)
+                    .unwrap()
+            );
+            assert_eq!(value(&mut host), "abc");
+            host.panels[0].local.as_mut().unwrap().with_host(&mut |h| {
+                assert_eq!(h.focused_text().unwrap().input.selection(), selection);
+            });
+            assert_eq!(clipboard.clipboard_text(), before);
+            assert!(clipboard.writes.borrow().is_empty());
+        }
+    }
+    #[test]
+    fn local_clipboard_unclaimed_command_shortcuts_keep_window_fallback() {
+        for (letter, control, alt) in [("q", false, false), ("x", true, false), ("v", false, true)]
+        {
+            let mut host = host(1..3);
+            let clipboard = Clipboard::new(Some("keep"));
+            let Event::Key(mut key) = shortcut(letter) else {
+                unreachable!()
+            };
+            key.modifiers.control = control;
+            key.modifiers.alt = alt;
+            assert!(
+                !host
+                    .local_content_input(&Event::Key(key), &clipboard)
+                    .unwrap()
+            );
+            assert_eq!(value(&mut host), "abc");
+            assert_eq!(clipboard.clipboard_text().as_deref(), Some("keep"));
+            assert!(clipboard.writes.borrow().is_empty());
+        }
+    }
+    #[test]
+    fn local_clipboard_native_span_raw_and_selector_edit_once() {
+        use tekes_ui_platform_macos::{TextKeyContext, TextKeyDisposition, TextKeyEvent};
+        for (letter, command, expected) in [("x", "cut:", "a"), ("v", "paste:", "aNEW")] {
+            let mut host = host(1..3);
+            let clipboard = Clipboard::new(Some("NEW"));
+            let Event::Key(key) = shortcut(letter) else {
+                unreachable!()
+            };
+            let context = TextKeyContext {
+                id: 270,
+                key: key.clone(),
+                composing_at_start: false,
+            };
+            for event in [
+                Event::TextKey(TextKeyEvent::Started(context.clone())),
+                Event::Key(key),
+                Event::TextCommand(command.into()),
+                Event::TextKey(TextKeyEvent::Finished {
+                    context,
+                    input_context_handled: None,
+                    disposition: TextKeyDisposition::NotOffered,
+                    text_callbacks: 0,
+                    command_callbacks: 1,
+                }),
+            ] {
+                assert!(host.local_content_input(&event, &clipboard).unwrap());
+            }
+            assert_eq!(value(&mut host), expected);
+            assert_eq!(
+                clipboard.writes.borrow().as_slice(),
+                if letter == "x" { vec!["bc"] } else { vec![] }
+            );
+            // One undo restores the complete edit; a second native callback did not edit.
+            host.local_content_input(&Event::TextCommand("undo:".into()), &clipboard)
+                .unwrap();
+            assert_eq!(value(&mut host), "abc");
+        }
+    }
+    #[test]
+    fn local_clipboard_readonly_disabled_and_marked_reject_edits() {
+        for mode in ["readonly", "disabled", "marked"] {
+            for event in [
+                shortcut("x"),
+                shortcut("v"),
+                Event::TextCommand("cut:".into()),
+                Event::TextCommand("paste:".into()),
+            ] {
+                let mut host = host(1..3);
+                let clipboard = Clipboard::new(Some("keep"));
+                host.panels[0].local.as_mut().unwrap().with_host(&mut |h| {
+                    let input = &mut h
+                        .get_mut(ComponentId(1))
+                        .unwrap()
+                        .component_mut::<TextFieldContent>()
+                        .unwrap()
+                        .surface
+                        .input;
+                    match mode {
+                        "readonly" => input.read_only = true,
+                        "disabled" => input.disabled = true,
+                        _ => input.marked = Some(1..3),
+                    }
+                });
+                assert!(host.local_content_input(&event, &clipboard).unwrap());
+                assert_eq!(value(&mut host), "abc", "{mode}");
+                assert_eq!(
+                    clipboard.clipboard_text().as_deref(),
+                    Some("keep"),
+                    "{mode}"
+                );
+                assert!(clipboard.writes.borrow().is_empty(), "{mode}");
+            }
+        }
+    }
+    #[test]
+    fn local_clipboard_cut_uses_exact_utf16_selection_and_copy_keeps_readonly_text() {
+        for command in ["cut:", "copy:"] {
+            let mut host = host(1..3);
+            let clipboard = Clipboard::new(Some("keep"));
+            host.panels[0].local.as_mut().unwrap().with_host(&mut |h| {
+                let input = &mut h
+                    .get_mut(ComponentId(1))
+                    .unwrap()
+                    .component_mut::<TextFieldContent>()
+                    .unwrap()
+                    .surface
+                    .input;
+                input.text = "A😀B".into();
+                input.select_range(1..3);
+                input.read_only = command == "copy:";
+            });
+            host.local_content_input(&Event::TextCommand(command.into()), &clipboard)
+                .unwrap();
+            assert_eq!(
+                value(&mut host),
+                if command == "cut:" { "AB" } else { "A😀B" }
+            );
+            assert_eq!(clipboard.writes.borrow().as_slice(), ["😀"]);
+        }
+    }
+    #[test]
+    fn local_clipboard_keeps_text_service_layout_for_noop_and_edit() {
+        let mut host = host(3..3);
+        let clipboard = Clipboard::new(Some("keep"));
+        host.panels[0].local.as_mut().unwrap().with_host(&mut |h| {
+            h.get_mut(ComponentId(1))
+                .unwrap()
+                .component_mut::<TextFieldContent>()
+                .unwrap()
+                .surface
+                .invalidate_text_layout();
+        });
+        host.local_content_input(&Event::TextCommand("cut:".into()), &clipboard)
+            .unwrap();
+        host.panels[0].local.as_mut().unwrap().with_host(&mut |h| {
+            assert!(h.focused_text().unwrap().paragraph.is_some());
+            // The same service scope prepares before a platform snapshot/claim,
+            // and refreshes again after the dispatch mutates the original field.
+            h.get_mut(ComponentId(1))
+                .unwrap()
+                .component_mut::<TextFieldContent>()
+                .unwrap()
+                .surface
+                .invalidate_text_layout();
+            h.with_text_input(&mut host.text, |h| {
+                assert!(h.focused_text().unwrap().paragraph.is_some());
+                h.event(&ContentEvent::Commit {
+                    text: "!".into(),
+                    replacement: None,
+                });
+            })
+            .unwrap();
+            assert!(h.focused_text().unwrap().paragraph.is_some());
+            assert_eq!(h.focused_text().unwrap().input.text, "abc!");
+            assert_eq!(
+                h.focused_text()
+                    .unwrap()
+                    .paragraph
+                    .as_ref()
+                    .unwrap()
+                    .utf16_len,
+                4
+            );
+        });
     }
 }

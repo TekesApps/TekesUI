@@ -762,6 +762,20 @@ pub fn content_event(
     native_input(event).and_then(|input| crate::content_input::event(&input))
 }
 
+/// Native clipboard transport; editing and key ownership remain in ContentHost.
+pub trait ContentClipboard {
+    fn clipboard_text(&self) -> Option<String>;
+    fn set_clipboard_text(&self, text: &str);
+}
+impl ContentClipboard for native::Window {
+    fn clipboard_text(&self) -> Option<String> {
+        native::Window::clipboard_text(self)
+    }
+    fn set_clipboard_text(&self, text: &str) {
+        native::Window::set_clipboard_text(self, text);
+    }
+}
+
 /// One window-level adapter for original local/remote Content, including the
 /// native clipboard capability. Components retain all editing/key state.
 /// Hosts may handle their own product/window commands before calling this.
@@ -770,7 +784,6 @@ pub fn dispatch_content_window_event(
     event: &native::Event,
     window: &native::Window,
 ) -> Option<tekes_ui_controls::composition::ContentResponse> {
-    use tekes_ui_controls::composition::{ContentEvent as E, ContentResponse as R};
     host.set_window_active(window.is_active());
     if let native::Event::Accessibility { target, action } = event {
         return Some(native::content_accessibility::content_action(
@@ -779,6 +792,30 @@ pub fn dispatch_content_window_event(
             action.clone(),
         ));
     }
+    dispatch_content_event(host, event, window)
+}
+
+/// The local Container path retains its existing font backend and pre/post input
+/// layout, including before a clipboard claim reads the owner's snapshot.
+/// Window activity and accessibility routing are supplied by the caller.
+pub fn dispatch_content_window_event_with_text(
+    host: &mut tekes_ui_controls::composition::ContentHost,
+    event: &native::Event,
+    clipboard: &dyn ContentClipboard,
+    text: &mut dyn tekes_ui_controls::ButtonTextRenderer,
+) -> Result<
+    Option<tekes_ui_controls::composition::ContentResponse>,
+    tekes_ui_controls::composition::CompositionError,
+> {
+    host.with_text_input(text, |host| dispatch_content_event(host, event, clipboard))
+}
+
+fn dispatch_content_event(
+    host: &mut tekes_ui_controls::composition::ContentHost,
+    event: &native::Event,
+    clipboard: &dyn ContentClipboard,
+) -> Option<tekes_ui_controls::composition::ContentResponse> {
+    use tekes_ui_controls::composition::{ContentEvent as E, ContentResponse as R};
     let command = match event {
         native::Event::TextCommand(command)
             if matches!(command.as_str(), "copy:" | "cut:" | "paste:") =>
@@ -812,7 +849,7 @@ pub fn dispatch_content_window_event(
         }
         if command == "paste:" {
             return Some(if !snapshot.read_only {
-                window
+                clipboard
                     .clipboard_text()
                     .map(|text| {
                         host.event(&E::Commit {
@@ -830,7 +867,7 @@ pub fn dispatch_content_window_event(
         }
         let utf16: Vec<_> = snapshot.text.encode_utf16().collect();
         let selected = String::from_utf16(&utf16[snapshot.selection.clone()]).ok()?;
-        window.set_clipboard_text(&selected);
+        clipboard.set_clipboard_text(&selected);
         return Some(if command == "cut:" {
             host.event(&E::Commit {
                 text: String::new(),
