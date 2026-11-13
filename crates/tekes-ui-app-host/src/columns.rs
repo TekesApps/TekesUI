@@ -178,6 +178,27 @@ impl LocalContainer {
         });
         result
     }
+    pub(crate) fn window_event(
+        &mut self,
+        event: &tekes_ui_platform_macos::Event,
+        clipboard: &dyn tekes_ui_module_runtime::ContentClipboard,
+        text: &mut dyn ButtonTextRenderer,
+    ) -> Result<bool> {
+        let mut result = Ok(false);
+        let callback = &mut self.action;
+        self.source.with_host(&mut |host| {
+            result = tekes_ui_module_runtime::dispatch_content_window_event_with_text(
+                host, event, clipboard, text,
+            )
+            .map(|response| response.is_some())
+            .map_err(|e| anyhow::anyhow!("Container input: {e:?}"));
+            if let Some(callback) = callback {
+                let records = host.drain_action_records();
+                callback(host, records);
+            }
+        });
+        result
+    }
     pub(crate) fn event(
         &mut self,
         event: &ContentEvent,

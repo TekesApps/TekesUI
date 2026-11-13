@@ -2960,13 +2960,23 @@ impl ContentHost {
             // Preserve original cancellation before any delegated ack reconciliation.
             return Ok(self.event(event));
         }
+        self.with_text_input(text, |host| host.event(event))
+    }
+    /// Run a native text-service operation against the current original owner.
+    /// Clipboard claims need the same pre/post layout as ordinary text events.
+    pub fn with_text_input<R>(
+        &mut self,
+        text: &mut dyn ButtonTextRenderer,
+        dispatch: impl FnOnce(&mut Self) -> R,
+    ) -> Result<R, CompositionError> {
+        self.reading_scroll_source = None;
         if let Some(id) = self.root.needs_text()
             && text.text_surface_host().is_none()
         {
             return Err(CompositionError::MissingTextServices(id));
         }
         self.prepare_focused_text(text);
-        let result = self.event(event);
+        let result = dispatch(self);
         self.prepare_focused_text(text);
         Ok(result)
     }

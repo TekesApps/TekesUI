@@ -1,5 +1,12 @@
 # ProcessComponent / ProcessContainer / AppHost migration boundary
 
+## Local clipboard ownership — 2026-11-13 (#270)
+
+The local AppWindow → LocalContainer route uses the module-runtime's shared native Content dispatcher for clipboard commands. Window supplies only the clipboard transport; the original ContentHost claims the native key span and supplies the current UTF-16 text selection. Empty Cut and a clipboard without text are no-ops, Cut uses the exact claimed replacement range, and read-only, disabled and marked owners retain their existing edit gates. Raw shortcut and selector callbacks in one native key span cannot apply the same operation twice.
+
+LocalContainer supplies its existing font backend through ContentHost's text-input service scope, preserving validation and layout before the claim and after the edit. The existing window dispatcher and the local text-service dispatcher share one clipboard reducer. Window activity, modal/navigation gates and accessibility routing remain with AppHost. This is a local clipboard repair under [#270](https://github.com/TekesApps/TekesUI/issues/270), not new remote text, scrolling or snapshot capability. CPU regression results and unverified native/IME/GPU layers are tracked in the Issue; historical receipts below do not certify this change.
+
+
 ## Implementation update — 2026-11-07 (#229, v0.2.0)
 
 User authorization now covers implementation, affected verification and formal semantic-version Release. The dated design-only and prior acceptance statements below remain historical. New assembly is `AppWindow::from_containers(Vec<Container>, PresentationOptions)` with `Container::{Local, Process}` and `LocalContainer`; old local-only source callers can temporarily import `legacy::Container`. `Column/from_columns` retains its horizontal layout semantics through the same Host and container-owned Toolbar instances, not a second runtime. The module-runtime Content adapter is unchanged.
