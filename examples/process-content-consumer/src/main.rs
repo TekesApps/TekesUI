@@ -1924,6 +1924,29 @@ mod consumer {
         );
         let end = Instant::now() + Duration::from_secs(15);
         loop {
+            // Import the unfocused siblings before allowing render to reconcile
+            // the source's deferred key. Ordinary traversal skips siblings with
+            // pending geometry; this case requires the exact next container.
+            let mut siblings_ready = true;
+            for id in &ids[1..] {
+                let container = host
+                    .get_mut(*id)
+                    .unwrap()
+                    .component_mut::<ProcessContainer>()
+                    .unwrap();
+                container.prepare(&mut renderer)?;
+                siblings_ready &= container.input_ready();
+            }
+            if siblings_ready {
+                break;
+            }
+            ensure!(
+                Instant::now() < end,
+                "pending native boundary sibling geometry deadline: key=1017"
+            );
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        loop {
             let last_tick = tick(&mut host, &mut renderer, &ids, pending_tab_frame)?;
             if last_tick && host.focused() == Some(ids[1]) {
                 break;
