@@ -1,5 +1,11 @@
 # Issue 36 — original controlled menu declarations
 
+## 2026-11-13: intrinsic popup height and pointer acceptance (#245 / T68)
+
+Menu popup height follows the actual measured rows plus the existing insets; it must not reserve blank rows for short menus. The existing viewport cap, placement and ScrollArea continue to handle long menus. This contract belongs to the shared MenuView geometry, including ToolbarControl consumers, rather than a per-AppHost height override.
+
+Acceptance follows the actual consumer route: an enabled row responds to pointer hover and dispatches its original action once on a completed click; Escape and outside dismissal do not activate it. Disabled rows retain their declared disabled behavior. The AppHost workspace menu must be checked with its actual current container and enabled state, so a disabled exchange is not mistaken for an input-routing failure. The T68 records distinguish the reproduced sizing failure, component/consumer regressions and native observations.
+
 This increment fills the original Menu's public component contract. It does not add an AgentKit preference model or another menu engine. The first event-capture stage remains documented in menu-action-records-20261021.md; current implementation and validation records are under design/reviews/menu-declarations-20261021.
 
 `MenuContent::set_entries(Vec<MenuEntry>)` atomically declares original item, submenu and separator templates. Each nonseparator has a stable sibling value and a nonempty label; duplicate sibling values reject without changing the previous model. Items may declare `checked: Option<bool>` and `disabled`; submenus may be disabled. None is an ordinary command, Some(false) a checkable off item, and Some(true) a checked item. Selection never automatically changes this controlled check state. The caller owns its business values, checked preferences and any preference revision, as in the read-only ClientKit Sort/Group reference.

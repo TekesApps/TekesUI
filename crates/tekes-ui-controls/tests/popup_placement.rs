@@ -46,6 +46,31 @@ fn layout(
     (v, m, l)
 }
 #[test]
+fn menu_height_fits_short_content_and_hover_keeps_original_activation() {
+    for count in [1, 2, 4] {
+        let (mut view, mut model, popup) = layout(
+            Rect::new(20., 20., 180., 36.),
+            Rect::new(0., 0., 600., 800.),
+            count,
+        );
+        let first = popup.items.first().unwrap().frame;
+        let last = popup.items.last().unwrap().frame;
+        let inset = first.min_y() - popup.popup.min_y();
+        assert_eq!(popup.popup.max_y(), last.max_y() + inset);
+        let point = last.center();
+        view.pointer_move_with_model(&mut model, point);
+        assert_eq!(model.items.selected, count - 1);
+        view.pointer_down_with_model(&mut model, point);
+        assert!(matches!(view.pointer_up_with_model(&mut model, point),
+            MenuEvent::Activated { index, .. } if index == count - 1));
+        assert_eq!(
+            view.pointer_up_with_model(&mut model, point),
+            MenuEvent::None
+        );
+    }
+}
+
+#[test]
 fn menu_follows_the_bottom_of_measured_tall_anchors() {
     for height in [36., 64., 100.] {
         let anchor = Rect::new(20., 20., 180., height);

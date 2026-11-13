@@ -2279,6 +2279,91 @@ mod input_regressions {
         );
     }
     #[test]
+    fn workspace_secondary_pointer_activates_original_action_after_redraw() {
+        for expanded in [false, true] {
+            let mut host = workspace_secondary_fixture();
+            if expanded {
+                host.presentation
+                    .as_mut()
+                    .unwrap()
+                    .toggle_others_expanded()
+                    .unwrap();
+                refresh_window_chrome(&mut host);
+            }
+            let point = host.panels[0]
+                .mounted_toolbar
+                .host
+                .content_host()
+                .get(ComponentId(92041))
+                .unwrap()
+                .frame()
+                .center();
+            let target = host.toolbar_target_at(point).unwrap();
+            let pointer = |position: Point, phase| {
+                let kind = match phase {
+                    PointerPhase::Down => MouseEventKind::Down {
+                        button: MouseButton::Left,
+                        click_count: 1,
+                    },
+                    PointerPhase::Up => MouseEventKind::Up {
+                        button: MouseButton::Left,
+                        click_count: 1,
+                    },
+                    _ => MouseEventKind::Moved,
+                };
+                window_toolbar_mount::native_toolbar_event(&Event::Mouse(MouseEvent {
+                    kind,
+                    position: tekes_ui_platform_macos::Point {
+                        x: position.x as f64,
+                        y: position.y as f64,
+                    },
+                    modifiers: Default::default(),
+                }))
+                .unwrap()
+            };
+            host.dispatch_toolbar(target, &pointer(point, PointerPhase::Down))
+                .unwrap();
+            refresh_window_chrome(&mut host);
+            host.dispatch_toolbar(target, &pointer(point, PointerPhase::Up))
+                .unwrap();
+            refresh_window_chrome(&mut host);
+            assert_eq!(host.open_toolbar(), Some(target));
+            let row = host.panels[0]
+                .mounted_toolbar
+                .host
+                .semantics()
+                .into_iter()
+                .flat_map(|node| node.parts)
+                .find(|(_, part)| part.semantics.name == "Switch Focus and Others")
+                .unwrap()
+                .1
+                .frame
+                .center();
+            for phase in [PointerPhase::Move, PointerPhase::Down, PointerPhase::Up] {
+                // Use the same open-overlay precedence as route_toolbar_event,
+                // including hits outside the original toolbar band.
+                let owner = host
+                    .open_toolbar()
+                    .or_else(|| host.toolbar_target_at(row))
+                    .unwrap();
+                assert_eq!(owner, target);
+                host.dispatch_toolbar(owner, &pointer(row, phase)).unwrap();
+                if phase != PointerPhase::Up {
+                    refresh_window_chrome(&mut host);
+                }
+            }
+            assert_eq!(
+                host.presentation.as_ref().unwrap().focus_id(),
+                "other",
+                "expanded={expanded}"
+            );
+            assert!(!host.presentation.as_ref().unwrap().others_expanded());
+            host.drain_toolbar_commands().unwrap();
+            assert_eq!(host.presentation.as_ref().unwrap().focus_id(), "other");
+            assert_eq!(host.open_toolbar(), None);
+        }
+    }
+    #[test]
     fn expanded_workspace_menu_survives_real_hidden_draw_between_press_and_release() {
         let mut host = workspace_secondary_fixture();
         host.presentation

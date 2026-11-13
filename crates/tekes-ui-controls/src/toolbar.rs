@@ -1391,6 +1391,56 @@ mod tests {
         }
     }
     #[test]
+    fn single_command_menu_fits_its_row_and_keeps_original_pointer_action() {
+        let mut toolbar = ToolbarControl::window();
+        toolbar.set_menu_only(true);
+        toolbar.set_actions(vec![ToolbarAction {
+            id: 0x5604,
+            title: "Switch Focus and Others".into(),
+            enabled: true,
+        }]);
+        let mut text = Text { height: 16. };
+        let viewport = Rect::new(0., 0., 700., 700.);
+        toolbar.set_viewport(viewport);
+        toolbar.render(
+            &mut Scene::new(),
+            &mut text,
+            Rect::new(0., 0., 300., 48.),
+            tekes_ui_tokens::Theme::LIGHT.into(),
+        );
+        let trigger = toolbar.trigger_rect;
+        toolbar.pointer_event(&pointer(trigger.center(), PointerPhase::Down));
+        toolbar.pointer_event(&pointer(trigger.center(), PointerPhase::Up));
+        toolbar.render_overlay(
+            &mut Scene::new(),
+            &mut text,
+            viewport,
+            tekes_ui_tokens::Theme::LIGHT.into(),
+        );
+        let popup = toolbar.popup.as_ref().unwrap();
+        let row = popup.items[0].frame;
+        let inset = row.min_y() - popup.popup.min_y();
+        assert_eq!(
+            popup.popup.size.height,
+            row.size.height + 2. * inset,
+            "one command must not retain blank rows below its content"
+        );
+        assert!(
+            toolbar
+                .pointer_event(&pointer(row.center(), PointerPhase::Move))
+                .changed
+        );
+        toolbar.pointer_event(&pointer(row.center(), PointerPhase::Down));
+        assert!(
+            toolbar
+                .pointer_event(&pointer(row.center(), PointerPhase::Up))
+                .activated
+        );
+        assert_eq!(toolbar.take_action(), Some(0x5604));
+        assert_eq!(toolbar.take_action(), None);
+        assert_eq!(toolbar.trigger_rect, trigger);
+    }
+    #[test]
     fn mixed_window_actions_share_height_center_and_hover_geometry() {
         let mut toolbar = ToolbarControl::window();
         toolbar.set_actions(vec![
