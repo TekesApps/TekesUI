@@ -356,7 +356,7 @@ impl TabsContent {
             })
             .collect();
         self.header_height = if self.open_items.iter().any(|open| *open) {
-            TabsView::content_height(text, &self.sizes, &self.lanes, self.compact)
+            TabsView::content_height(text, &self.sizes, &self.closable_items, &self.lanes)
         } else {
             0.
         };

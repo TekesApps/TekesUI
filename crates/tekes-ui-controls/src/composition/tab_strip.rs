@@ -99,7 +99,7 @@ impl TabStripContent {
                     + if *closable { close } else { 0. }
             })
             .collect();
-        self.height = TabsView::content_height(text, &self.sizes, &self.lanes, false);
+        self.height = TabsView::content_height(text, &self.sizes, &self.closable, &self.lanes);
     }
     fn snapshot(&mut self, selected: Option<usize>) -> ContentResponse {
         let close = self.view.take_close_request();

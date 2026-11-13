@@ -533,7 +533,7 @@ fn assemble(theme: Theme, settings: SettingsOwner) -> anyhow::Result<AppWindow> 
                     StackContent {
                         model: Stack {
                             axis: Axis::Vertical,
-                            gap: Spacing::Micro.value(),
+                            gap: Spacing::Regular.value(),
                         },
                         flexible_child: None,
                         children: vec![

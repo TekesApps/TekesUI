@@ -70,13 +70,9 @@ fn set_button_state(
 
 fn size_role(compact: bool) -> ButtonSize {
     let _ = compact;
-    // Compact density changes the outer row metric. Body is retained so
-    // typography and horizontal inset stay equal to existing Gallery actions.
+    // Both densities use the content-derived equal inset rule. Body keeps
+    // typography and horizontal inset equal to existing Gallery actions.
     ButtonSize::Body
-}
-
-fn row_height(compact: bool) -> f32 {
-    if compact { 30.0 } else { 34.0 }
 }
 
 fn empty_button_layout() -> ButtonLayout {
@@ -380,31 +376,42 @@ impl TabsView {
     pub(crate) fn content_lane_width(text: &mut dyn ButtonTextRenderer, advance: f32) -> f32 {
         (advance - focus_reveal_outset(text.backing_scale()).max(4.)).max(0.)
     }
+    // Tabs use one inset around the title line box and close icon artboard.
+    // Keep this independent of the general Button vertical sizing policy.
+    fn content_inset(text: &mut dyn ButtonTextRenderer) -> f32 {
+        let role = proposal::TextRole::UiBody;
+        proposal::metric("spacing", "space-relaxed").expect("Tabs inset token")
+            * text.resolved_font_size(role)
+            / role.style().size
+    }
+    fn close_icon_size(text: &mut dyn ButtonTextRenderer) -> f32 {
+        let role = proposal::TextRole::UiBody;
+        proposal::metric("size", "size-icon-standard").expect("Tabs close icon token")
+            * text.resolved_font_size(role)
+            / role.style().size
+    }
     pub(crate) fn close_width(text: &mut dyn ButtonTextRenderer) -> f32 {
         let role = proposal::TextRole::UiBody;
-        24. * (text.resolved_font_size(role) / role.style().size).max(1.)
+        let gap = proposal::metric("spacing", "space-regular").expect("Tabs close gap token")
+            * text.resolved_font_size(role)
+            / role.style().size;
+        Self::close_icon_size(text) + gap
     }
     pub(crate) fn content_height(
         text: &mut dyn ButtonTextRenderer,
         sizes: &[Size],
+        closable: &[bool],
         lanes: &[f32],
-        compact: bool,
     ) -> f32 {
-        let gap = focus_reveal_outset(text.backing_scale()).max(4.);
+        let inset = Self::content_inset(text);
+        let icon = Self::close_icon_size(text);
         sizes
             .iter()
+            .zip(closable)
             .zip(lanes)
-            .fold(row_height(compact), |height, (size, lane)| {
-                height.max(
-                    ButtonModel::measure_content(
-                        text,
-                        *size,
-                        (*lane - gap).max(0.),
-                        size_role(compact),
-                        proposal::TextRole::UiBody,
-                    )
-                    .height,
-                )
+            .filter(|(_, lane)| **lane > 0.)
+            .fold(0., |height, ((size, close), _)| {
+                height.max(size.height.max(if *close { icon } else { 0. }) + inset * 2.)
             })
     }
 
@@ -550,7 +557,8 @@ impl TabsView {
         };
         let lane_gap = focus_reveal_outset(text.backing_scale()).max(4.0);
         let close_width = Self::close_width(text);
-        let base_height = row_height(compact);
+        let inset = Self::content_inset(text);
+        let icon_size = Self::close_icon_size(text);
         let mut measured_heights = Vec::with_capacity(self.model.count);
         for (index, lane) in lanes.iter().copied().enumerate().take(self.model.count) {
             if !self.visible_items[index] {
@@ -568,16 +576,15 @@ impl TabsView {
             let label = labels.get(index).copied().unwrap_or("");
             let measured = content_sizes
                 .and_then(|sizes| sizes.get(index).copied())
-                .map(|size| {
-                    ButtonModel::measure_content(text, size, lane_width, size_role(compact), role)
-                        .height
-                })
-                .unwrap_or_else(|| {
-                    ButtonModel::measure(text, label, lane_width, size_role(compact), role).height
-                });
-            measured_heights.push(base_height.max(measured));
+                .unwrap_or_else(|| text.measure(label, role, (lane_width - inset * 2.).max(0.)));
+            measured_heights.push(
+                measured
+                    .height
+                    .max(if self.closable[index] { icon_size } else { 0. })
+                    + inset * 2.,
+            );
         }
-        let height = measured_heights.iter().copied().fold(base_height, f32::max);
+        let height = measured_heights.iter().copied().fold(0., f32::max);
         let component_frame = Rect::new(frame.min_x(), frame.min_y(), frame.size.width, height);
         let visible = clip_rect(component_frame, clip);
         let mut items = Vec::with_capacity(self.model.count);
@@ -658,9 +665,20 @@ impl TabsView {
             };
             let close_layout = if self.closable[index] {
                 let width = close_width.min((item.size.width * 0.5).max(0.));
-                let close_frame =
-                    Rect::new(item.max_x() - width, item.min_y(), width, item.size.height);
-                layout.content.size.width = (close_frame.min_x() - layout.content.min_x()).max(0.);
+                let side = icon_size.min(width).min(item.size.height);
+                // Keep the artwork centered in its original close target, and
+                // move that target inward to reserve the tab's trailing inset.
+                // A constrained lane must still keep the target inside the tab.
+                let trailing =
+                    (inset - (width - side) * 0.5).clamp(0., (item.size.width - width).max(0.));
+                let close_frame = Rect::new(
+                    item.max_x() - trailing - width,
+                    item.min_y(),
+                    width,
+                    item.size.height,
+                );
+                let title_end = item.max_x() - inset - close_width;
+                layout.content.size.width = (title_end - layout.content.min_x()).max(0.);
                 let close = &mut self.close_buttons[index];
                 close.set_surface(self.surface);
                 close.frame_policy = crate::ButtonFramePolicy::Exact;
@@ -681,13 +699,6 @@ impl TabsView {
                     paint::ButtonVariant::Quiet,
                 );
                 if let Some(visible) = close_layout.visible {
-                    let body = proposal::TextRole::UiBody;
-                    let scale = (text.resolved_font_size(body) / body.style().size).max(1.);
-                    let side = (proposal::metric("size", "size-icon-standard")
-                        .expect("Tabs close icon size token")
-                        * scale)
-                        .min(close_frame.size.width)
-                        .min(close_frame.size.height);
                     let artboard = Rect::new(
                         close_frame.center().x - side * 0.5,
                         close_frame.center().y - side * 0.5,
@@ -4261,6 +4272,140 @@ mod tests {
         assert_eq!(layout.popup.size.width, header.width + inset * 2.0);
         assert_eq!(layout.items[0].frame.size.height, expected_height);
         assert_eq!(layout.items[0].frame.size.height, 36.0);
+    }
+
+    #[test]
+    fn tabs_keep_content_insets_equal_and_close_separate_at_each_type_scale() {
+        struct TabText(f32);
+        impl crate::layout_view::IconRenderer for TabText {
+            fn prepare_icon(
+                &mut self,
+                _: &str,
+                _: f32,
+                _: f32,
+                _: Rgba,
+            ) -> Result<crate::composition::IconImage, crate::composition::IconRenderError>
+            {
+                Ok(crate::composition::IconImage::new(
+                    tekes_ui_scene::ImageId(1),
+                    std::rc::Rc::new(()),
+                ))
+            }
+            fn draw_icon(&mut self, _: &mut Scene, _: &str, _: Rect, _: Rgba) {
+                unreachable!("Tabs retain prepared artwork");
+            }
+        }
+        impl ButtonTextRenderer for TabText {
+            fn icon_renderer(&mut self) -> Option<&mut dyn crate::layout_view::IconRenderer> {
+                Some(self)
+            }
+            fn resolved_font_size(&mut self, role: proposal::TextRole) -> f32 {
+                role.style().size * self.0
+            }
+            fn measure(&mut self, label: &str, role: proposal::TextRole, width: f32) -> Size {
+                Size::new(
+                    (label.len() as f32 * 7. * self.0).min(width),
+                    role.style().line_height * self.0,
+                )
+            }
+            fn draw(
+                &mut self,
+                _: &mut Scene,
+                _: &str,
+                _: proposal::TextRole,
+                _: Rect,
+                _: ButtonTextAlign,
+                _: Rgba,
+            ) {
+            }
+        }
+        for scale in [1., 2.] {
+            for closable in [false, true] {
+                for composed in [false, true] {
+                    let mut text = TabText(scale);
+                    let role = proposal::TextRole::UiBody;
+                    let size = text.measure("Tab", role, 1000.);
+                    // Use the natural lane used by TabStrip, not an equal-width
+                    // allocation with intentional spare title space.
+                    let width = ButtonModel::measure_content(
+                        &mut text,
+                        size,
+                        1000.,
+                        ButtonSize::Body,
+                        role,
+                    )
+                    .width
+                        + if closable {
+                            TabsView::close_width(&mut text)
+                        } else {
+                            0.
+                        }
+                        + focus_reveal_outset(1.).max(4.);
+                    let measured =
+                        TabsView::content_height(&mut text, &[size], &[closable], &[width]);
+                    let frame = Rect::new(10., 20., width, measured);
+                    let mut view = TabsView::new(1);
+                    view.set_closable(0, closable);
+                    let mut scene = Scene::new();
+                    let layout = if composed {
+                        view.render_content(
+                            &mut scene,
+                            &mut text,
+                            &[size],
+                            &[width],
+                            frame,
+                            None,
+                            palette(),
+                            role,
+                            false,
+                        )
+                    } else {
+                        view.render(
+                            &mut scene,
+                            &mut text,
+                            &["Tab"],
+                            frame,
+                            None,
+                            palette(),
+                            role,
+                            false,
+                        )
+                    };
+                    let item = layout.items[0];
+                    let left = item.content.min_x() - item.frame.min_x();
+                    assert_eq!(item.frame.size.height, measured, "measure and paint agree");
+                    assert_eq!(item.content.min_y() - item.frame.min_y(), left);
+                    assert_eq!(item.frame.max_y() - item.content.max_y(), left);
+                    if closable {
+                        let close = layout.close_buttons[0].unwrap();
+                        let art = scene
+                            .primitives()
+                            .iter()
+                            .find_map(|p| match p {
+                                tekes_ui_scene::Primitive::Image(image) => Some(image.rect),
+                                _ => None,
+                            })
+                            .expect("close artwork");
+                        assert_eq!(art.center(), close.frame.center());
+                        assert_eq!(item.frame.max_x() - art.max_x(), left);
+                        assert_eq!(art.min_y() - item.frame.min_y(), left);
+                        assert!(item.content.max_x() <= close.frame.min_x());
+                        assert_eq!(view.close_target_at(item.content.center()), None);
+                        assert_eq!(view.pointer_down_at(close.frame.center()), Some(0));
+                        assert_eq!(view.pointer_up_at(close.frame.center()), None);
+                        assert_eq!(view.take_close_request(), Some(0));
+                    } else {
+                        assert_eq!(item.frame.max_x() - item.content.max_x(), left);
+                        assert!(layout.close_buttons[0].is_none());
+                    }
+                    let toolbar = crate::toolbar::metrics(&mut text, role).row;
+                    assert!(
+                        measured <= toolbar,
+                        "standard title fits the actual Toolbar row at {scale}x"
+                    );
+                }
+            }
+        }
     }
 
     #[test]

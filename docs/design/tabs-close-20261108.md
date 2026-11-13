@@ -65,3 +65,27 @@ original pointer/AX/keyboard requests, delayed identity, controlled fallback,
 all-close/reopen, IME, disabled state, old captures and invalid auxiliary AX
 parts. Native/GPU visual acceptance and test execution are recorded by the
 coordinator against the frozen integrated source.
+
+## Equal content insets (Issue #245, 2026-11-13)
+
+Tabs measure their height from the title line box and, when present, the close
+icon artboard, plus `space-relaxed` on both sides at the resolved UiBody scale.
+The same inset applies at the leading and trailing edges. The title-to-close
+separation uses `space-regular`; the close icon remains centered in its own
+hit target. That target moves inward to reserve the trailing inset, and the
+title slot ends before the target. Natural-title TabStrip lanes
+therefore have equal content insets; equal-width Tabs retain their assigned
+extra title-slot width. Glyph ink is not the measurement boundary. Compact
+Tabs follow the same content-inset rule rather than the old fixed 30pt floor.
+General Button geometry, Toolbar partitions and ScrollArea ownership are unchanged.
+
+For the standard 16pt UiBody line box and 16pt close artboard, Tabs measure 40pt
+at 1x and 80pt at 2x; the existing Toolbar rows are 42pt and 84pt respectively.
+A custom title line box taller than 18pt times the typography scale needs more
+height than that Toolbar row; this change does not silently shrink its insets.
+The real AppHost renderer measures shaped line height, so native verification
+must also inspect the actual title font metrics and clipping.
+
+The Gallery Workspace headings are separate TextContent/Stack children, not
+ListView group headers. Their inter-group and heading-to-list gaps both use
+`Spacing::Regular`; ListView row metrics are unchanged.
