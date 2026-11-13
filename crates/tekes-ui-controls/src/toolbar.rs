@@ -77,6 +77,7 @@ pub struct ToolbarControl {
     hidden: Vec<usize>,
     trigger: crate::composition::Button,
     overflow_icon: Option<ImageId>,
+    icon_error: Option<crate::composition::IconRenderError>,
     viewport: Rect,
     held: Option<usize>,
     focused: Option<usize>,
@@ -111,6 +112,7 @@ impl Default for ToolbarControl {
             hidden: Vec::new(),
             trigger: crate::composition::Button::new("…"),
             overflow_icon: None,
+            icon_error: None,
             viewport: Rect::default(),
             held: None,
             focused: None,
@@ -433,6 +435,7 @@ impl ToolbarControl {
         palette: Palette,
         clip: Option<Rect>,
     ) {
+        self.icon_error = None;
         let m = metrics(text, self.text_role);
         let allocated = frame;
         let horizontal = self.axis == crate::extended::Axis::Horizontal;
@@ -603,7 +606,8 @@ impl ToolbarControl {
                 clip,
                 palette.into(),
             );
-            self.buttons[i].paint_toolbar_template_icon(scene, text, palette.into());
+            let error = self.buttons[i].paint_toolbar_template_icon(scene, text, palette.into());
+            self.icon_error = self.icon_error.or(error);
             cursor += (if horizontal { size.width } else { size.height }) + pad;
         }
         self.trigger_rect = Rect::default();
@@ -634,10 +638,15 @@ impl ToolbarControl {
             self.trigger.set_toolbar_presentation(true);
             self.trigger.button.frame_policy = crate::ButtonFramePolicy::Exact;
             self.trigger.button.chrome_height = None;
-            self.trigger.set_contents(match self.overflow_icon {
-                Some(image) => crate::composition::ButtonContents::Image(image),
-                None => crate::composition::ButtonContents::Text("…".into()),
-            });
+            if let Some(image) = self.overflow_icon {
+                self.trigger.set_contents(image);
+            } else if text.icon_renderer().is_some() {
+                // Optional icon-capable hosts use centered artwork, not a
+                // baseline-aligned text glyph. Legacy text-only hosts remain valid.
+                self.trigger.set_toolbar_template_icon("tekes-more");
+            } else {
+                self.trigger.set_contents("…");
+            }
             self.trigger
                 .set_accessible_name(Some("More actions".into()));
             crate::composition::Component::arrange(
@@ -654,6 +663,10 @@ impl ToolbarControl {
                 clip,
                 palette.into(),
             );
+            let error = self
+                .trigger
+                .paint_toolbar_template_icon(scene, text, palette.into());
+            self.icon_error = self.icon_error.or(error);
         }
     }
     /// Called after all ordinary content so the popup can overlay sibling panes.
@@ -791,6 +804,9 @@ impl ToolbarControl {
 // The composition wrapper keeps the real Button input contract,
 // including explicit drag propagation, modifiers and primary-button ownership.
 impl crate::composition::Component for ToolbarControl {
+    fn icon_error(&self) -> Option<crate::composition::IconRenderError> {
+        self.icon_error
+    }
     fn requires_icon_services(&self) -> bool {
         !self.template_icons.is_empty()
     }
