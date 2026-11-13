@@ -2012,6 +2012,14 @@ mod pinned_header_tests {
         assert_eq!(back.center().y, chip.center().y);
         sidebar.event(&ContentEvent::PointerDown(chip.center()));
         sidebar.event(&ContentEvent::PointerUp(chip.center()));
+        render_header(&mut sidebar, &mut text, Rect::new(12., 16., 760., 180.));
+        let wide_back = sidebar.host.get(ComponentId(4)).unwrap().frame();
+        let wide_editor = sidebar.host.get(ComponentId(6)).unwrap().frame();
+        assert_eq!(
+            wide_editor.min_x() - wide_back.max_x(),
+            tekes_ui_tokens::Spacing::Regular.value(),
+            "expanding search preserves the original Back-to-editor gap"
+        );
         draw(&mut sidebar, &mut text);
         // The editor changes the row's measured height; compare both controls
         // from this same expanded layout, including the eventual Back hit.

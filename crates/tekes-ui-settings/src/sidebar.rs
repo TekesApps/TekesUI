@@ -191,19 +191,20 @@ impl SettingsSidebar {
                         gap: tekes_ui_tokens::Spacing::Relaxed.value(),
                     },
                     children: vec![
-                        Content::new(
-                            ComponentId(5),
-                            StackContent {
-                                model: Stack {
-                                    axis: Axis::Horizontal,
-                                    gap: tekes_ui_tokens::Spacing::Regular.value(),
-                                },
-                                children: vec![
-                                    Content::new(ComponentId(4), back_button),
-                                    Content::new(ComponentId(10), search_button),
-                                ],
-                                flexible_child: Some(ComponentId(4)),
+                        StackContent {
+                            model: Stack {
+                                axis: Axis::Horizontal,
+                                gap: tekes_ui_tokens::Spacing::Regular.value(),
                             },
+                            children: vec![
+                                Content::new(ComponentId(4), back_button),
+                                Content::new(ComponentId(10), search_button),
+                            ],
+                            flexible_child: Some(ComponentId(4)),
+                        }
+                        .into_content_with_distribution(
+                            ComponentId(5),
+                            tekes_ui_tokens::proposal::layout::MainAxisDistribution::SpaceBetween,
                         ),
                         scroll,
                     ],
@@ -284,9 +285,10 @@ impl SettingsSidebar {
                 .with_help("搜索设置"),
             )
             .map_err(|error| anyhow::anyhow!("Settings search: {error:?}"))?;
-        self.host
-            .get_mut(ComponentId(5))
-            .unwrap()
+        let header = self.host.get_mut(ComponentId(5)).unwrap();
+        *header.stack_distribution_mut().unwrap() =
+            tekes_ui_tokens::proposal::layout::MainAxisDistribution::Start;
+        header
             .component_mut::<StackContent>()
             .unwrap()
             .flexible_child = Some(ComponentId(6));
@@ -305,9 +307,10 @@ impl SettingsSidebar {
         self.host
             .insert(ComponentId(5), self.search_button.take().unwrap())
             .map_err(|error| anyhow::anyhow!("Settings search: {error:?}"))?;
-        self.host
-            .get_mut(ComponentId(5))
-            .unwrap()
+        let header = self.host.get_mut(ComponentId(5)).unwrap();
+        *header.stack_distribution_mut().unwrap() =
+            tekes_ui_tokens::proposal::layout::MainAxisDistribution::SpaceBetween;
+        header
             .component_mut::<StackContent>()
             .unwrap()
             .flexible_child = Some(ComponentId(4));

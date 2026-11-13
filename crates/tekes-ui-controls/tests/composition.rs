@@ -53,6 +53,49 @@ fn render(h: &mut ContentHost) {
     )
     .unwrap();
 }
+
+#[test]
+fn distributed_stack_allocates_main_axis_without_changing_intrinsic_or_default_layout() {
+    for axis in [Axis::Horizontal, Axis::Vertical] {
+        let make = || StackContent {
+            model: Stack { axis, gap: 8. },
+            children: vec![
+                Content::new(id(2), TextContent::new("Back")),
+                Content::new(id(3), TextContent::new("Search")),
+            ],
+            flexible_child: None,
+        };
+        let proposal = Size::new(260., 180.);
+        let mut original = Content::new(id(1), make());
+        let natural = original.measure(&mut Text, proposal);
+        let mut distributed = make().into_content_with_distribution(
+            id(1),
+            proposal::layout::MainAxisDistribution::SpaceBetween,
+        );
+        assert_eq!(distributed.measure_intrinsic(&mut Text, proposal), natural);
+        let measured = distributed.measure(&mut Text, proposal);
+        match axis {
+            Axis::Horizontal => assert_eq!(measured.size, Size::new(260., natural.size.height)),
+            Axis::Vertical => assert_eq!(measured.size, Size::new(natural.size.width, 180.)),
+        }
+        assert_eq!(original.measure(&mut Text, proposal), natural);
+        let frame = Rect::new(7., 11., measured.size.width, measured.size.height);
+        distributed.arrange(&mut Text, frame, frame);
+        let stack = distributed.component::<StackContent>().unwrap();
+        let first = stack.children[0].frame();
+        let last = stack.children[1].frame();
+        match axis {
+            Axis::Horizontal => {
+                assert_eq!(first.min_x(), frame.min_x());
+                assert_eq!(last.max_x(), frame.max_x());
+            }
+            Axis::Vertical => {
+                assert_eq!(first.min_y(), frame.min_y());
+                assert_eq!(last.max_y(), frame.max_y());
+            }
+        }
+    }
+}
 #[derive(Debug)]
 struct Editor {
     input: TextInput,

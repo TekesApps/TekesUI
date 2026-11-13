@@ -950,6 +950,7 @@ pub struct Content {
     composition_active: bool,
     retained_body_paint: bool,
     semantic_suppressed: bool,
+    stack_distribution: Option<proposal::layout::MainAxisDistribution>,
 }
 impl Content {
     fn active(&self) -> bool {
@@ -981,6 +982,7 @@ impl Content {
             composition_active: true,
             retained_body_paint: false,
             semantic_suppressed: false,
+            stack_distribution: None,
         }
     }
     /// Hide a decorative slot from AX while preserving mount, layout and paint.
@@ -1212,6 +1214,13 @@ impl Content {
     pub fn component_mut<T: Component>(&mut self) -> Option<&mut T> {
         (self.component.as_mut() as &mut dyn Any).downcast_mut()
     }
+    /// Update an explicitly declared Stack distribution without replacing its
+    /// mounted content. Ordinary components and undeclared Stacks return None.
+    pub fn stack_distribution_mut(
+        &mut self,
+    ) -> Option<&mut proposal::layout::MainAxisDistribution> {
+        self.stack_distribution.as_mut()
+    }
     pub fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
         self.measure_content(text, available, false)
     }
@@ -1245,13 +1254,30 @@ impl Content {
             self.component.measure(text, clean_size(available))
         };
         measured.size = clean_size(measured.size);
+        if !intrinsic && self.stack_distribution.is_some() {
+            let available = clean_size(available);
+            match self
+                .component::<StackContent>()
+                .expect("distribution is declared by StackContent")
+                .model
+                .axis
+            {
+                Axis::Horizontal => measured.size.width = measured.size.width.max(available.width),
+                Axis::Vertical => measured.size.height = measured.size.height.max(available.height),
+            }
+        }
         measured.first_baseline = measured.first_baseline.filter(|v| v.is_finite());
         measured
     }
     pub fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
         self.frame = clean_rect(frame);
         self.clip = clean_rect(clip);
-        if let Some(label) = &mut self.label {
+        if let Some(distribution) = self.stack_distribution {
+            let (frame, clip) = (self.frame, self.clip);
+            self.component_mut::<StackContent>()
+                .expect("distribution is declared by StackContent")
+                .arrange_with_distribution(text, frame, clip, Some(distribution));
+        } else if let Some(label) = &mut self.label {
             let mut renderer = label::LabelRenderer::new(text, label, self.clip);
             self.component.measure(&mut renderer, self.frame.size);
             self.component.arrange(&mut renderer, self.frame, self.clip);
@@ -4493,6 +4519,47 @@ pub struct StackContent {
     pub flexible_child: Option<ComponentId>,
 }
 impl StackContent {
+    /// Declare a Stack that occupies the available main axis and distributes
+    /// its children within it. Intrinsic measurement keeps the natural size.
+    /// The original Stack component, children and mount identities are retained.
+    pub fn into_content_with_distribution(
+        self,
+        id: ComponentId,
+        distribution: proposal::layout::MainAxisDistribution,
+    ) -> Content {
+        let mut content = Content::new(id, self);
+        content.stack_distribution = Some(distribution);
+        content
+    }
+
+    fn arrange_with_distribution(
+        &mut self,
+        text: &mut dyn ButtonTextRenderer,
+        frame: Rect,
+        clip: Rect,
+        distribution: Option<proposal::layout::MainAxisDistribution>,
+    ) {
+        let measured = self.measurements(text, frame.size, false);
+        let placements = layout_measured_children(
+            frame,
+            self.model.axis,
+            &measured,
+            self.model.gap,
+            if self.model.axis == Axis::Horizontal {
+                proposal::layout::ROW
+            } else {
+                proposal::layout::COLUMN
+            },
+            AlignmentOverride {
+                main_axis: distribution,
+                ..AlignmentOverride::default()
+            },
+        );
+        for (c, p) in self.children.iter_mut().zip(placements) {
+            c.arrange(text, p.frame, clip)
+        }
+    }
+
     fn measurements(
         &mut self,
         text: &mut dyn ButtonTextRenderer,
@@ -4610,22 +4677,7 @@ impl Component for StackContent {
     }
 
     fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
-        let measured = self.measurements(text, frame.size, false);
-        let placements = layout_measured_children(
-            frame,
-            self.model.axis,
-            &measured,
-            self.model.gap,
-            if self.model.axis == Axis::Horizontal {
-                proposal::layout::ROW
-            } else {
-                proposal::layout::COLUMN
-            },
-            AlignmentOverride::default(),
-        );
-        for (c, p) in self.children.iter_mut().zip(placements) {
-            c.arrange(text, p.frame, clip)
-        }
+        self.arrange_with_distribution(text, frame, clip, None);
     }
 }
 #[derive(Debug)]
