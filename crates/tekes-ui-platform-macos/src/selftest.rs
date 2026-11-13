@@ -1466,6 +1466,10 @@ pub fn titlebar_contract() -> Vec<(bool, f64, f64)> {
                         icon: crate::CursorIcon::ResizeVertical,
                     },
                 ]);
+            } else if event == Event::Command(crate::CommandId(1001)) {
+                window.set_title("Titlebar contract A");
+            } else if event == Event::Command(crate::CommandId(1002)) {
+                window.set_title("Titlebar contract B");
             } else if let Event::Command(crate::CommandId(height)) = event {
                 let center = window.set_toolbar_row_height(f64::from(height));
                 self.1.set(center);
@@ -1612,6 +1616,43 @@ pub fn titlebar_contract() -> Vec<(bool, f64, f64)> {
                     "native reset must not move Toolbar target"
                 );
                 window.update();
+                if row == 42 {
+                    // Real consumer API, not a synthetic button-frame reset:
+                    // native title layout must leave the Toolbar controls aligned
+                    // before set_title returns, including repeated titles.
+                    let expected: Vec<_> = originals
+                        .iter()
+                        .map(|(_, button, _)| button.frame())
+                        .collect();
+                    let mut failures = Vec::new();
+                    for (step, command) in [1001, 1001, 1002, 1002].into_iter().enumerate() {
+                        shared.dispatch(Event::Command(crate::CommandId(command)));
+                        let actual: Vec<_> = originals
+                            .iter()
+                            .map(|(_, button, _)| button.frame())
+                            .collect();
+                        let title = if command == 1001 {
+                            "Titlebar contract A"
+                        } else {
+                            "Titlebar contract B"
+                        };
+                        assert_eq!(window.title().to_string(), title);
+                        println!(
+                            "TITLEBAR_TITLE_ALIGNMENT step={step} title={title:?} synchronous={} expected={expected:?} actual={actual:?}",
+                            actual == expected,
+                        );
+                        if actual != expected {
+                            failures.push((step, actual));
+                        }
+                        // Restore only after recording this call's result, so
+                        // all four cases start aligned and failures remain visible.
+                        window.update();
+                    }
+                    assert!(
+                        failures.is_empty(),
+                        "title update changed native controls: {failures:?}"
+                    );
+                }
             }
             for (kind, original, before) in &originals {
                 let button = window.standardWindowButton(*kind).unwrap();

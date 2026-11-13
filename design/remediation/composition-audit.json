@@ -2148,7 +2148,7 @@
     "crates/tekes-ui-platform-macos/src/app.rs": "340ca745fb5d9babc6a36ae9c14927a42c59bc1c6dcb504a8a51323553e20e37",
     "crates/tekes-ui-platform-macos/src/event.rs": "e3cbb4a7b0630bf91db44051e2f245fc01d41c441d8a76ea96c8692e93a4acdf",
     "crates/tekes-ui-platform-macos/src/lib.rs": "38b492134c3230dd8d23c56e2d7636180e098cb002f0c7a13bfa8f9b4b50066e",
-    "crates/tekes-ui-platform-macos/src/shared.rs": "e00ec022182fc964c1c298cb37649205f531be767fc165248bab996eb1c0304d",
+    "crates/tekes-ui-platform-macos/src/shared.rs": "028256ff954e3103e523be9720b0e68efda5db5abbfdbe15ed7fdc450729c524",
     "crates/tekes-ui-platform-macos/src/text_key.rs": "2d17364ccd846719db6bba796959a3e58ce9cbe5def6b7c2c51929dc91274115",
     "crates/tekes-ui-platform-macos/src/view.rs": "36f97f23967d86c52861383c58231d69760ce1a412cfa09ae0e3e378254d5ef1",
     "crates/tekes-ui-text/src/coretext/label.rs": "bc00cc86263847284b1b95ed4f2117faf6f2ec33316ad893e3b2d51b4d1b92f5",
@@ -2651,7 +2651,7 @@
     },
     {
       "path": "crates/tekes-ui-platform-macos/src/shared.rs",
-      "line": 1026,
+      "line": 1033,
       "anchor": "pub fn try_begin_titlebar_drag(&self) -> bool {"
     },
     {
@@ -4693,6 +4693,20 @@
         "crates/tekes-ui-controls/src/composition.rs",
         2323,
         2408
+      ]
+    ]
+  },
+  "window_title_alignment_review_20261113": {
+    "issue": 280,
+    "changed_sources": [
+      "crates/tekes-ui-platform-macos/src/shared.rs",
+      "crates/tekes-ui-platform-macos/src/selftest.rs"
+    ],
+    "boundary": "Native set_title compares actual title and restores existing toolbar alignment after setTitle returns. Preserves native controls, toolbar dimensions, existing synchronous reset contract. Hidden native A/A/B/B regression; visual acceptance and publication tracked separately. No capability status uplift.",
+    "relocated_evidence": [
+      [
+        1026,
+        1033
       ]
     ]
   }
