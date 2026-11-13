@@ -4,13 +4,13 @@ use tekes_ui_platform_macos::{
     AccessibilityAction as A, AccessibilityKey as K, AccessibilityNode as N, AccessibilityRole as R,
 };
 impl Workbench {
-    pub(in crate::gallery) fn search_native_layouts(
+    pub(in crate::gallery) fn hosted_native_layouts(
         &self,
         i: usize,
     ) -> Vec<(K, tekes_ui_platform_macos::AccessibilityTextLayout)> {
         self.states
             .get(&i)
-            .and_then(|s| s.input.search_host())
+            .and_then(|s| s.input.hosted())
             .map(|host| host.native_layouts())
             .unwrap_or_default()
     }
@@ -63,6 +63,8 @@ impl Workbench {
         let renderer = entry(i).renderer();
         let mut nodes = if renderer == "select" {
             s.select_story.native_nodes()
+        } else if renderer == "master" {
+            s.master().native_nodes()
         } else {
             Vec::new()
         };
@@ -546,7 +548,6 @@ impl Workbench {
             nodes.push(n);
         }
         let filtered = match renderer {
-            "combo-box" => Some((&s.extended.combo_view.options, &s.extended.combo)),
             "command-palette" => {
                 Some((&s.extended.command_view.options, &s.extended.command.combo))
             }
@@ -639,6 +640,20 @@ impl Workbench {
                 }
             }
             return response.changed || focus_changed;
+        }
+        if renderer == "master" && self.state(i).master().owns_native_key(key) {
+            let s = self.state(i);
+            let response = s.master_mut().native_action(key, action.clone());
+            for document in s.master_mut().drain_documents() {
+                s.activate(10000 + document, renderer);
+            }
+            if s.master().host.focused().is_some()
+                && let Some(key) = s.master().list().focused_key()
+            {
+                s.focus = Some(10000 + (key.0 - 1) as usize);
+                s.detail.blur();
+            }
+            return response.consumed;
         }
         if renderer == "select" && self.state(i).select_story.owns_native_key(key) {
             let (response, focused, logs) = {
@@ -775,7 +790,7 @@ impl Workbench {
                     return changed || focus_changed;
                 }
             }
-            if matches!(renderer, "combo-box" | "command-palette") {
+            if renderer == "command-palette" {
                 if id == 39 {
                     return false;
                 }
@@ -783,15 +798,10 @@ impl Workbench {
                     let s = self.state(i);
                     return match action {
                         A::Focus => {
-                            let focused = if renderer == "combo-box" {
-                                s.extended
-                                    .combo_view
-                                    .focus_option(original, &mut s.extended.combo)
-                            } else {
-                                s.extended
-                                    .command_view
-                                    .focus_option(original, &mut s.extended.command)
-                            };
+                            let focused = s
+                                .extended
+                                .command_view
+                                .focus_option(original, &mut s.extended.command);
                             if focused {
                                 s.input.focus_field();
                                 s.focus = Some(1000);
@@ -800,17 +810,9 @@ impl Workbench {
                             focused
                         }
                         A::Press => {
-                            let before = if renderer == "combo-box" {
-                                s.extended.combo.open
-                            } else {
-                                s.extended.command.combo.open
-                            };
+                            let before = s.extended.command.combo.open;
                             s.activate(id, renderer);
-                            let open = if renderer == "combo-box" {
-                                s.extended.combo.open
-                            } else {
-                                s.extended.command.combo.open
-                            };
+                            let open = s.extended.command.combo.open;
                             if before && !open {
                                 s.input.refresh(text);
                                 if renderer == "command-palette" {
@@ -1177,10 +1179,13 @@ mod tests {
     #[test]
     fn actual_text_editor_ax_edits_selection_and_native_input_state_stay_in_sync() {
         let (mut g, i) = gallery("field");
-        let key = K {
-            component: INPUT + i as u64,
-            part: Some(0),
-        };
+        let key = g
+            .workbench
+            .accessibility_nodes(i)
+            .into_iter()
+            .find(|node| node.role == R::TextField)
+            .unwrap()
+            .key;
         assert!(g.accessibility_nodes().iter().any(|n| n.key == key));
         g.accessibility_action(key, &A::Focus);
         assert!(
@@ -1208,10 +1213,13 @@ mod tests {
     #[test]
     fn actual_route_and_story_changes_remove_old_nodes_and_keys_cannot_activate_them() {
         let (mut g, i) = gallery("field");
-        let key = K {
-            component: INPUT + i as u64,
-            part: Some(0),
-        };
+        let key = g
+            .workbench
+            .accessibility_nodes(i)
+            .into_iter()
+            .find(|node| node.role == R::TextField)
+            .unwrap()
+            .key;
         assert!(g.accessibility_nodes().iter().any(|n| n.key == key));
         let docs = K {
             component: STORY + i as u64,
@@ -1351,10 +1359,13 @@ mod isolation_tests {
     #[test]
     fn composing_editor_rejects_ax_navigation_value_and_selection_without_disrupting_preedit() {
         let (mut g, i) = gallery("field");
-        let key = K {
-            component: INPUT + i as u64,
-            part: Some(0),
-        };
+        let key = g
+            .workbench
+            .accessibility_nodes(i)
+            .into_iter()
+            .find(|node| node.role == R::TextField)
+            .unwrap()
+            .key;
         g.accessibility_action(key, &A::Focus);
         g.handle_input(&Event::TextPreedit {
             text: "拼".into(),
@@ -1398,18 +1409,15 @@ mod text_family_tests {
             g.page = Page::Workbench(i);
             g.set_view_size(1200., 850.);
             g.build_scene(&mut Scene::new());
-            let key = if renderer == "search" {
-                g.accessibility_nodes()
-                    .into_iter()
-                    .find(|node| node.key.component >= (1_u64 << 63) && node.value.is_some())
-                    .unwrap()
-                    .key
-            } else {
-                K {
-                    component: INPUT + i as u64,
-                    part: Some(0),
-                }
-            };
+            let key = g
+                .accessibility_nodes()
+                .into_iter()
+                .find(|node| {
+                    matches!(node.role, R::TextField | R::TextArea | R::SearchField)
+                        && node.key.component >= (1_u64 << 63)
+                })
+                .expect("projected original text owner")
+                .key;
             g.accessibility_action(key, &A::Focus);
             assert!(
                 g.accessibility_action(key, &A::SetValue("中文 😀 e\u{301}".into()))
@@ -1981,11 +1989,31 @@ mod filtered_menu_tests {
             part: Some(id),
         }
     }
-    fn input(i: usize) -> K {
-        K {
-            component: INPUT + i as u64,
-            part: Some(0),
+    fn input(g: &Gallery, i: usize) -> K {
+        if entry(i).renderer() == "combo-box" {
+            // Resolve from the actual story owner, never the navigation Search.
+            g.workbench.states[&i]
+                .input
+                .hosted()
+                .unwrap()
+                .native_nodes()
+                .into_iter()
+                .find(|n| n.role == R::ComboBox)
+                .unwrap()
+                .key
+        } else {
+            K {
+                component: INPUT + i as u64,
+                part: Some(0),
+            }
         }
+    }
+    fn candidates(g: &Gallery, i: usize) -> Vec<N> {
+        g.workbench
+            .accessibility_nodes(i)
+            .into_iter()
+            .filter(|n| n.role == R::MenuItem)
+            .collect()
     }
     fn gallery(renderer: &str) -> (Gallery, usize) {
         let i = entries()
@@ -2009,29 +2037,29 @@ mod filtered_menu_tests {
             ("command-palette", "Search", "Search files"),
         ] {
             let (mut g, i) = gallery(renderer);
-            g.accessibility_action(input(i), &A::Focus);
+            let editor = input(&g, i);
+            g.accessibility_action(editor, &A::Focus);
             assert!(
-                g.accessibility_action(input(i), &A::SetValue(query.into()))
+                g.accessibility_action(editor, &A::SetValue(query.into()))
                     .redraw
             );
             g.build_scene(&mut Scene::new());
-            let nodes = g.accessibility_nodes();
-            assert!(!nodes.iter().any(|n| n.key == key(i, 40)));
-            let candidate = nodes.iter().find(|n| n.key == key(i, 42)).unwrap();
-            assert_eq!(candidate.label, expected);
-            assert_eq!(candidate.role, R::MenuItem);
-            assert_eq!(candidate.parent, Some(key(i, 39)));
-            assert!(!g.accessibility_action(key(i, 39), &A::Press).redraw);
-            assert!(g.accessibility_action(key(i, 42), &A::Focus).redraw);
+            let candidates = candidates(&g, i);
+            assert!(!candidates.iter().any(|n| n.label == "Automatic"));
+            let candidate = candidates.iter().find(|n| n.label == expected).unwrap();
+            let candidate_key = candidate.key;
+            let menu = candidate.parent.unwrap();
+            assert!(!g.accessibility_action(menu, &A::Press).redraw);
+            assert!(g.accessibility_action(candidate_key, &A::Focus).redraw);
             let state = &g.workbench.states[&i];
             let model = if renderer == "combo-box" {
-                &state.extended.combo
+                state.input.combo().model()
             } else {
                 &state.extended.command.combo
             };
             assert_eq!(model.active, Some(2));
             assert_eq!(model.selected, None);
-            assert!(g.accessibility_action(key(i, 42), &A::Press).redraw);
+            assert!(g.accessibility_action(candidate_key, &A::Press).redraw);
             let state = &g.workbench.states[&i];
             assert_eq!(state.input.query(), expected);
             assert_eq!(
@@ -2047,8 +2075,12 @@ mod filtered_menu_tests {
                 1
             );
             g.build_scene(&mut Scene::new());
-            assert!(!g.accessibility_nodes().iter().any(|n| n.key == key(i, 42)));
-            assert!(!g.accessibility_action(key(i, 42), &A::Press).redraw);
+            assert!(
+                !g.accessibility_nodes()
+                    .iter()
+                    .any(|n| n.key == candidate_key)
+            );
+            assert!(!g.accessibility_action(candidate_key, &A::Press).redraw);
             if renderer == "command-palette" {
                 assert_eq!(g.workbench.states[&i].focus, Some(20));
             }
@@ -2058,15 +2090,18 @@ mod filtered_menu_tests {
     fn stale_candidates_empty_query_and_preedit_do_not_retarget_or_commit() {
         for renderer in ["combo-box", "command-palette"] {
             let (mut g, i) = gallery(renderer);
-            g.accessibility_action(input(i), &A::Focus);
-            g.accessibility_action(input(i), &A::SetValue("a".into()));
+            let editor = input(&g, i);
+            g.accessibility_action(editor, &A::Focus);
+            g.accessibility_action(editor, &A::SetValue("a".into()));
             g.build_scene(&mut Scene::new());
-            g.accessibility_action(input(i), &A::SetValue("no matching candidate".into()));
-            assert!(!g.accessibility_action(key(i, 42), &A::Press).redraw);
+            let stale = candidates(&g, i).last().unwrap().key;
+            g.accessibility_action(editor, &A::SetValue("no matching candidate".into()));
+            assert!(!g.accessibility_action(stale, &A::Press).redraw);
             g.build_scene(&mut Scene::new());
-            assert!(!g.accessibility_nodes().iter().any(|n| n.key == key(i, 39)));
-            g.accessibility_action(input(i), &A::SetValue("".into()));
+            assert!(candidates(&g, i).is_empty());
+            g.accessibility_action(editor, &A::SetValue("".into()));
             g.build_scene(&mut Scene::new());
+            let before_preedit = candidates(&g, i).last().unwrap().key;
             g.handle_input(&Event::TextPreedit {
                 text: "拼".into(),
                 selection: 0..1,
@@ -2075,7 +2110,7 @@ mod filtered_menu_tests {
             });
             let before = g.text_input_state().unwrap();
             assert!(before.marked.is_some());
-            assert!(!g.accessibility_action(key(i, 42), &A::Press).redraw);
+            assert!(!g.accessibility_action(before_preedit, &A::Press).redraw);
             assert_eq!(g.text_input_state().unwrap().marked, before.marked);
         }
     }
@@ -2083,16 +2118,18 @@ mod filtered_menu_tests {
     fn outer_focus_dismisses_both_filtered_consumers() {
         for renderer in ["combo-box", "command-palette"] {
             let (mut g, i) = gallery(renderer);
-            g.accessibility_action(input(i), &A::Focus);
-            g.accessibility_action(input(i), &A::SetValue("a".into()));
+            let editor = input(&g, i);
+            g.accessibility_action(editor, &A::Focus);
+            g.accessibility_action(editor, &A::SetValue("a".into()));
             g.build_scene(&mut Scene::new());
+            assert!(!candidates(&g, i).is_empty());
             let search = K {
                 component: crate::gallery::accessibility::SEARCH,
                 part: Some(0),
             };
             assert!(g.accessibility_action(search, &A::Focus).redraw);
             g.build_scene(&mut Scene::new());
-            assert!(!g.accessibility_nodes().iter().any(|n| n.key == key(i, 39)));
+            assert!(candidates(&g, i).is_empty());
         }
     }
 }
@@ -2307,5 +2344,285 @@ mod search_recovery_focus_tests {
         assert!(g.accessibility_action(key, &A::Focus).redraw);
         assert_eq!(g.workbench.state(i).focus, Some(1000));
         assert!(g.workbench.state(i).input.search_host().unwrap().focused());
+    }
+}
+
+#[cfg(test)]
+mod field_area_host_migration_tests {
+    use super::*;
+    use crate::gallery::{Gallery, static_text::StaticText};
+    use tekes_ui_platform_macos::{
+        KeyEvent, KeyEventKind, Modifiers, TextKeyContext, TextKeyDisposition, TextKeyEvent,
+    };
+
+    fn gallery(renderer: &str) -> (Gallery, usize, K) {
+        let i = entries()
+            .iter()
+            .position(|e| e.renderer() == renderer)
+            .unwrap();
+        let mut g = Gallery::with_static_text(StaticText::new(None));
+        g.page = Page::Workbench(i);
+        g.set_view_size(1200., 850.);
+        g.build_scene(&mut Scene::new());
+        let role = if renderer == "area" {
+            R::TextArea
+        } else {
+            R::TextField
+        };
+        let key = g
+            .workbench
+            .accessibility_nodes(i)
+            .into_iter()
+            .find(|node| node.role == role)
+            .expect("actual story editor")
+            .key;
+        assert!(g.accessibility_action(key, &A::Focus).redraw);
+        (g, i, key)
+    }
+
+    #[test]
+    fn actual_field_area_use_native_key_spans_without_replaying_composition() {
+        for renderer in ["field", "area"] {
+            let (mut g, i, key) = gallery(renderer);
+            assert_eq!(
+                g.text_key_events(),
+                Some(true),
+                "{renderer} formal text owner"
+            );
+            assert!(
+                g.accessibility_text_layouts()
+                    .iter()
+                    .any(|(k, _)| *k == key),
+                "the same native editor publishes its formal text layout"
+            );
+            g.handle_input(&Event::TextCommand("selectAll:".into()));
+            let initial = g.text_input_state().unwrap().text;
+            let context = TextKeyContext {
+                id: 27501,
+                key: KeyEvent {
+                    kind: KeyEventKind::Down,
+                    key_code: 0,
+                    characters: "a".into(),
+                    characters_ignoring_modifiers: "a".into(),
+                    modifiers: Modifiers::NONE,
+                    is_repeat: false,
+                },
+                composing_at_start: false,
+            };
+            g.handle_input(&Event::TextKey(TextKeyEvent::Started(context.clone())));
+            assert_eq!(g.text_key_events(), None);
+            g.handle_input(&Event::TextPreedit {
+                text: "拼".into(),
+                selection: 0..1,
+                clauses: Vec::new(),
+                replacement: None,
+            });
+            assert!(g.text_input_state().unwrap().marked.is_some());
+            g.handle_input(&Event::TextCommit {
+                text: "项目".into(),
+                replacement: None,
+            });
+            let committed = g.text_input_state().unwrap();
+            assert_eq!(committed.text, "项目");
+            assert!(committed.marked.is_none());
+            g.handle_input(&Event::TextKey(TextKeyEvent::Finished {
+                context,
+                input_context_handled: Some(true),
+                disposition: TextKeyDisposition::TextDispatched,
+                text_callbacks: 2,
+                command_callbacks: 0,
+            }));
+            assert_eq!(g.text_key_events(), Some(true));
+            let finished = g.text_input_state().unwrap();
+            assert_eq!(
+                finished.text, committed.text,
+                "Finished must not replay commit"
+            );
+            assert_eq!(finished.selection, committed.selection);
+            g.handle_input(&Event::TextCommand("undo:".into()));
+            assert_eq!(g.workbench.state(i).input.query(), initial);
+        }
+    }
+
+    #[test]
+    fn actual_area_shift_diagonal_scroll_preserves_vertical_viewport() {
+        use tekes_ui_platform_macos::{ScrollEvent, ScrollPhase, Vec2};
+        let (mut g, i, _) = gallery("area");
+        let source = (0..80)
+            .map(|line| format!("Line {line}: editable area text.\n"))
+            .collect::<String>();
+        g.workbench.state(i).input.set_value(&source);
+        g.build_scene(&mut Scene::new());
+        g.workbench.state(i).input.scroll_to(120.);
+        g.build_scene(&mut Scene::new());
+        let point = g.workbench.state(i).input.visible_frame().unwrap().center();
+        let offset = |g: &Gallery| {
+            g.workbench.states[&i]
+                .input
+                .hosted()
+                .unwrap()
+                .host
+                .text_surface(tekes_ui_controls::composition::ComponentId(27502))
+                .unwrap()
+                .scroll
+                .offset
+                .y
+        };
+        let before = offset(&g);
+        assert!(before > 0.);
+        let selection = g.text_input_state().unwrap().selection;
+        let mut event = ScrollEvent {
+            timestamp: 1.,
+            delta: Vec2 { x: -4., y: -24. },
+            precise: true,
+            phase: ScrollPhase::Began,
+            momentum_phase: ScrollPhase::None,
+            inverted: false,
+            position: tekes_ui_platform_macos::Point {
+                x: point.x.into(),
+                y: point.y.into(),
+            },
+            modifiers: Modifiers {
+                shift: true,
+                ..Modifiers::NONE
+            },
+        };
+        g.handle_input(&Event::Scroll(event));
+        assert_eq!(
+            offset(&g),
+            before,
+            "Shift combines both native axes into horizontal scrolling"
+        );
+        assert_eq!(g.workbench.states[&i].input.query(), source);
+        assert_eq!(g.text_input_state().unwrap().selection, selection);
+        event.timestamp = 2.;
+        event.modifiers.shift = false;
+        g.handle_input(&Event::Scroll(event));
+        assert!(
+            offset(&g) > before,
+            "the same real Gallery route scrolls vertically without Shift"
+        );
+    }
+
+    #[test]
+    fn actual_area_precise_scroll_keeps_owner_after_leaving_viewport() {
+        use tekes_ui_platform_macos::{ScrollEvent, ScrollPhase, Vec2};
+        let (mut g, i, _) = gallery("area");
+        let source = (0..80)
+            .map(|line| format!("Line {line}: editable area text.\n"))
+            .collect::<String>();
+        g.workbench.state(i).input.set_value(&source);
+        g.build_scene(&mut Scene::new());
+        g.workbench.state(i).input.scroll_to(120.);
+        g.build_scene(&mut Scene::new());
+        let point = g.workbench.state(i).input.visible_frame().unwrap().center();
+        let offset = |g: &Gallery| {
+            g.workbench.states[&i]
+                .input
+                .hosted()
+                .unwrap()
+                .host
+                .text_surface(tekes_ui_controls::composition::ComponentId(27502))
+                .unwrap()
+                .scroll
+                .offset
+                .y
+        };
+        let before = offset(&g);
+        assert!(before > 0.);
+        let selection = g.text_input_state().unwrap().selection;
+        let mut event = ScrollEvent {
+            timestamp: 1.,
+            delta: Vec2 { x: 0., y: -24. },
+            precise: true,
+            phase: ScrollPhase::Began,
+            momentum_phase: ScrollPhase::None,
+            inverted: false,
+            position: tekes_ui_platform_macos::Point {
+                x: point.x.into(),
+                y: point.y.into(),
+            },
+            modifiers: Modifiers::NONE,
+        };
+        g.handle_input(&Event::Scroll(event));
+        let after_begin = offset(&g);
+        let document_offset = g.viewport.offset;
+        assert!(
+            after_begin > before,
+            "gesture starts on the actual Area editor"
+        );
+        let frame = g.workbench.states[&i].input.visible_frame().unwrap();
+        let outside = Point::new(frame.center().x, frame.min_y() - 8.);
+        assert!(!frame.contains(outside));
+        assert!(
+            g.workbench.preview_rect(i).contains(outside),
+            "continuation stays in the Gallery preview"
+        );
+        event.timestamp = 1.1;
+        event.phase = ScrollPhase::Changed;
+        event.position = tekes_ui_platform_macos::Point {
+            x: outside.x.into(),
+            y: outside.y.into(),
+        };
+        g.handle_input(&Event::Scroll(event));
+        assert!(
+            offset(&g) > after_begin,
+            "the same phased gesture must keep scrolling Area after leaving its viewport"
+        );
+        assert_eq!(
+            g.viewport.offset, document_offset,
+            "continuation must not scroll the outer Gallery document"
+        );
+        assert_eq!(g.workbench.states[&i].input.query(), source);
+        assert_eq!(g.text_input_state().unwrap().selection, selection);
+    }
+
+    #[test]
+    fn actual_field_area_reset_revokes_old_native_editor_identity() {
+        for renderer in ["field", "area"] {
+            let (mut g, i, old_key) = gallery(renderer);
+            let initial = g.text_input_state().unwrap().text;
+            assert!(
+                g.accessibility_action(old_key, &A::SetValue("edited".into()))
+                    .redraw
+            );
+            let reset = g
+                .accessibility_nodes()
+                .into_iter()
+                .find(|node| node.role == R::Button && node.label == "Reset")
+                .expect("real Gallery Reset button")
+                .key;
+            assert!(g.accessibility_action(reset, &A::Press).redraw);
+            g.build_scene(&mut Scene::new());
+            let role = if renderer == "area" {
+                R::TextArea
+            } else {
+                R::TextField
+            };
+            let current = g
+                .workbench
+                .accessibility_nodes(i)
+                .into_iter()
+                .find(|node| node.role == role)
+                .expect("remounted story editor")
+                .key;
+            assert_ne!(
+                old_key, current,
+                "same story reset must retire the old mount"
+            );
+            assert!(
+                !g.accessibility_text_layouts()
+                    .iter()
+                    .any(|(key, _)| *key == old_key)
+            );
+            assert!(
+                !g.accessibility_action(old_key, &A::SetValue("late stale edit".into()))
+                    .redraw
+            );
+            assert!(!g.accessibility_action(old_key, &A::Focus).redraw);
+            assert_eq!(g.workbench.state(i).input.query(), initial);
+            assert!(g.accessibility_action(current, &A::Focus).redraw);
+            assert_eq!(g.text_key_events(), Some(true));
+        }
     }
 }

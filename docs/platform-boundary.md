@@ -1,6 +1,51 @@
 # 架构与平台边界
 
-## 阅读基线与文档职责
+## 当前分层与消费入口（#269 / #277，2026-11-13）
+
+本节以 v0.3.20 审计基线 `37810fa9d2f2654605c7a65359cffa3cb513cab2` 及本轮对应修正为依据；下文 e39 图、差距与计划均为 2026-10-26 的历史快照，不再充当当前依赖清单。模块完成、CPU/原生验收、公开版本和消费者采用分别查各执行票，不由源码/hash 检查推导行为通过。
+
+```mermaid
+flowchart TD
+    Gallery -->|macOS| Host[app-host]
+    Gallery -->|macOS| Runtime[module-runtime]
+    Gallery -->|macOS| Controls[controls]
+    Host --> Runtime
+    Host --> Settings[settings]
+    Settings --> Controls
+    Settings --> Scene
+    Settings --> Tokens
+    Host -->|macOS| Platform[platform-macos]
+    Host -->|macOS| Controls
+    Runtime -->|macOS| Controls
+    Platform -->|content-accessibility optional| Controls
+    Platform -->|content-accessibility optional| Scene[scene]
+    Controls --> Text[text]
+    Controls --> Scene
+    Controls --> Motion[motion]
+    Controls --> Icons[icons]
+    Controls --> Tokens[tokens]
+    Controls -->|svg-icons or bitmap-images optional| Render[render]
+    Render --> Scene
+    Render --> Tokens
+    Text --> Scene
+    Tokens -. build .-> Export[design-export]
+```
+
+箭头是生产依赖，不是事件流；图仅列相关内部边。`controls` 默认 feature 为空，只有 `svg-icons` / `bitmap-images` 启用可选 render；`platform-macos` 默认不依赖 controls/scene，`content-accessibility` 明确增加数据适配边。macOS 原生代码受 target cfg 约束；platform 的 native-oracle 另有 dev-dependency，不能混入默认生产图。依据为各 crate 的 Cargo.toml，不按旧图机械拆层。
+
+| 当前消费合同 | 真实 owner / 入口 | 状态与证据边界 |
+| --- | --- | --- |
+| AppHost Container Toolbar | 每个 `MountedToolbar` 持有原 `ToolbarHost`；`window_toolbar_mount.rs` 按声明分配 Window/Container 呈现，默认 Window，显式 Container 可选位置 | Window 分配位置/命令来源，不复制 Toolbar/Menu reducer；Window contributions 可合入选中容器的 MountedToolbar，并非每个 AppWindow 仅存在一个 Host。#272 记录 wheel/clock/退出绘制修正，较广原生/VO能力不由此提升 |
+| 本地 Content 剪贴板 | `LocalContainer::window_event` → runtime 正式剪贴板入口 → 原 ContentHost 文本服务与编辑 owner | #270 / v0.3.21 已交付；原生 pasteboard 未新增验收 |
+| 正文滚动、文本几何 | AppHost 使用 runtime 事件投影和 `content_text_input_state(host)`；Host/surface 拥有几何及编辑状态 | #271 / #273 分别记录实际 CPU 和有限原生结果，不在宿主重新枚举 caret 或滚动物理状态 |
+| Gallery Field/Area | 限定 #275 迁移到原 TextFieldContent/ContentHost；原 Search transport 共享接线 | 源码/CPU验收完成，公开交付独立记录；与 #199 历史 Search 结果分开，旧 Field/Area TextDemo 描述属于原范围 |
+| Gallery master-detail | `MasterHost` → 原 keyed List / ListContent::scrollable；原 ListIntent 更新业务 detail，Host 导航调用原 reveal planner | #274 源码/CPU验收完成；原滚动、选择、绘制 owner 共用，native/公开交付分别记录 |
+| Gallery Combo | `StoryInput::Combo` → StoryTextHost / 原 ComboBoxContent；候选原始 index 从正式 action payload 读取，native ID 投影与其他 Host 共享 | #276 源码/CPU验收完成；过滤/日志/布局仍是 Gallery 业务，文本编辑/候选撤销由原组件拥有。静态 ComboBoxView 样态保留，非第二交互 owner |
+| 其余 TextDemo / specimens | filter、command/global/icon Search 和静态样态保留各自有限范围 | 不把一条 consumer 迁移宣称为所有 Gallery 路径迁移 |
+
+机器清单 `composition-audit.json` 的 freshness/API 锚验证只证明登记与源码对应，不证明上述行为链已验收；保留原 source/receipt 与失败。VoiceOver 由 #5 承接后续版本，本轮不执行。
+
+## 历史阅读基线与文档职责（2026-10-26）
 
 2026-10-26，架构事实绑定本地 main **`e39bfaa1785dbedd9672081a8877e27047155885`**。这是代码基线；后续仅文档提交不把未接收源码加入该身份。审计入口 [#137](https://github.com/TekesApps/TekesUI/issues/137)，本轮不做生产代码重构。
 
@@ -15,7 +60,7 @@
 
 当前验证已安全结束。#113 离线证据绑定的首次失败及第二次成功均保留；独立清单仍未证明完整引用全集，14 个 render 首切口的笔记不是可整合片段。详细来源放 SSD `artifacts/architecture-audit-20261026/` 及原 Issue 产物目录；本轮不运行 Cargo/GPU/native、不清理缓存或 worktree，不启动新的实施任务。
 
-## 当前实际职责与依赖
+## 历史实际职责与依赖（e39 快照）
 
 下图只列主要内部依赖，箭头从使用者指向依赖。`build` 边不是运行时依赖；测试边未画入。实际 manifests 及 cfg 优先于示意图。
 

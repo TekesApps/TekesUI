@@ -1169,6 +1169,18 @@
       "reason": "Existing experimental composition protocol/runtime, stable identity, routed events, semantics and lifecycle; not an additional Gallery component."
     },
     {
+      "api": "tekes_ui_controls::composition::ContentWheelEvent",
+      "category": "composition",
+      "components": [],
+      "reason": "Local ContentHost native-wheel transport retains logical units, gesture and momentum phases for the original TextField/Scroll owner. No new widget, IPC contract or cross-container arbitration; compatibility ContentEvent remains supported."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ContentWheelPhase",
+      "category": "composition",
+      "components": [],
+      "reason": "Local ContentHost native-wheel transport retains logical units, gesture and momentum phases for the original TextField/Scroll owner. No new widget, IPC contract or cross-container arbitration; compatibility ContentEvent remains supported."
+    },
+    {
       "api": "tekes_ui_controls::composition::ContextMenuBinding",
       "category": "component-support",
       "components": [

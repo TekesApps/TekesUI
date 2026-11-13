@@ -56,3 +56,12 @@ Navigation uses the existing Gallery `ControlSize::RowHeight` and `Spacing::Micr
 ## 2026-11-12: shared List resting rows
 
 An unselected row with no pointer interaction has no decorative background. This is the shared List behavior, including Gallery navigation, rather than a consumer color override. Hover and press use the existing parent Surface action-quiet state tokens; selected rows retain selection fill and disabled rows retain disabled foreground. Keyboard focus, clipping, original geometry and the hover/drag-only scrollbar contract are unchanged. Segmented controls keep their own resting chrome. No theme color values are added for this correction.
+
+
+## #274 master-detail consumer（2026-11-13，用户已确认）
+
+本轮将 Gallery master-detail 明确纳入标准 List 消费范围：左侧80文档由 `ListContent::scrollable` 直接组合原 ScrollContent/Items/keyed selectable List，保留稳定文档key和全部挂载行，不增加冗余外层滚动器或虚拟化。Gallery 消费原选择事件/selectedId更新业务文档与右侧既有 TextSurface，不再维护独立方向键选择器或手绘不可交互thumb。外层Tab继续交接至detail；native key投影共享原Gallery映射，不复制选择或输入owner。
+
+适用验收是原thumb拖动改变同一offset且零行激活，wheel/reveal/clip来自同一几何，selection/detail一致、hover离开恢复、Home/End/Tab保持，以及非precise行单位仅在原ScrollArea换算一次。CPU、原生及公开交付分别回填#274；本段记录已批准合同，不预先宣称实现/原生验收完成。
+
+键盘导航 reveal 由公共 ContentHost 接收原 keyed List 已消费的 Up/Down/Home/End 请求；同帧按键合并到最后一个已注册 row，正常布局后调用原 `plan_host_reveal` / `commit_host_reveal`，不在 Gallery 计算 offset。失焦、失活、卸载及后续 pointer/wheel 撤销待处理请求。`navigation_reveal_result()` 保留最后一次完整 `Result<HostRevealOutcome, HostRevealError>`；一次拒绝不自动逐帧重试，也不回退私有滚动。合法空 clip 可能先撤销布局平移能力并返回 `UnsupportedLayout`，保留 planner 原原因，不重新归类。render 的正常布局错误仍通过原 CompositionError 返回；reveal 拒绝与绘制结果分别可观察。

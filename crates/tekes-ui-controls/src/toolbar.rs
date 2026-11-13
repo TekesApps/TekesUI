@@ -76,6 +76,7 @@ pub struct ToolbarControl {
     last_action: Option<u64>,
     trigger_rect: Rect,
     menu: MenuView,
+    menu_last_frame: Option<std::time::Duration>,
     frame: Rect,
     clip: Rect,
 }
@@ -109,6 +110,7 @@ impl Default for ToolbarControl {
             last_action: None,
             trigger_rect: Rect::default(),
             menu: MenuView::new(0),
+            menu_last_frame: None,
             frame: Rect::default(),
             clip: Rect::default(),
         }
@@ -653,6 +655,17 @@ impl ToolbarControl {
         viewport: Rect,
         palette: Palette,
     ) {
+        // Bridge the host clock to the original menu's scroll owner, as MenuContent does.
+        if let Some(context) = text.motion_context() {
+            let dt = self
+                .menu_last_frame
+                .replace(context.now)
+                .map(|previous| context.now.saturating_sub(previous).as_secs_f32());
+            self.menu.set_reduced_motion(context.reduced_motion);
+            if let Some(dt) = dt {
+                self.menu.tick(dt);
+            }
+        }
         let labels: Vec<_> = self
             .hidden
             .iter()
@@ -669,6 +682,12 @@ impl ToolbarControl {
             proposal::TextRole::UiBody,
             false,
         );
+        if self.menu.needs_animation() {
+            text.request_animation_frame();
+        }
+        if !self.menu.is_open() && !self.menu.is_presented() {
+            self.menu_last_frame = None;
+        }
     }
     pub fn set_viewport(&mut self, viewport: Rect) {
         self.viewport = viewport;
@@ -742,6 +761,8 @@ impl ToolbarControl {
     }
     pub fn cancel(&mut self) {
         self.cancel_interaction();
+        self.menu.clear_presentation();
+        self.menu_last_frame = None;
         self.last_action = None;
     }
     fn cancel_interaction(&mut self) {
@@ -752,7 +773,6 @@ impl ToolbarControl {
         self.trigger.button.cancel();
         self.held = None;
         self.menu.key(ControlKey::Escape, true);
-        self.menu.clear_presentation();
     }
     pub fn overflow_ids(&self) -> Vec<u64> {
         self.hidden.iter().map(|&i| self.actions[i].id).collect()
@@ -844,6 +864,9 @@ impl crate::composition::Component for ToolbarControl {
     fn overlay_open(&self) -> bool {
         self.is_open()
     }
+    fn overlay_presented(&self) -> bool {
+        self.menu.is_open() || self.menu.is_presented()
+    }
     fn overlay_scope(&self) -> Option<crate::composition::OverlayScope> {
         // Closed toolbars stay ordinary active Content. Only the open original
         // menu acquires the shared input/Tab/AX barrier.
@@ -882,6 +905,8 @@ impl crate::composition::Component for ToolbarControl {
             self.focused
         };
         if (!focused && self.has_focus) || next != self.focused {
+            // Closing the overlay restores host focus and blurs this owner.
+            // Revoke interaction without discarding its paint-only exit.
             self.cancel_interaction();
         }
         self.focused = next;
@@ -1175,6 +1200,30 @@ impl crate::composition::Component for ToolbarControl {
     ) -> crate::composition::ContentResponse {
         use crate::composition::{ContentEvent, ContentResponse};
         match event {
+            ContentEvent::Scroll {
+                position,
+                delta,
+                precise,
+                begin,
+                end,
+                momentum,
+                time,
+            } => {
+                match self.menu.wheel_event(crate::MenuWheelInput {
+                    point: *position,
+                    delta: *delta,
+                    precise: *precise,
+                    begin: *begin,
+                    end: *end,
+                    momentum: *momentum,
+                    time: *time,
+                }) {
+                    crate::MenuWheelEvent::Consumed { scrolled } => {
+                        ContentResponse::consumed(scrolled)
+                    }
+                    crate::MenuWheelEvent::Ignored => ContentResponse::default(),
+                }
+            }
             ContentEvent::Pointer(pointer) => self.pointer_event(pointer),
             ContentEvent::PointerDown(p)
             | ContentEvent::PointerMove(p)

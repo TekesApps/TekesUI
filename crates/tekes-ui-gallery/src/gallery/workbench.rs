@@ -1,6 +1,7 @@
 //! Registry-driven native workbench. Fixtures orchestrate production control models;
 //! no duplicate component implementation lives in a story.
 mod accessibility;
+mod master_host;
 mod select_story;
 #[cfg(test)]
 mod select_story_tests;
@@ -227,7 +228,7 @@ pub struct StoryState {
     document_bottom: f32,
     document_origin_y: f32,
     selected: usize,
-    list_scroll: tekes_ui_controls::ScrollArea,
+    master: Option<master_host::MasterHost>,
     list_bounds: Rect,
     list_frame: Rect,
     focus_reveal: Option<usize>,
@@ -291,7 +292,7 @@ impl Default for StoryState {
             document_bottom: 0.,
             document_origin_y: 0.,
             selected: 0,
-            list_scroll: tekes_ui_controls::ScrollArea::default(),
+            master: None,
             list_bounds: Rect::default(),
             list_frame: Rect::default(),
             focus_reveal: None,
@@ -303,9 +304,22 @@ impl Default for StoryState {
     }
 }
 impl StoryState {
+    fn master(&self) -> &master_host::MasterHost {
+        self.master
+            .as_ref()
+            .expect("master renderer owns its document List")
+    }
+    fn master_mut(&mut self) -> &mut master_host::MasterHost {
+        self.master
+            .as_mut()
+            .expect("master renderer owns its document List")
+    }
     fn set_window_active(&mut self, active: bool, now: Duration) {
         self.window_active = active;
         self.input.set_window_active(active);
+        if let Some(master) = &mut self.master {
+            master.host.set_window_active(active);
+        }
         self.detail.set_window_active(active);
         self.tabs_view.set_window_active(active);
         let menu_event = self.menu_view.set_window_active(active);
@@ -325,7 +339,9 @@ impl StoryState {
             self.number_view.blur();
             self.dialog_view.deactivate();
             self.extended.cancel_pointer();
-            self.list_scroll.cancel();
+            if let Some(master) = &mut self.master {
+                master.host.cancel();
+            }
             self.tabs_view.cancel();
             for b in self.buttons.values_mut() {
                 b.cancel();
@@ -406,15 +422,6 @@ impl StoryState {
             "number-field" if id == 23 => self.number_view.layout().decrement.frame,
             "number-field" if id == 24 => self.number_view.layout().increment.frame,
             "combo-box" | "command-palette" if id == 1000 => self.input.frame_at(0)?,
-            "combo-box" if (40..43).contains(&id) => {
-                self.extended
-                    .combo_view
-                    .options
-                    .layout()?
-                    .items
-                    .get(id - 40)?
-                    .frame
-            }
             "command-palette" if (40..43).contains(&id) => {
                 self.extended
                     .command_view
@@ -475,15 +482,16 @@ impl StoryState {
     fn for_entry(e: &Entry) -> Self {
         let mut s = Self::default();
         s.extended = extended::ExtendedStory::default();
+        s.master = (e.renderer() == "master").then(master_host::MasterHost::default);
         s.input = match e.renderer() {
-            "area" => TextDemo::field(
+            "field" => StoryInput::field("Studio", false),
+            "area" => StoryInput::field(
                 "A quiet room, an open window.\nWrite a complete paragraph here. 中日文と English.",
                 true,
-                false,
-            )
-            .into(),
+            ),
             "search" => StoryInput::search(),
-            "filter" | "combo-box" | "command-palette" => TextDemo::field("", false, false).into(),
+            "combo-box" => StoryInput::combo_box(),
+            "filter" | "command-palette" => TextDemo::field("", false, false).into(),
             _ => s.input,
         };
         if e.renderer() == "form" {
@@ -593,9 +601,7 @@ impl StoryState {
         }
     }
     fn input_changed(&mut self, renderer: &str) {
-        if renderer == "combo-box" {
-            self.extended.combo.set_query(self.input.query());
-        } else if renderer == "command-palette" {
+        if renderer == "command-palette" {
             self.extended.command.combo.set_query(self.input.query());
         }
         self.record("input: value changed");
@@ -701,6 +707,12 @@ impl StoryState {
             .collect()
     }
     fn sync_owned_focus(&mut self, renderer: &str, target: Option<usize>, visible: bool) {
+        if renderer == "master" {
+            self.master_mut().focus(
+                target.is_some_and(|id| (10000..10080).contains(&id)),
+                visible,
+            );
+        }
         if renderer == "command-palette" && target == Some(20) {
             self.extended.command_view.focus_trigger(visible);
         } else {
@@ -967,15 +979,11 @@ impl StoryState {
             if changed && renderer == "command-palette" && id == 20 {
                 self.input.set_value("");
             }
-            if changed && ["combo-box", "command-palette"].contains(&renderer) {
-                let (selected, items) = if renderer == "combo-box" {
-                    (self.extended.combo.selected, &self.extended.combo.items)
-                } else {
-                    (
-                        self.extended.command.combo.selected,
-                        &self.extended.command.combo.items,
-                    )
-                };
+            if changed && renderer == "command-palette" {
+                let (selected, items) = (
+                    self.extended.command.combo.selected,
+                    &self.extended.command.combo.items,
+                );
                 if let Some(index) = selected
                     && let Some(value) = items.get(index)
                 {
@@ -1320,7 +1328,7 @@ fn api_reference(entry: &Entry) -> &str {
     match entry.renderer() {
         "form" | "settings" | "async" => "Gallery pattern using TextInput, FieldView and Button",
         "filter" => "Gallery pattern using TextInput and local file filtering",
-        "master" => "Gallery pattern using ScrollArea and TextSurface",
+        "master" => "Gallery pattern using keyed List and TextSurface",
         _ => "Gallery fixture; see the route renderer",
     }
 }
@@ -1813,8 +1821,6 @@ impl Workbench {
         // stealing focus back from the new owner. Dialog scope is unchanged.
         let _ = state.menu_view.deactivate();
         state.menu_layout = None;
-        state.extended.combo.open = false;
-        state.extended.combo_view.options.cancel();
         state
             .extended
             .command_view
@@ -1839,7 +1845,7 @@ impl Workbench {
     pub(super) fn combo_popup_open(&self, i: usize) -> bool {
         self.states
             .get(&i)
-            .is_some_and(|state| state.extended.combo.open)
+            .is_some_and(|state| state.input.combo().model().open)
     }
 
     #[cfg(test)]
@@ -1866,10 +1872,6 @@ impl Workbench {
         if id == 21 {
             w.state(i).phase = Phase::Pending;
         }
-        if entry(i).renderer() == "combo-box" && (40..43).contains(&id) {
-            // Option fixtures are exposed only when the real popup is open.
-            w.state(i).extended.combo.open = true;
-        }
         let mut text = super::text::TextEngine::new();
         text.set_motion_enabled(true);
         text.set_motion_context(Duration::ZERO, false);
@@ -1881,6 +1883,24 @@ impl Workbench {
             static_text: &mut st,
         };
         w.build(i, &mut ctx, super::layout::PAGE_CONTENT, &mut Scene::new());
+        if entry(i).renderer() == "combo-box" && (40..43).contains(&id) {
+            // Fixture coordinates map original source indices only after mounting
+            // the formal owner; these are not published candidate action IDs.
+            w.state(i).input.focus_field();
+            w.state(i).input.set_value("");
+            w.build(i, &mut ctx, super::layout::PAGE_CONTENT, &mut Scene::new());
+            let combo = w.state(i).input.combo();
+            let row = combo
+                .model()
+                .filtered()
+                .iter()
+                .position(|index| *index == id - 40)
+                .expect("fixture source index");
+            return combo.popup_layout().unwrap().items[row]
+                .visible
+                .unwrap()
+                .center();
+        }
         w.state(i)
             .visible_for_id(id)
             .expect("fixture control")
@@ -1914,10 +1934,11 @@ impl Workbench {
         for s in self.states.values_mut() {
             s.input.set_reduced_motion(reduced);
             s.detail.set_reduced_motion(reduced);
-            s.list_scroll.set_reduced_motion(reduced);
+            if let Some(master) = &mut s.master {
+                master.scroll_mut().set_reduced_motion(reduced);
+            }
             s.menu_view.set_reduced_motion(reduced);
             s.select_story.set_reduced_motion(reduced);
-            s.extended.combo_view.options.set_reduced_motion(reduced);
             s.extended.command_view.options.set_reduced_motion(reduced);
         }
     }
@@ -1925,12 +1946,13 @@ impl Workbench {
         self.states.get(&i).is_some_and(|s| {
             s.input.needs_animation()
                 || s.detail.needs_animation()
-                || s.list_scroll.needs_animation()
+                || s.master
+                    .as_ref()
+                    .is_some_and(|master| master.scroll().needs_animation())
                 || s.menu_view.needs_animation()
                 || s.dialog_view.needs_animation()
                 || s.extended.overlay_needs_animation()
                 || s.select_story.needs_animation()
-                || s.extended.combo_view.options.needs_animation()
                 || s.extended.command_view.options.needs_animation()
         }) || (entry(i).renderer() == "matrix" && self.brand_preview.needs_animation())
     }
@@ -1942,10 +1964,11 @@ impl Workbench {
         };
         s.input.animate(dt)
             | s.detail.animate(dt)
-            | s.list_scroll.tick(dt)
+            | s.master
+                .as_ref()
+                .is_some_and(|master| master.host.animation_frame_requested())
             | s.menu_view.tick(dt)
             | s.select_story.tick(dt)
-            | s.extended.combo_view.options.tick(dt)
             | s.extended.command_view.options.tick(dt)
             | brand_preview_animated
     }
@@ -2106,14 +2129,11 @@ impl Workbench {
             let mut state = StoryState::for_entry(entry(i));
             state.input.set_reduced_motion(reduced);
             state.detail.set_reduced_motion(reduced);
-            state.list_scroll.set_reduced_motion(reduced);
+            if let Some(master) = &mut state.master {
+                master.scroll_mut().set_reduced_motion(reduced);
+            }
             state.menu_view.set_reduced_motion(reduced);
             state.select_story.set_reduced_motion(reduced);
-            state
-                .extended
-                .combo_view
-                .options
-                .set_reduced_motion(reduced);
             state
                 .extended
                 .command_view
@@ -2123,10 +2143,10 @@ impl Workbench {
             state
         })
     }
-    pub fn search_text_focused(&self, i: usize) -> bool {
+    pub fn hosted_text_focused(&self, i: usize) -> bool {
         self.states
             .get(&i)
-            .and_then(|state| state.input.search_host())
+            .and_then(|state| state.input.hosted())
             .is_some_and(|host| host.state().is_some())
     }
 
@@ -2159,7 +2179,7 @@ impl Workbench {
         {
             return (false, None);
         }
-        if let Some(search) = s.input.search_host_mut() {
+        if let Some(search) = s.input.hosted_mut() {
             let result = search.command(command, clipboard, text);
             for event in s.input.drain_search_logs() {
                 s.record(event);
@@ -2283,14 +2303,11 @@ impl Workbench {
             let mut state = StoryState::for_entry(e);
             state.input.set_reduced_motion(reduced);
             state.detail.set_reduced_motion(reduced);
-            state.list_scroll.set_reduced_motion(reduced);
+            if let Some(master) = &mut state.master {
+                master.scroll_mut().set_reduced_motion(reduced);
+            }
             state.menu_view.set_reduced_motion(reduced);
             state.select_story.set_reduced_motion(reduced);
-            state
-                .extended
-                .combo_view
-                .options
-                .set_reduced_motion(reduced);
             state
                 .extended
                 .command_view
@@ -3829,7 +3846,12 @@ impl Workbench {
                     .text
                     .measure_button("Document", w, ButtonSize::Body, proposal::TextRole::UiBody)
                     .width;
-                let minimum_list_width = document_button_width + 20.0 + focus_padding * 2.0;
+                let minimum_list_width = document_button_width
+                    + 20.0
+                    + focus_padding * 2.0
+                    + proposal::SCROLLBAR_WIDTH
+                    + proposal::SCROLLBAR_INSET
+                    + tekes_ui_tokens::Spacing::Micro.value();
                 let lw = preferred_list_width
                     .max(minimum_list_width)
                     .min((w - 12.0).max(0.0));
@@ -3843,96 +3865,38 @@ impl Workbench {
                     .min((bottom - list_y).max(0.));
                 let list = Rect::new(x, list_y, lw - 12., h);
                 s.list_frame = list;
-                s.list_scroll.set_scroll_policy(
-                    tekes_ui_controls::ScrollPolicy::Disabled,
-                    tekes_ui_controls::ScrollPolicy::Auto,
+                s.master.as_mut().expect("master renderer List").paint(
+                    ctx,
+                    scene,
+                    list,
+                    s.button_clip.unwrap_or(list),
+                    s.brand,
                 );
-                let row_width = (lw - 20.0 - focus_padding * 2.0).max(0.0);
-                let row_height = (0..80)
-                    .map(|n| {
-                        ctx.text
-                            .measure_button(
-                                &format!("Document {:02}", n + 1),
-                                row_width,
-                                ButtonSize::Body,
-                                proposal::TextRole::UiBody,
-                            )
-                            .height
-                    })
-                    .fold(36.0, f32::max);
-                let row_stride = row_height + 6.;
-                s.list_scroll.layout(
-                    list.size,
-                    tekes_ui_scene::Size::new(
-                        list.size.width,
-                        80. * row_stride + focus_padding * 2.0,
-                    ),
-                );
-                if let Some(index) = s
-                    .focus_reveal
-                    .take()
-                    .filter(|id| (10000..10100).contains(id))
-                    .map(|id| id - 10000)
-                {
-                    let row = Rect::new(
-                        focus_padding,
-                        focus_padding + index as f32 * row_stride,
-                        row_width,
-                        row_height,
-                    );
-                    s.list_scroll.reveal_focus(row, ctx.text.backing_scale());
-                }
-                let geometry = s.list_scroll.geometry(list, s.button_clip);
-                let visible_list = geometry.visible_viewport_rect();
-                s.list_bounds =
-                    visible_list.unwrap_or(Rect::new(list.min_x(), list.min_y(), 0.0, 0.0));
-                let previous_button_clip = s.button_clip;
-                s.button_clip = visible_list;
-                if let Some(visible_list) = visible_list {
-                    scene.push_clip(visible_list);
-                }
-                let origin = geometry.content_origin();
+                s.list_bounds = list
+                    .intersection(&s.button_clip.unwrap_or(list))
+                    .unwrap_or_default();
+                s.focus_reveal = None;
                 for n in 0..80 {
-                    let document_row = Rect::new(
-                        focus_padding,
-                        focus_padding + n as f32 * row_stride,
-                        row_width,
-                        row_height,
-                    );
-                    let row = document_row.offset(origin.x, origin.y);
-                    // All rows are mounted by this deterministic fixture. Keep
-                    // their real layout frames in the keyboard sequence even
-                    // while the nested ScrollArea clips their paint and hits.
-                    s.register_logical_focus(10000 + n, row, true, true, Some(1), s.selected == n);
-                    if geometry.document_to_viewport(document_row).is_some() {
-                        action(
-                            s,
-                            ctx,
-                            scene,
-                            10000 + n,
-                            row,
-                            &format!("Document {:02}", n + 1),
-                            (s.selected == n, false),
-                        );
-                    }
-                }
-                s.button_clip = previous_button_clip;
-                if visible_list.is_some() {
-                    scene.pop_clip();
-                }
-                if s.list_scroll.scrollbar_visible(true)
-                    && let Some(visible_list) = visible_list
-                {
-                    let thumb = s.list_scroll.thumb(
+                    let row = s.master().row(n);
+                    let frame = row.frame();
+                    // The compatibility hit map is bounded by this frame's viewport,
+                    // including an empty ancestor clip. Row mounts can retain their
+                    // last arranged frames while the public List is fully clipped.
+                    let visible = row
+                        .visible()
+                        .and_then(|frame| frame.intersection(&s.list_bounds));
+                    s.register_logical_focus(
+                        10000 + n,
+                        frame,
                         true,
-                        Rect::new(list.max_x() - 4., list.min_y(), 4., list.size.height),
-                        24.,
+                        true,
+                        Some(1),
+                        s.selected == n,
                     );
-                    scene.push_clip(visible_list);
-                    scene.push_quad(
-                        Quad::new(thumb, paint::color(ctx.theme, "border")).with_corner_radius(2.),
-                    );
-                    scene.pop_clip();
+                    // Fixture IDs expose original List geometry, never another action owner.
+                    if let Some(visible) = visible {
+                        s.hits.push((10000 + n, visible));
+                    }
                 }
                 let detail = Rect::new(x + lw, body_y, (w - lw).max(1.), h);
                 s.detail
@@ -4506,10 +4470,18 @@ impl Workbench {
         }
     }
     pub fn has_pointer_capture(&self, i: usize) -> bool {
+        if entry(i).renderer() == "master"
+            && self
+                .states
+                .get(&i)
+                .is_some_and(|s| s.master().host.pointer_capture().is_some())
+        {
+            return true;
+        }
         if self
             .states
             .get(&i)
-            .and_then(|state| state.input.search_host())
+            .and_then(|state| state.input.hosted())
             .is_some_and(|host| host.has_pointer_capture())
         {
             return true;
@@ -4577,6 +4549,45 @@ impl Workbench {
             return true;
         }
         let s = self.state(i);
+        if renderer == "master"
+            && let Some(response) = s
+                .master
+                .as_mut()
+                .expect("master renderer List")
+                .handle(event, s.list_bounds)
+        {
+            for document in s.master_mut().drain_documents() {
+                s.activate(10000 + document, renderer);
+            }
+            if s.master().host.focused().is_some()
+                && let Some(key) = s.master().list().focused_key()
+            {
+                s.focus = Some(10000 + (key.0 - 1) as usize);
+                s.detail.blur();
+            }
+            if response.consumed || response.changed {
+                return true;
+            }
+        }
+        if renderer == "combo-box" {
+            s.input.set_disabled(s.extended.disabled);
+            let before = s.input.query().to_owned();
+            let response = s.input.handle_with_text(event, None, text);
+            for log in s.input.drain_search_logs() {
+                s.record(log);
+            }
+            if before != s.input.query() {
+                s.input_changed(renderer);
+            }
+            if s.input.hosted().unwrap().focused() {
+                s.focus = Some(1000);
+            } else if s.focus == Some(1000) {
+                s.focus = None;
+            }
+            if response == Some(true) {
+                return true;
+            }
+        }
         if renderer == "command-palette"
             && !s.extended.command.combo.open
             && matches!(
@@ -4628,13 +4639,11 @@ impl Workbench {
                 return true;
             }
             let filtered_popup_open = match renderer {
-                "combo-box" => s.extended.combo.open,
                 "command-palette" => s.extended.command.combo.open,
                 _ => false,
             };
             if filtered_popup_open {
                 let result = match renderer {
-                    "combo-box" => s.extended.combo_view.options.wheel_event(input),
                     "command-palette" => s.extended.command_view.options.wheel_event(input),
                     _ => MenuWheelEvent::Ignored,
                 };
@@ -4643,31 +4652,13 @@ impl Workbench {
                 }
             }
         }
-        if let Event::Scroll(e) = event {
-            let p = Point::new(e.position.x as f32, e.position.y as f32);
-            if renderer == "master" && s.list_bounds.contains(p) {
-                let changed = s.list_scroll.wheel_at(
-                    Point::new(0., -(e.delta.y as f32) * if e.precise { 1. } else { 32. }),
-                    e.precise,
-                    e.phase == tekes_ui_platform_macos::ScrollPhase::Began,
-                    matches!(
-                        e.phase,
-                        tekes_ui_platform_macos::ScrollPhase::Ended
-                            | tekes_ui_platform_macos::ScrollPhase::Cancelled
-                    ),
-                    e.momentum_phase != tekes_ui_platform_macos::ScrollPhase::None,
-                    e.timestamp,
-                );
-                return changed || e.precise;
-            }
-        }
 
         // AppKit routes arrow and Return key-downs through NSTextInputClient's
         // `doCommandBySelector:` while the editable ComboBox input owns focus.
         // Route only list-navigation commands; caret/editing commands remain
         // owned by the real TextInput.
         if let Event::TextCommand(command) = event
-            && matches!(renderer, "combo-box" | "command-palette")
+            && renderer == "command-palette"
             && s.focus == Some(1000)
             && s.input.state().is_none_or(|state| state.marked.is_none())
         {
@@ -4694,14 +4685,10 @@ impl Workbench {
                         return true;
                     }
                     if key == ControlKey::Enter {
-                        let (selected, items) = if renderer == "combo-box" {
-                            (s.extended.combo.selected, &s.extended.combo.items)
-                        } else {
-                            (
-                                s.extended.command.combo.selected,
-                                &s.extended.command.combo.items,
-                            )
-                        };
+                        let (selected, items) = (
+                            s.extended.command.combo.selected,
+                            &s.extended.command.combo.items,
+                        );
                         if let Some(value) = selected.and_then(|index| items.get(index)) {
                             s.input.set_value(value);
                         }
@@ -4782,14 +4769,6 @@ impl Workbench {
                             s.focus = s.restore_focus(s.extended.focused);
                             s.sync_owned_focus(renderer, s.focus, true);
                         }
-                        if renderer == "combo-box"
-                            && down
-                            && key == ControlKey::Enter
-                            && let Some(index) = s.extended.combo.selected
-                            && let Some(value) = s.extended.combo.items.get(index)
-                        {
-                            s.input.set_value(value);
-                        }
                         if renderer == "command-palette"
                             && down
                             && key == ControlKey::Enter
@@ -4821,20 +4800,16 @@ impl Workbench {
                     }
                     return true;
                 }
-                if down && matches!(key, ControlKey::Tab { .. }) {
-                    if renderer == "combo-box" && s.extended.combo.open {
-                        s.extended.combo_view.key_event(
-                            ControlKey::Escape,
-                            true,
-                            &mut s.extended.combo,
-                        );
-                    } else if renderer == "command-palette" && s.extended.command.combo.open {
-                        s.extended.command_view.key_event(
-                            ControlKey::Escape,
-                            true,
-                            &mut s.extended.command,
-                        );
-                    }
+                if down
+                    && matches!(key, ControlKey::Tab { .. })
+                    && renderer == "command-palette"
+                    && s.extended.command.combo.open
+                {
+                    s.extended.command_view.key_event(
+                        ControlKey::Escape,
+                        true,
+                        &mut s.extended.command,
+                    );
                 }
                 if down && matches!(key, ControlKey::Tab { .. }) {
                     if s.menu_view.is_open() {
@@ -4927,38 +4902,6 @@ impl Workbench {
                         == tekes_ui_controls::feedback_view::NumberFieldEvent::Changed
                     {
                         s.record(format!("value: {}", s.number.value()));
-                    }
-                    return true;
-                }
-                if renderer == "master"
-                    && let Some(id) = s.focus.filter(|id| (10000..10100).contains(id))
-                    && matches!(
-                        key,
-                        ControlKey::Up | ControlKey::Down | ControlKey::Home | ControlKey::End
-                    )
-                {
-                    if down {
-                        let current = id - 10000;
-                        let next = match key {
-                            ControlKey::Up => current.saturating_sub(1),
-                            ControlKey::Down => (current + 1).min(79),
-                            ControlKey::Home => 0,
-                            ControlKey::End => 79,
-                            _ => current,
-                        };
-                        let target = 10000 + next;
-                        if let Some(previous) = s.buttons.get_mut(&id) {
-                            previous.state.focus_visible = false;
-                        }
-                        s.focus = Some(target);
-                        if next != current {
-                            s.activate(target, renderer);
-                        }
-                        s.focus_reveal = Some(target);
-                        let focused = s.buttons.entry(target).or_default();
-                        focused.state.focused = true;
-                        focused.state.focus_visible = true;
-                        s.record(format!("focus: document {next}"));
                     }
                     return true;
                 }
@@ -5461,15 +5404,6 @@ impl Workbench {
                                 return true;
                             }
                         }
-                        if renderer == "combo-box" && (40..43).contains(&id) {
-                            // Selecting an option must leave the editable
-                            // ComboBox input as the active native text client.
-                            s.focus = Some(1000);
-                            s.input.focus_field();
-                            s.detail.blur();
-                            s.buttons.entry(id).or_default().pointer_down();
-                            return true;
-                        }
                         if id != 1000 {
                             s.input.blur();
                             s.detail.blur();
@@ -5486,11 +5420,6 @@ impl Workbench {
                         }
                         s.sync_owned_focus(renderer, Some(1000), false);
                         s.focus = Some(1000);
-                        if renderer == "combo-box" && !s.extended.disabled && !s.extended.combo.open
-                        {
-                            s.extended.combo.open = true;
-                            s.extended.combo.active = s.extended.combo.filtered().first().copied();
-                        }
                     } else if s.dialog_view.dialog().open {
                         return true;
                     } else if s.menu_view.is_open() || s.select_story.model().menu.open {
@@ -5574,12 +5503,6 @@ impl Workbench {
                         if renderer == "popover" && !s.extended.popover.open {
                             s.focus = s.extended.focused;
                         }
-                        if renderer == "combo-box" && s.input.query() != s.extended.combo.query {
-                            s.input.set_value(&s.extended.combo.query);
-                            s.input.focus_field();
-                            s.input.refresh(text);
-                            s.focus = Some(1000);
-                        }
                         for event in events {
                             s.record(event);
                         }
@@ -5619,10 +5542,10 @@ impl Workbench {
             _ => None,
         };
         let before = s.input.query().to_string();
-        let input = s
-            .input
-            .handle_with_text(event, point, text)
-            .unwrap_or(false);
+        let input = renderer != "combo-box"
+            && s.input
+                .handle_with_text(event, point, text)
+                .unwrap_or(false);
         for log in s.input.drain_search_logs() {
             s.record(log);
         }
@@ -7911,25 +7834,14 @@ mod interaction_tests {
                 include_str!("../../../../fixtures/text/gallery-reading-en.txt")
             )
         );
-        assert!(state.list_scroll.offset.y > 0.0);
-        let button = &state.buttons[&10050];
-        assert!(button.state.focus_visible);
-        let layout = button.layout().expect("focused row is rendered");
-        assert!(layout.hit_test(layout.frame.center()));
-        assert!(
-            layout
-                .focus_bounds()
-                .intersection(&state.list_bounds)
-                .is_some()
+        assert!(state.master().scroll().offset.y > 0.0);
+        let row = state.master().row(50);
+        assert!(row.visible().is_some());
+        assert_eq!(
+            state.master().list().focused_key(),
+            Some(tekes_ui_controls::extended::ListItemKey(51))
         );
-        assert!(
-            scene.primitives().iter().any(|primitive| {
-                matches!(primitive, tekes_ui_scene::Primitive::Quad(q)
-                if q.rect.min_y() < layout.frame.min_y()
-                    && q.rect.max_y() > layout.frame.max_y())
-            }),
-            "focus ring is painted for the keyboard-focused row"
-        );
+        assert!(!scene.primitives().is_empty());
         for (code, selected) in [(126, 49), (115, 0), (119, 79)] {
             assert!(workbench.handle(i, &key(code, true), &mut text));
             build(&mut workbench, i, &mut text);
@@ -7944,14 +7856,14 @@ mod interaction_tests {
                     include_str!("../../../../fixtures/text/gallery-reading-en.txt")
                 )
             );
-            let layout = state.buttons[&(10000 + selected)].layout().unwrap();
-            assert!(
-                layout
-                    .focus_bounds()
-                    .intersection(&state.list_bounds)
-                    .is_some()
+            assert!(state.master().row(selected).visible().is_some());
+            assert_eq!(
+                state.master().list().selected_key(),
+                Some(tekes_ui_controls::extended::ListItemKey(
+                    selected as u64 + 1
+                ))
             );
-            assert!(workbench.handle(i, &key(code, false), &mut text));
+            workbench.handle(i, &key(code, false), &mut text);
             assert_eq!(workbench.state(i).selected, selected);
             if selected == 0 || selected == 79 {
                 let detail = &mut workbench.state(i).detail;
@@ -8370,10 +8282,27 @@ mod interaction_tests {
             characters_ignoring_modifiers: String::new(),
         })
     }
+    fn combo_option(w: &mut Workbench, i: usize, source: usize) -> Option<Rect> {
+        let combo = w.state(i).input.combo();
+        if !combo.model().open {
+            return None;
+        }
+        let row = combo
+            .model()
+            .filtered()
+            .iter()
+            .position(|index| *index == source)?;
+        combo.popup_layout()?.items.get(row)?.visible
+    }
     fn click(w: &mut Workbench, i: usize, id: usize, t: &mut super::super::text::TextEngine) {
         build(w, i, t);
+        let option = if entry(i).renderer() == "combo-box" && (40..1000).contains(&id) {
+            combo_option(w, i, id - 40)
+        } else {
+            w.state(i).visible_for_id(id)
+        };
         let state = w.state(i);
-        let p = match state.visible_for_id(id) {
+        let p = match option {
             Some(visible) => visible.center(),
             None => panic!(
                 "missing visible component id {id} for {} (section {}, hits {:?})",
@@ -10722,6 +10651,190 @@ mod interaction_tests {
     }
 
     #[test]
+    fn master_detail_thumb_drag_changes_original_offset_without_document_actions() {
+        let mut w = Workbench::default();
+        let mut t = super::super::text::TextEngine::new();
+        let i = index("master");
+        build(&mut w, i, &mut t);
+        let frame = w.state(i).list_frame;
+        let track = Rect::new(
+            frame.max_x() - proposal::SCROLLBAR_WIDTH - proposal::SCROLLBAR_INSET,
+            frame.min_y(),
+            proposal::SCROLLBAR_WIDTH,
+            frame.size.height,
+        );
+        let thumb = w.state(i).master().scroll().thumb(
+            true,
+            track,
+            proposal::metric("size", "size-row-height").unwrap(),
+        );
+        let start = thumb.center();
+        w.handle(i, &move_pointer(start), &mut t);
+        build(&mut w, i, &mut t);
+        let before = w.state(i).master().scroll().offset.y;
+        let log = w.state(i).log.clone();
+        let detail = w.state(i).detail.query().to_owned();
+        assert!(w.handle(i, &mouse(start, true), &mut t));
+        assert!(w.has_pointer_capture(i));
+        let end = Point::new(start.x, start.y + 60.);
+        let mut drag = move_pointer(end);
+        if let Event::Mouse(m) = &mut drag {
+            m.kind = MouseEventKind::Dragged {
+                button: MouseButton::Left,
+            };
+        }
+        assert!(w.handle(i, &drag, &mut t));
+        assert!(w.state(i).master().scroll().offset.y > before);
+        assert!(w.handle(i, &mouse(end, false), &mut t));
+        assert!(!w.has_pointer_capture(i));
+        assert_eq!(w.state(i).selected, 0);
+        assert_eq!(
+            w.state(i).master().list().selected_key(),
+            Some(tekes_ui_controls::extended::ListItemKey(1))
+        );
+        assert_eq!(w.state(i).detail.query(), detail);
+        assert_eq!(w.state(i).log, log, "thumb must not activate a document");
+    }
+
+    #[test]
+    fn master_detail_list_hover_selection_event_and_tab_use_original_owner() {
+        use tekes_ui_scene::Primitive;
+        let mut w = Workbench::default();
+        let mut t = super::super::text::TextEngine::new();
+        let i = index("master");
+        build(&mut w, i, &mut t);
+        for n in [1, 2, 3] {
+            let point = w.state(i).master().row(n).visible().unwrap().center();
+            w.handle(i, &move_pointer(point), &mut t);
+            let scene = build(&mut w, i, &mut t);
+            let rows: Vec<_> = (0..80)
+                .filter(|n| {
+                    let frame = w.state(i).master().row(*n).frame();
+                    scene
+                        .primitives()
+                        .iter()
+                        .any(|p| matches!(p, Primitive::Quad(q) if q.rect == frame))
+                })
+                .collect();
+            assert_eq!(
+                rows,
+                vec![0, n],
+                "only selection and current hover have backgrounds"
+            );
+        }
+        let outside = Point::new(
+            w.state(i).list_bounds.max_x() + 20.,
+            w.state(i).list_bounds.min_y(),
+        );
+        w.handle(i, &move_pointer(outside), &mut t);
+        let scene = build(&mut w, i, &mut t);
+        for n in 1..80 {
+            let frame = w.state(i).master().row(n).frame();
+            assert!(
+                !scene
+                    .primitives()
+                    .iter()
+                    .any(|p| matches!(p, Primitive::Quad(q) if q.rect == frame))
+            );
+        }
+        let point = w.state(i).master().row(2).visible().unwrap().center();
+        let count = w
+            .state(i)
+            .log
+            .iter()
+            .filter(|line| line.starts_with("selection:"))
+            .count();
+        w.handle(i, &mouse(point, true), &mut t);
+        w.handle(i, &mouse(point, false), &mut t);
+        assert_eq!(w.state(i).selected, 2);
+        assert_eq!(
+            w.state(i).master().list().selected_key(),
+            Some(tekes_ui_controls::extended::ListItemKey(3))
+        );
+        assert_eq!(
+            w.state(i)
+                .log
+                .iter()
+                .filter(|line| line.starts_with("selection:"))
+                .count(),
+            count + 1
+        );
+        build(&mut w, i, &mut t);
+        assert!(w.handle(i, &key(48, true), &mut t));
+        assert_eq!(w.state(i).focus, Some(1000));
+        assert!(w.state(i).detail.state().is_some());
+        assert_eq!(w.state(i).master().host.focused(), None);
+        let nodes = w.state(i).master().native_nodes();
+        let selected: Vec<_> = nodes.iter().filter(|node| node.selected).collect();
+        assert_eq!(selected.len(), 1);
+        assert_eq!(selected[0].label, "Document 03");
+        assert!(w.handle(
+            i,
+            &key_with_modifiers(
+                48,
+                true,
+                Modifiers {
+                    shift: true,
+                    ..Modifiers::NONE
+                }
+            ),
+            &mut t
+        ));
+        assert_eq!(w.state(i).focus, Some(10002));
+        assert_eq!(w.state(i).master().host.focused(), Some(master_host::LIST));
+    }
+
+    #[test]
+    fn master_detail_nonprecise_wheel_matches_original_scroll_content_one_line() {
+        assert!(StoryState::default().master.is_none());
+        for renderer in ["field", "area", "search", "menu"] {
+            assert!(
+                StoryState::for_entry_renderer(renderer).master.is_none(),
+                "{renderer} must not mount the 80-document fixture"
+            );
+        }
+        let mut gallery = Workbench::default();
+        let mut original = Workbench::default();
+        let mut text = super::super::text::TextEngine::new();
+        let i = index("master");
+        build(&mut gallery, i, &mut text);
+        build(&mut original, i, &mut text);
+        let point = gallery.state(i).list_bounds.center();
+        let wheel = tekes_ui_platform_macos::ScrollEvent {
+            timestamp: 1.,
+            delta: tekes_ui_platform_macos::Vec2 { x: 0., y: -1. },
+            precise: false,
+            phase: tekes_ui_platform_macos::ScrollPhase::None,
+            momentum_phase: tekes_ui_platform_macos::ScrollPhase::None,
+            inverted: false,
+            position: NativePoint {
+                x: point.x as f64,
+                y: point.y as f64,
+            },
+            modifiers: Modifiers::NONE,
+        };
+        // Reference enters the original ContentHost/ScrollContent directly;
+        // the Gallery path must not preconvert lines into logical points again.
+        let input = tekes_ui_module_runtime::content_wheel_event(&wheel).unwrap();
+        assert!(
+            original
+                .state(i)
+                .master_mut()
+                .host
+                .wheel_event(&input)
+                .consumed
+        );
+        assert!(gallery.handle(i, &Event::Scroll(wheel), &mut text));
+        let expected = original.state(i).master().scroll().offset;
+        assert_eq!(
+            expected.y,
+            proposal::metric("size", "size-row-height").unwrap()
+        );
+        assert_eq!(gallery.state(i).master().scroll().offset, expected);
+        assert_eq!(gallery.state(i).selected, 0);
+    }
+
+    #[test]
     fn master_detail_rows_share_scroll_geometry_for_visible_paint_and_selection() {
         let mut w = Workbench::default();
         let mut t = super::super::text::TextEngine::new();
@@ -10730,7 +10843,25 @@ mod interaction_tests {
         build_in(&mut w, i, &mut t, content);
         let list = w.state(i).list_bounds;
         assert!(!list.is_empty());
-        w.state(i).list_scroll.scroll_by(0.0, 84.0);
+        let point = list.center();
+        assert!(w.handle(
+            i,
+            &Event::Scroll(tekes_ui_platform_macos::ScrollEvent {
+                timestamp: 0.,
+                delta: tekes_ui_platform_macos::Vec2 { x: 0., y: -84. },
+                precise: true,
+                phase: tekes_ui_platform_macos::ScrollPhase::Began,
+                momentum_phase: tekes_ui_platform_macos::ScrollPhase::None,
+                inverted: false,
+                position: NativePoint {
+                    x: point.x as f64,
+                    y: point.y as f64
+                },
+                modifiers: Modifiers::NONE,
+            }),
+            &mut t
+        ));
+        assert!(w.state(i).master().scroll().offset.y > 0.);
         build_in(&mut w, i, &mut t, content);
         let row_two = w
             .state(i)
@@ -10770,7 +10901,7 @@ mod interaction_tests {
     }
 
     #[test]
-    fn master_detail_document_word_fits_measured_button_and_preserves_layout() {
+    fn master_detail_document_word_fits_list_rows_and_preserves_layout() {
         let i = index("master");
         for width in [360.0, 384.0, 1000.0] {
             for type_scale in [1.0, 1.5] {
@@ -10823,19 +10954,33 @@ mod interaction_tests {
                         );
                     }
 
-                    let rendered_labels: Vec<_> = state
-                        .button_labels
-                        .iter()
-                        .filter(|(id, _)| (10000..10080).contains(*id))
-                        .map(|(id, label)| {
-                            let layout = state.buttons[id]
-                                .layout()
-                                .expect("visible master row has a production ButtonLayout");
-                            (*id, label.clone(), layout)
+                    let rendered_labels: Vec<_> = (0..80)
+                        .filter_map(|n| {
+                            let row = state.master().row(n);
+                            row.visible()
+                                .map(|_| (n, format!("Document {:02}", n + 1), row.frame()))
                         })
                         .collect();
                     assert!(!rendered_labels.is_empty(), "visible document rows render");
-                    for (id, label, layout) in rendered_labels {
+                    for (id, label, frame) in rendered_labels {
+                        // Use the public production renderer with the original List row's
+                        // actual frame and the same leading Body label metrics.
+                        let layout = text.render_button(
+                            &mut Scene::new(),
+                            &mut ButtonModel::default(),
+                            &label,
+                            frame,
+                            Some(state.list_bounds),
+                            tekes_ui_tokens::Palette::new(
+                                tekes_ui_tokens::Theme::LIGHT,
+                                state.brand,
+                            )
+                            .unwrap(),
+                            paint::ButtonVariant::Quiet,
+                            ButtonSize::Body,
+                            proposal::TextRole::UiBody,
+                            ButtonTextAlign::Leading,
+                        );
                         let paragraph = text.proposal_label(
                             &label,
                             proposal::TextRole::UiBody,
@@ -16485,14 +16630,7 @@ mod interaction_tests {
         let content = Rect::new(312., 70., 1000., 820.);
         let mut original = None;
         for theme in Theme::ALL {
-            let popup = w
-                .state(i)
-                .extended
-                .combo_view
-                .options
-                .layout()
-                .unwrap()
-                .clone();
+            let popup = w.state(i).input.combo().popup_layout().unwrap().clone();
             w.handle(i, &move_pointer(popup.popup.origin), &mut text);
             w.handle(i, &Event::TextCommand("moveUp:".into()), &mut text);
             w.handle(i, &Event::TextCommand("moveDown:".into()), &mut text);
@@ -16511,8 +16649,8 @@ mod interaction_tests {
                 w.build_clipped(i, &mut ctx, content, content, &mut scene);
                 assert!(scene.composition_error().is_none());
                 let state = w.state(i);
-                let combo = &state.extended.combo;
-                let view = &state.extended.combo_view.options;
+                let combo = state.input.combo().model();
+                let view = state.input.combo();
                 assert!(combo.open);
                 assert_eq!(combo.query, "Com");
                 assert_eq!(state.input.query(), "Com");
@@ -16522,10 +16660,13 @@ mod interaction_tests {
                 assert_eq!(combo.active, Some(active));
                 assert_eq!(combo.filtered(), vec![1, 2]);
                 assert_eq!(
-                    (view.original_index(0), view.original_index(1)),
+                    (
+                        combo.filtered().first().copied(),
+                        combo.filtered().get(1).copied()
+                    ),
                     (Some(1), Some(2))
                 );
-                let popup = view.layout().unwrap();
+                let popup = view.popup_layout().unwrap();
                 let input = state.input.frame_at(0).unwrap();
                 let geometry = (
                     input,
@@ -16561,6 +16702,7 @@ mod interaction_tests {
                     },
                     text.scale(),
                 );
+                let active_label = combo.items[active].clone();
                 let nodes = w.accessibility_nodes(i);
                 let menu = nodes
                     .iter()
@@ -16572,8 +16714,8 @@ mod interaction_tests {
                     .collect();
                 assert_eq!(options.len(), 2);
                 assert_eq!(
-                    options.iter().map(|n| n.key.part).collect::<Vec<_>>(),
-                    vec![Some(41), Some(42)]
+                    options.iter().map(|n| n.label.as_str()).collect::<Vec<_>>(),
+                    vec!["Compact", "Comfortable"]
                 );
                 assert!(
                     options
@@ -16583,7 +16725,7 @@ mod interaction_tests {
                 assert!(
                     options
                         .iter()
-                        .find(|n| n.key.part == Some(40 + active))
+                        .find(|n| n.label == active_label)
                         .unwrap()
                         .focused
                 );
@@ -16592,9 +16734,9 @@ mod interaction_tests {
         w.handle(i, &Event::TextCommand("moveDown:".into()), &mut text);
         w.handle(i, &Event::TextCommand("insertNewline:".into()), &mut text);
         build(&mut w, i, &mut text);
-        assert_eq!(w.state(i).extended.combo.selected, Some(2));
+        assert_eq!(w.state(i).input.combo().model().selected, Some(2));
         assert_eq!(w.state(i).input.query(), "Comfortable");
-        assert!(!w.state(i).extended.combo.open);
+        assert!(!w.state(i).input.combo().model().open);
         assert_eq!(
             w.state(i)
                 .log
@@ -16613,13 +16755,17 @@ mod interaction_tests {
             &mut text,
         );
         build(&mut w, i, &mut text);
-        assert!(w.state(i).extended.combo.open);
-        assert_eq!(w.state(i).extended.combo.active, None);
-        assert!(w.state(i).extended.combo_view.options.layout().is_none());
-        assert!(w.state(i).hits.iter().all(|(id, _)| !(40..43).contains(id)));
-        assert_eq!(w.state(i).extended.combo.selected, Some(2));
+        assert!(w.state(i).input.combo().model().open);
+        assert_eq!(w.state(i).input.combo().model().active, None);
+        assert!(w.state(i).input.combo().popup_layout().is_none());
+        assert!(
+            w.accessibility_nodes(i)
+                .iter()
+                .all(|n| n.role != tekes_ui_platform_macos::AccessibilityRole::MenuItem)
+        );
+        assert_eq!(w.state(i).input.combo().model().selected, Some(2));
         w.handle(i, &Event::TextCommand("cancelOperation:".into()), &mut text);
-        assert!(!w.state(i).extended.combo.open);
+        assert!(!w.state(i).input.combo().model().open);
         assert_eq!(w.state(i).input.query(), "absent");
         w.handle(i, &Event::TextCommand("selectAll:".into()), &mut text);
         w.handle(
@@ -16632,7 +16778,7 @@ mod interaction_tests {
         );
         build(&mut w, i, &mut text);
         click(&mut w, i, 41, &mut text);
-        assert_eq!(w.state(i).extended.combo.selected, Some(1));
+        assert_eq!(w.state(i).input.combo().model().selected, Some(1));
         assert_eq!(w.state(i).input.query(), "Compact");
         assert_eq!(w.state(i).focus, Some(1000));
         assert_eq!(
@@ -16646,7 +16792,144 @@ mod interaction_tests {
     }
 
     #[test]
-    fn combobox_native_text_command_moves_the_real_input_caret() {
+    fn combobox_formal_owner_preserves_empty_duplicate_source_indices_and_undo_history() {
+        use tekes_ui_platform_macos::{AccessibilityAction as A, AccessibilityRole as R};
+        let mut w = Workbench::default();
+        w.apply_reduced_motion(true);
+        let mut text = super::super::text::TextEngine::new();
+        let i = index("combo-box");
+        build(&mut w, i, &mut text);
+        w.state(i)
+            .input
+            .combo_mut()
+            .set_items(vec!["".into(), "same".into(), "same".into()])
+            .unwrap();
+        click(&mut w, i, 1000, &mut text);
+        let options: Vec<_> = w
+            .accessibility_nodes(i)
+            .into_iter()
+            .filter(|n| n.role == R::MenuItem)
+            .collect();
+        assert_eq!(
+            options.iter().map(|n| n.label.as_str()).collect::<Vec<_>>(),
+            vec!["", "same", "same"]
+        );
+        assert!(w.accessibility_action(i, options[0].key, &A::Press, &mut text));
+        assert_eq!(w.state(i).input.combo().model().selected, Some(0));
+        assert_eq!(w.state(i).input.query(), "");
+        assert!(
+            w.state(i)
+                .log
+                .iter()
+                .any(|line| line == "combo selection: 0")
+        );
+        assert!(!w.accessibility_action(i, options[0].key, &A::Press, &mut text));
+
+        for expected_count in 1..=2 {
+            click(&mut w, i, 1000, &mut text);
+            // Controlled query update retains the editor owner and revokes older candidates.
+            w.state(i).input.set_value("sa");
+            build(&mut w, i, &mut text);
+            let options: Vec<_> = w
+                .accessibility_nodes(i)
+                .into_iter()
+                .filter(|n| n.role == R::MenuItem)
+                .collect();
+            assert_eq!(options.len(), 2);
+            assert_ne!(options[0].key, options[1].key);
+            assert!(w.accessibility_action(i, options[1].key, &A::Press, &mut text));
+            assert_eq!(w.state(i).input.combo().model().selected, Some(2));
+            assert_eq!(w.state(i).input.query(), "same");
+            assert_eq!(
+                w.state(i)
+                    .log
+                    .iter()
+                    .filter(|line| line.as_str() == "combo selection: 2")
+                    .count(),
+                expected_count
+            );
+            assert!(!w.accessibility_action(i, options[1].key, &A::Press, &mut text));
+            assert!(w.text_command(i, "undo:", None, &mut text).0);
+            assert_eq!(w.state(i).input.query(), "sa");
+            assert!(w.text_command(i, "redo:", None, &mut text).0);
+            assert_eq!(w.state(i).input.query(), "same");
+        }
+        w.state(i).log.clear();
+        for count in 1..=2 {
+            click(&mut w, i, 1000, &mut text);
+            let same_value = w
+                .accessibility_nodes(i)
+                .into_iter()
+                .filter(|n| n.role == R::MenuItem)
+                .nth(1)
+                .unwrap()
+                .key;
+            assert!(w.accessibility_action(i, same_value, &A::Press, &mut text));
+            assert_eq!(w.state(i).input.query(), "same");
+            assert_eq!(
+                w.state(i)
+                    .log
+                    .iter()
+                    .filter(|line| line.as_str() == "combo selection: 2")
+                    .count(),
+                count
+            );
+            assert!(!w.accessibility_action(i, same_value, &A::Press, &mut text));
+        }
+    }
+
+    #[test]
+    fn combobox_gallery_revokes_candidates_on_focus_disable_window_and_external_updates() {
+        use tekes_ui_platform_macos::{AccessibilityAction as A, AccessibilityRole as R};
+        for transition in ["blur", "disabled", "window", "query", "items"] {
+            let mut w = Workbench::default();
+            let mut text = super::super::text::TextEngine::new();
+            let i = index("combo-box");
+            click(&mut w, i, 1000, &mut text);
+            let stale = w
+                .accessibility_nodes(i)
+                .into_iter()
+                .find(|n| n.role == R::MenuItem)
+                .unwrap()
+                .key;
+            match transition {
+                "blur" => w.clear_focus(i),
+                "disabled" => {
+                    w.state(i).extended.disabled = true;
+                    build(&mut w, i, &mut text);
+                }
+                "window" => w.set_window_active(false),
+                "query" => w.state(i).input.set_value("no matching options"),
+                "items" => {
+                    w.state(i)
+                        .input
+                        .combo_mut()
+                        .set_items(vec!["Replacement".into()])
+                        .unwrap();
+                }
+                _ => unreachable!(),
+            }
+            assert!(
+                !w.accessibility_action(i, stale, &A::Press, &mut text),
+                "{transition}"
+            );
+            assert_eq!(
+                w.state(i).input.combo().model().selected,
+                None,
+                "{transition}"
+            );
+            assert!(
+                !w.state(i)
+                    .log
+                    .iter()
+                    .any(|line| line.starts_with("combo selection:")),
+                "{transition}"
+            );
+        }
+    }
+
+    #[test]
+    fn combobox_gallery_overlay_dismissal_does_not_activate_background_reset() {
         let mut w = Workbench::default();
         let mut text = super::super::text::TextEngine::new();
         let i = index("combo-box");
@@ -16654,25 +16937,139 @@ mod interaction_tests {
         w.handle(
             i,
             &Event::TextCommit {
-                text: "Auto".into(),
+                text: "Com".into(),
                 replacement: None,
             },
             &mut text,
         );
         build(&mut w, i, &mut text);
-        assert_eq!(w.state(i).extended.combo.query, "Auto");
-        let before = w.text_state(i).unwrap().caret_index;
-        assert!(
-            !w.handle(i, &key(123, true), &mut text),
-            "Left must remain available to the platform text-input path"
-        );
-        w.handle(i, &Event::TextCommand("moveLeft:".into()), &mut text);
-        let after = w.text_state(i).unwrap().caret_index;
-        assert!(
-            after < before,
-            "native text editing commands should move the real input caret"
-        );
-        assert_eq!(w.state(i).extended.combo.query, "Auto");
+        let reset = w
+            .state(i)
+            .visible_for_id(0)
+            .expect("real reset button")
+            .center();
+        assert!(w.handle(i, &mouse(reset, true), &mut text));
+        w.handle(i, &mouse(reset, false), &mut text);
+        assert!(!w.state(i).input.combo().model().open);
+        assert_eq!(w.state(i).input.query(), "Com");
+        assert!(!w.state(i).log.iter().any(|line| line.starts_with("reset:")));
+    }
+
+    #[test]
+    fn combobox_native_text_command_moves_the_real_input_caret() {
+        use tekes_ui_platform_macos::{
+            AccessibilityAction, AccessibilityRole, TextKeyContext, TextKeyDisposition,
+            TextKeyEvent,
+        };
+        for route in ["selector", "fallback", "selection", "input-consumed"] {
+            let mut gallery = super::super::Gallery::new();
+            let i = index("combo-box");
+            gallery.page = Page::Workbench(i);
+            gallery.set_view_size(1200., 850.);
+            gallery.build_scene(&mut Scene::new());
+            let editor = gallery
+                .workbench
+                .accessibility_nodes(i)
+                .into_iter()
+                .find(|n| n.role == AccessibilityRole::ComboBox)
+                .unwrap()
+                .key;
+            assert!(
+                gallery
+                    .accessibility_action(editor, &AccessibilityAction::Focus)
+                    .redraw
+            );
+            gallery.handle_input(&Event::TextCommit {
+                text: "Auto".into(),
+                replacement: None,
+            });
+            assert_eq!(
+                gallery.text_key_events(),
+                Some(true),
+                "formal Combo enables platform key spans"
+            );
+            let before = gallery.text_input_state().unwrap();
+            assert_eq!(before.caret_index, 4);
+            assert_eq!(before.selection, 4..4);
+            let Event::Key(mut left) = key(123, true) else {
+                unreachable!()
+            };
+            left.modifiers.shift = route == "selection";
+            let context = TextKeyContext {
+                id: 27601,
+                key: left.clone(),
+                composing_at_start: false,
+            };
+            gallery.handle_input(&Event::TextKey(TextKeyEvent::Started(context.clone())));
+            assert_eq!(
+                gallery.text_key_events(),
+                None,
+                "keep platform mode stable during interpretation"
+            );
+            assert_eq!(
+                gallery.text_input_state().unwrap().caret_index,
+                before.caret_index
+            );
+            // view::key_down offers AppKit first. A selector callback prevents raw
+            // fallback; a callback-free fallback is deferred by the original Host.
+            let disposition = match route {
+                "selector" | "selection" => {
+                    gallery.handle_input(&Event::TextCommand(
+                        if route == "selection" {
+                            "moveLeftAndModifySelection:"
+                        } else {
+                            "moveLeft:"
+                        }
+                        .into(),
+                    ));
+                    assert_eq!(gallery.text_input_state().unwrap().caret_index, 3);
+                    TextKeyDisposition::CommandDispatched
+                }
+                "fallback" => {
+                    gallery.handle_input(&Event::Key(left));
+                    assert_eq!(
+                        gallery.text_input_state().unwrap().caret_index,
+                        4,
+                        "fallback waits for native span completion"
+                    );
+                    TextKeyDisposition::Unhandled
+                }
+                "input-consumed" => TextKeyDisposition::InputContextConsumed,
+                _ => unreachable!(),
+            };
+            let finish = Event::TextKey(TextKeyEvent::Finished {
+                context,
+                input_context_handled: Some(route != "fallback"),
+                disposition,
+                text_callbacks: 0,
+                command_callbacks: u64::from(matches!(route, "selector" | "selection")),
+            });
+            gallery.handle_input(&finish);
+            assert_eq!(gallery.text_key_events(), Some(true));
+            let after = gallery.text_input_state().unwrap();
+            let expected = if route == "input-consumed" { 4 } else { 3 };
+            assert_eq!(
+                after.caret_index, expected,
+                "{route}: exactly one movement, or none when AppKit consumed input"
+            );
+            assert_eq!(
+                after.selection,
+                if route == "selection" {
+                    3..4
+                } else {
+                    expected..expected
+                }
+            );
+            assert_eq!(after.text, "Auto");
+            assert_eq!(
+                gallery.workbench.state(i).input.combo().model().query,
+                "Auto"
+            );
+            assert_eq!(
+                gallery.workbench.state(i).input.combo().model().selected,
+                None
+            );
+        }
     }
 
     #[test]
@@ -16705,7 +17102,7 @@ mod interaction_tests {
             &mut text,
         );
         build(&mut workbench, i, &mut text);
-        assert_eq!(workbench.state(i).extended.combo.query, "Com");
+        assert_eq!(workbench.state(i).input.combo().model().query, "Com");
         assert_eq!(workbench.text_state(i).unwrap().text, "Com");
         assert!(workbench.text_state(i).unwrap().marked.is_none());
 
@@ -16713,10 +17110,10 @@ mod interaction_tests {
         build(&mut workbench, i, &mut text);
         assert_eq!(workbench.state(i).focus, Some(1000));
         assert_eq!(workbench.text_state(i).unwrap().text, "Com");
-        assert_eq!(workbench.state(i).extended.combo.active, Some(2));
+        assert_eq!(workbench.state(i).input.combo().model().active, Some(2));
 
         assert!(workbench.handle(i, &Event::TextCommand("insertNewline:".into()), &mut text));
-        assert!(!workbench.state(i).extended.combo.open);
+        assert!(!workbench.state(i).input.combo().model().open);
         assert_eq!(workbench.state(i).focus, Some(1000));
         assert_eq!(workbench.text_state(i).unwrap().text, "Comfortable");
         build(&mut workbench, i, &mut text);
@@ -16730,13 +17127,17 @@ mod interaction_tests {
         let mut text = super::super::text::TextEngine::new();
         let i = index("combo-box");
         build(&mut w, i, &mut text);
-        assert!(!w.state(i).extended.combo.open);
-        assert!(w.state(i).hits.iter().all(|(id, _)| !(40..43).contains(id)));
+        assert!(!w.state(i).input.combo().model().open);
+        assert!(
+            w.accessibility_nodes(i)
+                .iter()
+                .all(|n| n.role != tekes_ui_platform_macos::AccessibilityRole::MenuItem)
+        );
         assert!(w.state(i).hits.iter().any(|(id, _)| *id == 1000));
 
         click(&mut w, i, 1000, &mut text);
-        assert!(w.state(i).extended.combo.open);
-        assert!(w.state(i).hits.iter().any(|(id, _)| *id == 40));
+        assert!(w.state(i).input.combo().model().open);
+        assert!(combo_option(&mut w, i, 0).is_some());
 
         w.handle(
             i,
@@ -16747,18 +17148,22 @@ mod interaction_tests {
             &mut text,
         );
         build(&mut w, i, &mut text);
-        assert!(w.state(i).extended.combo.open);
-        assert!(w.state(i).hits.iter().any(|(id, _)| *id == 41));
-        assert!(w.state(i).hits.iter().any(|(id, _)| *id == 42));
+        assert!(w.state(i).input.combo().model().open);
+        assert!(combo_option(&mut w, i, 1).is_some());
+        assert!(combo_option(&mut w, i, 2).is_some());
 
         w.handle(i, &Event::TextCommand("insertNewline:".into()), &mut text);
         build(&mut w, i, &mut text);
-        assert!(!w.state(i).extended.combo.open);
-        assert!(w.state(i).hits.iter().all(|(id, _)| !(40..43).contains(id)));
+        assert!(!w.state(i).input.combo().model().open);
+        assert!(
+            w.accessibility_nodes(i)
+                .iter()
+                .all(|n| n.role != tekes_ui_platform_macos::AccessibilityRole::MenuItem)
+        );
 
         click(&mut w, i, 1000, &mut text);
-        assert!(w.state(i).extended.combo.open);
-        assert!(w.state(i).hits.iter().any(|(id, _)| *id == 41));
+        assert!(w.state(i).input.combo().model().open);
+        assert!(combo_option(&mut w, i, 1).is_some());
     }
 
     #[test]
@@ -16973,7 +17378,11 @@ mod interaction_tests {
             build_in(&mut w, i, &mut text, viewport);
             assert!(w.state(i).extended.command.combo.open);
             assert!(w.state(i).extended.command_view.options.layout().is_none());
-            assert!(w.state(i).hits.iter().all(|(id, _)| !(40..43).contains(id)));
+            assert!(
+                w.accessibility_nodes(i)
+                    .iter()
+                    .all(|n| n.role != tekes_ui_platform_macos::AccessibilityRole::MenuItem)
+            );
         }
     }
 
@@ -17124,7 +17533,13 @@ mod interaction_tests {
                 if renderer == "combo-box" { 1000 } else { 20 },
                 &mut text,
             );
-            let point = w.state(i).visible_for_id(40).unwrap().center();
+            let point = if renderer == "combo-box" {
+                combo_option(&mut w, i, 0)
+            } else {
+                w.state(i).visible_for_id(40)
+            }
+            .unwrap()
+            .center();
             w.handle(i, &mouse(point, true), &mut text);
             assert!(w.handle(
                 i,
@@ -17141,14 +17556,18 @@ mod interaction_tests {
             w.handle(i, &mouse(point, false), &mut text);
             assert_eq!(w.state(i).input.query(), query);
             let model = if renderer == "combo-box" {
-                &w.state(i).extended.combo
+                w.state(i).input.combo().model()
             } else {
                 &w.state(i).extended.command.combo
             };
             assert_eq!(model.query, query);
             assert_eq!(model.selected, None);
             build(&mut w, i, &mut text);
-            assert!(w.state(i).hits.iter().all(|(id, _)| !(40..43).contains(id)));
+            assert!(
+                w.accessibility_nodes(i)
+                    .iter()
+                    .all(|n| n.role != tekes_ui_platform_macos::AccessibilityRole::MenuItem)
+            );
         }
     }
 
@@ -17167,14 +17586,18 @@ mod interaction_tests {
             &mut text,
         );
         build(&mut w, i, &mut text);
-        assert!(w.state(i).hits.iter().any(|(id, _)| *id == 42));
+        assert!(combo_option(&mut w, i, 2).is_some());
 
         click(&mut w, i, 42, &mut text);
         assert_eq!(w.state(i).input.query(), "Comfortable");
-        assert!(!w.state(i).extended.combo.open);
+        assert!(!w.state(i).input.combo().model().open);
         assert_eq!(w.state(i).focus, Some(1000));
         assert_eq!(w.text_state(i).unwrap().text, "Comfortable");
-        assert!(w.state(i).hits.iter().all(|(id, _)| !(40..43).contains(id)));
+        assert!(
+            w.accessibility_nodes(i)
+                .iter()
+                .all(|n| n.role != tekes_ui_platform_macos::AccessibilityRole::MenuItem)
+        );
     }
 
     #[test]
@@ -17429,8 +17852,12 @@ mod interaction_tests {
         workbench.apply_reduced_motion(true);
         text.set_motion_context(Duration::ZERO, true);
         build(&mut workbench, combo, &mut text);
-        workbench.state(combo).extended.combo.items =
-            (0..24).map(|n| format!("Com candidate {n:02}")).collect();
+        workbench
+            .state(combo)
+            .input
+            .combo_mut()
+            .set_items((0..24).map(|n| format!("Com candidate {n:02}")).collect())
+            .unwrap();
         click(&mut workbench, combo, 1000, &mut text);
         workbench.handle(
             combo,
@@ -17441,13 +17868,12 @@ mod interaction_tests {
             &mut text,
         );
         build(&mut workbench, combo, &mut text);
-        assert!(workbench.state(combo).extended.combo.open);
+        assert!(workbench.state(combo).input.combo().model().open);
         let popup = workbench
             .state(combo)
-            .extended
-            .combo_view
-            .options
-            .layout()
+            .input
+            .combo()
+            .popup_layout()
             .expect("open ComboBox options are laid out")
             .clone();
         assert_eq!(popup.items.len(), 24);
@@ -17456,21 +17882,13 @@ mod interaction_tests {
         assert!(workbench.handle(combo, &wheel(position, 2.0, false), &mut text));
         assert!(workbench.handle(combo, &wheel(position, 2.01, true), &mut text));
         build(&mut workbench, combo, &mut text);
-        assert!(
-            !workbench
-                .state(combo)
-                .extended
-                .combo_view
-                .options
-                .needs_animation()
-        );
+        assert!(!workbench.state(combo).input.needs_animation());
         assert_eq!(
             workbench
                 .state(combo)
-                .extended
-                .combo_view
-                .options
-                .layout()
+                .input
+                .combo()
+                .popup_layout()
                 .unwrap()
                 .scroll_offset,
             0.0
@@ -17480,21 +17898,13 @@ mod interaction_tests {
         assert!(workbench.handle(combo, &wheel(position, 2.02, false), &mut text));
         assert!(workbench.handle(combo, &wheel(position, 2.03, true), &mut text));
         build(&mut workbench, combo, &mut text);
-        assert!(
-            workbench
-                .state(combo)
-                .extended
-                .combo_view
-                .options
-                .needs_animation()
-        );
+        assert!(workbench.state(combo).input.needs_animation());
         assert_ne!(
             workbench
                 .state(combo)
-                .extended
-                .combo_view
-                .options
-                .layout()
+                .input
+                .combo()
+                .popup_layout()
                 .unwrap()
                 .scroll_offset,
             0.0

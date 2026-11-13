@@ -723,10 +723,63 @@ pub fn content_text_input_state(
         carets,
     })
 }
-/// One native-to-Content conversion for the whole window, not each group/process.
+/// Preserve local native wheel phase facts for the original ContentHost owner.
+/// IPC compatibility packets remain unchanged; this does not arbitrate containers.
+pub fn content_wheel_event(
+    scroll: &native::ScrollEvent,
+) -> Option<tekes_ui_controls::composition::ContentWheelEvent> {
+    use tekes_ui_controls::composition::{ContentWheelEvent, ContentWheelPhase as P};
+    let phase = |phase| match phase {
+        native::ScrollPhase::None => P::None,
+        native::ScrollPhase::MayBegin => P::MayBegin,
+        native::ScrollPhase::Began => P::Began,
+        native::ScrollPhase::Ended => P::Ended,
+        native::ScrollPhase::Cancelled => P::Cancelled,
+        native::ScrollPhase::Changed
+        | native::ScrollPhase::Stationary
+        | native::ScrollPhase::Other(_) => P::Changed,
+    };
+    let position = tekes_ui_scene::Point::new(scroll.position.x as f32, scroll.position.y as f32);
+    let mut delta = tekes_ui_scene::Point::new(-scroll.delta.x as f32, -scroll.delta.y as f32);
+    if scroll.modifiers.shift {
+        delta = tekes_ui_scene::Point::new(delta.x + delta.y, 0.);
+    }
+    if !position.x.is_finite()
+        || !position.y.is_finite()
+        || !delta.x.is_finite()
+        || !delta.y.is_finite()
+        || !scroll.timestamp.is_finite()
+        || scroll.timestamp < 0.
+    {
+        return None;
+    }
+    Some(ContentWheelEvent {
+        position,
+        delta,
+        precise: scroll.precise,
+        phase: phase(scroll.phase),
+        momentum_phase: phase(scroll.momentum_phase),
+        time: scroll.timestamp,
+    })
+}
+
+/// One native-to-Content conversion for callers of the compatibility event API.
 pub fn content_event(
     event: &native::Event,
 ) -> Option<tekes_ui_controls::composition::ContentEvent> {
+    if let native::Event::Scroll(scroll) = event {
+        use tekes_ui_controls::composition::{ContentEvent, ContentWheelPhase as P};
+        return content_wheel_event(scroll).map(|wheel| ContentEvent::Scroll {
+            position: wheel.position,
+            delta: wheel.delta,
+            precise: wheel.precise,
+            begin: matches!(wheel.phase, P::MayBegin | P::Began),
+            end: matches!(wheel.phase, P::Ended | P::Cancelled)
+                || matches!(wheel.momentum_phase, P::Ended | P::Cancelled),
+            momentum: wheel.momentum_phase != P::None,
+            time: wheel.time,
+        });
+    }
     if let native::Event::Mouse(mouse) = event {
         let pointer = native_pointer(mouse);
         return pointer
@@ -816,6 +869,9 @@ fn dispatch_content_event(
     clipboard: &dyn ContentClipboard,
 ) -> Option<tekes_ui_controls::composition::ContentResponse> {
     use tekes_ui_controls::composition::{ContentEvent as E, ContentResponse as R};
+    if let native::Event::Scroll(scroll) = event {
+        return content_wheel_event(scroll).map(|wheel| host.wheel_event(&wheel));
+    }
     let command = match event {
         native::Event::TextCommand(command)
             if matches!(command.as_str(), "copy:" | "cut:" | "paste:") =>
@@ -1702,5 +1758,189 @@ mod tests {
                 .is_err()
         );
         assert!(remote.parts(frame, frame, false).is_empty());
+    }
+}
+
+#[cfg(test)]
+mod wheel_dispatch_tests {
+    use super::*;
+    use tekes_ui_controls::{ButtonTextAlign, ButtonTextRenderer, composition::*};
+    use tekes_ui_scene::{Rect, Scene, Size};
+    use tekes_ui_tokens::{Rgba, Theme, proposal};
+    struct Text;
+    impl ButtonTextRenderer for Text {
+        fn text_surface_host(&mut self) -> Option<&mut dyn tekes_ui_controls::TextSurfaceHost> {
+            Some(self)
+        }
+        fn measure(&mut self, s: &str, r: proposal::TextRole, w: f32) -> Size {
+            Size::new((s.len() as f32 * 8.).min(w), r.style().line_height)
+        }
+        fn draw(
+            &mut self,
+            _: &mut Scene,
+            _: &str,
+            _: proposal::TextRole,
+            _: Rect,
+            _: ButtonTextAlign,
+            _: Rgba,
+        ) {
+        }
+    }
+    impl tekes_ui_controls::TextSurfaceHost for Text {
+        fn shape_surface(
+            &mut self,
+            text: &str,
+            role: proposal::TextRole,
+            width: Option<f32>,
+        ) -> std::rc::Rc<tekes_ui_text::model::Paragraph> {
+            use tekes_ui_text::traits::Shaper;
+            let mut shaper = tekes_ui_text::coretext::CoreTextShaper::new(
+                tekes_ui_text::coretext::CoreTextFonts::new(),
+            );
+            std::rc::Rc::new(shaper.shape(
+                text,
+                &tekes_ui_text::style::TextStyle::system(role.style().size),
+                &tekes_ui_text::model::ShapeOptions {
+                    width: width.map(f64::from),
+                    line_spacing: 0.,
+                },
+            ))
+        }
+    }
+    impl tekes_ui_controls::TextSurfaceTextRenderer for Text {
+        fn push_visible(
+            &mut self,
+            _: &mut Scene,
+            _: &tekes_ui_text::model::Paragraph,
+            _: tekes_ui_scene::Point,
+            _: Rgba,
+            _: Rect,
+        ) {
+        }
+    }
+
+    struct NoClipboard;
+    impl ContentClipboard for NoClipboard {
+        fn clipboard_text(&self) -> Option<String> {
+            panic!("wheel does not read clipboard")
+        }
+        fn set_clipboard_text(&self, _: &str) {
+            panic!("wheel does not write clipboard")
+        }
+    }
+    #[test]
+    fn native_dispatch_retains_area_owner_through_outside_and_terminal_momentum() {
+        // Both public dispatch adapters converge on this reducer; the text variant
+        // owns exactly one surrounding text-service operation.
+        for with_text in [false, true] {
+            let mut field = TextFieldContent::new("Area", "");
+            field.show_metadata = false;
+            field.viewport = TextViewport::Fill;
+            field.surface =
+                tekes_ui_controls::TextSurface::new(&"editable line\n".repeat(80), true, false);
+            let mut host = ContentHost::new(Content::new(ComponentId(275), field)).unwrap();
+            let frame = Rect::new(0., 0., 240., 100.);
+            host.render(
+                &mut Scene::new(),
+                &mut Text,
+                frame,
+                frame,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
+            host.focus(Some(ComponentId(275)), true);
+            let offset =
+                |host: &ContentHost| host.text_surface(ComponentId(275)).unwrap().scroll.offset.y;
+            let mut event = native::ScrollEvent {
+                timestamp: 1.,
+                delta: native::Vec2 { x: 0., y: 0. },
+                precise: true,
+                phase: native::ScrollPhase::Began,
+                momentum_phase: native::ScrollPhase::None,
+                inverted: false,
+                position: native::Point { x: 80., y: 50. },
+                modifiers: native::Modifiers::NONE,
+            };
+            let deliver = |host: &mut ContentHost, event: native::ScrollEvent| {
+                if with_text {
+                    dispatch_content_window_event_with_text(
+                        host,
+                        &native::Event::Scroll(event),
+                        &NoClipboard,
+                        &mut Text,
+                    )
+                    .unwrap()
+                    .unwrap()
+                } else {
+                    dispatch_content_event(host, &native::Event::Scroll(event), &NoClipboard)
+                        .unwrap()
+                }
+            };
+            assert!(deliver(&mut host, event).consumed);
+            assert_eq!(offset(&host), 0.);
+            event.position.x = 260.;
+            event.phase = native::ScrollPhase::Changed;
+            event.delta.y = -20.;
+            deliver(&mut host, event);
+            let changed = offset(&host);
+            assert!(
+                changed > 0.,
+                "native continuation reaches original Area outside its frame"
+            );
+            event.phase = native::ScrollPhase::Ended;
+            event.delta.y = 0.;
+            deliver(&mut host, event);
+            event.phase = native::ScrollPhase::None;
+            event.momentum_phase = native::ScrollPhase::Changed;
+            event.delta.y = -20.;
+            deliver(&mut host, event);
+            assert!(offset(&host) > changed);
+            event.momentum_phase = native::ScrollPhase::Ended;
+            event.delta.y = 0.;
+            deliver(&mut host, event);
+            let ended = offset(&host);
+            event.momentum_phase = native::ScrollPhase::Changed;
+            event.delta.y = -20.;
+            deliver(&mut host, event);
+            assert_eq!(
+                offset(&host),
+                ended,
+                "native momentum end retires the original owner"
+            );
+        }
+    }
+    #[test]
+    fn local_wheel_projection_combines_shift_axes_and_preserves_terminal_fact() {
+        let event = native::ScrollEvent {
+            timestamp: 2.,
+            delta: native::Vec2 { x: -4., y: -24. },
+            precise: true,
+            phase: native::ScrollPhase::None,
+            momentum_phase: native::ScrollPhase::Ended,
+            inverted: false,
+            position: native::Point { x: 80., y: 50. },
+            modifiers: native::Modifiers {
+                shift: true,
+                ..native::Modifiers::NONE
+            },
+        };
+        let projected = content_wheel_event(&event).unwrap();
+        assert_eq!(projected.delta, tekes_ui_scene::Point::new(28., 0.));
+        assert_eq!(projected.momentum_phase, ContentWheelPhase::Ended);
+        assert!(
+            content_wheel_event(&native::ScrollEvent {
+                timestamp: -1.,
+                ..event
+            })
+            .is_none()
+        );
+        assert!(matches!(
+            content_event(&native::Event::Scroll(event)),
+            Some(ContentEvent::Scroll {
+                end: true,
+                momentum: true,
+                ..
+            })
+        ));
     }
 }

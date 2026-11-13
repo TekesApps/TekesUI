@@ -182,6 +182,7 @@ pub struct KeyedSelectableListContent {
     activity_epoch: u64,
     exhausted: bool,
     last_intent: Option<ListIntent>,
+    navigation_reveal: Option<Result<HostRevealOutcome, HostRevealError>>,
 }
 impl SelectableListContent {
     pub fn keyed(
@@ -224,6 +225,7 @@ impl KeyedSelectableListContent {
             activity_epoch: 0,
             exhausted: false,
             last_intent: None,
+            navigation_reveal: None,
         };
         let p = c.prepare(s, rows, (0, 0))?;
         let mut range = actions::reserve_mounts(p.mounts).ok_or(ListContentError::MountCapacity)?;
@@ -265,6 +267,16 @@ impl KeyedSelectableListContent {
     pub fn selected_key(&self) -> Option<K> {
         self.validate_all().ok()?;
         self.model.selected_key()
+    }
+    /// Last keyboard-navigation reveal attempt on this original owner. A new
+    /// request or revoked focus clears it; planner refusal is retained verbatim.
+    pub fn navigation_reveal_result(&self) -> Option<Result<HostRevealOutcome, HostRevealError>> {
+        self.navigation_reveal
+    }
+    // Unlike semantic_parts, this original mount identity includes offscreen rows.
+    pub(super) fn focused_row_id(&self) -> Option<ComponentId> {
+        let key = self.focused_key()?;
+        self.registered.get(&key).map(|(id, _)| *id)
     }
     pub fn focused_key(&self) -> Option<K> {
         self.available()
@@ -655,6 +667,7 @@ impl KeyedSelectableListContent {
         debug_assert!(range.exhausted());
     }
     fn revoke(&mut self) {
+        self.navigation_reveal = None;
         self.exposures.clear();
         self.needs_exposure = true;
         self.view.blur();
@@ -849,6 +862,7 @@ impl Component for KeyedSelectableListContent {
     }
     fn set_focus(&mut self, focused: bool, keyboard: bool) {
         if !focused {
+            self.navigation_reveal = None;
             self.view.blur();
         } else if self.available() {
             if let Some(k) = self.view.focused_keyed(&self.model) {
@@ -1033,6 +1047,7 @@ impl Component for KeyedSelectableListContent {
         }
 
         if matches!(e, ContentEvent::Cancel) {
+            self.navigation_reveal = None;
             self.view.cancel();
             return ContentResponse::default();
         }
@@ -1064,6 +1079,98 @@ impl Component for KeyedSelectableListContent {
 }
 
 use super::collection_transaction::*;
+#[derive(Clone, Copy, Debug)]
+pub(super) struct ListNavigationReveal {
+    owner: ComponentId,
+    mount: u64,
+    focus_epoch: u64,
+    row: ComponentId,
+    row_mount: u64,
+}
+impl ContentHost {
+    pub(super) fn queue_list_navigation_reveal(&mut self, owner: ComponentId) -> bool {
+        if self.focused != Some(owner) {
+            return false;
+        }
+        let Some(node) = self.scope().find_active(owner) else {
+            return false;
+        };
+        let Some(row) = node
+            .component::<KeyedSelectableListContent>()
+            .and_then(KeyedSelectableListContent::focused_row_id)
+        else {
+            return false;
+        };
+        let mount = node.mount;
+        let row_mount = self
+            .scope()
+            .find_active(row)
+            .expect("registered List row")
+            .mount;
+        self.root
+            .find_mut(owner)
+            .unwrap()
+            .component_mut::<KeyedSelectableListContent>()
+            .unwrap()
+            .navigation_reveal = None;
+        self.list_navigation_reveal = Some(ListNavigationReveal {
+            owner,
+            mount,
+            focus_epoch: self.focus_epoch,
+            row,
+            row_mount,
+        });
+        self.dirty = true;
+        true
+    }
+    pub(super) fn reconcile_list_navigation_reveal(&mut self) {
+        if self.list_navigation_reveal.is_some_and(|request| {
+            !self.window_active
+                || self.focused != Some(request.owner)
+                || self.focus_epoch != request.focus_epoch
+                || self.scope().find_active(request.owner).is_none_or(|node| {
+                    node.mount != request.mount || node.component.semantics().disabled
+                })
+                || self
+                    .scope()
+                    .find_active(request.row)
+                    .is_none_or(|row| row.mount != request.row_mount)
+        }) {
+            self.list_navigation_reveal = None;
+        }
+    }
+    // Consume only after normal layout has published the latest row frames.
+    // Repeated keys coalesce into the latest original row identity. Keep that
+    // identity across a layout becoming empty-clipped: ListView may then clear
+    // its visual focus, but the planner must report the precise clip refusal.
+    pub(super) fn apply_list_navigation_reveal(
+        &mut self,
+    ) -> Option<Result<HostRevealOutcome, HostRevealError>> {
+        self.reconcile_list_navigation_reveal();
+        let request = self.list_navigation_reveal.take()?;
+        let result = self
+            .plan_host_reveal(
+                request.row,
+                crate::ScrollRevealOptions {
+                    animated: false,
+                    ..Default::default()
+                },
+                &[],
+                HostRevealBudget::default(),
+            )
+            .and_then(|plan| self.commit_host_reveal(plan));
+        // Planning/commit invokes no callbacks: the authenticated owner is still
+        // the same mount. Retain both precise refusals and complete outcomes.
+        self.root
+            .find_mut(request.owner)
+            .unwrap()
+            .component_mut::<KeyedSelectableListContent>()
+            .unwrap()
+            .navigation_reveal = Some(result);
+        Some(result)
+    }
+}
+
 impl ContentHost {
     /// Publish selection without emitting an action or invalidating unchanged row
     /// geometry. Existing input plans are retired when the selection changes.
@@ -1466,6 +1573,439 @@ mod tests {
             .component::<KeyedSelectableListContent>()
             .unwrap()
     }
+    fn navigation_root(nested: bool) -> Content {
+        let snapshot = KeyedListSnapshot {
+            dataset: D(274),
+            items: (1..=80)
+                .map(|n| KeyedListItem {
+                    key: K(n),
+                    name: if nested && n % 3 == 0 {
+                        format!("Document {n}\nsecond line\nthird line")
+                    } else {
+                        format!("Document {n}")
+                    },
+                })
+                .collect(),
+            display_items: (1..=80).map(K).collect(),
+        };
+        let mut budget = b();
+        budget.max_items = 80;
+        budget.max_display_items = 80;
+        let mut list =
+            SelectableListContent::keyed("Documents", &snapshot, &mut d(&snapshot), budget)
+                .unwrap();
+        list.select_key(K(1)).unwrap();
+        let mut scroll = ListContent::scrollable(
+            "Documents",
+            ComponentId(2),
+            vec![Content::new(ComponentId(10), list)],
+        );
+        if nested {
+            scroll.viewport_height = Some(140.);
+            Content::new(
+                ComponentId(3),
+                ScrollContent::new(
+                    crate::ScrollArea::default(),
+                    Content::new(
+                        ComponentId(4),
+                        StackContent {
+                            model: crate::extended::Stack {
+                                axis: crate::extended::Axis::Vertical,
+                                gap: 12.,
+                            },
+                            children: vec![
+                                Content::new(
+                                    ComponentId(5),
+                                    TextContent::new("heading\nline\nline\nline\nline\nline"),
+                                ),
+                                Content::new(ComponentId(1), scroll),
+                            ],
+                            flexible_child: None,
+                        },
+                    ),
+                ),
+            )
+        } else {
+            Content::new(ComponentId(1), scroll)
+        }
+    }
+    fn navigation_host(nested: bool) -> ContentHost {
+        let mut h = ContentHost::new(navigation_root(nested)).unwrap();
+        h.set_action_events(true);
+        navigation_paint(&mut h);
+        assert!(h.focus(Some(ComponentId(10)), true));
+        h
+    }
+    fn navigation_paint(h: &mut ContentHost) {
+        let frame = Rect::new(0., 0., 240., 220.);
+        h.render(
+            &mut Scene::new(),
+            &mut Text,
+            frame,
+            frame,
+            tekes_ui_tokens::Theme::LIGHT.into(),
+        )
+        .unwrap();
+    }
+    fn navigation_offset(h: &ContentHost) -> f32 {
+        h.get(ComponentId(1))
+            .unwrap()
+            .component::<ScrollContent>()
+            .unwrap()
+            .scroll
+            .offset
+            .y
+    }
+    fn navigation_key(h: &mut ContentHost, key: ControlKey) -> ContentResponse {
+        h.event(&ContentEvent::Key { key, down: true })
+    }
+    fn assert_navigation_row_visible(h: &ContentHost, key: u64) {
+        let outcome = list_ref(h)
+            .navigation_reveal_result()
+            .expect("navigation was attempted after layout")
+            .expect("original planner accepted the navigation");
+        assert!(outcome.revealed && !outcome.animated);
+        let row = h.get(ComponentId(100 + key)).unwrap();
+        let visible = row
+            .visible()
+            .expect("focused row enters original clipped viewport");
+        assert_eq!(
+            visible,
+            row.frame(),
+            "the complete variable-height row fits the original clip"
+        );
+        assert_eq!(list_ref(h).focused_key(), Some(K(key)));
+        assert_eq!(list_ref(h).selected_key(), Some(K(key)));
+    }
+    #[test]
+    fn keyed_list_navigation_reveals_batched_and_per_frame_keys_and_boundaries() {
+        for per_frame in [false, true] {
+            let mut h = navigation_host(false);
+            for _ in 0..50 {
+                let response = navigation_key(&mut h, ControlKey::Down);
+                assert!(response.consumed && response.changed);
+                if per_frame {
+                    navigation_paint(&mut h);
+                }
+            }
+            navigation_paint(&mut h);
+            assert!(navigation_offset(&h) > 0.);
+            assert_navigation_row_visible(&h, 51);
+            assert_eq!(
+                h.drain_action_records().len(),
+                50,
+                "one selection intent per actual navigation"
+            );
+            for (key, expected) in [
+                (ControlKey::Up, 50),
+                (ControlKey::Home, 1),
+                (ControlKey::End, 80),
+            ] {
+                assert!(navigation_key(&mut h, key).changed);
+                navigation_paint(&mut h);
+                assert_navigation_row_visible(&h, expected);
+            }
+            // Same-direction endpoint navigation must schedule a frame even though
+            // selection is unchanged after the wheel moves its row offscreen.
+            assert!(
+                h.event(&ContentEvent::Scroll {
+                    position: Point::new(20., 100.),
+                    delta: Point::new(0., -1000.),
+                    precise: false,
+                    begin: false,
+                    end: false,
+                    momentum: false,
+                    time: 1.,
+                })
+                .consumed
+            );
+            navigation_paint(&mut h);
+            assert_eq!(navigation_offset(&h), 0.);
+            h.drain_action_records();
+            let response = navigation_key(&mut h, ControlKey::Down);
+            assert!(
+                response.consumed && response.changed,
+                "request normal consumer rendering at the endpoint"
+            );
+            assert!(
+                h.drain_action_records().is_empty(),
+                "endpoint reveal does not duplicate business selection"
+            );
+            navigation_paint(&mut h);
+            assert_navigation_row_visible(&h, 80);
+        }
+    }
+    #[test]
+    fn keyed_list_navigation_uses_nested_scroll_and_variable_height_row_geometry() {
+        let mut h = navigation_host(true);
+        assert!(navigation_key(&mut h, ControlKey::End).changed);
+        navigation_paint(&mut h);
+        assert_navigation_row_visible(&h, 80);
+        assert!(navigation_offset(&h) > 0.);
+        assert!(
+            h.get(ComponentId(3))
+                .unwrap()
+                .component::<ScrollContent>()
+                .unwrap()
+                .scroll
+                .offset
+                .y
+                > 0.
+        );
+        assert!(navigation_key(&mut h, ControlKey::Up).changed);
+        navigation_paint(&mut h);
+        assert_navigation_row_visible(&h, 79);
+        assert!(navigation_key(&mut h, ControlKey::Up).changed);
+        navigation_paint(&mut h);
+        assert_navigation_row_visible(&h, 78);
+        assert!(navigation_key(&mut h, ControlKey::Home).changed);
+        navigation_paint(&mut h);
+        assert_navigation_row_visible(&h, 1);
+    }
+    #[test]
+    fn keyed_list_navigation_requests_are_not_created_by_other_inputs_and_are_revoked() {
+        for revoke in ["pointer", "wheel", "blur", "cancel", "remount"] {
+            let mut h = navigation_host(false);
+            h.set_keyed_list_selection(ComponentId(10), Some(K(80)))
+                .unwrap();
+            let point = h.get(ComponentId(101)).unwrap().visible().unwrap().center();
+            h.event(&ContentEvent::PointerDown(point));
+            h.event(&ContentEvent::PointerUp(point));
+            assert!(
+                h.list_navigation_reveal.is_none(),
+                "pointer selection is not keyboard navigation"
+            );
+            for event in [
+                ContentEvent::Key {
+                    key: ControlKey::Enter,
+                    down: true,
+                },
+                ContentEvent::Key {
+                    key: ControlKey::Space,
+                    down: true,
+                },
+                ContentEvent::Key {
+                    key: ControlKey::End,
+                    down: false,
+                },
+            ] {
+                h.event(&event);
+                assert!(h.list_navigation_reveal.is_none());
+            }
+            navigation_paint(&mut h);
+            assert_eq!(navigation_offset(&h), 0.);
+            navigation_key(&mut h, ControlKey::End);
+            assert!(h.list_navigation_reveal.is_some());
+            match revoke {
+                "pointer" => {
+                    h.event(&ContentEvent::PointerMove(Point::new(20., 20.)));
+                }
+                "wheel" => {
+                    h.event(&ContentEvent::Scroll {
+                        position: Point::new(20., 20.),
+                        delta: Point::default(),
+                        precise: false,
+                        begin: false,
+                        end: false,
+                        momentum: false,
+                        time: 1.,
+                    });
+                }
+                "blur" => {
+                    h.focus(None, false);
+                    h.focus(Some(ComponentId(10)), true);
+                }
+                "cancel" => h.cancel(),
+                "remount" => {
+                    h.root.lifecycle(Lifecycle::Unmounted);
+                    h.root.lifecycle(Lifecycle::Mounted);
+                }
+                _ => unreachable!(),
+            }
+            navigation_paint(&mut h);
+            assert!(h.list_navigation_reveal.is_none());
+            assert_eq!(
+                navigation_offset(&h),
+                0.,
+                "stale {revoke} navigation must not scroll"
+            );
+        }
+    }
+    #[test]
+    fn keyed_list_navigation_native_key_span_reveals_once_on_actual_dispatch() {
+        let mut h = navigation_host(false);
+        let key = ContentKeyEvent {
+            key: Some(ControlKey::End),
+            down: true,
+            repeat: false,
+            modifiers: InputModifiers::default(),
+            native_code: 119,
+            characters: String::new(),
+            characters_ignoring_modifiers: String::new(),
+        };
+        h.event(&ContentEvent::TextKeyStart {
+            id: 1,
+            key: key.clone(),
+            composing: false,
+        });
+        h.event(&ContentEvent::KeyInput(key.clone()));
+        assert!(h.list_navigation_reveal.is_none());
+        assert!(h.drain_action_records().is_empty());
+        let end = ContentEvent::TextKeyEnd {
+            id: 1,
+            input_context_consumed: false,
+        };
+        let response = h.event(&end);
+        assert!(response.consumed && response.changed);
+        assert!(h.list_navigation_reveal.is_some());
+        assert_eq!(h.drain_action_records().len(), 1);
+        navigation_paint(&mut h);
+        assert_navigation_row_visible(&h, 80);
+        h.event(&end);
+        assert!(h.list_navigation_reveal.is_none());
+        assert!(h.drain_action_records().is_empty());
+        h.event(&ContentEvent::TextKeyStart {
+            id: 2,
+            key: key.clone(),
+            composing: false,
+        });
+        h.event(&ContentEvent::KeyInput(key));
+        h.event(&ContentEvent::TextKeyEnd {
+            id: 2,
+            input_context_consumed: true,
+        });
+        assert!(h.list_navigation_reveal.is_none());
+        assert!(h.drain_action_records().is_empty());
+    }
+
+    #[test]
+    fn keyed_list_navigation_retains_clipped_refusal_and_retries_only_new_navigation() {
+        let mut h = navigation_host(false);
+        navigation_key(&mut h, ControlKey::End);
+        let frame = Rect::new(0., 0., 240., 220.);
+        let empty = Rect::new(0., 0., 0., 0.);
+        h.render(
+            &mut Scene::new(),
+            &mut Text,
+            frame,
+            empty,
+            tekes_ui_tokens::Theme::LIGHT.into(),
+        )
+        .unwrap();
+        // Empty layout withdraws List's translation capability. The original
+        // planner checks that capability before clip feasibility, so retain its
+        // precise UnsupportedLayout rejection rather than reclassifying it.
+        let refusal = h
+            .plan_host_reveal(
+                ComponentId(180),
+                crate::ScrollRevealOptions {
+                    animated: false,
+                    ..Default::default()
+                },
+                &[],
+                HostRevealBudget::default(),
+            )
+            .unwrap_err();
+        assert_eq!(refusal, HostRevealError::UnsupportedLayout);
+        assert_eq!(list_ref(&h).navigation_reveal_result(), Some(Err(refusal)));
+        assert_eq!(navigation_offset(&h), 0.);
+        assert!(h.list_navigation_reveal.is_none());
+        h.render(
+            &mut Scene::new(),
+            &mut Text,
+            frame,
+            empty,
+            tekes_ui_tokens::Theme::LIGHT.into(),
+        )
+        .unwrap();
+        assert_eq!(list_ref(&h).navigation_reveal_result(), Some(Err(refusal)));
+        assert_eq!(navigation_offset(&h), 0.);
+        navigation_paint(&mut h);
+        assert_eq!(
+            navigation_offset(&h),
+            0.,
+            "restoring space alone does not retry navigation"
+        );
+        // Empty layout withdrew ListView's local focus. A real focus entry and
+        // new navigation, rather than an automatic render retry, resumes it.
+        h.focus(Some(ComponentId(10)), true);
+        assert!(navigation_key(&mut h, ControlKey::End).changed);
+        assert_eq!(list_ref(&h).navigation_reveal_result(), None);
+        navigation_paint(&mut h);
+        assert_navigation_row_visible(&h, 80);
+        assert!(navigation_key(&mut h, ControlKey::Down).changed);
+        navigation_paint(&mut h);
+        let outcome = list_ref(&h).navigation_reveal_result().unwrap().unwrap();
+        assert!(
+            outcome.revealed && !outcome.changed,
+            "visible endpoint is a successful stationary reveal"
+        );
+    }
+    #[test]
+    fn keyed_list_navigation_retains_unsupported_layout_without_legacy_fallback() {
+        #[derive(Debug)]
+        struct Opaque {
+            children: Vec<Content>,
+            supports_translation: bool,
+        }
+        impl Component for Opaque {
+            fn host_reveal_passthrough(&self) -> bool {
+                self.supports_translation
+            }
+            fn children(&self) -> &[Content] {
+                &self.children
+            }
+            fn children_mut(&mut self) -> Option<&mut Vec<Content>> {
+                Some(&mut self.children)
+            }
+            fn measure(
+                &mut self,
+                text: &mut dyn ButtonTextRenderer,
+                available: Size,
+            ) -> MeasuredChild {
+                self.children[0].measure(text, available)
+            }
+            fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
+                self.children[0].arrange(text, frame, clip);
+            }
+        }
+        let mut h = ContentHost::new(Content::new(
+            ComponentId(900),
+            Opaque {
+                children: vec![navigation_root(false)],
+                supports_translation: true,
+            },
+        ))
+        .unwrap();
+        navigation_paint(&mut h);
+        assert!(h.focus(Some(ComponentId(10)), true));
+        assert!(navigation_key(&mut h, ControlKey::End).changed);
+        // Focus is legitimately acquired under a supported layout. A changed
+        // ancestor then withdraws translation before the pending reveal layout.
+        h.get_mut(ComponentId(900))
+            .unwrap()
+            .component_mut::<Opaque>()
+            .unwrap()
+            .supports_translation = false;
+        navigation_paint(&mut h);
+        assert_eq!(
+            list_ref(&h).navigation_reveal_result(),
+            Some(Err(HostRevealError::UnsupportedLayout))
+        );
+        assert_eq!(
+            navigation_offset(&h),
+            0.,
+            "no imperative legacy fallback on planner refusal"
+        );
+        assert!(h.list_navigation_reveal.is_none());
+        navigation_paint(&mut h);
+        assert_eq!(
+            list_ref(&h).navigation_reveal_result(),
+            Some(Err(HostRevealError::UnsupportedLayout))
+        );
+        assert_eq!(navigation_offset(&h), 0.);
+    }
+
     fn read(h: &ContentHost, s: &KeyedListSnapshot) -> ListReadingUpdate {
         let scroll = h
             .get(ComponentId(1))

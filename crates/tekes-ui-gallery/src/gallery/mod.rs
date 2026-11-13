@@ -1110,7 +1110,7 @@ impl Gallery {
         }
         Some(
             self.navigation_search.state().is_none()
-                && matches!(self.page, Page::Workbench(i) if self.workbench.search_text_focused(i)),
+                && matches!(self.page, Page::Workbench(i) if self.workbench.hosted_text_focused(i)),
         )
     }
 

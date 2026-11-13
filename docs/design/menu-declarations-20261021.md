@@ -26,6 +26,14 @@ Legacy label/value binding and per-item flat setters remain available. The flat 
 
 Validation layers remain separate: public API and original runtime integration tests; actual bounded token probes including declared root/submenu states; source-bound CoreText/Metal screenshots with theme/type-scale/backing-scale, exit and replacement checks; real external native interaction; actual AgentKit consumer and matched ClientKit/Gold7 experience. Early green GPU assertions were rejected as final visual acceptance after image inspection found the missing indicator gap; their logs/images are retained. A first comparison also mixed pointer and AX focus decoration and was corrected to compare the same input source. Current progress.json identifies final source and pending layers. Physical IME, VoiceOver hearing and whole-page visual acceptance are never inferred from synthetic or offscreen checks. Performance is deferred. No commit, push, tag or Issue closure is part of this increment.
 
+## Toolbar menu host bridge (#272)
+
+ToolbarControl forwards Scroll input, including precise gesture begin/end, momentum and timestamp, to its existing MenuView. That MenuView remains the sole scroll owner. The renderer motion context supplies elapsed time and Reduced Motion; the toolbar requests another frame while the original menu needs animation. No independent menu reducer or animation scheduler is introduced.
+
+Interactive open continues to govern input, overlay scope and semantic menu items. Presented additionally governs paint: ordinary activation, Escape and outside dismissal can retain the original paint-only exit fragment after input and semantics are revoked. Cancel/unmount clears presentation and the elapsed-time baseline. Public ToolbarHost tests exercise wheel row geometry, original command identity and this controlled-clock lifecycle; they do not establish native pixels or physical input acceptance.
+
+The existing AppHost demo has an opt-in `TEKESUI_ARCHITECTURE_SCROLL_MENU=1` notes fixture for #271/#272. It retains editor ID 1, adds an original ScrollContent body (ID 27100) and long toolbar declarations, and logs body scroll snapshots and ordinary command dispatch. Its default assembly is unchanged. Use local backing and focus layout for bounded native acceptance; native results remain a separate evidence layer.
+
 ## Ordinary AX part activation and composing editors
 
 An ordinary Menu semantic-part `Press` navigates/selects through the original Menu owner without transferring keyboard focus. Host admission must match this existing dispatch behavior: a composing editor does not block that non-transferring part activation. Explicit `Focus`/`SetSelection`, whole-owner `Press` that acquires focus, and prepared actions requesting focus retain their original composition/reveal barriers. The original marked-Composer submenu regression remains the acceptance case; this does not claim native VoiceOver or physical IME validation.

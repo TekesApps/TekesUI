@@ -762,7 +762,18 @@ impl TextFieldContent {
         }
         result
     }
+    pub(super) fn captured_wheel_event(&mut self, e: &ContentEvent) -> ContentResponse {
+        self.input_event_with_wheel_capture(e, None, true)
+    }
     fn input_event(&mut self, e: &ContentEvent, pointer: Option<&PointerEvent>) -> ContentResponse {
+        self.input_event_with_wheel_capture(e, pointer, false)
+    }
+    fn input_event_with_wheel_capture(
+        &mut self,
+        e: &ContentEvent,
+        pointer: Option<&PointerEvent>,
+        captured_wheel: bool,
+    ) -> ContentResponse {
         if matches!(e, ContentEvent::PointerDown(_)) {
             let event =
                 pointer.map_or_else(|| e.clone(), |pointer| ContentEvent::Pointer(*pointer));
@@ -890,7 +901,13 @@ impl TextFieldContent {
                         false,
                     );
                 }
-                let result = self.surface.wheel_at(
+                let wheel = if captured_wheel {
+                    TextSurface::wheel_captured_at
+                } else {
+                    TextSurface::wheel_at
+                };
+                let result = wheel(
+                    &mut self.surface,
                     *position,
                     Point::new(-delta.x, -delta.y),
                     *precise,

@@ -7,7 +7,9 @@ use tekes_ui_app_host::{
     PresentationState, ProcessContainer,
 };
 use tekes_ui_app_protocol::ToolbarItem;
-use tekes_ui_controls::composition::{ComponentId, Content, TextFieldContent};
+use tekes_ui_controls::composition::{
+    ComponentId, Content, ScrollContent, StackContent, TextContent, TextFieldContent,
+};
 
 const RETAIN_FIRST: u64 = 101;
 const RETAIN_SECOND: u64 = 102;
@@ -62,20 +64,48 @@ fn toolbar_item(id: u64, title: &str) -> ToolbarItem {
     }
 }
 fn local(id: &str, toolbar: bool) -> Result<LocalContainer> {
+    let architecture_fixture =
+        id == "notes" && std::env::var("TEKESUI_ARCHITECTURE_SCROLL_MENU").as_deref() == Ok("1");
     let owner = id.to_owned();
     let actions_owner = owner.clone();
     let count = Rc::new(Cell::new(0_u64));
     let command_count = count.clone();
-    let mut container = LocalContainer::new(
-        id,
-        Content::new(
-            ComponentId(1),
-            TextFieldContent::new(
-                format!("Input {id}"),
-                &format!("{id}: type here; moving this container keeps this text."),
-            ),
+    let editor = Content::new(
+        ComponentId(1),
+        TextFieldContent::new(
+            format!("Input {id}"),
+            &format!("{id}: type here; moving this container keeps this text."),
         ),
-    )?
+    );
+    let body = if architecture_fixture {
+        let mut children = vec![editor];
+        children.extend((0..80).map(|index| {
+            Content::new(
+                ComponentId(27110 + index),
+                TextContent::new(format!("Scrollable notes row {index:02}")),
+            )
+        }));
+        Content::new(
+            ComponentId(27100),
+            ScrollContent::new(
+                tekes_ui_controls::ScrollArea::default(),
+                Content::new(
+                    ComponentId(27101),
+                    StackContent {
+                        model: tekes_ui_controls::extended::Stack {
+                            axis: tekes_ui_controls::extended::Axis::Vertical,
+                            gap: 8.,
+                        },
+                        children,
+                        flexible_child: None,
+                    },
+                ),
+            ),
+        )
+    } else {
+        editor
+    };
+    let mut container = LocalContainer::new(id, body)?
     .toolbar_host(tekes_ui_app_host::ContainerToolbarHost::Container { position: tekes_ui_app_host::ContainerToolbarPosition::Top })
     .on_command(move |host, command| {
         command_count.set(command_count.get() + 1);
@@ -90,6 +120,12 @@ fn local(id: &str, toolbar: bool) -> Result<LocalContainer> {
         Ok(())
     })
     .on_action(move |host, records| {
+        if architecture_fixture {
+            let scroll = &host.get(ComponentId(27100)).unwrap()
+                .component::<ScrollContent>().unwrap().scroll;
+            eprintln!("DEMO_SCROLL_SNAPSHOT owner={actions_owner} target=27100 offset={:?} overscroll={:?} limit={:?}",
+                scroll.offset, scroll.overscroll, scroll.limit());
+        }
         for record in records {
             let text = host
                 .get(ComponentId(1))
@@ -102,11 +138,24 @@ fn local(id: &str, toolbar: bool) -> Result<LocalContainer> {
         }
     });
     if toolbar {
-        container = container.toolbar_host(tekes_ui_app_host::ContainerToolbarHost::Container { position: tekes_ui_app_host::ContainerToolbarPosition::Top }).title(format!("{id} · own Toolbar")).toolbar(vec![
+        let mut actions = vec![
             toolbar_item(RETAIN_FIRST, "Owner command A"),
             toolbar_item(RETAIN_SECOND, "Owner command B"),
             toolbar_item(103, "Owner only"),
-        ]);
+        ];
+        if architecture_fixture {
+            actions.extend((0..40).map(|index| {
+                let mut item = toolbar_item(27200 + index, &format!("Long menu action {index:02}"));
+                item.enabled = index != 1;
+                item
+            }));
+        }
+        container = container
+            .toolbar_host(tekes_ui_app_host::ContainerToolbarHost::Container {
+                position: tekes_ui_app_host::ContainerToolbarPosition::Top,
+            })
+            .title(format!("{id} · own Toolbar"))
+            .toolbar(actions);
     }
     Ok(container)
 }
@@ -117,7 +166,10 @@ fn assembly(layout: Layout, backing: Backing) -> Result<(Vec<Container>, Present
         let nav = definitions[2].id;
         let mut containers = vec![
             ProcessContainer::new(definitions[0])
-                .toolbar_host(tekes_ui_app_host::ContainerToolbarHost::Container { position: tekes_ui_app_host::ContainerToolbarPosition::Top }).title("Process focus")
+                .toolbar_host(tekes_ui_app_host::ContainerToolbarHost::Container {
+                    position: tekes_ui_app_host::ContainerToolbarPosition::Top,
+                })
+                .title("Process focus")
                 .list_height(260.)
                 .into(),
         ];
@@ -125,7 +177,8 @@ fn assembly(layout: Layout, backing: Backing) -> Result<(Vec<Container>, Present
         if layout.nav() {
             containers.push(
                 ProcessContainer::new(definitions[2])
-                    .toolbar_host(tekes_ui_app_host::ContainerToolbarHost::Window).title("Process NavBar")
+                    .toolbar_host(tekes_ui_app_host::ContainerToolbarHost::Window)
+                    .title("Process NavBar")
                     .into(),
             );
             options = options.nav_bar(nav);
@@ -134,7 +187,10 @@ fn assembly(layout: Layout, backing: Backing) -> Result<(Vec<Container>, Present
             let mut ids = vec![definitions[1].id.to_owned()];
             containers.push(
                 ProcessContainer::new(definitions[1])
-                    .toolbar_host(tekes_ui_app_host::ContainerToolbarHost::Container { position: tekes_ui_app_host::ContainerToolbarPosition::Top }).title("Process second")
+                    .toolbar_host(tekes_ui_app_host::ContainerToolbarHost::Container {
+                        position: tekes_ui_app_host::ContainerToolbarPosition::Top,
+                    })
+                    .title("Process second")
                     .list_height(260.)
                     .retain_button(1, focus)
                     .into(),
@@ -142,7 +198,10 @@ fn assembly(layout: Layout, backing: Backing) -> Result<(Vec<Container>, Present
             if !layout.nav() {
                 containers.push(
                     ProcessContainer::new(definitions[2])
-                        .toolbar_host(tekes_ui_app_host::ContainerToolbarHost::Container { position: tekes_ui_app_host::ContainerToolbarPosition::Top }).title("Process third")
+                        .toolbar_host(tekes_ui_app_host::ContainerToolbarHost::Container {
+                            position: tekes_ui_app_host::ContainerToolbarPosition::Top,
+                        })
+                        .title("Process third")
                         .list_height(260.)
                         .into(),
                 );
@@ -163,9 +222,15 @@ fn assembly(layout: Layout, backing: Backing) -> Result<(Vec<Container>, Present
         "preview"
     };
     let mut containers: Vec<Container> = vec![local("notes", true)?.list_height(260.).into()];
-    let mut options = PresentationOptions::new("notes").navigation_toolbar("notes").workspace_switch(layout.others());
+    let mut options = PresentationOptions::new("notes")
+        .navigation_toolbar("notes")
+        .workspace_switch(layout.others());
     if layout.nav() {
-        containers.push(local("navbar", false)?.toolbar_host(tekes_ui_app_host::ContainerToolbarHost::Window).into());
+        containers.push(
+            local("navbar", false)?
+                .toolbar_host(tekes_ui_app_host::ContainerToolbarHost::Window)
+                .into(),
+        );
         options = options.nav_bar("navbar").navigation_toolbar("navbar");
     }
     if layout.others() {
@@ -180,7 +245,10 @@ fn assembly(layout: Layout, backing: Backing) -> Result<(Vec<Container>, Present
         containers.push(local("plain", false)?.into());
         containers.push(if matches!(backing, Backing::Mixed) {
             ProcessContainer::new(definitions[0])
-                .toolbar_host(tekes_ui_app_host::ContainerToolbarHost::Container { position: tekes_ui_app_host::ContainerToolbarPosition::Top }).title("Remote · own Toolbar")
+                .toolbar_host(tekes_ui_app_host::ContainerToolbarHost::Container {
+                    position: tekes_ui_app_host::ContainerToolbarPosition::Top,
+                })
+                .title("Remote · own Toolbar")
                 .list_height(280.)
                 .into()
         } else {
@@ -237,7 +305,80 @@ fn navigation() -> Result<NavigationOptions> {
         }),
     })
 }
+// Opt-in native query smoke check on the real AppHost publication path.
+// This does not exercise physical IME, clipped geometry or invalid point hits.
+fn text_geometry_probe() -> Result<()> {
+    use tekes_ui_platform_macos::selftest::{Action, run_script};
+
+    anyhow::ensure!(
+        std::env::args().len() == 1,
+        "text geometry probe accepts no arguments"
+    );
+    let id = ComponentId(27301);
+    let mut field = TextFieldContent::new("Native text geometry", "A😀B");
+    // Fill makes the published node center an editor hit, not blank space below
+    // a single-line Form slot. ClickPublished derives the actual content-view
+    // coordinates after AppHost's native titlebar/content allocation.
+    field.show_metadata = false;
+    field.viewport = tekes_ui_controls::composition::TextViewport::Fill;
+    let container = LocalContainer::new("text-geometry", Content::new(id, field))?;
+    let app = AppWindow::from_columns(vec![container.into()])?;
+    eprintln!(
+        "APPHOST_TEXT_GEOMETRY begin text=A😀B selection=4..4 scope=visible-native-query-only"
+    );
+    run_script(vec![
+        (
+            1000,
+            Action::ClickPublished {
+                label: "Native text geometry",
+                secondary: false,
+            },
+        ),
+        (1500, Action::TextCommand("moveToEndOfDocument:")),
+        (
+            2000,
+            Action::ExpectTextState {
+                text: "A😀B".into(),
+                selection: 4..4,
+                marked: None,
+                query: 1..2,
+                actual: 1..3,
+            },
+        ),
+        (
+            2300,
+            Action::ExpectTextRect {
+                range: 1..3,
+                actual: 1..3,
+                nonzero_width: true,
+            },
+        ),
+        (
+            2600,
+            Action::ExpectTextRect {
+                range: 3..3,
+                actual: 3..3,
+                nonzero_width: false,
+            },
+        ),
+        (
+            2900,
+            Action::Log(
+                "APPHOST_TEXT_GEOMETRY script-complete; require all three SELFTEST PASS records"
+                    .into(),
+            ),
+        ),
+        (3200, Action::Close),
+    ]);
+    app.run()
+}
+
 pub fn run(verify_only: bool) -> Result<()> {
+    if std::env::var("TEKESUI_APPHOST_TEXT_GEOMETRY").as_deref() == Ok("1") {
+        anyhow::ensure!(!verify_only, "text geometry probe is a native window check");
+        return text_geometry_probe();
+    }
+
     let layout = Layout::parse(
         &std::env::var("TEKESUI_APPHOST_LAYOUT").unwrap_or_else(|_| "nav-others".into()),
     )?;
@@ -286,16 +427,28 @@ mod tests {
                 if layout.nav() {
                     let owner = state.nav_bar_id().unwrap().to_owned();
                     let targets = state.navigation_targets().to_vec();
-                    assert_eq!(state.navigation_toolbar_presenter_id(), Some(owner.as_str()));
+                    assert_eq!(
+                        state.navigation_toolbar_presenter_id(),
+                        Some(owner.as_str())
+                    );
                     if let Some(other) = state.others_ids().first().cloned() {
                         state.promote(&other).unwrap();
-                        assert_eq!(state.navigation_toolbar_presenter_id(), Some(owner.as_str()));
+                        assert_eq!(
+                            state.navigation_toolbar_presenter_id(),
+                            Some(owner.as_str())
+                        );
                         assert_eq!(state.navigation_targets(), targets);
                     }
                     state.toggle_nav_bar().unwrap();
-                    assert_eq!(state.navigation_toolbar_presenter_id(), Some(owner.as_str()));
+                    assert_eq!(
+                        state.navigation_toolbar_presenter_id(),
+                        Some(owner.as_str())
+                    );
                     state.toggle_nav_bar().unwrap();
-                    assert_eq!(state.navigation_toolbar_presenter_id(), Some(owner.as_str()));
+                    assert_eq!(
+                        state.navigation_toolbar_presenter_id(),
+                        Some(owner.as_str())
+                    );
                 }
                 AppWindow::from_containers(containers, options).unwrap();
             }

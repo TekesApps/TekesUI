@@ -167,7 +167,7 @@ impl Gallery {
         &self,
     ) -> Vec<(K, tekes_ui_platform_macos::AccessibilityTextLayout)> {
         if let Page::Workbench(i) = self.page {
-            return self.workbench.search_native_layouts(i);
+            return self.workbench.hosted_native_layouts(i);
         }
         Vec::new()
     }
