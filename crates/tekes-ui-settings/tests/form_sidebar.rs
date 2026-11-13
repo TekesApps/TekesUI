@@ -343,21 +343,22 @@ fn pinned_header_composes_original_back_and_editor_outside_scroll_owner() {
         .unwrap()
         .component::<StackContent>()
         .unwrap();
-    assert_eq!(header.children().len(), 2);
-    assert!(header.children()[0].component::<Button>().is_some());
+    assert_eq!(header.children().len(), 1);
     assert!(
-        header.children()[1]
+        header.children()[0]
             .component::<TextFieldContent>()
             .is_some()
     );
     assert!(sidebar.host.get(ComponentId(10)).is_none());
     assert_eq!(sidebar.host.focused(), Some(ComponentId(6)));
-    assert_eq!(sidebar.host.semantic_mount(ComponentId(4)), back_mount);
+    assert!(sidebar.host.get(ComponentId(4)).is_none());
     assert_eq!(sidebar.host.semantic_mount(ComponentId(1)), scroll_mount);
     assert!(sidebar.cancel_search().unwrap());
     assert!(sidebar.host.get(ComponentId(6)).is_none());
     assert_eq!(sidebar.host.focused(), Some(ComponentId(10)));
     assert_eq!(sidebar.host.semantic_mount(ComponentId(1)), scroll_mount);
+    let restored_back_mount = sidebar.host.semantic_mount(ComponentId(4));
+    assert!(restored_back_mount.is_some());
     for width in [180., 360.] {
         let frame = Rect::new(12., 16., width, 500.);
         sidebar
@@ -373,7 +374,10 @@ fn pinned_header_composes_original_back_and_editor_outside_scroll_owner() {
         assert_eq!(back.min_x(), frame.min_x());
         assert_eq!(search.max_x(), frame.max_x());
         assert_eq!(search.center().y, back.center().y);
-        assert_eq!(sidebar.host.semantic_mount(ComponentId(4)), back_mount);
+        assert_eq!(
+            sidebar.host.semantic_mount(ComponentId(4)),
+            restored_back_mount
+        );
     }
 }
 

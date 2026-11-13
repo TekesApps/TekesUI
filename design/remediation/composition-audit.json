@@ -4743,5 +4743,11 @@
     "scope": "Radio keyboard-visible focus uses original indicator border, not detached ring; selected dot and disabled/error semantics preserved. Other controls/global tokens unchanged.",
     "validation": "Check289 original outer-ring red retained;290 affected controls/strict and291 original independent consumers pass. Native not run.",
     "capability_promotion": false
+  },
+  "settings_search_fullrow_review_20261113": {
+    "issue": 245,
+    "scope": "Existing Settings search replaces Back/Search header while expanded, uses existing full-width TextField allocation; blur restores controls without stealing destination focus, clearing filter not draft/section.",
+    "validation": "Check293 Settings25 and final AppHost23/local clipboard8/strict pass; first new fixture failure retained. Native separately not run.",
+    "capability_promotion": false
   }
 }
