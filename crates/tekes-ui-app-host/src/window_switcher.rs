@@ -196,6 +196,8 @@ impl Host {
         host.set_focus_wrap(false);
         host.set_regions(OWNER, whole, regions)
             .map_err(|e| anyhow::anyhow!("switcher regions: {e:?}"))?;
+        host.set_region_horizontal_inset(ComponentId(OWNER), Some(0.))
+            .map_err(|e| anyhow::anyhow!("switcher inset: {e:?}"))?;
         if structural {
             let items = visible
                 .iter()
@@ -206,6 +208,7 @@ impl Host {
                 })
                 .collect();
             let mut strip = TabStripContent::new(items, selected);
+            strip.set_toolbar_presentation(true);
             // Resolve the reveal range using the same shared natural-title layout.
             tekes_ui_controls::composition::Component::measure(
                 &mut strip,

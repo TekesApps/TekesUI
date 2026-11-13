@@ -66,26 +66,39 @@ all-close/reopen, IME, disabled state, old captures and invalid auxiliary AX
 parts. Native/GPU visual acceptance and test execution are recorded by the
 coordinator against the frozen integrated source.
 
-## Equal content insets (Issue #245, 2026-11-13)
+## Toolbar Tabs outer spacing (Issue #245, 2026-11-13)
 
-Tabs measure their height from the title line box and, when present, the close
-icon artboard, plus `space-relaxed` on both sides at the resolved UiBody scale.
-The same inset applies at the leading and trailing edges. The title-to-close
-separation uses `space-regular`; the close icon remains centered in its own
-hit target. That target moves inward to reserve the trailing inset, and the
-title slot ends before the target. Natural-title TabStrip lanes
-therefore have equal content insets; equal-width Tabs retain their assigned
-extra title-slot width. Glyph ink is not the measurement boundary. Compact
-Tabs follow the same content-inset rule rather than the old fixed 30pt floor.
-General Button geometry, Toolbar partitions and ScrollArea ownership are unchanged.
+The requested equality is between the selected tab background and the surrounding
+Toolbar/partition boundaries, not between glyph ink and the tab background.
+Ordinary Tabs retain their previous height, title inset and centered close target.
+The Gallery Workspace group-heading spacing correction is independent and retained.
 
-For the standard 16pt UiBody line box and 16pt close artboard, Tabs measure 40pt
-at 1x and 80pt at 2x; the existing Toolbar rows are 42pt and 84pt respectively.
-A custom title line box taller than 18pt times the typography scale needs more
-height than that Toolbar row; this change does not silently shrink its insets.
-The real AppHost renderer measures shaped line height, so native verification
-must also inspect the actual title font metrics and clipping.
+The Others Toolbar region opts out of the ordinary horizontal edge inset through
+`ToolbarHost::set_region_horizontal_inset`; all other regions retain their default.
+`ToolbarRegion` keeps its original public fields for full-literal source compatibility.
+The setter preserves its value across allocation updates; removing and recreating
+a region restores the default. Repeating the same value leaves live input intact. Its horizontal ScrollContent owns one outer
+padding budget P: `max(space-regular * UiBody scale, FocusRingMetrics.reserved_band)`.
+The existing toolbar presentation propagation applies this policy to the original
+TabStrip and its containing horizontal viewport on every measure/arrange, including
+Settings typography changes. Explicit non-toolbar scroll padding is unchanged.
+A larger explicit ScrollContent content padding takes precedence over the automatic
+Toolbar budget. Such a deliberate constraint can clip content and is outside the
+default equal-spacing contract; it is never silently reduced.
+No AppHost drawing offset, replacement wrapper or ScrollArea policy is introduced.
 
-The Gallery Workspace headings are separate TextContent/Stack children, not
-ListView group headers. Their inter-group and heading-to-list gaps both use
-`Spacing::Regular`; ListView row metrics are unchanged.
+Toolbar TabStrip height is the Toolbar row minus 2P. Background, content placement,
+close target and accessibility use that same exact height. Close artwork and its
+slot scale with the actual typography in this presentation only. At 100/110/200/300%
+P is 8/8.8/16/24pt and height is 26/28.6/52/78pt. At the supported 50% lower bound,
+full focus coverage sets P to 5pt at 1x backing or 4.5pt at 2x, giving heights 11/12pt;
+the close icon is 8pt. These floors reuse the existing focus geometry, including
+its physical-pixel antialias guard, rather than clipping the focus decoration.
+
+Titles retain natural widths. Toolbar inter-tab gaps equal P and the document
+extent omits the last lane's gap. First/last explicit reveal includes outer padding,
+so an overflowing document revealed to either end retains that spacing. A short
+document may leave unused horizontal space; it does not stretch tabs. The create
+button stays the viewport's sibling and right-side controls retain their allocation.
+Historical internal-padding and general ScrollContent gutter candidates, with
+266/267 evidence identities, are preserved in the task artifact directory.

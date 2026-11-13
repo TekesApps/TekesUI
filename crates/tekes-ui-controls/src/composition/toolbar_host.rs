@@ -472,6 +472,49 @@ impl<B: Clone + Debug> ToolbarHost<B> {
         self.viewport = viewport;
         Ok(())
     }
+    /// Override a mounted region's horizontal edge spacing in points.
+    /// None restores theme spacing. Replacing the region allocation preserves
+    /// this setting; removing and recreating the region restores the default.
+    pub fn set_region_horizontal_inset(
+        &mut self,
+        region: ComponentId,
+        inset: Option<f32>,
+    ) -> Result<(), CompositionError> {
+        if !self
+            .host
+            .get(self.root)
+            .unwrap()
+            .component::<Regions>()
+            .unwrap()
+            .allocations
+            .iter()
+            .any(|allocation| allocation.id == region)
+        {
+            return Err(CompositionError::MissingId(region));
+        }
+        let toolbar = self
+            .host
+            .get(region)
+            .and_then(|content| content.component::<ToolbarContent>())
+            .ok_or(CompositionError::MissingId(region))?;
+        if inset.is_some_and(|value| !value.is_finite() || value < 0.) {
+            return Err(CompositionError::InvalidSlotCount);
+        }
+        if toolbar.horizontal_inset == inset {
+            return Ok(());
+        }
+        self.host.cancel_subtree(region);
+        self.host
+            .get_mut(region)
+            .unwrap()
+            .component_mut::<ToolbarContent>()
+            .unwrap()
+            .horizontal_inset = inset;
+        self.invocations.clear();
+        self.invalidate();
+        Ok(())
+    }
+
     /// New or replacement declaration. Replacing one group unmounts only that
     /// original subtree; unrelated groups retain their controls and mount IDs.
     pub fn register(
@@ -943,5 +986,136 @@ impl<B: Clone + Debug> ToolbarHost<B> {
         } else {
             None
         }
+    }
+}
+
+#[cfg(test)]
+mod inset_tests {
+    use super::*;
+    struct Text;
+    impl ButtonTextRenderer for Text {
+        fn measure(&mut self, label: &str, role: proposal::TextRole, width: f32) -> Size {
+            Size::new(
+                (label.len() as f32 * 7.).min(width),
+                role.style().line_height,
+            )
+        }
+        fn draw(
+            &mut self,
+            _: &mut Scene,
+            _: &str,
+            _: proposal::TextRole,
+            _: Rect,
+            _: crate::ButtonTextAlign,
+            _: tekes_ui_tokens::Rgba,
+        ) {
+        }
+    }
+    #[test]
+    fn region_inset_preserves_legacy_literal_live_input_and_region_lifecycle() {
+        let viewport = Rect::new(0., 0., 300., 100.);
+        // Existing consumers can continue constructing the complete old literal.
+        let mut region = ToolbarRegion {
+            id: ComponentId(2),
+            available: Rect::new(0., 0., 300., 42.),
+            native_safe_area: Insets::ZERO,
+            axis: Axis::Horizontal,
+            scope: ToolbarRegionScope::Container,
+        };
+        let mut host: ToolbarHost<()> = ToolbarHost::new(ComponentId(1), 1, viewport).unwrap();
+        host.set_regions(1, viewport, vec![region.clone()]).unwrap();
+        host.register(ToolbarRegistration {
+            region: region.id,
+            order: 0,
+            group: Content::new(
+                ComponentId(3),
+                ToolbarGroup::new(
+                    ToolbarPlacement::Navigation,
+                    vec![Content::new(ComponentId(4), Button::new("Action"))],
+                ),
+            ),
+            bindings: vec![ToolbarCommandBinding {
+                target: ComponentId(4),
+                action: None,
+                command: 0,
+                source: (),
+            }],
+        })
+        .unwrap();
+        host.set_region_horizontal_inset(region.id, Some(0.))
+            .unwrap();
+        host.render(
+            &mut Scene::new(),
+            &mut Text,
+            tekes_ui_tokens::Theme::LIGHT.into(),
+        )
+        .unwrap();
+        let point = host
+            .content_host()
+            .get(ComponentId(4))
+            .unwrap()
+            .frame()
+            .center();
+        assert!(host.event(&ContentEvent::PointerDown(point)).consumed);
+        let revision = host.revision;
+        host.set_region_horizontal_inset(region.id, Some(0.))
+            .unwrap();
+        assert!(host.ready);
+        assert_eq!(host.revision, revision);
+        host.event(&ContentEvent::PointerUp(point));
+        assert_eq!(
+            host.invocations.len(),
+            1,
+            "same value preserves the live press"
+        );
+        host.event(&ContentEvent::PointerDown(point));
+        host.set_region_horizontal_inset(region.id, Some(3.))
+            .unwrap();
+        assert!(!host.ready);
+        assert!(
+            host.invocations.is_empty(),
+            "changed geometry retires queued invocations"
+        );
+        host.render(
+            &mut Scene::new(),
+            &mut Text,
+            tekes_ui_tokens::Theme::LIGHT.into(),
+        )
+        .unwrap();
+        host.event(&ContentEvent::PointerUp(point));
+        assert!(
+            host.drain_commands().is_empty(),
+            "changed inset cancels the old press"
+        );
+        region.available.size.width = 280.;
+        host.set_regions(1, viewport, vec![region.clone()]).unwrap();
+        assert_eq!(
+            host.content_host()
+                .get(region.id)
+                .unwrap()
+                .component::<ToolbarContent>()
+                .unwrap()
+                .horizontal_inset,
+            Some(3.)
+        );
+        assert!(matches!(
+            host.set_region_horizontal_inset(region.id, Some(-1.)),
+            Err(CompositionError::InvalidSlotCount)
+        ));
+        assert!(matches!(
+            host.set_region_horizontal_inset(ComponentId(4), Some(0.)),
+            Err(CompositionError::MissingId(_))
+        ));
+        host.set_regions(1, viewport, vec![]).unwrap();
+        host.set_regions(1, viewport, vec![region.clone()]).unwrap();
+        assert_eq!(
+            host.content_host()
+                .get(region.id)
+                .unwrap()
+                .component::<ToolbarContent>()
+                .unwrap()
+                .horizontal_inset,
+            None
+        );
     }
 }

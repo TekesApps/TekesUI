@@ -1091,6 +1091,16 @@ impl Content {
     // Toolbar owns a single-line presentation policy, while every descendant
     // retains its source, semantics, mount identity and interaction state.
     fn toolbar_label_layouts(&mut self) {
+        if let Some(strip) = self.component_mut::<TabStripContent>() {
+            strip.set_toolbar_presentation(true);
+        }
+        if let Some(scroll) = self.component_mut::<ScrollContent>() {
+            scroll.toolbar_tabs = scroll.horizontal
+                && scroll
+                    .children
+                    .iter()
+                    .any(|c| c.component::<TabStripContent>().is_some());
+        }
         if let Some(button) = self.component_mut::<Button>() {
             button.set_toolbar_presentation(true);
         }
@@ -1116,6 +1126,12 @@ impl Content {
         }
     }
     fn reset_label_layouts(&mut self) {
+        if let Some(strip) = self.component_mut::<TabStripContent>() {
+            strip.set_toolbar_presentation(false);
+        }
+        if let Some(scroll) = self.component_mut::<ScrollContent>() {
+            scroll.toolbar_tabs = false;
+        }
         if let Some(button) = self.component_mut::<Button>() {
             button.set_toolbar_presentation(false);
         }
@@ -4723,6 +4739,7 @@ impl Component for GridContent {
 }
 #[derive(Debug)]
 pub struct ScrollContent {
+    toolbar_tabs: bool,
     horizontal: bool,
     reveal_horizontal: Option<Rect>,
     pub scroll: ScrollArea,
@@ -4746,6 +4763,7 @@ impl ScrollContent {
         Self {
             scroll,
             horizontal: false,
+            toolbar_tabs: false,
             reveal_horizontal: None,
             viewport_height: None,
             backing_scale: 1.,
@@ -5018,7 +5036,14 @@ impl Component for ScrollContent {
         let width = if self.horizontal {
             let focus = crate::extended::ControlFrame::new(Rect::default(), None)
                 .focus_bounds(text.backing_scale());
-            let gutter = (-focus.min_x()).max(self.content_padding);
+            let padding = if self.toolbar_tabs {
+                crate::toolbar::tab_geometry(text)
+                    .0
+                    .max(self.content_padding)
+            } else {
+                self.content_padding
+            };
+            let gutter = (-focus.min_x()).max(padding);
             let document = self
                 .children
                 .iter_mut()
@@ -5065,7 +5090,14 @@ impl Component for ScrollContent {
         let focus_bounds =
             crate::extended::ControlFrame::new(frame, None).focus_bounds(self.backing_scale);
         let bleed = (frame.min_x() - focus_bounds.min_x()).max(0.0);
-        let gutter = bleed.max(self.content_padding);
+        let padding = if self.toolbar_tabs {
+            crate::toolbar::tab_geometry(text)
+                .0
+                .max(self.content_padding)
+        } else {
+            self.content_padding
+        };
+        let gutter = bleed.max(padding);
         let mut width = (frame.size.width - 2.0 * gutter).max(0.0);
         if self.horizontal {
             width = self
@@ -5111,8 +5143,13 @@ impl Component for ScrollContent {
         }
         self.scroll.layout(frame.size, document);
         if let Some(rect) = self.reveal_horizontal.take() {
-            let left = rect.min_x() + gutter;
-            let right = rect.max_x() + gutter;
+            let left = rect.min_x() + if self.toolbar_tabs { 0. } else { gutter };
+            let right = rect.max_x()
+                + if self.toolbar_tabs {
+                    2. * gutter
+                } else {
+                    gutter
+                };
             let target = if left < self.scroll.offset.x {
                 left
             } else if right > self.scroll.offset.x + frame.size.width {

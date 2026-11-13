@@ -33,6 +33,15 @@ pub(crate) fn metrics(
         inset: ink * proposal::TOOLBAR_INSET_TO_VISIBLE_ICON,
     }
 }
+/// Shared outer spacing for a toolbar tab viewport, including focus coverage.
+pub(crate) fn tab_geometry(text: &mut dyn ButtonTextRenderer) -> (f32, f32) {
+    let role = proposal::TextRole::UiBody;
+    let padding = (proposal::metric("spacing", "space-regular").expect("toolbar tab spacing")
+        * text.resolved_font_size(role)
+        / role.style().size)
+        .max(crate::extended::FocusRingMetrics::new(text.backing_scale()).reserved_band());
+    (padding, metrics(text, role).row - padding * 2.)
+}
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ToolbarAction {
     pub id: u64,

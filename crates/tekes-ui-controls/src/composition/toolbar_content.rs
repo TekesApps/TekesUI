@@ -220,6 +220,7 @@ impl Component for ToolbarGroup {
 /// adapter for each registered window region; custom content remains in-row.
 #[derive(Debug)]
 pub struct ToolbarContent {
+    pub(super) horizontal_inset: Option<f32>,
     pub children: Vec<Content>,
     paint_ground: bool,
     reveal_passthrough: bool,
@@ -229,6 +230,7 @@ impl ToolbarContent {
     pub fn new(children: Vec<Content>) -> Self {
         Self {
             children,
+            horizontal_inset: None,
             paint_ground: true,
             reveal_passthrough: false,
             axis: Axis::Horizontal,
@@ -237,6 +239,7 @@ impl ToolbarContent {
     pub(super) fn hosted() -> Self {
         Self {
             children: vec![],
+            horizontal_inset: None,
             paint_ground: false,
             reveal_passthrough: false,
             axis: Axis::Horizontal,
@@ -329,7 +332,8 @@ impl Component for ToolbarContent {
             0.
         } else {
             widths
-                + gap * (2 + sections.saturating_sub(1)) as f32
+                + self.horizontal_inset.unwrap_or(gap) * 2.
+                + gap * sections.saturating_sub(1) as f32
                 + (0..3)
                     .map(|i| gaps[i] * counts[i].saturating_sub(1) as f32)
                     .sum::<f32>()
@@ -370,7 +374,10 @@ impl Component for ToolbarContent {
         }
         let row = crate::toolbar::metrics(text, proposal::TextRole::UiBody).row;
         let gap = spacing(text, "space-regular");
-        let pad = gap.min(frame.size.width * 0.5);
+        let pad = self
+            .horizontal_inset
+            .unwrap_or(gap)
+            .min(frame.size.width * 0.5);
         let inner = Rect::new(
             frame.min_x() + pad,
             frame.min_y(),
