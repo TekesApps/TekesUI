@@ -333,6 +333,8 @@ fn pinned_header_composes_original_back_and_editor_outside_scroll_owner() {
     let search = sidebar.host.get(ComponentId(10)).unwrap().frame();
     let back = sidebar.host.get(ComponentId(4)).unwrap().frame();
     assert_eq!(search.center().y, back.center().y);
+    assert_eq!(back.min_x(), frame.min_x());
+    assert_eq!(search.max_x(), frame.max_x(), "search belongs at trailing");
     sidebar.event(&ContentEvent::PointerDown(search.center()));
     sidebar.event(&ContentEvent::PointerUp(search.center()));
     let header = sidebar
@@ -356,6 +358,23 @@ fn pinned_header_composes_original_back_and_editor_outside_scroll_owner() {
     assert!(sidebar.host.get(ComponentId(6)).is_none());
     assert_eq!(sidebar.host.focused(), Some(ComponentId(10)));
     assert_eq!(sidebar.host.semantic_mount(ComponentId(1)), scroll_mount);
+    for width in [180., 360.] {
+        let frame = Rect::new(12., 16., width, 500.);
+        sidebar
+            .render(
+                &mut Scene::new(),
+                &mut WithIconRenderer::new(&mut ListText, &mut Icons),
+                frame,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
+        let search = sidebar.host.get(ComponentId(10)).unwrap().frame();
+        let back = sidebar.host.get(ComponentId(4)).unwrap().frame();
+        assert_eq!(back.min_x(), frame.min_x());
+        assert_eq!(search.max_x(), frame.max_x());
+        assert_eq!(search.center().y, back.center().y);
+        assert_eq!(sidebar.host.semantic_mount(ComponentId(4)), back_mount);
+    }
 }
 
 #[test]

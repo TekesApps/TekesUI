@@ -863,6 +863,8 @@ Gallery document identity remains the stable gallery-document route and index. N
 
 Settings keeps Back and Search in one sidebar header row. Back artwork starts at the same leading boundary as the sidebar controls while preserving its original action hit height. The search icon expands the original text editor in that row; committed text matches existing group/item labels and field labels/descriptions to the original item routes. Empty search restores the rows; Escape closes search, while an active marked composition keeps its original IME cancellation path. This follows the Swift Tekes compact-search interaction (ContentSidebarChrome and ClientSettingsController); it does not introduce a second editor or navigation model. Field highlighting and direct field scrolling are outside this bounded search change.
 
+The collapsed search icon occupies the header's trailing edge, while Back stays leading. The header opts into the shared Stack `SpaceBetween` distribution and available main-axis allocation; ordinary Stack and intrinsic measurement remain unchanged. Expanding the original editor and cancelling it preserve this same header and its mounted Back/List owners. No consumer-specific coordinates or spacer text determine placement.
+
 Number steppers retain their original hit targets, bounds and keyboard/AX behavior. Their minus/plus actions paint only the existing action-quiet foreground states (secondary at rest, primary on hover/press, disabled foreground at limits), without rectangular hover backgrounds. Theme values are not overridden in Settings.
 ## 2026-11-12：消费者以选择事件和稳定 item ID 导航（#229）
 
