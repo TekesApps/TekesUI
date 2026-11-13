@@ -24,6 +24,8 @@ pub struct TabStripContent {
     sizes: Vec<Size>,
     lanes: Vec<f32>,
     height: f32,
+    toolbar: bool,
+    gap: f32,
     intent: Option<TabStripIntent>,
     pub title_max_width: f32,
 }
@@ -50,9 +52,17 @@ impl TabStripContent {
             sizes: vec![],
             lanes: vec![],
             height: 0.,
+            toolbar: false,
+            gap: 0.,
             intent: None,
             title_max_width: TAB_TITLE_MAX_WIDTH,
         }
+    }
+    /// Use the shared Toolbar row and outer-spacing contract.
+    /// ToolbarHost also propagates this presentation through mounted content.
+    pub fn set_toolbar_presentation(&mut self, toolbar: bool) {
+        self.toolbar = toolbar;
+        self.view.set_toolbar_presentation(toolbar);
     }
     pub fn select(&mut self, index: usize) {
         self.view.select(index);
@@ -66,12 +76,19 @@ impl TabStripContent {
         Rect::new(
             self.lanes.iter().take(index).sum(),
             0.,
-            self.lanes.get(index).copied().unwrap_or(0.),
+            (self.lanes.get(index).copied().unwrap_or(0.)
+                - if self.toolbar { self.gap } else { 0. })
+            .max(0.),
             self.height,
         )
     }
     fn measure_labels(&mut self, text: &mut dyn ButtonTextRenderer) {
-        let gap = crate::composite::focus_reveal_outset(text.backing_scale()).max(4.);
+        let gap = if self.toolbar {
+            crate::toolbar::tab_geometry(text).0
+        } else {
+            crate::composite::focus_reveal_outset(text.backing_scale()).max(4.)
+        };
+        self.gap = gap;
         self.sizes = self
             .children
             .iter_mut()
@@ -81,7 +98,12 @@ impl TabStripContent {
                     .size
             })
             .collect();
-        let close = TabsView::close_width(text);
+        let close = if self.toolbar {
+            let role = proposal::TextRole::UiBody;
+            24. * text.resolved_font_size(role) / role.style().size
+        } else {
+            TabsView::close_width(text)
+        };
         self.lanes = self
             .sizes
             .iter()
@@ -99,7 +121,11 @@ impl TabStripContent {
                     + if *closable { close } else { 0. }
             })
             .collect();
-        self.height = TabsView::content_height(text, &self.sizes, &self.lanes, false);
+        self.height = if self.toolbar {
+            crate::toolbar::tab_geometry(text).1
+        } else {
+            TabsView::content_height(text, &self.sizes, &self.lanes, false)
+        };
     }
     fn snapshot(&mut self, selected: Option<usize>) -> ContentResponse {
         let close = self.view.take_close_request();
@@ -149,7 +175,15 @@ impl Component for TabStripContent {
     }
     fn measure(&mut self, text: &mut dyn ButtonTextRenderer, _: Size) -> MeasuredChild {
         self.measure_labels(text);
-        MeasuredChild::new(Size::new(self.lanes.iter().sum(), self.height))
+        let trailing_gap = if self.toolbar && !self.lanes.is_empty() {
+            self.gap
+        } else {
+            0.
+        };
+        MeasuredChild::new(Size::new(
+            self.lanes.iter().sum::<f32>() - trailing_gap,
+            self.height,
+        ))
     }
     fn paint(
         &mut self,

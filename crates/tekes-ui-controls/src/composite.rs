@@ -101,6 +101,7 @@ pub struct TabsLayout {
 /// ButtonModel-backed, roving-tabstop presentation for the existing `Tabs` model.
 #[derive(Clone, Debug)]
 pub struct TabsView {
+    toolbar: bool,
     model: Tabs,
     buttons: Vec<ButtonModel>,
     close_buttons: Vec<ButtonModel>,
@@ -141,6 +142,7 @@ impl TabsView {
     }
     pub fn new(count: usize) -> Self {
         Self {
+            toolbar: false,
             model: Tabs::new(count),
             buttons: vec![ButtonModel::default(); count],
             close_buttons: vec![ButtonModel::default(); count],
@@ -162,6 +164,10 @@ impl TabsView {
             press_target: None,
             surface: "canvas",
         }
+    }
+
+    pub(crate) fn set_toolbar_presentation(&mut self, toolbar: bool) {
+        self.toolbar = toolbar;
     }
 
     pub fn selected(&self) -> usize {
@@ -548,8 +554,18 @@ impl TabsView {
                 })
                 .collect()
         };
-        let lane_gap = focus_reveal_outset(text.backing_scale()).max(4.0);
-        let close_width = Self::close_width(text);
+        let toolbar_geometry = self.toolbar.then(|| crate::toolbar::tab_geometry(text));
+        let lane_gap = toolbar_geometry.map_or_else(
+            || focus_reveal_outset(text.backing_scale()).max(4.),
+            |(padding, _)| padding,
+        );
+        let body = proposal::TextRole::UiBody;
+        let toolbar_scale = text.resolved_font_size(body) / body.style().size;
+        let close_width = if self.toolbar {
+            24. * toolbar_scale
+        } else {
+            Self::close_width(text)
+        };
         let base_height = row_height(compact);
         let mut measured_heights = Vec::with_capacity(self.model.count);
         for (index, lane) in lanes.iter().copied().enumerate().take(self.model.count) {
@@ -575,9 +591,13 @@ impl TabsView {
                 .unwrap_or_else(|| {
                     ButtonModel::measure(text, label, lane_width, size_role(compact), role).height
                 });
-            measured_heights.push(base_height.max(measured));
+            measured_heights
+                .push(toolbar_geometry.map_or(base_height.max(measured), |(_, height)| height));
         }
-        let height = measured_heights.iter().copied().fold(base_height, f32::max);
+        let height = measured_heights.iter().copied().fold(
+            toolbar_geometry.map_or(base_height, |(_, height)| height),
+            f32::max,
+        );
         let component_frame = Rect::new(frame.min_x(), frame.min_y(), frame.size.width, height);
         let visible = clip_rect(component_frame, clip);
         let mut items = Vec::with_capacity(self.model.count);
@@ -604,6 +624,11 @@ impl TabsView {
             let item_clip = clip;
             let button = &mut self.buttons[index];
             button.set_surface(self.surface);
+            button.frame_policy = if self.toolbar {
+                crate::ButtonFramePolicy::Exact
+            } else {
+                crate::ButtonFramePolicy::Minimum
+            };
             button.set_selection_fill_only(true);
             set_button_state(
                 button,
@@ -656,6 +681,20 @@ impl TabsView {
                     ButtonTextAlign::Leading,
                 )
             };
+            if self.toolbar {
+                let inset = proposal::metric("spacing", "space-relaxed").expect("tab title inset")
+                    * toolbar_scale;
+                let size = content_sizes
+                    .and_then(|sizes| sizes.get(index))
+                    .copied()
+                    .unwrap_or(layout.label_size);
+                layout.content = Rect::new(
+                    item.min_x() + inset,
+                    item.center().y - size.height * 0.5,
+                    (item.size.width - 2. * inset).max(0.),
+                    size.height,
+                );
+            }
             let close_layout = if self.closable[index] {
                 let width = close_width.min((item.size.width * 0.5).max(0.));
                 let close_frame =
@@ -682,7 +721,11 @@ impl TabsView {
                 );
                 if let Some(visible) = close_layout.visible {
                     let body = proposal::TextRole::UiBody;
-                    let scale = (text.resolved_font_size(body) / body.style().size).max(1.);
+                    let scale = if self.toolbar {
+                        toolbar_scale
+                    } else {
+                        (text.resolved_font_size(body) / body.style().size).max(1.)
+                    };
                     let side = (proposal::metric("size", "size-icon-standard")
                         .expect("Tabs close icon size token")
                         * scale)
