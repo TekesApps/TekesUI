@@ -228,6 +228,21 @@
         "value": "{p-separator}"
       },
       {
+        "name": "p-scrollbar-thumb",
+        "usage": "普通主题弱化滚动指示：仅比选中行底色稍强；增强对比模式绘制仍继承当前 border。",
+        "value": {
+          "light": "#DCDCD9",
+          "dark": "#363634",
+          "light-ic": "#4E4A41",
+          "dark-ic": "#C8C0B4"
+        }
+      },
+      {
+        "name": "scrollbar-thumb",
+        "usage": "共享滚动条滑块；普通主题按低对比外观验收，不承担输入框必要边界或3:1声明。",
+        "value": "{p-scrollbar-thumb}"
+      },
+      {
         "name": "accent",
         "usage": "消费者品牌派生的可读强调/链接前景，不承诺任何固定色相",
         "value": "{p-accent}"

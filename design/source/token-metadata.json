@@ -2597,6 +2597,22 @@
       "since": "0.3.0-proposal.1",
       "source": "window-toolbar-native-calibration-20261021",
       "owner_role": "design-maintainer"
+    },
+    "color:p-scrollbar-thumb": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.27",
+      "source": "TekesUI user-approved quiet scrollbar 2026-11-14",
+      "owner_role": "design-maintainer"
+    },
+    "color:scrollbar-thumb": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.27",
+      "source": "TekesUI user-approved quiet scrollbar 2026-11-14",
+      "owner_role": "design-maintainer"
     }
   }
 }

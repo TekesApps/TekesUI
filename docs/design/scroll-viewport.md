@@ -64,8 +64,15 @@ Gallery 页面 viewport 通过同一个 `ScrollGeometry` 快照完成 viewport/d
 ScrollArea Story 页面直接将 ScrollArea 放入预览剩余区域，Gallery 外层 viewport 没有额外文档滚动；TextEditor 的多行编辑区也使用其容器剩余高度。上述宿主集成解决裁切与布局几何一致性，不表示长文档已做分块虚拟化，也不代表独立的 120Hz、掉帧或 CPU 验收已通过。
 
 
-## 2026-11-13 滚动条中性图形颜色（#121）
+## 2026-11-13 滚动条中性图形颜色（#121，历史）
 
 滚动条属于可操作的图形指示，不复用要求正文可读性的 `secondary-text`，也不使用仅供装饰的 `separator`。共享 ScrollContent、TextSurface 及 Gallery 的直接 ScrollArea 视口绘制统一消费现有 `border` token：普通浅色 `#7C7C79`、深色 `#7E7E7A`；增强对比度继续使用该 token 已有的独立主题值。色值来自 `design/source/base.tokens.json`，消费者不加透明度或自定义灰色。
 
 此变更仅调整绘制角色；轨道/滑块几何、滚动状态、拖动命中和 List 默认 hover 显隐不变。保留现有真实 Scene 断言对滚动位置、选择、主题切换及滑块与实际背景至少 3:1 的检查，不把颜色变更标为新的原生/性能验收。
+
+
+## 2026-11-14 普通滚动条低对比修订（#245）
+
+用户实看后要求普通滚动条仅比选中行背景稍突出。本决定替代上一节普通主题的 border 接线和滑块3:1验收；不改写历史结果。共享 `scrollbar-thumb` 使用 Light #DCDCD9、Dark #363634，分别比选中底色略深/略亮。ScrollContent、TextSurface、Gallery直接ScrollArea视口统一接入该角色；无消费者私有灰色。增强对比模式仍直接读取当前 palette 的 border，保留自定义主题覆盖及原3:1要求。输入框必要边界与焦点不变。
+
+可操作滑块的低对比会降低发现性，不能冒称满足旧普通主题3:1；须按实际明暗画面单列体验结论。几何、命中、hover显隐和滚动状态保持；按用户要求本批不跑功能测试或新CI。

@@ -1690,8 +1690,18 @@ impl TextSurface {
                 );
                 if let Some(thumb) = thumb.intersection(&frame_clip) {
                     scene.push_quad(
-                        Quad::new(thumb, color("border", theme))
-                            .with_corner_radius(Spacing::Micro.value()),
+                        Quad::new(
+                            thumb,
+                            color(
+                                if theme.theme.is_increased() {
+                                    "border"
+                                } else {
+                                    "scrollbar-thumb"
+                                },
+                                theme,
+                            ),
+                        )
+                        .with_corner_radius(Spacing::Micro.value()),
                     );
                 }
             }

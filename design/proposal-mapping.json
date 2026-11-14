@@ -2472,7 +2472,7 @@
   "format": "tekesui.proposal-mapping/1",
   "native_evidence": "unverified; requires new Gallery render review",
   "new_proposal_counts": {
-    "color": 156,
+    "color": 158,
     "opacity": 12,
     "radius": 43,
     "size": 55,

@@ -1513,11 +1513,19 @@ mod tests {
                 })
                 .expect("actual visible ScrollArea fixture thumb");
             assert_eq!(background.fill, palette.color("surface-1").unwrap());
-            assert_eq!(painted_thumb.fill, palette.color("border").unwrap());
-            assert!(
-                contrast(painted_thumb.fill, background.fill) >= 3.,
-                "{theme:?}: actual thumb/parent contrast"
-            );
+            let role = if theme.is_increased() {
+                "border"
+            } else {
+                "scrollbar-thumb"
+            };
+            assert_eq!(painted_thumb.fill, palette.color(role).unwrap());
+            // Ordinary scrollbar appearance follows the 2026-11-14 quiet-ink decision.
+            if theme.is_increased() {
+                assert!(
+                    contrast(painted_thumb.fill, background.fill) >= 3.,
+                    "{theme:?}: actual thumb/parent contrast"
+                );
+            }
             assert!(background_index < thumb_index);
             // Bind only the original TextSurface paint interval, not page-wide headings/buttons.
             let own_content = &scene.primitives()[background_index + 1..thumb_index];

@@ -11805,8 +11805,16 @@ mod interaction_tests {
                     _ => None,
                 })
                 .expect("actual multiline viewport scrollbar thumb");
-            assert_eq!(thumb.fill, palette.color("border").unwrap());
-            assert!(contrast(thumb.fill, palette.color("transcript-input").unwrap()) >= 3.);
+            let role = if palette.theme.is_increased() {
+                "border"
+            } else {
+                "scrollbar-thumb"
+            };
+            assert_eq!(thumb.fill, palette.color(role).unwrap());
+            // Ordinary scrollbar appearance follows the 2026-11-14 quiet-ink decision.
+            if palette.theme.is_increased() {
+                assert!(contrast(thumb.fill, palette.color("transcript-input").unwrap()) >= 3.);
+            }
             thumb.rect
         }
 
