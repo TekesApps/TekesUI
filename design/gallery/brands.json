@@ -55,8 +55,8 @@
     "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/examples/example-clay.json": "c5a2160d582d90e0488810e66a6b7185c6bb3ff84876eed468c84a1d7e85ca52",
     "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/brand.py": "3da13fcc221ed488d383af75dc84f77930306368632b7f48fb38476dc78f6586",
     "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/brand_color.py": "f7395f04cbd8cf0215326345929d76f6d8e263bdff69c6aede1a417bccc82516",
-    "design/source/base.tokens.json": "6c2416536b59420a307a263fe8a6dfb13f4006b6e2365d2feaf5084fd3a940c5",
-    "design/source/token-metadata.json": "74d80ebfbfd5b020ced68b759f339144c3eea903b2608b099b6af752374963f3",
+    "design/source/base.tokens.json": "5d1bf6b2a0669a50530c82549556359fde7458b01d2f67af4ff557731fba60bf",
+    "design/source/token-metadata.json": "88c7ca5bbf033c3abd39425fe220b06cdd137904ee812517c5119608d2d54cd9",
     "scripts/generate-gallery-brands.py": "0a169997cc3edca32aa93d7a3f089e66c7f5a5b2ba2acce272b07a5d44013497"
   },
   "presets": [

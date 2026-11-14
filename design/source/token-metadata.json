@@ -2662,7 +2662,7 @@
       "source": "this-proposal",
       "owner_role": "design-maintainer"
     },
-    "spacing:space-content-row-inline": {
+    "spacing:space-grouped-form-row-inline": {
       "tier": "semantic",
       "unit": "logical-pt",
       "status": "proposed",
@@ -2670,7 +2670,7 @@
       "source": "this-proposal",
       "owner_role": "design-maintainer"
     },
-    "spacing:space-content-row-block": {
+    "spacing:space-grouped-form-row-block": {
       "tier": "semantic",
       "unit": "logical-pt",
       "status": "proposed",

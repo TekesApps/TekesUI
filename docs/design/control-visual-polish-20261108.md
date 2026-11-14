@@ -328,6 +328,11 @@ SettingsRow统一承接整行低对比底面、panel圆角与四边Regular留白
 
 r5分组结构已经由Light/Dark100%与Dark150%原图核对，无明显文字截断；用户进一步指出行高偏大、左右留白不足，故r5不能作为最终间距接受结论。原图/Check302–304保留。
 
-当前采用共享语义space-content-row-inline→space-loose（16pt），space-content-row-block→space-tight（4pt），统一用于SettingsRow的测量、安排与分隔线缩进。不是改全局spacing primitive，也不是AppHost/Gallery局部常量。相同“带底面内容行”的语义可复用此对token；不把按钮、导航List、文字输入框不分职责全部强改成同一padding。整体行高随实测内容加8pt并满足c-row-min-height；100%下比r5减少8pt，上下对称、左右对称。较大字号和窄窗口继续按真实内容重排。
+当前采用共享语义space-grouped-form-row-inline→space-loose（16pt），space-grouped-form-row-block→space-tight（4pt），统一用于SettingsRow的测量、安排与分隔线缩进。不是改全局spacing primitive，也不是AppHost/Gallery局部常量。这对token仅适用于分组表单行的背景到标签/控件的内边距；不用于主界面留白、Container内容边距、List item或TextBox内部padding。整体行高随实测内容加8pt并满足c-row-min-height；100%下比r5减少8pt，上下对称、左右对称。较大字号和窄窗口继续按真实内容重排。
 
 r6实际验收：Check305四项受影响行/分组检查、strict、release构建通过（构建181.88秒），无新CI。root已核对Light100%、Dark100%、Dark150%原图：组底/细线保持，左右留白增宽、行高减少，标签/控件居中，放大时减号/数值/加号可见且无明显截断。精确16/4由共享token与代码保证，截图不冒充pt测量。恢复System/100%，键鼠释放，Dock更新为本地v0.3.27 Settings Density，SHA04cd78be712ae6451e4e4944f7b8786a68e5958d0426925cecbd926720bad5f7。IC外观、Light150及旧键盘/hover缺项未被本批代签；正式Release仍v0.3.26。详见协调outputs/settings-density-background-20261114/。
+
+
+### 分组表单行命名收窄（2026-11-14）
+
+按用户最新决定，将原space-content-row-inline/block重命名为space-grouped-form-row-inline/block，限定为分组表单行语义。仍分别引用space-loose=16pt、space-tight=4pt；只更新SettingsRow既有引用及生成记录。共享spacing尺度不表示各组件采用相同padding；主界面、其他组件和原始档位均不变。本次仅命名/定义澄清，复用r6已有布局与原生证据，不运行功能测试、CI、构建或CU，不替换Dock程序。

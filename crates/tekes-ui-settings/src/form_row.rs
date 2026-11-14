@@ -34,8 +34,10 @@ impl SettingsRow {
     }
     fn padding() -> Size {
         Size::new(
-            proposal::metric("spacing", "space-content-row-inline").expect("row inline padding"),
-            proposal::metric("spacing", "space-content-row-block").expect("row block padding"),
+            proposal::metric("spacing", "space-grouped-form-row-inline")
+                .expect("grouped form row inline padding"),
+            proposal::metric("spacing", "space-grouped-form-row-block")
+                .expect("grouped form row block padding"),
         )
     }
     fn widths(width: f32) -> (f32, f32) {

@@ -1669,13 +1669,13 @@
         "value": "{space-micro}"
       },
       {
-        "name": "space-content-row-inline",
-        "usage": "Shared grouped content row horizontal inset; roomy text/control edges",
+        "name": "space-grouped-form-row-inline",
+        "usage": "Grouped form row horizontal inset between the group surface and its label/control; not window, container, List item or TextBox padding",
         "value": "{space-loose}"
       },
       {
-        "name": "space-content-row-block",
-        "usage": "Shared grouped content row vertical inset; control size determines natural row height",
+        "name": "space-grouped-form-row-block",
+        "usage": "Grouped form row vertical inset around its label/control; natural content height and the shared row minimum still apply",
         "value": "{space-tight}"
       }
     ]
