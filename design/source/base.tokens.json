@@ -548,6 +548,11 @@
         "value": "{p-surface-0}"
       },
       {
+        "name": "c-settings-group-ground",
+        "usage": "Passive Settings group surface; one rounded ground with inset row separators",
+        "value": "{p-settings-group-ground}"
+      },
+      {
         "name": "p-surface-1",
         "usage": "主文档画布；角色映射按 OCUI 手册第1篇",
         "value": {
@@ -906,6 +911,16 @@
         "name": "shadow-ink",
         "usage": "浮层静态软阴影；alpha由elevation层定义",
         "value": "{p-shadow-ink}"
+      },
+      {
+        "name": "p-settings-group-ground",
+        "usage": "Quiet Settings group fill in each theme; decorative, not a control boundary",
+        "value": {
+          "light": "#F5F5F4",
+          "dark": "#242423",
+          "light-ic": "#EEEEEB",
+          "dark-ic": "#30302E"
+        }
       }
     ]
   },
@@ -1478,6 +1493,16 @@
         "name": "size-toolbar-chrome",
         "usage": "Window toolbar visible hover/selected chrome height; independent of original >=32pt hit frame",
         "value": "{p-size-20}"
+      },
+      {
+        "name": "p-size-560",
+        "usage": "Settings readable form width primitive",
+        "value": 560
+      },
+      {
+        "name": "c-settings-content-max-width",
+        "usage": "Settings form readable width; scales with body typography",
+        "value": "{p-size-560}"
       }
     ]
   },
@@ -1642,6 +1667,16 @@
         "name": "c-focus-offset",
         "usage": "焦点外环与控件外边缘的可见间距",
         "value": "{space-micro}"
+      },
+      {
+        "name": "space-content-row-inline",
+        "usage": "Shared grouped content row horizontal inset; roomy text/control edges",
+        "value": "{space-loose}"
+      },
+      {
+        "name": "space-content-row-block",
+        "usage": "Shared grouped content row vertical inset; control size determines natural row height",
+        "value": "{space-tight}"
       }
     ]
   },

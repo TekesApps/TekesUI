@@ -2629,6 +2629,54 @@
       "since": "0.3.27",
       "source": "TekesUI user-approved quiet scrollbar 2026-11-14",
       "owner_role": "design-maintainer"
+    },
+    "color:c-settings-group-ground": {
+      "tier": "component",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.27",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:p-settings-group-ground": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.3.27",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "size:p-size-560": {
+      "tier": "primitive",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.3.27",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "size:c-settings-content-max-width": {
+      "tier": "component",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.3.27",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "spacing:space-content-row-inline": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.3.27",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "spacing:space-content-row-block": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.3.27",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
     }
   }
 }

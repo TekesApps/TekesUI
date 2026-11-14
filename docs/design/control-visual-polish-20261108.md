@@ -310,3 +310,24 @@ ScrollArea只管滚动、裁切及滚动条，不猜测子项是否为正文/表
 Check299只补Content来源1项、Field轮廓1项、Slider4项、Select13项，strict与Gallery构建通过；普通Select共享trailing图标测量与裁切、文字role保留已纳入。旧功能通过结果保留身份，没有新增CI。构建冻结期间源码及原缓存标记不变。新候选 `v0.3.27 Shared Controls.app` 的源码/程序/实际Dock身份由协调目录 `outputs/shared-control-visual-20261114/` 记录；正式Release仍v0.3.26。
 
 本批实际原生：Light/Dark正文拖选有选区、无整块框，Select普通底/下箭头及打开/Escape关闭、Field同轮廓focus变化、紧凑Slider已由root对截图复核。Settings已恢复System/100%。Dark Radio的AX键盘焦点到达但截图不能可靠区分checked/focus；正文键盘焦点未到达；纯hover无官方无按键移动接口，三项均未验通过，不扩成整个Gold7完成。Field静止轮廓本批未减轻。程序与截图保持同一签名SHA995b8b359507fb635f932d8baa5da0dcf67adb4e0b2cf78a81b88a049ab47ab9。
+
+## 2026-11-14 Settings整行视觉分组（#245）
+
+SettingsRow统一承接整行低对比底面、panel圆角与四边Regular留白，标签和对应控件落在同一底面；不把静止背景当selected/hover，不给各行使用强调色，不把背景写到AppHost/Gallery。背景采用共享c-settings-row-ground别名引用既有surface-0，不改变表面阶梯色值；行间复用既有间距。保持原child IDs、焦点/草稿/错误与滚动身份。只补受影响行几何/裁切绘制和本批已授权官方CU明暗外观，无全功能测试或新增CI。Apple Settings/grouped Form为参考；非声称所有macOS设置行必须交替背景。
+
+本批Check300：3项SettingsRow几何/滚动身份/裁切绘制、strict及Gallery构建通过（构建184.35秒）；生成/composition/格式检查通过。原token metadata的unit误写color被校验拒绝，已改为规范sRGB，未放宽schema。官方CU两色完整截图由root复核，Theme/Font size底面与左右对应清楚，未见截断，主题切换实际生效；恢复System/100%。新Dock为本地v0.3.27 Settings Rows候选，SHA1812c73d7611428acdfc8b3494c34ac592c5b46ee0eaa64d2c3f2bf77cf9bec1。无新CI、无正式Release；以前键盘focus/hover缺项不由本批代签。证据：协调outputs/settings-row-background-20261114/。
+
+### 用户参考图纠正：共享分组底面（r5，2026-11-14）
+
+上段r4记录保留为历史：用户随后明确否决逐行独立卡片的外观，不能继续称当前外观已接受。以用户15:16的macOS System Settings截图为本批视觉参考：同一schema group共用连续底面，仅首尾外角圆润，组内用缩进装饰hairline分隔，组间Relaxed留白。Shared SettingsForm用既有Stack组织原SettingsRow，不新增输入层/临时容器；字段ID、控件与挂载身份不变。各行Regular内边距，表单共享最大宽560pt、随正文type scale增大并在窄窗口内收缩。共享c-settings-group-ground引用专属primitive：Light #F5F5F4、Dark #242423、Light IC #EEEEEB、Dark IC #30302E；这是被动分组，不改变必要控件边界、选择或焦点token。没有AppHost/Gallery局部样式补丁。只补受影响布局/绘制检查与明暗外观，不新增CI；IC仅静态解析，实际外观仍待验。
+
+尺寸核对：对齐全局layout密度合同c-row-min-height下限与“content measurement wins”，行高取真实标签/控件高度加上下Regular并满足下限；不把所有字段强行压成固定行高。子项在实测行高内垂直居中。组内Stack为0间距，组间沿用Relaxed；分隔线复用decorative_border的物理像素与IC策略，不另写粗细/颜色。Check302三项行测量/身份/绘制通过，Check303共享Form分组几何及strict通过；保留新测试夹具缺label服务和误算滚动内容宽度的两次失败，修的是测试前提，未放宽产品合同。原有不受影响功能证据复用。明暗实际字号外观待本批CU。
+
+
+### r6同批密度修正
+
+r5分组结构已经由Light/Dark100%与Dark150%原图核对，无明显文字截断；用户进一步指出行高偏大、左右留白不足，故r5不能作为最终间距接受结论。原图/Check302–304保留。
+
+当前采用共享语义space-content-row-inline→space-loose（16pt），space-content-row-block→space-tight（4pt），统一用于SettingsRow的测量、安排与分隔线缩进。不是改全局spacing primitive，也不是AppHost/Gallery局部常量。相同“带底面内容行”的语义可复用此对token；不把按钮、导航List、文字输入框不分职责全部强改成同一padding。整体行高随实测内容加8pt并满足c-row-min-height；100%下比r5减少8pt，上下对称、左右对称。较大字号和窄窗口继续按真实内容重排。
+
+r6实际验收：Check305四项受影响行/分组检查、strict、release构建通过（构建181.88秒），无新CI。root已核对Light100%、Dark100%、Dark150%原图：组底/细线保持，左右留白增宽、行高减少，标签/控件居中，放大时减号/数值/加号可见且无明显截断。精确16/4由共享token与代码保证，截图不冒充pt测量。恢复System/100%，键鼠释放，Dock更新为本地v0.3.27 Settings Density，SHA04cd78be712ae6451e4e4944f7b8786a68e5958d0426925cecbd926720bad5f7。IC外观、Light150及旧键盘/hover缺项未被本批代签；正式Release仍v0.3.26。详见协调outputs/settings-density-background-20261114/。

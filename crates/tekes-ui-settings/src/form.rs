@@ -14,7 +14,7 @@ use tekes_ui_controls::{
     extended::{Axis, Stack},
 };
 use tekes_ui_scene::{Rect, Scene};
-use tekes_ui_tokens::Palette;
+use tekes_ui_tokens::{Palette, Spacing, proposal};
 const ROOT: ComponentId = ComponentId(1);
 const STATUS: ComponentId = ComponentId(2);
 const RESET: ComponentId = ComponentId(3);
@@ -38,7 +38,10 @@ fn stack(id: u64, axis: Axis, children: Vec<Content>) -> Content {
     Content::new(
         ComponentId(id),
         StackContent {
-            model: Stack { axis, gap: 12. },
+            model: Stack {
+                axis,
+                gap: Spacing::Relaxed.value(),
+            },
             children,
             flexible_child: None,
         },
@@ -63,17 +66,20 @@ impl SettingsForm {
             parent: Option<&str>,
         ) -> Vec<Content> {
             let mut children = vec![];
-            for group in schema
+            for (group_index, group) in schema
                 .groups
                 .iter()
-                .filter(|g| g.parent.as_deref() == parent)
+                .enumerate()
+                .filter(|(_, g)| g.parent.as_deref() == parent)
             {
-                for (index, f) in schema
+                let fields: Vec<_> = schema
                     .settings
                     .iter()
                     .enumerate()
                     .filter(|(_, f)| f.group == group.id)
-                {
+                    .collect();
+                let mut rows = Vec::with_capacity(fields.len());
+                for (position, &(index, f)) in fields.iter().enumerate() {
                     let raw = draft.display(f);
                     let control = match f.kind {
                         FieldType::Boolean => {
@@ -141,14 +147,28 @@ impl SettingsForm {
                             .with_label_layout(Default::default())
                             .expect("Text label supports wrapping"),
                     ];
-                    children.push(Content::new(
+                    rows.push(Content::new(
                         ComponentId(base),
                         form_row::SettingsRow::new(
                             &f.label,
                             stack(base + 3, Axis::Vertical, labels),
                             control.with_help(&f.description),
                             f.kind == FieldType::Boolean,
-                        ),
+                        )
+                        .in_group(position == 0, position + 1 == fields.len()),
+                    ));
+                }
+                if !rows.is_empty() {
+                    children.push(Content::new(
+                        ComponentId((1_u64 << 48) + group_index as u64),
+                        StackContent {
+                            model: Stack {
+                                axis: Axis::Vertical,
+                                gap: 0.,
+                            },
+                            children: rows,
+                            flexible_child: None,
+                        },
                     ));
                 }
                 children.extend(groups(schema, draft, ids, Some(&group.id)));
@@ -194,8 +214,20 @@ impl SettingsForm {
         frame: Rect,
         palette: Palette,
     ) -> Result<()> {
+        let role = proposal::TextRole::UiBody;
+        let max_width = proposal::metric("size", "c-settings-content-max-width")
+            .expect("Settings content width")
+            * text.resolved_font_size(role)
+            / role.style().size;
+        let width = frame.size.width.min(max_width);
+        let body = Rect::new(
+            frame.min_x() + (frame.size.width - width) * 0.5,
+            frame.min_y(),
+            width,
+            frame.size.height,
+        );
         self.host
-            .render(scene, text, frame, frame, palette)
+            .render(scene, text, body, frame, palette)
             .map_err(|e| anyhow::anyhow!("Settings render: {e:?}"))
     }
     pub fn event(

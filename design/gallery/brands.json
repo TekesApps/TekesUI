@@ -55,8 +55,8 @@
     "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/examples/example-clay.json": "c5a2160d582d90e0488810e66a6b7185c6bb3ff84876eed468c84a1d7e85ca52",
     "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/brand.py": "3da13fcc221ed488d383af75dc84f77930306368632b7f48fb38476dc78f6586",
     "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/brand_color.py": "f7395f04cbd8cf0215326345929d76f6d8e263bdff69c6aede1a417bccc82516",
-    "design/source/base.tokens.json": "8e87ef71a574a40b8839ccd78a2c285194ab3c0832ccfd750a964b06131def50",
-    "design/source/token-metadata.json": "376f28c9751b6e9543de56318ba8cc29b9c992dfa053c5449dbb36e00b2c7877",
+    "design/source/base.tokens.json": "6c2416536b59420a307a263fe8a6dfb13f4006b6e2365d2feaf5084fd3a940c5",
+    "design/source/token-metadata.json": "74d80ebfbfd5b020ced68b759f339144c3eea903b2608b099b6af752374963f3",
     "scripts/generate-gallery-brands.py": "0a169997cc3edca32aa93d7a3f089e66c7f5a5b2ba2acce272b07a5d44013497"
   },
   "presets": [
@@ -611,6 +611,11 @@
             "value": "{p-surface-0}"
           },
           {
+            "name": "c-settings-group-ground",
+            "usage": "Passive Settings group surface; one rounded ground with inset row separators",
+            "value": "{p-settings-group-ground}"
+          },
+          {
             "name": "p-surface-1",
             "usage": "主文档画布；角色映射按 OCUI 手册第1篇",
             "value": {
@@ -969,6 +974,16 @@
             "name": "shadow-ink",
             "usage": "浮层静态软阴影；alpha由elevation层定义",
             "value": "{p-shadow-ink}"
+          },
+          {
+            "name": "p-settings-group-ground",
+            "usage": "Quiet Settings group fill in each theme; decorative, not a control boundary",
+            "value": {
+              "dark": "#242423",
+              "dark-ic": "#30302E",
+              "light": "#F5F5F4",
+              "light-ic": "#EEEEEB"
+            }
           },
           {
             "name": "p-brand-seed",
@@ -1672,6 +1687,11 @@
             "value": "{p-surface-0}"
           },
           {
+            "name": "c-settings-group-ground",
+            "usage": "Passive Settings group surface; one rounded ground with inset row separators",
+            "value": "{p-settings-group-ground}"
+          },
+          {
             "name": "p-surface-1",
             "usage": "主文档画布；角色映射按 OCUI 手册第1篇",
             "value": {
@@ -2030,6 +2050,16 @@
             "name": "shadow-ink",
             "usage": "浮层静态软阴影；alpha由elevation层定义",
             "value": "{p-shadow-ink}"
+          },
+          {
+            "name": "p-settings-group-ground",
+            "usage": "Quiet Settings group fill in each theme; decorative, not a control boundary",
+            "value": {
+              "dark": "#242423",
+              "dark-ic": "#30302E",
+              "light": "#F5F5F4",
+              "light-ic": "#EEEEEB"
+            }
           },
           {
             "name": "p-brand-seed",
@@ -2733,6 +2763,11 @@
             "value": "{p-surface-0}"
           },
           {
+            "name": "c-settings-group-ground",
+            "usage": "Passive Settings group surface; one rounded ground with inset row separators",
+            "value": "{p-settings-group-ground}"
+          },
+          {
             "name": "p-surface-1",
             "usage": "主文档画布；角色映射按 OCUI 手册第1篇",
             "value": {
@@ -3091,6 +3126,16 @@
             "name": "shadow-ink",
             "usage": "浮层静态软阴影；alpha由elevation层定义",
             "value": "{p-shadow-ink}"
+          },
+          {
+            "name": "p-settings-group-ground",
+            "usage": "Quiet Settings group fill in each theme; decorative, not a control boundary",
+            "value": {
+              "dark": "#242423",
+              "dark-ic": "#30302E",
+              "light": "#F5F5F4",
+              "light-ic": "#EEEEEB"
+            }
           },
           {
             "name": "p-brand-seed",
@@ -3794,6 +3839,11 @@
             "value": "{p-surface-0}"
           },
           {
+            "name": "c-settings-group-ground",
+            "usage": "Passive Settings group surface; one rounded ground with inset row separators",
+            "value": "{p-settings-group-ground}"
+          },
+          {
             "name": "p-surface-1",
             "usage": "主文档画布；角色映射按 OCUI 手册第1篇",
             "value": {
@@ -4152,6 +4202,16 @@
             "name": "shadow-ink",
             "usage": "浮层静态软阴影；alpha由elevation层定义",
             "value": "{p-shadow-ink}"
+          },
+          {
+            "name": "p-settings-group-ground",
+            "usage": "Quiet Settings group fill in each theme; decorative, not a control boundary",
+            "value": {
+              "dark": "#242423",
+              "dark-ic": "#30302E",
+              "light": "#F5F5F4",
+              "light-ic": "#EEEEEB"
+            }
           },
           {
             "name": "p-brand-seed",
@@ -4855,6 +4915,11 @@
             "value": "{p-surface-0}"
           },
           {
+            "name": "c-settings-group-ground",
+            "usage": "Passive Settings group surface; one rounded ground with inset row separators",
+            "value": "{p-settings-group-ground}"
+          },
+          {
             "name": "p-surface-1",
             "usage": "主文档画布；角色映射按 OCUI 手册第1篇",
             "value": {
@@ -5213,6 +5278,16 @@
             "name": "shadow-ink",
             "usage": "浮层静态软阴影；alpha由elevation层定义",
             "value": "{p-shadow-ink}"
+          },
+          {
+            "name": "p-settings-group-ground",
+            "usage": "Quiet Settings group fill in each theme; decorative, not a control boundary",
+            "value": {
+              "dark": "#242423",
+              "dark-ic": "#30302E",
+              "light": "#F5F5F4",
+              "light-ic": "#EEEEEB"
+            }
           },
           {
             "name": "p-brand-seed",
@@ -5916,6 +5991,11 @@
             "value": "{p-surface-0}"
           },
           {
+            "name": "c-settings-group-ground",
+            "usage": "Passive Settings group surface; one rounded ground with inset row separators",
+            "value": "{p-settings-group-ground}"
+          },
+          {
             "name": "p-surface-1",
             "usage": "主文档画布；角色映射按 OCUI 手册第1篇",
             "value": {
@@ -6274,6 +6354,16 @@
             "name": "shadow-ink",
             "usage": "浮层静态软阴影；alpha由elevation层定义",
             "value": "{p-shadow-ink}"
+          },
+          {
+            "name": "p-settings-group-ground",
+            "usage": "Quiet Settings group fill in each theme; decorative, not a control boundary",
+            "value": {
+              "dark": "#242423",
+              "dark-ic": "#30302E",
+              "light": "#F5F5F4",
+              "light-ic": "#EEEEEB"
+            }
           },
           {
             "name": "p-brand-seed",
@@ -6977,6 +7067,11 @@
             "value": "{p-surface-0}"
           },
           {
+            "name": "c-settings-group-ground",
+            "usage": "Passive Settings group surface; one rounded ground with inset row separators",
+            "value": "{p-settings-group-ground}"
+          },
+          {
             "name": "p-surface-1",
             "usage": "主文档画布；角色映射按 OCUI 手册第1篇",
             "value": {
@@ -7335,6 +7430,16 @@
             "name": "shadow-ink",
             "usage": "浮层静态软阴影；alpha由elevation层定义",
             "value": "{p-shadow-ink}"
+          },
+          {
+            "name": "p-settings-group-ground",
+            "usage": "Quiet Settings group fill in each theme; decorative, not a control boundary",
+            "value": {
+              "dark": "#242423",
+              "dark-ic": "#30302E",
+              "light": "#F5F5F4",
+              "light-ic": "#EEEEEB"
+            }
           },
           {
             "name": "p-brand-seed",
@@ -8040,6 +8145,11 @@
             "value": "{p-surface-0}"
           },
           {
+            "name": "c-settings-group-ground",
+            "usage": "Passive Settings group surface; one rounded ground with inset row separators",
+            "value": "{p-settings-group-ground}"
+          },
+          {
             "name": "p-surface-1",
             "usage": "主文档画布；角色映射按 OCUI 手册第1篇",
             "value": {
@@ -8398,6 +8508,16 @@
             "name": "shadow-ink",
             "usage": "浮层静态软阴影；alpha由elevation层定义",
             "value": "{p-shadow-ink}"
+          },
+          {
+            "name": "p-settings-group-ground",
+            "usage": "Quiet Settings group fill in each theme; decorative, not a control boundary",
+            "value": {
+              "dark": "#242423",
+              "dark-ic": "#30302E",
+              "light": "#F5F5F4",
+              "light-ic": "#EEEEEB"
+            }
           },
           {
             "name": "p-brand-seed",
@@ -9103,6 +9223,11 @@
             "value": "{p-surface-0}"
           },
           {
+            "name": "c-settings-group-ground",
+            "usage": "Passive Settings group surface; one rounded ground with inset row separators",
+            "value": "{p-settings-group-ground}"
+          },
+          {
             "name": "p-surface-1",
             "usage": "主文档画布；角色映射按 OCUI 手册第1篇",
             "value": {
@@ -9461,6 +9586,16 @@
             "name": "shadow-ink",
             "usage": "浮层静态软阴影；alpha由elevation层定义",
             "value": "{p-shadow-ink}"
+          },
+          {
+            "name": "p-settings-group-ground",
+            "usage": "Quiet Settings group fill in each theme; decorative, not a control boundary",
+            "value": {
+              "dark": "#242423",
+              "dark-ic": "#30302E",
+              "light": "#F5F5F4",
+              "light-ic": "#EEEEEB"
+            }
           },
           {
             "name": "p-brand-seed",
@@ -10166,6 +10301,11 @@
             "value": "{p-surface-0}"
           },
           {
+            "name": "c-settings-group-ground",
+            "usage": "Passive Settings group surface; one rounded ground with inset row separators",
+            "value": "{p-settings-group-ground}"
+          },
+          {
             "name": "p-surface-1",
             "usage": "主文档画布；角色映射按 OCUI 手册第1篇",
             "value": {
@@ -10524,6 +10664,16 @@
             "name": "shadow-ink",
             "usage": "浮层静态软阴影；alpha由elevation层定义",
             "value": "{p-shadow-ink}"
+          },
+          {
+            "name": "p-settings-group-ground",
+            "usage": "Quiet Settings group fill in each theme; decorative, not a control boundary",
+            "value": {
+              "dark": "#242423",
+              "dark-ic": "#30302E",
+              "light": "#F5F5F4",
+              "light-ic": "#EEEEEB"
+            }
           },
           {
             "name": "p-brand-seed",
@@ -11229,6 +11379,11 @@
             "value": "{p-surface-0}"
           },
           {
+            "name": "c-settings-group-ground",
+            "usage": "Passive Settings group surface; one rounded ground with inset row separators",
+            "value": "{p-settings-group-ground}"
+          },
+          {
             "name": "p-surface-1",
             "usage": "主文档画布；角色映射按 OCUI 手册第1篇",
             "value": {
@@ -11587,6 +11742,16 @@
             "name": "shadow-ink",
             "usage": "浮层静态软阴影；alpha由elevation层定义",
             "value": "{p-shadow-ink}"
+          },
+          {
+            "name": "p-settings-group-ground",
+            "usage": "Quiet Settings group fill in each theme; decorative, not a control boundary",
+            "value": {
+              "dark": "#242423",
+              "dark-ic": "#30302E",
+              "light": "#F5F5F4",
+              "light-ic": "#EEEEEB"
+            }
           },
           {
             "name": "p-brand-seed",
@@ -12292,6 +12457,11 @@
             "value": "{p-surface-0}"
           },
           {
+            "name": "c-settings-group-ground",
+            "usage": "Passive Settings group surface; one rounded ground with inset row separators",
+            "value": "{p-settings-group-ground}"
+          },
+          {
             "name": "p-surface-1",
             "usage": "主文档画布；角色映射按 OCUI 手册第1篇",
             "value": {
@@ -12650,6 +12820,16 @@
             "name": "shadow-ink",
             "usage": "浮层静态软阴影；alpha由elevation层定义",
             "value": "{p-shadow-ink}"
+          },
+          {
+            "name": "p-settings-group-ground",
+            "usage": "Quiet Settings group fill in each theme; decorative, not a control boundary",
+            "value": {
+              "dark": "#242423",
+              "dark-ic": "#30302E",
+              "light": "#F5F5F4",
+              "light-ic": "#EEEEEB"
+            }
           },
           {
             "name": "p-brand-seed",
@@ -13355,6 +13535,11 @@
             "value": "{p-surface-0}"
           },
           {
+            "name": "c-settings-group-ground",
+            "usage": "Passive Settings group surface; one rounded ground with inset row separators",
+            "value": "{p-settings-group-ground}"
+          },
+          {
             "name": "p-surface-1",
             "usage": "主文档画布；角色映射按 OCUI 手册第1篇",
             "value": {
@@ -13713,6 +13898,16 @@
             "name": "shadow-ink",
             "usage": "浮层静态软阴影；alpha由elevation层定义",
             "value": "{p-shadow-ink}"
+          },
+          {
+            "name": "p-settings-group-ground",
+            "usage": "Quiet Settings group fill in each theme; decorative, not a control boundary",
+            "value": {
+              "dark": "#242423",
+              "dark-ic": "#30302E",
+              "light": "#F5F5F4",
+              "light-ic": "#EEEEEB"
+            }
           },
           {
             "name": "p-brand-seed",

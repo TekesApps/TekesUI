@@ -1,16 +1,19 @@
-//! Settings-owned layout only; original child controls own all paint and input.
+//! Shared Settings row surface and layout; original child controls own their input and state.
 use tekes_ui_controls::{
     ButtonTextRenderer,
-    composition::{Component, ComponentId, Content, ContentRole, ContentSemantics, Lifecycle},
+    composition::{
+        Component, ComponentId, Content, ContentRole, ContentSemantics, ContentTheme, Lifecycle,
+    },
     layout::MeasuredChild,
 };
-use tekes_ui_scene::{Rect, Size};
-use tekes_ui_tokens::Spacing;
+use tekes_ui_scene::{CornerRadii, Quad, Rect, Scene, Size};
+use tekes_ui_tokens::{Spacing, proposal};
 #[derive(Debug)]
 pub(super) struct SettingsRow {
     name: String,
     children: Vec<Content>,
     switch: bool,
+    group_edges: (bool, bool),
     child_ids: [ComponentId; 2],
     arranged_mounts: Option<[u64; 2]>,
 }
@@ -22,7 +25,18 @@ impl SettingsRow {
             children: vec![labels, value],
             arranged_mounts: None,
             switch,
+            group_edges: (true, true),
         }
+    }
+    pub fn in_group(mut self, first: bool, last: bool) -> Self {
+        self.group_edges = (first, last);
+        self
+    }
+    fn padding() -> Size {
+        Size::new(
+            proposal::metric("spacing", "space-content-row-inline").expect("row inline padding"),
+            proposal::metric("spacing", "space-content-row-block").expect("row block padding"),
+        )
     }
     fn widths(width: f32) -> (f32, f32) {
         let gap = Spacing::Relaxed.value().min(width.max(0.));
@@ -106,18 +120,79 @@ impl Component for SettingsRow {
     }
     fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
         self.arranged_mounts = None;
-        let ([labels, value], _) = self.measured(text, available);
-        MeasuredChild::new(Size::new(available.width, labels.height.max(value.height)))
+        let padding = Self::padding();
+        let inner = Size::new(
+            (available.width - padding.width * 2.).max(0.),
+            (available.height - padding.height * 2.).max(0.),
+        );
+        let ([labels, value], _) = self.measured(text, inner);
+        MeasuredChild::new(Size::new(
+            available.width,
+            (labels.height.max(value.height) + padding.height * 2.)
+                .max(proposal::metric("size", "c-row-min-height").expect("shared row minimum")),
+        ))
+    }
+    fn paint(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut dyn ButtonTextRenderer,
+        frame: Rect,
+        clip: Rect,
+        theme: ContentTheme,
+    ) {
+        // Adjacent rows share one group surface; only the group's outer corners round.
+        let radius = proposal::metric("radius", "radius-panel").expect("Settings group radius");
+        let corners = match self.group_edges {
+            (true, true) => CornerRadii::uniform(radius),
+            (true, false) => CornerRadii::top(radius),
+            (false, true) => CornerRadii::bottom(radius),
+            (false, false) => CornerRadii::ZERO,
+        };
+        scene.push_clip(clip);
+        scene.push_quad(
+            Quad::new(
+                frame,
+                theme
+                    .palette
+                    .color("c-settings-group-ground")
+                    .expect("Settings group ground"),
+            )
+            .with_corner_radii(corners),
+        );
+        if !self.group_edges.0 {
+            let (width, ink) =
+                tekes_ui_controls::paint::decorative_border(theme.palette, text.backing_scale());
+            let inset = Self::padding().width.min(frame.size.width * 0.5);
+            scene.push_quad(Quad::new(
+                Rect::new(
+                    frame.min_x() + inset,
+                    frame.min_y(),
+                    frame.size.width - 2. * inset,
+                    width,
+                ),
+                ink,
+            ));
+        }
+        scene.pop_clip();
     }
     fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
         self.arranged_mounts = None;
+        let padding = Self::padding();
+        let x = padding.width.min(frame.size.width * 0.5);
+        let y = padding.height.min(frame.size.height * 0.5);
+        let frame = Rect::new(
+            frame.min_x() + x,
+            frame.min_y() + y,
+            frame.size.width - 2. * x,
+            frame.size.height - 2. * y,
+        );
         let ([labels, value], (label_width, value_width)) = self.measured(text, frame.size);
         let control_width = if self.switch {
             value_width.min(48.)
         } else {
             value.width.min(value_width)
         };
-        let height = labels.height.max(value.height);
+        let height = frame.size.height.max(labels.height.max(value.height));
         self.children[1].arrange(
             text,
             Rect::new(
@@ -226,7 +301,8 @@ mod tests {
             let label = row.children[0].frame();
             let value = row.children[1].frame();
             assert!(label.max_x() <= value.min_x());
-            assert_eq!(value.max_x(), frame.max_x());
+            assert_eq!(value.max_x(), frame.max_x() - SettingsRow::padding().width);
+            assert_eq!(label.min_x(), frame.min_x() + SettingsRow::padding().width);
             assert_eq!(label.center().y, value.center().y);
             assert!(label.size.height <= size.height);
             let value_start = value.min_x();
@@ -243,6 +319,63 @@ mod tests {
                 row.children[1].frame().min_x(),
                 value_start,
                 "column alignment is independent of label length"
+            );
+        }
+    }
+    #[test]
+    fn row_ground_links_columns_without_a_border_and_respects_parent_clip() {
+        let mut row = SettingsRow::new(
+            "Row",
+            Content::new(
+                ComponentId(1),
+                BoxContent {
+                    text_width: 100.,
+                    wraps: false,
+                },
+            ),
+            Content::new(
+                ComponentId(2),
+                BoxContent {
+                    text_width: 80.,
+                    wraps: false,
+                },
+            ),
+            false,
+        );
+        let measured = row.measure(&mut Text, Size::new(620., 1000.)).size;
+        let frame = Rect::new(10., 20., measured.width, measured.height);
+        let clip = Rect::new(10., 30., 620., 20.);
+        row.arrange(&mut Text, frame, clip);
+        assert_eq!(
+            row.children[0].frame().min_y() - frame.min_y(),
+            SettingsRow::padding().height
+        );
+        assert_eq!(
+            frame.max_y() - row.children[0].frame().max_y(),
+            SettingsRow::padding().height
+        );
+        for theme in tekes_ui_tokens::Theme::ALL {
+            let mut scene = Scene::new();
+            row.paint(
+                &mut scene,
+                &mut Text,
+                frame,
+                clip,
+                tekes_ui_tokens::Palette::from(theme).into(),
+            );
+            assert!(
+                matches!(scene.primitives()[0], tekes_ui_scene::Primitive::PushClip(r) if r == clip)
+            );
+            let tekes_ui_scene::Primitive::Quad(q) = &scene.primitives()[1] else {
+                panic!("row ground")
+            };
+            assert_eq!(q.rect, frame);
+            assert_eq!(q.border_width, 0.);
+            assert_eq!(
+                q.fill,
+                tekes_ui_tokens::Palette::from(theme)
+                    .color("c-settings-group-ground")
+                    .unwrap()
             );
         }
     }
