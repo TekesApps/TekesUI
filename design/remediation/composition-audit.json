@@ -2075,7 +2075,7 @@
     "crates/tekes-ui-controls/src/composition/navigation/breadcrumb.rs": "fd31b6198d468ecc5a11812e0e8c3402d46cceaec6fa4b2f46860414fb86394f",
     "crates/tekes-ui-controls/src/composition/navigation/command.rs": "b190b1110f8b51f2aa0e7516f3b0b5e5577008d78b250ce07eca0737163407d5",
     "crates/tekes-ui-controls/src/composition/notice.rs": "cc6dded89400f9bafa405ed499592f8f331792a68c746e501cb3e2768097c245",
-    "crates/tekes-ui-controls/src/composition/number.rs": "8e2d45208d01811010cfff10a3e9c29cc420e7e53a727cceac8133e4c88825e5",
+    "crates/tekes-ui-controls/src/composition/number.rs": "e699856b5b9878a377bb28aa21a40a022c5e125843a5592423b85f64a17d43c1",
     "crates/tekes-ui-controls/src/composition/panel.rs": "d1db1479140a553ae93c02109c78e8b976a519c5662eadacd5227ba9fb31fc4f",
     "crates/tekes-ui-controls/src/composition/pointer.rs": "bab363a222d7c6195349569a4a317ca4586070463964a3503212c3c7aa3927d6",
     "crates/tekes-ui-controls/src/composition/popover.rs": "7f98ed4d062e1694a3ffea0a31b8455de0958cc0974a3fd435025c44aec45690",
@@ -2232,7 +2232,7 @@
     "docs/design/datatable-public-content-20261024.md": "812988af6954e21b11d6aca4fe769bfb405f26f256685c400f88cc28ef377cf9",
     "docs/design/disclosure-public-content-20261024.md": "1d9a5e8149c04ab5320ffe8639026034b25dfdd267c38631dd8f9c3f2b078f39",
     "docs/design/media-viewer-design-20261031.md": "1b3205a11b7d11f67c8d628e9a7c684283ddfea46a1fb5c54097d86ab11d52b0",
-    "crates/tekes-ui-app-host/src/columns.rs": "3f5ad4a4577534b35864b6f846fb5d787d2c919d67f774f7bef47b3e35be2086",
+    "crates/tekes-ui-app-host/src/columns.rs": "d7030f652694019e38670380478c723c9e1c7c7b795e9ce2e2f73255b8744d77",
     "crates/tekes-ui-app-host/src/presentation.rs": "c2de5c8778fc3e17d8ffb74cbb99229ed0f038075600c87482ad014032f6c9bf",
     "crates/tekes-ui-app-host/src/window_presentation.rs": "a36b03f15ddc5f8bd2e38646eeb677869f99518adefc26ca9f7123e4d4c54c1c",
     "crates/tekes-ui-controls/src/composition/toolbar_host.rs": "00bae218b96330f113bf3f19d7f5642d99c2751bdda73fdb68c26cd9a1be0eb4",
@@ -4756,5 +4756,11 @@
       "crates/tekes-ui-controls/src/extended.rs",
       "crates/tekes-ui-gallery/src/gallery/workbench.rs"
     ]
+  },
+  "settings_native_focus_review_20261114": {
+    "issue": 245,
+    "scope": "Preserve original ContentResponse through LocalContainer; coordinate unhandled completed native Tab once; avoid mutable empty NumberField intent polling invalidating reveal.",
+    "verification": "Check311 forward RED; Check313 reverse reveal Ok to UnlaidOut RED; Check314 10 Settings scope + 1 number save/cancel passed; affected three-package strict passed. Native candidate not yet verified.",
+    "capability_claims_promoted": false
   }
 }

@@ -305,15 +305,25 @@ impl SettingsForm {
     }
     pub fn collect_number_changes(&mut self, schema: &Schema, draft: &mut Draft) {
         for (index, id) in self.field_ids.iter().enumerate() {
-            if let Some(number) = self
+            // Empty intent polling must not invalidate the arrangement needed
+            // by the following callbacks in the same native text-key span.
+            if !self
+                .host
+                .get(*id)
+                .unwrap()
+                .component::<NumberFieldContent>()
+                .is_some_and(NumberFieldContent::has_value_changes)
+            {
+                continue;
+            }
+            let number = self
                 .host
                 .get_mut(*id)
                 .unwrap()
                 .component_mut::<NumberFieldContent>()
-            {
-                for change in number.drain_value_changes() {
-                    draft.edit(&schema.settings[index], change.value.to_string());
-                }
+                .unwrap();
+            for change in number.drain_value_changes() {
+                draft.edit(&schema.settings[index], change.value.to_string());
             }
         }
     }

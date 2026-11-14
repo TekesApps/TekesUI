@@ -3,7 +3,7 @@
 use anyhow::Result;
 use tekes_ui_controls::{
     ButtonTextRenderer,
-    composition::{Content, ContentActionRecord, ContentEvent, ContentHost},
+    composition::{Content, ContentActionRecord, ContentEvent, ContentHost, ContentResponse},
 };
 use tekes_ui_scene::{Rect, Scene};
 use tekes_ui_tokens::Palette;
@@ -204,12 +204,18 @@ impl LocalContainer {
         event: &ContentEvent,
         text: &mut dyn ButtonTextRenderer,
     ) -> Result<()> {
-        let mut result = Ok(());
+        self.event_with_response(event, text).map(|_| ())
+    }
+    pub(crate) fn event_with_response(
+        &mut self,
+        event: &ContentEvent,
+        text: &mut dyn ButtonTextRenderer,
+    ) -> Result<ContentResponse> {
+        let mut result = Ok(ContentResponse::default());
         let callback = &mut self.action;
         self.source.with_host(&mut |h| {
             result = h
                 .event_with_text(event, text)
-                .map(|_| ())
                 .map_err(|e| anyhow::anyhow!("Container input: {e:?}"));
             if let Some(callback) = callback {
                 let records = h.drain_action_records();
