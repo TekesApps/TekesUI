@@ -4092,7 +4092,12 @@ mod form_keyboard_owner_tests {
                 .windows(2)
                 .all(|rows| { rows[0].frame().min_x() < rows[1].frame().min_x() })
         );
-        assert_eq!(radio_frame.max_x(), row_frame.max_x());
+        assert_eq!(
+            radio_frame.max_x(),
+            row_frame.max_x()
+                - tekes_ui_tokens::proposal::metric("spacing", "space-grouped-form-row-inline")
+                    .unwrap()
+        );
         assert_eq!(selected, Some(0));
         for phase in [PointerPhase::Down, PointerPhase::Up] {
             host.settings_form_input(&ContentEvent::Pointer(PointerEvent {

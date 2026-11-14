@@ -14,7 +14,7 @@ use tekes_ui_text::{
     style::TextStyle,
     traits::Shaper,
 };
-use tekes_ui_tokens::{Palette, Rgba, Stroke, Theme, proposal};
+use tekes_ui_tokens::{Palette, Rgba, Theme, proposal};
 struct Text {
     shaper: CoreTextShaper,
     labels: Vec<String>,
@@ -291,11 +291,7 @@ fn command_loading_and_failure_keep_actual_query_tokens_for_cached_and_empty_dat
                     assert_eq!(q.border_color, p.color("border-focused").unwrap());
                     assert_eq!(
                         q.border_width,
-                        if theme.is_increased() {
-                            proposal::metric("stroke", "c-focus-width").unwrap()
-                        } else {
-                            Stroke::Rule.value()
-                        }
+                        proposal::metric("stroke", "c-focus-width").unwrap()
                     );
                     assert!(t.labels.iter().any(|s| s == status.label()));
                     let feedback = s

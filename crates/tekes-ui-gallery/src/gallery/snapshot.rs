@@ -632,34 +632,80 @@ mod tests {
                         },
                         &mut original_scene,
                     );
-                    // Reconstruct only #245's declared ordinary boundary/focus
-                    // colors for the immutable historical PNG. Keep geometry,
-                    // opacity, primitive order and every other color unchanged.
+                    // Reconstruct only #245's reviewed ordinary palette changes
+                    // for the immutable historical PNG. Geometry, text, alpha,
+                    // primitive order and Increased Contrast remain unchanged.
                     let boundary_revision = if theme == Theme::LIGHT {
                         Some([
                             (
-                                ColorRole::Border,
-                                Rgba::rgb8(124, 124, 121),
+                                "border",
+                                Rgba::rgb8(130, 130, 127),
                                 Rgba::rgb8(115, 115, 112),
                             ),
                             (
-                                ColorRole::BorderFocused,
-                                Rgba::rgb8(107, 107, 104),
+                                "border-focused",
+                                Rgba::rgb8(116, 116, 113),
                                 Rgba::rgb8(66, 66, 63),
+                            ),
+                            (
+                                "button-hover",
+                                Rgba::rgb8(237, 237, 235),
+                                Rgba::rgb8(233, 233, 231),
+                            ),
+                            (
+                                "button-pressed",
+                                Rgba::rgb8(231, 231, 228),
+                                Rgba::rgb8(221, 221, 218),
+                            ),
+                            (
+                                "row-selection",
+                                Rgba::rgb8(234, 234, 232),
+                                Rgba::rgb8(230, 230, 228),
+                            ),
+                            (
+                                "row-selection-hover",
+                                Rgba::rgb8(230, 230, 227),
+                                Rgba::rgb8(220, 220, 217),
+                            ),
+                            (
+                                "separator",
+                                Rgba::rgb8(228, 228, 226),
+                                Rgba::rgb8(223, 223, 221),
                             ),
                         ])
                     } else if theme == Theme::DARK {
                         Some([
                             (
-                                ColorRole::Border,
-                                Rgba::rgb8(126, 126, 122),
+                                "border",
+                                Rgba::rgb8(118, 118, 115),
                                 Rgba::rgb8(163, 163, 158),
                             ),
                             (
-                                ColorRole::BorderFocused,
-                                Rgba::rgb8(150, 150, 146),
+                                "border-focused",
+                                Rgba::rgb8(140, 140, 136),
                                 Rgba::rgb8(238, 238, 234),
                             ),
+                            (
+                                "button-hover",
+                                Rgba::rgb8(37, 37, 36),
+                                Rgba::rgb8(39, 39, 38),
+                            ),
+                            (
+                                "button-pressed",
+                                Rgba::rgb8(43, 43, 42),
+                                Rgba::rgb8(50, 50, 49),
+                            ),
+                            (
+                                "row-selection",
+                                Rgba::rgb8(40, 40, 39),
+                                Rgba::rgb8(42, 42, 41),
+                            ),
+                            (
+                                "row-selection-hover",
+                                Rgba::rgb8(44, 44, 43),
+                                Rgba::rgb8(52, 52, 51),
+                            ),
+                            ("separator", Rgba::rgb8(48, 48, 46), Rgba::rgb8(53, 53, 51)),
                         ])
                     } else {
                         None
@@ -679,18 +725,25 @@ mod tests {
                     };
                     if let Some(revision) = boundary_revision {
                         for (role, current, _) in revision {
-                            assert_eq!(role.resolve(theme), current);
+                            assert_eq!(
+                                tekes_ui_tokens::proposal::render_color(role, theme).unwrap(),
+                                current
+                            );
                             for other in ColorRole::ALL {
                                 if !matches!(
                                     other,
                                     ColorRole::Border
                                         | ColorRole::FloatingPanelBorder
+                                        | ColorRole::FloatingPanelDivider
                                         | ColorRole::BorderFocused
+                                        | ColorRole::ButtonHover
+                                        | ColorRole::RowSelection
+                                        | ColorRole::Separator
                                 ) {
                                     assert_ne!(
                                         other.resolve(theme),
                                         current,
-                                        "unique declared boundary role"
+                                        "unique reviewed ordinary palette role"
                                     );
                                 }
                             }
@@ -721,7 +774,7 @@ mod tests {
                                 assert_eq!(
                                     restore_boundary(run.color),
                                     run.color,
-                                    "boundary revision must not recolor text"
+                                    "ordinary palette revision must not recolor text"
                                 );
                                 boundary_reference_scene.push(primitive.clone());
                             }

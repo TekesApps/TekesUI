@@ -128,10 +128,7 @@ fn draw(v: &mut BreadcrumbView, m: &Breadcrumb, t: &mut Text, p: Palette) {
         proposal::TextRole::UiBody,
     );
 }
-fn assert_primary_trigger_fill(scene: &Scene, frame: Rect, p: Palette, state: &str) {
-    let expected = resolve_surface(p, "canvas", "action-primary", state)
-        .unwrap()
-        .background;
+fn assert_trigger_fill(scene: &Scene, frame: Rect, expected: Rgba, state: &str) {
     assert!(scene.primitives().iter().any(
         |primitive| matches!(primitive, Primitive::Quad(quad) if quad.rect == frame && quad.fill == expected)
     ), "trigger chrome should use {state} background {expected:?}");
@@ -734,7 +731,14 @@ fn command_palette_pointer_move_routes_trigger_hover_and_clears_live_unavailable
     let point = v.trigger_layout().unwrap().frame.center();
     v.pointer_move(point, &mut m);
     let scene = draw(&mut v, &mut m, &mut t);
-    assert_primary_trigger_fill(&scene, v.trigger_layout().unwrap().frame, p, "hover");
+    assert_trigger_fill(
+        &scene,
+        v.trigger_layout().unwrap().frame,
+        resolve_surface(p, "canvas", "action-primary", "hover")
+            .unwrap()
+            .background,
+        "hover",
+    );
     assert!(!m.combo.open); // hover never enters the popup scope
 
     // Disable, move out, and re-enable without an intervening paint. The
@@ -743,15 +747,36 @@ fn command_palette_pointer_move_routes_trigger_hover_and_clears_live_unavailable
     v.pointer_move(Point::new(900., 900.), &mut m);
     m.combo.disabled = false;
     let scene = draw(&mut v, &mut m, &mut t);
-    assert_primary_trigger_fill(&scene, v.trigger_layout().unwrap().frame, p, "rest");
+    assert_trigger_fill(
+        &scene,
+        v.trigger_layout().unwrap().frame,
+        resolve_surface(p, "canvas", "action-primary", "rest")
+            .unwrap()
+            .background,
+        "rest",
+    );
 
     v.pointer_move(point, &mut m);
     let scene = draw(&mut v, &mut m, &mut t);
-    assert_primary_trigger_fill(&scene, v.trigger_layout().unwrap().frame, p, "hover");
+    assert_trigger_fill(
+        &scene,
+        v.trigger_layout().unwrap().frame,
+        resolve_surface(p, "canvas", "action-primary", "hover")
+            .unwrap()
+            .background,
+        "hover",
+    );
     v.set_window_active(false, &mut m);
     v.pointer_move(point, &mut m);
     let scene = draw(&mut v, &mut m, &mut t);
-    assert_primary_trigger_fill(&scene, v.trigger_layout().unwrap().frame, p, "rest");
+    assert_trigger_fill(
+        &scene,
+        v.trigger_layout().unwrap().frame,
+        resolve_surface(p, "canvas", "action-primary", "rest")
+            .unwrap()
+            .background,
+        "rest",
+    );
     assert!(!m.combo.open);
 }
 
@@ -783,21 +808,41 @@ fn select_trigger_tracks_pointer_exit_while_disabled_and_blurs_when_window_deact
     let point = v.layout().trigger.frame.center();
     v.pointer_move(point, &mut m);
     let scene = draw(&mut v, &mut m);
-    assert_primary_trigger_fill(&scene, v.layout().trigger.frame, p, "hover");
+    assert_trigger_fill(
+        &scene,
+        v.layout().trigger.frame,
+        p.color("button-hover").unwrap(),
+        "hover",
+    );
 
     v.set_disabled(true, &mut m);
     v.pointer_move(outside, &mut m);
     v.set_disabled(false, &mut m);
     let scene = draw(&mut v, &mut m);
-    assert_primary_trigger_fill(&scene, v.layout().trigger.frame, p, "rest");
+    assert_trigger_fill(
+        &scene,
+        v.layout().trigger.frame,
+        p.color("surface-2").unwrap(),
+        "rest",
+    );
 
     v.pointer_move(point, &mut m);
     let scene = draw(&mut v, &mut m);
-    assert_primary_trigger_fill(&scene, v.layout().trigger.frame, p, "hover");
+    assert_trigger_fill(
+        &scene,
+        v.layout().trigger.frame,
+        p.color("button-hover").unwrap(),
+        "hover",
+    );
     v.set_window_active(false, &mut m);
     v.pointer_move(outside, &mut m);
     let scene = draw(&mut v, &mut m);
-    assert_primary_trigger_fill(&scene, v.layout().trigger.frame, p, "rest");
+    assert_trigger_fill(
+        &scene,
+        v.layout().trigger.frame,
+        p.color("surface-2").unwrap(),
+        "rest",
+    );
 }
 
 #[test]

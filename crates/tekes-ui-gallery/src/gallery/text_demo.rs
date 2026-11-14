@@ -1923,7 +1923,7 @@ mod tests {
                 .expect("real attached Field focus edge");
             assert_eq!(
                 edge.border_width,
-                proposal::metric("stroke", "stroke-rule").unwrap()
+                proposal::metric("stroke", "c-focus-width").unwrap()
             );
             let ring = edge.rect;
             assert_eq!(
@@ -2426,7 +2426,7 @@ mod tests {
                 initial = Some((surface.outer, surface.inner));
             }
             assert_readonly_scene(&scene, surface, theme.into(), gallery.text.scale());
-            assert!(scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q)if q.rect == surface.outer && q.border_width == if theme.is_increased() { proposal::metric("stroke", "c-focus-width").unwrap() } else { proposal::metric("stroke", "stroke-rule").unwrap() }
+            assert!(scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q)if q.rect == surface.outer && q.border_width == proposal::metric("stroke", "c-focus-width").unwrap()
                 && q.border_color==Palette::from(theme).color("border-focused").unwrap())));
             assert_eq!(gallery.text_view.clipboard_selection(), Some(copy.clone()));
             let native = gallery

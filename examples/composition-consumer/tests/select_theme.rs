@@ -108,17 +108,16 @@ fn retained_select_themes_preserve_trigger_popup_value_and_real_input() {
                 layout,
                 palette
                     .color(match state {
-                        "hover" => "action-primary-hover",
-                        "pressed" => "action-primary-pressed",
-                        "disabled" => "surface-2",
-                        _ => "action-primary-ground",
+                        "hover" => "button-hover",
+                        "pressed" => "button-pressed",
+                        _ => "surface-2",
                     })
                     .unwrap(),
                 palette
                     .color(if state == "disabled" {
                         "tertiary-text"
                     } else {
-                        "action-primary-foreground"
+                        "primary-text"
                     })
                     .unwrap(),
                 theme,
@@ -185,8 +184,8 @@ fn retained_select_themes_preserve_trigger_popup_value_and_real_input() {
             label(
                 &scene,
                 layout.trigger,
-                palette.color("action-primary-ground").unwrap(),
-                palette.color("action-primary-foreground").unwrap(),
+                palette.color("surface-2").unwrap(),
+                palette.color("primary-text").unwrap(),
                 theme,
                 true,
             );

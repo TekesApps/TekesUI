@@ -224,7 +224,29 @@ fn select_async_states_observe_real_public_composition_tokens_in_four_themes_and
                 assert_eq!(node.semantics.value.as_deref(), Some("Compact"));
                 assert!(!node.semantics.invalid);
                 assert!(!node.semantics.disabled);
-                assert!(scene.primitives().iter().any(|v| matches!(v,Primitive::Quad(q) if q.rect==node.frame && q.fill==p.color("action-primary-ground").unwrap())));
+                let ground = scene
+                    .primitives()
+                    .iter()
+                    .find_map(|primitive| match primitive {
+                        Primitive::Quad(quad)
+                            if quad.rect.origin == node.frame.origin
+                                && quad.rect.size.width == node.frame.size.width =>
+                        {
+                            Some(quad)
+                        }
+                        _ => None,
+                    })
+                    .expect("Select trigger ground at its semantic origin and width");
+                assert_eq!(
+                    ground.rect, node.frame,
+                    "Select paint and semantic bounds must agree: {theme:?}/{brand}/{status:?}"
+                );
+                // This fixture uses SelectView directly without a Surface override.
+                assert_eq!(
+                    ground.fill,
+                    p.color("surface-2").unwrap(),
+                    "Quiet trigger rest ink: {theme:?}/{brand}/{status:?}"
+                );
                 cases.push(serde_json::json!({"component":"tui.select","choice_state":if status==Status::Loading {"loading"}else{"error"},"state_asserted":true,"theme":format!("{theme:?}"),"brand":brand,"lookups":reads}));
             }
         }

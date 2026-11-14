@@ -78,13 +78,21 @@ impl Component for Choice {
             .get(self.model.selected)
             .map(String::as_str)
             .unwrap_or("");
-        MeasuredChild::new(ButtonModel::measure(
+        let role = proposal::TextRole::UiBody;
+        let indicator = (proposal::metric("size", "size-icon-standard")
+            .expect("select indicator size")
+            + proposal::metric("spacing", "space-tight").expect("select indicator gap"))
+            * text.resolved_font_size(role)
+            / role.style().size;
+        let mut size = ButtonModel::measure(
             &mut text,
             title,
-            available.width,
+            (available.width - indicator).max(0.),
             ButtonSize::Body,
-            proposal::TextRole::UiBody,
-        ))
+            role,
+        );
+        size.width = (size.width + indicator).min(available.width);
+        MeasuredChild::new(size)
     }
     fn paint(
         &mut self,

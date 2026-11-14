@@ -173,10 +173,9 @@ fn existing_choice_states_preserve_values_and_use_actual_production_tokens() {
                             assert!(!model.menu.open);
                         }
                         expected = match state {
-                            "hover" => "action-primary-hover",
-                            "pressed" => "action-primary-pressed",
-                            "disabled" | "empty" => "surface-2",
-                            _ => "action-primary-ground",
+                            "hover" => "button-hover",
+                            "pressed" => "button-pressed",
+                            _ => "surface-2",
                         };
                         result
                     } else {
@@ -297,7 +296,7 @@ fn existing_choice_states_preserve_values_and_use_actual_production_tokens() {
                         assert_eq!(base.border_color, palette.color(boundary).unwrap());
                         assert_eq!(
                             base.border_width,
-                            if focused && theme.is_increased() {
+                            if focused {
                                 proposal::metric("stroke", "c-focus-width").unwrap()
                             } else {
                                 proposal::metric("stroke", "stroke-rule").unwrap()

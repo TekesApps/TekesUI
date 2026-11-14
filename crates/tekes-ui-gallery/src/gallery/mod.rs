@@ -2461,7 +2461,7 @@ mod tests {
         let normal = tekes_ui_tokens::proposal::render_color("border", g.theme()).unwrap();
         let focused = tekes_ui_tokens::proposal::render_color("border-focused", g.theme()).unwrap();
         let rule = tekes_ui_tokens::proposal::metric("stroke", "stroke-rule").unwrap();
-        let focus_width = rule;
+        let focus_width = tekes_ui_tokens::proposal::metric("stroke", "c-focus-width").unwrap();
         assert_eq!(border(&mut g), ((normal, rule), None));
         let point = rect.center();
         g.handle_input(&click(point.x.into(), point.y.into()));
