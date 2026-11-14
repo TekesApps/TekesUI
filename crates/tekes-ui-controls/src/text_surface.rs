@@ -143,6 +143,8 @@ struct MeasuredParagraph {
 pub struct TextSurface {
     pub input: TextInput,
     pub presentation: TextSurfacePresentation,
+    /// Keyboard-origin focus decoration, independent of logical editing focus.
+    pub focus_visible: bool,
     pub alignment: TextSurfaceAlignment,
     /// Soft wrapping for multiline text. Single-line editing remains unwrapped.
     /// Scroll axes remain configurable on the original `scroll` model.
@@ -209,6 +211,7 @@ impl TextSurface {
         Self {
             input,
             presentation: TextSurfacePresentation::Field,
+            focus_visible: false,
             alignment: TextSurfaceAlignment::Leading,
             wrap: true,
             scroll,
@@ -1558,9 +1561,8 @@ impl TextSurface {
         }
         if self.presentation == TextSurfacePresentation::Field {
             // Fields express editing focus on their original edge. Keep one
-            // contour; standard themes use the rule-width line and increased
-            // contrast retains the existing emphasis-width treatment. Explicit
-            // error ink retains priority over focus color.
+            // contour; editing focus uses the existing emphasis width in every
+            // theme. Explicit error ink retains priority over focus color.
             let editing_focus = focused && !self.input.disabled;
             let boundary = if self.error {
                 proposal::control_boundary("error", theme.theme).expect("JSON text error boundary")
@@ -1586,7 +1588,7 @@ impl TextSurface {
                     proposal::metric("radius", "radius-input").expect("JSON radius"),
                 )
                 .with_border(
-                    if editing_focus && theme.theme.is_increased() {
+                    if editing_focus {
                         proposal::metric("stroke", "c-focus-width").expect("input focus width")
                     } else {
                         Stroke::Rule.value()
@@ -1594,8 +1596,8 @@ impl TextSurface {
                     color(boundary, theme),
                 ),
             );
-        } else if focused && !self.input.disabled {
-            // Undecorated document Content keeps its independent focus scope.
+        } else if focused && self.focus_visible && !self.input.disabled {
+            // Pointer selection keeps logical focus without framing the document.
             crate::paint::focus_ring(scene, self.outer, theme, 0.);
         }
         if background_clip.is_some() {
@@ -1821,7 +1823,7 @@ mod tests {
                             let editing_focus = focused && !disabled;
                             assert_eq!(
                                 quad.border_width,
-                                if editing_focus && theme.is_increased() {
+                                if editing_focus {
                                     proposal::metric("stroke", "c-focus-width").unwrap()
                                 } else {
                                     Stroke::Rule.value()

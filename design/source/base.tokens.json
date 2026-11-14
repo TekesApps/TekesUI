@@ -1375,6 +1375,16 @@
         "value": "{size-row-height}"
       },
       {
+        "name": "c-slider-thumb-size",
+        "usage": "Slider thumb visual diameter",
+        "value": "{p-size-16}"
+      },
+      {
+        "name": "c-slider-track-size",
+        "usage": "Slider track visual thickness",
+        "value": "{p-size-2}"
+      },
+      {
         "name": "c-checkbox-size",
         "usage": "Checkbox 方框视觉尺寸组件角色",
         "value": "{size-icon-standard}"

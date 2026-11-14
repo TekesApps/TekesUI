@@ -13,9 +13,9 @@
     "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/brand.py": "3da13fcc221ed488d383af75dc84f77930306368632b7f48fb38476dc78f6586",
     "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/brand_color.py": "f7395f04cbd8cf0215326345929d76f6d8e263bdff69c6aede1a417bccc82516",
     "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/validate.py": "f48e97e00a0f8da9d0b373d4636da251c35cbdc667b33a03b9679e00460e1acc",
-    "design/source/base.tokens.json": "02ac4a26dac3cef29a2c4b22f551f4bc8210c9e6caee004ce5865a4ff36ad3fc",
-    "design/source/token-metadata.json": "b29c9f9c173be2496a28c8595aa06ce51d74d814e0b5089b073898f9d36f85e7",
-    "design/system.json": "4a4b568cf35bbd759026d25bbbb51a1736fad4977c814358510ff5b67116b252",
+    "design/source/base.tokens.json": "8e87ef71a574a40b8839ccd78a2c285194ab3c0832ccfd750a964b06131def50",
+    "design/source/token-metadata.json": "376f28c9751b6e9543de56318ba8cc29b9c992dfa053c5449dbb36e00b2c7877",
+    "design/system.json": "9202b2841e0f174987961027582026aae4eff1c884de6741fca5d5f7a128491c",
     "design/system.schema.json": "af11f7ef0f9f4b495181d72f0b8b4a3cb274e79fe3ce9e98d4d82b6aaa396393",
     "design/theme/artifact-lock.schema.json": "642653ddc482c053402ad6abe2f14c6d836ea282e16c709ca85792f8a435b32a",
     "design/theme/data-plot-pairs.json": "b75e6e57c155d596ba60a086406aa91cfa087009e6200847db1bbd25c2d442c7",
@@ -53872,7 +53872,7 @@
       "provenance": {
         "brand_config": "design/brand/config.json",
         "brand_config_sha256": "155eceec64c3aa33f4bc6b58a6ef7a1b071384b1dbbb55075a223e460d16e8a8",
-        "contract_sha256": "10f288cd59b50f015c78237e37d5b970dc2d4af15911c5e41394c62d3f253884",
+        "contract_sha256": "2fd8f4c255e9f4f1200c86c3d98656e08c904fc92a51c3c47acebca1a3a6f4af",
         "contract_version": "1.0.0",
         "overrides": {
           "neutral_base": {},
@@ -107727,7 +107727,7 @@
       "provenance": {
         "brand_config": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/examples/example-blue.json",
         "brand_config_sha256": "e89eb95c16e4e2c964588b2a7eab7e24364e183b493cf3859f7bc7da7ab230bd",
-        "contract_sha256": "10f288cd59b50f015c78237e37d5b970dc2d4af15911c5e41394c62d3f253884",
+        "contract_sha256": "2fd8f4c255e9f4f1200c86c3d98656e08c904fc92a51c3c47acebca1a3a6f4af",
         "contract_version": "1.0.0",
         "overrides": {
           "neutral_base": {},
@@ -161582,7 +161582,7 @@
       "provenance": {
         "brand_config": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/examples/example-clay.json",
         "brand_config_sha256": "c5a2160d582d90e0488810e66a6b7185c6bb3ff84876eed468c84a1d7e85ca52",
-        "contract_sha256": "10f288cd59b50f015c78237e37d5b970dc2d4af15911c5e41394c62d3f253884",
+        "contract_sha256": "2fd8f4c255e9f4f1200c86c3d98656e08c904fc92a51c3c47acebca1a3a6f4af",
         "contract_version": "1.0.0",
         "overrides": {
           "neutral_base": {},
@@ -215529,7 +215529,7 @@
       "provenance": {
         "brand_config": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/examples/example-blue.json",
         "brand_config_sha256": "e89eb95c16e4e2c964588b2a7eab7e24364e183b493cf3859f7bc7da7ab230bd",
-        "contract_sha256": "10f288cd59b50f015c78237e37d5b970dc2d4af15911c5e41394c62d3f253884",
+        "contract_sha256": "2fd8f4c255e9f4f1200c86c3d98656e08c904fc92a51c3c47acebca1a3a6f4af",
         "contract_version": "1.0.0",
         "overrides": {
           "neutral_base": {
@@ -215673,8 +215673,8 @@
       "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/brand.py": "3da13fcc221ed488d383af75dc84f77930306368632b7f48fb38476dc78f6586",
       "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/brand_color.py": "f7395f04cbd8cf0215326345929d76f6d8e263bdff69c6aede1a417bccc82516",
       "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/validate.py": "f48e97e00a0f8da9d0b373d4636da251c35cbdc667b33a03b9679e00460e1acc",
-      "design/source/base.tokens.json": "02ac4a26dac3cef29a2c4b22f551f4bc8210c9e6caee004ce5865a4ff36ad3fc",
-      "design/source/token-metadata.json": "b29c9f9c173be2496a28c8595aa06ce51d74d814e0b5089b073898f9d36f85e7",
+      "design/source/base.tokens.json": "8e87ef71a574a40b8839ccd78a2c285194ab3c0832ccfd750a964b06131def50",
+      "design/source/token-metadata.json": "376f28c9751b6e9543de56318ba8cc29b9c992dfa053c5449dbb36e00b2c7877",
       "design/system.schema.json": "af11f7ef0f9f4b495181d72f0b8b4a3cb274e79fe3ce9e98d4d82b6aaa396393",
       "design/theme/artifact-lock.schema.json": "642653ddc482c053402ad6abe2f14c6d836ea282e16c709ca85792f8a435b32a",
       "design/theme/data-plot-pairs.json": "b75e6e57c155d596ba60a086406aa91cfa087009e6200847db1bbd25c2d442c7",

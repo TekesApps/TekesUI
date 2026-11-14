@@ -263,3 +263,50 @@ from CPU results. The original detached-ring failure is retained.
 用户在普通主题调色候选中仍观察滚动条过深，明确要求只比选中项背景稍强。CU 基线在 Light/Dark Gallery 内容区确认此现象。原 ScrollContent/TextSurface 共用必要输入边界 `border`，仅调该值无法同时满足两种视觉职责。新增共享 `p-scrollbar-thumb` / `scrollbar-thumb`，普通 Light #DCDCD9、Dark #363634；Dark 采用比选中底稍亮的对应层次。两处共享滚动绘制使用此角色，所有消费者继承，不改变布局、hover、滚动、捕获或输入。增强对比主题继续直接读取当前 palette 的 `border`，保留消费者覆盖和原可辨性。
 
 这是按用户最新要求修订普通滚动条的视觉合同，不是纯色值微调：普通滚动条不再声明旧3:1；输入框必要边界、焦点、文字和增强对比的门槛保持。对应旧绘制断言仅同步角色与IC范围，未执行功能测试或CI，不以断言修改代替原生外观验收。本批只做生成/颜色接线检查、构建和明暗外观审阅；旧失败、旧程序和功能证据保留身份。
+
+
+## 2026-11-14 内容角色、控件视觉重量与焦点泛化（#245）
+
+状态：共享源码实现完成，Check299受影响19项、strict、Gallery release构建及生成/composition检查通过；官方CU已完成有限明暗外观核验，Dock已安装并运行同一签名候选；键盘焦点专项的缺口按下文保留。用户10:54截图否定了整页视觉已足够安静的推断，保留前一批已通过的滚动条有限结果，不将其扩展为全部Gold7通过。用户随后明确要求考虑泛化。
+
+### 来源与适用边界
+
+已查阅 Apple HIG 的 [Text fields](https://developer.apple.com/design/human-interface-guidelines/text-fields)、[Text views](https://developer.apple.com/design/human-interface-guidelines/text-views)、[Focus and selection](https://developer.apple.com/design/human-interface-guidelines/focus-and-selection)、[Color](https://developer.apple.com/design/human-interface-guidelines/color)、[Pop-up buttons](https://developer.apple.com/design/human-interface-guidelines/pop-up-buttons) 与 [Sliders](https://developer.apple.com/design/human-interface-guidelines/sliders)。Apple 区分短字段与长正文，使用按用途定义的颜色，并要求焦点可辨；“所有多行文本一律无边框”不是引用自 HIG 的规定，本项目按内容职责作下面的设计选择。
+
+参考 skill 为 [HIG Doctor 的 foundations / controls](https://github.com/raintree-technology/hig-doctor/tree/main/skills) 和 [platform-design 的 macOS](https://github.com/ehmo/platform-design-skills/blob/main/skills/macos/SKILL.md)。本机条目只是目录索引，本次读取了上游实际指南，不声称安装了整套工具或运行其自动审计。仅采用相关桌面视觉规则；不复制全部示例、不改变已确认窗口布局、不据第三方清单增加本批VO/功能/CI门槛。平台规则以 Apple 原文为准，精确尺寸与色值以 TekesUI 的共享 token 合同为准。
+
+### 已定位事实（源码87c6550）
+
+- `gallery/apphost.rs::document_content` 已调用 `TextFieldContent::read_only_content`，正文是只读可选Content，并非可编辑多行Field。`TextSurface::draw` 的Content静止时无框，有焦点时画整块独立focus ring。
+- `composition/adapters.rs::TextFieldContent::set_focus(f, _: bool)` 丢弃了Host已有的keyboard来源；因此鼠标取得正文焦点也会进入上述画框路径。这是共享组件状态接线问题，不能通过把全局border调透明来修。
+- Inspector的标题/作者为TextField，Revision为NumberField，Published为Checkbox，Draft为Select，Priority为Slider；本页没有Radio。用户反馈的Radio另沿共享Radio与Settings消费者核对，不把Checkbox或Select误记为Radio。
+- `SelectView::render_trigger` 固定使用 `ButtonVariant::Primary`，令普通值选择呈现为主操作按钮；现有Quiet/Panel风格可复用。此为选择控件默认语义问题，不能靠降低所有accent颜色补救。
+- Radio已有 `focused && focus_visible` 条件、`border-focused` 与 `c-focus-width` 接线；指针与键盘焦点来源不同。缺少动态画面时不能将“鼠标点击未显示键盘框”认定为丢状态。仍需验证真实Tab焦点可辨。
+- Slider已填轨道使用accent、hover/pressed用对应accent状态色，thumb用surface-0与border；轨道厚度为本地常量。视觉重量同时涉及语义、几何和色值，不能一概称token色值问题。
+
+### 共享默认规则与最小落点
+
+| 类别 | 默认视觉合同 | 共享责任与消费者边界 |
+| --- | --- | --- |
+| 文档正文 / Content | 静止和鼠标选择时不围整页大框；选区仍清晰，键盘进入时保留可辨的焦点提示 | 复用现有Content presentation；保留Host传来的键盘来源，分开逻辑焦点与focus-visible。不复制编辑器，不关闭选择、复制和文本服务 |
+| 表单Field / NumberField | 用统一底面与轻轮廓表示可编辑区域；focus在原轮廓上清楚变化；错误有独立语义 | 先区分静止边界与焦点的视觉职责，再决定共享值。必要边界、文字、错误及IC标准不被默默降低；不新增Inspector专用颜色 |
+| Select | 表示一个当前值，普通情况下不是强调动作按钮；菜单可发现，选项互斥与当前值清楚 | 优先在共享Select默认路径复用原Quiet/Panel与现有菜单指示机制；不要求每个Gallery/AppHost/Settings调用者设置variant |
+| Radio / Checkbox | checked、hover、pressed、keyboard-focus、disabled各自独立；不能用checked冒充focus，也不能为去掉大外圈删除焦点 | 保留既有状态机及focus-visible来源；共享绘制消费相应状态，使用贴合控件的清楚提示，禁止重新加巨大外圈 |
+| Slider | 保留数值位置、已填段与thumb的辨识，降低大圆和粗深轨道对正文的竞争 | 先核对既有slider语义与尺寸token，再在责任组件统一调整；不降低全局accent导致主操作/状态标记一起变化 |
+
+ScrollArea只管滚动、裁切及滚动条，不猜测子项是否为正文/表单，也不替子项擦边框。AppHost只组合，Gallery只演示；内容角色由现成正式组件API表达。同一角色在普通页面、Settings和AppHost的默认结果应一致，不通过父容器名称、嵌套位置或消费者临时布尔补丁推断。只有存在已确认第二种业务语义时才增加明确variant，不增加任意颜色/边框开关包。
+
+### 接续顺序与验收
+
+1. 先修已经定位的共享接线：TextFieldContent保留keyboard焦点来源，使Content的鼠标选择不显示大框；Select默认触发器不固定Primary。保留文档选择/逻辑焦点及菜单实例、ID与命令路径。
+2. 再以同一套角色表处理表单与Slider的视觉重量；不先在消费者零散写HEX，也不为视觉安静把正常/hover/selected/focus全部变成同色。
+3. 验收只补改变的绘制合同：Content鼠标/键盘来源区别；Select静止/hover/打开的外观与原菜单身份；Radio真正键盘焦点与checked区别。复用原输入/滚动/菜单功能证据，不重跑全功能套件、不新增CI。
+4. Light/Dark用同一页面、尺寸与字号比较；检查正文是否优先、默认控件是否安静、目标状态是否可辨。截图不能单独证明所有焦点变化。当前用户截图与源码定位是失败/设计证据，本节不标实现或原生验收通过。VO仍在后续版本。
+
+本轮证据：协调目录 `outputs/inspector-gold7-design-20261114/`，用户原图已保留；前批滚动条与Dock身份继续使用原收据。本批将构建同一共享候选，由官方CU验收后更新Dock；CU2当前不可用。不把研究skill当成修复交付。
+
+实施边界补充：Slider视觉尺寸使用共享 `c-slider-thumb-size`（16）与 `c-slider-track-size`（2），命中区域仍由原SliderView负责。Field正常边界保持原必要边界色和rule宽度，focus统一用原轮廓上的c-focus-width；没有把装饰hairline用于必要控件边界，故不宣称静止Field边框已经减轻。Select复用Quiet底色；其normal/increased boundary实际为none，不能宣称保留封闭轮廓。共享触发器补trailing展开提示，并为文字保留空间，不引入消费者专用样式。
+
+Check299只补Content来源1项、Field轮廓1项、Slider4项、Select13项，strict与Gallery构建通过；普通Select共享trailing图标测量与裁切、文字role保留已纳入。旧功能通过结果保留身份，没有新增CI。构建冻结期间源码及原缓存标记不变。新候选 `v0.3.27 Shared Controls.app` 的源码/程序/实际Dock身份由协调目录 `outputs/shared-control-visual-20261114/` 记录；正式Release仍v0.3.26。
+
+本批实际原生：Light/Dark正文拖选有选区、无整块框，Select普通底/下箭头及打开/Escape关闭、Field同轮廓focus变化、紧凑Slider已由root对截图复核。Settings已恢复System/100%。Dark Radio的AX键盘焦点到达但截图不能可靠区分checked/focus；正文键盘焦点未到达；纯hover无官方无按键移动接口，三项均未验通过，不扩成整个Gold7完成。Field静止轮廓本批未减轻。程序与截图保持同一签名SHA995b8b359507fb635f932d8baa5da0dcf67adb4e0b2cf78a81b88a049ab47ab9。

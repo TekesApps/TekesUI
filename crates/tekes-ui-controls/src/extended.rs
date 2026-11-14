@@ -2926,11 +2926,21 @@ pub fn slider(
 ) -> SliderGeometry {
     let theme = theme.into();
     let disabled = state.disabled || model.disabled;
-    let diameter = rect.size.height.max(0.).min(rect.size.width.max(0.));
+    // The visual thumb stays compact while SliderView retains the full row hit target.
+    let diameter = proposal::metric("size", "c-slider-thumb-size")
+        .expect("slider thumb size")
+        .min(rect.size.height.max(0.))
+        .min(rect.size.width.max(0.));
     let radius = diameter * 0.5;
     let travel = (rect.size.width.max(0.) - diameter).max(0.);
     let center_x = rect.min_x() + radius + travel * model.normalized_value() as f32;
-    let track = Rect::new(rect.min_x() + radius, rect.center().y - 2., travel, 4.);
+    let track_height = proposal::metric("size", "c-slider-track-size").expect("slider track size");
+    let track = Rect::new(
+        rect.min_x() + radius,
+        rect.center().y - track_height * 0.5,
+        travel,
+        track_height,
+    );
     let thumb = Rect::new(
         center_x - radius,
         rect.center().y - radius,
@@ -2938,7 +2948,10 @@ pub fn slider(
         diameter,
     );
     let track_role = if disabled { "surface-2" } else { "surface-3" };
-    scene.push_quad(Quad::new(track, paint_color(theme, track_role)).with_corner_radius(2.));
+    scene.push_quad(
+        Quad::new(track, paint_color(theme, track_role))
+            .with_corner_radius(track.size.height * 0.5),
+    );
     let fill_role = if disabled {
         "disabled-text"
     } else if state.pressed {
@@ -2958,7 +2971,7 @@ pub fn slider(
             ),
             paint_color(theme, fill_role),
         )
-        .with_corner_radius(2.),
+        .with_corner_radius(track.size.height * 0.5),
     );
     scene.push_quad(
         Quad::new(
@@ -3370,6 +3383,44 @@ mod tests {
         assert!(!radio.key(ControlKey::Left));
         assert_eq!(radio.selected, Some(1));
     }
+    #[test]
+    fn slider_compact_geometry_preserves_endpoints_and_state_ink() {
+        let frame = Rect::new(12., 20., 160., 40.);
+        for theme in tekes_ui_tokens::Theme::ALL {
+            for (value, hovered, pressed, role) in [
+                (0., false, false, "accent"),
+                (50., true, false, "accent-hover"),
+                (100., true, true, "accent-pressed"),
+            ] {
+                let mut scene = Scene::new();
+                let geometry = slider(
+                    &mut scene,
+                    frame,
+                    theme,
+                    Slider::new(value, 0., 100., 1.).unwrap(),
+                    ControlState {
+                        hovered,
+                        pressed,
+                        ..ControlState::default()
+                    },
+                );
+                assert_eq!(geometry.thumb.size, tekes_ui_scene::Size::new(16., 16.));
+                assert_eq!(geometry.track.size.height, 2.);
+                assert_eq!(geometry.thumb.center().y, frame.center().y);
+                assert_eq!(geometry.track.center().y, frame.center().y);
+                assert_eq!(
+                    geometry.thumb_center_x,
+                    geometry.track.min_x() + geometry.track.size.width * value as f32 / 100.
+                );
+                let tekes_ui_scene::Primitive::Quad(fill) = &scene.primitives()[1] else {
+                    panic!("slider fill quad")
+                };
+                assert_eq!(fill.fill, paint_color(theme.into(), role));
+                assert_eq!(fill.rect.max_x(), geometry.thumb_center_x);
+            }
+        }
+    }
+
     #[test]
     fn slider_rejects_nonfinite_and_maps_drag_and_keys() {
         let mut s = Slider::new(5., 0., 10., 2.).unwrap();
