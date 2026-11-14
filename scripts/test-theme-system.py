@@ -302,15 +302,31 @@ class ThemeSystemTests(unittest.TestCase):
                         packet[surface][usage][state][channel]=old_tertiary
                         restored+=1
                 self.assertGreater(restored,0)
-            # #245 softens only the declared ordinary boundary/focus roles.
-            # Undo those exact bindings to prove all other historic channels;
-            # preserve explicit consumer overrides and the immutable fixture.
-            boundary_revision = {
-                'light': {'border': ('#7C7C79', '#737370'), 'border-focused': ('#6B6B68', '#42423F')},
-                'dark': {'border': ('#7E7E7A', '#A3A39E'), 'border-focused': ('#969692', '#EEEEEA')},
+            # #245 ordinary palette changes are explicit, reviewed role deltas.
+            # Undo only those bindings to compare all other historic channels;
+            # keep IC, consumer overrides and the immutable fixture unchanged.
+            ordinary_revision = {
+                'light': {
+                    'border': ('#82827F', '#737370'),
+                    'border-focused': ('#747471', '#42423F'),
+                    'button-hover': ('#EDEDEB', '#E9E9E7'),
+                    'button-pressed': ('#E7E7E4', '#DDDDDA'),
+                    'row-selection': ('#EAEAE8', '#E6E6E4'),
+                    'row-selection-hover': ('#E6E6E3', '#DCDCD9'),
+                    'separator': ('#E4E4E2', '#DFDFDD'),
+                },
+                'dark': {
+                    'border': ('#767673', '#A3A39E'),
+                    'border-focused': ('#8C8C88', '#EEEEEA'),
+                    'button-hover': ('#252524', '#272726'),
+                    'button-pressed': ('#2B2B2A', '#323231'),
+                    'row-selection': ('#282827', '#2A2A29'),
+                    'row-selection-hover': ('#2C2C2B', '#343433'),
+                    'separator': ('#30302E', '#353533'),
+                },
             }.get(record['mode'], {})
             overrides = instance['inputs']['overrides']['neutral_base']
-            for role, (new_color, historic_color) in boundary_revision.items():
+            for role, (new_color, historic_color) in ordinary_revision.items():
                 if 'p-' + role in overrides:
                     self.assertEqual(instance['compiled_color_roles'][record['mode']][role], overrides['p-' + role][record['mode']])
                     if record['theme_id'] != 'blue-inputs' or role != 'border-focused':
