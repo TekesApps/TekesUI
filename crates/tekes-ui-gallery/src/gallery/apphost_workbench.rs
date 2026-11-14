@@ -753,8 +753,13 @@ pub fn assemble() -> anyhow::Result<AppWindow> {
     })
     .shared_settings(super::apphost::settings_owner()?))
 }
-pub fn run() -> anyhow::Result<()> {
-    assemble()?.run()
+/// Consume Gallery's entry selector; retain argv[0] and every AppHost argument.
+pub fn apphost_arguments(args: &[String]) -> Option<Vec<String>> {
+    (args.get(1).map(String::as_str) == Some("--apphost"))
+        .then(|| args[..1].iter().chain(&args[2..]).cloned().collect())
+}
+pub fn run(args: &[String]) -> anyhow::Result<()> {
+    assemble()?.run_with_args(args)
 }
 
 #[cfg(test)]
@@ -762,6 +767,36 @@ mod tests {
     use super::*;
     use tekes_ui_controls::composition::ContentEvent;
 
+    #[test]
+    fn apphost_workbench_consumes_only_its_entry_argument() {
+        let args = |values: &[&str]| {
+            values
+                .iter()
+                .map(|value| (*value).to_owned())
+                .collect::<Vec<_>>()
+        };
+        let launch = args(&["/retained/program/tekes-ui-gallery", "--apphost"]);
+        assert_eq!(apphost_arguments(&launch), Some(vec![launch[0].clone()]));
+        for tail in [
+            vec!["--window-acceptance"],
+            vec!["--modules", "unknown"],
+            vec!["--worker", "unknown", "socket"],
+            vec!["unexpected"],
+        ] {
+            let mut launch = args(&["gallery", "--apphost"]);
+            launch.extend(tail.iter().map(|value| (*value).to_owned()));
+            let mut expected = args(&["gallery"]);
+            expected.extend(tail.into_iter().map(str::to_owned));
+            assert_eq!(apphost_arguments(&launch), Some(expected));
+        }
+        for other in [
+            vec!["gallery"],
+            vec!["gallery", "--snapshot", "output"],
+            vec!["gallery", "--worker", "module", "socket"],
+        ] {
+            assert!(apphost_arguments(&args(&other)).is_none());
+        }
+    }
     fn state(page: &str) -> SharedWorkbench {
         Rc::new(RefCell::new(WorkbenchState {
             current: 0,

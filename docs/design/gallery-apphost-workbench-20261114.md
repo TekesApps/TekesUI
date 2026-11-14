@@ -128,3 +128,12 @@ composition are not reconstructed. Disabled recording clears the cache.
 The first Documents reader projects the supported Markdown subset through
 RichDocument into selectable read-only content. Rich heading/code styling and
 link opening remain unimplemented; this candidate does not claim those features.
+
+### Consumer-owned startup arguments
+
+Gallery consumes its `--apphost` entry selector before invoking
+`AppWindow::run_with_args`, passing argv[0] and the remaining arguments.
+The ordinary `AppWindow::run` retains process-argument validation. Fixed-profile
+worker/module admission and rejection of unknown trailing arguments are unchanged.
+This prevents the observed pre-window rejection of Gallery's own selector; it
+does not enable runtime module discovery or modify process-global argv.
