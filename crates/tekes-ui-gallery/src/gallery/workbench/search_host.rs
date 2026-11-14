@@ -35,17 +35,17 @@ impl StoryTextHost {
             ContentHost::new(Content::new(SEARCH, search)).expect("fixed Search story structure");
         Self::from_host(host, SEARCH)
     }
-    pub(super) fn text_field(value: &str, multiline: bool) -> Self {
+    pub(super) fn text_field(value: &str, multiline: bool, root: fn(Content) -> Content) -> Self {
         let id = ComponentId(if multiline { 27502 } else { 27501 });
         let mut field = TextFieldContent::new("Project name", value);
         field.show_metadata = false;
         field.viewport = TextViewport::Fill;
         field.surface = tekes_ui_controls::TextSurface::new(value, multiline, false);
-        let host =
-            ContentHost::new(Content::new(id, field)).expect("fixed Field/Area story structure");
+        let host = ContentHost::new(root(Content::new(id, field)))
+            .expect("fixed Field/Area story structure");
         Self::from_host(host, id)
     }
-    pub(super) fn combo_box() -> Self {
+    pub(super) fn combo_box(root: fn(Content) -> Content) -> Self {
         let id = ComponentId(27601);
         let combo = ComboBoxContent::new(
             "Combo options",
@@ -55,7 +55,7 @@ impl StoryTextHost {
                 .collect(),
         );
         Self::from_host(
-            ContentHost::new(Content::new(id, combo)).expect("fixed Combo story structure"),
+            ContentHost::new(root(Content::new(id, combo))).expect("fixed Combo story structure"),
             id,
         )
     }

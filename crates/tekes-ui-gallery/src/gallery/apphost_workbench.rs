@@ -30,6 +30,9 @@ const CHOOSER: ComponentId = ComponentId(3);
 const COMMAND: u64 = 0x4757_0000;
 const SEARCH_ROUTE: &str = "component-search-field";
 const FORM_ROUTE: &str = "component-text-field";
+const AREA_ROUTE: &str = "component-text-area";
+const COMBO_ROUTE: &str = "component-combo-box";
+const SELECT_ROUTE: &str = "component-select";
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Selection {
@@ -50,7 +53,31 @@ const SEARCH: &[Specimen] = &[Specimen {
     document_id: "tui.search-field",
     label: "Search query",
 }];
+const AREA: &[Specimen] = &[Specimen {
+    key: "original-area",
+    component_id: ComponentId(27502),
+    document_id: "tui.text-area",
+    label: "Original TextArea Playground",
+}];
+const COMBO: &[Specimen] = &[Specimen {
+    key: "original-combo",
+    component_id: ComponentId(27601),
+    document_id: "tui.combo-box",
+    label: "Original ComboBox Playground",
+}];
+const SELECT: &[Specimen] = &[Specimen {
+    key: "original-select",
+    component_id: ComponentId(8901),
+    document_id: "tui.select",
+    label: "Original Select Playground",
+}];
 const FORM: &[Specimen] = &[
+    Specimen {
+        key: "original-field",
+        component_id: ComponentId(27501),
+        document_id: "tui.text-field",
+        label: "Original TextField Playground",
+    },
     Specimen {
         key: "name",
         component_id: ComponentId(100),
@@ -74,6 +101,9 @@ pub fn specimens(page: &str) -> &'static [Specimen] {
     match page {
         SEARCH_ROUTE => SEARCH,
         FORM_ROUTE => FORM,
+        AREA_ROUTE => AREA,
+        COMBO_ROUTE => COMBO,
+        SELECT_ROUTE => SELECT,
         _ => &[],
     }
 }
@@ -95,7 +125,7 @@ impl Selection {
 pub struct WorkbenchState {
     current: u64,
     visits: Vec<Selection>,
-    pages: HashMap<String, Rc<RefCell<ContentHost>>>,
+    pages: HashMap<String, Rc<RefCell<MountedPage>>>,
     pending: VecDeque<tekes_ui_app_host::navigation::Entry>,
     inspected: Option<(String, ComponentId, u64)>,
 }
@@ -232,55 +262,89 @@ fn stack(id: u64, children: Vec<Content>) -> Content {
         },
     )
 }
-fn page_host(page: &str) -> anyhow::Result<ContentHost> {
-    if page == SEARCH_ROUTE {
-        return Ok(workbench::apphost_search());
+/// Original hosted stories keep their owning StoryState; plain pages keep the
+/// previously accepted Host. Both expose exactly one Host to AppHost.
+enum MountedPage {
+    Plain(Box<ContentHost>),
+    Story(Box<workbench::apphost_story::AppHostStory>),
+}
+impl std::ops::Deref for MountedPage {
+    type Target = ContentHost;
+    fn deref(&self) -> &ContentHost {
+        match self {
+            Self::Plain(host) => host,
+            Self::Story(story) => story.host(),
+        }
     }
-    // A new composition fixture using the original controls; this does not claim
-    // migration of the legacy TextField story controls or its fixture toolbar.
-    let content = if page == FORM_ROUTE {
-        Content::new(
-            ComponentId(200),
-            ListContent::scrollable(
-                "Composition example",
-                ComponentId(201),
-                vec![
-                    text(202, "Project form — composition example"),
-                    Content::new(
-                        ComponentId(100),
-                        TextFieldContent::new("Project name", "Gallery"),
-                    ),
-                    Content::new(
-                        ComponentId(102),
-                        TextFieldContent::new("Project owner", "TekesUI team"),
-                    ),
-                    Content::new(
-                        ComponentId(101),
-                        CheckboxContent::new("Published", CheckState::Unchecked),
-                    ),
-                ],
-            ),
-        )
-    } else {
-        let entry = workbench::entries()
-            .iter()
-            .find(|entry| entry.slug() == page)
-            .ok_or_else(|| anyhow::anyhow!("unknown Gallery route: {page}"))?;
-        stack(
-            200,
+}
+impl std::ops::DerefMut for MountedPage {
+    fn deref_mut(&mut self) -> &mut ContentHost {
+        match self {
+            Self::Plain(host) => host,
+            Self::Story(story) => story.host_mut(),
+        }
+    }
+}
+impl From<ContentHost> for MountedPage {
+    fn from(host: ContentHost) -> Self {
+        Self::Plain(Box::new(host))
+    }
+}
+/// #291 composition fixture remains separately labelled inside the Field page.
+pub(super) fn composition_fixture() -> Content {
+    Content::new(
+        ComponentId(200),
+        ListContent::scrollable(
+            "Composition example",
+            ComponentId(201),
             vec![
-                text(201, entry.title()),
                 text(
                     202,
-                    "This route has not migrated to AppHost yet. Open the default Gallery to use its existing stories.",
+                    "Additional composition fixture — not the original Playground",
+                ),
+                Content::new(
+                    ComponentId(100),
+                    TextFieldContent::new("Project name", "Gallery"),
+                ),
+                Content::new(
+                    ComponentId(102),
+                    TextFieldContent::new("Project owner", "TekesUI team"),
+                ),
+                Content::new(
+                    ComponentId(101),
+                    CheckboxContent::new("Published", CheckState::Unchecked),
                 ),
             ],
-        )
-    };
+        ),
+    )
+}
+fn page_host(page: &str) -> anyhow::Result<MountedPage> {
+    if page == SEARCH_ROUTE {
+        return Ok(workbench::apphost_search().into());
+    }
+    let entry = workbench::entries()
+        .iter()
+        .find(|entry| entry.slug() == page)
+        .ok_or_else(|| anyhow::anyhow!("unknown Gallery route: {page}"))?;
+    if workbench::apphost_story::supports(page) {
+        return Ok(MountedPage::Story(Box::new(
+            workbench::apphost_story::AppHostStory::new(entry),
+        )));
+    }
+    let content = stack(
+        200,
+        vec![
+            text(201, entry.title()),
+            text(
+                202,
+                "This route has not migrated to AppHost yet. Open the default Gallery to use its existing stories.",
+            ),
+        ],
+    );
     let mut host =
         ContentHost::new(content).map_err(|error| anyhow::anyhow!("Gallery page: {error:?}"))?;
     host.set_action_events(true);
-    Ok(host)
+    Ok(host.into())
 }
 struct FocusContent(SharedWorkbench);
 impl ContainerContent for FocusContent {
@@ -294,7 +358,11 @@ impl ContainerContent for FocusContent {
                 .expect("current page mounted")
                 .clone()
         };
-        visit(&mut host.borrow_mut());
+        let mut page = host.borrow_mut();
+        visit(&mut page);
+        if let MountedPage::Story(story) = &mut *page {
+            story.after_host_visit();
+        }
     }
 }
 fn list_snapshot(query: &str) -> KeyedListSnapshot {
@@ -1076,7 +1144,8 @@ mod tests {
                         CheckboxContent::new("Published", CheckState::Unchecked),
                     )],
                 ))
-                .unwrap(),
+                .unwrap()
+                .into(),
             )),
         );
         state.borrow_mut().select(Some("published"));
@@ -1134,5 +1203,55 @@ mod tests {
         state.borrow_mut().sync_inspection();
         assert!(state.borrow().inspected.is_none());
         assert!(state.borrow().selected_snapshot().is_none());
+    }
+    #[test]
+    fn apphost_original_pages_preserve_edits_and_specimen_selection_on_history() {
+        let state = state(AREA_ROUTE);
+        let mut text = super::super::text::TextEngine::new();
+        FocusContent(state.clone()).with_host(&mut |host| {
+            render_text_host(host, &mut text);
+            assert!(host.focus(Some(ComponentId(27502)), false));
+            render_text_host(host, &mut text);
+            host.event_with_text(
+                &ContentEvent::Commit {
+                    text: " retained area edit".into(),
+                    replacement: None,
+                },
+                &mut text,
+            )
+            .unwrap();
+        });
+        let original_mount = state.borrow().selected_snapshot().unwrap().mount;
+        for route in [COMBO_ROUTE, SELECT_ROUTE, FORM_ROUTE] {
+            publish(&state, route);
+        }
+        state.borrow_mut().select(Some("original-field"));
+        assert_eq!(
+            state.borrow().selected_snapshot().unwrap().id,
+            ComponentId(27501)
+        );
+        state.borrow_mut().restore(COMMAND).unwrap();
+        assert_eq!(
+            state.borrow().selection().document_id.as_deref(),
+            Some("tui.text-area")
+        );
+        FocusContent(state.clone()).with_host(&mut |host| {
+            assert!(
+                host.text_surface(ComponentId(27502))
+                    .unwrap()
+                    .input
+                    .text
+                    .contains("retained area edit")
+            );
+        });
+        assert_eq!(
+            state.borrow().selected_snapshot().unwrap().mount,
+            original_mount
+        );
+        state.borrow_mut().restore(COMMAND + 3).unwrap();
+        assert_eq!(
+            state.borrow().selection().specimen.as_deref(),
+            Some("original-field")
+        );
     }
 }

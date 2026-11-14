@@ -2134,7 +2134,7 @@
     "crates/tekes-ui-gallery/src/gallery/quality_effects.rs": "b99730312721bf8eec15f3b10255c977ba444c4ea064fdb8537186f3271e7d85",
     "crates/tekes-ui-gallery/src/gallery/text.rs": "0861f4087a60f10bdf3d7c6697cb97e3513b2b6890fcc8984dd8ea966cbad13d",
     "crates/tekes-ui-gallery/src/gallery/text_demo.rs": "4beeb7e5085813d11718011fe703eefaaa1a541764fed25c28bcbf9c99b455cb",
-    "crates/tekes-ui-gallery/src/gallery/workbench.rs": "645a566b596c15f00c4a75aef9ae1341e8ca6e5fc0602ec7daa22463d414c703",
+    "crates/tekes-ui-gallery/src/gallery/workbench.rs": "a9a0495b9ef6703189e34e4c9903e31692f2f97ab7f75bb6f0a8aef31b3dfff1",
     "crates/tekes-ui-gallery/src/gallery/workbench/accessibility.rs": "140c2dfc32ee3b5cb430ce3372632e491d94f1c387f9d93f30860cc397aed033",
     "crates/tekes-ui-gallery/src/gallery/workbench/content_status.rs": "2b3262d539c063b91493ee29db9aa13c8cdefacb3259c2efb6cdded337120588",
     "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs": "ec0409a3abdb57ff98e42b0ff1f3598ed7657235a524a199c59c46f8e6abe732",
@@ -2238,9 +2238,13 @@
     "crates/tekes-ui-controls/src/composition/toolbar_host.rs": "00bae218b96330f113bf3f19d7f5642d99c2751bdda73fdb68c26cd9a1be0eb4",
     "crates/tekes-ui-controls/src/composition/tab_strip.rs": "4add005d907baa98192cfe199730d74697bf72d8906c6b1024c8afb0aff980bb",
     "crates/tekes-ui-controls/src/composition/inspection.rs": "2408c26fdb67d0af7da76f5198aa7bb9c889225fc5a4f910375803a8541ed1ef",
-    "crates/tekes-ui-gallery/src/gallery/apphost_workbench.rs": "662222fc70b9f4a4e24f692dec9e6200b21ed1a06830ef7a377682c95929341d",
+    "crates/tekes-ui-gallery/src/gallery/apphost_workbench.rs": "cee8ce87d4e845225473a127502b97ffab5bd66953e578deea83f492267518f4",
     "crates/tekes-ui-gallery/build.rs": "4ddf0311f8f43af62027c4befb7b3a3be0b8b4a6846b854799b55fc8ae6fdb76",
-    "design/gallery/component-documents.json": "f5ff0010d0b561988dc8b09255a2b88d894d14ffff44f5aa2f16fe7193fed51e"
+    "design/gallery/component-documents.json": "18dbfe0a826d383fd22ec0f139d7270e89f1ffa9c15b6e4802f211424a8dce60",
+    "crates/tekes-ui-gallery/src/gallery/workbench/apphost_story.rs": "699bc0c2803a7276179524ddd0192b578aa08300be35ab866a8e05164c76dd4f",
+    "crates/tekes-ui-gallery/src/gallery/workbench/search_input.rs": "e00307167c0343f1b85533ad31953b42bcebf7a92db24867920f16fdeb3db445",
+    "crates/tekes-ui-gallery/src/gallery/workbench/select_story.rs": "a4d8d398d26711bfa24f8600b2ce70ba7768ca5e9b40f88f49e02d4e413a1c9f",
+    "crates/tekes-ui-gallery/src/gallery/workbench/search_host.rs": "dd692d0ba80e5cbcfc03a873d61641e07f34c47960998f1287ba567cd0cddeaf"
   },
   "remaining": [
     "Collections49 public adapter/support paths recovered in thisf4df candidate; actual compatible compilation/consumer/IPC acceptance and publication remain Main gates. Tree/Table and keyed List slots remain finite passive contracts, not arbitrary interactive content or virtualization.",
@@ -4797,6 +4801,23 @@
         "crates/tekes-ui-gallery/src/main.rs",
         "crates/tekes-ui-gallery/src/gallery/apphost_workbench.rs"
       ]
+    },
+    {
+      "date": "2026-11-15",
+      "issue": 294,
+      "scope": "Gallery original Field/Area/Combo/Select Playground: original StoryState, one ContentHost and original control reducers. Other sections/full route migration remain incomplete.",
+      "reviewed_paths": [
+        "crates/tekes-ui-gallery/src/gallery/apphost_workbench.rs",
+        "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+        "crates/tekes-ui-gallery/src/gallery/workbench/apphost_story.rs",
+        "crates/tekes-ui-gallery/src/gallery/workbench/search_host.rs",
+        "crates/tekes-ui-gallery/src/gallery/workbench/search_input.rs",
+        "crates/tekes-ui-gallery/src/gallery/workbench/select_story.rs",
+        "design/gallery/component-documents.json"
+      ],
+      "verification": "Check329: 15 affected CPU tests, strict/release; 46 manual snippets type-check. Four-page native pending.",
+      "capability_promotion": false,
+      "documents": "45 exact component-to-manual bindings reviewed; all 46 code blocks type-check with Check328 libraries; full bundle compiled in Check329. Rich presentation/links not yet completed."
     }
   ]
 }

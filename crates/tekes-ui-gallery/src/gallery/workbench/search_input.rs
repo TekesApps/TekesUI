@@ -23,8 +23,12 @@ impl StoryInput {
         Self::Search(Box::new(StoryTextHost::new()))
     }
 
-    pub(super) fn combo_box() -> Self {
-        Self::Combo(Box::new(StoryTextHost::combo_box()))
+    pub(super) fn combo_box(
+        root: fn(
+            tekes_ui_controls::composition::Content,
+        ) -> tekes_ui_controls::composition::Content,
+    ) -> Self {
+        Self::Combo(Box::new(StoryTextHost::combo_box(root)))
     }
     pub(super) fn combo(&self) -> &tekes_ui_controls::composition::ComboBoxContent {
         self.hosted().expect("Combo host").combo()
@@ -33,8 +37,14 @@ impl StoryInput {
     pub(super) fn combo_mut(&mut self) -> &mut tekes_ui_controls::composition::ComboBoxContent {
         self.hosted_mut().expect("Combo host").combo_mut()
     }
-    pub(super) fn field(value: &str, multiline: bool) -> Self {
-        Self::Field(Box::new(StoryTextHost::text_field(value, multiline)))
+    pub(super) fn field(
+        value: &str,
+        multiline: bool,
+        root: fn(
+            tekes_ui_controls::composition::Content,
+        ) -> tekes_ui_controls::composition::Content,
+    ) -> Self {
+        Self::Field(Box::new(StoryTextHost::text_field(value, multiline, root)))
     }
     pub(super) fn hosted(&self) -> Option<&StoryTextHost> {
         match self {

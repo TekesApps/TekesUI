@@ -25,13 +25,16 @@ impl Default for SelectStoryHost {
 }
 impl SelectStoryHost {
     pub(super) fn new() -> Self {
-        let mut host = ContentHost::new(Content::new(
+        Self::with_root(std::convert::identity)
+    }
+    pub(super) fn with_root(root: fn(Content) -> Content) -> Self {
+        let mut host = ContentHost::new(root(Content::new(
             SELECT,
             SelectContent::new(
                 "Selection",
                 vec!["Automatic".into(), "Compact".into(), "Comfortable".into()],
             ),
-        ))
+        )))
         .expect("fixed Select story");
         host.set_action_events(true);
         host.set_focus_wrap(false);

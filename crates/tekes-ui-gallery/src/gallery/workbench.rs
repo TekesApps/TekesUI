@@ -8,6 +8,7 @@ mod select_story_tests;
 #[cfg(feature = "composition-review")]
 pub(crate) mod settings_native207;
 use select_story::SelectStoryHost;
+pub(super) mod apphost_story;
 mod basic_states;
 mod brand_preview;
 #[cfg(any(test, feature = "composition-review"))]
@@ -480,20 +481,32 @@ impl StoryState {
     }
 
     fn for_entry(e: &Entry) -> Self {
+        Self::for_entry_with_root(e, std::convert::identity)
+    }
+    fn for_entry_with_root(
+        e: &Entry,
+        root: fn(
+            tekes_ui_controls::composition::Content,
+        ) -> tekes_ui_controls::composition::Content,
+    ) -> Self {
         let mut s = Self::default();
         s.extended = extended::ExtendedStory::default();
         s.master = (e.renderer() == "master").then(master_host::MasterHost::default);
         s.input = match e.renderer() {
-            "field" => StoryInput::field("Studio", false),
+            "field" => StoryInput::field("Studio", false, root),
             "area" => StoryInput::field(
                 "A quiet room, an open window.\nWrite a complete paragraph here. 中日文と English.",
                 true,
+                root,
             ),
             "search" => StoryInput::search(),
-            "combo-box" => StoryInput::combo_box(),
+            "combo-box" => StoryInput::combo_box(root),
             "filter" | "command-palette" => TextDemo::field("", false, false).into(),
             _ => s.input,
         };
+        if e.renderer() == "select" {
+            s.select_story = SelectStoryHost::with_root(root);
+        }
         if e.renderer() == "form" {
             s.draft_fixture = Some(durable_draft::DurableDraft::memory());
         }
@@ -925,6 +938,16 @@ impl StoryState {
         });
     }
     fn activate(&mut self, id: usize, renderer: &str) {
+        self.activate_with_root(id, renderer, std::convert::identity);
+    }
+    fn activate_with_root(
+        &mut self,
+        id: usize,
+        renderer: &str,
+        root: fn(
+            tekes_ui_controls::composition::Content,
+        ) -> tekes_ui_controls::composition::Content,
+    ) {
         // Story tabs belong to the workbench host for every renderer.
         // Dispatch them before the component-specific adapter.
         if (1..=6).contains(&id) {
@@ -963,7 +986,7 @@ impl StoryState {
             if id == 0 {
                 let section = self.section;
                 let active = self.window_active;
-                *self = Self::for_entry_renderer(renderer);
+                *self = Self::for_entry_renderer_with_root(renderer, root);
                 self.set_window_active(active, Duration::ZERO);
                 self.section = section;
                 self.record("reset: initial fixture");
@@ -996,7 +1019,7 @@ impl StoryState {
             0 => {
                 let section = self.section;
                 let active = self.window_active;
-                *self = Self::for_entry_renderer(renderer);
+                *self = Self::for_entry_renderer_with_root(renderer, root);
                 self.set_window_active(active, Duration::ZERO);
                 self.section = section;
                 self.scene3d_reset = renderer == "scene3d";
@@ -1136,9 +1159,18 @@ impl StoryState {
         }
         self.activate(id, renderer);
     }
+    #[cfg(test)]
     fn for_entry_renderer(renderer: &str) -> Self {
+        Self::for_entry_renderer_with_root(renderer, std::convert::identity)
+    }
+    fn for_entry_renderer_with_root(
+        renderer: &str,
+        root: fn(
+            tekes_ui_controls::composition::Content,
+        ) -> tekes_ui_controls::composition::Content,
+    ) -> Self {
         if let Some(e) = entries().iter().find(|e| e.renderer() == renderer) {
-            Self::for_entry(e)
+            Self::for_entry_with_root(e, root)
         } else {
             Self::default()
         }

@@ -155,3 +155,19 @@ group and keyed selection model, avoiding duplicate scroll ownership.
 
 Original Field/Area/Combo/Select story migration is the next bounded source batch.
 The original Gallery remains the default and Dock production remains v0.3.28.
+
+## Original hosted Playground intake — 2026-11-15
+
+Field, Area, Combo and Select now retain their original StoryState and component
+Host. A Gallery-only root decorator adds the original reset, disabled/error and
+applicable edge-case controls. AppHost visits that single Host; Gallery consumes
+its control intents afterwards instead of replaying the legacy input/paint loop.
+Field retains the explicitly labelled additional multi-instance fixture from the
+first slice. Original States/Variants/Behaviors sections and other routes remain
+unmigrated; this is a Playground intake, not complete four-route parity.
+
+Check329 passes 15 affected CPU regressions, Gallery strict and release build.
+The 45 offline manuals contain 46 Rust snippets; all type-check against the
+existing Check328 Controls/Tokens libraries. This does not prove snippet runtime
+behavior. Existing native-r2 identity and results remain limited to the first
+slice; the changed four-page layout and input still need native acceptance.
