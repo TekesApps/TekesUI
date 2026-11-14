@@ -3143,18 +3143,69 @@ impl SelectView {
             self.trigger.state.focused && self.window_active && !self.trigger.state.disabled;
         let selected = model.selected.min(labels.len().saturating_sub(1));
         let title = labels.get(selected).copied().unwrap_or("");
-        let trigger = self.trigger.render(
+        let icon_side = proposal::metric("size", "size-icon-standard")
+            .expect("select indicator size")
+            * text.resolved_font_size(role)
+            / role.style().size;
+        let gap = proposal::metric("spacing", "space-tight").expect("select indicator gap")
+            * text.resolved_font_size(role)
+            / role.style().size;
+        let insets = ButtonModel::measure_content(
+            text,
+            Size::default(),
+            frame.size.width,
+            ButtonSize::Body,
+            role,
+        )
+        .width;
+        let label_width = (frame.size.width - insets - icon_side - gap).max(0.);
+        let label_size = text.measure(title, role, label_width);
+        let mut trigger = self.trigger.render_content_frame_with_role(
             scene,
             text,
-            title,
+            Size::new(
+                label_size.width + icon_side + gap,
+                label_size.height.max(icon_side),
+            ),
             frame,
             clip,
             palette,
-            ButtonVariant::Primary,
-            ButtonSize::Body,
+            ButtonVariant::Quiet,
             role,
-            ButtonTextAlign::Leading,
         );
+        let icon_width = icon_side.min(trigger.content.size.width);
+        let icon_frame = Rect::new(
+            trigger.content.max_x() - icon_width,
+            trigger.content.center().y - icon_width * 0.5,
+            icon_width,
+            icon_width,
+        );
+        trigger.content.size.width = (trigger.content.size.width - icon_width - gap).max(0.);
+        if let Some(visible) = trigger.visible {
+            let ink = palette
+                .color(if self.trigger.state.disabled {
+                    "tertiary-text"
+                } else {
+                    "primary-text"
+                })
+                .expect("select ink");
+            scene.push_clip(visible);
+            // Explicit text clipping keeps long values out of the popup indicator slot.
+            scene.push_clip(trigger.content);
+            text.draw(
+                scene,
+                title,
+                role,
+                trigger.content,
+                ButtonTextAlign::Leading,
+                ink,
+            );
+            scene.pop_clip();
+            if let Some(renderer) = text.icon_renderer() {
+                renderer.draw_icon(scene, "tekes-expand", icon_frame, ink);
+            }
+            scene.pop_clip();
+        }
         model.menu.items.count = labels.len();
         if !model.menu.open {
             model.menu.items.selected = model.selected.min(labels.len().saturating_sub(1));
@@ -4623,6 +4674,116 @@ mod tests {
         assert_eq!(model.combo.selected, Some(2));
         assert_eq!(model.combo.query, "Comfortable");
         assert!(!model.combo.open);
+    }
+
+    #[test]
+    fn select_long_value_reserves_and_clips_before_popup_indicator() {
+        #[derive(Default)]
+        struct CaptureIcon {
+            name: String,
+            frame: Rect,
+        }
+        impl IconRenderer for CaptureIcon {
+            fn draw_icon(
+                &mut self,
+                _: &mut Scene,
+                name: &str,
+                frame: Rect,
+                _: tekes_ui_tokens::Rgba,
+            ) {
+                self.name = name.to_owned();
+                self.frame = frame;
+            }
+        }
+        #[derive(Default)]
+        struct Text {
+            icon: CaptureIcon,
+            label: Option<Rect>,
+            measured_width: f32,
+        }
+        impl ButtonTextRenderer for Text {
+            fn icon_renderer(&mut self) -> Option<&mut dyn IconRenderer> {
+                Some(&mut self.icon)
+            }
+            fn measure(&mut self, _: &str, _: proposal::TextRole, width: f32) -> Size {
+                self.measured_width = width;
+                Size::new(width, 20.)
+            }
+            fn draw(
+                &mut self,
+                _: &mut Scene,
+                _: &str,
+                _: proposal::TextRole,
+                rect: Rect,
+                _: ButtonTextAlign,
+                _: tekes_ui_tokens::Rgba,
+            ) {
+                self.label = Some(rect);
+            }
+        }
+        let mut view = SelectView::new(1);
+        let mut model = crate::Select::new(1);
+        let mut text = Text::default();
+        let mut scene = Scene::new();
+        let layout = view.render_trigger(
+            &mut scene,
+            &mut text,
+            &mut model,
+            &["An unusually long selected value"],
+            Rect::new(10., 20., 120., 40.),
+            None,
+            Palette::from(Theme::LIGHT),
+            proposal::TextRole::UiBody,
+        );
+        let label = text.label.unwrap();
+        assert_eq!(text.icon.name, "tekes-expand");
+        assert!(text.icon.frame.size.width > 0.);
+        assert_eq!(
+            text.icon.frame.min_x() - label.max_x(),
+            proposal::metric("spacing", "space-tight").unwrap()
+        );
+        assert_eq!(label.size.width, text.measured_width);
+        assert!(text.icon.frame.max_x() <= layout.frame.max_x());
+        assert!(scene.primitives().iter().any(|p| matches!(p,
+            tekes_ui_scene::Primitive::PushClip(rect) if *rect == label)));
+    }
+
+    #[test]
+    fn select_quiet_trigger_preserves_open_menu_selection() {
+        for theme in Theme::ALL {
+            let palette = Palette::from(theme);
+            let mut view = SelectView::new(2);
+            let mut model = crate::Select::new(2);
+            model.selected = 1;
+            let frame = Rect::new(20., 20., 180., 40.);
+            for open in [false, true] {
+                model.menu.open = open;
+                let mut scene = Scene::new();
+                view.render_trigger(
+                    &mut scene,
+                    &mut FixedText,
+                    &mut model,
+                    &["Draft", "Published"],
+                    frame,
+                    None,
+                    palette,
+                    proposal::TextRole::UiBody,
+                );
+                let ground = scene
+                    .primitives()
+                    .iter()
+                    .find_map(|p| match p {
+                        tekes_ui_scene::Primitive::Quad(q) if q.rect == frame => Some(q),
+                        _ => None,
+                    })
+                    .expect("select trigger ground");
+                assert_eq!(ground.fill, palette.color("surface-2").unwrap());
+                assert_eq!(ground.border_width, 0.);
+                assert_eq!(model.selected, 1);
+                assert_eq!(model.menu.items.selected, 1);
+                assert_eq!(model.menu.open, open);
+            }
+        }
     }
 
     #[test]

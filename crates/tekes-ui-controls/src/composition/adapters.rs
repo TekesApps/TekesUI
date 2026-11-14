@@ -596,7 +596,8 @@ impl Component for TextFieldContent {
     fn focusable(&self) -> bool {
         !self.surface.input.disabled
     }
-    fn set_focus(&mut self, f: bool, _: bool) {
+    fn set_focus(&mut self, f: bool, visible: bool) {
+        self.surface.focus_visible = f && visible;
         if self.focused && !f {
             self.surface.break_kill_sequence();
             // Blur finalizes the visible draft using the existing TextInput
@@ -1402,6 +1403,49 @@ mod prepared_field_tests {
     fn pointer(point: Point) -> action_preparation::OwnedActionRequest {
         action_preparation::OwnedActionRequest::Pointer(ContentEvent::PointerDown(point))
     }
+    #[test]
+    fn content_focus_source_changes_decoration_without_blurring_selection() {
+        struct Text;
+        impl crate::TextSurfaceTextRenderer for Text {
+            fn push_visible(
+                &mut self,
+                _: &mut Scene,
+                _: &tekes_ui_text::Paragraph,
+                _: Point,
+                _: tekes_ui_tokens::Rgba,
+                _: Rect,
+            ) {
+            }
+        }
+        let mut field = TextFieldContent::read_only_content(
+            "Document",
+            "selectable text",
+            proposal::TextRole::UiBody,
+        );
+        field.surface.outer = Rect::new(0., 0., 200., 100.);
+        field.surface.input.select(5, false);
+        field.surface.input.select(10, true);
+        let before = field.surface.input.action_snapshot();
+        for theme in tekes_ui_tokens::Theme::ALL {
+            // Host can update the same owner's focus source without a blur.
+            for (focused, visible) in [(true, false), (true, true), (true, false), (false, false)] {
+                field.set_focus(focused, visible);
+                let mut scene = Scene::new();
+                field
+                    .surface
+                    .draw(&mut Text, &mut scene, theme, field.focused, false);
+                let outlines = scene.primitives().iter().filter(|p| matches!(p,
+                    tekes_ui_scene::Primitive::Quad(q)
+                        if q.border_color == tekes_ui_tokens::Palette::from(theme).color("border-focused").unwrap()
+                            && q.border_width == proposal::metric("stroke", "c-focus-width").unwrap()
+                )).count();
+                assert_eq!(outlines, usize::from(focused && visible));
+                assert_eq!(field.focused, focused);
+                assert_eq!(field.surface.input.action_snapshot(), before);
+            }
+        }
+    }
+
     #[test]
     fn prepared_field_selection_is_pure_rejects_changed_state_and_keeps_readonly_selection() {
         let mut field = TextFieldContent::new("Draft", "A😀B");

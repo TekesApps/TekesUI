@@ -1974,7 +1974,7 @@ mod pinned_header_tests {
             panic!("original Settings icons must retain their prepared image lease");
         }
     }
-    fn render_header(
+    pub(super) fn render_header(
         sidebar: &mut tekes_ui_settings::SettingsSidebar,
         text: &mut crate::text::Text,
         frame: Rect,
@@ -2013,22 +2013,19 @@ mod pinned_header_tests {
         sidebar.event(&ContentEvent::PointerDown(chip.center()));
         sidebar.event(&ContentEvent::PointerUp(chip.center()));
         render_header(&mut sidebar, &mut text, Rect::new(12., 16., 760., 180.));
-        let wide_back = sidebar.host.get(ComponentId(4)).unwrap().frame();
         let wide_editor = sidebar.host.get(ComponentId(6)).unwrap().frame();
         assert_eq!(
-            wide_editor.min_x() - wide_back.max_x(),
-            tekes_ui_tokens::Spacing::Regular.value(),
-            "expanding search preserves the original Back-to-editor gap"
+            wide_editor,
+            sidebar.host.get(ComponentId(5)).unwrap().frame()
         );
+        assert!(sidebar.host.get(ComponentId(4)).is_none());
         draw(&mut sidebar, &mut text);
-        // The editor changes the row's measured height; compare both controls
-        // from this same expanded layout, including the eventual Back hit.
-        let back = sidebar.host.get(ComponentId(4)).unwrap().frame();
         let search = sidebar.host.get(ComponentId(6)).unwrap().frame();
         let scroll = sidebar.host.get(ComponentId(1)).unwrap().frame();
         assert_eq!(sidebar.host.focused(), Some(ComponentId(6)));
         assert!(sidebar.host.get(ComponentId(10)).is_none());
-        assert_eq!(back.center().y, search.center().y);
+        assert!(sidebar.host.get(ComponentId(4)).is_none());
+        assert_eq!(search, sidebar.host.get(ComponentId(5)).unwrap().frame());
         assert!(search.max_y() < scroll.min_y());
         assert!(
             sidebar
@@ -2056,16 +2053,6 @@ mod pinned_header_tests {
                 tekes_ui_tokens::Spacing::Micro.value()
             );
         }
-        assert!(
-            sidebar
-                .host
-                .get(ComponentId(4))
-                .unwrap()
-                .component::<tekes_ui_controls::Button>()
-                .unwrap()
-                .label
-                .is_empty()
-        );
         sidebar
             .host
             .event_with_text(&ContentEvent::PointerDown(search.center()), &mut text)
@@ -2112,6 +2099,19 @@ mod pinned_header_tests {
                 .input
                 .text,
             "文字大小"
+        );
+        assert!(sidebar.cancel_search().unwrap());
+        draw(&mut sidebar, &mut text);
+        let back = sidebar.host.get(ComponentId(4)).unwrap().frame();
+        assert!(
+            sidebar
+                .host
+                .get(ComponentId(4))
+                .unwrap()
+                .component::<tekes_ui_controls::Button>()
+                .unwrap()
+                .label
+                .is_empty()
         );
         sidebar.event(&ContentEvent::PointerDown(back.center()));
         sidebar.event(&ContentEvent::PointerUp(back.center()));
@@ -2189,6 +2189,8 @@ mod pinned_header_tests {
             }),
             Some("reading/advanced".into())
         );
+        // Escape while the original editor owns focus restores keyboard focus.
+        sidebar.host.focus(Some(ComponentId(6)), true);
         assert!(sidebar.cancel_search().unwrap());
         let collapsed = render_header(&mut sidebar, &mut text, frame);
         let chip = sidebar.host.get(ComponentId(10)).unwrap();
@@ -2298,6 +2300,62 @@ mod pinned_header_tests {
                 .display_indices()
                 .len(),
             2
+        );
+    }
+
+    #[test]
+    fn nonempty_search_blur_preserves_result_action_selection_and_focus() {
+        let schema = tekes_ui_settings::Schema::parse(include_str!(
+            "../../tekes-ui-settings/tests/fixtures/layout.schema.toml"
+        ))
+        .unwrap();
+        let mut sidebar = tekes_ui_settings::SettingsSidebar::new_with_back(&schema).unwrap();
+        sidebar.select("reading/text");
+        let mut text = crate::text::Text::new();
+        let frame = Rect::new(0., 0., 260., 600.);
+        render_header(&mut sidebar, &mut text, frame);
+        let chip = sidebar.host.get(ComponentId(10)).unwrap().frame().center();
+        sidebar.event(&ContentEvent::PointerDown(chip));
+        sidebar.event(&ContentEvent::PointerUp(chip));
+        sidebar
+            .host
+            .event_with_text(
+                &ContentEvent::Commit {
+                    text: "行距倍数".into(),
+                    replacement: None,
+                },
+                &mut text,
+            )
+            .unwrap();
+        render_header(&mut sidebar, &mut text, frame);
+        let result = sidebar
+            .host
+            .get(ComponentId(103))
+            .unwrap()
+            .component::<tekes_ui_controls::composition::KeyedSelectableListContent>()
+            .unwrap()
+            .semantic_parts()[0]
+            .frame
+            .center();
+        let route = sidebar.event(&ContentEvent::PointerDown(result)).unwrap();
+        assert_eq!(route, "reading/advanced");
+        sidebar.select(&route);
+        render_header(&mut sidebar, &mut text, frame);
+        sidebar.event(&ContentEvent::PointerUp(result));
+        assert!(sidebar.host.get(ComponentId(6)).is_none());
+        assert!(sidebar.host.get(ComponentId(4)).is_some());
+        assert!(sidebar.host.get(ComponentId(10)).is_some());
+        assert_eq!(sidebar.host.focused(), Some(ComponentId(103)));
+        let list = sidebar
+            .host
+            .get(ComponentId(103))
+            .unwrap()
+            .component::<tekes_ui_controls::composition::KeyedSelectableListContent>()
+            .unwrap();
+        assert_eq!(list.semantic_parts().len(), 2);
+        assert_eq!(
+            list.selected_key(),
+            Some(tekes_ui_controls::extended::ListItemKey(3))
         );
     }
 
@@ -3698,6 +3756,90 @@ mod form_keyboard_owner_tests {
     }
 
     #[test]
+    fn search_blur_to_original_form_keeps_clicked_editor_and_draft() {
+        let (mut host, surface, path) = fixture_source(include_str!(
+            "../../tekes-ui-settings/tests/fixtures/layout.schema.toml"
+        ));
+        // Independent fixture supplies the real mounted form; install the
+        // Exclusive header declaration used by this interaction.
+        {
+            let mut state = surface.borrow_mut();
+            state.sidebar =
+                tekes_ui_settings::SettingsSidebar::new_with_back(&state.schema).unwrap();
+            let selected = state.selected.clone();
+            state.sidebar.select(&selected);
+        }
+        let draw_header = |host: &mut Host| {
+            pinned_header_tests::render_header(
+                &mut surface.borrow_mut().sidebar,
+                &mut host.text,
+                host.panels[0].bounds,
+            );
+        };
+        draw_header(&mut host);
+        let field = surface
+            .borrow()
+            .form
+            .host
+            .get(ComponentId(100))
+            .unwrap()
+            .frame()
+            .center();
+        host.settings_form_input(&ContentEvent::PointerDown(field))
+            .unwrap();
+        host.settings_form_input(&ContentEvent::PointerUp(field))
+            .unwrap();
+        host.settings_form_input(&ContentEvent::TextCommand("selectAll:".into()))
+            .unwrap();
+        host.settings_form_input(&ContentEvent::Commit {
+            text: "Retained draft".into(),
+            replacement: None,
+        })
+        .unwrap();
+        let chip = surface
+            .borrow()
+            .sidebar
+            .host
+            .get(ComponentId(10))
+            .unwrap()
+            .frame()
+            .center();
+        host.settings_sidebar_input(&ContentEvent::PointerDown(chip))
+            .unwrap();
+        host.settings_sidebar_input(&ContentEvent::PointerUp(chip))
+            .unwrap();
+        draw_header(&mut host);
+        host.settings_sidebar_input(&ContentEvent::Commit {
+            text: "行距倍数".into(),
+            replacement: None,
+        })
+        .unwrap();
+        surface.borrow_mut().sidebar.sync_search().unwrap();
+        draw_header(&mut host);
+        host.settings_form_input(&ContentEvent::PointerDown(field))
+            .unwrap();
+        surface.borrow_mut().sidebar.sync_search().unwrap();
+        draw_header(&mut host);
+        host.settings_form_input(&ContentEvent::PointerUp(field))
+            .unwrap();
+        let state = surface.borrow();
+        assert_eq!(state.selected, "workspace/general");
+        assert_eq!(state.form.host.focused(), Some(ComponentId(100)));
+        assert_eq!(
+            state.form.host.focused_text().unwrap().input.text,
+            "Retained draft"
+        );
+        assert_eq!(state.sidebar.host.focused(), None);
+        assert!(state.sidebar.host.get(ComponentId(6)).is_none());
+        assert!(state.sidebar.host.get(ComponentId(4)).is_some());
+        assert!(state.sidebar.host.get(ComponentId(10)).is_some());
+        drop(state);
+        drop(host);
+        drop(surface);
+        std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
+    }
+
+    #[test]
     fn original_settings_keyboard_route_traverses_scopes_and_space_selects_form_radio() {
         let (mut host, surface, path) = fixture();
         // This same key entry point is called by the actual native toolbar
@@ -3950,7 +4092,12 @@ mod form_keyboard_owner_tests {
                 .windows(2)
                 .all(|rows| { rows[0].frame().min_x() < rows[1].frame().min_x() })
         );
-        assert_eq!(radio_frame.max_x(), row_frame.max_x());
+        assert_eq!(
+            radio_frame.max_x(),
+            row_frame.max_x()
+                - tekes_ui_tokens::proposal::metric("spacing", "space-grouped-form-row-inline")
+                    .unwrap()
+        );
         assert_eq!(selected, Some(0));
         for phase in [PointerPhase::Down, PointerPhase::Up] {
             host.settings_form_input(&ContentEvent::Pointer(PointerEvent {

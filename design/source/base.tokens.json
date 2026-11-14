@@ -116,9 +116,9 @@
         "name": "p-row-selection",
         "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
         "value": {
-          "dark": "#2A2A29",
+          "dark": "#282827",
           "dark-ic": "#414C4C",
-          "light": "#E6E6E4",
+          "light": "#EAEAE8",
           "light-ic": "#D8DEDE"
         }
       },
@@ -131,9 +131,9 @@
         "name": "p-row-selection-hover",
         "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
         "value": {
-          "dark": "#343433",
+          "dark": "#2C2C2B",
           "dark-ic": "#465151",
-          "light": "#DCDCD9",
+          "light": "#E6E6E3",
           "light-ic": "#CCD5D5"
         }
       },
@@ -146,9 +146,9 @@
         "name": "p-button-hover",
         "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
         "value": {
-          "dark": "#272726",
+          "dark": "#252524",
           "dark-ic": "#36332D",
-          "light": "#E9E9E7",
+          "light": "#EDEDEB",
           "light-ic": "#DEDDD7"
         }
       },
@@ -161,9 +161,9 @@
         "name": "p-button-pressed",
         "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
         "value": {
-          "dark": "#323231",
+          "dark": "#2B2B2A",
           "dark-ic": "#4C4740",
-          "light": "#DDDDDA",
+          "light": "#E7E7E4",
           "light-ic": "#D0CEC8"
         }
       },
@@ -186,9 +186,9 @@
         "name": "p-border",
         "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
         "value": {
-          "dark": "#7E7E7A",
+          "dark": "#767673",
           "dark-ic": "#C8C0B4",
-          "light": "#7C7C79",
+          "light": "#82827F",
           "light-ic": "#4E4A41"
         }
       },
@@ -201,9 +201,9 @@
         "name": "p-border-focused",
         "usage": "中性焦点强调；普通主题保持必要对比并降低突出度，高对比主题保留",
         "value": {
-          "dark": "#969692",
+          "dark": "#8C8C88",
           "dark-ic": "#FFFFFF",
-          "light": "#6B6B68",
+          "light": "#747471",
           "light-ic": "#111111"
         }
       },
@@ -216,9 +216,9 @@
         "name": "p-separator",
         "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
         "value": {
-          "dark": "#353533",
+          "dark": "#30302E",
           "dark-ic": "#9C9488",
-          "light": "#DFDFDD",
+          "light": "#E4E4E2",
           "light-ic": "#8C867D"
         }
       },
@@ -226,6 +226,21 @@
         "name": "separator",
         "usage": "非必要的分组装饰线，不能单独承担控件识别或选中标记",
         "value": "{p-separator}"
+      },
+      {
+        "name": "p-scrollbar-thumb",
+        "usage": "普通主题弱化滚动指示：仅比选中行底色稍强；增强对比模式绘制仍继承当前 border。",
+        "value": {
+          "light": "#DCDCD9",
+          "dark": "#363634",
+          "light-ic": "#4E4A41",
+          "dark-ic": "#C8C0B4"
+        }
+      },
+      {
+        "name": "scrollbar-thumb",
+        "usage": "共享滚动条滑块；普通主题按低对比外观验收，不承担输入框必要边界或3:1声明。",
+        "value": "{p-scrollbar-thumb}"
       },
       {
         "name": "accent",
@@ -531,6 +546,11 @@
         "name": "surface-0",
         "usage": "窗口基底/侧栏；普通主题取 OCUI CSS",
         "value": "{p-surface-0}"
+      },
+      {
+        "name": "c-settings-group-ground",
+        "usage": "Passive Settings group surface; one rounded ground with inset row separators",
+        "value": "{p-settings-group-ground}"
       },
       {
         "name": "p-surface-1",
@@ -891,6 +911,16 @@
         "name": "shadow-ink",
         "usage": "浮层静态软阴影；alpha由elevation层定义",
         "value": "{p-shadow-ink}"
+      },
+      {
+        "name": "p-settings-group-ground",
+        "usage": "Quiet Settings group fill in each theme; decorative, not a control boundary",
+        "value": {
+          "light": "#F5F5F4",
+          "dark": "#242423",
+          "light-ic": "#EEEEEB",
+          "dark-ic": "#30302E"
+        }
       }
     ]
   },
@@ -1360,6 +1390,16 @@
         "value": "{size-row-height}"
       },
       {
+        "name": "c-slider-thumb-size",
+        "usage": "Slider thumb visual diameter",
+        "value": "{p-size-16}"
+      },
+      {
+        "name": "c-slider-track-size",
+        "usage": "Slider track visual thickness",
+        "value": "{p-size-2}"
+      },
+      {
         "name": "c-checkbox-size",
         "usage": "Checkbox 方框视觉尺寸组件角色",
         "value": "{size-icon-standard}"
@@ -1453,6 +1493,16 @@
         "name": "size-toolbar-chrome",
         "usage": "Window toolbar visible hover/selected chrome height; independent of original >=32pt hit frame",
         "value": "{p-size-20}"
+      },
+      {
+        "name": "p-size-560",
+        "usage": "Settings readable form width primitive",
+        "value": 560
+      },
+      {
+        "name": "c-settings-content-max-width",
+        "usage": "Settings form readable width; scales with body typography",
+        "value": "{p-size-560}"
       }
     ]
   },
@@ -1617,6 +1667,16 @@
         "name": "c-focus-offset",
         "usage": "焦点外环与控件外边缘的可见间距",
         "value": "{space-micro}"
+      },
+      {
+        "name": "space-grouped-form-row-inline",
+        "usage": "Grouped form row horizontal inset between the group surface and its label/control; not window, container, List item or TextBox padding",
+        "value": "{space-loose}"
+      },
+      {
+        "name": "space-grouped-form-row-block",
+        "usage": "Grouped form row vertical inset around its label/control; natural content height and the shared row minimum still apply",
+        "value": "{space-tight}"
       }
     ]
   },

@@ -3,7 +3,7 @@ use super::layout;
 use std::ops::{Deref, DerefMut};
 use tekes_ui_controls::ScrollArea;
 use tekes_ui_scene::{Point, Quad, Rect, Scene, Size};
-use tekes_ui_tokens::{ColorRole, ControlSize, Spacing, Theme};
+use tekes_ui_tokens::{ControlSize, Palette, Spacing, Theme};
 #[derive(Debug)]
 pub struct Viewport {
     size: Size,
@@ -180,8 +180,17 @@ impl Viewport {
                     .scroll
                     .thumb(vertical, track, ControlSize::RowHeight.value());
                 target.push_quad(
-                    Quad::new(thumb, ColorRole::Border.resolve(theme))
-                        .with_corner_radius(Spacing::Tight.value() * 0.5),
+                    Quad::new(
+                        thumb,
+                        Palette::from(theme)
+                            .color(if theme.is_increased() {
+                                "border"
+                            } else {
+                                "scrollbar-thumb"
+                            })
+                            .expect("scrollbar Theme ink"),
+                    )
+                    .with_corner_radius(Spacing::Tight.value() * 0.5),
                 );
             }
         }

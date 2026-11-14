@@ -893,8 +893,11 @@ mod tests {
             ) -> Result<IconImage, IconRenderError> {
                 Ok(IconImage::new(tekes_ui_scene::ImageId(99), Rc::new(())))
             }
-            fn draw_icon(&mut self, _: &mut Scene, _: &str, _: Rect, _: Rgba) {
-                panic!("prepared original icon required");
+            fn draw_icon(&mut self, _: &mut Scene, name: &str, frame: Rect, _: Rgba) {
+                // The shared Select now draws its popup indicator through the
+                // renderer; Disclosure still uses the prepared icon path.
+                assert_eq!(name, "tekes-expand");
+                assert!(frame.size.width > 0. && frame.size.height > 0.);
             }
         }
         let state = documents();

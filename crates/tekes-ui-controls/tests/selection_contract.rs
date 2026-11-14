@@ -26,6 +26,99 @@ impl ButtonTextRenderer for Labels {
     ) {
     }
 }
+#[test]
+fn radio_keyboard_focus_stays_on_indicator_without_a_detached_outer_ring() {
+    for theme in Theme::ALL {
+        for brand in [0, 1, 2] {
+            let palette = Palette::new(theme, brand).unwrap();
+            for selected in [false, true] {
+                for error in [false, true] {
+                    for disabled in [false, true] {
+                        for keyboard in [false, true] {
+                            let mut model = RadioGroup::new(1);
+                            model.selected = selected.then_some(0);
+                            let mut view = RadioGroupView::new();
+                            view.set_disabled(disabled);
+                            view.set_error(error);
+                            view.focus(&model, Some(0), keyboard);
+                            let mut scene = Scene::new();
+                            let layout = view.render(
+                                &mut scene,
+                                &mut Labels,
+                                &model,
+                                Rect::new(16., 18., 200., 48.),
+                                None,
+                                palette,
+                                &["Choice"],
+                            );
+                            let frame = layout.indicators[0];
+                            let mut legacy = Scene::new();
+                            tekes_ui_controls::extended::radio_with_state(
+                                &mut legacy,
+                                frame,
+                                palette,
+                                tekes_ui_controls::ControlState {
+                                    selected,
+                                    error,
+                                    disabled,
+                                    focused: true,
+                                    focus_visible: keyboard,
+                                    ..Default::default()
+                                },
+                            );
+                            for scene in [&scene, &legacy] {
+                                let quads: Vec<_> = scene
+                                    .primitives()
+                                    .iter()
+                                    .filter_map(|p| {
+                                        if let Primitive::Quad(q) = p {
+                                            Some(q)
+                                        } else {
+                                            None
+                                        }
+                                    })
+                                    .collect();
+                                assert_eq!(
+                                    quads.len(),
+                                    1 + usize::from(selected),
+                                    "no detached ring: {theme:?}"
+                                );
+                                assert_eq!(quads[0].rect, frame);
+                                let focused = keyboard && !disabled;
+                                assert_eq!(
+                                    quads[0].border_width,
+                                    proposal::metric(
+                                        "stroke",
+                                        if focused {
+                                            "c-focus-width"
+                                        } else {
+                                            "stroke-rule"
+                                        }
+                                    )
+                                    .unwrap()
+                                );
+                                let role = if error {
+                                    "status-failed"
+                                } else if disabled {
+                                    "disabled-text"
+                                } else if focused {
+                                    "border-focused"
+                                } else {
+                                    "border"
+                                };
+                                assert_eq!(quads[0].border_color, palette.color(role).unwrap());
+                                if selected {
+                                    assert_eq!(quads[1].rect, frame.inset(frame.size.width * 0.28));
+                                }
+                            }
+                            assert_eq!(model.selected, selected.then_some(0));
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
 fn observe<T>(render: impl FnOnce() -> T) -> (T, Vec<(String, String)>) {
     #[cfg(feature = "token-audit")]
     {
@@ -205,7 +298,19 @@ fn selection_validation_preserves_geometry_value_focus_and_existing_disabled_rol
                                         .expect("production control boundary");
                                     assert_eq!(
                                         boundary.border_color,
-                                        palette.color(expected).unwrap(),
+                                        palette
+                                            .color(
+                                                if component == "tui.radio-group"
+                                                    && focused
+                                                    && !disabled
+                                                    && !error
+                                                {
+                                                    "border-focused"
+                                                } else {
+                                                    expected
+                                                }
+                                            )
+                                            .unwrap(),
                                         "{component} / {theme:?}"
                                     );
                                     let rings = quads
@@ -218,8 +323,10 @@ fn selection_validation_preserves_geometry_value_focus_and_existing_disabled_rol
                                         .count();
                                     assert_eq!(
                                         rings,
-                                        usize::from(focused && !disabled),
-                                        "{component} focus remains independent of validation"
+                                        usize::from(
+                                            component != "tui.radio-group" && focused && !disabled
+                                        ),
+                                        "Radio uses its attached contour; other controls retain independent focus"
                                     );
                                     cases.push(serde_json::json!({"component":component,"theme":format!("{theme:?}"),"brand":brand,"value":value,"error":error,"disabled":disabled,"focus":focused,"phase":phase,"lookups":reads}));
                                 }

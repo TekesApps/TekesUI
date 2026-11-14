@@ -857,7 +857,7 @@ impl Host {
         let id = self.panels[target].module_id.as_str();
         if state.nav_bar_id() == Some(id) {
             WINDOW_NAV_BUSINESS
-        } else if state.focus_id() == id {
+        } else if state.focus_id() == id && !state.others_expanded() {
             WINDOW_BUSINESS
         } else {
             WINDOW_OTHERS_BUSINESS
@@ -1021,10 +1021,10 @@ impl Host {
             .unwrap();
         for (index, panel) in self.panels.iter().enumerate() {
             let visible = panel.bounds.size.width > 0. && panel.bounds.size.height > 0.;
-            let in_others = self
-                .presentation
-                .as_ref()
-                .is_some_and(|state| state.others_ids().contains(&panel.module_id));
+            let in_others = self.presentation.as_ref().is_some_and(|state| {
+                state.others_ids().contains(&panel.module_id)
+                    || (state.others_expanded() && state.focus_id() == panel.module_id)
+            });
             if visible
                 && !in_others
                 && matches!(
@@ -1498,6 +1498,50 @@ mod tests {
             )
             .unwrap();
         }
+    }
+    #[test]
+    fn expanded_focus_tab_toolbar_routes_business_and_collapse_without_self_exchange() {
+        let (mut host, _) = fixture();
+        host.panels[0].options.toolbar_host = crate::ContainerToolbarHost::Window;
+        host.presentation.as_mut().unwrap().toggle_others().unwrap();
+        host.toggle_others_expansion("other", false).unwrap();
+        host.presentation
+            .as_mut()
+            .unwrap()
+            .select_tab(OthersTab::Container("focus".into()))
+            .unwrap();
+        let whole = Rect::new(0., 0., 600., 600.);
+        let layout = host
+            .presentation
+            .as_ref()
+            .unwrap()
+            .layout_with_toolbar(whole, 48.);
+        host.apply_presentation_layout(layout).unwrap();
+        paint(&mut host);
+        let declarations = host.presentation_toolbar_declarations();
+        assert!(declarations[0].iter().any(|d| matches!(&d.source, Source::Expand { container, expanded: true } if container == "focus")));
+        assert!(
+            !declarations[0]
+                .iter()
+                .any(|d| matches!(&d.source, Source::Title))
+        );
+        let business = declarations[0]
+            .iter()
+            .find(|d| matches!(&d.source, Source::Panel { module, .. } if module == "focus"))
+            .unwrap();
+        assert_eq!(business.region, WINDOW_OTHERS_BUSINESS);
+        assert_eq!(
+            host.presentation
+                .as_ref()
+                .unwrap()
+                .focus_switch_target("focus"),
+            None
+        );
+        assert!(host.toggle_others_expansion("focus", true).unwrap());
+        assert_eq!(
+            host.presentation.as_ref().unwrap().selected_tab(),
+            Some(&OthersTab::Container("other".into()))
+        );
     }
     #[test]
     fn dark_toolbar_measurement_keeps_original_hover_transition_palette() {

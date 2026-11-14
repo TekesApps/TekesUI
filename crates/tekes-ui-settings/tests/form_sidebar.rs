@@ -343,21 +343,22 @@ fn pinned_header_composes_original_back_and_editor_outside_scroll_owner() {
         .unwrap()
         .component::<StackContent>()
         .unwrap();
-    assert_eq!(header.children().len(), 2);
-    assert!(header.children()[0].component::<Button>().is_some());
+    assert_eq!(header.children().len(), 1);
     assert!(
-        header.children()[1]
+        header.children()[0]
             .component::<TextFieldContent>()
             .is_some()
     );
     assert!(sidebar.host.get(ComponentId(10)).is_none());
     assert_eq!(sidebar.host.focused(), Some(ComponentId(6)));
-    assert_eq!(sidebar.host.semantic_mount(ComponentId(4)), back_mount);
+    assert!(sidebar.host.get(ComponentId(4)).is_none());
     assert_eq!(sidebar.host.semantic_mount(ComponentId(1)), scroll_mount);
     assert!(sidebar.cancel_search().unwrap());
     assert!(sidebar.host.get(ComponentId(6)).is_none());
     assert_eq!(sidebar.host.focused(), Some(ComponentId(10)));
     assert_eq!(sidebar.host.semantic_mount(ComponentId(1)), scroll_mount);
+    let restored_back_mount = sidebar.host.semantic_mount(ComponentId(4));
+    assert!(restored_back_mount.is_some());
     for width in [180., 360.] {
         let frame = Rect::new(12., 16., width, 500.);
         sidebar
@@ -373,7 +374,10 @@ fn pinned_header_composes_original_back_and_editor_outside_scroll_owner() {
         assert_eq!(back.min_x(), frame.min_x());
         assert_eq!(search.max_x(), frame.max_x());
         assert_eq!(search.center().y, back.center().y);
-        assert_eq!(sidebar.host.semantic_mount(ComponentId(4)), back_mount);
+        assert_eq!(
+            sidebar.host.semantic_mount(ComponentId(4)),
+            restored_back_mount
+        );
     }
 }
 
@@ -495,4 +499,113 @@ fn sidebar_hidden_item_revokes_queued_selection_instead_of_retargeting() {
         None,
         "hidden route cannot become the item now at its old display position"
     );
+}
+
+#[test]
+fn grouped_form_keeps_rows_contiguous_and_separates_schema_groups() {
+    use tekes_ui_controls::composition::ComponentId;
+    use tekes_ui_scene::{CornerRadii, Primitive, Rect, Scene};
+    use tekes_ui_tokens::{Palette, Spacing, Theme};
+    // Three real controls: two in one schema group, one in the next.
+    let definition = schema();
+    let mut schema = definition.clone();
+    let field = definition.settings[1].clone();
+    schema.settings = (0..3)
+        .map(|i| {
+            let mut f = field.clone();
+            f.id = format!("toggle-{i}");
+            f.group = schema.groups[usize::from(i == 2)].id.clone();
+            f
+        })
+        .collect();
+    let draft = Draft::new(Snapshot::default());
+    let mut form = SettingsForm::new_autosave(&schema, &draft).unwrap();
+    // This geometry fixture uses measured labels, not a font-shaping service.
+    // Keep original rows and control mounts; real wrapping is checked by the
+    // SettingsRow multiline test and the native appearance candidate.
+    for i in 0..3 {
+        let id = ComponentId((1_u64 << 32) + i * 4 + 1);
+        *form.host.get_mut(id).unwrap() = tekes_ui_controls::composition::Content::new(
+            id,
+            tekes_ui_controls::composition::TextContent::new("Setting"),
+        );
+    }
+    let mount = form.host.semantic_mount(ComponentId(100));
+    for width in [260., 900.] {
+        for theme in [Theme::LIGHT, Theme::DARK] {
+            let mut scene = Scene::new();
+            let palette = Palette::from(theme);
+            form.render(
+                &mut scene,
+                &mut ListText,
+                Rect::new(0., 0., width, 500.),
+                palette,
+            )
+            .unwrap();
+            let rows: Vec<_> = (0..3)
+                .map(|i| {
+                    form.host
+                        .get(ComponentId((1_u64 << 32) + i * 4))
+                        .unwrap()
+                        .frame()
+                })
+                .collect();
+            assert_eq!(
+                rows[0].max_y(),
+                rows[1].min_y(),
+                "one continuous group ground"
+            );
+            assert_eq!(rows[2].min_y() - rows[1].max_y(), Spacing::Relaxed.value());
+            let body = form.host.get(ComponentId(11)).unwrap().frame();
+            assert_eq!(body.size.width, width.min(560.));
+            assert_eq!(body.min_x(), (width - body.size.width) * 0.5);
+            let content = form.host.get(ComponentId(20)).unwrap().frame();
+            assert_eq!(rows[0].size.width, content.size.width);
+            assert_eq!(rows[0].min_x(), content.min_x());
+            let grounds: Vec<_> = scene
+                .primitives()
+                .iter()
+                .filter_map(|p| match p {
+                    Primitive::Quad(q)
+                        if q.fill == palette.color("c-settings-group-ground").unwrap() =>
+                    {
+                        Some(q)
+                    }
+                    _ => None,
+                })
+                .collect();
+            assert_eq!(grounds.len(), 3);
+            assert_eq!(grounds[0].corner_radii.bottom_left, 0.);
+            assert!(grounds[0].corner_radii.top_left > 0.);
+            assert_eq!(grounds[1].corner_radii.top_left, 0.);
+            assert!(grounds[1].corner_radii.bottom_left > 0.);
+            assert_eq!(
+                grounds[2].corner_radii,
+                CornerRadii::uniform(grounds[0].corner_radii.top_left)
+            );
+            let separator = scene
+                .primitives()
+                .iter()
+                .filter_map(|p| match p {
+                    Primitive::Quad(q)
+                        if q.fill == palette.color("separator").unwrap()
+                            && q.rect.min_y() == rows[1].min_y() =>
+                    {
+                        Some(q)
+                    }
+                    _ => None,
+                })
+                .next()
+                .expect("inset separator within first group");
+            assert_eq!(
+                separator.rect.min_x(),
+                rows[1].min_x() + Spacing::Loose.value()
+            );
+            assert_eq!(
+                separator.rect.max_x(),
+                rows[1].max_x() - Spacing::Loose.value()
+            );
+            assert_eq!(form.host.semantic_mount(ComponentId(100)), mount);
+        }
+    }
 }

@@ -9258,6 +9258,7 @@ mod interaction_tests {
             clear: Rgba,
         ) {
             let (indicator, label) = geometry;
+            let focused = state.focused && state.focus_visible && !state.disabled;
             let (index, outer) = scene
                 .primitives()
                 .iter()
@@ -9278,10 +9279,31 @@ mod interaction_tests {
                 palette
                     .color(if state.disabled {
                         "disabled-text"
+                    } else if focused {
+                        "border-focused"
                     } else {
                         "border"
                     })
                     .unwrap()
+            );
+            assert_eq!(
+                outer.border_width,
+                tekes_ui_tokens::proposal::metric(
+                    "stroke",
+                    if focused {
+                        "c-focus-width"
+                    } else {
+                        "stroke-rule"
+                    },
+                )
+                .unwrap()
+            );
+            assert!(
+                !scene.primitives().iter().any(|p| matches!(p,
+                    Primitive::Quad(q) if q.fill.a == 0. && q.border_width > 0.
+                        && q.rect.center() == indicator.center()
+                )),
+                "Radio focus remains on the indicator, without a detached ring"
             );
             let marks: Vec<_> = scene.primitives()[index + 1..]
                 .iter()
@@ -9494,14 +9516,16 @@ mod interaction_tests {
             palette,
             ControlState {
                 selected: true,
+                focused: true,
+                focus_visible: true,
                 ..Default::default()
             },
             "c-radio-checked-ground",
             gallery.text.scale(),
             clear,
         );
-        assert!(scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q)if q.fill.a==0. && q.border_width>0.
-            && q.rect.center()==initial.indicators[2].center() && q.border_color==palette.color("border-focused").unwrap())));
+        assert!(scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q)if q.fill.a>0. && q.border_width>0.
+            && q.rect==initial.indicators[2] && q.border_color==palette.color("border-focused").unwrap())));
         let disabled = initial.rows[1].frame().center();
         gallery.handle_input(&mouse(disabled, true));
         gallery.handle_input(&mouse(disabled, false));
@@ -11172,11 +11196,7 @@ mod interaction_tests {
                     text.scale(),
                 );
                 let palette = Palette::from(theme);
-                let focus_width = if theme.is_increased() {
-                    proposal::metric("stroke", "c-focus-width").unwrap()
-                } else {
-                    proposal::metric("stroke", "stroke-rule").unwrap()
-                };
+                let focus_width = proposal::metric("stroke", "c-focus-width").unwrap();
                 let attached_focus=scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q) if q.rect==frame && q.border_width == focus_width && q.border_color==palette.color("border-focused").unwrap()));
                 assert_eq!(
                     attached_focus, !placeholder,
@@ -11429,7 +11449,7 @@ mod interaction_tests {
                 if q.fill.a == 0. && q.border_width > 0. && q.rect.center() == frame.center()))
             );
             scene.primitives().iter().any(|p| matches!(p, Primitive::Quad(q) if q.rect == frame
-                && q.border_width == if palette.theme.is_increased() { proposal::metric("stroke", "c-focus-width").unwrap() } else { proposal::metric("stroke", "stroke-rule").unwrap() }
+                && q.border_width == proposal::metric("stroke", "c-focus-width").unwrap()
                 && q.border_color == palette.color(if error { "status-failed" } else { "border-focused" }).unwrap()))
         }
 
@@ -11750,7 +11770,7 @@ mod interaction_tests {
             );
             scene.primitives().iter().any(|p| {
                 matches!(p, Primitive::Quad(q) if q.rect == frame
-                && q.border_width == if palette.theme.is_increased() { proposal::metric("stroke", "c-focus-width").unwrap() } else { proposal::metric("stroke", "stroke-rule").unwrap() }
+                && q.border_width == proposal::metric("stroke", "c-focus-width").unwrap()
                 && q.border_color == palette.color("border-focused").unwrap())
             })
         }
@@ -11781,8 +11801,16 @@ mod interaction_tests {
                     _ => None,
                 })
                 .expect("actual multiline viewport scrollbar thumb");
-            assert_eq!(thumb.fill, palette.color("border").unwrap());
-            assert!(contrast(thumb.fill, palette.color("transcript-input").unwrap()) >= 3.);
+            let role = if palette.theme.is_increased() {
+                "border"
+            } else {
+                "scrollbar-thumb"
+            };
+            assert_eq!(thumb.fill, palette.color(role).unwrap());
+            // Ordinary scrollbar appearance follows the 2026-11-14 quiet-ink decision.
+            if palette.theme.is_increased() {
+                assert!(contrast(thumb.fill, palette.color("transcript-input").unwrap()) >= 3.);
+            }
             thumb.rect
         }
 
@@ -12817,11 +12845,7 @@ mod interaction_tests {
             );
             // The original Form editor has Field presentation: one attached
             // focus edge; document Content retains a separate scope elsewhere.
-            let focus_width = if palette.theme.is_increased() {
-                proposal::metric("stroke", "c-focus-width").unwrap()
-            } else {
-                proposal::metric("stroke", "stroke-rule").unwrap()
-            };
+            let focus_width = proposal::metric("stroke", "c-focus-width").unwrap();
             assert_eq!(scene.primitives().iter().filter(|p| matches!(p, Primitive::Quad(q) if q.rect == frame && q.border_width == focus_width && q.border_color == palette.color("border-focused").unwrap())).count(), 1);
             assert!(!scene.primitives().iter().any(|p| matches!(p, Primitive::Quad(q) if q.fill.a == 0. && q.border_width > 0. && q.rect.center() == frame.center())));
             assert_label(
@@ -14095,11 +14119,7 @@ mod interaction_tests {
                     .unwrap();
                 assert_eq!(surface.fill, palette.color("surface-popover").unwrap());
                 for (slot, fill, ink) in [
-                    (
-                        layout.trigger,
-                        "action-primary-ground",
-                        "action-primary-foreground",
-                    ),
+                    (layout.trigger, "surface-1", "primary-text"),
                     (
                         popup.items[active],
                         if hovered {
@@ -17306,7 +17326,7 @@ mod interaction_tests {
                     .primitives()
                     .iter()
                     .any(|p| matches!(p, Primitive::Quad(q)
-                if q.rect == initial_query && q.border_width == if theme.is_increased() { proposal::metric("stroke", "c-focus-width").unwrap() } else { proposal::metric("stroke", "stroke-rule").unwrap() }
+                if q.rect == initial_query && q.border_width == proposal::metric("stroke", "c-focus-width").unwrap()
                 && q.border_color == palette.color("border-focused").unwrap()))
             );
             assert!(

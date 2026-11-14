@@ -1513,11 +1513,19 @@ mod tests {
                 })
                 .expect("actual visible ScrollArea fixture thumb");
             assert_eq!(background.fill, palette.color("surface-1").unwrap());
-            assert_eq!(painted_thumb.fill, palette.color("border").unwrap());
-            assert!(
-                contrast(painted_thumb.fill, background.fill) >= 3.,
-                "{theme:?}: actual thumb/parent contrast"
-            );
+            let role = if theme.is_increased() {
+                "border"
+            } else {
+                "scrollbar-thumb"
+            };
+            assert_eq!(painted_thumb.fill, palette.color(role).unwrap());
+            // Ordinary scrollbar appearance follows the 2026-11-14 quiet-ink decision.
+            if theme.is_increased() {
+                assert!(
+                    contrast(painted_thumb.fill, background.fill) >= 3.,
+                    "{theme:?}: actual thumb/parent contrast"
+                );
+            }
             assert!(background_index < thumb_index);
             // Bind only the original TextSurface paint interval, not page-wide headings/buttons.
             let own_content = &scene.primitives()[background_index + 1..thumb_index];
@@ -1915,7 +1923,7 @@ mod tests {
                 .expect("real attached Field focus edge");
             assert_eq!(
                 edge.border_width,
-                proposal::metric("stroke", "stroke-rule").unwrap()
+                proposal::metric("stroke", "c-focus-width").unwrap()
             );
             let ring = edge.rect;
             assert_eq!(
@@ -2418,7 +2426,7 @@ mod tests {
                 initial = Some((surface.outer, surface.inner));
             }
             assert_readonly_scene(&scene, surface, theme.into(), gallery.text.scale());
-            assert!(scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q)if q.rect == surface.outer && q.border_width == if theme.is_increased() { proposal::metric("stroke", "c-focus-width").unwrap() } else { proposal::metric("stroke", "stroke-rule").unwrap() }
+            assert!(scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q)if q.rect == surface.outer && q.border_width == proposal::metric("stroke", "c-focus-width").unwrap()
                 && q.border_color==Palette::from(theme).color("border-focused").unwrap())));
             assert_eq!(gallery.text_view.clipboard_selection(), Some(copy.clone()));
             let native = gallery

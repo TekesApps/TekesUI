@@ -70,6 +70,7 @@ pub struct SettingsSidebar {
     back_requested: bool,
     back_template: Option<&'static str>,
     search_button: Option<Content>,
+    back_button: Option<Content>,
     query: String,
 }
 impl SettingsSidebar {
@@ -224,6 +225,7 @@ impl SettingsSidebar {
             back_requested: false,
             back_template: None,
             search_button: None,
+            back_button: None,
             query: String::new(),
         })
     }
@@ -270,6 +272,13 @@ impl SettingsSidebar {
         Ok(())
     }
     fn open_search(&mut self) -> Result<()> {
+        self.back_button = Some(
+            self.host
+                .remove(ComponentId(4))
+                .map_err(|error| anyhow::anyhow!("Settings search: {error:?}"))?,
+        );
+        let mut editor = TextFieldContent::new("搜索设置", "");
+        editor.show_metadata = false;
         self.search_button = Some(
             self.host
                 .remove(ComponentId(10))
@@ -278,11 +287,7 @@ impl SettingsSidebar {
         self.host
             .insert(
                 ComponentId(5),
-                Content::new(
-                    ComponentId(6),
-                    TextFieldContent::inline("搜索设置", "", 20.),
-                )
-                .with_help("搜索设置"),
+                Content::new(ComponentId(6), editor).with_help("搜索设置"),
             )
             .map_err(|error| anyhow::anyhow!("Settings search: {error:?}"))?;
         let header = self.host.get_mut(ComponentId(5)).unwrap();
@@ -301,8 +306,12 @@ impl SettingsSidebar {
         if self.search_button.is_none() || self.host.is_composing() {
             return Ok(false);
         }
+        let return_focus = self.host.focused() == Some(ComponentId(6));
         self.host
             .remove(ComponentId(6))
+            .map_err(|error| anyhow::anyhow!("Settings search: {error:?}"))?;
+        self.host
+            .insert(ComponentId(5), self.back_button.take().unwrap())
             .map_err(|error| anyhow::anyhow!("Settings search: {error:?}"))?;
         self.host
             .insert(ComponentId(5), self.search_button.take().unwrap())
@@ -314,7 +323,11 @@ impl SettingsSidebar {
             .component_mut::<StackContent>()
             .unwrap()
             .flexible_child = Some(ComponentId(4));
-        self.host.focus(Some(ComponentId(10)), true);
+        // A result/form click already owns focus; only keyboard cancellation
+        // from the editor returns focus to the restored search button.
+        if return_focus {
+            self.host.focus(Some(ComponentId(10)), true);
+        }
         self.sync_search()?;
         Ok(true)
     }
@@ -331,7 +344,6 @@ impl SettingsSidebar {
             .map(|field| field.surface.input.text.trim().to_lowercase())
             .unwrap_or_default();
         if self.search_button.is_some()
-            && query.is_empty()
             && self.host.focused() != Some(ComponentId(6))
             && !self.host.is_composing()
         {

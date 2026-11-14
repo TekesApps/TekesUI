@@ -133,6 +133,8 @@ pub struct PresentationState {
     list_order: Vec<String>,
     list_scroll: f32,
     others_expanded: bool,
+    /// Temporary Focus selection; Others keeps its last destination for collapse.
+    expanded_focus: Option<OthersTab>,
 }
 /// Container allocation and its visible clipping rectangle use the same IDs.
 /// A List item can extend beyond its viewport; its own layout keeps its height.
@@ -278,6 +280,7 @@ impl PresentationState {
             list_order,
             list_scroll: 0.,
             others_expanded: false,
+            expanded_focus: None,
         };
         if state
             .options
@@ -342,10 +345,13 @@ impl PresentationState {
             "expansion requires one visible Others container"
         );
         self.others_expanded = !self.others_expanded;
+        self.expanded_focus = None;
         Ok(())
     }
     pub fn selected_tab(&self) -> Option<&OthersTab> {
-        self.others().and_then(|o| o.selected.as_ref())
+        self.expanded_focus
+            .as_ref()
+            .or_else(|| self.others().and_then(|o| o.selected.as_ref()))
     }
     pub fn list_ids(&self) -> Vec<&str> {
         self.list_order
@@ -362,6 +368,9 @@ impl PresentationState {
             .cloned()
             .map(OthersTab::Container)
             .collect();
+        if self.others_expanded {
+            tabs.insert(0, OthersTab::Container(self.focus_id().into()));
+        }
         if !self.list_ids().is_empty() {
             tabs.push(OthersTab::List);
         }
@@ -376,11 +385,17 @@ impl PresentationState {
         others.visible = !others.visible;
         if !others.visible {
             self.others_expanded = false;
+            self.expanded_focus = None;
         }
         Ok(())
     }
     pub fn select_tab(&mut self, selected: OthersTab) -> Result<()> {
         ensure!(self.tabs().contains(&selected), "tab is not available");
+        if selected == OthersTab::Container(self.focus_id().into()) {
+            self.expanded_focus = Some(selected);
+            return Ok(());
+        }
+        self.expanded_focus = None;
         if selected == OthersTab::List {
             self.others_expanded = false;
         }
@@ -455,6 +470,8 @@ impl PresentationState {
             others.containers.push(id.into());
         }
         others.selected = Some(selected);
+        self.expanded_focus = None;
+        self.reconcile_selection();
         Ok(())
     }
     /// Closing a tab only removes its presentation; its backing remains mounted.
@@ -481,7 +498,7 @@ impl PresentationState {
     pub fn focus_switch_target(&self, owner: &str) -> Option<&str> {
         if owner == self.focus_id() {
             match self.selected_tab() {
-                Some(OthersTab::Container(id)) => Some(id.as_str()),
+                Some(OthersTab::Container(id)) if id != self.focus_id() => Some(id.as_str()),
                 _ => None,
             }
         } else {
@@ -509,6 +526,7 @@ impl PresentationState {
             .position(|i| i == id)
             .ok_or_else(|| anyhow::anyhow!("container is not in others: {id}"))?;
         self.others_expanded = false;
+        self.expanded_focus = None;
         let old_focus = std::mem::replace(&mut self.options.focus, id.into());
         others.containers[index] = old_focus.clone();
         if others.selected == Some(OthersTab::Container(id.into())) {
@@ -723,8 +741,14 @@ impl PresentationState {
         match self.selected_tab() {
             Some(OthersTab::Container(id)) => {
                 let frame = Rect::new(x, right.min_y(), others_width, right.size.height);
-                layout.frames.push((id.clone(), frame));
-                layout.clips.push((id.clone(), frame));
+                if id == self.focus_id() {
+                    // Replace the zero-width Focus allocation, preserving one identity.
+                    *layout.frames.last_mut().unwrap() = (id.clone(), frame);
+                    *layout.clips.last_mut().unwrap() = (id.clone(), frame);
+                } else {
+                    layout.frames.push((id.clone(), frame));
+                    layout.clips.push((id.clone(), frame));
+                }
             }
             Some(OthersTab::List) => {
                 layout.list_viewport = Some(viewport);
@@ -797,6 +821,64 @@ mod tests {
                 .navigation_targets(vec!["c".into(), "remote".into()]),
         )
         .unwrap()
+    }
+    #[test]
+    fn expanded_focus_tab_restores_others_and_preserves_list_and_role_contracts() {
+        let mut state = configured();
+        let focus = OthersTab::Container("a".into());
+        let other = OthersTab::Container("c".into());
+        assert!(state.select_tab(focus.clone()).is_err());
+        state.select_tab(other.clone()).unwrap();
+        let area = Rect::new(0., 0., 1000., 600.);
+        let split = state.frames(area);
+        state.toggle_others_expanded().unwrap();
+        assert_eq!(
+            state.tabs(),
+            vec![focus.clone(), other.clone(), OthersTab::List]
+        );
+        state.select_tab(focus.clone()).unwrap();
+        let layout = state.layout(area);
+        assert_eq!(layout.frames.iter().filter(|(id, _)| id == "a").count(), 1);
+        let frame = layout.frames.iter().find(|(id, _)| id == "a").unwrap().1;
+        assert_eq!(
+            frame.size.width,
+            area.size.width - state.configured_nav_width(area) - 1.
+        );
+        assert_eq!(state.focus_switch_target("a"), None);
+        assert_eq!(state.others_ids(), &["b", "c", "remote"]);
+        assert!(state.close("a").is_err());
+        state.toggle_others_expanded().unwrap();
+        assert_eq!(state.frames(area), split);
+        assert_eq!(state.selected_tab(), Some(&other));
+        state.toggle_others_expanded().unwrap();
+        state.select_tab(focus.clone()).unwrap();
+        state.toggle_others().unwrap();
+        assert_eq!(state.selected_tab(), Some(&other));
+        assert!(!state.others_expanded());
+        state.toggle_others().unwrap();
+        assert_eq!(state.frames(area), split);
+        state.toggle_others_expanded().unwrap();
+        state.select_tab(focus.clone()).unwrap();
+        state.select_tab(OthersTab::List).unwrap();
+        assert!(!state.others_expanded());
+        assert_eq!(state.list_ids(), vec!["b", "remote"]);
+        state.select_tab(other).unwrap();
+        state.toggle_others_expanded().unwrap();
+        state.select_tab(focus.clone()).unwrap();
+        for id in ["b", "c", "remote"] {
+            state.close(id).unwrap();
+        }
+        assert_eq!(state.selected_tab(), Some(&focus));
+        assert_eq!(state.tabs(), vec![focus]);
+        state.toggle_others_expanded().unwrap();
+        assert_eq!(state.selected_tab(), None);
+        assert_eq!(state.focus_id(), "a");
+        state.open("c").unwrap();
+        state.toggle_others_expanded().unwrap();
+        state.select_tab(OthersTab::Container("a".into())).unwrap();
+        state.open("b").unwrap();
+        assert_eq!(state.selected_tab(), Some(&OthersTab::List));
+        assert!(!state.others_expanded());
     }
     #[test]
     fn aggregate_list_wheel_converts_lines_once_and_keeps_precise_points_and_bounds() {

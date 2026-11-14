@@ -1,9 +1,9 @@
 {
-  "contract_sha256": "8ec2ea052c112582e64a5086df2beada43e53a5bae7411a2856850693d067052",
+  "contract_sha256": "d86029c26c9a87702c0bfb8a59cb377bfcc331b50c566bba902e02fb88572168",
   "definition_source_sha256": "4b43f832f75825e6714d14a4f052948a67c5df78f5926fc62d22fd14e33b7df3",
   "format": "tekesui.theme-artifact-lock/1",
   "instance_format": "tekesui.theme-instances/2",
-  "instances_sha256": "8754e7383504d503da101f83f8e004c487004d17de9b71d8c04578da59996726",
+  "instances_sha256": "dfdab71c60100f1c063452f6c6727379835bea920e9947d4798ce773afd51524",
   "source_inputs_sha256": {
     "design/brand/config.json": "155eceec64c3aa33f4bc6b58a6ef7a1b071384b1dbbb55075a223e460d16e8a8",
     "design/brand/policy.json": "8ab0d7c6c9605a72ace5af335cf90ffa8abe3243534ac9c4ca68f3fc39bf488c",
@@ -17,9 +17,9 @@
     "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/brand.py": "3da13fcc221ed488d383af75dc84f77930306368632b7f48fb38476dc78f6586",
     "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/brand_color.py": "f7395f04cbd8cf0215326345929d76f6d8e263bdff69c6aede1a417bccc82516",
     "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/validate.py": "f48e97e00a0f8da9d0b373d4636da251c35cbdc667b33a03b9679e00460e1acc",
-    "design/source/base.tokens.json": "20e4c9aac39588785babbbab223ca01dcdaf47ec1d4191d8d7e413b00521fea5",
-    "design/source/token-metadata.json": "53db464280f6d381cf108cb78c1f894a1dd31d780a5045145d31e6bd925e637b",
-    "design/system.json": "6f1070d0477a96640db1da0e02c9d24afe92131ccd476f031be4b61373268a3d",
+    "design/source/base.tokens.json": "5d1bf6b2a0669a50530c82549556359fde7458b01d2f67af4ff557731fba60bf",
+    "design/source/token-metadata.json": "88c7ca5bbf033c3abd39425fe220b06cdd137904ee812517c5119608d2d54cd9",
+    "design/system.json": "b4227324c0aa604b2f36a2973bdb90d2462942823b05682d47b6fcb5d7ad777c",
     "design/system.schema.json": "af11f7ef0f9f4b495181d72f0b8b4a3cb274e79fe3ce9e98d4d82b6aaa396393",
     "design/theme/artifact-lock.schema.json": "642653ddc482c053402ad6abe2f14c6d836ea282e16c709ca85792f8a435b32a",
     "design/theme/data-plot-pairs.json": "b75e6e57c155d596ba60a086406aa91cfa087009e6200847db1bbd25c2d442c7",
@@ -30,7 +30,7 @@
     "scripts/generate-theme-system.py": "98697ce1e383fb2aafc557f2b196d770bded49430b700e3d0d742c8a85e64297",
     "scripts/merge-design-system.py": "46831d8a089c1dfc06012b78a23025293bb4e2010100e0a4ce93c137b30b6ba2"
   },
-  "source_inputs_sha256_digest": "59968f18332d34d76e1f94453e78645f208c428918f56ef91032388621ef3708",
+  "source_inputs_sha256_digest": "2397b8d7d09cd0c735dabb528019311231e9f5b1717688f58d0bccdc7c3a0e00",
   "surface_rules_sha256": "424aeb451b710391e2938d2e5a8ee90c547e4396c33608784c5bf60006d87400",
   "themes": [
     {

@@ -29,6 +29,7 @@ pub(super) struct Item {
     title: String,
     pub(super) tab: OthersTab,
     selected: bool,
+    closable: bool,
 }
 #[derive(Default)]
 pub(super) struct SwitcherState {
@@ -100,6 +101,7 @@ impl Host {
                     key,
                     title,
                     selected: state.selected_tab() == Some(&tab),
+                    closable: matches!(&tab, OthersTab::Container(id) if id != state.focus_id()),
                     tab,
                 }
             })
@@ -108,6 +110,7 @@ impl Host {
     pub(super) fn presentation_creation_frame(&self) -> Option<Rect> {
         let state = self.presentation.as_ref()?;
         if !state.others_visible()
+            || state.others_expanded()
             || !state.others_ids().is_empty()
             || self.creation_choices().is_empty()
         {
@@ -165,8 +168,10 @@ impl Host {
                 .presentation_switcher
                 .items
                 .iter()
-                .map(|item| (&item.key, &item.title))
-                .ne(visible.iter().map(|item| (&item.key, &item.title)))
+                .map(|item| (&item.key, &item.title, item.closable))
+                .ne(visible
+                    .iter()
+                    .map(|item| (&item.key, &item.title, item.closable)))
             || self.presentation_switcher.creation != creation;
         let selected = visible.iter().position(|item| item.selected).unwrap_or(0);
         let uncommitted_selection = self
@@ -204,7 +209,7 @@ impl Host {
                 .map(|item| TabStripItem {
                     label: Content::new(item.key, TextContent::new(&item.title)),
                     name: item.title.clone(),
-                    closable: matches!(item.tab, OthersTab::Container(_)),
+                    closable: item.closable,
                 })
                 .collect();
             let mut strip = TabStripContent::new(items, selected);
@@ -505,6 +510,78 @@ mod tests {
         );
         native_pointer(host, point, false);
         paint(host, width);
+    }
+    #[test]
+    fn expanded_focus_tab_click_preserves_content_identity_and_restore_target() {
+        let mut host = fixture();
+        let identities: Vec<_> = host.panels.iter().map(|p| p.instance).collect();
+        paint(&mut host, 600.);
+        assert!(host.toggle_others_expansion("inspector", false).unwrap());
+        paint(&mut host, 600.);
+        assert_eq!(
+            host.presentation_switcher.items[0].tab,
+            OthersTab::Container("focus".into())
+        );
+        assert_eq!(host.presentation_switcher.items.len(), 4);
+        click_with_paint(&mut host, "focus", 600.);
+        assert!(host.panels[0].logically_visible);
+        assert_eq!(host.panels[0].bounds.size.width, 1200.);
+        assert!(!host.panels[1].logically_visible);
+        host.panels[0]
+            .local
+            .as_mut()
+            .unwrap()
+            .with_host(&mut |content| {
+                assert_eq!(
+                    content
+                        .get(ComponentId(1))
+                        .unwrap()
+                        .component::<TextContent>()
+                        .unwrap()
+                        .text,
+                    "Original 0"
+                );
+            });
+        assert!(!host.presentation_switcher.items[0].closable);
+        assert!(
+            host.presentation_tabs
+                .as_ref()
+                .unwrap()
+                .semantics()
+                .iter()
+                .flat_map(|node| &node.parts)
+                .all(|(_, part)| part.semantics.name != "Close focus")
+        );
+        assert!(host.close_container("focus").is_err());
+        click_with_paint(&mut host, "Close second", 600.);
+        assert_eq!(
+            host.presentation.as_ref().unwrap().selected_tab(),
+            Some(&OthersTab::Container("focus".into()))
+        );
+        click_with_paint(&mut host, "first", 600.);
+        assert!(host.panels[2].logically_visible);
+        click_with_paint(&mut host, "focus", 600.);
+        assert!(
+            !host.toggle_others_expansion("first", true).unwrap(),
+            "old expansion command must be rejected"
+        );
+        assert!(host.toggle_others_expansion("focus", true).unwrap());
+        paint(&mut host, 600.);
+        assert!(host.panels[0].logically_visible && host.panels[2].logically_visible);
+        assert_eq!(
+            host.presentation.as_ref().unwrap().selected_tab(),
+            Some(&OthersTab::Container("first".into()))
+        );
+        assert_eq!(
+            host.panels.iter().map(|p| p.instance).collect::<Vec<_>>(),
+            identities
+        );
+        assert!(
+            host.presentation_switcher
+                .items
+                .iter()
+                .all(|item| item.tab != OthersTab::Container("focus".into()))
+        );
     }
     #[test]
     fn t64_native_horizontal_wheel_survives_header_repaint_in_both_directions() {
