@@ -12,6 +12,7 @@ default = []
 svg-icons = ["dep:tekes-ui-render", "dep:resvg"]
 bitmap-images = ["dep:tekes-ui-render"]
 token-audit = ["tekes-ui-tokens/token-audit"]
+inspection = ["token-audit"]
 
 [dependencies]
 tekes-ui-icons = { path = "../tekes-ui-icons" }

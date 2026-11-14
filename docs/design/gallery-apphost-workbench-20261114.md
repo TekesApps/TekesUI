@@ -113,3 +113,18 @@ not each small document or adapter change. WIP and historical failures survive.
 Design approved through the user's implementation instruction. Child Issues and
 the coordinator ledger track actual implementation, checks, gaps and delivery.
 No new-host runtime, native or release pass is asserted by this design document.
+
+### First candidate inspection boundary
+
+The shared `inspection` Cargo feature enables observation; ordinary Controls
+builds retain no observation cache or Palette tracing. Gallery opts in explicitly.
+Only the selected mount records its normal paint. Property hooks are initially
+provided for Button, TextFieldContent, SearchFieldContent and CheckboxContent.
+Snapshot layout is unavailable after invalidation until the next valid render.
+Cached paint is explicitly historical: actual Palette lookup values and emitted
+quads are distinct; aliases, override provenance, glyph/image pixels and GPU
+composition are not reconstructed. Disabled recording clears the cache.
+
+The first Documents reader projects the supported Markdown subset through
+RichDocument into selectable read-only content. Rich heading/code styling and
+link opening remain unimplemented; this candidate does not claim those features.

@@ -16,7 +16,7 @@ tekes-ui-module-runtime = { path = "../tekes-ui-module-runtime" }
 anyhow = "1"
 tekes-ui-app-host = { path = "../tekes-ui-app-host" }
 tekes-ui-app-protocol = { path = "../tekes-ui-app-protocol" }
-tekes-ui-controls.workspace = true
+tekes-ui-controls = { workspace = true, features = ["inspection"] }
 tekes-ui-scene3d = { path = "../tekes-ui-scene3d" }
 tekes-ui-composition-consumer = { path = "../../examples/composition-consumer", optional = true }
 tekes-ui-icons = { path = "../tekes-ui-icons" }

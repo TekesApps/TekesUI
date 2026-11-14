@@ -1,0 +1,329 @@
+{
+  "format": "tekesui-component-documents/1",
+  "documents": [
+    {
+      "id": "tui.button",
+      "title": "Button",
+      "related_routes": [
+        "component-button"
+      ],
+      "path": "docs/components/button.md"
+    },
+    {
+      "id": "tui.text-field",
+      "title": "TextField",
+      "related_routes": [
+        "component-text-field"
+      ],
+      "path": "docs/components/text-field.md"
+    },
+    {
+      "id": "tui.text-area",
+      "title": "TextArea",
+      "related_routes": [
+        "component-text-area"
+      ],
+      "path": "docs/components/text-area.md"
+    },
+    {
+      "id": "tui.search-field",
+      "title": "SearchField",
+      "related_routes": [
+        "component-search-field"
+      ],
+      "path": "docs/components/search.md"
+    },
+    {
+      "id": "tui.combo-box",
+      "title": "ComboBox",
+      "related_routes": [
+        "component-combo-box"
+      ],
+      "path": "docs/components/combo-box.md"
+    },
+    {
+      "id": "tui.checkbox",
+      "title": "Checkbox",
+      "related_routes": [
+        "component-checkbox"
+      ],
+      "path": "docs/components/checkbox.md"
+    },
+    {
+      "id": "tui.select",
+      "title": "Select",
+      "related_routes": [
+        "component-select"
+      ],
+      "path": "docs/components/select.md"
+    }
+  ],
+  "pending": [
+    {
+      "id": "tui.stack",
+      "title": "Stack",
+      "related_routes": [
+        "component-stack"
+      ]
+    },
+    {
+      "id": "tui.grid",
+      "title": "Grid",
+      "related_routes": [
+        "component-grid"
+      ]
+    },
+    {
+      "id": "tui.separator",
+      "title": "Separator",
+      "related_routes": [
+        "component-separator"
+      ]
+    },
+    {
+      "id": "tui.split-view",
+      "title": "SplitView",
+      "related_routes": [
+        "component-split-view"
+      ]
+    },
+    {
+      "id": "tui.scroll-area",
+      "title": "ScrollArea",
+      "related_routes": [
+        "component-scroll-area"
+      ]
+    },
+    {
+      "id": "tui.disclosure",
+      "title": "Disclosure",
+      "related_routes": [
+        "component-disclosure"
+      ]
+    },
+    {
+      "id": "tui.surface",
+      "title": "Surface / Panel",
+      "related_routes": [
+        "component-surface"
+      ]
+    },
+    {
+      "id": "tui.toolbar",
+      "title": "Toolbar",
+      "related_routes": [
+        "component-toolbar"
+      ]
+    },
+    {
+      "id": "tui.text",
+      "title": "Text",
+      "related_routes": [
+        "component-text"
+      ]
+    },
+    {
+      "id": "tui.icon",
+      "title": "Icon",
+      "related_routes": [
+        "component-icon"
+      ]
+    },
+    {
+      "id": "tui.icon-button",
+      "title": "Button · Icon content",
+      "related_routes": [
+        "component-icon-button"
+      ]
+    },
+    {
+      "id": "tui.link",
+      "title": "Link",
+      "related_routes": [
+        "component-link"
+      ]
+    },
+    {
+      "id": "tui.slider",
+      "title": "Slider",
+      "related_routes": [
+        "component-slider"
+      ]
+    },
+    {
+      "id": "tui.radio-group",
+      "title": "RadioGroup",
+      "related_routes": [
+        "component-radio-group"
+      ]
+    },
+    {
+      "id": "tui.switch",
+      "title": "Switch",
+      "related_routes": [
+        "component-switch"
+      ]
+    },
+    {
+      "id": "tui.segmented-control",
+      "title": "SegmentedControl",
+      "related_routes": [
+        "component-segmented-control"
+      ]
+    },
+    {
+      "id": "tui.field",
+      "title": "Field",
+      "related_routes": [
+        "component-field"
+      ]
+    },
+    {
+      "id": "tui.number-field",
+      "title": "NumberField",
+      "related_routes": [
+        "component-number-field"
+      ]
+    },
+    {
+      "id": "tui.tabs",
+      "title": "Tabs",
+      "related_routes": [
+        "component-tabs"
+      ]
+    },
+    {
+      "id": "tui.breadcrumb",
+      "title": "Breadcrumb",
+      "related_routes": [
+        "component-breadcrumb"
+      ]
+    },
+    {
+      "id": "tui.command-palette",
+      "title": "CommandPalette",
+      "related_routes": [
+        "component-command-palette"
+      ]
+    },
+    {
+      "id": "tui.list",
+      "title": "List",
+      "related_routes": [
+        "component-list"
+      ]
+    },
+    {
+      "id": "tui.tree",
+      "title": "Tree",
+      "related_routes": [
+        "component-tree"
+      ]
+    },
+    {
+      "id": "tui.data-table",
+      "title": "DataTable",
+      "related_routes": [
+        "component-data-table"
+      ]
+    },
+    {
+      "id": "tui.chart",
+      "title": "Chart",
+      "related_routes": [
+        "component-chart"
+      ]
+    },
+    {
+      "id": "tui.menu",
+      "title": "Menu",
+      "related_routes": [
+        "component-menu"
+      ]
+    },
+    {
+      "id": "tui.tooltip",
+      "title": "Tooltip",
+      "related_routes": [
+        "component-tooltip"
+      ]
+    },
+    {
+      "id": "tui.popover",
+      "title": "Popover",
+      "related_routes": [
+        "component-popover"
+      ]
+    },
+    {
+      "id": "tui.dialog",
+      "title": "Dialog",
+      "related_routes": [
+        "component-dialog"
+      ]
+    },
+    {
+      "id": "tui.toast",
+      "title": "Toast",
+      "related_routes": [
+        "component-toast"
+      ]
+    },
+    {
+      "id": "tui.banner",
+      "title": "Banner",
+      "related_routes": [
+        "component-banner"
+      ]
+    },
+    {
+      "id": "tui.status-badge",
+      "title": "StatusBadge",
+      "related_routes": [
+        "component-status-badge"
+      ]
+    },
+    {
+      "id": "tui.progress",
+      "title": "Progress",
+      "related_routes": [
+        "component-progress"
+      ]
+    },
+    {
+      "id": "tui.empty-state",
+      "title": "EmptyState",
+      "related_routes": [
+        "component-empty-state"
+      ]
+    },
+    {
+      "id": "tui.skeleton",
+      "title": "Skeleton",
+      "related_routes": [
+        "component-skeleton"
+      ]
+    },
+    {
+      "id": "tui.markdown",
+      "title": "Markdown",
+      "related_routes": [
+        "component-markdown"
+      ]
+    },
+    {
+      "id": "tui.code-block",
+      "title": "CodeBlock",
+      "related_routes": [
+        "component-code-block"
+      ]
+    },
+    {
+      "id": "tui.diff-view",
+      "title": "DiffView",
+      "related_routes": [
+        "component-diff-view"
+      ]
+    }
+  ]
+}

@@ -78,6 +78,13 @@ fn main() {
     let mut args = std::env::args().skip(1);
     if let Some(arg) = args.next() {
         match arg.as_str() {
+            "--apphost" => {
+                if let Err(error) = gallery::apphost_workbench::run() {
+                    eprintln!("Gallery AppHost: {error:#}");
+                    std::process::exit(1);
+                }
+                return;
+            }
             "--snapshot" => {
                 let Some(dir) = args.next() else {
                     eprintln!("用法：tekes-ui-gallery --snapshot <输出目录>");
@@ -98,7 +105,7 @@ fn main() {
                 }
             }
             other => {
-                eprintln!("未知参数 {other}\n用法：tekes-ui-gallery [--snapshot <输出目录>]");
+                eprintln!("未知参数 {other}\n用法：tekes-ui-gallery [--apphost | --snapshot <输出目录>]");
                 std::process::exit(2);
             }
         }

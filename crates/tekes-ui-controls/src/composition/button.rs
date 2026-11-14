@@ -393,6 +393,24 @@ impl Button {
     }
 }
 impl Component for Button {
+    #[cfg(feature = "inspection")]
+    fn inspection_properties(&self) -> Option<Vec<InspectionProperty>> {
+        Some(vec![
+            InspectionProperty::new("component", "Button"),
+            InspectionProperty::new("label", &self.label),
+            InspectionProperty::new("variant", format!("{:?}", self.variant)),
+            InspectionProperty::new("state", format!("{:?}", self.button.state)),
+            InspectionProperty::new(
+                "activation_phase",
+                format!("{:?}", self.pointer_activation_phase),
+            ),
+            InspectionProperty::new("activations", self.activations),
+            InspectionProperty::new(
+                "leading_content_inset",
+                format!("{:?}", self.leading_content_inset),
+            ),
+        ])
+    }
     fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
         TableTransactionCompatibility::StableHooks
     }

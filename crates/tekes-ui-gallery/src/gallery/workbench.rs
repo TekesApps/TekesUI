@@ -18102,3 +18102,8 @@ mod skeleton_gpu_acceptance {
         .unwrap();
     }
 }
+
+/// Mount the existing Search story directly under the production AppHost.
+pub(super) fn apphost_search() -> tekes_ui_controls::composition::ContentHost {
+    search_host::StoryTextHost::new().host
+}

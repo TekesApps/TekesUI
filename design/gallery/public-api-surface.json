@@ -1426,6 +1426,34 @@
       "reason": "Shared input metadata, editor policy and once-only text-key acknowledgement at existing Component/ContentHost boundary; no editor state machine or additional component."
     },
     {
+      "api": "tekes_ui_controls::composition::InspectionGeometry",
+      "category": "composition",
+      "components": [],
+      "feature": "inspection",
+      "reason": "Optional read-only original ContentHost observation; no new component, input owner or native/pixel acceptance. Paint evidence is historical and lookup values do not imply pixel use."
+    },
+    {
+      "api": "tekes_ui_controls::composition::InspectionPaint",
+      "category": "composition",
+      "components": [],
+      "feature": "inspection",
+      "reason": "Optional read-only original ContentHost observation; no new component, input owner or native/pixel acceptance. Paint evidence is historical and lookup values do not imply pixel use."
+    },
+    {
+      "api": "tekes_ui_controls::composition::InspectionProperty",
+      "category": "composition",
+      "components": [],
+      "feature": "inspection",
+      "reason": "Optional read-only original ContentHost observation; no new component, input owner or native/pixel acceptance. Paint evidence is historical and lookup values do not imply pixel use."
+    },
+    {
+      "api": "tekes_ui_controls::composition::InspectionSnapshot",
+      "category": "composition",
+      "components": [],
+      "feature": "inspection",
+      "reason": "Optional read-only original ContentHost observation; no new component, input owner or native/pixel acceptance. Paint evidence is historical and lookup values do not imply pixel use."
+    },
+    {
       "api": "tekes_ui_controls::composition::KeyedSelectableListContent",
       "category": "component-adapter",
       "components": [
