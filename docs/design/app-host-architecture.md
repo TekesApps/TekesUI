@@ -923,3 +923,9 @@ Others 展开覆盖 Focus 时，在原文字 Tabs 首位临时呈现当前 Focus
 PresentationState 保存临时 Focus 选择，同时保留最近的 Others 选择。Collapse 或关闭 Others 显示区域清除临时选择，恢复原分区和有效的 Others 选择；展开期间切换普通 Others 更新该选择。选中 Focus 后 Collapse/on-off 仍有效，Workspace 交换不可对自身执行。选中 List 沿原规则结束展开；关闭其他 Tab 保持当前 Focus 展示并校正恢复目标，即使最后一个 Others 被关闭也不关闭 Focus。
 
 布局对每个 Container 仅输出一个 frame/clip；展开选中 Focus 时把原 Focus frame 扩展到 workspace，业务 Toolbar 使用该展开分区，省略重复标题。输入、旧命令失效及实例身份继续走原 Host 路由。验收分别覆盖状态恢复、真实 Tab 点击与内容/身份、关闭与 Toolbar 动作、原滚动/reveal；CPU 与原生观察分列，不以本节代签通过。
+
+## 2026-11-14: Settings native text-key focus completion (#245)
+
+Settings coordinates cross-scope Tab only after the original ContentHost finishes a native text-key sequence and explicitly reports the matching key as unhandled. The completion is delivered once; invalid number edits, active composition and input-context-consumed keys retain their owner. LocalContainer preserves the original response through its existing callback boundary.
+
+Settings polls NumberField commit queues through a read-only query before draining actual changes. Empty polling must not request mutable Host access and invalidate the geometry needed by later callbacks in the same native key sequence. Focus reveal keeps its original layout admission checks; this is not a forced-layout or consumer-specific bypass.

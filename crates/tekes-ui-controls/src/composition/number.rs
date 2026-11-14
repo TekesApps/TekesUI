@@ -319,6 +319,10 @@ impl NumberFieldContent {
             committed_value: self.value(),
         }
     }
+    /// Inspect the commit queue without requesting mutable host access.
+    pub fn has_value_changes(&self) -> bool {
+        !self.changes.is_empty()
+    }
     /// Includes blur commits, which cannot be represented by activation alone.
     /// Drain after every host delivery/focus change; only changed committed values enter this queue.
     pub fn drain_value_changes(&mut self) -> impl Iterator<Item = NumberValueChange> + '_ {

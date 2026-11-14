@@ -1,5 +1,5 @@
 use super::*;
-use tekes_ui_controls::composition::Component;
+use tekes_ui_controls::composition::{Component, ContentResponse, TextKeyDisposition};
 use tekes_ui_settings::FormIntent;
 /// The ticket and receiver have the same requesting-Host lifetime. The worker
 /// never owns the ticket, so closing that Host releases the owner's load gate.
@@ -171,7 +171,10 @@ impl Host {
     }
     // Original form input boundary, kept separate from native Window access so
     // ownership regressions exercise the same mounted Host path as production.
-    fn settings_form_input(&mut self, event: &ContentEvent) -> Result<Vec<FormIntent>> {
+    fn settings_form_input(
+        &mut self,
+        event: &ContentEvent,
+    ) -> Result<(Vec<FormIntent>, ContentResponse)> {
         // Opt-in diagnosis of the observed native menu click. Do not log text
         // input or settings values; pointer delivery and overlay ownership are
         // sufficient to distinguish routing from menu activation.
@@ -182,11 +185,11 @@ impl Host {
         if trace_pointer {
             eprintln!("SETTINGS_FORM_POINTER before event={event:?}");
         }
-        self.panels[1]
+        let response = self.panels[1]
             .local
             .as_mut()
             .unwrap()
-            .event(event, &mut self.text)?;
+            .event_with_response(event, &mut self.text)?;
         let shared = self.settings.as_ref().unwrap().clone();
         let mut state = shared.borrow_mut();
         let settings = &mut *state;
@@ -210,7 +213,7 @@ impl Host {
             self.set_toolbar_focus(None, false);
             self.focused = 1;
         }
-        Ok(intents)
+        Ok((intents, response))
     }
     /// Settings embeds the original keyboard scopes in window order. Other
     /// AppHosts retain their original toolbar traversal contract.
@@ -232,6 +235,7 @@ impl Host {
     }
     fn settings_scope_tab(&mut self, reverse: bool, event: &ContentEvent) -> Result<()> {
         let shared = self.settings.as_ref().unwrap().clone();
+        let completing = matches!(event, ContentEvent::TextKeyEnd { .. });
         if self
             .navigation
             .as_ref()
@@ -246,7 +250,8 @@ impl Host {
             // current original hosts, rather than relying on an old mount.
             state.sidebar.host.set_focus_wrap(false);
             state.form.host.set_focus_wrap(false);
-            if state.sidebar.host.is_composing() || state.form.host.is_composing() {
+            if !completing && (state.sidebar.host.is_composing() || state.form.host.is_composing())
+            {
                 return Ok(());
             }
         }
@@ -272,17 +277,25 @@ impl Host {
                     None
                 }
             });
+        if completing
+            && !matches!(
+                current,
+                Some(SettingsFocusScope::Sidebar | SettingsFocusScope::Form)
+            )
+        {
+            return Ok(());
+        }
         if let Some(scope @ (SettingsFocusScope::Sidebar | SettingsFocusScope::Form)) = current {
-            if scope == SettingsFocusScope::Sidebar {
+            let response = if scope == SettingsFocusScope::Sidebar {
                 self.panels[0]
                     .local
                     .as_mut()
                     .unwrap()
-                    .event(event, &mut self.text)?;
+                    .event_with_response(event, &mut self.text)?
             } else {
                 // Plain autosave-form Tab changes focus/edits, not Apply/Cancel.
-                self.settings_form_input(event)?;
-            }
+                self.settings_form_input(event)?.1
+            };
             let mut state = shared.borrow_mut();
             let bubbles = if scope == SettingsFocusScope::Sidebar {
                 state.sidebar.host.event_bubbled()
@@ -290,6 +303,16 @@ impl Host {
                 state.form.host.event_bubbled()
             };
             state.edited();
+            // Only the original editor can authorize continuation of a native
+            // Tab. A duplicate finish has no acknowledgement; consumed IME or
+            // invalid-number completions must retain their existing owner.
+            if let ContentEvent::TextKeyEnd { id, .. } = event
+                && !response.text_key.is_some_and(|outcome| {
+                    outcome.id == *id && outcome.disposition == TextKeyDisposition::Unhandled
+                })
+            {
+                return Ok(());
+            }
             if !bubbles {
                 return Ok(());
             }
@@ -1463,6 +1486,20 @@ impl Host {
         {
             return Ok(true);
         }
+        if let Event::TextKey(tekes_ui_platform_macos::TextKeyEvent::Finished { context, .. }) =
+            event
+            && let Some(ControlKey::Tab { reverse }) = toolbar_key(context.key.clone()).key
+            && !context.key.modifiers.command
+            && !context.key.modifiers.control
+            && !context.key.modifiers.alt
+            && self.open_toolbar().is_none()
+        {
+            let event = window_toolbar_mount::native_toolbar_event(event).unwrap();
+            self.settings_scope_tab(reverse, &event)?;
+            w.set_text_input_state(self.settings.as_ref().unwrap().borrow().text_state());
+            w.request_redraw();
+            return Ok(true);
+        }
         if let Event::TextCommand(command) = event
             && matches!(command.as_str(), "insertTab:" | "insertBacktab:")
             && self.open_toolbar().is_none()
@@ -1811,7 +1848,7 @@ impl Host {
         }
         if let Some(event) = routed {
             drop(state);
-            intents.extend(self.settings_form_input(&event)?);
+            intents.extend(self.settings_form_input(&event)?.0);
             state = shared_settings.borrow_mut();
         }
         let settings = &mut *state;
@@ -3907,6 +3944,164 @@ mod form_keyboard_owner_tests {
         assert!(surface.borrow().form.host.focused().is_some());
         assert!(host.actual_toolbar_owner().is_none());
         assert!(host.leading_visible);
+        drop(host);
+        drop(surface);
+        std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
+    }
+
+    #[test]
+    fn native_text_key_tab_leaves_last_valid_settings_number() {
+        use tekes_ui_platform_macos::{TextKeyContext, TextKeyDisposition, TextKeyEvent};
+
+        let (mut host, surface, path) = fixture();
+        for _ in 0..4 {
+            host.toolbar_key_input(key(48, true)).unwrap();
+            render_original_panels(&mut host);
+        }
+        assert_eq!(surface.borrow().form.host.focused(), Some(ComponentId(101)));
+        let context = TextKeyContext {
+            id: 1,
+            key: KeyEvent {
+                kind: KeyEventKind::Down,
+                key_code: 48,
+                modifiers: Modifiers::NONE,
+                is_repeat: false,
+                characters: "\t".into(),
+                characters_ignoring_modifiers: "\t".into(),
+            },
+            composing_at_start: false,
+        };
+        // Mirror settings_event's native adapter and routing boundaries. The
+        // command arrives inside the text-key span, before completion commits
+        // the original editor's deferred Tab.
+        let started = window_toolbar_mount::native_toolbar_event(&Event::TextKey(
+            TextKeyEvent::Started(context.clone()),
+        ))
+        .unwrap();
+        host.settings_form_input(&started).unwrap();
+        host.settings_scope_tab(false, &ContentEvent::TextCommand("insertTab:".into()))
+            .unwrap();
+        assert_eq!(surface.borrow().form.host.focused(), Some(ComponentId(101)));
+        assert!(host.actual_toolbar_owner().is_none());
+        let finished =
+            window_toolbar_mount::native_toolbar_event(&Event::TextKey(TextKeyEvent::Finished {
+                context,
+                input_context_handled: Some(true),
+                disposition: TextKeyDisposition::CommandDispatched,
+                text_callbacks: 0,
+                command_callbacks: 1,
+            }))
+            .unwrap();
+        host.settings_scope_tab(false, &finished).unwrap();
+        assert_eq!(
+            host.actual_toolbar_owner(),
+            Some(ToolbarTarget::Visibility(0)),
+            "completed Tab at the last valid field must advance to the next window scope"
+        );
+        assert!(surface.borrow().form.host.focused().is_none());
+        host.settings_scope_tab(false, &finished).unwrap();
+        assert_eq!(
+            host.actual_toolbar_owner(),
+            Some(ToolbarTarget::Visibility(0)),
+            "duplicate completion must not advance another scope"
+        );
+        drop(host);
+        drop(surface);
+        std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
+    }
+
+    #[test]
+    fn native_text_key_tab_retains_invalid_composing_and_input_consumed_number() {
+        for case in ["invalid", "composing", "input-consumed"] {
+            let (mut host, surface, path) = fixture();
+            for _ in 0..4 {
+                host.toolbar_key_input(key(48, true)).unwrap();
+                render_original_panels(&mut host);
+            }
+            assert_eq!(surface.borrow().form.host.focused(), Some(ComponentId(101)));
+            if case == "invalid" {
+                host.settings_form_input(&ContentEvent::TextCommand("selectAll:".into()))
+                    .unwrap();
+                host.settings_form_input(&ContentEvent::Commit {
+                    text: "999".into(),
+                    replacement: None,
+                })
+                .unwrap();
+            } else if case == "composing" {
+                host.settings_form_input(&ContentEvent::Preedit {
+                    text: "1".into(),
+                    selection: 0..1,
+                    clauses: std::iter::once(0..1).collect(),
+                    replacement: None,
+                })
+                .unwrap();
+            }
+            let (text, marked) = {
+                let state = surface.borrow();
+                let input = &state.form.host.focused_text().unwrap().input;
+                (input.text.clone(), input.marked.clone())
+            };
+            host.settings_form_input(&ContentEvent::TextKeyStart {
+                id: 1,
+                key: key(48, true),
+                composing: case == "composing",
+            })
+            .unwrap();
+            // InputContextConsumed means the input context supplied no callbacks.
+            if case != "input-consumed" {
+                host.settings_scope_tab(false, &ContentEvent::TextCommand("insertTab:".into()))
+                    .unwrap();
+            }
+            let finished = ContentEvent::TextKeyEnd {
+                id: 1,
+                input_context_consumed: case == "input-consumed",
+            };
+            for _ in 0..2 {
+                host.settings_scope_tab(false, &finished).unwrap();
+                let state = surface.borrow();
+                assert_eq!(state.form.host.focused(), Some(ComponentId(101)), "{case}");
+                let input = &state.form.host.focused_text().unwrap().input;
+                assert_eq!(input.text, text, "{case}");
+                assert_eq!(input.marked, marked, "{case}");
+                assert!(state.sidebar.host.focused().is_none(), "{case}");
+                assert!(host.actual_toolbar_owner().is_none(), "{case}");
+            }
+            drop(host);
+            drop(surface);
+            std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
+        }
+    }
+
+    #[test]
+    fn native_text_key_backtab_moves_number_to_radio_once() {
+        let (mut host, surface, path) = fixture();
+        for _ in 0..4 {
+            host.toolbar_key_input(key(48, true)).unwrap();
+            render_original_panels(&mut host);
+        }
+        assert_eq!(surface.borrow().form.host.focused(), Some(ComponentId(101)));
+        let mut reverse = key(48, true);
+        reverse.key = Some(ControlKey::Tab { reverse: true });
+        reverse.modifiers.shift = true;
+        host.settings_form_input(&ContentEvent::TextKeyStart {
+            id: 1,
+            key: reverse,
+            composing: false,
+        })
+        .unwrap();
+        host.settings_scope_tab(true, &ContentEvent::TextCommand("insertBacktab:".into()))
+            .unwrap();
+        assert_eq!(surface.borrow().form.host.focused(), Some(ComponentId(101)));
+        let finished = ContentEvent::TextKeyEnd {
+            id: 1,
+            input_context_consumed: false,
+        };
+        for _ in 0..2 {
+            host.settings_scope_tab(true, &finished).unwrap();
+            assert_eq!(surface.borrow().form.host.focused(), Some(ComponentId(100)));
+            assert!(surface.borrow().sidebar.host.focused().is_none());
+            assert!(host.actual_toolbar_owner().is_none());
+        }
         drop(host);
         drop(surface);
         std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
