@@ -336,3 +336,76 @@ r6实际验收：Check305四项受影响行/分组检查、strict、release构�
 ### 分组表单行命名收窄（2026-11-14）
 
 按用户最新决定，将原space-content-row-inline/block重命名为space-grouped-form-row-inline/block，限定为分组表单行语义。仍分别引用space-loose=16pt、space-tight=4pt；只更新SettingsRow既有引用及生成记录。共享spacing尺度不表示各组件采用相同padding；主界面、其他组件和原始档位均不变。本次仅命名/定义澄清，复用r6已有布局与原生证据，不运行功能测试、CI、构建或CU，不替换Dock程序。
+
+
+## T84 finite hover acceptance — 2026-11-14
+
+The remaining Quiet Select hover appearance was accepted on the original
+AppHost Status/Draft control in Light and Dark. A temporary entry used the
+original AppHost assembly, SelectContent and native self-test MouseMoved /
+MouseExited route; it did not replace the component or inject click/drag input.
+The tested production baseline is `5bc621ba5240ac001c89681b6589c52a170e3bbb`.
+The retained diagnostic executable has signed SHA256
+`bf7c0d11af7a1f37d74418a93f975ed95b627260f0bc4f47bd4f314eb9ee9c88`.
+
+Six native screenshots cover rest, hover and leave in each theme. Root reviewed
+the images and original state/event logs: hover changes false → true → false;
+pressed, focused and focus-visible stay false, host focus remains absent, the
+menu stays closed and the value stays Draft. The target crop changes on hover
+and returns to byte-identical decoded RGB pixels on leave in both themes.
+Light hover darkens softly; Dark hover lightens softly. No mouse Down/Up/Dragged
+or Key/TextKey events occurred; Other events are absent from the screenshot
+measurement intervals. Both native runs completed and exited normally.
+
+This is programmatic native input plus actual GPU/window pixels, not human
+physical input, global pointer movement or automatic NSTrackingArea delivery.
+The temporary entry was restored byte-for-byte; the installed v0.3.28 program
+and Dock were not replaced. Existing passing functional, focus, menu and CI
+evidence was reused. No production styling or acceptance threshold changed.
+
+Evidence in the coordination workspace:
+`outputs/t84-hover-acceptance-20261114/ROOT-HOVER-REVIEW.json`,
+`PIXEL-COMPARISON.json`, `EVENT-AUDIT.json`, the six native originals and raw
+Light/Dark stderr logs. Earlier failed or unavailable observations remain
+historical evidence; this finite pass is not a whole-library Gold7 certificate.
+
+
+## AppKit comparison completion boundary — 2026-11-14
+
+The original Field reference above remains valid. A new same-machine Finder
+window-tab screenshot shows selected Applications with a lighter continuous
+fill and a subtle enclosing contour; unselected Library has no separate raised
+button background. This is a native system window-tab structural reference,
+not a claim that Finder uses NSTabView or that it has the same widget type as
+TekesUI Tabs. AppKit is not universally borderless. TekesUI deliberately keeps
+its component-owned fill-only selection, clear text and independent focus;
+it does not copy Finder materials or exact pixel geometry.
+
+Reference: coordination workspace
+`outputs/appkit-menu-tabs-reference-20261114/native/finder-tabs.jpeg`
+and the adjacent AX/UTC receipt `finder-tabs.json`. The existing TekesUI
+`outputs/menu-intrinsic-pointer-20261113/native002/multi-hover.png` also shows
+selected Inspector, unselected Reference and a highlighted menu row. Its
+program identity and prior native acceptance remain unchanged. Source paths
+are `crates/tekes-ui-controls/src/composite.rs` (Tabs and Menu both opt the
+original buttons into selection-fill-only) and `paint.rs`
+(the shared surface painter omits the selected boundary unless error); this is shared
+rendering, not Gallery repainting. The input-focus root cause remains the
+explicit ring geometry described above, not duplicate paint calls.
+
+The original native Menu visual-reference requirement is still incomplete.
+The installed Swift Tekes reference hit a Kernel startup alert; it was not
+retried or modified. Finder menu AX exposed children but the CU application
+screenshot returned null. CoreGraphics metadata did not locate a visible menu
+window. One final system screenshot call captured both connected displays;
+root reviewed both originals and neither contained the menu popup. Therefore
+AX expansion and capture exit success do not prove native menu presentation,
+and no menu appearance conclusion is drawn from them. The CU cancelled the
+menu and released input. No additional menu trials are scheduled without a
+changed, observable presentation/capture path.
+
+Evidence: `outputs/appkit-menu-tabs-reference-20261114/ROOT-REFERENCE-REVIEW.json`.
+T87 records this original missing Menu comparison; it is not a new product
+feature, a TekesUI menu behavior failure, or a reason to repeat T84. Issue #245
+remains open for this concrete condition; existing source, CI, release and
+consumer adoption evidence is reused. No new full-library matrix is implied.
