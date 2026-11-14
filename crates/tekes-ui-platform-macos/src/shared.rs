@@ -115,6 +115,7 @@ pub(crate) struct Shared {
     pending_titlebar_zoom: Cell<bool>,
     pub(crate) toolbar_row_height: Cell<Option<f64>>,
     toolbar_aligning: Cell<bool>,
+    toolbar_alignment_pending: Cell<bool>,
     pub redraw_pending: Cell<bool>,
     pub last_geometry: Cell<Option<GeometryState>>,
     pub last_motion: Cell<Option<bool>>,
@@ -173,6 +174,7 @@ impl Shared {
             pending_titlebar_zoom: Cell::new(false),
             toolbar_row_height: Cell::new(None),
             toolbar_aligning: Cell::new(false),
+            toolbar_alignment_pending: Cell::new(false),
             redraw_pending: Cell::new(false),
             last_geometry: Cell::new(None),
             last_motion: Cell::new(None),
@@ -378,7 +380,7 @@ impl Shared {
         Some(height.max(minimum) * 0.5)
     }
 
-    pub(crate) fn align_toolbar_controls(&self) {
+    pub(crate) fn align_toolbar_controls(self: &Rc<Self>) {
         // Our own origin writes synchronously emit the same frame notification.
         // The outer alignment owns all three buttons until its writes finish.
         if self.toolbar_aligning.get() {
@@ -426,6 +428,51 @@ impl Shared {
             }
         }
         self.toolbar_aligning.set(false);
+        // AppKit can reject the sending button's origin write while delivering
+        // its native frame notification (#288). Other buttons still correct
+        // synchronously. Check actual geometry after the whole pass; only a
+        // remaining error needs one correction outside that setter's stack.
+        let remaining = controls.into_iter().any(|kind| {
+            let Some(button) = objects.window.standardWindowButton(kind) else {
+                return false;
+            };
+            if button.isHiddenOrHasHiddenAncestor() {
+                return false;
+            }
+            let rect = objects
+                .view
+                .convertRect_fromView(button.bounds(), Some(&button));
+            (rect.origin.y + rect.size.height * 0.5 - center).abs() > 0.001
+        });
+        if remaining && !self.toolbar_alignment_pending.replace(true) {
+            unsafe extern "C" {
+                static _dispatch_main_q: c_void;
+                fn dispatch_async_f(
+                    queue: *const c_void,
+                    context: *mut c_void,
+                    work: extern "C" fn(*mut c_void),
+                );
+            }
+            extern "C" fn correct(context: *mut c_void) {
+                // SAFETY: one main-queue callback owns this Box, created below
+                // on the main thread. Weak is never accessed on another thread
+                // and does not keep a closed/dropped window alive.
+                let weak = unsafe { Box::from_raw(context.cast::<std::rc::Weak<Shared>>()) };
+                if let Some(shared) = weak.upgrade() {
+                    if !shared.closed.get() {
+                        // Keep pending set throughout this attempt: synchronous
+                        // notifications coalesce, and a failed attempt cannot
+                        // schedule itself into an unbounded retry loop.
+                        shared.align_toolbar_controls();
+                    }
+                    shared.toolbar_alignment_pending.set(false);
+                }
+            }
+            let context = Box::into_raw(Box::new(Rc::downgrade(self))).cast();
+            // SAFETY: same libdispatch main-queue mechanism as native wake and
+            // selftest delivery; correct consumes this exact context once.
+            unsafe { dispatch_async_f(&raw const _dispatch_main_q, context, correct) };
+        }
     }
 
     /// 重新读取系统外观，变化了（或 `force`）就投递 `SystemAppearanceChanged`。

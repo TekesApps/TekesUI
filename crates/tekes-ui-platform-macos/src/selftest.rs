@@ -1608,6 +1608,21 @@ pub fn titlebar_contract() -> Vec<(bool, f64, f64)> {
                         "native reset must be corrected synchronously before window.update"
                     );
                 }
+                // #288: real frame notifications left their sending button
+                // 5pt low after the synchronous alignment returned. Exercise
+                // the full native frame setter separately from setFrameOrigin;
+                // keep dimensions fixed and do not pump/update before checking.
+                for (kind, button, _) in &originals {
+                    let frame = button.frame();
+                    let mut reset = frame;
+                    reset.origin.y -= 5.;
+                    button.setFrame(reset);
+                    assert_eq!(
+                        button.frame(),
+                        frame,
+                        "full native frame reset must be corrected synchronously: row={row}, button={kind:?}"
+                    );
+                }
                 let measured_center = center.get();
                 shared.dispatch(Event::Command(crate::CommandId(row)));
                 assert_eq!(
