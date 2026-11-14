@@ -370,7 +370,7 @@ Light/Dark stderr logs. Earlier failed or unavailable observations remain
 historical evidence; this finite pass is not a whole-library Gold7 certificate.
 
 
-## AppKit comparison completion boundary — 2026-11-14
+## AppKit comparison boundary — 2026-11-14 historical snapshot
 
 The original Field reference above remains valid. A new same-machine Finder
 window-tab screenshot shows selected Applications with a lighter continuous
@@ -409,3 +409,23 @@ T87 records this original missing Menu comparison; it is not a new product
 feature, a TekesUI menu behavior failure, or a reason to repeat T84. Issue #245
 remains open for this concrete condition; existing source, CI, release and
 consumer adoption evidence is reused. No new full-library matrix is implied.
+
+## Native Menu structural reference completed — 2026-11-15
+
+A later ordinary Finder interaction captured the actual path popup. The image
+shows one rounded outer surface, ordinary rows without separate raised borders,
+and a blue highlighted checked Downloads row. The pointer overlaps that row;
+this does not establish a pure-hover or keyboard-highlight cause. Compared with
+the existing TekesUI Menu image, both use a shared popup surface and localized
+row highlighting. This completes T87's missing structural visual reference.
+It does not assert Finder's implementation class, dark appearance, exact
+colors, geometry or pixel equivalence. Field and Tabs references remain valid.
+
+Primary reference: coordination workspace
+`outputs/gallery-apphost-upgrade-20261114/native-r1/finder-open-menu-recovery.jpeg`
+(SHA256 `faa05810cd282ceaabf3236c13739fd18326cb62a7b6a6e9c4ba9999b1aed215`).
+Comparison: `outputs/menu-intrinsic-pointer-20261113/native002/multi-hover.png`
+(SHA256 `6b99f0864b3e42a66f4008fe32a514c6524ce9dc89b91796b476123ecc31617a`).
+The root review is `outputs/appkit-menu-tabs-reference-20261114/ROOT-FINAL-REVIEW.json`.
+The failed earlier captures and preparation incident remain recorded; no
+production code, functional tests, CI, release or Dock changes were needed.
