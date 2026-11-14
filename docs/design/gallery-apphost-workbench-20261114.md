@@ -137,3 +137,21 @@ The ordinary `AppWindow::run` retains process-argument validation. Fixed-profile
 worker/module admission and rejection of unknown trailing arguments are unchanged.
 This prevents the observed pre-window rejection of Gallery's own selector; it
 does not enable runtime module discovery or modify process-global argv.
+
+## First native slice and manual catalogue — 2026-11-15
+
+The opt-in AppHost candidate has passed bounded official-CU navigation, component
+selection, Documents/Inspector switching and Back/Forward draft restoration.
+Its seven bundled manuals and composition fixture retain their exact program
+identity; they do not certify full story migration or rich document rendering.
+The startup argument transport regression is fixed through AppWindow::run_with_args;
+Gallery consumes only its own selector before passing remaining arguments.
+
+The source catalogue now maps all 45 registered component IDs to offline Markdown
+manuals. Catalogue coverage, referenced paths and paired fences were checked;
+manual snippets and the complete new bundle still require verification. The List
+manual distinguishes the existing scrollable composition from the non-scrolling
+group and keyed selection model, avoiding duplicate scroll ownership.
+
+Original Field/Area/Combo/Select story migration is the next bounded source batch.
+The original Gallery remains the default and Dock production remains v0.3.28.

@@ -30,7 +30,7 @@ host.set_action_events(true);
 
 TextSurface 管理编辑视口与插入点显露。外部 ScrollContent 负责页面滚动，不能替代编辑器内的 caret、选区或组字所有权。切换 Documents 时保留组件实例和 ComponentId，不重建用户草稿。
 
-只读长文可用 `TextFieldContent::read_only_content(...)` 或 RichDocumentContent；普通多行 Field 保留输入轮廓，不能因为放进 ScrollArea 就变成长文阅读样式。
+只读长文可用 `TextFieldContent::read_only_content(...)` 或 RichContent；普通多行 Field 保留输入轮廓，不能因为放进 ScrollArea 就变成长文阅读样式。
 
 ## 依据与限制
 
