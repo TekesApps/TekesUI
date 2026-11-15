@@ -2238,7 +2238,7 @@
     "crates/tekes-ui-controls/src/composition/toolbar_host.rs": "00bae218b96330f113bf3f19d7f5642d99c2751bdda73fdb68c26cd9a1be0eb4",
     "crates/tekes-ui-controls/src/composition/tab_strip.rs": "4add005d907baa98192cfe199730d74697bf72d8906c6b1024c8afb0aff980bb",
     "crates/tekes-ui-controls/src/composition/inspection.rs": "2408c26fdb67d0af7da76f5198aa7bb9c889225fc5a4f910375803a8541ed1ef",
-    "crates/tekes-ui-gallery/src/gallery/apphost_workbench.rs": "9580bba0e097ec241518e3fa9c1acd3e0393aefd176ad039e7cefe8f48cc6d9e",
+    "crates/tekes-ui-gallery/src/gallery/apphost_workbench.rs": "803fe60db44389e740c375c9d40ff5582d8898a2b90dd589c8b5035571e983b2",
     "crates/tekes-ui-gallery/build.rs": "fc03f59422318c6062020aa7099915e4421ede5f4a3dced88f2d1cd6dbc8c398",
     "design/gallery/component-documents.json": "abf58d08377606c799bae8d40acf37bacf91950af0074f9b6fa66a95475b93c7",
     "crates/tekes-ui-gallery/src/gallery/workbench/apphost_story.rs": "699bc0c2803a7276179524ddd0192b578aa08300be35ab866a8e05164c76dd4f",
@@ -4843,6 +4843,16 @@
       ],
       "scope": "Inline RichContent links decorate existing glyphs without standalone Link background. AppHost forwards CommandEnter to original local RichContent; Control/Alt and other window shortcuts keep fallback. No consumer color/shortcut patches.",
       "verification": "Check332-red reproduces defects; affected green/native repair acceptance recorded separately.",
+      "capability_promotion": false
+    },
+    {
+      "date": "2026-11-15",
+      "issue": 292,
+      "reviewed_paths": [
+        "crates/tekes-ui-gallery/src/gallery/apphost_workbench.rs"
+      ],
+      "scope": "Gallery consumes explicit chooser ListIntent Activated even when selection identity is unchanged; shared List event semantics and ordinary repeated selection remain unchanged. Documents alone consumes the return request; Inspector cannot swallow it.",
+      "verification": "Check334-red reproduces dropped explicit activation; affected green/native repair acceptance recorded separately.",
       "capability_promotion": false
     }
   ]

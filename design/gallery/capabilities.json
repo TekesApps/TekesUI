@@ -72041,7 +72041,7 @@
     "crates/tekes-ui-gallery/src/controlled_acceptance.rs": "ce1776aecc775f77ff5ed53bbf51f55fcfc93a7857a4d2395470fccf051fc15c",
     "crates/tekes-ui-gallery/src/gallery/accessibility.rs": "61e19abdd812c18b15dea3d6c02ed20c72d603e056749fcc364f2023dfbe4fe9",
     "crates/tekes-ui-gallery/src/gallery/apphost.rs": "46356b0f23072fb43f85671483a584c1a151d3b8cc0b31fda3027117dd11ea5e",
-    "crates/tekes-ui-gallery/src/gallery/apphost_workbench.rs": "9580bba0e097ec241518e3fa9c1acd3e0393aefd176ad039e7cefe8f48cc6d9e",
+    "crates/tekes-ui-gallery/src/gallery/apphost_workbench.rs": "803fe60db44389e740c375c9d40ff5582d8898a2b90dd589c8b5035571e983b2",
     "crates/tekes-ui-gallery/src/gallery/catalog.rs": "a092bab9bc4ee821175f5763aef51abb8af8b2d2fe9a45ebe5fc68270f69692c",
     "crates/tekes-ui-gallery/src/gallery/chrome.rs": "7662aef9ff956be2e19b5c51a3944c27246c3133186d7834d4ad6ba6e37b4114",
     "crates/tekes-ui-gallery/src/gallery/commands.rs": "1abb762b587964297e4ddd058f844c8cedbccec50b7eccc22850f469998c28b0",

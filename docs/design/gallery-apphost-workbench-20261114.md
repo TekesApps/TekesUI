@@ -134,7 +134,9 @@ Command-Enter uses the existing RichContent keyboard contract through shared
 AppHost routing; native reachability is recorded separately from CPU checks.
 
 A same-document specimen change retains the reader and selection. An explicit
-specimen selection after browsing another manual returns to that component manual.
+specimen selection change or explicit chooser activation (Enter or accessibility Press)
+after browsing another manual returns to that component manual. An ordinary click
+on the already-selected List row does not create a selection-change event.
 A document switch replaces the reader through Host lifecycle; keyboard focus
 transfer waits for the new mount to have actual text layout, and is cancelled
 if the user focuses another control. Supplemental Ticking Number documentation

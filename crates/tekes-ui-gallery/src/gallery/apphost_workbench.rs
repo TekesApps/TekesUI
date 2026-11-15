@@ -13,10 +13,10 @@ use tekes_ui_app_host::{
 use tekes_ui_controls::{
     CheckState, ScrollArea,
     composition::{
-        CheckboxContent, ComponentId, Content, ContentActionPayload, ContentHost,
-        InspectionSnapshot, KeyedSelectableListContent, ListContent, ListDisplayUpdate,
-        ListIntentKind, ListRowDisplay, RichContent, RichDocument, ScrollContent,
-        SearchFieldContent, StackContent, TextContent, TextFieldContent,
+        CheckboxContent, ComponentId, Content, ContentActionPayload, ContentActionRecord,
+        ContentHost, InspectionSnapshot, KeyedSelectableListContent, ListContent,
+        ListDisplayUpdate, ListIntentKind, ListRowDisplay, RichContent, RichDocument,
+        ScrollContent, SearchFieldContent, StackContent, TextContent, TextFieldContent,
     },
     extended::{
         Axis, KeyedListItem, KeyedListSnapshot, ListBudget, ListDatasetKey, ListItemKey, Stack,
@@ -128,6 +128,7 @@ pub struct WorkbenchState {
     pages: HashMap<String, Rc<RefCell<MountedPage>>>,
     pending: VecDeque<tekes_ui_app_host::navigation::Entry>,
     inspected: Option<(String, ComponentId, u64)>,
+    document_return_requested: bool,
 }
 pub type SharedWorkbench = Rc<RefCell<WorkbenchState>>;
 impl WorkbenchState {
@@ -810,7 +811,11 @@ impl ContainerContent for PanelContent {
         let body = if self.inspector {
             inspector_body(&selection, self.state.borrow().selected_snapshot())
         } else {
-            if selection_changed {
+            // Only an explicit chooser activation requests a return after link browsing.
+            // Ordinary reads and select(same) keep the linked reader intact.
+            let return_requested =
+                std::mem::take(&mut self.state.borrow_mut().document_return_requested);
+            if selection_changed || return_requested {
                 publish_document(
                     &mut self.host,
                     &document_key(&selection),
@@ -862,6 +867,32 @@ impl ContainerContent for PanelContent {
         }
     }
 }
+fn consume_chooser_actions(state: &SharedWorkbench, records: Vec<ContentActionRecord>) {
+    for record in records {
+        if record.action.target != CHOOSER {
+            continue;
+        }
+        if let Some(ContentActionPayload::ListIntent(intent)) = record.payload {
+            let key = match intent.kind {
+                ListIntentKind::Activated => Some(intent.key),
+                ListIntentKind::SelectionChanged => intent.selected_key,
+            };
+            if let Some(key) = key {
+                let mut state = state.borrow_mut();
+                let specimen = key
+                    .0
+                    .checked_sub(2)
+                    .and_then(|index| specimens(&state.selection().page).get(index as usize))
+                    .map(|item| item.key);
+                state.select(specimen);
+                if intent.kind == ListIntentKind::Activated {
+                    state.document_return_requested = true;
+                }
+            }
+        }
+    }
+}
+
 fn panel(
     id: &str,
     title: &str,
@@ -927,26 +958,7 @@ fn panel(
         if !inspector {
             consume_document_links(host, &document_focus);
         }
-        for record in records {
-            if record.action.target != CHOOSER {
-                continue;
-            }
-            if let Some(ContentActionPayload::ListIntent(intent)) = record.payload {
-                let key = match intent.kind {
-                    ListIntentKind::Activated => Some(intent.key),
-                    ListIntentKind::SelectionChanged => intent.selected_key,
-                };
-                if let Some(key) = key {
-                    let mut state = actions.borrow_mut();
-                    let specimen = key
-                        .0
-                        .checked_sub(2)
-                        .and_then(|index| specimens(&state.selection().page).get(index as usize))
-                        .map(|item| item.key);
-                    state.select(specimen);
-                }
-            }
-        }
+        consume_chooser_actions(&actions, records);
     }))
 }
 pub fn assemble() -> anyhow::Result<AppWindow> {
@@ -958,6 +970,7 @@ pub fn assemble() -> anyhow::Result<AppWindow> {
         pages: HashMap::from([(page, Rc::new(RefCell::new(host)))]),
         pending: VecDeque::new(),
         inspected: None,
+        document_return_requested: false,
     }));
     let initial = state.borrow().entry(0);
     let commands = state.clone();
@@ -1063,6 +1076,7 @@ mod tests {
             pages: HashMap::from([(page.into(), Rc::new(RefCell::new(page_host(page).unwrap())))]),
             pending: VecDeque::new(),
             inspected: None,
+            document_return_requested: false,
         }))
     }
     fn render_text_host(host: &mut ContentHost, text: &mut super::super::text::TextEngine) {
@@ -1409,6 +1423,85 @@ mod tests {
                     .is_empty()
             );
         });
+    }
+
+    #[test]
+    fn apphost_workbench_selected_chooser_activation_returns_linked_reader() {
+        use tekes_ui_controls::composition::AccessibilityAction;
+        // Both panel choosers publish the same explicit return request.
+        for from_inspector in [false, true] {
+            let state = state(FORM_ROUTE);
+            state.borrow_mut().select(Some("owner"));
+            let mut documents = panel("documents", "Documents", state.clone(), false).unwrap();
+            let mut inspector = panel("inspector", "Inspector", state.clone(), true).unwrap();
+            let mut text = super::super::text::TextEngine::new();
+            let mut linked_mount = None;
+            documents.with_host(&mut |host| {
+                publish_document(
+                    host,
+                    "tui.number-field",
+                    document_source("tui.number-field").unwrap(),
+                    &Cell::new(None),
+                );
+                render_text_host(host, &mut text);
+                linked_mount = host.semantic_mount(DOCUMENT_READER);
+            });
+            // A same-value selection or ordinary callback/read is not activation.
+            state.borrow_mut().select(Some("owner"));
+            consume_chooser_actions(&state, vec![]);
+            documents.with_host(&mut |host| {
+                assert_eq!(host.semantic_mount(DOCUMENT_READER), linked_mount);
+            });
+            let chooser = if from_inspector {
+                &mut inspector
+            } else {
+                &mut documents
+            };
+            chooser.with_host(&mut |host| {
+                render_text_host(host, &mut text);
+                let list = host
+                    .get(CHOOSER)
+                    .unwrap()
+                    .component::<KeyedSelectableListContent>()
+                    .unwrap();
+                let key = list.selected_key().unwrap();
+                let part = list.semantic_part_for_key(key).unwrap();
+                assert!(
+                    host.accessibility_action(CHOOSER, Some(part), AccessibilityAction::Press)
+                        .consumed
+                );
+                let records = host.drain_action_records();
+                assert!(records.iter().any(|record| matches!(
+                    &record.payload,
+                    Some(ContentActionPayload::ListIntent(intent))
+                        if intent.kind == ListIntentKind::Activated
+                )));
+                consume_chooser_actions(&state, records);
+            });
+            // Reading Inspector must not consume the Documents request.
+            inspector.with_host(&mut |_| {});
+            let mut returned_mount = None;
+            documents.with_host(&mut |host| {
+                returned_mount = host.semantic_mount(DOCUMENT_READER);
+                assert_ne!(returned_mount, linked_mount);
+                assert_eq!(
+                    host.get(DOCUMENT_READER)
+                        .unwrap()
+                        .component::<RichContent>()
+                        .unwrap()
+                        .version()
+                        .identity(),
+                    "tui.text-field"
+                );
+            });
+            documents.with_host(&mut |host| {
+                assert_eq!(host.semantic_mount(DOCUMENT_READER), returned_mount);
+            });
+            assert_eq!(
+                state.borrow().selection().specimen.as_deref(),
+                Some("owner")
+            );
+        }
     }
 
     #[test]
