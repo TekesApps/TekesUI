@@ -30,4 +30,6 @@ host.set_action_events(true);
 
 ## 依据与限制
 
-定义与更新语义见 `crates/tekes-ui-controls/src/composition/combobox.rs`；事件类型见 `composition/actions.rs`。候选是字符串列表，公共入口不是任意富内容或远程搜索服务。IdentityExhausted 等更新错误不能伪装成成功。本页是源码消费指南，本批未运行其既有测试、GUI、物理输入或无障碍验收。
+定义与更新语义见 `crates/tekes-ui-controls/src/composition/combobox.rs`；事件类型见 `composition/actions.rs`。候选是字符串列表，公共入口不是任意富内容或远程搜索服务。IdentityExhausted 等更新错误不能伪装成成功。本页是源码消费指南，既有测试、GUI、物理输入和无障碍验收需独立证据。
+
+当前片段验证：Check329 已对这 45 份手册中的 46 段原文 Rust 代码完成 `--emit=metadata` 类型检查，通过但未链接、未运行；本文代码块保持不变，复用该结果。此证据不代替 GUI、物理 IME、VoiceOver 或运行时验收。收据位于协调工作区 `outputs/gallery-apphost-upgrade-20261114/manual-snippets/RESULT.json`，提取源为同目录 `manual-snippets.rs`。

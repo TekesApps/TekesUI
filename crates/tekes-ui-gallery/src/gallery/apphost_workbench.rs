@@ -2,7 +2,7 @@
 //! Unmigrated routes remain available in the legacy default Gallery.
 use super::workbench;
 use std::{
-    cell::RefCell,
+    cell::{Cell, RefCell},
     collections::{HashMap, VecDeque},
     rc::Rc,
 };
@@ -15,8 +15,8 @@ use tekes_ui_controls::{
     composition::{
         CheckboxContent, ComponentId, Content, ContentActionPayload, ContentHost,
         InspectionSnapshot, KeyedSelectableListContent, ListContent, ListDisplayUpdate,
-        ListIntentKind, ListRowDisplay, RichDocument, ScrollContent, SearchFieldContent,
-        StackContent, TextContent, TextFieldContent,
+        ListIntentKind, ListRowDisplay, RichContent, RichDocument, ScrollContent,
+        SearchFieldContent, StackContent, TextContent, TextFieldContent,
     },
     extended::{
         Axis, KeyedListItem, KeyedListSnapshot, ListBudget, ListDatasetKey, ListItemKey, Stack,
@@ -528,21 +528,27 @@ fn chooser_snapshot(selection: &Selection) -> KeyedListSnapshot {
         items,
     }
 }
-const DOCUMENTS: &[(&str, &str)] = include!(concat!(env!("OUT_DIR"), "/component_documents.rs"));
+const DOCUMENTS: &[(&str, &str, &str)] =
+    include!(concat!(env!("OUT_DIR"), "/component_documents.rs"));
+const SUPPLEMENTAL_DOCUMENTS: &[(&str, &str, &str)] =
+    include!(concat!(env!("OUT_DIR"), "/supplemental_documents.rs"));
+const DOCUMENT_READER: ComponentId = ComponentId(21);
+const DOCUMENT_SCROLL: ComponentId = ComponentId(22);
+const DOCUMENT_NOTICE: ComponentId = ComponentId(23);
+const DOCUMENT_HELP: &str =
+    "⌘-click a link to read a bundled manual. External links are not supported.";
+
 fn document_source(id: &str) -> Option<&'static str> {
     DOCUMENTS
         .iter()
-        .find(|(key, _)| *key == id)
-        .map(|(_, source)| *source)
+        .find(|(key, _, _)| *key == id)
+        .map(|(_, _, source)| *source)
 }
 
 fn document_body(selection: &Selection) -> String {
     match selection.document_id.as_deref() {
         Some(id) => match document_source(id) {
-            Some(source) => format!(
-                "Document: {id}\n\n{}",
-                RichDocument::from_markdown(source).text()
-            ),
+            Some(source) => source.into(),
             None => format!("Component manual not provided: {id}"),
         },
         None => format!(
@@ -554,6 +560,158 @@ fn document_body(selection: &Selection) -> String {
                 "This composition uses independently selectable original components."
             }
         ),
+    }
+}
+fn document_key(selection: &Selection) -> String {
+    selection
+        .document_id
+        .clone()
+        .unwrap_or_else(|| format!("page:{}", selection.page))
+}
+
+fn document_scroll(key: &str, source: &str) -> Content {
+    Content::new(
+        DOCUMENT_SCROLL,
+        ScrollContent::new(
+            ScrollArea::default(),
+            Content::new(
+                DOCUMENT_READER,
+                RichContent::new(key, 1, RichDocument::from_markdown(source))
+                    .expect("nonempty Gallery document identity"),
+            ),
+        ),
+    )
+}
+
+/// Same document publications preserve the original text owner and selection.
+/// Different documents retire the complete reader through the Host lifecycle.
+fn publish_document(
+    host: &mut ContentHost,
+    key: &str,
+    source: &str,
+    pending_focus: &Cell<Option<u64>>,
+) {
+    let current = host
+        .get(DOCUMENT_READER)
+        .unwrap()
+        .component::<RichContent>()
+        .unwrap();
+    let expected = current.version();
+    if expected.identity() == key {
+        if current.document().source() == source {
+            return;
+        }
+        host.get_mut(DOCUMENT_READER)
+            .unwrap()
+            .component_mut::<RichContent>()
+            .unwrap()
+            .update(
+                &expected,
+                expected.revision() + 1,
+                RichDocument::from_markdown(source),
+            )
+            .expect("synchronous Gallery document publication");
+    } else {
+        let replacement = document_scroll(key, source);
+        let focused = host.focused() == Some(DOCUMENT_READER);
+        host.remove(DOCUMENT_SCROLL)
+            .expect("mounted Gallery document scroll");
+        host.insert(ComponentId(20), replacement)
+            .expect("Gallery document slot");
+        pending_focus.set(if focused {
+            host.semantic_mount(DOCUMENT_READER)
+        } else {
+            None
+        });
+    }
+}
+
+/// A replacement has no focusable geometry until the original Host arranges it.
+/// Retain only that mount's one pending transfer, never a second focus owner.
+fn finish_document_focus(host: &mut ContentHost, pending_focus: &Cell<Option<u64>>) {
+    let Some(mount) = pending_focus.get() else {
+        return;
+    };
+    if host.semantic_mount(DOCUMENT_READER) != Some(mount)
+        || host.focused().is_some_and(|id| id != DOCUMENT_READER)
+    {
+        pending_focus.set(None);
+        return;
+    }
+    if host
+        .semantic_text_layout_snapshot(DOCUMENT_READER, None)
+        .is_none()
+    {
+        return;
+    }
+    let restored =
+        host.focus(Some(DOCUMENT_READER), false) || host.focused() == Some(DOCUMENT_READER);
+    pending_focus.set(None);
+    if !restored {
+        document_notice(host, "Click the document to continue keyboard reading.");
+    }
+}
+/// Resolve only bundled paths relative to the captured source manual. Never read
+/// the filesystem or treat an arbitrary target as a command/URL to execute.
+fn linked_document(document: &str, target: &str) -> Option<(&'static str, &'static str)> {
+    let manuals = || DOCUMENTS.iter().chain(SUPPLEMENTAL_DOCUMENTS);
+    let (_, path, _) = manuals().find(|(id, _, _)| *id == document)?;
+    let joined = std::path::Path::new(path).parent()?.join(target);
+    let mut resolved = std::path::PathBuf::new();
+    for part in joined.components() {
+        match part {
+            std::path::Component::Normal(part) => resolved.push(part),
+            std::path::Component::CurDir => {}
+            std::path::Component::ParentDir => {
+                resolved.pop();
+            }
+            _ => return None,
+        }
+    }
+    manuals()
+        .find(|(_, path, _)| std::path::Path::new(path) == resolved.as_path())
+        .map(|(id, _, source)| (*id, *source))
+}
+
+fn document_notice(host: &mut ContentHost, message: &str) {
+    if host
+        .get(DOCUMENT_NOTICE)
+        .unwrap()
+        .component::<TextContent>()
+        .unwrap()
+        .text
+        != message
+    {
+        host.get_mut(DOCUMENT_NOTICE)
+            .unwrap()
+            .component_mut::<TextContent>()
+            .unwrap()
+            .text = message.into();
+    }
+}
+
+/// Called only by the existing post-input action callback, even when the ordinary
+/// action queue is empty. Rich links intentionally have their own owned queue.
+fn consume_document_links(host: &mut ContentHost, pending_focus: &Cell<Option<u64>>) {
+    let links = host
+        .get_mut(DOCUMENT_READER)
+        .unwrap()
+        .component_mut::<RichContent>()
+        .unwrap()
+        .drain_link_actions();
+    for link in links {
+        if let Some((key, source)) = linked_document(&link.document, &link.target) {
+            publish_document(host, key, source, pending_focus);
+            document_notice(host, DOCUMENT_HELP);
+        } else {
+            document_notice(
+                host,
+                &format!(
+                    "Link not opened: {} — only bundled manual links are supported.",
+                    link.target
+                ),
+            );
+        }
     }
 }
 fn inspector_body(selection: &Selection, snapshot: Option<InspectionSnapshot>) -> String {
@@ -624,6 +782,7 @@ struct PanelContent {
     selection: Option<Selection>,
     inspector: bool,
     body: String,
+    document_focus: Rc<Cell<Option<u64>>>,
 }
 impl ContainerContent for PanelContent {
     fn with_host(&mut self, visit: &mut dyn FnMut(&mut ContentHost)) {
@@ -650,9 +809,16 @@ impl ContainerContent for PanelContent {
         }
         let body = if self.inspector {
             inspector_body(&selection, self.state.borrow().selected_snapshot())
-        } else if selection_changed {
-            document_body(&selection)
         } else {
+            if selection_changed {
+                publish_document(
+                    &mut self.host,
+                    &document_key(&selection),
+                    &document_body(&selection),
+                    &self.document_focus,
+                );
+                document_notice(&mut self.host, DOCUMENT_HELP);
+            }
             self.body.clone()
         };
         // Do not invalidate layout on reads or erase selection on an unchanged
@@ -691,6 +857,9 @@ impl ContainerContent for PanelContent {
         }
         self.selection = Some(selection);
         visit(&mut self.host);
+        if !self.inspector {
+            finish_document_focus(&mut self.host, &self.document_focus);
+        }
     }
 }
 fn panel(
@@ -704,19 +873,36 @@ fn panel(
         20,
         vec![
             Content::new(CHOOSER, list("Inspect specimen", &snapshot, 2000)),
-            Content::new(
-                ComponentId(22),
-                ScrollContent::new(
-                    ScrollArea::default(),
-                    Content::new(
-                        ComponentId(21),
-                        TextFieldContent::read_only_content(title, "", TextRole::UiBody),
+            if inspector {
+                Content::new(
+                    DOCUMENT_SCROLL,
+                    ScrollContent::new(
+                        ScrollArea::default(),
+                        Content::new(
+                            DOCUMENT_READER,
+                            TextFieldContent::read_only_content(title, "", TextRole::UiBody),
+                        ),
                     ),
-                ),
-            ),
+                )
+            } else {
+                let selection = state.borrow().selection().clone();
+                document_scroll(&document_key(&selection), &document_body(&selection))
+            },
         ],
     ))
     .map_err(|error| anyhow::anyhow!("Gallery panel: {error:?}"))?;
+    if !inspector {
+        host.insert(
+            ComponentId(20),
+            Content::new(DOCUMENT_NOTICE, TextContent::new(DOCUMENT_HELP)),
+        )
+        .expect("Gallery document help");
+        host.reorder(
+            ComponentId(20),
+            &[CHOOSER, DOCUMENT_NOTICE, DOCUMENT_SCROLL],
+        )
+        .expect("Gallery document order");
+    }
     host.set_action_events(true);
     host.get_mut(ComponentId(20))
         .unwrap()
@@ -724,6 +910,7 @@ fn panel(
         .unwrap()
         .flexible_child = Some(ComponentId(22));
     let actions = state.clone();
+    let document_focus = Rc::new(Cell::new(None));
     Ok(LocalContainer::from_source(
         id,
         PanelContent {
@@ -732,10 +919,14 @@ fn panel(
             selection: None,
             inspector,
             body: String::new(),
+            document_focus: document_focus.clone(),
         },
     )
     .title(title)
-    .on_action(move |_, records| {
+    .on_action(move |host, records| {
+        if !inspector {
+            consume_document_links(host, &document_focus);
+        }
         for record in records {
             if record.action.target != CHOOSER {
                 continue;
@@ -1079,26 +1270,38 @@ mod tests {
         let mut inspector = panel("test-inspector", "Inspector", state.clone(), true).unwrap();
         let mut version = 0;
         documents.with_host(&mut |host| {
-            let field = host
-                .get_mut(ComponentId(21))
+            render_text_host(host, &mut text);
+            assert!(host.text_surface(DOCUMENT_READER).unwrap().input.read_only);
+            host.accessibility_action(
+                DOCUMENT_READER,
+                None,
+                tekes_ui_controls::composition::AccessibilityAction::SetSelection(0..8),
+            );
+            version = host
+                .get(DOCUMENT_READER)
                 .unwrap()
-                .component_mut::<TextFieldContent>()
-                .unwrap();
-            assert!(field.surface.input.read_only);
-            field.surface.input.select_range(0..8);
-            version = field.surface.input.external_value().unwrap().version;
+                .component::<RichContent>()
+                .unwrap()
+                .version()
+                .revision();
         });
         for _ in 0..3 {
             inspector.with_host(&mut |_| {});
             documents.with_host(&mut |host| {
-                let field = host
-                    .get(ComponentId(21))
-                    .unwrap()
-                    .component::<TextFieldContent>()
-                    .unwrap();
-                assert_eq!(field.surface.input.selection(), 0..8);
                 assert_eq!(
-                    field.surface.input.external_value().unwrap().version,
+                    host.text_surface(DOCUMENT_READER)
+                        .unwrap()
+                        .input
+                        .selection(),
+                    0..8
+                );
+                assert_eq!(
+                    host.get(DOCUMENT_READER)
+                        .unwrap()
+                        .component::<RichContent>()
+                        .unwrap()
+                        .version()
+                        .revision(),
                     version
                 );
             });
@@ -1110,6 +1313,339 @@ mod tests {
         let body = inspector_body(state.borrow().selection(), Some(snapshot));
         assert!(body.contains("Current measured layout (not declared sizing)"));
         assert!(body.contains("Last paint (historical"));
+    }
+    #[test]
+    fn apphost_workbench_rich_manual_preserves_code_selection_until_document_switch() {
+        use tekes_ui_controls::composition::{AccessibilityAction, RichBlockKind};
+        let state = state(FORM_ROUTE);
+        state.borrow_mut().select(Some("name"));
+        let mut panel = panel("documents", "Documents", state.clone(), false).unwrap();
+        let mut text = super::super::text::TextEngine::new();
+        let mut mount = None;
+        let mut copied = String::new();
+        panel.with_host(&mut |host| {
+            render_text_host(host, &mut text);
+            let rich = host
+                .get(DOCUMENT_READER)
+                .unwrap()
+                .component::<RichContent>()
+                .unwrap();
+            assert!(
+                rich.document()
+                    .blocks()
+                    .iter()
+                    .any(|b| matches!(b.kind(), RichBlockKind::Heading { .. }))
+            );
+            let code = rich
+                .document()
+                .blocks()
+                .iter()
+                .find(|b| b.kind() == RichBlockKind::Code)
+                .unwrap()
+                .display();
+            assert!(!rich.block_geometry().is_empty());
+            host.accessibility_action(
+                DOCUMENT_READER,
+                None,
+                AccessibilityAction::SetSelection(code),
+            );
+            copied = host
+                .text_surface(DOCUMENT_READER)
+                .unwrap()
+                .input
+                .selected_text();
+            assert!(copied.contains("TextFieldContent::new"));
+            assert!(!copied.contains("```"));
+            mount = host.semantic_mount(DOCUMENT_READER);
+        });
+        state.borrow_mut().select(Some("owner"));
+        panel.with_host(&mut |host| {
+            assert_eq!(host.semantic_mount(DOCUMENT_READER), mount);
+            assert_eq!(
+                host.text_surface(DOCUMENT_READER)
+                    .unwrap()
+                    .input
+                    .selected_text(),
+                copied
+            );
+            let source = format!(
+                "{}\n\nUpdated guidance",
+                document_source("tui.text-field").unwrap()
+            );
+            publish_document(host, "tui.text-field", &source, &Cell::new(None));
+            assert_eq!(host.semantic_mount(DOCUMENT_READER), mount);
+            assert_eq!(
+                host.text_surface(DOCUMENT_READER)
+                    .unwrap()
+                    .input
+                    .selected_text(),
+                copied
+            );
+            assert_eq!(
+                host.get(DOCUMENT_READER)
+                    .unwrap()
+                    .component::<RichContent>()
+                    .unwrap()
+                    .version()
+                    .revision(),
+                2
+            );
+        });
+        state.borrow_mut().select(Some("published"));
+        panel.with_host(&mut |host| {
+            assert_ne!(host.semantic_mount(DOCUMENT_READER), mount);
+            let rich = host
+                .get(DOCUMENT_READER)
+                .unwrap()
+                .component::<RichContent>()
+                .unwrap();
+            assert_eq!(rich.version().identity(), "tui.checkbox");
+            assert_eq!(rich.version().revision(), 1);
+            assert!(
+                host.text_surface(DOCUMENT_READER)
+                    .unwrap()
+                    .input
+                    .selected_text()
+                    .is_empty()
+            );
+        });
+    }
+
+    #[test]
+    fn apphost_workbench_local_rich_link_uses_supplemental_identity_without_page_navigation() {
+        use tekes_ui_controls::composition::{AccessibilityAction, Component};
+        let state = state(FORM_ROUTE);
+        state.borrow_mut().select(Some("name"));
+        let selection = state.borrow().selection().clone();
+        let mut panel = panel("documents", "Documents", state.clone(), false).unwrap();
+        let mut text = super::super::text::TextEngine::new();
+        let mut mount = None;
+        let document_focus = Cell::new(None);
+        let source = RichDocument::from_markdown(document_source("tui.number-field").unwrap());
+        let target = source
+            .links()
+            .iter()
+            .find(|link| link.target() == "ticking-number.md")
+            .unwrap()
+            .target();
+        panel.with_host(&mut |host| {
+            // Use the real bundled target in a short document so the link is visible.
+            publish_document(
+                host,
+                "tui.number-field",
+                &format!("[Ticking Number]({target})"),
+                &document_focus,
+            );
+            render_text_host(host, &mut text);
+            mount = host.semantic_mount(DOCUMENT_READER);
+            let part = host
+                .get(DOCUMENT_READER)
+                .unwrap()
+                .component::<RichContent>()
+                .unwrap()
+                .semantic_parts()[0]
+                .index;
+            assert!(
+                host.accessibility_action(DOCUMENT_READER, Some(part), AccessibilityAction::Press)
+                    .consumed
+            );
+            assert!(host.drain_action_records().is_empty());
+        });
+        // Reads/paint must not consume the independent link queue or navigate.
+        panel.with_host(&mut |host| {
+            assert_eq!(host.semantic_mount(DOCUMENT_READER), mount);
+            assert_eq!(
+                host.get(DOCUMENT_READER)
+                    .unwrap()
+                    .component::<RichContent>()
+                    .unwrap()
+                    .version()
+                    .identity(),
+                "tui.number-field"
+            );
+            consume_document_links(host, &document_focus);
+            assert_ne!(host.semantic_mount(DOCUMENT_READER), mount);
+            let rich = host
+                .get(DOCUMENT_READER)
+                .unwrap()
+                .component::<RichContent>()
+                .unwrap();
+            assert_eq!(rich.version().identity(), "supplemental.ticking-number");
+            assert!(rich.document().source().contains("TickingNumber::new"));
+            mount = host.semantic_mount(DOCUMENT_READER);
+            consume_document_links(host, &document_focus);
+            assert_eq!(
+                host.semantic_mount(DOCUMENT_READER),
+                mount,
+                "link delivered only once"
+            );
+        });
+        state.borrow_mut().select(Some("owner"));
+        panel.with_host(&mut |host| {
+            assert_ne!(host.semantic_mount(DOCUMENT_READER), mount);
+            let rich = host
+                .get(DOCUMENT_READER)
+                .unwrap()
+                .component::<RichContent>()
+                .unwrap();
+            assert_eq!(rich.version().identity(), "tui.text-field");
+            assert_eq!(
+                rich.document().source(),
+                document_source("tui.text-field").unwrap()
+            );
+        });
+        assert_eq!(state.borrow().selection().page, selection.page);
+        assert!(state.borrow().pending.is_empty());
+        assert_eq!(
+            linked_document("supplemental.ticking-number", "number-field.md")
+                .unwrap()
+                .0,
+            "tui.number-field"
+        );
+        assert!(document_source("supplemental.ticking-number").is_none());
+    }
+
+    #[test]
+    fn apphost_workbench_link_reader_focus_waits_for_host_layout_then_accepts_keyboard() {
+        use tekes_ui_controls::composition::{
+            Component, InputModifiers, PointerButton, PointerEvent, PointerPhase,
+        };
+        let state = state(FORM_ROUTE);
+        state.borrow_mut().select(Some("name"));
+        let selection = state.borrow().selection().clone();
+        let document_focus = Rc::new(Cell::new(None));
+        let mut host = ContentHost::new(stack(
+            20,
+            vec![
+                Content::new(DOCUMENT_NOTICE, TextContent::new(DOCUMENT_HELP)),
+                Content::new(ComponentId(24), TextFieldContent::new("Other", "")),
+                document_scroll("tui.text-field", "[NumberField](number-field.md)"),
+            ],
+        ))
+        .unwrap();
+        host.get_mut(ComponentId(20))
+            .unwrap()
+            .component_mut::<StackContent>()
+            .unwrap()
+            .flexible_child = Some(DOCUMENT_SCROLL);
+        let mut panel = PanelContent {
+            host,
+            state,
+            selection: Some(selection),
+            inspector: false,
+            body: String::new(),
+            document_focus: document_focus.clone(),
+        };
+        let mut text = super::super::text::TextEngine::new();
+        panel.with_host(&mut |host| {
+            render_text_host(host, &mut text);
+            assert!(host.focus(Some(DOCUMENT_READER), false));
+            let point = host
+                .get(DOCUMENT_READER)
+                .unwrap()
+                .component::<RichContent>()
+                .unwrap()
+                .semantic_parts()[0]
+                .frame
+                .center();
+            assert!(
+                host.event(&ContentEvent::Pointer(PointerEvent {
+                    position: point,
+                    phase: PointerPhase::Down,
+                    button: Some(PointerButton::Primary),
+                    modifiers: InputModifiers {
+                        command: true,
+                        ..Default::default()
+                    },
+                    click_count: 1,
+                }))
+                .consumed
+            );
+            consume_document_links(host, &document_focus);
+            assert!(document_focus.get().is_some());
+            assert!(
+                !host.focus(Some(DOCUMENT_READER), false),
+                "unarranged replacement must not claim focus"
+            );
+            assert_eq!(host.focused(), None);
+        });
+        assert!(
+            document_focus.get().is_some(),
+            "plain host access cannot complete layout-dependent focus"
+        );
+        panel.with_host(&mut |host| render_text_host(host, &mut text));
+        assert_eq!(document_focus.get(), None);
+        panel.with_host(&mut |host| {
+            assert_eq!(host.focused(), Some(DOCUMENT_READER));
+            assert_eq!(
+                host.get(DOCUMENT_READER)
+                    .unwrap()
+                    .component::<RichContent>()
+                    .unwrap()
+                    .version()
+                    .identity(),
+                "tui.number-field"
+            );
+            host.event(&ContentEvent::TextCommand(
+                "moveToBeginningOfDocument:".into(),
+            ));
+            host.event(&ContentEvent::TextCommand(
+                "moveToEndOfDocumentAndModifySelection:".into(),
+            ));
+            let input = &host.text_surface(DOCUMENT_READER).unwrap().input;
+            assert_eq!(input.selected_text(), input.text);
+            assert!(!input.selected_text().is_empty());
+            // A user choosing another focus owner before the transfer completes
+            // must not have that choice overwritten by the pending reader.
+            publish_document(
+                host,
+                "tui.text-field",
+                document_source("tui.text-field").unwrap(),
+                &document_focus,
+            );
+            render_text_host(host, &mut text);
+            assert!(host.focus(Some(ComponentId(24)), false));
+        });
+        assert_eq!(document_focus.get(), None);
+        panel.with_host(&mut |host| assert_eq!(host.focused(), Some(ComponentId(24))));
+    }
+
+    #[test]
+    fn apphost_workbench_unbundled_link_reports_without_replacing_reader() {
+        use tekes_ui_controls::composition::{AccessibilityAction, Component};
+        let mut panel = panel("documents", "Documents", state(FORM_ROUTE), false).unwrap();
+        let mut text = super::super::text::TextEngine::new();
+        let document_focus = Cell::new(None);
+        for target in ["https://example.com/manual", "missing.md"] {
+            panel.with_host(&mut |host| {
+                publish_document(
+                    host,
+                    "tui.number-field",
+                    &format!("[Manual]({target})"),
+                    &document_focus,
+                );
+                render_text_host(host, &mut text);
+                let mount = host.semantic_mount(DOCUMENT_READER);
+                let part = host
+                    .get(DOCUMENT_READER)
+                    .unwrap()
+                    .component::<RichContent>()
+                    .unwrap()
+                    .semantic_parts()[0]
+                    .index;
+                host.accessibility_action(DOCUMENT_READER, Some(part), AccessibilityAction::Press);
+                consume_document_links(host, &document_focus);
+                assert_eq!(host.semantic_mount(DOCUMENT_READER), mount);
+                let notice = &host
+                    .get(DOCUMENT_NOTICE)
+                    .unwrap()
+                    .component::<TextContent>()
+                    .unwrap()
+                    .text;
+                assert!(notice.contains("Link not opened"));
+                assert!(notice.contains(target));
+            });
+        }
     }
     #[test]
     fn apphost_workbench_reenables_inspection_after_same_id_remount() {

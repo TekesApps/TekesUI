@@ -36,3 +36,5 @@ host.set_action_events(true);
 ## 限制
 
 图像资源由宿主注册和准备。创建 Button 不表示图片资源已上传，也不证明原生、无障碍或性能验收完成。
+
+当前片段验证：Check329 已对这 45 份手册中的 46 段原文 Rust 代码完成 `--emit=metadata` 类型检查，通过但未链接、未运行；本文代码块保持不变，复用该结果。此证据不代替 GUI、物理 IME、VoiceOver 或运行时验收。收据位于协调工作区 `outputs/gallery-apphost-upgrade-20261114/manual-snippets/RESULT.json`，提取源为同目录 `manual-snippets.rs`。

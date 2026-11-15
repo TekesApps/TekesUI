@@ -125,9 +125,21 @@ Cached paint is explicitly historical: actual Palette lookup values and emitted
 quads are distinct; aliases, override provenance, glyph/image pixels and GPU
 composition are not reconstructed. Disabled recording clears the cache.
 
-The first Documents reader projects the supported Markdown subset through
-RichDocument into selectable read-only content. Rich heading/code styling and
-link opening remain unimplemented; this candidate does not claim those features.
+The first accepted native slice projected Markdown into selectable plain text.
+The subsequent Documents candidate uses the existing RichContent for heading/code
+layout and continuous selection, inside the original ScrollContent. Local bundled
+manual links are consumed after input through RichContent link actions. External
+or absent targets report that they were not opened; no system URL opener is added.
+Native Cmd-Enter reachability remains unverified and is not advertised.
+
+A same-document specimen change retains the reader and selection. An explicit
+specimen selection after browsing another manual returns to that component manual.
+A document switch replaces the reader through Host lifecycle; keyboard focus
+transfer waits for the new mount to have actual text layout, and is cancelled
+if the user focuses another control. Supplemental Ticking Number documentation
+has an independent supplemental identity, not a new component or Gallery route.
+This candidate is awaiting affected CPU/native verification; the original four
+Playground native-r3 acceptance keeps its prior program identity.
 
 ### Consumer-owned startup arguments
 

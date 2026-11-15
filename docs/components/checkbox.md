@@ -35,3 +35,5 @@ host.set_action_events(true);
 使用固定稳定的 ComponentId，把标签和勾选框作为同一个语义控件。禁用控件仍可被 Gallery 的组件选择器检查，但选择 Inspector 不等于激活 Checkbox。
 事件中的挂载身份与原输入授权由 Host 维护；消费者不要把旧实例的延迟动作套用到新实例。
 此页不声称 VoiceOver 或完整物理输入矩阵已验收。
+
+当前片段验证：Check329 已对这 45 份手册中的 46 段原文 Rust 代码完成 `--emit=metadata` 类型检查，通过但未链接、未运行；本文代码块保持不变，复用该结果。此证据不代替 GUI、物理 IME、VoiceOver 或运行时验收。收据位于协调工作区 `outputs/gallery-apphost-upgrade-20261114/manual-snippets/RESULT.json`，提取源为同目录 `manual-snippets.rs`。

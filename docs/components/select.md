@@ -32,4 +32,6 @@ Host 统一处理焦点、弹层键盘、指针和可访问动作；组件管理
 
 外层布局分配触发器空间，弹层使用原 SelectView/Host 的 overlay 路径和裁剪，不用另一个窗口伪造列表。说明文档不保证当前弹层已布局或可见。
 
-定义：`crates/tekes-ui-controls/src/composition/select.rs`；动作合同：`composition/actions.rs`。本页描述字符串选项和单选入口，不承诺多选或任意自定义行。本批仅核对源码，未运行既有测试、GUI 或平台输入验收。
+定义：`crates/tekes-ui-controls/src/composition/select.rs`；动作合同：`composition/actions.rs`。本页描述字符串选项和单选入口，不承诺多选或任意自定义行。既有测试、GUI 和平台输入验收结果需独立记录。
+
+当前片段验证：Check329 已对这 45 份手册中的 46 段原文 Rust 代码完成 `--emit=metadata` 类型检查，通过但未链接、未运行；本文代码块保持不变，复用该结果。此证据不代替 GUI、物理 IME、VoiceOver 或运行时验收。收据位于协调工作区 `outputs/gallery-apphost-upgrade-20261114/manual-snippets/RESULT.json`，提取源为同目录 `manual-snippets.rs`。

@@ -44,4 +44,6 @@ host.set_action_events(true);
 
 此页描述正式本地 Search 内容合同。自动原生输入、物理输入、VoiceOver 和性能证据分别记录；不由示例创建成功推定全部验收通过。
 
-公共定义见 `crates/tekes-ui-controls/src/composition/search.rs`；动作类型见 `composition/actions.rs`。本批仅核对定义和消费者，未重新执行示例或原生验收。
+公共定义见 `crates/tekes-ui-controls/src/composition/search.rs`；动作类型见 `composition/actions.rs`。原生验收和消费者运行结果需独立记录。
+
+当前片段验证：Check329 已对这 45 份手册中的 46 段原文 Rust 代码完成 `--emit=metadata` 类型检查，通过但未链接、未运行；本文代码块保持不变，复用该结果。此证据不代替 GUI、物理 IME、VoiceOver 或运行时验收。收据位于协调工作区 `outputs/gallery-apphost-upgrade-20261114/manual-snippets/RESULT.json`，提取源为同目录 `manual-snippets.rs`。

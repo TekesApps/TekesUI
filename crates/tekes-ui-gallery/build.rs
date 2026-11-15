@@ -45,6 +45,7 @@ fn main() {
     assert_eq!(catalogue["format"], "tekesui-component-documents/1");
     let mut ids = std::collections::BTreeSet::new();
     let mut documents = Vec::new();
+    let mut paths = std::collections::BTreeSet::new();
     for (section, bundled) in [("documents", true), ("pending", false)] {
         for document in catalogue[section].as_array().expect("catalogue section") {
             let id = document["id"].as_str().expect("document id");
@@ -65,10 +66,12 @@ fn main() {
                 "document route mismatch {id}"
             );
             if bundled {
-                let file = root.join(document["path"].as_str().expect("document path"));
+                let path = document["path"].as_str().expect("document path");
+                assert!(paths.insert(path), "duplicate document path {path}");
+                let file = root.join(path);
                 assert!(file.is_file(), "missing document {}", file.display());
                 println!("cargo:rerun-if-changed={}", file.display());
-                documents.push(format!("({id:?}, include_str!({:?}))", file));
+                documents.push(format!("({id:?}, {path:?}, include_str!({file:?}))"));
             }
         }
     }
@@ -80,6 +83,34 @@ fn main() {
         ids, registered,
         "catalogue must account for every component, including pending manuals"
     );
+    // Supplemental manuals are bundled links, never component registrations/routes.
+    let mut supplemental = Vec::new();
+    for document in catalogue["supplemental"]
+        .as_array()
+        .expect("supplemental manuals")
+    {
+        let id = document["id"].as_str().expect("supplemental id");
+        assert!(
+            id.starts_with("supplemental."),
+            "supplemental identity {id}"
+        );
+        assert!(ids.insert(id), "duplicate document identity {id}");
+        let path = document["path"].as_str().expect("supplemental path");
+        assert!(paths.insert(path), "duplicate document path {path}");
+        let file = root.join(path);
+        assert!(
+            file.is_file(),
+            "missing supplemental manual {}",
+            file.display()
+        );
+        println!("cargo:rerun-if-changed={}", file.display());
+        supplemental.push(format!("({id:?}, {path:?}, include_str!({file:?}))"));
+    }
+    fs::write(
+        PathBuf::from(env::var_os("OUT_DIR").unwrap()).join("supplemental_documents.rs"),
+        format!("&[{}]", supplemental.join(",")),
+    )
+    .unwrap();
     fs::write(
         PathBuf::from(env::var_os("OUT_DIR").unwrap()).join("component_documents.rs"),
         format!("&[{}]", documents.join(",")),

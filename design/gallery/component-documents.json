@@ -362,5 +362,12 @@
       "path": "docs/components/diff-view.md"
     }
   ],
-  "pending": []
+  "pending": [],
+  "supplemental": [
+    {
+      "id": "supplemental.ticking-number",
+      "title": "Ticking Number",
+      "path": "docs/components/ticking-number.md"
+    }
+  ]
 }

@@ -40,6 +40,8 @@ Field 使用共享语义颜色和原轮廓上的焦点提示；错误与禁用�
 
 ## 限制
 
-这里记录单行 Field 的主要消费路径。多行文字、数字解析及只读富文档有独立合同；不能根据共同 TextSurface 推定它们所有键盘策略相同。
+这里记录单行 Field 的主要消费路径。[多行文字](text-area.md)、[数字解析](number-field.md)及[只读富文档](markdown.md)有独立合同；不能根据共同 TextSurface 推定它们所有键盘策略相同。
 
-公共定义见 `crates/tekes-ui-controls/src/composition/adapters.rs`，键策略见 `composition/key.rs`。启用 `host.set_action_events(true)` 后可消费正式提交动作；外部值发布使用 `surface.apply_external_value(...)`，须处理其返回值，不能当成用户提交。本批仅核对源码，未编译文档片段。
+公共定义见 `crates/tekes-ui-controls/src/composition/adapters.rs`，键策略见 `composition/key.rs`。启用 `host.set_action_events(true)` 后可消费正式提交动作；外部值发布使用 `surface.apply_external_value(...)`，须处理其返回值，不能当成用户提交。片段当前类型检查结论见下方，运行时验收另列。
+
+当前片段验证：Check329 已对这 45 份手册中的 46 段原文 Rust 代码完成 `--emit=metadata` 类型检查，通过但未链接、未运行；本文代码块保持不变，复用该结果。此证据不代替 GUI、物理 IME、VoiceOver 或运行时验收。收据位于协调工作区 `outputs/gallery-apphost-upgrade-20261114/manual-snippets/RESULT.json`，提取源为同目录 `manual-snippets.rs`。
