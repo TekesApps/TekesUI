@@ -438,7 +438,7 @@
         {
           "api": "tekes_ui_controls::composition::TextContent",
           "path": "crates/tekes-ui-controls/src/composition.rs",
-          "line": 5539,
+          "line": 5560,
           "anchor": "pub struct TextContent {"
         }
       ]
@@ -2054,7 +2054,7 @@
     "crates/tekes-ui-controls/src/chart.rs": "9e3e5dd1e9d62f358cb74201a254f4165b81e4b79c3a97f0a74bde6f591e983c",
     "crates/tekes-ui-controls/src/collections_view.rs": "f44a0329b3d395a59b2849bab36ddcea71d366afeb7a6e6a5f6d42525f69eefe",
     "crates/tekes-ui-controls/src/composite.rs": "8f6e5e4845b3cd3c90048e63c3f743c9d2e55e951ae6b9bfde1a473263fb39bb",
-    "crates/tekes-ui-controls/src/composition.rs": "480d574e38363f67aaa1196b45f5acec3ec90c4139ff59aac3738fb6151afec2",
+    "crates/tekes-ui-controls/src/composition.rs": "fa222f0831a96a80f2b55de6b92c74544d9dac4a709e9fc4f11f8bf8d912ef68",
     "crates/tekes-ui-controls/src/composition/actions.rs": "f8345217306f62f1b8bf9d01b0ab4d1537b7a3a7d885d2eb9a7770956d18b987",
     "crates/tekes-ui-controls/src/composition/adapters.rs": "34c91f0209d07dc2ece2bfdf7206ea47af171fd3e1fb24882dd8e377947a8215",
     "crates/tekes-ui-controls/src/composition/button.rs": "e6ba59a910a93471b14ae9bdf7acd01feb2c1a1eb076626dbe57fb422809f1cc",
@@ -2134,7 +2134,7 @@
     "crates/tekes-ui-gallery/src/gallery/quality_effects.rs": "b99730312721bf8eec15f3b10255c977ba444c4ea064fdb8537186f3271e7d85",
     "crates/tekes-ui-gallery/src/gallery/text.rs": "0861f4087a60f10bdf3d7c6697cb97e3513b2b6890fcc8984dd8ea966cbad13d",
     "crates/tekes-ui-gallery/src/gallery/text_demo.rs": "4beeb7e5085813d11718011fe703eefaaa1a541764fed25c28bcbf9c99b455cb",
-    "crates/tekes-ui-gallery/src/gallery/workbench.rs": "a9a0495b9ef6703189e34e4c9903e31692f2f97ab7f75bb6f0a8aef31b3dfff1",
+    "crates/tekes-ui-gallery/src/gallery/workbench.rs": "9fd72a59eda205900b8fe39047259d2bbb8d41d71e8c8981e5490d6ee583fe5f",
     "crates/tekes-ui-gallery/src/gallery/workbench/accessibility.rs": "140c2dfc32ee3b5cb430ce3372632e491d94f1c387f9d93f30860cc397aed033",
     "crates/tekes-ui-gallery/src/gallery/workbench/content_status.rs": "2b3262d539c063b91493ee29db9aa13c8cdefacb3259c2efb6cdded337120588",
     "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs": "ec0409a3abdb57ff98e42b0ff1f3598ed7657235a524a199c59c46f8e6abe732",
@@ -2224,7 +2224,7 @@
     "crates/tekes-ui-controls/src/composition/search.rs": "9d6233131702b0d7050d13cb91786cf34a7482a123d31e19e3d24ffffb3f77fc",
     "docs/design/navigation-content-combo17-recovery-20261031.md": "cab75179ffc5ed7be2ab4de95d3d43ed430c5195a0f5b2b7bf56ca215f454090",
     "crates/tekes-ui-controls/src/composition/legacy_selectable_list.rs": "69e244976d28c82a4cdf6d53631bcb94d081bc597b7abbc19cb0a289de7c8bdf",
-    "crates/tekes-ui-controls/src/composition/selectable_list.rs": "2a48945f29c3a297c161792f3dac1a11470de52e55880b98702790388ed6d341",
+    "crates/tekes-ui-controls/src/composition/selectable_list.rs": "d9fdfefe4509f95aa81a33e67fa37989c35802a3242dc96200d15d2f4f8b3a33",
     "crates/tekes-ui-controls/src/composition/tree.rs": "d2a69f0ce142127c7a7ecc35bbb3eeafaba955afb585519dd608ec70b3777978",
     "crates/tekes-ui-controls/src/composition/datatable.rs": "1463e1cc08290d05f9769ed56b3abb95b07267df86150ab16bd9732403ec1045",
     "docs/design/selectable-list-public-content-20261024.md": "caa3246925653bd620cc586b5ddfc4b8061538d50d39b5b4dd55229827327cfe",
@@ -4882,6 +4882,18 @@
       ],
       "scope": "Shared List default inset and Stack header padding; empty Search geometry and AppHost Find registration; Inspector publishes before normal layout, preserving stable readonly values. Standard focus token adjustment, Increase Contrast unchanged. No capability promotion.",
       "verification": "Checks343/345 affected regressions passed; two test fixtures corrected, their reruns and native pending. Historical failures retained.",
+      "capability_promotion": false
+    },
+    {
+      "date": "2026-11-15",
+      "issue": 291,
+      "reviewed_paths": [
+        "crates/tekes-ui-controls/src/composition.rs",
+        "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+        "crates/tekes-ui-controls/src/composition/selectable_list.rs"
+      ],
+      "scope": "Owner-provided ScrollContent minimum outer width shares actual gutter layout rules; master-detail consumes measurement rather than copying default padding. Test premises follow legal initial focus reveal and empty Search allocation. Shared focus colors remain distinct; historic image normalization preserves original frozen expected output.",
+      "verification": "Original CI red retained; affected regression and final appearance reruns pending.",
       "capability_promotion": false
     }
   ]

@@ -73,6 +73,19 @@ impl Default for MasterHost {
     }
 }
 impl MasterHost {
+    pub(super) fn minimum_width(
+        &self,
+        text: &mut dyn tekes_ui_controls::ButtonTextRenderer,
+        row_width: f32,
+    ) -> f32 {
+        // This fixed 80-row story overflows every supported preview height.
+        self.host
+            .get(SCROLL)
+            .unwrap()
+            .component::<ScrollContent>()
+            .unwrap()
+            .outer_width_for_content(text, row_width, true)
+    }
     pub(super) fn list(&self) -> &KeyedSelectableListContent {
         self.host
             .get(LIST)

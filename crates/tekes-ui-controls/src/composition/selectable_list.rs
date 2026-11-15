@@ -1766,6 +1766,8 @@ mod tests {
     fn keyed_list_navigation_requests_are_not_created_by_other_inputs_and_are_revoked() {
         for revoke in ["pointer", "wheel", "blur", "cancel", "remount"] {
             let mut h = navigation_host(false);
+            // Ordinary focus may reveal the padded List before navigation begins.
+            let focused_offset = navigation_offset(&h);
             h.set_keyed_list_selection(ComponentId(10), Some(K(80)))
                 .unwrap();
             let point = h.get(ComponentId(101)).unwrap().visible().unwrap().center();
@@ -1793,7 +1795,7 @@ mod tests {
                 assert!(h.list_navigation_reveal.is_none());
             }
             navigation_paint(&mut h);
-            assert_eq!(navigation_offset(&h), 0.);
+            assert_eq!(navigation_offset(&h), focused_offset);
             navigation_key(&mut h, ControlKey::End);
             assert!(h.list_navigation_reveal.is_some());
             match revoke {
@@ -1826,7 +1828,7 @@ mod tests {
             assert!(h.list_navigation_reveal.is_none());
             assert_eq!(
                 navigation_offset(&h),
-                0.,
+                focused_offset,
                 "stale {revoke} navigation must not scroll"
             );
         }
@@ -1881,6 +1883,8 @@ mod tests {
     #[test]
     fn keyed_list_navigation_retains_clipped_refusal_and_retries_only_new_navigation() {
         let mut h = navigation_host(false);
+        // Ordinary focus may reveal the padded List before navigation begins.
+        let focused_offset = navigation_offset(&h);
         navigation_key(&mut h, ControlKey::End);
         let frame = Rect::new(0., 0., 240., 220.);
         let empty = Rect::new(0., 0., 0., 0.);
@@ -1908,7 +1912,7 @@ mod tests {
             .unwrap_err();
         assert_eq!(refusal, HostRevealError::UnsupportedLayout);
         assert_eq!(list_ref(&h).navigation_reveal_result(), Some(Err(refusal)));
-        assert_eq!(navigation_offset(&h), 0.);
+        assert_eq!(navigation_offset(&h), focused_offset);
         assert!(h.list_navigation_reveal.is_none());
         h.render(
             &mut Scene::new(),
@@ -1919,11 +1923,11 @@ mod tests {
         )
         .unwrap();
         assert_eq!(list_ref(&h).navigation_reveal_result(), Some(Err(refusal)));
-        assert_eq!(navigation_offset(&h), 0.);
+        assert_eq!(navigation_offset(&h), focused_offset);
         navigation_paint(&mut h);
         assert_eq!(
             navigation_offset(&h),
-            0.,
+            focused_offset,
             "restoring space alone does not retry navigation"
         );
         // Empty layout withdrew ListView's local focus. A real focus entry and
@@ -1979,6 +1983,8 @@ mod tests {
         .unwrap();
         navigation_paint(&mut h);
         assert!(h.focus(Some(ComponentId(10)), true));
+        // Ordinary focus may reveal the padded List before navigation begins.
+        let focused_offset = navigation_offset(&h);
         assert!(navigation_key(&mut h, ControlKey::End).changed);
         // Focus is legitimately acquired under a supported layout. A changed
         // ancestor then withdraws translation before the pending reveal layout.
@@ -1994,7 +2000,7 @@ mod tests {
         );
         assert_eq!(
             navigation_offset(&h),
-            0.,
+            focused_offset,
             "no imperative legacy fallback on planner refusal"
         );
         assert!(h.list_navigation_reveal.is_none());
@@ -2003,7 +2009,7 @@ mod tests {
             list_ref(&h).navigation_reveal_result(),
             Some(Err(HostRevealError::UnsupportedLayout))
         );
-        assert_eq!(navigation_offset(&h), 0.);
+        assert_eq!(navigation_offset(&h), focused_offset);
     }
 
     fn read(h: &ContentHost, s: &KeyedListSnapshot) -> ListReadingUpdate {

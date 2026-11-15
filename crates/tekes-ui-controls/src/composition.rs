@@ -4951,6 +4951,49 @@ impl ScrollContent {
         self.content_padding = finite(padding);
         self
     }
+    fn document_gutter(&self, text: &mut dyn ButtonTextRenderer) -> (f32, f32) {
+        let focus = crate::extended::ControlFrame::new(Rect::default(), None)
+            .focus_bounds(text.backing_scale());
+        let bleed = (-focus.min_x()).max(0.);
+        let padding = if self.toolbar_tabs {
+            crate::toolbar::tab_geometry(text)
+                .0
+                .max(self.content_padding)
+        } else {
+            self.content_padding
+        };
+        (bleed, bleed.max(padding))
+    }
+    fn overflow_gutter(&self, bleed: f32, gutter: f32) -> f32 {
+        if self.scroll.scrollbar_requested(true)
+            && self.scroll.scroll_policy().1 != crate::ScrollPolicy::Disabled
+        {
+            let band = proposal::SCROLLBAR_WIDTH
+                + proposal::SCROLLBAR_INSET
+                + tekes_ui_tokens::Spacing::Micro.value();
+            (band + bleed - gutter).max(0.)
+        } else {
+            0.
+        }
+    }
+    /// Outer width needed for a document's minimum content width. The caller
+    /// supplies whether that document overflows its allocated vertical extent;
+    /// padding, focus bleed and requested scrollbar space remain owner policy.
+    pub fn outer_width_for_content(
+        &self,
+        text: &mut dyn ButtonTextRenderer,
+        width: f32,
+        vertical_overflow: bool,
+    ) -> f32 {
+        let (bleed, gutter) = self.document_gutter(text);
+        finite(width)
+            + 2. * gutter
+            + if vertical_overflow {
+                self.overflow_gutter(bleed, gutter)
+            } else {
+                0.
+            }
+    }
     fn scrollbar_track(&self, vertical: bool) -> Rect {
         if vertical {
             Rect::new(
@@ -5175,16 +5218,7 @@ impl Component for ScrollContent {
         // This lets a fixed sibling follow short tabs while a flexible viewport
         // consumes only the space remaining beside that sibling on narrow rows.
         let width = if self.horizontal {
-            let focus = crate::extended::ControlFrame::new(Rect::default(), None)
-                .focus_bounds(text.backing_scale());
-            let padding = if self.toolbar_tabs {
-                crate::toolbar::tab_geometry(text)
-                    .0
-                    .max(self.content_padding)
-            } else {
-                self.content_padding
-            };
-            let gutter = (-focus.min_x()).max(padding);
+            let (_, gutter) = self.document_gutter(text);
             let document = self
                 .children
                 .iter_mut()
@@ -5228,17 +5262,7 @@ impl Component for ScrollContent {
         self.clip = frame.intersection(&clip).unwrap_or_default();
         // Scroll is a viewport: reserve the existing ControlFrame focus bleed
         // in document geometry, rather than relaxing the ancestor clip.
-        let focus_bounds =
-            crate::extended::ControlFrame::new(frame, None).focus_bounds(self.backing_scale);
-        let bleed = (frame.min_x() - focus_bounds.min_x()).max(0.0);
-        let padding = if self.toolbar_tabs {
-            crate::toolbar::tab_geometry(text)
-                .0
-                .max(self.content_padding)
-        } else {
-            self.content_padding
-        };
-        let gutter = bleed.max(padding);
+        let (bleed, gutter) = self.document_gutter(text);
         let mut width = (frame.size.width - 2.0 * gutter).max(0.0);
         if self.horizontal {
             width = self
@@ -5261,10 +5285,7 @@ impl Component for ScrollContent {
             && self.scroll.scroll_policy().1 != crate::ScrollPolicy::Disabled
             && height > frame.size.height
         {
-            let band = proposal::SCROLLBAR_WIDTH
-                + proposal::SCROLLBAR_INSET
-                + tekes_ui_tokens::Spacing::Micro.value();
-            let extra = (band + bleed - gutter).max(0.);
+            let extra = self.overflow_gutter(bleed, gutter);
             width = (width - extra).max(0.);
             height = 2. * gutter;
             for child in &mut self.children {
@@ -5791,6 +5812,34 @@ mod list_scrollbar_hover_tests {
     const ROW: ComponentId = ComponentId(8802);
     const FRAME: Rect = Rect::new(0., 0., 120., 80.);
 
+    #[test]
+    fn scroll_content_minimum_width_preserves_requested_document_width_after_layout() {
+        for padding in [0., tekes_ui_tokens::Spacing::Loose.value()] {
+            for scrollbar in [false, true] {
+                for height in [80., 600.] {
+                    let scroll = ScrollContent::new(
+                        crate::ScrollArea::default(),
+                        Content::new(ROW, TallItems),
+                    )
+                    .content_padding(padding)
+                    .scrollbar(scrollbar);
+                    let width = scroll.outer_width_for_content(&mut Text, 120., height < 320.);
+                    let mut host = ContentHost::new(Content::new(ROOT, scroll)).unwrap();
+                    let frame = Rect::new(20., 30., width, height);
+                    host.render(
+                        &mut Scene::new(),
+                        &mut Text,
+                        frame,
+                        frame,
+                        Palette::from(tekes_ui_tokens::Theme::LIGHT),
+                    )
+                    .unwrap();
+                    assert_eq!(host.get(ROW).unwrap().frame().size.width, 120.);
+                    assert!(host.get(ROW).unwrap().visible().is_some());
+                }
+            }
+        }
+    }
     fn list(show_scrollbar: bool) -> ContentHost {
         let mut scroll = ListContent::scrollable("List", ITEMS, vec![Content::new(ROW, TallItems)]);
         if !show_scrollbar {

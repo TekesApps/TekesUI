@@ -309,7 +309,7 @@ class ThemeSystemTests(unittest.TestCase):
             ordinary_revision = {
                 'light': {
                     'border': ('#82827F', '#737370'),
-                    'border-focused': ('#82827F', '#42423F'),
+                    'border-focused': ('#7C7C79', '#42423F'),
                     'button-hover': ('#EDEDEB', '#E9E9E7'),
                     'button-pressed': ('#E7E7E4', '#DDDDDA'),
                     'row-selection': ('#EAEAE8', '#E6E6E4'),
@@ -318,7 +318,7 @@ class ThemeSystemTests(unittest.TestCase):
                 },
                 'dark': {
                     'border': ('#767673', '#A3A39E'),
-                    'border-focused': ('#767673', '#EEEEEA'),
+                    'border-focused': ('#7D7D7A', '#EEEEEA'),
                     'button-hover': ('#252524', '#272726'),
                     'button-pressed': ('#2B2B2A', '#323231'),
                     'row-selection': ('#282827', '#2A2A29'),

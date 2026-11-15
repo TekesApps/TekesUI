@@ -55,7 +55,7 @@
     "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/examples/example-clay.json": "c5a2160d582d90e0488810e66a6b7185c6bb3ff84876eed468c84a1d7e85ca52",
     "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/brand.py": "3da13fcc221ed488d383af75dc84f77930306368632b7f48fb38476dc78f6586",
     "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/brand_color.py": "f7395f04cbd8cf0215326345929d76f6d8e263bdff69c6aede1a417bccc82516",
-    "design/source/base.tokens.json": "b92f5a01ce79dcccfcc8c42e2a24dc42c4049718506aee05fb9f5253c6b477cc",
+    "design/source/base.tokens.json": "a159e5e8e64c452832cbea49914fbc0b8ce39e091908498c2aea4555d7029fa7",
     "design/source/token-metadata.json": "88c7ca5bbf033c3abd39425fe220b06cdd137904ee812517c5119608d2d54cd9",
     "scripts/generate-gallery-brands.py": "0a169997cc3edca32aa93d7a3f089e66c7f5a5b2ba2acce272b07a5d44013497"
   },
@@ -262,11 +262,11 @@
           },
           {
             "name": "p-border-focused",
-            "usage": "普通主题焦点沿用必要边界的中性明度，以既有强调线宽区分焦点；高对比主题保留",
+            "usage": "普通主题焦点接近必要边界的中性明度并保留小幅色差，兼容仅以颜色表达焦点的控件；高对比主题保留",
             "value": {
-              "dark": "#767673",
+              "dark": "#7D7D7A",
               "dark-ic": "#FFFFFF",
-              "light": "#82827F",
+              "light": "#7C7C79",
               "light-ic": "#111111"
             }
           },
@@ -1338,11 +1338,11 @@
           },
           {
             "name": "p-border-focused",
-            "usage": "普通主题焦点沿用必要边界的中性明度，以既有强调线宽区分焦点；高对比主题保留",
+            "usage": "普通主题焦点接近必要边界的中性明度并保留小幅色差，兼容仅以颜色表达焦点的控件；高对比主题保留",
             "value": {
-              "dark": "#767673",
+              "dark": "#7D7D7A",
               "dark-ic": "#FFFFFF",
-              "light": "#82827F",
+              "light": "#7C7C79",
               "light-ic": "#111111"
             }
           },
@@ -2414,11 +2414,11 @@
           },
           {
             "name": "p-border-focused",
-            "usage": "普通主题焦点沿用必要边界的中性明度，以既有强调线宽区分焦点；高对比主题保留",
+            "usage": "普通主题焦点接近必要边界的中性明度并保留小幅色差，兼容仅以颜色表达焦点的控件；高对比主题保留",
             "value": {
-              "dark": "#767673",
+              "dark": "#7D7D7A",
               "dark-ic": "#FFFFFF",
-              "light": "#82827F",
+              "light": "#7C7C79",
               "light-ic": "#111111"
             }
           },
@@ -3490,11 +3490,11 @@
           },
           {
             "name": "p-border-focused",
-            "usage": "普通主题焦点沿用必要边界的中性明度，以既有强调线宽区分焦点；高对比主题保留",
+            "usage": "普通主题焦点接近必要边界的中性明度并保留小幅色差，兼容仅以颜色表达焦点的控件；高对比主题保留",
             "value": {
-              "dark": "#767673",
+              "dark": "#7D7D7A",
               "dark-ic": "#FFFFFF",
-              "light": "#82827F",
+              "light": "#7C7C79",
               "light-ic": "#111111"
             }
           },
@@ -4566,11 +4566,11 @@
           },
           {
             "name": "p-border-focused",
-            "usage": "普通主题焦点沿用必要边界的中性明度，以既有强调线宽区分焦点；高对比主题保留",
+            "usage": "普通主题焦点接近必要边界的中性明度并保留小幅色差，兼容仅以颜色表达焦点的控件；高对比主题保留",
             "value": {
-              "dark": "#767673",
+              "dark": "#7D7D7A",
               "dark-ic": "#FFFFFF",
-              "light": "#82827F",
+              "light": "#7C7C79",
               "light-ic": "#111111"
             }
           },
@@ -5642,11 +5642,11 @@
           },
           {
             "name": "p-border-focused",
-            "usage": "普通主题焦点沿用必要边界的中性明度，以既有强调线宽区分焦点；高对比主题保留",
+            "usage": "普通主题焦点接近必要边界的中性明度并保留小幅色差，兼容仅以颜色表达焦点的控件；高对比主题保留",
             "value": {
-              "dark": "#767673",
+              "dark": "#7D7D7A",
               "dark-ic": "#FFFFFF",
-              "light": "#82827F",
+              "light": "#7C7C79",
               "light-ic": "#111111"
             }
           },
@@ -6718,11 +6718,11 @@
           },
           {
             "name": "p-border-focused",
-            "usage": "普通主题焦点沿用必要边界的中性明度，以既有强调线宽区分焦点；高对比主题保留",
+            "usage": "普通主题焦点接近必要边界的中性明度并保留小幅色差，兼容仅以颜色表达焦点的控件；高对比主题保留",
             "value": {
-              "dark": "#767673",
+              "dark": "#7D7D7A",
               "dark-ic": "#FFFFFF",
-              "light": "#82827F",
+              "light": "#7C7C79",
               "light-ic": "#111111"
             }
           },
@@ -7796,11 +7796,11 @@
           },
           {
             "name": "p-border-focused",
-            "usage": "普通主题焦点沿用必要边界的中性明度，以既有强调线宽区分焦点；高对比主题保留",
+            "usage": "普通主题焦点接近必要边界的中性明度并保留小幅色差，兼容仅以颜色表达焦点的控件；高对比主题保留",
             "value": {
-              "dark": "#767673",
+              "dark": "#7D7D7A",
               "dark-ic": "#FFFFFF",
-              "light": "#82827F",
+              "light": "#7C7C79",
               "light-ic": "#111111"
             }
           },
@@ -8874,11 +8874,11 @@
           },
           {
             "name": "p-border-focused",
-            "usage": "普通主题焦点沿用必要边界的中性明度，以既有强调线宽区分焦点；高对比主题保留",
+            "usage": "普通主题焦点接近必要边界的中性明度并保留小幅色差，兼容仅以颜色表达焦点的控件；高对比主题保留",
             "value": {
-              "dark": "#767673",
+              "dark": "#7D7D7A",
               "dark-ic": "#FFFFFF",
-              "light": "#82827F",
+              "light": "#7C7C79",
               "light-ic": "#111111"
             }
           },
@@ -9952,11 +9952,11 @@
           },
           {
             "name": "p-border-focused",
-            "usage": "普通主题焦点沿用必要边界的中性明度，以既有强调线宽区分焦点；高对比主题保留",
+            "usage": "普通主题焦点接近必要边界的中性明度并保留小幅色差，兼容仅以颜色表达焦点的控件；高对比主题保留",
             "value": {
-              "dark": "#767673",
+              "dark": "#7D7D7A",
               "dark-ic": "#FFFFFF",
-              "light": "#82827F",
+              "light": "#7C7C79",
               "light-ic": "#111111"
             }
           },
@@ -11030,11 +11030,11 @@
           },
           {
             "name": "p-border-focused",
-            "usage": "普通主题焦点沿用必要边界的中性明度，以既有强调线宽区分焦点；高对比主题保留",
+            "usage": "普通主题焦点接近必要边界的中性明度并保留小幅色差，兼容仅以颜色表达焦点的控件；高对比主题保留",
             "value": {
-              "dark": "#767673",
+              "dark": "#7D7D7A",
               "dark-ic": "#FFFFFF",
-              "light": "#82827F",
+              "light": "#7C7C79",
               "light-ic": "#111111"
             }
           },
@@ -12108,11 +12108,11 @@
           },
           {
             "name": "p-border-focused",
-            "usage": "普通主题焦点沿用必要边界的中性明度，以既有强调线宽区分焦点；高对比主题保留",
+            "usage": "普通主题焦点接近必要边界的中性明度并保留小幅色差，兼容仅以颜色表达焦点的控件；高对比主题保留",
             "value": {
-              "dark": "#767673",
+              "dark": "#7D7D7A",
               "dark-ic": "#FFFFFF",
-              "light": "#82827F",
+              "light": "#7C7C79",
               "light-ic": "#111111"
             }
           },
@@ -13186,11 +13186,11 @@
           },
           {
             "name": "p-border-focused",
-            "usage": "普通主题焦点沿用必要边界的中性明度，以既有强调线宽区分焦点；高对比主题保留",
+            "usage": "普通主题焦点接近必要边界的中性明度并保留小幅色差，兼容仅以颜色表达焦点的控件；高对比主题保留",
             "value": {
-              "dark": "#767673",
+              "dark": "#7D7D7A",
               "dark-ic": "#FFFFFF",
-              "light": "#82827F",
+              "light": "#7C7C79",
               "light-ic": "#111111"
             }
           },

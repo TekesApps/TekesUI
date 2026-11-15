@@ -241,6 +241,14 @@ capability, and existing Stack struct literals remain source-compatible. Empty
 Search queries use the complete editor allocation; nonempty queries retain the
 existing separate Clear action and spacing.
 
+When a consumer allocates a minimum column width, it passes its content minimum
+to the original `ScrollContent::outer_width_for_content`. ScrollContent owns the
+same padding, focus-bleed and requested scrollbar calculation used by layout.
+The existing master-detail story uses this measurement to keep its Document word
+intact; it does not duplicate List inset values. The consumer supplies its known
+vertical-overflow condition, while its column ratio and inter-column gap remain
+composition policy.
+
 `LocalContainer::search_entry(ComponentId)` declares the window's single local
 Find destination. AppHost handles Cmd+F, resolves the container-scoped identity,
 uses existing PresentationState operations to reveal hidden Nav/Others, lays out,
@@ -250,5 +258,9 @@ IME composition, modal/overlay input and ongoing navigation retain their gates.
 No registration preserves ordinary shortcut handling. This adds no Gallery key
 interceptor or second text event loop. Legacy horizontal assemblies retain their
 existing visibility behavior; automatic reveal applies to the formal presentation
-model used by this Gallery. Source regressions are pending coordinated build and
-native validation; this paragraph is a candidate contract, not passing evidence.
+model used by this Gallery. Coordinated Check343/345/346 verify the registered
+Find and stable input-owner paths; native-r10 verifies grouped navigation, wide
+and narrow Search, Clear and hidden-Nav Cmd+F. Check348/349 verify List navigation,
+minimum document width, horizontal Tabs, Search phase geometry and retained
+historical rendering. Final palette appearance remains a separate native check;
+these results do not certify physical IME, VoiceOver or performance.
