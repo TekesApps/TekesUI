@@ -2221,7 +2221,7 @@
     "examples/composition-consumer/tests/surface_host_scale.rs": "152941bff9d9baa1e402f3d1c52d051a4aacc0e5702de774780aa951178419c7",
     "scripts/audit-menu-content-tokens.py": "c6c66ffd9939c61b2069cdafc9f798ea72b7aa58f1c7d8c0b3f55dc67765f867",
     "crates/tekes-ui-controls/src/composition/select.rs": "c87b0bc410a601254e7693bd15a2e87f08332fa651adc2ed6403299cc7c73b83",
-    "crates/tekes-ui-controls/src/composition/search.rs": "bc134916042bf5e88842e894971dd8ac9fdd6830ed9d4cdbd4c63b2a0b3668a5",
+    "crates/tekes-ui-controls/src/composition/search.rs": "c1e0e105abc229820b61825fef490b9de1b63e631302515d46b29d6b1d3ecd16",
     "docs/design/navigation-content-combo17-recovery-20261031.md": "cab75179ffc5ed7be2ab4de95d3d43ed430c5195a0f5b2b7bf56ca215f454090",
     "crates/tekes-ui-controls/src/composition/legacy_selectable_list.rs": "69e244976d28c82a4cdf6d53631bcb94d081bc597b7abbc19cb0a289de7c8bdf",
     "crates/tekes-ui-controls/src/composition/selectable_list.rs": "d9fdfefe4509f95aa81a33e67fa37989c35802a3242dc96200d15d2f4f8b3a33",

@@ -28,7 +28,7 @@ lifecycle instructions supersede the tag's historical fixed-chat requirement.
 | --- | --- | --- | --- |
 | F1 | Nonempty Search: Clear hover followed by movement into the editor/outside leaves Clear's cached hover. Blur/cancel also only cancel its press. | Shared Search compound routing; default Gallery Search Playground and AppHost Gallery filter | #299; first repair batch |
 | F2 | Hidden nested ToolbarGroup is excluded from measured child size but still counted in gaps and arranged, moving/clipping visible siblings. | Shared ToolbarGroup; public nested composition is reachable. No current production AppHost/Gallery declaration of this shape was established. | #300; independent repair batch |
-| F3 | Direct SettingsForm uses 560 × body typography scale; AppHost uses fixed 620. At 150%, wide allocations produce 840 vs 620. | Shared Settings layout / AppHost adapter; AppHost Gallery and app-host-demo Settings | #301; width policy decision before changing defaults |
+| F3 | Direct SettingsForm uses 560 × body typography scale; AppHost uses fixed 620. At 150%, wide allocations produce 840 vs 620. | Shared Settings layout / AppHost adapter; AppHost Gallery and app-host-demo Settings | #301; shared 560 + resolved body typography scale |
 | F4 | Legacy Gallery directory Search still uses TextDemo, and action helpers shrink compact frames while two consumer measurement paths add the same 4pt back. | Gallery migration; no newly proved pixel failure from the compensation itself | Reuse #290/#294; do not create parallel migration tickets |
 
 F1 sources: composition/search.rs:214–218,425–440,621–656;
@@ -57,17 +57,26 @@ F1 forwards the original Clear Button's outside primary Move and merges redraw
 without stealing editor capture/actions. Full Search blur/cancel uses the original
 Button blur contract, with no public API or global Button cancellation change.
 Validate original Scene ink plus real Host query/focus/capture/action behavior.
+Native follow-up also exposed a tall allocation stretching Clear while the
+single-line editor stayed at its natural height. Search now bounds its auxiliary
+button to the original Button's measured height (clamped to available height),
+without changing the outer allocation or requiring consumer height patches.
+The empty area below Clear must not activate it; the tall-allocation Host
+regression preserves the observed failure separately from hover cleanup.
 
 F2 measures and arranges the same active child set and counts only its gaps.
 Retain hidden nodes and surviving mount identities; no consumer padding or
 remove/reinsert workaround. Validate both axes, visibility transitions and
 constrained geometry using public composition.
 
-F3 has contradictory intentional inputs: the semantic token promises 560 and
-typography scaling, while an AppHost radio fixture explicitly expects 620.
-Options are shared 560+scale, shared 620+scale, or explicit product 620+scale.
-Do not merely replace a literal and discard the radio-content acceptance.
-Share the body-layout operation; preserve AppHost titlebar/pane responsibility.
+F3 uses the existing shared 560pt token scaled by resolved body typography
+(840pt at 150%), capped by the available content allocation and centered.
+`SettingsForm::body_rect` owns this operation for direct rendering and AppHost's
+mounted original host. AppHost retains pane allocation, titlebar-safe insets and
+outer padding. This narrows the former AppHost 620pt body at 100% and allows it to
+grow with type size; no new token or row/control-specific compensation is added.
+The former 620pt radio fixture retains its content-fit acceptance at the shared
+scaled width, alongside direct/mounted geometry regression coverage.
 
 F4 continues existing route/story migration, including real Button layout at
 normal/compact density. Removing compensations before adopting the shared owner

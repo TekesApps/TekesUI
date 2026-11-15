@@ -553,6 +553,56 @@ fn search_clear_host_exit_preserves_query_focus_capture_and_actions() {
 
 #[cfg(target_os = "macos")]
 #[test]
+fn search_clear_keeps_intrinsic_height_in_a_tall_host_allocation() {
+    use native_text::EditorText;
+    const SEARCH: ComponentId = ComponentId(500);
+    for theme in [Theme::LIGHT, Theme::DARK] {
+        for height in [24., 80., 560.] {
+            let frame = Rect::new(20., 30., 640., height);
+            let mut text = EditorText;
+            let mut clear = Button::new("×").with_accessible_name("Clear");
+            let natural = clear.measure(&mut text, frame.size).size;
+            let mut host = ContentHost::new(Content::new(
+                SEARCH,
+                SearchFieldContent::new("Find", "query"),
+            ))
+            .unwrap();
+            host.set_action_events(true);
+            let mut scene = Scene::new();
+            host.render(&mut scene, &mut text, frame, frame, theme.into())
+                .unwrap();
+            let part = host
+                .get(SEARCH)
+                .unwrap()
+                .component::<SearchFieldContent>()
+                .unwrap()
+                .semantic_parts()[0]
+                .frame;
+            assert_eq!(part.min_y(), frame.min_y());
+            assert_eq!(part.size.height, natural.height.min(height));
+            assert_eq!(part.max_x(), frame.max_x());
+            if height > natural.height {
+                let below = Point::new(part.center().x, frame.max_y() - 1.);
+                for phase in [PointerPhase::Move, PointerPhase::Down, PointerPhase::Up] {
+                    host.event_with_text(&pointer(below, phase), &mut text)
+                        .unwrap();
+                }
+                assert!(host.drain_action_records().is_empty());
+                assert_eq!(
+                    host.get(SEARCH)
+                        .unwrap()
+                        .component::<SearchFieldContent>()
+                        .unwrap()
+                        .query(),
+                    "query"
+                );
+            }
+        }
+    }
+}
+
+#[cfg(target_os = "macos")]
+#[test]
 fn scrollbar_drag_preserves_real_sibling_editor_marked_input_and_focus() {
     use native_text::EditorText;
     const EDITOR: ComponentId = ComponentId(500);

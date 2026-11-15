@@ -528,20 +528,17 @@ impl Component for SearchFieldContent {
     fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
         // The outer Search allocation stays stable. Only a visible Clear
         // action reserves a trailing slot; an empty editor fills its allocation.
+        let clear_size = self.clear.measure(text, frame.size).size;
         let width = if self.query().is_empty() {
             0.
         } else {
-            self.clear
-                .measure(text, frame.size)
-                .size
-                .width
-                .min(frame.size.width.max(0.))
+            clear_size.width.min(frame.size.width.max(0.))
         };
         self.clear_frame = Rect::new(
             frame.max_x() - width,
             frame.min_y(),
             width,
-            frame.size.height,
+            clear_size.height.min(frame.size.height.max(0.)),
         );
         self.clear_clip = self
             .clear_frame
