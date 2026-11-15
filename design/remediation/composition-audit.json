@@ -395,7 +395,7 @@
         {
           "api": "tekes_ui_controls::composition::ToolbarContent",
           "path": "crates/tekes-ui-controls/src/composition/toolbar_content.rs",
-          "line": 222,
+          "line": 224,
           "anchor": "pub struct ToolbarContent {"
         },
         {
@@ -2088,7 +2088,7 @@
     "crates/tekes-ui-controls/src/composition/skeleton.rs": "8f95c18a7aae090ca14ee2c70e539a1ed5123940ac4e98020bec9f57a043d959",
     "crates/tekes-ui-controls/src/composition/split_view.rs": "4ec314c0fefb07b61ea7a5e8f84ab418f4f04de46a987c6688d2bcfb93e5e9c7",
     "crates/tekes-ui-controls/src/composition/status_badge.rs": "55160ac8e5f901e644b09dcedb11f5b227e36a6aec7ff91706e6d3b422007f41",
-    "crates/tekes-ui-controls/src/composition/toolbar_content.rs": "299f68c30e17665d305e4b1fc4e3eb9ce0cdde13c7e61bc6c0f9169dd3d7dc88",
+    "crates/tekes-ui-controls/src/composition/toolbar_content.rs": "40c0aebe53126bde2432cb0b3694e3309ee27bd99ccfc375ff85c4c541c928fb",
     "crates/tekes-ui-controls/src/control_motion.rs": "0301717c307ba6bdc2b91085c9e1995e6ca74391c7bbda9168af2c042a52a788",
     "crates/tekes-ui-controls/src/extended.rs": "43c725396991fc05fa7cff954b6eff224fde7c49a41092180c2b321b369dcd65",
     "crates/tekes-ui-controls/src/feedback_view.rs": "b0ac9827fbbc3fc1bdf3b393faa573d1d3f1f0f75419cb043d1d2941e571f56c",
@@ -2221,7 +2221,7 @@
     "examples/composition-consumer/tests/surface_host_scale.rs": "152941bff9d9baa1e402f3d1c52d051a4aacc0e5702de774780aa951178419c7",
     "scripts/audit-menu-content-tokens.py": "c6c66ffd9939c61b2069cdafc9f798ea72b7aa58f1c7d8c0b3f55dc67765f867",
     "crates/tekes-ui-controls/src/composition/select.rs": "c87b0bc410a601254e7693bd15a2e87f08332fa651adc2ed6403299cc7c73b83",
-    "crates/tekes-ui-controls/src/composition/search.rs": "9d6233131702b0d7050d13cb91786cf34a7482a123d31e19e3d24ffffb3f77fc",
+    "crates/tekes-ui-controls/src/composition/search.rs": "bc134916042bf5e88842e894971dd8ac9fdd6830ed9d4cdbd4c63b2a0b3668a5",
     "docs/design/navigation-content-combo17-recovery-20261031.md": "cab75179ffc5ed7be2ab4de95d3d43ed430c5195a0f5b2b7bf56ca215f454090",
     "crates/tekes-ui-controls/src/composition/legacy_selectable_list.rs": "69e244976d28c82a4cdf6d53631bcb94d081bc597b7abbc19cb0a289de7c8bdf",
     "crates/tekes-ui-controls/src/composition/selectable_list.rs": "d9fdfefe4509f95aa81a33e67fa37989c35802a3242dc96200d15d2f4f8b3a33",
@@ -4894,6 +4894,23 @@
       ],
       "scope": "Owner-provided ScrollContent minimum outer width shares actual gutter layout rules; master-detail consumes measurement rather than copying default padding. Test premises follow legal initial focus reveal and empty Search allocation. Shared focus colors remain distinct; historic image normalization preserves original frozen expected output.",
       "verification": "Original CI red retained; affected regression and final appearance reruns pending.",
+      "capability_promotion": false
+    },
+    {
+      "date": "2026-11-15",
+      "issues": [
+        298,
+        299,
+        300
+      ],
+      "baseline": "de3b28dac56b0917cbfe9463fc019b6c8f401b1b",
+      "reviewed_paths": [
+        "crates/tekes-ui-controls/src/composition/search.rs",
+        "crates/tekes-ui-controls/src/composition/toolbar_content.rs"
+      ],
+      "scope": "Shared Search forwards auxiliary outside hover and fully clears Clear on blur/cancel; ToolbarGroup and enclosing minimum width use active children consistently. Public API and consumer runtime declarations unchanged. Settings width policy #301 and Gallery migration #294 remain open.",
+      "verification": "Actual baseline Search Scene and real Host red, Toolbar hidden-gap red; 48 scoped CPU/public-consumer checks and affected Clippy passed. No new native/GPU/IME/VoiceOver/performance, public-delivery or adoption claim. Initial fixture compile errors retained.",
+      "report": "docs/design/default-component-contract-audit-v0329.md",
       "capability_promotion": false
     }
   ]

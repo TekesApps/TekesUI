@@ -211,11 +211,13 @@ impl SearchFieldContent {
     fn clear_hit(&self, point: Point) -> bool {
         self.clear_clip.is_some_and(|clip| clip.contains(point)) && !self.query().is_empty()
     }
-    fn cancel_gesture(&mut self) {
-        self.clear.button.cancel();
+    fn cancel_gesture(&mut self) -> bool {
+        let before = self.clear.button.state;
+        self.clear.set_focus(false, false);
         self.clear_captured = false;
         self.editor_captured = false;
         self.preserve_focus = false;
+        before != self.clear.button.state
     }
     fn decide_prepared_action(
         &self,
@@ -646,7 +648,13 @@ impl Component for SearchFieldContent {
             }
             return response;
         }
-        let response = self.editor.pointer_event(pointer);
+        // The compound Search owns delivery to its auxiliary button, including
+        // outside moves that retire hover. Only its redraw joins the editor's
+        // response; capture, focus and activation stay with the routed owner.
+        let clear_changed =
+            pointer.phase == PointerPhase::Move && self.clear.pointer_event(pointer).changed;
+        let mut response = self.editor.pointer_event(pointer);
+        response.changed |= clear_changed;
         if response.capture_pointer {
             self.editor_captured = true;
         }
@@ -681,12 +689,11 @@ impl Component for SearchFieldContent {
             _ => {}
         }
         self.begin_delivery();
-        if matches!(event, ContentEvent::Cancel) {
-            self.cancel_gesture();
-        }
+        let clear_changed = matches!(event, ContentEvent::Cancel) && self.cancel_gesture();
         // Keep legacy raw Key and native TextCommand behavior in the original
         // editor. In particular raw Key Enter must not enable submission.
-        let response = self.editor.event(event);
+        let mut response = self.editor.event(event);
+        response.changed |= clear_changed;
         self.finish_editor(response)
     }
 }

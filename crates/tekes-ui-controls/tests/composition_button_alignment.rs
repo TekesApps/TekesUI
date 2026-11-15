@@ -109,6 +109,54 @@ fn body_text_keeps_its_independent_leading_alignment() {
 }
 
 #[test]
+fn search_clear_chrome_returns_to_rest_after_leave_or_cancellation() {
+    use tekes_ui_controls::composition::{ContentEvent, SearchFieldContent};
+    use tekes_ui_scene::{Point, Primitive};
+    let frame = Rect::new(20., 30., 360., 40.);
+    for theme in [Theme::LIGHT, Theme::DARK] {
+        for exit in ["editor", "outside", "cancel", "blur"] {
+            let mut search = SearchFieldContent::new("Find", "query");
+            search.arrange(&mut Text::default(), frame, frame);
+            let clear = search.semantic_parts()[0].frame.center();
+            let paint = |search: &mut SearchFieldContent| {
+                let mut scene = Scene::new();
+                search.paint(
+                    &mut scene,
+                    &mut Text::default(),
+                    frame,
+                    frame,
+                    Palette::from(theme).into(),
+                );
+                scene
+                    .primitives()
+                    .iter()
+                    .find_map(|p| match p {
+                        Primitive::Quad(q) if q.rect.contains(clear) => Some(q.fill),
+                        _ => None,
+                    })
+                    .expect("original Clear button background")
+            };
+            let rest = paint(&mut search);
+            search.event(&ContentEvent::PointerMove(clear));
+            assert_ne!(paint(&mut search), rest, "fixture must show Clear hover");
+            match exit {
+                "editor" => {
+                    search.event(&ContentEvent::PointerMove(Point::new(40., 50.)));
+                }
+                "outside" => {
+                    search.event(&ContentEvent::PointerMove(Point::new(-1., -1.)));
+                }
+                "cancel" => assert!(search.event(&ContentEvent::Cancel).changed),
+                "blur" => search.set_focus(false, false),
+                _ => unreachable!(),
+            }
+            assert_eq!(paint(&mut search), rest, "{theme:?}: {exit}");
+            assert_eq!(search.query(), "query");
+        }
+    }
+}
+
+#[test]
 fn public_button_rendered_text_and_background_meet_declared_contrast() {
     // Existing contrast-pairs.json: text 4.5 (standard), 7 (increased).
     // Inspect the public component's actual draw ink and Scene fill, not a

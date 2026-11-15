@@ -20,6 +20,8 @@ ToolbarPlacement 表达 Navigation、Status、PrimaryAction 等角色。文字�
 
 各控件沿原 Host 动作路径交付；启用 `set_action_events(true)` 后按 target 处理按钮等动作。工具栏不是业务命令注册表，不能从位置或显示文字推断授权。
 
+`ToolbarGroup.visible = false` 的子组保留实例身份，但不参与父组的测量、间隔、最小宽度预算或排列。恢复显示后由原布局重新安排；消费者无需移除/重插节点或补偿空位。
+
 低层 Toolbar/ToolbarControl/ToolbarView 与 Content 入口同时存在，需按宿主选一个实际消费路径。紧凑样式及溢出策略由原布局实现决定，不把所有内容强制变成等宽图标按钮。
 
 ## 源码与消费者
