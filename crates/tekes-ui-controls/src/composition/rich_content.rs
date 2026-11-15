@@ -355,12 +355,29 @@ impl Component for RichContent {
         for index in 0..self.document.links().len() {
             for rect in self.link_rects(index) {
                 s.push_clip(c);
-                crate::extended::link_underline(
-                    s,
-                    rect,
+                // Inline links share the paragraph's text/selection paint. The
+                // standalone Link painter also paints an opaque control ground;
+                // invoking it here, after text, would cover the retained glyphs.
+                let ink = tekes_ui_tokens::surface_palette::resolve_surface(
                     theme.palette,
-                    crate::ControlState::default(),
-                );
+                    theme.surface(),
+                    "link",
+                    "rest",
+                )
+                .expect("validated inline Link Surface")
+                .text;
+                let thickness = proposal::metric("stroke", "stroke-rule")
+                    .expect("Link underline stroke")
+                    .min(rect.size.height);
+                s.push_quad(tekes_ui_scene::Quad::new(
+                    Rect::new(
+                        rect.min_x(),
+                        rect.max_y() - thickness,
+                        rect.size.width,
+                        thickness,
+                    ),
+                    ink,
+                ));
                 s.pop_clip();
             }
         }

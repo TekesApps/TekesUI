@@ -203,12 +203,13 @@ impl Host {
             && key.modifiers.command
             && (key.modifiers.control
                 || key.modifiers.alt
-                || !matches!(
-                    key.characters_ignoring_modifiers
-                        .to_ascii_lowercase()
-                        .as_str(),
-                    "a" | "z" | "c" | "x" | "v"
-                ))
+                || (!matches!(key.key_code, 36 | 76)
+                    && !matches!(
+                        key.characters_ignoring_modifiers
+                            .to_ascii_lowercase()
+                            .as_str(),
+                        "a" | "z" | "c" | "x" | "v"
+                    )))
         {
             return Ok(false);
         }
@@ -582,6 +583,100 @@ mod local_clipboard_tests {
             assert_eq!(value(&mut host), "abc");
             assert_eq!(clipboard.clipboard_text().as_deref(), Some("keep"));
             assert!(clipboard.writes.borrow().is_empty());
+        }
+    }
+    #[test]
+    fn local_rich_link_command_enter_native_span_activates_once() {
+        use std::rc::Rc;
+        use tekes_ui_controls::composition::{AccessibilityAction, RichContent, RichDocument};
+        use tekes_ui_platform_macos::{TextKeyContext, TextKeyDisposition, TextKeyEvent};
+        for code in [36, 76] {
+            for (control, alt, expected) in [(false, false, 1), (true, false, 0), (false, true, 0)]
+            {
+                let actions = Rc::new(RefCell::new(Vec::new()));
+                let received = actions.clone();
+                let local = LocalContainer::new(
+                    "reader",
+                    Content::new(
+                        ComponentId(1),
+                        RichContent::new(
+                            "manual",
+                            1,
+                            RichDocument::from_markdown("[Number](number-field.md)"),
+                        )
+                        .unwrap(),
+                    ),
+                )
+                .unwrap()
+                .on_action(move |host, _| {
+                    received.borrow_mut().extend(
+                        host.get_mut(ComponentId(1))
+                            .unwrap()
+                            .component_mut::<RichContent>()
+                            .unwrap()
+                            .drain_link_actions(),
+                    );
+                });
+                let mut host = AppWindow::from_columns(vec![local.into()])
+                    .unwrap()
+                    .into_host(false);
+                assert!(host.mount_columns());
+                let local = host.panels[0].local.as_mut().unwrap();
+                let frame = Rect::new(0., 40., 300., 160.);
+                local
+                    .render(
+                        &mut Scene::new(),
+                        &mut host.text,
+                        frame,
+                        frame,
+                        Theme::LIGHT.into(),
+                    )
+                    .unwrap();
+                local.with_host(&mut |h| {
+                    assert!(h.focus(Some(ComponentId(1)), true));
+                    h.accessibility_action(
+                        ComponentId(1),
+                        None,
+                        AccessibilityAction::SetSelection(2..2),
+                    );
+                });
+                let Event::Key(mut key) = shortcut("\r") else {
+                    unreachable!()
+                };
+                key.key_code = code;
+                key.modifiers.control = control;
+                key.modifiers.alt = alt;
+                let context = TextKeyContext {
+                    id: 292,
+                    key: key.clone(),
+                    composing_at_start: false,
+                };
+                let clipboard = Clipboard::new(Some("keep"));
+                for event in [
+                    Event::TextKey(TextKeyEvent::Started(context.clone())),
+                    Event::Key(key),
+                    Event::TextKey(TextKeyEvent::Finished {
+                        context,
+                        input_context_handled: None,
+                        disposition: TextKeyDisposition::NotOffered,
+                        text_callbacks: 0,
+                        command_callbacks: 0,
+                    }),
+                ] {
+                    host.local_content_input(&event, &clipboard).unwrap();
+                }
+                let actions = actions.borrow();
+                assert_eq!(
+                    actions.len(),
+                    expected,
+                    "code={code} ctrl={control} alt={alt}"
+                );
+                if expected == 1 {
+                    assert_eq!(actions[0].target, "number-field.md");
+                }
+                assert!(clipboard.writes.borrow().is_empty());
+                assert_eq!(clipboard.clipboard_text().as_deref(), Some("keep"));
+            }
         }
     }
     #[test]

@@ -2081,7 +2081,7 @@
     "crates/tekes-ui-controls/src/composition/popover.rs": "7f98ed4d062e1694a3ffea0a31b8455de0958cc0974a3fd435025c44aec45690",
     "crates/tekes-ui-controls/src/composition/progress.rs": "12cd00f2a0910d5888323aa64cb07ff6aae309147ce513614574c222f3f587cc",
     "crates/tekes-ui-controls/src/composition/radio.rs": "c69d166d67f3eb21246777a8ad860f3b4023c66f9ca24a95398b155ff3f7e758",
-    "crates/tekes-ui-controls/src/composition/rich_content.rs": "b5e46ce2d697f152d03129032fd9c1754fd17dc2e9c9627ccea6b2367745ca67",
+    "crates/tekes-ui-controls/src/composition/rich_content.rs": "abda45fd7755872ce80ac5714851c95d866e76fbbee020c23ce4af7052411dce",
     "crates/tekes-ui-controls/src/composition/rich_document.rs": "0b826474f713e197953e8c9737cb8c462db97ba1ba50a4cd2b13b4ddc6eb9ce0",
     "crates/tekes-ui-controls/src/composition/segmented.rs": "a6bd41ec203d8491a9b0caf1a7550ebf0b4c59aec0f33f0de288340710cfc40a",
     "crates/tekes-ui-controls/src/composition/separator.rs": "4fed31d0eb17470dadd33b7a3644ba922e06fa005a3feddb0f88379eed7f3397",
@@ -2244,7 +2244,9 @@
     "crates/tekes-ui-gallery/src/gallery/workbench/apphost_story.rs": "699bc0c2803a7276179524ddd0192b578aa08300be35ab866a8e05164c76dd4f",
     "crates/tekes-ui-gallery/src/gallery/workbench/search_input.rs": "e00307167c0343f1b85533ad31953b42bcebf7a92db24867920f16fdeb3db445",
     "crates/tekes-ui-gallery/src/gallery/workbench/select_story.rs": "a4d8d398d26711bfa24f8600b2ce70ba7768ca5e9b40f88f49e02d4e413a1c9f",
-    "crates/tekes-ui-gallery/src/gallery/workbench/search_host.rs": "dd692d0ba80e5cbcfc03a873d61641e07f34c47960998f1287ba567cd0cddeaf"
+    "crates/tekes-ui-gallery/src/gallery/workbench/search_host.rs": "dd692d0ba80e5cbcfc03a873d61641e07f34c47960998f1287ba567cd0cddeaf",
+    "crates/tekes-ui-app-host/src/window_columns.rs": "eff31a802216d156416026ef6c4163476d57bccfdfc7d0ce0fd4d2ec5c9cfd38",
+    "examples/composition-consumer/tests/rich_content.rs": "025caf99707a58940d6b0e33e867b8f1c90fb782131ca76e731cac625a94833e"
   },
   "remaining": [
     "Collections49 public adapter/support paths recovered in thisf4df candidate; actual compatible compilation/consumer/IPC acceptance and publication remain Main gates. Tree/Table and keyed List slots remain finite passive contracts, not arbitrary interactive content or virtualization.",
@@ -4829,6 +4831,18 @@
       ],
       "scope": "Documents uses existing RichContent/ScrollContent; bundled relative links and supplemental manual identity; explicit instance selection returns to correct manual; focus restoration waits for original Host layout. Inspector/Focus/story paths unchanged.",
       "verification": "Candidate scoped tests pending; original 46 manual snippets unchanged and prior type-check reused. No native promotion.",
+      "capability_promotion": false
+    },
+    {
+      "date": "2026-11-15",
+      "issue": 292,
+      "reviewed_paths": [
+        "crates/tekes-ui-controls/src/composition/rich_content.rs",
+        "crates/tekes-ui-app-host/src/window_columns.rs",
+        "examples/composition-consumer/tests/rich_content.rs"
+      ],
+      "scope": "Inline RichContent links decorate existing glyphs without standalone Link background. AppHost forwards CommandEnter to original local RichContent; Control/Alt and other window shortcuts keep fallback. No consumer color/shortcut patches.",
+      "verification": "Check332-red reproduces defects; affected green/native repair acceptance recorded separately.",
       "capability_promotion": false
     }
   ]

@@ -371,6 +371,75 @@ fn theme_width_scale_and_background_updates_keep_original_composer_marked_baseli
     );
 }
 #[test]
+fn inline_link_glyphs_are_not_covered_by_a_later_control_background() {
+    // Native Gallery regression: the AX link remained present, but the full
+    // standalone Link ground was painted after these paragraph glyphs.
+    for theme in Theme::ALL {
+        for surface in ["canvas", "sidebar"] {
+            let mut host = ContentHost::new(
+                Content::new(
+                    ComponentId(1),
+                    RichContent::new("manual", 1, RichDocument::from_markdown(
+                        "Read [NumberField 中文 editable values](number-field.md) before continuing.",
+                    )).unwrap(),
+                ).with_surface(surface).unwrap(),
+            ).unwrap();
+            let scene = paint(&mut host, 180., 1., theme);
+            let links = host
+                .get(ComponentId(1))
+                .unwrap()
+                .component::<RichContent>()
+                .unwrap()
+                .semantic_parts();
+            assert!(!links.is_empty(), "the link must have real laid-out spans");
+            let background = tekes_ui_tokens::surface_palette::resolve_surface(
+                theme.into(),
+                surface,
+                "content",
+                "rest",
+            )
+            .unwrap()
+            .background;
+            let mut visible_link_glyphs = 0;
+            for (index, primitive) in scene.primitives().iter().enumerate() {
+                let Primitive::Glyphs(run) = primitive else {
+                    continue;
+                };
+                for glyph in &run.glyphs {
+                    // The shared CoreText fixture rasterizes at backing scale 2.
+                    let bitmap = glyph.glyph;
+                    if bitmap.width == 0 || bitmap.height == 0 {
+                        continue;
+                    }
+                    let center = Point::new(
+                        glyph.origin.x + (bitmap.left as f32 + bitmap.width as f32 * 0.5) / 2.,
+                        glyph.origin.y + (bitmap.top as f32 + bitmap.height as f32 * 0.5) / 2.,
+                    );
+                    if !links.iter().any(|link| link.frame.contains(center)) {
+                        continue;
+                    }
+                    visible_link_glyphs += 1;
+                    assert_ne!(
+                        run.color, background,
+                        "link glyph ink must differ from its ground"
+                    );
+                    assert!(
+                        scene.primitives()[index + 1..].iter().all(|later| {
+                            !matches!(later, Primitive::Quad(quad)
+                            if quad.fill.a >= 0.99 && quad.rect.contains(center))
+                        }),
+                        "later opaque decoration covers a link glyph: {theme:?}/{surface}, {center:?}"
+                    );
+                }
+            }
+            assert!(
+                visible_link_glyphs > 0,
+                "the original text renderer must emit link glyphs"
+            );
+        }
+    }
+}
+#[test]
 fn links_are_owned_source_target_callbacks_without_system_actions_or_duplicate_submit() {
     let mut host = f::build().unwrap();
     paint(&mut host, 560., 1., Theme::LIGHT);

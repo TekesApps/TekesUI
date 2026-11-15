@@ -130,7 +130,8 @@ The subsequent Documents candidate uses the existing RichContent for heading/cod
 layout and continuous selection, inside the original ScrollContent. Local bundled
 manual links are consumed after input through RichContent link actions. External
 or absent targets report that they were not opened; no system URL opener is added.
-Native Cmd-Enter reachability remains unverified and is not advertised.
+Command-Enter uses the existing RichContent keyboard contract through shared
+AppHost routing; native reachability is recorded separately from CPU checks.
 
 A same-document specimen change retains the reader and selection. An explicit
 specimen selection after browsing another manual returns to that component manual.
@@ -138,7 +139,11 @@ A document switch replaces the reader through Host lifecycle; keyboard focus
 transfer waits for the new mount to have actual text layout, and is cancelled
 if the user focuses another control. Supplemental Ticking Number documentation
 has an independent supplemental identity, not a new component or Gallery route.
-This candidate is awaiting affected CPU/native verification; the original four
+Check331 passed affected CPU checks; native-r4 observed rich typography, copy
+and selection retention. Inline link labels were covered by the standalone Link
+background painter after glyph painting. The shared RichContent repair limits
+inline decoration to an underline; it does not change consumer palettes or text
+layout. Link activation remains pending repair acceptance. The original four
 Playground native-r3 acceptance keeps its prior program identity.
 
 ### Consumer-owned startup arguments
@@ -161,11 +166,11 @@ Gallery consumes only its own selector before passing remaining arguments.
 
 The source catalogue now maps all 45 registered component IDs to offline Markdown
 manuals. Catalogue coverage, referenced paths and paired fences were checked;
-manual snippets and the complete new bundle still require verification. The List
+Check329 type-checked all 46 original snippets and compiled the complete bundle. The List
 manual distinguishes the existing scrollable composition from the non-scrolling
 group and keyed selection model, avoiding duplicate scroll ownership.
 
-Original Field/Area/Combo/Select story migration is the next bounded source batch.
+Original Field/Area/Combo/Select Playground migration is recorded below.
 The original Gallery remains the default and Dock production remains v0.3.28.
 
 ## Original hosted Playground intake — 2026-11-15
@@ -182,4 +187,5 @@ Check329 passes 15 affected CPU regressions, Gallery strict and release build.
 The 45 offline manuals contain 46 Rust snippets; all type-check against the
 existing Check328 Controls/Tokens libraries. This does not prove snippet runtime
 behavior. Existing native-r2 identity and results remain limited to the first
-slice; the changed four-page layout and input still need native acceptance.
+slice. Native-r3 subsequently passed the bounded four-Playground input/reset/
+options/history and document-linkage checks; other story sections remain open.
