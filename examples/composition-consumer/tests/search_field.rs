@@ -1209,3 +1209,54 @@ fn strict_scroll_editor_drag_captured_by_search_cannot_clear_when_crossing_butto
     assert_eq!(search.query(), "needle");
     assert!(host.drain_action_records().is_empty());
 }
+
+#[test]
+fn empty_query_fills_search_allocation_and_clear_restores_editor_hit_region() {
+    let mut f = SearchFixture::new("");
+    render(&mut f);
+    let outer = f.host.get(SEARCH).unwrap().frame();
+    let editor = f.host.text_surface(SEARCH).unwrap().outer;
+    assert_eq!(
+        editor, outer,
+        "empty Search must not reserve an invisible Clear slot"
+    );
+    assert!(
+        f.host
+            .semantics()
+            .into_iter()
+            .find(|node| node.id == SEARCH)
+            .unwrap()
+            .parts
+            .is_empty()
+    );
+    assert!(f.host.focus(Some(SEARCH), false));
+    commit(&mut f, "needle");
+    render(&mut f);
+    assert_eq!(f.host.get(SEARCH).unwrap().frame(), outer);
+    let clear = clear_point(&f);
+    assert!(clear.x > f.host.text_surface(SEARCH).unwrap().outer.max_x());
+    assert!(
+        f.host
+            .accessibility_action(SEARCH, Some(0), AccessibilityAction::Press)
+            .consumed
+    );
+    f.collect();
+    assert!(f.search().query().is_empty());
+    assert_eq!(
+        f.delivered
+            .iter()
+            .filter(|record| record.action.kind == ContentActionKind::Clear)
+            .count(),
+        1
+    );
+    render(&mut f);
+    assert_eq!(f.host.text_surface(SEARCH).unwrap().outer, outer);
+    // The former Clear area is now part of the real editor, not an invisible
+    // button hit target. Clicking it retains the Search focus and emits no Clear.
+    let before = f.delivered.len();
+    f.host.event(&ContentEvent::PointerDown(clear));
+    f.host.event(&ContentEvent::PointerUp(clear));
+    f.collect();
+    assert_eq!(f.host.focused(), Some(SEARCH));
+    assert_eq!(f.delivered.len(), before);
+}

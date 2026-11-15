@@ -6,6 +6,8 @@
 
 普通滚动列表使用现成组合入口，默认在视口 hover 时显示溢出滚动条：
 
+该入口默认使用共享 `Spacing::Loose` 内容留白，列表行保持 Leading 左对齐；消费者只声明分组和条目，无需逐行补 padding。显式 `content_padding(...)` 替换默认值，不叠加。内部 `ListContent::new` 用来组织条目或嵌套分组，不再次增加视口留白；列表外的 Search 等兄弟控件由父布局安排。
+
 ```rust
 use tekes_ui_controls::composition::*;
 let list = ListContent::scrollable(

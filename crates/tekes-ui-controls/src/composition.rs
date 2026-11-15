@@ -961,6 +961,7 @@ pub struct Content {
     retained_body_paint: bool,
     semantic_suppressed: bool,
     stack_distribution: Option<proposal::layout::MainAxisDistribution>,
+    stack_padding: Option<crate::layout::Insets>,
     #[cfg(feature = "inspection")]
     inspection_enabled: bool,
     #[cfg(feature = "inspection")]
@@ -997,6 +998,7 @@ impl Content {
             retained_body_paint: false,
             semantic_suppressed: false,
             stack_distribution: None,
+            stack_padding: None,
             #[cfg(feature = "inspection")]
             inspection_enabled: false,
             #[cfg(feature = "inspection")]
@@ -1256,6 +1258,16 @@ impl Content {
         available: Size,
         intrinsic: bool,
     ) -> MeasuredChild {
+        let outer_available = clean_size(available);
+        let padding_layout = self.stack_padding.map(|padding| {
+            crate::layout::ContainerLayout::new(
+                Rect::new(0., 0., outer_available.width, outer_available.height),
+                crate::layout::Insets::ZERO,
+                padding,
+                None,
+            )
+        });
+        let available = padding_layout.map_or(outer_available, |layout| layout.content().size);
         let mut measured = if let Some(label) = &mut self.label {
             label.reset();
             let mut text = label::LabelRenderer::new(text, label, self.clip);
@@ -1284,17 +1296,34 @@ impl Content {
                 Axis::Vertical => measured.size.height = measured.size.height.max(available.height),
             }
         }
+        if let Some(layout) = padding_layout {
+            measured.size.width += outer_available.width - available.width;
+            measured.size.height += outer_available.height - available.height;
+            measured.first_baseline = measured
+                .first_baseline
+                .map(|baseline| baseline + layout.content().min_y());
+        }
         measured.first_baseline = measured.first_baseline.filter(|v| v.is_finite());
         measured
     }
     pub fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
         self.frame = clean_rect(frame);
         self.clip = clean_rect(clip);
-        if let Some(distribution) = self.stack_distribution {
-            let (frame, clip) = (self.frame, self.clip);
+        if self.stack_distribution.is_some() || self.stack_padding.is_some() {
+            let distribution = self.stack_distribution;
+            let frame = self.stack_padding.map_or(self.frame, |padding| {
+                crate::layout::ContainerLayout::new(
+                    self.frame,
+                    crate::layout::Insets::ZERO,
+                    padding,
+                    Some(self.clip),
+                )
+                .content()
+            });
+            let clip = self.clip;
             self.component_mut::<StackContent>()
                 .expect("distribution is declared by StackContent")
-                .arrange_with_distribution(text, frame, clip, Some(distribution));
+                .arrange_with_distribution(text, frame, clip, distribution);
         } else if let Some(label) = &mut self.label {
             let mut renderer = label::LabelRenderer::new(text, label, self.clip);
             self.component.measure(&mut renderer, self.frame.size);
@@ -4568,6 +4597,17 @@ pub struct StackContent {
     pub flexible_child: Option<ComponentId>,
 }
 impl StackContent {
+    /// Inset this Stack's original children without introducing a viewport or
+    /// changing their mount identities. Bare StackContent literals keep zero padding.
+    pub fn into_content_with_padding(
+        self,
+        id: ComponentId,
+        padding: crate::layout::Insets,
+    ) -> Content {
+        let mut content = Content::new(id, self);
+        content.stack_padding = Some(padding);
+        content
+    }
     /// Declare a Stack that occupies the available main axis and distributes
     /// its children within it. Intrinsic measurement keeps the natural size.
     /// The original Stack component, children and mount identities are retained.
@@ -4911,6 +4951,49 @@ impl ScrollContent {
         self.content_padding = finite(padding);
         self
     }
+    fn document_gutter(&self, text: &mut dyn ButtonTextRenderer) -> (f32, f32) {
+        let focus = crate::extended::ControlFrame::new(Rect::default(), None)
+            .focus_bounds(text.backing_scale());
+        let bleed = (-focus.min_x()).max(0.);
+        let padding = if self.toolbar_tabs {
+            crate::toolbar::tab_geometry(text)
+                .0
+                .max(self.content_padding)
+        } else {
+            self.content_padding
+        };
+        (bleed, bleed.max(padding))
+    }
+    fn overflow_gutter(&self, bleed: f32, gutter: f32) -> f32 {
+        if self.scroll.scrollbar_requested(true)
+            && self.scroll.scroll_policy().1 != crate::ScrollPolicy::Disabled
+        {
+            let band = proposal::SCROLLBAR_WIDTH
+                + proposal::SCROLLBAR_INSET
+                + tekes_ui_tokens::Spacing::Micro.value();
+            (band + bleed - gutter).max(0.)
+        } else {
+            0.
+        }
+    }
+    /// Outer width needed for a document's minimum content width. The caller
+    /// supplies whether that document overflows its allocated vertical extent;
+    /// padding, focus bleed and requested scrollbar space remain owner policy.
+    pub fn outer_width_for_content(
+        &self,
+        text: &mut dyn ButtonTextRenderer,
+        width: f32,
+        vertical_overflow: bool,
+    ) -> f32 {
+        let (bleed, gutter) = self.document_gutter(text);
+        finite(width)
+            + 2. * gutter
+            + if vertical_overflow {
+                self.overflow_gutter(bleed, gutter)
+            } else {
+                0.
+            }
+    }
     fn scrollbar_track(&self, vertical: bool) -> Rect {
         if vertical {
             Rect::new(
@@ -5135,16 +5218,7 @@ impl Component for ScrollContent {
         // This lets a fixed sibling follow short tabs while a flexible viewport
         // consumes only the space remaining beside that sibling on narrow rows.
         let width = if self.horizontal {
-            let focus = crate::extended::ControlFrame::new(Rect::default(), None)
-                .focus_bounds(text.backing_scale());
-            let padding = if self.toolbar_tabs {
-                crate::toolbar::tab_geometry(text)
-                    .0
-                    .max(self.content_padding)
-            } else {
-                self.content_padding
-            };
-            let gutter = (-focus.min_x()).max(padding);
+            let (_, gutter) = self.document_gutter(text);
             let document = self
                 .children
                 .iter_mut()
@@ -5188,17 +5262,7 @@ impl Component for ScrollContent {
         self.clip = frame.intersection(&clip).unwrap_or_default();
         // Scroll is a viewport: reserve the existing ControlFrame focus bleed
         // in document geometry, rather than relaxing the ancestor clip.
-        let focus_bounds =
-            crate::extended::ControlFrame::new(frame, None).focus_bounds(self.backing_scale);
-        let bleed = (frame.min_x() - focus_bounds.min_x()).max(0.0);
-        let padding = if self.toolbar_tabs {
-            crate::toolbar::tab_geometry(text)
-                .0
-                .max(self.content_padding)
-        } else {
-            self.content_padding
-        };
-        let gutter = bleed.max(padding);
+        let (bleed, gutter) = self.document_gutter(text);
         let mut width = (frame.size.width - 2.0 * gutter).max(0.0);
         if self.horizontal {
             width = self
@@ -5221,10 +5285,7 @@ impl Component for ScrollContent {
             && self.scroll.scroll_policy().1 != crate::ScrollPolicy::Disabled
             && height > frame.size.height
         {
-            let band = proposal::SCROLLBAR_WIDTH
-                + proposal::SCROLLBAR_INSET
-                + tekes_ui_tokens::Spacing::Micro.value();
-            let extra = (band + bleed - gutter).max(0.);
+            let extra = self.overflow_gutter(bleed, gutter);
             width = (width - extra).max(0.);
             height = 2. * gutter;
             for child in &mut self.children {
@@ -5751,6 +5812,34 @@ mod list_scrollbar_hover_tests {
     const ROW: ComponentId = ComponentId(8802);
     const FRAME: Rect = Rect::new(0., 0., 120., 80.);
 
+    #[test]
+    fn scroll_content_minimum_width_preserves_requested_document_width_after_layout() {
+        for padding in [0., tekes_ui_tokens::Spacing::Loose.value()] {
+            for scrollbar in [false, true] {
+                for height in [80., 600.] {
+                    let scroll = ScrollContent::new(
+                        crate::ScrollArea::default(),
+                        Content::new(ROW, TallItems),
+                    )
+                    .content_padding(padding)
+                    .scrollbar(scrollbar);
+                    let width = scroll.outer_width_for_content(&mut Text, 120., height < 320.);
+                    let mut host = ContentHost::new(Content::new(ROOT, scroll)).unwrap();
+                    let frame = Rect::new(20., 30., width, height);
+                    host.render(
+                        &mut Scene::new(),
+                        &mut Text,
+                        frame,
+                        frame,
+                        Palette::from(tekes_ui_tokens::Theme::LIGHT),
+                    )
+                    .unwrap();
+                    assert_eq!(host.get(ROW).unwrap().frame().size.width, 120.);
+                    assert!(host.get(ROW).unwrap().visible().is_some());
+                }
+            }
+        }
+    }
     fn list(show_scrollbar: bool) -> ContentHost {
         let mut scroll = ListContent::scrollable("List", ITEMS, vec![Content::new(ROW, TallItems)]);
         if !show_scrollbar {

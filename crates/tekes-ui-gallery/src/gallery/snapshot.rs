@@ -644,7 +644,7 @@ mod tests {
                             ),
                             (
                                 "border-focused",
-                                Rgba::rgb8(116, 116, 113),
+                                Rgba::rgb8(124, 124, 121),
                                 Rgba::rgb8(66, 66, 63),
                             ),
                             (
@@ -682,7 +682,7 @@ mod tests {
                             ),
                             (
                                 "border-focused",
-                                Rgba::rgb8(140, 140, 136),
+                                Rgba::rgb8(125, 125, 122),
                                 Rgba::rgb8(238, 238, 234),
                             ),
                             (

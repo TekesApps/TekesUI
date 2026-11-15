@@ -17,8 +17,8 @@ use tekes_ui_controls::{
 use tekes_ui_scene::{Point, Rect, Scene, Size};
 use tekes_ui_tokens::{Spacing, proposal};
 
-const SCROLL: ComponentId = ComponentId(0x0047_414c_0010);
-const LIST: ComponentId = ComponentId(0x0047_414c_0011);
+pub(super) const SCROLL: ComponentId = ComponentId(0x0047_414c_0010);
+pub(super) const LIST: ComponentId = ComponentId(0x0047_414c_0011);
 const GROUP_BASE: u64 = 0x0047_414c_0100;
 const HEADER_BASE: u64 = 0x0047_414c_0200;
 const ITEMS_BASE: u64 = 0x0047_414c_0300;
@@ -185,14 +185,14 @@ impl Navigation {
             .expect("Gallery uses shared ScrollContent")
             .scroll
     }
-    fn list_id(section: &Section) -> ComponentId {
+    pub(super) fn list_id(section: &Section) -> ComponentId {
         let index = sections()
             .iter()
             .position(|candidate| candidate.title == section.title)
             .expect("filtered section retains original identity");
         ComponentId(ITEMS_BASE + index as u64)
     }
-    fn group_id(section: &Section) -> ComponentId {
+    pub(super) fn group_id(section: &Section) -> ComponentId {
         ComponentId(GROUP_BASE + section_slot(&section.title) as u64)
     }
     fn section_for_page(&self, page: Page) -> Option<(&Section, usize)> {
@@ -448,7 +448,7 @@ impl Navigation {
             &self.filtered
         }
     }
-    fn filter_sections(query: &str) -> Vec<Section> {
+    pub(super) fn filter_sections(query: &str) -> Vec<Section> {
         let q = query.to_lowercase();
         let mut y = layout::CATALOG_TOP + 48.0;
         let mut result = Vec::new();
@@ -602,7 +602,7 @@ fn page_key(page: Page) -> ListItemKey {
     };
     ListItemKey(index as u64 + 1)
 }
-fn section_content(section: &Section, selected: Page) -> Content {
+pub(super) fn section_content(section: &Section, selected: Page) -> Content {
     let slot = section_slot(&section.title) as u64;
     let snapshot = KeyedListSnapshot {
         dataset: ListDatasetKey(ITEMS_BASE + slot),
@@ -662,7 +662,7 @@ fn section_content(section: &Section, selected: Page) -> Content {
         },
     )
 }
-fn content_host(sections: &[Section], selected: Page) -> ContentHost {
+pub(super) fn directory_content(sections: &[Section], selected: Page) -> Content {
     let mut scroll = ListContent::scrollable(
         "Components",
         LIST,
@@ -670,8 +670,7 @@ fn content_host(sections: &[Section], selected: Page) -> ContentHost {
             .iter()
             .map(|section| section_content(section, selected))
             .collect(),
-    )
-    .content_padding(Spacing::Loose.value());
+    );
     if let Some(list) = scroll
         .children_mut()
         .and_then(|children| children.first_mut())
@@ -679,7 +678,10 @@ fn content_host(sections: &[Section], selected: Page) -> ContentHost {
     {
         list.rows.model.gap = Spacing::Micro.value();
     }
-    let mut host = ContentHost::new(Content::new(SCROLL, scroll))
+    Content::new(SCROLL, scroll)
+}
+fn content_host(sections: &[Section], selected: Page) -> ContentHost {
+    let mut host = ContentHost::new(directory_content(sections, selected))
         .expect("Gallery navigation Content tree is valid");
     host.set_action_events(true);
     host

@@ -125,6 +125,37 @@ Cached paint is explicitly historical: actual Palette lookup values and emitted
 quads are distinct; aliases, override provenance, glyph/image pixels and GPU
 composition are not reconstructed. Disabled recording clears the cache.
 
+The grouped Inspector consumer uses shared Stack and Grid with TextContent labels
+and TextFieldContent::read_only_content values inside the existing ScrollContent. Identity, Properties, Layout, Observed tokens
+and Emitted primitives have aligned label/value rows with wrapping values.
+Inspector publishes selection, chooser and derived snapshot values only in
+ContainerContent::prepare_for_render, called by LocalContainer immediately before
+its normal Host render. Inspector with_host is a pure host visit: input and
+native/AX queries use the last painted values and never invalidate their own
+layout by publishing first. The short interval between Focus cancellation and
+the next normal draw retains that painted version, not a claim that the live
+source snapshot is still valid. If the source still lacks geometry at preparation,
+the next draw explicitly displays Unavailable.
+Within the same selected mount, groups with unchanged row-label sequences retain
+their value owners through controlled publication. Only changed values reset
+selection; focus and mount remain. Layout has fixed rows across invalidation.
+Identity focus changes therefore do not retire an unchanged Page/Specimen value.
+Groups whose row structure changes are replaced, and a selection or mount change
+replaces all groups; the scroll owner is retained. Each value supports independent
+selection/copy, not continuous selection across cells. Dynamic token/primitive
+row-structure changes may reset selection; they have no stronger continuity promise.
+No stale geometry is relabelled as current or used to suppress updates.
+Value readers have no field background/border, grow with wrapped text and disable
+internal scrolling; the outer ScrollContent remains the sole scroll owner.
+No property editor, local paint
+background or new property framework is introduced. Property hook coverage stays
+at the four component types above. Missing snapshots, unsupported properties,
+invalidated geometry and unrecorded paint remain explicit. Historical lookup
+calls, resolved colors and emitted quads remain separate from current values and
+from final pixels; unknown alias/override provenance is not inferred.
+This source candidate still requires affected CPU checks and native visual/scroll
+acceptance; the earlier plain-text Inspector evidence does not certify its layout.
+
 The first accepted native slice projected Markdown into selectable plain text.
 The subsequent Documents candidate uses the existing RichContent for heading/code
 layout and continuous selection, inside the original ScrollContent. Local bundled
@@ -191,3 +222,45 @@ existing Check328 Controls/Tokens libraries. This does not prove snippet runtime
 behavior. Existing native-r2 identity and results remain limited to the first
 slice. Native-r3 subsequently passed the bounded four-Playground input/reset/
 options/history and document-linkage checks; other story sections remain open.
+
+## Navigation and registered search — 2026-11-15 candidate
+
+The AppHost candidate reuses the original Gallery section headers, item names,
+route identities and filtering. The fixed Search header and scrolling directory
+share one ContentHost. Filtering replaces directory groups only, retaining the
+Search mount, selection and native input owner; it does not add history visits.
+
+Scrollable List owns its default `Spacing::Loose` content inset; an explicit
+`content_padding` replaces that value. Internal `ListContent::new` groups remain
+unpadded and list rows retain their existing Leading alignment. Nav's outer
+container padding and root Stack gap are zero. A Stack header declares top/left/
+right Loose padding and zero bottom padding via `into_content_with_padding`;
+the List's own top inset separates its first group from Search. Stack padding
+changes original child measurement/placement without adding a viewport or curve
+capability, and existing Stack struct literals remain source-compatible. Empty
+Search queries use the complete editor allocation; nonempty queries retain the
+existing separate Clear action and spacing.
+
+When a consumer allocates a minimum column width, it passes its content minimum
+to the original `ScrollContent::outer_width_for_content`. ScrollContent owns the
+same padding, focus-bleed and requested scrollbar calculation used by layout.
+The existing master-detail story uses this measurement to keep its Document word
+intact; it does not duplicate List inset values. The consumer supplies its known
+vertical-overflow condition, while its column ratio and inter-column gap remain
+composition policy.
+
+`LocalContainer::search_entry(ComponentId)` declares the window's single local
+Find destination. AppHost handles Cmd+F, resolves the container-scoped identity,
+uses existing PresentationState operations to reveal hidden Nav/Others, lays out,
+and admits focus through the original ContentHost before native text publication.
+Unavailable, read-only or disabled targets do not fall back to another editor;
+IME composition, modal/overlay input and ongoing navigation retain their gates.
+No registration preserves ordinary shortcut handling. This adds no Gallery key
+interceptor or second text event loop. Legacy horizontal assemblies retain their
+existing visibility behavior; automatic reveal applies to the formal presentation
+model used by this Gallery. Coordinated Check343/345/346 verify the registered
+Find and stable input-owner paths; native-r10 verifies grouped navigation, wide
+and narrow Search, Clear and hidden-Nav Cmd+F. Check348/349 verify List navigation,
+minimum document width, horizontal Tabs, Search phase geometry and retained
+historical rendering. Final palette appearance remains a separate native check;
+these results do not certify physical IME, VoiceOver or performance.

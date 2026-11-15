@@ -14,18 +14,18 @@ use tekes_ui_controls::{
     CheckState, ScrollArea,
     composition::{
         CheckboxContent, ComponentId, Content, ContentActionPayload, ContentActionRecord,
-        ContentHost, InspectionSnapshot, KeyedSelectableListContent, ListContent,
+        ContentHost, GridContent, InspectionSnapshot, KeyedSelectableListContent, ListContent,
         ListDisplayUpdate, ListIntentKind, ListRowDisplay, RichContent, RichDocument,
         ScrollContent, SearchFieldContent, StackContent, TextContent, TextFieldContent,
     },
     extended::{
-        Axis, KeyedListItem, KeyedListSnapshot, ListBudget, ListDatasetKey, ListItemKey, Stack,
+        Axis, Grid, KeyedListItem, KeyedListSnapshot, ListBudget, ListDatasetKey, ListItemKey,
+        Stack,
     },
 };
 use tekes_ui_tokens::{Spacing, proposal::TextRole};
 
 const FILTER: ComponentId = ComponentId(1);
-const ROUTES: ComponentId = ComponentId(2);
 const CHOOSER: ComponentId = ComponentId(3);
 const COMMAND: u64 = 0x4757_0000;
 const SEARCH_ROUTE: &str = "component-search-field";
@@ -366,25 +366,11 @@ impl ContainerContent for FocusContent {
         }
     }
 }
-fn list_snapshot(query: &str) -> KeyedListSnapshot {
-    let items: Vec<_> = workbench::entries()
-        .iter()
-        .enumerate()
-        .map(|(index, entry)| KeyedListItem {
-            key: ListItemKey(index as u64 + 1),
-            name: format!("{} · {}", entry.section(), entry.title()),
-        })
-        .collect();
-    let display_items = workbench::entries()
-        .iter()
-        .enumerate()
-        .filter(|(_, entry)| entry.matches(&query.to_lowercase()))
-        .map(|(index, _)| ListItemKey(index as u64 + 1))
-        .collect();
-    KeyedListSnapshot {
-        dataset: ListDatasetKey(1),
-        items,
-        display_items,
+fn navigation_sections(query: &str) -> Vec<super::navigation::Section> {
+    if query.trim().is_empty() {
+        super::navigation::sections().to_vec()
+    } else {
+        super::navigation::Navigation::filter_sections(query)
     }
 }
 fn rows(snapshot: &KeyedListSnapshot, base: u64) -> Vec<ListRowDisplay> {
@@ -417,18 +403,25 @@ struct NavContent {
     state: SharedWorkbench,
     query: String,
     page: String,
+    sections: Vec<super::navigation::Section>,
 }
 impl ContainerContent for NavContent {
     fn with_host(&mut self, visit: &mut dyn FnMut(&mut ContentHost)) {
+        use super::navigation::Navigation;
         let page = self.state.borrow().selection().page.clone();
         if self.page != page {
-            let key = workbench::entries()
-                .iter()
-                .position(|entry| entry.slug() == page)
-                .map(|index| ListItemKey(index as u64 + 1));
-            self.host
-                .set_keyed_list_selection(ROUTES, key)
-                .expect("registered route selection");
+            for section in &self.sections {
+                let key = section.items.iter().find_map(|(candidate, _)| {
+                    let super::Page::Workbench(index) = candidate else {
+                        return None;
+                    };
+                    (workbench::entries()[*index].slug() == page)
+                        .then_some(ListItemKey(*index as u64 + 1))
+                });
+                self.host
+                    .set_keyed_list_selection(Navigation::list_id(section), key)
+                    .expect("registered route selection");
+            }
             self.page = page;
         }
         visit(&mut self.host);
@@ -442,10 +435,23 @@ impl ContainerContent for NavContent {
             .text
             .clone();
         if query != self.query {
-            let snapshot = list_snapshot(&query);
-            self.host
-                .replace_keyed_list(ROUTES, &snapshot, &mut rows(&snapshot, 1000), None)
-                .expect("registered route filter");
+            // Only directory groups are replaced. The Search mount, IME state,
+            // selection and focus remain owned by the same original Host.
+            for section in &self.sections {
+                self.host
+                    .remove(Navigation::group_id(section))
+                    .expect("mounted Gallery group");
+            }
+            self.sections = navigation_sections(&query);
+            let selected = workbench::route(&self.page).expect("registered current page");
+            for section in &self.sections {
+                self.host
+                    .insert(
+                        super::navigation::LIST,
+                        super::navigation::section_content(section, selected),
+                    )
+                    .expect("Gallery directory accepts original groups");
+            }
             self.query = query;
         }
     }
@@ -454,29 +460,41 @@ impl ContainerContent for NavContent {
     }
 }
 fn navigation(state: SharedWorkbench) -> anyhow::Result<LocalContainer> {
-    let mut routes = list("Gallery pages", &list_snapshot(""), 1000);
-    routes.set_navigation_layout(true);
-    routes.set_navigation_selection_fill_only(true);
-    let mut host = ContentHost::new(stack(
-        10,
-        vec![
-            Content::new(FILTER, SearchFieldContent::new("Filter Gallery pages", "")),
-            Content::new(
-                ComponentId(11),
-                ListContent::scrollable(
-                    "Page directory",
-                    ComponentId(12),
-                    vec![Content::new(ROUTES, routes)],
-                ),
-            ),
-        ],
-    ))
-    .map_err(|error| anyhow::anyhow!("Gallery navigation: {error:?}"))?;
-    host.get_mut(ComponentId(10))
-        .unwrap()
-        .component_mut::<StackContent>()
-        .unwrap()
-        .flexible_child = Some(ComponentId(11));
+    let sections = navigation_sections("");
+    let selected =
+        workbench::route(&state.borrow().selection().page).expect("registered current page");
+    let inset = Spacing::Loose.value();
+    let search = StackContent {
+        model: Stack {
+            axis: Axis::Vertical,
+            gap: 0.,
+        },
+        children: vec![Content::new(
+            FILTER,
+            SearchFieldContent::new("Filter Gallery pages", ""),
+        )],
+        flexible_child: None,
+    }
+    .into_content_with_padding(
+        ComponentId(11),
+        tekes_ui_controls::layout::Insets::new(inset, inset, 0., inset),
+    );
+    let root = Content::new(
+        ComponentId(10),
+        StackContent {
+            model: Stack {
+                axis: Axis::Vertical,
+                gap: 0.,
+            },
+            children: vec![
+                search,
+                super::navigation::directory_content(&sections, selected),
+            ],
+            flexible_child: Some(super::navigation::SCROLL),
+        },
+    );
+    let mut host =
+        ContentHost::new(root).map_err(|error| anyhow::anyhow!("Gallery navigation: {error:?}"))?;
     host.set_action_events(true);
     let actions = state.clone();
     Ok(LocalContainer::from_source(
@@ -486,23 +504,32 @@ fn navigation(state: SharedWorkbench) -> anyhow::Result<LocalContainer> {
             state,
             query: String::new(),
             page: String::new(),
+            sections,
         },
     )
+    .content_padding(0.)
+    .search_entry(FILTER)
     .on_action(move |_, records| {
         for record in records {
-            if record.action.target != ROUTES {
+            let Some(section) = super::navigation::sections().iter().find(|section| {
+                super::navigation::Navigation::list_id(section) == record.action.target
+            }) else {
                 continue;
-            }
+            };
             if let Some(ContentActionPayload::ListIntent(intent)) = record.payload {
                 let key = match intent.kind {
                     ListIntentKind::Activated => Some(intent.key),
                     ListIntentKind::SelectionChanged => intent.selected_key,
                 };
-                if let Some(entry) = key
-                    .and_then(|key| key.0.checked_sub(1))
-                    .and_then(|index| workbench::entries().get(index as usize))
-                {
-                    actions.borrow_mut().navigate(entry.slug());
+                if let Some(index) = section.items.iter().find_map(|(page, _)| {
+                    let super::Page::Workbench(index) = page else {
+                        return None;
+                    };
+                    (key == Some(ListItemKey(*index as u64 + 1))).then_some(*index)
+                }) {
+                    actions
+                        .borrow_mut()
+                        .navigate(workbench::entries()[index].slug());
                 }
             }
         }
@@ -715,78 +742,175 @@ fn consume_document_links(host: &mut ContentHost, pending_focus: &Cell<Option<u6
         }
     }
 }
-fn inspector_body(selection: &Selection, snapshot: Option<InspectionSnapshot>) -> String {
-    let mut body = format!(
-        "Page: {}\nSpecimen: {}\nDocument: {}\n",
-        selection.page,
-        selection.specimen.as_deref().unwrap_or("none"),
-        selection.document_id.as_deref().unwrap_or("page guidance")
+/// Presentation data only: all values come from the selected mount's snapshot.
+#[derive(Debug, PartialEq, Eq)]
+struct InspectorGroup {
+    title: &'static str,
+    rows: Vec<(String, String)>,
+}
+impl InspectorGroup {
+    fn new(title: &'static str) -> Self {
+        Self {
+            title,
+            rows: Vec::new(),
+        }
+    }
+    fn row(&mut self, label: impl Into<String>, value: impl ToString) {
+        self.rows.push((label.into(), value.to_string()));
+    }
+}
+fn inspector_body(
+    selection: &Selection,
+    snapshot: Option<InspectionSnapshot>,
+) -> Vec<InspectorGroup> {
+    let mut identity = InspectorGroup::new("Identity");
+    identity.row("Page", &selection.page);
+    identity.row("Specimen", selection.specimen.as_deref().unwrap_or("none"));
+    identity.row(
+        "Document",
+        selection.document_id.as_deref().unwrap_or("page guidance"),
     );
     let Some(snapshot) = snapshot else {
-        body.push_str("\nLive snapshot unavailable. Select a mounted specimen.");
-        return body;
+        identity.row("Live snapshot", "Unavailable. Select a mounted specimen.");
+        return vec![identity];
     };
-    use std::fmt::Write;
-    writeln!(
-        body,
-        "\nCurrent instance: {:?}, mount {}\nCurrent semantics: {:?}\nCurrent specimen focus: {}",
-        snapshot.id, snapshot.mount, snapshot.semantics, snapshot.focused
-    )
-    .unwrap();
-    body.push_str("\nCurrent public properties:\n");
+    identity.row("Current instance", format!("{:?}", snapshot.id));
+    identity.row("Mount", snapshot.mount);
+    identity.row("Current semantics", format!("{:?}", snapshot.semantics));
+    identity.row("Specimen focus", snapshot.focused);
+    let mut properties = InspectorGroup::new("Properties");
     match snapshot.properties {
-        Some(properties) => {
-            for property in properties {
-                writeln!(body, "{}: {}", property.name, property.value).unwrap();
+        Some(values) => {
+            properties.row("Coverage", "Reported public properties only");
+            for property in values {
+                properties.row(property.name, property.value);
             }
         }
-        None => body.push_str("Not provided by this component.\n"),
+        None => properties.row("Coverage", "Not provided by this component."),
     }
-    match snapshot.geometry {
-        Some(geometry) => writeln!(body, "\nCurrent measured layout (not declared sizing):\nFrame: {:?}\nRectangular clip: {:?}\nVisible rectangle: {:?}\nAdditional curve geometry: {}", geometry.frame, geometry.rectangular_clip, geometry.visible, geometry.has_curve_geometry).unwrap(),
-        None => body.push_str("\nCurrent measured layout unavailable (not rendered or invalidated).\n"),
+    let mut layout = InspectorGroup::new("Layout");
+    layout.row("Sizing", "Measured bounds, not declared sizing");
+    // Keep the row schema stable across ordinary layout invalidation. A click
+    // must still address the same text owner while the next paint is pending.
+    let geometry = snapshot.geometry.as_ref();
+    for (label, value) in [
+        ("Frame", geometry.map(|g| format!("{:?}", g.frame))),
+        (
+            "Rectangular clip",
+            geometry.map(|g| format!("{:?}", g.rectangular_clip)),
+        ),
+        (
+            "Visible rectangle",
+            geometry.map(|g| format!("{:?}", g.visible)),
+        ),
+        (
+            "Additional curve geometry",
+            geometry.map(|g| g.has_curve_geometry.to_string()),
+        ),
+    ] {
+        layout.row(label, value.unwrap_or_else(|| "Unavailable".into()));
     }
-    body.push_str("\nLast paint (historical; not recomputed from current properties):\n");
+    layout.row(
+        "Current measured layout",
+        if geometry.is_some() {
+            "Available"
+        } else {
+            "Unavailable (not rendered or invalidated)."
+        },
+    );
+    let mut tokens = InspectorGroup::new("Observed tokens");
+    tokens.row(
+        "Evidence",
+        "Last paint (historical; not recomputed from current properties)",
+    );
+    tokens.row(
+        "Limits",
+        "Lookup calls do not prove every rendered pixel. Text and images are not sampled.",
+    );
+    tokens.row("Alias / override provenance", "Not provided");
+    let mut quads = InspectorGroup::new("Emitted primitives");
+    quads.row("Evidence", "Last paint, before GPU composition; quads only");
     match snapshot.last_paint {
         Some(paint) => {
-            writeln!(
-                body,
-                "Theme: {:?}\nIncludes owned children: {}\nActual token lookup calls: {:?}",
-                paint.theme, paint.includes_owned_children, paint.tokens.lookups
-            )
-            .unwrap();
-            for color in paint.tokens.colors {
-                writeln!(
-                    body,
-                    "Resolved role {}: {:?}; palette {:?}",
-                    color.role, color.value, color.palette
-                )
-                .unwrap();
+            tokens.row("Theme", format!("{:?}", paint.theme));
+            tokens.row("Includes owned children", paint.includes_owned_children);
+            tokens.row("Lookup count", paint.tokens.lookups.len());
+            for (family, name) in paint.tokens.lookups {
+                tokens.row(format!("Lookup · {family}"), name);
             }
-            writeln!(
-                body,
-                "Emitted quads before GPU composition: {:#?}",
-                paint.quads
-            )
-            .unwrap();
-            body.push_str("Lookup calls do not prove every rendered pixel. Text and images are not sampled.\n");
+            tokens.row("Resolved color count", paint.tokens.colors.len());
+            for color in paint.tokens.colors {
+                tokens.row(
+                    color.role,
+                    format!("{:?}\nPalette: {:?}", color.value, color.palette),
+                );
+            }
+            quads.row("Quad count", paint.quads.len());
+            for (index, quad) in paint.quads.iter().enumerate() {
+                quads.row(format!("Quad {}", index + 1), format!("{quad:#?}"));
+            }
         }
-        None => body.push_str("Not recorded yet; wait for the specimen's normal paint.\n"),
+        None => {
+            tokens.row(
+                "Recording",
+                "Not recorded yet; wait for the specimen's normal paint.",
+            );
+            quads.row("Recording", "Not recorded yet");
+        }
     }
-    body.push_str("Token alias chains and explicit override provenance: not provided.");
-    body
+    vec![identity, properties, layout, tokens, quads]
 }
-/// Both panels retain their own selectable reader and Gallery-owned chooser.
+
+/// Shared Grid aligns label/value columns and measures wrapped rows. The existing
+/// ScrollContent owns overflow. Values use the shared selectable read-only text
+/// owner; focusing them does not focus the specimen. IDs are panel-local.
+fn inspector_sections(groups: &[InspectorGroup], mut next_id: u64) -> Vec<Content> {
+    let mut sections = Vec::new();
+    for (index, group) in groups.iter().enumerate() {
+        let heading = Content::new(
+            ComponentId(10_000 + index as u64 * 2),
+            TextContent {
+                text: group.title.into(),
+                role: TextRole::UiHeading,
+            },
+        );
+        let grid_id = ComponentId(10_001 + index as u64 * 2);
+        let mut cells = Vec::new();
+        for (label, value) in &group.rows {
+            cells.push(text(next_id, label));
+            cells.push(Content::new(
+                ComponentId(next_id + 1),
+                TextFieldContent::read_only_content(label, value, TextRole::UiBody),
+            ));
+            next_id += 2;
+        }
+        sections.push(heading);
+        sections.push(Content::new(
+            grid_id,
+            GridContent {
+                model: Grid {
+                    columns: 2,
+                    gap_x: Spacing::Regular.value(),
+                    gap_y: Spacing::Micro.value(),
+                },
+                children: cells,
+            },
+        ));
+    }
+    sections
+}
+/// Both panels retain their own content and Gallery-owned chooser.
 struct PanelContent {
     host: ContentHost,
     state: SharedWorkbench,
     selection: Option<Selection>,
     inspector: bool,
-    body: String,
+    inspector_groups: Vec<InspectorGroup>,
+    inspector_target: Option<(ComponentId, u64)>,
     document_focus: Rc<Cell<Option<u64>>>,
 }
-impl ContainerContent for PanelContent {
-    fn with_host(&mut self, visit: &mut dyn FnMut(&mut ContentHost)) {
+impl PanelContent {
+    fn publish(&mut self) {
         self.state.borrow_mut().sync_inspection();
         let selection = self.state.borrow().selection().clone();
         let selection_changed = self.selection.as_ref() != Some(&selection);
@@ -808,8 +932,119 @@ impl ContainerContent for PanelContent {
                 .set_keyed_list_selection(CHOOSER, Some(ListItemKey(key)))
                 .expect("registered specimen selection");
         }
-        let body = if self.inspector {
-            inspector_body(&selection, self.state.borrow().selected_snapshot())
+        if self.inspector {
+            let snapshot = self.state.borrow().selected_snapshot();
+            let target = snapshot
+                .as_ref()
+                .map(|snapshot| (snapshot.id, snapshot.mount));
+            let groups = inspector_body(&selection, snapshot);
+            if groups != self.inspector_groups {
+                if selection_changed || target != self.inspector_target {
+                    self.host
+                        .remove(DOCUMENT_READER)
+                        .expect("mounted Inspector groups");
+                    self.host
+                        .insert(
+                            DOCUMENT_SCROLL,
+                            stack(DOCUMENT_READER.0, inspector_sections(&groups, 10_010)),
+                        )
+                        .expect("Inspector scroll content");
+                } else {
+                    // AppHost cancels other panels before a click, invalidating
+                    // specimen geometry until its next paint. Keep unchanged
+                    // groups mounted through that transition, including the
+                    // value receiving this click and its native/AX text owner.
+                    let next_id = self
+                        .host
+                        .get(DOCUMENT_READER)
+                        .unwrap()
+                        .component::<StackContent>()
+                        .unwrap()
+                        .children
+                        .iter()
+                        .filter_map(|node| node.component::<GridContent>())
+                        .flat_map(|grid| grid.children.iter().map(|cell| cell.id().0))
+                        .max()
+                        .map_or(10_010, |id| id + 1);
+                    for (index, section) in
+                        inspector_sections(&groups, next_id).into_iter().enumerate()
+                    {
+                        let group = index / 2;
+                        if self.inspector_groups.get(group) == groups.get(group) {
+                            continue;
+                        }
+                        if self.inspector_groups[group]
+                            .rows
+                            .iter()
+                            .map(|(label, _)| label)
+                            .eq(groups[group].rows.iter().map(|(label, _)| label))
+                        {
+                            if index % 2 == 1 {
+                                let values: Vec<_> = self
+                                    .host
+                                    .get(section.id())
+                                    .unwrap()
+                                    .component::<GridContent>()
+                                    .unwrap()
+                                    .children
+                                    .chunks_exact(2)
+                                    .zip(&groups[group].rows)
+                                    .map(|(cells, (_, value))| (cells[1].id(), value.clone()))
+                                    .collect();
+                                for (id, value) in values {
+                                    if self.host.text_surface(id).unwrap().input.text == value {
+                                        continue;
+                                    }
+                                    let field = self
+                                        .host
+                                        .get_mut(id)
+                                        .unwrap()
+                                        .component_mut::<TextFieldContent>()
+                                        .unwrap();
+                                    let baseline = field.surface.input.external_baseline();
+                                    let revision = tekes_ui_controls::DraftRevision {
+                                        identity: "gallery-inspector-value".into(),
+                                        version: field
+                                            .surface
+                                            .input
+                                            .external_value()
+                                            .map_or(1, |v| v.version + 1),
+                                        payload: value,
+                                    };
+                                    let result = field.surface.apply_external_value(
+                                        &baseline,
+                                        &revision,
+                                        tekes_ui_controls::ExternalSelection::Reset,
+                                        tekes_ui_controls::ExternalUndo::Reset,
+                                    );
+                                    assert!(
+                                        matches!(
+                                            result,
+                                            tekes_ui_controls::ExternalValueResult::Applied { .. }
+                                        ),
+                                        "synchronous Inspector value publication: {result:?}"
+                                    );
+                                }
+                            }
+                            continue;
+                        }
+                        self.host
+                            .remove(section.id())
+                            .expect("mounted Inspector section");
+                        self.host
+                            .insert(DOCUMENT_READER, section)
+                            .expect("Inspector section");
+                    }
+                    let order: Vec<_> = (0..groups.len() * 2)
+                        .map(|index| ComponentId(10_000 + index as u64))
+                        .collect();
+                    self.host
+                        .reorder(DOCUMENT_READER, &order)
+                        .expect("Inspector section order");
+                }
+                self.inspector_groups = groups;
+            }
+            self.inspector_target = target;
         } else {
             // Only an explicit chooser activation requests a return after link browsing.
             // Ordinary reads and select(same) keep the linked reader intact.
@@ -824,43 +1059,20 @@ impl ContainerContent for PanelContent {
                 );
                 document_notice(&mut self.host, DOCUMENT_HELP);
             }
-            self.body.clone()
-        };
-        // Do not invalidate layout on reads or erase selection on an unchanged
-        // snapshot. Only an actual publication obtains a mutable component.
-        if body != self.body {
-            let field = self
-                .host
-                .get_mut(ComponentId(21))
-                .unwrap()
-                .component_mut::<TextFieldContent>()
-                .unwrap();
-            let baseline = field.surface.input.external_baseline();
-            let revision = tekes_ui_controls::DraftRevision {
-                identity: "gallery-panel-reader".into(),
-                version: field
-                    .surface
-                    .input
-                    .external_value()
-                    .map_or(1, |value| value.version + 1),
-                payload: body.clone(),
-            };
-            let result = field.surface.apply_external_value(
-                &baseline,
-                &revision,
-                tekes_ui_controls::ExternalSelection::Reset,
-                tekes_ui_controls::ExternalUndo::Reset,
-            );
-            assert!(
-                matches!(
-                    result,
-                    tekes_ui_controls::ExternalValueResult::Applied { .. }
-                ),
-                "synchronous readonly reader update: {result:?}"
-            );
-            self.body = body;
         }
         self.selection = Some(selection);
+    }
+}
+impl ContainerContent for PanelContent {
+    fn prepare_for_render(&mut self) {
+        if self.inspector {
+            self.publish();
+        }
+    }
+    fn with_host(&mut self, visit: &mut dyn FnMut(&mut ContentHost)) {
+        if !self.inspector {
+            self.publish();
+        }
         visit(&mut self.host);
         if !self.inspector {
             finish_document_focus(&mut self.host, &self.document_focus);
@@ -893,12 +1105,7 @@ fn consume_chooser_actions(state: &SharedWorkbench, records: Vec<ContentActionRe
     }
 }
 
-fn panel(
-    id: &str,
-    title: &str,
-    state: SharedWorkbench,
-    inspector: bool,
-) -> anyhow::Result<LocalContainer> {
+fn panel_source(state: SharedWorkbench, inspector: bool) -> anyhow::Result<PanelContent> {
     let snapshot = chooser_snapshot(state.borrow().selection());
     let mut host = ContentHost::new(stack(
         20,
@@ -907,13 +1114,8 @@ fn panel(
             if inspector {
                 Content::new(
                     DOCUMENT_SCROLL,
-                    ScrollContent::new(
-                        ScrollArea::default(),
-                        Content::new(
-                            DOCUMENT_READER,
-                            TextFieldContent::read_only_content(title, "", TextRole::UiBody),
-                        ),
-                    ),
+                    ScrollContent::new(ScrollArea::default(), stack(DOCUMENT_READER.0, Vec::new()))
+                        .scrollbar(true),
                 )
             } else {
                 let selection = state.borrow().selection().clone();
@@ -940,26 +1142,32 @@ fn panel(
         .component_mut::<StackContent>()
         .unwrap()
         .flexible_child = Some(ComponentId(22));
-    let actions = state.clone();
-    let document_focus = Rc::new(Cell::new(None));
-    Ok(LocalContainer::from_source(
-        id,
-        PanelContent {
-            host,
-            state,
-            selection: None,
-            inspector,
-            body: String::new(),
-            document_focus: document_focus.clone(),
-        },
-    )
-    .title(title)
-    .on_action(move |host, records| {
-        if !inspector {
-            consume_document_links(host, &document_focus);
-        }
-        consume_chooser_actions(&actions, records);
-    }))
+    Ok(PanelContent {
+        host,
+        state,
+        selection: None,
+        inspector,
+        inspector_groups: Vec::new(),
+        inspector_target: None,
+        document_focus: Rc::new(Cell::new(None)),
+    })
+}
+fn panel(
+    id: &str,
+    title: &str,
+    state: SharedWorkbench,
+    inspector: bool,
+) -> anyhow::Result<LocalContainer> {
+    let source = panel_source(state.clone(), inspector)?;
+    let document_focus = source.document_focus.clone();
+    Ok(LocalContainer::from_source(id, source)
+        .title(title)
+        .on_action(move |host, records| {
+            if !inspector {
+                consume_document_links(host, &document_focus);
+            }
+            consume_chooser_actions(&state, records);
+        }))
 }
 pub fn assemble() -> anyhow::Result<AppWindow> {
     let page = std::env::var("TEKESUI_GALLERY_PAGE").unwrap_or_else(|_| SEARCH_ROUTE.into());
@@ -1090,6 +1298,12 @@ mod tests {
         )
         .unwrap();
     }
+    fn render_panel(panel: &mut PanelContent, text: &mut super::super::text::TextEngine) {
+        // Same production source and hook/Host sequence. AppHost's own tests
+        // separately exercise LocalContainer::render wiring and query ordering.
+        panel.prepare_for_render();
+        panel.with_host(&mut |host| render_text_host(host, text));
+    }
     fn publish(state: &SharedWorkbench, page: &str) {
         state.borrow_mut().navigate(page);
         let entry = state.borrow_mut().pending.pop_front().unwrap();
@@ -1182,26 +1396,103 @@ mod tests {
     }
     #[test]
     fn apphost_workbench_filter_retains_registry_identity() {
-        let all = list_snapshot("");
-        assert_eq!(all.items.len(), workbench::entries().len());
-        let filtered = list_snapshot("SEARCH-FIELD");
-        assert!(!filtered.display_items.is_empty());
-        for key in &filtered.display_items {
-            let original = all.items.iter().find(|item| item.key == *key).unwrap();
+        let all = navigation_sections("");
+        assert_eq!(
+            all.iter().map(|section| section.items.len()).sum::<usize>(),
+            workbench::entries().len()
+        );
+        let filtered = navigation_sections("SEARCH-FIELD");
+        assert!(!filtered.is_empty());
+        for section in filtered {
+            let original = all
+                .iter()
+                .find(|original| original.title == section.title)
+                .unwrap();
             assert_eq!(
-                filtered
-                    .items
-                    .iter()
-                    .find(|item| item.key == *key)
-                    .unwrap()
-                    .name,
-                original.name
+                super::super::navigation::Navigation::list_id(&section),
+                super::super::navigation::Navigation::list_id(original)
             );
+            for (page, _) in section.items {
+                assert!(
+                    original
+                        .items
+                        .iter()
+                        .any(|(candidate, _)| *candidate == page)
+                );
+            }
         }
+        assert!(navigation_sections("no-such-gallery-component-291").is_empty());
+    }
+    #[test]
+    fn apphost_workbench_navigation_reuses_group_headers_and_keeps_search_mount() {
+        use super::super::navigation::{LIST, Navigation};
+        let state = state(SEARCH_ROUTE);
+        let mut nav = navigation(state.clone()).unwrap();
+        let mut text = super::super::text::TextEngine::new();
+        let frame = tekes_ui_scene::Rect::new(0., 60., 300., 700.);
+        let mut search_mount = 0;
+        nav.with_host(&mut |host| {
+            host.render(
+                &mut tekes_ui_scene::Scene::new(),
+                &mut text,
+                frame,
+                frame,
+                tekes_ui_tokens::Theme::LIGHT.into(),
+            )
+            .unwrap();
+            let search = host.get(FILTER).unwrap().frame();
+            assert_eq!(search.min_x() - frame.min_x(), Spacing::Loose.value());
+            assert_eq!(frame.max_x() - search.max_x(), Spacing::Loose.value());
+            assert_eq!(search.min_y() - frame.min_y(), Spacing::Loose.value());
+            let rows = host.get(LIST).unwrap().frame();
+            assert_eq!(rows.min_x(), search.min_x());
+            assert_eq!(rows.max_x(), search.max_x());
+            assert!(rows.min_y() > search.max_y());
+            for section in super::super::navigation::sections() {
+                let list = host
+                    .get(Navigation::list_id(section))
+                    .unwrap()
+                    .component::<KeyedSelectableListContent>()
+                    .unwrap();
+                assert_eq!(list.model().snapshot().items.len(), section.items.len());
+                for (item, (page, _)) in list.model().snapshot().items.iter().zip(&section.items) {
+                    assert_eq!(item.name, page.name());
+                }
+            }
+            search_mount = host.get(FILTER).unwrap().mount_identity();
+            assert!(host.focus(Some(FILTER), true));
+            host.event_with_text(
+                &ContentEvent::Commit {
+                    text: "SearchField".into(),
+                    replacement: None,
+                },
+                &mut text,
+            )
+            .unwrap();
+        });
+        nav.with_host(&mut |host| {
+            assert_eq!(host.get(FILTER).unwrap().mount_identity(), search_mount);
+            assert_eq!(host.focused(), Some(FILTER));
+            let displayed = navigation_sections("SearchField");
+            assert_eq!(
+                displayed
+                    .iter()
+                    .map(|section| section.items.len())
+                    .sum::<usize>(),
+                1
+            );
+            let section = &displayed[0];
+            assert!(host.get(Navigation::group_id(section)).is_some());
+            assert!(
+                host.get(Navigation::group_id(
+                    &super::super::navigation::sections()[0]
+                ))
+                .is_none()
+            );
+        });
         assert!(
-            list_snapshot("no-such-gallery-component-291")
-                .display_items
-                .is_empty()
+            state.borrow().pending.is_empty(),
+            "filtering must not push navigation history"
         );
     }
     #[test]
@@ -1263,14 +1554,371 @@ mod tests {
         assert!(document_source("retired-component").is_none());
     }
     #[test]
+    fn apphost_workbench_inspector_replaces_retired_rows_and_keeps_unchanged_mount() {
+        fn rows(host: &ContentHost) -> Vec<(String, String)> {
+            host.get(DOCUMENT_READER)
+                .unwrap()
+                .component::<StackContent>()
+                .unwrap()
+                .children
+                .iter()
+                .filter_map(|section| section.component::<GridContent>())
+                .flat_map(|grid| {
+                    grid.children.chunks_exact(2).map(|pair| {
+                        (
+                            pair[0].component::<TextContent>().unwrap().text.clone(),
+                            pair[1]
+                                .component::<TextFieldContent>()
+                                .unwrap()
+                                .surface
+                                .input
+                                .text
+                                .clone(),
+                        )
+                    })
+                })
+                .collect()
+        }
+        let state = state(FORM_ROUTE);
+        state.borrow_mut().select(Some("name"));
+        let mut inspector = panel_source(state.clone(), true).unwrap();
+        let mut text = super::super::text::TextEngine::new();
+        let mut reader_mount = None;
+        let mut scroll_mount = None;
+        render_panel(&mut inspector, &mut text);
+        inspector.with_host(&mut |host| {
+            let rows = rows(host);
+            assert!(rows.contains(&("text".into(), "Gallery".into())));
+            assert!(rows.iter().any(|(key, value)| key == "Current measured layout" && value.starts_with("Unavailable")));
+            assert!(rows.iter().any(|(key, value)| key == "Recording" && value.starts_with("Not recorded yet")));
+            reader_mount = host.semantic_mount(DOCUMENT_READER);
+            scroll_mount = host.semantic_mount(DOCUMENT_SCROLL);
+        });
+        render_panel(&mut inspector, &mut text);
+        inspector.with_host(&mut |host| {
+            assert_eq!(host.semantic_mount(DOCUMENT_READER), reader_mount);
+        });
+        state.borrow_mut().select(Some("owner"));
+        render_panel(&mut inspector, &mut text);
+        inspector.with_host(&mut |host| {
+            assert_ne!(host.semantic_mount(DOCUMENT_READER), reader_mount);
+            assert_eq!(host.semantic_mount(DOCUMENT_SCROLL), scroll_mount);
+            let rows = rows(host);
+            assert!(rows.contains(&("text".into(), "TekesUI team".into())));
+            assert!(!rows.iter().any(|(_, value)| value == "Gallery"));
+        });
+        state.borrow_mut().select(Some("published"));
+        render_panel(&mut inspector, &mut text);
+        inspector.with_host(&mut |host| {
+            assert!(!rows(host).iter().any(|(key, _)| key == "text"));
+        });
+        // Area is a multiline TextFieldContent and has its property hook.
+        // The actual ComboBoxContent mount has no hook, so it exercises the
+        // unavailable-properties boundary without inventing a snapshot.
+        publish(&state, COMBO_ROUTE);
+        {
+            let state = state.borrow();
+            assert_eq!(
+                state.selection().specimen.as_deref(),
+                Some("original-combo")
+            );
+            let snapshot = state
+                .selected_snapshot()
+                .expect("mounted ComboBox specimen");
+            assert_eq!(snapshot.id, ComponentId(27601));
+            assert_eq!(
+                Some(snapshot.mount),
+                state.pages[COMBO_ROUTE]
+                    .borrow()
+                    .semantic_mount(snapshot.id),
+            );
+            assert!(snapshot.properties.is_none());
+        }
+        render_panel(&mut inspector, &mut text);
+        inspector.with_host(&mut |host| {
+            let rows = rows(host);
+            assert!(rows.contains(&("Coverage".into(), "Not provided by this component.".into())));
+            assert!(!rows.iter().any(|(key, _)| key == "text"));
+        });
+        state.borrow_mut().select(None);
+        render_panel(&mut inspector, &mut text);
+        inspector.with_host(&mut |host| {
+            let rows = rows(host);
+            assert!(
+                rows.iter()
+                    .any(|(key, value)| key == "Live snapshot" && value.starts_with("Unavailable"))
+            );
+            assert!(
+                !rows
+                    .iter()
+                    .any(|(key, _)| key == "Coverage" || key == "Theme" || key == "Frame")
+            );
+            assert_eq!(host.semantic_mount(DOCUMENT_SCROLL), scroll_mount);
+        });
+    }
+    struct InspectorClipboard(RefCell<String>);
+    impl tekes_ui_module_runtime::ContentClipboard for InspectorClipboard {
+        fn clipboard_text(&self) -> Option<String> {
+            Some(self.0.borrow().clone())
+        }
+        fn set_clipboard_text(&self, value: &str) {
+            *self.0.borrow_mut() = value.into();
+        }
+    }
+    fn inspector_value_id(host: &ContentHost, label: &str) -> ComponentId {
+        host.get(DOCUMENT_READER)
+            .unwrap()
+            .component::<StackContent>()
+            .unwrap()
+            .children
+            .iter()
+            .filter_map(|section| section.component::<GridContent>())
+            .flat_map(|grid| grid.children.chunks_exact(2))
+            .find(|pair| pair[0].component::<TextContent>().unwrap().text == label)
+            .unwrap()[1]
+            .id()
+    }
+    #[test]
+    fn apphost_workbench_inspector_values_select_copy_and_reject_edits() {
+        use tekes_ui_controls::composition::AccessibilityAction;
+        use tekes_ui_module_runtime::{ContentClipboard, dispatch_content_window_event_with_text};
+        let state = state(FORM_ROUTE);
+        state.borrow_mut().select(Some("name"));
+        let mut inspector = panel_source(state.clone(), true).unwrap();
+        let mut text = super::super::text::TextEngine::new();
+        let clipboard = InspectorClipboard(RefCell::new(String::new()));
+        FocusContent(state.clone()).with_host(&mut |host| {
+            render_text_host(host, &mut text);
+            assert!(host.focus(Some(ComponentId(100)), false));
+            render_text_host(host, &mut text);
+        });
+        render_panel(&mut inspector, &mut text);
+        // Actual AppHost mouse-down routing cancels every other local panel
+        // before delivering the click. That invalidates specimen layout.
+        FocusContent(state.clone()).with_host(&mut |host| {
+            host.cancel();
+            host.focus(None, false);
+        });
+        assert!(
+            state
+                .borrow()
+                .selected_snapshot()
+                .unwrap()
+                .geometry
+                .is_none()
+        );
+        let mut value_mount = None;
+        inspector.with_host(&mut |host| {
+            let value = inspector_value_id(host, "Specimen");
+            let point = host.get(value).unwrap().frame().center();
+            host.event_with_text(
+                &tekes_ui_controls::composition::ContentEvent::PointerDown(point),
+                &mut text,
+            )
+            .unwrap();
+            host.event_with_text(
+                &tekes_ui_controls::composition::ContentEvent::PointerUp(point),
+                &mut text,
+            )
+            .unwrap();
+            assert_eq!(host.focused(), Some(value));
+            value_mount = host.semantic_mount(value);
+            host.accessibility_action(value, None, AccessibilityAction::SetSelection(0..4));
+            assert_eq!(
+                host.text_surface(value).unwrap().input.selected_text(),
+                "name"
+            );
+            host.accessibility_action(
+                value,
+                None,
+                AccessibilityAction::ReplaceSelectedText("changed".into()),
+            );
+            host.accessibility_action(value, None, AccessibilityAction::SetValue("changed".into()));
+            assert_eq!(host.text_surface(value).unwrap().input.text, "name");
+            assert!(host.text_surface(value).unwrap().input.read_only);
+        });
+        // The next ordinary Focus paint restores geometry. Publishing that
+        // Layout group must not retire the clicked Identity text owner.
+        FocusContent(state.clone()).with_host(&mut |host| render_text_host(host, &mut text));
+        assert!(
+            state
+                .borrow()
+                .selected_snapshot()
+                .unwrap()
+                .geometry
+                .is_some()
+        );
+        render_panel(&mut inspector, &mut text);
+        inspector.with_host(&mut |host| {
+            let value = inspector_value_id(host, "Specimen");
+            assert_eq!(host.semantic_mount(value), value_mount);
+            assert_eq!(host.focused(), Some(value));
+            dispatch_content_window_event_with_text(
+                host,
+                &tekes_ui_platform_macos::Event::TextCommand("copy:".into()),
+                &clipboard,
+                &mut text,
+            )
+            .unwrap();
+            assert_eq!(clipboard.clipboard_text().as_deref(), Some("name"));
+            assert_eq!(
+                host.text_surface(inspector_value_id(host, "Specimen"))
+                    .unwrap()
+                    .input
+                    .selected_text(),
+                "name"
+            );
+        });
+        state.borrow_mut().select(Some("owner"));
+        render_panel(&mut inspector, &mut text);
+        inspector.with_host(&mut |host| {
+            let input = &host
+                .text_surface(inspector_value_id(host, "Specimen"))
+                .unwrap()
+                .input;
+            assert_eq!(input.text, "owner");
+            assert!(input.selected_text().is_empty());
+        });
+    }
+    #[test]
+    fn apphost_workbench_inspector_layout_value_survives_invalidation_and_copies_current_frame() {
+        use tekes_ui_controls::composition::{AccessibilityAction, ContentEvent};
+        use tekes_ui_module_runtime::{ContentClipboard, dispatch_content_window_event_with_text};
+        let state = state(FORM_ROUTE);
+        state.borrow_mut().select(Some("name"));
+        let mut inspector = panel_source(state.clone(), true).unwrap();
+        let mut text = super::super::text::TextEngine::new();
+        let clipboard = InspectorClipboard(RefCell::new(String::new()));
+        FocusContent(state.clone()).with_host(&mut |host| render_text_host(host, &mut text));
+        let current_frame = format!(
+            "{:?}",
+            state
+                .borrow()
+                .selected_snapshot()
+                .unwrap()
+                .geometry
+                .unwrap()
+                .frame
+        );
+        render_panel(&mut inspector, &mut text);
+        let mut frame_id = ComponentId(0);
+        inspector.with_host(&mut |host| {
+            frame_id = inspector_value_id(host, "Frame");
+            let y = host.get(frame_id).unwrap().frame().min_y();
+            host.get_mut(DOCUMENT_SCROLL)
+                .unwrap()
+                .component_mut::<ScrollContent>()
+                .unwrap()
+                .scroll
+                .scroll_by(0., y - 300.);
+        });
+        render_panel(&mut inspector, &mut text);
+        let mut frame_mount = None;
+        let mut frame_point = tekes_ui_scene::Point::new(0., 0.);
+        inspector.with_host(&mut |host| {
+            let frame = host.get(frame_id).unwrap().frame();
+            frame_point = tekes_ui_scene::Point::new(frame.min_x() + 8., frame.min_y() + 8.);
+            assert!(
+                host.get(frame_id)
+                    .unwrap()
+                    .visible()
+                    .unwrap()
+                    .contains(frame_point)
+            );
+            frame_mount = host.semantic_mount(frame_id);
+        });
+        // Real mouse-down ordering: another panel is cancelled before the
+        // Inspector receives input. There is no prepare/render between them.
+        FocusContent(state.clone()).with_host(&mut |host| {
+            host.cancel();
+            host.focus(None, false);
+        });
+        assert!(
+            state
+                .borrow()
+                .selected_snapshot()
+                .unwrap()
+                .geometry
+                .is_none()
+        );
+        inspector.with_host(&mut |host| {
+            assert_eq!(
+                host.text_surface(frame_id).unwrap().input.text,
+                current_frame
+            );
+            host.event_with_text(&ContentEvent::PointerDown(frame_point), &mut text)
+                .unwrap();
+            host.event_with_text(&ContentEvent::PointerUp(frame_point), &mut text)
+                .unwrap();
+            assert_eq!(host.focused(), Some(frame_id));
+            let len = host.text_surface(frame_id).unwrap().input.len();
+            host.accessibility_action(frame_id, None, AccessibilityAction::SetSelection(0..len));
+        });
+        FocusContent(state.clone()).with_host(&mut |host| render_text_host(host, &mut text));
+        render_panel(&mut inspector, &mut text);
+        inspector.with_host(&mut |host| {
+            assert_eq!(host.semantic_mount(frame_id), frame_mount);
+            assert_eq!(host.focused(), Some(frame_id));
+            assert_eq!(
+                host.text_surface(frame_id).unwrap().input.selected_text(),
+                current_frame
+            );
+        });
+        // If the source really remains invalid at a normal Inspector draw,
+        // publish Unavailable honestly and reset only that changed value.
+        FocusContent(state.clone()).with_host(&mut |host| host.cancel());
+        render_panel(&mut inspector, &mut text);
+        inspector.with_host(&mut |host| {
+            assert_eq!(host.semantic_mount(frame_id), frame_mount);
+            assert_eq!(host.focused(), Some(frame_id));
+            assert_eq!(
+                host.text_surface(frame_id).unwrap().input.text,
+                "Unavailable"
+            );
+            assert!(
+                host.text_surface(frame_id)
+                    .unwrap()
+                    .input
+                    .selected_text()
+                    .is_empty()
+            );
+            host.accessibility_action(frame_id, None, AccessibilityAction::SetSelection(0..11));
+        });
+        FocusContent(state.clone()).with_host(&mut |host| render_text_host(host, &mut text));
+        render_panel(&mut inspector, &mut text);
+        inspector.with_host(&mut |host| {
+            assert_eq!(host.semantic_mount(frame_id), frame_mount);
+            assert_eq!(host.focused(), Some(frame_id));
+            let input = &host.text_surface(frame_id).unwrap().input;
+            assert_eq!(input.text, current_frame);
+            assert!(input.selected_text().is_empty());
+            let len = input.len();
+            host.accessibility_action(frame_id, None, AccessibilityAction::SetSelection(0..len));
+            dispatch_content_window_event_with_text(
+                host,
+                &tekes_ui_platform_macos::Event::TextCommand("copy:".into()),
+                &clipboard,
+                &mut text,
+            )
+            .unwrap();
+            assert_eq!(
+                clipboard.clipboard_text().as_deref(),
+                Some(current_frame.as_str())
+            );
+        });
+    }
+    #[test]
     fn apphost_workbench_readers_preserve_selection_and_specimen_focus() {
         let state = state(FORM_ROUTE);
         state.borrow_mut().select(Some("name"));
         let unpainted = state.borrow().selected_snapshot().unwrap();
         assert!(unpainted.geometry.is_none());
         assert!(unpainted.last_paint.is_none());
-        let body = inspector_body(state.borrow().selection(), Some(unpainted));
-        assert!(body.contains("Current measured layout unavailable"));
+        let body = format!(
+            "{:?}",
+            inspector_body(state.borrow().selection(), Some(unpainted))
+        );
+        assert!(body.contains("Unavailable (not rendered or invalidated)"));
         assert!(body.contains("Last paint (historical"));
         assert!(body.contains("Not recorded yet"));
         let mut text = super::super::text::TextEngine::new();
@@ -1281,7 +1929,7 @@ mod tests {
             assert_eq!(host.focused(), Some(ComponentId(100)));
         });
         let mut documents = panel("test-documents", "Documents", state.clone(), false).unwrap();
-        let mut inspector = panel("test-inspector", "Inspector", state.clone(), true).unwrap();
+        let mut inspector = panel_source(state.clone(), true).unwrap();
         let mut version = 0;
         documents.with_host(&mut |host| {
             render_text_host(host, &mut text);
@@ -1299,6 +1947,7 @@ mod tests {
                 .version()
                 .revision();
         });
+        render_panel(&mut inspector, &mut text);
         for _ in 0..3 {
             inspector.with_host(&mut |_| {});
             documents.with_host(&mut |host| {
@@ -1324,8 +1973,11 @@ mod tests {
         assert!(snapshot.focused);
         assert!(snapshot.geometry.is_some());
         assert!(snapshot.last_paint.is_some());
-        let body = inspector_body(state.borrow().selection(), Some(snapshot));
-        assert!(body.contains("Current measured layout (not declared sizing)"));
+        let body = format!(
+            "{:?}",
+            inspector_body(state.borrow().selection(), Some(snapshot))
+        );
+        assert!(body.contains("Measured bounds, not declared sizing"));
         assert!(body.contains("Last paint (historical"));
     }
     #[test]
@@ -1432,8 +2084,8 @@ mod tests {
         for from_inspector in [false, true] {
             let state = state(FORM_ROUTE);
             state.borrow_mut().select(Some("owner"));
-            let mut documents = panel("documents", "Documents", state.clone(), false).unwrap();
-            let mut inspector = panel("inspector", "Inspector", state.clone(), true).unwrap();
+            let mut documents = panel_source(state.clone(), false).unwrap();
+            let mut inspector = panel_source(state.clone(), true).unwrap();
             let mut text = super::super::text::TextEngine::new();
             let mut linked_mount = None;
             documents.with_host(&mut |host| {
@@ -1452,6 +2104,7 @@ mod tests {
             documents.with_host(&mut |host| {
                 assert_eq!(host.semantic_mount(DOCUMENT_READER), linked_mount);
             });
+            render_panel(&mut inspector, &mut text);
             let chooser = if from_inspector {
                 &mut inspector
             } else {
@@ -1626,7 +2279,8 @@ mod tests {
             state,
             selection: Some(selection),
             inspector: false,
-            body: String::new(),
+            inspector_groups: Vec::new(),
+            inspector_target: None,
             document_focus: document_focus.clone(),
         };
         let mut text = super::super::text::TextEngine::new();

@@ -283,12 +283,21 @@ fn admitted_thumb_navigation_stops_original_reading_follow_and_wins_reflow() {
 
 #[test]
 fn explicit_pane_padding_stays_symmetric_with_a_real_overflow_scrollbar() {
-    let padding = tekes_ui_tokens::Spacing::Loose.value();
-    let mut host = ContentHost::new(Content::new(
-        SCROLL,
-        ListContent::scrollable("Properties", ITEMS, rows()).content_padding(padding),
-    ))
-    .unwrap();
+    pane_padding(Some(tekes_ui_tokens::Spacing::Loose.value() * 2.));
+}
+#[test]
+fn default_list_padding_stays_symmetric_with_a_real_overflow_scrollbar() {
+    pane_padding(None);
+}
+fn pane_padding(explicit: Option<f32>) {
+    let padding = explicit.unwrap_or(tekes_ui_tokens::Spacing::Loose.value());
+    let list = ListContent::scrollable("Properties", ITEMS, rows());
+    let list = if let Some(value) = explicit {
+        list.content_padding(value)
+    } else {
+        list
+    };
+    let mut host = ContentHost::new(Content::new(SCROLL, list)).unwrap();
     let frame = Rect::new(20., 40., 240., 140.);
     let _ = render(&mut host, frame, Theme::LIGHT.into());
     hover(&mut host, frame);
@@ -313,6 +322,8 @@ fn explicit_pane_padding_stays_symmetric_with_a_real_overflow_scrollbar() {
     let items = host.get(ITEMS).unwrap().frame();
     assert!(last.min_x() >= items.min_x() && last.max_x() <= items.max_x());
     assert_eq!(frame.max_y() - last.max_y(), padding);
+    assert_eq!(host.get(ComponentId(109)).unwrap().visible(), Some(last));
+    assert!(host.get(ComponentId(100)).unwrap().visible().is_none());
 }
 
 #[test]
@@ -358,11 +369,11 @@ fn navigation_row_measurement_and_real_hits_use_gallery_tokens_without_changing_
 }
 
 #[cfg(target_os = "macos")]
-#[test]
-fn scrollbar_drag_preserves_real_sibling_editor_marked_input_and_focus() {
+mod native_text {
+    use super::*;
     use std::rc::Rc;
     use tekes_ui_controls::{TextSurfaceHost, TextSurfaceTextRenderer};
-    struct EditorText;
+    pub(super) struct EditorText;
     impl ButtonTextRenderer for EditorText {
         fn measure(&mut self, value: &str, role: proposal::TextRole, width: f32) -> Size {
             Text.measure(value, role, width)
@@ -413,6 +424,12 @@ fn scrollbar_drag_preserves_real_sibling_editor_marked_input_and_focus() {
             ))
         }
     }
+}
+
+#[cfg(target_os = "macos")]
+#[test]
+fn scrollbar_drag_preserves_real_sibling_editor_marked_input_and_focus() {
+    use native_text::EditorText;
     const EDITOR: ComponentId = ComponentId(500);
     let mut host = ContentHost::new(Content::new(
         ComponentId(900),
@@ -466,4 +483,89 @@ fn scrollbar_drag_preserves_real_sibling_editor_marked_input_and_focus() {
     assert_eq!(host.focused(), Some(EDITOR));
     assert_eq!(host.focus_epoch(), focus);
     assert_eq!(host.text_input_snapshot().unwrap(), before);
+}
+
+#[cfg(target_os = "macos")]
+#[test]
+fn padded_stack_header_keeps_natural_height_and_stays_fixed_while_list_scrolls() {
+    use tekes_ui_controls::{
+        extended::{Axis, Stack},
+        layout::Insets,
+    };
+    let mut text = native_text::EditorText;
+    const HEADER: ComponentId = ComponentId(800);
+    const FIELD: ComponentId = ComponentId(801);
+    let padding = tekes_ui_tokens::Spacing::Loose.value();
+    let header = StackContent {
+        model: Stack {
+            axis: Axis::Vertical,
+            gap: 0.,
+        },
+        children: vec![Content::new(FIELD, SearchFieldContent::new("Find", ""))],
+        flexible_child: None,
+    }
+    .into_content_with_padding(HEADER, Insets::new(padding, padding, 0., padding));
+    let mut root = Content::new(
+        ComponentId(900),
+        StackContent {
+            model: Stack {
+                axis: Axis::Vertical,
+                gap: 0.,
+            },
+            children: vec![
+                header,
+                Content::new(SCROLL, ListContent::scrollable("Items", ITEMS, rows())),
+            ],
+            flexible_child: Some(SCROLL),
+        },
+    );
+    let mut natural_field = SearchFieldContent::new("Find", "");
+    let field_height = natural_field
+        .measure(&mut text, Size::new(300. - 2. * padding, 300.))
+        .size
+        .height;
+    let header_height = root.component_mut::<StackContent>().unwrap().children[0]
+        .measure(&mut text, Size::new(300., 300.))
+        .size
+        .height;
+    assert_eq!(header_height, field_height + padding);
+    let mut host = ContentHost::new(root).unwrap();
+    for width in [300., 80.] {
+        let frame = Rect::new(10., 20., width, 160.);
+        host.render(
+            &mut Scene::new(),
+            &mut text,
+            frame,
+            frame,
+            Theme::LIGHT.into(),
+        )
+        .unwrap();
+        let field = host.get(FIELD).unwrap().frame();
+        assert_eq!(field.min_x(), frame.min_x() + padding);
+        assert_eq!(field.max_x(), frame.max_x() - padding);
+        assert_eq!(field.min_y(), frame.min_y() + padding);
+        assert_eq!(host.get(HEADER).unwrap().frame().size.height, header_height);
+        let mount = host.get(FIELD).unwrap().mount_identity();
+        host.focus(Some(FIELD), false);
+        assert_eq!(host.focused(), Some(FIELD));
+        let view = host
+            .get_mut(SCROLL)
+            .unwrap()
+            .component_mut::<ScrollContent>()
+            .unwrap();
+        view.scroll.scroll_by(0., view.scroll.limit().y);
+        host.render(
+            &mut Scene::new(),
+            &mut text,
+            frame,
+            frame,
+            Theme::LIGHT.into(),
+        )
+        .unwrap();
+        assert_eq!(host.get(FIELD).unwrap().frame(), field);
+        assert_eq!(host.get(FIELD).unwrap().mount_identity(), mount);
+        assert_eq!(host.focused(), Some(FIELD));
+        assert!(scroll(&host).scroll.offset.y > 0.);
+        assert_eq!(host.get(FIELD).unwrap().visible(), Some(field));
+    }
 }

@@ -2078,6 +2078,15 @@ impl Host {
             w.request_redraw();
             return Ok(());
         }
+        if w.is_active() && Self::is_search_shortcut(&event) && self.reveal_registered_search()? {
+            // Refresh current layout before formal focus admission; publish the
+            // accepted Search editor to native text services before more input.
+            self.draw(w)?;
+            if self.focus_registered_search()? {
+                self.draw(w)?;
+                return Ok(());
+            }
+        }
         if let Event::Key(key) = &event
             && self.typography_key_input(key)
         {

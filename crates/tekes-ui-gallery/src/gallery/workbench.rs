@@ -3871,19 +3871,12 @@ impl Workbench {
                 let preferred_list_width = (w * 0.32).min(240.);
                 // Keep the fixture's repeated word intact before giving the detail
                 // its remaining width; the original ratio alone can split it.
-                let focus_padding = -ControlFrame::new(Rect::new(0.0, 0.0, 1.0, 1.0), None)
-                    .focus_bounds(1.0)
-                    .min_x();
                 let document_button_width = ctx
                     .text
                     .measure_button("Document", w, ButtonSize::Body, proposal::TextRole::UiBody)
                     .width;
-                let minimum_list_width = document_button_width
-                    + 20.0
-                    + focus_padding * 2.0
-                    + proposal::SCROLLBAR_WIDTH
-                    + proposal::SCROLLBAR_INSET
-                    + tekes_ui_tokens::Spacing::Micro.value();
+                let minimum_list_width =
+                    s.master().minimum_width(ctx.text, document_button_width) + 12.0; // existing separation between the List and detail
                 let lw = preferred_list_width
                     .max(minimum_list_width)
                     .min((w - 12.0).max(0.0));
@@ -11155,7 +11148,8 @@ mod interaction_tests {
         build(&mut w, i, &mut text);
         assert_eq!(w.state(i).input.query(), "notes 文档");
         let content = Rect::new(312., 70., 1000., 820.);
-        let mut original_frame = None;
+        let mut original_allocation = None;
+        let mut original_editor_height = None;
         for placeholder in [false, true] {
             if placeholder {
                 let clear = w
@@ -11194,6 +11188,7 @@ mod interaction_tests {
                 assert_eq!(w.focused_control_id(i), None);
                 assert!(!w.state(i).input.search_host().unwrap().focused());
             }
+            let mut original_frame = None;
             for theme in Theme::ALL {
                 text.begin_frame();
                 let mut static_text = super::super::static_text::StaticText::new(None);
@@ -11207,6 +11202,47 @@ mod interaction_tests {
                 assert!(scene.composition_error().is_none());
                 let state = w.state(i);
                 let frame = state.input.frame_at(0).unwrap();
+                let search_host = &state.input.search_host().unwrap().host;
+                let allocation = search_host.get(search_host::SEARCH).unwrap().frame();
+                if let Some(original) = original_allocation {
+                    assert_eq!(
+                        allocation, original,
+                        "query changes retain the Search allocation"
+                    );
+                } else {
+                    original_allocation = Some(allocation);
+                }
+                let clear_parts = search_host
+                    .semantics()
+                    .into_iter()
+                    .find(|node| node.id == search_host::SEARCH)
+                    .unwrap()
+                    .parts
+                    .len();
+                assert_eq!(clear_parts, usize::from(!placeholder));
+                if let Some(height) = original_editor_height {
+                    assert_eq!(
+                        frame.size.height, height,
+                        "query changes retain the original Form editor height"
+                    );
+                } else {
+                    original_editor_height = Some(frame.size.height);
+                }
+                assert_eq!(frame.min_y(), allocation.min_y());
+                if placeholder {
+                    // Search keeps the Form editor's natural height; the taller
+                    // outer allocation also accommodates its original Clear button.
+                    assert_eq!(
+                        (frame.min_x(), frame.max_x()),
+                        (allocation.min_x(), allocation.max_x()),
+                        "empty query uses the full horizontal allocation without a hidden Clear slot"
+                    );
+                } else {
+                    assert!(
+                        frame.max_x() < allocation.max_x(),
+                        "nonempty query retains the real Clear slot"
+                    );
+                }
                 if let Some(original) = original_frame {
                     assert_eq!(frame, original);
                 } else {
@@ -11251,6 +11287,7 @@ mod interaction_tests {
         );
         let scene = build(&mut w, i, &mut text);
         assert_eq!(w.state(i).input.query(), "readme 查询");
+        let frame = w.state(i).input.frame_at(0).unwrap();
         assert_search(&scene, frame, Theme::LIGHT, "primary-text", text.scale());
         assert_eq!(
             w.state(i)
