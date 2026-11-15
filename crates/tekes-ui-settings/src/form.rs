@@ -207,6 +207,22 @@ impl SettingsForm {
             save_error: None,
         })
     }
+    /// Center the readable body within the caller's content allocation.
+    /// Hosts own pane/titlebar insets; Settings owns the typography-scaled width.
+    pub fn body_rect(text: &mut dyn ButtonTextRenderer, frame: Rect) -> Rect {
+        let role = proposal::TextRole::UiBody;
+        let max_width = proposal::metric("size", "c-settings-content-max-width")
+            .expect("Settings content width")
+            * text.resolved_font_size(role)
+            / role.style().size;
+        let width = frame.size.width.min(max_width);
+        Rect::new(
+            frame.min_x() + (frame.size.width - width) * 0.5,
+            frame.min_y(),
+            width,
+            frame.size.height,
+        )
+    }
     pub fn render(
         &mut self,
         scene: &mut Scene,
@@ -214,18 +230,7 @@ impl SettingsForm {
         frame: Rect,
         palette: Palette,
     ) -> Result<()> {
-        let role = proposal::TextRole::UiBody;
-        let max_width = proposal::metric("size", "c-settings-content-max-width")
-            .expect("Settings content width")
-            * text.resolved_font_size(role)
-            / role.style().size;
-        let width = frame.size.width.min(max_width);
-        let body = Rect::new(
-            frame.min_x() + (frame.size.width - width) * 0.5,
-            frame.min_y(),
-            width,
-            frame.size.height,
-        );
+        let body = Self::body_rect(text, frame);
         self.host
             .render(scene, text, body, frame, palette)
             .map_err(|e| anyhow::anyhow!("Settings render: {e:?}"))

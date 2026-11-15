@@ -139,6 +139,18 @@ impl crate::ContainerContent for SettingsColumn {
         });
     }
 }
+// Keep the mounted original host (input, AX and scrolling) while sharing the
+// public form's body allocation after AppHost's pane/titlebar-safe insets.
+fn render_settings_body(
+    container: &mut crate::LocalContainer,
+    scene: &mut Scene,
+    text: &mut dyn tekes_ui_controls::ButtonTextRenderer,
+    allocation: Rect,
+    palette: Palette,
+) -> Result<()> {
+    let body = tekes_ui_settings::SettingsForm::body_rect(text, allocation);
+    container.render(scene, text, body, allocation, palette)
+}
 fn settings_columns(
     surface: &std::rc::Rc<std::cell::RefCell<crate::settings::SettingsSurface>>,
 ) -> Vec<crate::Column> {
@@ -1206,13 +1218,6 @@ impl Host {
             (form_content.size.width - 2. * pad).max(1.),
             (form_content.size.height - 2. * pad).max(1.),
         );
-        let width = form_content.size.width.clamp(1., 620.);
-        let form_frame = Rect::new(
-            form_content.min_x() + (form_content.size.width - width) * 0.5,
-            form_content.min_y(),
-            width,
-            form_content.size.height,
-        );
         let _ = settings;
         drop(state);
         self.sync_toolbar(
@@ -1247,11 +1252,13 @@ impl Host {
             &mut panel.content_icons,
             &mut self.text,
             |text| {
-                panel
-                    .local
-                    .as_mut()
-                    .unwrap()
-                    .render(&mut scene, text, form_frame, form_frame, palette)
+                render_settings_body(
+                    panel.local.as_mut().unwrap(),
+                    &mut scene,
+                    text,
+                    form_content,
+                    palette,
+                )
             },
         )?;
         if frames[0].size.width > 32. {
@@ -1915,7 +1922,123 @@ mod settings_theme_radio_width_tests {
     use tekes_ui_controls::{TextSurfaceHost, composition::RadioGroupContent};
 
     #[test]
-    fn actual_core_text_theme_words_fit_their_slots_in_a_620_point_form() {
+    fn direct_and_mounted_forms_share_scaled_geometry_focus_ax_and_footer() {
+        use crate::settings::{SettingsSurface, SettingsWindow};
+        use tekes_ui_controls::composition::ScrollContent;
+        use tekes_ui_settings::{Draft, FileProvider, SettingsForm, Snapshot};
+        let definition = include_str!("../../tekes-ui-settings/tests/fixtures/layout.schema.toml");
+        // Only the provider's lock file is created; no settings are loaded/saved.
+        let directory = std::env::temp_dir().join(format!(
+            "settings-body-contract-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos(),
+        ));
+        let path = directory.join("settings.toml");
+        let options = SettingsWindow::from_toml(definition, path.clone()).unwrap();
+        let provider = FileProvider::open(path, options.schema.namespace.clone()).unwrap();
+        let mut surface = SettingsSurface::new(options, provider, Snapshot::default()).unwrap();
+        let mut schema = surface.view_schema.clone();
+        // A long label and enough original rows to require wrapping and scrolling.
+        let field = schema.settings[0].clone();
+        schema.settings = (0..12)
+            .map(|i| {
+                let mut field = field.clone();
+                field.id = format!("body-field-{i}");
+                field.path = vec![format!("body-field-{i}")];
+                field.label =
+                    "A longer settings label that wraps within a narrow allocation".into();
+                field
+            })
+            .collect();
+        let draft = Draft::new(Snapshot::default());
+        surface.form = SettingsForm::new(&schema, &draft).unwrap();
+        let state = std::rc::Rc::new(std::cell::RefCell::new(surface));
+        let mut mounted = crate::LocalContainer::from_source(
+            "settings-center",
+            SettingsColumn {
+                state: state.clone(),
+                sidebar: false,
+            },
+        );
+        let mut direct = SettingsForm::new(&schema, &draft).unwrap();
+        let mut text = crate::text::Text::new();
+        for scale in [1., 1.5] {
+            text.set_body_size(tekes_ui_tokens::proposal::TextRole::UiBody.style().size * scale);
+            for width in [320., 1200.] {
+                let allocation = Rect::new(240., 72., width, 260.);
+                let mount = state.borrow().form.host.semantic_mount(ComponentId(100));
+                for scrolled in [false, true] {
+                    direct
+                        .render(
+                            &mut Scene::new(),
+                            &mut text,
+                            allocation,
+                            Theme::LIGHT.into(),
+                        )
+                        .unwrap();
+                    render_settings_body(
+                        &mut mounted,
+                        &mut Scene::new(),
+                        &mut text,
+                        allocation,
+                        Theme::LIGHT.into(),
+                    )
+                    .unwrap();
+                    let mut state = state.borrow_mut();
+                    let host = &mut state.form.host;
+                    let body = host.get(ComponentId(1)).unwrap().frame();
+                    assert_eq!(body.size.width, width.min(560. * scale));
+                    assert_eq!(
+                        body.min_x(),
+                        allocation.min_x() + (width - body.size.width) / 2.
+                    );
+                    // Includes wrapped label/row heights, controls, clips and AX bounds.
+                    assert_eq!(host.semantics(), direct.host.semantics());
+                    assert_eq!(host.focus_targets(), direct.host.focus_targets());
+                    assert_eq!(host.semantic_mount(ComponentId(100)), mount);
+                    let footer = host.get(ComponentId(12)).unwrap().frame();
+                    assert!(footer.max_y() <= allocation.max_y());
+                    let scroll = host.get(ComponentId(11)).unwrap().frame();
+                    assert!(scroll.max_y() <= footer.min_y());
+                    if !scrolled {
+                        host.focus(Some(ComponentId(5)), true);
+                        direct.host.focus(Some(ComponentId(5)), true);
+                        for host in [host, &mut direct.host] {
+                            assert!(
+                                host.get_mut(ComponentId(11))
+                                    .unwrap()
+                                    .component_mut::<ScrollContent>()
+                                    .unwrap()
+                                    .scroll
+                                    .scroll_by(0., 80.)
+                            );
+                        }
+                    } else {
+                        assert_eq!(host.focused(), Some(ComponentId(5)));
+                        assert!(
+                            host.get(ComponentId(11))
+                                .unwrap()
+                                .component::<ScrollContent>()
+                                .unwrap()
+                                .scroll
+                                .offset
+                                .y
+                                > 0.
+                        );
+                    }
+                }
+            }
+        }
+        drop(mounted);
+        drop(state);
+        std::fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn actual_core_text_theme_words_fit_the_shared_scaled_body() {
         let schema = tekes_ui_settings::Schema::parse(include_str!(
             "../../tekes-ui-gallery/src/gallery/apphost.settings.toml"
         ))
@@ -1936,15 +2059,8 @@ mod settings_theme_radio_width_tests {
                 &tekes_ui_settings::Draft::new(tekes_ui_settings::Snapshot::default()),
             )
             .unwrap();
-            let frame = Rect::new(0., 0., 620., 500.);
-            form.host
-                .render(
-                    &mut Scene::new(),
-                    &mut text,
-                    frame,
-                    frame,
-                    Theme::LIGHT.into(),
-                )
+            let frame = Rect::new(0., 0., 560. * scale, 500.);
+            form.render(&mut Scene::new(), &mut text, frame, Theme::LIGHT.into())
                 .unwrap();
 
             let radio = form
@@ -1955,6 +2071,14 @@ mod settings_theme_radio_width_tests {
                 .unwrap();
             let layout = radio.view().layout();
             assert_eq!(layout.labels.len(), field.options.len());
+            assert!(
+                layout
+                    .labels
+                    .iter()
+                    .all(|label| label.min_y() == layout.labels[0].min_y()),
+                "horizontal options retain a single aligned row"
+            );
+            assert!(layout.labels.last().unwrap().max_x() <= frame.max_x());
             for (index, option) in field.options.iter().enumerate() {
                 let natural = text
                     .shape_label(
@@ -2570,6 +2694,11 @@ mod navigation_input_tests {
         .enumerate()
         {
             host.panels[i].bounds = frame;
+            let frame = if i == 1 {
+                tekes_ui_settings::SettingsForm::body_rect(&mut host.text, frame)
+            } else {
+                frame
+            };
             host.panels[i]
                 .local
                 .as_mut()
@@ -3722,8 +3851,13 @@ mod form_keyboard_owner_tests {
             Rect::new(0., 42., 225., 598.),
             Rect::new(225., 42., 675., 598.),
         ];
-        for (panel, frame) in host.panels.iter_mut().zip(frames) {
+        for (i, (panel, frame)) in host.panels.iter_mut().zip(frames).enumerate() {
             panel.bounds = frame;
+            let frame = if i == 1 {
+                tekes_ui_settings::SettingsForm::body_rect(&mut host.text, frame)
+            } else {
+                frame
+            };
             panel
                 .local
                 .as_mut()
@@ -3775,8 +3909,12 @@ mod form_keyboard_owner_tests {
     }
 
     fn render_original_panels(host: &mut Host) {
-        for panel in &mut host.panels {
-            let frame = panel.bounds;
+        for (i, panel) in host.panels.iter_mut().enumerate() {
+            let frame = if i == 1 {
+                tekes_ui_settings::SettingsForm::body_rect(&mut host.text, panel.bounds)
+            } else {
+                panel.bounds
+            };
             panel
                 .local
                 .as_mut()
