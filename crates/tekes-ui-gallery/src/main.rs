@@ -75,7 +75,15 @@ fn main() {
         return;
     }
 
-    let mut args = std::env::args().skip(1);
+    let startup_args = std::env::args().collect::<Vec<_>>();
+    if let Some(args) = gallery::apphost_workbench::apphost_arguments(&startup_args) {
+        if let Err(error) = gallery::apphost_workbench::run(&args) {
+            eprintln!("Gallery AppHost: {error:#}");
+            std::process::exit(1);
+        }
+        return;
+    }
+    let mut args = startup_args.into_iter().skip(1);
     if let Some(arg) = args.next() {
         match arg.as_str() {
             "--snapshot" => {
@@ -98,7 +106,9 @@ fn main() {
                 }
             }
             other => {
-                eprintln!("未知参数 {other}\n用法：tekes-ui-gallery [--snapshot <输出目录>]");
+                eprintln!(
+                    "未知参数 {other}\n用法：tekes-ui-gallery [--apphost | --snapshot <输出目录>]"
+                );
                 std::process::exit(2);
             }
         }

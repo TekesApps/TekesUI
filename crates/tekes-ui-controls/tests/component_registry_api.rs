@@ -1255,6 +1255,34 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         &mut actual,
         "tekes_ui_controls::composition::InputModifiers",
     );
+    #[cfg(feature = "inspection")]
+    {
+        public_type::<tekes_ui_controls::composition::InspectionGeometry>(
+            &mut actual,
+            "tekes_ui_controls::composition::InspectionGeometry",
+        );
+    }
+    #[cfg(feature = "inspection")]
+    {
+        public_type::<tekes_ui_controls::composition::InspectionPaint>(
+            &mut actual,
+            "tekes_ui_controls::composition::InspectionPaint",
+        );
+    }
+    #[cfg(feature = "inspection")]
+    {
+        public_type::<tekes_ui_controls::composition::InspectionProperty>(
+            &mut actual,
+            "tekes_ui_controls::composition::InspectionProperty",
+        );
+    }
+    #[cfg(feature = "inspection")]
+    {
+        public_type::<tekes_ui_controls::composition::InspectionSnapshot>(
+            &mut actual,
+            "tekes_ui_controls::composition::InspectionSnapshot",
+        );
+    }
     public_type::<tekes_ui_controls::composition::KeyedSelectableListContent>(
         &mut actual,
         "tekes_ui_controls::composition::KeyedSelectableListContent",
@@ -1375,7 +1403,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::composition::NumberFieldContent",
     );
     #[allow(dead_code)]
-    fn public_trait_217<T: tekes_ui_controls::composition::NumberFormat + ?Sized>() {}
+    fn public_trait_221<T: tekes_ui_controls::composition::NumberFormat + ?Sized>() {}
     actual.push("tekes_ui_controls::composition::NumberFormat");
     public_type::<tekes_ui_controls::composition::NumberParseError>(
         &mut actual,
@@ -1438,7 +1466,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::composition::PopoverSession",
     );
     #[allow(dead_code)]
-    fn public_trait_233<T: tekes_ui_controls::composition::PreparedActionEffect + ?Sized>() {}
+    fn public_trait_237<T: tekes_ui_controls::composition::PreparedActionEffect + ?Sized>() {}
     actual.push("tekes_ui_controls::composition::PreparedActionEffect");
     public_type::<tekes_ui_controls::composition::PreparedActionFocus>(
         &mut actual,
@@ -2255,7 +2283,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::layout_view::IconLayout",
     );
     #[allow(dead_code)]
-    fn public_trait_436<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
+    fn public_trait_440<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
     actual.push("tekes_ui_controls::layout_view::IconRenderer");
     public_type::<tekes_ui_controls::layout_view::IconView>(
         &mut actual,
@@ -2321,6 +2349,8 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
     let enabled_features: &[&str] = &[
         #[cfg(feature = "bitmap-images")]
         "bitmap-images",
+        #[cfg(feature = "inspection")]
+        "inspection",
         #[cfg(feature = "svg-icons")]
         "svg-icons",
     ];

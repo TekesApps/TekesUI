@@ -411,6 +411,24 @@ impl TextFieldContent {
     }
 }
 impl Component for TextFieldContent {
+    #[cfg(feature = "inspection")]
+    fn inspection_properties(&self) -> Option<Vec<InspectionProperty>> {
+        Some(vec![
+            InspectionProperty::new("component", "TextFieldContent"),
+            InspectionProperty::new("label", &self.field.label),
+            InspectionProperty::new("text", &self.surface.input.text),
+            InspectionProperty::new(
+                "selection_utf16",
+                format!("{:?}", self.surface.input.selection()),
+            ),
+            InspectionProperty::new("marked_utf16", format!("{:?}", self.surface.input.marked)),
+            InspectionProperty::new("read_only", self.surface.input.read_only),
+            InspectionProperty::new("disabled", self.surface.input.disabled),
+            InspectionProperty::new("focus_visible", self.surface.focus_visible),
+            InspectionProperty::new("viewport", format!("{:?}", self.viewport)),
+            InspectionProperty::new("show_metadata", self.show_metadata),
+        ])
+    }
     fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
         action_preparation::prepare_original(
             self,

@@ -236,9 +236,22 @@ fn actual_passive_feedback_token_reads() {
                         }
                     });
                     assert!(!reads.is_empty());
-                    assert!(scene.primitives().iter().any(
-                        |p| matches!(p, Primitive::PushClip(r) if *r == clip.unwrap_or(frame))
-                    ));
+                    if component == "tui.skeleton" && clip.is_none() {
+                        // Skeleton owns bounded ink, not a redundant leaf scissor.
+                        // Only an explicit ancestor supplies its rectangular clip.
+                        assert!(
+                            !scene
+                                .primitives()
+                                .iter()
+                                .any(|p| matches!(p, Primitive::PushClip(_))),
+                            "{component} {theme:?} brand={brand}: unexpected leaf clip"
+                        );
+                        assert!(quads(&scene).iter().all(|q| q.rect == frame));
+                    } else {
+                        assert!(scene.primitives().iter().any(
+                            |p| matches!(p, Primitive::PushClip(r) if *r == clip.unwrap_or(frame))
+                        ), "{component} {theme:?} brand={brand} partial={partial}: missing ancestor/visible clip");
+                    }
                     cases.push(serde_json::json!({"component":component,"content_state":state,"state_asserted":true,"variant":variant,"theme":format!("{theme:?}"),"brand":brand,"partial":partial,"lookups":reads}));
                 }
             }

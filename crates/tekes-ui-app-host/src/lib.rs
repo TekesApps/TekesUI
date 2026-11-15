@@ -231,6 +231,13 @@ impl AppWindow {
     }
 
     pub fn run(self) -> anyhow::Result<()> {
+        self.run_with_args(&std::env::args().collect::<Vec<_>>())
+    }
+
+    /// Run with explicit startup arguments, including the executable at argv[0].
+    /// Embedding consumers remove only their own already-consumed arguments;
+    /// all remaining worker and fixed-profile argument validation still applies.
+    pub fn run_with_args(self, args: &[String]) -> anyhow::Result<()> {
         run_columns(
             self.profile,
             self.columns,
@@ -239,6 +246,7 @@ impl AppWindow {
             self.presentation,
             self.theme,
             self.container_factories,
+            args,
         )
     }
 }
@@ -293,6 +301,7 @@ fn run_internal(
         None,
         tekes_ui_tokens::Theme::LIGHT,
         Vec::new(),
+        &std::env::args().collect::<Vec<_>>(),
     )
 }
 #[cfg(target_os = "macos")]
@@ -321,6 +330,7 @@ fn validate_assembly(
 }
 
 #[cfg(target_os = "macos")]
+#[allow(clippy::too_many_arguments)]
 fn run_columns(
     profile: AppProfile,
     columns: Option<Vec<Column>>,
@@ -329,6 +339,7 @@ fn run_columns(
     presentation: Option<PresentationOptions>,
     theme: tekes_ui_tokens::Theme,
     factories: Vec<ContainerFactory>,
+    args: &[String],
 ) -> anyhow::Result<()> {
     validate_assembly(
         &profile,
@@ -336,8 +347,7 @@ fn run_columns(
         navigation.is_some(),
         presentation.as_ref(),
     )?;
-    let args: Vec<String> = std::env::args().collect();
-    if run_component_worker_from_args(&args)? {
+    if run_component_worker_from_args(args)? {
         return Ok(());
     }
     if args.get(1).map(String::as_str) == Some("--worker") {
@@ -349,11 +359,7 @@ fn run_columns(
             .ok_or_else(|| anyhow::anyhow!("worker module not in fixed profile"))?;
         return tekes_ui_module_runtime::run((definition.create)(), &args[3]);
     }
-    let acceptance = match args.get(1).map(String::as_str) {
-        None => false,
-        Some("--window-acceptance") if args.len() == 2 => true,
-        _ => anyhow::bail!("fixed-profile app accepts no runtime module discovery or selection"),
-    };
+    let acceptance = window_acceptance_from_args(args)?;
     window::run(
         AppWindow {
             profile,
@@ -367,6 +373,14 @@ fn run_columns(
         acceptance,
     )
 }
+#[cfg(target_os = "macos")]
+fn window_acceptance_from_args(args: &[String]) -> anyhow::Result<bool> {
+    match args.get(1).map(String::as_str) {
+        None => Ok(false),
+        Some("--window-acceptance") if args.len() == 2 => Ok(true),
+        _ => anyhow::bail!("fixed-profile app accepts no runtime module discovery or selection"),
+    }
+}
 #[cfg(not(target_os = "macos"))]
 pub fn run(profile: AppProfile) -> anyhow::Result<()> {
     validate(&profile)?;
@@ -377,6 +391,41 @@ pub fn run(profile: AppProfile) -> anyhow::Result<()> {
 mod hosted_window_tests {
     use super::*;
     use tekes_ui_controls::composition::{ComponentId, Content, TextFieldContent};
+    #[test]
+    fn hosted_run_argument_gate_requires_consumed_consumer_flags() {
+        let args = |values: &[&str]| {
+            values
+                .iter()
+                .map(|value| (*value).to_owned())
+                .collect::<Vec<_>>()
+        };
+        // Reproduces the native Gallery launch failure at the same run gate.
+        assert!(window_acceptance_from_args(&args(&["gallery", "--apphost"])).is_err());
+        assert!(!window_acceptance_from_args(&args(&["gallery"])).unwrap());
+        assert!(window_acceptance_from_args(&args(&["gallery", "--window-acceptance"])).unwrap());
+        for tail in [
+            vec!["--modules", "unknown"],
+            vec!["unknown"],
+            vec!["--window-acceptance", "extra"],
+            vec!["--worker", "unregistered", "socket"],
+            vec!["--worker", "unregistered"],
+        ] {
+            let mut remaining = vec!["gallery".to_owned()];
+            remaining.extend(tail.into_iter().map(str::to_owned));
+            assert!(window_acceptance_from_args(&remaining).is_err());
+            let local = LocalContainer::new(
+                "focus",
+                Content::new(ComponentId(1), TextFieldContent::new("Field", "")),
+            )
+            .unwrap();
+            let app =
+                AppWindow::from_containers(vec![local.into()], PresentationOptions::new("focus"))
+                    .unwrap();
+            // Exercise the public startup path; each invalid argument must fail
+            // before any worker connection or native window is created.
+            assert!(app.run_with_args(&remaining).is_err());
+        }
+    }
     #[test]
     fn hosted_open_uses_run_assembly_preconditions_before_native_creation() {
         let empty = AppProfile { modules: vec![] };

@@ -25,6 +25,10 @@ pub use icon::{SvgIconCache, SvgIconRenderer};
 mod disclosure;
 pub use disclosure::{DisclosureContent, DisclosureIntent};
 mod actions;
+#[cfg(feature = "inspection")]
+mod inspection;
+#[cfg(feature = "inspection")]
+pub use inspection::{InspectionGeometry, InspectionPaint, InspectionProperty, InspectionSnapshot};
 mod collection_transaction;
 mod legacy_selectable_list;
 pub use legacy_selectable_list::SelectableListContent;
@@ -924,6 +928,12 @@ pub trait Component: Debug + Any {
     fn semantics(&self) -> ContentSemantics {
         ContentSemantics::new(ContentRole::Group, "")
     }
+    /// Optional observational properties. Must not mutate state or perform work
+    /// that changes layout, focus, input, animation, or action queues.
+    #[cfg(feature = "inspection")]
+    fn inspection_properties(&self) -> Option<Vec<InspectionProperty>> {
+        None
+    }
     fn reveal(&mut self, descendant: Rect) -> Rect {
         descendant
     }
@@ -951,6 +961,10 @@ pub struct Content {
     retained_body_paint: bool,
     semantic_suppressed: bool,
     stack_distribution: Option<proposal::layout::MainAxisDistribution>,
+    #[cfg(feature = "inspection")]
+    inspection_enabled: bool,
+    #[cfg(feature = "inspection")]
+    inspection_paint: Option<InspectionPaint>,
 }
 impl Content {
     fn active(&self) -> bool {
@@ -983,6 +997,10 @@ impl Content {
             retained_body_paint: false,
             semantic_suppressed: false,
             stack_distribution: None,
+            #[cfg(feature = "inspection")]
+            inspection_enabled: false,
+            #[cfg(feature = "inspection")]
+            inspection_paint: None,
         }
     }
     /// Hide a decorative slot from AX while preserving mount, layout and paint.
@@ -1287,6 +1305,25 @@ impl Content {
     }
     /// Paint this existing mounted subtree with its arranged frames and clips.
     /// This does not create another input/focus owner or perform layout.
+    fn paint_component(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut dyn ButtonTextRenderer,
+        theme: ContentTheme,
+    ) {
+        if let Some(label) = &mut self.label {
+            self.component.paint(
+                scene,
+                &mut label::LabelRenderer::new(text, label, self.clip).with_palette(theme.palette),
+                self.frame,
+                self.clip,
+                theme,
+            );
+        } else {
+            self.component
+                .paint(scene, text, self.frame, self.clip, theme);
+        }
+    }
     pub fn paint(
         &mut self,
         scene: &mut Scene,
@@ -1314,19 +1351,31 @@ impl Content {
         // children even when their parent frame itself is outside the viewport.
         if self.visible().is_some() {
             scene.push_clip(self.clip);
-            if let Some(label) = &mut self.label {
-                self.component.paint(
-                    scene,
-                    &mut label::LabelRenderer::new(text, label, self.clip)
-                        .with_palette(theme.palette),
-                    self.frame,
-                    self.clip,
+            #[cfg(feature = "inspection")]
+            if self.inspection_enabled {
+                let start = scene.primitives().len();
+                let (_, tokens) = tekes_ui_tokens::audit::capture_resolved(|| {
+                    self.paint_component(scene, text, theme);
+                });
+                let quads = scene.primitives()[start..]
+                    .iter()
+                    .filter_map(|primitive| match primitive {
+                        tekes_ui_scene::Primitive::Quad(quad)
+                        | tekes_ui_scene::Primitive::KeyedQuad { quad, .. } => Some(*quad),
+                        _ => None,
+                    })
+                    .collect();
+                self.inspection_paint = Some(InspectionPaint {
                     theme,
-                );
+                    tokens,
+                    quads,
+                    includes_owned_children: self.component.paints_children(),
+                });
             } else {
-                self.component
-                    .paint(scene, text, self.frame, self.clip, theme);
+                self.paint_component(scene, text, theme);
             }
+            #[cfg(not(feature = "inspection"))]
+            self.paint_component(scene, text, theme);
             scene.pop_clip();
         }
         if self.component.paints_children() {

@@ -359,6 +359,16 @@ impl SearchFieldContent {
 }
 
 impl Component for SearchFieldContent {
+    #[cfg(feature = "inspection")]
+    fn inspection_properties(&self) -> Option<Vec<InspectionProperty>> {
+        let mut properties = self.editor.inspection_properties()?;
+        properties[0] = InspectionProperty::new("component", "SearchFieldContent");
+        properties.push(InspectionProperty::new(
+            "placeholder",
+            self.placeholder.as_deref().unwrap_or(""),
+        ));
+        Some(properties)
+    }
     fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
         let owned = super::action_preparation::OwnedActionRequest::read(request);
         let recognized_clear = match &owned {

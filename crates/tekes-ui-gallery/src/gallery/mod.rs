@@ -21,6 +21,7 @@ use std::time::Duration;
 
 mod accessibility;
 pub mod apphost;
+pub mod apphost_workbench;
 pub mod catalog;
 pub mod chrome;
 pub mod commands;

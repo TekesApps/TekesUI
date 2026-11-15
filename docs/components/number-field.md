@@ -61,3 +61,11 @@ cargo test -p tekes-ui-controls
 ```
 
 Tests cover paired codecs, input restrictions, step/bounds, draft retention, commit/cancel/blur, IME/key chains, external value conflicts, text Undo/Redo and selection, keyboard focus, accessibility actions, hover help, fixed digit width, font scaling, alignment and narrow geometry. The native example forwards Copy/Cut/Paste through the original text transactions.
+
+## Gallery document scope
+
+The offline catalogue reuses this manual for `tui.number-field`; its route is `component-number-field`. The API definition is `crates/tekes-ui-controls/src/composition/number.rs`. The commands above identify existing consumer checks; they were not executed for the #292 documentation batch and are not a new passing test receipt. Follow the repository build-window and toolchain rules before running them.
+
+For general text editing, return to the [TextField manual](text-field.md). For a passive animated integer display, use the separate existing [Ticking Number manual](ticking-number.md). It does not parse editable numeric drafts and has no independent component ID in this 45-component catalogue. No additional route or capability is implied by this cross-reference.
+
+当前片段验证：Check329 已对这 45 份手册中的 46 段原文 Rust 代码完成 `--emit=metadata` 类型检查，通过但未链接、未运行；本文代码块保持不变，复用该结果。此证据不代替 GUI、物理 IME、VoiceOver 或运行时验收。收据位于协调工作区 `outputs/gallery-apphost-upgrade-20261114/manual-snippets/RESULT.json`，提取源为同目录 `manual-snippets.rs`。

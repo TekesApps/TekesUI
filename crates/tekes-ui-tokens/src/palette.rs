@@ -89,14 +89,15 @@ impl Palette {
 
     pub fn color(self, role: &str) -> Option<Rgba> {
         let index = Theme::ALL.iter().position(|t| *t == self.theme)?;
-        match self.source {
+        let color = match self.source {
             PaletteSource::GalleryBrand { index: brand } => {
                 gallery_brand_preset(brand)?;
                 let base = proposal::render_color(role, self.theme)?;
-                if brand == 0 {
-                    return Some(base);
-                }
-                let mut color = brand_color(brand, role, index).unwrap_or(base);
+                let mut color = if brand == 0 {
+                    base
+                } else {
+                    brand_color(brand, role, index).unwrap_or(base)
+                };
                 color.a = base.a;
                 Some(color)
             }
@@ -107,7 +108,10 @@ impl Palette {
                 color.a = proposal::render_color(role, self.theme)?.a;
                 Some(color)
             }
-        }
+        }?;
+        #[cfg(feature = "token-audit")]
+        crate::audit::record_color(role, self, color);
+        Some(color)
     }
 }
 #[cfg(test)]

@@ -298,6 +298,21 @@ class CapabilityTests(unittest.TestCase):
         self.assertFalse(any(e['api'].split('::')[-1] in removed for e in surface))
         self.assertEqual(self.data['counts']['components'], 45)
 
+    def test_inspection_support_retains_feature_without_new_component_identity(self):
+        registry = capabilities.read_json(capabilities.REGISTRY)
+        surface = capabilities.reverse_coverage(registry)
+        entries = [entry for entry in surface['types'] if entry.get('feature') == 'inspection']
+        self.assertEqual(len(entries), 4)
+        self.assertTrue(all(entry['category'] == 'composition' and not entry['components'] for entry in entries))
+        with self.source_fixture() as root:
+            path = root / capabilities.PUBLIC_SURFACE
+            data = json.loads(path.read_text())
+            entry = next(entry for entry in data['types'] if entry.get('feature') == 'inspection')
+            entry['feature'] = 'unknown-inspection-feature'
+            path.write_text(json.dumps(data))
+            with self.assertRaisesRegex(ValueError, 'declared Cargo feature'):
+                capabilities.reverse_coverage(registry)
+
     def test_optional_bitmap_public_types_keep_feature_owner_without_gallery_roots(self):
         surface = self.data['public_type_surface']['types']
         optional = [entry for entry in surface if entry.get('feature') == 'bitmap-images']
@@ -346,7 +361,7 @@ class CapabilityTests(unittest.TestCase):
             entry[change[0]] = change[1]
             with self.subTest(change=change), self.source_fixture() as root:
                 (root / capabilities.PUBLIC_SURFACE).write_text(json.dumps(bad))
-                with self.assertRaisesRegex(ValueError, 'feature-gated component support'):
+                with self.assertRaisesRegex(ValueError, 'feature-gated .*support'):
                     capabilities.reverse_coverage(registry)
 
     def test_optional_feature_owner_and_registered_binding_cannot_be_falsified(self):
