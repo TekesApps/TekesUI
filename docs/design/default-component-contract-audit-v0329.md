@@ -115,6 +115,17 @@ Focused boundaries were traced; the 203 top-level integration-test source files
 were not all deeply audited or executed. Historical design/reviews harnesses and
 external repositories are outside current-product consumer acceptance.
 
+Coverage reconciliation also inspected Grid/SplitView's retained layout and pane
+lifecycle; Checkbox/Radio/Switch/Segmented/Slider/Number/Icon/Link's original
+state and public value/event paths; and the separate legacy MarkdownView,
+CodeBlockView and DiffViewRuntime actually used by Gallery. The latter are
+documented static previews: RichContent supplies continuous selection/copy.
+No new reachable defect was established in those paths. Similar press-only
+cancellation in NumberField was not equated with Search's visible hover failure:
+its step buttons deliberately paint transparent chrome. Gallery's lower-level
+Segmented and Link Views remain valid public APIs, with Content migration and
+its acceptance separately tracked by #294.
+
 ## Evidence dimensions
 
 - Baseline source: local and remote tag peeled to de3b28d; isolated checkout clean
@@ -147,4 +158,3 @@ The tests use deterministic immediate chrome rendering and CPU CoreText shaping;
 they do not certify animated GPU pixels or native window interaction. No GUI was
 started, installed application replaced, release published or adoption inferred.
 F3 remains a width-policy decision; F4 remains the existing migration's work.
-
