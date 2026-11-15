@@ -428,6 +428,131 @@ mod native_text {
 
 #[cfg(target_os = "macos")]
 #[test]
+fn search_clear_host_exit_preserves_query_focus_capture_and_actions() {
+    use native_text::EditorText;
+    const SEARCH: ComponentId = ComponentId(500);
+    const OTHER: ComponentId = ComponentId(501);
+    let frame = Rect::new(0., 0., 640., 80.);
+    for mode in [
+        "editor",
+        "other",
+        "outside",
+        "blur",
+        "cancel",
+        "inactive",
+        "clear_drag",
+        "editor_drag",
+        "click",
+    ] {
+        let mut host = ContentHost::new(Content::new(
+            ComponentId(900),
+            GridContent {
+                model: Grid::new(2),
+                children: vec![
+                    Content::new(SEARCH, SearchFieldContent::new("Find", "query")),
+                    Content::new(OTHER, Button::new("Other")),
+                ],
+            },
+        ))
+        .unwrap();
+        host.set_action_events(true);
+        let mut text = EditorText;
+        let paint = |host: &mut ContentHost, text: &mut EditorText| {
+            let mut scene = Scene::new();
+            host.render(&mut scene, text, frame, frame, Theme::LIGHT.into())
+                .unwrap();
+            let clear = host
+                .get(SEARCH)
+                .unwrap()
+                .component::<SearchFieldContent>()
+                .unwrap()
+                .semantic_parts()[0]
+                .frame
+                .center();
+            let fill = scene
+                .primitives()
+                .iter()
+                .find_map(|p| match p {
+                    Primitive::Quad(q) if q.rect.contains(clear) => Some(q.fill),
+                    _ => None,
+                })
+                .expect("original Clear chrome");
+            (clear, fill)
+        };
+        paint(&mut host, &mut text);
+        assert!(host.focus(Some(SEARCH), true));
+        let (clear, rest) = paint(&mut host, &mut text);
+        let mount = host.get(SEARCH).unwrap().mount_identity();
+        let editor = host.text_surface(SEARCH).unwrap().inner.center();
+        let outside = Point::new(-1., -1.);
+        host.event_with_text(&pointer(clear, PointerPhase::Move), &mut text)
+            .unwrap();
+        assert_ne!(paint(&mut host, &mut text).1, rest);
+        match mode {
+            "editor" | "other" | "outside" => {
+                let point = match mode {
+                    "editor" => editor,
+                    "other" => host.get(OTHER).unwrap().frame().center(),
+                    _ => outside,
+                };
+                host.event_with_text(&pointer(point, PointerPhase::Move), &mut text)
+                    .unwrap();
+            }
+            "blur" => {
+                host.focus(Some(OTHER), true);
+            }
+            "cancel" => host.cancel(),
+            "inactive" => {
+                host.set_window_active(false);
+                host.set_window_active(true);
+            }
+            "clear_drag" | "click" => {
+                host.event_with_text(&pointer(clear, PointerPhase::Down), &mut text)
+                    .unwrap();
+                assert_eq!(host.pointer_capture().map(|p| p.0), Some(SEARCH));
+                let end = if mode == "click" { clear } else { outside };
+                host.event_with_text(&pointer(end, PointerPhase::Drag), &mut text)
+                    .unwrap();
+                host.event_with_text(&pointer(end, PointerPhase::Up), &mut text)
+                    .unwrap();
+            }
+            "editor_drag" => {
+                host.event_with_text(&pointer(editor, PointerPhase::Move), &mut text)
+                    .unwrap();
+                host.event_with_text(&pointer(editor, PointerPhase::Down), &mut text)
+                    .unwrap();
+                host.event_with_text(&pointer(clear, PointerPhase::Drag), &mut text)
+                    .unwrap();
+                host.event_with_text(&pointer(clear, PointerPhase::Up), &mut text)
+                    .unwrap();
+            }
+            _ => unreachable!(),
+        }
+        let actions = host.drain_action_records();
+        let search = host
+            .get(SEARCH)
+            .unwrap()
+            .component::<SearchFieldContent>()
+            .unwrap();
+        assert_eq!(
+            search.query(),
+            if mode == "click" { "" } else { "query" },
+            "{mode}"
+        );
+        assert_eq!(actions.len(), usize::from(mode == "click"), "{mode}");
+        assert!(host.pointer_capture().is_none());
+        assert_eq!(host.get(SEARCH).unwrap().mount_identity(), mount);
+        if mode != "blur" && mode != "cancel" && mode != "inactive" {
+            assert_eq!(host.focused(), Some(SEARCH), "{mode}");
+        }
+        if mode != "click" {
+            assert_eq!(paint(&mut host, &mut text).1, rest, "{mode}");
+        }
+    }
+}
+
+#[cfg(target_os = "macos")]
+#[test]
 fn scrollbar_drag_preserves_real_sibling_editor_marked_input_and_focus() {
     use native_text::EditorText;
     const EDITOR: ComponentId = ComponentId(500);

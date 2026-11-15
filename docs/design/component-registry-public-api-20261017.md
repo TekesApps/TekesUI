@@ -606,3 +606,13 @@ Refs #1 #12 #55 #56。
 ### 2026-11-09 输入与方向增量
 
 `TextFieldContent::new` 的单行水平指示条默认隐藏，`.scrollbar(bool)` 显式控制显示；保留原水平 Auto 滚动/插入点 reveal 和多行默认。`RadioGroupContent::set_axis(Axis::Horizontal)` 在原模型/View内横排，默认仍Vertical；变更方向撤销旧几何与part授权，下一次原Host布局再发布。NumberField按钮与原编辑器之间使用Spacing::Tight，绘制/输入/AX复用相同source frames。Gallery Focus正文使用现成只读TextSurface，跨段选择及Copy沿原文本服务，不新增选择引擎。
+# 2026-11-15 default-contract audit follow-up
+
+Fixed baseline v0.3.29/de3b28d and the full current finding index are recorded in
+[the default-contract audit](default-component-contract-audit-v0329.md), parent
+Issue #298. Shared Search hover cleanup (#299) and Toolbar active-child geometry
+(#300) have a local source candidate with 48 passing scoped CPU/public-consumer
+checks; the actual old failure logs remain preserved. No native/experience or
+maturity status is promoted. Settings width policy (#301) and existing Gallery
+migration (#294) remain separate open work. Source, CPU, native, publication and
+adoption are split in design/reviews/default-contract-audit-v0329/acceptance.json.

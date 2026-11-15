@@ -140,7 +140,9 @@ impl Component for ToolbarGroup {
     fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
         let gap = spacing(text, "space-tight");
         let mut size = Size::default();
+        let mut count: usize = 0;
         for child in self.children.iter_mut().filter(|c| c.active()) {
+            count += 1;
             let m = child.measure(text, available).size;
             if self.axis == Axis::Horizontal {
                 size.width += m.width;
@@ -151,16 +153,16 @@ impl Component for ToolbarGroup {
             }
         }
         if self.axis == Axis::Horizontal {
-            size.width += gap * self.children.len().saturating_sub(1) as f32;
+            size.width += gap * count.saturating_sub(1) as f32;
         } else {
-            size.height += gap * self.children.len().saturating_sub(1) as f32;
+            size.height += gap * count.saturating_sub(1) as f32;
         }
         MeasuredChild::new(size)
     }
     fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
         let gap = spacing(text, "space-tight");
-        let measured: Vec<_> = self
-            .children
+        let mut children: Vec<_> = self.children.iter_mut().filter(|c| c.active()).collect();
+        let measured: Vec<_> = children
             .iter_mut()
             .map(|c| c.measure(text, frame.size))
             .collect();
@@ -181,10 +183,10 @@ impl Component for ToolbarGroup {
         );
         let natural_main = if self.axis == Axis::Horizontal {
             measured.iter().map(|m| m.size.width).sum::<f32>()
-                + gap * self.children.len().saturating_sub(1) as f32
+                + gap * children.len().saturating_sub(1) as f32
         } else {
             measured.iter().map(|m| m.size.height).sum::<f32>()
-                + gap * self.children.len().saturating_sub(1) as f32
+                + gap * children.len().saturating_sub(1) as f32
         };
         // Preserve the true ancestor viewport for ordinary focus decoration.
         // Only actual constrained overflow introduces a group viewport.
@@ -201,7 +203,7 @@ impl Component for ToolbarGroup {
         } else {
             clip
         };
-        for (child, placed) in self.children.iter_mut().zip(placements) {
+        for (child, placed) in children.into_iter().zip(placements) {
             child.arrange(text, placed.frame, clip);
         }
     }
@@ -391,10 +393,19 @@ impl Component for ToolbarContent {
             if let Some(control) = node.component::<crate::ToolbarControl>() {
                 return control.minimum_width(text);
             }
-            let children = node.component.children();
             let gap = spacing(text, "space-tight");
-            children.iter().map(|c| minimum(c, text)).sum::<f32>()
-                + gap * children.len().saturating_sub(1) as f32
+            let mut count: usize = 0;
+            let width: f32 = node
+                .component
+                .children()
+                .iter()
+                .filter(|c| c.active())
+                .map(|child| {
+                    count += 1;
+                    minimum(child, text)
+                })
+                .sum();
+            width + gap * count.saturating_sub(1) as f32
         }
         let mut entries = Vec::new();
         for (index, child) in self
@@ -634,6 +645,143 @@ impl ToolbarContent {
 #[cfg(test)]
 mod radio_projection_tests {
     use super::*;
+    #[test]
+    fn toolbar_group_hidden_children_preserve_visible_layout_and_mounts() {
+        struct Text;
+        impl ButtonTextRenderer for Text {
+            fn measure(&mut self, text: &str, _: proposal::TextRole, width: f32) -> Size {
+                Size::new((text.len() as f32 * 7.).min(width), 20.)
+            }
+            fn draw(
+                &mut self,
+                _: &mut Scene,
+                _: &str,
+                _: proposal::TextRole,
+                _: Rect,
+                _: crate::ButtonTextAlign,
+                _: Rgba,
+            ) {
+            }
+        }
+        let group = |axis, hidden_position: Option<usize>, enclosed| {
+            let mut children = vec![
+                Content::new(ComponentId(2), Button::new("First")),
+                Content::new(ComponentId(3), Button::new("Last")),
+            ];
+            if let Some(position) = hidden_position {
+                let mut hidden = ToolbarGroup::new(
+                    ToolbarPlacement::Automatic,
+                    vec![Content::new(
+                        ComponentId(5),
+                        Button::new("Hidden wide action"),
+                    )],
+                );
+                hidden.visible = false;
+                children.insert(position, Content::new(ComponentId(4), hidden));
+            }
+            let mut group = ToolbarGroup::new(ToolbarPlacement::Automatic, children);
+            group.set_axis(axis);
+            let content = Content::new(ComponentId(1), group);
+            let root = if enclosed {
+                let mut toolbar = ToolbarContent::new(vec![
+                    content,
+                    Content::new(ComponentId(6), Button::new("Competing action")),
+                ]);
+                toolbar.set_axis(axis);
+                Content::new(ComponentId(100), toolbar)
+            } else {
+                content
+            };
+            ContentHost::new(root).unwrap()
+        };
+        for axis in [Axis::Horizontal, Axis::Vertical] {
+            for enclosed in [false, true] {
+                for width in [120., 800.] {
+                    let frame = Rect::new(10., 20., width, 200.);
+                    let paint = |host: &mut ContentHost| {
+                        host.render(
+                            &mut Scene::new(),
+                            &mut Text,
+                            frame,
+                            frame,
+                            tekes_ui_tokens::Theme::LIGHT.into(),
+                        )
+                        .unwrap();
+                    };
+                    let mut reference = group(axis, None, enclosed);
+                    let expected_size = reference
+                        .get_mut(ComponentId(1))
+                        .unwrap()
+                        .measure(&mut Text, frame.size)
+                        .size;
+                    paint(&mut reference);
+                    for position in 0..3 {
+                        let mut host = group(axis, Some(position), enclosed);
+                        assert_eq!(
+                            host.get_mut(ComponentId(1))
+                                .unwrap()
+                                .measure(&mut Text, frame.size)
+                                .size,
+                            expected_size
+                        );
+                        paint(&mut host);
+                        let mounts = [2, 3, 4, 5]
+                            .map(|id| host.get(ComponentId(id)).unwrap().mount_identity());
+                        for visible in [false, true, false] {
+                            host.get_mut(ComponentId(4))
+                                .unwrap()
+                                .component_mut::<ToolbarGroup>()
+                                .unwrap()
+                                .visible = visible;
+                            paint(&mut host);
+                            assert_eq!(
+                                [2, 3, 4, 5]
+                                    .map(|id| host.get(ComponentId(id)).unwrap().mount_identity()),
+                                mounts
+                            );
+                            if !visible {
+                                for id in [ComponentId(2), ComponentId(3)] {
+                                    assert_eq!(
+                                        host.get(id).unwrap().frame(),
+                                        reference.get(id).unwrap().frame()
+                                    );
+                                    assert_eq!(
+                                        host.get(id).unwrap().visible(),
+                                        reference.get(id).unwrap().visible()
+                                    );
+                                }
+                                if enclosed {
+                                    assert_eq!(
+                                        host.get(ComponentId(6)).unwrap().frame(),
+                                        reference.get(ComponentId(6)).unwrap().frame()
+                                    );
+                                }
+                                assert!(
+                                    !host
+                                        .focus_targets()
+                                        .iter()
+                                        .any(|(id, _)| *id == ComponentId(5))
+                                );
+                            }
+                        }
+                    }
+                    let mut empty = ToolbarGroup::new(
+                        ToolbarPlacement::Automatic,
+                        (4..6)
+                            .map(|id| {
+                                let mut hidden =
+                                    ToolbarGroup::new(ToolbarPlacement::Automatic, Vec::new());
+                                hidden.visible = false;
+                                Content::new(ComponentId(id), hidden)
+                            })
+                            .collect(),
+                    );
+                    empty.set_axis(axis);
+                    assert_eq!(empty.measure(&mut Text, frame.size).size, Size::default());
+                }
+            }
+        }
+    }
     #[test]
     fn radio_projection_has_no_second_selection_and_false_preserves_checked_siblings() {
         let mut first = Button::new("First");

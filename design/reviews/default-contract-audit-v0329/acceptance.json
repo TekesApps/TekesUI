@@ -1,0 +1,144 @@
+{
+  "format": "tekesui-default-contract-audit/1",
+  "baseline": "de3b28dac56b0917cbfe9463fc019b6c8f401b1b",
+  "parent_issue": 298,
+  "findings": [
+    {
+      "id": "F1",
+      "issue": 299,
+      "owner": "SearchFieldContent",
+      "source": "repaired candidate",
+      "cpu": "baseline red / candidate green",
+      "native": "not run",
+      "publication": "not delivered",
+      "adoption": "not asserted"
+    },
+    {
+      "id": "F2",
+      "issue": 300,
+      "owner": "ToolbarGroup / ToolbarContent minimum",
+      "source": "repaired candidate",
+      "cpu": "baseline red / candidate green",
+      "native": "not run",
+      "publication": "not delivered",
+      "adoption": "not asserted"
+    },
+    {
+      "id": "F3",
+      "issue": 301,
+      "owner": "Settings / AppHost adapter",
+      "source": "confirmed contract divergence; width policy pending",
+      "cpu": "not run",
+      "native": "not run",
+      "publication": "not delivered",
+      "adoption": "not asserted"
+    },
+    {
+      "id": "F4",
+      "issue": 294,
+      "parent_issue": 290,
+      "owner": "Gallery",
+      "source": "existing migration; directory Search and compact Button compensation identified",
+      "cpu": "no new run",
+      "native": "not run",
+      "publication": "existing partial delivery only",
+      "adoption": "not inferred"
+    }
+  ],
+  "source_sha256": {
+    "crates/tekes-ui-controls/src/composition/search.rs": "bc134916042bf5e88842e894971dd8ac9fdd6830ed9d4cdbd4c63b2a0b3668a5",
+    "crates/tekes-ui-controls/src/composition/toolbar_content.rs": "40c0aebe53126bde2432cb0b3694e3309ee27bd99ccfc375ff85c4c541c928fb",
+    "crates/tekes-ui-controls/tests/composition_button_alignment.rs": "ddc973de5e702f87360101cbaaeb5583b96a5212cd5681d2488ef86f3499f7d3",
+    "crates/tekes-ui-controls/tests/list_scrollbar_composition.rs": "8c5a342f86dd95455e8b075551001f51244bcd10a740640a59b71ba51a687900"
+  },
+  "checks": [
+    {
+      "command": [
+        "cargo",
+        "+1.95.0",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "tekes-ui-controls",
+        "--test",
+        "composition_button_alignment",
+        "--test",
+        "list_scrollbar_composition"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 11.091672375,
+      "log": "/Users/frankqin/.codex/worktrees/tekesui-default-contract-audit/TekesUI/outputs/default-contract-audit-v0329/green-1-1.log"
+    },
+    {
+      "command": [
+        "cargo",
+        "+1.95.0",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "tekes-ui-controls",
+        "--lib",
+        "composition::toolbar_content"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 14.313533459,
+      "log": "/Users/frankqin/.codex/worktrees/tekesui-default-contract-audit/TekesUI/outputs/default-contract-audit-v0329/green-1-2.log"
+    },
+    {
+      "command": [
+        "cargo",
+        "+1.95.0",
+        "test",
+        "--locked",
+        "--offline",
+        "--manifest-path",
+        "examples/composition-consumer/Cargo.toml",
+        "--test",
+        "search_field",
+        "--test",
+        "toolbar_groups"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 22.993629333,
+      "log": "/Users/frankqin/.codex/worktrees/tekesui-default-contract-audit/TekesUI/outputs/default-contract-audit-v0329/green-1-3.log"
+    },
+    {
+      "command": [
+        "cargo",
+        "+1.95.0",
+        "clippy",
+        "--locked",
+        "--offline",
+        "-p",
+        "tekes-ui-controls",
+        "--lib",
+        "--test",
+        "composition_button_alignment",
+        "--test",
+        "list_scrollbar_composition",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 21.915839166000005,
+      "log": "/Users/frankqin/.codex/worktrees/tekesui-default-contract-audit/TekesUI/outputs/default-contract-audit-v0329/green-1-4.log"
+    }
+  ],
+  "behavioral_red_logs": [
+    "outputs/default-contract-audit-v0329/red-r2-1.log",
+    "outputs/default-contract-audit-v0329/red-r2-2.log",
+    "outputs/default-contract-audit-v0329/red-host.log"
+  ],
+  "fixture_compile_failures": [
+    "outputs/default-contract-audit-v0329/red-1.log",
+    "outputs/default-contract-audit-v0329/red-2.log"
+  ],
+  "limits": [
+    "Source family audit is not exhaustive execution of all states or all 203 example integration test files",
+    "Deterministic Scene and CPU CoreText do not prove native animated presentation",
+    "No installed application, Dock entry or release changed"
+  ]
+}
