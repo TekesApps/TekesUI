@@ -525,17 +525,23 @@ fn action_family_required_states_use_real_public_events_and_token_painters() {
                     });
                     #[cfg(feature = "token-audit")]
                     if component == "tui.icon-button" {
+                        // Image-only Button shares ordinary Button chrome; only its
+                        // image extent uses the icon token. This is not a Toolbar slot.
                         for (family, token) in [
-                            ("radius", "radius-control"),
-                            ("size", "size-icon-button"),
+                            ("radius", "c-button-md-radius"),
+                            ("size", "size-action-button"),
                             ("size", "size-icon-standard"),
                         ] {
-                            assert!(reads.iter().any(|(f, t)| f == family && t == token));
+                            assert!(
+                                reads.iter().any(|(f, t)| f == family && t == token),
+                                "{component} {theme:?} brand={brand} state={state}: missing {family}/{token}; reads={reads:?}"
+                            );
                         }
                         assert!(
                             !reads
                                 .iter()
-                                .any(|(f, t)| f == "radius" && t == "c-button-md-radius")
+                                .any(|(f, t)| (f == "radius" && t == "radius-control")
+                                    || (f == "size" && t == "size-icon-button"))
                         );
                     }
                     cases.push(serde_json::json!({"component":component,"theme":format!("{theme:?}"),"brand":brand,"action_state":state,"state_asserted":true,"lookups":reads}));
