@@ -961,6 +961,7 @@ pub struct Content {
     retained_body_paint: bool,
     semantic_suppressed: bool,
     stack_distribution: Option<proposal::layout::MainAxisDistribution>,
+    stack_padding: Option<crate::layout::Insets>,
     #[cfg(feature = "inspection")]
     inspection_enabled: bool,
     #[cfg(feature = "inspection")]
@@ -997,6 +998,7 @@ impl Content {
             retained_body_paint: false,
             semantic_suppressed: false,
             stack_distribution: None,
+            stack_padding: None,
             #[cfg(feature = "inspection")]
             inspection_enabled: false,
             #[cfg(feature = "inspection")]
@@ -1256,6 +1258,16 @@ impl Content {
         available: Size,
         intrinsic: bool,
     ) -> MeasuredChild {
+        let outer_available = clean_size(available);
+        let padding_layout = self.stack_padding.map(|padding| {
+            crate::layout::ContainerLayout::new(
+                Rect::new(0., 0., outer_available.width, outer_available.height),
+                crate::layout::Insets::ZERO,
+                padding,
+                None,
+            )
+        });
+        let available = padding_layout.map_or(outer_available, |layout| layout.content().size);
         let mut measured = if let Some(label) = &mut self.label {
             label.reset();
             let mut text = label::LabelRenderer::new(text, label, self.clip);
@@ -1284,17 +1296,34 @@ impl Content {
                 Axis::Vertical => measured.size.height = measured.size.height.max(available.height),
             }
         }
+        if let Some(layout) = padding_layout {
+            measured.size.width += outer_available.width - available.width;
+            measured.size.height += outer_available.height - available.height;
+            measured.first_baseline = measured
+                .first_baseline
+                .map(|baseline| baseline + layout.content().min_y());
+        }
         measured.first_baseline = measured.first_baseline.filter(|v| v.is_finite());
         measured
     }
     pub fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
         self.frame = clean_rect(frame);
         self.clip = clean_rect(clip);
-        if let Some(distribution) = self.stack_distribution {
-            let (frame, clip) = (self.frame, self.clip);
+        if self.stack_distribution.is_some() || self.stack_padding.is_some() {
+            let distribution = self.stack_distribution;
+            let frame = self.stack_padding.map_or(self.frame, |padding| {
+                crate::layout::ContainerLayout::new(
+                    self.frame,
+                    crate::layout::Insets::ZERO,
+                    padding,
+                    Some(self.clip),
+                )
+                .content()
+            });
+            let clip = self.clip;
             self.component_mut::<StackContent>()
                 .expect("distribution is declared by StackContent")
-                .arrange_with_distribution(text, frame, clip, Some(distribution));
+                .arrange_with_distribution(text, frame, clip, distribution);
         } else if let Some(label) = &mut self.label {
             let mut renderer = label::LabelRenderer::new(text, label, self.clip);
             self.component.measure(&mut renderer, self.frame.size);
@@ -4568,6 +4597,17 @@ pub struct StackContent {
     pub flexible_child: Option<ComponentId>,
 }
 impl StackContent {
+    /// Inset this Stack's original children without introducing a viewport or
+    /// changing their mount identities. Bare StackContent literals keep zero padding.
+    pub fn into_content_with_padding(
+        self,
+        id: ComponentId,
+        padding: crate::layout::Insets,
+    ) -> Content {
+        let mut content = Content::new(id, self);
+        content.stack_padding = Some(padding);
+        content
+    }
     /// Declare a Stack that occupies the available main axis and distributes
     /// its children within it. Intrinsic measurement keeps the natural size.
     /// The original Stack component, children and mount identities are retained.

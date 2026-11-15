@@ -1,6 +1,118 @@
 //! Local column routing uses the original ContentHost; process columns keep IPC.
 use super::*;
 impl Host {
+    pub(super) fn is_search_shortcut(event: &Event) -> bool {
+        matches!(event, Event::Key(key) if key.kind == KeyEventKind::Down
+            && key.modifiers.command && !key.modifiers.control && !key.modifiers.alt && !key.modifiers.shift && !key.modifiers.function
+            && key.characters_ignoring_modifiers.eq_ignore_ascii_case("f"))
+    }
+    /// Resolve the declared destination only while ordinary input may change focus.
+    fn available_search_entry(&mut self) -> Option<(usize, ComponentId)> {
+        if self.sidebar_motion.needs_frame()
+            || self.open_toolbar().is_some()
+            || self
+                .navigation
+                .as_ref()
+                .is_some_and(|n| n.busy || !n.host.input_open)
+            || self.composition_in_progress()
+            || self
+                .presentation_tabs
+                .as_ref()
+                .is_some_and(|tabs| tabs.content_host().input_overlay_owner().is_some())
+        {
+            return None;
+        }
+        for panel in &mut self.panels {
+            if let Some(local) = &mut panel.local {
+                let mut overlay = false;
+                local.with_host(&mut |host| overlay = host.input_overlay_owner().is_some());
+                if overlay {
+                    return None;
+                }
+            }
+        }
+        self.panels
+            .iter_mut()
+            .enumerate()
+            .find_map(|(index, panel)| {
+                let local = panel.local.as_mut()?;
+                let target = local.options.search_entry?;
+                let mut enabled = false;
+                local.with_host(&mut |host| {
+                    enabled = host
+                        .text_surface(target)
+                        .is_some_and(|surface| !surface.input.disabled && !surface.input.read_only)
+                });
+                enabled.then_some((index, target))
+            })
+    }
+    /// Use the existing presentation operations before the normal layout pass.
+    /// A hidden Nav or Others destination retains its original backing Host.
+    pub(super) fn reveal_registered_search(&mut self) -> Result<bool> {
+        let Some((index, _)) = self.available_search_entry() else {
+            return Ok(false);
+        };
+        let id = self.panels[index].module_id.clone();
+        if let Some(state) = &mut self.presentation {
+            if state.nav_bar_id() == Some(id.as_str()) {
+                if !state.nav_bar_visible() {
+                    state.toggle_nav_bar()?;
+                }
+            } else if state.focus_id() == id {
+                if state.others_expanded() {
+                    state.toggle_others_expanded()?;
+                }
+            } else {
+                state.open(&id)?;
+                if !state.others_visible() {
+                    state.toggle_others()?;
+                }
+            }
+            self.cancel_toolbar_input();
+            self.drag_split = None;
+            self.outer_view.cancel(&mut self.outer);
+            self.inner_view.cancel(&mut self.inner);
+        }
+        Ok(true)
+    }
+    /// Admit focus after layout and publish through the ordinary local text route.
+    pub(super) fn focus_registered_search(&mut self) -> Result<bool> {
+        let Some((index, target)) = self.available_search_entry() else {
+            return Ok(false);
+        };
+        if self.panels[index].bounds.is_empty() {
+            return Ok(false);
+        }
+        let mut accepted = false;
+        self.panels[index]
+            .local
+            .as_mut()
+            .unwrap()
+            .with_host(&mut |host| {
+                host.focus(Some(target), true);
+                accepted = host.focused() == Some(target);
+            });
+        if !accepted {
+            return Ok(false);
+        }
+        self.set_toolbar_focus(None, false);
+        if let Some(tabs) = &mut self.presentation_tabs {
+            tabs.blur();
+        }
+        for (other, panel) in self.panels.iter_mut().enumerate() {
+            if other != index {
+                if let Some(local) = &mut panel.local {
+                    local.with_host(&mut |host| {
+                        host.focus(None, false);
+                    });
+                } else {
+                    panel.request(InputKind::Cancel, 0., 0.)?;
+                }
+            }
+        }
+        self.focused = index;
+        Ok(true)
+    }
     /// Prepare all original Hosts in actual paint order; toolbar is composited last.
     pub(super) fn content_accessibility_publication(
         &mut self,
@@ -493,6 +605,259 @@ mod local_clipboard_tests {
             );
         });
         host
+    }
+    #[test]
+    fn registered_search_shortcut_routes_container_scoped_id_and_native_text() {
+        use tekes_ui_controls::composition::SearchFieldContent;
+        // Both containers deliberately use ID 1; registration must route by
+        // container identity, never by a global ComponentId scan.
+        let search = LocalContainer::new(
+            "navigation",
+            Content::new(ComponentId(1), SearchFieldContent::new("Find pages", "")),
+        )
+        .unwrap()
+        .search_entry(ComponentId(1));
+        let editor = LocalContainer::new(
+            "editor",
+            Content::new(ComponentId(1), TextFieldContent::new("Draft", "retained")),
+        )
+        .unwrap();
+        let mut host = AppWindow::from_columns(vec![search.into(), editor.into()])
+            .unwrap()
+            .into_host(false);
+        assert!(host.mount_columns());
+        for (index, panel) in host.panels.iter_mut().enumerate() {
+            let frame = Rect::new(index as f32 * 320., 40., 300., 160.);
+            panel.bounds = frame;
+            panel
+                .local
+                .as_mut()
+                .unwrap()
+                .render(
+                    &mut Scene::new(),
+                    &mut host.text,
+                    frame,
+                    frame,
+                    Theme::LIGHT.into(),
+                )
+                .unwrap();
+        }
+        host.focused = 1;
+        host.panels[1]
+            .local
+            .as_mut()
+            .unwrap()
+            .with_host(&mut |host| {
+                assert!(host.focus(Some(ComponentId(1)), true));
+            });
+        assert!(Host::is_search_shortcut(&shortcut("f")));
+        assert!(!Host::is_search_shortcut(&shortcut("g")));
+        assert!(host.focus_registered_search().unwrap());
+        assert_eq!(host.focused, 0);
+        host.panels[1]
+            .local
+            .as_mut()
+            .unwrap()
+            .with_host(&mut |host| assert!(host.focused().is_none()));
+        // Match the production redraw before subsequent native text input.
+        for panel in &mut host.panels {
+            let frame = panel.bounds;
+            panel
+                .local
+                .as_mut()
+                .unwrap()
+                .render(
+                    &mut Scene::new(),
+                    &mut host.text,
+                    frame,
+                    frame,
+                    Theme::LIGHT.into(),
+                )
+                .unwrap();
+        }
+        let clipboard = Clipboard::new(None);
+        assert!(
+            host.local_content_input(
+                &Event::TextCommit {
+                    text: "query".into(),
+                    replacement: None
+                },
+                &clipboard
+            )
+            .unwrap()
+        );
+        let frame = host.panels[0].bounds;
+        host.panels[0]
+            .local
+            .as_mut()
+            .unwrap()
+            .render(
+                &mut Scene::new(),
+                &mut host.text,
+                frame,
+                frame,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
+        assert!(host.local_text_state(true).is_some());
+        host.panels[0]
+            .local
+            .as_mut()
+            .unwrap()
+            .with_host(&mut |host| {
+                assert_eq!(
+                    host.text_surface(ComponentId(1)).unwrap().input.text,
+                    "query"
+                );
+                assert!(crate::columns::text_state(host).is_some());
+            });
+        host.panels[1]
+            .local
+            .as_mut()
+            .unwrap()
+            .with_host(&mut |host| {
+                assert_eq!(
+                    host.text_surface(ComponentId(1)).unwrap().input.text,
+                    "retained"
+                )
+            });
+        // Marked IME text is a real cross-container focus barrier.
+        host.local_content_input(
+            &Event::TextPreedit {
+                text: "中".into(),
+                selection: 0..1,
+                clauses: vec![],
+                replacement: None,
+            },
+            &clipboard,
+        )
+        .unwrap();
+        assert!(!host.focus_registered_search().unwrap());
+        host.panels[0]
+            .local
+            .as_mut()
+            .unwrap()
+            .with_host(&mut |host| assert!(host.is_composing()));
+    }
+    #[test]
+    fn registered_search_reveals_hidden_navigation_before_focus_and_text_input() {
+        use tekes_ui_controls::composition::SearchFieldContent;
+        let search = LocalContainer::new(
+            "nav",
+            Content::new(ComponentId(1), SearchFieldContent::new("Find pages", "")),
+        )
+        .unwrap()
+        .search_entry(ComponentId(1));
+        let editor = LocalContainer::new(
+            "editor",
+            Content::new(ComponentId(1), TextFieldContent::new("Draft", "retained")),
+        )
+        .unwrap();
+        let mut host = AppWindow::from_containers(
+            vec![search.into(), editor.into()],
+            crate::PresentationOptions::new("editor").nav_bar("nav"),
+        )
+        .unwrap()
+        .into_host(false);
+        assert!(host.mount_columns());
+        let paint = |host: &mut Host| {
+            let layout = host
+                .presentation
+                .as_ref()
+                .unwrap()
+                .layout(Rect::new(0., 40., 900., 600.));
+            let frames = host.apply_presentation_layout(layout).unwrap();
+            for (panel, frame) in host.panels.iter_mut().zip(frames) {
+                panel.bounds = frame;
+                if !frame.is_empty() {
+                    panel
+                        .local
+                        .as_mut()
+                        .unwrap()
+                        .render(
+                            &mut Scene::new(),
+                            &mut host.text,
+                            frame,
+                            panel.clip,
+                            Theme::LIGHT.into(),
+                        )
+                        .unwrap();
+                }
+            }
+        };
+        paint(&mut host);
+        host.toggle_visibility(0).unwrap();
+        paint(&mut host);
+        assert!(!host.presentation.as_ref().unwrap().nav_bar_visible());
+        assert!(host.panels[0].bounds.is_empty());
+        assert!(host.reveal_registered_search().unwrap());
+        paint(&mut host);
+        assert!(host.presentation.as_ref().unwrap().nav_bar_visible());
+        assert!(!host.panels[0].bounds.is_empty());
+        assert!(host.focus_registered_search().unwrap());
+        paint(&mut host);
+        assert_eq!(host.focused, 0);
+        assert!(host.local_text_state(true).is_some());
+        assert!(
+            host.local_content_input(
+                &Event::TextCommit {
+                    text: "found".into(),
+                    replacement: None
+                },
+                &Clipboard::new(None)
+            )
+            .unwrap()
+        );
+        host.panels[0].local.as_mut().unwrap().with_host(&mut |h| {
+            assert_eq!(h.focused(), Some(ComponentId(1)));
+            assert_eq!(h.text_surface(ComponentId(1)).unwrap().input.text, "found");
+        });
+    }
+    #[test]
+    fn registered_search_rejects_duplicate_missing_and_disabled_targets() {
+        use tekes_ui_controls::composition::SearchFieldContent;
+        let search = |name| {
+            LocalContainer::new(
+                name,
+                Content::new(ComponentId(1), SearchFieldContent::new("Search", "")),
+            )
+            .unwrap()
+            .search_entry(ComponentId(1))
+        };
+        assert!(AppWindow::from_columns(vec![search("a").into(), search("b").into()]).is_err());
+        let mut host = AppWindow::from_columns(vec![search("a").into()])
+            .unwrap()
+            .into_host(false);
+        host.mount_columns();
+        let frame = Rect::new(0., 40., 300., 100.);
+        host.panels[0].bounds = frame;
+        let local = host.panels[0].local.as_mut().unwrap();
+        local
+            .render(
+                &mut Scene::new(),
+                &mut host.text,
+                frame,
+                frame,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
+        local.options.search_entry = Some(ComponentId(99));
+        assert!(!host.focus_registered_search().unwrap());
+        let local = host.panels[0].local.as_mut().unwrap();
+        local.options.search_entry = Some(ComponentId(1));
+        local.with_host(&mut |host| {
+            host.get_mut(ComponentId(1))
+                .unwrap()
+                .component_mut::<SearchFieldContent>()
+                .unwrap()
+                .set_availability(false, true);
+        });
+        assert!(!host.focus_registered_search().unwrap());
+        host.panels[0]
+            .local
+            .as_mut()
+            .unwrap()
+            .with_host(&mut |host| assert!(host.focused().is_none()));
     }
     fn value(host: &mut Host) -> String {
         let mut value = String::new();

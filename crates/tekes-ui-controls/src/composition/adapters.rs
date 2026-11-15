@@ -19,6 +19,8 @@ impl ListContent {
     /// One original scrolling owner around this List's grouped Items and Model.
     /// `items_id` and the outer Content ID are explicit caller-owned identities.
     /// Headers, items and their existing selection reducers keep their own IDs.
+    /// The List owns default document padding; an explicit content_padding on
+    /// the returned ScrollContent replaces it rather than adding another inset.
     pub fn scrollable(
         name: impl Into<String>,
         items_id: ComponentId,
@@ -29,6 +31,7 @@ impl ListContent {
             Content::new(items_id, Self::new(name, children)),
         )
         .scrollbar(true)
+        .content_padding(Spacing::Loose.value())
     }
     pub fn new(name: impl Into<String>, children: Vec<Content>) -> Self {
         Self {

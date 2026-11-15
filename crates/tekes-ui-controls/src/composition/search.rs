@@ -509,27 +509,32 @@ impl Component for SearchFieldContent {
     }
     fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
         let clear = self.clear.measure(text, available).size;
+        let reserved = if self.query().is_empty() {
+            0.
+        } else {
+            clear.width + tekes_ui_tokens::Spacing::Regular.value()
+        };
         let editor = self
             .editor
             .measure(
                 text,
-                Size::new(
-                    (available.width - clear.width - tekes_ui_tokens::Spacing::Regular.value())
-                        .max(0.),
-                    available.height,
-                ),
+                Size::new((available.width - reserved).max(0.), available.height),
             )
             .size;
         MeasuredChild::new(Size::new(available.width, editor.height.max(clear.height)))
     }
     fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
-        // Stable reservation, including an empty query; typing never resizes its owner.
-        let width = self
-            .clear
-            .measure(text, frame.size)
-            .size
-            .width
-            .min(frame.size.width.max(0.));
+        // The outer Search allocation stays stable. Only a visible Clear
+        // action reserves a trailing slot; an empty editor fills its allocation.
+        let width = if self.query().is_empty() {
+            0.
+        } else {
+            self.clear
+                .measure(text, frame.size)
+                .size
+                .width
+                .min(frame.size.width.max(0.))
+        };
         self.clear_frame = Rect::new(
             frame.max_x() - width,
             frame.min_y(),
@@ -542,9 +547,13 @@ impl Component for SearchFieldContent {
             .filter(|r| !r.is_empty());
         // Existing regular spacing keeps the original TextSurface focus-ring
         // outsets clear of the independent Button's chrome and hit frame.
-        let gap = tekes_ui_tokens::Spacing::Regular
-            .value()
-            .min((frame.size.width - width).max(0.));
+        let gap = if self.query().is_empty() {
+            0.
+        } else {
+            tekes_ui_tokens::Spacing::Regular
+                .value()
+                .min((frame.size.width - width).max(0.))
+        };
         self.editor_frame = Rect::new(
             frame.min_x(),
             frame.min_y(),

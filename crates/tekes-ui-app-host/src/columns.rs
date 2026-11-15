@@ -12,6 +12,10 @@ use tekes_ui_tokens::Palette;
 /// can expose its own host without cloning controls or leaking RefCell guards.
 pub trait ContainerContent {
     fn with_host(&mut self, visit: &mut dyn FnMut(&mut ContentHost));
+    /// Publish consumer-owned derived content immediately before normal layout.
+    /// Input and native/AX queries do not call this hook. Do not render or advance
+    /// another host here; the following render owns layout and painting.
+    fn prepare_for_render(&mut self) {}
     /// Optional consumer request into the existing headless navigation service.
     /// Called only while its input gate is open; publications must not push again.
     fn take_navigation_request(&mut self) -> Option<crate::navigation::Entry> {
@@ -78,6 +82,13 @@ impl LocalContainer {
     /// Compatibility shorthand for selecting List mode with this height.
     pub fn list_height(mut self, height: f32) -> Self {
         self.options.list_height = Some(height);
+        self
+    }
+    /// Register this local editor as the window's Cmd+F search destination.
+    /// The ID belongs to this ContentHost; unavailable targets never fall back
+    /// to another editor. A window permits one explicit search entry.
+    pub fn search_entry(mut self, id: tekes_ui_controls::composition::ComponentId) -> Self {
+        self.options.search_entry = Some(id);
         self
     }
     /// Override the window's default outer content padding for this container.
@@ -156,6 +167,8 @@ impl LocalContainer {
     pub fn with_host(&mut self, visit: &mut dyn FnMut(&mut ContentHost)) {
         self.source.with_host(visit);
     }
+    /// Publish derived content, then lay out and paint the original host once.
+    /// Callers supply their existing text backend and normal frame allocation.
     pub(crate) fn render(
         &mut self,
         scene: &mut Scene,
@@ -170,6 +183,7 @@ impl LocalContainer {
             });
         }
         self.frame = frame;
+        self.source.prepare_for_render();
         let mut result = Ok(());
         self.source.with_host(&mut |h| {
             result = h
@@ -255,6 +269,9 @@ pub enum ContainerPresentation {
 /// Presentation metadata belongs to the container, independently of its backing.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct ContainerOptions {
+    /// Optional local ContentHost editor for the window's Find shortcut.
+    /// Process containers cannot declare a local component identity.
+    pub search_entry: Option<tekes_ui_controls::composition::ComponentId>,
     pub title: Option<String>,
     /// Canonical icon for this single-instance destination.
     pub switcher_icon: Option<String>,
@@ -420,9 +437,25 @@ pub(crate) fn validate(columns: &[Column]) -> Result<()> {
         (1..=3).contains(&columns.len()),
         "legacy horizontal AppWindow requires one to three columns"
     );
+    for column in columns {
+        if let Column::ProcessContainer(process) = column {
+            anyhow::ensure!(
+                process.options.search_entry.is_none(),
+                "search entry requires local ContentHost"
+            );
+        }
+    }
     validate_ids(columns.iter().map(|c| (c.id(), c.options())))
 }
 pub(crate) fn validate_containers(containers: &[Container]) -> Result<()> {
+    for container in containers {
+        if let Container::Process(process) = container {
+            anyhow::ensure!(
+                process.options.search_entry.is_none(),
+                "search entry requires local ContentHost"
+            );
+        }
+    }
     validate_ids(containers.iter().map(|c| (c.id(), c.container_options())))
 }
 pub(crate) fn validate_ids<'a>(
@@ -430,6 +463,7 @@ pub(crate) fn validate_ids<'a>(
 ) -> Result<()> {
     let mut ids = std::collections::HashSet::new();
     let mut destinations = Vec::new();
+    let mut search_declared = false;
     for (id, options) in containers {
         anyhow::ensure!(
             !id.is_empty()
@@ -439,6 +473,10 @@ pub(crate) fn validate_ids<'a>(
             "invalid container ID"
         );
         anyhow::ensure!(ids.insert(id), "duplicate container ID: {id}");
+        if options.search_entry.is_some() {
+            anyhow::ensure!(!search_declared, "AppWindow permits one search entry");
+            search_declared = true;
+        }
         anyhow::ensure!(
             options.list_height.is_none_or(|h| h.is_finite() && h > 0.),
             "invalid List height for {id}"
@@ -562,6 +600,124 @@ mod tests {
             vec![local("a").retain_button(42, "b").into(), local("b").into()];
         validate_containers(&valid).unwrap();
         assert_eq!(valid[0].container_options().retained_buttons[0].target, "b");
+    }
+    #[test]
+    fn local_derived_publication_runs_only_before_render_not_input_or_native_queries() {
+        use std::{
+            cell::{Cell, RefCell},
+            rc::Rc,
+        };
+        struct Derived {
+            host: ContentHost,
+            next: Rc<RefCell<String>>,
+            prepares: Rc<Cell<usize>>,
+        }
+        impl ContainerContent for Derived {
+            fn prepare_for_render(&mut self) {
+                self.prepares.set(self.prepares.get() + 1);
+                let value = self.next.borrow().clone();
+                if self.host.text_surface(ComponentId(1)).unwrap().input.text != value {
+                    self.host
+                        .get_mut(ComponentId(1))
+                        .unwrap()
+                        .component_mut::<TextFieldContent>()
+                        .unwrap()
+                        .surface
+                        .input
+                        .text = value;
+                }
+            }
+            fn with_host(&mut self, visit: &mut dyn FnMut(&mut ContentHost)) {
+                visit(&mut self.host);
+            }
+        }
+        let next = Rc::new(RefCell::new("published".into()));
+        let prepares = Rc::new(Cell::new(0));
+        let source = Derived {
+            host: ContentHost::new(Content::new(
+                ComponentId(1),
+                TextFieldContent::read_only_content(
+                    "Value",
+                    "initial",
+                    tekes_ui_tokens::proposal::TextRole::UiBody,
+                ),
+            ))
+            .unwrap(),
+            next: next.clone(),
+            prepares: prepares.clone(),
+        };
+        let mut container = LocalContainer::from_source("derived", source);
+        container.with_host(&mut |host| {
+            assert_eq!(
+                host.text_surface(ComponentId(1)).unwrap().input.text,
+                "initial"
+            )
+        });
+        assert_eq!(prepares.get(), 0);
+        let mut text = crate::text::Text::new();
+        let frame = Rect::new(20., 60., 240., 160.);
+        container
+            .render(
+                &mut Scene::new(),
+                &mut text,
+                frame,
+                frame,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
+        assert_eq!(prepares.get(), 1);
+        let mut point = frame.center();
+        container.with_host(&mut |host| {
+            point = host
+                .text_surface(ComponentId(1))
+                .unwrap()
+                .visible_frame()
+                .unwrap()
+                .center();
+            assert!(
+                host.get(ComponentId(1))
+                    .unwrap()
+                    .visible()
+                    .unwrap()
+                    .contains(point)
+            );
+        });
+        container
+            .event(&ContentEvent::PointerDown(point), &mut text)
+            .unwrap();
+        container
+            .event(&ContentEvent::PointerUp(point), &mut text)
+            .unwrap();
+        *next.borrow_mut() = "next draw".into();
+        container
+            .event(&ContentEvent::TextCommand("selectAll:".into()), &mut text)
+            .unwrap();
+        container.with_host(&mut |host| {
+            assert_eq!(host.focused(), Some(ComponentId(1)));
+            assert_eq!(text_state(host).unwrap().text, "published");
+            assert!(
+                host.semantic_text_layout_snapshot(ComponentId(1), None)
+                    .is_some()
+            );
+        });
+        assert_eq!(prepares.get(), 1);
+        container
+            .render(
+                &mut Scene::new(),
+                &mut text,
+                frame,
+                frame,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
+        container.with_host(&mut |host| {
+            assert_eq!(text_state(host).unwrap().text, "next draw");
+            assert!(
+                host.semantic_text_layout_snapshot(ComponentId(1), None)
+                    .is_some()
+            );
+        });
+        assert_eq!(prepares.get(), 2);
     }
     #[test]
     fn local_original_text_host_accepts_input_and_resize_cancel_without_ipc() {
