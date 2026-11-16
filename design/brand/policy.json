@@ -25,17 +25,17 @@
   "syntax": "independent",
   "targets": {
     "dark": {
-      "action": 0.74,
-      "action_step": 0.045,
-      "link": 0.8,
-      "link_step": 0.035,
-      "outline": 0.76,
+      "action": 0.7,
+      "action_step": 0.04,
+      "link": 0.73,
+      "link_step": 0.032,
+      "outline": 0.68,
       "subtle": [
         0.22,
         0.26,
         0.3
       ],
-      "subtle_text": 0.85
+      "subtle_text": 0.77
     },
     "dark-ic": {
       "action": 0.83,
@@ -51,17 +51,17 @@
       "subtle_text": 0.92
     },
     "light": {
-      "action": 0.52,
-      "action_step": -0.045,
-      "link": 0.43,
-      "link_step": -0.035,
-      "outline": 0.5,
+      "action": 0.54,
+      "action_step": -0.04,
+      "link": 0.46,
+      "link_step": -0.032,
+      "outline": 0.52,
       "subtle": [
-        0.97,
-        0.94,
-        0.91
+        0.955,
+        0.925,
+        0.895
       ],
-      "subtle_text": 0.4
+      "subtle_text": 0.43
     },
     "light-ic": {
       "action": 0.43,

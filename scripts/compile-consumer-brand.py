@@ -78,8 +78,8 @@ def _prepare_theme_inputs(staged, definition_path):
     fixed = {'design/system.json', 'design/system.schema.json',
              'design/theme/rules.json', 'design/theme/rules.schema.json', 'design/theme/theme.schema.json',
              theme_generator.ARTIFACT_LOCK_SCHEMA, 'design/theme/artifact.lock.json',
-             'design/source/base.tokens.json', 'design/source/token-metadata.json', 'design/brand/policy.json',
-             'scripts/generate-theme-system.py', 'scripts/merge-design-system.py'}
+             'design/source/base.tokens.json', 'design/source/token-metadata.json', 'design/source/contrast-pairs.json',
+             'design/brand/policy.json', 'scripts/generate-theme-system.py', 'scripts/merge-design-system.py'}
     closure = fixed | set(contract['pinned_inputs'])
     # The source lock is carried as an artifact file for compatibility, while
     # the independently supplied copy below remains the verifier's trust input.

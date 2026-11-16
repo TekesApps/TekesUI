@@ -2,7 +2,7 @@
 """Compile registered Gallery BrandConfig profiles into deterministic palettes."""
 import argparse
 import hashlib
-import importlib
+import importlib.util
 import json
 from pathlib import Path
 import sys
@@ -13,8 +13,10 @@ UPSTREAM = Path('design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-
 
 
 def generate():
-    sys.path.insert(0, str(ROOT / UPSTREAM / 'tools'))
-    brand = importlib.import_module('brand')
+    merge_spec = importlib.util.spec_from_file_location('tekes_brand_merge', ROOT / 'scripts/merge-design-system.py')
+    merge = importlib.util.module_from_spec(merge_spec)
+    merge_spec.loader.exec_module(merge)
+    brand, _ = merge.load_brand_compiler(ROOT)
 
     def load(path):
         return json.loads((ROOT / path).read_text())
@@ -42,6 +44,7 @@ def generate():
     sources = [
         'design/source/base.tokens.json',
         'design/source/token-metadata.json',
+        'design/source/contrast-pairs.json',
         'design/brand/policy.json',
         registry_path,
         'scripts/generate-gallery-brands.py',

@@ -4,9 +4,10 @@ use serde_json::Value;
 use std::collections::BTreeSet;
 
 const THEMES: [&str; 4] = ["light", "dark", "light-ic", "dark-ic"];
-const FIXED_INPUTS: [&str; 7] = [
+const FIXED_INPUTS: [&str; 8] = [
     "design/source/base.tokens.json",
     "design/source/token-metadata.json",
+    "design/source/contrast-pairs.json",
     "design/brand/policy.json",
     "design/brand/gallery.json",
     "scripts/generate-gallery-brands.py",

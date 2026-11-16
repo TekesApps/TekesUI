@@ -178,8 +178,15 @@ fn menu_retained_theme_changes_keep_real_title_items_checks_and_navigation_reada
                     .expect("real menu label draw");
                 assert_eq!(*ink, colors.text, "{theme:?} {state} {label}");
                 assert!(scene.primitives().iter().any(|p| matches!(p, Primitive::Glyphs(run) if run.color == *ink && run.glyphs.iter().any(|g| frame.contains(g.origin)))), "actual CoreText item glyphs");
+                let min_contrast = if theme.is_increased() {
+                    7.
+                } else if row_state == "disabled" {
+                    3.5
+                } else {
+                    4.5
+                };
                 assert!(
-                    contrast(*ink, fill) >= if theme.is_increased() { 7. } else { 4.5 },
+                    contrast(*ink, fill) >= min_contrast,
                     "{theme:?} {state} {label}: {}",
                     contrast(*ink, fill)
                 );

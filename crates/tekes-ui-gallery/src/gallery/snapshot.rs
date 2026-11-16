@@ -548,8 +548,6 @@ mod tests {
 
     #[test]
     fn original_three_page_content_matches_the_committed_proposal_review() {
-        use tekes_ui_scene::Quad;
-        use tekes_ui_tokens::{ColorRole, Rgba};
         // CoreText's automatic CJK cascade depends on preferred languages.
         // Run this historical fixture in its own process: changing defaults in
         // the parallel test process would also change unrelated text tests.
@@ -632,89 +630,267 @@ mod tests {
                         },
                         &mut original_scene,
                     );
-                    // Reconstruct only #245's reviewed ordinary palette changes
-                    // for the immutable historical PNG. Geometry, text, alpha,
+                    // Reconstruct only the reviewed ordinary palette changes for the
+                    // immutable proposal1 historical PNG. Geometry, text, alpha,
                     // primitive order and Increased Contrast remain unchanged.
-                    let boundary_revision = if theme == Theme::LIGHT {
-                        Some([
+                    assert_eq!(
+                        tekes_ui_tokens::proposal::color("row-selection-hover", Theme::LIGHT),
+                        Some(tekes_ui_tokens::Rgba::rgb8(231, 229, 224))
+                    );
+                    assert_eq!(
+                        tekes_ui_tokens::proposal::color("row-selection-hover", Theme::DARK),
+                        Some(tekes_ui_tokens::Rgba::rgb8(42, 42, 39))
+                    );
+                    let ordinary_revision: Option<
+                        &[(&str, tekes_ui_tokens::Rgba, tekes_ui_tokens::Rgba)],
+                    > = if theme == Theme::LIGHT {
+                        Some(&[
+                            (
+                                "accent",
+                                tekes_ui_tokens::Rgba::rgb8(88, 88, 88),
+                                tekes_ui_tokens::Rgba::rgb8(80, 80, 80),
+                            ),
                             (
                                 "border",
-                                Rgba::rgb8(130, 130, 127),
-                                Rgba::rgb8(115, 115, 112),
+                                tekes_ui_tokens::Rgba::rgb8(131, 128, 121),
+                                tekes_ui_tokens::Rgba::rgb8(115, 115, 112),
                             ),
                             (
                                 "border-focused",
-                                Rgba::rgb8(124, 124, 121),
-                                Rgba::rgb8(66, 66, 63),
+                                tekes_ui_tokens::Rgba::rgb8(124, 121, 114),
+                                tekes_ui_tokens::Rgba::rgb8(66, 66, 63),
                             ),
                             (
                                 "button-hover",
-                                Rgba::rgb8(237, 237, 235),
-                                Rgba::rgb8(233, 233, 231),
+                                tekes_ui_tokens::Rgba::rgb8(237, 235, 230),
+                                tekes_ui_tokens::Rgba::rgb8(233, 233, 231),
                             ),
                             (
                                 "button-pressed",
-                                Rgba::rgb8(231, 231, 228),
-                                Rgba::rgb8(221, 221, 218),
+                                tekes_ui_tokens::Rgba::rgb8(231, 229, 224),
+                                tekes_ui_tokens::Rgba::rgb8(221, 221, 218),
+                            ),
+                            (
+                                "diff-added-marker",
+                                tekes_ui_tokens::Rgba::rgb8(45, 104, 71),
+                                tekes_ui_tokens::Rgba::rgb8(33, 99, 63),
+                            ),
+                            (
+                                "diff-added-surface",
+                                tekes_ui_tokens::Rgba::rgb8(230, 239, 232),
+                                tekes_ui_tokens::Rgba::rgb8(229, 240, 232),
+                            ),
+                            (
+                                "diff-removed-marker",
+                                tekes_ui_tokens::Rgba::rgb8(158, 59, 62),
+                                tekes_ui_tokens::Rgba::rgb8(164, 47, 53),
+                            ),
+                            (
+                                "diff-removed-surface",
+                                tekes_ui_tokens::Rgba::rgb8(244, 232, 231),
+                                tekes_ui_tokens::Rgba::rgb8(248, 232, 232),
+                            ),
+                            (
+                                "document-canvas",
+                                tekes_ui_tokens::Rgba::rgb8(250, 249, 246),
+                                tekes_ui_tokens::Rgba::rgb8(252, 252, 251),
+                            ),
+                            (
+                                "primary-text",
+                                tekes_ui_tokens::Rgba::rgb8(52, 50, 47),
+                                tekes_ui_tokens::Rgba::rgb8(21, 21, 21),
                             ),
                             (
                                 "row-selection",
-                                Rgba::rgb8(234, 234, 232),
-                                Rgba::rgb8(230, 230, 228),
+                                tekes_ui_tokens::Rgba::rgb8(236, 234, 229),
+                                tekes_ui_tokens::Rgba::rgb8(230, 230, 228),
                             ),
                             (
-                                "row-selection-hover",
-                                Rgba::rgb8(230, 230, 227),
-                                Rgba::rgb8(220, 220, 217),
+                                "secondary-text",
+                                tekes_ui_tokens::Rgba::rgb8(97, 94, 88),
+                                tekes_ui_tokens::Rgba::rgb8(82, 82, 82),
+                            ),
+                            (
+                                "selected-text",
+                                tekes_ui_tokens::Rgba::rgb8(30, 29, 27),
+                                tekes_ui_tokens::Rgba::rgb8(21, 21, 21),
                             ),
                             (
                                 "separator",
-                                Rgba::rgb8(228, 228, 226),
-                                Rgba::rgb8(223, 223, 221),
+                                tekes_ui_tokens::Rgba::rgb8(228, 226, 220),
+                                tekes_ui_tokens::Rgba::rgb8(223, 223, 221),
+                            ),
+                            (
+                                "status-running",
+                                tekes_ui_tokens::Rgba::rgb8(138, 82, 20),
+                                tekes_ui_tokens::Rgba::rgb8(138, 75, 0),
+                            ),
+                            (
+                                "surface-sidebar",
+                                tekes_ui_tokens::Rgba::rgb8(243, 242, 238),
+                                tekes_ui_tokens::Rgba::rgb8(245, 245, 243),
+                            ),
+                            (
+                                "tertiary-text",
+                                tekes_ui_tokens::Rgba::rgb8(122, 119, 112),
+                                tekes_ui_tokens::Rgba::rgb8(96, 96, 96),
+                            ),
+                            (
+                                "text-selection",
+                                tekes_ui_tokens::Rgba::rgb8(200, 213, 230),
+                                tekes_ui_tokens::Rgba::rgb8(201, 215, 234),
+                            ),
+                            (
+                                "warning",
+                                tekes_ui_tokens::Rgba::rgb8(232, 198, 104),
+                                tekes_ui_tokens::Rgba::rgb8(243, 206, 103),
+                            ),
+                            (
+                                "warning-foreground",
+                                tekes_ui_tokens::Rgba::rgb8(150, 70, 18),
+                                tekes_ui_tokens::Rgba::rgb8(160, 60, 0),
                             ),
                         ])
                     } else if theme == Theme::DARK {
-                        Some([
+                        Some(&[
+                            (
+                                "accent",
+                                tekes_ui_tokens::Rgba::rgb8(168, 168, 168),
+                                tekes_ui_tokens::Rgba::rgb8(190, 190, 190),
+                            ),
                             (
                                 "border",
-                                Rgba::rgb8(118, 118, 115),
-                                Rgba::rgb8(163, 163, 158),
+                                tekes_ui_tokens::Rgba::rgb8(120, 117, 110),
+                                tekes_ui_tokens::Rgba::rgb8(163, 163, 158),
                             ),
                             (
                                 "border-focused",
-                                Rgba::rgb8(125, 125, 122),
-                                Rgba::rgb8(238, 238, 234),
+                                tekes_ui_tokens::Rgba::rgb8(127, 124, 117),
+                                tekes_ui_tokens::Rgba::rgb8(238, 238, 234),
                             ),
                             (
                                 "button-hover",
-                                Rgba::rgb8(37, 37, 36),
-                                Rgba::rgb8(39, 39, 38),
+                                tekes_ui_tokens::Rgba::rgb8(36, 36, 33),
+                                tekes_ui_tokens::Rgba::rgb8(39, 39, 38),
                             ),
                             (
                                 "button-pressed",
-                                Rgba::rgb8(43, 43, 42),
-                                Rgba::rgb8(50, 50, 49),
+                                tekes_ui_tokens::Rgba::rgb8(41, 41, 38),
+                                tekes_ui_tokens::Rgba::rgb8(50, 50, 49),
+                            ),
+                            (
+                                "diff-added-marker",
+                                tekes_ui_tokens::Rgba::rgb8(120, 179, 140),
+                                tekes_ui_tokens::Rgba::rgb8(150, 217, 172),
+                            ),
+                            (
+                                "diff-added-surface",
+                                tekes_ui_tokens::Rgba::rgb8(31, 45, 35),
+                                tekes_ui_tokens::Rgba::rgb8(35, 54, 42),
+                            ),
+                            (
+                                "diff-removed-marker",
+                                tekes_ui_tokens::Rgba::rgb8(212, 142, 142),
+                                tekes_ui_tokens::Rgba::rgb8(255, 177, 177),
+                            ),
+                            (
+                                "diff-removed-surface",
+                                tekes_ui_tokens::Rgba::rgb8(48, 34, 35),
+                                tekes_ui_tokens::Rgba::rgb8(59, 39, 41),
+                            ),
+                            (
+                                "document-canvas",
+                                tekes_ui_tokens::Rgba::rgb8(25, 25, 23),
+                                tekes_ui_tokens::Rgba::rgb8(21, 21, 21),
+                            ),
+                            (
+                                "primary-text",
+                                tekes_ui_tokens::Rgba::rgb8(212, 209, 201),
+                                tekes_ui_tokens::Rgba::rgb8(245, 245, 245),
                             ),
                             (
                                 "row-selection",
-                                Rgba::rgb8(40, 40, 39),
-                                Rgba::rgb8(42, 42, 41),
+                                tekes_ui_tokens::Rgba::rgb8(38, 38, 35),
+                                tekes_ui_tokens::Rgba::rgb8(42, 42, 41),
                             ),
                             (
-                                "row-selection-hover",
-                                Rgba::rgb8(44, 44, 43),
-                                Rgba::rgb8(52, 52, 51),
+                                "secondary-text",
+                                tekes_ui_tokens::Rgba::rgb8(151, 148, 140),
+                                tekes_ui_tokens::Rgba::rgb8(163, 163, 163),
                             ),
-                            ("separator", Rgba::rgb8(48, 48, 46), Rgba::rgb8(53, 53, 51)),
+                            (
+                                "selected-text",
+                                tekes_ui_tokens::Rgba::rgb8(242, 239, 232),
+                                tekes_ui_tokens::Rgba::rgb8(255, 255, 255),
+                            ),
+                            (
+                                "separator",
+                                tekes_ui_tokens::Rgba::rgb8(44, 44, 40),
+                                tekes_ui_tokens::Rgba::rgb8(53, 53, 51),
+                            ),
+                            (
+                                "status-running",
+                                tekes_ui_tokens::Rgba::rgb8(204, 155, 94),
+                                tekes_ui_tokens::Rgba::rgb8(245, 190, 116),
+                            ),
+                            (
+                                "surface-sidebar",
+                                tekes_ui_tokens::Rgba::rgb8(21, 21, 19),
+                                tekes_ui_tokens::Rgba::rgb8(11, 11, 10),
+                            ),
+                            (
+                                "tertiary-text",
+                                tekes_ui_tokens::Rgba::rgb8(126, 123, 116),
+                                tekes_ui_tokens::Rgba::rgb8(180, 180, 176),
+                            ),
+                            (
+                                "text-selection",
+                                tekes_ui_tokens::Rgba::rgb8(62, 80, 102),
+                                tekes_ui_tokens::Rgba::rgb8(66, 86, 111),
+                            ),
+                            (
+                                "transcript-input",
+                                tekes_ui_tokens::Rgba::rgb8(34, 34, 31),
+                                tekes_ui_tokens::Rgba::rgb8(32, 32, 30),
+                            ),
+                            (
+                                "warning",
+                                tekes_ui_tokens::Rgba::rgb8(207, 166, 78),
+                                tekes_ui_tokens::Rgba::rgb8(228, 183, 81),
+                            ),
+                            (
+                                "warning-foreground",
+                                tekes_ui_tokens::Rgba::rgb8(206, 145, 85),
+                                tekes_ui_tokens::Rgba::rgb8(255, 168, 92),
+                            ),
                         ])
                     } else {
                         None
                     };
-                    let restore_boundary = |ink: Rgba| {
-                        if let Some(revision) = boundary_revision {
-                            for (_, current, historical) in revision {
+                    if let Some(revision) = ordinary_revision {
+                        for (i, &(role, current, _)) in revision.iter().enumerate() {
+                            assert_eq!(
+                                tekes_ui_tokens::proposal::color(role, theme),
+                                Some(current),
+                                "{role} / {theme:?}"
+                            );
+                            for &(other_role, other_current, _) in &revision[i + 1..] {
+                                assert_ne!(
+                                    (current.r, current.g, current.b),
+                                    (other_current.r, other_current.g, other_current.b),
+                                    "duplicate RGB mapping between {role} and {other_role} in {theme:?}"
+                                );
+                            }
+                        }
+                    }
+                    let restore_ordinary = |ink: tekes_ui_tokens::Rgba| {
+                        if ink.a == 0.0 {
+                            return ink;
+                        }
+                        if let Some(revision) = ordinary_revision {
+                            for &(_, current, historical) in revision {
                                 if ink.r == current.r && ink.g == current.g && ink.b == current.b {
-                                    return Rgba {
+                                    return tekes_ui_tokens::Rgba {
                                         a: ink.a,
                                         ..historical
                                     };
@@ -723,157 +899,45 @@ mod tests {
                         }
                         ink
                     };
-                    if let Some(revision) = boundary_revision {
-                        for (role, current, _) in revision {
-                            assert_eq!(
-                                tekes_ui_tokens::proposal::render_color(role, theme).unwrap(),
-                                current
-                            );
-                            for other in ColorRole::ALL {
-                                if !matches!(
-                                    other,
-                                    ColorRole::Border
-                                        | ColorRole::FloatingPanelBorder
-                                        | ColorRole::FloatingPanelDivider
-                                        | ColorRole::BorderFocused
-                                        | ColorRole::ButtonHover
-                                        | ColorRole::RowSelection
-                                        | ColorRole::Separator
-                                ) {
-                                    assert_ne!(
-                                        other.resolve(theme),
-                                        current,
-                                        "unique reviewed ordinary palette role"
-                                    );
-                                }
-                            }
-                        }
-                    }
-                    let mut boundary_reference_scene = Scene::new();
-                    let mut changed_boundary_channels = 0;
+                    let mut reference_color_scene = Scene::new();
+                    let mut changed_channels = 0;
                     for primitive in original_scene.primitives() {
                         match primitive {
                             tekes_ui_scene::Primitive::Quad(quad) => {
                                 let mut reference = *quad;
-                                reference.fill = restore_boundary(quad.fill);
-                                reference.border_color = restore_boundary(quad.border_color);
-                                changed_boundary_channels +=
-                                    usize::from(reference.fill != quad.fill)
-                                        + usize::from(reference.border_color != quad.border_color);
+                                reference.fill = restore_ordinary(quad.fill);
+                                reference.border_color = restore_ordinary(quad.border_color);
+                                changed_channels += usize::from(reference.fill != quad.fill)
+                                    + usize::from(reference.border_color != quad.border_color);
                                 assert_eq!(
-                                    Quad {
+                                    tekes_ui_scene::Quad {
                                         fill: quad.fill,
                                         border_color: quad.border_color,
                                         ..reference
                                     },
                                     *quad
                                 );
-                                boundary_reference_scene.push_quad(reference);
+                                reference_color_scene.push_quad(reference);
                             }
                             tekes_ui_scene::Primitive::Glyphs(run) => {
-                                assert_eq!(
-                                    restore_boundary(run.color),
-                                    run.color,
-                                    "ordinary palette revision must not recolor text"
-                                );
-                                boundary_reference_scene.push(primitive.clone());
-                            }
-                            other => boundary_reference_scene.push(other.clone()),
-                        }
-                    }
-                    eprintln!("boundary revision {name}: {changed_boundary_channels} channels");
-                    // Preserve the historical PNG's exact Theme while validating
-                    // the prior ordinary-dark tertiary input separately.
-                    // This is a semantic reference reconstruction, not a pixel mask.
-                    let mut reference_color_scene = Scene::new();
-                    let tertiary = tekes_ui_tokens::ColorRole::TertiaryText.resolve(theme);
-                    let old_tertiary = tekes_ui_tokens::Rgba::rgb8(180, 180, 176);
-                    let ordinary_dark = theme == Theme::DARK;
-                    if ordinary_dark {
-                        assert_eq!(tertiary, tekes_ui_tokens::Rgba::rgb8(159, 159, 155));
-                        for role in tekes_ui_tokens::ColorRole::ALL {
-                            if role != tekes_ui_tokens::ColorRole::TertiaryText {
-                                assert_ne!(role.resolve(theme), tertiary, "unique changed role");
-                            }
-                        }
-                    }
-                    let tertiary_index = tekes_ui_tokens::ColorRole::ALL
-                        .iter()
-                        .position(|role| *role == tekes_ui_tokens::ColorRole::TertiaryText)
-                        .unwrap();
-                    let tertiary_swatch = super::super::pages::tokens::swatch_rect(
-                        super::super::layout::PAGE_CONTENT.min_x(),
-                        super::super::layout::PAGE_CONTENT.min_y()
-                            + super::super::containers::SECTION_HEADER_H,
-                        tertiary_index,
-                    )
-                    .inset(tekes_ui_tokens::Spacing::Tight.value());
-                    let mut changed_tertiary_swatches = 0;
-                    let mut changed_tertiary_notes = 0;
-                    for primitive in boundary_reference_scene.primitives() {
-                        match primitive {
-                            tekes_ui_scene::Primitive::Quad(quad)
-                                if ordinary_dark
-                                    && page == Page::Tokens
-                                    && quad.rect == tertiary_swatch =>
-                            {
-                                assert_eq!(quad.fill, tertiary);
-                                let mut reference = *quad;
-                                reference.fill = old_tertiary;
-                                assert_eq!(
-                                    tekes_ui_scene::Quad {
-                                        fill: tertiary,
-                                        ..reference
-                                    },
-                                    *quad,
-                                    "only the declared swatch fill may change"
-                                );
-                                reference_color_scene.push_quad(reference);
-                                changed_tertiary_swatches += 1;
-                            }
-                            tekes_ui_scene::Primitive::Glyphs(run)
-                                if ordinary_dark
-                                    && page == Page::StaticText
-                                    && run.color == tertiary =>
-                            {
-                                // In this fixed no-reference fixture, NOTE_STYLE
-                                // paints crop count, heatmap placeholder and verdict.
-                                assert!(run.glyphs.iter().all(|glyph| {
-                                    glyph.origin.x >= super::super::layout::PAGE_CONTENT.min_x()
-                                        && glyph.origin.y
-                                            >= super::super::layout::PAGE_CONTENT.min_y()
-                                }));
                                 let mut reference = run.clone();
-                                reference.color = old_tertiary;
+                                reference.color = restore_ordinary(run.color);
+                                changed_channels += usize::from(reference.color != run.color);
                                 assert_eq!(reference.glyphs, run.glyphs, "glyph identity/position");
                                 reference_color_scene.push_glyphs(reference);
-                                changed_tertiary_notes += 1;
                             }
                             other => reference_color_scene.push(other.clone()),
                         }
                     }
-                    assert_eq!(
-                        (changed_tertiary_swatches, changed_tertiary_notes),
-                        if ordinary_dark && page == Page::Tokens {
-                            (1, 0)
-                        } else if ordinary_dark && page == Page::StaticText {
-                            (0, 3)
-                        } else {
-                            (0, 0)
-                        },
-                        "exact approved tertiary primitive count: {name}"
-                    );
+                    eprintln!("ordinary revision {name}: {changed_channels} channels");
                     assert_eq!(
                         reference_color_scene.primitives().len(),
                         original_scene.primitives().len(),
                         "primitive order/count retained"
                     );
                     let mut legacy_scene = Scene::new();
-                    let mut colors = tekes_ui_tokens::ColorRole::ALL
-                        .map(|role| restore_boundary(role.resolve(theme)));
-                    if ordinary_dark {
-                        colors[tertiary_index] = old_tertiary;
-                    }
+                    let colors = tekes_ui_tokens::ColorRole::ALL
+                        .map(|role| restore_ordinary(role.resolve(theme)));
                     let current_radius = tekes_ui_tokens::CornerRadius::concentric(
                         tekes_ui_tokens::CornerRadius::Row.value(),
                         tekes_ui_tokens::Spacing::Tight.value(),
@@ -910,6 +974,7 @@ mod tests {
                         assert_eq!(concentric_swatches, 0, "non-token page swatch match");
                     }
                     let size = (FRAME_W as u32 * scale, FRAME_H as u32 * scale);
+                    let reference_background = restore_ordinary(Gallery::background(theme));
                     // Still render the actual current scene. The historical
                     // comparison below restores only the asserted Theme channel.
                     let current = renderer
@@ -927,7 +992,7 @@ mod tests {
                             text.atlas_mut(),
                             size,
                             scale as f32,
-                            Gallery::background(theme),
+                            reference_background,
                         )
                         .unwrap();
                     let legacy = renderer
@@ -936,7 +1001,7 @@ mod tests {
                             text.atlas_mut(),
                             size,
                             scale as f32,
-                            Gallery::background(theme),
+                            reference_background,
                         )
                         .unwrap();
                     let new_width = size.0;
@@ -946,13 +1011,11 @@ mod tests {
                         after.len(),
                         "{name} current image dimensions"
                     );
-                    if changed_tertiary_swatches
-                        + changed_tertiary_notes
-                        + changed_boundary_channels
-                        == 0
-                    {
+                    if ordinary_revision.is_none() {
+                        assert_eq!(changed_channels, 0, "{name} unchanged Theme channels");
                         assert_eq!(current, after, "{name} unchanged Theme render");
                     } else {
+                        assert!(changed_channels > 0, "{name} expected changed channels");
                         assert_ne!(current, after, "{name} approved Theme changes are rendered");
                     }
                     assert_eq!(before.len(), after.len(), "{name} image dimensions");

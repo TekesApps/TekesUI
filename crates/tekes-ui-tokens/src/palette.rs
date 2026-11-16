@@ -220,9 +220,10 @@ mod tests {
 
     #[test]
     fn same_brand_config_definitions_keep_independent_effective_color_inputs() {
-        // The reviewed blue-inputs fixture changes p-status-info and p-accent in
-        // light mode; its p-primary-text override changes every compiled mode.
-        let status_changes_by_mode = [true, false, false, false];
+        // The reviewed blue-inputs fixture changes p-status-info in ordinary
+        // light/dark modes and p-accent in light mode; its p-primary-text
+        // override changes every compiled mode.
+        let status_changes_by_mode = [true, true, false, false];
         let accent_changes_by_mode = [true, false, false, false];
         for (mode_index, theme) in Theme::ALL.into_iter().enumerate() {
             let blue = Palette::for_theme_definition(theme, "blue").unwrap();

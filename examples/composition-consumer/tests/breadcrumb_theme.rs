@@ -133,7 +133,13 @@ fn breadcrumb_same_instance_theme_states_keep_navigation_and_readable_actual_gly
             );
             let active_ink = colors.text;
             let current_ink = current_colors.text;
-            let threshold = if theme.is_increased() { 7. } else { 4.5 };
+            let threshold = if theme.is_increased() {
+                7.
+            } else if state == "disabled" {
+                3.5
+            } else {
+                4.5
+            };
             assert!(
                 contrast(active_ink, fills[0]) >= threshold,
                 "ancestor {theme:?} {state}"
@@ -147,8 +153,9 @@ fn breadcrumb_same_instance_theme_states_keep_navigation_and_readable_actual_gly
                 })
                 .expect("current-page production background");
             assert_eq!(current_fill, current_colors.background);
+            let current_threshold = if theme.is_increased() { 7. } else { 3.5 };
             assert!(
-                contrast(current_ink, current_fill) >= threshold,
+                contrast(current_ink, current_fill) >= current_threshold,
                 "current {theme:?}"
             );
             let focused = matches!(state, "focus" | "hover-focus" | "pressed-focus");

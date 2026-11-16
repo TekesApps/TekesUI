@@ -89,9 +89,11 @@ fn canonical_svg_gpu_resources_reuse_retire_and_never_cross_renderer_namespace()
             };
             let (first, rgba) = draw(&mut host, &mut gpu, &mut cache);
             assert_eq!(first.len(), 2);
+            // At 1x backing scale, 24pt stroke-width=1.25 icons rasterize ~0.83px
+            // strokes; calm primary-text (#34322F) blended over #FAF9F6 sits ~101-115.
             assert!(
                 rgba.chunks_exact(4)
-                    .any(|p| p[0] < 100 && p[1] < 100 && p[2] < 100)
+                    .any(|p| p[0] < 140 && p[1] < 140 && p[2] < 140)
             );
             let (second, again) = draw(&mut host, &mut gpu, &mut cache);
             assert_eq!(first, second);
