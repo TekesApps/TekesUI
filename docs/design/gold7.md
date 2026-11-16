@@ -180,3 +180,14 @@ Gallery 的作用域顺序为搜索框、过滤结果中的侧栏当前项、页
 ## 2026-11-15 普通主题焦点明度收敛
 
 用户在 AppHost Gallery 候选中再次指出 Search 聚焦边界过于突出。本轮把共享 `p-border-focused` 的普通 Light/Dark 明度收敛到接近必要边界的值（Light `#7C7C79`，Dark `#7D7D7A`），保留既有焦点强调线宽、错误优先级和高对比主题。初版与 `p-border` 完全相同，被既有 SplitView 状态预览回归检出：只改变颜色的焦点表达会消失。因此保留小幅色差，不能仅依赖部分组件的线宽变化。原失败与初版原生截图保留。这是共享主题值修正，不在消费者补颜色；最终明暗外观单独复验，未受影响的功能证据复用。
+
+## 2026-11-17 普通主题低干扰带通预算与三级文字分层（Issue #345）
+
+此前仓库对比度门禁仅设置单边下限且把 `tertiary-text` 在全部分支底面上一刀切卡在 `4.5:1`，导致普通主题主正文端到端对比度高达 `16.75:1–18.06:1`、Dark `surface-0`/`code-surface` 压到 `#0B0B0A` 引发暗底亮字眩光，且 Dark 下 `tertiary-text`（`#9F9F9B`）与 `secondary-text`（`#A3A3A3`）挤压同亮、状态色过曝。
+
+本轮按 **方案 B** 在不改动任何 `*.schema.json`、Token 名称、Rust 公开枚举或冻结导入包的前提下完成以下收敛：
+1. 新增项目级 `.agents/skills/gold7-calm-audit/`（带通审计脚本 `audit_gold7_calm.py`、`calm-budget.md` 及只读组件噪点扫描 `--scan-components`），为普通 `light`/`dark` 引入双边舒适区间（正文眩光上限 `13.5:1`、四级文字明度台阶、`dark` 基底防纯黑 `L_oklch >= 0.185`、状态色低饱和上限、暖中性色温护栏）与 `-ic` 单调性兜底。
+2. 将对比度配对契约本地承接到 `design/source/contrast-pairs.json`（仅在普通模式下将 `tertiary-text` 放宽至静态底面 `3.5:1` / 瞬态与 Diff 底面 `3.0:1`，`action-quiet` 不可用态同步为 `3.5:1`），`light-ic` 与 `dark-ic` 保持 `7.0:1` / `3.0:1` 与原取色不变。
+3. 调优普通 `light`/`dark` 表面阶梯、四级文字、边界/焦点、状态色及品牌派生 `targets`，并刷新对应锁定投影。
+
+本段仅覆盖静态 Token 契约、品牌生成校验、Rust export/workspace 与离线 consumer CPU 场景测试；不声明新增真实物理 IME、VoiceOver 或性能验收。

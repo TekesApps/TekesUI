@@ -279,92 +279,139 @@ class ThemeSystemTests(unittest.TestCase):
             # immutable v1.6.1 fixture and prove every other channel is unchanged.
             instance=next(i for i in instances if i['id']==record['theme_id'])
             packet=copy.deepcopy(packet)
+            historic_disabled={'light':'#918B81','dark':'#807A70','light-ic':'#767066','dark-ic':'#A09A90'}[record['mode']]
             for uses in packet.values():
                 for usage in ['action-quiet','action-quiet-error']:
                     for state in ['disabled','selected-disabled']:
                         for channel in ['text','icon']:
                             self.assertEqual(uses[usage][state][channel],instance['compiled_color_roles'][record['mode']]['tertiary-text'])
-                            uses[usage][state][channel]=instance['compiled_color_roles'][record['mode']]['disabled-text']
-            # #245 changes only the ordinary dark default tertiary input. Undo
-            # its exact declared references after the independent #206 undo;
-            # preserve the frozen fixture and reject unrelated packet changes.
-            if record['theme_id'] in ['default','blue','clay'] and record['mode']=='dark':
-                current_tertiary='#9F9F9B'
-                old_tertiary='#B4B4B0'
-                self.assertEqual(instance['compiled_color_roles'][record['mode']]['tertiary-text'],current_tertiary)
-                restored=0
-                for surface,usage,state,roles in g.bindings(self.rules()):
-                    if usage not in packet[surface]: continue
-                    for channel,role in roles.items():
-                        if role != 'tertiary-text': continue
-                        if usage in ['action-quiet','action-quiet-error'] and state in ['disabled','selected-disabled'] and channel in ['text','icon']: continue
-                        self.assertEqual(packet[surface][usage][state][channel],current_tertiary)
-                        packet[surface][usage][state][channel]=old_tertiary
-                        restored+=1
-                self.assertGreater(restored,0)
-            # #245 ordinary palette changes and #291's quieter standard focus
-            # are explicit, reviewed role deltas.
-            # Undo only those bindings to compare all other historic channels;
-            # keep IC, consumer overrides and the immutable fixture unchanged.
-            ordinary_revision = {
-                'light': {
-                    'border': ('#82827F', '#737370'),
-                    'border-focused': ('#7C7C79', '#42423F'),
-                    'button-hover': ('#EDEDEB', '#E9E9E7'),
-                    'button-pressed': ('#E7E7E4', '#DDDDDA'),
-                    'row-selection': ('#EAEAE8', '#E6E6E4'),
-                    'row-selection-hover': ('#E6E6E3', '#DCDCD9'),
-                    'separator': ('#E4E4E2', '#DFDFDD'),
-                },
-                'dark': {
-                    'border': ('#767673', '#A3A39E'),
-                    'border-focused': ('#7D7D7A', '#EEEEEA'),
-                    'button-hover': ('#252524', '#272726'),
-                    'button-pressed': ('#2B2B2A', '#323231'),
-                    'row-selection': ('#282827', '#2A2A29'),
-                    'row-selection-hover': ('#2C2C2B', '#343433'),
-                    'separator': ('#30302E', '#353533'),
-                },
-            }.get(record['mode'], {})
-            overrides = instance['inputs']['overrides']['neutral_base']
+                            uses[usage][state][channel]=historic_disabled
+            # Undo reviewed ordinary-mode palette & Plan B calm-UI role deltas
+            # (leaving light-ic/dark-ic base and brand targets untouched except
+            # #308 code-surface) to prove every other channel matches v1.6.1.
+            if record['mode'] in ('light', 'dark'):
+                ordinary_shared_revision = {
+                    'light': {
+                        'border': ('#838079', '#737370'),
+                        'border-focused': ('#7C7972', '#42423F'),
+                        'button-hover': ('#EDEBE6', '#E9E9E7'),
+                        'button-pressed': ('#E7E5E0', '#DDDDDA'),
+                        'code-surface': ('#F3F2EE', '#FFFFFF'),
+                        'disabled-text': ('#9E9A92', '#918B81'),
+                        'document-canvas': ('#FAF9F6', '#FCFCFB'),
+                        'primary-text': ('#34322F', '#151515'),
+                        'row-selection': ('#ECEAE5', '#E6E6E4'),
+                        'row-selection-hover': ('#E7E5E0', '#DCDCD9'),
+                        'secondary-text': ('#615E58', '#525252'),
+                        'selected-text': ('#1E1D1B', '#151515'),
+                        'separator': ('#E4E2DC', '#DFDFDD'),
+                        'status-failed': ('#9E3B3E', '#A42F35'),
+                        'status-info': ('#36618A', '#285B8D'),
+                        'status-running': ('#8A5214', '#8A4B00'),
+                        'status-succeeded': ('#2D6847', '#21633F'),
+                        'surface-0': ('#F3F2EE', '#F5F5F3'),
+                        'surface-1': ('#FAF9F6', '#FCFCFB'),
+                        'surface-2': ('#FDFCFA', '#FFFFFF'),
+                        'surface-panel': ('#FDFCFA', '#FFFFFF'),
+                        'surface-sidebar': ('#F3F2EE', '#F5F5F3'),
+                        'tertiary-text': ('#7A7770', '#606060'),
+                        'text-selection': ('#C8D5E6', '#C9D7EA'),
+                    },
+                    'dark': {
+                        'border': ('#78756E', '#A3A39E'),
+                        'border-focused': ('#7F7C75', '#EEEEEA'),
+                        'button-hover': ('#242421', '#272726'),
+                        'button-pressed': ('#292926', '#323231'),
+                        'code-surface': ('#141412', '#1A1A19'),
+                        'disabled-text': ('#605D57', '#807A70'),
+                        'document-canvas': ('#191917', '#151515'),
+                        'primary-text': ('#D4D1C9', '#F5F5F5'),
+                        'row-selection': ('#262623', '#2A2A29'),
+                        'row-selection-hover': ('#2A2A27', '#343433'),
+                        'secondary-text': ('#97948C', '#A3A3A3'),
+                        'selected-text': ('#F2EFE8', '#FFFFFF'),
+                        'separator': ('#2C2C28', '#353533'),
+                        'status-failed': ('#D48E8E', '#FFB1B1'),
+                        'status-info': ('#80A9D1', '#A8D1FF'),
+                        'status-running': ('#CC9B5E', '#F5BE74'),
+                        'status-succeeded': ('#78B38C', '#96D9AC'),
+                        'surface-0': ('#151513', '#0B0B0A'),
+                        'surface-1': ('#191917', '#151515'),
+                        'surface-2': ('#1E1E1B', '#1A1A19'),
+                        'surface-3': ('#22221F', '#20201E'),
+                        'surface-panel': ('#1E1E1B', '#1A1A19'),
+                        'surface-popover': ('#242421', '#222220'),
+                        'surface-sidebar': ('#151513', '#0B0B0A'),
+                        'tertiary-text': ('#7E7B74', '#B4B4B0'),
+                        'text-selection': ('#3E5066', '#42566F'),
+                        'transcript-input': ('#22221F', '#20201E'),
+                    },
+                }[record['mode']]
+                ordinary_brand_revision = {
+                    ('default', 'light'): {
+                        'accent': ('#585858', '#505050'), 'accent-hover': ('#4F4F4F', '#464646'), 'accent-pressed': ('#464646', '#3D3D3D'),
+                        'action-primary-ground': ('#6F6F6F', '#696969'), 'action-primary-hover': ('#636363', '#5C5C5C'), 'action-primary-pressed': ('#585858', '#505050'),
+                        'c-link-foreground': ('#585858', '#505050'), 'c-link-hover': ('#4F4F4F', '#464646'), 'c-link-pressed': ('#464646', '#3D3D3D'),
+                        'c-list-selection-marker': ('#696969', '#636363'), 'c-switch-on-ground': ('#6F6F6F', '#696969'),
+                        'control-checked-ground': ('#6F6F6F', '#696969'), 'control-checked-hover': ('#636363', '#5C5C5C'), 'control-checked-pressed': ('#585858', '#505050'),
+                    },
+                    ('default', 'dark'): {
+                        'accent': ('#A8A8A8', '#BEBEBE'), 'accent-hover': ('#B2B2B2', '#C9C9C9'), 'accent-pressed': ('#BCBCBC', '#D4D4D4'),
+                        'action-primary-ground': ('#9E9E9E', '#ABABAB'), 'action-primary-hover': ('#ABABAB', '#B9B9B9'), 'action-primary-pressed': ('#B7B7B7', '#C7C7C7'),
+                        'c-link-foreground': ('#A8A8A8', '#BEBEBE'), 'c-link-hover': ('#B2B2B2', '#C9C9C9'), 'c-link-pressed': ('#BCBCBC', '#D4D4D4'),
+                        'c-list-selection-marker': ('#989898', '#B1B1B1'), 'c-switch-on-ground': ('#9E9E9E', '#ABABAB'),
+                        'control-checked-ground': ('#9E9E9E', '#ABABAB'), 'control-checked-hover': ('#ABABAB', '#B9B9B9'), 'control-checked-pressed': ('#B7B7B7', '#C7C7C7'),
+                    },
+                    ('blue', 'light'): {
+                        'accent': ('#124AC5', '#0840BB'), 'accent-hover': ('#073FBA', '#0035AD'), 'accent-pressed': ('#0035AE', '#002D99'),
+                        'action-primary-ground': ('#2A64E0', '#245DD9'), 'action-primary-hover': ('#1E57D3', '#174FCA'), 'action-primary-pressed': ('#124AC5', '#0840BB'),
+                        'c-link-foreground': ('#124AC5', '#0840BB'), 'c-link-hover': ('#073FBA', '#0035AD'), 'c-link-pressed': ('#0035AE', '#002D99'),
+                        'c-list-selection-marker': ('#245DD9', '#1E57D3'), 'c-switch-on-ground': ('#2A64E0', '#245DD9'),
+                        'control-checked-ground': ('#2A64E0', '#245DD9'), 'control-checked-hover': ('#1E57D3', '#174FCA'), 'control-checked-pressed': ('#124AC5', '#0840BB'),
+                    },
+                    ('blue', 'dark'): {
+                        'accent': ('#78A6FF', '#9BBEFF'), 'accent-hover': ('#88B1FF', '#ADC9FF'), 'accent-pressed': ('#98BCFF', '#BED5FF'),
+                        'action-primary-ground': ('#699BFF', '#7DA9FF'), 'action-primary-hover': ('#7DA9FF', '#94B9FF'), 'action-primary-pressed': ('#91B7FF', '#AAC8FF'),
+                        'c-link-foreground': ('#78A6FF', '#9BBEFF'), 'c-link-hover': ('#88B1FF', '#ADC9FF'), 'c-link-pressed': ('#98BCFF', '#BED5FF'),
+                        'c-list-selection-marker': ('#5F94FF', '#87B0FF'), 'c-switch-on-ground': ('#699BFF', '#7DA9FF'),
+                        'control-checked-ground': ('#699BFF', '#7DA9FF'), 'control-checked-hover': ('#7DA9FF', '#94B9FF'), 'control-checked-pressed': ('#91B7FF', '#AAC8FF'),
+                    },
+                    ('clay', 'light'): {
+                        'accent': ('#923716', '#882E0A'), 'accent-hover': ('#872D09', '#7B2400'), 'accent-pressed': ('#7C2500', '#6C1F00'),
+                        'action-primary-ground': ('#AC4F30', '#A64929'), 'action-primary-hover': ('#9F4323', '#973B1B'), 'action-primary-pressed': ('#923716', '#882E0A'),
+                        'c-link-foreground': ('#923716', '#882E0A'), 'c-link-hover': ('#872D09', '#7B2400'), 'c-link-pressed': ('#7C2500', '#6C1F00'),
+                        'c-list-selection-marker': ('#A64929', '#9F4323'), 'c-switch-on-ground': ('#AC4F30', '#A64929'),
+                        'control-checked-ground': ('#AC4F30', '#A64929'), 'control-checked-hover': ('#9F4323', '#973B1B'), 'control-checked-pressed': ('#923716', '#882E0A'),
+                    },
+                    ('clay', 'dark'): {
+                        'accent': ('#ED8968', '#FFA385'), 'accent-hover': ('#F89372', '#FFB49C'), 'accent-pressed': ('#FF9F80', '#FFC5B2'),
+                        'action-primary-ground': ('#E2805F', '#F08C6B'), 'action-primary-hover': ('#F08C6B', '#FF9B7A'), 'action-primary-pressed': ('#FE9978', '#FFB298'),
+                        'c-link-foreground': ('#ED8968', '#FFA385'), 'c-link-hover': ('#F89372', '#FFB49C'), 'c-link-pressed': ('#FF9F80', '#FFC5B2'),
+                        'c-list-selection-marker': ('#DC7959', '#F79271'), 'c-switch-on-ground': ('#E2805F', '#F08C6B'),
+                        'control-checked-ground': ('#E2805F', '#F08C6B'), 'control-checked-hover': ('#F08C6B', '#FF9B7A'), 'control-checked-pressed': ('#FE9978', '#FFB298'),
+                    },
+                }[(record['theme_id'], record['mode'])]
+                ordinary_revision = {**ordinary_shared_revision, **ordinary_brand_revision}
+            else:
+                ordinary_revision = {
+                    'code-surface': {
+                        'light-ic': ('#F4F4F1', '#FFFFFF'),
+                        'dark-ic': ('#000000', '#171715'),
+                    }[record['mode']]
+                }
             for role, (new_color, historic_color) in ordinary_revision.items():
-                if 'p-' + role in overrides:
-                    self.assertEqual(instance['compiled_color_roles'][record['mode']][role], overrides['p-' + role][record['mode']])
-                    if record['theme_id'] != 'blue-inputs' or role != 'border-focused':
-                        continue
-                    # This batch explicitly preserves blue-inputs' pre-change
-                    # focus on its custom surface. It still differs from the
-                    # immutable v1.6.1 fixture, so restore only that exact role.
-                    new_color = {'light': '#5E5E5B', 'dark': '#B0B0AC'}[record['mode']]
-                self.assertEqual(instance['compiled_color_roles'][record['mode']][role], new_color)
+                self.assertEqual(instance['compiled_color_roles'][record['mode']][role], new_color, (record['theme_id'], record['mode'], role))
                 restored = 0
                 for surface, usage, state, roles in g.bindings(self.rules()):
                     if usage not in packet[surface]: continue
                     for channel, binding in roles.items():
                         if binding != role: continue
-                        self.assertEqual(packet[surface][usage][state][channel], new_color)
+                        if role == 'tertiary-text' and usage in ['action-quiet', 'action-quiet-error'] and state in ['disabled', 'selected-disabled'] and channel in ['text', 'icon']:
+                            continue
+                        self.assertEqual(packet[surface][usage][state][channel], new_color, (record['theme_id'], record['mode'], surface, usage, state, channel, role))
                         packet[surface][usage][state][channel] = historic_color
                         restored += 1
-                self.assertGreater(restored, 0)
-            # #308 gives code its own neutral surface, distinct from document
-            # panels and unaffected by sidebar overrides. Preserve the frozen
-            # fixture by reversing only this declared role for comparison.
-            code_color, historic_code = {
-                'light': ('#F5F5F3', '#FFFFFF'),
-                'dark': ('#0B0B0A', '#1A1A19'),
-                'light-ic': ('#F4F4F1', '#FFFFFF'),
-                'dark-ic': ('#000000', '#171715'),
-            }[record['mode']]
-            self.assertEqual(instance['compiled_color_roles'][record['mode']]['code-surface'], code_color)
-            restored = 0
-            for surface, usage, state, roles in g.bindings(self.rules()):
-                if usage not in packet[surface]: continue
-                for channel, binding in roles.items():
-                    if binding != 'code-surface': continue
-                    self.assertEqual(packet[surface][usage][state][channel], code_color)
-                    packet[surface][usage][state][channel] = historic_code
-                    restored += 1
-            self.assertGreater(restored, 0)
+                self.assertGreater(restored, 0, (record['theme_id'], record['mode'], role))
             self.assertEqual(hashlib.sha256(canonical(packet)).hexdigest(),record['canonical_sha256'],(record['theme_id'],record['mode']))
         for mode in g.MODES:
             default=instances[0]['modes'][mode]
@@ -387,7 +434,7 @@ class ThemeSystemTests(unittest.TestCase):
 
     def test_quiet_disabled_readability_and_ordinary_emphasis_across_instances(self):
         instances=json.loads(g.generate()['design/theme/generated/instances.json'])['instances']
-        expected={'light':'#606060','dark':'#9F9F9B','light-ic':'#37352F','dark-ic':'#F4EEE2'}
+        expected={'light':'#7A7770','dark':'#7E7B74','light-ic':'#37352F','dark-ic':'#F4EEE2'}
         for instance in instances:
             for mode,surfaces in instance['modes'].items():
                 tertiary=instance['compiled_color_roles'][mode]['tertiary-text']
@@ -398,7 +445,7 @@ class ThemeSystemTests(unittest.TestCase):
                         for state in ['disabled','selected-disabled']:
                             colors=states[state]
                             for channel in ['text','icon']:
-                                self.assertGreaterEqual(g.contrast(colors[channel],colors['background']),7.0 if mode.endswith('-ic') else 4.5,(instance['id'],mode,usage,state,channel))
+                                self.assertGreaterEqual(g.contrast(colors[channel],colors['background']),7.0 if mode.endswith('-ic') else 3.5,(instance['id'],mode,usage,state,channel))
                         if instance['id']!='blue-inputs' and not mode.endswith('-ic'):
                             # Compare the same resting ground; selection fill has
                             # its own persistent emphasis and is tested above.
@@ -476,9 +523,7 @@ class ThemeSystemTests(unittest.TestCase):
             r=self.rules();mutation(r)
             with self.assertRaises(Exception):g.bindings(r)
     def test_all_thirteen_brands_and_custom_configs_use_same_complete_pairings(self):
-        import importlib
-        sys.path.insert(0,str(ROOT/g.merge.UPSTREAM/'tools'))
-        brand=importlib.import_module('brand')
+        brand, _ = g.merge.load_brand_compiler(ROOT)
         base=g.merge.load(ROOT/'design/source/base.tokens.json')
         policy=g.merge.load(ROOT/'design/brand/policy.json')
         metadata=g.merge.load(ROOT/'design/source/token-metadata.json')
@@ -615,7 +660,7 @@ class ThemeSystemTests(unittest.TestCase):
                         for state in ['disabled','selected-disabled']:
                             pair=uses[usage][state]
                             for channel in ['text','icon']:
-                                self.assertGreaterEqual(g.contrast(pair[channel],pair['background']),7.0 if mode.endswith('-ic') else 4.5,(instance['id'],mode,surface,usage,state,channel))
+                                self.assertGreaterEqual(g.contrast(pair[channel],pair['background']),7.0 if mode.endswith('-ic') else 3.5,(instance['id'],mode,surface,usage,state,channel))
                             self.assertIsNone(pair['focus'])
                         self.assertNotEqual(uses[usage]['disabled']['background'],uses[usage]['selected-disabled']['background'])
                         self.assertEqual(uses[usage]['selected-disabled']['boundary'],instance['compiled_color_roles'][mode]['separator'])

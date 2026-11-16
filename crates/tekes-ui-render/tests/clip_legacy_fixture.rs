@@ -109,14 +109,17 @@ fn actual_unshaped_pixels_are_byte_identical_to_frozen_baseline() {
             scene.pop_clip();
             scene.pop_clip();
             let size = ((64. * scale) as u32, (64. * scale) as u32);
+            let (expected_live_canvas, frozen_baseline_canvas) = match theme {
+                Theme::LIGHT => (Rgba::rgb8(250, 249, 246), Rgba::rgb8(252, 252, 251)),
+                Theme::DARK => (Rgba::rgb8(25, 25, 23), Rgba::rgb8(21, 21, 21)),
+                other => unreachable!("unexpected clip-legacy theme: {other:?}"),
+            };
+            assert_eq!(
+                ColorRole::DocumentCanvas.resolve(theme),
+                expected_live_canvas
+            );
             let data = renderer
-                .render_to_rgba8(
-                    &scene,
-                    &mut atlas,
-                    size,
-                    scale,
-                    ColorRole::DocumentCanvas.resolve(theme),
-                )
+                .render_to_rgba8(&scene, &mut atlas, size, scale, frozen_baseline_canvas)
                 .unwrap();
             let suffix = format!("{theme_name}-{}", (scale * 100.) as u32);
             save(&out, &format!("current-{suffix}"), size, &data);

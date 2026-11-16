@@ -23,6 +23,7 @@ THEMES = ['light','dark','light-ic','dark-ic']
 SOURCE_FILES = ['design/source/base.tokens.json','design/source/legacy.tokens.json',
                 'design/source/rust-mapping.json','design/source/motion.json','design/source/token-metadata.json',
                 'design/source/layout.json','design/source/interaction-contracts.json',
+                'design/source/contrast-pairs.json',
                 'design/brand/config.json','design/brand/policy.json','design/brand/gallery.json',
                 'scripts/merge-design-system.py','scripts/generate-gallery-brands.py',
                 'design/gallery/brands.json']
@@ -79,9 +80,43 @@ def pointer(d,path):
     return d
 
 
+def load_brand_compiler(root=ROOT):
+    tools_dir = str(root / UPSTREAM / 'tools')
+    if tools_dir not in sys.path:
+        sys.path.insert(0, tools_dir)
+    validate_mod = importlib.import_module('validate')
+    brand_mod = importlib.import_module('brand')
+    pairs_data = load(root / 'design/source/contrast-pairs.json')['pairs']
+
+    def local_contrast_results(tokens: dict):
+        result = []
+        for pair in pairs_data:
+            for theme in validate_mod.THEMES:
+                fg = validate_mod.rgb(validate_mod.resolve(tokens, 'color', pair['foreground'], theme))
+                bg = validate_mod.rgb(validate_mod.resolve(tokens, 'color', pair['background'], theme))
+                overlay = pair.get('overlay')
+                if overlay:
+                    oc = validate_mod.rgb(validate_mod.resolve(tokens, 'color', overlay['color'], theme))
+                    alpha = overlay.get('opacity_by_theme', {}).get(theme)
+                    if alpha is None:
+                        alpha = validate_mod.resolve(tokens, 'opacity', overlay['opacity'], theme)
+                    # Rendering contract: source-over in sRGB for these solid UI recipes.
+                    bg = tuple(alpha * c + (1 - alpha) * b for c, b in zip(oc, bg))
+                ratio = validate_mod.contrast(fg, bg)
+                minimum = pair['ic' if theme.endswith('-ic') else 'normal']
+                result.append({'theme': theme, 'foreground': pair['foreground'],
+                               'background': pair['background'], 'overlay': overlay,
+                               'ratio': ratio, 'minimum': minimum,
+                               'status': 'pass' if ratio >= minimum else 'fail'})
+        return result
+
+    validate_mod.contrast_results = local_contrast_results
+    brand_mod.contrast_results = local_contrast_results
+    return brand_mod, validate_mod
+
+
 def merge(root=ROOT,config_path=None):
-    sys.path.insert(0,str(root/UPSTREAM/'tools'))
-    brand=importlib.import_module('brand')
+    brand, _ = load_brand_compiler(root)
     config=load(config_path or root/'design/brand/config.json')
     base=load(root/'design/source/base.tokens.json');policy=load(root/'design/brand/policy.json')
     bundle,palette=brand.compile_config(config,base=base,policy=policy,

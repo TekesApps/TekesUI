@@ -12,6 +12,7 @@ import argparse
 import copy
 import hashlib
 import importlib
+import importlib.util
 import json
 import re
 from pathlib import Path
@@ -22,9 +23,10 @@ import tempfile
 sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parents[1]
 UPSTREAM = Path('design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1')
-sys.path.insert(0, str(ROOT / UPSTREAM / 'tools'))
-brand = importlib.import_module('brand')
-validate = importlib.import_module('validate')
+merge_spec = importlib.util.spec_from_file_location('tekes_ref_merge', ROOT / 'scripts/merge-design-system.py')
+merge = importlib.util.module_from_spec(merge_spec)
+merge_spec.loader.exec_module(merge)
+brand, validate = merge.load_brand_compiler(ROOT)
 color = importlib.import_module('brand_color')
 
 
@@ -122,6 +124,7 @@ def audit():
     errors = []
     inputs = [Path('design/behavior/reference-alignment.json'), Path('design/source/base.tokens.json'),
               Path('design/source/token-metadata.json'), Path('design/source/layout.json'),
+              Path('design/source/contrast-pairs.json'),
               Path('design/brand/policy.json'),
               Path('design/brand/config.json'), Path('design/tokens.json'),
               Path('design/gallery/brands.json'), Path('scripts/check-reference-alignment.py'),

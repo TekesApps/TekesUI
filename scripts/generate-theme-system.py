@@ -242,7 +242,7 @@ def theme_input_contract(rules):
     for field, value in actual.items():
         if contract.get(field) != value: raise ValueError('stale or unsupported Theme input contract field: ' + field)
     if contract.get('supported_modes') != MODES or rules.get('modes') != MODES: raise ValueError('unsupported Theme input modes')
-    required_pins = {'design/source/base.tokens.json','design/source/token-metadata.json','design/brand/policy.json',
+    required_pins = {'design/source/base.tokens.json','design/source/token-metadata.json','design/source/contrast-pairs.json','design/brand/policy.json',
                      'design/theme/data-plot-pairs.json','design/theme/rules.json','design/theme/rules.schema.json','design/theme/theme.schema.json','design/system.schema.json',ARTIFACT_LOCK_SCHEMA,
                      'scripts/generate-theme-system.py','scripts/merge-design-system.py', str(merge.UPSTREAM / 'requirements.txt'),
                      str(merge.UPSTREAM / 'tools/brand.py'), str(merge.UPSTREAM / 'tools/brand_color.py'), str(merge.UPSTREAM / 'tools/validate.py'),
@@ -281,8 +281,7 @@ def generate():
     contract = theme_input_contract(rules)
     rows = bindings(rules)
     import jsonschema
-    sys.path.insert(0, str(ROOT / merge.UPSTREAM / 'tools'))
-    import brand
+    brand, _ = merge.load_brand_compiler(ROOT)
     base = merge.load(ROOT / 'design/source/base.tokens.json')
     policy = merge.load(ROOT / 'design/brand/policy.json')
     metadata = merge.load(ROOT / 'design/source/token-metadata.json')
@@ -328,7 +327,7 @@ def generate():
                 if 'disabled' not in state or readable_disabled_quiet:
                     for fg in ['text','icon','marker']:
                         if colors[fg] is None: continue
-                        threshold = 7.0 if readable_disabled_quiet and mode.endswith('-ic') else (3.0 if fg == 'marker' else 4.5)
+                        threshold = (7.0 if mode.endswith('-ic') else 3.5) if readable_disabled_quiet else (3.0 if fg == 'marker' else 4.5)
                         if contrast(colors[fg],colors['background']) < threshold:
                             raise ValueError(f'insufficient foreground contrast: {definition["id"]}/{mode}/{surface}/{usage}/{state}/{fg}')
                 if colors['helper'] is not None and 'disabled' not in state:

@@ -284,6 +284,7 @@ fn theme_input_contract(root: &Path, rules: &Value) -> Result<Value, String> {
         "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/brand_color.py",
         "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/validate.py",
         "design/source/base.tokens.json",
+        "design/source/contrast-pairs.json",
         "design/source/token-metadata.json",
         "design/system.schema.json",
         "design/theme/artifact-lock.schema.json",
@@ -981,6 +982,7 @@ pub fn verify_theme_system(root: &Path, tokens: &Value) -> Result<Vec<PathBuf>, 
         "scripts/merge-design-system.py",
         "scripts/generate-theme-system.py",
         "design/source/base.tokens.json",
+        "design/source/contrast-pairs.json",
         "design/source/token-metadata.json",
         "design/brand/policy.json",
         "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/brand.py",
@@ -1315,8 +1317,8 @@ fn verify_surface_foregrounds(rules: &Value, palette: &Value) -> Result<(), Stri
                         } else {
                             background
                         };
-                        let minimum = if readable_disabled_quiet && mode.ends_with("-ic") {
-                            7.0
+                        let minimum = if readable_disabled_quiet {
+                            if mode.ends_with("-ic") { 7.0 } else { 3.5 }
                         } else if channel == "marker" || channel == "focus" {
                             3.0
                         } else {
@@ -1645,6 +1647,7 @@ fn verify_instances(
         "design/theme/themes.json",
         "scripts/generate-theme-system.py",
         "design/source/base.tokens.json",
+        "design/source/contrast-pairs.json",
         "design/source/token-metadata.json",
         "design/brand/policy.json",
         "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/brand.py",
@@ -2264,8 +2267,8 @@ mod foreground_gate_tests {
             for state in ["disabled", "selected-disabled"] {
                 for channel in ["text", "icon"] {
                     for (mode, low_ink) in [
-                        ("light", "#888888"),
-                        ("dark", "#888888"),
+                        ("light", "#999999"),
+                        ("dark", "#999999"),
                         ("light-ic", "#666666"),
                         ("dark-ic", "#666666"),
                     ] {
