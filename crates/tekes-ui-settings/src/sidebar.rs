@@ -173,7 +173,6 @@ impl SettingsSidebar {
             let mut back_button = Button::new("〈 返回")
                 .with_accessible_name("返回主窗口")
                 .with_help("返回主窗口");
-            back_button.leading_content_inset = Some(0.);
             back_button.content_alignment =
                 tekes_ui_tokens::proposal::layout::MainAxisDistribution::Start;
             let mut search_button = Button::new(Content::new(
@@ -184,6 +183,21 @@ impl SettingsSidebar {
             .with_accessible_name("搜索设置")
             .with_help("搜索设置");
             search_button.set_toolbar_icon_slot(true);
+            let header = StackContent {
+                model: Stack {
+                    axis: Axis::Horizontal,
+                    gap: tekes_ui_tokens::Spacing::Regular.value(),
+                },
+                children: vec![
+                    Content::new(ComponentId(4), back_button),
+                    Content::new(ComponentId(10), search_button),
+                ],
+                flexible_child: Some(ComponentId(4)),
+            }
+            .into_content_with_distribution(
+                ComponentId(5),
+                tekes_ui_tokens::proposal::layout::MainAxisDistribution::SpaceBetween,
+            );
             Content::new(
                 ComponentId(3),
                 StackContent {
@@ -194,18 +208,20 @@ impl SettingsSidebar {
                     children: vec![
                         StackContent {
                             model: Stack {
-                                axis: Axis::Horizontal,
-                                gap: tekes_ui_tokens::Spacing::Regular.value(),
+                                axis: Axis::Vertical,
+                                gap: 0.,
                             },
-                            children: vec![
-                                Content::new(ComponentId(4), back_button),
-                                Content::new(ComponentId(10), search_button),
-                            ],
-                            flexible_child: Some(ComponentId(4)),
+                            flexible_child: None,
+                            children: vec![header],
                         }
-                        .into_content_with_distribution(
-                            ComponentId(5),
-                            tekes_ui_tokens::proposal::layout::MainAxisDistribution::SpaceBetween,
+                        .into_content_with_padding(
+                            ComponentId(12),
+                            tekes_ui_controls::layout::Insets::new(
+                                tekes_ui_tokens::Spacing::Loose.value(),
+                                tekes_ui_tokens::Spacing::Loose.value(),
+                                0.,
+                                tekes_ui_tokens::Spacing::Loose.value(),
+                            ),
                         ),
                         scroll,
                     ],
@@ -242,8 +258,9 @@ impl SettingsSidebar {
     /// A canonical monochrome Back icon inherits its original Button's state ink.
     /// Repeated declarations retain the same passive content and image lease.
     pub fn set_back_template_icon(&mut self, name: &str) -> Result<()> {
-        let icon = IconContent::new(name)
+        let mut icon = IconContent::new(name)
             .map_err(|error| anyhow::anyhow!("Settings Back icon: {error:?}"))?;
+        icon.set_ink_leading(true);
         let name = icon.glyph().name;
         if self.back_template == Some(name) {
             return Ok(());

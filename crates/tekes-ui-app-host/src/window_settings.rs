@@ -1272,7 +1272,9 @@ impl Host {
             context,
         )?;
         if frames[0].size.width > 32. {
-            let left = content_geometry(
+            // The sidebar owns its fixed header and scrolling List padding,
+            // just like Gallery navigation. Do not inset its List a second time.
+            let rect = content_geometry(
                 frames[0],
                 settings_content_inset(
                     frames[0],
@@ -1283,12 +1285,6 @@ impl Host {
                     controls_floor,
                     leading as f32,
                 ),
-            );
-            let rect = Rect::new(
-                left.min_x() + pad,
-                left.min_y() + pad,
-                (left.size.width - 2. * pad).max(1.),
-                (left.size.height - 2. * pad).max(1.),
             );
             self.panels[0].bounds = frames[0];
             let panel = &mut self.panels[0];
@@ -2132,6 +2128,15 @@ mod pinned_header_tests {
     // through with_content_icons; this headless fixture validates catalog names.
     pub(super) struct HeaderIcons;
     impl tekes_ui_controls::layout_view::IconRenderer for HeaderIcons {
+        fn leading_ink_inset(
+            &mut self,
+            name: &str,
+        ) -> std::result::Result<f32, tekes_ui_controls::composition::IconRenderError> {
+            let glyph = tekes_ui_icons::Glyph::named(name).unwrap();
+            let tree =
+                resvg::usvg::Tree::from_str(glyph.svg, &resvg::usvg::Options::default()).unwrap();
+            Ok(tree.root().abs_stroke_bounding_box().left() / tree.size().width())
+        }
         fn prepare_icon(
             &mut self,
             name: &str,
@@ -2186,7 +2191,10 @@ mod pinned_header_tests {
         assert!(sidebar.host.get(ComponentId(6)).is_none());
         let chip = sidebar.host.get(ComponentId(10)).unwrap().frame();
         let scroll = sidebar.host.get(ComponentId(1)).unwrap().frame();
-        assert_eq!(back.min_x(), scroll.min_x());
+        assert_eq!(
+            back.min_x(),
+            scroll.min_x() + tekes_ui_tokens::Spacing::Loose.value()
+        );
         assert_eq!(back.center().y, chip.center().y);
         sidebar.event(&ContentEvent::PointerDown(chip.center()));
         sidebar.event(&ContentEvent::PointerUp(chip.center()));
@@ -2315,7 +2323,33 @@ mod pinned_header_tests {
         let back = sidebar.host.get(ComponentId(4)).unwrap().frame();
         let arrow = sidebar.host.get(ComponentId(8)).unwrap().frame();
         let scroll = sidebar.host.get(ComponentId(1)).unwrap().frame();
-        assert_eq!(arrow.min_x(), scroll.min_x());
+        let list = sidebar.host.get(ComponentId(101)).unwrap().frame();
+        assert_eq!(
+            list.min_x(),
+            scroll.min_x() + tekes_ui_tokens::Spacing::Loose.value()
+        );
+        assert_eq!(back.min_x(), list.min_x());
+        assert_eq!(
+            arrow.min_x(),
+            list.min_x() + tekes_ui_tokens::Spacing::Relaxed.value()
+        );
+        let artwork = sidebar
+            .host
+            .get(ComponentId(8))
+            .unwrap()
+            .component::<tekes_ui_controls::composition::IconContent>()
+            .unwrap()
+            .layout()
+            .artboard;
+        let outline_inset = tekes_ui_controls::layout_view::IconRenderer::leading_ink_inset(
+            &mut HeaderIcons,
+            "tekes-back",
+        )
+        .unwrap();
+        assert!(
+            (artwork.min_x() + outline_inset * artwork.size.width - arrow.min_x()).abs() < 0.001,
+            "Back painted outline, not its transparent artboard, shares item content leading"
+        );
         assert_eq!(arrow.center().y, back.center().y);
         assert!(
             back.size.height
@@ -2382,7 +2416,8 @@ mod pinned_header_tests {
         assert_eq!(chip.frame().center().y, back.center().y);
         assert_eq!(
             arrow.min_x(),
-            sidebar.host.get(ComponentId(1)).unwrap().frame().min_x()
+            sidebar.host.get(ComponentId(101)).unwrap().frame().min_x()
+                + tekes_ui_tokens::Spacing::Relaxed.value()
         );
         let focus_ink = Palette::from(Theme::LIGHT).color("border-focused").unwrap();
         assert!(

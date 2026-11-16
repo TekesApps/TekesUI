@@ -39,6 +39,8 @@ impl IconImage {
 pub struct IconContent {
     glyph: tekes_ui_icons::Glyph,
     view: IconView,
+    ink_leading: bool,
+    leading_ink_inset: Option<f32>,
     name: Option<String>,
     visible: bool,
     resource: Option<IconImage>,
@@ -55,6 +57,8 @@ impl IconContent {
         Ok(Self {
             glyph,
             view: IconView::default(),
+            ink_leading: false,
+            leading_ink_inset: None,
             name: None,
             visible: true,
             resource: None,
@@ -74,9 +78,16 @@ impl IconContent {
             return Ok(false);
         }
         self.glyph = next;
+        self.leading_ink_inset = None;
         self.resource = None;
         self.error = None;
         Ok(true)
+    }
+    /// Align the canonical painted outline to this content slot's leading edge.
+    /// The fixed slot, measurement and semantics are unchanged. Default false
+    /// preserves centered artwork for ordinary and toolbar icons.
+    pub fn set_ink_leading(&mut self, enabled: bool) {
+        self.ink_leading = enabled;
     }
     /// Defaults to decorative; a named passive icon has text semantics and no
     /// action/focus owner. An enclosing Button still owns the entire AX identity.
@@ -269,6 +280,23 @@ impl Component for IconContent {
             self.resource = None;
             return;
         };
+        if self.ink_leading && self.leading_ink_inset.is_none() {
+            match service.leading_ink_inset(self.glyph.name) {
+                Ok(inset) => {
+                    self.leading_ink_inset = Some(inset);
+                }
+                Err(error) => {
+                    self.error = Some(error);
+                    self.resource = None;
+                    return;
+                }
+            }
+        }
+        self.view.set_leading_ink_inset(if self.ink_leading {
+            self.leading_ink_inset
+        } else {
+            None
+        });
         struct Prepared<'a> {
             service: &'a mut dyn IconRenderer,
             resource: &'a mut Option<IconImage>,

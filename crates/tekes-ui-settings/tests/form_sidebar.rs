@@ -309,7 +309,11 @@ fn pinned_header_composes_original_back_and_editor_outside_scroll_owner() {
         .unwrap();
     assert_eq!(root.children().len(), 2);
     assert!(root.children()[1].component::<ScrollContent>().is_some());
-    let header = root.children()[0].component::<StackContent>().unwrap();
+    let header_inset = root.children()[0].component::<StackContent>().unwrap();
+    assert_eq!(header_inset.children().len(), 1);
+    let header = header_inset.children()[0]
+        .component::<StackContent>()
+        .unwrap();
     assert_eq!(
         header.model.axis,
         tekes_ui_controls::extended::Axis::Horizontal
@@ -333,8 +337,15 @@ fn pinned_header_composes_original_back_and_editor_outside_scroll_owner() {
     let search = sidebar.host.get(ComponentId(10)).unwrap().frame();
     let back = sidebar.host.get(ComponentId(4)).unwrap().frame();
     assert_eq!(search.center().y, back.center().y);
-    assert_eq!(back.min_x(), frame.min_x());
-    assert_eq!(search.max_x(), frame.max_x(), "search belongs at trailing");
+    assert_eq!(
+        back.min_x(),
+        frame.min_x() + tekes_ui_tokens::Spacing::Loose.value()
+    );
+    assert_eq!(
+        search.max_x(),
+        frame.max_x() - tekes_ui_tokens::Spacing::Loose.value(),
+        "search belongs at padded trailing"
+    );
     sidebar.event(&ContentEvent::PointerDown(search.center()));
     sidebar.event(&ContentEvent::PointerUp(search.center()));
     let header = sidebar
@@ -371,8 +382,14 @@ fn pinned_header_composes_original_back_and_editor_outside_scroll_owner() {
             .unwrap();
         let search = sidebar.host.get(ComponentId(10)).unwrap().frame();
         let back = sidebar.host.get(ComponentId(4)).unwrap().frame();
-        assert_eq!(back.min_x(), frame.min_x());
-        assert_eq!(search.max_x(), frame.max_x());
+        assert_eq!(
+            back.min_x(),
+            frame.min_x() + tekes_ui_tokens::Spacing::Loose.value()
+        );
+        assert_eq!(
+            search.max_x(),
+            frame.max_x() - tekes_ui_tokens::Spacing::Loose.value()
+        );
         assert_eq!(search.center().y, back.center().y);
         assert_eq!(
             sidebar.host.semantic_mount(ComponentId(4)),
