@@ -1,15 +1,8 @@
 # Ticking Number
 
-`tekes_ui_controls::TickingNumber` 是固定数位的非负整数计数组件。
-Gallery 的 **Foundations → Motion → Playground** 页面的 **Ticking Number** 独立 tab 提供交互演示（排在 Symbols 后）。
+Use TickingNumber for a fixed-width nonnegative integer display with animated digits.
 
-- 1–15 位，默认补前导零；例如三位的 `7` 显示为 `007`。
-- 每个数字格宽度取当前字体 `0–9` 中的最大字形 advance，总宽度恒为格宽 × 位数。每个字形在格内居中，字体或字号改变后重新测量。
-- 值超出预设位数时返回错误，不截断、不扩宽。
-- 从当前呈现位置向目标插值；升降均支持，中途改目标保持位置连续。
-- 强度 `0..=1`：0 为匀速，1 为完整的 quintic smoothstep 加减速，中间值混合两种曲线。默认 1，时长默认 1.8 秒。
-- 时长与强度变化从当前位置重新计时；不承诺中断时速度连续。
-- 减少动态效果或零时长立即呈现目标，完成后不再请求动画帧。
+## Creating the content
 
 ```rust
 use std::time::Duration;
@@ -25,10 +18,14 @@ number.advance(Duration::from_secs_f64(1.0 / 120.0));
 // needs_animation() 为 true 时继续调度帧；无自有 timer 或线程。
 ```
 
-宿主负责裁切、系统减少动态效果偏好和无障碍名称/值。不要把每帧变化作为 live announcement；需要时在计数完成后报告最终值。
+## State and events
 
-Gallery 支持切换 2 / 3 / 6 位、强度 0 / 0.5 / 1、时长 1 / 2 / 4 秒，以及反向计数。两位演示为 `37 ↔ 46`，其他位数为 `137 ↔ 546`。
+Choose 1 to 15 digits; leading zeros are shown by default. Each cell uses the widest digit advance in the current font, keeping total width stable. Out-of-range values return an error. Targets can increase or decrease, and retargeting preserves position continuity.
 
-## 相关手册
+## Composition and limitations
 
-需要编辑、解析或提交数值时，阅读 [NumberField 手册](number-field.md)。本页作为补充手册离线打包，不新增组件目录项或页面路由。原有 Rust 示例保持不变；不将组件手册 Check329 的类型检查范围延伸到本补充手册。
+Intensity from 0 to 1 blends linear motion with quintic smoothstep; defaults are intensity 1 and duration 1.8 seconds. Changing duration or intensity restarts from the current position without guaranteeing velocity continuity. Reduced motion or zero duration presents the target immediately. Host owns clipping, reduced-motion preference and accessibility; announce a final value if needed, not every frame. This is a display, not numeric input.
+
+## Related APIs
+
+[Number Field](number-field.md)

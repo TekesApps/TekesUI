@@ -1234,7 +1234,16 @@ fn empty_query_fills_search_allocation_and_clear_restores_editor_hit_region() {
     render(&mut f);
     assert_eq!(f.host.get(SEARCH).unwrap().frame(), outer);
     let clear = clear_point(&f);
-    assert!(clear.x > f.host.text_surface(SEARCH).unwrap().outer.max_x());
+    let surface = f.host.text_surface(SEARCH).unwrap();
+    assert_eq!(
+        surface.outer, outer,
+        "Clear stays inside the original input chrome"
+    );
+    assert!(surface.outer.contains(clear));
+    assert!(
+        !surface.inner.contains(clear),
+        "text reserves the internal Clear slot"
+    );
     assert!(
         f.host
             .accessibility_action(SEARCH, Some(0), AccessibilityAction::Press)
@@ -1251,6 +1260,7 @@ fn empty_query_fills_search_allocation_and_clear_restores_editor_hit_region() {
     );
     render(&mut f);
     assert_eq!(f.host.text_surface(SEARCH).unwrap().outer, outer);
+    assert!(f.host.text_surface(SEARCH).unwrap().inner.contains(clear));
     // The former Clear area is now part of the real editor, not an invisible
     // button hit target. Clicking it retains the Search focus and emits no Clear.
     let before = f.delivered.len();

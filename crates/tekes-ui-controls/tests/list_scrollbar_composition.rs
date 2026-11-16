@@ -472,6 +472,7 @@ fn search_clear_host_exit_preserves_query_focus_capture_and_actions() {
             let fill = scene
                 .primitives()
                 .iter()
+                .rev()
                 .find_map(|p| match p {
                     Primitive::Quad(q) if q.rect.contains(clear) => Some(q.fill),
                     _ => None,
@@ -483,7 +484,17 @@ fn search_clear_host_exit_preserves_query_focus_capture_and_actions() {
         assert!(host.focus(Some(SEARCH), true));
         let (clear, rest) = paint(&mut host, &mut text);
         let mount = host.get(SEARCH).unwrap().mount_identity();
-        let editor = host.text_surface(SEARCH).unwrap().inner.center();
+        let surface = host.text_surface(SEARCH).unwrap();
+        let editor = surface.inner.center();
+        assert_eq!(
+            surface.outer.size.width,
+            host.get(SEARCH).unwrap().frame().size.width
+        );
+        assert!(surface.outer.contains(clear));
+        assert!(!surface.inner.contains(clear));
+        let cursor_regions = host.text_cursor_regions();
+        assert!(cursor_regions.iter().any(|r| r.contains(editor)));
+        assert!(cursor_regions.iter().all(|r| !r.contains(clear)));
         let outside = Point::new(-1., -1.);
         host.event_with_text(&pointer(clear, PointerPhase::Move), &mut text)
             .unwrap();
@@ -560,8 +571,6 @@ fn search_clear_keeps_intrinsic_height_in_a_tall_host_allocation() {
         for height in [24., 80., 560.] {
             let frame = Rect::new(20., 30., 640., height);
             let mut text = EditorText;
-            let mut clear = Button::new("×").with_accessible_name("Clear");
-            let natural = clear.measure(&mut text, frame.size).size;
             let mut host = ContentHost::new(Content::new(
                 SEARCH,
                 SearchFieldContent::new("Find", "query"),
@@ -578,10 +587,16 @@ fn search_clear_keeps_intrinsic_height_in_a_tall_host_allocation() {
                 .unwrap()
                 .semantic_parts()[0]
                 .frame;
-            assert_eq!(part.min_y(), frame.min_y());
-            assert_eq!(part.size.height, natural.height.min(height));
-            assert_eq!(part.max_x(), frame.max_x());
-            if height > natural.height {
+            let outer = host.text_surface(SEARCH).unwrap().outer;
+            let inset = tekes_ui_tokens::Spacing::Micro.value();
+            assert_eq!(part.min_y(), outer.min_y() + inset);
+            // ContentHost preserves the editor's minimum layout height even
+            // when the caller's viewport is shorter. AX publishes the clipped
+            // interior button, not a second button resized to that viewport.
+            assert_eq!(part.max_y(), (outer.max_y() - inset).min(frame.max_y()));
+            assert_eq!(part.max_x(), outer.max_x() - inset);
+            assert!(outer.intersection(&part) == Some(part));
+            if height > outer.size.height {
                 let below = Point::new(part.center().x, frame.max_y() - 1.);
                 for phase in [PointerPhase::Move, PointerPhase::Down, PointerPhase::Up] {
                     host.event_with_text(&pointer(below, phase), &mut text)
@@ -742,5 +757,138 @@ fn padded_stack_header_keeps_natural_height_and_stays_fixed_while_list_scrolls()
         assert_eq!(host.focused(), Some(FIELD));
         assert!(scroll(&host).scroll.offset.y > 0.);
         assert_eq!(host.get(FIELD).unwrap().visible(), Some(field));
+    }
+}
+
+#[cfg(target_os = "macos")]
+#[test]
+fn ordinary_text_field_clear_uses_original_editor_and_rejects_replaced_draft() {
+    use native_text::EditorText;
+    const FIELD: ComponentId = ComponentId(960);
+    let frame = Rect::new(0., 0., 320., 80.);
+    for replacement in [false, true] {
+        let mut host = ContentHost::new(Content::new(
+            FIELD,
+            TextFieldContent::new("Draft", "original"),
+        ))
+        .unwrap();
+        host.set_action_events(true);
+        let mut text = EditorText;
+        host.render(
+            &mut Scene::new(),
+            &mut text,
+            frame,
+            frame,
+            Theme::LIGHT.into(),
+        )
+        .unwrap();
+        assert!(host.focus(Some(FIELD), true));
+        let mount = host.get(FIELD).unwrap().mount_identity();
+        let field = host
+            .get(FIELD)
+            .unwrap()
+            .component::<TextFieldContent>()
+            .unwrap();
+        let clear = field.semantic_parts()[0].frame;
+        assert_eq!(field.semantics().role, ContentRole::TextInput);
+        assert_eq!(field.surface.outer.intersection(&clear), Some(clear));
+        assert!(field.surface.inner.max_x() <= clear.min_x());
+        assert!(
+            host.text_cursor_regions()
+                .iter()
+                .all(|r| !r.contains(clear.center()))
+        );
+        host.event_with_text(&pointer(clear.center(), PointerPhase::Down), &mut text)
+            .unwrap();
+        if replacement {
+            let field = host
+                .get_mut(FIELD)
+                .unwrap()
+                .component_mut::<TextFieldContent>()
+                .unwrap();
+            // The public original editor may receive an external publication
+            // between down and up; the pending Clear must not erase that value.
+            let baseline = field.surface.input.external_baseline();
+            let value = tekes_ui_controls::DraftRevision {
+                identity: "replacement".into(),
+                version: 1,
+                payload: "new value".into(),
+            };
+            let result = field.surface.apply_external_value(
+                &baseline,
+                &value,
+                tekes_ui_controls::ExternalSelection::Reset,
+                tekes_ui_controls::ExternalUndo::Preserve,
+            );
+            assert!(matches!(
+                result,
+                tekes_ui_controls::ExternalValueResult::Applied { .. }
+            ));
+        }
+        host.event_with_text(&pointer(clear.center(), PointerPhase::Up), &mut text)
+            .unwrap();
+        let actions = host.drain_action_records();
+        assert_eq!(actions.len(), usize::from(!replacement));
+        if !replacement {
+            assert_eq!(actions[0].action.kind, ContentActionKind::Clear);
+        }
+        assert_eq!(host.focused(), Some(FIELD));
+        assert_eq!(host.get(FIELD).unwrap().mount_identity(), mount);
+        let field = host
+            .get_mut(FIELD)
+            .unwrap()
+            .component_mut::<TextFieldContent>()
+            .unwrap();
+        assert_eq!(
+            field.surface.input.text,
+            if replacement { "new value" } else { "" }
+        );
+        if !replacement {
+            assert!(field.surface.input.undo());
+            assert_eq!(field.surface.input.text, "original");
+            assert!(!field.surface.input.undo());
+        }
+    }
+}
+
+#[test]
+fn text_field_clear_policy_preserves_multiline_document_and_unavailable_input() {
+    for mode in [
+        "empty",
+        "multiline",
+        "document",
+        "opt_out",
+        "readonly",
+        "disabled",
+        "marked",
+    ] {
+        let mut field = TextFieldContent::new("Draft", if mode == "empty" { "" } else { "draft" });
+        match mode {
+            "multiline" => field.surface.input.multiline = true,
+            "document" => {
+                field.surface.presentation = tekes_ui_controls::TextSurfacePresentation::Content
+            }
+            "opt_out" => field = field.clear_button(false),
+            "readonly" => field.surface.input.read_only = true,
+            "disabled" => field.surface.input.disabled = true,
+            "marked" => field.surface.input.marked = Some(0..5),
+            _ => {}
+        }
+        let original = field.surface.input.text.clone();
+        let frame = Rect::new(0., 0., 300., 80.);
+        field.arrange(&mut Text, frame, frame);
+        let parts = field.semantic_parts();
+        if ["empty", "multiline", "document", "opt_out"].contains(&mode) {
+            assert!(parts.is_empty(), "{mode}");
+        } else {
+            assert!(parts[0].semantics.disabled, "{mode}");
+            for event in [
+                ContentEvent::PointerDown(parts[0].frame.center()),
+                ContentEvent::PointerUp(parts[0].frame.center()),
+            ] {
+                assert!(!field.event(&event).activated, "{mode}");
+            }
+        }
+        assert_eq!(field.surface.input.text, original, "{mode}");
     }
 }

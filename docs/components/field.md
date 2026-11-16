@@ -1,8 +1,8 @@
 # Field
 
-Field 提供表单标签、required、帮助与错误元信息；实际输入组合通常使用 TextFieldContent，FieldView 负责元信息和几何。
+Use Field metadata for an input label, required marker, help and error. TextFieldContent combines that metadata with an editor.
 
-## 短用法
+## Creating the content
 
 ```rust
 use tekes_ui_controls::composition::TextFieldContent;
@@ -12,16 +12,14 @@ field.field.help = "Use a recognizable name.".into();
 field.field.error = Some("A name is required.".into());
 ```
 
-## 职责边界
+## State and events
 
-`field.label`、`help`、`error` 与 `required` 是说明和校验状态，输入文字、disabled、read_only、组字和选区仍在 TextSurface.input。required 标记不自动验证或拒绝保存；错误提示也不是自动弹出 Dialog。
+field.label, help, error and required describe the field. TextSurface.input owns text, disabled/read-only state, composition and selection. Required does not automatically validate or prevent saving. Field itself emits no save action; use the input component action contract.
 
-按正式 TextFieldContent 路径提交与读取动作，Field 本身不生成业务保存事件。元信息占用布局高度，Fill/Grow 视口需要扣除这部分空间；不要把错误文字遮盖在输入区上。
+## Composition and limitations
 
-这不是任意组件的自动表单框架。业务验证、跨字段依赖和异步错误归消费者，帮助 hover 与可见 field.help 也有不同呈现职责。
+Metadata takes layout height, including in Fill and Grow viewports. Keep errors outside the editable text area. The application owns cross-field validation and asynchronous errors. Visible field help and transient hover help serve different purposes.
 
-## 源码与消费者
+## Related APIs
 
-定义：`crates/tekes-ui-controls/src/composition/adapters.rs`。现有消费路径：`examples/composition-consumer/src/field_metadata.rs`。上面的构造片段不是独立窗口程序；完整消费者运行及原生输入、视觉、无障碍验收仍需独立证据。
-
-当前片段验证：Check329 已对这 45 份手册中的 46 段原文 Rust 代码完成 `--emit=metadata` 类型检查，通过但未链接、未运行；本文代码块保持不变，复用该结果。此证据不代替 GUI、物理 IME、VoiceOver 或运行时验收。收据位于协调工作区 `outputs/gallery-apphost-upgrade-20261114/manual-snippets/RESULT.json`，提取源为同目录 `manual-snippets.rs`。
+[Text Field](text-field.md)

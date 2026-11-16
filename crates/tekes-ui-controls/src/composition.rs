@@ -2383,8 +2383,10 @@ impl ContentHost {
             if !node.active() {
                 return;
             }
-            if node.component.semantics().role == ContentRole::TextInput
-                && let Some(surface) = node.component.text_surface()
+            if matches!(
+                node.component.semantics().role,
+                ContentRole::TextInput | ContentRole::SearchInput
+            ) && let Some(surface) = node.component.text_surface()
                 && !surface.input.disabled
                 && let Some(region) = surface.visible_content()
                 && !region.is_empty()

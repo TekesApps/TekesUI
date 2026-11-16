@@ -183,6 +183,8 @@ pub struct TextSurface {
     pub reflow_anchor: Option<ReflowAnchor>,
     pub outer: Rect,
     pub inner: Rect,
+    /// Space owned by an internal trailing action; chrome keeps the full frame.
+    pub(crate) trailing_action_width: f32,
     pub role: proposal::TextRole,
     shaped_role: Option<proposal::TextRole>,
     measured: RefCell<Option<MeasuredParagraph>>,
@@ -248,6 +250,7 @@ impl TextSurface {
             reflow_anchor: None,
             outer: Rect::default(),
             inner: Rect::default(),
+            trailing_action_width: 0.,
             role: if multiline {
                 proposal::TextRole::ComposerBody
             } else {
@@ -357,7 +360,7 @@ impl TextSurface {
             } else {
                 proposal::SCROLL_SINGLE_LINE_PADDING_Y
             };
-            Insets::new(y, x, y, x)
+            Insets::new(y, x + self.trailing_action_width, y, x)
         }
     }
 

@@ -239,8 +239,19 @@ pub struct TextFieldContent {
     /// Hide visible form label/help layout for inline controls. Semantic field
     /// metadata and the original TextSurface chrome/editing remain available.
     pub show_metadata: bool,
+    pub(super) clear: Button,
+    pub(super) clear_enabled: bool,
+    pub(super) editor_frame: Rect,
+    pub(super) clear_frame: Rect,
+    pub(super) clear_clip: Option<Rect>,
+    pub(super) clear_captured: bool,
+    pub(super) clear_baseline: Option<crate::TextEditBaseline>,
+    pub(super) editor_captured: bool,
+    pub(super) preserve_focus: bool,
+    pub(super) placeholder: Option<String>,
+    pub(super) last_action: Option<SearchAction>,
     inline_width_em: Option<f32>,
-    focused: bool,
+    pub(super) focused: bool,
     backing_scale: f32,
 }
 impl TextFieldContent {
@@ -273,6 +284,17 @@ impl TextFieldContent {
             submit_policy: TextSubmitPolicy::None,
             viewport: TextViewport::Form,
             show_metadata: true,
+            clear: Button::new("×").with_accessible_name("Clear"),
+            clear_enabled: true,
+            editor_frame: Rect::default(),
+            clear_frame: Rect::default(),
+            clear_clip: None,
+            clear_captured: false,
+            clear_baseline: None,
+            editor_captured: false,
+            preserve_focus: false,
+            placeholder: None,
+            last_action: None,
             inline_width_em: None,
             focused: false,
             backing_scale: 1.,
@@ -367,7 +389,7 @@ impl TextFieldContent {
         }
         presentation
     }
-    fn field_layout(
+    pub(super) fn field_layout(
         &mut self,
         t: &mut dyn ButtonTextRenderer,
         f: Rect,
@@ -413,9 +435,9 @@ impl TextFieldContent {
         )
     }
 }
-impl Component for TextFieldContent {
+impl TextFieldContent {
     #[cfg(feature = "inspection")]
-    fn inspection_properties(&self) -> Option<Vec<InspectionProperty>> {
+    pub(super) fn editor_inspection_properties(&self) -> Option<Vec<InspectionProperty>> {
         Some(vec![
             InspectionProperty::new("component", "TextFieldContent"),
             InspectionProperty::new("label", &self.field.label),
@@ -432,82 +454,12 @@ impl Component for TextFieldContent {
             InspectionProperty::new("show_metadata", self.show_metadata),
         ])
     }
-    fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
-        action_preparation::prepare_original(
-            self,
-            request,
-            Self::decide_action,
-            Self::apply_action,
-            |decision| {
-                (
-                    decision.response,
-                    if decision.response.consumed {
-                        PreparedActionFocus::Owner
-                    } else {
-                        PreparedActionFocus::None
-                    },
-                )
-            },
-        )
-    }
-    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
-        ActionTransactionCompatibility::StableHooks
-    }
-    fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
-        CurveSubtreeCapability::Local
-    }
-    fn prepared_effects_work(&self, n: usize) -> Result<usize, PreparedEffectsError> {
-        PreparedEffects::local_work(n)?
-            .checked_add(
-                self.surface
-                    .input
-                    .text
-                    .len()
-                    .checked_add(self.field.label.len())
-                    .and_then(|v| v.checked_add(self.field.message().len()))
-                    .and_then(|v| v.checked_mul(n.max(1)))
-                    .ok_or(PreparedEffectsError::CounterCapacity)?,
-            )
-            .ok_or(PreparedEffectsError::CounterCapacity)
-    }
-    fn prepare_effects(
-        &self,
-        hooks: &[PreparedHook],
-    ) -> Result<PreparedEffects, PreparedEffectsError> {
-        let mut focused = self.focused;
-        let mut unmark = false;
-        for h in hooks {
-            if let PreparedHookKind::Focus { focused: next, .. } = h.kind {
-                if focused && !next {
-                    unmark = true;
-                }
-                focused = next;
-            }
-        }
-        if !self.surface.input.preflight_unmark(unmark) {
-            return Err(PreparedEffectsError::CounterCapacity);
-        }
-        Ok(PreparedEffects::local(self, hooks))
-    }
-    fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
-        TableTransactionCompatibility::StableHooks
-    }
 
-    fn action_kinds(&self, result: &ContentResponse) -> Vec<ContentActionKind> {
-        if result.activated {
-            vec![ContentActionKind::Submit]
-        } else {
-            Vec::new()
-        }
-    }
-
-    fn key_event(&mut self, key: &ContentKeyEvent) -> ContentResponse {
+    pub(super) fn editor_key_event(&mut self, key: &ContentKeyEvent) -> ContentResponse {
         self.keyboard(key, true)
     }
-    fn semantic_frame(&self, _: Rect) -> Rect {
-        self.surface.outer
-    }
-    fn accessibility_action(
+
+    pub(super) fn editor_accessibility_action(
         &mut self,
         part: Option<usize>,
         action: &AccessibilityAction,
@@ -547,14 +499,17 @@ impl Component for TextFieldContent {
         }
         ContentResponse::default()
     }
-
-    fn requires_text_services(&self) -> bool {
+    pub(super) fn editor_requires_text_services(&self) -> bool {
         true
     }
-    fn text_surface(&self) -> Option<&TextSurface> {
+    pub(super) fn editor_text_surface(&self) -> Option<&TextSurface> {
         Some(&self.surface)
     }
-    fn measure(&mut self, t: &mut dyn ButtonTextRenderer, a: Size) -> MeasuredChild {
+    pub(super) fn editor_measure(
+        &mut self,
+        t: &mut dyn ButtonTextRenderer,
+        a: Size,
+    ) -> MeasuredChild {
         let a = if let Some(em) = self.inline_width_em {
             Size::new(
                 a.width
@@ -571,18 +526,22 @@ impl Component for TextFieldContent {
         );
         MeasuredChild::new(Size::new(a.width, l.slot.max_y().max(l.message.max_y())))
     }
-    fn arrange(&mut self, t: &mut dyn ButtonTextRenderer, f: Rect, c: Rect) {
+    pub(super) fn editor_arrange(&mut self, t: &mut dyn ButtonTextRenderer, f: Rect, c: Rect) {
         let l = self.field_layout(t, f, c);
         self.surface.error = self.field.error.is_some();
         self.layout_surface(t, l.slot, c);
     }
-    fn prepare_text_input(&mut self, t: &mut dyn ButtonTextRenderer, _: Rect, clip: Rect) {
+    pub(super) fn editor_prepare_text_input(
+        &mut self,
+        t: &mut dyn ButtonTextRenderer,
+        _: Rect,
+        clip: Rect,
+    ) {
         if !self.surface.outer.is_empty() {
             self.layout_surface(t, self.surface.outer, clip);
         }
     }
-
-    fn paint(
+    pub(super) fn editor_paint(
         &mut self,
         s: &mut Scene,
         t: &mut dyn ButtonTextRenderer,
@@ -614,10 +573,10 @@ impl Component for TextFieldContent {
                 .draw(host, s, theme.palette, self.has_focus(), caret_visible);
         }
     }
-    fn focusable(&self) -> bool {
+    pub(super) fn editor_focusable(&self) -> bool {
         !self.surface.input.disabled
     }
-    fn set_focus(&mut self, f: bool, visible: bool) {
+    pub(super) fn editor_set_focus(&mut self, f: bool, visible: bool) {
         self.surface.focus_visible = f && visible;
         if self.focused && !f {
             self.surface.break_kill_sequence();
@@ -631,10 +590,10 @@ impl Component for TextFieldContent {
             self.surface.cancel_interaction();
         }
     }
-    fn composing(&self) -> bool {
+    pub(super) fn editor_composing(&self) -> bool {
         self.surface.input.marked.is_some()
     }
-    fn semantics(&self) -> ContentSemantics {
+    pub(super) fn editor_semantics(&self) -> ContentSemantics {
         let mut s = ContentSemantics::new(ContentRole::TextInput, &self.field.label);
         s.value = Some(self.surface.input.text.clone());
         s.disabled = self.surface.input.disabled;
@@ -643,10 +602,10 @@ impl Component for TextFieldContent {
         s.description = (!self.field.message().is_empty()).then(|| self.field.message().to_owned());
         s
     }
-    fn event(&mut self, e: &ContentEvent) -> ContentResponse {
+    pub(super) fn editor_event(&mut self, e: &ContentEvent) -> ContentResponse {
         self.input_event(e, None)
     }
-    fn pointer_event(&mut self, pointer: &PointerEvent) -> ContentResponse {
+    pub(super) fn editor_pointer_event(&mut self, pointer: &PointerEvent) -> ContentResponse {
         if !pointer.is_primary() {
             return ContentResponse::default();
         }

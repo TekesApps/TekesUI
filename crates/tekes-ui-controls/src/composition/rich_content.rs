@@ -8,6 +8,9 @@ use crate::{
 use std::{ops::Range, rc::Rc};
 use tekes_ui_text::Paragraph;
 
+mod syntax;
+use syntax::CodeSpan;
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct RichContentVersion {
     identity: String,
@@ -28,6 +31,8 @@ pub enum RichContentError {
     WrongDocument,
     StaleVersion,
     PartCapacity,
+    /// A recognized code language could not be parsed. No update was applied.
+    Syntax(String),
     Input(ExternalValueConflict),
 }
 #[derive(Clone, Debug, PartialEq)]
@@ -52,6 +57,7 @@ pub struct RichLinkAction {
 #[derive(Debug)]
 pub struct RichContent {
     field: TextFieldContent,
+    code_spans: Vec<CodeSpan>,
     document: RichDocument,
     identity: String,
     revision: u64,
@@ -69,6 +75,7 @@ impl RichContent {
         if identity.trim().is_empty() || revision == 0 {
             return Err(RichContentError::InvalidIdentity);
         }
+        let code_spans = syntax::parse(&document).map_err(RichContentError::Syntax)?;
         let mut field = TextFieldContent::read_only_content(
             "Document",
             document.text(),
@@ -91,6 +98,7 @@ impl RichContent {
         let next_link_part = document.links().len();
         Ok(Self {
             field,
+            code_spans,
             document,
             identity,
             revision,
@@ -124,6 +132,7 @@ impl RichContent {
         if *expected != self.version() || revision <= self.revision {
             return Err(RichContentError::StaleVersion);
         }
+        let code_spans = syntax::parse(&document).map_err(RichContentError::Syntax)?;
         let next_link_part = self
             .next_link_part
             .checked_add(document.links().len())
@@ -144,6 +153,7 @@ impl RichContent {
         }
         self.field.surface.invalidate_text_layout();
         self.document = document;
+        self.code_spans = code_spans;
         self.link_part_base = self.next_link_part;
         self.next_link_part = next_link_part;
         self.revision = revision;
@@ -279,16 +289,24 @@ impl Component for RichContent {
         Some(layout)
     }
     fn measure(&mut self, t: &mut dyn ButtonTextRenderer, a: Size) -> MeasuredChild {
-        self.field
-            .measure(&mut RichRenderer::new(t, &self.document, None), a)
+        self.field.measure(
+            &mut RichRenderer::new(t, &self.document, &self.code_spans, None),
+            a,
+        )
     }
     fn arrange(&mut self, t: &mut dyn ButtonTextRenderer, f: Rect, c: Rect) {
-        self.field
-            .arrange(&mut RichRenderer::new(t, &self.document, None), f, c)
+        self.field.arrange(
+            &mut RichRenderer::new(t, &self.document, &self.code_spans, None),
+            f,
+            c,
+        )
     }
     fn prepare_text_input(&mut self, t: &mut dyn ButtonTextRenderer, f: Rect, c: Rect) {
-        self.field
-            .prepare_text_input(&mut RichRenderer::new(t, &self.document, None), f, c)
+        self.field.prepare_text_input(
+            &mut RichRenderer::new(t, &self.document, &self.code_spans, None),
+            f,
+            c,
+        )
     }
     fn paint(
         &mut self,
@@ -300,7 +318,7 @@ impl Component for RichContent {
     ) {
         self.field.paint(
             s,
-            &mut RichRenderer::new(t, &self.document, Some(theme.palette)),
+            &mut RichRenderer::new(t, &self.document, &self.code_spans, Some(theme.palette)),
             f,
             c,
             theme,
@@ -492,6 +510,7 @@ impl Component for RichContent {
 struct RichRenderer<'a> {
     host: &'a mut dyn ButtonTextRenderer,
     document: &'a RichDocument,
+    code_spans: &'a [CodeSpan],
     palette: Option<Palette>,
     type_scale: f32,
     caret_visible: bool,
@@ -546,6 +565,7 @@ impl RichRenderer<'_> {
     fn new<'a>(
         host: &'a mut dyn ButtonTextRenderer,
         document: &'a RichDocument,
+        code_spans: &'a [CodeSpan],
         palette: Option<Palette>,
     ) -> RichRenderer<'a> {
         let (type_scale, caret_visible) = host
@@ -554,6 +574,7 @@ impl RichRenderer<'_> {
         RichRenderer {
             host,
             document,
+            code_spans,
             palette,
             type_scale,
             caret_visible,
@@ -565,14 +586,17 @@ impl TextSurfaceTextRenderer for RichRenderer<'_> {
         let host = self.host.text_surface_host().expect("checked text service");
         // Recolor the actual retained runs; never shape a second paint layout.
         if let Some(palette) = self.palette {
-            if self.document.blocks().iter().all(|block| {
-                !matches!(
-                    block.kind,
-                    RichBlockKind::Diff {
-                        kind: crate::extended::DiffKind::Added | crate::extended::DiffKind::Removed
-                    }
-                )
-            }) {
+            if self.code_spans.is_empty()
+                && self.document.blocks().iter().all(|block| {
+                    !matches!(
+                        block.kind,
+                        RichBlockKind::Diff {
+                            kind: crate::extended::DiffKind::Added
+                                | crate::extended::DiffKind::Removed
+                        }
+                    )
+                })
+            {
                 host.push_visible(s, p, origin, ink, clip);
                 return;
             }
@@ -602,7 +626,47 @@ impl TextSurfaceTextRenderer for RichRenderer<'_> {
                     fonts: p.fonts.clone(),
                     utf16_len: p.utf16_len,
                 };
-                host.push_visible(s, &part, origin, color, clip);
+                let spans: Vec<_> = self
+                    .code_spans
+                    .iter()
+                    .filter(|span| {
+                        span.display.start < block.display.end
+                            && span.display.end > block.display.start
+                    })
+                    .collect();
+                if spans.is_empty() {
+                    host.push_visible(s, &part, origin, color, clip);
+                    continue;
+                }
+                // A cluster is indivisible: its first UTF-16 unit chooses its ink.
+                // Filter retained glyphs, preserving their fonts and coordinates.
+                for token in [
+                    None,
+                    Some("c-code-keyword"),
+                    Some("c-code-string"),
+                    Some("c-code-number"),
+                    Some("c-code-comment"),
+                ] {
+                    let mut colored = part.clone();
+                    for line in &mut colored.lines {
+                        for run in &mut line.runs {
+                            run.glyphs.retain(|glyph| {
+                                spans
+                                    .iter()
+                                    .find(|span| span.display.contains(&glyph.cluster_utf16.start))
+                                    .map(|span| span.token)
+                                    == token
+                            });
+                        }
+                        line.runs.retain(|run| !run.glyphs.is_empty());
+                    }
+                    colored.lines.retain(|line| !line.runs.is_empty());
+                    if !colored.lines.is_empty() {
+                        let ink = token
+                            .map_or(color, |key| palette.color(key).expect("shared code token"));
+                        host.push_visible(s, &colored, origin, ink, clip);
+                    }
+                }
             }
         } else {
             host.push_visible(s, p, origin, ink, clip);

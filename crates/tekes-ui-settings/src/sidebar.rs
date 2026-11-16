@@ -9,7 +9,7 @@ use tekes_ui_controls::{
     composition::{
         Button, ComponentId, Content, ContentActionPayload, ContentEvent, ContentHost, IconContent,
         KeyedSelectableListContent, ListContent, ListDisplayUpdate, ListIntentKind, ListRowDisplay,
-        StackContent, TextContent, TextFieldContent,
+        SearchFieldContent, StackContent, TextContent,
     },
     extended::{
         Axis, KeyedListItem, KeyedListSnapshot, ListBudget, ListDatasetKey, ListItemKey, Stack,
@@ -294,8 +294,7 @@ impl SettingsSidebar {
                 .remove(ComponentId(4))
                 .map_err(|error| anyhow::anyhow!("Settings search: {error:?}"))?,
         );
-        let mut editor = TextFieldContent::new("搜索设置", "");
-        editor.show_metadata = false;
+        let editor = SearchFieldContent::new("搜索设置", "");
         self.search_button = Some(
             self.host
                 .remove(ComponentId(10))
@@ -357,8 +356,8 @@ impl SettingsSidebar {
         let query = self
             .host
             .get(ComponentId(6))
-            .and_then(|node| node.component::<TextFieldContent>())
-            .map(|field| field.surface.input.text.trim().to_lowercase())
+            .and_then(|node| node.component::<SearchFieldContent>())
+            .map(|field| field.query().trim().to_lowercase())
             .unwrap_or_default();
         if self.search_button.is_some()
             && self.host.focused() != Some(ComponentId(6))

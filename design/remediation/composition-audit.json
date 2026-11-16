@@ -72,7 +72,7 @@
         {
           "api": "tekes_ui_controls::composition::StackContent",
           "path": "crates/tekes-ui-controls/src/composition.rs",
-          "line": 4612,
+          "line": 4614,
           "anchor": "pub struct StackContent {"
         }
       ]
@@ -117,7 +117,7 @@
         {
           "api": "tekes_ui_controls::composition::GridContent",
           "path": "crates/tekes-ui-controls/src/composition.rs",
-          "line": 4793,
+          "line": 4795,
           "anchor": "pub struct GridContent {"
         }
       ]
@@ -245,7 +245,7 @@
         {
           "api": "tekes_ui_controls::composition::ScrollContent",
           "path": "crates/tekes-ui-controls/src/composition.rs",
-          "line": 4902,
+          "line": 4904,
           "anchor": "pub struct ScrollContent {"
         }
       ]
@@ -438,7 +438,7 @@
         {
           "api": "tekes_ui_controls::composition::TextContent",
           "path": "crates/tekes-ui-controls/src/composition.rs",
-          "line": 5580,
+          "line": 5582,
           "anchor": "pub struct TextContent {"
         }
       ]
@@ -602,7 +602,7 @@
       "heterogeneous_consumer_content": "不适用",
       "runtime_profile": "owned-content",
       "state_identity": "Content stable key + retained owned production objects",
-      "limits": "Shared editor and default FieldView retained; additive read_only_content removes form chrome and delegates document scrolling to its parent. Generic arbitrary label/accessory Content slots remain absent; no dedicated new TextField state machine.",
+      "limits": "Original editor and FieldView retained. Ordinary single-line fields own a default internal Clear action, configurable by clear_button(bool); multiline/content presentation excludes it. Readonly/disabled/composing input cannot activate Clear. No arbitrary accessory Content slots or second editor state machine. Text input cursor regions belong to ContentHost.",
       "native_acceptance": "未验证",
       "accessibility": "Existing Component semantics and macOS bridge are used by independent consumers; Gallery also exports workbench/default-page nodes through Host. Source plumbing does not establish this component family native/VoiceOver acceptance. Existing Field.required is now expressible in shared ContentSemantics/AccessibilityNode and projected by TextFieldContent/Gallery metadata. Bare TextSurface/View hosts still publish their own form metadata. Native-object getter checks are separate from active-window/VoiceOver acceptance.",
       "requires_internal_source_edit": "no; existing public composition adapters and caller Component implementations",
@@ -677,7 +677,7 @@
       "heterogeneous_consumer_content": "不适用",
       "runtime_profile": "owned-content",
       "state_identity": "Internal original TextFieldContent/TextSurface and clear Button own editor/action state; fixed clear semantic part; caller handles query effects.",
-      "limits": "Primary TextSurface remains. SearchFieldContent is a fixed adapter over the original TextFieldContent editor and Clear Button; caller handles query effects. No caller Content slots or result/filtering engine; no complete Gallery migration claim. Source implementation and original bounded evidence do not establish current full-batch CI or native acceptance. Original finite #199 accepted on611a; this compatible candidate has not been compiled/tested. No full-batch or native acceptance inferred.",
+      "limits": "SearchFieldContent adds SearchInput semantics and captured SearchCommand/SearchAction delivery to the original TextFieldContent editor and internal Clear. Query effects belong to consumers. No arbitrary Content slots or result engine. Bounded CPU evidence and native acceptance are recorded separately in Issue 307; the source audit does not promote native acceptance.",
       "native_acceptance": "未验证",
       "accessibility": "Owned Content publishes actual mounted active semantics/parts and uses the existing checked Host/macOS bridge. Source and CPU/GPU evidence do not establish this family native window or VoiceOver acceptance.",
       "requires_internal_source_edit": "no; additive public owned Content adapter and existing host callbacks",
@@ -698,7 +698,7 @@
         {
           "api": "tekes_ui_controls::composition::SearchFieldContent",
           "path": "crates/tekes-ui-controls/src/composition/search.rs",
-          "line": 74,
+          "line": 73,
           "anchor": "pub struct SearchFieldContent {"
         }
       ]
@@ -720,7 +720,7 @@
       "heterogeneous_consumer_content": "不适用",
       "runtime_profile": "owned-content",
       "state_identity": "Original ComboBox/ComboBoxView plus unique internal TextFieldContent editor. String options and original indices; no arbitrary option Content.",
-      "limits": "Fixed string options and the unique original TextFieldContent editor; no arbitrary option Content, portal or async loading/error protocol. Source-position option identity is not a persistent business key. Native/physical IME/VoiceOver/performance remain unverified.",
+      "limits": "Fixed string options and the unique original TextFieldContent editor; no arbitrary option Content, portal or async loading/error protocol. Source-position option identity is not a persistent business key. Native/physical IME/VoiceOver/performance remain unverified. Its internal editor explicitly disables generic Clear to retain the component-specific action routing.",
       "native_acceptance": "未验证",
       "accessibility": "Owned Content publishes actual mounted active semantics/parts and uses the existing checked Host/macOS bridge. Source and CPU/GPU evidence do not establish this family native window or VoiceOver acceptance.",
       "requires_internal_source_edit": "no; additive public owned Content adapter and existing host callbacks",
@@ -784,7 +784,7 @@
         {
           "api": "tekes_ui_controls::composition::SliderContent",
           "path": "crates/tekes-ui-controls/src/composition/adapters.rs",
-          "line": 1155,
+          "line": 1114,
           "anchor": "pub struct SliderContent {"
         }
       ]
@@ -1058,7 +1058,7 @@
       "heterogeneous_consumer_content": "不适用",
       "runtime_profile": "owned-content",
       "state_identity": "One original Content owner retains its text editor, selection, undo history and numeric model. Draft validation is separate from committed value changes; blur/submit/step publish only valid changed values. IME barriers retain the original text ownership.",
-      "limits": "Numeric leaf without arbitrary content slots. Default auto width follows content; optional digit capacity fixes the input width using current typography. Larger drafts retain text and scroll. Persistence and configuration Undo/Redo belong to consumers.",
+      "limits": "Numeric leaf without arbitrary content slots. Default auto width follows content; optional digit capacity fixes the input width using current typography. Larger drafts retain text and scroll. Persistence and configuration Undo/Redo belong to consumers. Its internal editor explicitly disables generic Clear to retain the component-specific action routing.",
       "native_acceptance": "未验证",
       "accessibility": "Original editable text semantics, current draft, range description and named increment/decrement semantic parts; public actions and native AX example verified separately from full-family VoiceOver acceptance.",
       "requires_internal_source_edit": "No: the exported NumberFieldContent, NumberFormat and normal host text/clipboard interfaces are sufficient.",
@@ -1624,7 +1624,7 @@
         {
           "api": "tekes_ui_controls::composition::DialogContent",
           "path": "crates/tekes-ui-controls/src/composition/adapters.rs",
-          "line": 961,
+          "line": 920,
           "anchor": "pub struct DialogContent {"
         }
       ]
@@ -1928,7 +1928,7 @@
       "heterogeneous_consumer_content": "不适用",
       "runtime_profile": "owned-content",
       "state_identity": "One original TextFieldContent/TextSurface owner with immutable document identity/revision, controlled replacement and original selection/native query layout.",
-      "limits": "Bounded readonly Markdown subset plus simple links, code and diff. No arbitrary child slots, editable projection or virtualization. Semantic foreground label runs remain a separate unimplemented increment.",
+      "limits": "Bounded readonly Markdown blocks, simple links, code and diff. RichContent colors recognized fenced code through shared semantic tokens without reshaping; unknown/omitted languages are plain. Original source mapping, selection and copy retained. No full CommonMark, inline font shaping, arbitrary child slots, editing or virtualization; passive legacy views are not upgraded to this reader.",
       "native_acceptance": "未验证",
       "accessibility": "Original text owner and source-tagged link parts; scoped software-native selection/query/copy verified. Physical IME and VoiceOver remain unverified.",
       "requires_internal_source_edit": "Public RichDocument and RichContent APIs; independent composition consumer.",
@@ -1949,7 +1949,7 @@
         {
           "api": "tekes_ui_controls::composition::RichContent",
           "path": "crates/tekes-ui-controls/src/composition/rich_content.rs",
-          "line": 53,
+          "line": 58,
           "anchor": "pub struct RichContent {"
         }
       ]
@@ -1971,7 +1971,7 @@
       "heterogeneous_consumer_content": "不适用",
       "runtime_profile": "owned-content",
       "state_identity": "One original TextFieldContent/TextSurface owner with immutable document identity/revision, controlled replacement and original selection/native query layout.",
-      "limits": "Bounded readonly Markdown subset plus simple links, code and diff. No arbitrary child slots, editable projection or virtualization. Semantic foreground label runs remain a separate unimplemented increment.",
+      "limits": "Bounded readonly Markdown blocks, simple links, code and diff. RichContent colors recognized fenced code through shared semantic tokens without reshaping; unknown/omitted languages are plain. Original source mapping, selection and copy retained. No full CommonMark, inline font shaping, arbitrary child slots, editing or virtualization; passive legacy views are not upgraded to this reader.",
       "native_acceptance": "未验证",
       "accessibility": "Original text owner and source-tagged link parts; scoped software-native selection/query/copy verified. Physical IME and VoiceOver remain unverified.",
       "requires_internal_source_edit": "Public RichDocument and RichContent APIs; independent composition consumer.",
@@ -1992,7 +1992,7 @@
         {
           "api": "tekes_ui_controls::composition::RichContent",
           "path": "crates/tekes-ui-controls/src/composition/rich_content.rs",
-          "line": 53,
+          "line": 58,
           "anchor": "pub struct RichContent {"
         }
       ]
@@ -2035,7 +2035,7 @@
         {
           "api": "tekes_ui_controls::composition::RichContent",
           "path": "crates/tekes-ui-controls/src/composition/rich_content.rs",
-          "line": 53,
+          "line": 58,
           "anchor": "pub struct RichContent {"
         }
       ]
@@ -2054,13 +2054,13 @@
     "crates/tekes-ui-controls/src/chart.rs": "9e3e5dd1e9d62f358cb74201a254f4165b81e4b79c3a97f0a74bde6f591e983c",
     "crates/tekes-ui-controls/src/collections_view.rs": "f44a0329b3d395a59b2849bab36ddcea71d366afeb7a6e6a5f6d42525f69eefe",
     "crates/tekes-ui-controls/src/composite.rs": "8f6e5e4845b3cd3c90048e63c3f743c9d2e55e951ae6b9bfde1a473263fb39bb",
-    "crates/tekes-ui-controls/src/composition.rs": "5de7f0978804272fc0aa82397beab1fb23e359d84918d932e8e201a12d969f05",
+    "crates/tekes-ui-controls/src/composition.rs": "986ce6b494689c429a4320c94204b5fee18489f56b5d89a01f6a20b3acaedcb8",
     "crates/tekes-ui-controls/src/composition/actions.rs": "f8345217306f62f1b8bf9d01b0ab4d1537b7a3a7d885d2eb9a7770956d18b987",
-    "crates/tekes-ui-controls/src/composition/adapters.rs": "34c91f0209d07dc2ece2bfdf7206ea47af171fd3e1fb24882dd8e377947a8215",
+    "crates/tekes-ui-controls/src/composition/adapters.rs": "7728aca81e1431959d76381a71eb7edd7f5c65bbb936af23c94ae1c205cf9a7b",
     "crates/tekes-ui-controls/src/composition/button.rs": "e6ba59a910a93471b14ae9bdf7acd01feb2c1a1eb076626dbe57fb422809f1cc",
     "crates/tekes-ui-controls/src/composition/chart_content.rs": "dc3b686d0b7c84e9e44cc3e0ee54c2e040204b141ee10b6970f2f6c88ea8cff4",
     "crates/tekes-ui-controls/src/composition/checkbox.rs": "1f30d0a16c6b258469b197470b66c113ee6d3d9533cbafb23674beb21faeeeda",
-    "crates/tekes-ui-controls/src/composition/combobox.rs": "29d825cc459bef202edec0fc59bed240a25a2a3a40deddc012a772a8c9247154",
+    "crates/tekes-ui-controls/src/composition/combobox.rs": "f6e02a12075e708bcbf6fbeca8ed09a82cc20d188b21dda1b3ffa7197b43ad28",
     "crates/tekes-ui-controls/src/composition/content_reading.rs": "a4fdc957ace1c50d107dac6eb03ce82e08b2b7749fa8a7861c3d901853455e68",
     "crates/tekes-ui-controls/src/composition/content_reveal.rs": "1d2173c778670f825e67257ea54912d04f497d555f293ced0228e19f8a1b2dde",
     "crates/tekes-ui-controls/src/composition/disclosure.rs": "994be293370a9be87317db78b11551cfd03bb7328626b5d2823b81408ffb8628",
@@ -2075,13 +2075,13 @@
     "crates/tekes-ui-controls/src/composition/navigation/breadcrumb.rs": "690f515e0ecb90a90ecc18b6b5d24c90b178cb7e3e212028211354714403e173",
     "crates/tekes-ui-controls/src/composition/navigation/command.rs": "7cda8d49a07354c034889ab3bbb55c4ccf8e7d631459998e3a2287069e6b749d",
     "crates/tekes-ui-controls/src/composition/notice.rs": "99c4877563b1924a10828df3858bfbbfa260b669e893f38a8f88ed534d00cc7f",
-    "crates/tekes-ui-controls/src/composition/number.rs": "e699856b5b9878a377bb28aa21a40a022c5e125843a5592423b85f64a17d43c1",
+    "crates/tekes-ui-controls/src/composition/number.rs": "59e87efa1fa962943e53778abcbc0a16e4727acf0dbf4537f3e606240eacca52",
     "crates/tekes-ui-controls/src/composition/panel.rs": "d1db1479140a553ae93c02109c78e8b976a519c5662eadacd5227ba9fb31fc4f",
     "crates/tekes-ui-controls/src/composition/pointer.rs": "df6178e632f0d22622cc5efa54fcd7ef892e963137d832635995d9df2e8eca14",
     "crates/tekes-ui-controls/src/composition/popover.rs": "7f98ed4d062e1694a3ffea0a31b8455de0958cc0974a3fd435025c44aec45690",
     "crates/tekes-ui-controls/src/composition/progress.rs": "12cd00f2a0910d5888323aa64cb07ff6aae309147ce513614574c222f3f587cc",
     "crates/tekes-ui-controls/src/composition/radio.rs": "c69d166d67f3eb21246777a8ad860f3b4023c66f9ca24a95398b155ff3f7e758",
-    "crates/tekes-ui-controls/src/composition/rich_content.rs": "abda45fd7755872ce80ac5714851c95d866e76fbbee020c23ce4af7052411dce",
+    "crates/tekes-ui-controls/src/composition/rich_content.rs": "415e4bb388ea759f206c152058f07f95e2df62d7d92759b2d55d8981d74f282c",
     "crates/tekes-ui-controls/src/composition/rich_document.rs": "0b826474f713e197953e8c9737cb8c462db97ba1ba50a4cd2b13b4ddc6eb9ce0",
     "crates/tekes-ui-controls/src/composition/segmented.rs": "a6bd41ec203d8491a9b0caf1a7550ebf0b4c59aec0f33f0de288340710cfc40a",
     "crates/tekes-ui-controls/src/composition/separator.rs": "4fed31d0eb17470dadd33b7a3644ba922e06fa005a3feddb0f88379eed7f3397",
@@ -2100,7 +2100,7 @@
     "crates/tekes-ui-controls/src/selection.rs": "a766cef56acf3e37ff1590e20c2a0af7597cec297d620036d1a81bcaa96930d9",
     "crates/tekes-ui-controls/src/text_input.rs": "c6198a40cc2212298d2fa59648466ccec917b72a106d582ea6d0cc71a0032ccb",
     "crates/tekes-ui-controls/src/text_input/external.rs": "872c6a58fc112c17f7711ce3fe88c868a6ecb0e2ee32fc394ed8877fa30626ca",
-    "crates/tekes-ui-controls/src/text_surface.rs": "254b49164333cd72cbfe64d19f3fb175381f4380ae95c51fd4186607f3e9314c",
+    "crates/tekes-ui-controls/src/text_surface.rs": "74eb5299c16bb8f7d497281237b70ba67d2d9bc22717d82afb0c4e9011bd06c1",
     "crates/tekes-ui-controls/src/toolbar.rs": "f74843e5f00a198f53330040ab20413b1264ef28dbb4f310723ada77a4d63df6",
     "crates/tekes-ui-controls/src/widgets.rs": "ff103cc30d1cec3b76b6ca64ec5259d01725a91f89ac414505f001b2f49255a8",
     "crates/tekes-ui-controls/tests/choice_contract.rs": "4ee09801a24dd52ffc229e45c7ed7adbb2e5ad25b61fea71fb233ec63787a564",
@@ -2221,7 +2221,7 @@
     "examples/composition-consumer/tests/surface_host_scale.rs": "152941bff9d9baa1e402f3d1c52d051a4aacc0e5702de774780aa951178419c7",
     "scripts/audit-menu-content-tokens.py": "c6c66ffd9939c61b2069cdafc9f798ea72b7aa58f1c7d8c0b3f55dc67765f867",
     "crates/tekes-ui-controls/src/composition/select.rs": "c87b0bc410a601254e7693bd15a2e87f08332fa651adc2ed6403299cc7c73b83",
-    "crates/tekes-ui-controls/src/composition/search.rs": "c1e0e105abc229820b61825fef490b9de1b63e631302515d46b29d6b1d3ecd16",
+    "crates/tekes-ui-controls/src/composition/search.rs": "e04dd53670388b24d0b948ec159b07c423d04d98292d8aa98b46a89a39801264",
     "docs/design/navigation-content-combo17-recovery-20261031.md": "cab75179ffc5ed7be2ab4de95d3d43ed430c5195a0f5b2b7bf56ca215f454090",
     "crates/tekes-ui-controls/src/composition/legacy_selectable_list.rs": "69e244976d28c82a4cdf6d53631bcb94d081bc597b7abbc19cb0a289de7c8bdf",
     "crates/tekes-ui-controls/src/composition/selectable_list.rs": "d9fdfefe4509f95aa81a33e67fa37989c35802a3242dc96200d15d2f4f8b3a33",
@@ -2246,7 +2246,7 @@
     "crates/tekes-ui-gallery/src/gallery/workbench/select_story.rs": "a4d8d398d26711bfa24f8600b2ce70ba7768ca5e9b40f88f49e02d4e413a1c9f",
     "crates/tekes-ui-gallery/src/gallery/workbench/search_host.rs": "354d60f31470abb2df195e37f5cd0a45742b2cb1797e4ffd4ccec9ab37f24471",
     "crates/tekes-ui-app-host/src/window_columns.rs": "89854ae102929dc4b78d91f9fbd3ce30291d70c03f2d63c3612446d3c58acf36",
-    "examples/composition-consumer/tests/rich_content.rs": "025caf99707a58940d6b0e33e867b8f1c90fb782131ca76e731cac625a94833e"
+    "examples/composition-consumer/tests/rich_content.rs": "771605f5924c18875914b91d46e81119b09b350aac6e5703543b1ef91d8363a5"
   },
   "remaining": [
     "Collections49 public adapter/support paths recovered in thisf4df candidate; actual compatible compilation/consumer/IPC acceptance and publication remain Main gates. Tree/Table and keyed List slots remain finite passive contracts, not arbitrary interactive content or virtualization.",
@@ -2263,47 +2263,47 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 2586,
+      "line": 2588,
       "anchor": "pub fn render("
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 3039,
+      "line": 3041,
       "anchor": "pub fn event(&mut self, event: &ContentEvent) -> ContentResponse {"
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 3753,
+      "line": 3755,
       "anchor": "pub fn focused_text(&self) -> Option<&crate::TextSurface> {"
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 4422,
+      "line": 4424,
       "anchor": "pub fn insert("
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 4458,
+      "line": 4460,
       "anchor": "pub fn remove(&mut self, id: ComponentId) -> Result<Content, CompositionError> {"
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 4515,
+      "line": 4517,
       "anchor": "pub fn reorder("
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 4595,
+      "line": 4597,
       "anchor": "pub fn semantics(&self) -> Vec<SemanticNode> {"
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 4242,
+      "line": 4244,
       "anchor": "pub fn show_dialog(&mut self, id: ComponentId) -> Result<(), CompositionError> {"
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 4283,
+      "line": 4285,
       "anchor": "pub fn close_dialog(&mut self) -> bool {"
     },
     {
@@ -2383,7 +2383,7 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/composition/adapters.rs",
-      "line": 1169,
+      "line": 1128,
       "anchor": "impl Component for SliderContent {"
     },
     {
@@ -2458,7 +2458,7 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/composition/adapters.rs",
-      "line": 642,
+      "line": 601,
       "anchor": "s.required = self.field.required;"
     },
     {
@@ -2480,13 +2480,13 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 2504,
+      "line": 2506,
       "anchor": "pub fn capture_focus(&self) -> Option<(ComponentId, u64)> {",
       "purpose": "Existing mount identity reused for temporary presentation focus intent"
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 2517,
+      "line": 2519,
       "anchor": "pub fn restore_focus(&mut self, captured: Option<(ComponentId, u64)>) -> bool {",
       "purpose": "Same mount/current eligibility validation; Dialog shares this implementation"
     },
@@ -2558,7 +2558,7 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 2530,
+      "line": 2532,
       "anchor": "fn check_text_services(",
       "purpose": "Single existing text-capability traversal and cancellation reused at all render layout boundaries"
     },

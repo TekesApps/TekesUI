@@ -1,8 +1,8 @@
 # Toolbar
 
-ToolbarContent 和 ToolbarGroup 在真实 Content 树里组织工具栏。AppHost 中 Toolbar 归 Container 所有；页面不应再安装一个窗口级输入循环。
+Use ToolbarContent and ToolbarGroup to organize controls in the Content tree. In AppHost, the toolbar belongs to its Container.
 
-## 短用法
+## Creating the content
 
 ```rust
 use tekes_ui_controls::composition::*;
@@ -14,18 +14,14 @@ let bar = ToolbarContent::new(vec![Content::new(
 )]);
 ```
 
-## 分组和事件
+## State and events
 
-ToolbarPlacement 表达 Navigation、Status、PrimaryAction 等角色。文字状态保持 TextContent，不应为对齐而伪装成按钮。ToolbarGroup 的 `set_radio` 和 `set_selected_id` 可声明互斥组，选择 ID 必须对应该组真实子项。
+ToolbarPlacement identifies roles such as Navigation, Status and PrimaryAction. set_radio and set_selected_id configure exclusive groups using real child IDs. Child actions use the normal host action queue. Keep status text as TextContent.
 
-各控件沿原 Host 动作路径交付；启用 `set_action_events(true)` 后按 target 处理按钮等动作。工具栏不是业务命令注册表，不能从位置或显示文字推断授权。
+## Composition and limitations
 
-`ToolbarGroup.visible = false` 的子组保留实例身份，但不参与父组的测量、间隔、最小宽度预算或排列。恢复显示后由原布局重新安排；消费者无需移除/重插节点或补偿空位。
+A group with visible = false retains its instance but contributes no measurement, spacing or width budget. Restoring visibility uses the normal layout. Toolbar does not register commands or permissions. The host owns window input and compact layout.
 
-低层 Toolbar/ToolbarControl/ToolbarView 与 Content 入口同时存在，需按宿主选一个实际消费路径。紧凑样式及溢出策略由原布局实现决定，不把所有内容强制变成等宽图标按钮。
+## Related APIs
 
-## 源码与消费者
-
-定义：`crates/tekes-ui-controls/src/composition/toolbar_content.rs`。现有消费路径：`examples/composition-consumer/src/toolbar_groups.rs`。上面的构造片段不是独立窗口程序；完整消费者运行及原生输入、视觉、无障碍验收仍需独立证据。
-
-当前片段验证：Check329 已对这 45 份手册中的 46 段原文 Rust 代码完成 `--emit=metadata` 类型检查，通过但未链接、未运行；本文代码块保持不变，复用该结果。此证据不代替 GUI、物理 IME、VoiceOver 或运行时验收。收据位于协调工作区 `outputs/gallery-apphost-upgrade-20261114/manual-snippets/RESULT.json`，提取源为同目录 `manual-snippets.rs`。
+[Button](button.md)

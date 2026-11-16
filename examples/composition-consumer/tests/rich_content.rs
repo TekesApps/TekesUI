@@ -651,3 +651,63 @@ fn mixed_reading_prepend_expand_and_reflow_use_existing_stable_item_transaction(
         other => panic!("expected item-local history: {other:?}"),
     }
 }
+
+#[test]
+fn code_ink_uses_theme_tokens_without_changing_shaped_geometry_or_copy() {
+    let source = "let greeting = \"你好🦀\"; // comment\nlet n = 42;";
+    let id = ComponentId(901);
+    for theme in [Theme::LIGHT, Theme::DARK] {
+        let make = |language: &str| {
+            let document = RichDocument::from_markdown(&format!("```{language}\n{source}\n```"));
+            ContentHost::new(Content::new(
+                id,
+                RichContent::new("syntax", 1, document).unwrap(),
+            ))
+            .unwrap()
+        };
+        let mut colored = make("rust");
+        let mut plain = make("unknown-language");
+        let scene = paint(&mut colored, 300., 1., theme);
+        let plain_scene = paint(&mut plain, 300., 1., theme);
+        assert_eq!(
+            colored.text_surface(id).unwrap().paragraph,
+            plain.text_surface(id).unwrap().paragraph
+        );
+        for token in [
+            "c-code-keyword",
+            "c-code-string",
+            "c-code-number",
+            "c-code-comment",
+        ] {
+            let color = tekes_ui_tokens::Palette::from(theme).color(token).unwrap();
+            assert!(scene.primitives().iter().any(|primitive| matches!(primitive, Primitive::Glyphs(run) if run.color == color && !run.glyphs.is_empty())), "missing {token}");
+        }
+        let count = |scene: &Scene| {
+            scene
+                .primitives()
+                .iter()
+                .map(|primitive| match primitive {
+                    Primitive::Glyphs(run) => run.glyphs.len(),
+                    _ => 0,
+                })
+                .sum::<usize>()
+        };
+        assert_eq!(
+            count(&scene),
+            count(&plain_scene),
+            "each original glyph is painted once"
+        );
+        let length = colored
+            .text_surface(id)
+            .unwrap()
+            .input
+            .text
+            .encode_utf16()
+            .count();
+        colored.accessibility_action(id, None, AccessibilityAction::SetSelection(0..length));
+        assert_eq!(
+            colored.text_surface(id).unwrap().input.selected_text(),
+            source
+        );
+    }
+}

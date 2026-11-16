@@ -130,6 +130,7 @@ fn search_clear_chrome_returns_to_rest_after_leave_or_cancellation() {
                 scene
                     .primitives()
                     .iter()
+                    .rev()
                     .find_map(|p| match p {
                         Primitive::Quad(q) if q.rect.contains(clear) => Some(q.fill),
                         _ => None,
