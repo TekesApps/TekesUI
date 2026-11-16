@@ -985,7 +985,7 @@ dependencies = [
 
 [[package]]
 name = "tekes-ui-controls"
-version = "0.3.33"
+version = "0.3.34"
 dependencies = [
  "serde_json",
  "syntect",
@@ -1000,7 +1000,7 @@ dependencies = [
 
 [[package]]
 name = "tekes-ui-design-export"
-version = "0.3.33"
+version = "0.3.34"
 dependencies = [
  "serde_json",
  "sha2",
@@ -1008,7 +1008,7 @@ dependencies = [
 
 [[package]]
 name = "tekes-ui-icons"
-version = "0.3.33"
+version = "0.3.34"
 
 [[package]]
 name = "tekes-ui-issue82-panel-consumer"
@@ -1027,11 +1027,11 @@ dependencies = [
 
 [[package]]
 name = "tekes-ui-motion"
-version = "0.3.33"
+version = "0.3.34"
 
 [[package]]
 name = "tekes-ui-platform-macos"
-version = "0.3.33"
+version = "0.3.34"
 dependencies = [
  "block2",
  "objc2",
@@ -1047,7 +1047,7 @@ dependencies = [
 
 [[package]]
 name = "tekes-ui-render"
-version = "0.3.33"
+version = "0.3.34"
 dependencies = [
  "bytemuck",
  "objc2-core-graphics",
@@ -1060,14 +1060,14 @@ dependencies = [
 
 [[package]]
 name = "tekes-ui-scene"
-version = "0.3.33"
+version = "0.3.34"
 dependencies = [
  "tekes-ui-tokens",
 ]
 
 [[package]]
 name = "tekes-ui-text"
-version = "0.3.33"
+version = "0.3.34"
 dependencies = [
  "objc2-core-foundation",
  "objc2-core-graphics",
@@ -1081,7 +1081,7 @@ dependencies = [
 
 [[package]]
 name = "tekes-ui-tokens"
-version = "0.3.33"
+version = "0.3.34"
 dependencies = [
  "serde_json",
  "sha2",
