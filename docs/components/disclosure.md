@@ -1,8 +1,8 @@
 # Disclosure
 
-DisclosureContent 是受控展开区域：标题、触发器和 body 保持真实组件身份，业务层决定是否接受展开请求。
+Use DisclosureContent for an expandable region whose application decides whether to accept expansion requests.
 
-## 短用法
+## Creating the content
 
 ```rust
 use tekes_ui_controls::composition::*;
@@ -11,16 +11,14 @@ let body = Content::new(ComponentId(4), TextFieldContent::new("Notes", ""));
 let disclosure = DisclosureContent::new(ComponentId(2), title, body, false);
 ```
 
-## 请求与状态
+## State and events
 
-`expanded()`、`disabled()`、`trigger_id()` 读取状态。消费 `ContentActionPayload::DisclosureExpansion` 中的 DisclosureIntent，并调用 `confirm(&intent, accepted)`；`expanded()` 读取请求目标，generation/revision 绑定当时声明。不要用读取文档的操作确认业务请求。
+Read expanded, disabled and trigger_id. Consume DisclosureExpansion and confirm its DisclosureIntent with confirm(intent, accepted). The intent carries the requested expanded state and declaration identity. set_expanded synchronizes authoritative state; set_disabled, set_rtl and set_accessible_name update presentation.
 
-`set_expanded` 用于权威状态同步；`set_disabled`、`set_rtl`、`set_accessible_name` 管理元信息。`with_section_header_layout` 提供分组标题布局，`with_trigger_focusable` 控制触发器焦点策略。
+## Composition and limitations
 
-body 的编辑器和滚动由自身持有，折叠不应通过重建 body 丢失草稿。此入口不是自动保存表单，也不替消费者决定是否允许收起未保存内容。
+with_section_header_layout configures the header; with_trigger_focusable configures keyboard focus. Keep the body instance to preserve drafts and scroll state when collapsed. The application decides whether unsaved content may be hidden.
 
-## 源码与消费者
+## Related APIs
 
-定义：`crates/tekes-ui-controls/src/composition/disclosure.rs`。现有消费路径：`examples/composition-consumer/src/disclosure_review.rs`。上面的构造片段不是独立窗口程序；完整消费者运行及原生输入、视觉、无障碍验收仍需独立证据。
-
-当前片段验证：Check329 已对这 45 份手册中的 46 段原文 Rust 代码完成 `--emit=metadata` 类型检查，通过但未链接、未运行；本文代码块保持不变，复用该结果。此证据不代替 GUI、物理 IME、VoiceOver 或运行时验收。收据位于协调工作区 `outputs/gallery-apphost-upgrade-20261114/manual-snippets/RESULT.json`，提取源为同目录 `manual-snippets.rs`。
+[Field](field.md)

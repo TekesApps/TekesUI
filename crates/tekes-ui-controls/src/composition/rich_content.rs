@@ -8,6 +8,9 @@ use crate::{
 use std::{ops::Range, rc::Rc};
 use tekes_ui_text::Paragraph;
 
+mod syntax;
+use syntax::CodeSpan;
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct RichContentVersion {
     identity: String,
@@ -28,6 +31,8 @@ pub enum RichContentError {
     WrongDocument,
     StaleVersion,
     PartCapacity,
+    /// A recognized code language could not be parsed. No update was applied.
+    Syntax(String),
     Input(ExternalValueConflict),
 }
 #[derive(Clone, Debug, PartialEq)]
@@ -52,6 +57,7 @@ pub struct RichLinkAction {
 #[derive(Debug)]
 pub struct RichContent {
     field: TextFieldContent,
+    code_spans: Vec<CodeSpan>,
     document: RichDocument,
     identity: String,
     revision: u64,
@@ -69,6 +75,7 @@ impl RichContent {
         if identity.trim().is_empty() || revision == 0 {
             return Err(RichContentError::InvalidIdentity);
         }
+        let code_spans = syntax::parse(&document).map_err(RichContentError::Syntax)?;
         let mut field = TextFieldContent::read_only_content(
             "Document",
             document.text(),
@@ -91,6 +98,7 @@ impl RichContent {
         let next_link_part = document.links().len();
         Ok(Self {
             field,
+            code_spans,
             document,
             identity,
             revision,
@@ -124,6 +132,7 @@ impl RichContent {
         if *expected != self.version() || revision <= self.revision {
             return Err(RichContentError::StaleVersion);
         }
+        let code_spans = syntax::parse(&document).map_err(RichContentError::Syntax)?;
         let next_link_part = self
             .next_link_part
             .checked_add(document.links().len())
@@ -144,6 +153,7 @@ impl RichContent {
         }
         self.field.surface.invalidate_text_layout();
         self.document = document;
+        self.code_spans = code_spans;
         self.link_part_base = self.next_link_part;
         self.next_link_part = next_link_part;
         self.revision = revision;
@@ -193,11 +203,12 @@ impl RichContent {
                     .collect();
                 let first = lines.first()?;
                 let last = lines.last()?;
+                let inset = code_inset(block.kind);
                 let frame = Rect::new(
                     origin.x,
-                    origin.y + first.top as f32,
+                    origin.y + first.top as f32 - inset,
                     surface.inner.size.width,
-                    (last.top + last.height - first.top) as f32,
+                    (last.top + last.height - first.top) as f32 + 2. * inset,
                 );
                 Some(RichBlockGeometry {
                     index,
@@ -279,16 +290,24 @@ impl Component for RichContent {
         Some(layout)
     }
     fn measure(&mut self, t: &mut dyn ButtonTextRenderer, a: Size) -> MeasuredChild {
-        self.field
-            .measure(&mut RichRenderer::new(t, &self.document, None), a)
+        self.field.measure(
+            &mut RichRenderer::new(t, &self.document, &self.code_spans, None),
+            a,
+        )
     }
     fn arrange(&mut self, t: &mut dyn ButtonTextRenderer, f: Rect, c: Rect) {
-        self.field
-            .arrange(&mut RichRenderer::new(t, &self.document, None), f, c)
+        self.field.arrange(
+            &mut RichRenderer::new(t, &self.document, &self.code_spans, None),
+            f,
+            c,
+        )
     }
     fn prepare_text_input(&mut self, t: &mut dyn ButtonTextRenderer, f: Rect, c: Rect) {
-        self.field
-            .prepare_text_input(&mut RichRenderer::new(t, &self.document, None), f, c)
+        self.field.prepare_text_input(
+            &mut RichRenderer::new(t, &self.document, &self.code_spans, None),
+            f,
+            c,
+        )
     }
     fn paint(
         &mut self,
@@ -298,9 +317,27 @@ impl Component for RichContent {
         c: Rect,
         theme: ContentTheme,
     ) {
+        // Prepare the same retained layout before painting surfaces. TextSurface
+        // paints selection before glyphs, so backgrounds must precede its paint.
+        self.prepare_text_input(t, f, c);
+        for block in self.block_geometry() {
+            if self.document.blocks()[block.index].kind == RichBlockKind::Code
+                && let Some(visible) = block.visible
+            {
+                s.push_clip(visible);
+                crate::paint::surface_kind_at_scale(
+                    s,
+                    block.frame,
+                    theme.palette,
+                    crate::paint::SurfaceKind::Code,
+                    t.backing_scale(),
+                );
+                s.pop_clip();
+            }
+        }
         self.field.paint(
             s,
-            &mut RichRenderer::new(t, &self.document, Some(theme.palette)),
+            &mut RichRenderer::new(t, &self.document, &self.code_spans, Some(theme.palette)),
             f,
             c,
             theme,
@@ -326,7 +363,7 @@ impl Component for RichContent {
                 }) {
                     if first {
                         let frame = Rect::new(
-                            origin.x,
+                            origin.x + code_inset(block.kind),
                             origin.y + line.top as f32,
                             gutter,
                             line.height as f32,
@@ -492,6 +529,7 @@ impl Component for RichContent {
 struct RichRenderer<'a> {
     host: &'a mut dyn ButtonTextRenderer,
     document: &'a RichDocument,
+    code_spans: &'a [CodeSpan],
     palette: Option<Palette>,
     type_scale: f32,
     caret_visible: bool,
@@ -546,6 +584,7 @@ impl RichRenderer<'_> {
     fn new<'a>(
         host: &'a mut dyn ButtonTextRenderer,
         document: &'a RichDocument,
+        code_spans: &'a [CodeSpan],
         palette: Option<Palette>,
     ) -> RichRenderer<'a> {
         let (type_scale, caret_visible) = host
@@ -554,6 +593,7 @@ impl RichRenderer<'_> {
         RichRenderer {
             host,
             document,
+            code_spans,
             palette,
             type_scale,
             caret_visible,
@@ -565,14 +605,17 @@ impl TextSurfaceTextRenderer for RichRenderer<'_> {
         let host = self.host.text_surface_host().expect("checked text service");
         // Recolor the actual retained runs; never shape a second paint layout.
         if let Some(palette) = self.palette {
-            if self.document.blocks().iter().all(|block| {
-                !matches!(
-                    block.kind,
-                    RichBlockKind::Diff {
-                        kind: crate::extended::DiffKind::Added | crate::extended::DiffKind::Removed
-                    }
-                )
-            }) {
+            if self.code_spans.is_empty()
+                && self.document.blocks().iter().all(|block| {
+                    !matches!(
+                        block.kind,
+                        RichBlockKind::Diff {
+                            kind: crate::extended::DiffKind::Added
+                                | crate::extended::DiffKind::Removed
+                        }
+                    )
+                })
+            {
                 host.push_visible(s, p, origin, ink, clip);
                 return;
             }
@@ -602,7 +645,47 @@ impl TextSurfaceTextRenderer for RichRenderer<'_> {
                     fonts: p.fonts.clone(),
                     utf16_len: p.utf16_len,
                 };
-                host.push_visible(s, &part, origin, color, clip);
+                let spans: Vec<_> = self
+                    .code_spans
+                    .iter()
+                    .filter(|span| {
+                        span.display.start < block.display.end
+                            && span.display.end > block.display.start
+                    })
+                    .collect();
+                if spans.is_empty() {
+                    host.push_visible(s, &part, origin, color, clip);
+                    continue;
+                }
+                // A cluster is indivisible: its first UTF-16 unit chooses its ink.
+                // Filter retained glyphs, preserving their fonts and coordinates.
+                for token in [
+                    None,
+                    Some("c-code-keyword"),
+                    Some("c-code-string"),
+                    Some("c-code-number"),
+                    Some("c-code-comment"),
+                ] {
+                    let mut colored = part.clone();
+                    for line in &mut colored.lines {
+                        for run in &mut line.runs {
+                            run.glyphs.retain(|glyph| {
+                                spans
+                                    .iter()
+                                    .find(|span| span.display.contains(&glyph.cluster_utf16.start))
+                                    .map(|span| span.token)
+                                    == token
+                            });
+                        }
+                        line.runs.retain(|run| !run.glyphs.is_empty());
+                    }
+                    colored.lines.retain(|line| !line.runs.is_empty());
+                    if !colored.lines.is_empty() {
+                        let ink = token
+                            .map_or(color, |key| palette.color(key).expect("shared code token"));
+                        host.push_visible(s, &colored, origin, ink, clip);
+                    }
+                }
             }
         } else {
             host.push_visible(s, p, origin, ink, clip);
@@ -644,10 +727,13 @@ fn shape_document(
         } else {
             0.
         };
+        let inset = code_inset(block.kind) as f64;
+        y += inset;
+        let text_offset = gutter + inset;
         let paragraph = host.shape_surface(
             &value,
             block.role,
-            width.map(|w| (w - gutter as f32).max(0.)),
+            width.map(|w| (w - gutter as f32 - 2. * inset as f32).max(0.)),
         );
         result.default_line_height = result
             .default_line_height
@@ -674,26 +760,26 @@ fn shape_document(
             line.utf16.end += block.display.start;
             line.bytes.start += byte_offset;
             line.bytes.end += byte_offset;
-            line.width += gutter;
-            line.width_trimmed += gutter;
+            line.width += text_offset;
+            line.width_trimmed += text_offset;
             for (caret, x) in &mut line.carets {
                 *caret += block.display.start;
-                *x += gutter;
+                *x += text_offset;
             }
             for run in &mut line.runs {
                 run.utf16.start += block.display.start;
                 run.utf16.end += block.display.start;
                 for glyph in &mut run.glyphs {
-                    glyph.x += gutter;
+                    glyph.x += text_offset;
                     glyph.utf16_index += block.display.start;
                     glyph.cluster_utf16.start += block.display.start;
                     glyph.cluster_utf16.end += block.display.start;
                 }
             }
-            result.width = result.width.max(line.width);
+            result.width = result.width.max(line.width + inset);
             result.lines.push(line);
         }
-        y = result.lines.last().map_or(y, |line| line.top + line.height);
+        y = result.lines.last().map_or(y, |line| line.top + line.height) + inset;
         if index + 1 < document.blocks().len() {
             y += proposal::metric("spacing", "space-relaxed").unwrap_or(12.) as f64;
         }
@@ -701,6 +787,15 @@ fn shape_document(
     }
     result.height = y.max(result.default_line_height);
     result
+}
+
+// Match the existing CodeBlockView surface inset; it is part of text geometry.
+fn code_inset(kind: RichBlockKind) -> f32 {
+    if kind == RichBlockKind::Code {
+        proposal::metric("spacing", "space-button-md-inset").expect("code surface inset")
+    } else {
+        0.
+    }
 }
 
 // Actual host typography measures the decoration; it never enters copy/ranges.

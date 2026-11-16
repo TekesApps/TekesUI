@@ -135,7 +135,7 @@ impl NumberFieldContent {
             return None;
         }
         let name = name.into();
-        let mut editor = TextFieldContent::new("", &format.format(value));
+        let mut editor = TextFieldContent::new("", &format.format(value)).clear_button(false);
         editor.submit_policy = TextSubmitPolicy::Enter;
         editor.show_metadata = false;
 

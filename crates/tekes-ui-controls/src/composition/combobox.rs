@@ -50,7 +50,7 @@ pub struct ComboBoxContent {
 impl ComboBoxContent {
     pub fn new(name: impl Into<String>, items: Vec<String>) -> Self {
         Self {
-            editor: TextFieldContent::new(name, ""),
+            editor: TextFieldContent::new(name, "").clear_button(false),
             model: ComboBox {
                 items,
                 ..Default::default()

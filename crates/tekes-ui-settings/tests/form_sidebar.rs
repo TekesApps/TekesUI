@@ -280,7 +280,7 @@ fn descriptions_use_original_help_and_accessibility_without_extra_label_rows() {
 fn pinned_header_composes_original_back_and_editor_outside_scroll_owner() {
     use tekes_ui_controls::composition::{
         Button, Component, ComponentId, ContentEvent, IconImage, IconRenderError, ScrollContent,
-        StackContent, TextFieldContent, WithIconRenderer,
+        SearchFieldContent, StackContent, WithIconRenderer,
     };
     use tekes_ui_scene::{ImageId, Rect, Scene};
     use tekes_ui_tokens::{Rgba, Theme};
@@ -357,7 +357,7 @@ fn pinned_header_composes_original_back_and_editor_outside_scroll_owner() {
     assert_eq!(header.children().len(), 1);
     assert!(
         header.children()[0]
-            .component::<TextFieldContent>()
+            .component::<SearchFieldContent>()
             .is_some()
     );
     assert!(sidebar.host.get(ComponentId(10)).is_none());

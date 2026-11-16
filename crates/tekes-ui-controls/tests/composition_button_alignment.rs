@@ -130,6 +130,7 @@ fn search_clear_chrome_returns_to_rest_after_leave_or_cancellation() {
                 scene
                     .primitives()
                     .iter()
+                    .rev()
                     .find_map(|p| match p {
                         Primitive::Quad(q) if q.rect.contains(clear) => Some(q.fill),
                         _ => None,
@@ -227,4 +228,26 @@ fn public_button_rendered_text_and_background_meet_declared_contrast() {
             }
         }
     }
+}
+
+#[cfg(feature = "inspection")]
+#[test]
+fn search_inspection_preserves_search_identity_and_original_editor_properties() {
+    use tekes_ui_controls::composition::{SearchFieldContent, TextFieldContent};
+    let search = SearchFieldContent::new("Find", "query");
+    let field = TextFieldContent::new("Draft", "value");
+    let search_properties = search.inspection_properties().unwrap();
+    let field_properties = field.inspection_properties().unwrap();
+    let value = |properties: &[tekes_ui_controls::composition::InspectionProperty], name| {
+        properties
+            .iter()
+            .find(|property| property.name == name)
+            .unwrap()
+            .value
+            .clone()
+    };
+    assert_eq!(value(&search_properties, "component"), "SearchFieldContent");
+    assert_eq!(value(&field_properties, "component"), "TextFieldContent");
+    assert_eq!(value(&search_properties, "label"), "Find");
+    assert_eq!(value(&search_properties, "text"), "query");
 }

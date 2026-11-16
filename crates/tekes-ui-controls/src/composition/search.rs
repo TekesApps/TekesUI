@@ -1,5 +1,5 @@
-//! Search policy over the original editor and Button. SearchInput semantics
-//! require the matched controls/wire/native closure tracked by #101.
+//! Shared trailing Clear behavior for the original TextFieldContent editor.
+//! SearchFieldContent adds SearchInput semantics and captured Search commands.
 use super::*;
 use crate::{
     DraftRevision, ExternalSelection, ExternalUndo, ExternalValueResult, TextEditBaseline,
@@ -68,62 +68,48 @@ pub enum SearchCommandError {
     EmptyQuery,
 }
 
-/// One native text owner. Neither the clear action nor its semantic part owns
-/// another TextInput, focus state machine, undo history or query cache.
+/// Search policy over the original clearable TextFieldContent. One native text owner.
 #[derive(Debug)]
 pub struct SearchFieldContent {
     editor: TextFieldContent,
-    clear: Button,
-    editor_frame: Rect,
-    clear_frame: Rect,
-    clear_clip: Option<Rect>,
-    clear_captured: bool,
-    editor_captured: bool,
-    preserve_focus: bool,
-    focused: bool,
-    placeholder: Option<String>,
-    last_action: Option<SearchAction>,
 }
-
 impl SearchFieldContent {
     pub fn new(name: impl Into<String>, query: &str) -> Self {
         let mut editor = TextFieldContent::new(name, query);
         editor.show_metadata = false;
-        Self {
-            editor,
-            clear: Button::new("×").with_accessible_name("Clear"),
-            editor_frame: Rect::default(),
-            clear_frame: Rect::default(),
-            clear_clip: None,
-            clear_captured: false,
-            editor_captured: false,
-            preserve_focus: false,
-            focused: false,
-            placeholder: None,
-            last_action: None,
-        }
+        Self { editor }
     }
+}
+impl std::ops::Deref for SearchFieldContent {
+    type Target = TextFieldContent;
+    fn deref(&self) -> &Self::Target {
+        &self.editor
+    }
+}
+impl std::ops::DerefMut for SearchFieldContent {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.editor
+    }
+}
+impl TextFieldContent {
     pub fn query(&self) -> &str {
-        &self.editor.surface.input.text
+        &self.surface.input.text
     }
     pub fn input(&self) -> &TextInput {
-        &self.editor.surface.input
+        &self.surface.input
     }
     pub fn set_submit_policy(&mut self, policy: TextSubmitPolicy) {
-        self.editor.submit_policy = policy;
+        self.submit_policy = policy;
     }
     pub fn set_availability(&mut self, read_only: bool, disabled: bool) {
-        self.editor.surface.input.read_only = read_only;
-        self.editor.surface.input.disabled = disabled;
+        self.surface.input.read_only = read_only;
+        self.surface.input.disabled = disabled;
         self.sync_clear();
     }
-    /// Original Field/TextSurface validation presentation, independent of the
-    /// original submit policy and without a second validation engine.
     pub fn set_error(&mut self, error: Option<String>) {
-        self.editor.surface.error = error.is_some();
-        self.editor.field.error = error;
+        self.surface.error = error.is_some();
+        self.field.error = error;
     }
-    /// Host-owned copy, never inserted into the query or native text snapshot.
     pub fn set_placeholder(&mut self, placeholder: Option<String>) {
         self.placeholder = placeholder;
     }
@@ -135,8 +121,6 @@ impl SearchFieldContent {
         self.clear.set_accessible_name(Some(label));
         Ok(())
     }
-    /// Authorized external publication retains the original conflict/idempotency
-    /// policy, including readonly/disabled publication. It emits no user action.
     pub fn apply_query(
         &mut self,
         expected: &TextEditBaseline,
@@ -145,7 +129,6 @@ impl SearchFieldContent {
         undo: ExternalUndo,
     ) -> ExternalValueResult {
         let result = self
-            .editor
             .surface
             .apply_external_value(expected, value, selection, undo);
         if matches!(result, ExternalValueResult::Applied { .. }) {
@@ -161,13 +144,21 @@ impl SearchFieldContent {
         !self.input().read_only && !self.input().disabled && self.input().marked.is_none()
     }
     fn can_clear(&self) -> bool {
-        self.editable() && !self.query().is_empty()
+        self.clear_visible() && self.editable()
     }
     fn sync_clear(&mut self) {
         self.clear.button.state.disabled = !self.can_clear();
-        if self.clear.button.state.disabled {
+        // Public TextField consumers can publish directly through the original
+        // Surface while a Clear press is held. That press must not clear the
+        // replacement draft on release.
+        let replaced = self
+            .clear_baseline
+            .as_ref()
+            .is_some_and(|baseline| *baseline != self.surface.input.external_baseline());
+        if self.clear.button.state.disabled || replaced {
             self.clear.button.cancel();
             self.clear_captured = false;
+            self.clear_baseline = None;
         }
     }
     fn begin_delivery(&mut self) {
@@ -182,13 +173,13 @@ impl SearchFieldContent {
         let action = SearchAction {
             kind,
             query: self.query().to_owned(),
-            binding: ContentTextInput::local_binding(&self.editor.surface),
+            binding: ContentTextInput::local_binding(&self.surface),
         };
         let changed = if kind == SearchCommandKind::Clear {
             let len = self.input().len();
-            let changed = self.editor.surface.input.insert("", Some(0..len));
-            self.editor.surface.clauses.clear();
-            self.editor.surface.reveal();
+            let changed = self.surface.input.insert("", Some(0..len));
+            self.surface.clauses.clear();
+            self.surface.reveal();
             self.sync_clear();
             changed
         } else {
@@ -209,12 +200,13 @@ impl SearchFieldContent {
         response
     }
     fn clear_hit(&self, point: Point) -> bool {
-        self.clear_clip.is_some_and(|clip| clip.contains(point)) && !self.query().is_empty()
+        self.clear_clip.is_some_and(|clip| clip.contains(point)) && self.clear_visible()
     }
     fn cancel_gesture(&mut self) -> bool {
         let before = self.clear.button.state;
         self.clear.set_focus(false, false);
         self.clear_captured = false;
+        self.clear_baseline = None;
         self.editor_captured = false;
         self.preserve_focus = false;
         before != self.clear.button.state
@@ -255,7 +247,7 @@ impl SearchFieldContent {
                         focus_rect: None,
                     })
                 } else {
-                    let decision = self.editor.decide_action(request)?;
+                    let decision = self.decide_action(request)?;
                     let response = decision.response;
                     let focus = if response.consumed {
                         PreparedActionFocus::Owner
@@ -283,12 +275,12 @@ impl SearchFieldContent {
                 if !button.activated || self.clear.activations.checked_add(1).is_none() {
                     return None;
                 }
-                let input = &self.editor.surface.input;
+                let input = &self.surface.input;
                 let insert = input.prepare_insert("", Some(0..input.len()))?;
                 let action = SearchAction {
                     kind: SearchCommandKind::Clear,
                     query: self.query().to_owned(),
-                    binding: ContentTextInput::local_binding(&self.editor.surface),
+                    binding: ContentTextInput::local_binding(&self.surface),
                 };
                 Some(PreparedSearchAction {
                     effect: PreparedSearchEffect::ClearAccessibility {
@@ -306,7 +298,7 @@ impl SearchFieldContent {
                 })
             }
             super::action_preparation::OwnedActionRequest::Accessibility(_, _) => {
-                let decision = self.editor.decide_action(request)?;
+                let decision = self.decide_action(request)?;
                 let response = decision.response;
                 let focus = if response.consumed {
                     PreparedActionFocus::Owner
@@ -331,7 +323,7 @@ impl SearchFieldContent {
                 if decision.response.capture_pointer {
                     self.editor_captured = true;
                 }
-                self.editor.apply_action(editor);
+                self.apply_action(editor);
                 self.sync_clear();
             }
             PreparedSearchEffect::ClearPointer(button) => {
@@ -339,6 +331,9 @@ impl SearchFieldContent {
                 self.preserve_focus = true;
                 self.clear.button.apply_content_action(button);
                 self.clear_captured = decision.response.capture_pointer;
+                self.clear_baseline = self
+                    .clear_captured
+                    .then(|| self.surface.input.external_baseline());
             }
             PreparedSearchEffect::ClearAccessibility {
                 button,
@@ -350,21 +345,32 @@ impl SearchFieldContent {
                 self.begin_delivery();
                 self.clear.button.apply_content_action(button);
                 self.clear.activations = activations + 1;
-                self.editor.surface.input.apply_insert(insert);
-                self.editor.surface.clauses.clear();
-                self.editor.surface.reveal();
+                self.surface.input.apply_insert(insert);
+                self.surface.clauses.clear();
+                self.surface.reveal();
                 self.sync_clear();
                 self.last_action = Some(action);
             }
         }
     }
+    /// Enable the built-in trailing Clear action. Enabled by default for
+    /// nonempty single-line fields; multiline/document content never show it.
+    pub fn clear_button(mut self, enabled: bool) -> Self {
+        self.clear_enabled = enabled;
+        self
+    }
+    fn clear_visible(&self) -> bool {
+        self.clear_enabled
+            && !self.surface.input.multiline
+            && self.surface.presentation == crate::TextSurfacePresentation::Field
+            && !self.query().is_empty()
+    }
 }
-
-impl Component for SearchFieldContent {
+impl Component for TextFieldContent {
     #[cfg(feature = "inspection")]
     fn inspection_properties(&self) -> Option<Vec<InspectionProperty>> {
-        let mut properties = self.editor.inspection_properties()?;
-        properties[0] = InspectionProperty::new("component", "SearchFieldContent");
+        let mut properties = self.editor_inspection_properties()?;
+        properties[0] = InspectionProperty::new("component", "TextFieldContent");
         properties.push(InspectionProperty::new(
             "placeholder",
             self.placeholder.as_deref().unwrap_or(""),
@@ -406,26 +412,23 @@ impl Component for SearchFieldContent {
         ActionTransactionCompatibility::StableHooks
     }
     fn validate(&self) -> Result<(), CompositionError> {
-        if self.editor.field.label.trim().is_empty() {
-            return Err(CompositionError::EmptyAccessibleName);
-        }
         self.clear.validate()?;
-        self.editor.validate()
+        Ok(())
     }
     fn requires_text_services(&self) -> bool {
-        self.editor.requires_text_services()
+        self.editor_requires_text_services()
     }
     fn text_surface(&self) -> Option<&TextSurface> {
-        self.editor.text_surface()
+        self.editor_text_surface()
     }
     fn composing(&self) -> bool {
-        self.editor.composing()
+        self.editor_composing()
     }
     fn focusable(&self) -> bool {
-        self.editor.focusable()
+        self.editor_focusable()
     }
     fn set_focus(&mut self, focused: bool, visible: bool) {
-        self.editor.set_focus(focused, visible);
+        self.editor_set_focus(focused, visible);
         self.focused = focused;
         if !focused {
             self.cancel_gesture();
@@ -434,24 +437,21 @@ impl Component for SearchFieldContent {
     fn lifecycle(&mut self, event: Lifecycle) {
         self.last_action = None;
         self.cancel_gesture();
-        self.editor.lifecycle(event);
+
         if event == Lifecycle::Unmounted {
-            self.editor.set_focus(false, false);
+            self.editor_set_focus(false, false);
             self.focused = false;
             self.clear_clip = None;
         }
     }
     fn semantics(&self) -> ContentSemantics {
-        let mut semantics = self.editor.semantics();
-        // Intentionally requires #101. Never substitute ordinary TextInput.
-        semantics.role = ContentRole::SearchInput;
-        semantics
+        self.editor_semantics()
     }
-    fn semantic_frame(&self, frame: Rect) -> Rect {
-        frame
+    fn semantic_frame(&self, _: Rect) -> Rect {
+        self.surface.outer
     }
     fn semantic_parts(&self) -> Vec<SemanticPart> {
-        if self.query().is_empty() {
+        if !self.clear_visible() {
             return Vec::new();
         }
         let Some(frame) = self.clear_clip else {
@@ -483,11 +483,7 @@ impl Component for SearchFieldContent {
         }
     }
     fn action_payload(&self, _: ContentActionKind) -> Option<ContentActionPayload> {
-        self.last_action.clone().map(ContentActionPayload::Search)
-    }
-    fn action_payload_current(&self, payload: &ContentActionPayload) -> bool {
-        matches!(payload, ContentActionPayload::Search(action)
-            if self.editable() && action.binding == ContentTextInput::local_binding(&self.editor.surface))
+        None
     }
     fn accessibility_action(
         &mut self,
@@ -506,84 +502,67 @@ impl Component for SearchFieldContent {
                 ContentResponse::default()
             };
         }
-        let response = self.editor.accessibility_action(part, action);
+        let response = self.editor_accessibility_action(part, action);
         self.finish_editor(response)
     }
     fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
-        let clear = self.clear.measure(text, available).size;
-        let reserved = if self.query().is_empty() {
-            0.
-        } else {
-            clear.width + tekes_ui_tokens::Spacing::Regular.value()
-        };
-        let editor = self
-            .editor
-            .measure(
-                text,
-                Size::new((available.width - reserved).max(0.), available.height),
-            )
-            .size;
-        MeasuredChild::new(Size::new(available.width, editor.height.max(clear.height)))
+        self.editor_measure(text, available)
     }
     fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
-        // The outer Search allocation stays stable. Only a visible Clear
-        // action reserves a trailing slot; an empty editor fills its allocation.
-        let clear_size = self.clear.measure(text, frame.size).size;
-        let width = if self.query().is_empty() {
+        // The original editor owns the entire input chrome. Its text/selection/
+        // IME viewport alone reserves the internal trailing action's space.
+        let slot = self.field_layout(text, frame, clip).slot;
+        let inset = tekes_ui_tokens::Spacing::Micro.value();
+        let edge = (slot.size.height.min(frame.size.height) - 2. * inset).max(0.);
+        let width = if !self.clear_visible() {
             0.
         } else {
-            clear_size.width.min(frame.size.width.max(0.))
+            edge.min((slot.size.width - 2. * inset).max(0.))
         };
         self.clear_frame = Rect::new(
-            frame.max_x() - width,
-            frame.min_y(),
+            slot.max_x() - inset - width,
+            slot.min_y() + inset,
             width,
-            clear_size.height.min(frame.size.height.max(0.)),
+            edge,
         );
         self.clear_clip = self
             .clear_frame
             .intersection(&clip)
             .filter(|r| !r.is_empty());
-        // Existing regular spacing keeps the original TextSurface focus-ring
-        // outsets clear of the independent Button's chrome and hit frame.
-        let gap = if self.query().is_empty() {
-            0.
+        self.surface.trailing_action_width = if width > 0. { width + inset } else { 0. };
+        self.editor_frame = frame;
+        self.editor_arrange(text, frame, clip);
+        self.clear.button.frame_policy = crate::ButtonFramePolicy::Exact;
+        if self.clear_clip.is_some() {
+            self.clear.arrange(text, self.clear_frame, clip);
         } else {
-            tekes_ui_tokens::Spacing::Regular
-                .value()
-                .min((frame.size.width - width).max(0.))
-        };
-        self.editor_frame = Rect::new(
-            frame.min_x(),
-            frame.min_y(),
-            (frame.size.width - width - gap).max(0.),
-            frame.size.height,
-        );
-        self.editor.arrange(text, self.editor_frame, clip);
-        self.clear.arrange(text, self.clear_frame, clip);
+            // Empty, multiline and fully clipped fields have no Clear slot.
+            // Do not ask a text backend to measure an invisible zero-width label.
+            self.clear.button.clear_layout();
+            self.clear_captured = false;
+            self.clear_baseline = None;
+        }
     }
     fn prepare_text_input(&mut self, text: &mut dyn ButtonTextRenderer, _: Rect, clip: Rect) {
-        self.editor
-            .prepare_text_input(text, self.editor_frame, clip);
+        self.editor_prepare_text_input(text, self.editor_frame, clip);
     }
     fn paint(
         &mut self,
         scene: &mut Scene,
         text: &mut dyn ButtonTextRenderer,
-        _: Rect,
+        frame: Rect,
         clip: Rect,
         theme: ContentTheme,
     ) {
         self.sync_clear();
-        if !self.query().is_empty() {
+        self.editor_paint(scene, text, frame, clip, theme);
+        if self.clear_visible() && self.clear_clip.is_some() {
             self.clear.paint(scene, text, self.clear_frame, clip, theme);
         }
-        self.editor
-            .paint(scene, text, self.editor_frame, clip, theme);
         if self.query().is_empty()
             && !self.focused
             && let Some(placeholder) = &self.placeholder
-            && let Some(visible) = self.editor.surface.inner.intersection(&clip)
+            && let Some(visible) = self.surface.inner.intersection(&clip)
         {
             let ink = tekes_ui_tokens::surface_palette::resolve_surface_with_options(
                 theme.palette,
@@ -595,7 +574,7 @@ impl Component for SearchFieldContent {
                     "rest"
                 },
                 tekes_ui_tokens::surface_palette::SurfaceOptions {
-                    error: self.editor.surface.error,
+                    error: self.surface.error,
                     read_only: self.input().read_only,
                 },
             )
@@ -605,8 +584,8 @@ impl Component for SearchFieldContent {
             // The original Search placeholder is a single unwrapped label,
             // clipped to the real editor interior, never a second text owner.
             if let Some(host) = text.text_surface_host() {
-                let paragraph = host.shape_surface(placeholder, self.editor.surface.role, None);
-                let inner = self.editor.surface.inner;
+                let paragraph = host.shape_surface(placeholder, self.surface.role, None);
+                let inner = self.surface.inner;
                 let origin = Point::new(
                     inner.min_x().round(),
                     (inner.center().y - paragraph.height as f32 * 0.5).round(),
@@ -634,9 +613,11 @@ impl Component for SearchFieldContent {
             let mut response = self.clear.pointer_event(pointer);
             if response.capture_pointer {
                 self.clear_captured = true;
+                self.clear_baseline = Some(self.surface.input.external_baseline());
             }
             if pointer.phase == PointerPhase::Up {
                 self.clear_captured = false;
+                self.clear_baseline = None;
             }
             if response.activated {
                 let accepted = self.accept(SearchCommandKind::Clear);
@@ -650,7 +631,7 @@ impl Component for SearchFieldContent {
         // response; capture, focus and activation stay with the routed owner.
         let clear_changed =
             pointer.phase == PointerPhase::Move && self.clear.pointer_event(pointer).changed;
-        let mut response = self.editor.pointer_event(pointer);
+        let mut response = self.editor_pointer_event(pointer);
         response.changed |= clear_changed;
         if response.capture_pointer {
             self.editor_captured = true;
@@ -662,7 +643,7 @@ impl Component for SearchFieldContent {
     }
     fn key_event(&mut self, key: &ContentKeyEvent) -> ContentResponse {
         self.begin_delivery();
-        let response = self.editor.key_event(key);
+        let response = self.editor_key_event(key);
         self.finish_editor(response)
     }
     fn event(&mut self, event: &ContentEvent) -> ContentResponse {
@@ -689,9 +670,177 @@ impl Component for SearchFieldContent {
         let clear_changed = matches!(event, ContentEvent::Cancel) && self.cancel_gesture();
         // Keep legacy raw Key and native TextCommand behavior in the original
         // editor. In particular raw Key Enter must not enable submission.
-        let mut response = self.editor.event(event);
+        let mut response = self.editor_event(event);
         response.changed |= clear_changed;
         self.finish_editor(response)
+    }
+    fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
+        CurveSubtreeCapability::Local
+    }
+    fn prepared_effects_work(&self, n: usize) -> Result<usize, PreparedEffectsError> {
+        PreparedEffects::local_work(n)?
+            .checked_add(
+                self.surface
+                    .input
+                    .text
+                    .len()
+                    .checked_add(self.field.label.len())
+                    .and_then(|v| v.checked_add(self.field.message().len()))
+                    .and_then(|v| v.checked_mul(n.max(1)))
+                    .ok_or(PreparedEffectsError::CounterCapacity)?,
+            )
+            .ok_or(PreparedEffectsError::CounterCapacity)
+    }
+    fn prepare_effects(
+        &self,
+        hooks: &[PreparedHook],
+    ) -> Result<PreparedEffects, PreparedEffectsError> {
+        let mut focused = self.focused;
+        let mut unmark = false;
+        for h in hooks {
+            if let PreparedHookKind::Focus { focused: next, .. } = h.kind {
+                if focused && !next {
+                    unmark = true;
+                }
+                focused = next;
+            }
+        }
+        if !self.surface.input.preflight_unmark(unmark) {
+            return Err(PreparedEffectsError::CounterCapacity);
+        }
+        Ok(PreparedEffects::local(self, hooks))
+    }
+    fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
+        TableTransactionCompatibility::StableHooks
+    }
+}
+impl Component for SearchFieldContent {
+    #[cfg(feature = "inspection")]
+    fn inspection_properties(&self) -> Option<Vec<InspectionProperty>> {
+        let mut properties = self.editor.inspection_properties()?;
+        properties[0] = InspectionProperty::new("component", "SearchFieldContent");
+        Some(properties)
+    }
+    fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
+        let owned = super::action_preparation::OwnedActionRequest::read(request);
+        let recognized_clear = match &owned {
+            super::action_preparation::OwnedActionRequest::Pointer(event) => {
+                let routed = event.routing_event();
+                match routed.as_ref() {
+                    ContentEvent::PointerDown(point) => {
+                        !matches!(event, ContentEvent::Pointer(pointer) if !pointer.is_primary())
+                            && (self.clear_captured
+                                || !self.editor_captured && self.clear_hit(*point))
+                    }
+                    _ => false,
+                }
+            }
+            super::action_preparation::OwnedActionRequest::Accessibility(
+                Some(0),
+                AccessibilityAction::Press,
+            ) => self.clear_clip.is_some(),
+            _ => false,
+        };
+        if recognized_clear && self.decide_prepared_action(&owned).is_none() {
+            return super::action_preparation::rejected();
+        }
+        super::action_preparation::prepare_original(
+            self,
+            request,
+            |owner, request| owner.editor.decide_prepared_action(request),
+            |owner, decision| owner.editor.apply_prepared_action(decision),
+            |decision| (decision.response, decision.focus),
+        )
+    }
+    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
+        self.editor.action_transaction_compatibility()
+    }
+    fn validate(&self) -> Result<(), CompositionError> {
+        if self.editor.field.label.trim().is_empty() {
+            return Err(CompositionError::EmptyAccessibleName);
+        }
+        self.editor.validate()
+    }
+    fn requires_text_services(&self) -> bool {
+        self.editor.requires_text_services()
+    }
+    fn text_surface(&self) -> Option<&TextSurface> {
+        self.editor.text_surface()
+    }
+    fn composing(&self) -> bool {
+        self.editor.composing()
+    }
+    fn focusable(&self) -> bool {
+        self.editor.focusable()
+    }
+    fn set_focus(&mut self, focused: bool, visible: bool) {
+        self.editor.set_focus(focused, visible)
+    }
+    fn lifecycle(&mut self, event: Lifecycle) {
+        self.editor.lifecycle(event)
+    }
+    fn semantics(&self) -> ContentSemantics {
+        let mut semantics = self.editor.semantics();
+        // Intentionally requires #101. Never substitute ordinary TextInput.
+        semantics.role = ContentRole::SearchInput;
+        semantics
+    }
+    fn semantic_frame(&self, frame: Rect) -> Rect {
+        frame
+    }
+    fn semantic_parts(&self) -> Vec<SemanticPart> {
+        self.editor.semantic_parts()
+    }
+    fn semantic_part_preserves_activation_focus(&self, part: usize) -> bool {
+        self.editor.semantic_part_preserves_activation_focus(part)
+    }
+    fn preserves_activation_focus(&self) -> bool {
+        self.editor.preserves_activation_focus()
+    }
+    fn action_kinds(&self, response: &ContentResponse) -> Vec<ContentActionKind> {
+        self.editor.action_kinds(response)
+    }
+    fn action_payload(&self, _: ContentActionKind) -> Option<ContentActionPayload> {
+        self.last_action.clone().map(ContentActionPayload::Search)
+    }
+    fn action_payload_current(&self, payload: &ContentActionPayload) -> bool {
+        matches!(payload, ContentActionPayload::Search(action)
+            if self.editable() && action.binding == ContentTextInput::local_binding(&self.editor.surface))
+    }
+    fn accessibility_action(
+        &mut self,
+        part: Option<usize>,
+        action: &AccessibilityAction,
+    ) -> ContentResponse {
+        self.editor.accessibility_action(part, action)
+    }
+    fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
+        self.editor.measure(text, available)
+    }
+    fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
+        self.editor.arrange(text, frame, clip)
+    }
+    fn prepare_text_input(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
+        self.editor.prepare_text_input(text, frame, clip)
+    }
+    fn paint(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut dyn ButtonTextRenderer,
+        frame: Rect,
+        clip: Rect,
+        theme: ContentTheme,
+    ) {
+        self.editor.paint(scene, text, frame, clip, theme)
+    }
+    fn pointer_event(&mut self, pointer: &PointerEvent) -> ContentResponse {
+        self.editor.pointer_event(pointer)
+    }
+    fn key_event(&mut self, key: &ContentKeyEvent) -> ContentResponse {
+        self.editor.key_event(key)
+    }
+    fn event(&mut self, event: &ContentEvent) -> ContentResponse {
+        self.editor.event(event)
     }
 }
 
@@ -806,9 +955,7 @@ impl ContentHost {
             .or_else(|| hit(self.scope(), point));
         target.is_some_and(|node| {
             self.focused != Some(node.id)
-                && node
-                    .component::<SearchFieldContent>()
-                    .is_some_and(|s| s.clear_captured || s.clear_hit(point))
+                && clearable_field(node).is_some_and(|s| s.clear_captured || s.clear_hit(point))
         })
     }
     pub(super) fn search_ax_blocked(
@@ -824,6 +971,11 @@ impl ContentHost {
             && self
                 .scope()
                 .find_active(id)
-                .is_some_and(|n| n.component::<SearchFieldContent>().is_some())
+                .is_some_and(|n| clearable_field(n).is_some())
     }
+}
+
+fn clearable_field(node: &Content) -> Option<&TextFieldContent> {
+    node.component::<TextFieldContent>()
+        .or_else(|| node.component::<SearchFieldContent>().map(|s| &s.editor))
 }

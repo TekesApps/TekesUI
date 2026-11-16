@@ -232,6 +232,71 @@ fn text_cursor_regions_follow_visible_text_viewports_without_focusing_or_editing
 }
 
 #[test]
+fn combo_cursor_uses_original_text_viewport_and_excludes_sibling_button() {
+    const COMBO: ComponentId = ComponentId(211);
+    const BUTTON: ComponentId = ComponentId(212);
+    let mut host = ContentHost::new(Content::new(
+        ComponentId(210),
+        StackContent {
+            model: Stack {
+                axis: Axis::Vertical,
+                gap: 4.,
+            },
+            children: vec![
+                Content::new(COMBO, ComboBoxContent::new("Choose", vec!["Alpha".into()])),
+                Content::new(BUTTON, Button::new("Apply")),
+            ],
+            flexible_child: None,
+        },
+    ))
+    .unwrap();
+    let frame = Rect::new(0., 0., 280., 160.);
+    let clip = Rect::new(16., 0., 200., 160.);
+    host.render(
+        &mut Scene::new(),
+        &mut Text,
+        frame,
+        clip,
+        Theme::LIGHT.into(),
+    )
+    .unwrap();
+    let combo = host
+        .get(COMBO)
+        .unwrap()
+        .component::<ComboBoxContent>()
+        .unwrap();
+    assert_eq!(combo.semantics().role, ContentRole::ComboBox);
+    let surface = combo.text_surface();
+    let baseline = surface.input.external_baseline();
+    let expected = surface.inner.intersection(&clip).unwrap();
+    assert_eq!(expected.intersection(&clip), Some(expected));
+    let regions = host.text_cursor_regions();
+    assert_eq!(regions, vec![expected]);
+    assert!(
+        regions
+            .iter()
+            .all(|region| !region.contains(host.get(BUTTON).unwrap().frame().center()))
+    );
+    host.event(&ContentEvent::PointerMove(expected.center()));
+    assert_eq!(host.focused(), None);
+    assert_eq!(
+        host.text_surface(COMBO).unwrap().input.external_baseline(),
+        baseline
+    );
+
+    host.set_window_active(false);
+    assert!(host.text_cursor_regions().is_empty());
+    host.set_window_active(true);
+    assert_eq!(host.text_cursor_regions(), vec![expected]);
+    host.get_mut(COMBO)
+        .unwrap()
+        .component_mut::<ComboBoxContent>()
+        .unwrap()
+        .set_disabled(true);
+    assert!(host.text_cursor_regions().is_empty());
+}
+
+#[test]
 fn plain_document_delegates_precise_and_wheel_scroll_to_its_single_parent() {
     let text = "History 中文😀 e\u{301}\n".repeat(100);
     let body = Content::new(

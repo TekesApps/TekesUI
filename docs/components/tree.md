@@ -1,8 +1,8 @@
 # Tree
 
-TreeContent 是稳定节点 key 的有限树。原 Tree/TreeView 负责展开、选择和行输入；消费者负责节点关系和业务数据。
+Use TreeContent for a finite hierarchy with stable node keys, expansion and selection.
 
-## 短用法
+## Creating the content
 
 ```rust
 use tekes_ui_controls::{composition::*, extended::{KeyedTreeNode, TreeDatasetKey, TreeNodeKey}};
@@ -13,16 +13,14 @@ let tree = TreeContent::new("Entities", TreeDatasetKey(1), vec![TreeContentNode 
 }]).unwrap();
 ```
 
-## 更新和意图
+## State and events
 
-TreeContentNode 分开实体 key、父 key、row_id 和装饰内容。连续存在的节点应保留 row_id；display 的 Keep、DefaultLabel、Replace 表示明确的显示更新。挂载后使用 `host.replace_tree_nodes(...)` 执行结构事务。
+TreeContentNode separates key, parent key, row_id and display content. Keep row_id for continuing entities. Keep, DefaultLabel and Replace describe display updates. Use host.replace_tree_nodes for mounted structural changes. selected_key, select_key and set_expanded_key access selection and expansion.
 
-`selected_key()` 读取选择，`select_key` 与 `set_expanded_key` 提供状态操作。Host 的 TreeIntent 包含 dataset、key、kind、selected_key；kind 区分选择、激活和展开。`intent_is_current` 可用于延迟处理时判断声明有效性。
+## Composition and limitations
 
-树行装饰只允许被动内容，不能把独立编辑器嵌进去同时抢行输入。展开不自动从服务器加载子项，滚动属于父视口；无效父关系、身份变化及不支持的装饰须按 Result 处理，不忽略错误继续展示旧数据为成功。
+TreeIntent captures dataset, key, kind and selected_key. It distinguishes selection, activation and expansion; intent_is_current checks delayed use. Row decorations are passive. A parent supplies scrolling and the application supplies children; expanding does not fetch data. Handle invalid parent relations and unsupported decorations as errors.
 
-## 源码与消费者
+## Related APIs
 
-定义：`crates/tekes-ui-controls/src/composition/tree.rs`。现有消费路径：`examples/composition-consumer/src/tree_content.rs`。构造片段不包含完整窗口接入；完整消费者运行及原生输入、视觉、无障碍验收仍需独立证据。
-
-当前片段验证：Check329 已对这 45 份手册中的 46 段原文 Rust 代码完成 `--emit=metadata` 类型检查，通过但未链接、未运行；本文代码块保持不变，复用该结果。此证据不代替 GUI、物理 IME、VoiceOver 或运行时验收。收据位于协调工作区 `outputs/gallery-apphost-upgrade-20261114/manual-snippets/RESULT.json`，提取源为同目录 `manual-snippets.rs`。
+[List](list.md)

@@ -459,3 +459,9 @@ Gallery diagnostic renderer. `--snapshot` and explicit legacy selftest/performan
 environment entry points retain their original implementation and evidence scope.
 The source candidate version is 0.3.31; this does not replace the installed v0.3.30
 or assert completion of native acceptance, required CI, Release or Dock delivery.
+
+### English consumer manuals and shared source coloring (#308, 2026-11-16)
+
+All 45 registered component manuals and the supplemental Ticking Number manual use English consumer guidance with supported Markdown headings, paragraphs, bullets, simple links and fenced examples. Original Rust examples are preserved. Validation receipts and delivery bookkeeping belong to design/Issue history rather than reader prose; the prior manuals are archived in the coordination artifact documents/original-manuals.json.
+
+Documents retains the registry → build bundle → ScrollContent(RichContent(RichDocument::from_markdown)) path. RichContent supplies syntax coloring through existing shared tokens and retained glyph geometry. Gallery owns neither a lexer nor a second text layout. Unknown languages remain plain. This change does not add Markdown projection editing (#132). Native observation and CI remain separate acceptance evidence.

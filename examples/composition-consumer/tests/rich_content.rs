@@ -651,3 +651,144 @@ fn mixed_reading_prepend_expand_and_reflow_use_existing_stable_item_transaction(
         other => panic!("expected item-local history: {other:?}"),
     }
 }
+
+#[test]
+fn code_ink_uses_theme_tokens_without_changing_shaped_geometry_or_copy() {
+    let source = "let greeting = \"你好🦀\"; // comment\nlet n = 42;";
+    let id = ComponentId(901);
+    for theme in [Theme::LIGHT, Theme::DARK] {
+        let make = |language: &str| {
+            let document = RichDocument::from_markdown(&format!("```{language}\n{source}\n```"));
+            ContentHost::new(Content::new(
+                id,
+                RichContent::new("syntax", 1, document).unwrap(),
+            ))
+            .unwrap()
+        };
+        let mut colored = make("rust");
+        let mut plain = make("unknown-language");
+        let scene = paint(&mut colored, 300., 1., theme);
+        let plain_scene = paint(&mut plain, 300., 1., theme);
+        assert_eq!(
+            colored.text_surface(id).unwrap().paragraph,
+            plain.text_surface(id).unwrap().paragraph
+        );
+        for token in [
+            "c-code-keyword",
+            "c-code-string",
+            "c-code-number",
+            "c-code-comment",
+        ] {
+            let color = tekes_ui_tokens::Palette::from(theme).color(token).unwrap();
+            assert!(scene.primitives().iter().any(|primitive| matches!(primitive, Primitive::Glyphs(run) if run.color == color && !run.glyphs.is_empty())), "missing {token}");
+        }
+        let count = |scene: &Scene| {
+            scene
+                .primitives()
+                .iter()
+                .map(|primitive| match primitive {
+                    Primitive::Glyphs(run) => run.glyphs.len(),
+                    _ => 0,
+                })
+                .sum::<usize>()
+        };
+        assert_eq!(
+            count(&scene),
+            count(&plain_scene),
+            "each original glyph is painted once"
+        );
+        let length = colored
+            .text_surface(id)
+            .unwrap()
+            .input
+            .text
+            .encode_utf16()
+            .count();
+        colored.accessibility_action(id, None, AccessibilityAction::SetSelection(0..length));
+        assert_eq!(
+            colored.text_surface(id).unwrap().input.selected_text(),
+            source
+        );
+    }
+}
+
+#[test]
+fn fenced_code_surface_contains_original_text_and_stays_below_selection() {
+    let id = ComponentId(902);
+    let source = "Before\n\n```rust\nlet greeting = \"你好🦀\";\nlet count = 42;\n```\n\nAfter";
+    let inset = tekes_ui_tokens::proposal::metric("spacing", "space-button-md-inset").unwrap();
+    for theme in [Theme::LIGHT, Theme::DARK] {
+        for width in [220., 560.] {
+            let document = RichDocument::from_markdown(source);
+            let code_range = document.blocks()[1].display();
+            let expected_copy = document.text().to_owned();
+            let mut host = ContentHost::new(Content::new(
+                id,
+                RichContent::new("code-surface", 1, document).unwrap(),
+            ))
+            .unwrap();
+            paint(&mut host, width, 1., theme);
+            host.accessibility_action(
+                id,
+                None,
+                AccessibilityAction::SetSelection(code_range.clone()),
+            );
+            let scene = paint(&mut host, width, 1., theme);
+            let rich = host.get(id).unwrap().component::<RichContent>().unwrap();
+            let geometry = rich.block_geometry();
+            let code = &geometry[1];
+            let surface = host.text_surface(id).unwrap();
+            let paragraph = surface.paragraph.as_ref().unwrap();
+            let origin = surface.origin();
+            let lines: Vec<_> = paragraph
+                .lines
+                .iter()
+                .filter(|line| {
+                    line.utf16.start < code_range.end && line.utf16.end > code_range.start
+                })
+                .collect();
+            let first = lines.first().unwrap();
+            let last = lines.last().unwrap();
+            assert!((origin.y + first.top as f32 - code.frame.min_y() - inset).abs() < 0.01);
+            assert!(
+                (code.frame.max_y() - origin.y - (last.top + last.height) as f32 - inset).abs()
+                    < 0.01
+            );
+            assert!(geometry[0].frame.max_y() <= code.frame.min_y());
+            assert!(code.frame.max_y() <= geometry[2].frame.min_y());
+            for line in lines {
+                assert!(line.carets.iter().all(|(_, x)| *x >= inset as f64));
+            }
+            let palette = tekes_ui_tokens::Palette::from(theme);
+            let background = scene.primitives().iter().position(|primitive| {
+                matches!(primitive, Primitive::Quad(quad) if quad.fill == palette.color("code-surface").unwrap() && quad.rect == code.frame)
+            }).expect("shared code surface at original block geometry");
+            let selection = scene.primitives().iter().position(|primitive| {
+                matches!(primitive, Primitive::Quad(quad) if quad.fill == palette.color("text-selection").unwrap())
+            }).expect("selection remains painted");
+            assert!(
+                background < selection,
+                "code background must not cover selection"
+            );
+            assert_eq!(
+                surface.input.selected_text(),
+                "let greeting = \"你好🦀\";\nlet count = 42;"
+            );
+            assert_eq!(surface.input.text, expected_copy);
+            assert_eq!(rich.document().source(), source);
+            let query = host.semantic_text_layout_snapshot(id, None).unwrap();
+            for line in &paragraph.lines {
+                for (index, x) in &line.carets {
+                    assert!(
+                        query.carets.iter().any(|(i, r)| {
+                            i == index
+                                && (r.min_x() - origin.x - *x as f32).abs() < 0.01
+                                && (r.min_y() - origin.y - line.top as f32).abs() < 0.01
+                        }),
+                        "native text query uses the padded retained layout"
+                    );
+                }
+            }
+        }
+    }
+}
