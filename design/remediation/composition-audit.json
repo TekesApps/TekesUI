@@ -4960,6 +4960,17 @@
         "source": "Reviewed static PR200-compatible Search/Select plus Settings207 candidate;391 classified paths. Exact candidate sourceSHA/anchors are authority. Original611a/70ee/7414 programs retain identity. New candidate has not run Cargo/CI/native.",
         "current_review_scope": "PR200 published8 recovered families plus Search/Select2;391 publicpaths, unchanged45components/5patterns/2examples. Collections49/Media5 and AX205 production excluded."
       }
+    },
+    {
+      "date": "2026-11-16",
+      "issue": 305,
+      "reviewed_paths": [
+        "crates/tekes-ui-app-host/src/window_settings.rs",
+        "crates/tekes-ui-settings/src/sidebar.rs"
+      ],
+      "scope": "Remove duplicated Settings sidebar inset; fixed header uses existing padded Stack and canonical Button content inset matching List. Preserve List/token defaults and mounted search/back state.",
+      "verification": "Check392 pinned header/search four tests passed; native separate.",
+      "capability_promotion": false
     }
   ]
 }

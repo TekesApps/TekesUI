@@ -960,3 +960,11 @@ Settings inherits the same source while retaining its own appearance. Consumers
 commit explicit palette changes to this source; ordinary local components keep
 receiving the existing Host theme. This preserves one application color source
 without turning paint into a settings mutation or introducing another input owner.
+
+## 2026-11-16: Main and Settings navigation leading alignment (#305)
+
+Both navigation trees pass the full toolbar-safe body to the existing sidebar owner. `ListContent::scrollable` owns the single `Spacing::Loose` document inset (16pt); AppHost must not add a second inset around Settings navigation. Group captions and item backgrounds therefore begin 16pt from the body edge in both Main and Settings. Settings forms retain their separate existing layout.
+
+The fixed Back/Search header uses the same document inset through the existing padded Stack, outside the scrolling owner. Its original distributed header and mounted controls are retained, so expanded search still fills that entire header and focus loss restores the same Back/Search instances. Back uses the ordinary Body Button content inset (`Spacing::Relaxed`, 12pt), matching the List item content inset: Back icon and unadorned item text begin at 28pt from the body edge. The Back label follows its icon and Tight gap; no icon slot is added to text-only navigation items. This distinguishes outer viewport, item/background edge, and content leading rather than aligning the icon to the viewport. No global List, form-row or token values change.
+
+Affected CPU checks are the existing AppHost pinned-header/search regressions and Gallery navigation geometry regression. Native Main/Settings comparison remains a separate acceptance requirement in [#305](https://github.com/TekesApps/TekesUI/issues/305).
