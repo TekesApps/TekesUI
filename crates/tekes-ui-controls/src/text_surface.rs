@@ -44,6 +44,33 @@ pub trait TextSurfaceTextRenderer {
 /// Optional application text service for composed editable controls. The host
 /// retains its font backend; TextSurface retains editing and geometry.
 pub trait TextSurfaceHost: TextSurfaceTextRenderer {
+    /// Optional system-font paragraph at the final logical point size. The caller
+    /// has already applied typography scaling; no role minimum or second scale
+    /// is added. Glyphs use this host's existing font registry and paint backend.
+    fn shape_system_text(
+        &mut self,
+        _text: &str,
+        _final_logical_point_size: f32,
+        _width: Option<f32>,
+    ) -> Option<Rc<Paragraph>> {
+        None
+    }
+    /// System-font paragraph with an explicit weight and final point size.
+    /// Older backends can retain normal-weight support, but must not silently
+    /// substitute it for a requested heading or metadata weight.
+    fn shape_system_text_with_weight(
+        &mut self,
+        text: &str,
+        final_logical_point_size: f32,
+        weight: u16,
+        width: Option<f32>,
+    ) -> Option<Rc<Paragraph>> {
+        if weight == 400 {
+            self.shape_system_text(text, final_logical_point_size, width)
+        } else {
+            None
+        }
+    }
     /// Supplied by the native text service's blink timer, not a second component clock.
     fn caret_visible(&self) -> bool {
         true

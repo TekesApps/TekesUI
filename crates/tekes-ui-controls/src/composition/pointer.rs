@@ -61,6 +61,12 @@ impl PointerEvent {
     }
 }
 impl ContentEvent {
+    pub(super) fn pointer_button(&self) -> PointerButton {
+        match self {
+            Self::Pointer(p) => p.button.unwrap_or(PointerButton::Primary),
+            _ => PointerButton::Primary,
+        }
+    }
     pub(super) fn routing_event(&self) -> Cow<'_, ContentEvent> {
         match self {
             Self::Pointer(p) => Cow::Owned(p.routing_event()),

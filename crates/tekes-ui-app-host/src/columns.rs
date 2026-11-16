@@ -2,11 +2,25 @@
 //! process containers retain the compiled module registry and isolated transport.
 use anyhow::Result;
 use tekes_ui_controls::{
-    ButtonTextRenderer,
-    composition::{Content, ContentActionRecord, ContentEvent, ContentHost, ContentResponse},
+    ButtonTextRenderer, ControlMotionContext,
+    composition::{
+        Content, ContentActionRecord, ContentEvent, ContentHost, ContentResponse, PointerEvent,
+    },
 };
 use tekes_ui_scene::{Rect, Scene};
 use tekes_ui_tokens::Palette;
+
+/// Resource services for the current window render. `frame` and `clip` are the
+/// root allocation, not the measured geometry of a descendant component.
+/// Resource owners must scope registrations to `renderer.resource_identity()`.
+pub struct ContainerRenderContext<'a> {
+    pub renderer: &'a mut tekes_ui_render::Renderer,
+    pub frame: Rect,
+    pub clip: Rect,
+    pub scale: f32,
+    pub motion: Option<ControlMotionContext>,
+    pub palette: Palette,
+}
 
 /// Borrow a current original host for one operation. Shared application state
 /// can expose its own host without cloning controls or leaking RefCell guards.
@@ -16,10 +30,30 @@ pub trait ContainerContent {
     /// Input and native/AX queries do not call this hook. Do not render or advance
     /// another host here; the following render owns layout and painting.
     fn prepare_for_render(&mut self) {}
+    /// Prepare renderer-owned resources before the original host lays out and
+    /// paints. Do not change the current host, dispatch input or publish native
+    /// state here. Ordinary local content needs no resource implementation.
+    fn prepare_resources(&mut self, _context: &mut ContainerRenderContext<'_>) -> Result<()> {
+        Ok(())
+    }
+    /// Complete GPU work using geometry recorded by the preceding host layout.
+    /// Only resource state may change: do not mutate/re-layout the content tree
+    /// or start another frame. The window submits the resulting scene afterward.
+    fn finish_resources(&mut self, _context: &mut ContainerRenderContext<'_>) -> Result<()> {
+        Ok(())
+    }
     /// Optional consumer request into the existing headless navigation service.
     /// Called only while its input gate is open; publications must not push again.
     fn take_navigation_request(&mut self) -> Option<crate::navigation::Entry> {
         None
+    }
+    /// Consume an explicitly activated request once, while ordinary window input
+    /// is available. The current native appearance is supplied for new windows.
+    fn take_window_open_request(
+        &mut self,
+        _theme: tekes_ui_tokens::Theme,
+    ) -> Result<Option<crate::WindowOpenRequest>> {
+        Ok(None)
     }
 }
 impl ContainerContent for ContentHost {
@@ -32,6 +66,7 @@ type ActionHandler = Box<dyn FnMut(&mut ContentHost, Vec<ContentActionRecord>)>;
 pub struct LocalContainer {
     id: String,
     source: Box<dyn ContainerContent>,
+    active: bool,
     action: Option<ActionHandler>,
     command: Option<CommandHandler>,
     pub(crate) toolbar: Vec<tekes_ui_app_protocol::ToolbarItem>,
@@ -49,6 +84,7 @@ impl LocalContainer {
         Self {
             id: id.into(),
             source: Box::new(source),
+            active: true,
             action: None,
             command: None,
             toolbar: vec![],
@@ -138,6 +174,16 @@ impl LocalContainer {
     pub(crate) fn take_navigation_request(&mut self) -> Option<crate::navigation::Entry> {
         self.source.take_navigation_request()
     }
+    pub(crate) fn take_window_open_request(
+        &mut self,
+        theme: tekes_ui_tokens::Theme,
+    ) -> Result<Option<crate::WindowOpenRequest>> {
+        if self.active {
+            self.source.take_window_open_request(theme)
+        } else {
+            Ok(None)
+        }
+    }
     pub(crate) fn command(&mut self, id: u64) -> Result<()> {
         let callback = self
             .command
@@ -145,6 +191,7 @@ impl LocalContainer {
             .ok_or_else(|| anyhow::anyhow!("column {} has no command binding", self.id))?;
         let mut result = Ok(());
         self.source.with_host(&mut |h| {
+            h.set_window_active(self.active);
             result = callback(h, id);
         });
         result
@@ -153,6 +200,7 @@ impl LocalContainer {
         let callback = &mut self.action;
         if let Some(callback) = callback {
             self.source.with_host(&mut |h| {
+                h.set_window_active(self.active);
                 let records = h.drain_action_records();
                 callback(h, records);
             });
@@ -160,16 +208,59 @@ impl LocalContainer {
     }
     pub(crate) fn cancel(&mut self) {
         self.source.with_host(&mut |h| {
+            h.set_window_active(self.active);
             h.cancel();
             h.focus(None, false);
         });
     }
     pub fn with_host(&mut self, visit: &mut dyn FnMut(&mut ContentHost)) {
-        self.source.with_host(visit);
+        self.source.with_host(&mut |host| {
+            host.set_window_active(self.active);
+            visit(host);
+        });
+    }
+    /// Effective availability: a hidden container is inactive even in a key
+    /// window. Project this onto every borrowed host, including newly selected
+    /// cached hosts whose own initial activity was true.
+    pub(crate) fn set_active(&mut self, active: bool) {
+        if self.active != active {
+            self.active = active;
+            self.with_host(&mut |_| {});
+        }
+    }
+    pub(crate) fn prepare_render(&mut self) {
+        self.source.prepare_for_render();
+        // Derived publication may select a different retained host. Its resource
+        // owner must observe inactivity before either GPU preparation stage.
+        self.with_host(&mut |_| {});
+    }
+    pub(crate) fn prepare_resources(
+        &mut self,
+        context: &mut ContainerRenderContext<'_>,
+    ) -> Result<()> {
+        self.source.prepare_resources(context)
+    }
+    pub(crate) fn finish_resources(
+        &mut self,
+        context: &mut ContainerRenderContext<'_>,
+    ) -> Result<()> {
+        self.source.finish_resources(context)
     }
     /// Publish derived content, then lay out and paint the original host once.
     /// Callers supply their existing text backend and normal frame allocation.
+    #[cfg(test)]
     pub(crate) fn render(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut dyn ButtonTextRenderer,
+        frame: Rect,
+        clip: Rect,
+        palette: Palette,
+    ) -> Result<()> {
+        self.prepare_render();
+        self.render_prepared(scene, text, frame, clip, palette)
+    }
+    pub(crate) fn render_prepared(
         &mut self,
         scene: &mut Scene,
         text: &mut dyn ButtonTextRenderer,
@@ -179,13 +270,14 @@ impl LocalContainer {
     ) -> Result<()> {
         if self.frame != frame {
             self.source.with_host(&mut |h| {
+                h.set_window_active(self.active);
                 h.cancel_pointer_capture();
             });
         }
         self.frame = frame;
-        self.source.prepare_for_render();
         let mut result = Ok(());
         self.source.with_host(&mut |h| {
+            h.set_window_active(self.active);
             result = h
                 .render(scene, text, frame, clip, palette)
                 .map_err(|e| anyhow::anyhow!("Container render: {e:?}"))
@@ -201,6 +293,7 @@ impl LocalContainer {
         let mut result = Ok(false);
         let callback = &mut self.action;
         self.source.with_host(&mut |host| {
+            host.set_window_active(self.active);
             result = tekes_ui_module_runtime::dispatch_content_window_event_with_text(
                 host, event, clipboard, text,
             )
@@ -228,12 +321,38 @@ impl LocalContainer {
         let mut result = Ok(ContentResponse::default());
         let callback = &mut self.action;
         self.source.with_host(&mut |h| {
+            h.set_window_active(self.active);
             result = h
                 .event_with_text(event, text)
                 .map_err(|e| anyhow::anyhow!("Container input: {e:?}"));
             if let Some(callback) = callback {
                 let records = h.drain_action_records();
                 callback(h, records);
+            }
+        });
+        result
+    }
+    /// Verify and dispatch against one borrowed original Host. A dynamic source
+    /// may choose a different cached Host on its next visit.
+    pub(crate) fn captured_pointer_event(
+        &mut self,
+        pointer: PointerEvent,
+        text: &mut dyn ButtonTextRenderer,
+    ) -> Result<Option<ContentResponse>> {
+        let mut result = Ok(None);
+        let callback = &mut self.action;
+        self.source.with_host(&mut |host| {
+            host.set_window_active(self.active);
+            if host.pointer_capture_button() != pointer.button {
+                return;
+            }
+            result = host
+                .event_with_text(&ContentEvent::Pointer(pointer), text)
+                .map(Some)
+                .map_err(|e| anyhow::anyhow!("Container input: {e:?}"));
+            if let Some(callback) = callback {
+                let records = host.drain_action_records();
+                callback(host, records);
             }
         });
         result
@@ -530,12 +649,138 @@ mod tests {
     use super::*;
     use tekes_ui_controls::composition::{ComponentId, TextFieldContent};
     use tekes_ui_tokens::Theme;
+    #[test]
+    fn window_open_request_retains_inactive_action_and_uses_current_appearance_once() {
+        struct Launcher {
+            host: ContentHost,
+            pending: bool,
+        }
+        impl ContainerContent for Launcher {
+            fn with_host(&mut self, visit: &mut dyn FnMut(&mut ContentHost)) {
+                visit(&mut self.host);
+            }
+            fn take_window_open_request(
+                &mut self,
+                theme: Theme,
+            ) -> Result<Option<crate::WindowOpenRequest>> {
+                if !std::mem::take(&mut self.pending) {
+                    return Ok(None);
+                }
+                Ok(Some(crate::WindowOpenRequest {
+                    app: crate::AppWindow::from_columns(vec![local("new-window").into()])?
+                        .theme(theme),
+                    config: Default::default(),
+                }))
+            }
+        }
+        let source = Launcher {
+            host: ContentHost::new(Content::new(
+                ComponentId(1),
+                TextFieldContent::new("Launcher", ""),
+            ))
+            .unwrap(),
+            pending: true,
+        };
+        let mut container = LocalContainer::from_source("launcher", source);
+        container.set_active(false);
+        assert!(
+            container
+                .take_window_open_request(Theme::LIGHT)
+                .unwrap()
+                .is_none()
+        );
+        container.set_active(true);
+        let request = container
+            .take_window_open_request(Theme::DARK)
+            .unwrap()
+            .unwrap();
+        assert_eq!(request.app.theme, Theme::DARK);
+        assert!(
+            container
+                .take_window_open_request(Theme::LIGHT)
+                .unwrap()
+                .is_none()
+        );
+    }
     fn local(id: &str) -> LocalContainer {
         LocalContainer::new(
             id,
             Content::new(ComponentId(1), TextFieldContent::new("Notes", "hello")),
         )
         .unwrap()
+    }
+    #[test]
+    fn inactive_local_notifies_retained_content_and_newly_selected_host_before_use() {
+        use std::{
+            cell::{Cell, RefCell},
+            rc::Rc,
+        };
+        use tekes_ui_controls::{composition::Component, layout::MeasuredChild};
+        use tekes_ui_scene::Size;
+        #[derive(Debug)]
+        struct Activity(Rc<RefCell<Vec<bool>>>);
+        impl Component for Activity {
+            fn measure(&mut self, _: &mut dyn ButtonTextRenderer, _: Size) -> MeasuredChild {
+                MeasuredChild::new(Size::new(20., 20.))
+            }
+            fn window_active_changed(&mut self, active: bool) {
+                self.0.borrow_mut().push(active);
+            }
+        }
+        struct Pages {
+            hosts: [ContentHost; 2],
+            selected: Rc<Cell<usize>>,
+        }
+        impl ContainerContent for Pages {
+            fn with_host(&mut self, visit: &mut dyn FnMut(&mut ContentHost)) {
+                visit(&mut self.hosts[self.selected.get()]);
+            }
+        }
+        let observed = [Rc::new(RefCell::new(vec![])), Rc::new(RefCell::new(vec![]))];
+        let hosts = std::array::from_fn(|index| {
+            ContentHost::new(Content::new(
+                ComponentId(1),
+                Activity(observed[index].clone()),
+            ))
+            .unwrap()
+        });
+        let selected = Rc::new(Cell::new(0));
+        let mut local = LocalContainer::from_source(
+            "pages",
+            Pages {
+                hosts,
+                selected: selected.clone(),
+            },
+        )
+        .on_command(|host, _| {
+            assert!(
+                !host.is_window_active(),
+                "new cached host must be inactive before command dispatch"
+            );
+            Ok(())
+        });
+        for events in &observed {
+            events.borrow_mut().clear();
+        }
+        // Focus loss and hidden presentation both use this same activity edge.
+        local.set_active(false);
+        assert_eq!(*observed[0].borrow(), [false]);
+        selected.set(1);
+        local.command(1).unwrap();
+        assert_eq!(*observed[1].borrow(), [false]);
+        local.with_host(&mut |host| assert!(!host.is_window_active()));
+        assert_eq!(
+            *observed[1].borrow(),
+            [false],
+            "unchanged activity is not a new transition"
+        );
+        local.set_active(true);
+        assert_eq!(*observed[1].borrow(), [false, true]);
+        assert_eq!(
+            *observed[0].borrow(),
+            [false],
+            "non-current retained page stays inactive"
+        );
     }
     #[test]
     fn fixed_column_assembly_validates_count_ids_and_process_registry() {

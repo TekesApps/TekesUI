@@ -50,6 +50,7 @@ enum HeaderView {
 #[derive(Debug)]
 struct Header {
     tabs_layout: tekes_ui_controls::TabsLayout,
+    icon: Option<IconContent>,
     view: HeaderView,
     visible: Rc<Cell<bool>>,
     selected: Rc<Cell<usize>>,
@@ -66,6 +67,28 @@ impl Header {
     }
 }
 impl Component for Header {
+    fn rectangular_input_geometry(&self) -> bool {
+        true
+    }
+    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
+        ActionTransactionCompatibility::StableHooks
+    }
+    fn prepared_effects_work(&self, calls: usize) -> Result<usize, PreparedEffectsError> {
+        PreparedEffects::local_work(calls)
+    }
+    fn prepare_effects(
+        &self,
+        hooks: &[PreparedHook],
+    ) -> Result<PreparedEffects, PreparedEffectsError> {
+        Ok(PreparedEffects::local(self, hooks))
+    }
+    fn requires_icon_services(&self) -> bool {
+        self.icon.is_some()
+    }
+    fn icon_error(&self) -> Option<IconRenderError> {
+        self.icon.as_ref().and_then(Component::icon_error)
+    }
+
     fn measure(&mut self, t: &mut dyn ButtonTextRenderer, a: Size) -> MeasuredChild {
         let width = match self.view {
             HeaderView::Tabs(_) => (a.width / 3.).min(160.) - 8.,
@@ -119,6 +142,17 @@ impl Component for Header {
                     proposal::TextRole::UiBody,
                 );
             }
+        }
+        if let (Some(icon), HeaderView::Disclosure { model, view }) = (&mut self.icon, &self.view) {
+            icon.set_glyph(if model.open {
+                "tekes-expand"
+            } else {
+                "tekes-forward"
+            })
+            .expect("canonical disclosure icon");
+            let mut theme = theme;
+            theme.icon_foreground = Some(theme.palette.color("primary-text").unwrap());
+            icon.paint(s, t, view.icon_frame(), c, theme);
         }
         self.project();
     }
@@ -421,6 +455,81 @@ impl Component for Feedback {
         s
     }
 }
+/// Mount the original caller-owned fixture directly in another application's Host.
+/// `embedded_icon` assigns the disclosure glyph to this subtree instead of Scenario's external painter.
+#[allow(clippy::too_many_arguments)]
+pub fn fixture_content(
+    kind: Kind,
+    ids: [ComponentId; 6],
+    status: Rc<Cell<Status>>,
+    visible: Rc<Cell<bool>>,
+    selected: Rc<Cell<usize>>,
+    embedded_icon: bool,
+    focus: bool,
+) -> Content {
+    let [
+        root,
+        header_id,
+        panel_id,
+        feedback_id,
+        editor_gate,
+        editor_id,
+    ] = ids;
+    let mut header = Header {
+        tabs_layout: Default::default(),
+        icon: embedded_icon
+            .then(|| IconContent::new("tekes-forward").expect("canonical disclosure icon")),
+        view: match kind {
+            Kind::Tabs => {
+                let mut view = TabsView::new(3);
+                view.select(selected.get());
+                HeaderView::Tabs(Box::new(view))
+            }
+            Kind::Disclosure => HeaderView::Disclosure {
+                model: Disclosure {
+                    open: visible.get(),
+                    disabled: false,
+                },
+                view: Box::new(DisclosureView::default()),
+            },
+        },
+        visible: visible.clone(),
+        selected: selected.clone(),
+    };
+    if focus {
+        header.set_focus(true, true);
+    }
+    let editor = Content::new(
+        editor_gate,
+        EditorGate {
+            status: status.clone(),
+            children: vec![Content::new(
+                editor_id,
+                TextFieldContent::new("Retained draft", "Caller draft"),
+            )],
+        },
+    );
+    let feedback = Content::new(feedback_id, Feedback::new(status.clone()));
+    let panel = Content::new(
+        panel_id,
+        Panel {
+            visible: visible.clone(),
+            children: vec![feedback, editor],
+        },
+    );
+    Content::new(
+        root,
+        StackContent {
+            model: Stack {
+                axis: Axis::Vertical,
+                gap: Spacing::Regular.value(),
+            },
+            children: vec![Content::new(header_id, header), panel],
+            flexible_child: None,
+        },
+    )
+}
+
 /// The caller changes content status independently from the production header
 /// selection/expanded model. No status update forces opening or panel selection.
 #[derive(Debug)]
@@ -436,46 +545,21 @@ impl Scenario {
         let status = Rc::new(Cell::new(Status::Ready));
         let visible = Rc::new(Cell::new(kind == Kind::Tabs));
         let selected = Rc::new(Cell::new(0));
-        let header = Header {
-            tabs_layout: Default::default(),
-            view: match kind {
-                Kind::Tabs => HeaderView::Tabs(Box::new(TabsView::new(3))),
-                Kind::Disclosure => HeaderView::Disclosure {
-                    model: Disclosure::default(),
-                    view: Box::new(DisclosureView::default()),
-                },
-            },
-            visible: visible.clone(),
-            selected: selected.clone(),
-        };
-        let editor = Content::new(
-            EDITOR_GATE,
-            EditorGate {
-                status: status.clone(),
-                children: vec![Content::new(
-                    EDITOR,
-                    TextFieldContent::new("Retained draft", "Caller draft"),
-                )],
-            },
-        );
-        let feedback = Content::new(FEEDBACK, Feedback::new(status.clone()));
-        let panel = Content::new(
-            PANEL,
-            Panel {
-                visible: visible.clone(),
-                children: vec![feedback, editor],
-            },
-        );
-        let host = ContentHost::new(Content::new(
-            ComponentId(8100),
-            StackContent {
-                model: Stack {
-                    axis: Axis::Vertical,
-                    gap: Spacing::Regular.value(),
-                },
-                children: vec![Content::new(HEADER, header), panel],
-                flexible_child: None,
-            },
+        let host = ContentHost::new(fixture_content(
+            kind,
+            [
+                ComponentId(8100),
+                HEADER,
+                PANEL,
+                FEEDBACK,
+                EDITOR_GATE,
+                EDITOR,
+            ],
+            status.clone(),
+            visible.clone(),
+            selected.clone(),
+            false,
+            false,
         ))?;
         Ok(Self {
             host,

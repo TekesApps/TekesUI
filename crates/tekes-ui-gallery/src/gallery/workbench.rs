@@ -8,7 +8,28 @@ mod select_story_tests;
 #[cfg(feature = "composition-review")]
 pub(crate) mod settings_native207;
 use select_story::SelectStoryHost;
+mod apphost_actions;
+pub(super) mod apphost_basic;
+pub(super) mod apphost_brand;
+mod apphost_collections;
+mod apphost_command;
+mod apphost_display;
+pub(super) mod apphost_documents;
+pub(super) mod apphost_feedback;
+mod apphost_field_meta;
+pub(crate) mod apphost_foundations;
+pub(crate) mod apphost_icons;
+mod apphost_input_sections;
+mod apphost_layout;
+pub(crate) mod apphost_motion;
+mod apphost_navigation;
+pub(super) mod apphost_patterns;
+pub(crate) mod apphost_quality;
+pub(crate) mod apphost_scene3d;
+mod apphost_selection;
+mod apphost_split;
 pub(super) mod apphost_story;
+pub(crate) mod apphost_text_pages;
 mod basic_states;
 mod brand_preview;
 #[cfg(any(test, feature = "composition-review"))]
@@ -499,7 +520,7 @@ impl StoryState {
                 true,
                 root,
             ),
-            "search" => StoryInput::search(),
+            "search" => StoryInput::search_with_root(root),
             "combo-box" => StoryInput::combo_box(root),
             "filter" | "command-palette" => TextDemo::field("", false, false).into(),
             _ => s.input,
@@ -1218,6 +1239,18 @@ impl Default for Workbench {
         }
     }
 }
+/// Shared heading for migrated stories. The existing proposal heading role
+/// restores hierarchy; it is not a pixel-equivalence claim for legacy chrome.
+pub(crate) fn story_heading(
+    id: u64,
+    value: impl Into<String>,
+) -> tekes_ui_controls::composition::Content {
+    use tekes_ui_controls::composition::{ComponentId, Content, TextContent};
+    let mut content = TextContent::new(value);
+    content.role = proposal::TextRole::UiHeading;
+    Content::new(ComponentId(id), content)
+}
+
 fn label(ctx: &mut PageCtx<'_>, scene: &mut Scene, r: Rect, s: &str, heading: bool) {
     ctx.text.proposal_wrapped_in(
         scene,
@@ -1348,7 +1381,7 @@ fn preview_header_metrics(
     }
 }
 
-fn api_reference(entry: &Entry) -> &str {
+pub(super) fn api_reference(entry: &Entry) -> &str {
     if !entry.get("api").is_empty() {
         return entry.get("api");
     }
@@ -1445,6 +1478,14 @@ fn contract_summary(entry: &Entry) -> Vec<String> {
     ]
 }
 
+pub(super) fn overview_copy(e: &Entry) -> &'static str {
+    if e.slug() == "getting-started" {
+        "Open a component from the sidebar or search by name, ID or story keyword.\n\nDirect route: TEKESUI_GALLERY_PAGE=component-button/playground\n\nUse Preview for semantic brand presets, density, text scale and constrained width. Appearance keeps the existing Light / Dark and Increase Contrast choices.\n\nReset restores this story. The event log records real input and fixture transitions."
+    } else {
+        "Foundations explain the design rules. Components exercise reusable Rust controls. Patterns combine them, Examples present complete workflows, and Quality lab keeps calibration and acceptance evidence.\n\nStart with Component index, or search for Button, TextField, ScrollArea or Settings. A planned label reserves a missing capability; experimental means interactive but not fully accepted for production.\n\nStories use deterministic local data. Async fixtures resolve explicitly, so you can repeat failure and recovery without a network or user files."
+    }
+}
+
 fn behavior_copy(renderer: &str) -> &'static str {
     match renderer {
         "button" => {
@@ -1507,7 +1548,7 @@ fn behavior_copy(renderer: &str) -> &'static str {
     }
 }
 
-fn story_docs(entry: &Entry) -> &str {
+pub(super) fn story_docs(entry: &Entry) -> &str {
     if entry.renderer() == "master" {
         behavior_copy("master")
     } else if entry.renderer() == "filter" {
@@ -2754,173 +2795,8 @@ impl Workbench {
             explanation,
             false,
         );
-        let checkbox_states = [
-            ("Unchecked", ControlState::default(), CheckState::Unchecked),
-            (
-                "Unchecked · hover",
-                ControlState {
-                    hovered: true,
-                    ..Default::default()
-                },
-                CheckState::Unchecked,
-            ),
-            (
-                "Unchecked · pressed",
-                ControlState {
-                    pressed: true,
-                    ..Default::default()
-                },
-                CheckState::Unchecked,
-            ),
-            (
-                "Unchecked · focus-visible",
-                ControlState {
-                    focused: true,
-                    focus_visible: true,
-                    ..Default::default()
-                },
-                CheckState::Unchecked,
-            ),
-            (
-                "Unchecked · disabled",
-                ControlState {
-                    disabled: true,
-                    ..Default::default()
-                },
-                CheckState::Unchecked,
-            ),
-            (
-                "Unchecked · error + focus-visible",
-                ControlState {
-                    error: true,
-                    focused: true,
-                    focus_visible: true,
-                    ..Default::default()
-                },
-                CheckState::Unchecked,
-            ),
-            (
-                "Checked · error",
-                ControlState {
-                    error: true,
-                    ..Default::default()
-                },
-                CheckState::Checked,
-            ),
-            (
-                "Indeterminate · error + disabled",
-                ControlState {
-                    error: true,
-                    disabled: true,
-                    ..Default::default()
-                },
-                CheckState::Mixed,
-            ),
-            ("Checked", ControlState::default(), CheckState::Checked),
-            (
-                "Checked · pressed",
-                ControlState {
-                    selected: true,
-                    pressed: true,
-                    ..Default::default()
-                },
-                CheckState::Checked,
-            ),
-            (
-                "Checked · hover",
-                ControlState {
-                    selected: true,
-                    hovered: true,
-                    ..Default::default()
-                },
-                CheckState::Checked,
-            ),
-            (
-                "Checked · focus-visible",
-                ControlState {
-                    selected: true,
-                    focused: true,
-                    focus_visible: true,
-                    ..Default::default()
-                },
-                CheckState::Checked,
-            ),
-            ("Indeterminate", ControlState::default(), CheckState::Mixed),
-            (
-                "Indeterminate · focus-visible",
-                ControlState {
-                    focused: true,
-                    focus_visible: true,
-                    ..Default::default()
-                },
-                CheckState::Mixed,
-            ),
-            (
-                "Checked · disabled",
-                ControlState {
-                    selected: true,
-                    disabled: true,
-                    ..Default::default()
-                },
-                CheckState::Checked,
-            ),
-            (
-                "Indeterminate · disabled",
-                ControlState {
-                    disabled: true,
-                    ..Default::default()
-                },
-                CheckState::Mixed,
-            ),
-        ];
-        let standard_states = [
-            ("default", ControlState::default()),
-            (
-                "hover",
-                ControlState {
-                    hovered: true,
-                    ..Default::default()
-                },
-            ),
-            (
-                "pressed",
-                ControlState {
-                    pressed: true,
-                    ..Default::default()
-                },
-            ),
-            (
-                "focus-visible",
-                ControlState {
-                    focused: true,
-                    focus_visible: true,
-                    ..Default::default()
-                },
-            ),
-            (
-                "disabled",
-                ControlState {
-                    disabled: true,
-                    ..Default::default()
-                },
-            ),
-            (
-                "loading",
-                ControlState {
-                    loading: true,
-                    ..Default::default()
-                },
-            ),
-            (
-                "error + focus",
-                ControlState {
-                    error: true,
-                    focused: true,
-                    focus_visible: true,
-                    ..Default::default()
-                },
-            ),
-        ];
+        let checkbox_states = apphost_basic::matrix_states();
+        let standard_states = apphost_basic::standard_states();
         let checkbox = e.renderer() == "checkbox";
         let mut states: Vec<(&str, ControlState, Option<CheckState>)> = if checkbox {
             checkbox_states
@@ -3148,13 +3024,7 @@ impl Workbench {
         let role = proposal::TextRole::UiBody;
         let mut y = c.min_y();
         let titles: &[&str] = match e.renderer() {
-            "tabs" => &[
-                "Selected first",
-                "Selected second · focus-visible",
-                "Pressed selected tab",
-                "Disabled tabs",
-                "Selected tab · hover",
-            ],
+            "tabs" => &apphost_navigation::TAB_TITLES,
             "menu" => &[
                 "Open menu",
                 "Keyboard next item",
@@ -3189,49 +3059,7 @@ impl Workbench {
             let mut probe = Scene::new();
             match e.renderer() {
                 "tabs" => {
-                    let mut view = TabsView::new(3);
-                    if n == 1 {
-                        view.focus(1, true);
-                    }
-                    view.set_disabled(n == 3);
-                    let layout = view.render(
-                        &mut probe,
-                        ctx.text,
-                        &["General", "Security", "Advanced"],
-                        Rect::new(body.min_x(), body.min_y(), body.size.width, 36.),
-                        Some(body),
-                        palette,
-                        role,
-                        false,
-                    );
-                    if n == 4 {
-                        view.pointer_move_at(layout.items[0].frame.center());
-                    }
-                    if n == 2 {
-                        view.pointer_down_at(layout.items[0].frame.center());
-                    }
-                    let layout = view.render(
-                        scene,
-                        ctx.text,
-                        &["General", "Security", "Advanced"],
-                        Rect::new(body.min_x(), body.min_y(), body.size.width, 36.),
-                        Some(body),
-                        palette,
-                        role,
-                        false,
-                    );
-                    label(
-                        ctx,
-                        scene,
-                        Rect::new(
-                            body.min_x(),
-                            layout.frame.max_y() + 8.,
-                            body.size.width,
-                            48.,
-                        ),
-                        ["General panel", "Security panel", "Advanced panel"][view.selected()],
-                        false,
-                    );
+                    apphost_navigation::paint_tabs_case(n, scene, ctx.text, body, body, palette)
                 }
                 "menu" => {
                     let mut view = MenuView::new(3);
@@ -4185,11 +4013,7 @@ impl Workbench {
         let r = s.preview;
         match e.renderer() {
             "docs" => {
-                let copy = if e.slug() == "getting-started" {
-                    "Open a component from the sidebar or search by name, ID or story keyword.\n\nDirect route: TEKESUI_GALLERY_PAGE=component-button/playground\n\nUse Preview for semantic brand presets, density, text scale and constrained width. Appearance keeps the existing Light / Dark and Increase Contrast choices.\n\nReset restores this story. The event log records real input and fixture transitions."
-                } else {
-                    "Foundations explain the design rules. Components exercise reusable Rust controls. Patterns combine them, Examples present complete workflows, and Quality lab keeps calibration and acceptance evidence.\n\nStart with Component index, or search for Button, TextField, ScrollArea or Settings. A planned label reserves a missing capability; experimental means interactive but not fully accepted for production.\n\nStories use deterministic local data. Async fixtures resolve explicitly, so you can repeat failure and recovery without a network or user files."
-                };
+                let copy = overview_copy(e);
                 label(ctx, scene, r, copy, false);
             }
             "index" => {
@@ -4243,28 +4067,7 @@ impl Workbench {
                 }
                 let palette = tekes_ui_tokens::Palette::new(ctx.theme, s.brand)
                     .expect("registered Gallery brand");
-                let roles = [
-                    "surface-0",
-                    "surface-1",
-                    "surface-2",
-                    "surface-popover",
-                    "primary-text",
-                    "secondary-text",
-                    "border",
-                    "border-focused",
-                    "row-selection",
-                    "row-selection-hover",
-                    "action-primary-ground",
-                    "action-primary-hover",
-                    "action-primary-pressed",
-                    "action-primary-foreground",
-                    "control-checked-ground",
-                    "control-checked-mark",
-                    "text-selection",
-                    "status-failed",
-                    "status-succeeded",
-                    "warning",
-                ];
+                let roles = apphost_foundations::SEMANTIC_COLORS;
                 let columns = if r.size.width < 600. { 2 } else { 4 };
                 let cw = r.size.width / columns as f32;
                 for (n, role) in roles.iter().enumerate() {
@@ -18170,9 +17973,4 @@ mod skeleton_gpu_acceptance {
         )
         .unwrap();
     }
-}
-
-/// Mount the existing Search story directly under the production AppHost.
-pub(super) fn apphost_search() -> tekes_ui_controls::composition::ContentHost {
-    search_host::StoryTextHost::new().host
 }

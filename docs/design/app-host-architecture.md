@@ -937,3 +937,26 @@ Native traffic-light alignment belongs to the shared macOS window lifecycle, not
 Preserve native button identity, size, horizontal placement, actions and accessibility, and preserve the measured Toolbar layout. The #288 Main/Settings capture demonstrates a remaining 5-point vertical mismatch after synchronous alignment; earlier title-setter and frame-notification acceptance remains historical evidence for its tested scope. The repair and its actual-window acceptance must cover the shared lifecycle rather than mark all consumers passed from a hidden-object fixture alone.
 
 After a synchronous alignment pass, the shared window checks actual native button centers. A remaining mismatch schedules one coalesced main-thread correction after the notifying setter returns. The queued callback holds a weak window owner, skips a closed window, reads the current geometry, and cannot schedule itself indefinitely. Existing synchronous title/frame correction remains in place. Bounded Main/Settings logs verify the deferred correction of the observed residual; continuous native-titlebar presentation and closing during a pending correction remain separately unverified. No diagnostic logging is part of production delivery.
+
+### Consumer-requested native windows (#294)
+
+A local `ContainerContent` may consume an explicit action through
+`take_window_open_request(current_theme)`, returning one `WindowOpenRequest`
+(`AppWindow` plus `WindowConfig`). AppHost drains it only for active local
+content while ordinary native input and navigation are available, then uses
+the existing `AppWindow::open` in the current application event loop. Consumers
+own the declaration and one-shot request; they do not create another event loop
+or receive a second native input owner. The supplied theme is the current
+window appearance, not a stale palette-source default. Gallery uses this path
+for its original standalone AppHost demonstration, retaining the same assembly,
+Settings owner, placement and size as the legacy launcher.
+
+### Shared compiled palette source (#294)
+
+`AppWindow::palette_source` optionally receives an application-owned
+`Rc<Cell<Palette>>`. Each window reads the compiled colors and projects its own
+current appearance when rendering; rendering does not write the shared cell.
+Settings inherits the same source while retaining its own appearance. Consumers
+commit explicit palette changes to this source; ordinary local components keep
+receiving the existing Host theme. This preserves one application color source
+without turning paint into a settings mutation or introducing another input owner.

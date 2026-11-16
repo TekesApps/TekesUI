@@ -99,6 +99,21 @@ pub struct ComponentEvent {
 /// owns fitted size, semantic currentColor tint, and the same clip used by hit
 /// geometry. No Gallery-only icon artwork belongs in this trait.
 pub trait IconRenderer {
+    /// Resource namespace for retained image leases. Backends supporting bitmap
+    /// registration must return an identity that changes with the renderer.
+    fn resource_identity(&self) -> Option<u64> {
+        None
+    }
+    /// Register an immutable premultiplied RGBA8 icon through the current
+    /// renderer. The returned lease keeps it alive through scene submission.
+    fn register_icon_bitmap(
+        &mut self,
+        _rgba8_premul: &[u8],
+        _width: u32,
+        _height: u32,
+    ) -> Result<crate::composition::IconImage, crate::composition::IconRenderError> {
+        Err(crate::composition::IconRenderError::UnsupportedRenderer)
+    }
     /// Checked resource seam for ordinary Content. Existing drawing backends
     /// remain valid for direct View callers; unsupported Content use is explicit.
     fn prepare_icon(

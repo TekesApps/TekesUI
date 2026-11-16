@@ -9,7 +9,11 @@ pub const RANGE: ComponentId = ComponentId(8501);
 pub const EDITOR: ComponentId = ComponentId(8502);
 pub const ACTION: ComponentId = ComponentId(8503);
 pub fn build() -> Result<ContentHost, CompositionError> {
-    ContentHost::new(Content::new(
+    ContentHost::new(fixture_content(50.))
+}
+/// The same public subtree can be mounted by a receiving application Host.
+pub fn fixture_content(value: f64) -> Content {
+    Content::new(
         ROOT,
         StackContent {
             model: Stack {
@@ -21,11 +25,11 @@ pub fn build() -> Result<ContentHost, CompositionError> {
                 Content::new(ComponentId(8504), TextContent::new("Volume")),
                 Content::new(
                     RANGE,
-                    SliderContent::new("Volume", Slider::new(50., 0., 100., 5.).unwrap()),
+                    SliderContent::new("Volume", Slider::new(value, 0., 100., 5.).unwrap()),
                 ),
                 Content::new(EDITOR, TextFieldContent::new("Draft", "Keep this draft")),
                 Content::new(ACTION, Button::new("Continue")),
             ],
         },
-    ))
+    )
 }

@@ -6,7 +6,7 @@
 //! - 本文件：入口、窗口配置、命令行、自测模式。
 //!
 //! 命令行：
-//! - 无参数：打开窗口；
+//! - 无参数：打开 AppHost Gallery；`--legacy`：原诊断入口；
 //! - `--snapshot <目录>`：不开窗口，无头渲染每页 x 每个主题 x 缩放 2 和 1，写 PNG。
 //!
 //! 性能 harness：`TEKES_PERF=scroll[:秒数]` 开启，见 `perf.rs`；报告写到 `TEKES_PERF_OUT`。
@@ -76,14 +76,23 @@ fn main() {
     }
 
     let startup_args = std::env::args().collect::<Vec<_>>();
-    if let Some(args) = gallery::apphost_workbench::apphost_arguments(&startup_args) {
+    // Preserve explicit legacy diagnostic harnesses and their original program path.
+    let legacy_harness = startup_args.len() == 1
+        && (std::env::var_os("TEKES_SELFTEST").is_some()
+            || std::env::var_os("TEKES_PERF").is_some());
+    if !legacy_harness
+        && let Some(args) = gallery::apphost_workbench::apphost_arguments(&startup_args)
+    {
         if let Err(error) = gallery::apphost_workbench::run(&args) {
             eprintln!("Gallery AppHost: {error:#}");
             std::process::exit(1);
         }
         return;
     }
-    let mut args = startup_args.into_iter().skip(1);
+    let mut args = startup_args.into_iter().skip(1).peekable();
+    if args.peek().is_some_and(|arg| arg == "--legacy") {
+        args.next();
+    }
     if let Some(arg) = args.next() {
         match arg.as_str() {
             "--snapshot" => {
@@ -107,7 +116,7 @@ fn main() {
             }
             other => {
                 eprintln!(
-                    "未知参数 {other}\n用法：tekes-ui-gallery [--apphost | --snapshot <输出目录>]"
+                    "未知参数 {other}\n用法：tekes-ui-gallery [--apphost | --legacy | --snapshot <输出目录>]"
                 );
                 std::process::exit(2);
             }

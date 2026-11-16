@@ -11,6 +11,7 @@ use std::{
 };
 #[derive(Debug)]
 struct Owner {
+    arranged: bool,
     model: EmptyState,
     view: EmptyStateView,
     disabled: bool,
@@ -26,6 +27,7 @@ impl Owner {
             && self.view.focus_target().is_some()
     }
     fn revoke(&mut self) {
+        self.arranged = false;
         self.exposure.revoke();
         self.view.cancel_action();
         self.view.invalidate_geometry();
@@ -51,6 +53,7 @@ impl EmptyStateContent {
         validate_metadata(&name, None)?;
         validate_model(&model)?;
         let owner = Rc::new(RefCell::new(Owner {
+            arranged: false,
             model,
             view: EmptyStateView::default(),
             disabled: false,
@@ -118,6 +121,13 @@ fn validate_model(model: &EmptyState) -> Result<(), CompositionError> {
     Ok(())
 }
 impl Component for EmptyStateContent {
+    fn host_reveal_passthrough(&self) -> bool {
+        // The original View derives its action slot only from width, height and
+        // text metrics. Arrange forwards the same ancestor clip to the fixed
+        // proxy; scrolling translates both without introducing a local clip.
+        self.intact() && self.owner.borrow().arranged
+    }
+
     fn validate(&self) -> Result<(), CompositionError> {
         if !self.intact() {
             return Err(CompositionError::InvalidSlotCount);
@@ -141,6 +151,7 @@ impl Component for EmptyStateContent {
         Some(&mut self.children)
     }
     fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
+        self.owner.borrow_mut().arranged = false;
         if !self.intact() {
             return MeasuredChild::new(Size::default());
         }
@@ -152,6 +163,7 @@ impl Component for EmptyStateContent {
         ))
     }
     fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
+        self.owner.borrow_mut().arranged = false;
         if !self.intact() {
             return;
         }
@@ -174,6 +186,7 @@ impl Component for EmptyStateContent {
             next
         }; // Never recurse into Content while holding the owner borrow.
         self.children[0].arrange(text, action_frame, clip);
+        self.owner.borrow_mut().arranged = !frame.is_empty();
     }
     fn paint(
         &mut self,
@@ -216,6 +229,13 @@ struct ActionProxy {
     owner: Rc<RefCell<Owner>>,
 }
 impl Component for ActionProxy {
+    fn rectangular_input_geometry(&self) -> bool {
+        // The original View supplies the full logical action rectangle and
+        // clips its ButtonModel hit target with the forwarded ancestor Rect.
+        // This grants ordinary rectangular input, not curve or prepared effects.
+        true
+    }
+
     fn measure(&mut self, _text: &mut dyn ButtonTextRenderer, _available: Size) -> MeasuredChild {
         MeasuredChild::new(Size::default())
     }
@@ -510,6 +530,69 @@ mod tests {
             f,
             tekes_ui_tokens::Theme::LIGHT.into(),
         )
+    }
+    #[test]
+    fn empty_state_action_reveals_and_activates_in_rectangular_scroll() {
+        let empty = Content::new(
+            ROOT,
+            EmptyStateContent::new("Empty", model("Create"), ACTION).unwrap(),
+        );
+        let mut h = ContentHost::new(Content::new(
+            ComponentId(782),
+            ScrollContent::new(ScrollArea::default(), empty),
+        ))
+        .unwrap();
+        h.set_action_events(true);
+        paint(&mut h).unwrap();
+        let original = h.get(ACTION).unwrap().frame();
+        let frame = Rect::new(0., 0., 320., original.max_y() - 4.);
+        h.render(
+            &mut Scene::new(),
+            &mut Text,
+            frame,
+            frame,
+            tekes_ui_tokens::Theme::LIGHT.into(),
+        )
+        .unwrap();
+        assert!(h.get(ACTION).unwrap().visible().is_some());
+        assert!(h.focus(Some(ACTION), true));
+        h.render(
+            &mut Scene::new(),
+            &mut Text,
+            frame,
+            frame,
+            tekes_ui_tokens::Theme::LIGHT.into(),
+        )
+        .unwrap();
+        let moved = h.get(ACTION).unwrap().frame();
+        assert!(moved.min_y() < original.min_y());
+        assert_eq!(h.get(ACTION).unwrap().visible(), Some(moved));
+        assert_eq!(
+            h.get(ROOT)
+                .unwrap()
+                .component::<EmptyStateContent>()
+                .unwrap()
+                .owner
+                .borrow()
+                .view
+                .logical_focus_target(),
+            Some(moved)
+        );
+        assert!(
+            h.accessibility_action(ACTION, None, AccessibilityAction::Press)
+                .activated
+        );
+        assert!(h.drain_actions().iter().any(|a| a.target == ACTION));
+        // The consumer still decides what creation means; the action does not
+        // replace the original model behind the Host's back.
+        assert_eq!(
+            *h.get(ROOT)
+                .unwrap()
+                .component::<EmptyStateContent>()
+                .unwrap()
+                .model(),
+            model("Create")
+        );
     }
     #[test]
     fn allocation_exhaustion_precedes_cancel_model_mount_and_queue_commit() {

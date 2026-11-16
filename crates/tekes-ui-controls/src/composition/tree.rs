@@ -592,6 +592,10 @@ impl TreeContent {
     }
 }
 impl Component for TreeContent {
+    fn rectangular_input_geometry(&self) -> bool {
+        // TreeView retains rectangular clipped rows; geometry_actionable validates the original row before mutation.
+        true
+    }
     fn validate(&self) -> Result<(), CompositionError> {
         self.validate_rows().map_err(|e| match e {
             TreeContentError::Composition(e) => e,

@@ -139,6 +139,72 @@ fn breadcrumb_group_availability_and_public_index_boundaries_preserve_the_path()
 }
 
 #[test]
+fn breadcrumb_scroll_host_activates_visible_ancestors_and_rejects_unavailable_items() {
+    use tekes_ui_controls::{ScrollArea, composition::*, extended::Breadcrumb};
+    let path = vec!["Home".into(), "Library".into(), "Current".into()];
+    let mut host = ContentHost::new(Content::new(
+        ComponentId(1),
+        ScrollContent::new(
+            ScrollArea::default(),
+            Content::new(
+                ComponentId(2),
+                BreadcrumbContent::new(Breadcrumb {
+                    items: path.clone(),
+                }),
+            ),
+        ),
+    ))
+    .unwrap();
+    host.set_action_events(true);
+    let frame = Rect::new(0., 0., 480., 100.);
+    let render = |host: &mut ContentHost| {
+        host.render(
+            &mut Scene::new(),
+            &mut Labels,
+            frame,
+            frame,
+            Theme::LIGHT.into(),
+        )
+        .unwrap()
+    };
+    render(&mut host);
+    assert!(
+        host.accessibility_action(ComponentId(2), Some(1), AccessibilityAction::Press)
+            .activated
+    );
+    let records = host.drain_action_records();
+    assert_eq!(records.len(), 1);
+    assert_eq!(
+        records[0].payload,
+        Some(ContentActionPayload::BreadcrumbNavigation { index: 1, path })
+    );
+    render(&mut host);
+    assert!(
+        !host
+            .accessibility_action(ComponentId(2), Some(2), AccessibilityAction::Press)
+            .activated
+    );
+    host.get_mut(ComponentId(2))
+        .unwrap()
+        .component_mut::<BreadcrumbContent>()
+        .unwrap()
+        .set_disabled(true);
+    render(&mut host);
+    assert!(
+        !host
+            .accessibility_action(ComponentId(2), Some(0), AccessibilityAction::Press)
+            .activated
+    );
+    host.set_window_active(false);
+    assert!(
+        !host
+            .accessibility_action(ComponentId(2), Some(0), AccessibilityAction::Press)
+            .activated
+    );
+    assert!(host.drain_action_records().is_empty());
+}
+
+#[test]
 fn navigation_header_states_use_public_events_and_existing_painters() {
     use tekes_ui_controls::{TabsView, extended::Breadcrumb, layout_view::BreadcrumbView};
     let registry:serde_json::Value=serde_json::from_str(include_str!("../../../design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/registry/components.json")).unwrap();

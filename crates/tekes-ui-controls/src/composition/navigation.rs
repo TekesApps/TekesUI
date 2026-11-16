@@ -363,6 +363,10 @@ impl TabsContent {
     }
 }
 impl Component for TabsContent {
+    fn rectangular_input_geometry(&self) -> bool {
+        // TabsView publishes the clipped rectangular header parts used by its original input reducer.
+        true
+    }
     fn requires_icon_services(&self) -> bool {
         self.closable_items
             .iter()

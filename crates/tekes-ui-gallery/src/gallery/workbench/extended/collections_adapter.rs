@@ -6,7 +6,7 @@ use super::super::super::pages::icons::GalleryIconRenderer;
 use super::super::{Entry, PageCtx, StoryState, line};
 use super::{ExtendedStory, controls};
 use tekes_ui_controls::{
-    BarChart, ButtonTextRenderer, ChartDatum, ControlKey,
+    ButtonTextRenderer, ControlKey,
     collections_view::{
         ChartView, CodeBlockView, CollectionEvent, DataTableView, DiffViewRuntime, ListView,
         MarkdownView, TreeView,
@@ -508,11 +508,14 @@ pub(super) fn matrix(
         + 18.0;
     let palette = Palette::new(ctx.theme, s.brand).expect("registered Gallery brand");
     let scale = ctx.text.type_scale();
+    let icons = GalleryIconRenderer::native(ctx);
+    let mut text = MatrixText { ctx, icons };
+    use super::super::apphost_collections::{matrix_chart, matrix_list, matrix_table, matrix_tree};
     match e.renderer() {
-        "list" => matrix_list(ctx, scene, bounds, viewport, &mut y, palette, scale),
-        "tree" => matrix_tree(ctx, scene, bounds, viewport, &mut y, width, palette),
-        "data-table" => matrix_table(ctx, scene, bounds, viewport, &mut y, width, palette),
-        "chart" => matrix_chart(ctx, scene, bounds, viewport, &mut y, palette, scale),
+        "list" => matrix_list(&mut text, scene, bounds, viewport, &mut y, palette, scale),
+        "tree" => matrix_tree(&mut text, scene, bounds, viewport, &mut y, width, palette),
+        "data-table" => matrix_table(&mut text, scene, bounds, viewport, &mut y, width, palette),
+        "chart" => matrix_chart(&mut text, scene, bounds, viewport, &mut y, palette, scale),
         _ => {}
     }
     s.document_bottom = y + gutter;
@@ -539,349 +542,72 @@ fn draw_matrix_caption(
     );
 }
 
-fn matrix_heading(
-    ctx: &mut PageCtx<'_>,
-    scene: &mut Scene,
-    x: f32,
-    y: f32,
-    w: f32,
-    title: &str,
-) -> f32 {
-    let role = tekes_ui_tokens::proposal::TextRole::UiBody;
-    let measured = ctx.text.proposal_label(title, role, Some(w.max(0.)));
-    ctx.text.proposal_wrapped_in(
-        scene,
-        ctx.theme,
-        Rect::new(x, y, w.max(0.), measured.height as f32),
-        title,
-        role,
-        tekes_ui_tokens::ColorRole::PrimaryText.resolve(ctx.theme),
-    );
-    measured.height as f32
+/// Borrow the existing Gallery text and artwork services for the same matrix
+/// functions used by AppHost. The outer legacy caption, clip and document-bottom
+/// calculation remain in `matrix` above.
+struct MatrixText<'a, 'b> {
+    ctx: &'a mut PageCtx<'b>,
+    icons: GalleryIconRenderer,
 }
-
-fn matrix_list(
-    ctx: &mut PageCtx<'_>,
-    scene: &mut Scene,
-    bounds: Rect,
-    clip: Rect,
-    y: &mut f32,
-    palette: Palette,
-    scale: f32,
-) {
-    let width = bounds.size.width.max(0.0);
-    let labels = [
-        "Workspace 工作区",
-        "Documents 文档",
-        "Long mixed-language item 中文与 English",
-        "Archive 归档",
-    ]
-    .into_iter()
-    .map(str::to_owned)
-    .collect::<Vec<_>>();
-    for (title, selected, hovered, focused, disabled) in [
-        ("Default", None, None, None, false),
-        ("Selected", Some(1), None, None, false),
-        ("Selected + hover", Some(1), Some(1), None, false),
-        ("Keyboard focus-visible", Some(2), None, Some(2), false),
-        ("Disabled component", Some(1), None, None, true),
-    ] {
-        let heading = matrix_heading(ctx, scene, bounds.min_x(), *y, width, title);
-        let frame_y = *y + heading + 7.0;
-        let mut model = controls::List::new(labels.len());
-        if let Some(index) = selected {
-            model.select(index);
-        }
-        let mut view = ListView::new();
-        if disabled {
-            view.set_disabled(true);
-        }
-        if let Some(index) = focused {
-            view.focus(index, true);
-        }
-        let frame = Rect::new(bounds.min_x(), frame_y, width.min(480.0), 1_000.0);
-        let mut probe = Scene::new();
-        let layout = view.render_scaled(
-            &mut probe,
-            ctx.text,
-            &model,
-            &labels,
-            frame,
-            Some(clip),
-            palette,
-            scale,
-        );
-        if let Some(index) = hovered
-            && let Some(item) = layout.items.get(index)
-        {
-            view.pointer_move(item.frame.center());
-        }
-        let actual = view.render_scaled(
+impl ButtonTextRenderer for MatrixText<'_, '_> {
+    fn measure(
+        &mut self,
+        value: &str,
+        role: tekes_ui_tokens::proposal::TextRole,
+        width: f32,
+    ) -> tekes_ui_scene::Size {
+        self.ctx.text.measure(value, role, width)
+    }
+    fn draw(
+        &mut self,
+        scene: &mut Scene,
+        value: &str,
+        role: tekes_ui_tokens::proposal::TextRole,
+        frame: Rect,
+        align: tekes_ui_controls::ButtonTextAlign,
+        ink: tekes_ui_tokens::Rgba,
+    ) {
+        self.ctx.text.draw(scene, value, role, frame, align, ink);
+    }
+    fn backing_scale(&self) -> f32 {
+        self.ctx.text.backing_scale()
+    }
+    fn resolved_font_size(&mut self, role: tekes_ui_tokens::proposal::TextRole) -> f32 {
+        self.ctx.text.resolved_font_size(role)
+    }
+    fn first_line_height(
+        &mut self,
+        value: &str,
+        role: tekes_ui_tokens::proposal::TextRole,
+        width: f32,
+    ) -> f32 {
+        self.ctx.text.first_line_height(value, role, width)
+    }
+    fn icon_renderer(&mut self) -> Option<&mut dyn tekes_ui_controls::layout_view::IconRenderer> {
+        Some(&mut self.icons)
+    }
+}
+impl super::super::apphost_collections::MatrixPainter for MatrixText<'_, '_> {
+    fn heading(&mut self, scene: &mut Scene, frame: Rect, title: &str, palette: Palette) -> f32 {
+        let role = tekes_ui_tokens::proposal::TextRole::UiBody;
+        let measured = self
+            .ctx
+            .text
+            .proposal_label(title, role, Some(frame.size.width.max(0.)));
+        self.ctx.text.proposal_wrapped_in(
             scene,
-            ctx.text,
-            &model,
-            &labels,
-            frame,
-            Some(clip),
-            palette,
-            scale,
+            self.ctx.theme,
+            Rect::new(
+                frame.min_x(),
+                frame.min_y(),
+                frame.size.width.max(0.),
+                measured.height as f32,
+            ),
+            title,
+            role,
+            tekes_ui_tokens::ColorRole::PrimaryText.resolve(palette.theme),
         );
-        let bottom = actual
-            .items
-            .iter()
-            .map(|row| row.frame.max_y())
-            .fold(frame_y, f32::max);
-        *y = bottom + 18.0;
-    }
-}
-
-fn matrix_tree(
-    ctx: &mut PageCtx<'_>,
-    scene: &mut Scene,
-    bounds: Rect,
-    clip: Rect,
-    y: &mut f32,
-    width: f32,
-    palette: Palette,
-) {
-    for (title, expanded, selected, hovered, focused, disabled) in [
-        ("Collapsed", false, None, None, None, None),
-        ("Expanded", true, None, None, None, None),
-        ("Selected + hover", true, Some(1), Some(1), None, None),
-        ("Keyboard focus-visible", true, Some(2), None, Some(2), None),
-        ("Disabled row", true, None, None, None, Some(3)),
-    ] {
-        let heading = matrix_heading(ctx, scene, bounds.min_x(), *y, width, title);
-        let frame_y = *y + heading + 7.0;
-        let mut model = collection_tree_fixture(expanded);
-        if let Some(index) = selected {
-            model.select(index);
-        }
-        if let Some(index) = disabled {
-            model.set_disabled(index, true);
-        }
-        let mut view = TreeView::new();
-        if let Some(index) = focused {
-            view.focus(index, true);
-        }
-        let frame = Rect::new(bounds.min_x(), frame_y, width.min(480.0), 1_000.0);
-        let mut probe = Scene::new();
-        let layout = view.render(&mut probe, ctx.text, &model, frame, Some(clip), palette);
-        if let Some(index) = hovered
-            && let Some(item) = layout.items.iter().find(|item| item.id == index)
-        {
-            view.pointer_move(item.frame.center());
-        }
-        let actual = view.render(scene, ctx.text, &model, frame, Some(clip), palette);
-        let mut icons = GalleryIconRenderer::native(ctx);
-        view.render_icons(scene, &mut icons, Some(clip), palette, 16.0);
-        let bottom = actual
-            .items
-            .iter()
-            .map(|row| row.frame.max_y())
-            .fold(frame_y, f32::max);
-        *y = bottom + 18.0;
-    }
-}
-
-fn collection_tree_fixture(expanded: bool) -> controls::Tree {
-    let mut tree = controls::Tree::default();
-    let root = tree.add("Workspace 工作区", None).unwrap();
-    tree.add("Documents 文档", Some(root)).unwrap();
-    tree.add("Design system 设计规范", Some(root)).unwrap();
-    tree.add("Archived material 归档资料", Some(root)).unwrap();
-    if expanded {
-        tree.toggle(root);
-    }
-    tree
-}
-
-fn matrix_table(
-    ctx: &mut PageCtx<'_>,
-    scene: &mut Scene,
-    bounds: Rect,
-    clip: Rect,
-    y: &mut f32,
-    width: f32,
-    palette: Palette,
-) {
-    let headers = ["Name", "Kind", "Updated"]
-        .into_iter()
-        .map(str::to_owned)
-        .collect::<Vec<_>>();
-    let rows: Vec<Vec<String>> = vec![
-        vec!["Design workspace".into(), "Folder".into(), "Today".into()],
-        vec![
-            "Notes and references".into(),
-            "Text".into(),
-            "Yesterday".into(),
-        ],
-        vec!["Icon assets".into(), "Image".into(), "Monday".into()],
-    ];
-    for (title, selected, sort, focus_header, focus_row, disabled) in [
-        ("Default", None, None, None, None, false),
-        (
-            "Sorted ascending",
-            None,
-            Some((0, controls::SortDirection::Ascending)),
-            None,
-            None,
-            false,
-        ),
-        ("Selected + hover", Some(1), None, None, None, false),
-        (
-            "Sorted descending",
-            None,
-            Some((0, controls::SortDirection::Descending)),
-            None,
-            None,
-            false,
-        ),
-        (
-            "Keyboard focus-visible · header",
-            None,
-            None,
-            Some(0),
-            None,
-            false,
-        ),
-        (
-            "Keyboard focus-visible · row",
-            None,
-            None,
-            None,
-            Some(1),
-            false,
-        ),
-        ("Disabled table", None, None, None, None, true),
-    ] {
-        let heading = matrix_heading(ctx, scene, bounds.min_x(), *y, width, title);
-        let frame_y = *y + heading + 7.0;
-        let mut model = controls::DataTable::new(rows.len(), headers.len());
-        model.selected_row = selected;
-        model.sort = sort;
-        let mut order = (0..rows.len()).collect::<Vec<_>>();
-        if let Some((column, direction)) = model.sort {
-            order.sort_by(|a, b| rows[*a][column].cmp(&rows[*b][column]));
-            if direction == controls::SortDirection::Descending {
-                order.reverse();
-            }
-        }
-        let mut view = DataTableView::new();
-        if disabled {
-            view.set_disabled(true);
-        }
-        if let Some(column) = focus_header {
-            view.focus_header(column, true);
-        }
-        if let Some(row) = focus_row {
-            view.focus_row(row, true);
-        }
-        let frame = Rect::new(bounds.min_x(), frame_y, width.min(720.0), 1_000.0);
-        let mut probe = Scene::new();
-        let layout = view.render(
-            &mut probe,
-            ctx.text,
-            &model,
-            &headers,
-            &rows,
-            &order,
-            frame,
-            Some(clip),
-            palette,
-        );
-        if title == "Selected + hover"
-            && let Some(item) = layout.rows.iter().find(|item| item.id == 1)
-        {
-            view.pointer_move(item.frame.center());
-        }
-        let actual = view.render(
-            scene,
-            ctx.text,
-            &model,
-            &headers,
-            &rows,
-            &order,
-            frame,
-            Some(clip),
-            palette,
-        );
-        let bottom = actual
-            .rows
-            .iter()
-            .map(|row| row.frame.max_y())
-            .chain(actual.headers.iter().map(|item| item.frame.max_y()))
-            .fold(frame_y, f32::max);
-        *y = bottom + 18.0;
-    }
-}
-
-fn matrix_chart(
-    ctx: &mut PageCtx<'_>,
-    scene: &mut Scene,
-    bounds: Rect,
-    clip: Rect,
-    y: &mut f32,
-    palette: Palette,
-    scale: f32,
-) {
-    let width = bounds.size.width.max(0.0);
-    let data = || {
-        vec![
-            ChartDatum::new("Design", 18.0),
-            ChartDatum::new("Build", 31.0),
-            ChartDatum::new("Review", 23.0),
-            ChartDatum::new("Ship", 38.0),
-        ]
-    };
-    for (title, hovered, focused) in [
-        ("Default · selected datum", None, false),
-        ("Hover datum", Some(1), false),
-        ("Keyboard focus-visible · selected datum", None, true),
-    ] {
-        let heading = matrix_heading(ctx, scene, bounds.min_x(), *y, width, title);
-        let frame_y = *y + heading + 7.0;
-        let mut model = BarChart::new(data());
-        let frame = Rect::new(
-            bounds.min_x(),
-            frame_y,
-            width.min(680.0),
-            220.0 * scale.max(1.0),
-        );
-        let mut view = ChartView::new();
-        let mut probe = Scene::new();
-        view.render(
-            &mut probe,
-            ctx.text,
-            &mut model,
-            frame,
-            Some(clip),
-            palette,
-            scale,
-        );
-        if let Some(index) = hovered
-            && let Some(bar) = view
-                .layout()
-                .geometry
-                .bars
-                .iter()
-                .find(|bar| bar.index == index)
-        {
-            view.pointer_move(bar.rect.center(), &mut model);
-        }
-        if focused {
-            view.focus(true, &mut model);
-        }
-        view.render(
-            scene,
-            ctx.text,
-            &mut model,
-            frame,
-            Some(clip),
-            palette,
-            scale,
-        );
-        *y = frame.max_y() + 18.0;
+        measured.height as f32
     }
 }
 

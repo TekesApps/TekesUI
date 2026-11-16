@@ -368,16 +368,8 @@ fn select(
     }
 }
 
-fn breadcrumb(
-    ctx: &mut PageCtx<'_>,
-    scene: &mut Scene,
-    bounds: Rect,
-    clip: Rect,
-    y: &mut f32,
-    width: f32,
-    palette: Palette,
-) {
-    let cases = [
+fn breadcrumb_cases() -> [BreadcrumbCase; 6] {
+    [
         BreadcrumbCase {
             title: "Default · current location is non-interactive",
             labels: &["Home", "Docs", "Drafts"],
@@ -432,81 +424,165 @@ fn breadcrumb(
             pressed: false,
             disabled: true,
         },
-    ];
+    ]
+}
+
+fn breadcrumb(
+    ctx: &mut PageCtx<'_>,
+    scene: &mut Scene,
+    bounds: Rect,
+    clip: Rect,
+    y: &mut f32,
+    width: f32,
+    palette: Palette,
+) {
+    let cases = breadcrumb_cases();
     for case in cases {
-        let BreadcrumbCase {
-            title,
-            labels,
-            focused,
-            hovered,
-            focus_visible,
-            pressed,
-            disabled,
-        } = case;
+        let BreadcrumbCase { title, labels, .. } = case;
         let heading = row_heading(ctx, scene, bounds.min_x(), *y, width, title);
         let path_y = *y + heading + 7.;
-        let mut remaining = width;
-        let mut text_height = 0.0_f32;
-        for (index, text) in labels.iter().enumerate() {
-            let measured = tekes_ui_controls::ButtonModel::measure(
-                ctx.text,
-                text,
-                remaining.max(0.),
-                ButtonSize::Body,
-                BODY,
-            );
-            text_height = text_height.max(measured.height);
-            let cell_width = if index + 1 == labels.len() {
-                remaining
-            } else {
-                (measured.width + 22.).min(remaining.max(0.))
-            };
-            remaining -= cell_width + if index + 1 < labels.len() { 8. } else { 0. };
-        }
-        let height = text_height.max(34.);
+        let height = breadcrumb_height(ctx.text, labels, width);
         let frame = Rect::new(bounds.min_x(), path_y, width, height);
-        let model = controls::Breadcrumb {
-            items: labels.iter().map(|s| (*s).to_owned()).collect(),
-        };
-        let mut view = BreadcrumbView::default();
-        view.set_window_active(true);
-        view.set_disabled(disabled);
-        let mut probe = Scene::new();
-        let layout = view.render(
-            &mut probe,
-            ctx.text,
-            &model,
-            labels,
-            frame,
-            Some(clip),
-            palette,
-            BODY,
-        );
-        if let Some(index) = focused {
-            view.focus_with_visibility(index, focus_visible);
-        }
-        if let Some(index) = hovered
-            && let Some(target) = layout
-                .items
-                .get(index)
-                .and_then(|item| item.visible_frame())
-        {
-            view.pointer_move(target.center());
-            if pressed {
-                view.pointer_down(target.center());
-            }
-        }
-        view.render(
-            scene,
-            ctx.text,
-            &model,
-            labels,
-            frame,
-            Some(clip),
-            palette,
-            BODY,
-        );
+        paint_breadcrumb_case(ctx.text, scene, frame, clip, palette, case);
         *y = frame.max_y() + 19.;
+    }
+}
+
+fn breadcrumb_height(text: &mut impl ButtonTextRenderer, labels: &[&str], width: f32) -> f32 {
+    let mut remaining = width;
+    let mut text_height = 0.0_f32;
+    for (index, label) in labels.iter().enumerate() {
+        let measured = tekes_ui_controls::ButtonModel::measure(
+            text,
+            label,
+            remaining.max(0.),
+            ButtonSize::Body,
+            BODY,
+        );
+        text_height = text_height.max(measured.height);
+        let cell_width = if index + 1 == labels.len() {
+            remaining
+        } else {
+            (measured.width + 22.).min(remaining.max(0.))
+        };
+        remaining -= cell_width + if index + 1 < labels.len() { 8. } else { 0. };
+    }
+    text_height.max(34.)
+}
+fn paint_breadcrumb_case(
+    text: &mut impl ButtonTextRenderer,
+    scene: &mut Scene,
+    frame: Rect,
+    clip: Rect,
+    palette: Palette,
+    case: BreadcrumbCase,
+) {
+    let BreadcrumbCase {
+        labels,
+        focused,
+        hovered,
+        focus_visible,
+        pressed,
+        disabled,
+        ..
+    } = case;
+    let model = controls::Breadcrumb {
+        items: labels.iter().map(|s| (*s).to_owned()).collect(),
+    };
+    let mut view = BreadcrumbView::default();
+    view.set_window_active(true);
+    view.set_disabled(disabled);
+    let mut probe = Scene::new();
+    let layout = view.render(
+        &mut probe,
+        text,
+        &model,
+        labels,
+        frame,
+        Some(clip),
+        palette,
+        BODY,
+    );
+    if let Some(index) = focused {
+        view.focus_with_visibility(index, focus_visible);
+    }
+    if let Some(index) = hovered
+        && let Some(target) = layout
+            .items
+            .get(index)
+            .and_then(|item| item.visible_frame())
+    {
+        view.pointer_move(target.center());
+        if pressed {
+            view.pointer_down(target.center());
+        }
+    }
+    view.render(
+        scene,
+        text,
+        &model,
+        labels,
+        frame,
+        Some(clip),
+        palette,
+        BODY,
+    );
+}
+pub(in crate::gallery::workbench) fn apphost_breadcrumb_matrix()
+-> Vec<tekes_ui_controls::composition::Content> {
+    use tekes_ui_controls::composition::*;
+    breadcrumb_cases()
+        .into_iter()
+        .enumerate()
+        .flat_map(|(i, case)| {
+            [
+                Content::new(
+                    ComponentId(91700 + i as u64 * 2),
+                    TextContent::new(case.title),
+                ),
+                Content::new(ComponentId(91701 + i as u64 * 2), BreadcrumbFixture(case)),
+            ]
+        })
+        .collect()
+}
+struct BreadcrumbFixture(BreadcrumbCase);
+impl std::fmt::Debug for BreadcrumbFixture {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.0.title)
+    }
+}
+impl tekes_ui_controls::composition::Component for BreadcrumbFixture {
+    fn measure(
+        &mut self,
+        text: &mut dyn ButtonTextRenderer,
+        available: tekes_ui_scene::Size,
+    ) -> tekes_ui_controls::layout::MeasuredChild {
+        let height = breadcrumb_height(
+            &mut super::super::apphost_basic::FixtureText(text),
+            self.0.labels,
+            available.width,
+        );
+        tekes_ui_controls::layout::MeasuredChild::new(tekes_ui_scene::Size::new(
+            available.width,
+            height,
+        ))
+    }
+    fn paint(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut dyn ButtonTextRenderer,
+        frame: Rect,
+        clip: Rect,
+        theme: tekes_ui_controls::composition::ContentTheme,
+    ) {
+        paint_breadcrumb_case(
+            &mut super::super::apphost_basic::FixtureText(text),
+            scene,
+            frame,
+            clip,
+            theme.palette,
+            self.0,
+        );
     }
 }
 
@@ -519,17 +595,7 @@ fn command_palette(
     width: f32,
     palette: Palette,
 ) {
-    let cases = [
-        ("Closed · default", "", false, false),
-        ("Closed · hover", "", false, false),
-        ("Closed · pressed", "", false, false),
-        ("Closed · keyboard focus", "", false, false),
-        ("Selected · last executed command", "", false, false),
-        ("Open · available commands", "", true, false),
-        ("Open · filtered commands", "open", true, false),
-        ("Open · no results", "no-such-command", true, false),
-        ("Disabled", "", false, true),
-    ];
+    let cases = super::super::apphost_command::CASES;
     for (title, query, open, disabled) in cases {
         let heading = row_heading(ctx, scene, bounds.min_x(), *y, width, title);
         let top = *y + heading + 7.;

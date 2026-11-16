@@ -100,6 +100,11 @@ impl BreadcrumbContent {
 }
 
 impl Component for BreadcrumbContent {
+    fn rectangular_input_geometry(&self) -> bool {
+        // BreadcrumbView publishes the same rectangular clipped item frames for
+        // pointer, keyboard and semantic ancestors in a ScrollContent viewport.
+        true
+    }
     fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
         MeasuredChild::new(
             self.view.measure(

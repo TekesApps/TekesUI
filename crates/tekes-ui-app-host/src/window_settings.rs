@@ -141,6 +141,7 @@ impl crate::ContainerContent for SettingsColumn {
 }
 // Keep the mounted original host (input, AX and scrolling) while sharing the
 // public form's body allocation after AppHost's pane/titlebar-safe insets.
+#[cfg(test)]
 fn render_settings_body(
     container: &mut crate::LocalContainer,
     scene: &mut Scene,
@@ -592,7 +593,9 @@ impl Host {
         let app = crate::AppWindow::from_columns(columns)?
             .theme(self.theme)
             .navigation(surface.borrow().navigation_options());
-        let mut host = app.into_host(false);
+        let mut host = app
+            .into_host(false)
+            .with_palette_source(self.palette_source.clone());
         host.mount_initial_containers();
         host.is_settings_window = true;
         host.settings_display = self.settings_owner.as_ref().and_then(|owner| {
@@ -1135,6 +1138,7 @@ impl Host {
             w.close();
             return Ok(());
         }
+        let palette = self.palette();
         let navigation = self.navigation.as_mut().unwrap();
         if self
             .navigation_ack
@@ -1166,7 +1170,6 @@ impl Host {
         self.text.scale = w.scale() as f32;
         let size = w.size();
         let whole = Rect::new(0., 0., size.width as f32, size.height as f32);
-        let palette = Palette::from(self.theme);
         let mut scene = Scene::new();
         let mut toolbar_scene = Scene::new();
         scene.push_quad(Quad::new(whole, palette.color("surface-panel").unwrap()));
@@ -1245,21 +1248,28 @@ impl Host {
                 },
             )?;
         }
+        // Activity on intervening input/focus events must use this same layout,
+        // including the sidebar's existing 32pt drawable threshold.
+        self.panels[0].bounds = frames[0];
+        self.panels[0].logically_visible = frames[0].size.width > 32.;
         self.panels[1].bounds = frames[1];
         let panel = &mut self.panels[1];
-        with_content_icons(
-            self.renderer.as_mut().unwrap(),
+        let local = panel.local.as_mut().unwrap();
+        local.set_active(w.is_active());
+        let context = crate::ContainerRenderContext {
+            renderer: self.renderer.as_mut().unwrap(),
+            frame: tekes_ui_settings::SettingsForm::body_rect(&mut self.text, form_content),
+            clip: form_content,
+            scale: self.text.scale,
+            motion: tekes_ui_controls::ButtonTextRenderer::motion_context(&self.text),
+            palette,
+        };
+        render_local_content(
+            local,
             &mut panel.content_icons,
             &mut self.text,
-            |text| {
-                render_settings_body(
-                    panel.local.as_mut().unwrap(),
-                    &mut scene,
-                    text,
-                    form_content,
-                    palette,
-                )
-            },
+            &mut scene,
+            context,
         )?;
         if frames[0].size.width > 32. {
             let left = content_geometry(
@@ -1282,18 +1292,25 @@ impl Host {
             );
             self.panels[0].bounds = frames[0];
             let panel = &mut self.panels[0];
-            with_content_icons(
-                self.renderer.as_mut().unwrap(),
+            let local = panel.local.as_mut().unwrap();
+            local.set_active(w.is_active());
+            let context = crate::ContainerRenderContext {
+                renderer: self.renderer.as_mut().unwrap(),
+                frame: rect,
+                clip: rect,
+                scale: self.text.scale,
+                motion: tekes_ui_controls::ButtonTextRenderer::motion_context(&self.text),
+                palette,
+            };
+            render_local_content(
+                local,
                 &mut panel.content_icons,
                 &mut self.text,
-                |text| {
-                    panel
-                        .local
-                        .as_mut()
-                        .unwrap()
-                        .render(&mut scene, text, rect, rect, palette)
-                },
+                &mut scene,
+                context,
             )?;
+        } else if let Some(local) = &mut self.panels[0].local {
+            local.set_active(false);
         }
         let row = Rect::new(whole.min_x(), row_y, whole.size.width, paint);
         let mut toolbar_controls = self

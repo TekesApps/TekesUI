@@ -28,11 +28,11 @@ pub(super) struct StoryTextHost {
     projection: std::cell::RefCell<NativeProjection>,
 }
 impl StoryTextHost {
-    pub(super) fn new() -> Self {
+    pub(super) fn with_root(root: fn(Content) -> Content) -> Self {
         let mut search = SearchFieldContent::new("Search by name", "");
         search.set_submit_policy(TextSubmitPolicy::Enter);
-        let host =
-            ContentHost::new(Content::new(SEARCH, search)).expect("fixed Search story structure");
+        let host = ContentHost::new(root(Content::new(SEARCH, search)))
+            .expect("fixed Search story structure");
         Self::from_host(host, SEARCH)
     }
     pub(super) fn text_field(value: &str, multiline: bool, root: fn(Content) -> Content) -> Self {

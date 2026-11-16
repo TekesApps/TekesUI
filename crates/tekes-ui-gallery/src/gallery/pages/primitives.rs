@@ -155,32 +155,49 @@ pub fn state_samples(
 
 /// Live raster diagnostics only: no unavailable reference image or heatmap panes.
 pub fn build_calibration(ctx: &mut PageCtx<'_>, content: Rect, scene: &mut Scene) {
+    let theme = ctx.theme;
+    build_calibration_with_labels(
+        theme,
+        ctx.text.scale(),
+        content,
+        scene,
+        |scene, slot, value| {
+            ctx.text.proposal_label_in(
+                scene,
+                theme,
+                slot,
+                value,
+                proposal::TextRole::UiBody,
+                ColorRole::PrimaryText.resolve(theme),
+            );
+        },
+    );
+}
+
+pub(crate) fn build_calibration_with_labels(
+    theme: Theme,
+    backing_scale: f32,
+    content: Rect,
+    scene: &mut Scene,
+    mut label: impl FnMut(&mut Scene, Rect, &str),
+) {
     let x = content.min_x();
     let y = content.min_y();
     for (row, offset) in [0.0, 0.5].into_iter().enumerate() {
         let top = y + row as f32 * 160.;
-        ctx.text.proposal_label_in(
+        label(
             scene,
-            ctx.theme,
             Rect::new(x, top, content.size.width, 32.),
-            &format!(
-                "Raster alignment: origin + {offset} pt · backing scale {}x",
-                ctx.text.scale()
-            ),
-            proposal::TextRole::UiBody,
-            ColorRole::PrimaryText.resolve(ctx.theme),
+            &format!("Raster alignment: origin + {offset} pt · backing scale {backing_scale}x"),
         );
-        stroke_samples(scene, ctx.theme, Point::new(x + offset, top + 40. + offset));
+        stroke_samples(scene, theme, Point::new(x + offset, top + 40. + offset));
     }
-    ctx.text.proposal_label_in(
+    label(
         scene,
-        ctx.theme,
         Rect::new(x, y + 340., content.size.width, 32.),
         "Live alpha compositing — inspect intersections for seams and clipping",
-        proposal::TextRole::UiBody,
-        ColorRole::PrimaryText.resolve(ctx.theme),
     );
-    alpha_samples(scene, ctx.theme, Point::new(x, y + 384.));
+    alpha_samples(scene, theme, Point::new(x, y + 384.));
 }
 
 pub fn build(ctx: &mut PageCtx<'_>, content: Rect, scene: &mut Scene) {

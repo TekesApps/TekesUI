@@ -16,6 +16,7 @@ pub const FEEDBACK: ComponentId = ComponentId(8402);
 const LABEL: &str = "Find a command";
 #[derive(Debug)]
 struct Commands {
+    owner: ComponentId,
     editor: TextFieldContent,
     model: CommandPalette,
     view: CommandPaletteView,
@@ -37,7 +38,7 @@ impl Commands {
         }
     }
     fn opened(&mut self) {
-        if !self.view.open_from(&mut self.model, COMMAND.0 as usize) {
+        if !self.view.open_from(&mut self.model, self.owner.0 as usize) {
             return;
         }
         let n = self.editor.surface.input.len();
@@ -59,7 +60,7 @@ impl Commands {
         }
         self.editor.set_focus(false, false);
         let caller = self.view.take_restore_focus(&self.model);
-        if self.focused && caller == Some(COMMAND.0 as usize) && !self.model.combo.disabled {
+        if self.focused && caller == Some(self.owner.0 as usize) && !self.model.combo.disabled {
             self.view.focus_trigger(self.keyboard);
         }
     }
@@ -83,6 +84,22 @@ impl Commands {
     }
 }
 impl Component for Commands {
+    fn rectangular_input_geometry(&self) -> bool {
+        true
+    }
+    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
+        ActionTransactionCompatibility::StableHooks
+    }
+    fn prepared_effects_work(&self, calls: usize) -> Result<usize, PreparedEffectsError> {
+        PreparedEffects::local_work(calls)
+    }
+    fn prepare_effects(
+        &self,
+        hooks: &[PreparedHook],
+    ) -> Result<PreparedEffects, PreparedEffectsError> {
+        Ok(PreparedEffects::local(self, hooks))
+    }
+
     fn prepare_text_input(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
         if self.open() {
             self.editor.prepare_text_input(text, frame, clip);
@@ -476,40 +493,61 @@ pub struct Scenario {
     pub host: ContentHost,
     status: Rc<Cell<Status>>,
 }
+/// The original command lookup and feedback subtree in a receiving Host.
+pub fn fixture_content(
+    ids: [ComponentId; 3],
+    items: Vec<String>,
+    status: Rc<Cell<Status>>,
+    initial_query: Option<&str>,
+) -> Content {
+    let [root, command, feedback] = ids;
+    let mut view = CommandPaletteView::default();
+    view.options.set_reduced_motion(true);
+    let mut commands = Commands {
+        owner: command,
+        editor: TextFieldContent::new("Command query", ""),
+        model: CommandPalette {
+            combo: ComboBox {
+                items,
+                ..Default::default()
+            },
+        },
+        view,
+        focused: false,
+        keyboard: false,
+        trigger_press: false,
+        editor_frame: Rect::default(),
+        last_executed: None,
+    };
+    if let Some(query) = initial_query {
+        commands.opened();
+        commands.editor.surface.input.insert(query, Some(0..0));
+        commands.sync_query();
+    }
+    Content::new(
+        root,
+        StackContent {
+            model: Stack {
+                axis: Axis::Vertical,
+                gap: Spacing::Regular.value(),
+            },
+            children: vec![
+                Content::new(feedback, Feedback::new(status)),
+                Content::new(command, commands),
+            ],
+            flexible_child: None,
+        },
+    )
+}
 impl Scenario {
     pub fn new(items: Vec<String>) -> Result<Self, CompositionError> {
         let status = Rc::new(Cell::new(Status::Ready));
-        let mut view = CommandPaletteView::default();
-        view.options.set_reduced_motion(true);
-        let commands = Commands {
-            editor: TextFieldContent::new("Command query", ""),
-            model: CommandPalette {
-                combo: ComboBox {
-                    items,
-                    ..Default::default()
-                },
-            },
-            view,
-            focused: false,
-            keyboard: false,
-            trigger_press: false,
-            editor_frame: Rect::default(),
-            last_executed: None,
-        };
         Ok(Self {
-            host: ContentHost::new(Content::new(
-                ROOT,
-                StackContent {
-                    model: Stack {
-                        axis: Axis::Vertical,
-                        gap: Spacing::Regular.value(),
-                    },
-                    children: vec![
-                        Content::new(FEEDBACK, Feedback::new(status.clone())),
-                        Content::new(COMMAND, commands),
-                    ],
-                    flexible_child: None,
-                },
+            host: ContentHost::new(fixture_content(
+                [ROOT, COMMAND, FEEDBACK],
+                items,
+                status.clone(),
+                None,
             ))?,
             status,
         })

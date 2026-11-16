@@ -30,7 +30,11 @@ fn caption_size(ctx: &mut PageCtx<'_>, text: &str, width: f32) -> tekes_ui_scene
     tekes_ui_scene::Size::new(paragraph.width as f32, paragraph.height as f32)
 }
 
-fn matrix_control_height(renderer: &str, text: &mut impl ButtonTextRenderer, width: f32) -> f32 {
+pub(super) fn matrix_control_height(
+    renderer: &str,
+    text: &mut impl ButtonTextRenderer,
+    width: f32,
+) -> f32 {
     match renderer {
         "switch" => {
             let text_width = (width - 62.).max(0.);
@@ -113,6 +117,568 @@ pub(super) fn wrapped_caption(
         ColorRole::SecondaryText.resolve(ctx.theme),
     );
     slot
+}
+
+pub(super) fn paint_selection_fixture(
+    renderer: &str,
+    fixture: (&str, ControlState),
+    scene: &mut Scene,
+    text: &mut impl ButtonTextRenderer,
+    control: Rect,
+    c: Rect,
+    palette: Palette,
+) {
+    let (name, state) = fixture;
+    match renderer {
+        "switch" => {
+            let model = controls::Switch {
+                checked: state.selected,
+                disabled: state.disabled,
+            };
+            let mut view = SwitchView::new();
+            view.set_error(state.error);
+            if state.focused {
+                view.focus(state.focus_visible);
+            }
+            let mut probe = Scene::new();
+            let layout = view.render_labeled(
+                &mut probe,
+                text,
+                model,
+                control,
+                Some(c),
+                palette,
+                "Enabled",
+            );
+            let point = layout.toggle.frame().center();
+            if state.hovered {
+                view.pointer_move(point);
+            }
+            if state.pressed {
+                view.pointer_down(point, &model);
+            }
+            view.render_labeled(scene, text, model, control, Some(c), palette, "Enabled");
+        }
+        "radio-group" => {
+            let mut model = controls::RadioGroup::new(1);
+            model.selected = state.selected.then_some(0);
+            let mut view = RadioGroupView::new();
+            view.set_error(state.error);
+            view.set_disabled(state.disabled);
+            if state.focused {
+                view.focus(&model, Some(0), state.focus_visible);
+            }
+            let mut probe = Scene::new();
+            let layout = view.render(
+                &mut probe,
+                text,
+                &model,
+                control,
+                Some(c),
+                palette,
+                &["Option"],
+            );
+            let point = layout.rows[0].frame().center();
+            if state.hovered {
+                view.pointer_move(point);
+            }
+            if state.pressed {
+                view.pointer_down(point, &model);
+            }
+            view.render(scene, text, &model, control, Some(c), palette, &["Option"]);
+        }
+        "slider" => {
+            let mut slider = controls::Slider::new(50., 0., 100., 5.).expect("valid fixture");
+            slider.disabled = state.disabled;
+            let mut view = SliderView::new();
+            if state.focused {
+                view.focus(state.focus_visible);
+            }
+            let mut probe = Scene::new();
+            let layout = view.render(&mut probe, slider, control, Some(c), palette);
+            if state.hovered {
+                view.pointer_move(layout.thumb.center(), &mut slider);
+            }
+            if state.pressed {
+                view.pointer_down(layout.thumb.center(), &mut slider);
+            }
+            if name == "Dragging" {
+                view.pointer_move(
+                    Point::new(
+                        layout.track.min_x() + layout.track.size.width * 0.75,
+                        layout.track.center().y,
+                    ),
+                    &mut slider,
+                );
+            }
+            view.render(scene, slider, control, Some(c), palette);
+        }
+        "link" => {
+            let mut model = controls::Link::default();
+            model.button.state.disabled = state.disabled;
+            let mut view = LinkView::default();
+            if state.focused {
+                view.focus(state.focus_visible);
+            }
+            let mut probe = Scene::new();
+            let layout = view.render(
+                &mut probe,
+                text,
+                &mut model,
+                "Open documentation",
+                control,
+                Some(c),
+                palette,
+                proposal::TextRole::UiBody,
+            );
+            if state.hovered {
+                view.pointer_move(layout.frame.center());
+            }
+            if state.pressed {
+                view.pointer_down(layout.frame.center());
+            }
+            view.render(
+                scene,
+                text,
+                &mut model,
+                "Open documentation",
+                control,
+                Some(c),
+                palette,
+                proposal::TextRole::UiBody,
+            );
+        }
+        "segmented-control" => {
+            let mut model = controls::SegmentedControl::new(3);
+            if state.selected {
+                model.select(1);
+            }
+            if state.disabled && name != "Disabled · all segments" {
+                model.set_enabled(2, false);
+            }
+            let mut view = SegmentedControlView::new(3);
+            view.set_disabled(state.disabled && name == "Disabled · all segments");
+            if state.focused {
+                view.focus_with_visibility(0, state.focus_visible);
+            }
+            let labels = ["General", "Advanced", "Security"];
+            let mut probe = Scene::new();
+            let layout = view.render(
+                &mut probe,
+                text,
+                &mut model,
+                &labels,
+                control,
+                Some(c),
+                palette,
+                proposal::TextRole::UiBody,
+                false,
+            );
+            let point = layout.items[0].frame.center();
+            if state.hovered {
+                view.pointer_move(point);
+            }
+            if state.pressed {
+                view.pointer_down(point);
+            }
+            view.render(
+                scene,
+                text,
+                &mut model,
+                &labels,
+                control,
+                Some(c),
+                palette,
+                proposal::TextRole::UiBody,
+                false,
+            );
+        }
+        _ => unreachable!("selection matrix renderer"),
+    }
+}
+
+pub(super) fn matrix_states(renderer: &str) -> Vec<(&'static str, ControlState)> {
+    match renderer {
+        "disclosure" => vec![
+            ("Collapsed · default", ControlState::default()),
+            (
+                "Collapsed · hover",
+                ControlState {
+                    hovered: true,
+                    ..Default::default()
+                },
+            ),
+            (
+                "Collapsed · pressed",
+                ControlState {
+                    pressed: true,
+                    ..Default::default()
+                },
+            ),
+            (
+                "Collapsed · focus-visible",
+                ControlState {
+                    focused: true,
+                    focus_visible: true,
+                    ..Default::default()
+                },
+            ),
+            (
+                "Expanded · default",
+                ControlState {
+                    selected: true,
+                    ..Default::default()
+                },
+            ),
+            (
+                "Expanded · hover",
+                ControlState {
+                    selected: true,
+                    hovered: true,
+                    ..Default::default()
+                },
+            ),
+            (
+                "Expanded · disabled",
+                ControlState {
+                    selected: true,
+                    disabled: true,
+                    ..Default::default()
+                },
+            ),
+            (
+                "Disabled",
+                ControlState {
+                    disabled: true,
+                    ..Default::default()
+                },
+            ),
+        ],
+        "icon-button" => vec![
+            ("Default", ControlState::default()),
+            (
+                "Hover",
+                ControlState {
+                    hovered: true,
+                    ..Default::default()
+                },
+            ),
+            (
+                "Pressed",
+                ControlState {
+                    pressed: true,
+                    ..Default::default()
+                },
+            ),
+            (
+                "Focus-visible",
+                ControlState {
+                    focused: true,
+                    focus_visible: true,
+                    ..Default::default()
+                },
+            ),
+            (
+                "Selected",
+                ControlState {
+                    selected: true,
+                    ..Default::default()
+                },
+            ),
+            (
+                "Loading",
+                ControlState {
+                    loading: true,
+                    ..Default::default()
+                },
+            ),
+            (
+                "Disabled",
+                ControlState {
+                    disabled: true,
+                    ..Default::default()
+                },
+            ),
+        ],
+        "link" => vec![
+            ("Default", ControlState::default()),
+            (
+                "Hover",
+                ControlState {
+                    hovered: true,
+                    ..Default::default()
+                },
+            ),
+            (
+                "Pressed",
+                ControlState {
+                    pressed: true,
+                    ..Default::default()
+                },
+            ),
+            (
+                "Focus-visible",
+                ControlState {
+                    focused: true,
+                    focus_visible: true,
+                    ..Default::default()
+                },
+            ),
+            (
+                "Disabled",
+                ControlState {
+                    disabled: true,
+                    ..Default::default()
+                },
+            ),
+        ],
+        "segmented-control" => vec![
+            ("Selected · default", ControlState::default()),
+            (
+                "Selected · alternate",
+                ControlState {
+                    selected: true,
+                    ..Default::default()
+                },
+            ),
+            (
+                "Disabled · all segments",
+                ControlState {
+                    disabled: true,
+                    ..Default::default()
+                },
+            ),
+            (
+                "Selected · hover",
+                ControlState {
+                    hovered: true,
+                    ..Default::default()
+                },
+            ),
+            (
+                "Selected · pressed",
+                ControlState {
+                    pressed: true,
+                    ..Default::default()
+                },
+            ),
+            (
+                "Selected · focus-visible",
+                ControlState {
+                    focused: true,
+                    focus_visible: true,
+                    ..Default::default()
+                },
+            ),
+            (
+                "Selected · disabled peer",
+                ControlState {
+                    disabled: true,
+                    ..Default::default()
+                },
+            ),
+        ],
+        "switch" | "radio-group" => vec![
+            (
+                "Checked · default",
+                ControlState {
+                    selected: true,
+                    ..Default::default()
+                },
+            ),
+            (
+                "Checked · hover",
+                ControlState {
+                    selected: true,
+                    hovered: true,
+                    ..Default::default()
+                },
+            ),
+            (
+                "Checked · pressed",
+                ControlState {
+                    selected: true,
+                    pressed: true,
+                    ..Default::default()
+                },
+            ),
+            (
+                "Checked · focus-visible",
+                ControlState {
+                    selected: true,
+                    focused: true,
+                    focus_visible: true,
+                    ..Default::default()
+                },
+            ),
+            (
+                "Checked · disabled",
+                ControlState {
+                    selected: true,
+                    disabled: true,
+                    ..Default::default()
+                },
+            ),
+            (
+                "Unchecked · error + focus-visible",
+                ControlState {
+                    error: true,
+                    focused: true,
+                    focus_visible: true,
+                    ..Default::default()
+                },
+            ),
+            (
+                "Checked · error",
+                ControlState {
+                    error: true,
+                    selected: true,
+                    ..Default::default()
+                },
+            ),
+            (
+                "Checked · error + disabled",
+                ControlState {
+                    error: true,
+                    selected: true,
+                    disabled: true,
+                    ..Default::default()
+                },
+            ),
+            ("Unchecked", ControlState::default()),
+            (
+                "Unchecked · disabled",
+                ControlState {
+                    disabled: true,
+                    ..Default::default()
+                },
+            ),
+        ],
+        "slider" => vec![
+            ("Default", ControlState::default()),
+            (
+                "Dragging",
+                ControlState {
+                    pressed: true,
+                    ..Default::default()
+                },
+            ),
+            (
+                "Hover",
+                ControlState {
+                    hovered: true,
+                    ..Default::default()
+                },
+            ),
+            (
+                "Pressed",
+                ControlState {
+                    pressed: true,
+                    ..Default::default()
+                },
+            ),
+            (
+                "Focus-visible",
+                ControlState {
+                    focused: true,
+                    focus_visible: true,
+                    ..Default::default()
+                },
+            ),
+            (
+                "Disabled",
+                ControlState {
+                    disabled: true,
+                    ..Default::default()
+                },
+            ),
+        ],
+        _ => vec![
+            ("Default", ControlState::default()),
+            (
+                "Hover",
+                ControlState {
+                    hovered: true,
+                    ..Default::default()
+                },
+            ),
+            (
+                "Pressed",
+                ControlState {
+                    pressed: true,
+                    ..Default::default()
+                },
+            ),
+            (
+                "Focus-visible",
+                ControlState {
+                    focused: true,
+                    focus_visible: true,
+                    ..Default::default()
+                },
+            ),
+            (
+                "Disabled",
+                ControlState {
+                    disabled: true,
+                    ..Default::default()
+                },
+            ),
+        ],
+    }
+}
+
+pub(super) fn behavior_copy(renderer: &str) -> &'static str {
+    match renderer {
+        "disclosure" => {
+            "Enter or Space toggles the disclosure. Collapsed content is not mounted in the fixture."
+        }
+        "split-view" => {
+            "Drag the divider after its 4 pt dead zone. Arrow keys adjust; Home and End set limits. Escape restores the starting ratio. Constrained widths expose master/detail pane selection."
+        }
+        "icon-button" => {
+            "Accessible name: Create item. Enter and Space activate; pointer activation requires press and release on the same control."
+        }
+        "link" => "Enter follows the link action. Space does not activate a link.",
+        "combo-box" => {
+            "Type to filter. Arrow keys move the active option, Enter commits, Escape closes. Marked IME composition is passed to the native text input first."
+        }
+        "slider" => {
+            "Left and Right adjust by the declared step; Home and End move to the range bounds. Pointer drag updates the value."
+        }
+        "radio-group" | "segmented-control" => {
+            "Arrow keys move selection; Space selects the focused item. Disabled items are skipped."
+        }
+        "switch" => "Space toggles the focused value. Disabled state prevents changes.",
+        "breadcrumb" => {
+            "Activate a crumb to navigate to its ancestor. It does not consume Space as a link activation."
+        }
+        "command-palette" => {
+            "Open the palette, type to filter, use arrow keys to move, Enter to run, and Escape to close."
+        }
+        "list" => "Single selection. Up and Down move; Home and End select the first and last row.",
+        "tree" => {
+            "Up and Down move among visible rows. Right expands or enters the first child; Left collapses or moves to the parent."
+        }
+        "data-table" => {
+            "Activate a header to sort deterministically. Up and Down move through rows; Enter selects the focused row."
+        }
+        "chart" => {
+            "Arrow keys move the selected data mark. Non-finite values are omitted and are not selectable."
+        }
+        "tooltip" => {
+            "Hover or focus-visible reveals the tooltip. Escape dismisses it until pointer leave or focus changes."
+        }
+        "popover" => {
+            "Activate the trigger, then Escape or click outside. Dismissal restores focus to the invoker."
+        }
+        "toast" => {
+            "Dismiss or advance the deterministic fixture timer by one second. No wall-clock timer is used."
+        }
+        "banner" => "Dismiss the notice; Reset restores its initial visible state.",
+        "progress" => "Advance the value in 10% steps. The value is clamped to 100%.",
+        _ => "This component is a static rendering specimen in this release.",
+    }
 }
 
 pub(super) fn supports(renderer: &str) -> bool {
@@ -769,334 +1335,7 @@ impl ExtendedStory {
         let width = content.size.width.max(0.);
         let columns = ((width / 300.).floor() as usize).clamp(1, 3);
         let cell_w = (width / columns as f32).max(0.);
-        let states: Vec<(&str, ControlState)> = match e.renderer() {
-            "disclosure" => vec![
-                ("Collapsed · default", ControlState::default()),
-                (
-                    "Collapsed · hover",
-                    ControlState {
-                        hovered: true,
-                        ..Default::default()
-                    },
-                ),
-                (
-                    "Collapsed · pressed",
-                    ControlState {
-                        pressed: true,
-                        ..Default::default()
-                    },
-                ),
-                (
-                    "Collapsed · focus-visible",
-                    ControlState {
-                        focused: true,
-                        focus_visible: true,
-                        ..Default::default()
-                    },
-                ),
-                (
-                    "Expanded · default",
-                    ControlState {
-                        selected: true,
-                        ..Default::default()
-                    },
-                ),
-                (
-                    "Expanded · hover",
-                    ControlState {
-                        selected: true,
-                        hovered: true,
-                        ..Default::default()
-                    },
-                ),
-                (
-                    "Expanded · disabled",
-                    ControlState {
-                        selected: true,
-                        disabled: true,
-                        ..Default::default()
-                    },
-                ),
-                (
-                    "Disabled",
-                    ControlState {
-                        disabled: true,
-                        ..Default::default()
-                    },
-                ),
-            ],
-            "icon-button" => vec![
-                ("Default", ControlState::default()),
-                (
-                    "Hover",
-                    ControlState {
-                        hovered: true,
-                        ..Default::default()
-                    },
-                ),
-                (
-                    "Pressed",
-                    ControlState {
-                        pressed: true,
-                        ..Default::default()
-                    },
-                ),
-                (
-                    "Focus-visible",
-                    ControlState {
-                        focused: true,
-                        focus_visible: true,
-                        ..Default::default()
-                    },
-                ),
-                (
-                    "Selected",
-                    ControlState {
-                        selected: true,
-                        ..Default::default()
-                    },
-                ),
-                (
-                    "Loading",
-                    ControlState {
-                        loading: true,
-                        ..Default::default()
-                    },
-                ),
-                (
-                    "Disabled",
-                    ControlState {
-                        disabled: true,
-                        ..Default::default()
-                    },
-                ),
-            ],
-            "link" => vec![
-                ("Default", ControlState::default()),
-                (
-                    "Hover",
-                    ControlState {
-                        hovered: true,
-                        ..Default::default()
-                    },
-                ),
-                (
-                    "Pressed",
-                    ControlState {
-                        pressed: true,
-                        ..Default::default()
-                    },
-                ),
-                (
-                    "Focus-visible",
-                    ControlState {
-                        focused: true,
-                        focus_visible: true,
-                        ..Default::default()
-                    },
-                ),
-                (
-                    "Disabled",
-                    ControlState {
-                        disabled: true,
-                        ..Default::default()
-                    },
-                ),
-            ],
-            "segmented-control" => vec![
-                ("Selected · default", ControlState::default()),
-                (
-                    "Selected · alternate",
-                    ControlState {
-                        selected: true,
-                        ..Default::default()
-                    },
-                ),
-                (
-                    "Disabled · all segments",
-                    ControlState {
-                        disabled: true,
-                        ..Default::default()
-                    },
-                ),
-                (
-                    "Selected · hover",
-                    ControlState {
-                        hovered: true,
-                        ..Default::default()
-                    },
-                ),
-                (
-                    "Selected · pressed",
-                    ControlState {
-                        pressed: true,
-                        ..Default::default()
-                    },
-                ),
-                (
-                    "Selected · focus-visible",
-                    ControlState {
-                        focused: true,
-                        focus_visible: true,
-                        ..Default::default()
-                    },
-                ),
-                (
-                    "Selected · disabled peer",
-                    ControlState {
-                        disabled: true,
-                        ..Default::default()
-                    },
-                ),
-            ],
-            "switch" | "radio-group" => vec![
-                (
-                    "Checked · default",
-                    ControlState {
-                        selected: true,
-                        ..Default::default()
-                    },
-                ),
-                (
-                    "Checked · hover",
-                    ControlState {
-                        selected: true,
-                        hovered: true,
-                        ..Default::default()
-                    },
-                ),
-                (
-                    "Checked · pressed",
-                    ControlState {
-                        selected: true,
-                        pressed: true,
-                        ..Default::default()
-                    },
-                ),
-                (
-                    "Checked · focus-visible",
-                    ControlState {
-                        selected: true,
-                        focused: true,
-                        focus_visible: true,
-                        ..Default::default()
-                    },
-                ),
-                (
-                    "Checked · disabled",
-                    ControlState {
-                        selected: true,
-                        disabled: true,
-                        ..Default::default()
-                    },
-                ),
-                (
-                    "Unchecked · error + focus-visible",
-                    ControlState {
-                        error: true,
-                        focused: true,
-                        focus_visible: true,
-                        ..Default::default()
-                    },
-                ),
-                (
-                    "Checked · error",
-                    ControlState {
-                        error: true,
-                        selected: true,
-                        ..Default::default()
-                    },
-                ),
-                (
-                    "Checked · error + disabled",
-                    ControlState {
-                        error: true,
-                        selected: true,
-                        disabled: true,
-                        ..Default::default()
-                    },
-                ),
-                ("Unchecked", ControlState::default()),
-                (
-                    "Unchecked · disabled",
-                    ControlState {
-                        disabled: true,
-                        ..Default::default()
-                    },
-                ),
-            ],
-            "slider" => vec![
-                ("Default", ControlState::default()),
-                (
-                    "Dragging",
-                    ControlState {
-                        pressed: true,
-                        ..Default::default()
-                    },
-                ),
-                (
-                    "Hover",
-                    ControlState {
-                        hovered: true,
-                        ..Default::default()
-                    },
-                ),
-                (
-                    "Pressed",
-                    ControlState {
-                        pressed: true,
-                        ..Default::default()
-                    },
-                ),
-                (
-                    "Focus-visible",
-                    ControlState {
-                        focused: true,
-                        focus_visible: true,
-                        ..Default::default()
-                    },
-                ),
-                (
-                    "Disabled",
-                    ControlState {
-                        disabled: true,
-                        ..Default::default()
-                    },
-                ),
-            ],
-            _ => vec![
-                ("Default", ControlState::default()),
-                (
-                    "Hover",
-                    ControlState {
-                        hovered: true,
-                        ..Default::default()
-                    },
-                ),
-                (
-                    "Pressed",
-                    ControlState {
-                        pressed: true,
-                        ..Default::default()
-                    },
-                ),
-                (
-                    "Focus-visible",
-                    ControlState {
-                        focused: true,
-                        focus_visible: true,
-                        ..Default::default()
-                    },
-                ),
-                (
-                    "Disabled",
-                    ControlState {
-                        disabled: true,
-                        ..Default::default()
-                    },
-                ),
-            ],
-        };
+        let states = matrix_states(e.renderer());
         const STATE_HELP: &str =
             "Visual comparison only. Use Playground for real focus and keyboard behavior.";
         let help_height = caption_size(ctx, STATE_HELP, width).height;
@@ -1156,224 +1395,23 @@ impl ExtendedStory {
             );
             let palette = Palette::new(ctx.theme, s.brand).expect("registered Gallery brand");
             match e.renderer() {
-                "switch" => {
-                    let model = controls::Switch {
-                        checked: state.selected,
-                        disabled: state.disabled,
-                    };
-                    let mut view = SwitchView::new();
-                    view.set_error(state.error);
-                    if state.focused {
-                        view.focus(state.focus_visible);
-                    }
-                    let mut probe = Scene::new();
-                    let layout = view.render_labeled(
-                        &mut probe,
-                        ctx.text,
-                        model,
-                        control,
-                        Some(c),
-                        palette,
-                        "Enabled",
-                    );
-                    let point = layout.toggle.frame().center();
-                    if state.hovered {
-                        view.pointer_move(point);
-                    }
-                    if state.pressed {
-                        view.pointer_down(point, &model);
-                    }
-                    view.render_labeled(
+                "switch" | "radio-group" | "slider" | "link" | "segmented-control" => {
+                    paint_selection_fixture(
+                        e.renderer(),
+                        (name, state),
                         scene,
                         ctx.text,
-                        model,
                         control,
-                        Some(c),
+                        c,
                         palette,
-                        "Enabled",
-                    );
-                }
-                "radio-group" => {
-                    let mut model = controls::RadioGroup::new(1);
-                    model.selected = state.selected.then_some(0);
-                    let mut view = RadioGroupView::new();
-                    view.set_error(state.error);
-                    view.set_disabled(state.disabled);
-                    if state.focused {
-                        view.focus(&model, Some(0), state.focus_visible);
-                    }
-                    let mut probe = Scene::new();
-                    let layout = view.render(
-                        &mut probe,
-                        ctx.text,
-                        &model,
-                        control,
-                        Some(c),
-                        palette,
-                        &["Option"],
-                    );
-                    let point = layout.rows[0].frame().center();
-                    if state.hovered {
-                        view.pointer_move(point);
-                    }
-                    if state.pressed {
-                        view.pointer_down(point, &model);
-                    }
-                    view.render(
-                        scene,
-                        ctx.text,
-                        &model,
-                        control,
-                        Some(c),
-                        palette,
-                        &["Option"],
-                    );
-                }
-                "slider" => {
-                    let mut slider =
-                        controls::Slider::new(50., 0., 100., 5.).expect("valid fixture");
-                    slider.disabled = state.disabled;
-                    let mut view = SliderView::new();
-                    if state.focused {
-                        view.focus(state.focus_visible);
-                    }
-                    let mut probe = Scene::new();
-                    let layout = view.render(&mut probe, slider, control, Some(c), palette);
-                    if state.hovered {
-                        view.pointer_move(layout.thumb.center(), &mut slider);
-                    }
-                    if state.pressed {
-                        view.pointer_down(layout.thumb.center(), &mut slider);
-                    }
-                    if name == "Dragging" {
-                        view.pointer_move(
-                            Point::new(
-                                layout.track.min_x() + layout.track.size.width * 0.75,
-                                layout.track.center().y,
-                            ),
-                            &mut slider,
-                        );
-                    }
-                    view.render(scene, slider, control, Some(c), palette);
+                    )
                 }
                 "disclosure" => {
-                    let model = controls::Disclosure {
-                        open: state.selected,
-                        disabled: state.disabled,
-                    };
-                    let mut view = DisclosureView::default();
-                    if state.focused {
-                        view.focus(state.focus_visible);
-                    }
-                    let mut probe = Scene::new();
-                    let layout = view.render(
-                        &mut probe,
-                        ctx.text,
-                        &model,
-                        "Details",
-                        control,
-                        Some(c),
-                        palette,
-                        proposal::TextRole::UiBody,
-                    );
-                    if state.hovered {
-                        view.pointer_move(layout.frame.center());
-                    }
-                    if state.pressed {
-                        view.pointer_down(layout.frame.center());
-                    }
-                    view.render(
-                        scene,
-                        ctx.text,
-                        &model,
-                        "Details",
-                        control,
-                        Some(c),
-                        palette,
-                        proposal::TextRole::UiBody,
+                    let (mut view, model) = super::apphost_navigation::paint_disclosure_case(
+                        state, scene, ctx.text, control, c, palette,
                     );
                     let mut icons = GalleryIconRenderer::native(ctx);
                     view.render_icon(scene, &mut icons, &model, Some(c), palette, 16.);
-                }
-                "link" => {
-                    let mut model = controls::Link::default();
-                    model.button.state.disabled = state.disabled;
-                    let mut view = LinkView::default();
-                    if state.focused {
-                        view.focus(state.focus_visible);
-                    }
-                    let mut probe = Scene::new();
-                    let layout = view.render(
-                        &mut probe,
-                        ctx.text,
-                        &mut model,
-                        "Open documentation",
-                        control,
-                        Some(c),
-                        palette,
-                        proposal::TextRole::UiBody,
-                    );
-                    if state.hovered {
-                        view.pointer_move(layout.frame.center());
-                    }
-                    if state.pressed {
-                        view.pointer_down(layout.frame.center());
-                    }
-                    view.render(
-                        scene,
-                        ctx.text,
-                        &mut model,
-                        "Open documentation",
-                        control,
-                        Some(c),
-                        palette,
-                        proposal::TextRole::UiBody,
-                    );
-                }
-                "segmented-control" => {
-                    let mut model = controls::SegmentedControl::new(3);
-                    if state.selected {
-                        model.select(1);
-                    }
-                    if state.disabled && name != "Disabled · all segments" {
-                        model.set_enabled(2, false);
-                    }
-                    let mut view = SegmentedControlView::new(3);
-                    view.set_disabled(state.disabled && name == "Disabled · all segments");
-                    if state.focused {
-                        view.focus_with_visibility(0, state.focus_visible);
-                    }
-                    let labels = ["General", "Advanced", "Security"];
-                    let mut probe = Scene::new();
-                    let layout = view.render(
-                        &mut probe,
-                        ctx.text,
-                        &mut model,
-                        &labels,
-                        control,
-                        Some(c),
-                        palette,
-                        proposal::TextRole::UiBody,
-                        false,
-                    );
-                    let point = layout.items[0].frame.center();
-                    if state.hovered {
-                        view.pointer_move(point);
-                    }
-                    if state.pressed {
-                        view.pointer_down(point);
-                    }
-                    view.render(
-                        scene,
-                        ctx.text,
-                        &mut model,
-                        &labels,
-                        control,
-                        Some(c),
-                        palette,
-                        proposal::TextRole::UiBody,
-                        false,
-                    );
                 }
                 "icon-button" => {
                     let mut view = ButtonSpecimen::new("Create item");
@@ -1447,58 +1485,7 @@ impl ExtendedStory {
         scene: &mut Scene,
         c: Rect,
     ) {
-        let text = match e.renderer() {
-            "disclosure" => {
-                "Enter or Space toggles the disclosure. Collapsed content is not mounted in the fixture."
-            }
-            "split-view" => {
-                "Drag the divider after its 4 pt dead zone. Arrow keys adjust; Home and End set limits. Escape restores the starting ratio. Constrained widths expose master/detail pane selection."
-            }
-            "icon-button" => {
-                "Accessible name: Create item. Enter and Space activate; pointer activation requires press and release on the same control."
-            }
-            "link" => "Enter follows the link action. Space does not activate a link.",
-            "combo-box" => {
-                "Type to filter. Arrow keys move the active option, Enter commits, Escape closes. Marked IME composition is passed to the native text input first."
-            }
-            "slider" => {
-                "Left and Right adjust by the declared step; Home and End move to the range bounds. Pointer drag updates the value."
-            }
-            "radio-group" | "segmented-control" => {
-                "Arrow keys move selection; Space selects the focused item. Disabled items are skipped."
-            }
-            "switch" => "Space toggles the focused value. Disabled state prevents changes.",
-            "breadcrumb" => {
-                "Activate a crumb to navigate to its ancestor. It does not consume Space as a link activation."
-            }
-            "command-palette" => {
-                "Open the palette, type to filter, use arrow keys to move, Enter to run, and Escape to close."
-            }
-            "list" => {
-                "Single selection. Up and Down move; Home and End select the first and last row."
-            }
-            "tree" => {
-                "Up and Down move among visible rows. Right expands or enters the first child; Left collapses or moves to the parent."
-            }
-            "data-table" => {
-                "Activate a header to sort deterministically. Up and Down move through rows; Enter selects the focused row."
-            }
-            "chart" => {
-                "Arrow keys move the selected data mark. Non-finite values are omitted and are not selectable."
-            }
-            "tooltip" => {
-                "Hover or focus-visible reveals the tooltip. Escape dismisses it until pointer leave or focus changes."
-            }
-            "popover" => {
-                "Activate the trigger, then Escape or click outside. Dismissal restores focus to the invoker."
-            }
-            "toast" => {
-                "Dismiss or advance the deterministic fixture timer by one second. No wall-clock timer is used."
-            }
-            "banner" => "Dismiss the notice; Reset restores its initial visible state.",
-            "progress" => "Advance the value in 10% steps. The value is clamped to 100%.",
-            _ => "This component is a static rendering specimen in this release.",
-        };
+        let text = behavior_copy(e.renderer());
         label(ctx, scene, c, text, false);
     }
 
@@ -1611,7 +1598,7 @@ impl ExtendedStory {
                 );
             }
             "split-view" => {
-                for (index, ratio) in [0.3, 0.5, 0.7].into_iter().enumerate() {
+                for (index, ratio) in super::apphost_split::VARIANTS.into_iter().enumerate() {
                     let bounds = Rect::new(x, y + index as f32 * 110. + 20., w.min(620.), 78.);
                     label(
                         ctx,

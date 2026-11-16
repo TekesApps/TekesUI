@@ -5,6 +5,10 @@ use resvg::{tiny_skia, usvg};
 use std::collections::HashSet;
 use std::io::Read;
 use std::path::{Path, PathBuf};
+use tekes_ui_controls::{
+    composition::{IconImage, IconRenderError},
+    layout_view::IconRenderer,
+};
 use tekes_ui_render::Renderer;
 use tekes_ui_scene::ImageId;
 use tekes_ui_tokens::{ColorRole, Theme};
@@ -41,6 +45,8 @@ pub struct IconCatalog {
     pub notices: Vec<String>,
     pub source: Option<PathBuf>,
     prepared: Option<(Theme, u32)>,
+    host_prepared: Option<(u64, Theme, u32)>,
+    host_images: std::collections::HashMap<(usize, bool, usize), IconImage>,
 }
 impl IconCatalog {
     pub fn from_env() -> Self {
@@ -316,7 +322,72 @@ impl IconCatalog {
         }
         catalog
     }
-    /// Render just the visible legacy tiles; keep bounded GPU images until theme/scale changes.
+    /// Called from the current component paint after ScrollContent has arranged
+    /// its document. Retain only this viewport's leases, owned by the original
+    /// renderer even when the next frame uses a replacement backend.
+    pub(crate) fn prepare_host(
+        &mut self,
+        renderer: &mut dyn IconRenderer,
+        theme: Theme,
+        scale: f32,
+        visible: &[usize],
+    ) -> Result<(), IconRenderError> {
+        let identity = renderer
+            .resource_identity()
+            .ok_or(IconRenderError::UnsupportedRenderer)?;
+        if !(scale.is_finite() && 0.0 < scale && scale <= 8.0) {
+            return Err(IconRenderError::InvalidSize);
+        }
+        let key = (identity, theme, (scale * 1000.0).round() as u32);
+        if self.host_prepared != Some(key) {
+            self.host_images.clear();
+            self.host_prepared = Some(key);
+        }
+        self.host_images
+            .retain(|(index, _, _), _| visible.contains(index));
+        // IDs are a paint projection of retained leases, never foreign IDs to
+        // unregister on a newly installed Renderer.
+        for entry in &mut self.entries {
+            entry.images = [None; 3];
+            if let Some(before) = &mut entry.before {
+                before.images = [None; 3];
+            }
+        }
+        for &index in visible {
+            let entry = &mut self.entries[index];
+            let Entry {
+                tree,
+                images,
+                before,
+                ..
+            } = entry;
+            for (before, variant) in std::iter::once((false, (&*tree, images))).chain(
+                before
+                    .iter_mut()
+                    .map(|old| (true, (&old.tree, &mut old.images))),
+            ) {
+                let (tree, images) = variant;
+                for (slot, size) in preview_sizes().into_iter().enumerate() {
+                    let cache_key = (index, before, slot);
+                    if let std::collections::hash_map::Entry::Vacant(slot) =
+                        self.host_images.entry(cache_key)
+                    {
+                        let bitmap = raster_icon(tree, theme, size, scale)?;
+                        let image = renderer.register_icon_bitmap(
+                            bitmap.data(),
+                            bitmap.width(),
+                            bitmap.height(),
+                        )?;
+                        slot.insert(image);
+                    }
+                    images[slot] = Some(self.host_images[&cache_key].id());
+                }
+            }
+        }
+        Ok(())
+    }
+
+    /// Original Gallery registration path, retaining its finite catalogue cache.
     pub fn prepare(
         &mut self,
         renderer: &mut Renderer,
@@ -343,8 +414,6 @@ impl IconCatalog {
             }
             self.prepared = Some(key);
         }
-        let color = ColorRole::PrimaryText.resolve(theme);
-        let ink = [color.r, color.g, color.b, color.a];
         for &index in visible {
             let Some(entry) = self.entries.get_mut(index) else {
                 continue;
@@ -362,25 +431,10 @@ impl IconCatalog {
                     if images[slot].is_some() {
                         continue;
                     }
-                    let pixels = (size * scale).round().max(1.0) as u32;
-                    let Some(mut pixmap) = tiny_skia::Pixmap::new(pixels, pixels) else {
+                    let Ok(pixmap) = raster_icon(tree, theme, size, scale) else {
                         continue;
                     };
-                    resvg::render(
-                        tree,
-                        tiny_skia::Transform::from_scale(
-                            pixels as f32 / tree.size().width(),
-                            pixels as f32 / tree.size().height(),
-                        ),
-                        &mut pixmap.as_mut(),
-                    );
-                    for rgba in pixmap.data_mut().chunks_exact_mut(4) {
-                        let alpha = f32::from(rgba[3]) / 255.0 * ink[3];
-                        for i in 0..3 {
-                            rgba[i] = (ink[i] * alpha * 255.0).round() as u8;
-                        }
-                        rgba[3] = (alpha * 255.0).round() as u8;
-                    }
+                    let pixels = pixmap.width();
                     match renderer.register_image(pixmap.data(), pixels, pixels) {
                         Ok(id) => images[slot] = Some(id),
                         Err(error) => eprintln!("icon {}: {error}", entry.name),
@@ -389,6 +443,35 @@ impl IconCatalog {
             }
         }
     }
+}
+
+// Both the original Gallery and AppHost use this exact raster/tint algorithm.
+fn raster_icon(
+    tree: &usvg::Tree,
+    theme: Theme,
+    size: f32,
+    scale: f32,
+) -> Result<tiny_skia::Pixmap, IconRenderError> {
+    let pixels = (size * scale).round().max(1.0) as u32;
+    let mut pixmap = tiny_skia::Pixmap::new(pixels, pixels).ok_or(IconRenderError::Raster)?;
+    resvg::render(
+        tree,
+        tiny_skia::Transform::from_scale(
+            pixels as f32 / tree.size().width(),
+            pixels as f32 / tree.size().height(),
+        ),
+        &mut pixmap.as_mut(),
+    );
+    let color = ColorRole::PrimaryText.resolve(theme);
+    let ink = [color.r, color.g, color.b, color.a];
+    for rgba in pixmap.data_mut().chunks_exact_mut(4) {
+        let alpha = f32::from(rgba[3]) / 255.0 * ink[3];
+        for i in 0..3 {
+            rgba[i] = (ink[i] * alpha * 255.0).round() as u8;
+        }
+        rgba[3] = (alpha * 255.0).round() as u8;
+    }
+    Ok(pixmap)
 }
 
 #[cfg(test)]

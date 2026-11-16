@@ -1,13 +1,80 @@
 //! The native Gallery icon catalogue, reusing the component renderer.
 use super::{
     PageCtx,
-    showcase::{Icon, draw_icon_tinted},
+    showcase::{Icon, draw_native_icon},
 };
 use crate::gallery::icon_catalog::{IconCatalog, preview_sizes};
 use tekes_ui_controls::layout_view::{IconRenderer, IconView};
 use tekes_ui_controls::paint;
 use tekes_ui_scene::{ImageId, ImageQuad, Quad, Rect, Scene, Size};
 use tekes_ui_tokens::{ColorRole, CornerRadius, Spacing, proposal};
+
+pub(crate) trait IconText {
+    fn type_scale(&self) -> f32;
+    fn scale(&self) -> f32;
+    fn proposal_label(
+        &mut self,
+        value: &str,
+        role: proposal::TextRole,
+        width: Option<f32>,
+    ) -> std::rc::Rc<tekes_ui_text::Paragraph>;
+    fn proposal_label_in(
+        &mut self,
+        scene: &mut Scene,
+        theme: tekes_ui_tokens::Theme,
+        slot: Rect,
+        value: &str,
+        role: proposal::TextRole,
+        ink: tekes_ui_tokens::Rgba,
+    ) -> f32;
+    fn proposal_wrapped_in(
+        &mut self,
+        scene: &mut Scene,
+        theme: tekes_ui_tokens::Theme,
+        slot: Rect,
+        value: &str,
+        role: proposal::TextRole,
+        ink: tekes_ui_tokens::Rgba,
+    ) -> usize;
+}
+impl IconText for crate::gallery::text::TextEngine {
+    fn type_scale(&self) -> f32 {
+        self.type_scale()
+    }
+    fn scale(&self) -> f32 {
+        self.scale()
+    }
+    fn proposal_label(
+        &mut self,
+        value: &str,
+        role: proposal::TextRole,
+        width: Option<f32>,
+    ) -> std::rc::Rc<tekes_ui_text::Paragraph> {
+        self.proposal_label(value, role, width)
+    }
+    fn proposal_label_in(
+        &mut self,
+        scene: &mut Scene,
+        theme: tekes_ui_tokens::Theme,
+        slot: Rect,
+        value: &str,
+        role: proposal::TextRole,
+        ink: tekes_ui_tokens::Rgba,
+    ) -> f32 {
+        self.proposal_label_in(scene, theme, slot, value, role, ink)
+    }
+    fn proposal_wrapped_in(
+        &mut self,
+        scene: &mut Scene,
+        theme: tekes_ui_tokens::Theme,
+        slot: Rect,
+        value: &str,
+        role: proposal::TextRole,
+        ink: tekes_ui_tokens::Rgba,
+    ) -> usize {
+        self.proposal_wrapped_in(scene, theme, slot, value, role, ink)
+    }
+}
 
 pub fn search_rect(content: Rect) -> Rect {
     Rect::new(content.min_x(), content.min_y(), content.size.width, 40.0)
@@ -34,21 +101,21 @@ enum GalleryIconArtwork {
     Legacy(Option<ImageId>),
 }
 
-pub(crate) struct GalleryIconRenderer<'ctx, 'frame> {
-    ctx: &'ctx mut PageCtx<'frame>,
+pub(crate) struct GalleryIconRenderer {
+    theme: tekes_ui_tokens::Theme,
     artwork: GalleryIconArtwork,
 }
 
-impl<'ctx, 'frame> GalleryIconRenderer<'ctx, 'frame> {
-    pub(crate) fn native(ctx: &'ctx mut PageCtx<'frame>) -> Self {
+impl GalleryIconRenderer {
+    pub(crate) fn native(ctx: &mut PageCtx<'_>) -> Self {
         Self {
-            ctx,
+            theme: ctx.theme,
             artwork: GalleryIconArtwork::Native,
         }
     }
 }
 
-impl IconRenderer for GalleryIconRenderer<'_, '_> {
+impl IconRenderer for GalleryIconRenderer {
     fn draw_icon(
         &mut self,
         scene: &mut Scene,
@@ -75,13 +142,14 @@ impl IconRenderer for GalleryIconRenderer<'_, '_> {
                         .map(|(icon, _)| *icon),
                 };
                 if let Some(icon) = icon {
-                    draw_icon_tinted(self.ctx, scene, frame, icon, tint);
+                    draw_native_icon(scene, self.theme, frame, icon, tint);
                 }
             }
         }
     }
 }
 
+#[cfg(test)]
 fn render_gallery_icon(
     ctx: &mut PageCtx<'_>,
     scene: &mut Scene,
@@ -91,8 +159,19 @@ fn render_gallery_icon(
     clip: Rect,
     artwork: GalleryIconArtwork,
 ) {
-    let palette = tekes_ui_tokens::Palette::from(ctx.theme);
-    let mut renderer = GalleryIconRenderer { ctx, artwork };
+    render_icon(ctx.theme, scene, canonical_name, frame, size, clip, artwork);
+}
+fn render_icon(
+    theme: tekes_ui_tokens::Theme,
+    scene: &mut Scene,
+    canonical_name: &str,
+    frame: Rect,
+    size: f32,
+    clip: Rect,
+    artwork: GalleryIconArtwork,
+) {
+    let palette = tekes_ui_tokens::Palette::from(theme);
+    let mut renderer = GalleryIconRenderer { theme, artwork };
     IconView::default().render(
         scene,
         &mut renderer,
@@ -274,17 +353,28 @@ pub fn build_catalog(
     catalog: &IconCatalog,
     bounds: Rect,
 ) {
+    build_catalog_with_text(ctx.text, ctx.theme, content, scene, query, catalog, bounds);
+}
+pub(crate) fn build_catalog_with_text(
+    text: &mut dyn IconText,
+    theme: tekes_ui_tokens::Theme,
+    content: Rect,
+    scene: &mut Scene,
+    query: &str,
+    catalog: &IconCatalog,
+    bounds: Rect,
+) {
     let found = filtered(catalog, query);
-    let ink = ColorRole::PrimaryText.resolve(ctx.theme);
-    let muted = ColorRole::SecondaryText.resolve(ctx.theme);
+    let ink = ColorRole::PrimaryText.resolve(theme);
+    let muted = ColorRole::SecondaryText.resolve(theme);
     let label = format!(
         "{} / {} icons · 名称包含匹配 · 12 / 16 / 24 pt",
         found.len(),
         Icon::ALL.len() + catalog.entries.len()
     );
-    ctx.text.proposal_label_in(
+    text.proposal_label_in(
         scene,
-        ctx.theme,
+        theme,
         Rect::new(
             content.min_x(),
             content.min_y() + 48.0,
@@ -323,9 +413,9 @@ pub fn build_catalog(
             format!(" · {} 项加载异常", catalog.notices.len())
         }
     );
-    ctx.text.proposal_label_in(
+    text.proposal_label_in(
         scene,
-        ctx.theme,
+        theme,
         Rect::new(
             content.min_x(),
             content.min_y() + 76.0,
@@ -337,9 +427,9 @@ pub fn build_catalog(
         muted,
     );
     if found.is_empty() {
-        ctx.text.proposal_label_in(
+        text.proposal_label_in(
             scene,
-            ctx.theme,
+            theme,
             Rect::new(
                 content.min_x(),
                 content.min_y() + GRID_TOP,
@@ -352,17 +442,17 @@ pub fn build_catalog(
         );
     }
     let gap = Spacing::Loose.value();
-    let scaled_type = ctx.text.type_scale() > 1.0;
+    let scaled_type = text.type_scale() > 1.0;
     for (i, (icon, name)) in found.into_iter().enumerate() {
-        let type_scale = ctx.text.type_scale();
+        let type_scale = text.type_scale();
         let tile = tile_rect_at_scale(content, i, type_scale);
         if tile.intersection(&bounds).is_none() {
             continue;
         }
         let width = tile.size.width;
-        let (border_width, border_ink) = paint::decorative_border(ctx.theme, ctx.text.scale());
+        let (border_width, border_ink) = paint::decorative_border(theme, text.scale());
         scene.push_quad(
-            Quad::new(tile, ColorRole::DocumentCanvas.resolve(ctx.theme))
+            Quad::new(tile, ColorRole::DocumentCanvas.resolve(theme))
                 .with_corner_radius(CornerRadius::Panel.value())
                 .with_border(border_width, border_ink),
         );
@@ -390,8 +480,7 @@ pub fn build_catalog(
             })
             .collect();
         let scaled_layout = if scaled_type {
-            let title_height = (ctx
-                .text
+            let title_height = (text
                 .proposal_label(name, proposal::TextRole::UiBody, Some(title_width))
                 .height as f32)
                 .max(Spacing::Relaxed.value());
@@ -399,17 +488,15 @@ pub fn build_catalog(
                 .iter()
                 .map(|caption| {
                     let panel_width = width / panels as f32;
-                    ctx.text
-                        .proposal_label(
-                            caption,
-                            proposal::TextRole::UiCaption,
-                            Some(panel_width - gap * 2.0),
-                        )
-                        .height as f32
+                    text.proposal_label(
+                        caption,
+                        proposal::TextRole::UiCaption,
+                        Some(panel_width - gap * 2.0),
+                    )
+                    .height as f32
                 })
                 .fold(Spacing::Relaxed.value(), f32::max);
-            let size_label_height = ctx
-                .text
+            let size_label_height = text
                 .proposal_label("24", proposal::TextRole::UiCaption, Some(32.0))
                 .height as f32;
             Some(scaled_card_text_layout(
@@ -422,9 +509,9 @@ pub fn build_catalog(
             None
         };
         if let Some(layout) = scaled_layout {
-            ctx.text.proposal_wrapped_in(
+            text.proposal_wrapped_in(
                 scene,
-                ctx.theme,
+                theme,
                 Rect::new(
                     tile.min_x() + gap,
                     tile.min_y() + gap,
@@ -436,9 +523,9 @@ pub fn build_catalog(
                 ink,
             );
         } else {
-            ctx.text.proposal_label_in(
+            text.proposal_label_in(
                 scene,
-                ctx.theme,
+                theme,
                 Rect::new(tile.min_x() + gap, tile.min_y() + gap, title_width, 24.0),
                 name,
                 proposal::TextRole::UiBody,
@@ -456,9 +543,9 @@ pub fn build_catalog(
                 }
             });
             if let Some(layout) = scaled_layout {
-                ctx.text.proposal_wrapped_in(
+                text.proposal_wrapped_in(
                     scene,
-                    ctx.theme,
+                    theme,
                     Rect::new(
                         left + gap,
                         tile.min_y() + layout.caption_top,
@@ -470,9 +557,9 @@ pub fn build_catalog(
                     muted,
                 );
             } else {
-                ctx.text.proposal_label_in(
+                text.proposal_label_in(
                     scene,
-                    ctx.theme,
+                    theme,
                     Rect::new(
                         left + gap,
                         tile.min_y() + 42.0,
@@ -509,13 +596,13 @@ pub fn build_catalog(
                     CatalogIcon::Legacy(index) => Some(catalog.entries[index].name.as_str()),
                 };
                 if let Some(canonical_name) = canonical_name {
-                    render_gallery_icon(ctx, scene, canonical_name, rect, size, bounds, artwork);
+                    render_icon(theme, scene, canonical_name, rect, size, bounds, artwork);
                 }
                 let size_label = format!("{}", size as u32);
                 if let Some(layout) = scaled_layout {
-                    ctx.text.proposal_wrapped_in(
+                    text.proposal_wrapped_in(
                         scene,
-                        ctx.theme,
+                        theme,
                         Rect::new(
                             center - 16.0,
                             tile.min_y() + layout.size_label_top,
@@ -527,9 +614,9 @@ pub fn build_catalog(
                         muted,
                     );
                 } else {
-                    ctx.text.proposal_label_in(
+                    text.proposal_label_in(
                         scene,
-                        ctx.theme,
+                        theme,
                         Rect::new(center - 16.0, tile.min_y() + 116.0, 32.0, 20.0),
                         &size_label,
                         proposal::TextRole::UiCaption,
