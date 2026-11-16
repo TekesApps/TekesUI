@@ -1405,6 +1405,58 @@ mod tests {
         assert_eq!(story.state.extended.split.ratio(), 0.5);
     }
     #[test]
+    fn apphost_split_scroll_host_pointer_captures_drags_and_releases() {
+        let entry = super::super::entries()
+            .iter()
+            .find(|e| e.renderer() == "split-view")
+            .unwrap();
+        let mut story = BasicStory::new(entry);
+        let mut text = crate::gallery::text::TextEngine::new();
+        let frame = Rect::new(0., 0., 740., 600.);
+        let present = |story: &mut BasicStory, text: &mut crate::gallery::text::TextEngine| {
+            story
+                .host
+                .render(
+                    &mut Scene::new(),
+                    text,
+                    frame,
+                    frame,
+                    tekes_ui_tokens::Theme::LIGHT.into(),
+                )
+                .unwrap();
+        };
+        story.host.set_window_active(true);
+        present(&mut story, &mut text);
+        let divider = super::super::apphost_split::DIVIDER;
+        let start = story.host.get(divider).unwrap().visible().unwrap().center();
+        let before = story.state.extended.split.ratio();
+        assert!(
+            story.host.event(&ContentEvent::PointerDown(start)).consumed,
+            "real divider pointer down must be admitted through the Scroll Host"
+        );
+        assert!(story.host.pointer_capture().is_some());
+        let end = tekes_ui_scene::Point::new(start.x + 90., start.y);
+        assert!(story.host.event(&ContentEvent::PointerMove(end)).consumed);
+        story.after_host_visit();
+        present(&mut story, &mut text);
+        assert!(story.state.extended.split.ratio() > before);
+        assert!(
+            story.host.pointer_capture().is_some(),
+            "repaint preserves the original divider gesture"
+        );
+        story.host.event(&ContentEvent::PointerUp(end));
+        assert!(story.host.pointer_capture().is_none());
+        let settled = story.state.extended.split.ratio();
+        story.host.event(&ContentEvent::PointerMove(start));
+        story.after_host_visit();
+        assert_eq!(story.state.extended.split.ratio(), settled);
+        story.host.set_window_active(false);
+        let point = story.host.get(divider).unwrap().visible().unwrap().center();
+        assert!(!story.host.event(&ContentEvent::PointerDown(point)).consumed);
+        assert!(story.host.pointer_capture().is_none());
+    }
+
+    #[test]
     fn apphost_collection_chapters_preserve_tree_expansion_and_table_sort() {
         let mut text = crate::gallery::text::TextEngine::new();
         for renderer in ["tree", "data-table"] {

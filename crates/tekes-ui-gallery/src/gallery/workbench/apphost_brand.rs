@@ -408,7 +408,12 @@ impl BrandStory {
                 arranged: false,
             },
         );
-        let host = ContentHost::new(Content::new(ComponentId(120000), ListContent::scrollable("Brand candidate matrix", ComponentId(120001), vec![text(120002, "Choose a hue direction"), text(120003, "Selecting a direction prepares a compiler-generated candidate. It does not change the app palette; only Confirm use applies it globally."), grid(120004, directions, 480., 2, 4), grid(120005, vec![current, candidate], 720., 1, 2), dialog]).content_padding(20.))).expect("unique brand content IDs");
+        let document = Content::new(ComponentId(120060), ListContent::scrollable("Brand candidate matrix", ComponentId(120001), vec![text(120002, "Choose a hue direction"), text(120003, "Selecting a direction prepares a compiler-generated candidate. It does not change the app palette; only Confirm use applies it globally."), grid(120004, directions, 480., 2, 4), grid(120005, vec![current, candidate], 720., 1, 2)]).content_padding(20.));
+        let host = ContentHost::new(super::apphost_layout::dialog_viewport(
+            ComponentId(120000),
+            vec![document, dialog],
+        ))
+        .expect("unique brand content IDs");
         let mut story = Self {
             host,
             model,
@@ -647,6 +652,86 @@ mod tests {
             .unwrap();
         assert!(story.host.focus(Some(OPEN), true));
         assert_eq!(story.host.focused(), Some(OPEN));
+    }
+
+    #[test]
+    fn brand_closed_dialog_keeps_scroll_end_real_and_open_dialog_in_viewport() {
+        let mut story = BrandStory::new(Rc::new(Cell::new(Theme::LIGHT.into())));
+        let mut text = TextEngine::new();
+        let frame = Rect::new(0., 0., 480., 480.);
+        let present = |story: &mut BrandStory, text: &mut TextEngine| {
+            story
+                .host
+                .render(&mut Scene::new(), text, frame, frame, story.palette.get())
+                .unwrap();
+        };
+        present(&mut story, &mut text);
+        assert!(
+            story
+                .host
+                .accessibility_action(ComponentId(DIRECTION), None, AccessibilityAction::Press)
+                .consumed
+        );
+        story.after_host_visit();
+        present(&mut story, &mut text);
+        let document = story
+            .host
+            .get(ComponentId(120060))
+            .unwrap()
+            .component::<ScrollContent>()
+            .unwrap()
+            .scroll
+            .document_size();
+        assert!(document.height > frame.size.height);
+        assert!(
+            document.height < 10_000.,
+            "closed modal must not add the unbounded document measurement height: {document:?}"
+        );
+        assert!(
+            story
+                .host
+                .event(&ContentEvent::Scroll {
+                    position: frame.center(),
+                    delta: tekes_ui_scene::Point::new(0., 1_000_000.),
+                    precise: true,
+                    begin: false,
+                    end: false,
+                    momentum: false,
+                    time: 1.,
+                })
+                .consumed
+        );
+        present(&mut story, &mut text);
+        assert!(
+            story
+                .host
+                .get(COUNT)
+                .unwrap()
+                .visible()
+                .is_some_and(|r| r.size.width > 0. && r.size.height > 0.),
+            "scroll end must expose the original last content row, not blank modal allocation"
+        );
+        assert!(
+            story
+                .host
+                .accessibility_action(OPEN, None, AccessibilityAction::Press)
+                .consumed
+        );
+        story.after_host_visit();
+        present(&mut story, &mut text);
+        let dialog = story.host.get(DIALOG).unwrap();
+        assert_eq!(
+            dialog.frame(),
+            frame,
+            "modal receives the finite parent viewport"
+        );
+        let control = dialog.component::<DialogContent>().unwrap();
+        assert!(control.is_open());
+        let modal = control.semantic_frame(frame);
+        assert!(modal.size.width > 0. && modal.size.height > 0.);
+        assert!(modal.min_x() >= frame.min_x() && modal.max_x() <= frame.max_x());
+        assert!(modal.min_y() >= frame.min_y() && modal.max_y() <= frame.max_y());
+        assert!(story.host.get(CLOSE).unwrap().visible().is_some());
     }
 
     #[test]

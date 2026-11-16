@@ -185,7 +185,7 @@
       "heterogeneous_consumer_content": "已实现",
       "runtime_profile": "owned-content",
       "state_identity": "Unchanged panes retain their original Content identities and state; checked replacement validates expected mount/revision before replacing one pane. Original Host owns event/focus/capture routing.",
-      "limits": "Finite two-pane owned Content over the original SplitView model/View. Checked construction and pane replacement enforce budget, owner/mount/revision, marked-state and supported-scope contracts; this is not an arbitrary pane-count or remote-window container.",
+      "limits": "Finite two-pane owned Content over the original SplitView model/View. Checked construction and pane replacement enforce budget, owner/mount/revision, marked-state and supported-scope contracts; this is not an arbitrary pane-count or remote-window container. The original divider declares its clipped rectangular pointer geometry for ordinary Scroll-host routing; no Curve capability is added.",
       "native_acceptance": "未验证",
       "accessibility": "Existing Content semantic/focus routing applies within the supported local contract; native/VoiceOver acceptance remains unverified.",
       "requires_internal_source_edit": "no; use the accepted checked Content adapter within its declared local and subtree limits",
@@ -206,7 +206,7 @@
         {
           "api": "tekes_ui_controls::composition::SplitViewContent",
           "path": "crates/tekes-ui-controls/src/composition/split_view.rs",
-          "line": 413,
+          "line": 418,
           "anchor": "pub struct SplitViewContent {"
         }
       ]
@@ -2086,7 +2086,7 @@
     "crates/tekes-ui-controls/src/composition/segmented.rs": "a6bd41ec203d8491a9b0caf1a7550ebf0b4c59aec0f33f0de288340710cfc40a",
     "crates/tekes-ui-controls/src/composition/separator.rs": "4fed31d0eb17470dadd33b7a3644ba922e06fa005a3feddb0f88379eed7f3397",
     "crates/tekes-ui-controls/src/composition/skeleton.rs": "8f95c18a7aae090ca14ee2c70e539a1ed5123940ac4e98020bec9f57a043d959",
-    "crates/tekes-ui-controls/src/composition/split_view.rs": "4ec314c0fefb07b61ea7a5e8f84ab418f4f04de46a987c6688d2bcfb93e5e9c7",
+    "crates/tekes-ui-controls/src/composition/split_view.rs": "188bdcb3ffd467072de67bdd3761e9e9c2f90603d0f8ce7dc9719871c04b243d",
     "crates/tekes-ui-controls/src/composition/status_badge.rs": "55160ac8e5f901e644b09dcedb11f5b227e36a6aec7ff91706e6d3b422007f41",
     "crates/tekes-ui-controls/src/composition/toolbar_content.rs": "40c0aebe53126bde2432cb0b3694e3309ee27bd99ccfc375ff85c4c541c928fb",
     "crates/tekes-ui-controls/src/control_motion.rs": "0301717c307ba6bdc2b91085c9e1995e6ca74391c7bbda9168af2c042a52a788",

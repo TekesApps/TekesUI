@@ -338,3 +338,27 @@ row inside an unbounded ScrollArea. The existing Host owns modal input, focus an
 retirement. Check379 verifies finite visible modal geometry, feedback log visibility
 and closing/removing the old dialog on section changes. The earlier oversized
 modal failure is retained in Check378; no public Dialog contract was weakened.
+
+
+### Brand viewport correction from native-r3
+
+The native Brand page exposed a separate instance of the same composition error:
+its inactive candidate-themed Dialog was a scroll document row, contributing the
+unbounded measurement height and leaving blank content after the real cards.
+The Brand document and themed Dialog now use the existing `dialog_viewport` as
+siblings; the original preview, cancel, confirm and shared palette model are
+unchanged. Check384 passes all five Brand regressions, including actual scroll
+end visibility and a finite open modal, plus Gallery strict checks. The original
+native failure remains preserved; repaired native acceptance is still pending.
+
+
+### Split pointer admission correction from native-r3
+
+The native divider drag retained 50% despite a hit inside its resize region.
+Check385 reproduced PointerDown rejection in the actual scrolling story Host;
+AX-only action tests did not cover that path. OriginalDivider now declares its
+existing clipped rectangular input geometry. This does not add Curve support or
+relax common routing. Check386 verifies capture, drag, repaint retention, release,
+no movement after release and inactive rejection; the original actions and Gallery
+strict checks also pass. The old native failure is retained pending repaired
+program verification.

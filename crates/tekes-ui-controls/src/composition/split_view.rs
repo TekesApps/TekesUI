@@ -275,6 +275,11 @@ impl OriginalDivider {
     }
 }
 impl Component for OriginalDivider {
+    // The original view owns the clipped rectangular divider hit region. This
+    // permits its pointer reducer beneath a Scroll without granting curve support.
+    fn rectangular_input_geometry(&self) -> bool {
+        true
+    }
     fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
         ActionTransactionCompatibility::StableHooks
     }
