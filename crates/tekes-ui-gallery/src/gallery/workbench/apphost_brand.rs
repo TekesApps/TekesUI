@@ -462,35 +462,74 @@ impl BrandStory {
                 ),
             ),
         ] {
-            self.host
-                .get_mut(ComponentId(id))
+            // Visits include paint/read-only queries. Mutate only changed values
+            // so an unchanged projection does not retire freshly painted input geometry.
+            if self
+                .host
+                .get(ComponentId(id))
                 .unwrap()
-                .component_mut::<TextContent>()
+                .component::<TextContent>()
                 .unwrap()
-                .text = value;
+                .text
+                != value
+            {
+                self.host
+                    .get_mut(ComponentId(id))
+                    .unwrap()
+                    .component_mut::<TextContent>()
+                    .unwrap()
+                    .text = value;
+            }
         }
         for id in [CONFIRM, CANCEL] {
-            self.host
-                .get_mut(id)
+            let disabled = model.candidate().is_none();
+            if self
+                .host
+                .get(id)
                 .unwrap()
-                .component_mut::<Button>()
+                .component::<Button>()
                 .unwrap()
                 .button
                 .state
-                .disabled = model.candidate().is_none();
+                .disabled
+                != disabled
+            {
+                self.host
+                    .get_mut(id)
+                    .unwrap()
+                    .component_mut::<Button>()
+                    .unwrap()
+                    .button
+                    .state
+                    .disabled = disabled;
+            }
         }
         for (i, d) in tekes_ui_tokens::palette::gallery_brand_directions()
             .iter()
             .enumerate()
         {
-            self.host
-                .get_mut(ComponentId(DIRECTION + i as u64))
+            let id = ComponentId(DIRECTION + i as u64);
+            let selected = model.direction() == Some(d.id);
+            if self
+                .host
+                .get(id)
                 .unwrap()
-                .component_mut::<Button>()
+                .component::<Button>()
                 .unwrap()
                 .button
                 .state
-                .selected = model.direction() == Some(d.id);
+                .selected
+                != selected
+            {
+                self.host
+                    .get_mut(id)
+                    .unwrap()
+                    .component_mut::<Button>()
+                    .unwrap()
+                    .button
+                    .state
+                    .selected = selected;
+            }
         }
     }
     pub(crate) fn after_host_visit(&mut self) {
@@ -732,6 +771,54 @@ mod tests {
         assert!(modal.min_x() >= frame.min_x() && modal.max_x() <= frame.max_x());
         assert!(modal.min_y() >= frame.min_y() && modal.max_y() <= frame.max_y());
         assert!(story.host.get(CLOSE).unwrap().visible().is_some());
+    }
+
+    #[test]
+    fn brand_pointer_clicks_stage_candidate_activate_preview_and_open_dialog() {
+        let mut story = BrandStory::new(Rc::new(Cell::new(Theme::LIGHT.into())));
+        let mut text = TextEngine::new();
+        let present = |story: &mut BrandStory, text: &mut TextEngine| {
+            render(story, text, 480.);
+            // FocusContent::with_host invokes this after every visit, including paint.
+            story.after_host_visit();
+        };
+        story.host.set_window_active(true);
+        present(&mut story, &mut text);
+        for id in [ComponentId(DIRECTION), ACTION, OPEN] {
+            let point = story.host.get(id).unwrap().visible().unwrap().center();
+            story.host.event(&ContentEvent::PointerMove(point));
+            story.after_host_visit();
+            present(&mut story, &mut text);
+            assert!(
+                story.host.event(&ContentEvent::PointerDown(point)).consumed,
+                "{id:?} down"
+            );
+            assert!(story.host.pointer_capture().is_some(), "{id:?} capture");
+            story.after_host_visit();
+            present(&mut story, &mut text);
+            assert!(
+                story.host.event(&ContentEvent::PointerUp(point)).activated,
+                "{id:?} up must activate"
+            );
+            story.after_host_visit();
+            present(&mut story, &mut text);
+            assert!(story.host.pointer_capture().is_none());
+            if id == ComponentId(DIRECTION) {
+                assert!(story.model.borrow().candidate().is_some());
+            } else if id == ACTION {
+                assert_eq!(story.model.borrow().demo_activations(), 1);
+            } else {
+                assert!(
+                    story
+                        .host
+                        .get(DIALOG)
+                        .unwrap()
+                        .component::<DialogContent>()
+                        .unwrap()
+                        .is_open()
+                );
+            }
+        }
     }
 
     #[test]

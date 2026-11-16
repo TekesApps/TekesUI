@@ -362,3 +362,16 @@ relax common routing. Check386 verifies capture, drag, repaint retention, releas
 no movement after release and inactive rejection; the original actions and Gallery
 strict checks also pass. The old native failure is retained pending repaired
 program verification.
+
+
+### Brand no-change projection correction from native-r4
+
+The finite document now scrolls correctly, but native direction/preview clicks
+exposed a second Brand consumer issue. Its after-visit refresh wrote unchanged
+text and button state after paint, invalidating the just-published input geometry.
+Check388's bare Host pointer flow passed; Check389 reproduced rejection with
+the actual FocusContent paint/after-visit sequence. Refresh now mutates only
+changed values. Check390 passes six Brand regressions, including real pointer
+down/capture/up across repaint and candidate/action/modal outcomes, and Gallery
+strict. Shared input admission remains unchanged. The r4 failure is retained;
+new-program Brand native acceptance remains separate.
