@@ -14,11 +14,16 @@ const ROWS: ComponentId = ComponentId(91001);
 const STATUS: ComponentId = ComponentId(91002);
 const LOG: ComponentId = ComponentId(91003);
 const CONTROL: u64 = 91100;
+const BODY: ComponentId = ComponentId(91007);
 
 pub(crate) fn supports(page: &str) -> bool {
     matches!(
         page,
-        "component-text-field" | "component-text-area" | "component-combo-box" | "component-select"
+        "component-text-field"
+            | "component-text-area"
+            | "component-search-field"
+            | "component-combo-box"
+            | "component-select"
     )
 }
 fn text(id: u64, value: impl Into<String>) -> Content {
@@ -26,6 +31,17 @@ fn text(id: u64, value: impl Into<String>) -> Content {
 }
 fn root(mut specimen: Content) -> Content {
     let id = specimen.id();
+    let renderer = match id.0 {
+        8901 => "select",
+        27601 => "combo-box",
+        27502 => "area",
+        8801 => "search",
+        _ => "field",
+    };
+    let entry = super::entries()
+        .iter()
+        .find(|entry| entry.renderer() == renderer)
+        .unwrap();
     let select = id == ComponentId(8901);
     let combo = id == ComponentId(27601);
     // The old Gallery allocated an explicit viewport (Area 100..270pt). In
@@ -34,13 +50,10 @@ fn root(mut specimen: Content) -> Content {
     if let Some(field) = specimen.component_mut::<TextFieldContent>() {
         field.viewport = TextViewport::Fixed(if id == ComponentId(27502) { 270. } else { 40. });
     }
-    let mut controls = vec![
-        Content::new(ComponentId(CONTROL), Button::new("Reset")),
-        Content::new(
-            ComponentId(CONTROL + 10),
-            CheckboxContent::new("Disabled", CheckState::Unchecked),
-        ),
-    ];
+    let mut controls = vec![Content::new(
+        ComponentId(CONTROL + 10),
+        CheckboxContent::new("Disabled", CheckState::Unchecked),
+    )];
     if !combo {
         controls.push(Content::new(
             ComponentId(CONTROL + 12),
@@ -84,8 +97,26 @@ fn root(mut specimen: Content) -> Content {
     }
     Content::new(
         ROOT,
-        ListContent::scrollable("Gallery Playground", ROWS, children)
-            .content_padding(Spacing::Loose.value()),
+        ListContent::scrollable(
+            "Gallery input story",
+            ROWS,
+            vec![
+                super::story_heading(91008, entry.title()),
+                super::apphost_basic::section_bar(entry, CONTROL),
+                Content::new(
+                    BODY,
+                    StackContent {
+                        model: Stack {
+                            axis: Axis::Vertical,
+                            gap: 16.,
+                        },
+                        flexible_child: None,
+                        children,
+                    },
+                ),
+            ],
+        )
+        .content_padding(Spacing::Loose.value()),
     )
 }
 
@@ -93,6 +124,8 @@ pub(crate) struct AppHostStory {
     state: StoryState,
     renderer: &'static str,
     last_query: String,
+    entry: &'static Entry,
+    retained: Option<Content>,
 }
 impl AppHostStory {
     pub(crate) fn new(entry: &'static Entry) -> Self {
@@ -100,6 +133,8 @@ impl AppHostStory {
             state: StoryState::for_entry_with_root(entry, root),
             renderer: entry.renderer(),
             last_query: String::new(),
+            entry,
+            retained: None,
         };
         story.last_query = story.state.input.query().into();
         story.apply_properties();
@@ -170,6 +205,9 @@ impl AppHostStory {
         }
     }
     fn refresh_copy(&mut self) {
+        if self.retained.is_some() {
+            return;
+        }
         let status = match self.renderer {
             "select" if self.state.select_empty => "No options available.".into(),
             "select" if self.state.error => {
@@ -220,6 +258,29 @@ impl AppHostStory {
             }
         }
     }
+    fn select_section(&mut self, section: usize) {
+        let live = matches!(section, 1 | 4);
+        if self.retained.is_none() {
+            // Blur while the original owner is still mounted. The original
+            // TextInput decides how to finalize composition before unmount.
+            self.state.input.blur();
+            let content = self.host_mut().remove(BODY).expect("input story body");
+            self.retained = Some(content);
+        } else {
+            self.host_mut()
+                .remove(BODY)
+                .expect("passive input story body");
+        }
+        self.state.section = section;
+        let content = if live {
+            self.retained.take().unwrap()
+        } else {
+            super::apphost_input_sections::body(self.entry, section)
+        };
+        self.host_mut()
+            .insert(ROWS, content)
+            .expect("unique input story section");
+    }
     /// Called after the one formal Host operation, never while dispatching an
     /// input event. Gallery consumes control intents without replaying them.
     pub(crate) fn after_host_visit(&mut self) {
@@ -230,11 +291,22 @@ impl AppHostStory {
         for record in records {
             let command = record.action.target.0.checked_sub(CONTROL);
             if record.action.kind == ContentActionKind::Activate
-                && matches!(command, Some(0 | 10 | 12 | 13 | 14 | 15))
+                && matches!(command, Some(0..=6 | 10 | 12 | 13 | 14 | 15))
             {
-                self.state
-                    .activate_with_root(command.unwrap() as usize, self.renderer, root);
-                self.apply_properties();
+                let command = command.unwrap() as usize;
+                if (1..=6).contains(&command) {
+                    self.select_section(command - 1);
+                } else {
+                    let section = self.state.section;
+                    if command == 0 {
+                        self.retained = None;
+                    }
+                    self.state.activate_with_root(command, self.renderer, root);
+                    self.apply_properties();
+                    if command == 0 {
+                        self.select_section(section);
+                    }
+                }
             } else {
                 match record.payload {
                     Some(ContentActionPayload::MenuSelection(selection)) => {
@@ -246,6 +318,9 @@ impl AppHostStory {
                     _ => {}
                 }
             }
+        }
+        if self.retained.is_some() {
+            return;
         }
         if let Some(host) = self.state.input.hosted_mut() {
             // Preserve original controlled-update error reporting. Action
@@ -306,6 +381,130 @@ mod tests {
         );
         story.after_host_visit();
         render(story, text);
+    }
+    #[test]
+    fn apphost_input_status_consumers_keep_independent_drafts_in_one_host() {
+        let mut text = TextEngine::new();
+        for renderer in ["combo-box", "select"] {
+            let mut story = story(renderer);
+            press(&mut story, &mut text, 3);
+            let count = if renderer == "combo-box" { 3 } else { 2 };
+            for i in 0..count {
+                let id = ComponentId(91402 + i * 10);
+                assert!(story.host().get(id).is_some());
+                assert!(
+                    !story
+                        .host()
+                        .inspection_snapshot(id)
+                        .unwrap()
+                        .semantics
+                        .disabled
+                );
+                if renderer == "combo-box" {
+                    assert_eq!(story.host().text_surface(id).unwrap().input.text, "Compact");
+                    assert_eq!(
+                        story
+                            .host()
+                            .inspection_snapshot(id)
+                            .unwrap()
+                            .semantics
+                            .invalid,
+                        i == 2
+                    );
+                }
+            }
+            if renderer == "combo-box" {
+                assert!(story.host_mut().focus(Some(ComponentId(91402)), true));
+                story.host_mut().event(&ContentEvent::Commit {
+                    text: "edited".into(),
+                    replacement: None,
+                });
+                assert_ne!(
+                    story
+                        .host()
+                        .text_surface(ComponentId(91402))
+                        .unwrap()
+                        .input
+                        .text,
+                    "Compact"
+                );
+                assert_eq!(
+                    story
+                        .host()
+                        .text_surface(ComponentId(91412))
+                        .unwrap()
+                        .input
+                        .text,
+                    "Compact"
+                );
+            }
+            press(&mut story, &mut text, 2);
+            assert!(story.host().get(ComponentId(91402)).is_none());
+            if renderer == "combo-box" {
+                assert_eq!(story.state.input.query(), "");
+            }
+        }
+    }
+    #[test]
+    fn apphost_input_chapters_retain_original_editor_and_reset_offstage() {
+        let mut text = TextEngine::new();
+        for renderer in ["field", "area", "search", "combo-box", "select"] {
+            let mut story = story(renderer);
+            let id = ComponentId(match renderer {
+                "field" => 27501,
+                "area" => 27502,
+                "search" => 8801,
+                "combo-box" => 27601,
+                _ => 8901,
+            });
+            if renderer != "select" {
+                story.state.input.set_value("Retained draft");
+            }
+            render(&mut story, &mut text);
+            press(&mut story, &mut text, 10);
+            for section in [1, 3, 4] {
+                press(&mut story, &mut text, section);
+                assert!(
+                    story.host().get(id).is_none(),
+                    "inactive original input leaked into {renderer} chapter"
+                );
+                assert!(story.retained.is_some());
+                // Matrix fields are paint-only TextSurface fixtures, not extra
+                // native inputs that could steal an IME/AX binding.
+                assert!(story.host().text_surface(ComponentId(91301)).is_none());
+            }
+            press(&mut story, &mut text, 2);
+            assert!(
+                story
+                    .host()
+                    .inspection_snapshot(id)
+                    .unwrap()
+                    .semantics
+                    .disabled
+            );
+            if renderer != "select" {
+                assert_eq!(story.state.input.query(), "Retained draft");
+            }
+            press(&mut story, &mut text, 1);
+            press(&mut story, &mut text, 0);
+            assert!(
+                story.host().get(id).is_none(),
+                "Reset must keep Docs selected"
+            );
+            press(&mut story, &mut text, 2);
+            assert!(
+                !story
+                    .host()
+                    .inspection_snapshot(id)
+                    .unwrap()
+                    .semantics
+                    .disabled
+            );
+            let original = StoryState::for_entry_renderer(renderer);
+            if renderer != "select" {
+                assert_eq!(story.state.input.query(), original.input.query());
+            }
+        }
     }
     #[test]
     fn apphost_original_playground_initial_values_controls_and_reset() {

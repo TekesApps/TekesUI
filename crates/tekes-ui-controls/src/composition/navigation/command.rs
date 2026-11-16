@@ -230,6 +230,9 @@ impl CommandPaletteContent {
 }
 
 impl Component for CommandPaletteContent {
+    fn rectangular_input_geometry(&self) -> bool {
+        true
+    }
     fn validate(&self) -> Result<(), CompositionError> {
         if self.children.len() != 2 {
             return Err(CompositionError::InvalidSlotCount);

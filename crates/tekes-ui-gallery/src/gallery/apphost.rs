@@ -804,14 +804,13 @@ fn assemble(theme: Theme, settings: SettingsOwner) -> anyhow::Result<AppWindow> 
     .navigation(history_options()?)
     .shared_settings(settings))
 }
-pub fn open(
-    parent: &Window,
+pub(super) fn open_request(
     theme: Theme,
     settings: SettingsOwner,
-) -> anyhow::Result<WindowHandle> {
-    assemble(theme, settings)?.open(
-        parent,
-        WindowConfig {
+) -> anyhow::Result<tekes_ui_app_host::WindowOpenRequest> {
+    Ok(tekes_ui_app_host::WindowOpenRequest {
+        app: assemble(theme, settings)?,
+        config: WindowConfig {
             title: "TekesUI AppHost".into(),
             unified_titlebar: true,
             placement: tekes_ui_platform_macos::WindowPlacement::Auto {
@@ -828,7 +827,16 @@ pub fn open(
             }),
             ..Default::default()
         },
-    )
+    })
+}
+
+pub fn open(
+    parent: &Window,
+    theme: Theme,
+    settings: SettingsOwner,
+) -> anyhow::Result<WindowHandle> {
+    let request = open_request(theme, settings)?;
+    request.app.open(parent, request.config)
 }
 
 #[cfg(test)]

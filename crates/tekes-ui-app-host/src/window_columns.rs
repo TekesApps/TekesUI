@@ -1,6 +1,62 @@
 //! Local column routing uses the original ContentHost; process columns keep IPC.
 use super::*;
 impl Host {
+    /// Preserve non-primary native gestures for local Content owners. Capture
+    /// lives in the original Host, so hiding/unmounting/cancelling that owner
+    /// retires it without a second window-level gesture state.
+    pub(super) fn local_secondary_pointer(&mut self, event: &Event) -> Result<bool> {
+        let Event::Mouse(mouse) = event else {
+            return Ok(false);
+        };
+        let content_event = toolbar_pointer(*mouse);
+        let ContentEvent::Pointer(pointer) = &content_event else {
+            unreachable!()
+        };
+        if pointer.button.is_none() || pointer.is_primary() {
+            return Ok(false);
+        }
+        if self.is_settings_window
+            || self.sidebar_motion.needs_frame()
+            || self.open_toolbar().is_some()
+            || self.settings.as_ref().is_some_and(|s| s.borrow().open)
+            || self
+                .navigation
+                .as_ref()
+                .is_some_and(|n| n.busy || !n.host.input_open)
+        {
+            return Ok(false);
+        }
+        if matches!(pointer.phase, PointerPhase::Drag | PointerPhase::Up) {
+            for panel in &mut self.panels {
+                if let Some(local) = &mut panel.local
+                    && local
+                        .captured_pointer_event(*pointer, &mut self.text)?
+                        .is_some()
+                {
+                    return Ok(true);
+                }
+            }
+            return Ok(false);
+        }
+        let index = if pointer.phase == PointerPhase::Down {
+            self.panels.iter().position(|panel| {
+                panel.local.is_some()
+                    && panel.content_frame().contains(pointer.position)
+                    && (self.presentation.is_none() || panel.clip.contains(pointer.position))
+                    && panel.frame_viewport == panel.viewport
+                    && panel.frame_size == panel.content_size()
+            })
+        } else {
+            None
+        };
+        let Some(index) = index else { return Ok(false) };
+        let response = self.panels[index]
+            .local
+            .as_mut()
+            .unwrap()
+            .event_with_response(&content_event, &mut self.text)?;
+        Ok(response.consumed)
+    }
     pub(super) fn is_search_shortcut(event: &Event) -> bool {
         matches!(event, Event::Key(key) if key.kind == KeyEventKind::Down
             && key.modifiers.command && !key.modifiers.control && !key.modifiers.alt && !key.modifiers.shift && !key.modifiers.function
@@ -356,6 +412,200 @@ impl Host {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn shared_color_source_preserves_each_windows_appearance() {
+        let source = std::rc::Rc::new(std::cell::Cell::new(tekes_ui_tokens::Theme::LIGHT.into()));
+        let make = |theme| {
+            crate::AppWindow::new(crate::AppProfile { modules: vec![] })
+                .theme(theme)
+                .palette_source(source.clone())
+                .into_host(false)
+        };
+        let dark = make(tekes_ui_tokens::Theme::DARK);
+        let light = make(tekes_ui_tokens::Theme::LIGHT);
+        let brand = tekes_ui_tokens::palette::gallery_brand_presets()
+            .iter()
+            .find(|p| p.palette_index != 0)
+            .unwrap()
+            .palette_index;
+        source.set(Palette::new(tekes_ui_tokens::Theme::LIGHT_INCREASED, brand).unwrap());
+        assert_eq!(
+            dark.palette(),
+            Palette::new(tekes_ui_tokens::Theme::DARK, brand).unwrap()
+        );
+        assert_eq!(
+            light.palette(),
+            Palette::new(tekes_ui_tokens::Theme::LIGHT, brand).unwrap()
+        );
+        assert_eq!(
+            source.get().theme,
+            tekes_ui_tokens::Theme::LIGHT_INCREASED,
+            "painting one window cannot rewrite another window's source"
+        );
+    }
+    #[derive(Debug, Default)]
+    struct PointerRecorder(Vec<PointerEvent>);
+    impl tekes_ui_controls::composition::Component for PointerRecorder {
+        fn measure(
+            &mut self,
+            _: &mut dyn tekes_ui_controls::ButtonTextRenderer,
+            size: tekes_ui_scene::Size,
+        ) -> tekes_ui_controls::layout::MeasuredChild {
+            tekes_ui_controls::layout::MeasuredChild::new(size)
+        }
+        fn paint(
+            &mut self,
+            _: &mut Scene,
+            _: &mut dyn tekes_ui_controls::ButtonTextRenderer,
+            _: Rect,
+            _: Rect,
+            _: tekes_ui_controls::composition::ContentTheme,
+        ) {
+        }
+        fn interactive(&self) -> bool {
+            true
+        }
+        fn pointer_event(
+            &mut self,
+            p: &PointerEvent,
+        ) -> tekes_ui_controls::composition::ContentResponse {
+            self.0.push(*p);
+            tekes_ui_controls::composition::ContentResponse {
+                capture_pointer: p.phase == PointerPhase::Down,
+                ..tekes_ui_controls::composition::ContentResponse::consumed(true)
+            }
+        }
+    }
+    #[test]
+    fn local_secondary_drag_retains_metadata_across_toolbar_and_other_container() {
+        use crate::{AppWindow, LocalContainer};
+        use tekes_ui_controls::composition::*;
+        let columns = ["first", "second"]
+            .into_iter()
+            .map(|name| {
+                LocalContainer::new(
+                    name,
+                    Content::new(ComponentId(1), PointerRecorder::default()),
+                )
+                .unwrap()
+                .into()
+            })
+            .collect();
+        let mut window = AppWindow::from_columns(columns).unwrap().into_host(false);
+        assert!(window.mount_columns());
+        for (i, panel) in window.panels.iter_mut().enumerate() {
+            panel
+                .geometry_with_header(Rect::new(i as f32 * 200., 0., 200., 260.), 1., 52., 0.)
+                .unwrap();
+            panel.frame_viewport = panel.viewport;
+            panel.frame_size = panel.content_size();
+            let frame = panel.content_frame();
+            panel
+                .local
+                .as_mut()
+                .unwrap()
+                .render(
+                    &mut Scene::new(),
+                    &mut window.text,
+                    frame,
+                    frame,
+                    tekes_ui_tokens::Theme::LIGHT.into(),
+                )
+                .unwrap();
+        }
+        let mouse = |kind, x, y| {
+            Event::Mouse(MouseEvent {
+                kind,
+                position: tekes_ui_platform_macos::Point { x, y },
+                modifiers: tekes_ui_platform_macos::Modifiers {
+                    shift: true,
+                    ..Default::default()
+                },
+            })
+        };
+        let down = mouse(
+            MouseEventKind::Down {
+                button: MouseButton::Right,
+                click_count: 2,
+            },
+            70.,
+            100.,
+        );
+        assert!(window.local_secondary_pointer(&down).unwrap());
+        assert!(
+            window
+                .local_secondary_pointer(&mouse(
+                    MouseEventKind::Dragged {
+                        button: MouseButton::Right
+                    },
+                    300.,
+                    20.
+                ))
+                .unwrap()
+        );
+        assert!(
+            window
+                .local_secondary_pointer(&mouse(
+                    MouseEventKind::Up {
+                        button: MouseButton::Right,
+                        click_count: 2
+                    },
+                    300.,
+                    100.
+                ))
+                .unwrap()
+        );
+        window.panels[0]
+            .local
+            .as_mut()
+            .unwrap()
+            .with_host(&mut |host| {
+                let events = &host
+                    .get(ComponentId(1))
+                    .unwrap()
+                    .component::<PointerRecorder>()
+                    .unwrap()
+                    .0;
+                assert_eq!(events.len(), 3);
+                assert!(
+                    events
+                        .iter()
+                        .all(|e| e.button == Some(PointerButton::Secondary) && e.modifiers.shift)
+                );
+                assert_eq!(events[1].position, Point::new(300., 20.));
+                assert!(host.pointer_capture().is_none());
+            });
+        window.panels[1]
+            .local
+            .as_mut()
+            .unwrap()
+            .with_host(&mut |host| {
+                assert!(
+                    host.get(ComponentId(1))
+                        .unwrap()
+                        .component::<PointerRecorder>()
+                        .unwrap()
+                        .0
+                        .is_empty()
+                )
+            });
+        assert!(window.local_secondary_pointer(&down).unwrap());
+        window.panels[0].local.as_mut().unwrap().cancel();
+        assert!(
+            !window
+                .local_secondary_pointer(&mouse(
+                    MouseEventKind::Up {
+                        button: MouseButton::Right,
+                        click_count: 1
+                    },
+                    300.,
+                    100.
+                ))
+                .unwrap()
+        );
+        window.is_settings_window = true;
+        assert!(!window.local_secondary_pointer(&down).unwrap());
+    }
     #[test]
     fn mixed_columns_mount_without_launching_local_workers() {
         use crate::{AppWindow, LocalContainer, ProcessContainer};

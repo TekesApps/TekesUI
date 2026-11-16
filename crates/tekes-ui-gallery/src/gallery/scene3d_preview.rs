@@ -22,6 +22,8 @@ struct Loaded {
     view: Scene3D,
     gpu: Renderer3D,
     image: Option<ImageId>,
+    registration: Option<tekes_ui_render::gpu::GpuImageRegistration>,
+    renderer_identity: u64,
     dirty: bool,
     camera: Camera3D,
     playing: bool,
@@ -35,7 +37,7 @@ fn home_camera() -> Camera3D {
     camera.zoom_by(0.85).unwrap();
     camera
 }
-fn image_frame(bounds: Rect) -> Rect {
+pub(super) fn image_frame(bounds: Rect) -> Rect {
     let side = bounds
         .size
         .width
@@ -173,7 +175,9 @@ impl Preview3D {
             state.dirty = true;
         }
     }
-    pub fn prepare(&mut self, renderer: &mut Renderer, reduced: bool, scale: f32) {
+    /// Allocate the current renderer's resources before ContentHost paints an
+    /// image reference. Rendering the pixels is deferred until layout is known.
+    pub fn prepare_resources(&mut self, renderer: &mut Renderer, reduced: bool, scale: f32) {
         self.scale = scale;
         // Bound the color + depth targets to 128 MiB at most, and respect the
         // adapter limit. This cap changes resolution only, never mesh geometry.
@@ -202,6 +206,8 @@ impl Preview3D {
                 view,
                 gpu,
                 image: None,
+                registration: None,
+                renderer_identity: renderer.resource_identity(),
                 dirty: true,
                 camera: home_camera(),
                 playing: true,
@@ -212,12 +218,41 @@ impl Preview3D {
         });
         if let Ok(state) = state {
             state.view.reduced_motion = reduced;
+            let result = (|| {
+                if state.renderer_identity != renderer.resource_identity() {
+                    state.gpu = Renderer3D::new(
+                        &renderer.gpu_context(),
+                        &state.view,
+                        (state.target_side, state.target_side),
+                    )?;
+                    state.renderer_identity = renderer.resource_identity();
+                    state.registration = None;
+                    state.image = None;
+                    state.dirty = true;
+                }
+                if state.registration.is_none() {
+                    let registration = renderer
+                        .register_owned_gpu_image(state.gpu.output())
+                        .map_err(|e| Error(e.to_string()))?;
+                    state.image = Some(registration.id());
+                    state.registration = Some(registration);
+                }
+                Ok::<(), Error>(())
+            })();
+            if let Err(error) = result {
+                self.loaded = Some(Err(error));
+            }
+        }
+    }
+    pub fn prepare(&mut self, renderer: &mut Renderer, reduced: bool, scale: f32) {
+        self.prepare_resources(renderer, reduced, scale);
+        if let Some(Ok(state)) = &mut self.loaded {
             let side = self.requested_side.unwrap_or(state.target_side);
             if side != state.target_side {
                 let result = state.gpu.resize((side, side)).and_then(|()| {
-                    if let Some(image) = state.image {
+                    if let Some(registration) = &state.registration {
                         renderer
-                            .replace_gpu_image(image, state.gpu.output())
+                            .replace_owned_gpu_image(registration, state.gpu.output())
                             .map_err(|e| Error(e.to_string()))?;
                     }
                     Ok(())
@@ -231,19 +266,7 @@ impl Preview3D {
                 state.dirty = true;
             }
             if state.dirty {
-                let result = state
-                    .gpu
-                    .render_camera(&state.view, &state.camera)
-                    .and_then(|()| {
-                        if state.image.is_none() {
-                            state.image = Some(
-                                renderer
-                                    .register_gpu_image(state.gpu.output())
-                                    .map_err(|e| Error(e.to_string()))?,
-                            );
-                        }
-                        Ok(())
-                    });
+                let result = state.gpu.render_camera(&state.view, &state.camera);
                 if let Err(e) = result {
                     self.loaded = Some(Err(e));
                 } else {
@@ -308,10 +331,56 @@ impl Preview3D {
     pub(super) fn diagnostics(&self) -> serde_json::Value {
         match &self.loaded {
             Some(Ok(state)) => {
-                serde_json::json!({"target_px":[state.target_side,state.target_side],"requested_side_px":self.requested_side,"backing_scale":self.scale,"target_limit_px":self.target_limit,"target_rebuilds":state.target_rebuilds,"pose_upload_bytes":state.gpu.last_frame_pose_upload_bytes(),"deformed_meshes":state.gpu.last_frame_deformed_meshes(),"vertex_buffer_allocations":state.gpu.vertex_buffer_allocations(),"geometry_resident_bytes":state.gpu.geometry_resident_bytes(),"model_rotation":state.camera.model_rotation(),"clip_time":state.view.time(),"spin":state.spin,"playing_clip":state.playing})
+                serde_json::json!({"target_px":[state.target_side,state.target_side],"requested_side_px":self.requested_side,"backing_scale":self.scale,"target_limit_px":self.target_limit,"target_rebuilds":state.target_rebuilds,"pose_upload_bytes":state.gpu.last_frame_pose_upload_bytes(),"deformed_meshes":state.gpu.last_frame_deformed_meshes(),"vertex_buffer_allocations":state.gpu.vertex_buffer_allocations(),"geometry_resident_bytes":state.gpu.geometry_resident_bytes(),"model_rotation":state.camera.model_rotation(),"clip_time":state.view.time(),"spin":state.spin,"playing_clip":state.playing,"camera_zoom":state.camera.zoom()})
             }
             _ => serde_json::Value::Null,
         }
+    }
+    pub fn cancel_drag(&mut self) {
+        self.drag = None;
+    }
+    pub fn set_focused(&mut self, focused: bool) {
+        self.focused = focused;
+        if !focused {
+            self.drag = None;
+        }
+    }
+    pub fn record_layout(&mut self, bounds: Rect) {
+        self.requested_side = physical_side(
+            image_frame(bounds).size.width,
+            self.scale,
+            self.target_limit,
+        );
+    }
+    pub fn paint_content(
+        &self,
+        scene: &mut Scene,
+        bounds: Rect,
+        text: &mut dyn tekes_ui_controls::ButtonTextRenderer,
+        palette: tekes_ui_tokens::Palette,
+    ) {
+        scene.push_clip(bounds);
+        let caption = match &self.loaded {
+            Some(Ok(state)) => {
+                if let Some(image) = state.image {
+                    state.view.paint(scene, image_frame(bounds), image);
+                }
+                "Drag: orbit · Right / Shift-drag: rotate · Scroll: zoom. Click preview: arrows, +/−, R reset, Space play/pause, A auto-rotate.".to_owned()
+            }
+            Some(Err(error)) => format!("Scene3D: {error}"),
+            None => "Preparing Scene3D…".to_owned(),
+        };
+        text.draw(
+            scene,
+            &caption,
+            proposal::TextRole::UiCaption,
+            Rect::new(bounds.min_x(), bounds.max_y() - 44., bounds.size.width, 44.),
+            tekes_ui_controls::ButtonTextAlign::default(),
+            palette
+                .color("secondary-text")
+                .expect("standard text token"),
+        );
+        scene.pop_clip();
     }
     pub fn paint(&mut self, scene: &mut Scene, bounds: Rect, text: &mut TextEngine, theme: Theme) {
         let frame = image_frame(bounds);

@@ -323,33 +323,57 @@ pub struct Scenario {
     pub host: ContentHost,
     status: Rc<Cell<Status>>,
 }
+/// Reuse the original caller-owned status/editor subtree in a receiving Host.
+/// IDs are root, query and feedback. Initial query follows the original
+/// commit/filter/Enter reducer; validation stays separate from refresh status.
+pub fn fixture_content(
+    ids: [ComponentId; 3],
+    items: Vec<String>,
+    status: Rc<Cell<Status>>,
+    validation: Option<String>,
+    initial_query: Option<&str>,
+) -> Content {
+    let mut view = ComboBoxView::default();
+    view.options.set_reduced_motion(true);
+    let mut query = Query {
+        editor: TextFieldContent::new("Search available layouts", ""),
+        model: ComboBox {
+            items,
+            ..Default::default()
+        },
+        view,
+        selected_value: None,
+    };
+    query.editor.field.error = validation;
+    if let Some(value) = initial_query {
+        query.editor.surface.input.insert(value, None);
+        query.sync_query();
+        query.menu_key(ControlKey::Enter, true);
+    }
+    Content::new(
+        ids[0],
+        StackContent {
+            model: Stack {
+                axis: Axis::Vertical,
+                gap: Spacing::Regular.value(),
+            },
+            children: vec![
+                Content::new(ids[2], Feedback::new(status.clone())),
+                Content::new(ids[1], query),
+            ],
+            flexible_child: None,
+        },
+    )
+}
 impl Scenario {
     pub fn new(items: Vec<String>) -> Result<Self, CompositionError> {
         let status = Rc::new(Cell::new(Status::Ready));
-        let mut view = ComboBoxView::default();
-        view.options.set_reduced_motion(true);
-        let query = Query {
-            editor: TextFieldContent::new("Search available layouts", ""),
-            model: ComboBox {
-                items,
-                ..Default::default()
-            },
-            view,
-            selected_value: None,
-        };
-        let host = ContentHost::new(Content::new(
-            ROOT,
-            StackContent {
-                model: Stack {
-                    axis: Axis::Vertical,
-                    gap: Spacing::Regular.value(),
-                },
-                children: vec![
-                    Content::new(FEEDBACK, Feedback::new(status.clone())),
-                    Content::new(QUERY, query),
-                ],
-                flexible_child: None,
-            },
+        let host = ContentHost::new(fixture_content(
+            [ROOT, QUERY, FEEDBACK],
+            items,
+            status.clone(),
+            None,
+            None,
         ))?;
         Ok(Self { host, status })
     }

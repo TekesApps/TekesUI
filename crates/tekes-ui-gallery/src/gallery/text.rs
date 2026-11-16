@@ -273,7 +273,7 @@ impl TextEngine {
     }
 
     /// Large counter glyphs are shaped at their final size and cached per digit.
-    fn ticking_preview_digit(&mut self, digit: &str, size: f32) -> Rc<Paragraph> {
+    pub(crate) fn ticking_preview_digit(&mut self, digit: &str, size: f32) -> Rc<Paragraph> {
         let key = LabelKey {
             text: digit.to_owned(),
             role: LabelRole::TickingPreview(size.to_bits()),
@@ -603,6 +603,37 @@ impl TextEngine {
 }
 
 impl tekes_ui_controls::TextSurfaceHost for TextEngine {
+    fn shape_system_text_with_weight(
+        &mut self,
+        text: &str,
+        final_logical_point_size: f32,
+        weight: u16,
+        width: Option<f32>,
+    ) -> Option<Rc<Paragraph>> {
+        Some(Rc::new(self.shape(
+            text,
+            &TextStyle::system(final_logical_point_size).with_weight(weight),
+            &ShapeOptions {
+                width: width.map(f64::from),
+                line_spacing: 0.,
+            },
+        )))
+    }
+    fn shape_system_text(
+        &mut self,
+        text: &str,
+        final_logical_point_size: f32,
+        width: Option<f32>,
+    ) -> Option<Rc<Paragraph>> {
+        Some(Rc::new(self.shape(
+            text,
+            &TextStyle::system(final_logical_point_size),
+            &ShapeOptions {
+                width: width.map(f64::from),
+                line_spacing: 0.,
+            },
+        )))
+    }
     fn shape_label(
         &mut self,
         text: &str,
@@ -670,28 +701,6 @@ impl tekes_ui_controls::TextSurfaceHost for TextEngine {
         self.type_scale
     }
 }
-/// Gallery-only large typography adapter; fixed slots remain owned by TickingNumber.
-pub(super) struct TickingPreviewText<'a>(pub &'a mut TextEngine, pub f32);
-impl ButtonTextRenderer for TickingPreviewText<'_> {
-    fn measure(&mut self, text: &str, _: proposal::TextRole, _: f32) -> Size {
-        let paragraph = self.0.ticking_preview_digit(text, self.1);
-        Size::new(paragraph.width as f32, paragraph.height as f32)
-    }
-    fn draw(
-        &mut self,
-        scene: &mut Scene,
-        text: &str,
-        _: proposal::TextRole,
-        rect: Rect,
-        _: ButtonTextAlign,
-        ink: Rgba,
-    ) {
-        let paragraph = self.0.ticking_preview_digit(text, self.1);
-        let origin = label_origin(rect, &paragraph, HAlign::Center);
-        self.0.push(scene, &paragraph, origin, ink);
-    }
-}
-
 impl ButtonTextRenderer for TextEngine {
     fn text_surface_host(&mut self) -> Option<&mut dyn tekes_ui_controls::TextSurfaceHost> {
         Some(self)

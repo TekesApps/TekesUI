@@ -128,6 +128,22 @@ fn with_content_icons<R>(
         &mut service,
     ))
 }
+// Resource preparation never overlaps the SVG service's Renderer borrow. The
+// original host still owns the single layout/paint and all input/AX publication.
+fn render_local_content(
+    local: &mut crate::LocalContainer,
+    icons: &mut tekes_ui_controls::composition::SvgIconCache,
+    text: &mut Text,
+    scene: &mut Scene,
+    mut context: crate::ContainerRenderContext<'_>,
+) -> Result<()> {
+    local.prepare_render();
+    local.prepare_resources(&mut context)?;
+    with_content_icons(context.renderer, icons, text, |text| {
+        local.render_prepared(scene, text, context.frame, context.clip, context.palette)
+    })?;
+    local.finish_resources(&mut context)
+}
 #[cfg(test)]
 fn content_size(bounds: Rect, toolbar_height: f32) -> (u32, u32) {
     let content = content_geometry(bounds, toolbar_height);
@@ -418,6 +434,7 @@ impl Panel {
         self.mounted_toolbar.host.blur();
         self.mounted_toolbar = crate::window_toolbar::MountedToolbar::new();
         if let Some(local) = &mut self.local {
+            local.set_active(false);
             local.cancel();
         }
         self.local = None;
@@ -630,6 +647,7 @@ enum ToolbarTarget {
 
 pub struct Host {
     theme: Theme,
+    palette_source: Option<std::rc::Rc<std::cell::Cell<Palette>>>,
     draw_diagnostic: bool,
     diagnostic_event: u64,
     diagnostic_draw: u64,
@@ -755,8 +773,20 @@ impl Host {
         self.theme = theme;
         self
     }
+    pub(crate) fn with_palette_source(
+        mut self,
+        source: Option<std::rc::Rc<std::cell::Cell<Palette>>>,
+    ) -> Self {
+        self.palette_source = source;
+        self
+    }
     fn palette(&self) -> Palette {
-        self.theme.into()
+        let mut palette = self
+            .palette_source
+            .as_ref()
+            .map_or_else(|| self.theme.into(), |source| source.get());
+        palette.theme = self.theme;
+        palette
     }
     pub(crate) fn new(
         module_ids: Vec<String>,
@@ -766,6 +796,7 @@ impl Host {
         let n = module_ids.len();
         Self {
             theme: Theme::LIGHT,
+            palette_source: None,
             draw_diagnostic: std::env::var("TEKESUI_APPHOST_DRAW_DIAGNOSTIC").as_deref() == Ok("1"),
             diagnostic_event: 0,
             diagnostic_draw: 0,
@@ -967,6 +998,9 @@ impl Host {
         // that canonical allocation: replacing it with default would make the
         // next identical layout cancel the still-visible Window toolbar again.
         self.panels[index].bounds = bounds;
+        if let Some(local) = &mut self.panels[index].local {
+            local.set_active(false);
+        }
         if self.focused == index && !self.panels[index].logically_visible {
             self.focused = self
                 .presentation
@@ -990,6 +1024,23 @@ impl Host {
         self.sync_settings_display(w)?;
         if !self.is_settings_window {
             self.poll_settings_open(w)?;
+            if w.is_active()
+                && !self.sidebar_motion.needs_frame()
+                && !self.settings.as_ref().is_some_and(|s| s.borrow().open)
+                && self
+                    .navigation
+                    .as_ref()
+                    .is_none_or(|nav| !nav.busy && nav.host.input_open && nav.publication.is_none())
+            {
+                for panel in &mut self.panels {
+                    if let Some(local) = &mut panel.local
+                        && let Some(request) = local.take_window_open_request(self.theme)?
+                    {
+                        request.app.open(w, request.config)?;
+                        break;
+                    }
+                }
+            }
         }
         self.text
             .begin_frame(self.motion_epoch.elapsed(), self.reduced_motion);
@@ -1249,11 +1300,21 @@ impl Host {
                 } else {
                     content
                 };
-                with_content_icons(
-                    self.renderer.as_mut().unwrap(),
+                local.set_active(w.is_active());
+                let context = crate::ContainerRenderContext {
+                    renderer: self.renderer.as_mut().unwrap(),
+                    frame: content,
+                    clip,
+                    scale: self.text.scale,
+                    motion: tekes_ui_controls::ButtonTextRenderer::motion_context(&self.text),
+                    palette,
+                };
+                render_local_content(
+                    local,
                     &mut p.content_icons,
                     &mut self.text,
-                    |text| local.render(&mut scene, text, content, clip, palette),
+                    &mut scene,
+                    context,
                 )?;
                 p.frame_seq = p.seq;
                 p.frame_viewport = p.viewport;
@@ -1945,6 +2006,18 @@ impl Host {
         false
     }
     fn event(&mut self, event: Event, w: &mut Window) -> Result<()> {
+        // Apply before Settings or any input handler borrows its current host.
+        // Do not depend on redraw: resign-active need not produce another frame.
+        let active = match &event {
+            Event::Focus(active) => *active,
+            Event::CloseRequested => false,
+            _ => w.is_active(),
+        };
+        for panel in &mut self.panels {
+            if let Some(local) = &mut panel.local {
+                local.set_active(active && panel.logically_visible && panel.bounds.size.width > 0.);
+            }
+        }
         if let Event::SystemAppearanceChanged {
             dark,
             increase_contrast,
@@ -2110,6 +2183,10 @@ impl Host {
             }
             self.draw(w)?;
             self.trace_presentation_scroll("flushed-before-input");
+        }
+        if w.is_active() && self.local_secondary_pointer(&event)? {
+            w.request_redraw();
+            return Ok(());
         }
         if self.presentation_event(&event, w)? {
             if matches!(&event, Event::Scroll(scroll) if self.presentation_layout.tabs.is_some_and(|frame| frame.contains(Point::new(scroll.position.x as f32, scroll.position.y as f32))))

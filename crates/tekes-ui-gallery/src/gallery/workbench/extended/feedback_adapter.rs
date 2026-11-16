@@ -3,7 +3,7 @@
 //! The story keeps its deterministic fixture models; these runtimes own their
 //! component geometry, clipping, transient pointer state and presentation.
 use tekes_ui_controls::{
-    ButtonModel, ButtonTextRenderer, ControlKey,
+    ButtonTextRenderer, ControlKey,
     extended::{Banner, EmptyState, Popover, Progress, StatusBadge, Toast, Tooltip},
     feedback_view::{
         BannerView, EmptyStateView, OverlayEvent, OverlayLayout, ProgressView, StatusBadgeView,
@@ -642,16 +642,6 @@ fn matrix_heading(
     size.height.max(20.0)
 }
 
-fn bounded_fixture_width(width: f32, maximum: f32) -> f32 {
-    // Preserve the previous min/max behavior for a malformed NaN viewport:
-    // f32::min(NaN, maximum) selects maximum, while clamp(NaN, ..) stays NaN.
-    if width.is_nan() {
-        maximum
-    } else {
-        width.clamp(0.0, maximum)
-    }
-}
-
 fn matrix_clip(ctx: &PageCtx<'_>, bounds: Rect) -> Rect {
     let gutter = -controls::ControlFrame::new(Rect::new(0., 0., 1., 1.), None)
         .focus_bounds(ctx.text.backing_scale())
@@ -664,32 +654,6 @@ fn matrix_clip(ctx: &PageCtx<'_>, bounds: Rect) -> Rect {
     )
 }
 
-fn matrix_button(
-    ctx: &mut PageCtx<'_>,
-    scene: &mut Scene,
-    frame: Rect,
-    clip: Rect,
-    palette: Palette,
-    label: &str,
-    focused: bool,
-) {
-    let mut button = ButtonModel::default();
-    button.state.focused = focused;
-    button.state.focus_visible = focused;
-    button.render(
-        scene,
-        ctx.text,
-        label,
-        frame,
-        Some(clip),
-        palette,
-        tekes_ui_controls::paint::ButtonVariant::Quiet,
-        tekes_ui_controls::ButtonSize::Body,
-        proposal::TextRole::UiBody,
-        tekes_ui_controls::ButtonTextAlign::Center,
-    );
-}
-
 fn matrix_tooltip(
     ctx: &mut PageCtx<'_>,
     scene: &mut Scene,
@@ -697,87 +661,17 @@ fn matrix_tooltip(
     y: &mut f32,
     palette: Palette,
 ) {
-    let clip = matrix_clip(ctx, bounds);
-    let width = bounded_fixture_width(bounds.size.width, 420.0);
-    for (title, interaction) in [
-        ("Rest · hidden", 0),
-        ("Hover · shown", 1),
-        ("Focus-visible · shown", 2),
-        ("Escape · dismissed until leave", 3),
-    ] {
-        *y += matrix_heading(ctx, scene, bounds, *y, title) + 6.0;
-        let button_size = ButtonModel::measure(
-            ctx.text,
-            "Hover or focus me",
-            width.min(190.0),
-            tekes_ui_controls::ButtonSize::Body,
-            proposal::TextRole::UiBody,
-        );
-        let anchor = Rect::new(
-            bounds.min_x(),
-            *y,
-            button_size.width.max(160.0).min(width),
-            button_size.height.max(36.0),
-        );
-        matrix_button(
-            ctx,
-            scene,
-            anchor,
-            clip,
-            palette,
-            "Hover or focus me",
-            interaction == 2,
-        );
-        let tip_text = "Tooltip content wraps naturally at the current preview width.";
-        let tip_width = width.min(240.0);
-        let tip_text_height = ctx
-            .text
-            .measure(
-                tip_text,
-                proposal::TextRole::UiBody,
-                (tip_width - 24.0).max(0.0),
-            )
-            .height;
-        let tip_size = Size::new(tip_width, tip_text_height + 16.0);
-        let model = Tooltip {
-            visible: false,
-            text: tip_text.into(),
-        };
-        let mut view = TooltipView::default();
-        if interaction == 1 || interaction == 3 {
-            let mut probe = Scene::new();
-            view.render(
-                &mut probe,
-                ctx.text,
-                &model,
-                anchor,
-                tip_size,
-                clip,
-                Some(clip),
-                palette,
-                proposal::TextRole::UiBody,
-            );
-            view.pointer_move(Point::new(anchor.min_x() + 8.0, anchor.min_y() + 8.0));
-        }
-        if interaction == 2 {
-            view.set_focus(true, true);
-        }
-        if interaction == 3 {
-            let _ = view.key(ControlKey::Escape);
-        }
-        view.render(
-            scene,
-            ctx.text,
-            &model,
-            anchor,
-            tip_size,
-            clip,
-            Some(clip),
-            palette,
-            proposal::TextRole::UiBody,
-        );
-        *y = (*y + button_size.height.max(36.0) + 54.0).max(view.layout().frame.max_y()) + 15.0;
-    }
+    let mut text = super::super::apphost_feedback::FixtureRenderer(ctx.text);
+    super::super::apphost_feedback::matrix_tooltip(
+        &mut super::super::apphost_feedback::FixtureContext {
+            text: &mut text,
+            theme: ctx.theme,
+        },
+        scene,
+        bounds,
+        y,
+        palette,
+    );
 }
 
 fn matrix_popover(
@@ -787,92 +681,17 @@ fn matrix_popover(
     y: &mut f32,
     palette: Palette,
 ) {
-    let clip = matrix_clip(ctx, bounds);
-    let width = bounded_fixture_width(bounds.size.width, 420.0);
-    for (title, open, focused) in [
-        ("Closed", false, false),
-        ("Open", true, false),
-        ("Open · dismiss action focus-visible", true, true),
-    ] {
-        *y += matrix_heading(ctx, scene, bounds, *y, title) + 6.0;
-        let button_size = ButtonModel::measure(
-            ctx.text,
-            "More options",
-            180.0_f32.min(width),
-            tekes_ui_controls::ButtonSize::Body,
-            proposal::TextRole::UiBody,
-        );
-        let anchor = Rect::new(
-            bounds.min_x(),
-            *y,
-            button_size.width.max(140.0).min(width),
-            button_size.height.max(36.0),
-        );
-        matrix_button(ctx, scene, anchor, clip, palette, "More options", false);
-        let mut model = Popover::default();
-        if open {
-            model.show(20);
-        }
-        let mut view = tekes_ui_controls::feedback_view::PopoverView::default();
-        if open {
-            let size = tekes_ui_controls::feedback_view::PopoverView::measure(
-                ctx.text,
-                Size::new((width.min(232.0) - 28.0).max(0.0), 24.0),
-                proposal::TextRole::UiBody,
-            );
-            if focused {
-                let mut probe = Scene::new();
-                view.render_with_text_content(
-                    &mut probe,
-                    ctx.text,
-                    &model,
-                    anchor,
-                    size,
-                    clip,
-                    Some(clip),
-                    palette,
-                    proposal::TextRole::UiBody,
-                    "Gallery popover focus geometry",
-                    |scene, text, slot| {
-                        text.proposal_label_in(
-                            scene,
-                            ctx.theme,
-                            slot,
-                            "Popover content",
-                            proposal::TextRole::UiBody,
-                            ColorRole::PrimaryText.resolve(ctx.theme),
-                        );
-                    },
-                );
-                view.focus_dismiss(true, true);
-            }
-            view.render_with_text_content(
-                scene,
-                ctx.text,
-                &model,
-                anchor,
-                size,
-                clip,
-                Some(clip),
-                palette,
-                proposal::TextRole::UiBody,
-                "Gallery popover state",
-                |scene, text, slot| {
-                    text.proposal_label_in(
-                        scene,
-                        ctx.theme,
-                        slot,
-                        "Popover content",
-                        proposal::TextRole::UiBody,
-                        ColorRole::PrimaryText.resolve(ctx.theme),
-                    );
-                },
-            );
-            *y = view.layout().frame.max_y() + 15.0;
-        } else {
-            *y += anchor.size.height + 15.0;
-        }
-    }
+    let mut text = super::super::apphost_feedback::FixtureRenderer(ctx.text);
+    super::super::apphost_feedback::matrix_popover(
+        &mut super::super::apphost_feedback::FixtureContext {
+            text: &mut text,
+            theme: ctx.theme,
+        },
+        scene,
+        bounds,
+        y,
+        palette,
+    );
 }
 
 fn matrix_toast(
@@ -882,49 +701,17 @@ fn matrix_toast(
     y: &mut f32,
     palette: Palette,
 ) {
-    let clip = matrix_clip(ctx, bounds);
-    let width = bounded_fixture_width(bounds.size.width, 500.0);
-    for (title, visible, focused) in [
-        ("Visible · default", true, false),
-        ("Visible · dismiss action focus-visible", true, true),
-        ("Dismissed", false, false),
-    ] {
-        *y += matrix_heading(ctx, scene, bounds, *y, title) + 6.0;
-        let message = if visible {
-            "Changes saved"
-        } else {
-            "Toast dismissed."
-        };
-        let mut model = Toast::new(message, controls::NoticeTone::Success, 5000);
-        model.paused = true;
-        model.visible = visible;
-        let size = ToastView::measure(ctx.text, message, width, proposal::TextRole::UiBody);
-        let frame = Rect::new(bounds.min_x(), *y, width, size.height);
-        let mut view = MountedToast::default();
-        if visible && focused {
-            let mut probe = Scene::new();
-            view.render(
-                &mut probe,
-                ctx.text,
-                &model,
-                frame,
-                Some(clip),
-                palette,
-                proposal::TextRole::UiBody,
-            );
-            view.focus_dismiss(true, true);
-        }
-        view.render(
-            scene,
-            ctx.text,
-            &model,
-            frame,
-            Some(clip),
-            palette,
-            proposal::TextRole::UiBody,
-        );
-        *y += size.height + 14.0;
-    }
+    let mut text = super::super::apphost_feedback::FixtureRenderer(ctx.text);
+    super::super::apphost_feedback::matrix_toast(
+        &mut super::super::apphost_feedback::FixtureContext {
+            text: &mut text,
+            theme: ctx.theme,
+        },
+        scene,
+        bounds,
+        y,
+        palette,
+    );
 }
 
 fn matrix_banner(
@@ -934,54 +721,17 @@ fn matrix_banner(
     y: &mut f32,
     palette: Palette,
 ) {
-    let clip = matrix_clip(ctx, bounds);
-    let width = bounded_fixture_width(bounds.size.width, 600.0);
-    for (title, visible, dismissible, focused) in [
-        ("Visible · dismissible", true, true, false),
-        ("Dismiss action focus-visible", true, true, true),
-        ("Visible · persistent", true, false, false),
-        ("Dismissed", false, true, false),
-    ] {
-        *y += matrix_heading(ctx, scene, bounds, *y, title) + 6.0;
-        let model = Banner {
-            message: "Your changes are saved. You can continue working.".into(),
-            tone: controls::NoticeTone::Info,
-            dismissible,
-            visible,
-        };
-        let size = BannerView::measure(
-            ctx.text,
-            &model.message,
-            width,
-            dismissible,
-            proposal::TextRole::UiBody,
-        );
-        let frame = Rect::new(bounds.min_x(), *y, width, size.height);
-        let mut view = MountedBanner::default();
-        if focused {
-            let mut probe = Scene::new();
-            view.render(
-                &mut probe,
-                ctx.text,
-                &model,
-                frame,
-                Some(clip),
-                palette,
-                proposal::TextRole::UiBody,
-            );
-            view.focus_dismiss(true, true);
-        }
-        view.render(
-            scene,
-            ctx.text,
-            &model,
-            frame,
-            Some(clip),
-            palette,
-            proposal::TextRole::UiBody,
-        );
-        *y += size.height.max(30.0) + 14.0;
-    }
+    let mut text = super::super::apphost_feedback::FixtureRenderer(ctx.text);
+    super::super::apphost_feedback::matrix_banner(
+        &mut super::super::apphost_feedback::FixtureContext {
+            text: &mut text,
+            theme: ctx.theme,
+        },
+        scene,
+        bounds,
+        y,
+        palette,
+    );
 }
 
 fn matrix_empty_state(
@@ -991,65 +741,17 @@ fn matrix_empty_state(
     y: &mut f32,
     palette: Palette,
 ) {
-    let clip = matrix_clip(ctx, bounds);
-    let width = bounded_fixture_width(bounds.size.width, 520.0);
-    for (title, action, disabled, focused) in [
-        ("Action enabled", Some("Create document"), false, false),
-        ("Action focus-visible", Some("Create document"), false, true),
-        ("Action disabled", Some("Create document"), true, false),
-        ("No action", None, false, false),
-    ] {
-        *y += matrix_heading(ctx, scene, bounds, *y, title) + 6.0;
-        let model = EmptyState {
-            title: "No documents yet".into(),
-            detail: "Create a document to begin your workspace.".into(),
-            action: action.map(str::to_owned),
-        };
-        let height = empty_state_matrix_height(ctx, &model, width);
-        let frame = Rect::new(bounds.min_x(), *y, width, height);
-        let mut surface = SurfaceView::default();
-        let mut probe = Scene::new();
-        let panel = surface.render_at_scale(
-            &mut probe,
-            frame,
-            Some(clip),
-            palette,
-            true,
-            ctx.text.backing_scale(),
-        );
-        let mut view = MountedEmptyState::default();
-        view.set_disabled(disabled);
-        if focused {
-            view.render(
-                &mut probe,
-                ctx.text,
-                &model,
-                panel.content,
-                Some(clip),
-                palette,
-                proposal::TextRole::UiBody,
-            );
-            view.focus_action(true, true);
-        }
-        let panel = surface.render_at_scale(
-            scene,
-            frame,
-            Some(clip),
-            palette,
-            true,
-            ctx.text.backing_scale(),
-        );
-        view.render(
-            scene,
-            ctx.text,
-            &model,
-            panel.content,
-            Some(clip),
-            palette,
-            proposal::TextRole::UiBody,
-        );
-        *y += height + 14.0;
-    }
+    let mut text = super::super::apphost_feedback::FixtureRenderer(ctx.text);
+    super::super::apphost_feedback::matrix_empty_state(
+        &mut super::super::apphost_feedback::FixtureContext {
+            text: &mut text,
+            theme: ctx.theme,
+        },
+        scene,
+        bounds,
+        y,
+        palette,
+    );
 }
 
 fn matrix_toast_variants(
@@ -1059,30 +761,17 @@ fn matrix_toast_variants(
     y: &mut f32,
     palette: Palette,
 ) {
-    let clip = matrix_clip(ctx, bounds);
-    let width = bounded_fixture_width(bounds.size.width, 520.0);
-    for (label, tone) in [
-        ("Info", controls::NoticeTone::Info),
-        ("Success", controls::NoticeTone::Success),
-        ("Warning", controls::NoticeTone::Warning),
-        ("Error", controls::NoticeTone::Error),
-    ] {
-        *y += matrix_heading(ctx, scene, bounds, *y, label) + 6.0;
-        let mut model = Toast::new("Changes saved", tone, 5000);
-        model.paused = true;
-        let size = ToastView::measure(ctx.text, &model.message, width, proposal::TextRole::UiBody);
-        let frame = Rect::new(bounds.min_x(), *y, width, size.height);
-        MountedToast::default().render(
-            scene,
-            ctx.text,
-            &model,
-            frame,
-            Some(clip),
-            palette,
-            proposal::TextRole::UiBody,
-        );
-        *y += size.height + 12.0;
-    }
+    let mut text = super::super::apphost_feedback::FixtureRenderer(ctx.text);
+    super::super::apphost_feedback::matrix_toast_variants(
+        &mut super::super::apphost_feedback::FixtureContext {
+            text: &mut text,
+            theme: ctx.theme,
+        },
+        scene,
+        bounds,
+        y,
+        palette,
+    );
 }
 
 fn matrix_banner_variants(
@@ -1092,40 +781,17 @@ fn matrix_banner_variants(
     y: &mut f32,
     palette: Palette,
 ) {
-    let clip = matrix_clip(ctx, bounds);
-    let width = bounded_fixture_width(bounds.size.width, 600.0);
-    for (label, tone) in [
-        ("Info", controls::NoticeTone::Info),
-        ("Success", controls::NoticeTone::Success),
-        ("Warning", controls::NoticeTone::Warning),
-        ("Error", controls::NoticeTone::Error),
-    ] {
-        *y += matrix_heading(ctx, scene, bounds, *y, label) + 6.0;
-        let model = Banner {
-            message: "Your changes are saved. You can continue working.".into(),
-            tone,
-            dismissible: true,
-            visible: true,
-        };
-        let size = BannerView::measure(
-            ctx.text,
-            &model.message,
-            width,
-            model.dismissible,
-            proposal::TextRole::UiBody,
-        );
-        let frame = Rect::new(bounds.min_x(), *y, width, size.height);
-        MountedBanner::default().render(
-            scene,
-            ctx.text,
-            &model,
-            frame,
-            Some(clip),
-            palette,
-            proposal::TextRole::UiBody,
-        );
-        *y += size.height + 12.0;
-    }
+    let mut text = super::super::apphost_feedback::FixtureRenderer(ctx.text);
+    super::super::apphost_feedback::matrix_banner_variants(
+        &mut super::super::apphost_feedback::FixtureContext {
+            text: &mut text,
+            theme: ctx.theme,
+        },
+        scene,
+        bounds,
+        y,
+        palette,
+    );
 }
 
 fn matrix_status_badges(
@@ -1201,40 +867,17 @@ fn matrix_empty_variants(
     y: &mut f32,
     palette: Palette,
 ) {
-    let clip = matrix_clip(ctx, bounds);
-    for (title, action) in [
-        ("With primary action", Some("Create document")),
-        ("Without action", None),
-    ] {
-        *y += matrix_heading(ctx, scene, bounds, *y, title) + 6.0;
-        let model = EmptyState {
-            title: "No documents yet".into(),
-            detail: "Create a document to begin your workspace.".into(),
-            action: action.map(str::to_owned),
-        };
-        let width = bounded_fixture_width(bounds.size.width, 520.0);
-        let height = empty_state_matrix_height(ctx, &model, width);
-        let frame = Rect::new(bounds.min_x(), *y, width, height);
-        let mut surface = SurfaceView::default();
-        let panel = surface.render_at_scale(
-            scene,
-            frame,
-            Some(clip),
-            palette,
-            true,
-            ctx.text.backing_scale(),
-        );
-        MountedEmptyState::default().render(
-            scene,
-            ctx.text,
-            &model,
-            panel.content,
-            Some(clip),
-            palette,
-            proposal::TextRole::UiBody,
-        );
-        *y += height + 14.0;
-    }
+    let mut text = super::super::apphost_feedback::FixtureRenderer(ctx.text);
+    super::super::apphost_feedback::matrix_empty_variants(
+        &mut super::super::apphost_feedback::FixtureContext {
+            text: &mut text,
+            theme: ctx.theme,
+        },
+        scene,
+        bounds,
+        y,
+        palette,
+    );
 }
 
 fn empty_state_matrix_height(ctx: &mut PageCtx<'_>, model: &EmptyState, width: f32) -> f32 {
@@ -2488,6 +2131,7 @@ impl FeedbackViews {
 #[cfg(test)]
 mod layout_tests {
     use super::*;
+    use crate::gallery::workbench::apphost_feedback::bounded_fixture_width;
     use crate::gallery::{static_text::StaticText, text::TextEngine};
 
     fn context<'a>(text: &'a mut TextEngine, static_text: &'a mut StaticText) -> PageCtx<'a> {

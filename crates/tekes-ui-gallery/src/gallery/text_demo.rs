@@ -16,6 +16,59 @@ fn ink(id: &str, theme: Theme) -> tekes_ui_tokens::Rgba {
 fn metric(group: &str, id: &str) -> f32 {
     proposal::metric(group, id).expect("JSON metric")
 }
+pub(crate) fn section_layout(
+    surfaces: &[&tekes_ui_controls::TextSurface],
+    content: Rect,
+    type_scale: f32,
+    heading_heights: &[f32],
+) -> Vec<(&'static str, Rect, Rect)> {
+    let gap = Spacing::Loose.value();
+    let type_scale = if type_scale.is_finite() {
+        type_scale.max(1.0)
+    } else {
+        1.0
+    };
+    let label_h = proposal::TextRole::UiHeading.style().line_height * type_scale;
+    let line_h = proposal::TextRole::ComposerBody.style().line_height * type_scale;
+    let mut y = content.min_y();
+    let bottom = content.max_y();
+    let mut out = Vec::new();
+    for (i, surface) in surfaces.iter().enumerate() {
+        let name = if surface.input.read_only {
+            "Text · 选择与复制"
+        } else if surface.input.multiline {
+            "TextEditor · 多行"
+        } else {
+            "TextEditor · 单行"
+        };
+        let measured_label_h = heading_heights
+            .get(i)
+            .copied()
+            .unwrap_or(label_h)
+            .max(label_h)
+            .min((bottom - y).max(0.0));
+        let label = Rect::new(content.min_x(), y, content.size.width, measured_label_h);
+        y += label.size.height;
+        y += Spacing::Regular.value().min((bottom - y).max(0.0));
+        let desired_height =
+            if surfaces.len() <= 2 && i + 1 == surfaces.len() && surface.input.multiline {
+                (bottom - y).max(0.0)
+            } else if surface.input.read_only {
+                line_h * 8.0
+            } else if surface.input.multiline {
+                line_h * 20.0
+            } else {
+                surface.minimum_outer_height(type_scale)
+            };
+        let height = desired_height.min((bottom - y).max(0.0));
+        let panel = Rect::new(content.min_x(), y, content.size.width, height);
+        out.push((name, label, panel));
+        y += height;
+        y += gap.min((bottom - y).max(0.0));
+    }
+    out
+}
+
 #[derive(Debug)]
 struct Surface {
     view: tekes_ui_controls::TextSurface,
@@ -346,59 +399,46 @@ impl TextDemo {
         demo.surfaces = vec![surface];
         demo
     }
+    /// Move the original text and reading models into the receiving ContentHost.
+    /// The host owns native focus, text transactions, painting and the blink clock.
+    pub(crate) fn into_content_fields(
+        self,
+    ) -> Vec<tekes_ui_controls::composition::TextFieldContent> {
+        self.surfaces
+            .into_iter()
+            .map(|surface| {
+                let label = if surface.input.read_only {
+                    "Text · 选择与复制"
+                } else if surface.input.multiline {
+                    "TextEditor · 多行"
+                } else {
+                    "TextEditor · 单行"
+                };
+                let mut field = tekes_ui_controls::composition::TextFieldContent::new(label, "");
+                field.surface = surface.view;
+                field.reading = surface.reading;
+                field.show_metadata = false;
+                field.viewport = tekes_ui_controls::composition::TextViewport::Fill;
+                field
+            })
+            .collect()
+    }
     fn sections(
         &self,
         content: Rect,
         type_scale: f32,
         heading_heights: &[f32],
     ) -> Vec<(&'static str, Rect, Rect)> {
-        let gap = Spacing::Loose.value();
-        let type_scale = if type_scale.is_finite() {
-            type_scale.max(1.0)
-        } else {
-            1.0
-        };
-        let label_h = proposal::TextRole::UiHeading.style().line_height * type_scale;
-        let line_h = proposal::TextRole::ComposerBody.style().line_height * type_scale;
-        let mut y = content.min_y();
-        let bottom = content.max_y();
-        let mut out = Vec::new();
-        for (i, surface) in self.surfaces.iter().enumerate() {
-            let name = if surface.input.read_only {
-                "Text · 选择与复制"
-            } else if surface.input.multiline {
-                "TextEditor · 多行"
-            } else {
-                "TextEditor · 单行"
-            };
-            let measured_label_h = heading_heights
-                .get(i)
-                .copied()
-                .unwrap_or(label_h)
-                .max(label_h)
-                .min((bottom - y).max(0.0));
-            let label = Rect::new(content.min_x(), y, content.size.width, measured_label_h);
-            y += label.size.height;
-            y += Spacing::Regular.value().min((bottom - y).max(0.0));
-            let desired_height = if self.surfaces.len() <= 2
-                && i + 1 == self.surfaces.len()
-                && surface.input.multiline
-            {
-                (bottom - y).max(0.0)
-            } else if surface.input.read_only {
-                line_h * 8.0
-            } else if surface.input.multiline {
-                line_h * 20.0
-            } else {
-                surface.minimum_outer_height(type_scale)
-            };
-            let height = desired_height.min((bottom - y).max(0.0));
-            let panel = Rect::new(content.min_x(), y, content.size.width, height);
-            out.push((name, label, panel));
-            y += height;
-            y += gap.min((bottom - y).max(0.0));
-        }
-        out
+        section_layout(
+            &self
+                .surfaces
+                .iter()
+                .map(|surface| &surface.view)
+                .collect::<Vec<_>>(),
+            content,
+            type_scale,
+            heading_heights,
+        )
     }
     pub fn build(&mut self, ctx: &mut PageCtx<'_>, content: Rect, scene: &mut Scene) {
         self.build_clipped(ctx, content, None, scene);

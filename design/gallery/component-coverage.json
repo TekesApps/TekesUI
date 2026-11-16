@@ -815,7 +815,7 @@
           "runtime": "public-api-verified",
           "experience": "unverified",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_basic.rs",
             "anchor": "(\"default\", ControlState::default())",
             "story": "states",
             "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
@@ -828,8 +828,8 @@
           "runtime": "public-api-verified",
           "experience": "unverified",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
-            "anchor": "\"hover\",\n                ControlState {",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_basic.rs",
+            "anchor": "\"hover\",\n            ControlState {",
             "story": "states",
             "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
           },
@@ -841,8 +841,8 @@
           "runtime": "public-api-verified",
           "experience": "unverified",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
-            "anchor": "\"pressed\",\n                ControlState {",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_basic.rs",
+            "anchor": "\"pressed\",\n            ControlState {",
             "story": "states",
             "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
           },
@@ -854,8 +854,8 @@
           "runtime": "public-api-verified",
           "experience": "unverified",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
-            "anchor": "\"focus-visible\",\n                ControlState {",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_basic.rs",
+            "anchor": "\"focus-visible\",\n            ControlState {",
             "story": "states",
             "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
           },
@@ -867,8 +867,8 @@
           "runtime": "public-api-verified",
           "experience": "unverified",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
-            "anchor": "\"disabled\",\n                ControlState {",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_basic.rs",
+            "anchor": "\"disabled\",\n            ControlState {",
             "story": "states",
             "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
           },
@@ -1175,7 +1175,7 @@
           "runtime": "public-api-verified",
           "experience": "unverified",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_basic.rs",
             "anchor": "(\"default\", ControlState::default())",
             "story": "states",
             "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
@@ -1211,8 +1211,8 @@
           "runtime": "public-api-verified",
           "experience": "unverified",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
-            "anchor": "\"focus-visible\",\n                ControlState {",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_basic.rs",
+            "anchor": "\"focus-visible\",\n            ControlState {",
             "story": "states",
             "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
           }
@@ -1223,8 +1223,8 @@
           "runtime": "public-api-verified",
           "experience": "unverified",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
-            "anchor": "\"disabled\",\n                ControlState {",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_basic.rs",
+            "anchor": "\"disabled\",\n            ControlState {",
             "story": "states",
             "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
           }
@@ -1328,7 +1328,7 @@
           "runtime": "public-api-verified",
           "experience": "unverified",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_basic.rs",
             "anchor": "(\"default\", ControlState::default())",
             "story": "states",
             "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
@@ -1364,8 +1364,8 @@
           "runtime": "public-api-verified",
           "experience": "unverified",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
-            "anchor": "\"focus-visible\",\n                ControlState {",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_basic.rs",
+            "anchor": "\"focus-visible\",\n            ControlState {",
             "story": "states",
             "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
           }
@@ -1376,8 +1376,8 @@
           "runtime": "public-api-verified",
           "experience": "unverified",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
-            "anchor": "\"disabled\",\n                ControlState {",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_basic.rs",
+            "anchor": "\"disabled\",\n            ControlState {",
             "story": "states",
             "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
           }
@@ -1483,7 +1483,7 @@
           "runtime": "public-api-verified",
           "experience": "unverified",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_basic.rs",
             "anchor": "(\"default\", ControlState::default())",
             "story": "states",
             "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
@@ -1519,8 +1519,8 @@
           "runtime": "public-api-verified",
           "experience": "unverified",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
-            "anchor": "\"focus-visible\",\n                ControlState {",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_basic.rs",
+            "anchor": "\"focus-visible\",\n            ControlState {",
             "story": "states",
             "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
           }
@@ -1531,8 +1531,8 @@
           "runtime": "public-api-verified",
           "experience": "unverified",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
-            "anchor": "\"disabled\",\n                ControlState {",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_basic.rs",
+            "anchor": "\"disabled\",\n            ControlState {",
             "story": "states",
             "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
           }
@@ -1935,7 +1935,7 @@
           "runtime": "public-api-verified",
           "experience": "unverified",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_basic.rs",
             "anchor": "(\"Unchecked\", ControlState::default(), CheckState::Unchecked)",
             "story": "states",
             "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
@@ -1947,7 +1947,7 @@
           "runtime": "public-api-verified",
           "experience": "unverified",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_basic.rs",
             "anchor": "Unchecked · hover",
             "story": "states",
             "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
@@ -1959,7 +1959,7 @@
           "runtime": "public-api-verified",
           "experience": "unverified",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_basic.rs",
             "anchor": "Unchecked · pressed",
             "story": "states",
             "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
@@ -1971,7 +1971,7 @@
           "runtime": "public-api-verified",
           "experience": "unverified",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_basic.rs",
             "anchor": "Unchecked · focus-visible",
             "story": "states",
             "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
@@ -1983,7 +1983,7 @@
           "runtime": "public-api-verified",
           "experience": "unverified",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_basic.rs",
             "anchor": "Unchecked · disabled",
             "story": "states",
             "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
@@ -1995,7 +1995,7 @@
           "runtime": "public-api-verified",
           "experience": "unverified",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_basic.rs",
             "anchor": "(\"Checked\", ControlState::default(), CheckState::Checked)",
             "story": "states",
             "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
@@ -2007,7 +2007,7 @@
           "runtime": "public-api-verified",
           "experience": "unverified",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_basic.rs",
             "anchor": "Unchecked · error + focus-visible",
             "story": "states",
             "note": "Production Checkbox/RadioGroup/Switch state fixtures, including error crossed with value/focus/disabled. Native input and assistive technology remain separate."
@@ -2019,7 +2019,7 @@
           "runtime": "public-api-verified",
           "experience": "unverified",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_basic.rs",
             "anchor": "(\"Indeterminate\", ControlState::default(), CheckState::Mixed)",
             "story": "states",
             "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
@@ -2466,7 +2466,7 @@
           "runtime": "public-api-verified",
           "experience": "unverified",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_basic.rs",
             "anchor": "(\"default\", ControlState::default())",
             "story": "states",
             "note": "Field metadata public API probe asserts actual label/required/message ink, error-over-help precedence and wrapping geometry across four themes, three brands and two label roles. Exact rest/error states only; disabled interaction is delegated to the input child; native experience remains separate."
@@ -2819,7 +2819,7 @@
           "experience": "unverified",
           "note": "Exact header state and actual paint asserted via public APIs, four themes/three brands. Content-status and native/AX acceptance separate.",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_navigation.rs",
             "anchor": "\"Selected tab · hover\",",
             "story": "states",
             "note": "Reviewed actual production view/event setup: Breadcrumb focus after first layout and whole-group disabled; Tabs hover/selected/focus/pressed/disabled; Disclosure expansion/disabled/header states. Content statuses remain unverified."
@@ -2832,7 +2832,7 @@
           "experience": "unverified",
           "note": "Exact header state and actual paint asserted via public APIs, four themes/three brands. Content-status and native/AX acceptance separate.",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_navigation.rs",
             "anchor": "\"Selected tab · hover\",",
             "story": "states",
             "note": "Reviewed actual production view/event setup: Breadcrumb focus after first layout and whole-group disabled; Tabs hover/selected/focus/pressed/disabled; Disclosure expansion/disabled/header states. Content statuses remain unverified."
@@ -2845,7 +2845,7 @@
           "experience": "unverified",
           "note": "Exact header state and actual paint asserted via public APIs, four themes/three brands. Content-status and native/AX acceptance separate.",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_navigation.rs",
             "anchor": "\"Selected tab · hover\",",
             "story": "states",
             "note": "Reviewed actual production view/event setup: Breadcrumb focus after first layout and whole-group disabled; Tabs hover/selected/focus/pressed/disabled; Disclosure expansion/disabled/header states. Content statuses remain unverified."
@@ -2858,7 +2858,7 @@
           "experience": "unverified",
           "note": "Exact header state and actual paint asserted via public APIs, four themes/three brands. Content-status and native/AX acceptance separate.",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_navigation.rs",
             "anchor": "\"Selected tab · hover\",",
             "story": "states",
             "note": "Reviewed actual production view/event setup: Breadcrumb focus after first layout and whole-group disabled; Tabs hover/selected/focus/pressed/disabled; Disclosure expansion/disabled/header states. Content statuses remain unverified."
@@ -2871,7 +2871,7 @@
           "experience": "unverified",
           "note": "Exact header state and actual paint asserted via public APIs, four themes/three brands. Content-status and native/AX acceptance separate.",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_navigation.rs",
             "anchor": "\"Selected tab · hover\",",
             "story": "states",
             "note": "Reviewed actual production view/event setup: Breadcrumb focus after first layout and whole-group disabled; Tabs hover/selected/focus/pressed/disabled; Disclosure expansion/disabled/header states. Content statuses remain unverified."
@@ -2884,7 +2884,7 @@
           "experience": "unverified",
           "note": "Exact header state and actual paint asserted via public APIs, four themes/three brands. Content-status and native/AX acceptance separate.",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_navigation.rs",
             "anchor": "\"Selected tab · hover\",",
             "story": "states",
             "note": "Reviewed actual production view/event setup: Breadcrumb focus after first layout and whole-group disabled; Tabs hover/selected/focus/pressed/disabled; Disclosure expansion/disabled/header states. Content statuses remain unverified."

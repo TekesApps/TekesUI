@@ -39,6 +39,143 @@ use crate::gallery::static_text::{
 };
 use crate::gallery::text::LabelStyle;
 
+/// Borrowed text services used by the original calibration painter. Measurement
+/// paragraphs and visible paragraphs must stay in their own font registries.
+pub(crate) trait CalibrationText {
+    fn locale(&self) -> crate::gallery::locale::Locale;
+    fn scale(&self) -> f32;
+    fn label(
+        &mut self,
+        value: &str,
+        role: TextRole,
+        width: Option<f32>,
+    ) -> std::rc::Rc<tekes_ui_text::Paragraph>;
+    fn shaped_fixture(
+        &mut self,
+        state: &mut StaticText,
+    ) -> std::rc::Rc<crate::gallery::static_text::ShapedFixture>;
+    fn measure_button(
+        &mut self,
+        value: &str,
+        width: f32,
+        size: ButtonSize,
+        role: proposal::TextRole,
+    ) -> Size;
+    // Match the existing ButtonModel paint contract without an adapter-only parameter type.
+    #[allow(clippy::too_many_arguments)]
+    fn render_button(
+        &mut self,
+        scene: &mut Scene,
+        model: &mut ButtonModel,
+        label: &str,
+        frame: Rect,
+        clip: Option<Rect>,
+        palette: tekes_ui_tokens::Palette,
+        variant: paint::ButtonVariant,
+        size: ButtonSize,
+        role: proposal::TextRole,
+        align: ButtonTextAlign,
+    );
+    fn push(
+        &mut self,
+        scene: &mut Scene,
+        paragraph: &tekes_ui_text::Paragraph,
+        origin: Point,
+        ink: tekes_ui_tokens::Rgba,
+    );
+    fn label_in(
+        &mut self,
+        scene: &mut Scene,
+        theme: Theme,
+        slot: Rect,
+        value: &str,
+        style: LabelStyle,
+    ) -> f32 {
+        let p = self.label(value, style.role, None);
+        self.push(
+            scene,
+            &p,
+            crate::gallery::text::label_origin(slot, &p, style.align),
+            style.color.resolve(theme),
+        );
+        p.width as f32
+    }
+    fn wrapped_label_in(
+        &mut self,
+        scene: &mut Scene,
+        theme: Theme,
+        slot: Rect,
+        value: &str,
+        style: LabelStyle,
+    ) -> usize {
+        let p = self.label(value, style.role, Some(slot.size.width));
+        self.push(
+            scene,
+            &p,
+            Point::new(slot.min_x().round(), slot.min_y().round()),
+            style.color.resolve(theme),
+        );
+        p.lines.len()
+    }
+}
+impl CalibrationText for crate::gallery::text::TextEngine {
+    fn locale(&self) -> crate::gallery::locale::Locale {
+        self.locale()
+    }
+    fn scale(&self) -> f32 {
+        self.scale()
+    }
+    fn label(
+        &mut self,
+        value: &str,
+        role: TextRole,
+        width: Option<f32>,
+    ) -> std::rc::Rc<tekes_ui_text::Paragraph> {
+        self.label(value, role, width)
+    }
+    fn shaped_fixture(
+        &mut self,
+        state: &mut StaticText,
+    ) -> std::rc::Rc<crate::gallery::static_text::ShapedFixture> {
+        state.shaped(self)
+    }
+    fn measure_button(
+        &mut self,
+        value: &str,
+        width: f32,
+        size: ButtonSize,
+        role: proposal::TextRole,
+    ) -> Size {
+        self.measure_button(value, width, size, role)
+    }
+    fn render_button(
+        &mut self,
+        scene: &mut Scene,
+        model: &mut ButtonModel,
+        label: &str,
+        frame: Rect,
+        clip: Option<Rect>,
+        palette: tekes_ui_tokens::Palette,
+        variant: paint::ButtonVariant,
+        size: ButtonSize,
+        role: proposal::TextRole,
+        align: ButtonTextAlign,
+    ) {
+        self.render_button(
+            scene, model, label, frame, clip, palette, variant, size, role, align,
+        );
+    }
+    fn push(
+        &mut self,
+        scene: &mut Scene,
+        paragraph: &tekes_ui_text::Paragraph,
+        origin: Point,
+        ink: tekes_ui_tokens::Rgba,
+    ) {
+        self.push(scene, paragraph, origin, ink);
+    }
+}
+
 // ---------------------------------------------------------------- 布局
 
 /// 选择器行的标签槽宽度（“夹具”“宽度”）。
@@ -114,7 +251,7 @@ struct LiveSelectorLayout {
 fn live_selector_layout(
     content_width: f32,
     st: &StaticText,
-    text: &mut crate::gallery::text::TextEngine,
+    text: &mut dyn CalibrationText,
 ) -> LiveSelectorLayout {
     // Size this column from the same localized, type-scaled shaping metrics used to draw the
     // labels. Preserve the 44pt baseline slot when it fits; grow only when the copy needs room.
@@ -184,11 +321,7 @@ fn live_selector_layout(
 
 /// Required vertical document extent for the calibration body, relative to its content origin.
 /// Selector measurements and the final three-pane/stat line geometry are shared with `build`.
-pub fn document_extent(
-    content_width: f32,
-    text: &mut crate::gallery::text::TextEngine,
-    st: &StaticText,
-) -> f32 {
+pub fn document_extent(content_width: f32, text: &mut dyn CalibrationText, st: &StaticText) -> f32 {
     let pane_top = if text.locale() == crate::gallery::locale::Locale::Reference {
         SLOT_TOP
     } else {
@@ -234,7 +367,7 @@ pub fn numbers_line(n: &crate::gallery::static_text::Numbers) -> String {
 
 fn button(
     scene: &mut Scene,
-    renderer: (&mut crate::gallery::text::TextEngine, Theme),
+    renderer: (&mut dyn CalibrationText, Theme),
     button: &mut ButtonModel,
     rect: Rect,
     clip: Rect,
@@ -262,7 +395,7 @@ fn button(
 fn draw_reference_selector(
     scene: &mut Scene,
     theme: Theme,
-    text: &mut crate::gallery::text::TextEngine,
+    text: &mut dyn CalibrationText,
     rect: Rect,
     label: &str,
     selected: bool,
@@ -296,7 +429,7 @@ fn draw_reference_selectors(
     content: Rect,
     scene: &mut Scene,
     theme: Theme,
-    text: &mut crate::gallery::text::TextEngine,
+    text: &mut dyn CalibrationText,
 ) {
     // Offline golden rendering must not leave stale production hit geometry or focus behind.
     st.blur();
@@ -355,12 +488,27 @@ pub fn build(ctx: &mut PageCtx<'_>, content: Rect, scene: &mut Scene) {
 
 /// Build within translated document coordinates while retaining the host's fixed viewport clip.
 pub fn build_clipped(ctx: &mut PageCtx<'_>, content: Rect, viewport_clip: Rect, scene: &mut Scene) {
-    let theme = ctx.theme;
-    let scale = ctx.text.scale();
+    build_content(
+        ctx.theme,
+        ctx.text,
+        ctx.static_text,
+        content,
+        viewport_clip,
+        scene,
+    );
+}
+
+pub(crate) fn build_content(
+    theme: Theme,
+    text: &mut dyn CalibrationText,
+    st: &mut StaticText,
+    content: Rect,
+    viewport_clip: Rect,
+    scene: &mut Scene,
+) {
+    let scale = text.scale();
     let scale_i = scale_to_int(scale);
     let dark = is_dark(theme);
-    let st = &mut *ctx.static_text;
-    let text = &mut *ctx.text;
     let button_clip = content.intersection(&viewport_clip).unwrap_or(Rect::new(
         viewport_clip.min_x(),
         viewport_clip.min_y(),
@@ -465,7 +613,7 @@ pub fn build_clipped(ctx: &mut PageCtx<'_>, content: Rect, viewport_clip: Rect, 
     };
 
     // 2. 三个窗格。
-    let shaped = st.shaped(text);
+    let shaped = text.shaped_fixture(st);
     let result: Option<Computed> = st.result(theme, scale).cloned();
     let colors = match &result {
         Some(c) => c.colors,
@@ -485,23 +633,34 @@ pub fn build_clipped(ctx: &mut PageCtx<'_>, content: Rect, viewport_clip: Rect, 
     }
     let ref_slot = slot_at(content, st.width(), slot_top);
     let pane = |i| ref_slot.pane_rect(i);
-    ref_slot.draw(scene, theme, text, &PANE_TITLES, |scene, text, rect| {
-        scene.push_quad(Quad::new(rect, colors.bg()));
-        text.push(scene, &shaped.cropped, rect.origin, colors.fg());
-    });
+    // Same ReferenceSlot geometry and chrome as its TextEngine-only draw entry.
+    for (i, title) in PANE_TITLES.iter().enumerate() {
+        text.label_in(scene, theme, ref_slot.header_slot(i), title, META_STYLE);
+        let fill = match i {
+            0 => ColorRole::DocumentCanvas.resolve(theme),
+            1 => ColorRole::HoverWash.resolve(theme),
+            _ => tekes_ui_tokens::Rgba::new(0., 0., 0., 0.),
+        };
+        scene.push_quad(
+            Quad::new(ref_slot.pane_rect(i).inset(-ref_slot.frame_outset), fill)
+                .with_corner_radius(ref_slot.corner_radius)
+                .with_border(Stroke::Hairline.value(), ColorRole::Border.resolve(theme)),
+        );
+    }
+    scene.push_quad(Quad::new(pane(0), colors.bg()));
+    text.push(scene, &shaped.cropped, pane(0).origin, colors.fg());
 
     // 标题行右侧的说明。
-    let note =
-        |scene: &mut Scene, text: &mut crate::gallery::text::TextEngine, i: usize, s: &str| {
-            let h = ref_slot.header_slot(i);
-            let r = Rect::new(
-                h.min_x() + NOTE_X,
-                h.min_y(),
-                h.size.width.max(400.0) - NOTE_X,
-                h.size.height,
-            );
-            text.label_in(scene, theme, r, s, NOTE_STYLE);
-        };
+    let note = |scene: &mut Scene, text: &mut dyn CalibrationText, i: usize, s: &str| {
+        let h = ref_slot.header_slot(i);
+        let r = Rect::new(
+            h.min_x() + NOTE_X,
+            h.min_y(),
+            h.size.width.max(400.0) - NOTE_X,
+            h.size.height,
+        );
+        text.label_in(scene, theme, r, s, NOTE_STYLE);
+    };
     let crop_note = if shaped.shown_lines < shaped.total_lines {
         format!(
             "显示前 {} 行 / 共 {} 行（画布 {}x{} pt，{}x）",

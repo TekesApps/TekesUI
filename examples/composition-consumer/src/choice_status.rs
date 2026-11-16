@@ -244,30 +244,43 @@ pub struct Scenario {
     pub host: ContentHost,
     status: Rc<Cell<Status>>,
 }
+/// Reuse the original caller-owned status/choice subtree in a receiving Host.
+/// IDs are root, choice and feedback; the caller owns the refresh status cell.
+pub fn fixture_content(
+    ids: [ComponentId; 3],
+    labels: Vec<String>,
+    status: Rc<Cell<Status>>,
+) -> Content {
+    let mut view = SelectView::default();
+    view.set_reduced_motion(true);
+    let choice = Choice {
+        model: Select::new(labels.len()),
+        view,
+        selected_value: labels.first().cloned(),
+        labels,
+    };
+    Content::new(
+        ids[0],
+        StackContent {
+            model: Stack {
+                axis: Axis::Vertical,
+                gap: Spacing::Regular.value(),
+            },
+            children: vec![
+                Content::new(ids[2], Feedback::new(status.clone())),
+                Content::new(ids[1], choice),
+            ],
+            flexible_child: None,
+        },
+    )
+}
 impl Scenario {
     pub fn new(labels: Vec<String>) -> Result<Self, CompositionError> {
         let status = Rc::new(Cell::new(Status::Ready));
-        let mut view = SelectView::default();
-        view.set_reduced_motion(true);
-        let choice = Choice {
-            model: Select::new(labels.len()),
-            view,
-            selected_value: labels.first().cloned(),
+        let host = ContentHost::new(fixture_content(
+            [ROOT, CHOICE, FEEDBACK],
             labels,
-        };
-        let host = ContentHost::new(Content::new(
-            ROOT,
-            StackContent {
-                model: Stack {
-                    axis: Axis::Vertical,
-                    gap: Spacing::Regular.value(),
-                },
-                children: vec![
-                    Content::new(FEEDBACK, Feedback::new(status.clone())),
-                    Content::new(CHOICE, choice),
-                ],
-                flexible_child: None,
-            },
+            status.clone(),
         ))?;
         Ok(Self { host, status })
     }

@@ -265,6 +265,37 @@ impl tekes_ui_controls::TextSurfaceTextRenderer for Text {
     }
 }
 impl tekes_ui_controls::TextSurfaceHost for Text {
+    fn shape_system_text_with_weight(
+        &mut self,
+        value: &str,
+        final_logical_point_size: f32,
+        weight: u16,
+        width: Option<f32>,
+    ) -> Option<Rc<tekes_ui_text::Paragraph>> {
+        Some(Rc::new(self.shaper.shape(
+            value,
+            &TextStyle::system(final_logical_point_size).with_weight(weight),
+            &ShapeOptions {
+                width: width.map(f64::from),
+                line_spacing: 0.,
+            },
+        )))
+    }
+    fn shape_system_text(
+        &mut self,
+        value: &str,
+        final_logical_point_size: f32,
+        width: Option<f32>,
+    ) -> Option<Rc<tekes_ui_text::Paragraph>> {
+        Some(Rc::new(self.shaper.shape(
+            value,
+            &TextStyle::system(final_logical_point_size),
+            &ShapeOptions {
+                width: width.map(f64::from),
+                line_spacing: 0.,
+            },
+        )))
+    }
     fn shape_label(
         &mut self,
         value: &str,
@@ -349,6 +380,156 @@ mod tests {
         layout_view::IconRenderer,
     };
     use tekes_ui_tokens::Theme;
+
+    #[test]
+    fn final_system_size_shapes_real_digits_without_role_minimum_or_double_scale() {
+        use tekes_ui_controls::{TextSurfaceHost, TextSurfaceTextRenderer};
+        let mut text = Text::new();
+        for scale in [1., 1.5] {
+            text.set_body_size(proposal::TextRole::UiBody.style().size * scale);
+            let large = text.shape_system_text("8", 64., None).unwrap();
+            let small = text.shape_system_text("8", 12., None).unwrap();
+            assert!((large.fonts[0].size - 64.).abs() < 1e-6);
+            assert!((small.fonts[0].size - 12.).abs() < 1e-6);
+            assert!(small.width < large.width && small.height < large.height);
+            let mut scene = Scene::new();
+            text.push_visible(
+                &mut scene,
+                &large,
+                Point::new(0., 0.),
+                Rgba::rgb8(0, 0, 0),
+                Rect::new(0., 0., 200., 200.),
+            );
+            assert!(
+                !scene.primitives().is_empty(),
+                "same host font registry and atlas must rasterize its shaped digit"
+            );
+        }
+    }
+
+    #[test]
+    fn calibration_final_style_preserves_layout_across_font_registries_and_ui_scale() {
+        use tekes_ui_controls::{TextSurfaceHost, TextSurfaceTextRenderer};
+        let mut text = Text::new();
+        text.shaper.shape(
+            "already registered mono",
+            &TextStyle::named("Menlo", 19.),
+            &ShapeOptions::default(),
+        );
+        text.set_body_size(proposal::TextRole::UiBody.style().size * 1.5);
+        let raw = include_str!("../../../fixtures/text/mixed-cjk-latin.txt");
+        let mut independent = CoreTextShaper::new(CoreTextFonts::new());
+        for weight in [400, 600] {
+            let actual = text
+                .shape_system_text_with_weight(raw, 14., weight, Some(320.))
+                .unwrap();
+            let expected = independent.shape(
+                raw,
+                &TextStyle::system(14.).with_weight(weight),
+                &ShapeOptions::with_width(320.),
+            );
+            assert_eq!(actual.height, expected.height);
+            assert_eq!(actual.default_line_height, expected.default_line_height);
+            assert_eq!(actual.lines.len(), expected.lines.len());
+            for (a, b) in actual.lines.iter().zip(&expected.lines) {
+                assert_eq!(a.utf16, b.utf16);
+                assert_eq!((a.top, a.height, a.width), (b.top, b.height, b.width));
+                for (ar, br) in a.runs.iter().zip(&b.runs) {
+                    let af = actual.font(ar.font).unwrap();
+                    let bf = expected.font(br.font).unwrap();
+                    assert_eq!(
+                        (&af.post_script_name, af.size),
+                        (&bf.post_script_name, bf.size)
+                    );
+                    assert_eq!(ar.glyphs, br.glyphs);
+                }
+            }
+            let whole_lines = |p: &tekes_ui_text::Paragraph| {
+                p.lines
+                    .iter()
+                    .take_while(|line| line.top + line.height <= 170.)
+                    .count()
+            };
+            assert_eq!(whole_lines(&actual), whole_lines(&expected));
+            let mut scene = Scene::new();
+            text.push_visible(
+                &mut scene,
+                &actual,
+                Point::new(0., 0.),
+                Rgba::gray(0.),
+                Rect::new(0., 0., 320., 170.),
+            );
+            assert!(
+                !scene.primitives().is_empty(),
+                "visible text must rasterize with its own font registry"
+            );
+        }
+        let regular = text
+            .shape_system_text_with_weight("MMMM WWWW", 14., 400, None)
+            .unwrap();
+        let semibold = text
+            .shape_system_text_with_weight("MMMM WWWW", 14., 600, None)
+            .unwrap();
+        assert_ne!(
+            regular.width, semibold.width,
+            "requested weight must affect actual shaping"
+        );
+    }
+
+    #[test]
+    #[ignore = "requires the registered GPU acceptance lane"]
+    fn actual_window_text_survives_measurement_atlas_switch_on_shared_renderer() {
+        let mut renderer = tekes_ui_render::Renderer::new_headless().unwrap();
+        let mut text = Text::new();
+        let mut host = ContentHost::new(Content::new(
+            ComponentId(1),
+            TextContent::new("AppHost window — 文本恢复，office ffi 😀"),
+        ))
+        .unwrap();
+        let window_pixels =
+            |renderer: &mut tekes_ui_render::Renderer, text: &mut Text, host: &mut ContentHost| {
+                text.begin_frame(std::time::Duration::ZERO, false);
+                let frame = Rect::new(0., 0., 600., 200.);
+                let mut scene = Scene::new();
+                host.render(&mut scene, text, frame, frame, Theme::LIGHT.into())
+                    .unwrap();
+                renderer
+                    .render_to_rgba8(&scene, &mut text.atlas, (600, 200), 1., Rgba::gray(1.))
+                    .unwrap()
+            };
+        let before = window_pixels(&mut renderer, &mut text, &mut host);
+        assert!(before.chunks_exact(4).any(|p| p[0] < 200));
+        let fonts = CoreTextFonts::new();
+        let mut measurement = CoreTextShaper::new(fonts.clone());
+        let mut raster = CoreTextRasterizer::new(fonts);
+        let paragraph = measurement.shape(
+            include_str!("../../../fixtures/text/mixed-cjk-latin.txt"),
+            &TextStyle::system(14.),
+            &ShapeOptions::with_width(320.),
+        );
+        let mut atlas = GlyphAtlas::default();
+        atlas.begin_frame();
+        let mut scene = Scene::new();
+        push_paragraph(
+            &mut scene,
+            &mut atlas,
+            &mut raster,
+            &paragraph,
+            Point::new(0., 0.),
+            1.,
+            Rgba::gray(0.),
+        );
+        renderer
+            .render_to_rgba8(
+                &scene,
+                &mut atlas,
+                (320, paragraph.height.ceil() as u32),
+                1.,
+                Rgba::gray(1.),
+            )
+            .unwrap();
+        assert_eq!(window_pixels(&mut renderer, &mut text, &mut host), before);
+    }
 
     #[test]
     fn actual_apphost_text_respects_code_family_and_ui_glyph_widths() {

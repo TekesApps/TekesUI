@@ -1,5 +1,30 @@
 # Gallery as an AppHost consumer
 
+## Current verification status — Check381 candidate
+
+All 70 registry routes have source adapters. Check380 passed two focused tests:
+the real Split/Icon actions and construction of all registered routes; Gallery
+all-targets strict also passed. Construction does not prove every route's behavior.
+Check381 release-mode candidate build succeeded, with native-r3 (signature prefix
+`d1120c4`) in progress. This is not a public Release or Dock delivery; legacy remains
+the default entry. Native-r2 retains only its fixed Check368 33-route program's
+limited evidence. Physical IME, VoiceOver and performance are not newly accepted.
+
+Scoped receipts now supersede the earlier source-only statements below: Check370/371
+cover Text/Icon/Calibration/Quality; Check374 secondary pointer dispatch (1 test),
+Check375 window requests (1), Check376 ordinary actions (1), collections (3) and
+Brand (2). Check377 passed Tabs/Disclosure/Slider (1), Chart (1), collection history
+(1), the remaining Brand action/focus checks (1 each) and four pattern checks.
+Check378 passed Command (1), launcher (1), original matrices (2), shared Scroll
+regressions (2), feedback actions/overlay (1 each), and original consumer checks
+(retained/status 1 each; slider/command 4 each). Check379 passed the remaining
+Danger and finite Dialog checks (1 each). AppHost strict passed Check378; Gallery
+strict passed Check380. Earlier failures remain historical evidence, not passes.
+See [route coverage](gallery-apphost-coverage-20261116.md) for current per-route
+scope; receipts live in the coordinator's `work/gallery-migration-checkNNN/partial-results.json`
+with stdout/stderr links. The dated sections below retain their original batch
+context and do not describe the current verification status unless stated.
+
 User authorization: 2026-11-14. Implementation starts after the read-only
 assessment of v0.3.28, source `5bc621ba5240ac001c89681b6589c52a170e3bbb`.
 The evidence-only successor `59bc128` does not change runtime behavior.
@@ -264,3 +289,173 @@ and narrow Search, Clear and hidden-Nav Cmd+F. Check348/349 verify List navigati
 minimum document width, horizontal Tabs, Search phase geometry and retained
 historical rendering. Final palette appearance remains a separate native check;
 these results do not certify physical IME, VoiceOver or performance.
+
+## Remaining-route inventory and first full-section candidate — 2026-11-16
+
+[The Issue #294 coverage table](gallery-apphost-coverage-20261116.md) tracks all
+70 registered routes and their original supported sections. Navigation presence
+and bundled manuals do not count as story migration. Checkbox is the first
+candidate to compose every original section under AppHost, using the original
+model, production Content adapter and shared passive state fixtures. Its Check356 CPU checks passed; native acceptance remains pending. The old default entry remains until the full
+table is behaviorally equivalent. GPU-resource preparation for the 3D route
+requires a separately owned shared host contract; the Gallery consumer does not
+introduce a renderer or flatten a legacy scene to bypass that boundary.
+
+The next ordinary-page source batch extends the same story container to Button,
+Stack, Grid and Separator, plus the original Overview copy and component index.
+The index routes through the same history service. The optional shared resource
+boundary is now two-phase: prepare resources, normal Host render once, finish
+resources before renderer submission. The finish phase consumes actual child
+geometry from that render's arrange, so a resource consumer need not duplicate
+Stack/Scroll layout or use stale child bounds. Context carries only the existing
+renderer, root frame/clip, scale, motion and palette. Activity is projected by
+LocalContainer onto each visited Host; Gallery deactivates a departing cached
+page using the already borrowed Host. Resource pages still require integration
+and acceptance; this API alone does not establish their coverage.
+
+The selection-page batch retains original Switch, Slider and RadioGroup models
+in their formal Content adapters, including complete original section sets and
+shared static matrix definitions. Matrix text rendering borrows the window's
+services with the original reduced-motion fixture policy; it cannot schedule a
+second animation loop. The Scene3D consumer is now wired to both resource phases
+and records actual arranged preview geometry. A cached departing page is stopped
+within its existing Host borrow. Test fixtures use LocalContainer's real activity
+projection. These new paths await combined CPU/GPU checks and native acceptance;
+Check358 evidence applies only to the preceding ordinary-page source batch.
+
+The subsequent display/reading batch adds the original Markdown/CodeBlock/Diff
+Views, Surface's real nested action, Skeleton, status variants and bounded
+Progress. Original View measurement uses a metric-only borrow of the receiving
+text renderer, with normal painting performed by the actual Content owner.
+Check361 native review also identified the vertically stacked section commands
+and weak title hierarchy in that frozen program. The new shared row uses
+horizontal Stack/Scroll ownership and measured height; `story_heading` uses the
+existing UiHeading role without token changes. These source repairs and new pages
+are separate from the frozen program's ongoing native evidence.
+
+### Input chapters and reference/resource routing (2026-11-16, source candidate)
+
+Field, Area and Search now compose all applicable original chapters. Search uses
+that same StoryState root factory as Field/Area/Combo; the legacy caller passes
+identity, so its native transport remains unchanged. Section navigation reuses
+the previously verified horizontal SectionBar. Before leaving a live chapter,
+the original input blurs while mounted; the Host removes and retains the whole
+Content subtree, including the real editing model. Passive chapters use that
+same Host. Returning to Playground or Edge reinserts the retained subtree;
+Reset rebuilds the original fixture and preserves the selected chapter. No second
+native or event owner is created. The passive text matrix uses the production
+TextSurface layout/paint with original selection/preedit fixtures and the receiving
+text service, without advertising those fixtures as editable native inputs.
+
+Combo/Select additionally expose their original nine navigation-view fixtures;
+conditional consumer refresh-status rows remain explicit coverage gaps. Six
+foundation routes and Motion are wired to their owning adapters. Typography and
+Iconography preserve their original reference text; component-icon remains a
+separate unresolved route. Foundation and Motion selections use real page guidance
+rather than invented registered component manuals. This candidate has formatting
+and diff checks only; affected CPU/strict/native evidence is pending coordination.
+
+### Consumer state fixtures and first navigation group (source candidate)
+
+The five Combo/Select conditional refresh-status specimens now use small factories
+in the existing independent consumer modules. Both their original Scenario::new
+and Gallery instantiate the same private Query/Choice and Feedback components.
+Explicit root/control/feedback IDs let Gallery put all specimens directly in its
+one Host. Combo's deterministic initial Com/Enter selection uses the original
+private query and menu reducer; validation remains independent of refresh status.
+There is no nested Scenario Host or alternate event loop.
+
+Link and SegmentedControl now use original StoryState models through their formal
+Content. Model changes are read once after Host dispatch; link activation logs once
+without replaying the action. Their original matrix painters and measurement are
+shared by legacy and AppHost paths. Docs/Playground/States/Behaviors, Disabled,
+Reset, and selection persistence are retained. The new same-Host consumer draft
+isolation and navigation behavior regressions are written but not yet executed.
+
+### Breadcrumb, Toolbar and NumberField admission (original source batch)
+
+The 36-route source includes all original chapters of these three pages. Breadcrumb
+uses its original model and formal Content, and preserves its ancestor-only action
+payload. Toolbar uses the formal ToolbarControl with original Create/Rename/Remove
+commands and its built-in keyboard/overflow owner. NumberField retains the original
+non-editable NumberField and NumberFieldView through a private Component; substituting
+the newer editable NumberFieldContent would change the original story contract.
+The fixed 1–32 stepper supplies its original pointer/key reducer, two semantic action
+parts and no text-input owner. Its value remains in StoryState across chapters.
+Their six/five/seven passive matrices share the original case data and painters.
+
+The admitted source is not the native-r2 program: r2 runs the frozen Check368
+33-route package. Their real actions/bounds CPU test subsequently passed Check376;
+original matrix tests passed Check370. Current native-r3 acceptance remains in progress.
+
+### Calibration resource boundary (coordinator-approved contract)
+
+Calibration may retain its original measurement-only TextEngine/offscreen atlas and
+use the same Renderer for readback. This is an offscreen measurement service, not
+a second window text/input/accessibility owner. Visible calibration text must be
+reshaped by the receiving Host font registry at the same raw 14 pt size and crop;
+a measured Paragraph must never cross registries with different FontKey tables.
+The existing prepare_resources hook is sufficient; no new GPU framework is needed.
+The Host weighted final-size shaping seam preserves original metadata/header font
+weight. Its default implementation explicitly rejects unsupported non-400 weight;
+it must not silently render requested weighted text as normal. Existing verified
+Motion shaping behavior remains unchanged. Check370 subsequently passed the font-registry,
+original painter and scoped GPU checks; current native acceptance remains pending.
+
+### Consistency child routes and geometry reference
+
+The original eight Consistency group actions open cached private
+`components-{category}` routes using the original ShowcaseState and painters.
+They are not additional registry entries: directory selection remains Consistency,
+and the existing visit history retains their Host and inspection selection.
+Documents resolves the original group component manuals. These forty state
+illustrations remain static references, not substitutes for migrated live controls.
+Geometry consumes the original raster alignment/alpha drawing with the receiving
+Host text service; mounting this reference does not establish GPU calibration.
+
+### Navigation stories and independent conditional consumers
+
+Tabs uses formal TabsContent; Disclosure confirms the formal controlled intent
+against its original StoryState only after Host action delivery. Original passive
+state painters are shared with the legacy Gallery. Conditional content-status and
+Slider examples expose their original Content factory so Gallery mounts their
+private model, feedback and draft under its existing Host. Scenario/build use the
+same factories; no nested Host or separate text/input/event owner is introduced.
+The conditional Disclosure header assigns glyph painting to either embedded
+Content or its original external Scenario painter, never both.
+
+### Collection, pattern and feedback integration
+
+The shared router delegates to their original domain adapters. Collection action
+records are consumed before snapshot-changing sort projection; section navigation
+retains the complete live body so Tree expansion and table order remain in their
+formal Content owners. Reset alone rebuilds deterministic state. Patterns reuse
+original submission/revision/delivery state and mount their original editor in
+the receiving Host; Field metadata reuses the emphasized metadata view for passive
+States. CommandPalette consumes the formal trigger/query/overlay owner and shares
+its independent lookup consumer factory with the original Scenario. Its popup
+query reveal geometry must satisfy the Host contract; Gallery does not bypass it.
+
+### Final action, split and launcher consumers
+
+The icon action uses one formal Button and a passive canonical plus IconContent;
+the legacy fallback renderer remains intact. SplitView owns its original formal
+divider and finite panes under the receiving Host; the outer viewport contributes
+only geometry and conditional pane-choice layout. The three ratio illustrations
+remain passive and do not change the live ratio.
+
+The AppHost route is a launcher page. Real button actions enqueue window requests;
+`take_window_open_request(theme)` consumes each once and delegates to the original
+AppHost demonstration's `open_request`, sharing the Gallery SettingsOwner. AppHost
+supplies the current native theme and opens via its existing event loop. Merely
+visiting or rendering the launcher cannot open another window. Default Gallery
+selection is unchanged until the combined source and native acceptance complete.
+
+### Final default-entry candidate (#294, 2026-11-16)
+
+Ordinary no-argument launch selects AppHost after the complete route migration.
+`--apphost` remains accepted for existing commands; `--legacy` retains the original
+Gallery diagnostic renderer. `--snapshot` and explicit legacy selftest/performance
+environment entry points retain their original implementation and evidence scope.
+The source candidate version is 0.3.31; this does not replace the installed v0.3.30
+or assert completion of native acceptance, required CI, Release or Dock delivery.

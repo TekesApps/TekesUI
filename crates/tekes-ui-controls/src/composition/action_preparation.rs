@@ -751,6 +751,7 @@ impl ContentHost {
         if let Some(epoch) = next_capture {
             self.capture_epoch = epoch;
             self.captured = Some(id);
+            self.captured_button = PointerButton::Primary;
             self.captured_mount = self.root.find_active(id).map(|node| node.mount);
             self.captured_overlay_handler = false;
         }

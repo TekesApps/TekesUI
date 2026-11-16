@@ -19,8 +19,12 @@ impl From<TextDemo> for StoryInput {
 }
 
 impl StoryInput {
-    pub(super) fn search() -> Self {
-        Self::Search(Box::new(StoryTextHost::new()))
+    pub(super) fn search_with_root(
+        root: fn(
+            tekes_ui_controls::composition::Content,
+        ) -> tekes_ui_controls::composition::Content,
+    ) -> Self {
+        Self::Search(Box::new(StoryTextHost::with_root(root)))
     }
 
     pub(super) fn combo_box(

@@ -32,8 +32,8 @@ mod window_toolbar;
 #[cfg(target_os = "macos")]
 pub use columns::{
     Column, Container, ContainerContent, ContainerOptions, ContainerPresentation,
-    ContainerToolbarHost, ContainerToolbarPosition, LocalContainer, ProcessContainer,
-    RetainedButton,
+    ContainerRenderContext, ContainerToolbarHost, ContainerToolbarPosition, LocalContainer,
+    ProcessContainer, RetainedButton,
 };
 #[cfg(target_os = "macos")]
 pub use presentation::{
@@ -77,6 +77,7 @@ fn validate(profile: &AppProfile) -> anyhow::Result<()> {
 #[cfg(target_os = "macos")]
 pub struct AppWindow {
     theme: tekes_ui_tokens::Theme,
+    palette_source: Option<std::rc::Rc<std::cell::Cell<tekes_ui_tokens::Palette>>>,
     profile: AppProfile,
     columns: Option<Vec<Column>>,
     navigation: Option<NavigationOptions>,
@@ -84,11 +85,19 @@ pub struct AppWindow {
     presentation: Option<PresentationOptions>,
     container_factories: Vec<ContainerFactory>,
 }
+/// A consumer-owned window declaration opened by the current native event loop.
+/// Requesting another window does not create a nested application or input owner.
+#[cfg(target_os = "macos")]
+pub struct WindowOpenRequest {
+    pub app: AppWindow,
+    pub config: tekes_ui_platform_macos::WindowConfig,
+}
 #[cfg(target_os = "macos")]
 impl AppWindow {
     pub fn new(profile: AppProfile) -> Self {
         Self {
             theme: tekes_ui_tokens::Theme::LIGHT,
+            palette_source: None,
             profile,
             columns: None,
             navigation: None,
@@ -108,6 +117,7 @@ impl AppWindow {
             .collect();
         Ok(Self {
             theme: tekes_ui_tokens::Theme::LIGHT,
+            palette_source: None,
             profile: AppProfile { modules },
             columns: Some(columns),
             navigation: None,
@@ -133,6 +143,7 @@ impl AppWindow {
             .collect();
         Ok(Self {
             theme: tekes_ui_tokens::Theme::LIGHT,
+            palette_source: None,
             profile: AppProfile { modules },
             columns: Some(columns),
             navigation: None,
@@ -162,6 +173,7 @@ impl AppWindow {
             ),
         };
         host.with_theme(theme)
+            .with_palette_source(self.palette_source)
             .with_container_factories(self.container_factories)
     }
     /// Register finite, consumer-defined creatable types before opening a window.
@@ -196,6 +208,17 @@ impl AppWindow {
     /// Defaults to LIGHT; does not follow an embedding window's later Theme.
     pub fn theme(mut self, theme: tekes_ui_tokens::Theme) -> Self {
         self.theme = theme;
+        self
+    }
+    /// Read compiled color choices from this UI-thread source on each paint.
+    /// Window appearance/contrast (including Settings) remains controlled by
+    /// `theme`; it is projected onto the source palette. Changing this source
+    /// during a normal UI action takes effect on that action's next redraw.
+    pub fn palette_source(
+        mut self,
+        source: std::rc::Rc<std::cell::Cell<tekes_ui_tokens::Palette>>,
+    ) -> Self {
+        self.palette_source = Some(source);
         self
     }
     pub fn navigation(mut self, navigation: NavigationOptions) -> Self {
@@ -245,6 +268,7 @@ impl AppWindow {
             self.settings,
             self.presentation,
             self.theme,
+            self.palette_source,
             self.container_factories,
             args,
         )
@@ -300,6 +324,7 @@ fn run_internal(
         settings,
         None,
         tekes_ui_tokens::Theme::LIGHT,
+        None,
         Vec::new(),
         &std::env::args().collect::<Vec<_>>(),
     )
@@ -338,6 +363,7 @@ fn run_columns(
     settings: Option<settings::SettingsConfiguration>,
     presentation: Option<PresentationOptions>,
     theme: tekes_ui_tokens::Theme,
+    palette_source: Option<std::rc::Rc<std::cell::Cell<tekes_ui_tokens::Palette>>>,
     factories: Vec<ContainerFactory>,
     args: &[String],
 ) -> anyhow::Result<()> {
@@ -368,6 +394,7 @@ fn run_columns(
             settings,
             presentation,
             theme,
+            palette_source,
             container_factories: factories,
         },
         acceptance,

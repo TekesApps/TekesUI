@@ -829,6 +829,12 @@ impl StaticText {
         s
     }
 
+    /// Image IDs belong to the previous renderer. Drop cached receipts without
+    /// unregistering those IDs in the receiving renderer's unrelated namespace.
+    pub(crate) fn forget_renderer_resources(&mut self) {
+        self.results.clear();
+    }
+
     /// 当前键下已经算好的结果。
     pub fn result(&self, theme: Theme, scale: f32) -> Option<&Computed> {
         let key = self.key(theme, scale);

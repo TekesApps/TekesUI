@@ -13,6 +13,7 @@ use std::{
 
 #[derive(Debug)]
 struct ToastOwner {
+    arranged: bool,
     model: Toast,
     view: ToastView,
     window_active: bool,
@@ -33,6 +34,7 @@ impl ToastOwner {
             && self.view.focus_target().is_some()
     }
     fn revoke(&mut self) {
+        self.arranged = false;
         self.dismissed_action = false;
         self.exposure.revoke();
         self.view.cancel();
@@ -63,6 +65,7 @@ impl ToastContent {
             return Err(CompositionError::EmptyAccessibleName);
         }
         let owner = Rc::new(RefCell::new(ToastOwner {
+            arranged: false,
             model,
             view: ToastView::default(),
             window_active: true,
@@ -111,6 +114,13 @@ impl ToastContent {
     }
 }
 impl Component for ToastContent {
+    fn host_reveal_passthrough(&self) -> bool {
+        // The original View derives its action slot only from width, height and
+        // text metrics. Arrange forwards the same ancestor clip to the fixed
+        // proxy; scrolling translates both without introducing a local clip.
+        self.intact() && self.owner.borrow().arranged
+    }
+
     fn interactive(&self) -> bool {
         true
     }
@@ -139,6 +149,7 @@ impl Component for ToastContent {
         Some(&mut self.children)
     }
     fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
+        self.owner.borrow_mut().arranged = false;
         if !self.intact() {
             return MeasuredChild::new(Size::default());
         }
@@ -151,6 +162,7 @@ impl Component for ToastContent {
         ))
     }
     fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
+        self.owner.borrow_mut().arranged = false;
         if !self.intact() {
             return;
         }
@@ -167,6 +179,7 @@ impl Component for ToastContent {
             view.logical_focus_target().unwrap_or_default()
         };
         self.children[0].arrange(text, action, clip);
+        self.owner.borrow_mut().arranged = !frame.is_empty();
     }
     fn paint(
         &mut self,
@@ -251,6 +264,13 @@ struct ToastProxy {
     owner: Rc<RefCell<ToastOwner>>,
 }
 impl Component for ToastProxy {
+    fn rectangular_input_geometry(&self) -> bool {
+        // The original View supplies the full logical action rectangle and
+        // clips its ButtonModel hit target with the forwarded ancestor Rect.
+        // This grants ordinary rectangular input, not curve or prepared effects.
+        true
+    }
+
     fn active(&self) -> bool {
         self.owner.borrow().available()
     }
@@ -346,6 +366,7 @@ impl Component for ToastProxy {
 
 #[derive(Debug)]
 struct BannerOwner {
+    arranged: bool,
     model: Banner,
     view: BannerView,
     window_active: bool,
@@ -363,6 +384,7 @@ impl BannerOwner {
             && self.view.focus_target().is_some()
     }
     fn revoke(&mut self) {
+        self.arranged = false;
         self.dismissed_action = false;
         self.exposure.revoke();
         self.view.cancel();
@@ -388,6 +410,7 @@ impl BannerContent {
             return Err(CompositionError::EmptyAccessibleName);
         }
         let owner = Rc::new(RefCell::new(BannerOwner {
+            arranged: false,
             model,
             view: BannerView::default(),
             window_active: true,
@@ -432,6 +455,13 @@ impl BannerContent {
     }
 }
 impl Component for BannerContent {
+    fn host_reveal_passthrough(&self) -> bool {
+        // The original View derives its action slot only from width, height and
+        // text metrics. Arrange forwards the same ancestor clip to the fixed
+        // proxy; scrolling translates both without introducing a local clip.
+        self.intact() && self.owner.borrow().arranged
+    }
+
     fn validate(&self) -> Result<(), CompositionError> {
         if !self.intact() {
             return Err(CompositionError::InvalidSlotCount);
@@ -457,6 +487,7 @@ impl Component for BannerContent {
         Some(&mut self.children)
     }
     fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
+        self.owner.borrow_mut().arranged = false;
         if !self.intact() {
             return MeasuredChild::new(Size::default());
         }
@@ -470,6 +501,7 @@ impl Component for BannerContent {
         ))
     }
     fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
+        self.owner.borrow_mut().arranged = false;
         if !self.intact() {
             return;
         }
@@ -486,6 +518,7 @@ impl Component for BannerContent {
             view.logical_focus_target().unwrap_or_default()
         };
         self.children[0].arrange(text, action, clip);
+        self.owner.borrow_mut().arranged = !frame.is_empty();
     }
     fn paint(
         &mut self,
@@ -542,6 +575,13 @@ struct BannerProxy {
     owner: Rc<RefCell<BannerOwner>>,
 }
 impl Component for BannerProxy {
+    fn rectangular_input_geometry(&self) -> bool {
+        // The original View supplies the full logical action rectangle and
+        // clips its ButtonModel hit target with the forwarded ancestor Rect.
+        // This grants ordinary rectangular input, not curve or prepared effects.
+        true
+    }
+
     fn active(&self) -> bool {
         self.owner.borrow().available()
     }
@@ -1020,6 +1060,109 @@ mod tests {
             .owner
             .borrow()
             .hover_calls
+    }
+    #[test]
+    fn notice_actions_reveal_and_dismiss_in_rectangular_scroll() {
+        for toast in [true, false] {
+            let notice = if toast {
+                Content::new(
+                    T,
+                    ToastContent::new("Toast", Toast::new("Saved", NoticeTone::Info, 5000), A)
+                        .unwrap(),
+                )
+            } else {
+                Content::new(
+                    T,
+                    BannerContent::new(
+                        "Banner",
+                        Banner {
+                            message: "Saved".into(),
+                            tone: NoticeTone::Info,
+                            dismissible: true,
+                            visible: true,
+                        },
+                        A,
+                    )
+                    .unwrap(),
+                )
+            };
+            let mut h = ContentHost::new(Content::new(
+                ComponentId(792),
+                ScrollContent::new(ScrollArea::default(), notice),
+            ))
+            .unwrap();
+            h.set_action_events(true);
+            paint(&mut h).unwrap();
+            let original = h.get(A).unwrap().frame();
+            // The real dismiss action remains partly visible, but must scroll
+            // to expose its last four pixels before focus/activation.
+            let frame = Rect::new(0., 0., 360., original.max_y() - 4.);
+            h.render(
+                &mut Scene::new(),
+                &mut Text,
+                frame,
+                frame,
+                tekes_ui_tokens::Theme::LIGHT.into(),
+            )
+            .unwrap();
+            assert!(h.get(A).unwrap().visible().is_some());
+            assert!(h.focus(Some(A), true), "toast={toast}");
+            h.render(
+                &mut Scene::new(),
+                &mut Text,
+                frame,
+                frame,
+                tekes_ui_tokens::Theme::LIGHT.into(),
+            )
+            .unwrap();
+            let moved = h.get(A).unwrap().frame();
+            assert!(
+                moved.min_y() < original.min_y(),
+                "toast={toast}: {original:?} -> {moved:?}"
+            );
+            assert_eq!(h.get(A).unwrap().visible(), Some(moved));
+            let view_action = if toast {
+                h.get(T)
+                    .unwrap()
+                    .component::<ToastContent>()
+                    .unwrap()
+                    .owner
+                    .borrow()
+                    .view
+                    .logical_focus_target()
+            } else {
+                h.get(T)
+                    .unwrap()
+                    .component::<BannerContent>()
+                    .unwrap()
+                    .owner
+                    .borrow()
+                    .view
+                    .logical_focus_target()
+            };
+            assert_eq!(view_action, Some(moved));
+            assert!(
+                h.accessibility_action(A, None, AccessibilityAction::Press)
+                    .activated
+            );
+            assert!(h.drain_actions().iter().any(|a| a.target == A));
+            let visible = if toast {
+                h.get(T)
+                    .unwrap()
+                    .component::<ToastContent>()
+                    .unwrap()
+                    .model()
+                    .visible
+            } else {
+                h.get(T)
+                    .unwrap()
+                    .component::<BannerContent>()
+                    .unwrap()
+                    .model()
+                    .visible
+            };
+            assert!(!visible);
+        }
     }
     #[test]
     fn original_hover_once_ordinary_exit_and_captured_route_from() {

@@ -2150,6 +2150,7 @@ pub struct ContentHost {
     overlay_scopes: Vec<overlay_scope::ScopedOverlay>,
     popover_order: Vec<PopoverSession>,
     captured: Option<ComponentId>,
+    captured_button: PointerButton,
     text_wheel: Option<TextWheelLease>,
     text_wheel_retired: bool,
     text_wheel_dispatch: Option<TextWheelDispatch>,
@@ -2206,6 +2207,7 @@ impl ContentHost {
             overlay_scopes: Vec::new(),
             popover_order: Vec::new(),
             captured: None,
+            captured_button: PointerButton::Primary,
             text_wheel: None,
             text_wheel_retired: false,
             text_wheel_dispatch: None,
@@ -3374,6 +3376,16 @@ impl ContentHost {
         }
         let routing = event.routing_event();
         let routed = routing.as_ref();
+        if matches!(
+            routed,
+            ContentEvent::PointerDown(_) | ContentEvent::PointerUp(_)
+        ) && self.pointer_capture().is_some()
+            && event.pointer_button() != self.captured_button
+        {
+            // An additional button must neither replace the current gesture nor
+            // reach its owner as an unrelated release through hit-test fallback.
+            return ContentResponse::default();
+        }
         if event.is_primary_pointer() && matches!(routed, ContentEvent::PointerDown(_)) {
             self.retired_combo_release = false;
         }
@@ -3439,7 +3451,7 @@ impl ContentHost {
         if matches!(
             routed,
             ContentEvent::PointerMove(_) | ContentEvent::PointerUp(_)
-        ) && event.is_primary_pointer()
+        ) && event.pointer_button() == self.captured_button
             && let Some(id) = self.captured
         {
             let captured_overlay = self.captured_overlay;
@@ -3486,6 +3498,7 @@ impl ContentHost {
                         .checked_add(1)
                         .expect("pointer capture identity exhausted");
                     self.captured = Some(id);
+                    self.captured_button = event.pointer_button();
                     self.captured_mount = self.root.find_active(id).map(|node| node.mount);
                     self.captured_overlay = true;
                     self.captured_overlay_handler = true;
@@ -3648,13 +3661,14 @@ impl ContentHost {
             }
             self.record_reading_scroll(event, id, &r);
             self.event_bubbled = Some(bubbles);
-            if matches!(routed, ContentEvent::PointerDown(_)) && event.is_primary_pointer() {
+            if matches!(routed, ContentEvent::PointerDown(_)) {
                 if r.capture_pointer {
                     self.capture_epoch = self
                         .capture_epoch
                         .checked_add(1)
                         .expect("pointer capture identity exhausted");
                     self.captured = Some(id);
+                    self.captured_button = event.pointer_button();
                     self.captured_mount = self.root.find_active(id).map(|node| node.mount);
                     self.captured_overlay = self.overlay_scope_id().is_some_and(|scope| {
                         self.root
@@ -3663,7 +3677,8 @@ impl ContentHost {
                     });
                     self.captured_overlay_handler = false;
                 }
-                if r.consumed
+                if event.is_primary_pointer()
+                    && r.consumed
                     && self.root.find(id).is_some_and(|c| {
                         c.component.focusable()
                             && !c.preserve_activation_focus
@@ -3848,6 +3863,11 @@ impl ContentHost {
                 })
                 .map(|node| (id, node.mount))
         })
+    }
+    /// The button belonging to the current original capture. Window hosts use
+    /// this to route secondary drags to the same ContentHost outside its bounds.
+    pub fn pointer_capture_button(&self) -> Option<PointerButton> {
+        self.pointer_capture().map(|_| self.captured_button)
     }
     /// Same validated original capture, with its existing acquisition epoch for
     /// asynchronous Content callbacks. The legacy pair query stays unchanged.

@@ -119,6 +119,23 @@ fn preview_rect(component: &'static Component, tile: Rect) -> Rect {
     )
 }
 
+pub(crate) fn state_parts(
+    category: &str,
+    content: Rect,
+) -> Vec<(&'static str, &'static str, Rect)> {
+    catalog::group(category)
+        .component_ids
+        .iter()
+        .enumerate()
+        .flat_map(|(index, id)| {
+            let component = catalog::component(id);
+            chip_rects(component, tile_rect(category, content, index))
+                .into_iter()
+                .map(move |(state, frame)| (component.id.as_str(), state, frame))
+        })
+        .collect()
+}
+
 pub fn hit_state(category: &str, content: Rect, p: Point) -> Option<(&'static str, &'static str)> {
     for (index, id) in catalog::group(category).component_ids.iter().enumerate() {
         let component = catalog::component(id);
@@ -152,8 +169,86 @@ pub fn state_center(
     .map(|(_, rect)| rect.center())
 }
 
+pub(crate) trait ShowcaseText {
+    fn proposal_label(
+        &mut self,
+        value: &str,
+        role: proposal::TextRole,
+        width: Option<f32>,
+    ) -> std::rc::Rc<tekes_ui_text::Paragraph>;
+    fn proposal_selected_in(
+        &mut self,
+        scene: &mut Scene,
+        theme: Theme,
+        slot: Rect,
+        value: &str,
+        role: proposal::TextRole,
+        wrapped: bool,
+    );
+    fn label(
+        &mut self,
+        scene: &mut Scene,
+        theme: Theme,
+        slot: Rect,
+        value: &str,
+        role: proposal::TextRole,
+        ink: Rgba,
+    );
+    fn wrapped(
+        &mut self,
+        scene: &mut Scene,
+        theme: Theme,
+        slot: Rect,
+        value: &str,
+        role: proposal::TextRole,
+        ink: Rgba,
+    );
+}
+impl ShowcaseText for TextEngine {
+    fn proposal_label(
+        &mut self,
+        value: &str,
+        role: proposal::TextRole,
+        width: Option<f32>,
+    ) -> std::rc::Rc<tekes_ui_text::Paragraph> {
+        self.proposal_label(value, role, width)
+    }
+    fn proposal_selected_in(
+        &mut self,
+        scene: &mut Scene,
+        theme: Theme,
+        slot: Rect,
+        value: &str,
+        role: proposal::TextRole,
+        wrapped: bool,
+    ) {
+        self.proposal_selected_in(scene, theme, slot, value, role, wrapped)
+    }
+    fn label(
+        &mut self,
+        scene: &mut Scene,
+        theme: Theme,
+        slot: Rect,
+        value: &str,
+        role: proposal::TextRole,
+        ink: Rgba,
+    ) {
+        self.proposal_label_in(scene, theme, slot, value, role, ink);
+    }
+    fn wrapped(
+        &mut self,
+        scene: &mut Scene,
+        theme: Theme,
+        slot: Rect,
+        value: &str,
+        role: proposal::TextRole,
+        ink: Rgba,
+    ) {
+        self.proposal_wrapped_in(scene, theme, slot, value, role, ink);
+    }
+}
 struct Painter<'a> {
-    text: &'a mut TextEngine,
+    text: &'a mut dyn ShowcaseText,
     scene: &'a mut Scene,
     theme: Theme,
     clip: Rect,
@@ -178,7 +273,7 @@ impl Painter<'_> {
     }
     fn label(&mut self, rect: Rect, text: &str, role: proposal::TextRole, ink: &str) {
         if let Some(slot) = rect.intersection(&self.clip) {
-            self.text.proposal_label_in(
+            self.text.label(
                 self.scene,
                 self.theme,
                 slot,
@@ -196,7 +291,7 @@ impl Painter<'_> {
     }
     fn wrapped(&mut self, r: Rect, text: &str, role: proposal::TextRole, ink: &str) {
         if let Some(slot) = r.intersection(&self.clip) {
-            self.text.proposal_wrapped_in(
+            self.text.wrapped(
                 self.scene,
                 self.theme,
                 slot,
@@ -240,6 +335,57 @@ impl Painter<'_> {
     }
     fn icon(&mut self, r: Rect, kind: Icon, ink: &str) {
         self.icon_with_color(r, kind, color(self.theme, ink));
+    }
+    fn icon_with_color(&mut self, rect: Rect, icon: Icon, tint: Rgba) {
+        IconPainter {
+            scene: self.scene,
+            theme: self.theme,
+            clip: self.clip,
+        }
+        .icon_with_color(rect, icon, tint);
+    }
+    fn control(&mut self, r: Rect, s: State<'_>, fill: &str, radius: &str) {
+        let bg = if s.is("pressed") {
+            "button-pressed"
+        } else if s.is("hover") {
+            "button-hover"
+        } else {
+            fill
+        };
+        let edge = if s.is("error") {
+            "status-failed"
+        } else if s.is("focus") {
+            "border-focused"
+        } else {
+            "border"
+        };
+        self.box_role(r, bg, radius, Some(edge));
+    }
+    fn status_ink(&self, s: State<'_>) -> &'static str {
+        if s.is("disabled") {
+            "disabled-text"
+        } else if s.is("error") {
+            "status-failed"
+        } else {
+            "primary-text"
+        }
+    }
+}
+// The catalogue and showcase share exactly the same native primitive artwork.
+struct IconPainter<'a> {
+    scene: &'a mut Scene,
+    theme: Theme,
+    clip: Rect,
+}
+impl IconPainter<'_> {
+    fn quad(&mut self, rect: Rect, fill: Rgba, radius: f32, border: Option<Rgba>) {
+        if let Some(visible) = rect.intersection(&self.clip) {
+            let mut q = Quad::new(visible, fill).with_corner_radius(radius);
+            if let Some(ink) = border {
+                q = q.with_border(Stroke::Rule.value(), ink);
+            }
+            self.scene.push_quad(q);
+        }
     }
     // Icon-only geometry: preserve other chart/rule line painting.
     fn line_with_color(&mut self, a: Point, b: Point, ink: Rgba, stroke: f32) {
@@ -443,32 +589,6 @@ impl Painter<'_> {
             }
         }
     }
-    fn control(&mut self, r: Rect, s: State<'_>, fill: &str, radius: &str) {
-        let bg = if s.is("pressed") {
-            "button-pressed"
-        } else if s.is("hover") {
-            "button-hover"
-        } else {
-            fill
-        };
-        let edge = if s.is("error") {
-            "status-failed"
-        } else if s.is("focus") {
-            "border-focused"
-        } else {
-            "border"
-        };
-        self.box_role(r, bg, radius, Some(edge));
-    }
-    fn status_ink(&self, s: State<'_>) -> &'static str {
-        if s.is("disabled") {
-            "disabled-text"
-        } else if s.is("error") {
-            "status-failed"
-        } else {
-            "primary-text"
-        }
-    }
 }
 #[derive(Clone, Copy, Debug)]
 pub(crate) enum Icon {
@@ -497,6 +617,7 @@ impl Icon {
         (Self::Spinner, "spinner"),
     ];
 }
+#[cfg(test)]
 pub(crate) fn draw_icon_tinted(
     ctx: &mut PageCtx<'_>,
     scene: &mut Scene,
@@ -504,14 +625,23 @@ pub(crate) fn draw_icon_tinted(
     icon: Icon,
     tint: Rgba,
 ) {
-    Painter {
-        text: ctx.text,
+    draw_native_icon(scene, ctx.theme, rect, icon, tint);
+}
+pub(crate) fn draw_native_icon(
+    scene: &mut Scene,
+    theme: Theme,
+    rect: Rect,
+    icon: Icon,
+    tint: Rgba,
+) {
+    IconPainter {
         scene,
-        theme: ctx.theme,
+        theme,
         clip: rect.inset(-Stroke::Emphasis.value()),
     }
     .icon_with_color(rect, icon, tint);
 }
+
 fn at(r: Rect, x: f32, y: f32, w: f32, h: f32) -> Rect {
     Rect::new(r.min_x() + x, r.min_y() + y, w.max(0.), h.max(0.))
 }
@@ -548,10 +678,21 @@ pub fn build(
     scene: &mut Scene,
     state: &ShowcaseState,
 ) {
+    build_with_text(category, ctx.theme, ctx.text, content, scene, state);
+}
+
+pub(crate) fn build_with_text(
+    category: &str,
+    theme: Theme,
+    text: &mut dyn ShowcaseText,
+    content: Rect,
+    scene: &mut Scene,
+    state: &ShowcaseState,
+) {
     let mut p = Painter {
-        text: &mut *ctx.text,
+        text,
         scene,
-        theme: ctx.theme,
+        theme,
         clip: content,
     };
     p.caption(

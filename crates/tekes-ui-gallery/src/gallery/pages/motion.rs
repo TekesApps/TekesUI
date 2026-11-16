@@ -8,6 +8,200 @@ use tekes_ui_platform_macos::{Event, MouseButton, MouseEventKind};
 use tekes_ui_scene::{Point, Primitive, Quad, Rect, Scene, Size};
 use tekes_ui_tokens::{CornerRadius, Rgba, Stroke, Theme, proposal};
 
+/// The retained page needs paragraph geometry as well as ordinary Button text.
+/// Both adapters use their caller's existing font registry and glyph atlas.
+pub(crate) trait MotionText {
+    fn renderer(&mut self) -> &mut dyn tekes_ui_controls::ButtonTextRenderer;
+    fn type_scale(&self) -> f32;
+    fn scale(&self) -> f32;
+    fn proposal_label(
+        &mut self,
+        text: &str,
+        role: proposal::TextRole,
+        width: Option<f32>,
+    ) -> std::rc::Rc<tekes_ui_text::Paragraph>;
+    fn proposal_document(
+        &mut self,
+        text: &str,
+        role: proposal::TextRole,
+        width: Option<f32>,
+    ) -> std::rc::Rc<tekes_ui_text::Paragraph>;
+    fn digit(&mut self, text: &str, size: f32) -> std::rc::Rc<tekes_ui_text::Paragraph>;
+    fn push(
+        &mut self,
+        scene: &mut Scene,
+        paragraph: &tekes_ui_text::Paragraph,
+        origin: Point,
+        color: Rgba,
+    );
+    fn measure_button(
+        &mut self,
+        label: &str,
+        width: f32,
+        size: ButtonSize,
+        role: proposal::TextRole,
+    ) -> Size {
+        tekes_ui_controls::ButtonModel::measure(&mut self.renderer(), label, width, size, role)
+    }
+    #[allow(clippy::too_many_arguments)]
+    fn render_button(
+        &mut self,
+        scene: &mut Scene,
+        model: &mut tekes_ui_controls::ButtonModel,
+        label: &str,
+        frame: Rect,
+        clip: Option<Rect>,
+        theme: Theme,
+        variant: ButtonVariant,
+        size: ButtonSize,
+        role: proposal::TextRole,
+        align: ButtonTextAlign,
+    ) {
+        model.render(
+            scene,
+            &mut self.renderer(),
+            label,
+            frame,
+            clip,
+            theme,
+            variant,
+            size,
+            role,
+            align,
+        );
+    }
+    fn proposal_label_in(
+        &mut self,
+        scene: &mut Scene,
+        _: Theme,
+        slot: Rect,
+        text: &str,
+        role: proposal::TextRole,
+        color: Rgba,
+    ) -> f32 {
+        let p = self.proposal_label(text, role, None);
+        let origin = Point::new(
+            slot.min_x().round(),
+            (slot.min_y() + (slot.size.height - p.height as f32) * 0.5).round(),
+        );
+        scene.push_clip(slot);
+        self.push(scene, &p, origin, color);
+        scene.pop_clip();
+        p.width as f32
+    }
+    fn proposal_wrapped_in(
+        &mut self,
+        scene: &mut Scene,
+        _: Theme,
+        slot: Rect,
+        text: &str,
+        role: proposal::TextRole,
+        color: Rgba,
+    ) -> usize {
+        let p = self.proposal_label(text, role, Some(slot.size.width));
+        scene.push_clip(slot);
+        self.push(
+            scene,
+            &p,
+            Point::new(slot.min_x().round(), slot.min_y().round()),
+            color,
+        );
+        scene.pop_clip();
+        p.lines
+            .iter()
+            .filter(|l| l.top < f64::from(slot.size.height))
+            .count()
+    }
+}
+impl MotionText for crate::gallery::text::TextEngine {
+    fn renderer(&mut self) -> &mut dyn tekes_ui_controls::ButtonTextRenderer {
+        self
+    }
+    fn type_scale(&self) -> f32 {
+        self.type_scale()
+    }
+    fn scale(&self) -> f32 {
+        self.scale()
+    }
+    fn proposal_label(
+        &mut self,
+        text: &str,
+        role: proposal::TextRole,
+        width: Option<f32>,
+    ) -> std::rc::Rc<tekes_ui_text::Paragraph> {
+        self.proposal_label(text, role, width)
+    }
+    fn proposal_document(
+        &mut self,
+        text: &str,
+        role: proposal::TextRole,
+        width: Option<f32>,
+    ) -> std::rc::Rc<tekes_ui_text::Paragraph> {
+        self.proposal_document(text, role, width)
+    }
+    fn digit(&mut self, text: &str, size: f32) -> std::rc::Rc<tekes_ui_text::Paragraph> {
+        self.ticking_preview_digit(text, size)
+    }
+    fn push(
+        &mut self,
+        scene: &mut Scene,
+        p: &tekes_ui_text::Paragraph,
+        origin: Point,
+        color: Rgba,
+    ) {
+        self.push(scene, p, origin, color);
+    }
+    fn proposal_label_in(
+        &mut self,
+        scene: &mut Scene,
+        theme: Theme,
+        slot: Rect,
+        text: &str,
+        role: proposal::TextRole,
+        color: Rgba,
+    ) -> f32 {
+        self.proposal_label_in(scene, theme, slot, text, role, color)
+    }
+    fn proposal_wrapped_in(
+        &mut self,
+        scene: &mut Scene,
+        theme: Theme,
+        slot: Rect,
+        text: &str,
+        role: proposal::TextRole,
+        color: Rgba,
+    ) -> usize {
+        self.proposal_wrapped_in(scene, theme, slot, text, role, color)
+    }
+}
+struct MotionCtx<'a> {
+    theme: Theme,
+    text: &'a mut dyn MotionText,
+}
+struct MotionDigits<'a>(&'a mut dyn MotionText, f32);
+impl tekes_ui_controls::ButtonTextRenderer for MotionDigits<'_> {
+    fn measure(&mut self, text: &str, _: proposal::TextRole, _: f32) -> Size {
+        let p = self.0.digit(text, self.1);
+        Size::new(p.width as f32, p.height as f32)
+    }
+    fn draw(
+        &mut self,
+        scene: &mut Scene,
+        text: &str,
+        _: proposal::TextRole,
+        rect: Rect,
+        _: ButtonTextAlign,
+        ink: Rgba,
+    ) {
+        let p = self.0.digit(text, self.1);
+        let origin = Point::new(
+            (rect.min_x() + (rect.size.width - p.width as f32) * 0.5).round(),
+            (rect.min_y() + (rect.size.height - p.height as f32) * 0.5).round(),
+        );
+        self.0.push(scene, &p, origin, ink);
+    }
+}
+
 #[cfg(test)]
 pub const HEIGHT: f32 = 942.0;
 const TARGETS: [f64; 3] = [0.15, 0.5, 0.85];
@@ -57,7 +251,7 @@ pub enum Action {
     TickDuration,
 }
 
-fn action_label(action: Action, state: &MotionPreview) -> &str {
+pub(crate) fn action_label(action: Action, state: &MotionPreview) -> &str {
     match action {
         Action::Catalog(PresetCatalog::Apple) => "Apple defaults",
         Action::Catalog(PresetCatalog::DesignSystem) => "Design System",
@@ -105,10 +299,10 @@ impl Layout {
         let mut text = crate::gallery::text::TextEngine::new();
         Self::for_state(content, &MotionPreview::default(), &mut text)
     }
-    pub fn for_state(
+    pub(crate) fn for_state(
         content: Rect,
         state: &MotionPreview,
-        text: &mut super::super::text::TextEngine,
+        text: &mut dyn MotionText,
     ) -> Self {
         let text_scale = text.type_scale().clamp(1.0, 1.5);
         let scaled = |n: f32| n * text_scale;
@@ -124,15 +318,12 @@ impl Layout {
         };
         let button_size = ButtonSize::Xs;
         let role = proposal::TextRole::UiBody;
-        let measure = |text: &mut super::super::text::TextEngine,
-                       label: &str,
-                       width: f32,
-                       min_height: f32|
-         -> f32 {
-            text.measure_button(label, width, button_size, role)
-                .height
-                .max(min_height)
-        };
+        let measure =
+            |text: &mut dyn MotionText, label: &str, width: f32, min_height: f32| -> f32 {
+                text.measure_button(label, width, button_size, role)
+                    .height
+                    .max(min_height)
+            };
 
         let mut button_frames = Vec::with_capacity(32);
         let mut y_cursor = 0.0;
@@ -676,7 +867,7 @@ impl Layout {
     fn flow_buttons(
         output: &mut Vec<(Action, Rect)>,
         y_cursor: &mut f32,
-        text: &mut super::super::text::TextEngine,
+        text: &mut dyn MotionText,
         state: &MotionPreview,
         actions: Vec<Action>,
         item_width: f32,
@@ -693,7 +884,7 @@ impl Layout {
     fn flow_buttons_with_widths(
         output: &mut Vec<(Action, Rect)>,
         _y_cursor: &mut f32,
-        text: &mut super::super::text::TextEngine,
+        text: &mut dyn MotionText,
         state: &MotionPreview,
         actions: Vec<Action>,
         widths: Vec<f32>,
@@ -753,7 +944,7 @@ impl Layout {
     }
 }
 
-fn apply_action(state: &mut MotionPreview, action: Action) {
+pub(crate) fn apply_action(state: &mut MotionPreview, action: Action) {
     match action {
         Action::Catalog(catalog) => {
             state.select_catalog(catalog);
@@ -865,10 +1056,10 @@ pub fn extent(content: Rect) -> Size {
         .size
 }
 
-pub fn extent_for_state(
+pub(crate) fn extent_for_state(
     content: Rect,
     state: &MotionPreview,
-    text: &mut super::super::text::TextEngine,
+    text: &mut dyn MotionText,
 ) -> Size {
     Layout::for_state(content, state, text).content.size
 }
@@ -1162,7 +1353,7 @@ fn color(theme: Theme, id: &str) -> Rgba {
 }
 
 struct Painter<'a, 'b> {
-    ctx: &'a mut PageCtx<'b>,
+    ctx: &'a mut MotionCtx<'b>,
     scene: &'a mut Scene,
 }
 impl Painter<'_, '_> {
@@ -1341,7 +1532,7 @@ fn footer_items(state: &MotionPreview) -> Vec<FooterItem<'_>> {
 }
 
 fn measured_footer_height(
-    text: &mut super::super::text::TextEngine,
+    text: &mut dyn MotionText,
     state: &MotionPreview,
     width: f32,
     scale: f32,
@@ -1373,6 +1564,19 @@ pub fn build(
     scene: &mut Scene,
     state: &mut MotionPreview,
 ) {
+    build_content(ctx.theme, ctx.text, content, visible_clip, scene, state);
+}
+
+pub(crate) fn build_content(
+    theme: Theme,
+    text: &mut dyn MotionText,
+    content: Rect,
+    visible_clip: Rect,
+    scene: &mut Scene,
+    state: &mut MotionPreview,
+) {
+    let mut context = MotionCtx { theme, text };
+    let ctx = &mut context;
     let layout = Layout::for_state(content, state, ctx.text);
     let content = layout.content;
     let x = content.min_x();
@@ -1459,8 +1663,7 @@ pub fn build(
             (layout.stage.size.width - 32.0 * layout.text_scale).max(1.0),
             192.0 * layout.text_scale,
         );
-        let mut digits =
-            crate::gallery::text::TickingPreviewText(p.ctx.text, 64.0 * layout.text_scale);
+        let mut digits = MotionDigits(p.ctx.text, 64.0 * layout.text_scale);
         let mut number_size = state
             .ticking
             .measure(&mut digits, proposal::TextRole::UiHeading);
@@ -3429,7 +3632,10 @@ mod tests {
                 for catalog in [PresetCatalog::Recipes, PresetCatalog::Symbols] {
                     state.select_catalog(catalog);
                     Painter {
-                        ctx: &mut ctx,
+                        ctx: &mut MotionCtx {
+                            theme: ctx.theme,
+                            text: ctx.text,
+                        },
                         scene: &mut scene,
                     }
                     .digits(content, "0123456789.-#", "primary-text");
@@ -3488,7 +3694,10 @@ mod tests {
                 let mut state = MotionPreview::default();
                 // Prime the finite telemetry alphabet and all lifecycle labels.
                 Painter {
-                    ctx: &mut ctx,
+                    ctx: &mut MotionCtx {
+                        theme: ctx.theme,
+                        text: ctx.text,
+                    },
                     scene: &mut scene,
                 }
                 .digits(content, "0123456789.-#", "primary-text");

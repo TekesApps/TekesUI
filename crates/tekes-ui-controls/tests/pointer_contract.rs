@@ -88,7 +88,7 @@ fn metadata_is_lossless_and_secondary_release_does_not_end_primary_capture() {
     drag.position = Point::new(500., 500.);
     host.event(&ContentEvent::Pointer(drag));
     let seen = &host.get(id).unwrap().component::<Recorder>().unwrap().seen;
-    assert_eq!(seen, &vec![down, secondary, drag]);
+    assert_eq!(seen, &vec![down, drag]);
     host.event(&ContentEvent::Cancel);
     host.event(&ContentEvent::Pointer(drag));
     // Hover broadcast is allowed after cancel; it must not restore capture.
@@ -143,6 +143,51 @@ fn ordinary_button_accepts_primary_metadata_and_legacy_but_ignores_secondary() {
             .activations,
         2
     );
+}
+
+#[test]
+fn secondary_capture_keeps_original_owner_outside_and_ends_only_on_matching_release() {
+    let id = ComponentId(9903);
+    let mut host = ContentHost::new(Content::new(id, Recorder::default())).unwrap();
+    render(&mut host);
+    let down = pointer(PointerPhase::Down, PointerButton::Secondary);
+    host.event(&ContentEvent::Pointer(down));
+    assert_eq!(
+        host.pointer_capture_button(),
+        Some(PointerButton::Secondary)
+    );
+    assert_eq!(
+        host.focused(),
+        None,
+        "secondary input must not steal keyboard focus"
+    );
+    let mut drag = pointer(PointerPhase::Drag, PointerButton::Secondary);
+    drag.position = Point::new(500., 500.);
+    host.event(&ContentEvent::Pointer(drag));
+    host.event(&ContentEvent::Pointer(pointer(
+        PointerPhase::Up,
+        PointerButton::Primary,
+    )));
+    assert_eq!(
+        host.pointer_capture_button(),
+        Some(PointerButton::Secondary)
+    );
+    let up = PointerEvent {
+        phase: PointerPhase::Up,
+        ..drag
+    };
+    assert!(host.event(&ContentEvent::Pointer(up)).consumed);
+    assert!(host.pointer_capture().is_none());
+    let seen = &host.get(id).unwrap().component::<Recorder>().unwrap().seen;
+    assert!(seen.contains(&drag) && seen.contains(&up));
+    host.event(&ContentEvent::Pointer(down));
+    host.set_window_active(false);
+    assert!(host.pointer_capture_button().is_none());
+    host.set_window_active(true);
+    render(&mut host);
+    let primary = pointer(PointerPhase::Down, PointerButton::Primary);
+    host.event(&ContentEvent::Pointer(primary));
+    assert_eq!(host.pointer_capture_button(), Some(PointerButton::Primary));
 }
 
 #[derive(Debug)]

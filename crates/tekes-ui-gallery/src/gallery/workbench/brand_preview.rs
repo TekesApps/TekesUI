@@ -13,7 +13,7 @@ const PREVIEW_OVERLAY: usize = 721;
 const CONFIRM: usize = 722;
 const CANCEL: usize = 723;
 const INPUT: usize = 1000;
-const ROLE_SAMPLES: [(&str, &str, &str); 3] = [
+pub(super) const ROLE_SAMPLES: [(&str, &str, &str); 3] = [
     (
         "Action",
         "action-primary-foreground",
@@ -59,6 +59,35 @@ impl Default for BrandPreview {
 }
 
 impl BrandPreview {
+    pub(super) fn take_apphost_input(
+        &mut self,
+    ) -> tekes_ui_controls::composition::TextFieldContent {
+        let input = std::mem::replace(&mut self.input, TextDemo::field("", false, false));
+        input.into_content_fields().remove(0)
+    }
+
+    pub(super) fn candidate(&self) -> Option<usize> {
+        self.candidate
+    }
+    pub(super) fn direction(&self) -> Option<&str> {
+        self.direction.as_deref()
+    }
+    pub(super) fn demo_activations(&self) -> usize {
+        self.demo_activations
+    }
+    pub(super) fn select_direction(&mut self, index: usize) {
+        self.activate(FAMILY_FIRST + index);
+    }
+    pub(super) fn confirm_candidate(&mut self) -> Option<usize> {
+        self.activate(CONFIRM).flatten()
+    }
+    pub(super) fn cancel_candidate(&mut self) {
+        self.activate(CANCEL);
+    }
+    pub(super) fn activate_demo(&mut self) {
+        self.activate(PREVIEW_ACTION);
+    }
+
     /// Full content height for the candidate matrix body. This mirrors the same
     /// measured flow used by `build`, so the outer Gallery viewport can expose
     /// every control at narrow widths and larger text scales.
@@ -1200,7 +1229,7 @@ fn map_key(key: u16, shift: bool) -> Option<ControlKey> {
     }
 }
 
-fn parse_hex(hex: &str) -> Option<Rgba> {
+pub(super) fn parse_hex(hex: &str) -> Option<Rgba> {
     if hex.len() != 7 || !hex.starts_with('#') {
         return None;
     }

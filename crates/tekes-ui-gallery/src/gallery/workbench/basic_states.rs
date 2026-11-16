@@ -191,7 +191,7 @@ fn draw_toolbar_grid(
         &fixtures,
         48.,
         |ctx, scene, frame, fixture| {
-            render_toolbar(ctx, scene, frame, clip, palette, fixture.state);
+            render_toolbar(ctx.text, scene, frame, clip, palette, fixture.state);
         },
     )
 }
@@ -213,7 +213,7 @@ fn draw_number_grid(
         &fixtures,
         52.,
         |ctx, scene, frame, fixture| {
-            render_number_field(ctx, scene, frame, clip, palette, fixture.state);
+            render_number_field(ctx.text, scene, frame, clip, palette, fixture.state);
         },
     )
 }
@@ -285,7 +285,7 @@ fn draw_grid<S: Copy>(
 }
 
 fn render_toolbar(
-    ctx: &mut PageCtx<'_>,
+    text: &mut impl ButtonTextRenderer,
     scene: &mut Scene,
     frame: Rect,
     clip: Rect,
@@ -301,7 +301,7 @@ fn render_toolbar(
         let mut probe = Scene::new();
         view.render(
             &mut probe,
-            ctx.text,
+            text,
             &labels,
             frame,
             Some(clip),
@@ -327,7 +327,7 @@ fn render_toolbar(
     }
     view.render(
         scene,
-        ctx.text,
+        text,
         &labels,
         frame,
         Some(clip),
@@ -337,7 +337,7 @@ fn render_toolbar(
 }
 
 fn render_number_field(
-    ctx: &mut PageCtx<'_>,
+    text: &mut impl ButtonTextRenderer,
     scene: &mut Scene,
     frame: Rect,
     clip: Rect,
@@ -358,7 +358,7 @@ fn render_number_field(
         let mut probe = Scene::new();
         view.render(
             &mut probe,
-            ctx.text,
+            text,
             &model,
             frame,
             Some(clip),
@@ -381,7 +381,7 @@ fn render_number_field(
     }
     view.render(
         scene,
-        ctx.text,
+        text,
         &model,
         frame,
         Some(clip),
@@ -417,6 +417,89 @@ fn draw_text(
 
 fn grid_columns(width: f32) -> usize {
     if width >= 660. { 2 } else { 1 }
+}
+
+/// The same original passive fixtures, measured and painted in the receiving Host.
+pub(super) fn apphost_matrix(renderer: &str) -> Vec<tekes_ui_controls::composition::Content> {
+    use tekes_ui_controls::composition::*;
+    let fixtures: Vec<_> = if renderer == "toolbar" {
+        TOOLBAR_FIXTURES
+            .iter()
+            .map(|f| (f.title, MatrixCase::Toolbar(f.state)))
+            .collect()
+    } else {
+        NUMBER_FIXTURES
+            .iter()
+            .map(|f| (f.title, MatrixCase::Number(f.state)))
+            .collect()
+    };
+    fixtures
+        .into_iter()
+        .enumerate()
+        .flat_map(|(i, (title, fixture))| {
+            [
+                Content::new(ComponentId(91600 + i as u64 * 2), TextContent::new(title)),
+                Content::new(ComponentId(91601 + i as u64 * 2), fixture),
+            ]
+        })
+        .collect()
+}
+#[derive(Clone, Copy)]
+enum MatrixCase {
+    Toolbar(ToolbarState),
+    Number(NumberState),
+}
+impl std::fmt::Debug for MatrixCase {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("Original basic state fixture")
+    }
+}
+impl tekes_ui_controls::composition::Component for MatrixCase {
+    fn measure(
+        &mut self,
+        text: &mut dyn ButtonTextRenderer,
+        available: tekes_ui_scene::Size,
+    ) -> tekes_ui_controls::layout::MeasuredChild {
+        let labels: &[&str] = match self {
+            Self::Toolbar(_) => &["Add", "Rename", "More"],
+            Self::Number(_) => &["−", "8", "+"],
+        };
+        let height = labels
+            .iter()
+            .map(|label| {
+                tekes_ui_controls::ButtonModel::measure(
+                    &mut &mut *text,
+                    label,
+                    available.width / 3.,
+                    tekes_ui_controls::ButtonSize::Body,
+                    proposal::TextRole::UiBody,
+                )
+                .height
+            })
+            .fold(52., f32::max);
+        tekes_ui_controls::layout::MeasuredChild::new(tekes_ui_scene::Size::new(
+            available.width.min(600.),
+            height,
+        ))
+    }
+    fn paint(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut dyn ButtonTextRenderer,
+        frame: Rect,
+        clip: Rect,
+        theme: tekes_ui_controls::composition::ContentTheme,
+    ) {
+        let mut text = super::apphost_basic::FixtureText(text);
+        match *self {
+            Self::Toolbar(state) => {
+                render_toolbar(&mut text, scene, frame, clip, theme.palette, state)
+            }
+            Self::Number(state) => {
+                render_number_field(&mut text, scene, frame, clip, theme.palette, state)
+            }
+        }
+    }
 }
 
 #[cfg(test)]
