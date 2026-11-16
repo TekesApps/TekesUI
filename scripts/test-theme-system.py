@@ -346,6 +346,25 @@ class ThemeSystemTests(unittest.TestCase):
                         packet[surface][usage][state][channel] = historic_color
                         restored += 1
                 self.assertGreater(restored, 0)
+            # #308 gives code its own neutral surface, distinct from document
+            # panels and unaffected by sidebar overrides. Preserve the frozen
+            # fixture by reversing only this declared role for comparison.
+            code_color, historic_code = {
+                'light': ('#F5F5F3', '#FFFFFF'),
+                'dark': ('#0B0B0A', '#1A1A19'),
+                'light-ic': ('#F4F4F1', '#FFFFFF'),
+                'dark-ic': ('#000000', '#171715'),
+            }[record['mode']]
+            self.assertEqual(instance['compiled_color_roles'][record['mode']]['code-surface'], code_color)
+            restored = 0
+            for surface, usage, state, roles in g.bindings(self.rules()):
+                if usage not in packet[surface]: continue
+                for channel, binding in roles.items():
+                    if binding != 'code-surface': continue
+                    self.assertEqual(packet[surface][usage][state][channel], code_color)
+                    packet[surface][usage][state][channel] = historic_code
+                    restored += 1
+            self.assertGreater(restored, 0)
             self.assertEqual(hashlib.sha256(canonical(packet)).hexdigest(),record['canonical_sha256'],(record['theme_id'],record['mode']))
         for mode in g.MODES:
             default=instances[0]['modes'][mode]
