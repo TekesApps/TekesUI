@@ -8,7 +8,7 @@ Use SearchFieldContent for a query editor. Your application filters local data o
 use tekes_ui_controls::composition::*;
 
 let mut search = SearchFieldContent::new("Search documents", "");
-search.set_placeholder(Some("按名称搜索…".into()));
+search.set_placeholder(Some("Search by name…".into()));
 search.set_submit_policy(TextSubmitPolicy::Enter);
 let mut host = ContentHost::new(Content::new(ComponentId(1), search)).unwrap();
 host.set_action_events(true);

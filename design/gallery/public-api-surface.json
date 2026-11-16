@@ -1454,6 +1454,12 @@
       "reason": "Optional read-only original ContentHost observation; no new component, input owner or native/pixel acceptance. Paint evidence is historical and lookup values do not imply pixel use."
     },
     {
+      "api": "tekes_ui_controls::composition::KeyValueTableContent",
+      "category": "composition",
+      "components": [],
+      "reason": "Finite paired Content layout for shared key/value presentation. Owns two-column measurement, token padding and separators; children retain selection/focus/AX, parent owns scrolling. No data-table model, sorting, virtualization or native acceptance claim."
+    },
+    {
       "api": "tekes_ui_controls::composition::KeyedSelectableListContent",
       "category": "component-adapter",
       "components": [

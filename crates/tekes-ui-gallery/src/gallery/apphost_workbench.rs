@@ -14,13 +14,12 @@ use tekes_ui_controls::{
     CheckState, ScrollArea,
     composition::{
         CheckboxContent, ComponentId, Content, ContentActionPayload, ContentActionRecord,
-        ContentHost, GridContent, InspectionSnapshot, KeyedSelectableListContent, ListContent,
-        ListDisplayUpdate, ListIntentKind, ListRowDisplay, RichContent, RichDocument,
+        ContentHost, InspectionSnapshot, KeyValueTableContent, KeyedSelectableListContent,
+        ListContent, ListDisplayUpdate, ListIntentKind, ListRowDisplay, RichContent, RichDocument,
         ScrollContent, SearchFieldContent, StackContent, TextContent, TextFieldContent,
     },
     extended::{
-        Axis, Grid, KeyedListItem, KeyedListSnapshot, ListBudget, ListDatasetKey, ListItemKey,
-        Stack,
+        Axis, KeyedListItem, KeyedListSnapshot, ListBudget, ListDatasetKey, ListItemKey, Stack,
     },
 };
 use tekes_ui_tokens::{Palette, Spacing, proposal::TextRole};
@@ -2056,7 +2055,7 @@ fn inspector_body(
     vec![identity, properties, layout, tokens, quads]
 }
 
-/// Shared Grid aligns label/value columns and measures wrapped rows. The existing
+/// Shared key/value table owns aligned columns, padded rows and separators. The existing
 /// ScrollContent owns overflow. Values use the shared selectable read-only text
 /// owner; focusing them does not focus the specimen. IDs are panel-local.
 fn inspector_sections(groups: &[InspectorGroup], mut next_id: u64) -> Vec<Content> {
@@ -2069,28 +2068,20 @@ fn inspector_sections(groups: &[InspectorGroup], mut next_id: u64) -> Vec<Conten
                 role: TextRole::UiHeading,
             },
         );
-        let grid_id = ComponentId(10_001 + index as u64 * 2);
-        let mut cells = Vec::new();
+        let table_id = ComponentId(10_001 + index as u64 * 2);
+        let mut rows = Vec::new();
         for (label, value) in &group.rows {
-            cells.push(text(next_id, label));
-            cells.push(Content::new(
-                ComponentId(next_id + 1),
-                TextFieldContent::read_only_content(label, value, TextRole::UiBody),
+            rows.push((
+                text(next_id, label),
+                Content::new(
+                    ComponentId(next_id + 1),
+                    TextFieldContent::read_only_content(label, value, TextRole::UiBody),
+                ),
             ));
             next_id += 2;
         }
         sections.push(heading);
-        sections.push(Content::new(
-            grid_id,
-            GridContent {
-                model: Grid {
-                    columns: 2,
-                    gap_x: Spacing::Regular.value(),
-                    gap_y: Spacing::Micro.value(),
-                },
-                children: cells,
-            },
-        ));
+        sections.push(Content::new(table_id, KeyValueTableContent::new(rows)));
     }
     sections
 }
@@ -2157,8 +2148,8 @@ impl PanelContent {
                         .unwrap()
                         .children
                         .iter()
-                        .filter_map(|node| node.component::<GridContent>())
-                        .flat_map(|grid| grid.children.iter().map(|cell| cell.id().0))
+                        .filter_map(|node| node.component::<KeyValueTableContent>())
+                        .flat_map(|table| table.cells().iter().map(|cell| cell.id().0))
                         .max()
                         .map_or(10_010, |id| id + 1);
                     for (index, section) in
@@ -2179,9 +2170,9 @@ impl PanelContent {
                                     .host
                                     .get(section.id())
                                     .unwrap()
-                                    .component::<GridContent>()
+                                    .component::<KeyValueTableContent>()
                                     .unwrap()
-                                    .children
+                                    .cells()
                                     .chunks_exact(2)
                                     .zip(&groups[group].rows)
                                     .map(|(cells, (_, value))| (cells[1].id(), value.clone()))
@@ -2915,9 +2906,9 @@ mod tests {
                 .unwrap()
                 .children
                 .iter()
-                .filter_map(|section| section.component::<GridContent>())
-                .flat_map(|grid| {
-                    grid.children.chunks_exact(2).map(|pair| {
+                .filter_map(|section| section.component::<KeyValueTableContent>())
+                .flat_map(|table| {
+                    table.cells().chunks_exact(2).map(|pair| {
                         (
                             pair[0].component::<TextContent>().unwrap().text.clone(),
                             pair[1]
@@ -3025,8 +3016,8 @@ mod tests {
             .unwrap()
             .children
             .iter()
-            .filter_map(|section| section.component::<GridContent>())
-            .flat_map(|grid| grid.children.chunks_exact(2))
+            .filter_map(|section| section.component::<KeyValueTableContent>())
+            .flat_map(|table| table.cells().chunks_exact(2))
             .find(|pair| pair[0].component::<TextContent>().unwrap().text == label)
             .unwrap()[1]
             .id()

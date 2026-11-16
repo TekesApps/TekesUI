@@ -15,6 +15,7 @@ fn contrast(a: Rgba, b: Rgba) -> f32 {
 fn assert_input(
     scene: &Scene,
     frame: Rect,
+    text_frame: Rect,
     palette: Palette,
     state: (bool, bool, bool, bool),
     ink_role: &str,
@@ -71,7 +72,7 @@ fn assert_input(
             Primitive::Glyphs(run)
                 if run.glyphs.iter().any(|g| {
                     let a = g.glyph;
-                    frame
+                    text_frame
                         .intersection(&Rect::new(
                             g.origin.x + a.left as f32 / backing,
                             g.origin.y + a.top as f32 / backing,
@@ -153,6 +154,7 @@ fn text_field_primary_single_line_surface_retains_theme_and_declared_state_ink()
         assert_input(
             &scene,
             field.outer,
+            field.inner,
             palette,
             (false, false, false, false),
             "primary-text",
@@ -169,6 +171,7 @@ fn text_field_primary_single_line_surface_retains_theme_and_declared_state_ink()
     assert_input(
         &scene,
         field.outer,
+        field.inner,
         palette,
         (false, false, true, true),
         "primary-text",
@@ -181,6 +184,7 @@ fn text_field_primary_single_line_surface_retains_theme_and_declared_state_ink()
     assert_input(
         &scene,
         field.outer,
+        field.inner,
         palette,
         (true, false, false, true),
         "primary-text",
@@ -194,6 +198,7 @@ fn text_field_primary_single_line_surface_retains_theme_and_declared_state_ink()
     assert_input(
         &scene,
         field.outer,
+        field.inner,
         palette,
         (false, true, false, false),
         "disabled-text",
@@ -246,6 +251,7 @@ fn text_field_content_retained_themes_use_real_opted_in_host_and_original_input_
         assert_input(
             &scene,
             frame,
+            host.text_surface(ComponentId(1)).unwrap().inner,
             theme.into(),
             (false, false, false, false),
             "primary-text",
@@ -286,6 +292,7 @@ fn text_field_content_retained_themes_use_real_opted_in_host_and_original_input_
     assert_input(
         &scene,
         frame,
+        host.text_surface(ComponentId(1)).unwrap().inner,
         palette,
         (true, false, false, true),
         "primary-text",
@@ -324,6 +331,7 @@ fn text_field_content_retained_themes_use_real_opted_in_host_and_original_input_
     assert_input(
         &scene,
         field.surface.outer,
+        field.surface.inner,
         palette,
         (false, false, true, true),
         "primary-text",
@@ -361,6 +369,7 @@ fn text_field_content_retained_themes_use_real_opted_in_host_and_original_input_
     assert_input(
         &scene,
         frame,
+        host.text_surface(ComponentId(1)).unwrap().inner,
         palette,
         (false, true, false, false),
         "disabled-text",

@@ -10,7 +10,7 @@ let dialog = DialogContent::new("Confirm",
     Content::new(ComponentId(2), TextContent::new("Save changes?")),
     Content::new(ComponentId(3), TextContent::new("Review before continuing.")),
     Content::new(ComponentId(4), Button::new("Save")));
-// 挂载后通过 host.show_dialog(dialog_id)? 打开。
+// After mounting, open with host.show_dialog(dialog_id)?.
 ```
 
 ## State and events

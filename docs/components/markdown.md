@@ -16,6 +16,8 @@ The bounded parser supports headings, paragraphs, bullets, simple links and fenc
 
 ## Composition and limitations
 
+Fenced code appears on a separate themed code surface with inset text and decorative line numbers. The same padded text layout drives selection and hit testing. Copy includes the displayed code body, without fences or line numbers.
+
 RichContent colors recognized fenced languages using shared keyword, string, number and comment colors. Unknown or omitted languages remain plain. Syntax errors reject construction or update. Original glyph clusters determine color boundaries without reshaping. drain_link_actions reports targets and source ranges; the application decides navigation. ScrollContent owns document scrolling. Full CommonMark, tables, inline emphasis/code font shaping, HTML, remote images and scripts are unsupported.
 
 ## Related APIs

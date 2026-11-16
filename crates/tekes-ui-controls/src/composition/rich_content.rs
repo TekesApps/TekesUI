@@ -203,11 +203,12 @@ impl RichContent {
                     .collect();
                 let first = lines.first()?;
                 let last = lines.last()?;
+                let inset = code_inset(block.kind);
                 let frame = Rect::new(
                     origin.x,
-                    origin.y + first.top as f32,
+                    origin.y + first.top as f32 - inset,
                     surface.inner.size.width,
-                    (last.top + last.height - first.top) as f32,
+                    (last.top + last.height - first.top) as f32 + 2. * inset,
                 );
                 Some(RichBlockGeometry {
                     index,
@@ -316,6 +317,24 @@ impl Component for RichContent {
         c: Rect,
         theme: ContentTheme,
     ) {
+        // Prepare the same retained layout before painting surfaces. TextSurface
+        // paints selection before glyphs, so backgrounds must precede its paint.
+        self.prepare_text_input(t, f, c);
+        for block in self.block_geometry() {
+            if self.document.blocks()[block.index].kind == RichBlockKind::Code
+                && let Some(visible) = block.visible
+            {
+                s.push_clip(visible);
+                crate::paint::surface_kind_at_scale(
+                    s,
+                    block.frame,
+                    theme.palette,
+                    crate::paint::SurfaceKind::Code,
+                    t.backing_scale(),
+                );
+                s.pop_clip();
+            }
+        }
         self.field.paint(
             s,
             &mut RichRenderer::new(t, &self.document, &self.code_spans, Some(theme.palette)),
@@ -344,7 +363,7 @@ impl Component for RichContent {
                 }) {
                     if first {
                         let frame = Rect::new(
-                            origin.x,
+                            origin.x + code_inset(block.kind),
                             origin.y + line.top as f32,
                             gutter,
                             line.height as f32,
@@ -708,10 +727,13 @@ fn shape_document(
         } else {
             0.
         };
+        let inset = code_inset(block.kind) as f64;
+        y += inset;
+        let text_offset = gutter + inset;
         let paragraph = host.shape_surface(
             &value,
             block.role,
-            width.map(|w| (w - gutter as f32).max(0.)),
+            width.map(|w| (w - gutter as f32 - 2. * inset as f32).max(0.)),
         );
         result.default_line_height = result
             .default_line_height
@@ -738,26 +760,26 @@ fn shape_document(
             line.utf16.end += block.display.start;
             line.bytes.start += byte_offset;
             line.bytes.end += byte_offset;
-            line.width += gutter;
-            line.width_trimmed += gutter;
+            line.width += text_offset;
+            line.width_trimmed += text_offset;
             for (caret, x) in &mut line.carets {
                 *caret += block.display.start;
-                *x += gutter;
+                *x += text_offset;
             }
             for run in &mut line.runs {
                 run.utf16.start += block.display.start;
                 run.utf16.end += block.display.start;
                 for glyph in &mut run.glyphs {
-                    glyph.x += gutter;
+                    glyph.x += text_offset;
                     glyph.utf16_index += block.display.start;
                     glyph.cluster_utf16.start += block.display.start;
                     glyph.cluster_utf16.end += block.display.start;
                 }
             }
-            result.width = result.width.max(line.width);
+            result.width = result.width.max(line.width + inset);
             result.lines.push(line);
         }
-        y = result.lines.last().map_or(y, |line| line.top + line.height);
+        y = result.lines.last().map_or(y, |line| line.top + line.height) + inset;
         if index + 1 < document.blocks().len() {
             y += proposal::metric("spacing", "space-relaxed").unwrap_or(12.) as f64;
         }
@@ -765,6 +787,15 @@ fn shape_document(
     }
     result.height = y.max(result.default_line_height);
     result
+}
+
+// Match the existing CodeBlockView surface inset; it is part of text geometry.
+fn code_inset(kind: RichBlockKind) -> f32 {
+    if kind == RichBlockKind::Code {
+        proposal::metric("spacing", "space-button-md-inset").expect("code surface inset")
+    } else {
+        0.
+    }
 }
 
 // Actual host typography measures the decoration; it never enters copy/ranges.

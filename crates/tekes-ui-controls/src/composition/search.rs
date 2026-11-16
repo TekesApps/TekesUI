@@ -533,7 +533,15 @@ impl Component for TextFieldContent {
         self.editor_frame = frame;
         self.editor_arrange(text, frame, clip);
         self.clear.button.frame_policy = crate::ButtonFramePolicy::Exact;
-        self.clear.arrange(text, self.clear_frame, clip);
+        if self.clear_clip.is_some() {
+            self.clear.arrange(text, self.clear_frame, clip);
+        } else {
+            // Empty, multiline and fully clipped fields have no Clear slot.
+            // Do not ask a text backend to measure an invisible zero-width label.
+            self.clear.button.clear_layout();
+            self.clear_captured = false;
+            self.clear_baseline = None;
+        }
     }
     fn prepare_text_input(&mut self, text: &mut dyn ButtonTextRenderer, _: Rect, clip: Rect) {
         self.editor_prepare_text_input(text, self.editor_frame, clip);
@@ -548,7 +556,7 @@ impl Component for TextFieldContent {
     ) {
         self.sync_clear();
         self.editor_paint(scene, text, frame, clip, theme);
-        if self.clear_visible() {
+        if self.clear_visible() && self.clear_clip.is_some() {
             self.clear.paint(scene, text, self.clear_frame, clip, theme);
         }
         if self.query().is_empty()
@@ -709,7 +717,9 @@ impl Component for TextFieldContent {
 impl Component for SearchFieldContent {
     #[cfg(feature = "inspection")]
     fn inspection_properties(&self) -> Option<Vec<InspectionProperty>> {
-        self.editor.inspection_properties()
+        let mut properties = self.editor.inspection_properties()?;
+        properties[0] = InspectionProperty::new("component", "SearchFieldContent");
+        Some(properties)
     }
     fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
         let owned = super::action_preparation::OwnedActionRequest::read(request);

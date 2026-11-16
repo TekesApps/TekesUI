@@ -1283,6 +1283,10 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
             "tekes_ui_controls::composition::InspectionSnapshot",
         );
     }
+    public_type::<tekes_ui_controls::composition::KeyValueTableContent>(
+        &mut actual,
+        "tekes_ui_controls::composition::KeyValueTableContent",
+    );
     public_type::<tekes_ui_controls::composition::KeyedSelectableListContent>(
         &mut actual,
         "tekes_ui_controls::composition::KeyedSelectableListContent",
@@ -1403,7 +1407,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::composition::NumberFieldContent",
     );
     #[allow(dead_code)]
-    fn public_trait_221<T: tekes_ui_controls::composition::NumberFormat + ?Sized>() {}
+    fn public_trait_222<T: tekes_ui_controls::composition::NumberFormat + ?Sized>() {}
     actual.push("tekes_ui_controls::composition::NumberFormat");
     public_type::<tekes_ui_controls::composition::NumberParseError>(
         &mut actual,
@@ -1466,7 +1470,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::composition::PopoverSession",
     );
     #[allow(dead_code)]
-    fn public_trait_237<T: tekes_ui_controls::composition::PreparedActionEffect + ?Sized>() {}
+    fn public_trait_238<T: tekes_ui_controls::composition::PreparedActionEffect + ?Sized>() {}
     actual.push("tekes_ui_controls::composition::PreparedActionEffect");
     public_type::<tekes_ui_controls::composition::PreparedActionFocus>(
         &mut actual,
@@ -2283,7 +2287,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::layout_view::IconLayout",
     );
     #[allow(dead_code)]
-    fn public_trait_440<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
+    fn public_trait_441<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
     actual.push("tekes_ui_controls::layout_view::IconRenderer");
     public_type::<tekes_ui_controls::layout_view::IconView>(
         &mut actual,

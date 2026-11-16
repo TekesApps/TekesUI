@@ -10874,9 +10874,17 @@ mod interaction_tests {
 
     #[test]
     fn search_gallery_retained_themes_keep_query_placeholder_and_real_clear_action() {
+        use tekes_ui_controls::composition::Component;
         use tekes_ui_scene::Primitive;
         use tekes_ui_tokens::{Palette, Theme};
-        fn assert_search(scene: &Scene, frame: Rect, theme: Theme, ink: &str, backing: f32) {
+        fn assert_search(
+            scene: &Scene,
+            frame: Rect,
+            text_frame: Rect,
+            theme: Theme,
+            ink: &str,
+            backing: f32,
+        ) {
             let palette = Palette::from(theme);
             let (index, ground) = scene
                 .primitives()
@@ -10896,7 +10904,7 @@ mod interaction_tests {
                         if !r.glyphs.is_empty()
                             && r.glyphs.iter().any(|g| {
                                 let a = g.glyph;
-                                frame
+                                text_frame
                                     .intersection(&Rect::new(
                                         g.origin.x + a.left as f32 / backing,
                                         g.origin.y + a.top as f32 / backing,
@@ -11007,6 +11015,8 @@ mod interaction_tests {
                 let frame = state.input.frame_at(0).unwrap();
                 let search_host = &state.input.search_host().unwrap().host;
                 let allocation = search_host.get(search_host::SEARCH).unwrap().frame();
+                let search_text_frame =
+                    search_host.text_surface(search_host::SEARCH).unwrap().inner;
                 if let Some(original) = original_allocation {
                     assert_eq!(
                         allocation, original,
@@ -11032,19 +11042,22 @@ mod interaction_tests {
                     original_editor_height = Some(frame.size.height);
                 }
                 assert_eq!(frame.min_y(), allocation.min_y());
-                if placeholder {
-                    // Search keeps the Form editor's natural height; the taller
-                    // outer allocation also accommodates its original Clear button.
-                    assert_eq!(
-                        (frame.min_x(), frame.max_x()),
-                        (allocation.min_x(), allocation.max_x()),
-                        "empty query uses the full horizontal allocation without a hidden Clear slot"
-                    );
-                } else {
-                    assert!(
-                        frame.max_x() < allocation.max_x(),
-                        "nonempty query retains the real Clear slot"
-                    );
+                assert_eq!(
+                    (frame.min_x(), frame.max_x()),
+                    (allocation.min_x(), allocation.max_x()),
+                    "the original input chrome always fills the Search allocation"
+                );
+                if !placeholder {
+                    let surface = search_host.text_surface(search_host::SEARCH).unwrap();
+                    let clear = search_host
+                        .get(search_host::SEARCH)
+                        .unwrap()
+                        .component::<tekes_ui_controls::composition::SearchFieldContent>()
+                        .unwrap()
+                        .semantic_parts()[0]
+                        .frame;
+                    assert_eq!(frame.intersection(&clear), Some(clear));
+                    assert!(surface.inner.max_x() <= clear.min_x());
                 }
                 if let Some(original) = original_frame {
                     assert_eq!(frame, original);
@@ -11058,6 +11071,7 @@ mod interaction_tests {
                 assert_search(
                     &scene,
                     frame,
+                    search_text_frame,
                     theme,
                     if placeholder {
                         "secondary-text"
@@ -11091,7 +11105,23 @@ mod interaction_tests {
         let scene = build(&mut w, i, &mut text);
         assert_eq!(w.state(i).input.query(), "readme 查询");
         let frame = w.state(i).input.frame_at(0).unwrap();
-        assert_search(&scene, frame, Theme::LIGHT, "primary-text", text.scale());
+        let search_text_frame = w
+            .state(i)
+            .input
+            .search_host()
+            .unwrap()
+            .host
+            .text_surface(search_host::SEARCH)
+            .unwrap()
+            .inner;
+        assert_search(
+            &scene,
+            frame,
+            search_text_frame,
+            Theme::LIGHT,
+            "primary-text",
+            text.scale(),
+        );
         assert_eq!(
             w.state(i)
                 .log
@@ -11207,6 +11237,18 @@ mod interaction_tests {
         use super::super::theme::{AppearanceChoice, ContrastChoice};
         use tekes_ui_scene::Primitive;
         use tekes_ui_tokens::{Palette, Rgba, Theme};
+        fn text_viewport(gallery: &mut Gallery, index: usize) -> Rect {
+            gallery
+                .workbench
+                .state(index)
+                .input
+                .hosted()
+                .unwrap()
+                .host
+                .text_surface(tekes_ui_controls::composition::ComponentId(27501))
+                .unwrap()
+                .inner
+        }
         fn contrast(a: Rgba, b: Rgba) -> f32 {
             let l = |c: Rgba| {
                 let c = c.to_linear();
@@ -11218,6 +11260,7 @@ mod interaction_tests {
         fn assert_input(
             scene: &Scene,
             frame: Rect,
+            text_frame: Rect,
             palette: Palette,
             state: (bool, bool, bool, bool),
             ink_role: &str,
@@ -11276,7 +11319,7 @@ mod interaction_tests {
                     Primitive::Glyphs(run)
                         if run.glyphs.iter().any(|g| {
                             let a = g.glyph;
-                            frame
+                            text_frame
                                 .intersection(&Rect::new(
                                     g.origin.x + a.left as f32 / backing,
                                     g.origin.y + a.top as f32 / backing,
@@ -11339,6 +11382,7 @@ mod interaction_tests {
         assert_input(
             &scene,
             frame,
+            text_viewport(&mut gallery, i),
             Theme::LIGHT.into(),
             (false, false, false, false),
             "primary-text",
@@ -11378,6 +11422,7 @@ mod interaction_tests {
             assert_input(
                 &scene,
                 current,
+                text_viewport(&mut gallery, i),
                 theme.into(),
                 (false, false, false, true),
                 "primary-text",
@@ -11392,6 +11437,7 @@ mod interaction_tests {
         assert_input(
             &scene,
             frame,
+            text_viewport(&mut gallery, i),
             palette,
             (false, false, true, true),
             "primary-text",
@@ -11405,6 +11451,7 @@ mod interaction_tests {
         assert_input(
             &scene,
             frame,
+            text_viewport(&mut gallery, i),
             palette,
             (false, true, false, false),
             "disabled-text",
@@ -11435,6 +11482,7 @@ mod interaction_tests {
         assert_input(
             &scene,
             frame,
+            text_viewport(&mut gallery, i),
             palette,
             (false, false, false, false),
             "secondary-text",
@@ -11453,6 +11501,7 @@ mod interaction_tests {
         assert_input(
             &scene,
             frame,
+            text_viewport(&mut gallery, i),
             palette,
             (false, false, false, true),
             "primary-text",

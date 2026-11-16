@@ -16,6 +16,8 @@ lines reads source lines. RichContent recognizes bundled language names and exte
 
 ## Composition and limitations
 
+Fenced code appears on a separate themed code surface with inset text and decorative line numbers. The same padded text layout drives selection and hit testing. Copy includes the displayed code body, without fences or line numbers.
+
 Selection, copy and source mapping use the original text owner. Color does not change shaping, glyph positions or cluster boundaries. Parent ScrollContent supplies scrolling. This is a read-only reader with no execution, editing, breakpoints, semantic type analysis or compiler diagnostics. Compose a Button explicitly if a copy action is needed.
 
 ## Related APIs

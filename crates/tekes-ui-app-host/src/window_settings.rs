@@ -2121,7 +2121,7 @@ mod settings_theme_radio_width_tests {
 #[cfg(test)]
 mod pinned_header_tests {
     use super::*;
-    use tekes_ui_controls::composition::{ListContent, TextContent, TextFieldContent};
+    use tekes_ui_controls::composition::{ListContent, TextContent};
 
     // Same original Text + prepared IconImage lease adapter used by the
     // AppHost text/toolbar tests. Production supplies SvgIconCache's GPU service
@@ -2279,11 +2279,9 @@ mod pinned_header_tests {
                 .host
                 .get(ComponentId(6))
                 .unwrap()
-                .component::<TextFieldContent>()
+                .component::<tekes_ui_controls::composition::SearchFieldContent>()
                 .unwrap()
-                .surface
-                .input
-                .text,
+                .query(),
             "文字大小"
         );
         assert!(sidebar.cancel_search().unwrap());

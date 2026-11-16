@@ -11,12 +11,12 @@ let list = ListContent::scrollable(
     ComponentId(2),
     vec![Content::new(ComponentId(3), TextContent::new("Document"))],
 );
-// 不显示滚动条时：let list = list.scrollbar(false);
+// To hide the scrollbar: let list = list.scrollbar(false);
 ```
 
 ```rust
 use tekes_ui_controls::{composition::*, extended::*};
-// snapshot: KeyedListSnapshot；rows: Vec<ListRowDisplay>，由消费者按稳定 key 构造。
+// Build snapshot: KeyedListSnapshot and rows: Vec<ListRowDisplay> with stable keys.
 fn mount_list(snapshot: &KeyedListSnapshot, rows: &mut Vec<ListRowDisplay>)
     -> Result<KeyedSelectableListContent, ListContentError>
 {

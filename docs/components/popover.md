@@ -8,7 +8,7 @@ Use PopoverContent to present interactive content anchored within the same Conte
 use tekes_ui_controls::composition::*;
 let popover = PopoverContent::new("Preferences",
     Content::new(ComponentId(2), TextFieldContent::new("Name", "")));
-// 将 popover 和 anchor 都挂载后：
+// After mounting both the popover and its anchor:
 // let session = host.show_popover(popover_id, anchor_id)?;
 // host.close_popover(session);
 ```

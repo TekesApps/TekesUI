@@ -41,6 +41,8 @@ mod tree;
 pub use tree::{
     TreeContent, TreeContentError, TreeContentNode, TreeDisplayUpdate, TreeIntent, TreeIntentKind,
 };
+mod key_value_table;
+pub use key_value_table::KeyValueTableContent;
 mod datatable;
 pub use datatable::{
     DataTableContent, TableCellDisplay, TableContentError, TableDisplayUpdate, TableDisplays,
@@ -2383,10 +2385,9 @@ impl ContentHost {
             if !node.active() {
                 return;
             }
-            if matches!(
-                node.component.semantics().role,
-                ContentRole::TextInput | ContentRole::SearchInput
-            ) && let Some(surface) = node.component.text_surface()
+            // Compound inputs retain their own semantic role while exposing
+            // the same original text viewport (for example editable ComboBox).
+            if let Some(surface) = node.component.text_surface()
                 && !surface.input.disabled
                 && let Some(region) = surface.visible_content()
                 && !region.is_empty()

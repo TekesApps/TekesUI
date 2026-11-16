@@ -12,10 +12,10 @@ let mut number = TickingNumber::new(137, 3).unwrap();
 number.set_duration(Duration::from_millis(1800));
 number.set_strength(1.0).unwrap();
 number.set_target(546).unwrap();
-// 在宿主每帧调用：
+// Call on each host frame:
 number.advance(Duration::from_secs_f64(1.0 / 120.0));
-// 用 measure(...) 预留布局，draw(...) 通过宿主文字适配器绘制。
-// needs_animation() 为 true 时继续调度帧；无自有 timer 或线程。
+// Reserve layout with measure(...); draw(...) uses the host text adapter.
+// Schedule frames while needs_animation() is true; no private timer or thread.
 ```
 
 ## State and events
