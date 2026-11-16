@@ -2128,6 +2128,15 @@ mod pinned_header_tests {
     // through with_content_icons; this headless fixture validates catalog names.
     pub(super) struct HeaderIcons;
     impl tekes_ui_controls::layout_view::IconRenderer for HeaderIcons {
+        fn leading_ink_inset(
+            &mut self,
+            name: &str,
+        ) -> std::result::Result<f32, tekes_ui_controls::composition::IconRenderError> {
+            let glyph = tekes_ui_icons::Glyph::named(name).unwrap();
+            let tree =
+                resvg::usvg::Tree::from_str(glyph.svg, &resvg::usvg::Options::default()).unwrap();
+            Ok(tree.root().abs_stroke_bounding_box().left() / tree.size().width())
+        }
         fn prepare_icon(
             &mut self,
             name: &str,
@@ -2323,6 +2332,23 @@ mod pinned_header_tests {
         assert_eq!(
             arrow.min_x(),
             list.min_x() + tekes_ui_tokens::Spacing::Relaxed.value()
+        );
+        let artwork = sidebar
+            .host
+            .get(ComponentId(8))
+            .unwrap()
+            .component::<tekes_ui_controls::composition::IconContent>()
+            .unwrap()
+            .layout()
+            .artboard;
+        let outline_inset = tekes_ui_controls::layout_view::IconRenderer::leading_ink_inset(
+            &mut HeaderIcons,
+            "tekes-back",
+        )
+        .unwrap();
+        assert!(
+            (artwork.min_x() + outline_inset * artwork.size.width - arrow.min_x()).abs() < 0.001,
+            "Back painted outline, not its transparent artboard, shares item content leading"
         );
         assert_eq!(arrow.center().y, back.center().y);
         assert!(

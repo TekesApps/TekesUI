@@ -114,6 +114,15 @@ pub trait IconRenderer {
     ) -> Result<crate::composition::IconImage, crate::composition::IconRenderError> {
         Err(crate::composition::IconRenderError::UnsupportedRenderer)
     }
+    /// Leading edge of the painted outline (including strokes/transforms),
+    /// normalized to the canonical artboard width. Used only by explicit
+    /// ink-leading Content; ordinary icons keep their centered artboard.
+    fn leading_ink_inset(
+        &mut self,
+        _name: &str,
+    ) -> Result<f32, crate::composition::IconRenderError> {
+        Err(crate::composition::IconRenderError::UnsupportedRenderer)
+    }
     /// Checked resource seam for ordinary Content. Existing drawing backends
     /// remain valid for direct View callers; unsupported Content use is explicit.
     fn prepare_icon(
@@ -143,16 +152,21 @@ pub struct IconLayout {
 pub struct IconView {
     layout: IconLayout,
     surface: &'static str,
+    leading_ink_inset: Option<f32>,
 }
 impl Default for IconView {
     fn default() -> Self {
         Self {
             layout: IconLayout::default(),
             surface: "canvas",
+            leading_ink_inset: None,
         }
     }
 }
 impl IconView {
+    pub(crate) fn set_leading_ink_inset(&mut self, inset: Option<f32>) {
+        self.leading_ink_inset = inset;
+    }
     /// Select the actual parent Surface; explicit render_tinted stays an override.
     pub fn set_surface(
         &mut self,
@@ -216,7 +230,7 @@ impl IconView {
         let side = natural
             .min(frame.size.width.max(0.))
             .min(frame.size.height.max(0.));
-        let artboard = layout_measured_children(
+        let mut artboard = layout_measured_children(
             frame,
             Axis::Horizontal,
             &[MeasuredChild::new(Size::new(side, side))],
@@ -225,6 +239,9 @@ impl IconView {
             AlignmentOverride::default(),
         )[0]
         .frame;
+        if let Some(inset) = self.leading_ink_inset {
+            artboard.origin.x = frame.min_x() - inset * side;
+        }
         self.layout = IconLayout {
             frame,
             artboard,

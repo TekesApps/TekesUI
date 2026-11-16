@@ -258,8 +258,9 @@ impl SettingsSidebar {
     /// A canonical monochrome Back icon inherits its original Button's state ink.
     /// Repeated declarations retain the same passive content and image lease.
     pub fn set_back_template_icon(&mut self, name: &str) -> Result<()> {
-        let icon = IconContent::new(name)
+        let mut icon = IconContent::new(name)
             .map_err(|error| anyhow::anyhow!("Settings Back icon: {error:?}"))?;
+        icon.set_ink_leading(true);
         let name = icon.glyph().name;
         if self.back_template == Some(name) {
             return Ok(());

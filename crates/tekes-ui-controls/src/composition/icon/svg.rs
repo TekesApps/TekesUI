@@ -37,7 +37,16 @@ pub struct SvgIconRenderer<'a> {
     renderer: &'a mut Renderer,
     backing: f32,
 }
+fn leading_ink_inset(name: &str) -> Result<f32, IconRenderError> {
+    let glyph = tekes_ui_icons::Glyph::named(name).ok_or(IconRenderError::UnknownIcon)?;
+    let tree = resvg::usvg::Tree::from_str(glyph.svg, &resvg::usvg::Options::default())
+        .map_err(|_| IconRenderError::Raster)?;
+    Ok(tree.root().abs_stroke_bounding_box().left() / tree.size().width())
+}
 impl IconRenderer for SvgIconRenderer<'_> {
+    fn leading_ink_inset(&mut self, name: &str) -> Result<f32, IconRenderError> {
+        leading_ink_inset(name)
+    }
     fn resource_identity(&self) -> Option<u64> {
         Some(self.renderer.resource_identity())
     }
@@ -134,6 +143,163 @@ impl IconRenderer for SvgIconRenderer<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // CPU-only resource seam: rasterize the actual canonical SVG, retain the
+    // ordinary image lease, and independently observe its painted alpha edge.
+    #[derive(Default)]
+    struct OutlineIcons {
+        queried: usize,
+        raster_leading: f32,
+        unsupported: bool,
+    }
+    impl IconRenderer for OutlineIcons {
+        fn leading_ink_inset(&mut self, name: &str) -> Result<f32, IconRenderError> {
+            self.queried += 1;
+            if self.unsupported {
+                return Err(IconRenderError::UnsupportedRenderer);
+            }
+            leading_ink_inset(name)
+        }
+        fn prepare_icon(
+            &mut self,
+            name: &str,
+            size: f32,
+            backing: f32,
+            _: Rgba,
+        ) -> Result<IconImage, IconRenderError> {
+            let glyph = tekes_ui_icons::Glyph::named(name).unwrap();
+            let tree =
+                resvg::usvg::Tree::from_str(glyph.svg, &resvg::usvg::Options::default()).unwrap();
+            let pixels = (size * backing).ceil() as u32;
+            let mut bitmap = resvg::tiny_skia::Pixmap::new(pixels, pixels).unwrap();
+            resvg::render(
+                &tree,
+                resvg::tiny_skia::Transform::from_scale(
+                    pixels as f32 / tree.size().width(),
+                    pixels as f32 / tree.size().height(),
+                ),
+                &mut bitmap.as_mut(),
+            );
+            self.raster_leading = (0..pixels)
+                .find(|x| (0..pixels).any(|y| bitmap.pixel(*x, y).unwrap().alpha() >= 128))
+                .unwrap() as f32
+                / backing;
+            Ok(IconImage::new(ImageId(1), Rc::new(())))
+        }
+        fn draw_icon(&mut self, _: &mut Scene, _: &str, _: Rect, _: Rgba) {
+            panic!("IconContent must retain its prepared image lease");
+        }
+    }
+    struct Text;
+    impl ButtonTextRenderer for Text {
+        fn measure(&mut self, _: &str, _: proposal::TextRole, _: f32) -> Size {
+            Size::new(20., 20.)
+        }
+        fn draw(
+            &mut self,
+            _: &mut Scene,
+            _: &str,
+            _: proposal::TextRole,
+            _: Rect,
+            _: crate::ButtonTextAlign,
+            _: Rgba,
+        ) {
+        }
+        fn backing_scale(&self) -> f32 {
+            4.
+        }
+    }
+    #[test]
+    fn canonical_back_ink_leading_preserves_slot_and_default_toolbar_center() {
+        let frame = Rect::new(28., 20., 16., 16.);
+        let mut icons = OutlineIcons::default();
+        let mut text = Text;
+        let mut icon = IconContent::new("tekes-back").unwrap();
+        let natural = icon.measure(&mut text, frame.size).size;
+        icon.set_ink_leading(true);
+        assert_eq!(icon.measure(&mut text, frame.size).size, natural);
+        let paint = |icon: &mut IconContent, icons: &mut OutlineIcons| {
+            icon.paint(
+                &mut Scene::new(),
+                &mut WithIconRenderer::new(&mut Text, icons),
+                frame,
+                frame,
+                tekes_ui_tokens::Palette::from(tekes_ui_tokens::Theme::LIGHT).into(),
+            );
+            assert_eq!(icon.icon_error(), None);
+        };
+        paint(&mut icon, &mut icons);
+        assert_eq!(icon.layout().frame, frame);
+        assert_eq!(icon.layout().visible, Some(frame));
+        let ink_x = icon.layout().artboard.min_x() + icons.raster_leading;
+        assert!(
+            (ink_x - frame.min_x()).abs() <= 0.25,
+            "actual raster outline: {ink_x}"
+        );
+        paint(&mut icon, &mut icons);
+        assert_eq!(
+            icons.queried, 1,
+            "canonical bounds are queried once per glyph"
+        );
+
+        let mut toolbar = Button::new(Content::new(
+            ComponentId(2),
+            IconContent::new("tekes-back").unwrap(),
+        ))
+        .with_accessible_name("Back");
+        toolbar.set_toolbar_icon_slot(true);
+        let mut host = ContentHost::new(Content::new(ComponentId(1), toolbar)).unwrap();
+        let button_frame = Rect::new(100., 20., 40., 40.);
+        host.render(
+            &mut Scene::new(),
+            &mut WithIconRenderer::new(&mut text, &mut icons),
+            button_frame,
+            button_frame,
+            tekes_ui_tokens::Theme::LIGHT.into(),
+        )
+        .unwrap();
+        let toolbar_icon = host
+            .get(ComponentId(2))
+            .unwrap()
+            .component::<IconContent>()
+            .unwrap();
+        assert_eq!(
+            toolbar_icon.layout().artboard.center(),
+            button_frame.center()
+        );
+        assert_eq!(
+            icons.queried, 1,
+            "default toolbar never requests outline alignment"
+        );
+
+        icon.set_ink_leading(false);
+        paint(&mut icon, &mut icons);
+        assert_eq!(icon.layout().artboard.center(), frame.center());
+        assert!(icon.layout().artboard.min_x() + icons.raster_leading > frame.min_x() + 4.);
+    }
+    #[test]
+    fn ink_leading_reports_backend_without_outline_support() {
+        let mut icon = IconContent::new("tekes-back").unwrap();
+        icon.set_ink_leading(true);
+        let mut icons = OutlineIcons {
+            unsupported: true,
+            ..Default::default()
+        };
+        let frame = Rect::new(0., 0., 16., 16.);
+        let mut scene = Scene::new();
+        icon.paint(
+            &mut scene,
+            &mut WithIconRenderer::new(&mut Text, &mut icons),
+            frame,
+            frame,
+            tekes_ui_tokens::Palette::from(tekes_ui_tokens::Theme::LIGHT).into(),
+        );
+        assert_eq!(
+            icon.icon_error(),
+            Some(IconRenderError::UnsupportedRenderer)
+        );
+        assert!(scene.primitives().is_empty());
+    }
 
     #[test]
     #[ignore = "requires the registered GPU acceptance lane"]

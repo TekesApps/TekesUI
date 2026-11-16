@@ -66,7 +66,7 @@
         {
           "api": "tekes_ui_controls::layout_view::StackView",
           "path": "crates/tekes-ui-controls/src/layout_view.rs",
-          "line": 254,
+          "line": 271,
           "anchor": "pub struct StackView {"
         },
         {
@@ -111,7 +111,7 @@
         {
           "api": "tekes_ui_controls::layout_view::GridView",
           "path": "crates/tekes-ui-controls/src/layout_view.rs",
-          "line": 297,
+          "line": 314,
           "anchor": "pub struct GridView {"
         },
         {
@@ -154,7 +154,7 @@
         {
           "api": "tekes_ui_controls::layout_view::SeparatorView",
           "path": "crates/tekes-ui-controls/src/layout_view.rs",
-          "line": 349,
+          "line": 366,
           "anchor": "pub struct SeparatorView {"
         },
         {
@@ -200,7 +200,7 @@
         {
           "api": "tekes_ui_controls::layout_view::SplitViewView",
           "path": "crates/tekes-ui-controls/src/layout_view.rs",
-          "line": 407,
+          "line": 424,
           "anchor": "pub struct SplitViewView {"
         },
         {
@@ -285,7 +285,7 @@
         {
           "api": "tekes_ui_controls::layout_view::DisclosureView",
           "path": "crates/tekes-ui-controls/src/layout_view.rs",
-          "line": 987,
+          "line": 1004,
           "anchor": "pub struct DisclosureView {"
         },
         {
@@ -467,7 +467,7 @@
         {
           "api": "tekes_ui_controls::layout_view::IconView",
           "path": "crates/tekes-ui-controls/src/layout_view.rs",
-          "line": 143,
+          "line": 152,
           "anchor": "pub struct IconView {"
         },
         {
@@ -574,7 +574,7 @@
         {
           "api": "tekes_ui_controls::layout_view::LinkView",
           "path": "crates/tekes-ui-controls/src/layout_view.rs",
-          "line": 1390,
+          "line": 1407,
           "anchor": "pub struct LinkView {"
         },
         {
@@ -735,7 +735,7 @@
         {
           "api": "tekes_ui_controls::layout_view::ComboBoxView",
           "path": "crates/tekes-ui-controls/src/layout_view.rs",
-          "line": 3500,
+          "line": 3517,
           "anchor": "pub struct ComboBoxView {"
         },
         {
@@ -944,7 +944,7 @@
         {
           "api": "tekes_ui_controls::layout_view::SegmentedControlView",
           "path": "crates/tekes-ui-controls/src/layout_view.rs",
-          "line": 1632,
+          "line": 1649,
           "anchor": "pub struct SegmentedControlView {"
         },
         {
@@ -1030,7 +1030,7 @@
         {
           "api": "tekes_ui_controls::layout_view::SelectView",
           "path": "crates/tekes-ui-controls/src/layout_view.rs",
-          "line": 2926,
+          "line": 2943,
           "anchor": "pub struct SelectView {"
         },
         {
@@ -1175,7 +1175,7 @@
         {
           "api": "tekes_ui_controls::layout_view::BreadcrumbView",
           "path": "crates/tekes-ui-controls/src/layout_view.rs",
-          "line": 2306,
+          "line": 2323,
           "anchor": "pub struct BreadcrumbView {"
         },
         {
@@ -1221,7 +1221,7 @@
         {
           "api": "tekes_ui_controls::layout_view::CommandPaletteView",
           "path": "crates/tekes-ui-controls/src/layout_view.rs",
-          "line": 3719,
+          "line": 3736,
           "anchor": "pub struct CommandPaletteView {"
         },
         {
@@ -2066,7 +2066,7 @@
     "crates/tekes-ui-controls/src/composition/disclosure.rs": "994be293370a9be87317db78b11551cfd03bb7328626b5d2823b81408ffb8628",
     "crates/tekes-ui-controls/src/composition/empty_state.rs": "83cc914c7497d7ca3ac2bd39bab0178d20c5451d9747a1da1e8ea0b0beaf4518",
     "crates/tekes-ui-controls/src/composition/help.rs": "0ff05ea2ee135ecb418f5a87b4687db9379a3b53792c225cfb650a3f400b058e",
-    "crates/tekes-ui-controls/src/composition/icon.rs": "12bb7040fc42deaddc525c61bf8d5be96b54db859adefadbf9643079615b710b",
+    "crates/tekes-ui-controls/src/composition/icon.rs": "f91053beb8ae4d481cb912d721f7d15afc65859da7aecbc016d6e44baf1c2e77",
     "crates/tekes-ui-controls/src/composition/key.rs": "931e220d625f6d04dd6d36b023199169c619f32fe99c4530dda3e41718b4b407",
     "crates/tekes-ui-controls/src/composition/label.rs": "4b202e0281e1e33f9714e1cc9470a59ba5f1a54c9e1dd48045b8491437405887",
     "crates/tekes-ui-controls/src/composition/link.rs": "17a6b5a9d7efc52cde5f0d7c7c0f6ebd735640fb0ae6dd5c8e9aac08a80276ad",
@@ -2092,7 +2092,7 @@
     "crates/tekes-ui-controls/src/control_motion.rs": "0301717c307ba6bdc2b91085c9e1995e6ca74391c7bbda9168af2c042a52a788",
     "crates/tekes-ui-controls/src/extended.rs": "43c725396991fc05fa7cff954b6eff224fde7c49a41092180c2b321b369dcd65",
     "crates/tekes-ui-controls/src/feedback_view.rs": "b0ac9827fbbc3fc1bdf3b393faa573d1d3f1f0f75419cb043d1d2941e571f56c",
-    "crates/tekes-ui-controls/src/layout_view.rs": "68aa59b3e1ce5a35cb869404b3f0e66392152ef910ab9358493ccf84703370b8",
+    "crates/tekes-ui-controls/src/layout_view.rs": "11a959862f3b0f9f6af4d2f90454aace20d905dce8c567634a74c9f715777b45",
     "crates/tekes-ui-controls/src/lib.rs": "7c02ead867e15b5149dd5216b04b021d0ef4205ff2b6603835f3ada967074698",
     "crates/tekes-ui-controls/src/reading.rs": "65fae5533cfe23601197b33fcf8521b5e68999138dad658d6de67c00bad14d82",
     "crates/tekes-ui-controls/src/scroll_view.rs": "b9995921f7dc57b122214b2117d2eedb2e6b6250fdeb3e947a84b800c79aa4d8",
@@ -2338,12 +2338,12 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/layout_view.rs",
-      "line": 3923,
+      "line": 3940,
       "anchor": "pub fn blur_trigger(&mut self) {"
     },
     {
       "path": "crates/tekes-ui-controls/src/layout_view.rs",
-      "line": 4095,
+      "line": 4112,
       "anchor": "pub fn pointer_move(&mut self, p: Point, model: &mut CommandPalette) {"
     },
     {
@@ -2353,12 +2353,12 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/layout_view.rs",
-      "line": 3135,
+      "line": 3152,
       "anchor": "pub fn render_trigger("
     },
     {
       "path": "crates/tekes-ui-controls/src/layout_view.rs",
-      "line": 3250,
+      "line": 3267,
       "anchor": "pub fn render_options("
     },
     {
@@ -4971,6 +4971,21 @@
       "scope": "Remove duplicated Settings sidebar inset; fixed header uses existing padded Stack and canonical Button content inset matching List. Preserve List/token defaults and mounted search/back state.",
       "verification": "Check392 pinned header/search four tests passed; native separate.",
       "capability_promotion": false
+    },
+    {
+      "issue": 305,
+      "scope": "Back canonical outline leading, opt-in shared IconContent; default toolbar center unchanged",
+      "source_paths": [
+        "crates/tekes-ui-app-host/src/window_settings.rs",
+        "crates/tekes-ui-controls/src/composition/icon.rs",
+        "crates/tekes-ui-controls/src/composition/icon/svg.rs",
+        "crates/tekes-ui-controls/src/layout_view.rs",
+        "crates/tekes-ui-settings/src/sidebar.rs",
+        "crates/tekes-ui-settings/tests/form_sidebar.rs",
+        "design/gallery/capabilities.json",
+        "docs/design/app-host-architecture.md"
+      ],
+      "validation": "Check396: 2 canonical SVG tests and 4 pinned-header tests passed; native ink comparison pending; no capability promotion"
     }
   ]
 }
