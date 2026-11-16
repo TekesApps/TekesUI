@@ -399,8 +399,13 @@
       },
       {
         "name": "p-code-surface",
-        "usage": "保留旧名，重绑定到显式表面阶梯；见迁移表",
-        "value": "{p-surface-2}"
+        "usage": "代码块底面；独立于侧栏覆盖，与正文保持低对比背景区分",
+        "value": {
+          "dark": "#0B0B0A",
+          "dark-ic": "#000000",
+          "light": "#F5F5F3",
+          "light-ic": "#F4F4F1"
+        }
       },
       {
         "name": "code-surface",

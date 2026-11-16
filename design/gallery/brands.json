@@ -55,7 +55,7 @@
     "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/examples/example-clay.json": "c5a2160d582d90e0488810e66a6b7185c6bb3ff84876eed468c84a1d7e85ca52",
     "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/brand.py": "3da13fcc221ed488d383af75dc84f77930306368632b7f48fb38476dc78f6586",
     "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/brand_color.py": "f7395f04cbd8cf0215326345929d76f6d8e263bdff69c6aede1a417bccc82516",
-    "design/source/base.tokens.json": "a159e5e8e64c452832cbea49914fbc0b8ce39e091908498c2aea4555d7029fa7",
+    "design/source/base.tokens.json": "ad4b512c0ffe4d81d5cfd6aab9ae392806d79419efd3afe8b3ced8e201ae56f7",
     "design/source/token-metadata.json": "88c7ca5bbf033c3abd39425fe220b06cdd137904ee812517c5119608d2d54cd9",
     "scripts/generate-gallery-brands.py": "0a169997cc3edca32aa93d7a3f089e66c7f5a5b2ba2acce272b07a5d44013497"
   },
@@ -462,8 +462,13 @@
           },
           {
             "name": "p-code-surface",
-            "usage": "保留旧名，重绑定到显式表面阶梯；见迁移表",
-            "value": "{p-surface-2}"
+            "usage": "代码块底面；独立于侧栏覆盖，与正文保持低对比背景区分",
+            "value": {
+              "dark": "#0B0B0A",
+              "dark-ic": "#000000",
+              "light": "#F5F5F3",
+              "light-ic": "#F4F4F1"
+            }
           },
           {
             "name": "code-surface",
@@ -1538,8 +1543,13 @@
           },
           {
             "name": "p-code-surface",
-            "usage": "保留旧名，重绑定到显式表面阶梯；见迁移表",
-            "value": "{p-surface-2}"
+            "usage": "代码块底面；独立于侧栏覆盖，与正文保持低对比背景区分",
+            "value": {
+              "dark": "#0B0B0A",
+              "dark-ic": "#000000",
+              "light": "#F5F5F3",
+              "light-ic": "#F4F4F1"
+            }
           },
           {
             "name": "code-surface",
@@ -2614,8 +2624,13 @@
           },
           {
             "name": "p-code-surface",
-            "usage": "保留旧名，重绑定到显式表面阶梯；见迁移表",
-            "value": "{p-surface-2}"
+            "usage": "代码块底面；独立于侧栏覆盖，与正文保持低对比背景区分",
+            "value": {
+              "dark": "#0B0B0A",
+              "dark-ic": "#000000",
+              "light": "#F5F5F3",
+              "light-ic": "#F4F4F1"
+            }
           },
           {
             "name": "code-surface",
@@ -3690,8 +3705,13 @@
           },
           {
             "name": "p-code-surface",
-            "usage": "保留旧名，重绑定到显式表面阶梯；见迁移表",
-            "value": "{p-surface-2}"
+            "usage": "代码块底面；独立于侧栏覆盖，与正文保持低对比背景区分",
+            "value": {
+              "dark": "#0B0B0A",
+              "dark-ic": "#000000",
+              "light": "#F5F5F3",
+              "light-ic": "#F4F4F1"
+            }
           },
           {
             "name": "code-surface",
@@ -4766,8 +4786,13 @@
           },
           {
             "name": "p-code-surface",
-            "usage": "保留旧名，重绑定到显式表面阶梯；见迁移表",
-            "value": "{p-surface-2}"
+            "usage": "代码块底面；独立于侧栏覆盖，与正文保持低对比背景区分",
+            "value": {
+              "dark": "#0B0B0A",
+              "dark-ic": "#000000",
+              "light": "#F5F5F3",
+              "light-ic": "#F4F4F1"
+            }
           },
           {
             "name": "code-surface",
@@ -5842,8 +5867,13 @@
           },
           {
             "name": "p-code-surface",
-            "usage": "保留旧名，重绑定到显式表面阶梯；见迁移表",
-            "value": "{p-surface-2}"
+            "usage": "代码块底面；独立于侧栏覆盖，与正文保持低对比背景区分",
+            "value": {
+              "dark": "#0B0B0A",
+              "dark-ic": "#000000",
+              "light": "#F5F5F3",
+              "light-ic": "#F4F4F1"
+            }
           },
           {
             "name": "code-surface",
@@ -6918,8 +6948,13 @@
           },
           {
             "name": "p-code-surface",
-            "usage": "保留旧名，重绑定到显式表面阶梯；见迁移表",
-            "value": "{p-surface-2}"
+            "usage": "代码块底面；独立于侧栏覆盖，与正文保持低对比背景区分",
+            "value": {
+              "dark": "#0B0B0A",
+              "dark-ic": "#000000",
+              "light": "#F5F5F3",
+              "light-ic": "#F4F4F1"
+            }
           },
           {
             "name": "code-surface",
@@ -7996,8 +8031,13 @@
           },
           {
             "name": "p-code-surface",
-            "usage": "保留旧名，重绑定到显式表面阶梯；见迁移表",
-            "value": "{p-surface-2}"
+            "usage": "代码块底面；独立于侧栏覆盖，与正文保持低对比背景区分",
+            "value": {
+              "dark": "#0B0B0A",
+              "dark-ic": "#000000",
+              "light": "#F5F5F3",
+              "light-ic": "#F4F4F1"
+            }
           },
           {
             "name": "code-surface",
@@ -9074,8 +9114,13 @@
           },
           {
             "name": "p-code-surface",
-            "usage": "保留旧名，重绑定到显式表面阶梯；见迁移表",
-            "value": "{p-surface-2}"
+            "usage": "代码块底面；独立于侧栏覆盖，与正文保持低对比背景区分",
+            "value": {
+              "dark": "#0B0B0A",
+              "dark-ic": "#000000",
+              "light": "#F5F5F3",
+              "light-ic": "#F4F4F1"
+            }
           },
           {
             "name": "code-surface",
@@ -10152,8 +10197,13 @@
           },
           {
             "name": "p-code-surface",
-            "usage": "保留旧名，重绑定到显式表面阶梯；见迁移表",
-            "value": "{p-surface-2}"
+            "usage": "代码块底面；独立于侧栏覆盖，与正文保持低对比背景区分",
+            "value": {
+              "dark": "#0B0B0A",
+              "dark-ic": "#000000",
+              "light": "#F5F5F3",
+              "light-ic": "#F4F4F1"
+            }
           },
           {
             "name": "code-surface",
@@ -11230,8 +11280,13 @@
           },
           {
             "name": "p-code-surface",
-            "usage": "保留旧名，重绑定到显式表面阶梯；见迁移表",
-            "value": "{p-surface-2}"
+            "usage": "代码块底面；独立于侧栏覆盖，与正文保持低对比背景区分",
+            "value": {
+              "dark": "#0B0B0A",
+              "dark-ic": "#000000",
+              "light": "#F5F5F3",
+              "light-ic": "#F4F4F1"
+            }
           },
           {
             "name": "code-surface",
@@ -12308,8 +12363,13 @@
           },
           {
             "name": "p-code-surface",
-            "usage": "保留旧名，重绑定到显式表面阶梯；见迁移表",
-            "value": "{p-surface-2}"
+            "usage": "代码块底面；独立于侧栏覆盖，与正文保持低对比背景区分",
+            "value": {
+              "dark": "#0B0B0A",
+              "dark-ic": "#000000",
+              "light": "#F5F5F3",
+              "light-ic": "#F4F4F1"
+            }
           },
           {
             "name": "code-surface",
@@ -13386,8 +13446,13 @@
           },
           {
             "name": "p-code-surface",
-            "usage": "保留旧名，重绑定到显式表面阶梯；见迁移表",
-            "value": "{p-surface-2}"
+            "usage": "代码块底面；独立于侧栏覆盖，与正文保持低对比背景区分",
+            "value": {
+              "dark": "#0B0B0A",
+              "dark-ic": "#000000",
+              "light": "#F5F5F3",
+              "light-ic": "#F4F4F1"
+            }
           },
           {
             "name": "code-surface",
