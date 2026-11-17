@@ -108,15 +108,18 @@ impl VerifiedFrameOutput {
 // Diagnostic A/B only. Normal applications retain the measured FIFO default.
 // wgpu Metal uses desired latency + 1 drawables; never disable display sync.
 fn frame_latency() -> u32 {
-    if std::env::var_os("TEKES_PERF").is_some() {
-        match std::env::var("TEKES_PERF_FRAME_LATENCY").as_deref() {
-            Ok("1") => 1,
-            Ok("2") => 2,
-            _ => FRAME_LATENCY,
+    static LATENCY: std::sync::OnceLock<u32> = std::sync::OnceLock::new();
+    *LATENCY.get_or_init(|| {
+        if std::env::var_os("TEKES_PERF").is_some() {
+            match std::env::var("TEKES_PERF_FRAME_LATENCY").as_deref() {
+                Ok("1") => 1,
+                Ok("2") => 2,
+                _ => FRAME_LATENCY,
+            }
+        } else {
+            FRAME_LATENCY
         }
-    } else {
-        FRAME_LATENCY
-    }
+    })
 }
 
 /// 渲染器编号。atlas 靠它区分是哪个渲染器取走了脏区（见 `GlyphAtlas::take_dirty`）。
@@ -128,11 +131,57 @@ fn next_renderer_id() -> Result<u64, RenderError> {
         .map_err(|_| RenderError::InvalidArgument("renderer identity space exhausted"))
 }
 
+#[cfg(target_os = "macos")]
+struct RetainedMetalLayer(NonNull<c_void>);
+
+#[cfg(target_os = "macos")]
+impl RetainedMetalLayer {
+    /// # Safety
+    /// Caller must supply a valid live Objective-C object pointer (`CAMetalLayer`).
+    unsafe fn retain(layer: NonNull<c_void>) -> Option<Self> {
+        #[link(name = "objc", kind = "dylib")]
+        unsafe extern "C" {
+            fn objc_retain(obj: *mut c_void) -> *mut c_void;
+        }
+        // SAFETY: Caller guarantees `layer` is a live Objective-C object.
+        let retained = unsafe { objc_retain(layer.as_ptr()) };
+        NonNull::new(retained).map(Self)
+    }
+
+    fn as_ptr(&self) -> *mut c_void {
+        self.0.as_ptr()
+    }
+}
+
+#[cfg(target_os = "macos")]
+impl std::ops::Deref for RetainedMetalLayer {
+    type Target = objc2_quartz_core::CAMetalLayer;
+
+    fn deref(&self) -> &Self::Target {
+        // SAFETY: `self.0` owns a retained `CAMetalLayer` reference accessed on the main thread.
+        unsafe { self.0.cast::<objc2_quartz_core::CAMetalLayer>().as_ref() }
+    }
+}
+
+#[cfg(target_os = "macos")]
+impl Drop for RetainedMetalLayer {
+    fn drop(&mut self) {
+        #[link(name = "objc", kind = "dylib")]
+        unsafe extern "C" {
+            fn objc_release(obj: *mut c_void);
+        }
+        // SAFETY: `self.0` was retained in `RetainedMetalLayer::retain` and is released once on drop.
+        unsafe { objc_release(self.0.as_ptr()) };
+    }
+}
+
 struct SurfaceState {
     surface: wgpu::Surface<'static>,
-    /// 建 surface 用的 CAMetalLayer 指针。`new_for_metal_layer` 的调用方保证它在
-    /// Renderer 存活期间有效，surface 丢失时用它重建。
-    layer: NonNull<c_void>,
+    /// Retained backing `CAMetalLayer` so `configure_surface` / `recreate_surface`
+    /// never dereference a dangling pointer after the caller drops its handle.
+    /// Dropped after `surface`.
+    #[cfg(target_os = "macos")]
+    layer: RetainedMetalLayer,
     size_px: (u32, u32),
     scale: f32,
     /// surface 当前是否已按 `size_px` 配置。尺寸为 0 时不能配置。
@@ -356,11 +405,15 @@ impl Renderer {
         if !(scale.is_finite() && scale > 0.0) {
             return Err(RenderError::InvalidArgument("scale 必须是正的有限数"));
         }
+        // SAFETY: Caller guarantees `layer` points to a valid live `CAMetalLayer`
+        // for the duration of this constructor; retain extends its lifetime cleanly.
+        let retained_layer = unsafe { RetainedMetalLayer::retain(layer) }
+            .ok_or(RenderError::InvalidArgument("CAMetalLayer 对象无效"))?;
         let instance = new_instance();
-        // SAFETY: 由调用方保证 layer 有效。
+        // SAFETY: `retained_layer` owns a live retain count on the `CAMetalLayer`.
         let surface = unsafe {
             instance.create_surface_unsafe(wgpu::SurfaceTargetUnsafe::CoreAnimationLayer(
-                layer.as_ptr(),
+                retained_layer.as_ptr(),
             ))
         }
         .map_err(|e| RenderError::Surface(e.to_string()))?;
@@ -377,7 +430,7 @@ impl Renderer {
             last_frame: FrameCounts::default(),
             surface: Some(SurfaceState {
                 surface,
-                layer,
+                layer: retained_layer,
                 size_px: drawable_size,
                 scale,
                 configured: false,
@@ -478,11 +531,8 @@ impl Renderer {
         };
         s.surface.configure(&self.device, &config);
         // wgpu 的配置会把 colorspace 重置为 nil，必须在它之后设置。
-        // SAFETY: layer 的有效性由 new_for_metal_layer 的调用方保证。
         #[cfg(target_os = "macos")]
-        unsafe {
-            set_srgb_colorspace(s.layer);
-        }
+        set_srgb_colorspace(&s.layer);
         s.configured = true;
         Ok(())
     }
@@ -545,13 +595,16 @@ impl Renderer {
         // never GPU completion/presentation acceptance. No timing mode or poll
         // is enabled, and the ordinary surface path below is unchanged.
         static SURFACE_DIAGNOSTIC_SEQUENCE: AtomicU64 = AtomicU64::new(1);
-        let diagnostic = (std::env::var("TEKESUI_PROCESS_NATIVE_B2_TIMING").as_deref() == Ok("1"))
-            .then(|| {
-                (
-                    Instant::now(),
-                    SURFACE_DIAGNOSTIC_SEQUENCE.fetch_add(1, Ordering::Relaxed),
-                )
-            });
+        static PROCESS_NATIVE_B2_TIMING: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+        let diagnostic = (*PROCESS_NATIVE_B2_TIMING.get_or_init(|| {
+            std::env::var("TEKESUI_PROCESS_NATIVE_B2_TIMING").as_deref() == Ok("1")
+        }))
+        .then(|| {
+            (
+                Instant::now(),
+                SURFACE_DIAGNOSTIC_SEQUENCE.fetch_add(1, Ordering::Relaxed),
+            )
+        });
         let renderer_id = self.id;
         let trace = |stage: &str, attempt: usize| {
             if let Some((start, call)) = diagnostic {
@@ -710,7 +763,7 @@ impl Renderer {
             let Some(s) = &mut self.surface else {
                 return Ok(());
             };
-            // SAFETY: layer 的有效性由 new_for_metal_layer 的调用方保证。
+            // SAFETY: `s.layer` retains a strong `CAMetalLayer` reference for `Renderer`'s lifetime.
             let surface = unsafe {
                 self.instance
                     .create_surface_unsafe(wgpu::SurfaceTargetUnsafe::CoreAnimationLayer(
@@ -1396,16 +1449,9 @@ impl Renderer {
 }
 
 /// 把 layer 的 colorspace 设为 sRGB。
-///
-/// # Safety
-///
-/// `layer` 必须指向有效的 `CAMetalLayer`。
 #[cfg(target_os = "macos")]
-unsafe fn set_srgb_colorspace(layer: NonNull<c_void>) {
+fn set_srgb_colorspace(layer: &objc2_quartz_core::CAMetalLayer) {
     use objc2_core_graphics::{CGColorSpace, kCGColorSpaceSRGB};
-    use objc2_quartz_core::CAMetalLayer;
-    // SAFETY: 由调用方保证。
-    let layer: &CAMetalLayer = unsafe { layer.cast::<CAMetalLayer>().as_ref() };
     let space = CGColorSpace::with_name(Some(unsafe { kCGColorSpaceSRGB }));
     layer.setColorspace(space.as_deref());
 }

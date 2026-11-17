@@ -34,15 +34,22 @@ struct Identity {
     variation: Vec<(i64, u64)>,
 }
 
+const MAX_CACHED_FONTS: usize = 512;
+
 struct Entry {
+    identity: Identity,
     font: CFRetained<CTFont>,
     info: FontInfo,
+    last_used: u64,
 }
 
 #[derive(Default)]
 struct Inner {
     by_identity: HashMap<Identity, FontKey>,
+    by_key: HashMap<FontKey, usize>,
     entries: Vec<Entry>,
+    next_key: u32,
+    clock: u64,
 }
 
 /// CoreText 字体登记表。克隆得到同一张表的另一个句柄。
@@ -125,21 +132,49 @@ impl CoreTextFonts {
         // Registered fonts are retained by this registry: pointer identity is
         // safe for the common repeated CTRun font, without rebuilding variation
         // dictionaries and PostScript strings for every wrapped line.
-        if let Some(key) = self
-            .inner
-            .borrow()
-            .entries
-            .iter()
-            .find_map(|entry| ptr::eq(entry.font.as_ref(), font).then_some(entry.info.key))
         {
-            return key;
+            let mut inner = self.inner.borrow_mut();
+            let next_tick = inner.clock.wrapping_add(1);
+            inner.clock = next_tick;
+            if let Some(entry) = inner
+                .entries
+                .iter_mut()
+                .find(|entry| ptr::eq(entry.font.as_ref(), font))
+            {
+                entry.last_used = next_tick;
+                return entry.info.key;
+            }
         }
         let identity = identity_of(font);
         let mut inner = self.inner.borrow_mut();
-        if let Some(key) = inner.by_identity.get(&identity) {
-            return *key;
+        let now = inner.clock;
+        if let Some(&key) = inner.by_identity.get(&identity) {
+            if let Some(&idx) = inner.by_key.get(&key) {
+                inner.entries[idx].last_used = now;
+            }
+            return key;
         }
-        let key = FontKey(inner.entries.len() as u32);
+        let key = FontKey(inner.next_key);
+        inner.next_key = inner
+            .next_key
+            .checked_add(1)
+            .expect("CoreTextFonts key space exhausted");
+        if inner.entries.len() >= MAX_CACHED_FONTS
+            && let Some(victim_idx) = inner
+                .entries
+                .iter()
+                .enumerate()
+                .min_by_key(|(_, entry)| entry.last_used)
+                .map(|(idx, _)| idx)
+        {
+            let removed = inner.entries.swap_remove(victim_idx);
+            inner.by_identity.remove(&removed.identity);
+            inner.by_key.remove(&removed.info.key);
+            if let Some(swapped) = inner.entries.get(victim_idx) {
+                let swapped_key = swapped.info.key;
+                inner.by_key.insert(swapped_key, victim_idx);
+            }
+        }
         // SAFETY: font 是有效的 CTFont；这里只读属性。
         let (size, traits) = unsafe { (font.size(), font.symbolic_traits()) };
         let info = FontInfo {
@@ -150,27 +185,33 @@ impl CoreTextFonts {
         };
         // 保留一份字体的强引用，光栅化时按键取回。
         let retained = retain_font(font);
+        let idx = inner.entries.len();
         inner.entries.push(Entry {
+            identity: identity.clone(),
             font: retained,
             info,
+            last_used: now,
         });
         inner.by_identity.insert(identity, key);
+        inner.by_key.insert(key, idx);
         key
     }
 
     pub fn info(&self, key: FontKey) -> Option<FontInfo> {
-        self.inner
-            .borrow()
-            .entries
-            .get(key.0 as usize)
+        let inner = self.inner.borrow();
+        inner
+            .by_key
+            .get(&key)
+            .and_then(|&idx| inner.entries.get(idx))
             .map(|e| e.info.clone())
     }
 
     pub fn font(&self, key: FontKey) -> Option<CFRetained<CTFont>> {
-        self.inner
-            .borrow()
-            .entries
-            .get(key.0 as usize)
+        let inner = self.inner.borrow();
+        inner
+            .by_key
+            .get(&key)
+            .and_then(|&idx| inner.entries.get(idx))
             .map(|e| e.font.clone())
     }
 
@@ -199,19 +240,29 @@ fn identity_of(font: &CTFont) -> Identity {
         let matrix = [m.a, m.b, m.c, m.d, m.tx, m.ty].map(f64::to_bits);
         let mut variation = Vec::new();
         if let Some(dict) = font.variation() {
-            let n = dict.count() as usize;
-            let mut keys: Vec<*const c_void> = vec![ptr::null(); n];
-            let mut values: Vec<*const c_void> = vec![ptr::null(); n];
-            dict.keys_and_values(keys.as_mut_ptr(), values.as_mut_ptr());
-            for (k, v) in keys.into_iter().zip(values) {
-                // 变体字典的键和值都是 CFNumber。
-                let k = &*(k as *const CFNumber);
-                let v = &*(v as *const CFNumber);
-                if let (Some(k), Some(v)) = (k.as_i64(), v.as_f64()) {
-                    variation.push((k, v.to_bits()));
+            let count = dict.count();
+            if count > 0 {
+                let n = count as usize;
+                let mut keys: Vec<*const c_void> = vec![ptr::null(); n];
+                let mut values: Vec<*const c_void> = vec![ptr::null(); n];
+                dict.keys_and_values(keys.as_mut_ptr(), values.as_mut_ptr());
+                for (k, v) in keys.into_iter().zip(values) {
+                    if k.is_null() || v.is_null() {
+                        continue;
+                    }
+                    // Verify CoreFoundation dynamic type before downcasting to `CFNumber`.
+                    let k_cf = &*(k as *const CFType);
+                    let v_cf = &*(v as *const CFType);
+                    if let (Some(k), Some(v)) = (
+                        k_cf.downcast_ref::<CFNumber>(),
+                        v_cf.downcast_ref::<CFNumber>(),
+                    ) && let (Some(k), Some(v)) = (k.as_i64(), v.as_f64())
+                    {
+                        variation.push((k, v.to_bits()));
+                    }
                 }
+                variation.sort_unstable();
             }
-            variation.sort_unstable();
         }
         Identity {
             post_script_name,
@@ -220,5 +271,51 @@ fn identity_of(font: &CTFont) -> Identity {
             matrix,
             variation,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn identity_handles_empty_and_weighted_variation_dicts_without_ub() {
+        let fonts = CoreTextFonts::new();
+        let regular = fonts.create_font(&TextStyle::system(13.0));
+        let bold = fonts.create_font(&TextStyle::system(13.0).with_weight(700));
+        let reg_key = fonts.key_for(&regular);
+        let bold_key = fonts.key_for(&bold);
+        assert_eq!(reg_key, fonts.key_for(&regular));
+        assert_eq!(bold_key, fonts.key_for(&bold));
+        let _ = identity_of(&regular);
+        let _ = identity_of(&bold);
+    }
+
+    #[test]
+    fn evicts_lru_font_and_keeps_keys_strictly_monotonic() {
+        let fonts = CoreTextFonts::new();
+        let mut first_key = None;
+        let mut prev_raw = None;
+        for i in 0..700 {
+            let font = fonts.create_font(&TextStyle::system(10.0 + i as f32 * 0.25));
+            let key = fonts.key_for(&font);
+            if let Some(prev) = prev_raw {
+                assert!(key.0 > prev, "font keys must remain strictly monotonic");
+            }
+            prev_raw = Some(key.0);
+            if i == 0 {
+                first_key = Some(key);
+            }
+        }
+        assert_eq!(fonts.len(), MAX_CACHED_FONTS);
+        assert!(
+            fonts.info(first_key.unwrap()).is_none(),
+            "oldest font should have been evicted"
+        );
+        // Re-registering evicted font assigns a new strictly higher key without aliasing.
+        let recycled_font = fonts.create_font(&TextStyle::system(10.0));
+        let new_key = fonts.key_for(&recycled_font);
+        assert!(new_key.0 > prev_raw.unwrap());
+        assert_eq!(fonts.len(), MAX_CACHED_FONTS);
     }
 }

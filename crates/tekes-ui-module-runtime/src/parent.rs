@@ -4,10 +4,7 @@
 //! ProcessContainer lifecycle. Callers must keep request/wait off the UI thread.
 use crate::surface as gpu;
 use anyhow::{Context, Result, ensure};
-use std::{
-    io::BufReader,
-    process::{ChildStdin, ChildStdout},
-};
+use std::{io::BufReader, os::unix::net::UnixStream};
 use tekes_ui_app_protocol::{Frame, Request, VERSION};
 /// Immutable wire metadata plus one owned, receiver-local IOSurface capability.
 /// Dropping a queued, rejected or never-imported frame releases its right.
@@ -40,8 +37,8 @@ impl ReceivedFrame {
 pub struct ModuleProcess {
     control: crate::ProcessControl,
     pid: u32,
-    input: ChildStdin,
-    output: BufReader<ChildStdout>,
+    input: crate::pipes::WorkerIpcWriter,
+    output: BufReader<UnixStream>,
     ports: crate::transport::Receiver,
     failed: bool,
 }
@@ -53,9 +50,10 @@ impl ModuleProcess {
     pub fn spawn_with_control(module: &str, control: crate::ProcessControl) -> Result<Self> {
         ensure!(!control.is_cancelled(), "worker launch cancelled");
         let ports = crate::transport::Receiver::new()?;
-        let connection = crate::pipes::spawn(&["--worker", module, &ports.name])?;
-        let pid = connection.child.id();
-        control.install(connection.child)?;
+        let connection =
+            crate::pipes::spawn_with_receiver(&["--worker", module, &ports.name], Some(&ports))?;
+        let pid = connection.pid;
+        control.install_spawned(connection.child)?;
         Ok(Self {
             input: connection.input,
             output: connection.output,

@@ -46,8 +46,11 @@
 //! 之后同一个键直接返回 `None`，不会每帧重新光栅化。这类记录不占页，不随页淘汰。
 
 use crate::glyph::{AtlasGlyph, GlyphKey, RasterGlyph};
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::atomic::{AtomicU64, Ordering};
+
+const MAX_CONSUMERS: usize = 32;
+const MAX_PAGE_WRITES: usize = 128;
 
 static NEXT_ATLAS_ID: AtomicU64 = AtomicU64::new(1);
 
@@ -121,6 +124,26 @@ struct Bounds {
     y1: u32,
 }
 
+impl Bounds {
+    fn union(self, other: Self) -> Self {
+        Self {
+            x0: self.x0.min(other.x0),
+            y0: self.y0.min(other.y0),
+            x1: self.x1.max(other.x1),
+            y1: self.y1.max(other.y1),
+        }
+    }
+
+    fn full(page_size: u32) -> Self {
+        Self {
+            x0: 0,
+            y0: 0,
+            x1: page_size,
+            y1: page_size,
+        }
+    }
+}
+
 struct Page {
     /// BGRA8，`page_size * page_size * 4` 字节。
     pixels: Vec<u8>,
@@ -131,7 +154,9 @@ struct Page {
     keys: Vec<GlyphKey>,
     /// 最后一次被用到（放入或命中）时的帧号。
     last_used: u64,
-    dirty: Option<Bounds>,
+    full_dirty_rev: u64,
+    writes: VecDeque<(u64, Bounds)>,
+    folded: Option<(u64, Bounds)>,
 }
 
 /// 字形 atlas。见模块文档。
@@ -139,13 +164,14 @@ pub struct GlyphAtlas {
     config: AtlasConfig,
     id: u64,
     frame: u64,
+    revision: u64,
     pages: Vec<Page>,
     /// `None` 表示"没有位图"。
     map: HashMap<GlyphKey, Option<AtlasGlyph>>,
     /// 本帧已经确认放不下的键，避免同一帧里重复光栅化。
     dropped_this_frame: HashSet<GlyphKey>,
-    /// 上一次取走脏区的消费者。换了消费者就整页重传。
-    drained_by: Option<u64>,
+    /// Per-consumer last drained revision (LRU-bounded).
+    consumers: VecDeque<(u64, u64)>,
     stats: AtlasStats,
 }
 
@@ -174,10 +200,11 @@ impl GlyphAtlas {
             config,
             id: NEXT_ATLAS_ID.fetch_add(1, Ordering::Relaxed),
             frame: 0,
+            revision: 0,
             pages: Vec::new(),
             map: HashMap::new(),
             dropped_this_frame: HashSet::new(),
-            drained_by: None,
+            consumers: VecDeque::new(),
             stats: AtlasStats::default(),
         }
     }
@@ -342,6 +369,8 @@ impl GlyphAtlas {
     }
 
     fn blit(&mut self, page: usize, x: u32, y: u32, r: &RasterGlyph) {
+        self.revision += 1;
+        let rev = self.revision;
         let size = self.config.page_size as usize;
         let p = &mut self.pages[page];
         let row_bytes = r.width as usize * 4;
@@ -356,43 +385,68 @@ impl GlyphAtlas {
             x1: x + r.width,
             y1: y + r.height,
         };
-        p.dirty = Some(match p.dirty {
-            None => b,
-            Some(d) => Bounds {
-                x0: d.x0.min(b.x0),
-                y0: d.y0.min(b.y0),
-                x1: d.x1.max(b.x1),
-                y1: d.y1.max(b.y1),
-            },
-        });
+        if p.writes.len() >= MAX_PAGE_WRITES
+            && let Some((old_rev, old_bounds)) = p.writes.pop_front()
+        {
+            p.folded = Some(match p.folded {
+                None => (old_rev, old_bounds),
+                Some((r, fb)) => (r.max(old_rev), fb.union(old_bounds)),
+            });
+        }
+        p.writes.push_back((rev, b));
     }
 
     /// 把所有页标为整页脏，下一次 [`take_dirty`](GlyphAtlas::take_dirty) 会全部给出。
     pub fn mark_all_dirty(&mut self) {
-        let n = self.config.page_size;
+        self.revision += 1;
+        let rev = self.revision;
         for p in &mut self.pages {
-            p.dirty = Some(Bounds {
-                x0: 0,
-                y0: 0,
-                x1: n,
-                y1: n,
-            });
+            p.full_dirty_rev = rev;
+            p.writes.clear();
+            p.folded = None;
         }
     }
 
     /// 取走要上传的脏区（每页最多一个，是该页上所有新写入位图的外接矩形）。
     ///
-    /// `consumer` 标识取走的渲染器。atlas 记着上一次是谁取走的：换了消费者，
-    /// 或 `force_all` 为真（消费者的 GPU 纹理刚重建），就把所有页整页给出，
-    /// 保证每个消费者的 GPU 纹理最终与 CPU 页一致。
+    /// `consumer` 标识取走的渲染器。每个已知消费者按其上次同步的修订号增量获取脏区；
+    /// 首次出现的消费者或 `force_all` 为真时返回整页脏区。
     pub fn take_dirty(&mut self, consumer: u64, force_all: bool) -> Vec<DirtyRect> {
-        if force_all || self.drained_by != Some(consumer) {
-            self.mark_all_dirty();
-        }
-        self.drained_by = Some(consumer);
+        let prev_rev = self
+            .consumers
+            .iter()
+            .position(|&(id, _)| id == consumer)
+            .and_then(|idx| self.consumers.remove(idx))
+            .map(|(_, rev)| rev);
+        let full_sync = force_all || prev_rev.is_none();
+        let n = self.config.page_size;
         let mut out = Vec::new();
-        for (i, p) in self.pages.iter_mut().enumerate() {
-            if let Some(d) = p.dirty.take() {
+        for (i, p) in self.pages.iter().enumerate() {
+            let dirty = if full_sync {
+                Some(Bounds::full(n))
+            } else {
+                let since = prev_rev.expect("checked prev_rev");
+                if since < p.full_dirty_rev {
+                    Some(Bounds::full(n))
+                } else {
+                    let mut rect: Option<Bounds> = None;
+                    if let Some((folded_rev, folded_bounds)) = p.folded
+                        && since < folded_rev
+                    {
+                        rect = Some(folded_bounds);
+                    }
+                    for &(write_rev, bounds) in &p.writes {
+                        if write_rev > since {
+                            rect = Some(match rect {
+                                None => bounds,
+                                Some(acc) => acc.union(bounds),
+                            });
+                        }
+                    }
+                    rect
+                }
+            };
+            if let Some(d) = dirty {
                 let r = DirtyRect {
                     page: i as u32,
                     x: d.x0,
@@ -405,6 +459,10 @@ impl GlyphAtlas {
                 out.push(r);
             }
         }
+        if self.consumers.len() >= MAX_CONSUMERS {
+            self.consumers.pop_front();
+        }
+        self.consumers.push_back((consumer, self.revision));
         out
     }
 
@@ -435,7 +493,9 @@ impl Page {
             next_shelf_y: 0,
             keys: Vec::new(),
             last_used: frame,
-            dirty: None,
+            full_dirty_rev: 0,
+            writes: VecDeque::new(),
+            folded: None,
         })
     }
 
@@ -753,24 +813,67 @@ mod tests {
     }
 
     #[test]
-    fn a_new_consumer_or_force_gets_whole_pages() {
+    fn a_new_consumer_or_force_gets_whole_pages_without_invalidating_peers() {
         let mut a = small(2);
         a.begin_frame();
         insert(&mut a, 0, 40, 40, 1).unwrap();
         insert(&mut a, 1, 40, 40, 2).unwrap();
         assert_eq!(a.take_dirty(1, false).len(), 2);
         assert!(a.take_dirty(1, false).is_empty());
-        // 另一个渲染器来取：整页重传。
+        // A second consumer receives full pages for its uninitialized GPU textures.
         let d = a.take_dirty(2, false);
         assert_eq!(d.len(), 2);
         assert!(
             d.iter()
                 .all(|r| (r.x, r.y, r.width, r.height) == (0, 0, 64, 64))
         );
-        // 原来的消费者回来，同样整页重传（它错过了期间的变化）。
-        assert_eq!(a.take_dirty(1, false).len(), 2);
+        // Consumer 1 did not lose its sync watermark just because consumer 2 drained.
+        assert!(a.take_dirty(1, false).is_empty());
+        // Incremental writes after both synced stay incremental for both consumers.
+        insert(&mut a, 2, 8, 8, 3).unwrap();
+        let d1 = a.take_dirty(1, false);
+        let d2 = a.take_dirty(2, false);
+        assert_eq!(d1, d2);
+        assert_eq!(d1.len(), 1);
+        assert!((d1[0].width, d1[0].height) == (8, 8));
         // force_all：纹理重建。
         assert_eq!(a.take_dirty(1, true).len(), 2);
+    }
+
+    #[test]
+    fn page_write_folding_and_consumer_lru_eviction_stay_sound() {
+        let mut a = GlyphAtlas::new(AtlasConfig {
+            page_size: 256,
+            max_pages: 1,
+            padding: 1,
+        });
+        a.begin_frame();
+        insert(&mut a, 0, 8, 8, 1).unwrap();
+        assert_eq!(a.take_dirty(1, false).len(), 1);
+        // Overflow MAX_PAGE_WRITES (128) so older writes fold into Page.folded.
+        for i in 1..150u16 {
+            insert(&mut a, i, 8, 8, 2).unwrap();
+        }
+        let d = a.take_dirty(1, false);
+        assert_eq!(d.len(), 1);
+        assert!(d[0].width > 8 && d[0].height > 8);
+        assert!(a.take_dirty(1, false).is_empty());
+
+        // Overflow MAX_CONSUMERS (32); consumer 1 is kept fresh then evicted by >32 others.
+        for cid in 10..50u64 {
+            assert_eq!(a.take_dirty(cid, false).len(), 1);
+        }
+        let full = a.take_dirty(1, false);
+        assert_eq!(
+            full,
+            vec![DirtyRect {
+                page: 0,
+                x: 0,
+                y: 0,
+                width: 256,
+                height: 256,
+            }]
+        );
     }
 
     #[test]

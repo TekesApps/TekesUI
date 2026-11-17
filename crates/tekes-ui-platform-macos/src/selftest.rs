@@ -236,8 +236,14 @@ fn key_event(
 thread_local! { static FRAME_MARK: std::cell::Cell<u64> = const { std::cell::Cell::new(0) }; }
 
 extern "C" fn run_step(ctx: *mut c_void) {
-    // SAFETY: ctx 是 run_script 里 Box::into_raw 出来的 Action，每个只消费一次。
-    let action = *unsafe { Box::from_raw(ctx.cast::<Action>()) };
+    crate::ffi_boundary("selftest::run_step", || {
+        // SAFETY: ctx 是 run_script 里 Box::into_raw 出来的 Action，每个只消费一次。
+        let action = *unsafe { Box::from_raw(ctx.cast::<Action>()) };
+        run_step_inner(action);
+    });
+}
+
+fn run_step_inner(action: Action) {
     let mtm = MainThreadMarker::new().expect("主队列上必是主线程");
     let app = NSApplication::sharedApplication(mtm);
     let Some(w) = app.windows().firstObject() else {
@@ -1050,15 +1056,25 @@ thread_local! {
     static PUBLISHED_STEP: std::cell::RefCell<Option<PublishedStep>> = const { std::cell::RefCell::new(None) };
 }
 extern "C" fn await_published_step(ctx: *mut c_void) {
+    crate::ffi_boundary("selftest::await_published_step", || {
+        // SAFETY: the opted-in script allocates one tuple for this main-queue call.
+        let (action, click_key, complete) = *unsafe {
+            Box::from_raw(ctx.cast::<(
+                Action,
+                Option<crate::AccessibilityKey>,
+                std::sync::mpsc::Sender<()>,
+            )>())
+        };
+        await_published_step_inner(action, click_key, complete);
+    });
+}
+
+fn await_published_step_inner(
+    action: Action,
+    click_key: Option<crate::AccessibilityKey>,
+    complete: std::sync::mpsc::Sender<()>,
+) {
     use objc2::DefinedClass;
-    // SAFETY: the opted-in script allocates one tuple for this main-queue call.
-    let (action, click_key, complete) = *unsafe {
-        Box::from_raw(ctx.cast::<(
-            Action,
-            Option<crate::AccessibilityKey>,
-            std::sync::mpsc::Sender<()>,
-        )>())
-    };
     match &action {
         Action::AXPressKey { key } => eprintln!("SELFTEST AX_WAIT key={key:?}"),
         Action::ExpectText { .. } => eprintln!("SELFTEST TEXT_GEOMETRY_WAIT"),

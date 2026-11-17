@@ -40,7 +40,9 @@ pub mod utf16;
 #[cfg(target_os = "macos")]
 pub mod coretext;
 
-pub use model::{FontInfo, FontRun, Line, Paragraph, ShapeOptions, ShapedGlyph, ShapedRun};
+pub use model::{
+    FontInfo, FontRun, GraphemeSpan, Line, Paragraph, ShapeOptions, ShapedGlyph, ShapedRun,
+};
 pub use push::{push_paragraph, push_paragraph_visible};
 pub use style::{FontFamily, TextStyle};
 pub use traits::{FontFallback, Rasterizer, Shaper};

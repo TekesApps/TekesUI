@@ -393,15 +393,15 @@ fn append_fragment(source: &str, text: &mut String, fragment: Fragment, map: &mu
 
 fn utf16_to_byte(text: &str, offset: usize) -> usize {
     let mut units = 0;
-    for (byte, grapheme) in text.grapheme_indices(true) {
+    for (byte, ch) in text.char_indices() {
         if units == offset {
             return byte;
         }
-        units += grapheme.encode_utf16().count();
+        units += ch.len_utf16();
     }
     assert_eq!(
         units, offset,
-        "internal UTF-16 offset must be a grapheme boundary"
+        "internal UTF-16 offset must be a scalar boundary"
     );
     text.len()
 }
@@ -466,44 +466,91 @@ struct SourceLine {
     content: Range<usize>,
 }
 fn source_lines(source: &str) -> Vec<SourceLine> {
-    let mut result = Vec::new();
-    let mut start = 0;
-    for raw in source.split_inclusive('\n') {
-        let end = start + raw.len();
-        let mut content_end = end;
-        let terminated = content_end > start && source.as_bytes()[content_end - 1] == b'\n';
-        if terminated {
-            content_end -= 1;
-        }
-        if terminated && content_end > start && source.as_bytes()[content_end - 1] == b'\r' {
-            content_end -= 1;
-        }
-        result.push(SourceLine {
-            content: start..content_end,
-        });
-        start = end;
-    }
-    if start < source.len() {
-        result.push(SourceLine {
-            content: start..source.len(),
-        });
-    }
     if source.is_empty() {
         return Vec::new();
     }
+    let mut result = Vec::new();
+    let bytes = source.as_bytes();
+    let mut start = 0;
+    let mut cursor = 0;
+    while cursor < bytes.len() {
+        if bytes[cursor] == b'\r' {
+            result.push(SourceLine {
+                content: start..cursor,
+            });
+            cursor += 1;
+            if cursor < bytes.len() && bytes[cursor] == b'\n' {
+                cursor += 1;
+            }
+            start = cursor;
+            if start == bytes.len() {
+                return result;
+            }
+        } else if bytes[cursor] == b'\n' {
+            result.push(SourceLine {
+                content: start..cursor,
+            });
+            cursor += 1;
+            start = cursor;
+            if start == bytes.len() {
+                return result;
+            }
+        } else {
+            cursor += source[cursor..]
+                .chars()
+                .next()
+                .expect("valid source UTF-8")
+                .len_utf8();
+        }
+    }
+    if start < bytes.len() {
+        result.push(SourceLine {
+            content: start..bytes.len(),
+        });
+    }
     result
+}
+fn parse_fence_open(raw: &str) -> Option<(usize, &str)> {
+    let indent = raw.bytes().take_while(|&b| b == b' ').count();
+    if indent > 3 {
+        return None;
+    }
+    let after = &raw[indent..];
+    let ticks = after.bytes().take_while(|&b| b == b'`').count();
+    if ticks < 3 {
+        return None;
+    }
+    let info = after[ticks..].trim();
+    if info.contains('`') {
+        return None;
+    }
+    let lang = info
+        .split(|c: char| c.is_whitespace() || c == ',')
+        .next()
+        .unwrap_or("");
+    Some((ticks, lang))
+}
+fn is_fence_close(raw: &str, open_ticks: usize) -> bool {
+    let indent = raw.bytes().take_while(|&b| b == b' ').count();
+    if indent > 3 {
+        return false;
+    }
+    let after = &raw[indent..];
+    let ticks = after.bytes().take_while(|&b| b == b'`').count();
+    ticks >= open_ticks && after[ticks..].trim().is_empty()
 }
 type SourceLines = Vec<(String, Range<usize>)>;
 fn parse_markdown(source: &str) -> Vec<PendingBlock> {
     let lines = source_lines(source);
     let mut out = Vec::new();
     let mut paragraph: SourceLines = Vec::new();
-    let mut code: Option<(String, SourceLines)> = None;
+    let mut code: Option<(usize, String, SourceLines)> = None;
     for line in lines {
         let raw = &source[line.content.clone()];
         let trimmed = raw.trim();
-        if let Some((language, contents)) = &mut code {
-            if trimmed.starts_with("```") {
+        let leading = raw.len() - raw.trim_start().len();
+        if let Some((open_ticks, language, contents)) = &mut code {
+            if is_fence_close(raw, *open_ticks) {
                 let mut block =
                     make_lines_block(source, contents, TextRole::Code, RichBlockKind::Code, true)
                         .unwrap_or_else(|| empty_code_block(language.clone(), line.content.start));
@@ -518,9 +565,9 @@ fn parse_markdown(source: &str) -> Vec<PendingBlock> {
             }
             continue;
         }
-        if let Some(fence) = trimmed.strip_prefix("```") {
+        if let Some((ticks, lang)) = parse_fence_open(raw) {
             flush_paragraph(source, &mut out, &mut paragraph);
-            code = Some((fence.trim().to_owned(), Vec::new()));
+            code = Some((ticks, lang.to_owned(), Vec::new()));
             continue;
         }
         if trimmed.is_empty() {
@@ -530,9 +577,11 @@ fn parse_markdown(source: &str) -> Vec<PendingBlock> {
         let hashes = trimmed.chars().take_while(|c| *c == '#').count();
         if (1..=6).contains(&hashes) && trimmed.as_bytes().get(hashes) == Some(&b' ') {
             flush_paragraph(source, &mut out, &mut paragraph);
-            let body = trimmed[hashes..].trim();
-            let line_start = line.content.start + raw.find(trimmed).unwrap_or(0);
-            let body_start = line_start + trimmed.find(body).unwrap_or(trimmed.len());
+            let line_start = line.content.start + leading;
+            let after = &trimmed[hashes..];
+            let body = after.trim();
+            let body_lead = after.len() - after.trim_start().len();
+            let body_start = line_start + hashes + body_lead;
             let mut fragments = vec![Fragment {
                 text: body.to_owned(),
                 source_bytes: body_start..body_start + body.len(),
@@ -555,7 +604,7 @@ fn parse_markdown(source: &str) -> Vec<PendingBlock> {
             .or_else(|| trimmed.strip_prefix("* "))
         {
             flush_paragraph(source, &mut out, &mut paragraph);
-            let line_start = line.content.start + raw.find(trimmed).unwrap_or(0);
+            let line_start = line.content.start + leading;
             let body_start = line_start + 2;
             let source_range = body_start..body_start + text.len();
             let fragments = vec![
@@ -577,11 +626,11 @@ fn parse_markdown(source: &str) -> Vec<PendingBlock> {
                 legacy: Some(MarkdownBlock::Bullet(text.to_owned())),
             });
         } else {
-            let start = line.content.start + raw.find(trimmed).unwrap_or(0);
+            let start = line.content.start + leading;
             paragraph.push((trimmed.to_owned(), start..start + trimmed.len()));
         }
     }
-    if let Some((language, contents)) = code {
+    if let Some((_, language, contents)) = code {
         let mut block =
             make_lines_block(source, &contents, TextRole::Code, RichBlockKind::Code, true)
                 .unwrap_or_else(|| empty_code_block(language.clone(), source.len()));
@@ -674,8 +723,57 @@ fn make_lines_block(
     })
 }
 
+fn find_matching_bracket_close(value: &str, open: usize) -> Option<(usize, bool)> {
+    let bytes = value.as_bytes();
+    let mut i = open + 1;
+    let mut depth = 1usize;
+    let mut nested = false;
+    while i < bytes.len() {
+        let b = bytes[i];
+        if b == b'\\' {
+            i += 1;
+            if i < bytes.len() {
+                i += value[i..].chars().next().expect("valid UTF-8").len_utf8();
+            }
+            continue;
+        }
+        if b == b'`' {
+            let ticks = bytes[i..].iter().take_while(|&&ch| ch == b'`').count();
+            let mut search = i + ticks;
+            let mut closed = None;
+            while let Some(rel) = value[search..].find('`') {
+                let pos = search + rel;
+                let run = bytes[pos..].iter().take_while(|&&ch| ch == b'`').count();
+                if run == ticks {
+                    closed = Some(pos + run);
+                    break;
+                }
+                search = pos + run;
+            }
+            i = closed.unwrap_or(i + ticks);
+            continue;
+        }
+        if b == b'[' {
+            depth += 1;
+            nested = true;
+            i += 1;
+            continue;
+        }
+        if b == b']' {
+            depth -= 1;
+            if depth == 0 {
+                return Some((i, nested));
+            }
+            i += 1;
+            continue;
+        }
+        i += value[i..].chars().next().expect("valid UTF-8").len_utf8();
+    }
+    None
+}
+
 fn linkify(fragments: Vec<Fragment>) -> (Vec<Fragment>, Vec<PendingLink>) {
-    let mut output = Vec::new();
+    let mut output: Vec<Fragment> = Vec::new();
     let mut links = Vec::new();
     let mut display_byte = 0;
     for fragment in fragments {
@@ -684,34 +782,83 @@ fn linkify(fragments: Vec<Fragment>) -> (Vec<Fragment>, Vec<PendingLink>) {
             .end
             .saturating_sub(fragment.source_bytes.start)
             == fragment.text.len();
-        if !direct || fragment.text.contains('`') {
+        if !direct {
             display_byte += fragment.text.len();
             output.push(fragment);
             continue;
         }
         let value = fragment.text.as_str();
+        let bytes = value.as_bytes();
         let mut scan = 0;
         let mut plain_start = 0;
-        while let Some(relative) = value[scan..].find('[') {
-            let open = scan + relative;
-            let Some(close_rel) = value[open + 1..].find("](") else {
-                break;
+        while scan < bytes.len() {
+            let b = bytes[scan];
+            if b == b'`' {
+                let ticks = bytes[scan..].iter().take_while(|&&ch| ch == b'`').count();
+                let mut search = scan + ticks;
+                let mut closed = None;
+                while let Some(rel) = value[search..].find('`') {
+                    let pos = search + rel;
+                    let run = bytes[pos..].iter().take_while(|&&ch| ch == b'`').count();
+                    if run == ticks {
+                        closed = Some(pos + run);
+                        break;
+                    }
+                    search = pos + run;
+                }
+                scan = closed.unwrap_or(scan + ticks);
+                continue;
+            }
+            if b != b'[' {
+                scan += value[scan..]
+                    .chars()
+                    .next()
+                    .expect("valid UTF-8")
+                    .len_utf8();
+                continue;
+            }
+            let open = scan;
+            let Some((close, has_nested)) = find_matching_bracket_close(value, open) else {
+                scan = open + 1;
+                continue;
             };
-            let close = open + 1 + close_rel;
+            if !value[close + 1..].starts_with('(') {
+                scan = close + 1;
+                continue;
+            }
             let target_start = close + 2;
             let Some(end_rel) = value[target_start..].find(')') else {
-                break;
+                scan = close + 1;
+                continue;
             };
             let end = target_start + end_rel;
             let label = &value[open + 1..close];
             let target = &value[target_start..end];
             let mut slashes = 0;
             let mut before = open;
-            while before > 0 && value.as_bytes()[before - 1] == b'\\' {
+            while before > 0 && bytes[before - 1] == b'\\' {
                 slashes += 1;
                 before -= 1;
             }
+            let prev_display = if plain_start < open {
+                &value[plain_start..open]
+            } else {
+                output.last().map_or("", |last| last.text.as_str())
+            };
+            let next_display = &value[end + 1..];
+            let clean_display_boundaries = (prev_display.is_empty() || {
+                let combined = format!("{prev_display}{label}");
+                grapheme_boundary(&combined, byte_to_utf16(prev_display, prev_display.len()))
+            }) && (next_display.is_empty() || {
+                let combined = format!("{label}{next_display}");
+                grapheme_boundary(&combined, byte_to_utf16(label, label.len()))
+            });
+            let clean_source_boundaries = grapheme_boundary(value, byte_to_utf16(value, open))
+                && grapheme_boundary(value, byte_to_utf16(value, open + 1))
+                && grapheme_boundary(value, byte_to_utf16(value, close))
+                && grapheme_boundary(value, byte_to_utf16(value, end + 1));
             let supported = slashes % 2 == 0
+                && !has_nested
                 && !label.is_empty()
                 && !target.is_empty()
                 && !label.chars().any(|c| matches!(c, '[' | ']' | '\\'))
@@ -719,7 +866,9 @@ fn linkify(fragments: Vec<Fragment>) -> (Vec<Fragment>, Vec<PendingLink>) {
                     .chars()
                     .any(|c| matches!(c, '(' | ')' | '[' | ']' | '\\'))
                 && !label.contains('`')
-                && !target.chars().any(char::is_whitespace);
+                && !target.chars().any(char::is_whitespace)
+                && clean_display_boundaries
+                && clean_source_boundaries;
             if !supported {
                 scan = end + 1;
                 continue;
@@ -943,16 +1092,16 @@ mod tests {
         assert_eq!(
             legacy.blocks,
             vec![
-                MarkdownBlock::Paragraph("左😀\r右".into()),
+                MarkdownBlock::Paragraph("左😀 右".into()),
                 MarkdownBlock::Code {
                     language: "txt".into(),
-                    source: "碼😀\r尾".into(),
+                    source: "碼😀\n尾".into(),
                 },
             ]
         );
 
         let rich = RichDocument::from_markdown(source);
-        assert_eq!(rich.text(), "左😀\n右\n碼😀\n尾");
+        assert_eq!(rich.text(), "左😀 右\n碼😀\n尾");
         let paragraph_cr = "左😀".encode_utf16().count();
         let code_source_start = byte_to_utf16(source, source.find("碼").unwrap());
         let code_display_start = byte_to_utf16(rich.text(), rich.text().find("碼").unwrap());
@@ -979,6 +1128,74 @@ mod tests {
             ),
             Some(code_cr..code_cr + 1)
         );
+    }
+
+    #[test]
+    fn diff_and_markdown_edge_cases_cover_all_seven_audit_fixes() {
+        // 1. Diff lines ending in '\r' must not panic, and keep 1 block per DiffLine.
+        let diff = DiffView {
+            lines: vec![
+                DiffLine {
+                    kind: DiffKind::Added,
+                    text: "a\r".into(),
+                },
+                DiffLine {
+                    kind: DiffKind::Added,
+                    text: "b\r".into(),
+                },
+                DiffLine {
+                    kind: DiffKind::Removed,
+                    text: "c".into(),
+                },
+            ],
+        };
+        let doc = RichDocument::from_diff(&diff);
+        assert_eq!(doc.blocks().len(), 3);
+        assert_eq!(doc.text(), "a\n\nb\n\nc");
+        assert_eq!(
+            doc.display_to_source(0..doc.text().encode_utf16().count()),
+            Some(0..doc.source().encode_utf16().count())
+        );
+
+        // 2 & 3. 4+ backtick fences, info string first token, indented/suffixed non-closers.
+        let md = "````markdown\ninner\n```\nstill inside\n````\n\n```rust,no_run\nlet x = 1;\n    ```\n```notclose\n```";
+        let fenced = RichDocument::from_markdown(md);
+        assert_eq!(fenced.blocks().len(), 2);
+        assert_eq!(fenced.blocks()[0].language(), Some("markdown"));
+        assert!(fenced.text().contains("inner\n```\nstill inside"));
+        assert_eq!(fenced.blocks()[1].language(), Some("rust"));
+        assert!(fenced.text().contains("let x = 1;\n    ```\n```notclose"));
+
+        // 4. Lone CR paragraph breaks.
+        let cr_doc = RichDocument::from_markdown("# H1\r\r- b1\r\r```rs\ra\r```");
+        assert_eq!(cr_doc.blocks().len(), 3);
+        assert_eq!(cr_doc.text(), "H1\n• b1\na");
+
+        // 5. Heading body offset when body starts with '#'.
+        let hash_heading = RichDocument::from_markdown("## #");
+        assert_eq!(hash_heading.text(), "#");
+        assert_eq!(hash_heading.display_to_source(0..1), Some(3..4));
+
+        // 6. Linkify with inline backticks and preceding non-link brackets.
+        let mixed = RichDocument::from_markdown(
+            "Use `fn()` and Item [0] see [docs](https://example.com) and `[lit](u)`",
+        );
+        assert_eq!(mixed.links().len(), 1);
+        assert_eq!(mixed.links()[0].target(), "https://example.com");
+        assert_eq!(
+            mixed.text(),
+            "Use `fn()` and Item [0] see docs and `[lit](u)`"
+        );
+        assert!(
+            mixed
+                .display_to_source(mixed.links()[0].display())
+                .is_some()
+        );
+
+        // 7. Combining mark across link boundary stays literal so display_to_source stays sound.
+        let combining = RichDocument::from_markdown("e[x](https://example.com)\u{0301}");
+        assert!(combining.links().is_empty());
+        assert_eq!(combining.text(), "e[x](https://example.com)\u{0301}");
     }
 
     #[test]

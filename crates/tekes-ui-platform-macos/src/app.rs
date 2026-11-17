@@ -61,42 +61,60 @@ define_class!(
     unsafe impl NSApplicationDelegate for AppDelegate {
         #[unsafe(method(applicationDidFinishLaunching:))]
         fn did_finish_launching(&self, notification: &NSNotification) {
-            let _ = notification;
-            self.launch();
+            crate::ffi_boundary("AppDelegate::did_finish_launching", || {
+                let _ = notification;
+                self.launch();
+            });
         }
 
         #[unsafe(method(applicationDidBecomeActive:))]
         fn did_become_active(&self, _notification: &NSNotification) {
-            for shared in windows() {
-                let active=shared.objects.get().is_some_and(|o|o.window.isKeyWindow());
-                shared.dispatch(Event::Focus(active));
-            }
+            crate::ffi_boundary("AppDelegate::did_become_active", || {
+                for shared in windows() {
+                    let active = shared.objects.get().is_some_and(|o| o.window.isKeyWindow());
+                    shared.dispatch(Event::Focus(active));
+                }
+            });
         }
 
         #[unsafe(method(applicationDidResignActive:))]
         fn did_resign_active(&self, _notification: &NSNotification) {
-            for shared in windows() {shared.dispatch(Event::Focus(false));}
+            crate::ffi_boundary("AppDelegate::did_resign_active", || {
+                for shared in windows() {
+                    shared.dispatch(Event::Focus(false));
+                }
+            });
         }
 
         #[unsafe(method(applicationShouldTerminateAfterLastWindowClosed:))]
         fn should_terminate_after_last_window_closed(&self, _app: &NSApplication) -> bool {
-            self.ivars().app_config.quit_after_last_window_closed
+            crate::ffi_boundary(
+                "AppDelegate::should_terminate_after_last_window_closed",
+                || self.ivars().app_config.quit_after_last_window_closed,
+            )
         }
 
         /// 不让 AppKit 调 `exit()`，而是停掉事件循环，让 `run()` 正常返回。
         /// 这样调用方（示例、测试）可以在 `run()` 之后收尾，处理器也能正常 Drop。
         #[unsafe(method(applicationShouldTerminate:))]
         fn should_terminate(&self, app: &NSApplication) -> NSApplicationTerminateReply {
-            let blocked:Vec<_>=windows().into_iter().filter(|s|!s.allows_app_quit()).collect();
-            if !blocked.is_empty() {
-                for shared in blocked {
-                    shared.dispatch(Event::QuitRequested);
-                    if let Some(o)=shared.objects.get(){o.window.makeKeyAndOrderFront(None);}
+            crate::ffi_boundary("AppDelegate::should_terminate", || {
+                let blocked: Vec<_> = windows()
+                    .into_iter()
+                    .filter(|s| !s.allows_app_quit())
+                    .collect();
+                if !blocked.is_empty() {
+                    for shared in blocked {
+                        shared.dispatch(Event::QuitRequested);
+                        if let Some(o) = shared.objects.get() {
+                            o.window.makeKeyAndOrderFront(None);
+                        }
+                    }
+                    return NSApplicationTerminateReply::TerminateCancel;
                 }
-                return NSApplicationTerminateReply::TerminateCancel;
-            }
-            stop_run_loop(app);
-            NSApplicationTerminateReply::TerminateCancel
+                stop_run_loop(app);
+                NSApplicationTerminateReply::TerminateCancel
+            })
         }
     }
 
@@ -106,97 +124,121 @@ define_class!(
         /// 投递 `CloseRequested` 并拒绝关闭，引擎要关就调 `Window::close`。
         #[unsafe(method(windowShouldClose:))]
         fn window_should_close(&self, _sender: &NSWindow) -> bool {
-            self.ivars().shared.dispatch(Event::CloseRequested);
-            false
+            crate::ffi_boundary("AppDelegate::window_should_close", || {
+                self.ivars().shared.dispatch(Event::CloseRequested);
+                false
+            })
         }
 
         #[unsafe(method(windowWillClose:))]
         fn window_will_close(&self, _notification: &NSNotification) {
-            // 之后不再投递事件。是否结束应用由 applicationShouldTerminateAfterLastWindowClosed: 决定。
-            self.stop_observing_toolbar_controls();
-            let shared = &self.ivars().shared;
-            crate::wake::native::unregister(&shared.wake_state);
-            shared.closed.set(true);
-            shared.revoke_accessibility();
-            restore_windows(shared);
-            shared.titlebar_drag_origin.borrow_mut().take();
-            shared.animating.set(false);
-            if let Some(o) = shared.objects.get() {
-                o.view.invalidate_display_link();
-            }
+            crate::ffi_boundary("AppDelegate::window_will_close", || {
+                // 之后不再投递事件。是否结束应用由 applicationShouldTerminateAfterLastWindowClosed: 决定。
+                self.stop_observing_toolbar_controls();
+                let shared = &self.ivars().shared;
+                crate::wake::native::unregister(&shared.wake_state);
+                shared.closed.set(true);
+                shared.revoke_accessibility();
+                restore_windows(shared);
+                shared.titlebar_drag_origin.borrow_mut().take();
+                shared.animating.set(false);
+                if let Some(o) = shared.objects.get() {
+                    o.view.invalidate_display_link();
+                    o.view.cancel_pending_performs();
+                }
+            });
         }
 
         /// 窗口重新可见（最小化后恢复、被盖住后露出来）时请求重绘。
         /// 不可见期间渲染层的取 drawable 会返回 Occluded 并跳过帧，不补这一帧会停在旧画面。
         #[unsafe(method(windowDidChangeOcclusionState:))]
         fn window_did_change_occlusion_state(&self, notification: &NSNotification) {
-            let visible = notification
-                .object()
-                .and_then(|o| o.downcast::<NSWindow>().ok())
-                .is_some_and(|w| w.occlusionState().contains(NSWindowOcclusionState::Visible));
-            if visible {
-                self.ivars().shared.request_redraw();
-            }
+            crate::ffi_boundary("AppDelegate::window_did_change_occlusion_state", || {
+                let visible = notification
+                    .object()
+                    .and_then(|o| o.downcast::<NSWindow>().ok())
+                    .is_some_and(|w| w.occlusionState().contains(NSWindowOcclusionState::Visible));
+                if visible {
+                    self.ivars().shared.request_redraw();
+                }
+            });
         }
 
         // Window movement changes screen-space candidate geometry without
         // changing the original text state or the view-local caret rectangle.
         #[unsafe(method(windowDidMove:))]
         fn window_did_move(&self, _notification: &NSNotification) {
-            if let Some(objects) = self.ivars().shared.objects.get()
-                && let Some(context) = objects.view.inputContext()
-            {
-                context.invalidateCharacterCoordinates();
-            }
+            crate::ffi_boundary("AppDelegate::window_did_move", || {
+                if let Some(objects) = self.ivars().shared.objects.get()
+                    && let Some(context) = objects.view.inputContext()
+                {
+                    context.invalidateCharacterCoordinates();
+                }
+            });
         }
 
         // Apply initial and changed Toolbar measurements after native layout.
         // Subsequent button-frame resets are corrected synchronously below.
         #[unsafe(method(windowDidUpdate:))]
         fn window_did_update(&self, _notification: &NSNotification) {
-            let shared = &self.ivars().shared;
-            if shared.closed.get() || shared.toolbar_row_height.get().is_none() {
-                return;
-            }
-            if let Some(objects) = shared.objects.get() {
-                objects.window.layoutIfNeeded();
-                shared.align_toolbar_controls();
-            }
+            crate::ffi_boundary("AppDelegate::window_did_update", || {
+                let shared = &self.ivars().shared;
+                if shared.closed.get() || shared.toolbar_row_height.get().is_none() {
+                    return;
+                }
+                if let Some(objects) = shared.objects.get() {
+                    objects.window.layoutIfNeeded();
+                    shared.align_toolbar_controls();
+                }
+            });
         }
 
         #[unsafe(method(windowDidBecomeKey:))]
         fn window_did_become_key(&self, _notification: &NSNotification) {
-            let shared = &self.ivars().shared;
-            let active = NSApplication::sharedApplication(shared.mtm).isActive();
-            shared.dispatch(Event::Focus(active));
+            crate::ffi_boundary("AppDelegate::window_did_become_key", || {
+                let shared = &self.ivars().shared;
+                let active = NSApplication::sharedApplication(shared.mtm).isActive();
+                shared.dispatch(Event::Focus(active));
+            });
         }
 
         #[unsafe(method(windowDidResignKey:))]
         fn window_did_resign_key(&self, _notification: &NSNotification) {
-            self.ivars().shared.dispatch(Event::Focus(false));
+            crate::ffi_boundary("AppDelegate::window_did_resign_key", || {
+                self.ivars().shared.dispatch(Event::Focus(false));
+            });
         }
     }
 
     impl AppDelegate {
         #[unsafe(method(toolbarControlFrameChanged:))]
         fn toolbar_control_frame_changed(&self, _notification: &NSNotification) {
-            self.ivars().shared.align_toolbar_controls();
+            crate::ffi_boundary("AppDelegate::toolbar_control_frame_changed", || {
+                self.ivars().shared.align_toolbar_controls();
+            });
         }
 
         /// 所有引擎命令菜单项的 action，`tag` 是 `CommandId`。
         #[unsafe(method(menuItemSelected:))]
         fn menu_item_selected(&self, sender: &NSMenuItem) {
-            let id = sender.tag();
-            if let Ok(id) = u32::try_from(id) {
-                let owner=windows().into_iter().find(|s|s.objects.get().is_some_and(|o|o.window.isKeyWindow())).unwrap_or_else(||self.ivars().shared.clone());
-                owner.dispatch(Event::Command(CommandId(id)));
-            }
+            crate::ffi_boundary("AppDelegate::menu_item_selected", || {
+                let id = sender.tag();
+                if let Ok(id) = u32::try_from(id) {
+                    let owner = windows()
+                        .into_iter()
+                        .find(|s| s.objects.get().is_some_and(|o| o.window.isKeyWindow()))
+                        .unwrap_or_else(|| self.ivars().shared.clone());
+                    owner.dispatch(Event::Command(CommandId(id)));
+                }
+            });
         }
 
         /// NSWorkspaceAccessibilityDisplayOptionsDidChangeNotification。
         #[unsafe(method(accessibilityDisplayOptionsChanged:))]
         fn accessibility_display_options_changed(&self, _notification: &NSNotification) {
-            self.ivars().shared.check_appearance(false);
+            crate::ffi_boundary("AppDelegate::accessibility_display_options_changed", || {
+                self.ivars().shared.check_appearance(false);
+            });
         }
     }
 );
@@ -258,6 +300,21 @@ impl AppDelegate {
             }
             button.setPostsFrameChangedNotifications(true);
         }
+    }
+
+    pub(crate) fn teardown_window(&self, shared: &Shared) {
+        // SAFETY: the retained delegate remains alive through observer removal.
+        unsafe {
+            NSWorkspace::sharedWorkspace()
+                .notificationCenter()
+                .removeObserver(self);
+        }
+        self.stop_observing_toolbar_controls();
+        if let Some(objects) = shared.objects.get() {
+            objects.window.setDelegate(None);
+            objects.window.close();
+        }
+        shared.finish();
     }
 
     pub(crate) fn stop_observing_toolbar_controls(&self) {
@@ -464,14 +521,16 @@ impl App {
         app.setDelegate(Some(ProtocolObject::from_ref(&*delegate)));
         app.run();
 
-        // run() 返回之后：丢弃处理器，断开委托。
+        // run() 返回之后：先销毁辅助窗口，再对主窗口执行与 WindowOwner::drop 对齐的收尾
+        // （移除观察者、解绑 delegate、关闭 NSWindow、清空待执行回调并丢弃处理器），
+        // 保证 delegate 析构晚于 window.delegate() 解绑且不泄漏主窗口。
         app.setDelegate(None);
+        let handles = WINDOW_OWNERS.with(|w| std::mem::take(&mut *w.borrow_mut()));
+        drop(handles);
         for window in windows() {
             window.finish();
         }
-        let handles = WINDOW_OWNERS.with(|w| std::mem::take(&mut *w.borrow_mut()));
-        drop(handles);
-        shared.finish();
+        delegate.teardown_window(&shared);
     }
 }
 
@@ -501,18 +560,7 @@ impl WindowHandle {
 }
 impl Drop for WindowOwner {
     fn drop(&mut self) {
-        // SAFETY: the retained delegate remains alive through observer removal.
-        unsafe {
-            NSWorkspace::sharedWorkspace()
-                .notificationCenter()
-                .removeObserver(&self.delegate);
-        }
-        self.delegate.stop_observing_toolbar_controls();
-        if let Some(objects) = self.shared.objects.get() {
-            objects.window.setDelegate(None);
-            objects.window.close();
-        }
-        self.shared.finish();
+        self.delegate.teardown_window(&self.shared);
     }
 }
 pub(crate) fn open_window(

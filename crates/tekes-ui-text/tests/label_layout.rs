@@ -183,3 +183,128 @@ fn constrained_ellipsis_without_space_drops_the_whole_token_and_keeps_normal_lin
         assert!(label.is_truncated());
     }
 }
+
+#[test]
+fn long_emoji_tail_ellipsis_jumps_to_cut_without_quadratic_resizing() {
+    let mut shaper = CoreTextShaper::new(CoreTextFonts::new());
+    let text = format!("{}{}", "a", "👨‍👩‍👧‍👦e\u{301}X".repeat(2000));
+    assert!(text.encode_utf16().count() >= 18_000);
+    let started = std::time::Instant::now();
+    let label = shaper.shape_label(
+        &text,
+        &TextStyle::system(15.),
+        &ShapeOptions::with_width(140.),
+        LabelOptions::single_line(LabelOverflow::TailEllipsis),
+    );
+    let elapsed = started.elapsed();
+    assert!(
+        elapsed < std::time::Duration::from_secs(1),
+        "TailEllipsis took too long ({elapsed:?})"
+    );
+    assert!(label.is_truncated());
+    assert_eq!(label.paragraph().lines.len(), 1);
+    assert!(label.paragraph().lines[0].width <= 140.001);
+}
+
+#[test]
+fn with_min_line_height_preserves_line_spacing_and_larger_default_height() {
+    let mut shaper = CoreTextShaper::new(CoreTextFonts::new());
+    let spaced = shaper.shape_label(
+        "line one\nline two",
+        &TextStyle::system(14.),
+        &ShapeOptions {
+            width: Some(300.),
+            line_spacing: 6.0,
+        },
+        LabelOptions::default(),
+    );
+    let base_default = spaced.paragraph().default_line_height;
+    let grown = spaced.with_min_line_height(24.0);
+    let lines = &grown.paragraph().lines;
+    assert_eq!(lines.len(), 2);
+    assert_eq!(lines[0].height, 24.0);
+    assert!((lines[1].top - (lines[0].height + 6.0)).abs() < 1e-6);
+    assert!((grown.height() - (24.0 + 6.0 + 24.0)).abs() < 1e-6);
+
+    let larger_font = shaper
+        .shape_label(
+            "big",
+            &TextStyle::system(28.),
+            &ShapeOptions::default(),
+            LabelOptions::default(),
+        )
+        .with_min_line_height(12.0);
+    assert!(larger_font.paragraph().default_line_height >= base_default);
+    assert!(larger_font.paragraph().default_line_height > 12.0);
+}
+
+#[test]
+fn bidi_selection_rects_and_hit_test_handle_mixed_ltr_rtl_and_fixture() {
+    let mut shaper = CoreTextShaper::new(CoreTextFonts::new());
+    let viewport = tekes_ui_scene::Rect::new(0., 0., 800., 600.);
+
+    let hello_shalom = shaper.shape(
+        "Hello שלום",
+        &TextStyle::system(14.),
+        &ShapeOptions::with_width(400.),
+    );
+    let space_rect = hello_shalom.selection_rects(5..6, viewport);
+    let shin_rect = hello_shalom.selection_rects(6..7, viewport);
+    let rtl_word_rect = hello_shalom.selection_rects(6..10, viewport);
+    assert_eq!(space_rect.len(), 1);
+    assert_eq!(shin_rect.len(), 1);
+    assert_eq!(rtl_word_rect.len(), 1);
+    assert!(space_rect[0].max_x() <= rtl_word_rect[0].min_x() + 0.01);
+    // In LTR+RTL `"Hello שלום"`, index 6..7 (`ש`) is on the RIGHT end of `"שלום"`.
+    assert!(shin_rect[0].min_x() > space_rect[0].max_x() + 5.0);
+    let shin_mid = tekes_ui_scene::Point::new(shin_rect[0].center().x, shin_rect[0].center().y);
+    let hit_shin = hello_shalom.hit_test(shin_mid);
+    assert!(hit_shin == 6 || hit_shin == 7, "hit={hit_shin}");
+
+    let single_rtl = shaper.shape(
+        "Hello ש world",
+        &TextStyle::system(14.),
+        &ShapeOptions::with_width(400.),
+    );
+    let middle_space = single_rtl.selection_rects(5..6, viewport);
+    let middle_shin = single_rtl.selection_rects(6..7, viewport);
+    let tail_space = single_rtl.selection_rects(7..8, viewport);
+    assert_eq!(middle_shin.len(), 1);
+    assert!(middle_shin[0].min_x() >= middle_space[0].max_x() - 0.01);
+    assert!(middle_shin[0].max_x() <= tail_space[0].min_x() + 0.01);
+
+    let fixture = include_str!("../../../fixtures/text/rtl.txt");
+    let para = shaper.shape(
+        fixture,
+        &TextStyle::system(14.),
+        &ShapeOptions::with_width(420.),
+    );
+    for line in &para.lines {
+        if line.utf16.is_empty() {
+            continue;
+        }
+        assert!(!line.graphemes.is_empty());
+        for g in &line.graphemes {
+            if line.has_newline && g.end == line.utf16.end {
+                continue;
+            }
+            let rects = para.selection_rects(g.start..g.end, viewport);
+            assert!(
+                !rects.is_empty() || (g.x_start - g.x_end).abs() < 1e-4,
+                "missing selection rect for {:?} on {:?}",
+                g,
+                line.utf16
+            );
+            let mid_x = ((g.x_start + g.x_end) * 0.5) as f32;
+            let mid_y = (line.top + line.height * 0.5) as f32;
+            let hit = para.hit_test(tekes_ui_scene::Point::new(mid_x, mid_y));
+            assert!(
+                hit == g.start || hit == g.end,
+                "hit={hit} expected {} or {} at {mid_x} on {:?}",
+                g.start,
+                g.end,
+                line.utf16
+            );
+        }
+    }
+}

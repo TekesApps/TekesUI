@@ -55,7 +55,9 @@ impl PointerEvent {
         match self.phase {
             PointerPhase::Down => ContentEvent::PointerDown(self.position),
             PointerPhase::Up => ContentEvent::PointerUp(self.position),
-            PointerPhase::Exit => ContentEvent::PointerMove(Point::new(-1., -1.)),
+            PointerPhase::Exit => {
+                ContentEvent::PointerMove(Point::new(f32::INFINITY, f32::INFINITY))
+            }
             _ => ContentEvent::PointerMove(self.position),
         }
     }
@@ -95,6 +97,29 @@ impl ContentEvent {
             Self::Pointer(p) => component.overlay_pointer_event(p),
             Self::KeyInput(k) => component.overlay_key_event(k),
             _ => component.overlay_event(self),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tekes_ui_scene::Rect;
+
+    #[test]
+    fn pointer_exit_does_not_hit_negative_coordinate_rect() {
+        let exit = PointerEvent {
+            position: Point::new(10., 10.),
+            phase: PointerPhase::Exit,
+            button: None,
+            modifiers: InputModifiers::default(),
+            click_count: 0,
+        };
+        let negative_rect = Rect::new(-50., -50., 100., 100.);
+        if let ContentEvent::PointerMove(p) = exit.routing_event() {
+            assert!(!negative_rect.contains(p));
+        } else {
+            panic!("Exit must map to PointerMove");
         }
     }
 }

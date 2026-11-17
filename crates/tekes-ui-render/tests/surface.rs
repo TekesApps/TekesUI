@@ -208,3 +208,16 @@ fn gpu_component_hook_runs_only_after_acquiring_a_valid_target() {
         .unwrap();
     assert_eq!(calls, 1, "minimized target must not consume producer work");
 }
+
+#[test]
+fn renderer_retains_metal_layer_after_caller_drops_handle() {
+    let layer = make_layer(100.0, 80.0, 2.0);
+    let Some(mut renderer) = new_renderer(&layer, (200, 160), 2.0) else {
+        return;
+    };
+    drop(layer);
+    renderer.resize((240, 180), 2.0);
+    renderer
+        .render(&scene(), &mut GlyphAtlas::default(), Rgba::gray(1.0))
+        .unwrap();
+}

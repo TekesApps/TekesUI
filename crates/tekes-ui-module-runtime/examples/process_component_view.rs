@@ -10,9 +10,9 @@ fn main() -> anyhow::Result<()> {
     use tekes_ui_module_runtime::{component::*, *};
     use tekes_ui_scene::{GlyphAtlas, Quad, Rect, Scene};
     fn invalidation_peer() -> Result<()> {
-        use std::io::Write;
+        let (mut input, mut ipc_output) = take_worker_ipc_for_test()?;
         let mut line = String::new();
-        std::io::stdin().read_line(&mut line)?;
+        input.read_line(&mut line)?;
         let ClientMessage::StartView {
             session,
             required,
@@ -22,8 +22,9 @@ fn main() -> anyhow::Result<()> {
         else {
             anyhow::bail!("missing View start")
         };
-        let send = |serial, output| -> Result<()> {
-            println!(
+        let mut send = |serial, output| -> Result<()> {
+            writeln!(
+                ipc_output,
                 "{}",
                 serde_json::to_string(&ServerMessage {
                     version: VERSION,
@@ -31,8 +32,8 @@ fn main() -> anyhow::Result<()> {
                     serial,
                     output
                 })?
-            );
-            std::io::stdout().flush()?;
+            )?;
+            ipc_output.flush()?;
             Ok(())
         };
         send(

@@ -50,6 +50,11 @@ pub fn run(_: Box<dyn PanelModule>, _: &str) -> Result<()> {
 mod control;
 pub use control::ProcessControl;
 mod pipes;
+#[cfg(target_os = "macos")]
+#[doc(hidden)]
+pub use pipes::spawn_raw_worker_for_test;
+#[doc(hidden)]
+pub use pipes::{RawWorkerForTest, take_worker_ipc_for_test};
 mod services;
 pub use services::{
     ComponentDefinition, ComponentEmitter, NativeViewOptions, ProcessComponent,

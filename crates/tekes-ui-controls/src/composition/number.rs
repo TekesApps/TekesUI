@@ -633,9 +633,19 @@ impl Component for NumberFieldContent {
             | ContentEvent::PointerUp(p) => p,
             _ => return ContentResponse::default(),
         };
+        let hit = self
+            .captured
+            .or_else(|| self.frames.iter().position(|f| f.contains(position)));
+        let mut button_changed = false;
         if matches!(event, ContentEvent::PointerMove(_)) && self.captured.is_none() {
-            for button in &mut self.buttons {
-                button.pointer_event(p);
+            let exit = PointerEvent {
+                phase: PointerPhase::Exit,
+                ..*p
+            };
+            for (idx, button) in self.buttons.iter_mut().enumerate() {
+                if Some(idx) != hit {
+                    button_changed |= button.pointer_event(&exit).changed;
+                }
             }
         }
         if self.editor_captured {
@@ -643,11 +653,10 @@ impl Component for NumberFieldContent {
             if matches!(event, ContentEvent::PointerUp(_)) {
                 self.editor_captured = false;
             }
-            return self.finish_edit_event(r);
+            let mut out = self.finish_edit_event(r);
+            out.changed |= button_changed;
+            return out;
         }
-        let hit = self
-            .captured
-            .or_else(|| self.frames.iter().position(|f| f.contains(position)));
         if let Some(i) = hit {
             let mut r = self.buttons[i].pointer_event(p);
             if r.capture_pointer {
@@ -660,11 +669,14 @@ impl Component for NumberFieldContent {
             if r.activated {
                 r.activated = self.step(i == 1);
             }
+            r.changed |= button_changed;
             return r;
         }
         let r = self.editor.pointer_event(p);
         self.editor_captured = r.capture_pointer;
-        self.finish_edit_event(r)
+        let mut out = self.finish_edit_event(r);
+        out.changed |= button_changed;
+        out
     }
     fn key_event(&mut self, key: &ContentKeyEvent) -> ContentResponse {
         if key.down
@@ -847,5 +859,34 @@ mod geometry_tests {
                 assert_eq!(editor.max_x() + gap, parts[1].frame.min_x());
             }
         }
+    }
+
+    #[test]
+    fn pointer_move_from_step_button_into_gap_reports_hover_exit_change() {
+        let mut field =
+            NumberFieldContent::new("Count", 2., 0., 9., 1., DecimalNumberFormat::default())
+                .unwrap();
+        let frame = Rect::new(0., 0., 160., 32.);
+        field.arrange(&mut Text, frame, frame);
+        let enter_btn = PointerEvent {
+            position: field.frames[1].center(),
+            phase: PointerPhase::Move,
+            button: None,
+            modifiers: InputModifiers::default(),
+            click_count: 0,
+        };
+        assert!(field.pointer_event(&enter_btn).changed);
+        let gap_x = (field.editor_frame.max_x() + field.frames[1].min_x()) * 0.5;
+        let to_gap = PointerEvent {
+            position: Point::new(gap_x, frame.center().y),
+            phase: PointerPhase::Move,
+            button: None,
+            modifiers: InputModifiers::default(),
+            click_count: 0,
+        };
+        assert!(
+            field.pointer_event(&to_gap).changed,
+            "leaving step button into 6pt gap must report changed=true"
+        );
     }
 }

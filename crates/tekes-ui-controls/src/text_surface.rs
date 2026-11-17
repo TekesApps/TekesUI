@@ -389,13 +389,16 @@ impl TextSurface {
         // The visible content area is the real editing/scroll viewport. Keeping
         // the larger allocation here makes a clipped caret impossible to reveal
         // and gives shaping, hit testing and IME different viewport bounds.
-        let inner = if self.presentation == TextSurfacePresentation::Content {
-            // A parent document viewport clips ink, not the paragraph's wrap
-            // width or height. Scrolling past a block must not reshape it.
-            layout.content()
-        } else {
-            layout.visible_clip().unwrap_or_else(|| layout.content())
-        };
+        let inner =
+            if self.presentation == TextSurfacePresentation::Field && self.input.marked.is_some() {
+                // Keep an active IME composition's candidate anchor inside a clipped
+                // field viewport even on non-scrolling horizontal axes.
+                layout.visible_clip().unwrap_or_else(|| layout.content())
+            } else {
+                // A parent viewport clips ink, not a field's baseline centering or
+                // wrap width; scrolling past an edge must not slide or reflow text.
+                layout.content()
+            };
         let reveal_composition = self.input.marked.is_some()
             && (scale_changed
                 || self.inner != inner
@@ -497,7 +500,7 @@ impl TextSurface {
             && !self.input.disabled
             && self.visible_frame().is_some()
         {
-            self.scroll.reveal(self.caret_doc(self.input.caret));
+            self.reveal_caret_now();
         }
     }
 
@@ -1089,10 +1092,22 @@ impl TextSurface {
                 .and_then(|p| p.lines.get(navigation.line))
         {
             let x = line
-                .carets
+                .graphemes
                 .iter()
-                .find(|(i, _)| *i == index)
-                .map_or(line.width, |(_, x)| *x);
+                .find(|g| g.start == index)
+                .map(|g| g.x_start)
+                .or_else(|| {
+                    (index == line.utf16.end)
+                        .then(|| line.graphemes.last().map(|g| g.x_end))
+                        .flatten()
+                })
+                .or_else(|| {
+                    line.carets
+                        .iter()
+                        .find(|(i, _)| *i == index)
+                        .map(|(_, x)| *x)
+                })
+                .unwrap_or(line.width);
             return Rect::new(
                 x as f32,
                 line.top as f32,
@@ -1203,6 +1218,32 @@ impl TextSurface {
             && !self.scrollbar_reveal_suppressed
     }
 
+    fn reveal_caret_now(&mut self) {
+        self.scroll.reveal(self.caret_doc(self.input.caret));
+        if let Some(vis) = self.visible_content()
+            && vis != self.inner
+        {
+            let caret = self.caret();
+            let dx = if caret.max_x() > vis.max_x() {
+                caret.max_x() - vis.max_x()
+            } else if caret.min_x() < vis.min_x() {
+                caret.min_x() - vis.min_x()
+            } else {
+                0.0
+            };
+            let dy = if caret.max_y() > vis.max_y() {
+                caret.max_y() - vis.max_y()
+            } else if caret.min_y() < vis.min_y() {
+                caret.min_y() - vis.min_y()
+            } else {
+                0.0
+            };
+            if dx != 0.0 || dy != 0.0 {
+                self.scroll.scroll_by(dx, dy);
+            }
+        }
+    }
+
     pub fn reveal(&mut self) {
         // Scrollbar thumb drags and track paging take precedence over the
         // stale insertion caret, including explicit reveals during the gesture.
@@ -1213,7 +1254,7 @@ impl TextSurface {
             self.scrollbar_reveal_suppressed = false;
             return;
         }
-        self.scroll.reveal(self.caret_doc(self.input.caret));
+        self.reveal_caret_now();
         self.pending_reveal = (self.paragraph.is_none() || self.shaped != self.input.text)
             .then_some(self.scroll.offset);
     }
@@ -2037,6 +2078,7 @@ mod tests {
                     width_trimmed: width,
                     runs: vec![],
                     carets: vec![(0, 0.), (1, width / 2.), (2, width)],
+                    graphemes: vec![],
                     has_newline: false,
                 }],
                 width,
@@ -2178,5 +2220,100 @@ mod tests {
             scene.primitives().get(1),
             Some(Primitive::Quad(quad)) if quad.rect == frame
         ));
+    }
+
+    #[test]
+    fn field_partial_parent_clip_keeps_inner_origin_and_wrap_stable_and_reveals_caret() {
+        let mut view = TextSurface::new("abcdef", false, false);
+        let frame = Rect::new(20., 40., 200., 44.);
+        let single_line_para = || {
+            Rc::new(Paragraph {
+                lines: vec![tekes_ui_text::Line {
+                    index: 0,
+                    utf16: 0..6,
+                    bytes: 0..6,
+                    ascent: 15.,
+                    descent: 5.,
+                    leading: 0.,
+                    height: 20.,
+                    top: 0.,
+                    baseline_y: 15.,
+                    width: 60.,
+                    width_trimmed: 60.,
+                    runs: vec![],
+                    carets: vec![(0, 0.), (6, 60.)],
+                    graphemes: vec![],
+                    has_newline: false,
+                }],
+                height: 20.,
+                width: 60.,
+                default_line_height: 20.,
+                fonts: vec![],
+                utf16_len: 6,
+            })
+        };
+        view.layout_with(frame, Some(frame), 1., 1., |_, _| single_line_para());
+        let unclipped_inner = view.inner;
+        let unclipped_origin = view.origin();
+
+        // Partially clipping the Field top/left edges via a parent viewport
+        // must keep `inner` and baseline origin unchanged when not composing.
+        view.layout_with(
+            frame,
+            Some(Rect::new(40., 62., 180., 22.)),
+            1.,
+            1.,
+            |_, _| single_line_para(),
+        );
+        assert_eq!(view.inner, unclipped_inner);
+        assert_eq!(view.origin(), unclipped_origin);
+
+        // Moving caret to x=60 (within inner=200, outside clipped left=40.. or right=..45)
+        // scrolls the wide document so caret becomes visible inside visible_content().
+        let mut wide = TextSurface::new("abcdef", false, false);
+        let wide_para = || {
+            Rc::new(Paragraph {
+                lines: vec![tekes_ui_text::Line {
+                    index: 0,
+                    utf16: 0..6,
+                    bytes: 0..6,
+                    ascent: 15.,
+                    descent: 5.,
+                    leading: 0.,
+                    height: 20.,
+                    top: 0.,
+                    baseline_y: 15.,
+                    width: 400.,
+                    width_trimmed: 400.,
+                    runs: vec![],
+                    carets: vec![(0, 0.), (3, 200.), (6, 400.)],
+                    graphemes: vec![],
+                    has_newline: false,
+                }],
+                height: 20.,
+                width: 400.,
+                default_line_height: 20.,
+                fonts: vec![],
+                utf16_len: 6,
+            })
+        };
+        wide.layout_with(
+            frame,
+            Some(Rect::new(20., 40., 90., 44.)),
+            1.,
+            1.,
+            |_, _| wide_para(),
+        );
+        let vis_before = wide.visible_content().unwrap();
+        assert!(vis_before.max_x() < 200.);
+        wide.input.caret = 3;
+        wide.input.anchor = 3;
+        wide.reveal();
+        let caret = wide.caret();
+        assert!(
+            caret.max_x() <= vis_before.max_x() + 0.01
+                && caret.min_x() >= vis_before.min_x() - 0.01,
+            "caret {caret:?} should scroll into clipped visible_content {vis_before:?}"
+        );
     }
 }

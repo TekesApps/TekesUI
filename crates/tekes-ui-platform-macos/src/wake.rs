@@ -120,19 +120,21 @@ pub(crate) mod native {
         unsafe { dispatch_async_f(&raw const _dispatch_main_q, context, deliver) };
     }
     extern "C" fn deliver(context: *mut c_void) {
-        // SAFETY: context is precisely the Box allocated by enqueue, consumed
-        // once by libdispatch. Keep the Arc alive while resolving its identity.
-        let state = unsafe { Box::from_raw(context.cast::<Arc<WakeState>>()) };
-        if !state.begin_delivery() {
-            return;
-        }
-        let target =
-            TARGETS.with(|targets| targets.borrow().get(&key(&state)).and_then(Weak::upgrade));
-        if let Some(shared) = target {
-            shared.dispatch(Event::Wake);
-        } else {
-            state.close();
-        }
+        crate::ffi_boundary("wake::deliver", || {
+            // SAFETY: context is precisely the Box allocated by enqueue, consumed
+            // once by libdispatch. Keep the Arc alive while resolving its identity.
+            let state = unsafe { Box::from_raw(context.cast::<Arc<WakeState>>()) };
+            if !state.begin_delivery() {
+                return;
+            }
+            let target =
+                TARGETS.with(|targets| targets.borrow().get(&key(&state)).and_then(Weak::upgrade));
+            if let Some(shared) = target {
+                shared.dispatch(Event::Wake);
+            } else {
+                state.close();
+            }
+        });
     }
 }
 

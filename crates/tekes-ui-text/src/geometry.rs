@@ -13,10 +13,17 @@ impl Paragraph {
             return Rect::default();
         };
         let x = line
-            .carets
+            .graphemes
             .iter()
-            .find(|v| v.0 == index)
-            .map_or(line.width, |v| v.1);
+            .find(|g| g.start == index)
+            .map(|g| g.x_start)
+            .or_else(|| {
+                (index == line.utf16.end)
+                    .then(|| line.graphemes.last().map(|g| g.x_end))
+                    .flatten()
+            })
+            .or_else(|| line.carets.iter().find(|v| v.0 == index).map(|v| v.1))
+            .unwrap_or(line.width);
         Rect::new(x as f32, line.top as f32, width, line.height as f32)
     }
     /// Hit-test a document-local point. An explicit newline belongs to its old
@@ -30,14 +37,47 @@ impl Paragraph {
         else {
             return 0;
         };
+        let px = f64::from(point.x);
+        if !line.graphemes.is_empty() {
+            let valid_spans = line
+                .graphemes
+                .iter()
+                .filter(|g| !line.has_newline || g.end < line.utf16.end);
+            for g in valid_spans.clone() {
+                let lo = g.x_start.min(g.x_end);
+                let hi = g.x_start.max(g.x_end);
+                if px >= lo && px <= hi {
+                    return if (g.x_start - px).abs() <= (g.x_end - px).abs() {
+                        g.start
+                    } else {
+                        g.end
+                    };
+                }
+            }
+            return valid_spans
+                .flat_map(|g| [(g.start, g.x_start), (g.end, g.x_end)])
+                .min_by(|a, b| (a.1 - px).abs().total_cmp(&(b.1 - px).abs()))
+                .map_or(line.utf16.start, |v| v.0);
+        }
+        for pair in line.carets.windows(2) {
+            let (a, b) = (pair[0], pair[1]);
+            if a.0 >= b.0 || (line.has_newline && b.0 == line.utf16.end) {
+                continue;
+            }
+            let lo = a.1.min(b.1);
+            let hi = a.1.max(b.1);
+            if px >= lo && px <= hi {
+                return if (a.1 - px).abs() <= (b.1 - px).abs() {
+                    a.0
+                } else {
+                    b.0
+                };
+            }
+        }
         line.carets
             .iter()
             .filter(|v| !line.has_newline || v.0 < line.utf16.end)
-            .min_by(|a, b| {
-                (a.1 - f64::from(point.x))
-                    .abs()
-                    .total_cmp(&(b.1 - f64::from(point.x)).abs())
-            })
+            .min_by(|a, b| (a.1 - px).abs().total_cmp(&(b.1 - px).abs()))
             .map_or(line.utf16.start, |v| v.0)
     }
     /// Tight advance-width rectangles per selected visual span. Explicit newline
@@ -54,21 +94,39 @@ impl Paragraph {
             {
                 continue;
             }
-            let mut intervals: Vec<(f32, f32)> = line
-                .carets
-                .windows(2)
-                .filter(|pair| pair[0].0 >= range.start && pair[0].0 < range.end)
-                .map(|pair| {
-                    let a = pair[0].1 as f32;
-                    let b = if line.has_newline && pair[1].0 == line.utf16.end {
-                        viewport.max_x().max(a + 1.0)
-                    } else {
-                        pair[1].1 as f32
-                    };
-                    (a.min(b), a.max(b))
-                })
-                .filter(|(a, b)| b > a)
-                .collect();
+            let mut intervals: Vec<(f32, f32)> = if !line.graphemes.is_empty() {
+                line.graphemes
+                    .iter()
+                    .filter(|g| g.start >= range.start && g.end <= range.end)
+                    .map(|g| {
+                        let a = g.x_start as f32;
+                        let b = if line.has_newline && g.end == line.utf16.end {
+                            viewport.max_x().max(a + 1.0)
+                        } else {
+                            g.x_end as f32
+                        };
+                        (a.min(b), a.max(b))
+                    })
+                    .filter(|(a, b)| b > a)
+                    .collect()
+            } else {
+                line.carets
+                    .windows(2)
+                    .filter(|pair| {
+                        pair[0].0 < pair[1].0 && pair[0].0 >= range.start && pair[1].0 <= range.end
+                    })
+                    .map(|pair| {
+                        let a = pair[0].1 as f32;
+                        let b = if line.has_newline && pair[1].0 == line.utf16.end {
+                            viewport.max_x().max(a + 1.0)
+                        } else {
+                            pair[1].1 as f32
+                        };
+                        (a.min(b), a.max(b))
+                    })
+                    .filter(|(a, b)| b > a)
+                    .collect()
+            };
             intervals.sort_by(|a, b| a.0.total_cmp(&b.0));
             let mut merged: Vec<(f32, f32)> = Vec::new();
             for (x, end) in intervals {

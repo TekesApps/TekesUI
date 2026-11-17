@@ -340,17 +340,116 @@ pub struct TextInputState {
     pub carets: Vec<(usize, Point, Size)>,
 }
 
+pub(crate) fn utf16_len(text: &str) -> usize {
+    text.chars().map(char::len_utf16).sum()
+}
+
+pub(crate) fn utf16_slice_exact(text: &str, range: std::ops::Range<usize>) -> Option<&str> {
+    if range.start > range.end {
+        return None;
+    }
+    let mut u16_pos = 0usize;
+    let mut start_byte = (range.start == 0).then_some(0);
+    let mut end_byte = (range.end == 0).then_some(0);
+    for (byte_idx, ch) in text.char_indices() {
+        if start_byte.is_some() && end_byte.is_some() {
+            break;
+        }
+        let next_u16 = u16_pos + ch.len_utf16();
+        let next_byte = byte_idx + ch.len_utf8();
+        if next_u16 == range.start {
+            start_byte = Some(next_byte);
+        }
+        if next_u16 == range.end {
+            end_byte = Some(next_byte);
+        }
+        if (u16_pos < range.start && range.start < next_u16)
+            || (u16_pos < range.end && range.end < next_u16)
+        {
+            return None;
+        }
+        u16_pos = next_u16;
+    }
+    Some(&text[start_byte?..end_byte?])
+}
+
+pub(crate) fn utf16_slice_clamped_expanding_surrogates(
+    text: &str,
+    raw_start: usize,
+    raw_end: usize,
+) -> Option<(usize, usize, &str)> {
+    if raw_start > raw_end {
+        return None;
+    }
+    let mut u16_pos = 0usize;
+    let mut start = (raw_start == 0).then_some((0usize, 0usize));
+    let mut end = (raw_end == 0).then_some((0usize, 0usize));
+    for (byte_idx, ch) in text.char_indices() {
+        let next_u16 = u16_pos + ch.len_utf16();
+        let next_byte = byte_idx + ch.len_utf8();
+        if start.is_none() {
+            if raw_start == u16_pos || raw_start < next_u16 {
+                start = Some((u16_pos, byte_idx));
+            } else if next_u16 == raw_start {
+                start = Some((next_u16, next_byte));
+            }
+        }
+        if end.is_none() {
+            if raw_end == u16_pos {
+                end = Some((u16_pos, byte_idx));
+            } else if raw_end < next_u16 || next_u16 == raw_end {
+                end = Some((next_u16, next_byte));
+            }
+        }
+        u16_pos = next_u16;
+        if start.is_some() && end.is_some() {
+            break;
+        }
+    }
+    let (s_u16, s_byte) = start.unwrap_or((u16_pos, text.len()));
+    let (e_u16, e_byte) = end.unwrap_or((u16_pos, text.len()));
+    (s_u16 <= e_u16).then_some((s_u16, e_u16, &text[s_byte..e_byte]))
+}
+
 impl TextInputState {
     pub(crate) fn character_index_for_point(&self, p: Point) -> Option<usize> {
-        self.carets
+        let valid = |v: &&(usize, Point, Size)| v.2.height > 0.0 && v.2.width >= 0.0;
+        let line_y = self
+            .carets
             .iter()
-            .filter(|v| v.2.height > 0.0 && v.2.width >= 0.0)
+            .filter(valid)
             .min_by(|a, b| {
-                let distance = |v: &(usize, Point, Size)| {
-                    ((p.y - (v.1.y + v.2.height * 0.5)).abs() * 1000.0) + (p.x - v.1.x).abs()
-                };
-                distance(a).total_cmp(&distance(b))
-            })
+                let da = (p.y - (a.1.y + a.2.height * 0.5)).abs();
+                let db = (p.y - (b.1.y + b.2.height * 0.5)).abs();
+                da.total_cmp(&db)
+                    .then_with(|| (p.x - a.1.x).abs().total_cmp(&(p.x - b.1.x).abs()))
+            })?
+            .1
+            .y;
+        let mut line: Vec<_> = self
+            .carets
+            .iter()
+            .filter(|v| valid(v) && (v.1.y - line_y).abs() < 0.01)
+            .copied()
+            .collect();
+        line.sort_by_key(|v| v.0);
+        for pair in line.windows(2) {
+            let (a, b) = (pair[0], pair[1]);
+            if a.0 >= b.0 {
+                continue;
+            }
+            let lo = a.1.x.min(b.1.x);
+            let hi = a.1.x.max(b.1.x);
+            if p.x >= lo && p.x <= hi {
+                return Some(if (a.1.x - p.x).abs() <= (b.1.x - p.x).abs() {
+                    a.0
+                } else {
+                    b.0
+                });
+            }
+        }
+        line.iter()
+            .min_by(|a, b| (p.x - a.1.x).abs().total_cmp(&(p.x - b.1.x).abs()))
             .map(|v| v.0)
     }
 
@@ -368,47 +467,98 @@ impl TextInputState {
         &self,
         range: std::ops::Range<usize>,
     ) -> Option<(std::ops::Range<usize>, Point, Size)> {
-        let units: Vec<_> = self.text.encode_utf16().collect();
-        units.get(range.clone())?;
-        if [range.start, range.end]
-            .iter()
-            .any(|i| units.get(*i).is_some_and(|u| (0xDC00..=0xDFFF).contains(u)))
-        {
-            return None;
-        }
+        utf16_slice_exact(&self.text, range.clone())?;
+        Self::first_rect_for_validated_range(
+            self.carets.iter(),
+            Some((self.caret_index, self.caret_origin, self.caret_size)),
+            range,
+        )
+    }
+
+    pub(crate) fn first_rect_for_validated_range<'a>(
+        carets: impl Iterator<Item = &'a (usize, Point, Size)> + Clone,
+        fallback: Option<(usize, Point, Size)>,
+        range: std::ops::Range<usize>,
+    ) -> Option<(std::ops::Range<usize>, Point, Size)> {
         let valid = |p: Point, s: Size| {
             p.x.is_finite() && p.y.is_finite() && s.height.is_finite() && s.height > 0.
         };
-        let (first, start, size) = self
-            .carets
-            .iter()
+        let (first, start, size) = carets
+            .clone()
             .filter(|c| c.0 >= range.start && c.0 <= range.end && valid(c.1, c.2))
             .min_by_key(|c| c.0)
             .copied()
             .or_else(|| {
-                (range.start == self.caret_index && valid(self.caret_origin, self.caret_size))
-                    .then_some((self.caret_index, self.caret_origin, self.caret_size))
+                fallback.filter(|&(idx, origin, sz)| idx == range.start && valid(origin, sz))
             })?;
         if range.is_empty() {
+            let has_following = carets
+                .clone()
+                .any(|c| c.0 > range.start && valid(c.1, c.2) && (c.1.y - start.y).abs() < 0.01);
+            let chosen = if has_following {
+                carets
+                    .clone()
+                    .filter(|c| {
+                        c.0 == range.start && valid(c.1, c.2) && (c.1.y - start.y).abs() < 0.01
+                    })
+                    .last()
+                    .copied()
+                    .unwrap_or((first, start, size))
+            } else {
+                (first, start, size)
+            };
             return Some((
                 range,
-                start,
+                chosen.1,
                 Size {
                     width: 0.,
+                    height: chosen.2.height,
+                },
+            ));
+        }
+        let mut line_carets: Vec<_> = carets
+            .clone()
+            .filter(|c| valid(c.1, c.2) && (c.1.y - start.y).abs() < 0.01)
+            .copied()
+            .collect();
+        line_carets.sort_by_key(|c| c.0);
+        let mut span_first: Option<usize> = None;
+        let mut span_last: usize = 0;
+        let mut span_min_x = f64::INFINITY;
+        let mut span_max_x = f64::NEG_INFINITY;
+        for pair in line_carets.windows(2) {
+            let (a, b) = (pair[0], pair[1]);
+            if a.0 < b.0 && a.0 >= range.start && b.0 <= range.end {
+                span_first.get_or_insert(a.0);
+                span_last = b.0;
+                span_min_x = span_min_x.min(a.1.x.min(b.1.x));
+                span_max_x = span_max_x.max(a.1.x.max(b.1.x));
+            }
+        }
+        if let Some(first_idx) = span_first
+            && (span_max_x - span_min_x).is_finite()
+        {
+            return Some((
+                first_idx..span_last,
+                Point {
+                    x: span_min_x,
+                    y: start.y,
+                },
+                Size {
+                    width: span_max_x - span_min_x,
                     height: size.height,
                 },
             ));
         }
-        let end = self
-            .carets
-            .iter()
+        let end = carets
+            .clone()
             .filter(|c| {
                 c.0 > first && c.0 <= range.end && valid(c.1, c.2) && (c.1.y - start.y).abs() < 0.01
             })
             .max_by_key(|c| c.0)?;
         let mut min_x = start.x.min(end.1.x);
         let mut max_x = start.x.max(end.1.x);
-        for c in self.carets.iter().filter(|c| {
+        for c in carets.filter(|c| {
             c.0 > first && c.0 < end.0 && valid(c.1, c.2) && (c.1.y - start.y).abs() < 0.01
         }) {
             min_x = min_x.min(c.1.x);
@@ -761,5 +911,92 @@ mod issue102_no_geometry_tests {
         );
         assert!(no_geometry.first_rect_for_range(0..1).is_none());
         assert_eq!(no_geometry.marked, old.marked);
+    }
+
+    #[test]
+    fn utf16_slice_helpers_match_surrogate_and_clamping_contracts() {
+        let s = "a😀b";
+        assert_eq!(utf16_len(s), 4);
+        assert_eq!(utf16_slice_exact(s, 0..0), Some(""));
+        assert_eq!(utf16_slice_exact(s, 1..1), Some(""));
+        assert_eq!(utf16_slice_exact(s, 4..4), Some(""));
+        assert_eq!(utf16_slice_exact(s, 1..3), Some("😀"));
+        assert_eq!(utf16_slice_exact(s, 0..2), None);
+        assert_eq!(utf16_slice_exact(s, 2..3), None);
+        assert_eq!(utf16_slice_exact(s, 0..5), None);
+
+        assert_eq!(
+            utf16_slice_clamped_expanding_surrogates(s, 1, 1),
+            Some((1, 1, ""))
+        );
+        assert_eq!(
+            utf16_slice_clamped_expanding_surrogates(s, 2, 2),
+            Some((1, 3, "😀"))
+        );
+        assert_eq!(
+            utf16_slice_clamped_expanding_surrogates(s, 2, 100),
+            Some((1, 4, "😀b"))
+        );
+        assert_eq!(
+            utf16_slice_clamped_expanding_surrogates(s, 50, 100),
+            Some((4, 4, ""))
+        );
+    }
+
+    #[test]
+    fn bidi_split_carets_resolve_exact_character_rect_and_hit_test() {
+        let state = TextInputState {
+            text: "Hello שלום".into(),
+            carets: vec![
+                (0, 0., 0.),
+                (5, 32., 0.),
+                (6, 36., 0.),
+                (6, 68., 0.),
+                (7, 57., 0.),
+                (8, 50., 0.),
+                (9, 46., 0.),
+                (10, 36., 0.),
+            ]
+            .into_iter()
+            .map(|(i, x, y)| {
+                (
+                    i,
+                    Point { x, y },
+                    Size {
+                        width: 1.,
+                        height: 18.,
+                    },
+                )
+            })
+            .collect(),
+            ..Default::default()
+        };
+        let (actual, origin, size) = state.first_rect_for_range(6..7).unwrap();
+        assert_eq!(actual, 6..7);
+        assert_eq!(origin, Point { x: 57., y: 0. });
+        assert_eq!(size.width, 11.);
+
+        let (actual, origin, size) = state.first_rect_for_range(5..6).unwrap();
+        assert_eq!(actual, 5..6);
+        assert_eq!(origin, Point { x: 32., y: 0. });
+        assert_eq!(size.width, 4.);
+
+        let (actual, origin, size) = state.first_rect_for_range(6..10).unwrap();
+        assert_eq!(actual, 6..10);
+        assert_eq!(origin, Point { x: 36., y: 0. });
+        assert_eq!(size.width, 32.);
+
+        assert_eq!(
+            state.character_index_for_point(Point { x: 33., y: 9. }),
+            Some(5)
+        );
+        assert_eq!(
+            state.character_index_for_point(Point { x: 66., y: 9. }),
+            Some(6)
+        );
+        assert_eq!(
+            state.character_index_for_point(Point { x: 59., y: 9. }),
+            Some(7)
+        );
     }
 }

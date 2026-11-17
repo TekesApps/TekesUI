@@ -41,6 +41,7 @@ pub struct ComboBoxContent {
     view: ComboBoxView,
     candidates: Option<CandidatePlan>,
     declaration: u64,
+    selected_declaration: Option<u64>,
     payload_authority: Option<u64>,
     last_selection: Option<ComboBoxSelection>,
     window_active: bool,
@@ -58,6 +59,7 @@ impl ComboBoxContent {
             view: ComboBoxView::default(),
             candidates: None,
             declaration: 0,
+            selected_declaration: None,
             payload_authority: None,
             last_selection: None,
             window_active: true,
@@ -132,6 +134,7 @@ impl ComboBoxContent {
     fn revoke(&mut self) {
         self.model.open = false;
         self.revoke_candidates();
+        self.selected_declaration = None;
         self.payload_authority = None;
         self.last_selection = None;
     }
@@ -146,8 +149,24 @@ impl ComboBoxContent {
         let plan =
             self.prepare_candidates(items.len(), self.model.open && self.popup_available())?;
         // All deterministic identity failures are before any original owner mutation.
+        let prev_active = self
+            .model
+            .active
+            .and_then(|i| self.model.items.get(i))
+            .cloned();
         let payload_authority = plan.group as u64;
         self.model.items = items;
+        let filtered = self.model.filtered();
+        if self.model.active.is_none_or(|i| !filtered.contains(&i)) {
+            self.model.active = prev_active
+                .and_then(|label| {
+                    filtered
+                        .iter()
+                        .copied()
+                        .find(|&i| self.model.items[i] == label)
+                })
+                .or_else(|| filtered.first().copied());
+        }
         self.declaration = declaration;
         self.payload_authority = Some(payload_authority);
         self.last_selection = None;
@@ -198,6 +217,7 @@ impl ComboBoxContent {
         self.editor.surface.cancel_interaction();
     }
     pub fn set_error(&mut self, error: Option<String>) {
+        self.editor.surface.error = error.is_some();
         self.editor.field.error = error;
     }
     /// Real editor success cannot be rolled back because popup capacity ran out.
@@ -254,6 +274,7 @@ impl ComboBoxContent {
         self.editor.surface.clauses.clear();
         self.editor.surface.reveal();
         self.candidates = None;
+        self.selected_declaration = Some(self.declaration);
         self.last_selection = Some(ComboBoxSelection {
             index,
             label,
@@ -308,6 +329,10 @@ impl ComboBoxContent {
             return r;
         }
         if let Some(control) = key.key
+            && !key.modifiers.command
+            && !key.modifiers.shift
+            && !key.modifiers.alt
+            && !key.modifiers.control
             && matches!(
                 control,
                 ControlKey::Enter | ControlKey::Escape | ControlKey::Up | ControlKey::Down
@@ -652,7 +677,8 @@ impl Component for ComboBoxContent {
             };
             let mut semantics =
                 ContentSemantics::new(ContentRole::MenuItem, &self.model.items[index]);
-            semantics.selected = self.model.selected == Some(index);
+            semantics.selected = self.selected_declaration == Some(self.declaration)
+                && self.model.selected == Some(index);
             parts.push(SemanticPart {
                 index: *token,
                 frame: row.frame,
@@ -1176,5 +1202,87 @@ mod tests {
         c.set_items(vec![]).unwrap();
         assert_eq!(c.model.selected, before);
         assert!(c.model.filtered().is_empty());
+    }
+
+    #[test]
+    fn set_error_set_items_active_semantics_and_modified_arrow_keys_sync_cleanly() {
+        struct DummyText;
+        impl ButtonTextRenderer for DummyText {
+            fn measure(&mut self, s: &str, _: proposal::TextRole, _: f32) -> Size {
+                Size::new(s.len() as f32 * 8., 16.)
+            }
+            fn draw(
+                &mut self,
+                _: &mut Scene,
+                _: &str,
+                _: proposal::TextRole,
+                _: Rect,
+                _: ButtonTextAlign,
+                _: tekes_ui_tokens::Rgba,
+            ) {
+            }
+        }
+        let mut c = combo();
+        c.set_error(Some("Required".into()));
+        assert!(c.editor.surface.error);
+        c.set_error(None);
+        assert!(!c.editor.surface.error);
+
+        c.set_query("Com").unwrap();
+        assert!(c.confirm(2).activated);
+        c.set_query("Com").unwrap();
+        assert!(c.model.open);
+        c.model.active = Some(3);
+        c.set_items(vec!["Compact".into()]).unwrap();
+        assert!(c.model.active.is_some_and(|i| i < c.model.items.len()));
+        let frame = Rect::new(0., 0., 240., 300.);
+        c.editor.surface.outer = Rect::new(0., 0., 240., 36.);
+        c.paint_overlay(
+            &mut Scene::new(),
+            &mut DummyText,
+            frame,
+            frame,
+            Palette::from(tekes_ui_tokens::Theme::LIGHT).into(),
+        );
+        assert!(
+            c.semantic_parts()
+                .iter()
+                .all(|part| !part.semantics.selected),
+            "replaced items in a new declaration must not inherit stale selected semantics"
+        );
+
+        c.editor.surface.input.insert("hello", Some(0..0));
+        c.editor.surface.input.select(5, false);
+        let shift_left = ContentKeyEvent {
+            key: Some(ControlKey::Left),
+            down: true,
+            repeat: false,
+            modifiers: InputModifiers {
+                shift: true,
+                ..Default::default()
+            },
+            native_code: 0,
+            characters: String::new(),
+            characters_ignoring_modifiers: String::new(),
+        };
+        assert!(c.key_event(&shift_left).consumed);
+        let shift_up = ContentKeyEvent {
+            key: Some(ControlKey::Up),
+            down: true,
+            repeat: false,
+            modifiers: InputModifiers {
+                shift: true,
+                ..Default::default()
+            },
+            native_code: 0,
+            characters: String::new(),
+            characters_ignoring_modifiers: String::new(),
+        };
+        c.model.open = false;
+        let _ = c.key_event(&shift_up);
+        assert!(
+            !c.model.open,
+            "modified Up key must go to editor, not open popup"
+        );
     }
 }
