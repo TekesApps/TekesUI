@@ -433,13 +433,32 @@ impl Renderer {
         let _ = self.configure_surface();
     }
 
+    fn check_target_dimensions(
+        &self,
+        size_px: (u32, u32),
+        message: &'static str,
+    ) -> Result<(), RenderError> {
+        let max_dim = self.device.limits().max_texture_dimension_2d;
+        if size_px.0 > max_dim || size_px.1 > max_dim {
+            return Err(RenderError::InvalidArgument(message));
+        }
+        Ok(())
+    }
+
     fn configure_surface(&mut self) -> Result<(), RenderError> {
+        let max_dim = self.device.limits().max_texture_dimension_2d;
         let Some(s) = &mut self.surface else {
             return Ok(());
         };
         if s.size_px.0 == 0 || s.size_px.1 == 0 {
             s.configured = false;
             return Ok(());
+        }
+        if s.size_px.0 > max_dim || s.size_px.1 > max_dim {
+            s.configured = false;
+            return Err(RenderError::InvalidArgument(
+                "surface dimensions exceed device max texture dimension",
+            ));
         }
         let config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
@@ -509,9 +528,14 @@ impl Renderer {
         if s.size_px.0 == 0 || s.size_px.1 == 0 {
             return Ok(());
         }
+        let (size_px, scale, configured) = (s.size_px, s.scale, s.configured);
+        self.check_target_dimensions(
+            size_px,
+            "surface dimensions exceed device max texture dimension",
+        )?;
         self.gpu
-            .prepare_frame(&self.device, scene, atlas, s.size_px, s.scale, clear)?;
-        if !s.configured {
+            .prepare_frame(&self.device, scene, atlas, size_px, scale, clear)?;
+        if !configured {
             self.configure_surface()?;
         }
 
@@ -580,6 +604,14 @@ impl Renderer {
                     return Err(RenderError::Surface("取 drawable 时校验失败".into()));
                 }
             };
+            let actual_size = (frame.texture.width(), frame.texture.height());
+            if actual_size.0 == 0 || actual_size.1 == 0 {
+                return Ok(());
+            }
+            if actual_size != size_px {
+                self.gpu
+                    .prepare_frame(&self.device, scene, atlas, actual_size, scale, clear)?;
+            }
             let t_acquired = t_acquire.map(|_| Instant::now());
             let view = frame
                 .texture
@@ -591,7 +623,7 @@ impl Renderer {
                 });
             before_ui(&mut encoder)?;
             let ticket =
-                self.encode_scene(&mut encoder, &view, size_px, scale, scene, atlas, clear);
+                self.encode_scene(&mut encoder, &view, actual_size, scale, scene, atlas, clear);
             let t_encoded = t_start.map(|_| Instant::now());
             trace("submit_begin", attempt);
             self.queue.submit([encoder.finish()]);
@@ -775,6 +807,10 @@ impl Renderer {
         }
         self.validate_controlled_images(scene)?;
         check_size(size_px, scale)?;
+        self.check_target_dimensions(
+            size_px,
+            "offscreen dimensions exceed device max texture dimension",
+        )?;
         let layout = checked_readback_layout(size_px, self.device.limits().max_buffer_size)?;
         self.gpu
             .prepare_layer_frame(&self.device, scene, atlas, size_px, scale)?;
@@ -825,6 +861,10 @@ impl Renderer {
             ));
         }
         check_size(size_px, scale)?;
+        self.check_target_dimensions(
+            size_px,
+            "offscreen dimensions exceed device max texture dimension",
+        )?;
         if !(clear.r == 0.0 && clear.g == 0.0 && clear.b == 0.0 && clear.a == 0.0) {
             return Err(RenderError::InvalidClipFrame(
                 "boundary proof requires transparent black clear",
@@ -909,8 +949,13 @@ impl Renderer {
             return Err(RenderError::SceneComposition(error));
         }
         self.validate_controlled_images(scene)?;
-        self.collect_retired_images();
         check_size(size_px, scale)?;
+        self.check_target_dimensions(
+            size_px,
+            "offscreen dimensions exceed device max texture dimension",
+        )?;
+        let layout = checked_readback_layout(size_px, self.device.limits().max_buffer_size)?;
+        self.collect_retired_images();
         self.gpu
             .prepare_frame(&self.device, scene, atlas, size_px, scale, clear)?;
         self.render_prepared_to_rgba8(
@@ -920,7 +965,7 @@ impl Renderer {
                 size_px,
                 scale,
                 clear,
-                prevalidated_layout: None,
+                prevalidated_layout: Some(layout),
             },
             before_ui,
         )
@@ -1440,5 +1485,32 @@ mod boundary_readback_layout_tests {
                 "readback row alignment exceeds u32"
             ))
         );
+    }
+
+    #[test]
+    fn offscreen_rejects_oversized_dimensions_before_callback_or_allocation() {
+        let mut renderer = Renderer::new_headless().expect("actual headless GPU required");
+        let mut atlas = GlyphAtlas::default();
+        let scene = Scene::new();
+        let max_dim = renderer.device.limits().max_texture_dimension_2d;
+        let called = std::cell::Cell::new(false);
+        let result = renderer.render_to_rgba8_with_gpu(
+            &scene,
+            &mut atlas,
+            (max_dim.saturating_add(1), 4),
+            1.0,
+            Rgba::gray(0.0),
+            |_| {
+                called.set(true);
+                Ok(())
+            },
+        );
+        assert_eq!(
+            result,
+            Err(RenderError::InvalidArgument(
+                "offscreen dimensions exceed device max texture dimension"
+            ))
+        );
+        assert!(!called.get());
     }
 }

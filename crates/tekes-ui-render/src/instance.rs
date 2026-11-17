@@ -27,19 +27,14 @@ pub(crate) struct QuadInstance {
 
 impl QuadInstance {
     pub fn from_quad(q: &Quad) -> QuadInstance {
-        let w = q.rect.size.width.max(0.0);
-        let h = q.rect.size.height.max(0.0);
+        let w = finite_nonnegative(q.rect.size.width);
+        let h = finite_nonnegative(q.rect.size.height);
         // 圆角钳到短边的一半：同一条边上两个角的半径之和不超过这条边的长度。
-        let max_r = w.min(h) * 0.5;
-        let radii = q.corner_radii.to_array().map(|r| r.clamp(0.0, max_r));
-        let bw = if q.border_width.is_finite() {
-            q.border_width.max(0.0)
-        } else {
-            0.0
-        };
+        let radii = sanitized_radii(q.corner_radii, w, h);
+        let bw = finite_nonnegative(q.border_width);
         let c = |c: tekes_ui_tokens::Rgba| [c.r, c.g, c.b, c.a];
         QuadInstance {
-            rect: [q.rect.origin.x, q.rect.origin.y, w, h],
+            rect: [finite(q.rect.origin.x), finite(q.rect.origin.y), w, h],
             fill: c(q.fill),
             border_color: c(q.border_color),
             radii,
@@ -53,18 +48,15 @@ impl QuadInstance {
     pub fn from_shadow(shadow: &ShadowQuad) -> QuadInstance {
         let w = finite_nonnegative(shadow.rect.size.width);
         let h = finite_nonnegative(shadow.rect.size.height);
-        let max_r = w.min(h) * 0.5;
-        let radii = shadow.corner_radii.to_array().map(|r| {
-            if r.is_finite() {
-                r.clamp(0.0, max_r)
-            } else {
-                0.0
-            }
-        });
-        let finite = |value: f32| if value.is_finite() { value } else { 0.0 };
+        let radii = sanitized_radii(shadow.corner_radii, w, h);
         let color = shadow.color;
         QuadInstance {
-            rect: [shadow.rect.origin.x, shadow.rect.origin.y, w, h],
+            rect: [
+                finite(shadow.rect.origin.x),
+                finite(shadow.rect.origin.y),
+                w,
+                h,
+            ],
             fill: [0.0; 4],
             border_color: [0.0; 4],
             radii,
@@ -79,6 +71,21 @@ impl QuadInstance {
             ],
         }
     }
+}
+
+fn finite(value: f32) -> f32 {
+    if value.is_finite() { value } else { 0.0 }
+}
+
+fn sanitized_radii(radii: tekes_ui_scene::CornerRadii, width: f32, height: f32) -> [f32; 4] {
+    let max_r = width.min(height) * 0.5;
+    radii.to_array().map(|r| {
+        if r.is_finite() {
+            r.clamp(0.0, max_r)
+        } else {
+            0.0
+        }
+    })
 }
 
 fn finite_nonnegative(value: f32) -> f32 {
@@ -148,5 +155,25 @@ mod tests {
             .with_blur_radius(f32::NAN)
             .with_outset(f32::NEG_INFINITY);
         assert_eq!(QuadInstance::from_shadow(&invalid).shadow_params, [0.0; 4]);
+    }
+
+    #[test]
+    fn quad_instance_sanitizes_nonfinite_inputs_without_panicking() {
+        let mut q = Quad::new(
+            Rect::new(f32::NAN, f32::INFINITY, f32::NAN, -3.0),
+            Rgba::gray(1.0),
+        )
+        .with_corner_radii(CornerRadii {
+            top_left: f32::NAN,
+            top_right: f32::INFINITY,
+            bottom_right: -2.0,
+            bottom_left: 4.0,
+        })
+        .with_border(f32::NAN, Rgba::gray(1.0));
+        q.border_width = f32::NAN;
+        let inst = QuadInstance::from_quad(&q);
+        assert_eq!(inst.rect, [0.0, 0.0, 0.0, 0.0]);
+        assert_eq!(inst.radii, [0.0, 0.0, 0.0, 0.0]);
+        assert_eq!(inst.params[0], 0.0);
     }
 }

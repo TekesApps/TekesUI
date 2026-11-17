@@ -84,18 +84,48 @@ fn descriptor(size: (u32, u32)) -> MTLDescriptor {
     d
 }
 type MTLDescriptor = Retained<MTLTextureDescriptor>;
+
+fn validate_dimensions(
+    context: &GpuContext,
+    size: (u32, u32),
+) -> Result<(usize, usize, usize, usize, usize)> {
+    let max_dim = context.device().limits().max_texture_dimension_2d;
+    ensure!(
+        size.0 >= 1 && size.1 >= 1 && size.0 <= max_dim && size.1 <= max_dim,
+        "invalid shared surface dimensions: {size:?}"
+    );
+    let w = usize::try_from(size.0)?;
+    let h = usize::try_from(size.1)?;
+    let min_row_bytes = w
+        .checked_mul(4)
+        .ok_or_else(|| anyhow!("shared surface row bytes overflow"))?;
+    let aligned_row = min_row_bytes
+        .checked_add(255)
+        .ok_or_else(|| anyhow!("shared surface row align overflow"))?
+        / 256
+        * 256;
+    let alloc_size = aligned_row
+        .checked_mul(h)
+        .ok_or_else(|| anyhow!("shared surface alloc size overflow"))?;
+    ensure!(
+        i64::try_from(alloc_size).is_ok(),
+        "shared surface alloc size exceeds i64"
+    );
+    Ok((w, h, min_row_bytes, aligned_row, alloc_size))
+}
+
 pub fn create(
     context: &GpuContext,
     size: (u32, u32),
 ) -> Result<(wgpu::Texture, CFRetained<IOSurfaceRef>)> {
-    let row = (size.0 as usize * 4).div_ceil(256) * 256;
+    let (_, _, _, row, alloc_size) = validate_dimensions(context, size)?;
     let values = [
-        CFNumber::new_i64(size.0 as i64),
-        CFNumber::new_i64(size.1 as i64),
+        CFNumber::new_i64(i64::from(size.0)),
+        CFNumber::new_i64(i64::from(size.1)),
         CFNumber::new_i64(4),
         CFNumber::new_i64(row as i64),
-        CFNumber::new_i64((row * size.1 as usize) as i64),
-        CFNumber::new_i64(u32::from_be_bytes(*b"BGRA") as i64),
+        CFNumber::new_i64(alloc_size as i64),
+        CFNumber::new_i64(i64::from(u32::from_be_bytes(*b"BGRA"))),
     ];
     // SAFETY: all keys are IOSurface numeric properties and values are CFNumbers.
     let keys = unsafe {
@@ -215,19 +245,78 @@ pub fn import(
         registry(context)? == expected,
         "GPU registry identity mismatch"
     );
+    let (w, h, min_row_bytes, _, _) = validate_dimensions(context, size)?;
+    ensure!(
+        surface.width() == w && surface.height() == h,
+        "invalid shared surface dimensions"
+    );
+    ensure!(
+        surface.pixel_format() == u32::from_be_bytes(*b"BGRA"),
+        "invalid shared surface pixel format"
+    );
+    ensure!(
+        surface.bytes_per_element() == 4,
+        "invalid shared surface bytes per element"
+    );
+    let bpr = surface.bytes_per_row();
+    ensure!(
+        bpr >= min_row_bytes && bpr.is_multiple_of(4),
+        "invalid shared surface bytes per row"
+    );
+    let required_alloc = bpr
+        .checked_mul(h - 1)
+        .and_then(|v| v.checked_add(min_row_bytes))
+        .ok_or_else(|| anyhow!("shared surface allocation overflow"))?;
+    ensure!(
+        surface.alloc_size() >= required_alloc,
+        "undersized shared surface allocation"
+    );
     let raw = metal(context)?
         .newTextureWithDescriptor_iosurface_plane(&descriptor(size), surface, 0)
         .ok_or_else(|| anyhow!("import surface failed"))?;
-    ensure!(
-        raw.width() == size.0 as usize && raw.height() == size.1 as usize,
-        "invalid shared size"
-    );
+    ensure!(raw.width() == w && raw.height() == h, "invalid shared size");
     Ok(wrap(context, raw, size, true))
 }
 
 #[cfg(test)]
 mod tests {
-    use super::rgba_to_bgra;
+    use super::{create, import, registry, rgba_to_bgra};
+    use objc2_core_foundation::{CFDictionary, CFNumber, CFRetained};
+    use objc2_io_surface::{
+        IOSurfaceRef, kIOSurfaceAllocSize, kIOSurfaceBytesPerElement, kIOSurfaceBytesPerRow,
+        kIOSurfaceHeight, kIOSurfacePixelFormat, kIOSurfaceWidth,
+    };
+
+    fn raw_surface(
+        w: usize,
+        h: usize,
+        bpe: usize,
+        bpr: usize,
+        alloc: usize,
+        fmt: u32,
+    ) -> CFRetained<IOSurfaceRef> {
+        let values = [
+            CFNumber::new_i64(w as i64),
+            CFNumber::new_i64(h as i64),
+            CFNumber::new_i64(bpe as i64),
+            CFNumber::new_i64(bpr as i64),
+            CFNumber::new_i64(alloc as i64),
+            CFNumber::new_i64(i64::from(fmt)),
+        ];
+        let keys = unsafe {
+            [
+                kIOSurfaceWidth,
+                kIOSurfaceHeight,
+                kIOSurfaceBytesPerElement,
+                kIOSurfaceBytesPerRow,
+                kIOSurfaceAllocSize,
+                kIOSurfacePixelFormat,
+            ]
+        };
+        let refs: Vec<_> = values.iter().map(|v| &**v).collect();
+        let properties = CFDictionary::from_slices(&keys, &refs);
+        unsafe { IOSurfaceRef::new(properties.as_opaque()) }.expect("allocate test IOSurface")
+    }
 
     #[test]
     fn verified_rgba_readback_is_swizzled_for_bgra_without_alpha_changes() {
@@ -235,5 +324,40 @@ mod tests {
             rgba_to_bgra(&[0x13, 0x57, 0xe9, 0x80, 0x22, 0x41, 0xa6, 0x35]),
             [0xe9, 0x57, 0x13, 0x80, 0xa6, 0x41, 0x22, 0x35]
         );
+    }
+
+    #[test]
+    fn create_and_import_reject_invalid_dimensions_and_mismatched_surfaces() {
+        let Ok(renderer) = crate::Renderer::new_headless() else {
+            return;
+        };
+        let context = renderer.gpu_context();
+        let expected = registry(&context).unwrap();
+        let max_dim = context.device().limits().max_texture_dimension_2d;
+
+        for bad in [
+            (0, 0),
+            (0, 8),
+            (8, 0),
+            (u32::MAX, u32::MAX),
+            (max_dim.saturating_add(1), 8),
+        ] {
+            assert!(create(&context, bad).is_err(), "create accepted {bad:?}");
+        }
+
+        let (_, valid) = create(&context, (8, 8)).unwrap();
+        assert!(import(&context, (8, 8), &valid, expected).is_ok());
+        assert!(import(&context, (0, 0), &valid, expected).is_err());
+        assert!(import(&context, (4, 8), &valid, expected).is_err());
+        assert!(import(&context, (u32::MAX, 8), &valid, expected).is_err());
+
+        let wrong_fmt = raw_surface(8, 8, 4, 256, 2048, u32::from_be_bytes(*b"ARGB"));
+        assert!(import(&context, (8, 8), &wrong_fmt, expected).is_err());
+
+        let wrong_bpe = raw_surface(8, 8, 1, 256, 2048, u32::from_be_bytes(*b"L008"));
+        assert!(import(&context, (8, 8), &wrong_bpe, expected).is_err());
+
+        let wrong_dims = raw_surface(8, 4, 4, 256, 1024, u32::from_be_bytes(*b"BGRA"));
+        assert!(import(&context, (8, 8), &wrong_dims, expected).is_err());
     }
 }

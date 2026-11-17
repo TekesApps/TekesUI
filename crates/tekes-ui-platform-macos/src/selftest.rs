@@ -1383,6 +1383,12 @@ pub fn link_role_contract() -> usize {
     shared.accessibility_nodes.borrow_mut().clear();
     let absent: bool = unsafe { msg_send![&*element, accessibilityPerformPress] };
     assert!(!absent);
+    let orphaned_parent: Option<Retained<objc2::runtime::AnyObject>> =
+        unsafe { msg_send![&*element, accessibilityParent] };
+    assert!(
+        orphaned_parent.is_none(),
+        "orphaned AX element must return nil parent, not NSNull"
+    );
     checks += 1;
     *shared.accessibility_nodes.borrow_mut() = vec![node];
     let replacement = NativeAccessibilityElement::new(mtm, &shared, key);
@@ -1404,6 +1410,165 @@ pub fn link_role_contract() -> usize {
     let closed: bool = unsafe { msg_send![&*replacement, accessibilityPerformPress] };
     assert!(!closed);
     checks + 1
+}
+
+/// Hidden native-object contract for content accessibility publication, reuse,
+/// `accessibilityParent` nil return, `accessibilityHitTest:` fallback, and `None` release.
+#[cfg(feature = "content-accessibility")]
+pub fn content_accessibility_publication_contract(
+    first: crate::content_accessibility::ContentAccessibilitySnapshot,
+    make_second: impl FnOnce() -> crate::content_accessibility::ContentAccessibilitySnapshot + 'static,
+) -> usize {
+    use crate::content_accessibility::ContentAccessibilitySnapshot;
+    use crate::shared::{Objects, Shared};
+    use crate::view::TekesView;
+    use crate::{
+        AccessibilityKey, AccessibilityNode, AccessibilityRole, Event, Point, Rect, Size, Window,
+        WindowHandler,
+    };
+    use objc2::rc::Retained;
+    use objc2::{MainThreadOnly, msg_send};
+    use objc2_app_kit::{
+        NSApplication, NSApplicationActivationPolicy, NSBackingStoreType, NSWindowStyleMask,
+    };
+    use objc2_foundation::{NSPoint, NSRect, NSSize};
+    use std::cell::Cell;
+    use std::rc::Rc;
+
+    let mtm = MainThreadMarker::new().expect("main-thread publication probe");
+    let app = NSApplication::sharedApplication(mtm);
+    app.setActivationPolicy(NSApplicationActivationPolicy::Prohibited);
+
+    let key = first.nodes()[0].key;
+    let checks = Rc::new(Cell::new(0usize));
+    let checks_cb = checks.clone();
+    struct Probe<F>(
+        Rc<Cell<usize>>,
+        Option<ContentAccessibilitySnapshot>,
+        Option<F>,
+        AccessibilityKey,
+    );
+    impl<F: FnOnce() -> ContentAccessibilitySnapshot + 'static> WindowHandler for Probe<F> {
+        fn handle(&mut self, event: Event, window: &mut Window) {
+            match event {
+                Event::Created => {
+                    let first = self.1.take().unwrap();
+                    assert!(window.set_content_accessibility_snapshot(first));
+                    self.0.set(self.0.get() + 1);
+                }
+                Event::Command(crate::CommandId(1)) => {
+                    let second = (self.2.take().unwrap())();
+                    assert_eq!(second.nodes()[0].key, self.3);
+                    assert!(window.set_content_accessibility_snapshot(second));
+                    self.0.set(self.0.get() + 1);
+                }
+                Event::Command(crate::CommandId(2)) => {
+                    assert!(!window.set_content_accessibility_publication(None));
+                    window.set_accessibility_nodes(vec![AccessibilityNode {
+                        key: AccessibilityKey {
+                            component: 77,
+                            part: None,
+                        },
+                        parent: None,
+                        role: AccessibilityRole::Button,
+                        frame: Rect {
+                            origin: Point { x: 10.0, y: 10.0 },
+                            size: Size {
+                                width: 80.0,
+                                height: 24.0,
+                            },
+                        },
+                        label: "Fallback".into(),
+                        value: None,
+                        description: None,
+                        enabled: true,
+                        focused: false,
+                        selected: false,
+                        expanded: None,
+                        invalid: false,
+                        required: false,
+                        text_selection: None,
+                        read_only: false,
+                        can_show_menu: false,
+                    }]);
+                    self.0.set(self.0.get() + 1);
+                }
+                _ => {}
+            }
+        }
+    }
+
+    let shared = Shared::new(
+        mtm,
+        Box::new(Probe(checks_cb, Some(first), Some(make_second), key)),
+    );
+    let rect = NSRect::new(NSPoint::new(0.0, 0.0), NSSize::new(320.0, 200.0));
+    let nswin = unsafe {
+        NSWindow::initWithContentRect_styleMask_backing_defer(
+            NSWindow::alloc(mtm),
+            rect,
+            NSWindowStyleMask::Titled | NSWindowStyleMask::Closable,
+            NSBackingStoreType::Buffered,
+            false,
+        )
+    };
+    unsafe { nswin.setReleasedWhenClosed(false) };
+    let view = TekesView::new(mtm, shared.clone(), rect);
+    nswin.setContentView(Some(&view));
+    shared
+        .objects
+        .set(Objects {
+            window: nswin.clone(),
+            view: view.clone(),
+        })
+        .ok()
+        .unwrap();
+    shared.ready.set(true);
+
+    shared.dispatch(Event::Created);
+    let first_elem = shared
+        .accessibility_elements
+        .borrow()
+        .get(&key)
+        .unwrap()
+        .clone();
+    let first_ptr = Retained::as_ptr(&first_elem);
+
+    // Edit publication with same key must reuse the exact NativeAccessibilityElement pointer.
+    shared.dispatch(Event::Command(crate::CommandId(1)));
+    let second_elem = shared
+        .accessibility_elements
+        .borrow()
+        .get(&key)
+        .unwrap()
+        .clone();
+    assert_eq!(
+        Retained::as_ptr(&second_elem),
+        first_ptr,
+        "surviving AccessibilityKey must reuse the same NativeAccessibilityElement"
+    );
+
+    // Hit-test miss on TekesView must fall back to super (view itself) rather than returning nil.
+    let miss_screen = nswin.convertPointToScreen(NSPoint::new(290.0, 190.0));
+    let hit: Option<Retained<objc2::runtime::AnyObject>> =
+        unsafe { msg_send![&*view, accessibilityHitTest: miss_screen] };
+    assert!(
+        hit.is_some(),
+        "accessibilityHitTest: outside content nodes must fall back to super"
+    );
+
+    // Clearing publication with None must unblock plain set_accessibility_nodes.
+    shared.dispatch(Event::Command(crate::CommandId(2)));
+    assert!(shared.content_geometry.borrow().is_none());
+    let fallback_nodes = shared.accessibility_nodes.borrow().clone();
+    assert_eq!(fallback_nodes.len(), 1);
+    assert_eq!(fallback_nodes[0].label, "Fallback");
+    assert_eq!(fallback_nodes[0].key.component, 77);
+    assert_eq!(checks.get(), 3);
+
+    shared.finish();
+    nswin.close();
+    4
 }
 
 /// Hidden native-object contract only: no shown window, global input or drag.

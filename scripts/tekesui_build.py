@@ -12,9 +12,17 @@ import subprocess
 ROOT = Path(__file__).resolve().parents[1]
 CACHE = ROOT / 'target/review-cache'
 TARGET_ROOT = ROOT / 'target'
-STORAGE_REGISTRY = Path('/Users/frankqin/.codex/storage-migrations/tekesui-targets.json')
-STORAGE_RECEIPT = Path('/Users/frankqin/.codex/storage-migrations/tekesui-20261024-build-artifacts.json')
-EXPECTED_VOLUME_UUID = '4289CF6D-F09D-4831-8558-4AB223E4EE04'
+STORAGE_REGISTRY = (
+    Path(os.environ['TEKESUI_STORAGE_REGISTRY'])
+    if os.environ.get('TEKESUI_STORAGE_REGISTRY')
+    else None
+)
+STORAGE_RECEIPT = (
+    Path(os.environ['TEKESUI_STORAGE_RECEIPT'])
+    if os.environ.get('TEKESUI_STORAGE_RECEIPT')
+    else None
+)
+EXPECTED_VOLUME_UUID = os.environ.get('TEKESUI_STORAGE_VOLUME_UUID') or None
 REGISTRY_FORMAT = 'tekesui-target-mappings/1'
 RECEIPT_FORMAT = 'tekesui-target-migration-receipt/1'
 POLICY = {'CARGO_PROFILE_DEV_DEBUG': '0', 'CARGO_PROFILE_TEST_DEBUG': '0',
@@ -77,7 +85,10 @@ def _canonical_absolute(value, description):
 
 def _load_target_registry(root=None, registry_path=None):
     root = Path(root if root is not None else ROOT)
-    registry_path = Path(registry_path if registry_path is not None else STORAGE_REGISTRY)
+    effective_registry = registry_path if registry_path is not None else STORAGE_REGISTRY
+    if effective_registry is None:
+        return None
+    registry_path = Path(effective_registry)
     target = root / 'target'
     if not registry_path.exists() and not registry_path.is_symlink():
         if target.is_symlink():
@@ -103,19 +114,22 @@ def _load_target_registry(root=None, registry_path=None):
             raise SystemExit('Invalid storage mapping')
         logical = _canonical_absolute(entry.get('logical_root'), 'logical root')
         physical = _canonical_absolute(entry.get('physical_root'), 'physical root')
-        if entry.get('volume_uuid') != EXPECTED_VOLUME_UUID:
+        volume_uuid = entry.get('volume_uuid')
+        if not isinstance(volume_uuid, str) or not volume_uuid.strip():
+            raise SystemExit('Storage mapping volume UUID mismatch')
+        if EXPECTED_VOLUME_UUID is not None and volume_uuid != EXPECTED_VOLUME_UUID:
             raise SystemExit('Storage mapping volume UUID mismatch')
         if logical in logicals or physical in physicals:
             raise SystemExit('Duplicate storage mapping root')
         logicals.append(logical)
         physicals.append(physical)
-        normalized.append((logical, physical, entry['volume_uuid']))
+        normalized.append((logical, physical, volume_uuid))
     for roots in (logicals, physicals, logicals + physicals):
         for i, left in enumerate(roots):
             if any(left in right.parents or right in left.parents for right in roots[i + 1:]):
                 raise SystemExit('Overlapping storage mapping roots')
     receipt_path = _canonical_absolute(registry.get('receipt'), 'receipt path')
-    if receipt_path != STORAGE_RECEIPT:
+    if STORAGE_RECEIPT is not None and receipt_path != STORAGE_RECEIPT:
         raise SystemExit('Migration receipt path differs from the fixed receipt location')
     receipt_raw = _checked_regular_file(receipt_path, uid, 'Migration receipt')
     if hashlib.sha256(receipt_raw).hexdigest() != registry.get('receipt_sha256'):
@@ -160,15 +174,26 @@ def _resolve_target_path(path, *, root=None, registry_path=None, volume_uuid_loo
     root = Path(root if root is not None else ROOT)
     _reject_parent_segments(root, 'Target root')
     _reject_parent_segments(path, 'Target path')
-    registry_path = registry_path if registry_path is not None else STORAGE_REGISTRY
+    effective_registry = registry_path if registry_path is not None else STORAGE_REGISTRY
     target = root / 'target'
     path = Path(os.path.abspath(path))
     target = Path(os.path.abspath(target))
     if not _is_within(path, target):
         return path
-    registry = _load_target_registry(root, registry_path)
+    registry = _load_target_registry(root, effective_registry)
     routes = [item for item in (registry or []) if item[0] == target]
     if target.is_symlink():
+        if effective_registry is None:
+            resolved = Path(os.path.realpath(target))
+            if not resolved.is_dir():
+                raise SystemExit('Target symlink destination is missing')
+            mapped = resolved / path.relative_to(target)
+            cursor = resolved
+            for part in path.relative_to(target).parts:
+                cursor = cursor / part
+                if cursor.is_symlink():
+                    raise SystemExit('Refusing symlink within mapped target')
+            return mapped
         if len(routes) != 1:
             raise SystemExit('Target symlink lacks one exact registry mapping')
         _, physical, volume_uuid = routes[0]

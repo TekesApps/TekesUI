@@ -32,7 +32,6 @@ const BODY: ComponentId = ComponentId(8403);
 const BACKING: f32 = 2.0;
 const TEXT_SCALE: f32 = 0.9;
 const TRANSPARENT: Rgba = Rgba::new(0.0, 0.0, 0.0, 0.0);
-const OUTPUT_PREFIX: &str = "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-127/";
 
 struct Evidence {
     dir: PathBuf,
@@ -45,11 +44,14 @@ impl Evidence {
     fn new(case: &'static str) -> Self {
         let root = PathBuf::from(
             std::env::var_os("TEKESUI_PANEL82_GPU_ARTIFACT_DIR")
-                .expect("runner must set a fresh Root consumer SSD output directory"),
+                .expect("runner must set a fresh Root consumer output directory"),
         );
         assert!(
-            root.starts_with(OUTPUT_PREFIX),
-            "Root consumer output path escaped its package"
+            !root.as_os_str().is_empty()
+                && !root
+                    .components()
+                    .any(|c| c == std::path::Component::ParentDir),
+            "safe output directory required"
         );
         fs::create_dir_all(&root).expect("create Root consumer output root");
         let dir = root.join(case);

@@ -19,7 +19,13 @@ fn actual_gpu_original_view_packets_and_clip() {
     let out = std::path::PathBuf::from(
         std::env::var_os("TEKESUI_EMPTY_GPU_OUT").expect("unique evidence output"),
     );
-    assert!(out.starts_with("/Volumes/HP P900/DEV/TekesUI/artifacts"));
+    assert!(
+        !out.as_os_str().is_empty()
+            && !out
+                .components()
+                .any(|c| c == std::path::Component::ParentDir),
+        "safe evidence output directory required"
+    );
     std::fs::create_dir(&out).expect("fresh output required");
     let mut gpu = tekes_ui_render::Renderer::new_headless().unwrap();
     let mut cases = vec![];

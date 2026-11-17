@@ -859,7 +859,7 @@ mod tests {
         let owner = settings_owner_in(root.clone()).unwrap();
         let first = assemble(Theme::LIGHT, owner.clone()).unwrap();
         let second = assemble(Theme::DARK, owner.clone()).unwrap();
-        assert!(root.join("settings/general/settings.lock").is_file());
+        assert!(root.join("settings/general/settings.toml.lock").is_file());
         drop(first);
         drop(second);
         drop(owner);

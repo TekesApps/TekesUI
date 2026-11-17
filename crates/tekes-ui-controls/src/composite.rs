@@ -1268,8 +1268,13 @@ pub(crate) fn menu_popup_geometry(
         natural.width,
         (rows_height + header_height + header_gap).max(0.0),
     );
-    let below = (viewport.max_y() - anchor.max_y() - gap).clamp(0.0, viewport.size.height);
-    let above = (anchor.min_y() - gap - viewport.min_y()).clamp(0.0, viewport.size.height);
+    let viewport_height = if viewport.size.height.is_finite() {
+        viewport.size.height.max(0.0)
+    } else {
+        0.0
+    };
+    let below = (viewport.max_y() - anchor.max_y() - gap).clamp(0.0, viewport_height);
+    let above = (anchor.min_y() - gap - viewport.min_y()).clamp(0.0, viewport_height);
     let available = below.max(above);
     let first = row_heights.first().copied().unwrap_or(0.0);
     let minimum = first + inset * 2.0 + header_height + header_gap;
@@ -5500,5 +5505,21 @@ mod overlay_presence_tests {
         assert_eq!(view.key(ControlKey::Space, false), None);
         assert_eq!(view.key(ControlKey::Right, true), None);
         assert_eq!(view.selected(), 0);
+    }
+
+    #[test]
+    fn menu_popup_geometry_handles_negative_or_nan_viewport_without_panicking() {
+        for vh in [-20.0, f32::NAN] {
+            let (popup, _, _) = menu_popup_geometry(
+                Rect::new(10.0, 20.0, 120.0, 28.0),
+                Size::new(120.0, 60.0),
+                Rect::new(0.0, 0.0, 320.0, vh),
+                4.0,
+                &[28.0, 28.0],
+                false,
+                None,
+            );
+            assert!(popup.size.height.is_finite() || vh.is_nan());
+        }
     }
 }

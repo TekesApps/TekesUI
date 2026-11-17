@@ -270,3 +270,22 @@ fn whole_span_and_visible_uncertainty_are_explicit() {
     assert_eq!(tangent.contains([1., 0.]), Ok(true));
     assert_eq!(tangent.has_positive_area(), Ok(false));
 }
+
+#[test]
+fn large_panel_subthreshold_spring_residuals_flush_cleanly() {
+    let s = ClipShape::normalize(
+        Rect::new(5e-5, 2_f32.powi(-70), 1000., 1000.),
+        CornerRadii {
+            top_left: 5e-5,
+            top_right: 0.,
+            bottom_right: 12.,
+            bottom_left: 0.,
+        },
+        Point::new(0., 0.),
+    )
+    .expect("1000pt clip with spring tail residual should normalize");
+    assert_eq!(s.rect(), Rect::new(0., 0., 1000., 1000.));
+    assert_eq!(s.radii().top_left, 0.);
+    assert_eq!(s.radii().bottom_right, 12.);
+    assert!(s.inset(1.).is_ok());
+}

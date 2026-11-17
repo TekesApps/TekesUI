@@ -2,12 +2,18 @@
 use anyhow::{Result, anyhow};
 use objc2_io_surface::IOSurfaceRef;
 use tekes_ui_render::{gpu::GpuContext, shared_surface_macos};
-pub fn import(
+/// Import a raw Mach send right as an immutable `IOSurface` texture.
+///
+/// # Safety
+/// `port` must be a valid Mach send right in `mach_task_self()` whose ownership
+/// (one send-right reference) is transferred to this call.
+pub unsafe fn import(
     context: &GpuContext,
     size: (u32, u32),
     port: u32,
     registry: u64,
 ) -> Result<wgpu::Texture> {
+    // SAFETY: caller transfers ownership of one valid Mach send right in this task.
     let right = unsafe { crate::transport::OwnedSendRight::from_raw(port) };
     import_owned(context, size, right, registry)
 }

@@ -19,7 +19,7 @@ cargo test --locked --manifest-path examples/panel-content-consumer/Cargo.toml -
 cargo clippy --locked --manifest-path examples/panel-content-consumer/Cargo.toml --test panel_content --test panel_gpu -- -D warnings
 ```
 
-Actual GPU matrix execution requires macOS/Metal and a fresh `TEKESUI_PANEL82_GPU_ARTIFACT_DIR` beneath `/Volumes/HP P900/DEV/TekesUI/artifacts/issue-82/`. The source enforces that SSD Issue #82 root before creating outputs. The coordinator must verify its selected fresh run subdirectory does not exist and must not reuse the old R19 output.
+Actual GPU matrix execution requires macOS/Metal and a fresh `TEKESUI_PANEL82_GPU_ARTIFACT_DIR` (for example under `$TMPDIR/tekesui-artifacts/issue-82/`). The coordinator must verify its selected fresh run subdirectory does not exist and must not reuse the old R19 output.
 
 ```sh
 cargo test --locked --manifest-path examples/panel-content-consumer/Cargo.toml --test panel_gpu actual_coretext_all_gpu_pipelines_and_full_frame_single_coverage_oracle -- --exact --nocapture
@@ -37,7 +37,7 @@ The native event journal records real window focus, mouse and scroll callbacks, 
 Run the real window manually to verify the system Pinyin candidate interaction without changing input-method settings:
 
 ```sh
-TEKESUI_PANEL82_NATIVE_EVIDENCE='/Volumes/HP P900/DEV/TekesUI/artifacts/issue-82/native-panel82-manual-20261029-01' \
+TEKESUI_PANEL82_NATIVE_EVIDENCE="${TMPDIR:-/tmp}/tekesui-artifacts/issue-82/native-panel82-manual" \
   cargo run --locked --manifest-path examples/panel-content-consumer/Cargo.toml --example native
 ```
 
@@ -47,7 +47,7 @@ For the separate AppKit event script, use this command with its separate evidenc
 
 ```sh
 TEKESUI_PANEL82_NATIVE_SELFTEST=1 \
-TEKESUI_PANEL82_NATIVE_EVIDENCE='/Volumes/HP P900/DEV/TekesUI/artifacts/issue-82/native-panel82-selftest-20261029-01' \
+TEKESUI_PANEL82_NATIVE_EVIDENCE="${TMPDIR:-/tmp}/tekesui-artifacts/issue-82/native-panel82-selftest" \
   cargo run --locked --manifest-path examples/panel-content-consumer/Cargo.toml --example native
 ```
 

@@ -122,10 +122,15 @@ fn independent_surface_matches_same_raster_parent_mask_at_fractional_placement_a
         ClipShape, CornerRadii, FragmentBudget, FragmentTransform, Point, Quad, ShapeTable,
     };
     let root = PathBuf::from(
-        std::env::var_os("TEKESUI_LAYER_TEST_OUTPUT")
-            .expect("fresh SSD evidence directory required"),
+        std::env::var_os("TEKESUI_LAYER_TEST_OUTPUT").expect("fresh evidence directory required"),
     );
-    assert!(root.starts_with("/Volumes/HP P900/DEV/TekesUI/artifacts/issue-81/"));
+    assert!(
+        !root.as_os_str().is_empty()
+            && !root
+                .components()
+                .any(|c| c == std::path::Component::ParentDir),
+        "safe output directory required"
+    );
     fs::create_dir(&root).expect("never overwrite prior layer evidence");
     let mut renderer = Renderer::new_headless().expect("actual Metal required");
     for (index, (scale, origin)) in [

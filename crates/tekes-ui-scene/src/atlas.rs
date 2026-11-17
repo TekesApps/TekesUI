@@ -215,12 +215,14 @@ impl GlyphAtlas {
     pub fn stats(&self) -> AtlasStats {
         let mut s = self.stats;
         s.pages = self.pages.len() as u32;
-        s.bytes = self.pages.len() as u64 * self.page_bytes();
+        s.bytes = (self.pages.len() as u64).saturating_mul(self.page_bytes());
         s
     }
 
     fn page_bytes(&self) -> u64 {
-        self.config.page_size as u64 * self.config.page_size as u64 * 4
+        u64::from(self.config.page_size)
+            .saturating_mul(u64::from(self.config.page_size))
+            .saturating_mul(4)
     }
 
     /// 取已缓存的字形，没有就调用 `raster` 光栅化并放进 atlas。
@@ -253,15 +255,24 @@ impl GlyphAtlas {
             self.map.insert(key, None);
             return None;
         }
-        let expected = r.width as usize * r.height as usize * 4;
-        if r.pixels.len() != expected {
-            debug_assert!(false, "RasterGlyph.pixels 长度与宽高不符");
+        if r.width > self.config.page_size || r.height > self.config.page_size {
+            // 永远放不下：缓存成"没有位图"，不再重试。
             self.map.insert(key, None);
             self.stats.dropped += 1;
             return None;
         }
-        if r.width > self.config.page_size || r.height > self.config.page_size {
-            // 永远放不下：缓存成"没有位图"，不再重试。
+        let expected = usize::try_from(r.width)
+            .ok()
+            .and_then(|w| {
+                usize::try_from(r.height)
+                    .ok()
+                    .and_then(|h| w.checked_mul(h))
+            })
+            .and_then(|px| px.checked_mul(4));
+        if expected != Some(r.pixels.len()) {
+            if expected.is_some() {
+                debug_assert!(false, "RasterGlyph.pixels 长度与宽高不符");
+            }
             self.map.insert(key, None);
             self.stats.dropped += 1;
             return None;
@@ -298,7 +309,7 @@ impl GlyphAtlas {
             }
         }
         if (self.pages.len() as u32) < self.config.max_pages {
-            let mut page = Page::new(&self.config, self.frame);
+            let mut page = Page::try_new(&self.config, self.frame)?;
             // 空页一定放得下（w、h 已检查不超过页大小）。
             let (x, y) = page.try_place(w, h, &self.config)?;
             self.pages.push(page);
@@ -412,16 +423,20 @@ impl GlyphAtlas {
 }
 
 impl Page {
-    fn new(config: &AtlasConfig, frame: u64) -> Page {
-        let n = config.page_size as usize;
-        Page {
-            pixels: vec![0; n * n * 4],
+    fn try_new(config: &AtlasConfig, frame: u64) -> Option<Page> {
+        let byte_len = usize::try_from(config.page_size)
+            .ok()
+            .and_then(|n| n.checked_mul(n))
+            .and_then(|px| px.checked_mul(4))
+            .filter(|&bytes| bytes <= isize::MAX as usize)?;
+        Some(Page {
+            pixels: vec![0; byte_len],
             shelves: Vec::new(),
             next_shelf_y: 0,
             keys: Vec::new(),
             last_used: frame,
             dirty: None,
-        }
+        })
     }
 
     /// shelf 装箱：在够高、够宽的 shelf 里选最矮的一条；没有就在下面开一条新 shelf。
@@ -431,23 +446,27 @@ impl Page {
             .shelves
             .iter()
             .enumerate()
-            .filter(|(_, s)| s.height >= h && s.x + w <= size)
+            .filter(|(_, s)| s.height >= h && s.x.checked_add(w).is_some_and(|end| end <= size))
             .min_by_key(|(i, s)| (s.height, *i))
             .map(|(i, _)| i);
         if let Some(i) = best {
             let s = &mut self.shelves[i];
             let pos = (s.x, s.y);
-            s.x += w + config.padding;
+            s.x = s.x.saturating_add(w).saturating_add(config.padding);
             return Some(pos);
         }
-        if self.next_shelf_y + h <= size {
+        if self
+            .next_shelf_y
+            .checked_add(h)
+            .is_some_and(|end| end <= size)
+        {
             let y = self.next_shelf_y;
             self.shelves.push(Shelf {
                 y,
                 height: h,
-                x: w + config.padding,
+                x: w.saturating_add(config.padding),
             });
-            self.next_shelf_y = y + h + config.padding;
+            self.next_shelf_y = y.saturating_add(h).saturating_add(config.padding);
             return Some((0, y));
         }
         None
@@ -812,5 +831,39 @@ mod tests {
             .unwrap();
         assert_eq!(g.format, RasterFormat::Color);
         assert_eq!((g.left, g.top), (-1, -4));
+    }
+
+    #[test]
+    fn huge_dimensions_and_padding_never_overflow() {
+        let mut a = small(1);
+        a.begin_frame();
+        assert!(
+            a.get_or_insert_with(key(10), || Some(RasterGlyph {
+                left: 0,
+                top: 0,
+                width: u32::MAX,
+                height: u32::MAX,
+                format: RasterFormat::Mask,
+                pixels: Vec::new(),
+            }))
+            .is_none()
+        );
+
+        let mut pad_atlas = GlyphAtlas::new(AtlasConfig {
+            page_size: 16,
+            max_pages: 1,
+            padding: u32::MAX,
+        });
+        pad_atlas.begin_frame();
+        assert!(
+            pad_atlas
+                .get_or_insert_with(key(1), || Some(bitmap(2, 2, 1)))
+                .is_some()
+        );
+        assert!(
+            pad_atlas
+                .get_or_insert_with(key(2), || Some(bitmap(2, 2, 2)))
+                .is_none()
+        );
     }
 }

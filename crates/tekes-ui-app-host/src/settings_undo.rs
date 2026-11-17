@@ -4,8 +4,14 @@ use serde::{Deserialize, Serialize};
 use std::{
     fs::{self, File, OpenOptions},
     io::Write,
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
+
+fn parent_dir(path: &Path) -> &Path {
+    path.parent()
+        .filter(|p| !p.as_os_str().is_empty())
+        .unwrap_or_else(|| Path::new("."))
+}
 use tekes_ui_module_runtime::{ComponentDefinition, ComponentEmitter, ProcessModule, component::*};
 use tekes_ui_settings::Snapshot;
 
@@ -68,8 +74,10 @@ struct Store {
 }
 impl Store {
     fn open(file: PathBuf, namespace: String, current: Snapshot) -> Result<Self> {
-        let parent = file.parent().context("history needs a directory")?;
-        fs::create_dir_all(parent)?;
+        let parent = parent_dir(&file);
+        if parent != Path::new(".") {
+            fs::create_dir_all(parent)?;
+        }
         let lock = OpenOptions::new()
             .create(true)
             .truncate(false)
@@ -161,7 +169,7 @@ impl Store {
         file.write_all(&serde_json::to_vec_pretty(&next)?)?;
         file.sync_all()?;
         fs::rename(temp, &self.file)?;
-        File::open(self.file.parent().unwrap())?.sync_all()?;
+        File::open(parent_dir(&self.file))?.sync_all()?;
         self.journal = next;
         Ok(())
     }
@@ -448,6 +456,17 @@ mod lossless_snapshot_tests {
         assert_eq!(roundtrip, snapshot);
         drop(provider);
         std::fs::remove_file(&file).unwrap();
-        std::fs::remove_file(file.with_extension("lock")).unwrap();
+        let mut lock = file.as_os_str().to_os_string();
+        lock.push(".lock");
+        std::fs::remove_file(std::path::PathBuf::from(lock)).unwrap();
+    }
+
+    #[test]
+    fn parent_dir_falls_back_to_current_dir_for_bare_relative_paths() {
+        assert_eq!(parent_dir(Path::new("history.json")), Path::new("."));
+        assert_eq!(
+            parent_dir(Path::new("nested/history.json")),
+            Path::new("nested")
+        );
     }
 }

@@ -11,15 +11,27 @@ fn text_image_mixed_and_original_content_use_the_real_shared_button_on_metal() {
     let mut renderer = tekes_ui_render::Renderer::new_headless().expect("real GPU");
     let output = std::env::var_os("TEKESUI_BUTTON_GPU_OUT").map(std::path::PathBuf::from);
     if let Some(out) = &output {
-        let root = std::path::Path::new("/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/unified-button-main36dd132-intake/gpu");
-        assert!(out.is_absolute() && out.starts_with(root) && !out.components().any(|c| c == std::path::Component::ParentDir), "GPU output must use the coordinated SSD artifact directory");
+        assert!(
+            !out.as_os_str().is_empty()
+                && !out
+                    .components()
+                    .any(|c| c == std::path::Component::ParentDir),
+            "safe GPU artifact directory required"
+        );
         std::fs::create_dir_all(out).unwrap();
     }
     let mut evidence = vec![];
     for (ti, theme) in Theme::ALL.into_iter().enumerate() {
         for scale in [1., 1.5, 2.] {
             let palette = Palette::from(theme);
-            let ink = tekes_ui_tokens::surface_palette::resolve_surface(palette,"canvas","action-quiet","rest").unwrap().icon;
+            let ink = tekes_ui_tokens::surface_palette::resolve_surface(
+                palette,
+                "canvas",
+                "action-quiet",
+                "rest",
+            )
+            .unwrap()
+            .icon;
             let glyph = tekes_ui_icons::Glyph::ALL
                 .iter()
                 .find(|g| g.name == "tekes-settings")

@@ -697,6 +697,8 @@ const RAW: &str = r#"pub struct LiteralOnly; { [ ] }"#;
             ('cross-identity', lambda intake: intake['evidence'][0].update(component='tui.chart'), 'cross-component'),
             ('missing-source', lambda intake: intake['source_identity']['sha256'].update({'crates/missing.rs': '0' * 64}), 'missing practical intake source'),
             ('wrong-status', lambda intake: intake.update(status='complete'), 'invalid practical intake status'),
+            ('absolute-artifact-path', lambda intake: intake['evidence'][0].update(artifact='/Volumes/External/DEV/TekesUI/artifacts/issue-1/receipt.json'), 'unsafe practical intake artifact path'),
+            ('traversal-artifact-path', lambda intake: intake['evidence'][0].update(artifact='artifacts/../secret/receipt.json'), 'unsafe practical intake artifact path'),
         ]
         for name, mutate, expected in cases:
             with self.subTest(name=name), self.contract_fixture() as root:

@@ -360,6 +360,7 @@ impl SettingsSidebar {
             .map(|field| field.query().trim().to_lowercase())
             .unwrap_or_default();
         if self.search_button.is_some()
+            && query.is_empty()
             && self.host.focused() != Some(ComponentId(6))
             && !self.host.is_composing()
         {
@@ -411,7 +412,19 @@ impl SettingsSidebar {
     }
     pub fn event(&mut self, event: &ContentEvent) -> Option<String> {
         self.host.event(event);
+        let _ = self.sync_search();
         self.take_selection()
+    }
+    pub fn event_with_text(
+        &mut self,
+        event: &ContentEvent,
+        text: &mut dyn ButtonTextRenderer,
+    ) -> Result<Option<String>> {
+        self.host
+            .event_with_text(event, text)
+            .map_err(|error| anyhow::anyhow!("Settings sidebar input: {error:?}"))?;
+        self.sync_search()?;
+        Ok(self.take_selection())
     }
     pub fn take_selection(&mut self) -> Option<String> {
         let actions = self.host.drain_action_records();
@@ -437,5 +450,92 @@ impl SettingsSidebar {
                 .filter(|route| self.selected_item.as_ref() != Some(route))
                 .cloned()
         })
+    }
+}
+
+#[cfg(test)]
+mod search_focus_tests {
+    use super::*;
+    use tekes_ui_controls::composition::{IconImage, IconRenderError, WithIconRenderer};
+    use tekes_ui_controls::{ButtonTextAlign, ControlKey, layout_view::IconRenderer};
+    use tekes_ui_scene::ImageId;
+
+    struct DummyText;
+    impl ButtonTextRenderer for DummyText {
+        fn measure(
+            &mut self,
+            text: &str,
+            _: tekes_ui_tokens::proposal::TextRole,
+            width: f32,
+        ) -> tekes_ui_scene::Size {
+            tekes_ui_scene::Size::new((text.chars().count() as f32 * 8.0).min(width), 16.0)
+        }
+        fn draw(
+            &mut self,
+            _: &mut Scene,
+            _: &str,
+            _: tekes_ui_tokens::proposal::TextRole,
+            _: Rect,
+            _: ButtonTextAlign,
+            _: tekes_ui_tokens::Rgba,
+        ) {
+        }
+    }
+
+    struct DummyIcons;
+    impl IconRenderer for DummyIcons {
+        fn prepare_icon(
+            &mut self,
+            name: &str,
+            _: f32,
+            _: f32,
+            _: tekes_ui_tokens::Rgba,
+        ) -> std::result::Result<IconImage, IconRenderError> {
+            assert_eq!(name, "tekes-search");
+            Ok(IconImage::new(ImageId(99), std::rc::Rc::new(())))
+        }
+        fn draw_icon(&mut self, _: &mut Scene, _: &str, _: Rect, _: tekes_ui_tokens::Rgba) {}
+    }
+
+    #[test]
+    fn non_empty_search_survives_tab_blur_while_empty_search_cancels() {
+        let schema = Schema::parse(include_str!("../tests/fixtures/layout.schema.toml")).unwrap();
+        let mut sidebar = SettingsSidebar::new_with_back(&schema).unwrap();
+        let mut text_backend = DummyText;
+        let mut icons = DummyIcons;
+        let mut renderer = WithIconRenderer::new(&mut text_backend, &mut icons);
+        sidebar
+            .render(
+                &mut Scene::new(),
+                &mut renderer,
+                Rect::new(0.0, 0.0, 220.0, 400.0),
+                Palette::from(tekes_ui_tokens::Theme::LIGHT),
+            )
+            .unwrap();
+        sidebar.open_search().unwrap();
+        sidebar.event(&ContentEvent::Commit {
+            text: "font".into(),
+            replacement: None,
+        });
+        assert_eq!(sidebar.query, "font");
+
+        // Tabbing out to filtered results must keep the search query & results.
+        sidebar.event(&ContentEvent::Key {
+            key: ControlKey::Tab { reverse: false },
+            down: true,
+        });
+        sidebar.host.focus(None, true);
+        sidebar.sync_search().unwrap();
+        assert!(sidebar.search_button.is_some());
+        assert_eq!(sidebar.query, "font");
+
+        // Clearing query to empty and blurring cancels search cleanly.
+        assert!(sidebar.host.focus(Some(ComponentId(6)), true));
+        sidebar.event(&ContentEvent::TextCommand("selectAll:".into()));
+        sidebar.event(&ContentEvent::TextCommand("deleteBackward:".into()));
+        sidebar.host.focus(None, false);
+        sidebar.sync_search().unwrap();
+        assert!(sidebar.search_button.is_none());
+        assert!(sidebar.query.is_empty());
     }
 }

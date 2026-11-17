@@ -46,7 +46,7 @@
             "issue": "#121",
             "component": "tui.stack",
             "commit": "bb488947e312a5a3caa262e96985a272f634108e",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-121/stack-main8253390-candidate/main-intake/commit-receipt.json",
+            "artifact": "artifacts/issue-121/stack-main8253390-candidate/main-intake/commit-receipt.json",
             "sha256": "c6900e03b5c4e5d785714eaec2fdedf87bf2e2b5aa26218a79952d73fe9840b5",
             "scope": "Actual current public retained layout/Theme forwarding and real Gallery/strict, corrected test mapping and explicit original evidence identities/boundaries."
           }
@@ -103,7 +103,7 @@
             "issue": "#121",
             "component": "tui.grid",
             "commit": "7120d5d272fc432950b622563481a4aa5ce7a90d",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-121/grid-maina8e985b-candidate/main-intake/commit-receipt.json",
+            "artifact": "artifacts/issue-121/grid-maina8e985b-candidate/main-intake/commit-receipt.json",
             "sha256": "9cff1e1a8aa0c57e3f9e2b5334835831926662de6c3dfdcc37effe449b1cd106",
             "scope": "Actual public/Gallery/strict; old inheritance/clip/reveal/leaf evidence retains original identity"
           }
@@ -166,7 +166,7 @@
             "issue": "#121",
             "component": "tui.separator",
             "commit": "ceeee8a6e30092e0cf709cd14edea465ac3d1302",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-121/separator-main0a389a9-candidate/main-intake/commit-receipt.json",
+            "artifact": "artifacts/issue-121/separator-main0a389a9-candidate/main-intake/commit-receipt.json",
             "sha256": "010a23fada4c6f3cfd1bba560b5f98e95b215cc911d33cfb3f24302198376b0d",
             "scope": "Actual main retained decorative Theme/clip and Gallery dual implementation/scale tests; strict passed; exceptions and not_run preserved."
           },
@@ -174,7 +174,7 @@
             "issue": "#54",
             "component": "tui.separator",
             "commit": "c7b4e511e6842137b09cf4a5f033fe37427dc1b5",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-54/separator-content-main8de6c24-candidate/main-intake/commit-receipt.json",
+            "artifact": "artifacts/issue-54/separator-content-main8de6c24-candidate/main-intake/commit-receipt.json",
             "sha256": "72d6cc42d01b54cf4f45fe7f08d7a7dda8a23b2bab7b73ad5bb6efe5574a4eb6",
             "scope": "Current ordinary Content/reading/marked/checked compatibility and original a2 GPU scope; prior Root/Gallery/scale evidence not re-signed."
           }
@@ -262,7 +262,7 @@
             "issue": "#121",
             "component": "tui.split-view",
             "commit": "2753d52ff5e344bec4492d9046b1c0933e56593b",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-121/split-view-main97bd424-candidate/main-intake/commit-receipt.json",
+            "artifact": "artifacts/issue-121/split-view-main97bd424-candidate/main-intake/commit-receipt.json",
             "sha256": "e6004f228b87bef1e2ebfc0d80148df057b221d7c4284e049e1dec9ba67cda44",
             "scope": "Actual corrected Gallery/strict plus exact original public pass reuse; #103 B/#12/native gaps remain separate"
           },
@@ -270,7 +270,7 @@
             "issue": "#103",
             "component": "tui.split-view",
             "commit": "51380cc4c95148549f48ec5b6aa87cbaf7816bbf",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-103/splitter-main277958f-candidate-20261028-01/acceptance-receipt.json",
+            "artifact": "artifacts/issue-103/splitter-main277958f-candidate-20261028-01/acceptance-receipt.json",
             "sha256": "f9e884dc046b8960fae3fe5fb310be385c8f86d87efa3fd697317706c8e910ce",
             "scope": "Main B intake after this base; exact changed source receipt and separate round identities, not historical A evidence re-signing. Native hidden dispatcher only."
           }
@@ -369,7 +369,7 @@
             "issue": "#121",
             "component": "tui.scroll-area",
             "commit": "5cc0063571efc89aa6409b8d925aa53c05df4dd2",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-121/scroll-area-main356ad1d-candidate/main-intake/commit-receipt.json",
+            "artifact": "artifacts/issue-121/scroll-area-main356ad1d-candidate/main-intake/commit-receipt.json",
             "sha256": "6b0df76de068b380eada2d9a9471c3cb3085e018cf7fa122eaedf49f20b29a21",
             "scope": "Actual public/dedicated Gallery/strict; original generated scroll/clip/reveal/reading/editor results retain identity"
           }
@@ -531,7 +531,7 @@
             "issue": "#121",
             "component": "tui.disclosure",
             "commit": "146a1c822e95e17bec355daa0d1356cec46fca9c",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-121/disclosure-main6594bad-candidate/main-intake/commit-receipt.json",
+            "artifact": "artifacts/issue-121/disclosure-main6594bad-candidate/main-intake/commit-receipt.json",
             "sha256": "8f8cdddae9c7546ff35492746798928a465f7cf7410c1453ed29bbc5b1a032d1",
             "scope": "Actual public/real Gallery native-icon Scene/strict; original shared Button/motion/ContentHost/IME evidence retains identity"
           }
@@ -584,7 +584,7 @@
             "issue": "#121",
             "component": "tui.surface",
             "commit": "7840faa7cfa15848b553ab5aea78e95841617ec3",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-121/surface-maine90220b-candidate/main-intake/commit-receipt.json",
+            "artifact": "artifacts/issue-121/surface-maine90220b-candidate/main-intake/commit-receipt.json",
             "sha256": "fc65819a7bcb559097fae05eb86d84c8c64d867ef83cf9af6d56d86ad4abbc7e",
             "scope": "Actual public/Gallery retained Surface Theme, content ink/ground/passive composition and strict; original shared evidence and boundaries retained."
           }
@@ -695,7 +695,7 @@
             "issue": "#121",
             "component": "tui.toolbar",
             "commit": "228f2c8e98730df07a97370ea75dd058893b4a27",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-121/toolbar-main511badf-candidate/main-intake/commit-receipt.json",
+            "artifact": "artifacts/issue-121/toolbar-main511badf-candidate/main-intake/commit-receipt.json",
             "sha256": "e4992c60f9619bd19d0672dabd2d41c754ca42237c11597547a9c39b4ac1a079",
             "scope": "Actual corrected public/real Gallery/strict; original #69 and shared Surface/Button/Menu evidence retains identity, first public101 preserved"
           }
@@ -748,7 +748,7 @@
             "issue": "#122",
             "component": "tui.text",
             "commit": "9f4660eed322b2be72edb137ac19a384dd6eaac9",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-122/text-main6594bad-candidate/main-intake/commit-receipt.json",
+            "artifact": "artifacts/issue-122/text-main6594bad-candidate/main-intake/commit-receipt.json",
             "sha256": "7e4773e386f456ec2ebb4ced5e1916b641fed342fd1e7c97fe7316fe3d150e8f",
             "scope": "Actual corrected public two cases/real Gallery/strict; original native copy/edit/IME and shared results retain identity, false preflight/compiler failure preserved"
           }
@@ -799,7 +799,7 @@
             "issue": "#123",
             "component": "tui.icon",
             "commit": "aec642fb69b339241205cab759e4ba0cf8ac7a25",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-123/icon-main7a0f6e7-candidate/main-intake/commit-receipt.json",
+            "artifact": "artifacts/issue-123/icon-main7a0f6e7-candidate/main-intake/commit-receipt.json",
             "sha256": "55645ec1db2a370af51078869f6901e60c2dbe5b8561864ba93f707b4c67d7ac",
             "scope": "Exact-main real canonical consumer/catalog adapter tests and strict, applicability exceptions and original unverified boundaries."
           }
@@ -908,7 +908,7 @@
           {
             "issue": "#113",
             "commit": "cef7b7f9a0ab75937de4a63d9f0ecf7067805534",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-113/button-public-contrast-main2a-20261026-01/run-20261026T135103.526780Z/run-receipt.json",
+            "artifact": "artifacts/issue-113/button-public-contrast-main2a-20261026-01/run-20261026T135103.526780Z/run-receipt.json",
             "sha256": "22f3d69c19516775c72567c08bc1b4f259d679bcab60947d1880f60d6763c73d",
             "scope": "72 representative public Button ink/fill contrast combinations; 3 tests and targeted strict passed",
             "component": "tui.button"
@@ -916,7 +916,7 @@
           {
             "issue": "#113",
             "commit": "33c2d61336c9a1895128c640c8b7a6c7c5f2bf3e",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-113/button-gallery-main-cef-20261026-01/run-20261026T135931.084134Z/run-receipt.json",
+            "artifact": "artifacts/issue-113/button-gallery-main-cef-20261026-01/run-20261026T135931.084134Z/run-receipt.json",
             "sha256": "bfd35999226ed335ae8b106b30b2f2f462448269d19bfb395d97c8ece545d858",
             "scope": "real Gallery Button theme/brand switch and representative state regression; 3 tests and Gallery strict passed",
             "component": "tui.button"
@@ -1050,7 +1050,7 @@
             "issue": "#123",
             "component": "tui.icon-button",
             "commit": "b74e9f73b17a3c8864b75adc978ed27bf4d84f1c",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-123/icon-button-mainc4d956b-candidate/main-intake/commit-receipt.json",
+            "artifact": "artifacts/issue-123/icon-button-mainc4d956b-candidate/main-intake/commit-receipt.json",
             "sha256": "2b865f247b56a49f773c0c058529665302e9324fd6bdb498ed6c6c50ad83534d",
             "scope": "Exact-main actual public registered artwork Metal, Gallery native Plus/semantic-state tests, strict, explicit applicability exceptions and original shared results."
           }
@@ -1159,7 +1159,7 @@
             "issue": "#123",
             "component": "tui.link",
             "commit": "be952dede5716f107801df2523aa5e8a69bb9d20",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-123/link-main113c0f9/commit-receipt.json",
+            "artifact": "artifacts/issue-123/link-main113c0f9/commit-receipt.json",
             "sha256": "32dffefe88685d67be4f8d965c0af568ba2184aa3832b7978e7ebee089086fe5",
             "scope": "Actual public retained-state/Theme and real Gallery results, strict and explicit unverified scope in accepted local-main receipt."
           }
@@ -1312,7 +1312,7 @@
             "issue": "#122",
             "component": "tui.text-field",
             "commit": "33b74b88d35c5d199fd826bca1f1d14d2fb74129",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-122/text-field-main2c6d7db-candidate/main-intake/commit-receipt.json",
+            "artifact": "artifacts/issue-122/text-field-main2c6d7db-candidate/main-intake/commit-receipt.json",
             "sha256": "c2530ef6f923d22acd50a783f5ee1b73c9447fd142e6e32dd554d18d17661d8e",
             "scope": "Actual public primary+adapter/real Gallery/strict; accepted Text/Field and old native/font/producer evidence retain original identities"
           }
@@ -1467,7 +1467,7 @@
             "issue": "#122",
             "component": "tui.text-area",
             "commit": "0bfbbdcf42532a9e0d6c46b16a31253acc4a4ee6",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-122/text-area-mainfc261e4-candidate/main-intake/selection-oracle-correction01/commit-receipt.json",
+            "artifact": "artifacts/issue-122/text-area-mainfc261e4-candidate/main-intake/selection-oracle-correction01/commit-receipt.json",
             "sha256": "70705cd57d5e50936bce47c11ac1f28ba72300c6b49afbc67e8581e304879303",
             "scope": "Actual public2/Gallery1/strict passed at recorded main source; unchanged shared matrices retain original identities"
           }
@@ -1623,7 +1623,7 @@
             "issue": "#122",
             "component": "tui.search-field",
             "commit": "c28228b1a0f0f95feb6a727a2864b64ca276811a",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-122/search-mainfc261e4-candidate/main-intake/commit-receipt.json",
+            "artifact": "artifacts/issue-122/search-mainfc261e4-candidate/main-intake/commit-receipt.json",
             "sha256": "85ed5270966f0fc8fe1b568fffecbe721a2761f962bff4d277a3abc372221928",
             "scope": "Actual inline public/real Gallery Clear+placeholder/strict; unchanged TextField/shared producer results retain actual identities"
           }
@@ -1797,7 +1797,7 @@
             "issue": "#122",
             "component": "tui.combo-box",
             "commit": "5227ff7d7a8233830e8f65f6eb5e019fded11137",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-122/combo-box-main9048146-candidate/main-intake/commit-receipt.json",
+            "artifact": "artifacts/issue-122/combo-box-main9048146-candidate/main-intake/commit-receipt.json",
             "sha256": "c977717212dc9e0b08b439c5022d96eac0c7a5e31f90034189a0efaf8e106bbb",
             "scope": "Actual public2/Gallery1/strict at recorded main source; unchanged shared parser/editor/Menu/IME evidence retains identities"
           }
@@ -1919,7 +1919,7 @@
             "issue": "#122",
             "component": "tui.slider",
             "commit": "b57d5806a9c19820c074502250f9feb5fad88326",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-122/slider-maina8e985b-candidate/main-intake/commit-receipt.json",
+            "artifact": "artifacts/issue-122/slider-maina8e985b-candidate/main-intake/commit-receipt.json",
             "sha256": "480ada8dfdff028e466570542f805f2ea9bf9b1991bbacba83b46ebb18c85ba2",
             "scope": "Actual final main public/Gallery original state/AX/disabled traversal and strict; source-confirmed old defect is not an executed red claim"
           }
@@ -2058,7 +2058,7 @@
             "issue": "#122",
             "component": "tui.checkbox",
             "commit": "293b75127a66716bd4fb872e84d5de7f333466ab",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-122/checkbox-main0a389a9-candidate/main-intake/commit-receipt.json",
+            "artifact": "artifacts/issue-122/checkbox-main0a389a9-candidate/main-intake/commit-receipt.json",
             "sha256": "95d4329871f5a1d60a7846286fc9eee605344369166f3e07c9207da5ea27ba29",
             "scope": "Exact-main actual public CoreText/Gallery check states, semantic ink/ground and input contracts, strict, explicit bounded applicability."
           }
@@ -2187,7 +2187,7 @@
             "issue": "#122",
             "component": "tui.radio-group",
             "commit": "e89447f822e9c438da965dcc8b73efcea9ae5c71",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-122/radio-group-maine90220b-candidate/main-intake/commit-receipt.json",
+            "artifact": "artifacts/issue-122/radio-group-maine90220b-candidate/main-intake/commit-receipt.json",
             "sha256": "5de9d158ffc9cc38a41e2d12d8eb7d8859c52dbc16a601b3f635b870ca72c020",
             "scope": "Actual public retained Theme pass and subsequent Gallery-only corrected affected regressions/strict, original failures/identities and precise unverified scope."
           }
@@ -2316,7 +2316,7 @@
             "issue": "#122",
             "component": "tui.switch",
             "commit": "611282ffadfec321c702aabad5ed2ae2c6d2be86",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-122/switch-main9f827c2-candidate/main-intake/commit-receipt.json",
+            "artifact": "artifacts/issue-122/switch-main9f827c2-candidate/main-intake/commit-receipt.json",
             "sha256": "d33a22c0ed8d756da0736c34f0090c95ab42a0cb709bfaa0457ca743ddece950",
             "scope": "Exact-main public/Gallery retained Switch Theme/input/contrast, bounded actual adapter fix and affected regressions/strict; original evidence identities retained."
           }
@@ -2439,7 +2439,7 @@
             "issue": "#122",
             "component": "tui.segmented-control",
             "commit": "59ffc6e9557e6cc217cae29813c6cec69e151292",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-122/segmented-control-main8253390-candidate/main-intake/commit-receipt.json",
+            "artifact": "artifacts/issue-122/segmented-control-main8253390-candidate/main-intake/commit-receipt.json",
             "sha256": "1e256dd09149a2d6ea0236564129c36d04c3f3ae37cccadbd338e9cab44801d8",
             "scope": "Actual final-main public/Gallery/strict and precise two host synchronization fixes; original old evidence not re-signed"
           }
@@ -2517,7 +2517,7 @@
             "issue": "#122",
             "component": "tui.field",
             "commit": "b3478f9d460cc40482d76504ea366a2349c38965",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-122/field-main2c6d7db-candidate/main-intake/commit-receipt.json",
+            "artifact": "artifacts/issue-122/field-main2c6d7db-candidate/main-intake/commit-receipt.json",
             "sha256": "45ee7725860bcb4da723f3d97de26bbf3aaed21ebba826a167c4411d32de5e31",
             "scope": "Actual public metadata/real Gallery input-slot/strict; original input/native/producer results retain identity"
           }
@@ -2693,7 +2693,7 @@
             "issue": "#122",
             "component": "tui.select",
             "commit": "22cbc8e88e980e889f03afb10d36488bba3e79f5",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-122/select-main2c6d7db-candidate/main-intake/commit-receipt.json",
+            "artifact": "artifacts/issue-122/select-main2c6d7db-candidate/main-intake/commit-receipt.json",
             "sha256": "79ae8c9a5a2a598cfc787e156328be8e6f6d0d0b7bdce2456107883fc6dc20c1",
             "scope": "Actual public/real Gallery/strict; original shared producer/Menu/motion/native results retain original identities"
           }
@@ -2802,7 +2802,7 @@
             "issue": "#122",
             "component": "tui.number-field",
             "commit": "398ac4e3fa74531a679becb75a3c4356d80e3c1d",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-122/number-field-mainfc261e4-candidate/main-intake/commit-receipt.json",
+            "artifact": "artifacts/issue-122/number-field-mainfc261e4-candidate/main-intake/commit-receipt.json",
             "sha256": "eddfa625992e5075d5cccd0c67b326e99ea813987e599628f59662bf54f0d7cb",
             "scope": "Public original pass; final changed Gallery/strict/original pointer routing actual pass at recorded sources; old failures retained"
           }
@@ -2963,7 +2963,7 @@
             "issue": "#123",
             "component": "tui.tabs",
             "commit": "08c3456b764be1589f652655d66f8f5d0dda6901",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-123/tabs-main5634d2a-candidate/main-intake/commit-receipt.json",
+            "artifact": "artifacts/issue-123/tabs-main5634d2a-candidate/main-intake/commit-receipt.json",
             "sha256": "e5dda0aa8373f0e0f130402f1ce9b23e7dc3165e52542408514f29b983ea6dd7",
             "scope": "Exact-main public retained Tabs and real Gallery tests, strict, failure and bounded unverified items."
           }
@@ -3074,7 +3074,7 @@
             "issue": "#123",
             "component": "tui.breadcrumb",
             "commit": "0608cb64ec7382fcea72e1265ddcd7bcb446e470",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-123/breadcrumb-main5634d2a-candidate/main-intake/commit-receipt.json",
+            "artifact": "artifacts/issue-123/breadcrumb-main5634d2a-candidate/main-intake/commit-receipt.json",
             "sha256": "63266659f54ee1499d6169be5dc214d63f15274e83626a10ec764d19bde8c8a5",
             "scope": "Exact-main public/Gallery tests and strict, actual glyph contrast, original input protection and bounded unverified scope."
           }
@@ -3251,7 +3251,7 @@
             "issue": "#123",
             "component": "tui.command-palette",
             "commit": "975303260d4f573bfb01e26bdb52bb8a5dfef30c",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-123/command-palette-main7a0f6e7-candidate/main-intake/commit-receipt.json",
+            "artifact": "artifacts/issue-123/command-palette-main7a0f6e7-candidate/main-intake/commit-receipt.json",
             "sha256": "ed3786096b1840e0ad1809e89411cb3a49bd6992a07d9a80f079f3d4538c1311",
             "scope": "Exact-main public/Gallery runtime and strict, retained source identities and bounded unverified scope."
           }
@@ -3358,7 +3358,7 @@
             "issue": "#124",
             "component": "tui.list",
             "commit": "c40f147c206c5bd744509b137c2bddda858356ac",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-124/list-main0a389a9-candidate/main-intake/commit-receipt.json",
+            "artifact": "artifacts/issue-124/list-main0a389a9-candidate/main-intake/commit-receipt.json",
             "sha256": "c31e561d3a42f649e74f3d4f7192ffb8b569ec0218d106ab24fe3f7e57322b92",
             "scope": "Exact-main actual public/Gallery retained selectable List Theme, real ink/ground/input/semantics, strict, original applicability boundaries."
           }
@@ -3472,7 +3472,7 @@
             "issue": "#124",
             "component": "tui.tree",
             "commit": "8db310b3d887eeaf92604b3da483652e640a6c91",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-124/tree-maine90220b-candidate/main-intake/commit-receipt.json",
+            "artifact": "artifacts/issue-124/tree-maine90220b-candidate/main-intake/commit-receipt.json",
             "sha256": "126daaf1e7fb6bd3aea825d49137653ffcb82a024cb44f1e6fdb9e0db125be70",
             "scope": "Exact-main real public/Gallery Theme text/chevron/hierarchy/input/semantics and strict with explicit applicability boundaries."
           }
@@ -3581,7 +3581,7 @@
             "issue": "#124",
             "component": "tui.data-table",
             "commit": "6de619d5f3cc5730f383ace379dde30384055b30",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-124/data-table-main8253390-candidate/main-intake/commit-receipt.json",
+            "artifact": "artifacts/issue-124/data-table-main8253390-candidate/main-intake/commit-receipt.json",
             "sha256": "e175a198cb9aeb3b4e41cef710342ed504dc8073b8c3864c5f02650e0f94f0cf",
             "scope": "Actual public/Gallery/strict results; prior generator/Row/List/Text evidence retains original identity"
           }
@@ -3675,7 +3675,7 @@
           {
             "issue": "#104",
             "commit": "3bd9f00ddb7e1e5c004b18fa44f62d3bc197b322",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/chart104-main-intake-20261026-01/root-final-acceptance.json",
+            "artifact": "artifacts/issue-136/chart104-main-intake-20261026-01/root-final-acceptance.json",
             "sha256": "5fc8335fe1669eb6e6e3867bcf0473ec133d945fd698ad301d982e08df681bfe",
             "scope": "source receipt identity and offline pixel gate passed; exact scope and excluded follow-ups recorded in acceptance receipt",
             "component": "tui.chart"
@@ -3683,7 +3683,7 @@
           {
             "issue": "#104",
             "commit": "3bd9f00ddb7e1e5c004b18fa44f62d3bc197b322",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/chart104-main-intake-20261026-01/gpu21-v5-source-receipt.json",
+            "artifact": "artifacts/issue-136/chart104-main-intake-20261026-01/gpu21-v5-source-receipt.json",
             "sha256": "f324eba851d17235b7d7e85ff24bebcf9a1124170c38b9eb1d33ad77134d2d6f",
             "scope": "exact V5 source identity for bounded default/external GPU capture; 112 matrix + 10 structural + 2 negatives",
             "component": "tui.chart"
@@ -3691,7 +3691,7 @@
           {
             "issue": "#92",
             "commit": "b7634699b5b7026a28fa26cc2416b55f2235ff8d",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/chart92-main909130a-intake/commit-receipt.json",
+            "artifact": "artifacts/issue-136/chart92-main909130a-intake/commit-receipt.json",
             "sha256": "e59f3a9ae8a1b383230c4498a64f6fc6a3cc0784ee45bdbaba4f56307d9455b3",
             "scope": "Local main received14 paths; preserves original runtime identities and unverified scope",
             "component": "tui.chart"
@@ -3699,7 +3699,7 @@
           {
             "issue": "#92",
             "commit": "b7634699b5b7026a28fa26cc2416b55f2235ff8d",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/chart92-main909130a-intake/candidate/offline-ready/gate-final.json",
+            "artifact": "artifacts/issue-136/chart92-main909130a-intake/candidate/offline-ready/gate-final.json",
             "sha256": "a58572b156d9da58013b6458c4e4ca43ea823e06140dd6d28944819fc19b52e5",
             "scope": "All18 offline gates passed using actual default/external archived programs and captures",
             "component": "tui.chart"
@@ -3707,7 +3707,7 @@
           {
             "issue": "#92",
             "commit": "b7634699b5b7026a28fa26cc2416b55f2235ff8d",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/chart92-main909130a-intake/round01/main-source-manifest.json",
+            "artifact": "artifacts/issue-136/chart92-main909130a-intake/round01/main-source-manifest.json",
             "sha256": "cff9f17f5f626a92dd73421d51eeced257c7e37b418fa0a77cd40df9352525a5",
             "scope": "Complete frozen source input map for this intake; later documentation edits are not runtime changes",
             "component": "tui.chart"
@@ -3832,7 +3832,7 @@
             "issue": "#123",
             "component": "tui.menu",
             "commit": "57575e0b69e71aeb5b49a72eb4c09569f32ff939",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-123/menu-main7a0f6e7-candidate/main-intake/commit-receipt.json",
+            "artifact": "artifacts/issue-123/menu-main7a0f6e7-candidate/main-intake/commit-receipt.json",
             "sha256": "81b4f913b704bf6a2e984afb8c870cb94da3f927b2dc9dadb4b0b0ef30419c5f",
             "scope": "Exact-main public/Gallery checks, strict, all failure/source identities and bounded unverified scope."
           }
@@ -3889,7 +3889,7 @@
             "issue": "#123",
             "component": "tui.tooltip",
             "commit": "80e9c7bee554521c6e838665e4aa422d3d5477d0",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-123/tooltip-maincd27d0b/main-intake/commit-receipt.json",
+            "artifact": "artifacts/issue-123/tooltip-maincd27d0b/main-intake/commit-receipt.json",
             "sha256": "3e1941c07cd0afbde4a8c3a1ca648bd456ea9b88c3e9e55eb0cb97334bcf3022",
             "scope": "Local main source/test acceptance, corrected fixture assertions, retained failures and explicit unverified scope."
           }
@@ -3953,7 +3953,7 @@
             "issue": "#123",
             "component": "tui.popover",
             "commit": "e25f104675778fe656f0958432f4fff22a6c81e0",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-123/popover-main1ca-candidate/main-intake/commit-receipt.json",
+            "artifact": "artifacts/issue-123/popover-main1ca-candidate/main-intake/commit-receipt.json",
             "sha256": "bccdaf54989963014df3c6827ebc2864b861ad12ea6ffb9cd1ee028f54b5c2e6",
             "scope": "Exact-main public retained state/Theme/scale and real Gallery popup body assertions, strict and explicit unverified scope."
           }
@@ -4020,7 +4020,7 @@
             "issue": "#62",
             "component": "tui.dialog",
             "commit": "8e4c01de5fae9a429016a039f53034b5737a0a2b",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/surface62-dialog-main-bcea-20261026-01/commit-receipt.json",
+            "artifact": "artifacts/issue-136/surface62-dialog-main-bcea-20261026-01/commit-receipt.json",
             "sha256": "835a583d2d2a5f67c2bde38336e3dd1e0d3c5f08ca44f1667fba04a42f2b56c9",
             "scope": "Accepted local main commit and explicitly bounded Surface/Dialog scope."
           },
@@ -4028,7 +4028,7 @@
             "issue": "#62",
             "component": "tui.dialog",
             "commit": "8e4c01de5fae9a429016a039f53034b5737a0a2b",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/surface62-dialog-main-bcea-20261026-01/final-source-receipt.json",
+            "artifact": "artifacts/issue-136/surface62-dialog-main-bcea-20261026-01/final-source-receipt.json",
             "sha256": "6f510f10398a456b36ebd858cd3b7ae4b6667ef6fab6b7faf9f90ba4301d7b8a",
             "scope": "Exact source paths and hashes for the accepted candidate."
           },
@@ -4036,7 +4036,7 @@
             "issue": "#62",
             "component": "tui.dialog",
             "commit": "8e4c01de5fae9a429016a039f53034b5737a0a2b",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/surface62-dialog-main-bcea-20261026-01/run-20261026T150112.663305Z/run-receipt.json",
+            "artifact": "artifacts/issue-136/surface62-dialog-main-bcea-20261026-01/run-20261026T150112.663305Z/run-receipt.json",
             "sha256": "b2243e8a88fda39684aae1590c89e32740cd00ec3a385eb79d4d7878faad64f3",
             "scope": "Controls Surface, public Dialog/fragment regressions, Controls Gallery strict, and public Surface strict all passed."
           },
@@ -4044,7 +4044,7 @@
             "issue": "#123",
             "component": "tui.dialog",
             "commit": "4658fe9253abafe5c9e80fd5abd6c38658ac5df3",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-123/dialog-main45f1cf1-candidate/main-intake/commit-receipt.json",
+            "artifact": "artifacts/issue-123/dialog-main45f1cf1-candidate/main-intake/commit-receipt.json",
             "sha256": "37647330b517ed0b92420dff3df19171aadba070f6822d38bda0ed711e0250f5",
             "scope": "Exact-main public retained Dialog Theme/state and actual Gallery title contrast; strict and explicit unverified boundary."
           }
@@ -4125,7 +4125,7 @@
             "issue": "#93",
             "component": "tui.toast",
             "commit": "3e989f1a6d05466d157b60209d2194348ab131ce",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/notice93-main-intake-20261026-01/local-main-commit-receipt.json",
+            "artifact": "artifacts/issue-136/notice93-main-intake-20261026-01/local-main-commit-receipt.json",
             "sha256": "ba8fa2718bc1d392c814145cc1134cf4e48afc4cca9441838e98a4525d89e1c2",
             "scope": "Accepted local main commit 3e989f1; five shared Notice marker purposes only."
           },
@@ -4133,7 +4133,7 @@
             "issue": "#93",
             "component": "tui.toast",
             "commit": "3e989f1a6d05466d157b60209d2194348ab131ce",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/notice93-main-external-20261026-01/root-acceptance-audit.json",
+            "artifact": "artifacts/issue-136/notice93-main-external-20261026-01/root-acceptance-audit.json",
             "sha256": "17d8c48285d74bc87b897f158258438c33fe67d6b4e5d8fbf1109b13c379bfc4",
             "scope": "External acceptance audit: 80 bounded commands passed, including rejection and legal-packet runs; component/GPU use excluded."
           },
@@ -4141,7 +4141,7 @@
             "issue": "#93",
             "component": "tui.toast",
             "commit": "3e989f1a6d05466d157b60209d2194348ab131ce",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/notice93-main-rust-20261026-01/root-artifact-audit.json",
+            "artifact": "artifacts/issue-136/notice93-main-rust-20261026-01/root-artifact-audit.json",
             "sha256": "baaae0958b5a9ae69f797690a6c1f8b83972658888460fe1af1d990174f4ba61",
             "scope": "Six local Rust/design-export/token/consumer commands passed for shared rules; component/GPU use excluded."
           },
@@ -4149,7 +4149,7 @@
             "issue": "#79",
             "component": "tui.toast",
             "commit": "08d845fdcbc899c873cb33b5bd8baf885de55eb7",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/notice79-main08d845f-intake/root-review.json",
+            "artifact": "artifacts/issue-136/notice79-main08d845f-intake/root-review.json",
             "sha256": "af6e9894389584e44a51f60546f9a5fa9f9c315b098fc1b12fe759f56240ccd6",
             "scope": "Baseline 08d845f plus frozen integration delta, actual CPU/strict/AC5/GPU review; historical Root receipts not transferred."
           },
@@ -4157,7 +4157,7 @@
             "issue": "#125",
             "component": "tui.toast",
             "commit": "08d845fdcbc899c873cb33b5bd8baf885de55eb7",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-125/toast-maind706eca-candidate/main-intake/prior-practical-intake.json",
+            "artifact": "artifacts/issue-125/toast-maind706eca-candidate/main-intake/prior-practical-intake.json",
             "sha256": "d853f43050ec9b21d5d4e7c708434db870dd2a6d9a175a8a8d7d924499d68613",
             "scope": "Verbatim historical practical record, not resigned to current source"
           },
@@ -4165,7 +4165,7 @@
             "issue": "#125",
             "component": "tui.toast",
             "commit": "fa8bcc09866d803caa3f70aad098a10e13b6993b",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-125/toast-maind706eca-candidate/main-intake/commit-receipt.json",
+            "artifact": "artifacts/issue-125/toast-maind706eca-candidate/main-intake/commit-receipt.json",
             "sha256": "01f17ced7352ee3472f24432ed96656c47521bc76a85f63e01737a3473122b92",
             "scope": "Only actual retained mounted Gallery Theme/clock/action/paint plus strict newly run; #79 public/default-external GPU evidence remains historical"
           }
@@ -4247,7 +4247,7 @@
             "issue": "#93",
             "component": "tui.banner",
             "commit": "3e989f1a6d05466d157b60209d2194348ab131ce",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/notice93-main-intake-20261026-01/local-main-commit-receipt.json",
+            "artifact": "artifacts/issue-136/notice93-main-intake-20261026-01/local-main-commit-receipt.json",
             "sha256": "ba8fa2718bc1d392c814145cc1134cf4e48afc4cca9441838e98a4525d89e1c2",
             "scope": "Accepted local main commit 3e989f1; five shared Notice marker purposes only."
           },
@@ -4255,7 +4255,7 @@
             "issue": "#93",
             "component": "tui.banner",
             "commit": "3e989f1a6d05466d157b60209d2194348ab131ce",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/notice93-main-external-20261026-01/root-acceptance-audit.json",
+            "artifact": "artifacts/issue-136/notice93-main-external-20261026-01/root-acceptance-audit.json",
             "sha256": "17d8c48285d74bc87b897f158258438c33fe67d6b4e5d8fbf1109b13c379bfc4",
             "scope": "External acceptance audit: 80 bounded commands passed, including rejection and legal-packet runs; component/GPU use excluded."
           },
@@ -4263,7 +4263,7 @@
             "issue": "#93",
             "component": "tui.banner",
             "commit": "3e989f1a6d05466d157b60209d2194348ab131ce",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/notice93-main-rust-20261026-01/root-artifact-audit.json",
+            "artifact": "artifacts/issue-136/notice93-main-rust-20261026-01/root-artifact-audit.json",
             "sha256": "baaae0958b5a9ae69f797690a6c1f8b83972658888460fe1af1d990174f4ba61",
             "scope": "Six local Rust/design-export/token/consumer commands passed for shared rules; component/GPU use excluded."
           },
@@ -4271,7 +4271,7 @@
             "issue": "#79",
             "component": "tui.banner",
             "commit": "08d845fdcbc899c873cb33b5bd8baf885de55eb7",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/notice79-main08d845f-intake/root-review.json",
+            "artifact": "artifacts/issue-136/notice79-main08d845f-intake/root-review.json",
             "sha256": "af6e9894389584e44a51f60546f9a5fa9f9c315b098fc1b12fe759f56240ccd6",
             "scope": "Baseline 08d845f plus frozen integration delta, actual CPU/strict/AC5/GPU review; historical Root receipts not transferred."
           },
@@ -4279,7 +4279,7 @@
             "issue": "#12",
             "component": "tui.banner",
             "commit": "08d845fdcbc899c873cb33b5bd8baf885de55eb7",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-12/banner-label-main4b574f2-candidate/main-intake/prior-practical-intake.json",
+            "artifact": "artifacts/issue-12/banner-label-main4b574f2-candidate/main-intake/prior-practical-intake.json",
             "sha256": "bebc9ce00ee2ed6bc806c9ec3ee8afadc53632bdad6cf49b9421abe211965d6f",
             "scope": "Verbatim historical Theme/component/GPU practical record, not current layout rerun"
           },
@@ -4287,7 +4287,7 @@
             "issue": "#12",
             "component": "tui.banner",
             "commit": "4b10bce94255640ad4be421c78c0b2a640f1fb28",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-12/banner-label-main4b574f2-candidate/main-intake/commit-receipt.json",
+            "artifact": "artifacts/issue-12/banner-label-main4b574f2-candidate/main-intake/commit-receipt.json",
             "sha256": "bb5e11674d39747461f0e7a934359b33e270a55183152cef7c6f923f1ad760c2",
             "scope": "Only Banner real-CoreText layout red/green+original owned behavior/strict newly executed; old GPU remains historical"
           }
@@ -4379,7 +4379,7 @@
             "issue": "#83",
             "component": "tui.status-badge",
             "commit": "8fb1909aa2590473a499b7f4af69278ec34672c3",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/status83-main-intake-20261026-01/local-main-commit-receipt.json",
+            "artifact": "artifacts/issue-136/status83-main-intake-20261026-01/local-main-commit-receipt.json",
             "sha256": "6b184f703586fc9a20cd9bc8d1f3098d84cde633b9d4e7056b5d6f1c9342ccb0",
             "scope": "Accepted local main commit 8fb1909; shared theme purpose only."
           },
@@ -4387,7 +4387,7 @@
             "issue": "#83",
             "component": "tui.status-badge",
             "commit": "8fb1909aa2590473a499b7f4af69278ec34672c3",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/status83-main-external-20261026-01/root-review.json",
+            "artifact": "artifacts/issue-136/status83-main-external-20261026-01/root-review.json",
             "sha256": "4ac946581db12471a3d35453853d571624202241aba8f13a616a139bea4fbfba",
             "scope": "External accepted-source review: 23 semantic negative cases and 25 legal 280-packet runs; component adapter use excluded."
           },
@@ -4395,7 +4395,7 @@
             "issue": "#83",
             "component": "tui.status-badge",
             "commit": "8fb1909aa2590473a499b7f4af69278ec34672c3",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/status83-main-rust-20261026-01/root-artifact-audit.json",
+            "artifact": "artifacts/issue-136/status83-main-rust-20261026-01/root-artifact-audit.json",
             "sha256": "3c085fbc3d52f67ba3be9653cbf21e9094809db6943c6531d4aff8d4c2917280",
             "scope": "Six local Rust/design-export/token/consumer commands passed for shared theme rules; component/GPU use excluded."
           },
@@ -4403,7 +4403,7 @@
             "issue": "#76",
             "component": "tui.status-badge",
             "commit": "437b5b6b41019389368c81f969bedc763875fe6b",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/status76-main437b5b6-intake/root-review.json",
+            "artifact": "artifacts/issue-136/status76-main437b5b6-intake/root-review.json",
             "sha256": "36e90c7bc59a4fc086610bca8be6c44a9218e94a1d77a9de5c2ba59cd74b1e5e",
             "scope": "Baseline 437b5b6 plus frozen integration delta; review indexes actual final-main consumer/Gallery/strict/GPU rounds, preserving earlier failures."
           },
@@ -4411,7 +4411,7 @@
             "issue": "#125",
             "component": "tui.status-badge",
             "commit": "437b5b6b41019389368c81f969bedc763875fe6b",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-125/status-badge-main9f827c2-candidate/main-intake/prior-practical-intake.json",
+            "artifact": "artifacts/issue-125/status-badge-main9f827c2-candidate/main-intake/prior-practical-intake.json",
             "sha256": "691f9d923a6ea32f22babfab8902229bfc3109683b2740f0ebbaf39c4247641b",
             "scope": "Verbatim prior bounded intake record/input identity/claims/gaps archived; provenance only, not new runtime verification."
           },
@@ -4419,7 +4419,7 @@
             "issue": "#125",
             "component": "tui.status-badge",
             "commit": "f6085f869ead269981fcee13d8b44efc38fdd510",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-125/status-badge-main9f827c2-candidate/main-intake/commit-receipt.json",
+            "artifact": "artifacts/issue-125/status-badge-main9f827c2-candidate/main-intake/commit-receipt.json",
             "sha256": "20963da4a85ec240c121777e8915465d60cef85bd73bbb878a8ac95cbc7b9c60",
             "scope": "Actual current retained public/Gallery Theme supplement, strict, original unchanged/format-only source review and precise unverified boundaries."
           }
@@ -4493,7 +4493,7 @@
             "issue": "#72",
             "component": "tui.progress",
             "commit": "3f13a1e1cccfa0afc82a89b580fdc26d64715311",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/progress72-main-63214be-intake/commit-receipt.json",
+            "artifact": "artifacts/issue-136/progress72-main-63214be-intake/commit-receipt.json",
             "sha256": "a3a94692a5b2e7bf6c7972fe5070a5d6fbe996fcdf11a16e16f1e21a4ff12802",
             "scope": "Root intake receipt indexes actual public/platform/Gallery/GPU/strict rounds and explicit unverified scope."
           }
@@ -4585,7 +4585,7 @@
             "issue": "#78",
             "component": "tui.empty-state",
             "commit": "b4fbed121d9cdec87ded2cf6c3cc05825538764a",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/empty78-mainb4fbed1-intake/root-review.json",
+            "artifact": "artifacts/issue-136/empty78-mainb4fbed1-intake/root-review.json",
             "sha256": "bd50cb00c7f310158a77208db4e7bd762f02b0b67ede653ca51df260d6728ae8",
             "scope": "Baseline b4fbed1 plus frozen integration delta, actual public/anchor/protocol/strict/GPU/Gallery review; not a transfer of old R proof."
           }
@@ -4641,7 +4641,7 @@
             "issue": "#83",
             "component": "tui.skeleton",
             "commit": "8fb1909aa2590473a499b7f4af69278ec34672c3",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/status83-main-intake-20261026-01/local-main-commit-receipt.json",
+            "artifact": "artifacts/issue-136/status83-main-intake-20261026-01/local-main-commit-receipt.json",
             "sha256": "6b184f703586fc9a20cd9bc8d1f3098d84cde633b9d4e7056b5d6f1c9342ccb0",
             "scope": "Accepted local main commit 8fb1909; shared theme purpose only."
           },
@@ -4649,7 +4649,7 @@
             "issue": "#83",
             "component": "tui.skeleton",
             "commit": "8fb1909aa2590473a499b7f4af69278ec34672c3",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/status83-main-external-20261026-01/root-review.json",
+            "artifact": "artifacts/issue-136/status83-main-external-20261026-01/root-review.json",
             "sha256": "4ac946581db12471a3d35453853d571624202241aba8f13a616a139bea4fbfba",
             "scope": "External accepted-source review: 23 semantic negative cases and 25 legal 280-packet runs; component adapter use excluded."
           },
@@ -4657,7 +4657,7 @@
             "issue": "#83",
             "component": "tui.skeleton",
             "commit": "8fb1909aa2590473a499b7f4af69278ec34672c3",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/status83-main-rust-20261026-01/root-artifact-audit.json",
+            "artifact": "artifacts/issue-136/status83-main-rust-20261026-01/root-artifact-audit.json",
             "sha256": "3c085fbc3d52f67ba3be9653cbf21e9094809db6943c6531d4aff8d4c2917280",
             "scope": "Six local Rust/design-export/token/consumer commands passed for shared theme rules; component/GPU use excluded."
           },
@@ -4665,7 +4665,7 @@
             "issue": "#77",
             "component": "tui.skeleton",
             "commit": "23447d238d4cedafd69986ee3b22106be7631e7e",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/skeleton77-main23447d2-intake/root-review.json",
+            "artifact": "artifacts/issue-136/skeleton77-main23447d2-intake/root-review.json",
             "sha256": "e77948311d07813d28205cf258f9cff470d7a77a0980daf2a79bbe522a2ccb04",
             "scope": "Baseline 23447d2 plus frozen delta; actual public/default/external/Gallery/strict/GPU evidence, historical R results not promoted."
           }
@@ -4764,7 +4764,7 @@
             "issue": "#124",
             "component": "tui.markdown",
             "commit": "781f2ab65ce7ba8b2c2c331565fc232f6aebe8ec",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-124/markdown-maineb94677-candidate/main-intake/commit-receipt.json",
+            "artifact": "artifacts/issue-124/markdown-maineb94677-candidate/main-intake/commit-receipt.json",
             "sha256": "b5882e70941efa105117d4857e0fe81bcd7c44b5518a1dc5c2e524971600fe7a",
             "scope": "Actual public/Gallery component/strict; unchanged parser/shared text/generator evidence retained with original identities"
           }
@@ -4862,7 +4862,7 @@
             "issue": "#124",
             "component": "tui.code-block",
             "commit": "e5369fc1c6ca954764de10c5fcf7ebff09dc91e7",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-124/code-block-mainbf518c0-candidate/main-intake/commit-receipt.json",
+            "artifact": "artifacts/issue-124/code-block-mainbf518c0-candidate/main-intake/commit-receipt.json",
             "sha256": "cdc4e732268aee16cbe6c6e9db14692139164549b47ca27917be52f15344d2eb",
             "scope": "Actual public/Gallery component adapter/strict; original shared and raster evidence retains original identity"
           }
@@ -4961,7 +4961,7 @@
             "issue": "#124",
             "component": "tui.diff-view",
             "commit": "29978859a2c99b1d70f12235b030f4cdc447bb28",
-            "artifact": "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-124/diff-view-maineb94677-candidate/main-intake/commit-receipt.json",
+            "artifact": "artifacts/issue-124/diff-view-maineb94677-candidate/main-intake/commit-receipt.json",
             "sha256": "12cddf119175427ea28586d85db9d45a844ff563d37c921ad5a531d1076d5cf3",
             "scope": "Actual public real delegated CoreText/Gallery component/strict; unchanged LCS/shared text/generator evidence retained with original identities"
           }

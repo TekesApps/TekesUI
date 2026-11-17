@@ -182,6 +182,8 @@ class ReviewSafetyTests(unittest.TestCase):
             self.assertEqual(external.read_bytes(), external_before)
             self.assertTrue((cache / '.tekesui-workspace.json').is_symlink())
 
+    TEST_VOLUME_UUID = '00000000-1111-2222-3333-444444444444'
+
     def _registered_target_fixture(self, *, mapped_volume_uuid=None, target_link=True):
         fixture = self.root / f'storage-{len(list(self.root.iterdir()))}'
         host = fixture / 'host'
@@ -195,7 +197,7 @@ class ReviewSafetyTests(unittest.TestCase):
             target.symlink_to(physical, target_is_directory=True)
         else:
             target.mkdir()
-        uuid = mapped_volume_uuid or shared.EXPECTED_VOLUME_UUID
+        uuid = mapped_volume_uuid or self.TEST_VOLUME_UUID
         receipt_data = {'format': shared.RECEIPT_FORMAT, 'status': 'complete', 'mappings': [
             {'logical_root': str(target), 'physical_root': str(physical),
              'verified': True, 'source_removed': True},
@@ -211,14 +213,15 @@ class ReviewSafetyTests(unittest.TestCase):
 
     def test_registered_target_resolves_exact_mapping_and_direct_physical_path(self):
         host, target, physical, registry, receipt = self._registered_target_fixture()
-        with patch.object(shared, 'STORAGE_RECEIPT', receipt):
+        with patch.object(shared, 'STORAGE_RECEIPT', receipt), \
+             patch.object(shared, 'EXPECTED_VOLUME_UUID', self.TEST_VOLUME_UUID):
             mapped = shared._resolve_target_path(
                 target / 'review-cache', root=host, registry_path=registry,
-                volume_uuid_lookup=lambda _path: shared.EXPECTED_VOLUME_UUID)
+                volume_uuid_lookup=lambda _path: self.TEST_VOLUME_UUID)
             self.assertEqual(mapped, physical / 'review-cache')
             direct = shared._resolve_target_path(
                 physical / 'review-cache', root=host, registry_path=registry,
-                volume_uuid_lookup=lambda _path: shared.EXPECTED_VOLUME_UUID)
+                volume_uuid_lookup=lambda _path: self.TEST_VOLUME_UUID)
             self.assertEqual(direct, physical / 'review-cache')
             with self.assertRaisesRegex(SystemExit, 'volume UUID is unavailable or incorrect'):
                 shared._resolve_target_path(
@@ -227,23 +230,30 @@ class ReviewSafetyTests(unittest.TestCase):
 
     def test_target_resolver_rejects_wrong_registered_volume_uuid(self):
         host, target, _, registry, receipt = self._registered_target_fixture(mapped_volume_uuid='wrong-volume')
-        with patch.object(shared, 'STORAGE_RECEIPT', receipt):
+        with patch.object(shared, 'STORAGE_RECEIPT', receipt), \
+             patch.object(shared, 'EXPECTED_VOLUME_UUID', self.TEST_VOLUME_UUID):
             with self.assertRaisesRegex(SystemExit, 'volume UUID mismatch'):
                 shared._resolve_target_path(target / 'review-cache', root=host, registry_path=registry)
 
-    def test_target_resolver_rejects_unregistered_target_symlink(self):
+    def test_target_resolver_rejects_unregistered_target_symlink_and_allows_unconfigured_env(self):
         host = self.root / 'host'; host.mkdir()
         physical = self.root / 'physical'; physical.mkdir()
         (host / 'target').symlink_to(physical, target_is_directory=True)
         registry = self.root / 'missing-registry.json'
         with self.assertRaisesRegex(SystemExit, 'no storage registry authorization'):
             shared._resolve_target_path(host / 'target' / 'review-cache', root=host, registry_path=registry)
+        with patch.object(shared, 'STORAGE_REGISTRY', None):
+            self.assertEqual(
+                shared._resolve_target_path(host / 'target' / 'review-cache', root=host),
+                physical.resolve() / 'review-cache',
+            )
 
     def test_target_resolver_rejects_symlink_mapping_mismatch_and_nested_symlink(self):
         host, target, physical, registry, receipt = self._registered_target_fixture()
         alternate = self.root / 'alternate'; alternate.mkdir()
         target.unlink(); target.symlink_to(alternate, target_is_directory=True)
-        with patch.object(shared, 'STORAGE_RECEIPT', receipt):
+        with patch.object(shared, 'STORAGE_RECEIPT', receipt), \
+             patch.object(shared, 'EXPECTED_VOLUME_UUID', self.TEST_VOLUME_UUID):
             with self.assertRaisesRegex(SystemExit, 'destination changed'):
                 shared._resolve_target_path(target / 'review-cache', root=host, registry_path=registry)
 
@@ -252,11 +262,12 @@ class ReviewSafetyTests(unittest.TestCase):
             (physical / 'review-cache').symlink_to(external, target_is_directory=True)
             with self.assertRaisesRegex(SystemExit, 'symlink within mapped target'):
                 shared._resolve_target_path(target / 'review-cache' / 'debug', root=host, registry_path=registry,
-                                            volume_uuid_lookup=lambda _path: shared.EXPECTED_VOLUME_UUID)
+                                            volume_uuid_lookup=lambda _path: self.TEST_VOLUME_UUID)
 
     def test_target_resolver_rejects_registered_target_replaced_by_native_directory(self):
         host, target, _, registry, receipt = self._registered_target_fixture(target_link=False)
-        with patch.object(shared, 'STORAGE_RECEIPT', receipt):
+        with patch.object(shared, 'STORAGE_RECEIPT', receipt), \
+             patch.object(shared, 'EXPECTED_VOLUME_UUID', self.TEST_VOLUME_UUID):
             with self.assertRaisesRegex(SystemExit, 'replaced by a native path'):
                 shared._resolve_target_path(target / 'review-cache', root=host, registry_path=registry)
 
@@ -265,9 +276,10 @@ class ReviewSafetyTests(unittest.TestCase):
         data = json.loads(registry.read_text())
         data['mappings'].append({'logical_root': str(target / 'nested'),
                                  'physical_root': str(self.root / 'other-physical'),
-                                 'volume_uuid': shared.EXPECTED_VOLUME_UUID})
+                                 'volume_uuid': self.TEST_VOLUME_UUID})
         registry.write_text(json.dumps(data))
-        with patch.object(shared, 'STORAGE_RECEIPT', receipt):
+        with patch.object(shared, 'STORAGE_RECEIPT', receipt), \
+             patch.object(shared, 'EXPECTED_VOLUME_UUID', self.TEST_VOLUME_UUID):
             with self.assertRaisesRegex(SystemExit, 'Overlapping storage mapping root'):
                 shared._load_target_registry(host, registry)
 
@@ -278,7 +290,8 @@ class ReviewSafetyTests(unittest.TestCase):
         data = json.loads(registry.read_text())
         data['receipt_sha256'] = hashlib.sha256(receipt.read_bytes()).hexdigest()
         registry.write_text(json.dumps(data))
-        with patch.object(shared, 'STORAGE_RECEIPT', receipt):
+        with patch.object(shared, 'STORAGE_RECEIPT', receipt), \
+             patch.object(shared, 'EXPECTED_VOLUME_UUID', self.TEST_VOLUME_UUID):
             with self.assertRaisesRegex(SystemExit, 'routes do not exactly match'):
                 shared._load_target_registry(host, registry)
 

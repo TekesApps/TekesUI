@@ -725,6 +725,15 @@ impl Window {
         publication: Option<crate::content_accessibility::WindowAccessibilityPublication>,
     ) -> bool {
         use crate::content_accessibility::WindowAccessibilityPublication;
+        if publication.is_none() && !self.shared.closed.get() {
+            if let Some(old) = self.shared.content_geometry.borrow_mut().take() {
+                old.revoke();
+            }
+            let previous = self.shared.accessibility_nodes.replace(Vec::new());
+            self.shared.accessibility_text_layouts.borrow_mut().clear();
+            self.view.accessibility_nodes_changed(&previous);
+            return false;
+        }
         let publication = if self.shared.closed.get() {
             None
         } else {
@@ -745,7 +754,6 @@ impl Window {
         };
         let previous = self.shared.accessibility_nodes.replace(nodes);
         self.shared.accessibility_text_layouts.replace(layouts);
-        self.shared.accessibility_elements.borrow_mut().clear();
         self.view.accessibility_nodes_changed(&previous);
         accepted
     }
@@ -960,10 +968,20 @@ impl Window {
     pub fn titlebar_safe_area(&self) -> (f64, f64) {
         let size = self.size();
         let bounds = self.titlebar_controls_bounds();
+        let size_height = if size.height.is_finite() {
+            size.height.max(0.)
+        } else {
+            0.
+        };
+        let size_width = if size.width.is_finite() {
+            size.width.max(0.)
+        } else {
+            0.
+        };
         let height = self
             .titlebar_content_height()
-            .max(bounds.map_or(0., |r| (r.origin.y + r.size.height).clamp(0., size.height)));
-        let leading = bounds.map_or(0., |r| (r.origin.x + r.size.width).clamp(0., size.width));
+            .max(bounds.map_or(0., |r| (r.origin.y + r.size.height).clamp(0., size_height)));
+        let leading = bounds.map_or(0., |r| (r.origin.x + r.size.width).clamp(0., size_width));
         (height, leading)
     }
 

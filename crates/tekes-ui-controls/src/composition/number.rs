@@ -39,11 +39,18 @@ impl NumberFormat for DecimalNumberFormat {
         format!("{value}{}", self.suffix)
     }
     fn parse(&self, text: &str) -> Result<f64, NumberParseError> {
-        let text = text.trim();
         let text = if self.suffix.is_empty() {
-            text
+            text.trim()
+        } else if let Some(stem) = text.strip_suffix(&self.suffix) {
+            stem.trim()
+        } else if let Some(stem) = text.trim().strip_suffix(&self.suffix) {
+            stem.trim()
+        } else if !self.suffix.trim().is_empty()
+            && let Some(stem) = text.trim().strip_suffix(self.suffix.trim())
+        {
+            stem.trim()
         } else {
-            text.strip_suffix(&self.suffix).unwrap_or(text).trim()
+            text.trim()
         };
         if text.is_empty() || matches!(text, "+" | "-" | "." | "+." | "-.") {
             return Err(NumberParseError::Incomplete);

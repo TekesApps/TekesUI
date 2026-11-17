@@ -405,7 +405,7 @@ fn glyph_run_scissor(
 }
 fn f32_gpu_scalar(v: f32, scale: f32) -> Result<(), RenderError> {
     let n = f64::from(v) * f64::from(scale);
-    if !n.is_finite() || n.abs() > 2_f64.powi(60) || (n != 0. && n.abs() < 2_f64.powi(-60)) {
+    if !n.is_finite() || n.abs() > 2_f64.powi(60) {
         return Err(RenderError::ClipGeometry(
             ClipError::UnsupportedNumericRange,
         ));
@@ -1087,9 +1087,11 @@ impl ClipFrame {
                         for g in &run.glyphs {
                             f32_gpu_scalar(g.origin.x, scale)?;
                             f32_gpu_scalar(g.origin.y, scale)?;
-                            if g.glyph.page >= atlas.page_count()
-                                || u64::from(g.glyph.x) + u64::from(g.glyph.width)
-                                    > u64::from(atlas.page_size())
+                            if g.glyph.page >= atlas.page_count() {
+                                continue;
+                            }
+                            if u64::from(g.glyph.x) + u64::from(g.glyph.width)
+                                > u64::from(atlas.page_size())
                                 || u64::from(g.glyph.y) + u64::from(g.glyph.height)
                                     > u64::from(atlas.page_size())
                             {

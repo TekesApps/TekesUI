@@ -707,7 +707,12 @@ def practical_intake(row: dict) -> dict | None:
         if not re.fullmatch(r'[0-9a-f]{40}', str(item.get('commit', ''))):
             raise ValueError(f'{row.get("id")}: malformed practical intake evidence commit')
         artifact = item.get('artifact')
-        if not isinstance(artifact, str) or not artifact.startswith('/Volumes/HP P900/DEV/TekesUI/artifacts/'):
+        if (
+            not isinstance(artifact, str)
+            or not artifact.startswith('artifacts/')
+            or Path(artifact).is_absolute()
+            or '..' in Path(artifact).parts
+        ):
             raise ValueError(f'{row.get("id")}: unsafe practical intake artifact path')
         if not re.fullmatch(r'[0-9a-f]{64}', str(item.get('sha256', ''))):
             raise ValueError(f'{row.get("id")}: malformed practical intake artifact hash')

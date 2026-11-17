@@ -28,7 +28,10 @@ impl OwnedSendRight {
 }
 impl Drop for OwnedSendRight {
     fn drop(&mut self) {
-        release(self.0);
+        // SAFETY: `OwnedSendRight` owns exactly one live send-right reference in this task.
+        unsafe {
+            release(self.0);
+        }
     }
 }
 struct ReceivedMessage(*mut mach_msg_header_t);
@@ -159,9 +162,19 @@ impl Drop for Receiver {
         }
     }
 }
-pub fn send(name: &str, surface_port: u32) -> Result<()> {
+/// Transfer ownership of `surface_port` and send a copy of its send right to `name`.
+///
+/// # Safety
+/// `surface_port` must be a valid Mach send right in `mach_task_self()` whose
+/// ownership (one send-right reference) is transferred to this call.
+pub unsafe fn send(name: &str, surface_port: u32) -> Result<()> {
     // Adopt before any fallible lookup, so a bad endpoint cannot leak the source.
+    // SAFETY: caller transfers ownership of one valid Mach send right in this task.
     let surface = unsafe { OwnedSendRight::from_raw(surface_port) };
+    send_owned(name, &surface)
+}
+
+pub(crate) fn send_owned(name: &str, surface: &OwnedSendRight) -> Result<()> {
     let c = CString::new(name)?;
     let mut remote = 0;
     // SAFETY: all descriptors and ports belong to this task. COPY_SEND retains
@@ -194,7 +207,14 @@ pub fn send(name: &str, surface_port: u32) -> Result<()> {
     }
     Ok(())
 }
-pub fn release(port: u32) {
+
+/// Deallocate one owned Mach port reference in `mach_task_self()`.
+///
+/// # Safety
+/// `port` must be a valid Mach port name whose reference count may be decremented
+/// by this task without dangling other owners.
+pub unsafe fn release(port: u32) {
+    // SAFETY: caller guarantees ownership of one valid Mach port reference.
     unsafe {
         mach_port_deallocate(mach_task_self(), port);
     }
@@ -234,7 +254,7 @@ pub(crate) mod tests {
         let right = endpoint.test_right();
         let raw = right.name();
         std::mem::forget(right);
-        send(&endpoint.name, raw).unwrap();
+        unsafe { send(&endpoint.name, raw) }.unwrap();
         assert_eq!(refs(endpoint.port), base);
         let received = endpoint.receive_owned().unwrap();
         assert_eq!(received.name(), endpoint.port);
@@ -250,7 +270,7 @@ pub(crate) mod tests {
             let source = endpoint.test_right();
             let raw = source.name();
             std::mem::forget(source);
-            assert!(send(name, raw).is_err());
+            assert!(unsafe { send(name, raw) }.is_err());
             assert_eq!(refs(endpoint.port), base);
         }
     }
@@ -341,7 +361,7 @@ pub(crate) mod tests {
         let right = endpoint.test_right();
         let raw = right.name();
         std::mem::forget(right);
-        send(&endpoint.name, raw).unwrap();
+        unsafe { send(&endpoint.name, raw) }.unwrap();
         let control = crate::ProcessControl::new();
         let mut child = std::process::Command::new("/usr/bin/true").spawn().unwrap();
         child.wait().unwrap();

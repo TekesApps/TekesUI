@@ -47,14 +47,23 @@ pub fn push_paragraph_visible<R: Rasterizer + ?Sized>(
     color: Rgba,
     visible_y: std::ops::Range<f32>,
 ) {
+    if paragraph.lines.is_empty()
+        || visible_y.start.is_nan()
+        || visible_y.end.is_nan()
+        || visible_y.start > visible_y.end
+        || !origin.x.is_finite()
+        || !origin.y.is_finite()
+    {
+        return;
+    }
     let start = paragraph
         .lines
         .partition_point(|line| origin.y + ((line.top + line.height) as f32) < visible_y.start);
     let end = paragraph
         .lines
         .partition_point(|line| origin.y + line.top as f32 <= visible_y.end);
-    let start = start.saturating_sub(1);
     let end = (end + 1).min(paragraph.lines.len());
+    let start = start.saturating_sub(1).min(end);
     let scale_key = GlyphKey::scale_key_for(scale);
     for line in &paragraph.lines[start..end] {
         let mut glyphs = Vec::new();
@@ -77,6 +86,94 @@ pub fn push_paragraph_visible<R: Rasterizer + ?Sized>(
         }
         if !glyphs.is_empty() {
             scene.push_glyphs(GlyphRun { color, glyphs });
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::model::{Line, Paragraph, ShapedGlyph, ShapedRun};
+    use tekes_ui_scene::{FontKey, RasterFormat, RasterGlyph};
+
+    struct CountingRasterizer(usize);
+    impl Rasterizer for CountingRasterizer {
+        fn rasterize(&mut self, _: FontKey, _: u16, _: f32) -> Option<RasterGlyph> {
+            self.0 += 1;
+            Some(RasterGlyph {
+                left: 0,
+                top: 0,
+                width: 1,
+                height: 1,
+                format: RasterFormat::Mask,
+                pixels: vec![255, 255, 255, 255],
+            })
+        }
+    }
+
+    fn dummy_line(index: usize, top: f64) -> Line {
+        Line {
+            index,
+            utf16: index..index + 1,
+            bytes: index..index + 1,
+            ascent: 10.0,
+            descent: 2.0,
+            leading: 0.0,
+            height: 16.0,
+            top,
+            baseline_y: top + 10.0,
+            width: 8.0,
+            width_trimmed: 8.0,
+            runs: vec![ShapedRun {
+                font: FontKey(1),
+                utf16: index..index + 1,
+                glyphs: vec![ShapedGlyph {
+                    id: (index + 1) as u16,
+                    x: 0.0,
+                    y: 0.0,
+                    utf16_index: index,
+                    cluster_utf16: index..index + 1,
+                }],
+            }],
+            carets: vec![],
+            has_newline: false,
+        }
+    }
+
+    #[test]
+    fn push_paragraph_visible_handles_reversed_nan_and_narrow_ranges() {
+        let paragraph = Paragraph {
+            lines: vec![dummy_line(0, 0.0), dummy_line(1, 20.0), dummy_line(2, 40.0)],
+            width: 8.0,
+            height: 56.0,
+            default_line_height: 16.0,
+            fonts: vec![],
+            utf16_len: 3,
+        };
+        let mut atlas = GlyphAtlas::default();
+        for range in [
+            100.0..0.0,
+            f32::NAN..50.0,
+            0.0..f32::NAN,
+            500.0..600.0,
+            -200.0..-100.0,
+        ] {
+            let mut scene = Scene::new();
+            let mut raster = CountingRasterizer(0);
+            push_paragraph_visible(
+                &mut scene,
+                &mut atlas,
+                &mut raster,
+                &paragraph,
+                Point::new(0.0, 0.0),
+                1.0,
+                Rgba::gray(1.0),
+                range.clone(),
+            );
+            if range.start.is_nan() || range.end.is_nan() || range.start > range.end {
+                assert_eq!(raster.0, 0);
+                assert!(scene.primitives().is_empty());
+            }
         }
     }
 }

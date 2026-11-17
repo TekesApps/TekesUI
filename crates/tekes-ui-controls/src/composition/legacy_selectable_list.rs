@@ -21,6 +21,10 @@ impl SelectableListContent {
     }
 }
 impl Component for SelectableListContent {
+    fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
+        CurveSubtreeCapability::Local
+    }
+
     // Interaction ownership is independent of the current empty state.
     fn interactive(&self) -> bool {
         true

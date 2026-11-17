@@ -807,6 +807,32 @@ fn numerical_indeterminate_and_nonfinite_ink_reject_before_callback() {
             .is_err()
     );
     assert!(!called.get());
+
+    // A clipped glyph referencing a foreign atlas page skips instead of rejecting the frame.
+    let (mut foreign_scene, keys, _) = table_scene(&[shape]);
+    foreign_scene.push_shape_clip(keys[0].clone());
+    foreign_scene.push_glyphs(tekes_ui_scene::GlyphRun {
+        color: Rgba::gray(1.),
+        glyphs: vec![tekes_ui_scene::PositionedGlyph {
+            origin: Point::new(12., 20.),
+            glyph: tekes_ui_scene::AtlasGlyph {
+                page: 99,
+                x: 0,
+                y: 0,
+                width: 4,
+                height: 4,
+                left: 0,
+                top: 0,
+                format: tekes_ui_scene::RasterFormat::Mask,
+            },
+        }],
+    });
+    foreign_scene.pop_clip();
+    assert!(
+        renderer
+            .render_to_rgba8(&foreign_scene, &mut atlas, (64, 64), 1., Rgba::gray(0.))
+            .is_ok()
+    );
 }
 #[test]
 fn image_and_glyph_real_alpha_multiply_coverage_and_preserve_independent_draws() {

@@ -61,24 +61,23 @@ impl CommandPaletteContent {
         &self.children[1]
     }
 
-    fn query_content_mut(&mut self) -> &mut Content {
-        &mut self.children[1]
+    fn query_text(&self) -> Option<&TextFieldContent> {
+        self.children
+            .get(1)
+            .and_then(|child| child.component::<TextFieldContent>())
     }
 
-    fn query_text(&self) -> &TextFieldContent {
-        self.query_content()
-            .component::<TextFieldContent>()
-            .expect("CommandPaletteContent query is validated")
-    }
-
-    fn query_text_mut(&mut self) -> &mut TextFieldContent {
-        self.query_content_mut()
-            .component_mut::<TextFieldContent>()
-            .expect("CommandPaletteContent query is validated")
+    fn query_text_mut(&mut self) -> Option<&mut TextFieldContent> {
+        self.children
+            .get_mut(1)
+            .and_then(|child| child.component_mut::<TextFieldContent>())
     }
 
     fn sync_model_query(&mut self) {
-        let query = self.query_text().surface.input.text.clone();
+        let Some(field) = self.query_text() else {
+            return;
+        };
+        let query = field.surface.input.text.clone();
         if self.model.combo.query != query {
             self.model.combo.query = query;
             if self.model.combo.open {
@@ -89,7 +88,9 @@ impl CommandPaletteContent {
 
     fn sync_query_text(&mut self) {
         let value = self.model.combo.query.clone();
-        let field = self.query_text_mut();
+        let Some(field) = self.query_text_mut() else {
+            return;
+        };
         if field.surface.input.text != value {
             let len = field.surface.input.len();
             field.surface.input.insert(&value, Some(0..len));
@@ -99,7 +100,10 @@ impl CommandPaletteContent {
     }
 
     pub fn open(&mut self) -> bool {
-        if self.model.combo.disabled || self.model.combo.open || self.query_text().composing() {
+        if self.model.combo.disabled
+            || self.model.combo.open
+            || self.query_text().is_none_or(TextFieldContent::composing)
+        {
             return false;
         }
         self.last_selection = None;
@@ -110,7 +114,7 @@ impl CommandPaletteContent {
     }
 
     pub fn close(&mut self) -> bool {
-        if !self.model.combo.open || self.query_text().composing() {
+        if !self.model.combo.open || self.query_text().is_some_and(TextFieldContent::composing) {
             return false;
         }
         self.last_selection = None;
@@ -172,7 +176,7 @@ impl CommandPaletteContent {
                 }
             }
             PointerPhase::Up => {
-                if self.query_text().composing() {
+                if self.query_text().is_some_and(TextFieldContent::composing) {
                     return ContentResponse::default();
                 }
                 let selected = self.view.pointer_up(position, &mut self.model);
@@ -411,7 +415,10 @@ impl Component for CommandPaletteContent {
     fn requires_text_services(&self) -> bool {
         // Exit presentation still rebuilds this original field's glyphs;
         // inactivity removes input authority, not its paint capability need.
-        self.overlay_presented() && self.query_text().requires_text_services()
+        self.overlay_presented()
+            && self
+                .query_text()
+                .is_some_and(Component::requires_text_services)
     }
 
     fn paints_children(&self) -> bool {
@@ -495,7 +502,7 @@ impl Component for CommandPaletteContent {
                 ContentResponse::consumed(changed)
             }
             (Some(index), AccessibilityAction::Press) if index != usize::MAX => {
-                if self.query_text().composing() {
+                if self.query_text().is_some_and(TextFieldContent::composing) {
                     return ContentResponse::default();
                 }
                 let selected = self.view.activate_option(index, &mut self.model);
@@ -568,7 +575,7 @@ impl Component for CommandPaletteContent {
     fn overlay_event(&mut self, event: &ContentEvent) -> ContentResponse {
         self.last_selection = None;
         self.sync_model_query();
-        if self.query_text().composing()
+        if self.query_text().is_some_and(TextFieldContent::composing)
             && matches!(
                 event,
                 ContentEvent::Key { .. }
@@ -650,7 +657,7 @@ impl Component for CommandPaletteContent {
     }
 
     fn overlay_pointer_event(&mut self, pointer: &PointerEvent) -> ContentResponse {
-        if !pointer.is_primary() || self.query_text().composing() {
+        if !pointer.is_primary() || self.query_text().is_some_and(TextFieldContent::composing) {
             return ContentResponse::default();
         }
         match pointer.phase {
@@ -759,5 +766,27 @@ impl Component for CommandPaletteContent {
             }
             _ => ContentResponse::default(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn non_text_field_query_does_not_panic_on_open_or_close() {
+        let trigger = Content::new(ComponentId(1), Button::new("Commands"));
+        let bad_query = Content::new(ComponentId(2), Button::new("NotAField"));
+        let model = CommandPalette {
+            combo: crate::extended::ComboBox {
+                items: vec!["One".into(), "Two".into()],
+                ..Default::default()
+            },
+        };
+        let mut palette = CommandPaletteContent::new(trigger, bad_query, model);
+        assert!(palette.validate().is_err());
+        assert!(!palette.open());
+        assert!(!palette.close());
+        assert!(!palette.requires_text_services());
     }
 }
