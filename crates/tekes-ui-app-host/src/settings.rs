@@ -276,8 +276,8 @@ impl SettingsSurface {
     }
     pub fn accessibility_input(
         &mut self,
-        publication: &tekes_ui_platform_macos::content_accessibility::WindowAccessibilityPublication,
-        owner: tekes_ui_platform_macos::content_accessibility::ContentAccessibilityOwner,
+        publication: &tekes_ui_macos_bridge::content_accessibility::WindowAccessibilityPublication,
+        owner: tekes_ui_macos_bridge::content_accessibility::ContentAccessibilityOwner,
         target: tekes_ui_platform_macos::AccessibilityKey,
         action: tekes_ui_platform_macos::AccessibilityAction,
         sidebar_visible: bool,
@@ -732,7 +732,7 @@ mod autosave_restore_tests {
             .join(format!("settings-restore-{}", std::process::id()))
             .join("settings.toml");
         let options = SettingsWindow::from_toml(
-            include_str!("../../../examples/app-host-demo/settings.schema.toml"),
+            include_str!("test_fixtures/app-host-demo.settings.schema.toml"),
             path.clone(),
         )
         .unwrap();
@@ -788,7 +788,7 @@ mod autosave_restore_tests {
             ))
             .join("settings.toml");
         let options = SettingsWindow::from_toml(
-            include_str!("../../../examples/app-host-demo/settings.schema.toml"),
+            include_str!("test_fixtures/app-host-demo.settings.schema.toml"),
             path.clone(),
         )
         .unwrap();

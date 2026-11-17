@@ -353,9 +353,9 @@ fn main() -> Result<()> {
         std::env::var_os("LIST_PROTOCOL_REPLY").context("reply output")?,
         serde_json::to_vec_pretty(s.reply())?,
     )?;
-    let native = tekes_ui_platform_macos::content_accessibility::content_nodes(&h);
+    let native = tekes_ui_macos_bridge::content_accessibility::content_nodes(&h);
     let _snapshot =
-        tekes_ui_platform_macos::content_accessibility::ContentAccessibilitySnapshot::from_host(&h)
+        tekes_ui_macos_bridge::content_accessibility::ContentAccessibilitySnapshot::from_host(&h)
             .context("whole accessibility snapshot rejected")?;
     ensure!(tekes_ui_platform_macos::accept_accessibility_nodes(native.clone()) == native);
     ensure!(
@@ -367,7 +367,7 @@ fn main() -> Result<()> {
     );
     for _ in 0..3 {
         let _ = stamped(&h)?;
-        let _ = tekes_ui_platform_macos::content_accessibility::content_nodes(&h);
+        let _ = tekes_ui_macos_bridge::content_accessibility::content_nodes(&h);
     }
     ensure!(
         message(container(&h), "inspect")? == before,

@@ -4485,7 +4485,7 @@
             "crates/tekes-ui-platform-macos/src/lib.rs": "0fec47c5594731eb304781f3781902b658828ef9fe7c9b1693ee658543c93ab7",
             "crates/tekes-ui-controls/src/composition/progress.rs": "69c0421f93daef763b79794842e16ef55645c8557b8728535e25cfe3a48d7cdb",
             "crates/tekes-ui-controls/src/composition/text_query.rs": "627c805d16073bdb5f3f9886c00baf6227cdb0a1db32873144ece32520caf763",
-            "crates/tekes-ui-platform-macos/src/content_accessibility.rs": "c1f6c6d8a04918e69eed664f8da03e4b37ebc0c158f797b4cfd8e015e2a4347d"
+            "crates/tekes-ui-macos-bridge/src/content_accessibility.rs": "c1f6c6d8a04918e69eed664f8da03e4b37ebc0c158f797b4cfd8e015e2a4347d"
           }
         },
         "evidence": [

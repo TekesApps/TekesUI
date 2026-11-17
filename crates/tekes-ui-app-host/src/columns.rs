@@ -1189,7 +1189,7 @@ mod tests {
         c.with_host(&mut |h| {
             assert_eq!(h.get(ComponentId(1)).unwrap().frame(), next);
             assert!(
-                tekes_ui_platform_macos::content_accessibility::content_nodes(h)
+                tekes_ui_macos_bridge::content_accessibility::content_nodes(h)
                     .iter()
                     .any(|n| n.label == "Notes")
             );

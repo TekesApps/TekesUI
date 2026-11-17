@@ -100,7 +100,7 @@ class ThemeSystemTests(unittest.TestCase):
     def test_passive_status_exact_bindings_and_rejections(self):
         r=self.rules(); profiles=g.validate(r)
         expected={'status-badge-'+t:dict(background='status-'+t,text='c-status-badge-foreground',icon='c-status-badge-foreground',boundary=None,focus=None,marker=None,helper=None) for t in ['info','running','succeeded','failed']}
-        expected['skeleton']=dict(background='surface-2',text='primary-text',icon='primary-text',boundary='border',focus=None,marker=None,helper=None)
+        expected['skeleton']=dict(background='surface-2',text='primary-text',icon='primary-text',boundary='separator',focus=None,marker=None,helper=None)
         self.assertEqual(len(g.USES),44)
         for usage, packet in expected.items():
             self.assertEqual(profiles[usage],{'rest':packet})
@@ -123,11 +123,13 @@ class ThemeSystemTests(unittest.TestCase):
         for fill,parent,side in [('#FFFFFF','#000000','fill'),('#000000','#FFFFFF','parent')]:
             bad=dict(packet,background=fill,boundary='#FFFFFF')
             with self.assertRaisesRegex(ValueError,'skeleton boundary-'+side):g.verify_passive_status_contrast('skeleton','light',bad,parent)
+        g.verify_passive_status_contrast('skeleton','light',dict(packet,boundary='#D8D8D8'),'#FFFFFF')
+        with self.assertRaisesRegex(ValueError,'skeleton boundary-fill'):g.verify_passive_status_contrast('skeleton','light-ic',dict(packet,boundary='#D8D8D8'),'#FFFFFF')
         g.verify_passive_status_contrast('skeleton','light',dict(packet,boundary='#000000'),'#FFFFFF')
     def test_progress_is_one_shared_passive_rest_packet(self):
         r=self.rules(); p=g.validate(r)
         self.assertEqual(set(p['progress-track']), {'rest'})
-        self.assertEqual(p['progress-track']['rest'], dict(background='surface-2',text='primary-text',icon='primary-text',boundary='border',focus=None,marker='c-progress-active',helper=None))
+        self.assertEqual(p['progress-track']['rest'], dict(background='surface-2',text='primary-text',icon='primary-text',boundary='separator',focus=None,marker='c-progress-active',helper=None))
         for surface in r['surfaces'].values():self.assertEqual(surface['usages']['progress-track'],'progress-track')
     def test_progress_rejects_missing_uses_channels_and_invented_states(self):
         r=self.rules(); del r['surfaces']['canvas']['usages']['progress-track']
@@ -280,12 +282,16 @@ class ThemeSystemTests(unittest.TestCase):
             instance=next(i for i in instances if i['id']==record['theme_id'])
             packet=copy.deepcopy(packet)
             historic_disabled={'light':'#918B81','dark':'#807A70','light-ic':'#767066','dark-ic':'#A09A90'}[record['mode']]
+            historic_quiet_selected_boundary={'light':'#737370','dark':'#A3A39E','light-ic':'#4E4A41','dark-ic':'#C8C0B4'}[record['mode']]
             for uses in packet.values():
                 for usage in ['action-quiet','action-quiet-error']:
                     for state in ['disabled','selected-disabled']:
                         for channel in ['text','icon']:
                             self.assertEqual(uses[usage][state][channel],instance['compiled_color_roles'][record['mode']]['tertiary-text'])
                             uses[usage][state][channel]=historic_disabled
+                for state in ['selected','selected-hover','selected-pressed']:
+                    self.assertEqual(uses['action-quiet'][state]['boundary'],instance['compiled_color_roles'][record['mode']]['separator'])
+                    uses['action-quiet'][state]['boundary']=historic_quiet_selected_boundary
             # Undo reviewed ordinary-mode palette & Plan B calm-UI role deltas
             # (leaving light-ic/dark-ic base and brand targets untouched except
             # #308 code-surface) to prove every other channel matches v1.6.1.
@@ -407,6 +413,8 @@ class ThemeSystemTests(unittest.TestCase):
                     for channel, binding in roles.items():
                         if binding != role: continue
                         if role == 'tertiary-text' and usage in ['action-quiet', 'action-quiet-error'] and state in ['disabled', 'selected-disabled'] and channel in ['text', 'icon']:
+                            continue
+                        if role == 'separator' and usage == 'action-quiet' and state in ['selected', 'selected-hover', 'selected-pressed'] and channel == 'boundary':
                             continue
                         self.assertEqual(packet[surface][usage][state][channel], new_color, (record['theme_id'], record['mode'], surface, usage, state, channel, role))
                         packet[surface][usage][state][channel] = historic_color

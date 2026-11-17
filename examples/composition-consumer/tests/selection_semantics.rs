@@ -7,7 +7,8 @@ use tekes_ui_controls::{
     composition::*,
     extended::{RadioGroup, SegmentedControl},
 };
-use tekes_ui_platform_macos::{AccessibilityRole, content_accessibility as ax};
+use tekes_ui_macos_bridge::content_accessibility as ax;
+use tekes_ui_platform_macos::AccessibilityRole;
 use tekes_ui_scene::{Rect, Scene, Size};
 use tekes_ui_tokens::Theme;
 #[derive(Debug)]

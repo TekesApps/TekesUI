@@ -1023,6 +1023,7 @@ pub struct WorkbenchState {
     pending: VecDeque<tekes_ui_app_host::navigation::Entry>,
     inspected: Option<(String, ComponentId, u64)>,
     document_return_requested: bool,
+    session_dirs: Vec<super::apphost::SessionTempDir>,
 }
 pub type SharedWorkbench = Rc<RefCell<WorkbenchState>>;
 impl WorkbenchState {
@@ -1513,7 +1514,9 @@ impl ContainerContent for FocusContent {
                 .expect("assembled Gallery Settings owner")
                 .clone()
         };
-        super::apphost::open_request(theme, settings).map(Some)
+        let (request, session_dir) = super::apphost::open_request(theme, settings)?;
+        self.0.borrow_mut().session_dirs.push(session_dir);
+        Ok(Some(request))
     }
     fn prepare_resources(
         &mut self,
@@ -2355,11 +2358,22 @@ fn panel(
             consume_chooser_actions(&state, records);
         }))
 }
-pub fn assemble() -> anyhow::Result<AppWindow> {
+fn assemble_with_session_path() -> anyhow::Result<(AppWindow, std::path::PathBuf)> {
     let page = std::env::var("TEKESUI_GALLERY_PAGE").unwrap_or_else(|_| SEARCH_ROUTE.into());
     let palette = Rc::new(Cell::new(Palette::from(tekes_ui_tokens::Theme::LIGHT)));
     let host = page_host(&page, &palette)?;
     let settings = super::apphost::settings_owner()?;
+    let root = std::env::var_os("TEKESUI_APPHOST_DATA_DIR")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|| std::env::temp_dir().join("tekesui-gallery-workbench"));
+    let history_id = format!(
+        "workbench-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)?
+            .as_nanos()
+    );
+    let session_path = root.join(&history_id);
     let state = Rc::new(RefCell::new(WorkbenchState {
         settings: Some(settings.clone()),
         window_requests: 0,
@@ -2370,6 +2384,7 @@ pub fn assemble() -> anyhow::Result<AppWindow> {
         pending: VecDeque::new(),
         inspected: None,
         document_return_requested: false,
+        session_dirs: vec![super::apphost::SessionTempDir::new(session_path.clone())],
     }));
     let initial = state.borrow().entry(0);
     let commands = state.clone();
@@ -2384,17 +2399,7 @@ pub fn assemble() -> anyhow::Result<AppWindow> {
             "gallery-documents".into(),
             "gallery-inspector".into(),
         ]));
-    let root = std::env::var_os("TEKESUI_APPHOST_DATA_DIR")
-        .map(std::path::PathBuf::from)
-        .unwrap_or_else(|| std::env::temp_dir().join("tekesui-gallery-workbench"));
-    let history_id = format!(
-        "workbench-{}-{}",
-        std::process::id(),
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)?
-            .as_nanos()
-    );
-    Ok(AppWindow::from_containers(
+    let app = AppWindow::from_containers(
         vec![
             navigation(state.clone())?.into(),
             focus.into(),
@@ -2404,7 +2409,7 @@ pub fn assemble() -> anyhow::Result<AppWindow> {
         presentation,
     )?
     .navigation(NavigationOptions {
-        directory: root.join(&history_id),
+        directory: session_path.clone(),
         history_id,
         initial_entries: vec![initial],
         view_command: Some(|entry| {
@@ -2418,7 +2423,8 @@ pub fn assemble() -> anyhow::Result<AppWindow> {
         }),
     })
     .palette_source(palette)
-    .shared_settings(settings))
+    .shared_settings(settings);
+    Ok((app, session_path))
 }
 /// Default to AppHost; retain the explicit selector and its original arguments.
 pub fn apphost_arguments(args: &[String]) -> Option<Vec<String>> {
@@ -2431,7 +2437,9 @@ pub fn apphost_arguments(args: &[String]) -> Option<Vec<String>> {
     }
 }
 pub fn run(args: &[String]) -> anyhow::Result<()> {
-    assemble()?.run_with_args(args)
+    let (app, session_path) = assemble_with_session_path()?;
+    let _session_dir = super::apphost::SessionTempDir::new(session_path);
+    app.run_with_args(args)
 }
 
 #[cfg(test)]
@@ -2529,6 +2537,7 @@ mod tests {
             pending: VecDeque::new(),
             inspected: None,
             document_return_requested: false,
+            session_dirs: Vec::new(),
         }))
     }
     fn render_text_host(host: &mut ContentHost, text: &mut super::super::text::TextEngine) {

@@ -5,7 +5,7 @@ use std::{
     sync::atomic::{AtomicU64, Ordering},
 };
 use tekes_ui_controls::composition::{ContentHost, ContentResponse};
-use tekes_ui_platform_macos::content_accessibility::{
+use tekes_ui_macos_bridge::content_accessibility::{
     content_action, content_nodes, content_text_layouts,
 };
 use tekes_ui_platform_macos::{

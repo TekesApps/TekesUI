@@ -769,9 +769,8 @@ fn local_command_cannot_clear_between_original_native_key_start_and_end() {
 
 #[test]
 fn actual_search_adapter_projects_native_search_text_and_clear_action() {
-    use tekes_ui_platform_macos::{
-        AccessibilityAction as NativeAction, AccessibilityRole, content_accessibility::*,
-    };
+    use tekes_ui_macos_bridge::content_accessibility::*;
+    use tekes_ui_platform_macos::{AccessibilityAction as NativeAction, AccessibilityRole};
     let mut f = SearchFixture::new("A😀B");
     render(&mut f);
     f.host.focus(Some(SEARCH), true);

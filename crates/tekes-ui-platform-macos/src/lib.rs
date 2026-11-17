@@ -10,8 +10,6 @@
 
 pub mod accessibility;
 pub mod config;
-#[cfg(feature = "content-accessibility")]
-pub mod content_accessibility;
 pub mod event;
 pub mod menu;
 pub mod placement;
@@ -21,9 +19,10 @@ pub use text_key::{TextKeyContext, TextKeyDisposition, TextKeyEvent};
 pub use wake::{WakeResult, WindowWake};
 
 pub use accessibility::{
-    AccessibilityAction, AccessibilityKey, AccessibilityNode, AccessibilityRange,
-    AccessibilityRole, AccessibilitySortDirection, AccessibilityTextLayout,
-    accept_accessibility_nodes,
+    AccessibilityAction, AccessibilityGeometryLease, AccessibilityKey, AccessibilityNode,
+    AccessibilityRange, AccessibilityRole, AccessibilitySortDirection, AccessibilityTextLayout,
+    accept_accessibility_nodes, validate_accessibility_nodes,
+    validate_accessibility_nodes_with_geometry,
 };
 pub use config::{AppConfig, WindowConfig};
 pub use event::{
@@ -42,7 +41,7 @@ mod appearance;
 mod menu_build;
 #[cfg(target_os = "macos")]
 mod screens;
-#[cfg(target_os = "macos")]
+#[cfg(all(target_os = "macos", feature = "selftest"))]
 #[doc(hidden)]
 pub mod selftest;
 #[cfg(target_os = "macos")]

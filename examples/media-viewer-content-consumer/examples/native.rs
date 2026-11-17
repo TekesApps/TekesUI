@@ -247,9 +247,11 @@ fn main() {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     use std::io::Write;
     use tekes_ui_controls::composition::*;
+    use tekes_ui_macos_bridge::{
+        WindowContentAccessibilityExt, content_accessibility::ContentAccessibilitySnapshot,
+    };
     use tekes_ui_platform_macos::{
         self as p, App, AppConfig, Event, MenuBar, Window, WindowConfig, WindowHandler,
-        content_accessibility::ContentAccessibilitySnapshot,
     };
     use tekes_ui_render::Renderer;
     use tekes_ui_scene::{Rect, Scene};
@@ -390,7 +392,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "same live active window required"
             );
             assert_eq!(tree.focused(), Some(fixture::INVOKER));
-            let key = p::content_accessibility::content_key(tree, fixture::INVOKER, None).unwrap();
+            let key = tekes_ui_macos_bridge::content_accessibility::content_key(
+                tree,
+                fixture::INVOKER,
+                None,
+            )
+            .unwrap();
             let publication = window.content_accessibility_publication().unwrap();
             assert!(
                 publication.is_current() && publication.owner(key).is_some(),
@@ -473,7 +480,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         fn published(&mut self, tree: &ContentHost, window: &Window, log: &mut std::fs::File) {
             if self.phase == StalePhase::Publication {
-                let key = p::content_accessibility::content_key(tree, fixture::COMMANDS[1].0, None);
+                let key = tekes_ui_macos_bridge::content_accessibility::content_key(
+                    tree,
+                    fixture::COMMANDS[1].0,
+                    None,
+                );
                 let publication = window.content_accessibility_publication();
                 let ready = window.is_active()
                     && tree.is_window_active()
@@ -606,8 +617,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             assert_eq!(viewer.image_status(), Some(ImageLoadStatus::Ready));
             assert!(viewer.can_execute(MediaViewerCommand::ZoomIn));
             let publication = window.content_accessibility_publication().unwrap();
-            let key =
-                p::content_accessibility::content_key(tree, fixture::COMMANDS[1].0, None).unwrap();
+            let key = tekes_ui_macos_bridge::content_accessibility::content_key(
+                tree,
+                fixture::COMMANDS[1].0,
+                None,
+            )
+            .unwrap();
             assert!(publication.is_current() && publication.owner(key).is_some());
             assert_eq!(Some(key), self.new_key);
             assert_ne!(Some(key), self.old_key);
@@ -698,7 +713,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         fn published(&mut self, tree: &ContentHost, window: &Window, log: &mut std::fs::File) {
             if self.phase == RemountPhase::Initial {
-                let key = p::content_accessibility::content_key(tree, fixture::COMMANDS[1].0, None);
+                let key = tekes_ui_macos_bridge::content_accessibility::content_key(
+                    tree,
+                    fixture::COMMANDS[1].0,
+                    None,
+                );
                 let publication = window.content_accessibility_publication();
                 if !(window.is_active()
                     && tree.is_window_active()
@@ -747,8 +766,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let accepted = old.press();
                 assert!(!live && !accepted && fresh.live());
                 assert_eq!(before, ime_witness(tree));
-                self.new_key =
-                    p::content_accessibility::content_key(tree, fixture::COMMANDS[1].0, None);
+                self.new_key = tekes_ui_macos_bridge::content_accessibility::content_key(
+                    tree,
+                    fixture::COMMANDS[1].0,
+                    None,
+                );
                 self.positive_peer = Some(fresh);
                 self.publication(tree, window, log);
                 writeln!(log, "m6_remount_ready host={tree:p} old_key={:?} new_key={:?} old_{} current_{} old_live={live} old_press={accepted} baseline={before:?} notifications={} frame={frame:?}", self.old_key, self.new_key, old.identity(), self.positive_peer.as_ref().unwrap().identity(), self.notifications).unwrap();
@@ -1013,7 +1035,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let sample = (observation, self.notifications);
             self.first.get_or_insert_with(|| sample.clone());
             self.whole_unchanged &= self.first.as_ref() == Some(&sample);
-            let key = p::content_accessibility::content_key(tree, fixture::COMMANDS[3].0, None);
+            let key = tekes_ui_macos_bridge::content_accessibility::content_key(
+                tree,
+                fixture::COMMANDS[3].0,
+                None,
+            );
             let current = window
                 .content_accessibility_publication()
                 .is_some_and(|publication| {
@@ -1180,7 +1206,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             log: &mut std::fs::File,
         ) {
             let geometry = tree.geometry_snapshot();
-            let editor_key = p::content_accessibility::content_key(tree, IME_EDITOR, None);
+            let editor_key =
+                tekes_ui_macos_bridge::content_accessibility::content_key(tree, IME_EDITOR, None);
             let publication = window.content_accessibility_publication();
             let editor_published = editor_key.is_some_and(|key| {
                 publication
@@ -1242,8 +1269,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         fn start_ime_script(tree: &ContentHost) {
             use p::selftest::{Action as A, run_script_published_state};
-            let zoom = p::content_accessibility::content_key(tree, fixture::COMMANDS[1].0, None)
-                .expect("current original Zoom key");
+            let zoom = tekes_ui_macos_bridge::content_accessibility::content_key(
+                tree,
+                fixture::COMMANDS[1].0,
+                None,
+            )
+            .expect("current original Zoom key");
             let mut steps = vec![
                 (0, A::AXPressKey { key: zoom }),
                 (100, A::AXPressKey { key: zoom }),
@@ -1731,8 +1762,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             if self.ime_mode {
                 window.set_text_input_state(tree.focused_text().map(Self::text_state));
-                let zoom_key =
-                    p::content_accessibility::content_key(tree, fixture::COMMANDS[1].0, None);
+                let zoom_key = tekes_ui_macos_bridge::content_accessibility::content_key(
+                    tree,
+                    fixture::COMMANDS[1].0,
+                    None,
+                );
                 let publication = window.content_accessibility_publication();
                 let publication_current = publication.as_ref().is_some_and(|p| p.is_current());
                 let zoom_published = zoom_key.is_some_and(|key| {

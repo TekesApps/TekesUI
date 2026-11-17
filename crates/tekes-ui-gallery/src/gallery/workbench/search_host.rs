@@ -7,7 +7,6 @@ use tekes_ui_controls::{
 };
 use tekes_ui_platform_macos::{Event, TextInputState};
 use tekes_ui_scene::{Point, Rect, Scene, Size};
-use tekes_ui_tokens::Palette;
 
 pub(super) mod native_projection;
 use native_projection::NativeProjection;
@@ -156,8 +155,8 @@ impl StoryTextHost {
             return None;
         }
         let key =
-            tekes_ui_platform_macos::content_accessibility::content_key(&self.host, self.id, None)?;
-        tekes_ui_platform_macos::content_accessibility::content_text_layouts(&self.host)
+            tekes_ui_macos_bridge::content_accessibility::content_key(&self.host, self.id, None)?;
+        tekes_ui_macos_bridge::content_accessibility::content_text_layouts(&self.host)
             .remove(&key)
             .map(|layout| layout.state)
     }
@@ -346,7 +345,8 @@ impl StoryTextHost {
             ctx.text,
             frame,
             clip,
-            Palette::new(ctx.theme, brand).expect("registered Gallery brand"),
+            crate::gallery::brands::brand_palette(ctx.theme, brand)
+                .expect("registered Gallery brand"),
         );
         ctx.text.replace_fixture_surface_cache(previous);
         if let Err(e) = result {

@@ -466,7 +466,7 @@
       },
       "selected": {
         "background": "row-selection",
-        "boundary": "border",
+        "boundary": "separator",
         "focus": "border-focused",
         "helper": null,
         "icon": "primary-text",
@@ -484,7 +484,7 @@
       },
       "selected-hover": {
         "background": "row-selection-hover",
-        "boundary": "border",
+        "boundary": "separator",
         "focus": "border-focused",
         "helper": null,
         "icon": "primary-text",
@@ -493,7 +493,7 @@
       },
       "selected-pressed": {
         "background": "button-pressed",
-        "boundary": "border",
+        "boundary": "separator",
         "focus": "border-focused",
         "helper": null,
         "icon": "primary-text",
@@ -807,7 +807,7 @@
         "background": "surface-2",
         "text": "primary-text",
         "icon": "primary-text",
-        "boundary": "border",
+        "boundary": "separator",
         "focus": null,
         "marker": "c-progress-active",
         "helper": null
@@ -862,7 +862,7 @@
         "background": "surface-2",
         "text": "primary-text",
         "icon": "primary-text",
-        "boundary": "border",
+        "boundary": "separator",
         "focus": null,
         "marker": null,
         "helper": null

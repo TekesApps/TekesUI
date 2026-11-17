@@ -405,7 +405,7 @@ pub fn run(verify_only: bool) -> Result<()> {
     AppWindow::from_containers(containers, options)?
         .navigation(navigation()?)
         .settings(super::settings()?)
-        .run()
+        .run_with_args(&std::env::args().collect::<Vec<_>>())
 }
 
 #[cfg(test)]

@@ -149,6 +149,7 @@ pub fn hit_state(category: &str, content: Rect, p: Point) -> Option<(&'static st
 }
 
 /// Scripted native selftest uses the exact same chip geometry as rendering/hit tests.
+#[cfg(any(test, feature = "selftest"))]
 pub fn state_center(
     category: &str,
     content: Rect,

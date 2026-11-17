@@ -481,13 +481,13 @@ fn accepted_host_sources_reject_ax_before_effect_and_allow_original_pointer_tran
         replacement: None,
     });
     render(&mut h, 400., Theme::LIGHT.into());
-    let nodes = tekes_ui_platform_macos::content_accessibility::content_nodes(&h);
+    let nodes = tekes_ui_macos_bridge::content_accessibility::content_nodes(&h);
     assert!(
         nodes
             .iter()
             .any(|n| n.role == tekes_ui_platform_macos::AccessibilityRole::ComboBox)
     );
-    assert!(!tekes_ui_platform_macos::content_accessibility::content_text_layouts(&h).is_empty());
+    assert!(!tekes_ui_macos_bridge::content_accessibility::content_text_layouts(&h).is_empty());
     assert!(h.drain_actions().is_empty());
     key(&mut h, ControlKey::Tab { reverse: false });
     assert_eq!(h.focused(), Some(OTHER));

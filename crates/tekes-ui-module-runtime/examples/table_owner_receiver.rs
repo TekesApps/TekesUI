@@ -607,8 +607,8 @@ fn original_acceptance_main() -> Result<()> {
         std::env::var_os("TABLE_PROTOCOL_REPLY").context("reply path")?,
         serde_json::to_vec_pretty(snap.reply())?,
     )?;
-    let native = tekes_ui_platform_macos::content_accessibility::content_nodes(&h);
-    tekes_ui_platform_macos::content_accessibility::ContentAccessibilitySnapshot::from_host(&h)
+    let native = tekes_ui_macos_bridge::content_accessibility::content_nodes(&h);
+    tekes_ui_macos_bridge::content_accessibility::ContentAccessibilitySnapshot::from_host(&h)
         .context("unclipped Table accessibility snapshot rejected nodes")?;
     ensure!(
         tekes_ui_platform_macos::accept_accessibility_nodes(native.clone()) == native,
@@ -628,7 +628,7 @@ fn original_acceptance_main() -> Result<()> {
         let _ = container(&h)
             .native_content_bridge(Duration::from_secs(2))?
             .semantics()?;
-        let _ = tekes_ui_platform_macos::content_accessibility::content_nodes(&h);
+        let _ = tekes_ui_macos_bridge::content_accessibility::content_nodes(&h);
     }
     ensure!(
         message(container(&h), "inspect")? == before,
@@ -673,7 +673,7 @@ fn original_acceptance_main() -> Result<()> {
         "owner readback {state}"
     );
     // Native platform callback goes through the real host map and child sort owner.
-    let native = tekes_ui_platform_macos::content_accessibility::content_nodes(&h);
+    let native = tekes_ui_macos_bridge::content_accessibility::content_nodes(&h);
     let key = native
         .iter()
         .find(|n| {
@@ -685,7 +685,7 @@ fn original_acceptance_main() -> Result<()> {
         .unwrap()
         .key;
     ensure!(
-        tekes_ui_platform_macos::content_accessibility::content_action(
+        tekes_ui_macos_bridge::content_accessibility::content_action(
             &mut h,
             key,
             tekes_ui_platform_macos::AccessibilityAction::Press
@@ -770,9 +770,9 @@ fn original_acceptance_main() -> Result<()> {
     }
     ensure!(message(container(&h), "inspect")? == untouched);
     clipped_ready(&mut h, &mut gpu)?;
-    let ns = tekes_ui_platform_macos::content_accessibility::content_nodes(&h);
+    let ns = tekes_ui_macos_bridge::content_accessibility::content_nodes(&h);
     let clipped_snapshot =
-        tekes_ui_platform_macos::content_accessibility::ContentAccessibilitySnapshot::from_host(&h)
+        tekes_ui_macos_bridge::content_accessibility::ContentAccessibilitySnapshot::from_host(&h)
             .context("clipped Table accessibility snapshot rejected nodes")?;
     ensure!(
         clipped_snapshot.is_valid(),

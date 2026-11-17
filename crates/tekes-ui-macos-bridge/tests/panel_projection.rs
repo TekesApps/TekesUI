@@ -1,4 +1,4 @@
-#![cfg(all(target_os = "macos", feature = "content-accessibility"))]
+#![cfg(target_os = "macos")]
 //! Public original Host + real original text editor; no native window or GPU.
 use std::rc::Rc;
 use tekes_ui_controls::{
@@ -106,7 +106,9 @@ fn panel(child: Content, zero: bool) -> PanelContent {
 
 #[test]
 fn actual_native_projection_uses_exact_points_same_mount_generation_and_stales() {
-    use tekes_ui_platform_macos::content_accessibility::ContentAccessibilitySnapshot;
+    use tekes_ui_macos_bridge::content_accessibility::{
+        ContentAccessibilitySnapshot, content_nodes,
+    };
     use tekes_ui_platform_macos::event::Point as P;
     let mut h = ContentHost::new(Content::new(
         ROOT,
@@ -118,7 +120,7 @@ fn actual_native_projection_uses_exact_points_same_mount_generation_and_stales()
     .unwrap();
     let mut text = Text::new(true);
     render(&mut h, &mut text, Rect::new(0., 0., 100., 100.));
-    assert!(tekes_ui_platform_macos::content_accessibility::content_nodes(&h).is_empty());
+    assert!(content_nodes(&h).is_empty());
     let s = ContentAccessibilitySnapshot::from_host(&h).unwrap();
     assert!(s.is_valid());
     assert!(s.hit_test(P { x: 0.5, y: 0.5 }).is_none());
@@ -136,7 +138,9 @@ fn actual_native_projection_uses_exact_points_same_mount_generation_and_stales()
 }
 #[test]
 fn actual_fully_clipped_editor_keeps_native_key_value_and_selection_interfaces() {
-    use tekes_ui_platform_macos::content_accessibility::ContentAccessibilitySnapshot;
+    use tekes_ui_macos_bridge::content_accessibility::{
+        ContentAccessibilitySnapshot, content_nodes,
+    };
     let mut h = ContentHost::new(Content::new(
         ROOT,
         panel(
@@ -150,7 +154,7 @@ fn actual_fully_clipped_editor_keeps_native_key_value_and_selection_interfaces()
     assert!(h.focus(Some(FIELD), true));
     let mount = h.semantic_mount(FIELD).unwrap();
     render(&mut h, &mut text, Rect::new(300., 300., 100., 100.));
-    assert!(tekes_ui_platform_macos::content_accessibility::content_nodes(&h).is_empty());
+    assert!(content_nodes(&h).is_empty());
     let s = ContentAccessibilitySnapshot::from_host(&h).unwrap();
     assert!(s.is_valid());
     let n = s.nodes().iter().find(|n| n.key.component == mount).unwrap();
@@ -163,8 +167,9 @@ fn actual_fully_clipped_editor_keeps_native_key_value_and_selection_interfaces()
 
 #[test]
 fn window_batch_keeps_three_original_owners_text_geometry_and_direct_dispatch() {
+    use tekes_ui_macos_bridge::content_accessibility::*;
+    use tekes_ui_platform_macos::AccessibilityAction as A;
     use tekes_ui_platform_macos::Point as P;
-    use tekes_ui_platform_macos::{AccessibilityAction as A, content_accessibility::*};
     let mut toolbar =
         ContentHost::new(Content::new(ComponentId(91), Button::new("Toolbar"))).unwrap();
     let mut plain = ContentHost::new(Content::new(ComponentId(92), Button::new("Other"))).unwrap();
@@ -191,14 +196,8 @@ fn window_batch_keeps_three_original_owners_text_geometry_and_direct_dispatch() 
         )
         .unwrap();
     }
-    let key =
-        tekes_ui_platform_macos::content_accessibility::content_key(&curve, FIELD, None).unwrap();
-    let toolbar_key = tekes_ui_platform_macos::content_accessibility::content_key(
-        &toolbar,
-        ComponentId(91),
-        None,
-    )
-    .unwrap();
+    let key = content_key(&curve, FIELD, None).unwrap();
+    let toolbar_key = content_key(&toolbar, ComponentId(91), None).unwrap();
     let publication = WindowAccessibilityPublication::prepare(vec![
         (
             ContentAccessibilityOwner(1),
@@ -295,7 +294,7 @@ fn window_batch_keeps_three_original_owners_text_geometry_and_direct_dispatch() 
 
 #[test]
 fn duplicate_or_missing_native_parent_rejects_whole_batch_and_revokes_saved_authority() {
-    use tekes_ui_platform_macos::content_accessibility::*;
+    use tekes_ui_macos_bridge::content_accessibility::*;
     let mut host = ContentHost::new(Content::new(
         ROOT,
         panel(Content::new(CHILD, Button::new("button")), true),
@@ -324,8 +323,7 @@ fn duplicate_or_missing_native_parent_rejects_whole_batch_and_revokes_saved_auth
     ));
     assert!(!saved.is_current());
     assert!(saved.nodes().is_empty());
-    let child =
-        tekes_ui_platform_macos::content_accessibility::content_key(&host, CHILD, None).unwrap();
+    let child = content_key(&host, CHILD, None).unwrap();
     let mut mapping = std::collections::HashMap::new();
     mapping.insert(child, child);
     let illegal_parent = snapshot.clone().with_native_keys(&mapping);
@@ -357,7 +355,9 @@ fn duplicate_or_missing_native_parent_rejects_whole_batch_and_revokes_saved_auth
 
 #[test]
 fn inactive_original_window_cannot_republish_geometry_or_text_authority() {
-    use tekes_ui_platform_macos::content_accessibility::ContentAccessibilitySnapshot;
+    use tekes_ui_macos_bridge::content_accessibility::{
+        ContentAccessibilitySnapshot, content_nodes, content_text_layouts,
+    };
     let mut host = ContentHost::new(Content::new(
         ROOT,
         panel(
@@ -375,6 +375,6 @@ fn inactive_original_window_cannot_republish_geometry_or_text_authority() {
     host.set_window_active(false);
     assert!(!saved.is_current());
     assert!(ContentAccessibilitySnapshot::from_host(&host).is_none());
-    assert!(tekes_ui_platform_macos::content_accessibility::content_nodes(&host).is_empty());
-    assert!(tekes_ui_platform_macos::content_accessibility::content_text_layouts(&host).is_empty());
+    assert!(content_nodes(&host).is_empty());
+    assert!(content_text_layouts(&host).is_empty());
 }

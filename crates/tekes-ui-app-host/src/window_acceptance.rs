@@ -2,6 +2,7 @@ use std::{
     sync::{Arc, Mutex},
     time::Instant,
 };
+use tekes_ui_macos_bridge::WindowContentAccessibilityExt;
 
 impl super::Host {
     /// Finite opt-in continuation of the original Main23 driver. Three-column
@@ -305,10 +306,11 @@ impl super::Host {
             // Authenticate the original native handle while its publication is
             // current. The wheel burst below retires that geometry lease.
             let ax_target = if action == "AX" {
-                let target = tekes_ui_platform_macos::content_accessibility::content_key(
-                    header, CREATE, None,
-                )
-                .ok_or_else(|| anyhow::anyhow!("creation trigger has no current AX identity"))?;
+                let target =
+                    tekes_ui_macos_bridge::content_accessibility::content_key(header, CREATE, None)
+                        .ok_or_else(|| {
+                            anyhow::anyhow!("creation trigger has no current AX identity")
+                        })?;
                 ensure!(
                     w.content_accessibility_publication()
                         .is_some_and(|publication| {

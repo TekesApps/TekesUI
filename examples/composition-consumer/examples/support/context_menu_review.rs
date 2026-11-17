@@ -399,12 +399,18 @@ impl Review {
         }
         if matches!(id, 44018 | 44019) {
             let row = sidebar.host.get(B).unwrap();
-            if !row.visible().is_some_and(|visible| visible.contains(row.frame().center()))
+            if !row
+                .visible()
+                .is_some_and(|visible| visible.contains(row.frame().center()))
                 || !sidebar.host.can_show_context_menu(B)
             {
                 errors.push("edge-click original owner is outside its visible viewport".into());
             }
-            eprintln!("CONTEXT_NATIVE_EDGE_OWNER phase={id} frame={:?} visible={:?}", row.frame(), row.visible());
+            eprintln!(
+                "CONTEXT_NATIVE_EDGE_OWNER phase={id} frame={:?} visible={:?}",
+                row.frame(),
+                row.visible()
+            );
         }
         if id == 44019 {
             let menu = sidebar

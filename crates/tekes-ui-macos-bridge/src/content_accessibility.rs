@@ -5,13 +5,14 @@
 //! the current ContentHost mount, and accepted actions are routed back through
 //! the original component state machine.
 
-use crate::{
-    AccessibilityAction, AccessibilityKey, AccessibilityNode, AccessibilityRange,
-    AccessibilityRole, AccessibilityTextLayout, Point, Rect, Size, TextInputState,
-};
 use tekes_ui_controls::composition::{
     AccessibilityAction as ContentAction, ComponentId, ContentHost, ContentResponse, ContentRole,
     ContentSemantics, ContentTextLayout,
+};
+use tekes_ui_platform_macos::{
+    AccessibilityAction, AccessibilityKey, AccessibilityNode, AccessibilityRange,
+    AccessibilityRole, AccessibilitySortDirection, AccessibilityTextLayout, Point, Rect, Size,
+    TextInputState,
 };
 
 use std::collections::HashMap;
@@ -317,10 +318,10 @@ fn project(
                 index,
                 sort: sort.map(|direction| match direction {
                     tekes_ui_controls::extended::SortDirection::Ascending => {
-                        crate::AccessibilitySortDirection::Ascending
+                        AccessibilitySortDirection::Ascending
                     }
                     tekes_ui_controls::extended::SortDirection::Descending => {
-                        crate::AccessibilitySortDirection::Descending
+                        AccessibilitySortDirection::Descending
                     }
                 }),
             },
@@ -510,7 +511,7 @@ impl ContentAccessibilitySnapshot {
                 node.frame.size.height as f32,
             );
             node.frame = match geometry.bounds(id, node.key.part, frame).ok()? {
-                Some(b) => crate::placement::Rect {
+                Some(b) => Rect {
                     origin: Point {
                         x: b.min_x() as f64,
                         y: b.min_y() as f64,
@@ -532,7 +533,7 @@ impl ContentAccessibilitySnapshot {
                     {
                         structural_only.insert(node.key);
                     }
-                    crate::placement::Rect {
+                    Rect {
                         origin: Point { x: 0., y: 0. },
                         size: Size {
                             width: 0.,
@@ -602,7 +603,7 @@ impl ContentAccessibilitySnapshot {
     }
     pub fn is_valid(&self) -> bool {
         self.is_current()
-            && crate::accessibility::validate_accessibility_nodes_with_geometry(
+            && tekes_ui_platform_macos::validate_accessibility_nodes_with_geometry(
                 &self.nodes,
                 &self.identities.keys().copied().collect(),
             )
@@ -630,7 +631,7 @@ impl ContentAccessibilitySnapshot {
         &self,
         key: AccessibilityKey,
         range: std::ops::Range<usize>,
-    ) -> Option<crate::placement::Rect> {
+    ) -> Option<Rect> {
         let (id, part) = *self.identities.get(&key)?;
         let rect = self.text_layouts.get(&key)?.frame_for_range(range)?;
         let r = tekes_ui_scene::Rect::new(
@@ -640,7 +641,7 @@ impl ContentAccessibilitySnapshot {
             rect.size.height as f32,
         );
         let b = self.geometry.bounds(id, part, r).ok()??;
-        Some(crate::placement::Rect {
+        Some(Rect {
             origin: Point {
                 x: b.min_x() as f64,
                 y: b.min_y() as f64,
@@ -654,6 +655,8 @@ impl ContentAccessibilitySnapshot {
 }
 
 mod publication;
+#[cfg(target_os = "macos")]
+pub use publication::WindowContentAccessibilityExt;
 pub use publication::{ContentAccessibilityOwner, WindowAccessibilityPublication};
 
 #[cfg(test)]
@@ -702,7 +705,7 @@ mod image_role_local_port_tests {
         assert_eq!(image.role, AccessibilityRole::Image);
         assert_eq!(image.label, "Informative image");
         assert_eq!(
-            crate::accessibility::accept_accessibility_nodes(vec![image.clone()]),
+            tekes_ui_platform_macos::accept_accessibility_nodes(vec![image.clone()]),
             vec![image.clone()]
         );
         let host = ContentHost::new(Content::new(
@@ -728,10 +731,12 @@ mod image_role_local_port_tests {
             &ContentSemantics::new(ContentRole::Text, "valid prefix"),
         );
         assert_eq!(
-            crate::accessibility::accept_accessibility_nodes(vec![prefix.clone()]),
+            tekes_ui_platform_macos::accept_accessibility_nodes(vec![prefix.clone()]),
             vec![prefix.clone()]
         );
-        assert!(crate::accessibility::accept_accessibility_nodes(vec![prefix, image]).is_empty());
+        assert!(
+            tekes_ui_platform_macos::accept_accessibility_nodes(vec![prefix, image]).is_empty()
+        );
     }
     #[derive(Debug)]
     struct AdjustablePart(std::ops::RangeInclusive<f64>);
@@ -844,8 +849,8 @@ mod splitter_projection_tests {
 #[cfg(test)]
 mod splitter_content_bridge_tests {
     use super::*;
-    use crate::AccessibilityAction;
     use tekes_ui_controls::{ButtonTextAlign, ButtonTextRenderer, composition::*};
+    use tekes_ui_platform_macos::AccessibilityAction;
     use tekes_ui_scene::{Rect as SceneRect, Scene, Size as SceneSize};
     use tekes_ui_tokens::{Rgba, Theme, proposal};
 
@@ -949,7 +954,9 @@ mod splitter_content_bridge_tests {
             AccessibilityRole::Splitter(AccessibilityRange::new(0.1, 0.9).unwrap())
         );
         assert_eq!(nodes[1].value.as_deref(), Some("0.5"));
-        assert!(crate::accessibility::validate_accessibility_nodes(&nodes));
+        assert!(tekes_ui_platform_macos::validate_accessibility_nodes(
+            &nodes
+        ));
         assert!(host.semantic_value_range(id, Some(8)).is_none());
         host.get_mut(id)
             .unwrap()
@@ -988,9 +995,11 @@ mod splitter_content_bridge_tests {
         assert_eq!(range.maximum(), 0.9);
         let published_value = splitter.value.as_deref().unwrap().parse::<f64>().unwrap();
         assert!(range.minimum() <= published_value && published_value <= range.maximum());
-        assert!(crate::accessibility::validate_accessibility_nodes(&nodes));
+        assert!(tekes_ui_platform_macos::validate_accessibility_nodes(
+            &nodes
+        ));
         assert_eq!(
-            crate::accessibility::accept_accessibility_nodes(nodes.clone()),
+            tekes_ui_platform_macos::accept_accessibility_nodes(nodes.clone()),
             nodes
         );
 
@@ -999,16 +1008,16 @@ mod splitter_content_bridge_tests {
             .into_iter()
             .find(|node| node.key == root_key)
             .expect("valid prefix owner");
-        assert!(crate::accessibility::validate_accessibility_nodes(
+        assert!(tekes_ui_platform_macos::validate_accessibility_nodes(
             std::slice::from_ref(&prefix)
         ));
         let mut invalid_splitter = splitter;
         invalid_splitter.value = Some("0.05".into());
         let invalid_packet = vec![prefix, invalid_splitter];
-        assert!(!crate::accessibility::validate_accessibility_nodes(
+        assert!(!tekes_ui_platform_macos::validate_accessibility_nodes(
             &invalid_packet
         ));
-        assert!(crate::accessibility::accept_accessibility_nodes(invalid_packet).is_empty());
+        assert!(tekes_ui_platform_macos::accept_accessibility_nodes(invalid_packet).is_empty());
     }
 
     #[test]

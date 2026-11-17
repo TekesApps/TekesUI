@@ -15,9 +15,10 @@ fn main() {}
 fn main() {
     use serde_json::{Value, json};
     use tekes_ui_controls::composition::*;
+    use tekes_ui_macos_bridge::content_accessibility as ax;
     use tekes_ui_platform_macos::{
         self as p, App, AppConfig, Event, KeyEventKind, Menu, MenuBar, MenuCommand, MenuItem,
-        Window, WindowConfig, WindowHandler, content_accessibility as ax, selftest::Action,
+        Window, WindowConfig, WindowHandler, selftest::Action,
     };
     use tekes_ui_render::Renderer;
     use tekes_ui_scene::{Rect, Scene};

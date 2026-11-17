@@ -1763,18 +1763,8 @@ impl TextSurface {
                 );
                 if let Some(thumb) = thumb.intersection(&frame_clip) {
                     scene.push_quad(
-                        Quad::new(
-                            thumb,
-                            color(
-                                if theme.theme.is_increased() {
-                                    "border"
-                                } else {
-                                    "scrollbar-thumb"
-                                },
-                                theme,
-                            ),
-                        )
-                        .with_corner_radius(Spacing::Micro.value()),
+                        Quad::new(thumb, color("scrollbar-thumb", theme))
+                            .with_corner_radius(Spacing::Micro.value()),
                     );
                 }
             }
@@ -1900,14 +1890,24 @@ mod tests {
                                     Stroke::Rule.value()
                                 }
                             );
-                            let role = if error {
-                                "status-failed"
-                            } else if editing_focus {
-                                "border-focused"
+                            let input_packet =
+                                tekes_ui_tokens::surface_palette::resolve_surface_with_options(
+                                    theme.into(),
+                                    "canvas",
+                                    "input",
+                                    "rest",
+                                    tekes_ui_tokens::surface_palette::SurfaceOptions {
+                                        error,
+                                        read_only,
+                                    },
+                                )
+                                .expect("Field input Surface packet");
+                            let expected_border = if editing_focus && !error {
+                                input_packet.focus.expect("input focus ink")
                             } else {
-                                "border"
+                                input_packet.boundary.expect("input boundary ink")
                             };
-                            assert_eq!(quad.border_color, color(role, theme.into()));
+                            assert_eq!(quad.border_color, expected_border);
                             assert_eq!(
                                 quad.fill,
                                 color(

@@ -1,9 +1,8 @@
 #![cfg(target_os = "macos")]
-#[path = "../../../crates/tekes-ui-gallery/src/reading_pointer.rs"]
-mod gallery;
 #[path = "../examples/support/native_pointer.rs"]
 mod independent;
 use tekes_ui_controls::composition::*;
+use tekes_ui_macos_bridge::content_input::translate_pointer;
 use tekes_ui_platform_macos::{Modifiers, MouseButton, MouseEvent, MouseEventKind, Point};
 #[test]
 fn both_real_host_adapters_retain_all_fields_for_every_mouse_phase_and_button() {
@@ -55,7 +54,7 @@ fn both_real_host_adapters_retain_all_fields_for_every_mouse_phase_and_button() 
                 position: Point { x: 23.25, y: 48.5 },
                 modifiers,
             };
-            for translate in [independent::translate, gallery::translate] {
+            for translate in [independent::translate, translate_pointer] {
                 let ContentEvent::Pointer(p) = translate(native) else {
                     panic!("lost pointer input")
                 };

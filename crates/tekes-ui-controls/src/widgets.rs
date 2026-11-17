@@ -3387,19 +3387,7 @@ mod tests {
 
     #[test]
     fn checkbox_label_uses_semantic_text_ink_for_all_mark_and_control_states() {
-        let palettes = [
-            0,
-            tekes_ui_tokens::palette::gallery_brand_presets()
-                .iter()
-                .find(|preset| preset.id == "example-blue")
-                .expect("blue example preset")
-                .palette_index,
-            tekes_ui_tokens::palette::gallery_brand_presets()
-                .iter()
-                .find(|preset| preset.id == "example-clay")
-                .expect("clay example preset")
-                .palette_index,
-        ];
+        let palettes = [0, 1, 2];
         let states = [
             (CheckState::Unchecked, ControlState::default()),
             (

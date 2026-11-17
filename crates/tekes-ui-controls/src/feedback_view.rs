@@ -163,6 +163,21 @@ fn notice_marker_frame(
 }
 
 #[allow(clippy::too_many_arguments)]
+fn draw_centered_text_with_rgba(
+    scene: &mut Scene,
+    renderer: &mut impl ButtonTextRenderer,
+    text: &str,
+    role: proposal::TextRole,
+    rect: Rect,
+    align: ButtonTextAlign,
+    ink: tekes_ui_tokens::Rgba,
+) {
+    if text.is_empty() || rect.is_empty() {
+        return;
+    }
+    renderer.draw(scene, text, role, rect, align, ink);
+}
+#[allow(clippy::too_many_arguments)]
 fn draw_centered_text_with_ink(
     scene: &mut Scene,
     renderer: &mut impl ButtonTextRenderer,
@@ -177,7 +192,7 @@ fn draw_centered_text_with_ink(
         return;
     }
     let ink = palette.color(ink_role).expect("semantic text token");
-    renderer.draw(scene, text, role, rect, align, ink);
+    draw_centered_text_with_rgba(scene, renderer, text, role, rect, align, ink);
 }
 fn button_text_align(policy: proposal::layout::AlignmentPolicy) -> ButtonTextAlign {
     match policy.text_alignment {
@@ -553,19 +568,25 @@ impl FieldView {
                 );
             }
             if !message.is_empty() {
-                draw_centered_text_with_ink(
+                let packet = tekes_ui_tokens::surface_palette::resolve_surface_with_options(
+                    palette,
+                    "canvas",
+                    "input",
+                    "rest",
+                    tekes_ui_tokens::surface_palette::SurfaceOptions {
+                        error: model.error.is_some(),
+                        read_only: false,
+                    },
+                )
+                .expect("Field helper Surface packet");
+                draw_centered_text_with_rgba(
                     scene,
                     text,
                     message,
                     message_role,
                     message_rect,
-                    palette,
                     ButtonTextAlign::Leading,
-                    if model.error.is_some() {
-                        "status-failed"
-                    } else {
-                        "secondary-text"
-                    },
+                    packet.helper.expect("Field helper ink"),
                 );
             }
             scene.pop_clip();

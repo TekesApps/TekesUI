@@ -1,46 +1,52 @@
-//! Immutable semantic environment. Presets are outputs of the existing brand compiler,
-//! never a second hand-authored color ramp. Reference (0) keeps the consumer bundle.
+//! Immutable semantic environment backed by compiled proposal tokens,
+//! compiled Design System Theme definitions, or explicit consumer palette sources.
 use crate::{Rgba, Theme, proposal};
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct GalleryBrandPreset {
-    pub id: &'static str,
-    pub name: &'static str,
-    pub palette_index: usize,
-    pub seed_srgb: &'static str,
-    pub category: &'static str,
-    pub color_family: &'static str,
-    pub recommended_for_direction: &'static [&'static str],
-    pub description: &'static str,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct GalleryBrandDirection {
-    pub id: &'static str,
-    pub name: &'static str,
-    pub description: &'static str,
-}
-
-include!(concat!(env!("OUT_DIR"), "/brand_colors.rs"));
 include!(concat!(env!("OUT_DIR"), "/theme_definition_colors.rs"));
 
-pub fn gallery_brand_presets() -> &'static [GalleryBrandPreset] {
-    GALLERY_BRAND_PRESETS
+/// Host-provided or application-defined custom color resolver.
+#[derive(Clone, Copy)]
+pub struct CustomPaletteSource {
+    pub id: usize,
+    pub name: &'static str,
+    resolve: fn(usize, &str, Theme) -> Option<Rgba>,
 }
 
-pub fn gallery_brand_directions() -> &'static [GalleryBrandDirection] {
-    GALLERY_BRAND_DIRECTIONS
+impl CustomPaletteSource {
+    pub const fn new(
+        id: usize,
+        name: &'static str,
+        resolve: fn(usize, &str, Theme) -> Option<Rgba>,
+    ) -> Self {
+        Self { id, name, resolve }
+    }
 }
 
-pub fn gallery_brand_preset(palette_index: usize) -> Option<&'static GalleryBrandPreset> {
-    GALLERY_BRAND_PRESETS
-        .iter()
-        .find(|preset| preset.palette_index == palette_index)
+impl std::fmt::Debug for CustomPaletteSource {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("CustomPaletteSource")
+            .field("id", &self.id)
+            .field("name", &self.name)
+            .finish()
+    }
 }
+
+impl PartialEq for CustomPaletteSource {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id && self.name == other.name
+    }
+}
+
+impl Eq for CustomPaletteSource {}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PaletteSource {
-    GalleryBrand { index: usize },
+    /// Framework neutral / consumer default compiled token bundle (`proposal::render_color`).
+    Default,
+    /// Design System Theme definition compiled into this package.
     ThemeDefinition { index: usize },
+    /// Application or Gallery custom palette source.
+    Custom(CustomPaletteSource),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -48,22 +54,30 @@ pub struct Palette {
     pub theme: Theme,
     source: PaletteSource,
 }
+
 impl From<Theme> for Palette {
     fn from(theme: Theme) -> Self {
         Self {
             theme,
-            source: PaletteSource::GalleryBrand { index: 0 },
+            source: PaletteSource::Default,
         }
     }
 }
+
 impl Palette {
-    /// Select a registered Gallery preview. Zero is the consumer's compiled
-    /// BrandConfig, including an explicitly selected offline artifact.
-    pub fn new(theme: Theme, brand: usize) -> Option<Self> {
-        gallery_brand_preset(brand).map(|_| Self {
-            theme,
-            source: PaletteSource::GalleryBrand { index: brand },
-        })
+    /// Select a compiled palette by index. Index `0` selects [`PaletteSource::Default`];
+    /// non-zero indices select a compiled Theme definition (`1..theme_definition_count`).
+    pub fn new(theme: Theme, index: usize) -> Option<Self> {
+        if index == 0 {
+            Some(Self::from(theme))
+        } else if index < theme_definition_count() {
+            Some(Self {
+                theme,
+                source: PaletteSource::ThemeDefinition { index },
+            })
+        } else {
+            None
+        }
     }
 
     /// Select one Design System Theme definition compiled into this package.
@@ -74,38 +88,50 @@ impl Palette {
         })
     }
 
+    /// Construct a palette backed by an explicit custom color resolver.
+    pub const fn from_custom(theme: Theme, custom: CustomPaletteSource) -> Self {
+        Self {
+            theme,
+            source: PaletteSource::Custom(custom),
+        }
+    }
+
+    /// Rebind this palette to `theme` while preserving its [`PaletteSource`].
+    pub const fn with_theme(self, theme: Theme) -> Self {
+        Self {
+            theme,
+            source: self.source,
+        }
+    }
+
     /// Return the explicit palette source without exposing mutable source state.
     pub const fn source(self) -> PaletteSource {
         self.source
     }
 
-    /// Return the Gallery brand index when this palette selects a Gallery brand.
+    /// Return the custom source ID when this palette uses [`PaletteSource::Custom`].
     pub const fn brand_index(self) -> Option<usize> {
         match self.source {
-            PaletteSource::GalleryBrand { index } => Some(index),
-            PaletteSource::ThemeDefinition { .. } => None,
+            PaletteSource::Custom(custom) => Some(custom.id),
+            PaletteSource::Default | PaletteSource::ThemeDefinition { .. } => None,
         }
     }
 
     pub fn color(self, role: &str) -> Option<Rgba> {
         let index = Theme::ALL.iter().position(|t| *t == self.theme)?;
         let color = match self.source {
-            PaletteSource::GalleryBrand { index: brand } => {
-                gallery_brand_preset(brand)?;
-                let base = proposal::render_color(role, self.theme)?;
-                let mut color = if brand == 0 {
-                    base
-                } else {
-                    brand_color(brand, role, index).unwrap_or(base)
-                };
-                color.a = base.a;
-                Some(color)
-            }
+            PaletteSource::Default => proposal::render_color(role, self.theme),
             PaletteSource::ThemeDefinition { index: definition } => {
                 // Theme instances store opaque compiled RGB. Render alpha remains owned by the
                 // original token role and mode, preserving scrim/selection/wash behavior.
                 let mut color = theme_definition_color(definition, role, index)?;
                 color.a = proposal::render_color(role, self.theme)?.a;
+                Some(color)
+            }
+            PaletteSource::Custom(custom) => {
+                let base = proposal::render_color(role, self.theme)?;
+                let mut color = (custom.resolve)(custom.id, role, self.theme).unwrap_or(base);
+                color.a = base.a;
                 Some(color)
             }
         }?;
@@ -114,76 +140,56 @@ impl Palette {
         Some(color)
     }
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn test_custom_color(_id: usize, role: &str, _theme: Theme) -> Option<Rgba> {
+        (role == "action-primary-ground").then(|| Rgba::rgb8(12, 34, 56))
+    }
+
     #[test]
-    fn unknown_brand_and_role_fail_without_default_fallback() {
+    fn unknown_index_and_role_fail_without_default_fallback() {
         for theme in Theme::ALL {
             assert!(Palette::new(theme, usize::MAX).is_none());
             assert!(
                 Palette {
                     theme,
-                    source: PaletteSource::GalleryBrand { index: usize::MAX },
+                    source: PaletteSource::ThemeDefinition { index: usize::MAX },
                 }
                 .color("primary-text")
                 .is_none()
             );
-            assert!(
-                Palette::new(theme, 0)
-                    .unwrap()
-                    .color("unknown-role")
-                    .is_none()
-            );
-        }
-    }
-    #[test]
-    fn every_registered_preset_compiles_four_themes_and_preserves_independent_roles() {
-        assert_eq!(gallery_brand_presets().len(), 13);
-        assert_eq!(gallery_brand_preset(0).unwrap().id, "consumer-reference");
-        assert_eq!(gallery_brand_directions().len(), 7);
-        for theme in Theme::ALL {
-            let baseline = Palette::from(theme);
-            for preset in gallery_brand_presets() {
-                let candidate = Palette::new(theme, preset.palette_index).unwrap();
-                for role in [
-                    "action-primary-ground",
-                    "action-primary-foreground",
-                    "c-link-foreground",
-                    "accent-subtle-ground",
-                ] {
-                    assert!(candidate.color(role).is_some(), "{} / {role}", preset.id);
-                }
-                for role in [
-                    "primary-text",
-                    "secondary-text",
-                    "border-focused",
-                    "text-selection",
-                    "row-selection",
-                    "scrim",
-                ] {
-                    assert_eq!(
-                        candidate.color(role),
-                        baseline.color(role),
-                        "{} / {role}",
-                        preset.id
-                    );
-                }
-            }
+            assert!(Palette::from(theme).color("unknown-role").is_none());
         }
     }
 
     #[test]
-    fn hue_choices_reference_registered_candidates_without_implicit_application() {
-        for direction in gallery_brand_directions() {
-            let matches: Vec<_> = gallery_brand_presets()
-                .iter()
-                .filter(|preset| preset.recommended_for_direction.contains(&direction.id))
-                .collect();
-            assert_eq!(matches.len(), 1, "{}", direction.id);
-            assert_eq!(matches[0].color_family, direction.id);
+    fn default_theme_is_neutral_and_custom_sources_preserve_identity_across_modes() {
+        for theme in Theme::ALL {
+            let baseline = Palette::from(theme);
+            assert_eq!(baseline.source(), PaletteSource::Default);
+            assert_eq!(baseline.brand_index(), None);
+            assert_eq!(
+                baseline.color("primary-text"),
+                proposal::render_color("primary-text", theme)
+            );
+            let custom = Palette::from_custom(
+                theme,
+                CustomPaletteSource::new(7, "test-custom", test_custom_color),
+            );
+            assert_eq!(custom.brand_index(), Some(7));
+            assert_eq!(
+                custom.color("action-primary-ground").unwrap(),
+                Rgba {
+                    a: baseline.color("action-primary-ground").unwrap().a,
+                    ..Rgba::rgb8(12, 34, 56)
+                }
+            );
+            assert_eq!(custom.color("primary-text"), baseline.color("primary-text"));
+            assert_eq!(custom.with_theme(Theme::DARK).brand_index(), Some(7));
         }
-        assert_eq!(Palette::from(Theme::LIGHT).brand_index(), Some(0));
     }
 
     #[test]

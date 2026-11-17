@@ -491,9 +491,11 @@ fn all_host_states_preserve_composer_marked_binding_focus_and_original_reading_a
 #[cfg(target_os = "macos")]
 #[test]
 fn platform_progress_projection_is_readonly_known_unknown_and_rejects_all_actions() {
+    use tekes_ui_macos_bridge::content_accessibility::{
+        content_action, content_key, content_nodes,
+    };
     use tekes_ui_platform_macos::{
         AccessibilityAction as A, AccessibilityRange, AccessibilityRole,
-        content_accessibility::{content_action, content_key, content_nodes},
     };
     let (mut s, _) = fixture::build().unwrap();
     let mut t = coretext::Text::new(1.);

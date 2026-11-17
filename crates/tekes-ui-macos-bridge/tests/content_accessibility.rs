@@ -1,8 +1,9 @@
-#![cfg(all(target_os = "macos", feature = "content-accessibility"))]
+#![cfg(target_os = "macos")]
 use tekes_ui_controls::{
     ButtonTextAlign, ButtonTextRenderer, TextSurfaceHost, TextSurfaceTextRenderer, composition::*,
 };
-use tekes_ui_platform_macos::{AccessibilityAction, AccessibilityRole, content_accessibility::*};
+use tekes_ui_macos_bridge::content_accessibility::*;
+use tekes_ui_platform_macos::{AccessibilityAction, AccessibilityRole};
 use tekes_ui_scene::{Rect, Scene, Size};
 use tekes_ui_tokens::{Rgba, Theme, proposal};
 struct Text;

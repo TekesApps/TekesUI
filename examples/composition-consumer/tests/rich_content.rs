@@ -6,7 +6,7 @@ use tekes_ui_controls::{
     composition::*,
     extended::{CodeBlock, DiffView},
 };
-use tekes_ui_platform_macos::content_accessibility as ax;
+use tekes_ui_macos_bridge::content_accessibility as ax;
 use tekes_ui_scene::{Point, Primitive, Rect, Scene};
 use tekes_ui_tokens::Theme;
 

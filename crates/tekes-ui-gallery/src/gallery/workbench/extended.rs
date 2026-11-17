@@ -1393,7 +1393,8 @@ impl ExtendedStory {
                 specimen_width,
                 control_height,
             );
-            let palette = Palette::new(ctx.theme, s.brand).expect("registered Gallery brand");
+            let palette = crate::gallery::brands::brand_palette(ctx.theme, s.brand)
+                .expect("registered Gallery brand");
             match e.renderer() {
                 "switch" | "radio-group" | "slider" | "link" | "segmented-control" => {
                     paint_selection_fixture(
@@ -1460,7 +1461,8 @@ impl ExtendedStory {
                     ctx.text,
                     frame,
                     c,
-                    Palette::new(ctx.theme, s.brand).expect("registered Gallery brand"),
+                    crate::gallery::brands::brand_palette(ctx.theme, s.brand)
+                        .expect("registered Gallery brand"),
                 )
                 .unwrap();
             s.document_bottom = frame.max_y() + 12.;
@@ -1501,7 +1503,8 @@ impl ExtendedStory {
             feedback_adapter::variants(e, s, ctx, scene, c);
             return;
         }
-        let palette = Palette::new(ctx.theme, s.brand).expect("registered Gallery brand");
+        let palette = crate::gallery::brands::brand_palette(ctx.theme, s.brand)
+            .expect("registered Gallery brand");
         let x = c.min_x();
         let y = c.min_y();
         let w = c.size.width.max(0.);
@@ -1948,7 +1951,8 @@ impl ExtendedStory {
         let bx = body.min_x();
         let by = body.min_y();
         let bw = body.size.width;
-        let palette = Palette::new(ctx.theme, s.brand).expect("registered Gallery brand");
+        let palette = crate::gallery::brands::brand_palette(ctx.theme, s.brand)
+            .expect("registered Gallery brand");
         if self.disabled && self.pointer_dragging.is_some() {
             self.cancel_pointer();
         }
@@ -3852,7 +3856,8 @@ mod tests {
                         wrong += crate::gallery::quality_effects::record_panel_host_scale(
                             &scene,
                             &mut text,
-                            Palette::new(theme, brand).expect("registered Gallery brand"),
+                            crate::gallery::brands::brand_palette(theme, brand)
+                                .expect("registered Gallery brand"),
                             &name,
                             gpu.as_mut(),
                         );

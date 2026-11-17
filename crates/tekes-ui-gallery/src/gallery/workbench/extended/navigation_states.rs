@@ -41,7 +41,8 @@ pub(in crate::gallery::workbench) fn matrix(
     let help_height = caption_size(ctx, HELP, width).height;
     wrapped_caption(ctx, scene, x, y, width, HELP);
     y += help_height.max(18.) + 18.;
-    let palette = Palette::new(ctx.theme, s.brand).expect("registered Gallery brand");
+    let palette = crate::gallery::brands::brand_palette(ctx.theme, s.brand)
+        .expect("registered Gallery brand");
 
     match e.renderer() {
         "select" => select(ctx, scene, bounds, viewport, &mut y, width, palette),

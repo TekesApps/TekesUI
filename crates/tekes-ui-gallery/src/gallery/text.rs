@@ -18,9 +18,10 @@ use tekes_ui_controls::{
     ButtonLayout, ButtonModel, ButtonSize, ButtonTextAlign, ButtonTextRenderer,
     ControlMotionContext, TextSurfaceTextRenderer,
 };
+use tekes_ui_macos_bridge::coretext_host::{self, CoreTextHost};
 use tekes_ui_render::{RenderError, Renderer};
 use tekes_ui_scene::{GlyphAtlas, Point, Rect, Scene, Size};
-use tekes_ui_text::coretext::{CoreTextFonts, CoreTextRasterizer, CoreTextShaper, PreparedText};
+use tekes_ui_text::coretext::PreparedText;
 use tekes_ui_text::model::{Paragraph, ShapeOptions};
 use tekes_ui_text::push::push_paragraph;
 use tekes_ui_text::style::TextStyle;
@@ -76,21 +77,15 @@ impl LabelStyle {
 }
 
 pub struct TextEngine {
-    shaper: CoreTextShaper,
-    rasterizer: CoreTextRasterizer,
-    atlas: GlyphAtlas,
+    core: CoreTextHost,
     /// 离屏渲染用的 atlas。
     offscreen_atlas: GlyphAtlas,
     labels: HashMap<LabelKey, Rc<Paragraph>>,
     label_order: VecDeque<LabelKey>,
     /// 到目前为止排过几次版（测试用：重绘不应增加它）。
     shapes: u64,
-    scale: f32,
-    type_scale: f32,
     locale: super::locale::Locale,
     motion_enabled: bool,
-    motion_context: Option<ControlMotionContext>,
-    motion_frame_requested: bool,
     fixture_surface_cache: bool,
 }
 
@@ -99,7 +94,7 @@ impl std::fmt::Debug for TextEngine {
         f.debug_struct("TextEngine")
             .field("labels", &self.labels.len())
             .field("shapes", &self.shapes)
-            .field("scale", &self.scale)
+            .field("scale", &self.core.scale)
             .finish_non_exhaustive()
     }
 }
@@ -118,31 +113,24 @@ pub fn role_style(role: TextRole) -> TextStyle {
 
 impl TextEngine {
     pub fn new() -> TextEngine {
-        let fonts = CoreTextFonts::new();
         TextEngine {
-            shaper: CoreTextShaper::new(fonts.clone()),
-            rasterizer: CoreTextRasterizer::new(fonts),
-            atlas: GlyphAtlas::default(),
+            core: CoreTextHost::new().with_backing_scale(2.0),
             offscreen_atlas: GlyphAtlas::default(),
             labels: HashMap::new(),
             label_order: VecDeque::new(),
             shapes: 0,
-            scale: 2.0,
-            type_scale: 1.0,
             locale: super::locale::Locale::default(),
             motion_enabled: false,
-            motion_context: None,
-            motion_frame_requested: false,
             fixture_surface_cache: false,
         }
     }
 
     pub fn type_scale(&self) -> f32 {
-        self.type_scale
+        self.core.type_scale
     }
     pub fn set_type_scale(&mut self, scale: f32) {
         if scale.is_finite() {
-            self.type_scale = scale.clamp(1.0, 1.5);
+            self.core.type_scale = scale.clamp(1.0, 1.5);
         }
     }
     pub fn locale(&self) -> super::locale::Locale {
@@ -165,41 +153,41 @@ impl TextEngine {
     }
 
     pub fn scale(&self) -> f32 {
-        self.scale
+        self.core.scale
     }
 
     pub fn set_scale(&mut self, scale: f32) {
-        self.scale = scale;
+        self.core.scale = scale;
     }
 
     /// 窗口用的 atlas（渲染器画之前上传它的脏区）。
     pub fn atlas_mut(&mut self) -> &mut GlyphAtlas {
-        &mut self.atlas
+        &mut self.core.atlas
     }
 
     /// 每帧开头调用一次。
     pub fn begin_frame(&mut self) {
-        self.atlas.begin_frame();
-        self.motion_frame_requested = false;
+        self.core.atlas.begin_frame();
+        self.core.animation_requested = false;
     }
 
     /// Enable component motion for the live Gallery. Standalone fixtures keep
     /// the default static behavior unless a host explicitly opts in.
     pub fn set_motion_enabled(&mut self, enabled: bool) {
         self.motion_enabled = enabled;
-        if enabled && self.motion_context.is_none() {
-            self.motion_context = Some(ControlMotionContext {
+        if enabled && self.core.motion_context.is_none() {
+            self.core.motion_context = Some(ControlMotionContext {
                 now: Duration::ZERO,
                 reduced_motion: false,
             });
         } else if !enabled {
-            self.motion_context = None;
-            self.motion_frame_requested = false;
+            self.core.motion_context = None;
+            self.core.animation_requested = false;
         }
     }
 
     pub fn set_motion_context(&mut self, now: Duration, reduced_motion: bool) {
-        self.motion_context = self.motion_enabled.then_some(ControlMotionContext {
+        self.core.motion_context = self.motion_enabled.then_some(ControlMotionContext {
             now,
             reduced_motion,
         });
@@ -211,7 +199,7 @@ impl TextEngine {
         &mut self,
         context: Option<ControlMotionContext>,
     ) -> Option<ControlMotionContext> {
-        std::mem::replace(&mut self.motion_context, context)
+        std::mem::replace(&mut self.core.motion_context, context)
     }
 
     /// Immutable Search fixtures borrow the existing finite paragraph cache;
@@ -221,7 +209,7 @@ impl TextEngine {
     }
 
     pub fn motion_frame_requested(&self) -> bool {
-        self.motion_frame_requested
+        self.core.animation_requested
     }
 
     #[cfg(test)]
@@ -232,7 +220,7 @@ impl TextEngine {
     /// 排一段文字（不缓存）。
     pub fn shape(&mut self, text: &str, style: &TextStyle, options: &ShapeOptions) -> Paragraph {
         self.shapes += 1;
-        self.shaper.shape(text, style, options)
+        self.core.shaper.shape(text, style, options)
     }
 
     fn cache_label(&mut self, key: LabelKey, paragraph: Rc<Paragraph>) {
@@ -255,7 +243,7 @@ impl TextEngine {
             role: LabelRole::Legacy(role),
             width_64: width.map(|w| (w * 64.0).round() as u32),
             locale: self.locale,
-            type_scale_bits: self.type_scale.to_bits(),
+            type_scale_bits: self.core.type_scale.to_bits(),
         };
         if let Some(p) = self.labels.get(&key) {
             return p.clone();
@@ -266,7 +254,7 @@ impl TextEngine {
         };
         let localized = self.locale.text(text);
         let mut style = role_style(role);
-        style.size *= self.type_scale;
+        style.size *= self.core.type_scale;
         let p = Rc::new(self.shape(&localized, &style, &options));
         self.cache_label(key, p.clone());
         p
@@ -279,7 +267,7 @@ impl TextEngine {
             role: LabelRole::TickingPreview(size.to_bits()),
             width_64: None,
             locale: self.locale,
-            type_scale_bits: self.type_scale.to_bits(),
+            type_scale_bits: self.core.type_scale.to_bits(),
         };
         if let Some(paragraph) = self.labels.get(&key) {
             return paragraph.clone();
@@ -294,11 +282,11 @@ impl TextEngine {
     pub fn push(&mut self, scene: &mut Scene, paragraph: &Paragraph, origin: Point, color: Rgba) {
         push_paragraph(
             scene,
-            &mut self.atlas,
-            &mut self.rasterizer,
+            &mut self.core.atlas,
+            &mut self.core.raster,
             paragraph,
             origin,
-            self.scale,
+            self.core.scale,
             color,
         );
     }
@@ -311,16 +299,8 @@ impl TextEngine {
         color: Rgba,
         clip: Rect,
     ) {
-        tekes_ui_text::push_paragraph_visible(
-            scene,
-            &mut self.atlas,
-            &mut self.rasterizer,
-            paragraph,
-            origin,
-            self.scale,
-            color,
-            clip.min_y()..clip.max_y(),
-        );
+        self.core
+            .push_visible(scene, paragraph, origin, color, clip);
     }
 
     /// 在 `slot` 里画一行标签：水平 `align`，垂直居中，原点取整到整数 pt。
@@ -419,7 +399,7 @@ impl TextEngine {
             role: LabelRole::Proposal(role),
             width_64: width.map(|w| (w * 64.0).round() as u32),
             locale,
-            type_scale_bits: self.type_scale.to_bits(),
+            type_scale_bits: self.core.type_scale.to_bits(),
         };
         if let Some(paragraph) = self.labels.get(&key) {
             return paragraph.clone();
@@ -444,14 +424,7 @@ impl TextEngine {
     }
 
     pub fn prepare_proposal(&self, text: &str, role: proposal::TextRole) -> PreparedText {
-        let metrics = role.style();
-        let style = if proposal::text_family(role.id()) == Some("mono") {
-            TextStyle::named("Menlo", metrics.size * self.type_scale)
-        } else {
-            TextStyle::system(metrics.size * self.type_scale)
-        }
-        .with_weight(metrics.weight);
-        self.shaper.prepare(text, &style)
+        coretext_host::prepare_role_text(&self.core.shaper, text, role, self.core.type_scale)
     }
 
     pub fn reflow_proposal(
@@ -460,26 +433,14 @@ impl TextEngine {
         role: proposal::TextRole,
         width: Option<f32>,
     ) -> Paragraph {
-        let metrics = role.style();
         self.shapes += 1;
-        let mut paragraph = self.shaper.shape_prepared(
+        coretext_host::reflow_role_text(
+            &mut self.core.shaper,
             prepared,
-            &ShapeOptions {
-                width: width.map(f64::from),
-                line_spacing: 0.0,
-            },
-        );
-        let mut top = 0.0;
-        for line in &mut paragraph.lines {
-            let height = f64::from(metrics.line_height * self.type_scale).max(line.height);
-            line.top = top;
-            line.height = height;
-            line.baseline_y = top + (height - line.ascent - line.descent) * 0.5 + line.ascent;
-            top += height;
-        }
-        paragraph.height = top.max(f64::from(metrics.line_height * self.type_scale));
-        paragraph.default_line_height = f64::from(metrics.line_height * self.type_scale);
-        paragraph
+            role,
+            self.core.type_scale,
+            width,
+        )
     }
 
     /// Draw a one-line fixture label, cropped to its actual device-pixel slot.
@@ -568,7 +529,7 @@ impl TextEngine {
         self.push(&mut labels, paragraph, origin, color);
         for primitive in labels.primitives() {
             if let tekes_ui_scene::Primitive::Glyphs(run) = primitive {
-                let run = clip_glyphs(run, slot, self.scale);
+                let run = clip_glyphs(run, slot, self.core.scale);
                 if !run.glyphs.is_empty() {
                     scene.push_glyphs(run);
                 }
@@ -592,7 +553,7 @@ impl TextEngine {
         push_paragraph(
             &mut scene,
             &mut self.offscreen_atlas,
-            &mut self.rasterizer,
+            &mut self.core.raster,
             paragraph,
             Point::new(0.0, 0.0),
             scale,
@@ -610,14 +571,8 @@ impl tekes_ui_controls::TextSurfaceHost for TextEngine {
         weight: u16,
         width: Option<f32>,
     ) -> Option<Rc<Paragraph>> {
-        Some(Rc::new(self.shape(
-            text,
-            &TextStyle::system(final_logical_point_size).with_weight(weight),
-            &ShapeOptions {
-                width: width.map(f64::from),
-                line_spacing: 0.,
-            },
-        )))
+        self.core
+            .shape_system_text_with_weight(text, final_logical_point_size, weight, width)
     }
     fn shape_system_text(
         &mut self,
@@ -625,14 +580,8 @@ impl tekes_ui_controls::TextSurfaceHost for TextEngine {
         final_logical_point_size: f32,
         width: Option<f32>,
     ) -> Option<Rc<Paragraph>> {
-        Some(Rc::new(self.shape(
-            text,
-            &TextStyle::system(final_logical_point_size),
-            &ShapeOptions {
-                width: width.map(f64::from),
-                line_spacing: 0.,
-            },
-        )))
+        self.core
+            .shape_system_text(text, final_logical_point_size, width)
     }
     fn shape_label(
         &mut self,
@@ -641,23 +590,7 @@ impl tekes_ui_controls::TextSurfaceHost for TextEngine {
         width: f32,
         options: tekes_ui_text::LabelOptions,
     ) -> Option<Rc<tekes_ui_text::LabelLayout>> {
-        let metrics = role.style();
-        let style = if proposal::text_family(role.id()) == Some("mono") {
-            TextStyle::named("Menlo", metrics.size * self.type_scale)
-        } else {
-            TextStyle::system(metrics.size * self.type_scale)
-        }
-        .with_weight(metrics.weight);
-        Some(Rc::new(
-            self.shaper
-                .shape_label(
-                    text,
-                    &style,
-                    &ShapeOptions::with_width(f64::from(width)),
-                    options,
-                )
-                .with_min_line_height(f64::from(metrics.line_height * self.type_scale)),
-        ))
+        self.core.shape_label(text, role, width, options)
     }
     fn shape_semantic_label(
         &mut self,
@@ -666,23 +599,7 @@ impl tekes_ui_controls::TextSurfaceHost for TextEngine {
         width: f32,
         options: tekes_ui_text::LabelOptions,
     ) -> Option<Rc<tekes_ui_text::LabelLayout>> {
-        let metrics = role.style();
-        let style = if proposal::text_family(role.id()) == Some("mono") {
-            TextStyle::named("Menlo", metrics.size * self.type_scale)
-        } else {
-            TextStyle::system(metrics.size * self.type_scale)
-        }
-        .with_weight(metrics.weight);
-        Some(Rc::new(
-            self.shaper
-                .shape_semantic_label(
-                    text,
-                    &style,
-                    &ShapeOptions::with_width(f64::from(width)),
-                    options,
-                )
-                .with_min_line_height(f64::from(metrics.line_height * self.type_scale)),
-        ))
+        self.core.shape_semantic_label(text, role, width, options)
     }
 
     fn shape_surface(
@@ -698,7 +615,7 @@ impl tekes_ui_controls::TextSurfaceHost for TextEngine {
         }
     }
     fn type_scale(&self) -> f32 {
-        self.type_scale
+        self.core.type_scale
     }
 }
 impl ButtonTextRenderer for TextEngine {
@@ -707,17 +624,17 @@ impl ButtonTextRenderer for TextEngine {
     }
 
     fn motion_context(&self) -> Option<ControlMotionContext> {
-        self.motion_context
+        self.core.motion_context
     }
 
     fn request_animation_frame(&mut self) {
         if self.motion_enabled {
-            self.motion_frame_requested = true;
+            self.core.animation_requested = true;
         }
     }
 
     fn backing_scale(&self) -> f32 {
-        self.scale
+        self.core.scale
     }
 
     fn measure(&mut self, text: &str, role: proposal::TextRole, max_width: f32) -> Size {
@@ -1003,7 +920,7 @@ mod tests {
                         label,
                         Rect::new(13.0, 17.0, measured.width, measured.height),
                         None,
-                        tekes_ui_tokens::Palette::new(Theme::LIGHT, 0)
+                        crate::gallery::brands::brand_palette(Theme::LIGHT, 0)
                             .expect("registered Gallery brand"),
                         paint::ButtonVariant::Quiet,
                         ButtonSize::Md,
@@ -1092,7 +1009,7 @@ mod tests {
                         label,
                         layout.frame,
                         None,
-                        tekes_ui_tokens::Palette::new(Theme::LIGHT, 0)
+                        crate::gallery::brands::brand_palette(Theme::LIGHT, 0)
                             .expect("registered Gallery brand"),
                         paint::ButtonVariant::Quiet,
                         ButtonSize::Md,
@@ -1121,8 +1038,8 @@ mod tests {
         text.set_type_scale(1.5);
         let label = "Smooth motion preview";
         let mut button = ButtonModel::default();
-        let palette =
-            tekes_ui_tokens::Palette::new(Theme::LIGHT, 0).expect("registered Gallery brand");
+        let palette = crate::gallery::brands::brand_palette(Theme::LIGHT, 0)
+            .expect("registered Gallery brand");
         let mut scene = Scene::new();
         let mut first_shapes = None;
         for frame in 0..120 {

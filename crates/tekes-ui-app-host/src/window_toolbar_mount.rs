@@ -325,9 +325,12 @@ impl Host {
             {
                 continue;
             }
-            eprintln!(
+            host_diag!(
                 "TOOLBAR_INVOCATION window={} command={} input={:?} source={:?}",
-                invocation.window, invocation.command, invocation.input, invocation.source
+                invocation.window,
+                invocation.command,
+                invocation.input,
+                invocation.source
             );
             let mut exchanged = false;
             let result = match invocation.source {
@@ -389,7 +392,7 @@ impl Host {
                 }
             };
             if let Err(error) = result {
-                eprintln!("TOOLBAR_COMMAND_REJECTED {error:#}");
+                host_diag!("TOOLBAR_COMMAND_REJECTED {error:#}");
             }
             // A completed presentation change revokes remaining old-position
             // actions already drained in this input batch, as well as capture.
@@ -433,6 +436,7 @@ impl Host {
             }
         }
         if let Event::Accessibility { target, action } = event {
+            use tekes_ui_macos_bridge::WindowContentAccessibilityExt;
             if w.content_accessibility_publication()
                 .and_then(|p| p.owner(*target))
                 .is_none_or(|owner| {

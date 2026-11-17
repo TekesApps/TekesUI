@@ -166,12 +166,21 @@ mod range_tests {
     use super::*;
     use crate::Theme;
 
+    pub(super) fn test_palettes(mode: Theme) -> Vec<Palette> {
+        let mut out = vec![Palette::from(mode)];
+        out.extend(
+            ["default", "blue", "clay", "blue-inputs"]
+                .into_iter()
+                .map(|id| Palette::for_theme_definition(mode, id).unwrap()),
+        );
+        out
+    }
+
     #[test]
     fn original_range_parts_in_every_mode_brand_surface_and_supported_state() {
         let mut count = 0;
         for mode in Theme::ALL {
-            for preset in crate::palette::gallery_brand_presets() {
-                let p = Palette::new(mode, preset.palette_index).unwrap();
+            for p in test_palettes(mode) {
                 for surface in surface_names() {
                     for state in ["rest", "hover", "pressed", "disabled"] {
                         let c = resolve_range_surface(p, surface, state).unwrap();
@@ -234,10 +243,7 @@ mod range_tests {
         }
         assert_eq!(
             count,
-            Theme::ALL.len()
-                * crate::palette::gallery_brand_presets().len()
-                * surface_names().len()
-                * 4
+            Theme::ALL.len() * test_palettes(Theme::LIGHT).len() * surface_names().len() * 4
         );
     }
 
@@ -299,8 +305,7 @@ mod toggle_tests {
         ];
         let mut pairs = 0;
         for mode in Theme::ALL {
-            for preset in crate::palette::gallery_brand_presets() {
-                let palette = Palette::new(mode, preset.palette_index).unwrap();
+            for palette in range_tests::test_palettes(mode) {
                 for surface in surface_names() {
                     for state in states {
                         for error in [false, true] {
@@ -395,7 +400,7 @@ mod toggle_tests {
         assert_eq!(
             pairs,
             Theme::ALL.len()
-                * crate::palette::gallery_brand_presets().len()
+                * range_tests::test_palettes(Theme::LIGHT).len()
                 * surface_names().len()
                 * states.len()
                 * 2
@@ -445,8 +450,7 @@ mod frame_tests {
     #[test]
     fn framed_and_flat_anatomy_share_declared_ground_and_content_ink() {
         for mode in crate::Theme::ALL {
-            for preset in crate::palette::gallery_brand_presets() {
-                let p = Palette::new(mode, preset.palette_index).unwrap();
+            for p in super::range_tests::test_palettes(mode) {
                 for surface in surface_names() {
                     for state in ["rest", "disabled"] {
                         let mut expected = resolve_surface(p, surface, "content", state).unwrap();
@@ -476,8 +480,7 @@ mod status_content_tests {
     fn passive_status_packets_are_surface_bound_and_reject_action_states() {
         let mut count = 0;
         for mode in crate::Theme::ALL {
-            for preset in crate::palette::gallery_brand_presets() {
-                let p = Palette::new(mode, preset.palette_index).unwrap();
+            for p in super::range_tests::test_palettes(mode) {
                 for surface in surface_names() {
                     for tone in ["info", "running", "succeeded", "failed"] {
                         let usage = format!("content-status-{tone}");
@@ -510,7 +513,14 @@ mod status_content_tests {
                 }
             }
         }
-        assert_eq!(count, 13 * 4 * surface_names().len() * 4 * 2);
+        assert_eq!(
+            count,
+            super::range_tests::test_palettes(crate::Theme::LIGHT).len()
+                * 4
+                * surface_names().len()
+                * 4
+                * 2
+        );
     }
 }
 
@@ -521,15 +531,7 @@ mod passive_status_tests {
     #[test]
     fn passive_status_complete_packets_and_rest_only() {
         for mode in Theme::ALL {
-            for p in crate::palette::gallery_brand_presets()
-                .iter()
-                .map(|preset| Palette::new(mode, preset.palette_index).unwrap())
-                .chain(
-                    ["default", "blue", "clay", "blue-inputs"]
-                        .into_iter()
-                        .map(|id| Palette::for_theme_definition(mode, id).unwrap()),
-                )
-            {
+            for p in super::range_tests::test_palettes(mode) {
                 for surface in surface_names() {
                     for tone in ["info", "running", "succeeded", "failed"] {
                         let usage = format!("status-badge-{tone}");
@@ -552,7 +554,7 @@ mod passive_status_tests {
                     assert_eq!(c.background, p.color("surface-2").unwrap());
                     assert_eq!(c.text, p.color("primary-text").unwrap());
                     assert_eq!(c.icon, c.text);
-                    assert_eq!(c.boundary, p.color("border"));
+                    assert_eq!(c.boundary, p.color("separator"));
                     assert_eq!((c.focus, c.marker, c.helper), (None, None, None));
                     for state in ["hover", "pressed", "disabled", "selected", "focus"] {
                         assert_eq!(
@@ -578,15 +580,7 @@ mod notice_marker_tests {
     #[test]
     fn complete_notice_packets_all_brands_modes_surfaces() {
         for mode in crate::Theme::ALL {
-            for p in crate::palette::gallery_brand_presets()
-                .iter()
-                .map(|preset| Palette::new(mode, preset.palette_index).unwrap())
-                .chain(
-                    ["default", "blue", "clay", "blue-inputs"]
-                        .into_iter()
-                        .map(|id| Palette::for_theme_definition(mode, id).unwrap()),
-                )
-            {
+            for p in super::range_tests::test_palettes(mode) {
                 for surface in surface_names() {
                     for (tone, role) in [
                         ("info", "status-info"),

@@ -40,7 +40,13 @@ fn main() -> anyhow::Result<()> {
     #[cfg(target_os = "macos")]
     let mut columns: Vec<tekes_ui_app_host::Column> = modules
         .into_iter()
-        .map(|module| tekes_ui_app_host::ProcessContainer::new(module).toolbar_host(tekes_ui_app_host::ContainerToolbarHost::Container { position: tekes_ui_app_host::ContainerToolbarPosition::Top }).into())
+        .map(|module| {
+            tekes_ui_app_host::ProcessContainer::new(module)
+                .toolbar_host(tekes_ui_app_host::ContainerToolbarHost::Container {
+                    position: tekes_ui_app_host::ContainerToolbarPosition::Top,
+                })
+                .into()
+        })
         .collect();
     #[cfg(target_os = "macos")]
     if cfg!(feature = "three-panels") {
@@ -89,13 +95,13 @@ fn main() -> anyhow::Result<()> {
                 }),
             })
             .settings(settings()?)
-            .run();
+            .run_with_args(&std::env::args().collect::<Vec<_>>());
     }
     #[cfg(target_os = "macos")]
     {
         tekes_ui_app_host::AppWindow::from_columns(columns)?
             .settings(settings()?)
-            .run()
+            .run_with_args(&std::env::args().collect::<Vec<_>>())
     }
     #[cfg(not(target_os = "macos"))]
     {

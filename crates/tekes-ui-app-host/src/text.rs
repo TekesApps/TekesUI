@@ -1,217 +1,87 @@
-use std::{collections::HashMap, rc::Rc};
-use tekes_ui_controls::{ButtonTextAlign, ButtonTextRenderer, ControlMotionContext};
-use tekes_ui_scene::{GlyphAtlas, Point, Rect, Scene, Size};
-use tekes_ui_text::{
-    ShapeOptions, Shaper, TextStyle,
-    coretext::{CoreTextFonts, CoreTextRasterizer, CoreTextShaper},
-    push_paragraph,
+use std::{
+    ops::{Deref, DerefMut},
+    rc::Rc,
 };
+use tekes_ui_controls::{ButtonTextAlign, ButtonTextRenderer, ControlMotionContext};
+use tekes_ui_macos_bridge::coretext_host::CoreTextHost;
+pub(crate) use tekes_ui_macos_bridge::coretext_host::ParagraphLayoutDiagnostic;
+use tekes_ui_scene::{Point, Rect, Scene, Size};
 use tekes_ui_tokens::{Rgba, proposal};
-/// Opt-in per-draw CPU observations, reset by the original begin_frame call.
-#[derive(Clone, Copy, Debug, Default)]
-pub(crate) struct ParagraphLayoutDiagnostic {
-    pub requests: u64,
-    pub hits: u64,
-    pub misses: u64,
-    pub unique_entries: usize,
-    pub prepare_count: u64,
-    pub prepare_ns: u128,
-    pub natural_count: u64,
-    pub natural_ns: u128,
-    pub bounded_count: u64,
-    pub bounded_ns: u128,
+
+/// Shared CoreText host adapter for AppHost windows, delegating shaping,
+/// glyph atlas rasterization, and composition text-service traits to [`CoreTextHost`].
+pub struct Text(pub CoreTextHost);
+
+impl std::fmt::Debug for Text {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("Text").field(&self.0).finish()
+    }
 }
-/// Exact logical layout inputs. Draw position, color, clip and backing scale
-/// do not affect CoreText's point-space paragraph and are applied on every draw.
-#[derive(Debug, PartialEq, Eq, Hash)]
-struct ParagraphLayoutKey {
-    text: String,
-    role: proposal::TextRole,
-    type_scale: u32,
-    width: u32,
+
+impl Default for Text {
+    fn default() -> Self {
+        Self::new()
+    }
 }
-pub struct Text {
-    pub atlas: GlyphAtlas,
-    shaper: CoreTextShaper,
-    raster: CoreTextRasterizer,
-    pub scale: f32,
-    type_scale: f32,
-    motion_context: Option<ControlMotionContext>,
-    animation_requested: bool,
-    paragraph_diagnostic: Option<ParagraphLayoutDiagnostic>,
-    frame_paragraphs: Option<HashMap<ParagraphLayoutKey, (Rc<tekes_ui_text::Paragraph>, f32)>>,
+
+impl Deref for Text {
+    type Target = CoreTextHost;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
 }
+
+impl DerefMut for Text {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
 impl Text {
     pub fn new() -> Self {
-        let f = CoreTextFonts::new();
-        Self {
-            atlas: GlyphAtlas::default(),
-            shaper: CoreTextShaper::new(f.clone()),
-            raster: CoreTextRasterizer::new(f),
-            scale: 1.,
-            type_scale: 1.,
-            motion_context: None,
-            animation_requested: false,
-            frame_paragraphs: None,
-            paragraph_diagnostic: (std::env::var("TEKESUI_APPHOST_DRAW_DIAGNOSTIC").as_deref()
-                == Ok("1"))
-            .then(ParagraphLayoutDiagnostic::default),
-        }
+        let diagnostic = std::env::var("TEKESUI_APPHOST_DRAW_DIAGNOSTIC").as_deref() == Ok("1");
+        Self(CoreTextHost::new().with_diagnostic(diagnostic))
     }
-    fn role_style(&self, role: proposal::TextRole) -> TextStyle {
-        let metrics = role.style();
-        let size = metrics.size * self.type_scale;
-        let style = if proposal::text_family(role.id()) == Some("mono") {
-            TextStyle::named("Menlo", size)
-        } else {
-            TextStyle::system(size)
-        };
-        style.with_weight(metrics.weight)
-    }
-    fn trimmed_advance(paragraph: &tekes_ui_text::Paragraph) -> f32 {
-        paragraph
-            .lines
-            .iter()
-            .map(|line| line.width_trimmed)
-            .fold(0., f64::max) as f32
-    }
-    // Keep native advances intact. Wrapped display layout occupies the requested
-    // slot: trailing blanks cannot enlarge it or shrink it before draw/reflow.
-    fn paragraph_layout(
-        &mut self,
-        value: &str,
-        role: proposal::TextRole,
-        width: f32,
-    ) -> (Rc<tekes_ui_text::Paragraph>, f32) {
-        // Direct public measure/draw callers need not have a frame lifecycle.
-        // Only an explicit begin_frame opts into this frame's retained layouts.
-        let key = self.frame_paragraphs.as_ref().map(|_| ParagraphLayoutKey {
-            text: value.to_owned(),
-            role,
-            type_scale: self.type_scale.to_bits(),
-            width: width.to_bits(),
-        });
-        if let Some(stats) = &mut self.paragraph_diagnostic {
-            stats.requests += 1;
-        }
-        if let Some(layout) = key
-            .as_ref()
-            .and_then(|key| self.frame_paragraphs.as_ref()?.get(key))
-        {
-            if let Some(stats) = &mut self.paragraph_diagnostic {
-                stats.hits += 1;
-            }
-            return layout.clone();
-        }
-        if let Some(stats) = &mut self.paragraph_diagnostic {
-            stats.misses += 1;
-        }
-        let style = self.role_style(role);
-        let begin = self.paragraph_diagnostic.map(|_| std::time::Instant::now());
-        // Both width queries describe the same text/style. Keep its native
-        // attributed string and typesetter for this miss only; retain just the layout.
-        let prepared = self.shaper.prepare(value, &style);
-        if let (Some(begin), Some(stats)) = (begin, &mut self.paragraph_diagnostic) {
-            stats.prepare_count += 1;
-            stats.prepare_ns += begin.elapsed().as_nanos();
-        }
-        let begin = self.paragraph_diagnostic.map(|_| std::time::Instant::now());
-        let natural = self
-            .shaper
-            .shape_prepared(&prepared, &ShapeOptions::default());
-        if let (Some(begin), Some(stats)) = (begin, &mut self.paragraph_diagnostic) {
-            stats.natural_count += 1;
-            stats.natural_ns += begin.elapsed().as_nanos();
-        }
-        let intrinsic = Self::trimmed_advance(&natural);
-        let (paragraph, slot) = if !width.is_finite() || intrinsic <= width.max(0.) + 1. / 64. {
-            (natural, intrinsic)
-        } else {
-            let slot = width.max(1.);
-            let begin = self.paragraph_diagnostic.map(|_| std::time::Instant::now());
-            let bounded = self
-                .shaper
-                .shape_prepared(&prepared, &ShapeOptions::with_width(f64::from(slot)));
-            if let (Some(begin), Some(stats)) = (begin, &mut self.paragraph_diagnostic) {
-                stats.bounded_count += 1;
-                stats.bounded_ns += begin.elapsed().as_nanos();
-            }
-            (bounded, slot)
-        };
-        let paragraph = Rc::new(paragraph);
-        if let (Some(cache), Some(key)) = (&mut self.frame_paragraphs, key) {
-            cache.insert(key, (paragraph.clone(), slot));
-            if let Some(stats) = &mut self.paragraph_diagnostic {
-                stats.unique_entries = cache.len();
-            }
-        }
-        (paragraph, slot)
-    }
-    pub(crate) fn paragraph_layout_diagnostic(&self) -> Option<ParagraphLayoutDiagnostic> {
-        self.paragraph_diagnostic
-    }
-    pub fn type_scale(&self) -> f32 {
-        self.type_scale
-    }
-    pub fn begin_frame(&mut self, now: std::time::Duration, reduced_motion: bool) {
-        self.motion_context = Some(ControlMotionContext {
-            now,
-            reduced_motion,
-        });
-        self.animation_requested = false;
-        self.frame_paragraphs
-            .get_or_insert_with(HashMap::new)
-            .clear();
-        if let Some(stats) = &mut self.paragraph_diagnostic {
-            *stats = ParagraphLayoutDiagnostic::default();
-        }
-    }
+
     pub fn animation_requested(&self) -> bool {
-        self.animation_requested
+        self.0.animation_requested
     }
-    pub fn set_body_size(&mut self, size: f32) -> bool {
-        let scale = size / proposal::TextRole::UiBody.style().size;
-        if !scale.is_finite() || scale <= 0. || self.type_scale == scale {
-            return false;
-        }
-        self.type_scale = scale;
-        if let Some(cache) = &mut self.frame_paragraphs {
-            cache.clear();
-        }
-        if let Some(stats) = &mut self.paragraph_diagnostic {
-            stats.unique_entries = 0;
-        }
-        true
+
+    pub fn type_scale(&self) -> f32 {
+        self.0.type_scale
+    }
+
+    pub(crate) fn paragraph_layout_diagnostic(&self) -> Option<ParagraphLayoutDiagnostic> {
+        self.0.paragraph_layout_diagnostic()
+    }
+
+    #[cfg(test)]
+    pub(crate) fn trimmed_advance(paragraph: &tekes_ui_text::Paragraph) -> f32 {
+        tekes_ui_macos_bridge::coretext_host::trimmed_advance(paragraph)
     }
 }
+
 impl ButtonTextRenderer for Text {
     fn text_surface_host(&mut self) -> Option<&mut dyn tekes_ui_controls::TextSurfaceHost> {
         Some(self)
     }
     fn motion_context(&self) -> Option<ControlMotionContext> {
-        self.motion_context
+        self.0.motion_context()
     }
     fn request_animation_frame(&mut self) {
-        self.animation_requested = true;
+        self.0.request_animation_frame();
     }
     fn resolved_font_size(&mut self, role: proposal::TextRole) -> f32 {
-        role.style().size * self.type_scale
+        self.0.resolved_font_size(role)
     }
     fn measure(&mut self, text: &str, role: proposal::TextRole, width: f32) -> Size {
-        let (paragraph, slot) = self.paragraph_layout(text, role, width);
-        Size::new(slot, paragraph.height as f32)
+        self.0.measure(text, role, width)
     }
     fn first_line_height(&mut self, text: &str, role: proposal::TextRole, width: f32) -> f32 {
-        let (paragraph, _) = self.paragraph_layout(text, role, width);
-        paragraph
-            .lines
-            .first()
-            .map_or(paragraph.default_line_height as f32, |line| {
-                line.height as f32
-            })
+        self.0.first_line_height(text, role, width)
     }
     fn backing_scale(&self) -> f32 {
-        self.scale
+        self.0.backing_scale()
     }
     fn draw(
         &mut self,
@@ -222,24 +92,7 @@ impl ButtonTextRenderer for Text {
         align: ButtonTextAlign,
         color: Rgba,
     ) {
-        let (p, _) = self.paragraph_layout(text, role, r.size.width);
-        let x = if align == ButtonTextAlign::Center {
-            r.min_x() + (r.size.width - Self::trimmed_advance(&p)) * 0.5
-        } else {
-            r.min_x()
-        };
-        let y = r.min_y() + (r.size.height - p.height as f32) * 0.5;
-        scene.push_clip(r);
-        push_paragraph(
-            scene,
-            &mut self.atlas,
-            &mut self.raster,
-            &p,
-            Point::new(x.round(), y.round()),
-            self.scale,
-            color,
-        );
-        scene.pop_clip();
+        self.0.draw(scene, text, role, r, align, color);
     }
 }
 
@@ -252,18 +105,10 @@ impl tekes_ui_controls::TextSurfaceTextRenderer for Text {
         color: Rgba,
         clip: Rect,
     ) {
-        tekes_ui_text::push_paragraph_visible(
-            scene,
-            &mut self.atlas,
-            &mut self.raster,
-            paragraph,
-            origin,
-            self.scale,
-            color,
-            clip.min_y()..clip.max_y(),
-        );
+        self.0.push_visible(scene, paragraph, origin, color, clip);
     }
 }
+
 impl tekes_ui_controls::TextSurfaceHost for Text {
     fn shape_system_text_with_weight(
         &mut self,
@@ -272,14 +117,8 @@ impl tekes_ui_controls::TextSurfaceHost for Text {
         weight: u16,
         width: Option<f32>,
     ) -> Option<Rc<tekes_ui_text::Paragraph>> {
-        Some(Rc::new(self.shaper.shape(
-            value,
-            &TextStyle::system(final_logical_point_size).with_weight(weight),
-            &ShapeOptions {
-                width: width.map(f64::from),
-                line_spacing: 0.,
-            },
-        )))
+        self.0
+            .shape_system_text_with_weight(value, final_logical_point_size, weight, width)
     }
     fn shape_system_text(
         &mut self,
@@ -287,14 +126,8 @@ impl tekes_ui_controls::TextSurfaceHost for Text {
         final_logical_point_size: f32,
         width: Option<f32>,
     ) -> Option<Rc<tekes_ui_text::Paragraph>> {
-        Some(Rc::new(self.shaper.shape(
-            value,
-            &TextStyle::system(final_logical_point_size),
-            &ShapeOptions {
-                width: width.map(f64::from),
-                line_spacing: 0.,
-            },
-        )))
+        self.0
+            .shape_system_text(value, final_logical_point_size, width)
     }
     fn shape_label(
         &mut self,
@@ -303,18 +136,7 @@ impl tekes_ui_controls::TextSurfaceHost for Text {
         width: f32,
         options: tekes_ui_text::LabelOptions,
     ) -> Option<std::rc::Rc<tekes_ui_text::LabelLayout>> {
-        let metrics = role.style();
-        let style = self.role_style(role);
-        Some(std::rc::Rc::new(
-            self.shaper
-                .shape_label(
-                    value,
-                    &style,
-                    &ShapeOptions::with_width(f64::from(width)),
-                    options,
-                )
-                .with_min_line_height(f64::from(metrics.line_height * self.type_scale)),
-        ))
+        self.0.shape_label(value, role, width, options)
     }
     fn shape_semantic_label(
         &mut self,
@@ -323,22 +145,10 @@ impl tekes_ui_controls::TextSurfaceHost for Text {
         width: f32,
         options: tekes_ui_text::LabelOptions,
     ) -> Option<std::rc::Rc<tekes_ui_text::LabelLayout>> {
-        let metrics = role.style();
-        let style = self.role_style(role);
-        Some(std::rc::Rc::new(
-            self.shaper
-                .shape_semantic_label(
-                    value,
-                    &style,
-                    &ShapeOptions::with_width(f64::from(width)),
-                    options,
-                )
-                .with_min_line_height(f64::from(metrics.line_height * self.type_scale)),
-        ))
+        self.0.shape_semantic_label(value, role, width, options)
     }
-
     fn type_scale(&self) -> f32 {
-        self.type_scale
+        self.0.type_scale()
     }
     fn shape_surface(
         &mut self,
@@ -346,27 +156,7 @@ impl tekes_ui_controls::TextSurfaceHost for Text {
         role: proposal::TextRole,
         width: Option<f32>,
     ) -> std::rc::Rc<tekes_ui_text::Paragraph> {
-        let metrics = role.style();
-        let style = self.role_style(role);
-        let mut paragraph = self.shaper.shape(
-            value,
-            &style,
-            &ShapeOptions {
-                width: width.map(f64::from),
-                line_spacing: 0.,
-            },
-        );
-        let mut top = 0.;
-        for line in &mut paragraph.lines {
-            let height = f64::from(metrics.line_height * self.type_scale).max(line.height);
-            line.top = top;
-            line.height = height;
-            line.baseline_y = top + (height - line.ascent - line.descent) * 0.5 + line.ascent;
-            top += height;
-        }
-        paragraph.height = top.max(f64::from(metrics.line_height * self.type_scale));
-        paragraph.default_line_height = f64::from(metrics.line_height * self.type_scale);
-        std::rc::Rc::new(paragraph)
+        self.0.shape_surface(value, role, width)
     }
 }
 
@@ -378,6 +168,12 @@ mod tests {
         composition::*,
         extended::{Axis, Stack},
         layout_view::IconRenderer,
+    };
+    use tekes_ui_scene::GlyphAtlas;
+    use tekes_ui_text::{
+        ShapeOptions, Shaper, TextStyle,
+        coretext::{CoreTextFonts, CoreTextRasterizer, CoreTextShaper},
+        push_paragraph,
     };
     use tekes_ui_tokens::Theme;
 
@@ -615,7 +411,7 @@ mod tests {
         for width in [180., 181., 182.] {
             text.measure(source, role, width);
         }
-        assert!(text.frame_paragraphs.is_none());
+        assert!(!text.has_frame_paragraphs());
         text.begin_frame(std::time::Duration::ZERO, false);
         let (original, _) = text.paragraph_layout(source, role, 180.);
         text.measure(source, role, 180.);
@@ -645,8 +441,8 @@ mod tests {
             let y = frame.min_y() + (frame.size.height - original.height as f32) * 0.5;
             push_paragraph(
                 &mut expected,
-                &mut text.atlas,
-                &mut text.raster,
+                &mut text.0.atlas,
+                &mut text.0.raster,
                 &original,
                 Point::new(x.round(), y.round()),
                 scale,
@@ -671,11 +467,11 @@ mod tests {
         let (heading, _) = text.paragraph_layout(source, proposal::TextRole::UiHeading, 180.);
         assert!(!Rc::ptr_eq(&heading, &original));
         assert!(text.set_body_size(20.));
-        assert!(text.frame_paragraphs.as_ref().unwrap().is_empty());
+        assert_eq!(text.frame_paragraph_count(), Some(0));
         let (larger, _) = text.paragraph_layout(source, role, 180.);
         assert!(larger.height > original.height);
         text.begin_frame(std::time::Duration::from_millis(1), false);
-        assert!(text.frame_paragraphs.as_ref().unwrap().is_empty());
+        assert_eq!(text.frame_paragraph_count(), Some(0));
         let (next_frame, _) = text.paragraph_layout(source, role, 180.);
         assert!(!Rc::ptr_eq(&larger, &next_frame));
         assert_eq!(larger, next_frame);
@@ -774,11 +570,11 @@ mod tests {
                         expected_scene.push_clip(frame);
                         push_paragraph(
                             &mut expected_scene,
-                            &mut text.atlas,
-                            &mut text.raster,
+                            &mut text.0.atlas,
+                            &mut text.0.raster,
                             &reference,
                             Point::new(frame.min_x().round(), (frame.min_y() + 10.).round()),
-                            text.scale,
+                            text.0.scale,
                             Rgba::gray(0.),
                         );
                         expected_scene.pop_clip();

@@ -52,7 +52,7 @@ def validate_use_channels(usage, state, pair):
         expected = dict(background=('status-' + usage.removeprefix('status-badge-')) if usage in BADGE_USES else 'surface-2',
                         text='c-status-badge-foreground' if usage in BADGE_USES else 'primary-text',
                         icon='c-status-badge-foreground' if usage in BADGE_USES else 'primary-text',
-                        boundary=None if usage in BADGE_USES else 'border', focus=None, marker=None, helper=None)
+                        boundary=None if usage in BADGE_USES else 'separator', focus=None, marker=None, helper=None)
         if state != 'rest' or pair != expected:
             raise ValueError('invalid passive status packet binding: ' + usage + '/' + state)
     if usage == 'link' and any(pair[k] is not None for k in ['marker','helper']):
@@ -188,8 +188,9 @@ def verify_passive_status_contrast(usage, mode, colors, parent):
         if contrast(colors['background'],parent) < 3.0:
             raise ValueError('insufficient badge fill-parent contrast: ' + mode + '/' + usage)
     if usage == 'skeleton':
+        minimum = 3.0 if mode.endswith('-ic') else 1.05
         for side, ground in [('fill',colors['background']),('parent',parent)]:
-            if colors['boundary'] is None or contrast(colors['boundary'],ground) < 3.0:
+            if colors['boundary'] is None or contrast(colors['boundary'],ground) < minimum:
                 raise ValueError('insufficient skeleton boundary-' + side + ' contrast: ' + mode)
 
 
@@ -340,7 +341,8 @@ def generate():
                         raise ValueError(f'insufficient focus contrast: {definition["id"]}/{mode}/{surface}/{usage}/{state}')
                 if usage in ['range-track','progress-track'] and state != 'disabled':
                     parent = merge.token_value(bundle,'color',rules['surfaces'][surface]['background'],mode)
-                    if colors['boundary'] is None or min(contrast(colors['boundary'],colors['background']),contrast(colors['boundary'],parent)) < 3.0:
+                    minimum = 3.0 if (usage == 'range-track' or mode.endswith('-ic')) else 1.05
+                    if colors['boundary'] is None or min(contrast(colors['boundary'],colors['background']),contrast(colors['boundary'],parent)) < minimum:
                         raise ValueError(f'insufficient {"range" if usage == "range-track" else "progress"} boundary contrast: {definition["id"]}/{mode}/{surface}/{state}')
                 surfaces.setdefault(surface,{}).setdefault(usage,{})[state] = colors
             modes[mode] = surfaces

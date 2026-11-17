@@ -2697,16 +2697,20 @@ pub fn switch_with_state_and_thumb_progress(
     let track = paint_color(theme, role);
     let radius = rect.size.height.max(0.) * 0.5;
     let stroke = proposal::metric("stroke", "stroke-rule").expect("Design System control stroke");
-    let boundary = paint_color(
+    let toggle = tekes_ui_tokens::surface_palette::resolve_toggle_surface(
         theme,
-        if state.error {
-            "status-failed"
-        } else if state.disabled {
-            "disabled-text"
-        } else {
-            "border"
+        "canvas",
+        crate::paint::control_surface_state(state),
+        tekes_ui_tokens::surface_palette::SurfaceOptions {
+            error: state.error,
+            read_only: false,
         },
-    );
+    )
+    .expect("Switch Surface packet");
+    let boundary = toggle
+        .track
+        .boundary
+        .expect("Switch track Surface boundary");
     scene.push_quad(
         Quad::new(rect, track)
             .with_corner_radius(radius)
@@ -2736,14 +2740,10 @@ pub fn switch_with_state_and_thumb_progress(
         .with_corner_radius(d * 0.5)
         .with_border(
             stroke,
-            paint_color(
-                theme,
-                if state.disabled {
-                    "disabled-text"
-                } else {
-                    "border"
-                },
-            ),
+            toggle
+                .thumb
+                .boundary
+                .expect("Switch thumb Surface boundary"),
         ),
     );
     if state.focused && state.focus_visible && !state.disabled {
@@ -2799,6 +2799,21 @@ pub fn radio_with_state(
     } else {
         paint_color(theme, "surface-0")
     };
+    let toggle = tekes_ui_tokens::surface_palette::resolve_toggle_surface(
+        theme,
+        "canvas",
+        crate::paint::control_surface_state(state),
+        tekes_ui_tokens::surface_palette::SurfaceOptions {
+            error: state.error,
+            read_only: false,
+        },
+    )
+    .expect("Radio Surface packet");
+    let edge = if state.error || state.disabled || !focused {
+        toggle.track.boundary.expect("Radio track Surface boundary")
+    } else {
+        toggle.track.focus.expect("Radio track Surface focus")
+    };
     scene.push_quad(
         Quad::new(frame, fill)
             .with_corner_radius(size * 0.5)
@@ -2812,18 +2827,7 @@ pub fn radio_with_state(
                     },
                 )
                 .expect("Design System control stroke"),
-                paint_color(
-                    theme,
-                    if state.error {
-                        "status-failed"
-                    } else if state.disabled {
-                        "disabled-text"
-                    } else if focused {
-                        "border-focused"
-                    } else {
-                        "border"
-                    },
-                ),
+                edge,
             ),
     );
     if checked {
@@ -2973,6 +2977,20 @@ pub fn slider(
         )
         .with_corner_radius(track.size.height * 0.5),
     );
+    let range = tekes_ui_tokens::surface_palette::resolve_range_surface(
+        theme,
+        "canvas",
+        if disabled {
+            "disabled"
+        } else if state.pressed {
+            "pressed"
+        } else if state.hovered {
+            "hover"
+        } else {
+            "rest"
+        },
+    )
+    .expect("Slider Surface packet");
     scene.push_quad(
         Quad::new(
             thumb,
@@ -2981,7 +2999,7 @@ pub fn slider(
         .with_corner_radius(radius)
         .with_border(
             1.,
-            paint_color(theme, if disabled { "disabled-text" } else { "border" }),
+            range.thumb.boundary.expect("Slider thumb Surface boundary"),
         ),
     );
     if state.focused && state.focus_visible && !state.disabled {
@@ -3669,7 +3687,19 @@ mod tests {
                         panic!("switch paints quads")
                     };
                     assert_eq!(quad.border_width, stroke);
-                    assert_eq!(quad.border_color, palette.color("border").unwrap());
+                    assert_eq!(
+                        quad.border_color,
+                        tekes_ui_tokens::surface_palette::resolve_toggle_surface(
+                            palette,
+                            "canvas",
+                            "selected",
+                            tekes_ui_tokens::surface_palette::SurfaceOptions::default(),
+                        )
+                        .unwrap()
+                        .track
+                        .boundary
+                        .unwrap()
+                    );
                 }
                 radio_with_state(
                     &mut scene,

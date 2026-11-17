@@ -107,7 +107,8 @@ pub(super) fn matrix(
         .focus_bounds(ctx.text.backing_scale())
         .min_x();
     let bounds = c.inset(gutter);
-    let palette = Palette::new(ctx.theme, s.brand).expect("registered Gallery brand");
+    let palette = crate::gallery::brands::brand_palette(ctx.theme, s.brand)
+        .expect("registered Gallery brand");
     let mut y = bounds.min_y();
 
     match e.renderer() {

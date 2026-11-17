@@ -240,10 +240,8 @@ fn autosave_form_has_no_footer_and_preserves_original_text_mount_during_errors()
 #[test]
 fn descriptions_use_original_help_and_accessibility_without_extra_label_rows() {
     use tekes_ui_controls::composition::{ComponentId, TextContent};
-    let schema = Schema::parse(include_str!(
-        "../../../examples/app-host-demo/settings.schema.toml"
-    ))
-    .unwrap();
+    let schema =
+        Schema::parse(include_str!("fixtures/app-host-demo.settings.schema.toml")).unwrap();
     let draft = Draft::new(Snapshot::default());
     let mut form = SettingsForm::new_autosave(&schema, &draft).unwrap();
     for (index, field) in schema.settings.iter().enumerate() {

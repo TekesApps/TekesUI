@@ -919,7 +919,8 @@ fn independent_navigation_content_statuses_render_real_text_and_gpu() {
                 for brand in 0..3 {
                     for (width, type_scale) in [(360u32, 1.5f32), (800, 1.)] {
                         for scale in [1u32, 2] {
-                            let palette = Palette::new(theme, brand).unwrap();
+                            let palette =
+                                crate::gallery::brands::brand_palette(theme, brand).unwrap();
                             let mut text = TextEngine::new();
                             text.set_scale(scale as f32);
                             text.set_type_scale(type_scale);

@@ -1,0 +1,50 @@
+# AppHost General defaults reference ClientKit appearance and text zoom only.
+# Transcript thinking and Running HUD are not AppHost defaults.
+# This prototype edits local config; consumers bind actual application effects.
+schema_version = 1
+namespace = "apphost-demo.general-percent"
+provider = "demo.settings"
+
+[[pages]]
+id = "general"
+label = "通用"
+
+[[groups]]
+id = "general"
+page = "general"
+label = "通用"
+
+# ClientKit's General section opens the Appearance route, containing the common
+# General rows. Markdown Format and About are separate pages, not General fields.
+[[groups.items]]
+id = "appearance"
+label = "外观"
+
+[[groups.items.fields]]
+id = "appearance"
+path = ["general", "appearance"]
+label = "外观"
+description = "应用到所有 App 窗口。"
+type = "enum"
+default = "system"
+options = [
+  { value = "system", label = "跟随系统" },
+  { value = "light", label = "浅色" },
+  { value = "dark", label = "深色" },
+]
+
+# ClientKit places Feedback here. It is a code-registered action opening a
+# mail draft with consumer app identity, not a persisted field. Action binding
+# remains outside this minimum local-Provider prototype; no inert button is shown.
+
+[[groups.items.fields]]
+id = "text-size"
+path = ["general", "text_size_percent"]
+label = "文字大小"
+description = "文字缩放百分比，可直接输入；每次增减 10%。"
+type = "integer"
+default = 100
+min = 50
+max = 300
+step = 10
+suffix = "%"

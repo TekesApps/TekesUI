@@ -26,7 +26,7 @@ mod controlled_acceptance;
 mod gallery;
 #[cfg(target_os = "macos")]
 mod host;
-#[cfg(target_os = "macos")]
+#[cfg(all(target_os = "macos", feature = "selftest"))]
 mod perf;
 #[cfg(all(target_os = "macos", feature = "composition-review"))]
 mod reading_acceptance;
@@ -56,7 +56,9 @@ fn main() {
             std::process::exit(1);
         }
     }
-    use tekes_ui_platform_macos::{App, AppConfig, Size, WindowConfig, WindowPlacement, selftest};
+    #[cfg(feature = "selftest")]
+    use tekes_ui_platform_macos::selftest;
+    use tekes_ui_platform_macos::{App, AppConfig, Size, WindowConfig, WindowPlacement};
 
     #[cfg(feature = "composition-review")]
     if actions_acceptance::try_run() {
@@ -123,8 +125,21 @@ fn main() {
         }
     }
 
+    #[cfg(not(feature = "selftest"))]
+    if std::env::var_os("TEKES_SELFTEST").is_some() || std::env::var_os("TEKES_PERF").is_some() {
+        eprintln!(
+            "TEKES_SELFTEST and TEKES_PERF require building tekes-ui-gallery with --features selftest"
+        );
+        std::process::exit(2);
+    }
+    #[cfg(feature = "selftest")]
     let mode = std::env::var("TEKES_SELFTEST").ok();
+    #[cfg(feature = "selftest")]
     let perf_config = perf::PerfConfig::from_env();
+    #[cfg(feature = "selftest")]
+    let (need_120hz, size_check) = (perf_config.is_some(), mode.as_deref() == Some("1"));
+    #[cfg(not(feature = "selftest"))]
+    let (need_120hz, size_check) = (false, false);
     let mut gallery_state = gallery::Gallery::new();
     if let Ok(slug) = std::env::var("TEKESUI_GALLERY_PAGE")
         && !gallery_state.open_route(&slug)
@@ -149,12 +164,13 @@ fn main() {
         // 可用环境变量 TEKESUI_WINDOW_PLACEMENT 覆盖。
         placement: WindowPlacement::Auto {
             // 性能测量要 120Hz（只有内建 ProMotion 屏有），摆放规则会选内建屏。
-            need_120hz: perf_config.is_some(),
-            size_check: mode.as_deref() == Some("1"),
+            need_120hz,
+            size_check,
         },
         // 不保存窗口位置与尺寸：需要固定、可复现的尺寸。
         frame_autosave_name: None,
     };
+    #[cfg(feature = "selftest")]
     match mode.as_deref() {
         None => {}
         #[cfg(feature = "composition-review")]
@@ -173,15 +189,15 @@ fn main() {
         Some("motion-layout") => selftest::run_script(selftest_motion_layout_script()),
         Some(_) => selftest::run_script(selftest_script()),
     }
+    let host = host::Host::new(gallery_state);
+    #[cfg(feature = "selftest")]
+    let host = host.with_perf(perf_config.map(perf::Perf::new));
     App::new(AppConfig {
         name: Some("TekesUI Gallery".into()),
         ..AppConfig::default()
     })
-    .run(
-        window_config,
-        menu_bar,
-        host::Host::new(gallery_state).with_perf(perf_config.map(perf::Perf::new)),
-    );
+    .run(window_config, menu_bar, host);
+    #[cfg(feature = "selftest")]
     if std::env::var_os("TEKES_PERF").is_some() {
         // 0：完整跑完且空闲确认通过；2：中途被关、没跑起来或空闲确认失败。
         std::process::exit(perf::exit_code());
@@ -189,7 +205,7 @@ fn main() {
 }
 
 /// 自测时间表：初始截图；缩放到几个尺寸各截一张；最小化再恢复，截图确认内容还在。
-#[cfg(target_os = "macos")]
+#[cfg(all(target_os = "macos", feature = "selftest"))]
 fn selftest_script() -> Vec<(u64, tekes_ui_platform_macos::selftest::Action)> {
     use tekes_ui_platform_macos::selftest::Action;
 
@@ -224,7 +240,7 @@ fn selftest_script() -> Vec<(u64, tekes_ui_platform_macos::selftest::Action)> {
 /// 菜单命令编号见 `gallery/commands.rs`：页 100、101；外观 200（跟随）、201（浅）、202（深）；
 /// 对比度 300（跟随）、301（开）、302（关）。日志里 `Redraw #n` 的行数用来核对哪一步重绘了。
 /// 每一步之间留 700ms，让重绘完成再截图。
-#[cfg(target_os = "macos")]
+#[cfg(all(target_os = "macos", feature = "selftest"))]
 fn selftest_gallery_script() -> Vec<(u64, tekes_ui_platform_macos::selftest::Action)> {
     use tekes_ui_platform_macos::selftest::Action::{self, *};
 
@@ -387,7 +403,7 @@ fn selftest_gallery_script() -> Vec<(u64, tekes_ui_platform_macos::selftest::Act
 }
 
 /// Native-window smoke: real menu routing, state-chip clicks, screenshots, then close.
-#[cfg(target_os = "macos")]
+#[cfg(all(target_os = "macos", feature = "selftest"))]
 fn selftest_components_script() -> Vec<(u64, tekes_ui_platform_macos::selftest::Action)> {
     use gallery::{Page, layout, pages::showcase};
     use tekes_ui_platform_macos::selftest::Action;
@@ -461,7 +477,7 @@ fn selftest_components_script() -> Vec<(u64, tekes_ui_platform_macos::selftest::
     steps
 }
 
-#[cfg(target_os = "macos")]
+#[cfg(all(target_os = "macos", feature = "selftest"))]
 fn selftest_reflow_script() -> Vec<(u64, tekes_ui_platform_macos::selftest::Action)> {
     use tekes_ui_platform_macos::selftest::Action;
     let out = std::env::var("TEKES_SELFTEST_OUT").expect("reflow output directory");
@@ -516,7 +532,7 @@ fn selftest_reflow_script() -> Vec<(u64, tekes_ui_platform_macos::selftest::Acti
     steps
 }
 
-#[cfg(target_os = "macos")]
+#[cfg(all(target_os = "macos", feature = "selftest"))]
 fn selftest_scroll_repair_script() -> Vec<(u64, tekes_ui_platform_macos::selftest::Action)> {
     use tekes_ui_platform_macos::selftest::Action;
     let out = std::env::var("TEKES_SELFTEST_OUT").expect("scroll-repair output");
@@ -649,7 +665,7 @@ fn selftest_scroll_repair_script() -> Vec<(u64, tekes_ui_platform_macos::selftes
     ]
 }
 
-#[cfg(target_os = "macos")]
+#[cfg(all(target_os = "macos", feature = "selftest"))]
 fn selftest_text_script() -> Vec<(u64, tekes_ui_platform_macos::selftest::Action)> {
     use tekes_ui_platform_macos::selftest::Action;
     let out = std::env::var("TEKES_SELFTEST_OUT").expect("text selftest output directory");
@@ -797,7 +813,7 @@ fn selftest_text_script() -> Vec<(u64, tekes_ui_platform_macos::selftest::Action
 }
 
 /// Integrated native smoke test. Physical gestures/IME still require manual acceptance.
-#[cfg(target_os = "macos")]
+#[cfg(all(target_os = "macos", feature = "selftest"))]
 fn selftest_foundation_script() -> Vec<(u64, tekes_ui_platform_macos::selftest::Action)> {
     use gallery::{motion_preview::PresetCatalog, pages::motion::Action as MotionAction};
     use tekes_ui_platform_macos::selftest::Action;
@@ -917,7 +933,7 @@ fn selftest_foundation_script() -> Vec<(u64, tekes_ui_platform_macos::selftest::
 
 /// Regresses the canonical Motion story's live-preview origin through actual
 /// mouse-move and click events after preview text scaling, resize, and scroll.
-#[cfg(target_os = "macos")]
+#[cfg(all(target_os = "macos", feature = "selftest"))]
 fn selftest_motion_layout_script() -> Vec<(u64, tekes_ui_platform_macos::selftest::Action)> {
     use gallery::{
         Command, locale::Locale, motion_preview::PresetCatalog,
@@ -1091,6 +1107,7 @@ fn selftest_motion_layout_script() -> Vec<(u64, tekes_ui_platform_macos::selftes
 }
 
 /// Native rendering regression, not a performance run or physical resize capture.
+#[cfg(all(target_os = "macos", feature = "selftest"))]
 fn selftest_metal_lifecycle_script() -> Vec<(u64, tekes_ui_platform_macos::selftest::Action)> {
     use gallery::{layout::PAGE_CONTENT, motion_preview::PresetCatalog, pages::motion};
     use tekes_ui_platform_macos::selftest::Action;
@@ -1180,7 +1197,7 @@ fn selftest_metal_lifecycle_script() -> Vec<(u64, tekes_ui_platform_macos::selft
     steps
 }
 
-#[cfg(target_os = "macos")]
+#[cfg(all(target_os = "macos", feature = "selftest"))]
 fn selftest_workbench_script() -> Vec<(u64, tekes_ui_platform_macos::selftest::Action)> {
     use tekes_ui_platform_macos::selftest::Action;
     let out = std::env::var("TEKES_SELFTEST_OUT").expect("workbench evidence directory");
@@ -1288,7 +1305,7 @@ fn selftest_workbench_script() -> Vec<(u64, tekes_ui_platform_macos::selftest::A
 /// Native AppKit smoke across the production extended-control stories.
 /// This exercises their real hit targets and keyboard paths; it is not an
 /// automated pixel-diff or VoiceOver acceptance run.
-#[cfg(target_os = "macos")]
+#[cfg(all(target_os = "macos", feature = "selftest"))]
 fn selftest_workbench_extended_script() -> Vec<(u64, tekes_ui_platform_macos::selftest::Action)> {
     use tekes_ui_platform_macos::selftest::Action;
 

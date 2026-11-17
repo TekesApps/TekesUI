@@ -601,25 +601,51 @@ def audit(root: Path = ROOT) -> dict[str, Any]:
     }
 
 
+EXEMPT_INPUT_PREFIXES = ("input", "check-", "toggle-", "range-", "selection", "action-primary")
+ALLOWED_NON_INPUT_BORDER_PROFILES: frozenset[str] = frozenset()
+ALLOWED_NON_INPUT_SECONDARY_TEXT_PROFILES: frozenset[str] = frozenset(
+    {"quiet", "data-category-label"}
+)
+ALLOWED_RUST_CONTROL_FILES: frozenset[str] = frozenset()
+
+
 def scan_components(root: Path = ROOT) -> dict[str, Any]:
-    """Read-only advisory scan of theme rules & Rust controls for chrome noise."""
+    """Read-only regression gate scanning theme rules & Rust controls for chrome noise."""
     rules = json.loads((root / "design/theme/rules.json").read_text(encoding="utf-8"))
     advisory_profiles: list[dict[str, Any]] = []
-    exempt_input_prefixes = ("input", "check-", "toggle-", "range-", "selection", "action-primary")
+    violations: list[dict[str, Any]] = []
 
     for profile_name, body in sorted(rules.get("profiles", {}).items()):
-        if profile_name.startswith(exempt_input_prefixes):
+        if profile_name.startswith(EXEMPT_INPUT_PREFIXES):
             continue
-        # Resolve direct dictionary fields (including overrides) for advisory check.
+        # Resolve direct dictionary fields (including overrides) for gate check.
         serialized = json.dumps(body)
-        if '"border"' in serialized or '"secondary-text"' in serialized:
+        uses_border = '"border"' in serialized
+        uses_secondary = '"secondary-text"' in serialized
+        if uses_border or uses_secondary:
             advisory_profiles.append(
                 {
                     "profile": profile_name,
-                    "uses_border": '"border"' in serialized,
-                    "uses_secondary_text": '"secondary-text"' in serialized,
+                    "uses_border": uses_border,
+                    "uses_secondary_text": uses_secondary,
                 }
             )
+            if uses_border and profile_name not in ALLOWED_NON_INPUT_BORDER_PROFILES:
+                violations.append(
+                    {
+                        "code": "NON_INPUT_PROFILE_BORDER",
+                        "subject": f"profile:{profile_name}",
+                        "message": "Non-input profile references high-contrast 'border' role instead of 'separator'",
+                    }
+                )
+            if uses_secondary and profile_name not in ALLOWED_NON_INPUT_SECONDARY_TEXT_PROFILES:
+                violations.append(
+                    {
+                        "code": "NON_INPUT_PROFILE_SECONDARY_TEXT",
+                        "subject": f"profile:{profile_name}",
+                        "message": "Non-input profile references 'secondary-text' outside explicit allowlist",
+                    }
+                )
 
     rust_hits: list[dict[str, Any]] = []
     controls_src = root / "crates/tekes-ui-controls/src"
@@ -629,17 +655,36 @@ def scan_components(root: Path = ROOT) -> dict[str, Any]:
             border_refs = len(re.findall(r'"border"', text))
             secondary_refs = len(re.findall(r'"secondary-text"', text))
             if border_refs or secondary_refs:
+                rel = path.relative_to(root).as_posix()
                 rust_hits.append(
                     {
-                        "file": path.relative_to(root).as_posix(),
+                        "file": rel,
                         "border_refs": border_refs,
                         "secondary_text_refs": secondary_refs,
                     }
                 )
+                if rel not in ALLOWED_RUST_CONTROL_FILES:
+                    violations.append(
+                        {
+                            "code": "CONTROLS_RAW_PALETTE_BYPASS",
+                            "subject": rel,
+                            "message": (
+                                f"Direct palette string lookup (border={border_refs}, "
+                                f"secondary-text={secondary_refs}) bypasses shared Surface contract"
+                            ),
+                        }
+                    )
 
     return {
-        "mode": "read-only-advisory",
-        "note": "Advisory only. Never modify design/theme/rules.json or component Rust sources without explicit user approval.",
+        "mode": "regression-gate",
+        "status": "fail" if violations else "pass",
+        "violation_count": len(violations),
+        "violations": violations,
+        "allowlisted_profiles": {
+            "border": sorted(ALLOWED_NON_INPUT_BORDER_PROFILES),
+            "secondary_text": sorted(ALLOWED_NON_INPUT_SECONDARY_TEXT_PROFILES),
+        },
+        "allowlisted_control_files": sorted(ALLOWED_RUST_CONTROL_FILES),
         "non_input_profiles_with_border_or_secondary": advisory_profiles,
         "rust_control_files_with_border_or_secondary": rust_hits,
     }
@@ -648,12 +693,12 @@ def scan_components(root: Path = ROOT) -> dict[str, Any]:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=ROOT, help="TekesUI repository root")
-    parser.add_argument("--check", action="store_true", help="Exit 1 if any band-pass violation is found")
+    parser.add_argument("--check", action="store_true", help="Exit 1 if any band-pass or component violation is found")
     parser.add_argument("--json", action="store_true", help="Emit JSON output")
     parser.add_argument(
         "--scan-components",
         action="store_true",
-        help="Read-only scan of rules.json and controls for chrome-noise advisories (always exits 0)",
+        help="Read-only regression gate of rules.json and controls for chrome noise / Surface bypasses",
     )
     args = parser.parse_args()
     root = args.root.resolve()
@@ -663,14 +708,18 @@ def main() -> int:
         if args.json:
             print(json.dumps(scan, ensure_ascii=False, indent=2))
         else:
-            print("ADVISORY (--scan-components, read-only):", scan["note"])
-            print(f"Non-input profiles referencing border/secondary-text: {len(scan['non_input_profiles_with_border_or_secondary'])}")
-            for item in scan["non_input_profiles_with_border_or_secondary"]:
-                print(f"  - profile {item['profile']} (border={item['uses_border']}, secondary-text={item['uses_secondary_text']})")
-            print(f"Control source files referencing border/secondary-text: {len(scan['rust_control_files_with_border_or_secondary'])}")
-            for item in scan["rust_control_files_with_border_or_secondary"]:
-                print(f"  - {item['file']} (border={item['border_refs']}, secondary-text={item['secondary_text_refs']})")
-        return 0
+            if scan["violations"]:
+                for v in scan["violations"]:
+                    print(
+                        f"FAIL [{v['code']}] {v['subject']}: {v['message']}",
+                        file=sys.stderr,
+                    )
+            else:
+                print(
+                    "PASS: Component Surface contract & non-input profile gate "
+                    f"(allowlisted secondary-text profiles={scan['allowlisted_profiles']['secondary_text']}, raw control bypasses=0)."
+                )
+        return 1 if scan["violations"] else 0
 
     report = audit(root)
     if args.json:

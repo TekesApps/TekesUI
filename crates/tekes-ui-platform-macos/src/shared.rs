@@ -83,8 +83,8 @@ struct ProvidedFrame {
 }
 
 struct QueuedEvent {
-    #[cfg(feature = "content-accessibility")]
-    accessibility_authority: Option<crate::content_accessibility::WindowAccessibilityPublication>,
+    accessibility_authority:
+        Option<std::rc::Rc<dyn crate::accessibility::AccessibilityGeometryLease>>,
     event: Event,
     drawable: Option<ProvidedFrame>,
 }
@@ -95,9 +95,8 @@ pub(crate) struct Shared {
     pub caret_scheduled: Cell<bool>,
     pub text_input: RefCell<Option<crate::event::TextInputState>>,
     pub accessibility_nodes: RefCell<Vec<crate::accessibility::AccessibilityNode>>,
-    #[cfg(feature = "content-accessibility")]
     pub content_geometry:
-        RefCell<Option<crate::content_accessibility::WindowAccessibilityPublication>>,
+        RefCell<Option<std::rc::Rc<dyn crate::accessibility::AccessibilityGeometryLease>>>,
     pub accessibility_text_layouts: RefCell<
         HashMap<
             crate::accessibility::AccessibilityKey,
@@ -168,7 +167,6 @@ impl Shared {
             caret_scheduled: Cell::new(false),
             text_input: RefCell::new(None),
             accessibility_nodes: RefCell::new(Vec::new()),
-            #[cfg(feature = "content-accessibility")]
             content_geometry: RefCell::new(None),
             accessibility_text_layouts: RefCell::new(HashMap::new()),
             accessibility_elements: RefCell::new(HashMap::new()),
@@ -216,7 +214,6 @@ impl Shared {
                 .set(self.metal_reentrant_queued.get() + 1);
         }
         self.enqueue(QueuedEvent {
-            #[cfg(feature = "content-accessibility")]
             accessibility_authority: None,
             event: Event::AnimationFrame(frame),
             drawable: Some(ProvidedFrame { layer, drawable }),
@@ -244,14 +241,12 @@ impl Shared {
             self.titlebar_drag_origin.borrow_mut().take();
             self.pending_titlebar_zoom.set(false);
         }
-        #[cfg(feature = "content-accessibility")]
         let accessibility_authority = if matches!(event, Event::Accessibility { .. }) {
             self.content_geometry.borrow().clone()
         } else {
             None
         };
         self.enqueue(QueuedEvent {
-            #[cfg(feature = "content-accessibility")]
             accessibility_authority,
             event,
             drawable: None,
@@ -286,7 +281,6 @@ impl Shared {
         loop {
             let next = self.queue.borrow_mut().pop_front();
             let Some(QueuedEvent {
-                #[cfg(feature = "content-accessibility")]
                 accessibility_authority,
                 mut event,
                 drawable,
@@ -294,12 +288,11 @@ impl Shared {
             else {
                 break;
             };
-            #[cfg(feature = "content-accessibility")]
             if let Event::Accessibility { target, .. } = &event {
                 // Queued/reentrant native actions retain their original whole-batch
                 // lease. A replacement cannot authorize an event from the old batch.
                 let authorized = match accessibility_authority.as_ref() {
-                    Some(p) => p.owner(*target).is_some(),
+                    Some(p) => p.authorizes_target(*target),
                     None => self.content_geometry.borrow().is_none(),
                 };
                 if !authorized {
@@ -344,6 +337,7 @@ impl Shared {
         }
         drop(_dispatch_guard);
         // Explicit selftest AX readiness runs only outside the mutable handler.
+        #[cfg(feature = "selftest")]
         crate::selftest::run_published_step(self);
         // AppKit can synchronously resize through its whole zoom animation.
         // Starting it inside handle would queue every Resized/Redraw until the
@@ -517,7 +511,6 @@ impl Shared {
             .is_some_and(|h| h.allows_app_quit())
     }
     pub(crate) fn revoke_accessibility(&self) {
-        #[cfg(feature = "content-accessibility")]
         if let Some(publication) = self.content_geometry.borrow_mut().take() {
             publication.revoke();
         }
@@ -724,30 +717,13 @@ impl Window {
             context.invalidateCharacterCoordinates();
         }
     }
-    /// Publish the host-owned accessibility tree. Node data stays in the host
-    /// snapshot; native AX elements only expose it and route requested actions.
-    #[cfg(feature = "content-accessibility")]
-    pub fn set_content_accessibility_snapshot(
-        &self,
-        snapshot: crate::content_accessibility::ContentAccessibilitySnapshot,
-    ) -> bool {
-        use crate::content_accessibility::{
-            ContentAccessibilityOwner, WindowAccessibilityPublication,
-        };
-        self.set_content_accessibility_publication(WindowAccessibilityPublication::prepare(vec![(
-            ContentAccessibilityOwner(0),
-            snapshot,
-        )]))
-    }
-    /// Commit one complete prepared batch, or revoke the entire previous publication.
+    /// Commit one accessibility geometry lease, or clear and revoke any previous publication.
     /// No borrowed store survives notification or host/native callbacks.
-    #[cfg(feature = "content-accessibility")]
-    pub fn set_content_accessibility_publication(
+    pub fn set_accessibility_geometry_lease(
         &self,
-        publication: Option<crate::content_accessibility::WindowAccessibilityPublication>,
+        lease: Option<Rc<dyn crate::accessibility::AccessibilityGeometryLease>>,
     ) -> bool {
-        use crate::content_accessibility::WindowAccessibilityPublication;
-        if publication.is_none() && !self.shared.closed.get() {
+        if lease.is_none() && !self.shared.closed.get() {
             if let Some(old) = self.shared.content_geometry.borrow_mut().take() {
                 old.revoke();
             }
@@ -756,33 +732,38 @@ impl Window {
             self.view.accessibility_nodes_changed(&previous);
             return false;
         }
-        let publication = if self.shared.closed.get() {
+        let lease = if self.shared.closed.get() {
             None
         } else {
-            publication
+            lease
         };
-        // This performs the final whole-lease check and revokes old saved handles.
-        let accepted = WindowAccessibilityPublication::commit(
-            &mut self.shared.content_geometry.borrow_mut(),
-            publication,
+        if let Some(old) = self.shared.content_geometry.borrow().as_ref() {
+            old.revoke();
+        }
+        let accepted = lease
+            .as_ref()
+            .is_some_and(|l| l.is_current() && l.is_valid());
+        let stored: Rc<dyn crate::accessibility::AccessibilityGeometryLease> = if accepted {
+            lease.unwrap()
+        } else {
+            if let Some(l) = lease {
+                l.revoke();
+            }
+            Rc::new(RevokedAccessibilityLease)
+        };
+        let (nodes, layouts) = (
+            stored.nodes().to_vec(),
+            stored.text_layouts().cloned().unwrap_or_default(),
         );
-        let (nodes, layouts) = {
-            let store = self.shared.content_geometry.borrow();
-            let p = store.as_ref().unwrap();
-            (
-                p.nodes().to_vec(),
-                p.text_layouts().cloned().unwrap_or_default(),
-            )
-        };
+        *self.shared.content_geometry.borrow_mut() = Some(stored);
         let previous = self.shared.accessibility_nodes.replace(nodes);
         self.shared.accessibility_text_layouts.replace(layouts);
         self.view.accessibility_nodes_changed(&previous);
         accepted
     }
-    #[cfg(feature = "content-accessibility")]
-    pub fn content_accessibility_publication(
+    pub fn accessibility_geometry_lease(
         &self,
-    ) -> Option<crate::content_accessibility::WindowAccessibilityPublication> {
+    ) -> Option<Rc<dyn crate::accessibility::AccessibilityGeometryLease>> {
         if self.shared.closed.get() {
             return None;
         }
@@ -794,7 +775,6 @@ impl Window {
             .cloned()
     }
     pub fn set_accessibility_nodes(&self, nodes: Vec<crate::accessibility::AccessibilityNode>) {
-        #[cfg(feature = "content-accessibility")]
         if self.shared.content_geometry.borrow().is_some() {
             return;
         }
@@ -822,7 +802,6 @@ impl Window {
         if self.shared.closed.get() {
             return;
         }
-        #[cfg(feature = "content-accessibility")]
         if self.shared.content_geometry.borrow().is_some() {
             return;
         }
@@ -842,7 +821,6 @@ impl Window {
         if self.shared.closed.get() {
             return Vec::new();
         }
-        #[cfg(feature = "content-accessibility")]
         if let Some(p) = self.shared.content_geometry.borrow().as_ref() {
             return p.nodes().to_vec();
         }
@@ -1235,9 +1213,66 @@ impl Drop for HandlerGuard<'_> {
     }
 }
 
+#[derive(Debug)]
+struct RevokedAccessibilityLease;
+
+impl crate::accessibility::AccessibilityGeometryLease for RevokedAccessibilityLease {
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+    fn is_current(&self) -> bool {
+        false
+    }
+    fn is_valid(&self) -> bool {
+        false
+    }
+    fn revoke(&self) {}
+    fn nodes(&self) -> &[crate::accessibility::AccessibilityNode] {
+        &[]
+    }
+    fn text_layouts(
+        &self,
+    ) -> Option<
+        &HashMap<
+            crate::accessibility::AccessibilityKey,
+            crate::accessibility::AccessibilityTextLayout,
+        >,
+    > {
+        None
+    }
+    fn is_structural_only(&self, _key: crate::accessibility::AccessibilityKey) -> bool {
+        false
+    }
+    fn contains(
+        &self,
+        _key: crate::accessibility::AccessibilityKey,
+        _point: crate::event::Point,
+    ) -> bool {
+        false
+    }
+    fn hit_test(
+        &self,
+        _point: crate::event::Point,
+    ) -> Option<crate::accessibility::AccessibilityKey> {
+        None
+    }
+    fn frame_for_range(
+        &self,
+        _key: crate::accessibility::AccessibilityKey,
+        _range: std::ops::Range<usize>,
+    ) -> Option<crate::placement::Rect> {
+        None
+    }
+    fn authorizes_target(&self, _target: crate::accessibility::AccessibilityKey) -> bool {
+        false
+    }
+}
+
 fn text_pasteboard() -> Retained<objc2_app_kit::NSPasteboard> {
     static SELFTEST_TEXT: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    if *SELFTEST_TEXT.get_or_init(|| std::env::var("TEKES_SELFTEST").as_deref() == Ok("text")) {
+    if *SELFTEST_TEXT.get_or_init(|| {
+        cfg!(feature = "selftest") && std::env::var("TEKES_SELFTEST").as_deref() == Ok("text")
+    }) {
         // Native text smoke tests must not replace the user's general clipboard.
         objc2_app_kit::NSPasteboard::pasteboardWithName(&NSString::from_str(&format!(
             "TekesUI.TextSelftest.{}",

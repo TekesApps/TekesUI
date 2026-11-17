@@ -22,6 +22,7 @@ use std::time::Duration;
 mod accessibility;
 pub mod apphost;
 pub mod apphost_workbench;
+pub mod brands;
 pub mod catalog;
 pub mod chrome;
 pub mod commands;
@@ -408,7 +409,7 @@ impl Gallery {
         let revealed = frame.is_some_and(|frame| self.reveal_focused_frame(frame));
         Some(redraw_if(changed || revealed))
     }
-    #[cfg(target_os = "macos")]
+    #[cfg(all(target_os = "macos", feature = "selftest"))]
     pub(crate) fn motion_action_center_for_selftest(
         width: f32,
         height: f32,
@@ -448,7 +449,7 @@ impl Gallery {
     /// Resolve a TextSurface pointer target from the exact retained layout used
     /// by the Gallery route under test. `index` addresses the live surfaces in
     /// the internal editor route (0 = single line, 1 = multiline).
-    #[cfg(target_os = "macos")]
+    #[cfg(all(target_os = "macos", feature = "selftest"))]
     pub(crate) fn text_surface_center_for_selftest(
         route: &str,
         width: f32,
@@ -479,7 +480,7 @@ impl Gallery {
         point
     }
 
-    #[cfg(target_os = "macos")]
+    #[cfg(all(target_os = "macos", feature = "selftest"))]
     pub(crate) fn calibration_selector_center_for_selftest(
         width: f32,
         height: f32,
@@ -535,6 +536,7 @@ impl Gallery {
     }
 
     /// 文字引擎（排版、光栅化、窗口 atlas）。性能 harness 用它往同一个 atlas 里编文字段。
+    #[cfg(any(test, feature = "selftest"))]
     pub fn text_mut(&mut self) -> &mut TextEngine {
         &mut self.text
     }
@@ -844,12 +846,15 @@ impl Gallery {
             .append_visible_with_geometry(&layer, scene, ctx.theme, &viewport_geometry);
     }
 
+    #[cfg(any(test, feature = "selftest"))]
     pub(crate) fn start_scene3d_rotation(&mut self, animate_clip: bool) {
         self.scene3d.start_rotation(animate_clip);
     }
+    #[cfg(any(test, feature = "selftest"))]
     pub(crate) fn scene3d_frame_work(&self) -> (u64, usize) {
         self.scene3d.frame_work()
     }
+    #[cfg(feature = "selftest")]
     pub(crate) fn scene3d_diagnostics(&self) -> serde_json::Value {
         self.scene3d.diagnostics()
     }
@@ -1067,16 +1072,20 @@ impl Gallery {
     pub fn page_scroll_range(&self) -> f32 {
         self.viewport.limit().y
     }
+    #[cfg(any(test, feature = "selftest"))]
     pub fn scroll_page_to(&mut self, y: f32) {
         let offset = self.viewport.offset.y;
         self.viewport.move_by(0.0, y - offset);
     }
+    #[cfg(feature = "selftest")]
     pub fn motion_retarget(&mut self, target: f64) {
         self.motion.retarget(target);
     }
+    #[cfg(feature = "selftest")]
     pub fn advance_motion(&mut self, dt: f32) {
         self.motion.animate(dt);
     }
+    #[cfg(feature = "selftest")]
     pub(crate) fn scroll_reference_state(&self) -> Option<[f32; 2]> {
         (self.content_page() == Page::ScrollArea)
             .then(|| self.scroll_demo.scroll_reference_state())
@@ -1084,12 +1093,14 @@ impl Gallery {
     }
 
     /// Export only the current ScrollArea layout, without preparing a second copy.
+    #[cfg(feature = "selftest")]
     pub(crate) fn scroll_reference_fixture(&self) -> Option<serde_json::Value> {
         (self.content_page() == Page::ScrollArea)
             .then(|| self.scroll_demo.scroll_reference_fixture())
             .flatten()
     }
 
+    #[cfg(any(test, feature = "selftest"))]
     pub fn editor_scroll_metrics(&self) -> (f32, f32) {
         if self.content_page() == Page::ScrollArea {
             self.scroll_demo.scroll_metrics()
@@ -1097,6 +1108,7 @@ impl Gallery {
             self.editor.scroll_metrics()
         }
     }
+    #[cfg(feature = "selftest")]
     pub fn scroll_editor_to(&mut self, offset: f32) {
         if self.content_page() == Page::ScrollArea {
             self.scroll_demo.scroll_to(offset);

@@ -5,7 +5,7 @@ use crate::gallery::{Gallery, Page, static_text::StaticText};
 use tekes_ui_platform_macos::{Event, Modifiers, MouseButton, MouseEvent, MouseEventKind, Point};
 use tekes_ui_render::Renderer;
 use tekes_ui_scene::{Primitive, Scene};
-use tekes_ui_tokens::{Palette, Theme};
+use tekes_ui_tokens::Theme;
 
 #[test]
 #[ignore = "requires allocated GPU and fresh TEKESUI_VISUAL_REMAINDER_OUT"]
@@ -74,7 +74,7 @@ fn nondefault_brand_menu_dialog_capture_original_open_layers() {
     let mut renderer = Renderer::new_headless().expect("real GPU required");
     let brand = 1;
     let preset =
-        tekes_ui_tokens::palette::gallery_brand_preset(brand).expect("existing registered brand 1");
+        crate::gallery::brands::gallery_brand_preset(brand).expect("existing registered brand 1");
     let mut manifest = Vec::new();
     for kind in ["menu", "dialog"] {
         let index = entries().iter().position(|e| e.renderer() == kind).unwrap();
@@ -124,7 +124,7 @@ fn nondefault_brand_menu_dialog_capture_original_open_layers() {
                 assert!(state.dialog_view.is_open());
                 state.dialog_layout.as_ref().unwrap().modal
             };
-            let palette = Palette::new(theme, brand).unwrap();
+            let palette = crate::gallery::brands::brand_palette(theme, brand).unwrap();
             let surface = scene
                 .primitives()
                 .iter()

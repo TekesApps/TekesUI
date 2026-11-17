@@ -929,7 +929,6 @@ name = "tekes-ui-tokens"
 version = "0.3.34"
 dependencies = [
  "serde_json",
- "sha2",
  "tekes-ui-design-export",
 ]
 

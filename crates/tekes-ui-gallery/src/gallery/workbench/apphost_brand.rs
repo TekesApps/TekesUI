@@ -139,7 +139,8 @@ impl Component for CandidateTheme {
     }
     fn child_theme(&self, mut theme: ContentTheme) -> ContentTheme {
         if let Some(index) = self.model.borrow().candidate() {
-            theme.palette = Palette::new(theme.palette.theme, index).expect("compiled brand");
+            theme.palette = crate::gallery::brands::brand_palette(theme.palette.theme, index)
+                .expect("compiled brand");
         }
         theme
     }
@@ -229,7 +230,9 @@ impl Roles {
             self.model
                 .borrow()
                 .candidate()
-                .map(|i| Palette::new(applied.theme, i).expect("compiled brand"))
+                .map(|i| {
+                    crate::gallery::brands::brand_palette(applied.theme, i).expect("compiled brand")
+                })
                 .unwrap_or(applied)
         } else {
             applied
@@ -239,7 +242,7 @@ impl Roles {
         self.candidate
             .then(|| self.model.borrow().candidate())
             .flatten()
-            .and_then(tekes_ui_tokens::palette::gallery_brand_preset)
+            .and_then(crate::gallery::brands::gallery_brand_preset)
             .map(|p| p.seed_srgb)
     }
     fn rows(
@@ -387,7 +390,7 @@ impl BrandStory {
                 Content::new(CLOSE, Button::new("Close")),
             ),
         );
-        let directions = tekes_ui_tokens::palette::gallery_brand_directions()
+        let directions = crate::gallery::brands::gallery_brand_directions()
             .iter()
             .enumerate()
             .map(|(i, d)| Content::new(ComponentId(DIRECTION + i as u64), Button::new(d.name)))
@@ -428,16 +431,18 @@ impl BrandStory {
         let model = self.model.borrow();
         let preview = model
             .candidate()
-            .map(|i| Palette::new(applied.theme, i).expect("compiled brand"))
+            .map(|i| {
+                crate::gallery::brands::brand_palette(applied.theme, i).expect("compiled brand")
+            })
             .unwrap_or(applied);
         let name = |p: Palette| {
             p.brand_index()
-                .and_then(tekes_ui_tokens::palette::gallery_brand_preset)
+                .and_then(crate::gallery::brands::gallery_brand_preset)
                 .map_or_else(|| "Consumer reference".to_string(), |p| p.name.to_string())
         };
         let detail = model
             .candidate()
-            .and_then(tekes_ui_tokens::palette::gallery_brand_preset)
+            .and_then(crate::gallery::brands::gallery_brand_preset)
             .map_or_else(
                 || name(preview),
                 |p| format!("{} · {}", p.name, p.seed_srgb),
@@ -504,7 +509,7 @@ impl BrandStory {
                     .disabled = disabled;
             }
         }
-        for (i, d) in tekes_ui_tokens::palette::gallery_brand_directions()
+        for (i, d) in crate::gallery::brands::gallery_brand_directions()
             .iter()
             .enumerate()
         {
@@ -536,7 +541,7 @@ impl BrandStory {
         for record in self.host.drain_action_records() {
             let id = record.action.target;
             if (DIRECTION
-                ..DIRECTION + tekes_ui_tokens::palette::gallery_brand_directions().len() as u64)
+                ..DIRECTION + crate::gallery::brands::gallery_brand_directions().len() as u64)
                 .contains(&id.0)
             {
                 self.model
@@ -553,8 +558,10 @@ impl BrandStory {
             } else if id == CONFIRM
                 && let Some(index) = self.model.borrow_mut().confirm_candidate()
             {
-                self.palette
-                    .set(Palette::new(self.palette.get().theme, index).expect("compiled brand"));
+                self.palette.set(
+                    crate::gallery::brands::brand_palette(self.palette.get().theme, index)
+                        .expect("compiled brand"),
+                );
             }
         }
         self.refresh();
@@ -585,7 +592,9 @@ mod tests {
     }
     #[test]
     fn preview_cancel_and_confirm_preserve_application_palette_and_editor_owner() {
-        let palette = Rc::new(Cell::new(Palette::new(Theme::LIGHT, 0).unwrap()));
+        let palette = Rc::new(Cell::new(
+            crate::gallery::brands::brand_palette(Theme::LIGHT, 0).unwrap(),
+        ));
         let mut story = BrandStory::new(palette.clone());
         let mut text = TextEngine::new();
         render(&mut story, &mut text, 900.);
@@ -823,7 +832,9 @@ mod tests {
 
     #[test]
     fn staged_candidate_tracks_each_receiving_window_theme_without_changing_source() {
-        let palette = Rc::new(Cell::new(Palette::new(Theme::LIGHT, 0).unwrap()));
+        let palette = Rc::new(Cell::new(
+            crate::gallery::brands::brand_palette(Theme::LIGHT, 0).unwrap(),
+        ));
         let story = BrandStory::new(palette.clone());
         story.model.borrow_mut().select_direction(0);
         let index = story.model.borrow().candidate().unwrap();
@@ -835,11 +846,21 @@ mod tests {
                 .component::<CandidateTheme>()
                 .unwrap();
             for theme in [Theme::LIGHT, Theme::DARK] {
-                let projected = scope.child_theme(Palette::new(theme, 0).unwrap().into());
-                assert_eq!(projected.palette, Palette::new(theme, index).unwrap());
+                let projected = scope.child_theme(
+                    crate::gallery::brands::brand_palette(theme, 0)
+                        .unwrap()
+                        .into(),
+                );
+                assert_eq!(
+                    projected.palette,
+                    crate::gallery::brands::brand_palette(theme, index).unwrap()
+                );
             }
         }
-        assert_eq!(palette.get(), Palette::new(Theme::LIGHT, 0).unwrap());
+        assert_eq!(
+            palette.get(),
+            crate::gallery::brands::brand_palette(Theme::LIGHT, 0).unwrap()
+        );
     }
 
     #[test]

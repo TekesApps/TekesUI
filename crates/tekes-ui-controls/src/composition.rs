@@ -1345,7 +1345,7 @@ impl Content {
         if let Some(label) = &mut self.label {
             self.component.paint(
                 scene,
-                &mut label::LabelRenderer::new(text, label, self.clip).with_palette(theme.palette),
+                &mut label::LabelRenderer::new(text, label, self.clip).with_theme(theme),
                 self.frame,
                 self.clip,
                 theme,
@@ -5386,11 +5386,7 @@ impl Component for ScrollContent {
                             thumb,
                             theme
                                 .palette
-                                .color(if theme.palette.theme.is_increased() {
-                                    "border"
-                                } else {
-                                    "scrollbar-thumb"
-                                })
+                                .color("scrollbar-thumb")
                                 .expect("scrollbar Theme ink"),
                         )
                         .with_corner_radius(proposal::SCROLLBAR_WIDTH * 0.5),

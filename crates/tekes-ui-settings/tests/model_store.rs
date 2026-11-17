@@ -205,10 +205,7 @@ fn known_write_failure_is_not_unknown_and_does_not_replace_original() {
 
 #[test]
 fn apphost_general_defaults_only_include_appearance_and_text_zoom() {
-    let s = Schema::parse(include_str!(
-        "../../../examples/app-host-demo/settings.schema.toml"
-    ))
-    .unwrap();
+    let s = Schema::parse(include_str!("fixtures/app-host-demo.settings.schema.toml")).unwrap();
     let draft = Draft::new(Snapshot::default());
     let field = |id: &str| s.settings.iter().find(|f| f.id.ends_with(id)).unwrap();
     assert_eq!(draft.display(field("/appearance")), "system");

@@ -1430,12 +1430,12 @@ pub fn link_role_contract() -> usize {
 
 /// Hidden native-object contract for content accessibility publication, reuse,
 /// `accessibilityParent` nil return, `accessibilityHitTest:` fallback, and `None` release.
-#[cfg(feature = "content-accessibility")]
 pub fn content_accessibility_publication_contract(
-    first: crate::content_accessibility::ContentAccessibilitySnapshot,
-    make_second: impl FnOnce() -> crate::content_accessibility::ContentAccessibilitySnapshot + 'static,
+    first: std::rc::Rc<dyn crate::accessibility::AccessibilityGeometryLease>,
+    make_second: impl FnOnce() -> std::rc::Rc<dyn crate::accessibility::AccessibilityGeometryLease>
+    + 'static,
 ) -> usize {
-    use crate::content_accessibility::ContentAccessibilitySnapshot;
+    use crate::accessibility::AccessibilityGeometryLease;
     use crate::shared::{Objects, Shared};
     use crate::view::TekesView;
     use crate::{
@@ -1460,26 +1460,26 @@ pub fn content_accessibility_publication_contract(
     let checks_cb = checks.clone();
     struct Probe<F>(
         Rc<Cell<usize>>,
-        Option<ContentAccessibilitySnapshot>,
+        Option<Rc<dyn AccessibilityGeometryLease>>,
         Option<F>,
         AccessibilityKey,
     );
-    impl<F: FnOnce() -> ContentAccessibilitySnapshot + 'static> WindowHandler for Probe<F> {
+    impl<F: FnOnce() -> Rc<dyn AccessibilityGeometryLease> + 'static> WindowHandler for Probe<F> {
         fn handle(&mut self, event: Event, window: &mut Window) {
             match event {
                 Event::Created => {
                     let first = self.1.take().unwrap();
-                    assert!(window.set_content_accessibility_snapshot(first));
+                    assert!(window.set_accessibility_geometry_lease(Some(first)));
                     self.0.set(self.0.get() + 1);
                 }
                 Event::Command(crate::CommandId(1)) => {
                     let second = (self.2.take().unwrap())();
                     assert_eq!(second.nodes()[0].key, self.3);
-                    assert!(window.set_content_accessibility_snapshot(second));
+                    assert!(window.set_accessibility_geometry_lease(Some(second)));
                     self.0.set(self.0.get() + 1);
                 }
                 Event::Command(crate::CommandId(2)) => {
-                    assert!(!window.set_content_accessibility_publication(None));
+                    assert!(!window.set_accessibility_geometry_lease(None));
                     window.set_accessibility_nodes(vec![AccessibilityNode {
                         key: AccessibilityKey {
                             component: 77,

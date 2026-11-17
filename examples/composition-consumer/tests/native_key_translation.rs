@@ -1,9 +1,8 @@
 #![cfg(target_os = "macos")]
-#[path = "../../../crates/tekes-ui-gallery/src/reading_key.rs"]
-mod gallery;
 #[path = "../examples/support/native_key.rs"]
 mod independent;
 use tekes_ui_controls::{ControlKey, composition::*};
+use tekes_ui_macos_bridge::content_input::{translate_key, translate_text_key};
 use tekes_ui_platform_macos::{KeyEvent, KeyEventKind, Modifiers, TextKeyContext, TextKeyEvent};
 fn native() -> KeyEvent {
     KeyEvent {
@@ -31,7 +30,7 @@ fn real_host_adapters_preserve_all_modifiers_repeat_up_down_and_unmapped_charact
             n.key_code = code;
             n.characters = "é".into();
             n.characters_ignoring_modifiers = "e".into();
-            for translate in [gallery::key, independent::key] {
+            for translate in [translate_key, independent::key] {
                 let k = translate(n.clone());
                 assert_eq!(k.native_code, code);
                 assert_eq!(k.down, kind == KeyEventKind::Down);
@@ -69,7 +68,7 @@ fn callback_delivery_never_gets_mislabelled_as_opaque_input_consumption() {
         key: native(),
         composing_at_start: true,
     };
-    for translate in [gallery::translate, independent::translate] {
+    for translate in [translate_text_key, independent::translate] {
         let ContentEvent::TextKeyStart { id, key, composing } =
             translate(TextKeyEvent::Started(context.clone()))
         else {

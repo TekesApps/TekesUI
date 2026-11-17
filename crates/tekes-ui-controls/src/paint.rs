@@ -406,11 +406,9 @@ pub fn checkbox(
     } else {
         "surface-2"
     };
-    let border = if state.error {
-        "status-failed"
-    } else {
-        "border"
-    };
+    let boundary = check_surface_colors(theme, "canvas", state, checked)
+        .boundary
+        .expect("checkbox Surface boundary");
     let radius = proposal::metric("radius", "c-checkbox-radius").expect("checkbox radius");
     let ink = color(
         theme,
@@ -427,7 +425,7 @@ pub fn checkbox(
             .with_corner_radius(radius)
             .with_border(
                 proposal::metric("stroke", "stroke-rule").expect("checkbox stroke"),
-                color(theme, border),
+                boundary,
             ),
     );
     if checked == CheckState::Mixed {
@@ -1204,7 +1202,13 @@ mod focus_tests {
                     } else if variant == ButtonVariant::Primary {
                         assert_eq!(q.border_color, q.fill);
                     } else if selected {
-                        assert_eq!(q.border_color, color(theme, "border"));
+                        assert_eq!(
+                            q.border_color,
+                            color(
+                                theme,
+                                proposal::control_boundary("selected", theme).unwrap()
+                            )
+                        );
                     } else {
                         assert_eq!(q.border_width, 0.);
                     }

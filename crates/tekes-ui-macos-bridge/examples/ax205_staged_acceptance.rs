@@ -1,10 +1,10 @@
 //! Opt-in native selector probe. Opens one real window; no physical input or GPU submission.
 //! Run only in an allocated native window. This is not a VoiceOver speech test.
-#[cfg(all(target_os = "macos", feature = "content-accessibility"))]
+#[cfg(target_os = "macos")]
 #[path = "../tests/support/ax_modal_fixture.rs"]
 mod fixture;
 
-#[cfg(all(target_os = "macos", feature = "content-accessibility"))]
+#[cfg(target_os = "macos")]
 mod native {
     use super::fixture::*;
     use objc2::{Message, msg_send, rc::Retained, runtime::AnyObject, sel};
@@ -18,13 +18,16 @@ mod native {
         time::{Duration, Instant},
     };
     use tekes_ui_controls::composition::{ContentHost, DialogContent, SwitchContent};
-    use tekes_ui_platform_macos::{
-        AccessibilityAction, App, AppConfig, Event, MenuBar, Size, Window, WindowConfig,
-        WindowHandler,
+    use tekes_ui_macos_bridge::{
+        WindowContentAccessibilityExt,
         content_accessibility::{
             ContentAccessibilityOwner, ContentAccessibilitySnapshot,
             WindowAccessibilityPublication, content_key,
         },
+    };
+    use tekes_ui_platform_macos::{
+        AccessibilityAction, App, AppConfig, Event, MenuBar, Size, Window, WindowConfig,
+        WindowHandler,
     };
     const TITLE: &str = "AX external notification probe #205";
     const LAYOUT_IDENTIFIER: &str = "TekesUI.AX205.actual-layout-ancestor";
@@ -495,11 +498,11 @@ mod native {
         );
     }
 }
-#[cfg(all(target_os = "macos", feature = "content-accessibility"))]
+#[cfg(target_os = "macos")]
 fn main() {
     native::run();
 }
-#[cfg(not(all(target_os = "macos", feature = "content-accessibility")))]
+#[cfg(not(target_os = "macos"))]
 fn main() {
-    panic!("AX modal lifecycle requires macOS and content-accessibility");
+    panic!("AX modal lifecycle requires macOS");
 }

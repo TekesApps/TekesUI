@@ -656,6 +656,7 @@ impl SymbolAssets {
         });
         Ok(())
     }
+    #[cfg(feature = "selftest")]
     pub fn is_prepared(&self) -> bool {
         self.prepared.is_some()
     }

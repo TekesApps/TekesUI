@@ -9,10 +9,8 @@ use tekes_ui_controls::{
     ButtonTextAlign, ButtonTextRenderer, ControlKey, composition::*, extended::EmptyState,
     feedback_view::EmptyStateView,
 };
-use tekes_ui_platform_macos::{
-    AccessibilityAction as NativeAction,
-    content_accessibility::{content_action, content_key},
-};
+use tekes_ui_macos_bridge::content_accessibility::{content_action, content_key};
+use tekes_ui_platform_macos::AccessibilityAction as NativeAction;
 use tekes_ui_scene::{Point, Primitive, Rect, Scene, Size};
 use tekes_ui_tokens::{
     Palette, Rgba, Theme, proposal,
@@ -670,7 +668,9 @@ fn reorder_and_theme_preserve_an_already_queued_current_action() {
     render(&mut s.host, &mut text, Theme::LIGHT.into());
     let key = content_key(&s.host, ACTION, None).unwrap();
     assert!(content_action(&mut s.host, key, NativeAction::Press).activated);
-    s.host.reorder(ROOT, &[SCROLLER, LATEST, MESSAGE, COMPOSER]).unwrap();
+    s.host
+        .reorder(ROOT, &[SCROLLER, LATEST, MESSAGE, COMPOSER])
+        .unwrap();
     s.host.set_inherited_surface("panel").unwrap();
     render(&mut s.host, &mut text, Theme::DARK.into());
     assert_eq!(content_key(&s.host, ACTION, None), Some(key));

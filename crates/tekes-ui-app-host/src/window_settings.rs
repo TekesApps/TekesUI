@@ -1,5 +1,6 @@
 use super::*;
 use tekes_ui_controls::composition::{Component, ContentResponse, TextKeyDisposition};
+use tekes_ui_macos_bridge::WindowContentAccessibilityExt;
 use tekes_ui_settings::FormIntent;
 /// The ticket and receiver have the same requesting-Host lifetime. The worker
 /// never owns the ticket, so closing that Host releases the owner's load gate.
@@ -11,6 +12,7 @@ pub(super) struct SettingsHostState {
     pub(super) settings: Option<std::rc::Rc<std::cell::RefCell<crate::settings::SettingsSurface>>>,
     pub(super) settings_back: bool,
     pub(super) settings_options: Option<crate::settings::SettingsOptions>,
+    #[cfg(feature = "window-acceptance")]
     pub(super) settings_child: Option<tekes_ui_platform_macos::WindowHandle>,
     pub(super) is_settings_window: bool,
     pub(super) settings_frames: Vec<Rect>,
@@ -26,6 +28,7 @@ impl SettingsHostState {
             settings: None,
             settings_back: false,
             settings_options: None,
+            #[cfg(feature = "window-acceptance")]
             settings_child: None,
             is_settings_window: false,
             settings_frames: Vec::new(),
@@ -446,7 +449,7 @@ impl Host {
         &mut self,
         event: &Event,
         publication: Option<
-            &tekes_ui_platform_macos::content_accessibility::WindowAccessibilityPublication,
+            &tekes_ui_macos_bridge::content_accessibility::WindowAccessibilityPublication,
         >,
     ) -> bool {
         let Some(state) = &self.settings_mgr.settings else {
@@ -543,18 +546,46 @@ impl Host {
                     | tekes_ui_platform_macos::AccessibilityAction::Press,
             } => {
                 let owner = publication.and_then(|p| p.owner(*target));
-                if owner.is_some_and(|owner| owner.0 >= Self::toolbar_accessibility_owner(0) && owner.0 < Self::toolbar_accessibility_owner(self.panel_mgr.panels.len())) {
-                    let opaque = self.toolbar_mgr.toolbar_ax.iter().find(|(key, _, _)| key == target).map(|(_, index, target)| (*index, *target));
+                if owner.is_some_and(|owner| {
+                    owner.0 >= Self::toolbar_accessibility_owner(0)
+                        && owner.0 < Self::toolbar_accessibility_owner(self.panel_mgr.panels.len())
+                }) {
+                    let opaque = self
+                        .toolbar_mgr
+                        .toolbar_ax
+                        .iter()
+                        .find(|(key, _, _)| key == target)
+                        .map(|(_, index, target)| (*index, *target));
                     let index = opaque.map_or(self.toolbar_mgr.toolbar_index, |(index, _)| index);
-                    self.panel_mgr.panels[index].mounted_toolbar.host.semantics().iter().any(|node| node.node.id == Self::toolbar_control(ToolbarTarget::Navigation)
-                        && opaque.is_some_and(|(_, target)| node.target == target || node.parts.iter().any(|(part, _)| *part == target)))
-                } else if self.layout.leading_visible && owner == Some(tekes_ui_platform_macos::content_accessibility::ContentAccessibilityOwner(1)) {
+                    self.panel_mgr.panels[index]
+                        .mounted_toolbar
+                        .host
+                        .semantics()
+                        .iter()
+                        .any(|node| {
+                            node.node.id == Self::toolbar_control(ToolbarTarget::Navigation)
+                                && opaque.is_some_and(|(_, target)| {
+                                    node.target == target
+                                        || node.parts.iter().any(|(part, _)| *part == target)
+                                })
+                        })
+                } else if self.layout.leading_visible
+                    && owner
+                        == Some(
+                            tekes_ui_macos_bridge::content_accessibility::ContentAccessibilityOwner(
+                                1,
+                            ),
+                        )
+                {
                     let state = state.borrow();
-                    back = state.sidebar.host.semantic_mount(ComponentId(4)) == Some(target.component)
+                    back = state.sidebar.host.semantic_mount(ComponentId(4))
+                        == Some(target.component)
                         && state.sidebar.host.get(ComponentId(4)).is_some();
                     back || state.sidebar.host.semantics().iter().any(|node| state.sidebar.host.semantic_mount(node.id) == Some(target.component)
                         && state.sidebar.host.get(node.id).is_some_and(|n| n.component::<tekes_ui_controls::composition::KeyedSelectableListContent>().is_some()))
-                } else { false }
+                } else {
+                    false
+                }
             }
             _ => false,
         };
@@ -656,9 +687,12 @@ impl Host {
                         .map_or(self.theme, |binding| binding.system_theme),
                 )
             });
-        host.diagnostics.acceptance_shared = self.diagnostics.acceptance_shared.clone();
-        if self.diagnostics.acceptance_shared.is_some() {
-            host.settings_mgr.settings_options = self.settings_mgr.settings_options.clone();
+        #[cfg(feature = "window-acceptance")]
+        {
+            host.diagnostics.acceptance_shared = self.diagnostics.acceptance_shared.clone();
+            if self.diagnostics.acceptance_shared.is_some() {
+                host.settings_mgr.settings_options = self.settings_mgr.settings_options.clone();
+            }
         }
         host.layout.leading_visible = true;
         host.layout.trailing_visible = false;
@@ -732,6 +766,7 @@ impl Host {
         owner.0.borrow_mut().child = Some(child.clone());
         // Only the original finite acceptance harness needs a parent-local
         // observation handle; the shared owner is the runtime authority.
+        #[cfg(feature = "window-acceptance")]
         if self.diagnostics.acceptance_shared.is_some() {
             self.settings_mgr.settings_child = Some(child);
         }
@@ -739,6 +774,7 @@ impl Host {
     }
     /// Observe the enabled control on its actual container, authenticated by the
     /// original Settings service contribution rather than the last input route.
+    #[cfg(any(test, feature = "window-acceptance"))]
     fn acceptance_settings_undo_target(&self) -> Option<(usize, Rect)> {
         let original = self
             .settings_mgr
@@ -769,6 +805,7 @@ impl Host {
                     .map(|(_, part)| (index, part.frame))
             })
     }
+    #[cfg(feature = "window-acceptance")]
     pub(super) fn drive_settings_acceptance(&mut self, w: &mut Window) -> Result<()> {
         let Some(shared) = self.diagnostics.acceptance_shared.clone() else {
             return Ok(());
@@ -926,7 +963,7 @@ impl Host {
                     return Ok(());
                 }
                 let owner =
-                    tekes_ui_platform_macos::content_accessibility::ContentAccessibilityOwner(2);
+                    tekes_ui_macos_bridge::content_accessibility::ContentAccessibilityOwner(2);
                 let Some(node) = publication.nodes().iter().find(|n| {
                     n.label == field.label
                         && n.enabled
@@ -1536,16 +1573,25 @@ impl Host {
             }
         }));
         w.set_cursor_regions(cursor_regions);
-        let animate = (self
-            .diagnostics
-            .acceptance_shared
-            .as_ref()
-            .is_some_and(|s| {
-                !matches!(
-                    s.stage(),
-                    window_acceptance::Stage::Done | window_acceptance::Stage::Failed
-                )
-            })
+        let acceptance_animating = {
+            #[cfg(feature = "window-acceptance")]
+            {
+                self.diagnostics
+                    .acceptance_shared
+                    .as_ref()
+                    .is_some_and(|s| {
+                        !matches!(
+                            s.stage(),
+                            window_acceptance::Stage::Done | window_acceptance::Stage::Failed
+                        )
+                    })
+            }
+            #[cfg(not(feature = "window-acceptance"))]
+            {
+                false
+            }
+        };
+        let animate = (acceptance_animating
             || self.layout.sidebar_motion.needs_frame()
             || self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
                 .mounted_toolbar
@@ -2125,7 +2171,7 @@ mod settings_theme_radio_width_tests {
         use crate::settings::{SettingsSurface, SettingsWindow};
         use tekes_ui_controls::composition::ScrollContent;
         use tekes_ui_settings::{Draft, FileProvider, SettingsForm, Snapshot};
-        let definition = include_str!("../../tekes-ui-settings/tests/fixtures/layout.schema.toml");
+        let definition = include_str!("test_fixtures/layout.schema.toml");
         // Only the provider's lock file is created; no settings are loaded/saved.
         let directory = std::env::temp_dir().join(format!(
             "settings-body-contract-{}-{}",
@@ -2238,12 +2284,11 @@ mod settings_theme_radio_width_tests {
 
     #[test]
     fn actual_core_text_theme_words_fit_the_shared_scaled_body() {
-        let schema = tekes_ui_settings::Schema::parse(include_str!(
-            "../../tekes-ui-gallery/src/gallery/apphost.settings.toml"
-        ))
-        .unwrap()
-        .for_item("general/appearance")
-        .unwrap();
+        let schema =
+            tekes_ui_settings::Schema::parse(include_str!("test_fixtures/apphost.settings.toml"))
+                .unwrap()
+                .for_item("general/appearance")
+                .unwrap();
         let field = schema
             .settings
             .iter()
@@ -2362,7 +2407,7 @@ mod pinned_header_tests {
     #[test]
     fn header_search_expands_in_place_and_keeps_original_editor_with_scrolling_list() {
         let schema = tekes_ui_settings::Schema::parse(include_str!(
-            "../../../examples/app-host-demo/settings.schema.toml"
+            "test_fixtures/app-host-demo.settings.schema.toml"
         ))
         .unwrap();
         let mut sidebar = tekes_ui_settings::SettingsSidebar::new_with_back(&schema).unwrap();
@@ -2491,10 +2536,9 @@ mod pinned_header_tests {
 
     #[test]
     fn search_matches_field_routes_and_escape_restores_rows_without_losing_selection() {
-        let schema = tekes_ui_settings::Schema::parse(include_str!(
-            "../../tekes-ui-settings/tests/fixtures/layout.schema.toml"
-        ))
-        .unwrap();
+        let schema =
+            tekes_ui_settings::Schema::parse(include_str!("test_fixtures/layout.schema.toml"))
+                .unwrap();
         let mut sidebar = tekes_ui_settings::SettingsSidebar::new_with_back(&schema).unwrap();
         sidebar.set_back_template_icon("tekes-back").unwrap();
         sidebar.select("reading/text");
@@ -2702,10 +2746,9 @@ mod pinned_header_tests {
 
     #[test]
     fn nonempty_search_blur_preserves_result_action_selection_and_focus() {
-        let schema = tekes_ui_settings::Schema::parse(include_str!(
-            "../../tekes-ui-settings/tests/fixtures/layout.schema.toml"
-        ))
-        .unwrap();
+        let schema =
+            tekes_ui_settings::Schema::parse(include_str!("test_fixtures/layout.schema.toml"))
+                .unwrap();
         let mut sidebar = tekes_ui_settings::SettingsSidebar::new_with_back(&schema).unwrap();
         sidebar.select("reading/text");
         let mut text = crate::text::Text::new();
@@ -2774,10 +2817,9 @@ mod pinned_header_tests {
 
     #[test]
     fn group_headers_match_gallery_caption_and_spacing_hierarchy() {
-        let schema = tekes_ui_settings::Schema::parse(include_str!(
-            "../../tekes-ui-settings/tests/fixtures/layout.schema.toml"
-        ))
-        .unwrap();
+        let schema =
+            tekes_ui_settings::Schema::parse(include_str!("test_fixtures/layout.schema.toml"))
+                .unwrap();
         let mut sidebar = tekes_ui_settings::SettingsSidebar::new(&schema).unwrap();
         sidebar
             .render(
@@ -2827,9 +2869,8 @@ mod navigation_input_tests {
         AccessibilityAction as ContentAction, ToolbarButtonDeclaration, ToolbarGroupOverflow,
         ToolbarPlacement, ToolbarRegion,
     };
-    use tekes_ui_platform_macos::{
-        AccessibilityAction, Modifiers, content_accessibility::ContentAccessibilityOwner,
-    };
+    use tekes_ui_macos_bridge::content_accessibility::ContentAccessibilityOwner;
+    use tekes_ui_platform_macos::{AccessibilityAction, Modifiers};
     use tekes_ui_settings::{FileProvider, Snapshot};
     fn fixture(marked: bool) -> (Host, std::path::PathBuf) {
         fixture_mode(marked, SettingsDisplayMode::Independent)
@@ -2847,7 +2888,7 @@ mod navigation_input_tests {
                     .as_nanos()
             ))
             .join("settings.toml");
-        let schema=include_str!("../../tekes-ui-settings/tests/fixtures/layout.schema.toml").replace("min = 10\nmax = 32","min = 10\nmax = 32\nstep = 1")
+        let schema=include_str!("test_fixtures/layout.schema.toml").replace("min = 10\nmax = 32","min = 10\nmax = 32\nstep = 1")
             .replace("[[groups.items]]\nid = \"advanced\"", "[[groups.items.fields]]\nid = \"extra-number\"\npath = [\"reading\", \"extra_number\"]\nlabel = \"Extra number\"\ntype = \"integer\"\ndefault = 14\nmin = 10\nmax = 32\nstep = 1\n\n[[groups.items]]\nid = \"advanced\"");
         let options = SettingsWindow::from_toml(&schema, path.clone())
             .unwrap()
@@ -3688,7 +3729,7 @@ mod cold_settings_host_tests {
                 ))
                 .join("settings.toml");
             let options = SettingsWindow::from_toml(
-                include_str!("../../tekes-ui-settings/tests/fixtures/layout.schema.toml"),
+                include_str!("test_fixtures/layout.schema.toml"),
                 path.clone(),
             )
             .unwrap()
@@ -3812,7 +3853,7 @@ mod display_preferences_tests {
             .join("settings.toml");
         let owner = SettingsOwner::new(
             SettingsWindow::from_toml(
-                include_str!("../../tekes-ui-gallery/src/gallery/apphost.settings.toml"),
+                include_str!("test_fixtures/apphost.settings.toml"),
                 path.clone(),
             )
             .unwrap(),
@@ -4042,7 +4083,7 @@ mod display_preferences_tests {
             ))
             .join("settings.toml");
         let options = SettingsWindow::from_toml(
-            include_str!("../../tekes-ui-gallery/src/gallery/apphost.settings.toml"),
+            include_str!("test_fixtures/apphost.settings.toml"),
             path.clone(),
         )
         .unwrap();
@@ -4150,9 +4191,7 @@ mod form_keyboard_owner_tests {
     }
 
     fn fixture() -> (Host, Rc<RefCell<SettingsSurface>>, std::path::PathBuf) {
-        fixture_source(include_str!(
-            "../../tekes-ui-gallery/src/gallery/apphost.settings.toml"
-        ))
+        fixture_source(include_str!("test_fixtures/apphost.settings.toml"))
     }
     fn fixture_source(source: &str) -> (Host, Rc<RefCell<SettingsSurface>>, std::path::PathBuf) {
         static NEXT_FIXTURE: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
@@ -4262,9 +4301,8 @@ mod form_keyboard_owner_tests {
 
     #[test]
     fn search_blur_to_original_form_keeps_clicked_editor_and_draft() {
-        let (mut host, surface, path) = fixture_source(include_str!(
-            "../../tekes-ui-settings/tests/fixtures/layout.schema.toml"
-        ));
+        let (mut host, surface, path) =
+            fixture_source(include_str!("test_fixtures/layout.schema.toml"));
         // Independent fixture supplies the real mounted form; install the
         // Exclusive header declaration used by this interaction.
         {
@@ -4852,7 +4890,7 @@ mod form_keyboard_owner_tests {
     }
     #[test]
     fn default_enum_menu_tab_stays_in_the_form_scope() {
-        let source = include_str!("../../tekes-ui-gallery/src/gallery/apphost.settings.toml")
+        let source = include_str!("test_fixtures/apphost.settings.toml")
             .replace("presentation = \"radio\"\n", "");
         let (mut host, surface, path) = fixture_source(&source);
         for _ in 0..3 {

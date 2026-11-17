@@ -12,10 +12,10 @@ use tekes_ui_platform_macos::{
     CommandId, KeyEquivalent, Menu, MenuBar, MenuCommand, MenuItem, Modifiers,
 };
 
+use super::brands::{gallery_brand_preset, gallery_brand_presets};
 use super::locale::Locale;
 use super::pages::Page;
 use super::theme::{AppearanceChoice, ContrastChoice};
-use tekes_ui_tokens::palette::gallery_brand_presets;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Command {
@@ -108,7 +108,7 @@ impl Command {
             Command::TextScale(v) => ["Text: 100%", "Text: 125%", "Text: 150%"][v].into(),
             Command::Brand(v) => format!(
                 "Brand: {}",
-                tekes_ui_tokens::palette::gallery_brand_preset(v)
+                gallery_brand_preset(v)
                     .map(|preset| preset.name)
                     .unwrap_or("unknown")
             ),
@@ -270,7 +270,7 @@ mod tests {
         let want: Vec<_> = Command::all().iter().map(|c| c.id()).collect();
         assert_eq!(ids, want);
         assert_eq!(
-            tekes_ui_tokens::palette::gallery_brand_presets()
+            gallery_brand_presets()
                 .iter()
                 .map(|preset| Command::Brand(preset.palette_index))
                 .collect::<Vec<_>>(),

@@ -131,7 +131,7 @@ impl MasterHost {
                 ctx.text,
                 frame,
                 clip,
-                tekes_ui_tokens::Palette::new(ctx.theme, brand).expect("Gallery brand"),
+                crate::gallery::brands::brand_palette(ctx.theme, brand).expect("Gallery brand"),
             )
             .expect("master List layout");
     }

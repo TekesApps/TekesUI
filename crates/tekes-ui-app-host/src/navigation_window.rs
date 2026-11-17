@@ -275,7 +275,7 @@ impl WindowNavigation {
                     .context("commit without pending execution")?;
                 self.host.committed(&tx, &history)?;
                 self.busy = false;
-                eprintln!(
+                host_diag!(
                     "NAV_COMMITTED revision={} entry={:?} order={:?}",
                     history.revision,
                     history.current().map(|e| &e.id),

@@ -550,17 +550,40 @@ fn one_original_tree_keeps_composer_and_reading_owners_through_streaming_and_rev
 
 #[test]
 fn legacy_rect_native_adapter_refuses_actual_curve_authority() {
-    use tekes_ui_platform_macos::content_accessibility::{content_action, content_key, content_nodes};
+    use tekes_ui_macos_bridge::content_accessibility::{
+        content_action, content_key, content_nodes,
+    };
     let root = ComponentId(8490);
     let child = ComponentId(8491);
     let content = panel(Content::new(child, Button::new("Curve action")), false);
     let mut host = ContentHost::new(Content::new(root, content)).unwrap();
-    render(&mut host, &mut Text::new(true), Rect::new(0., 0., 240., 180.));
+    render(
+        &mut host,
+        &mut Text::new(true),
+        Rect::new(0., 0., 240., 180.),
+    );
     let key = content_key(&host, child, None).unwrap();
     assert!(host.requires_curve_geometry());
-    assert!(!host.semantics().is_empty(), "real current Content tree remains available");
-    assert!(content_nodes(&host).is_empty(), "legacy Rect publication cannot grant curve point authority");
-    let response = content_action(&mut host, key, tekes_ui_platform_macos::AccessibilityAction::Press);
+    assert!(
+        !host.semantics().is_empty(),
+        "real current Content tree remains available"
+    );
+    assert!(
+        content_nodes(&host).is_empty(),
+        "legacy Rect publication cannot grant curve point authority"
+    );
+    let response = content_action(
+        &mut host,
+        key,
+        tekes_ui_platform_macos::AccessibilityAction::Press,
+    );
     assert!(!response.consumed && !response.activated);
-    assert_eq!(host.get(child).unwrap().component::<Button>().unwrap().activations, 0);
+    assert_eq!(
+        host.get(child)
+            .unwrap()
+            .component::<Button>()
+            .unwrap()
+            .activations,
+        0
+    );
 }

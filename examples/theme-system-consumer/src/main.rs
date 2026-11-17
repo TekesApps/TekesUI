@@ -1,12 +1,12 @@
 //! Independent consumer of the public Theme/Surface API; no copied engine.
-pub use tekes_ui_tokens::{Palette, Rgba};
-use tekes_ui_tokens::surface_palette;
-use tekes_ui_design_export::theme_system;
 use surface_palette::{
-    SurfaceError, SurfaceOptions, canonical_surface, resolve_surface, resolve_surface_with_options,
-    surface_names, resolve_toggle_surface, resolve_range_surface,
+    SurfaceError, SurfaceOptions, canonical_surface, resolve_range_surface, resolve_surface,
+    resolve_surface_with_options, resolve_toggle_surface, surface_names,
 };
+use tekes_ui_design_export::theme_system;
 use tekes_ui_tokens::Theme;
+use tekes_ui_tokens::surface_palette;
+pub use tekes_ui_tokens::{Palette, Rgba};
 fn main() {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let tokens =
@@ -18,18 +18,33 @@ fn main() {
         let default = Palette::for_theme_definition(mode, "default").unwrap();
         let blue = Palette::for_theme_definition(mode, "blue").unwrap();
         let clay = Palette::for_theme_definition(mode, "clay").unwrap();
-        assert!(matches!(blue.source(), tekes_ui_tokens::PaletteSource::ThemeDefinition { .. }));
+        assert!(matches!(
+            blue.source(),
+            tekes_ui_tokens::PaletteSource::ThemeDefinition { .. }
+        ));
         assert_ne!(blue.source(), clay.source());
         assert_eq!(blue.brand_index(), None);
-        assert_ne!(blue.color("action-primary-ground"), clay.color("action-primary-ground"));
+        assert_ne!(
+            blue.color("action-primary-ground"),
+            clay.color("action-primary-ground")
+        );
         for role in ["primary-text", "secondary-text", "border-focused"] {
             assert_eq!(blue.color(role), clay.color(role));
             assert_eq!(default.color(role), Palette::from(mode).color(role));
         }
         for selected in [blue, clay] {
             let packet = resolve_surface(selected, "canvas", "action-primary", "rest").unwrap();
-            assert_eq!(Some(packet.background), selected.color("action-primary-ground"));
-            assert_eq!(packet.background.a, Palette::from(mode).color("action-primary-ground").unwrap().a);
+            assert_eq!(
+                Some(packet.background),
+                selected.color("action-primary-ground")
+            );
+            assert_eq!(
+                packet.background.a,
+                Palette::from(mode)
+                    .color("action-primary-ground")
+                    .unwrap()
+                    .a
+            );
         }
     }
     assert_eq!(surface_names().len(), 7);
@@ -43,17 +58,22 @@ fn main() {
     let rules: serde_json::Value =
         serde_json::from_slice(&std::fs::read(root.join("design/theme/rules.json")).unwrap())
             .unwrap();
-    let instances: serde_json::Value = serde_json::from_slice(&std::fs::read(root.join("design/theme/generated/instances.json")).unwrap()).unwrap();
+    let instances: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(root.join("design/theme/generated/instances.json")).unwrap(),
+    )
+    .unwrap();
     for theme in Theme::ALL {
-        for preset in tekes_ui_tokens::palette::gallery_brand_presets() {
-            let palette = Palette::new(theme, preset.palette_index).unwrap();
+        for id in ["default", "blue", "clay", "blue-inputs"] {
+            let palette = Palette::for_theme_definition(theme, id).unwrap();
             for (surface, definition) in rules["surfaces"].as_object().unwrap() {
                 for usage in definition["usages"].as_object().unwrap().keys() {
                     // Generated instances were verified against the same rules above.
                     // Enumerate their states instead of assuming every new purpose
                     // supports the action/selection state vocabulary.
                     let states = instances["instances"][0]["modes"]["light"][surface][usage]
-                        .as_object().unwrap().keys();
+                        .as_object()
+                        .unwrap()
+                        .keys();
                     for state in states {
                         let colors = resolve_surface(palette, surface, usage, state).unwrap();
                         assert!(
@@ -87,18 +107,41 @@ fn main() {
                     resolve_surface_with_options(palette, surface, "content", "rest", options),
                     Err(SurfaceError::UnknownCombination)
                 );
-                let toggle = resolve_toggle_surface(palette, surface, "selected-hover", SurfaceOptions { error: true, read_only: false }).unwrap();
+                let toggle = resolve_toggle_surface(
+                    palette,
+                    surface,
+                    "selected-hover",
+                    SurfaceOptions {
+                        error: true,
+                        read_only: false,
+                    },
+                )
+                .unwrap();
                 assert_eq!(toggle.track.boundary, palette.color("status-failed"));
                 assert_eq!(toggle.thumb.boundary, palette.color("border"));
                 assert_eq!(toggle.label.text, palette.color("primary-text").unwrap());
-                for state in ["rest","hover","pressed","disabled"] {
-                    let range = resolve_range_surface(palette,surface,state).unwrap();
-                    assert_eq!(range.track,resolve_surface(palette,surface,"range-track",state).unwrap());
-                    assert_eq!(range.thumb,resolve_surface(palette,surface,"range-thumb",state).unwrap());
-                    assert_eq!(range.label,resolve_surface(palette,surface,"control-label",state).unwrap());
-                    if state == "disabled" {assert!(range.thumb.focus.is_none());}
+                for state in ["rest", "hover", "pressed", "disabled"] {
+                    let range = resolve_range_surface(palette, surface, state).unwrap();
+                    assert_eq!(
+                        range.track,
+                        resolve_surface(palette, surface, "range-track", state).unwrap()
+                    );
+                    assert_eq!(
+                        range.thumb,
+                        resolve_surface(palette, surface, "range-thumb", state).unwrap()
+                    );
+                    assert_eq!(
+                        range.label,
+                        resolve_surface(palette, surface, "control-label", state).unwrap()
+                    );
+                    if state == "disabled" {
+                        assert!(range.thumb.focus.is_none());
+                    }
                 }
-                assert_eq!(resolve_range_surface(palette,surface,"selected"),Err(SurfaceError::UnknownCombination));
+                assert_eq!(
+                    resolve_range_surface(palette, surface, "selected"),
+                    Err(SurfaceError::UnknownCombination)
+                );
                 let mark = resolve_surface(palette, surface, "check-checked", "hover").unwrap();
                 assert_eq!(mark.marker, palette.color("control-checked-mark"));
                 let label = resolve_surface(palette, surface, "content", "rest").unwrap();

@@ -597,10 +597,14 @@ impl Component for RichContent {
             } else {
                 t.measure(&sample, caption, f32::MAX).width
             };
-            let secondary_ink = theme
-                .palette
-                .color("secondary-text")
-                .expect("semantic secondary text");
+            let secondary_ink = tekes_ui_tokens::surface_palette::resolve_surface(
+                theme.palette,
+                "code",
+                "action-quiet",
+                "disabled",
+            )
+            .expect("code gutter Surface ink")
+            .text;
             let mut number = 1;
             for block in self.document.blocks() {
                 if !matches!(block.kind, RichBlockKind::Code | RichBlockKind::Diff { .. }) {
@@ -1301,7 +1305,16 @@ mod tests {
             .filter(|(_, _, clip, glyphs)| *glyphs > 0 && clip.size.width < 100.)
             .collect();
         assert!(!caption_draws.is_empty());
-        for (_, _, clip, _) in caption_draws {
+        let expected_gutter_ink = tekes_ui_tokens::surface_palette::resolve_surface(
+            Palette::from(Theme::LIGHT),
+            "code",
+            "action-quiet",
+            "disabled",
+        )
+        .unwrap()
+        .text;
+        for (_, color, clip, _) in caption_draws {
+            assert_eq!(*color, expected_gutter_ink);
             assert!(
                 clip.min_y() >= frame.min_y() && clip.max_y() <= frame.max_y(),
                 "line number clip {clip:?} escaped RichContent frame {frame:?}"

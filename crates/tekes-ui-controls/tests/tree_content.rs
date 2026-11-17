@@ -393,7 +393,7 @@ fn stale_pointer_up_cannot_activate_another_entity() {
     assert!(h.drain_action_records().is_empty());
 }
 #[cfg(target_os = "macos")]
-#[path = "../../../examples/composition-consumer/tests/support/coretext.rs"]
+#[path = "support/coretext.rs"]
 mod coretext;
 #[cfg(target_os = "macos")]
 #[test]

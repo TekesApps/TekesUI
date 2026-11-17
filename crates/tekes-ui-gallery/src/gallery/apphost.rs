@@ -203,11 +203,46 @@ fn request_navigation(
             .is_some_and(|surface| surface.input.marked.is_some())
         {
             update_navigation(host, documents);
-            eprintln!("GALLERY_APPHOST_NAV_REJECTED composition-in-progress");
+            if diag_enabled() {
+                eprintln!("GALLERY_APPHOST_NAV_REJECTED composition-in-progress");
+            }
             continue;
         }
         pending.borrow_mut().push_back(entry(selected));
-        eprintln!("GALLERY_APPHOST_NAV_REQUEST selected={}", selected);
+        if diag_enabled() {
+            eprintln!("GALLERY_APPHOST_NAV_REQUEST selected={}", selected);
+        }
+    }
+}
+fn diag_enabled() -> bool {
+    static ENABLED: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *ENABLED.get_or_init(|| {
+        std::env::var_os("TEKESUI_GALLERY_DIAGNOSTICS").is_some_and(|v| v == "1")
+            || std::env::var_os("TEKESUI_APPHOST_DIAGNOSTICS").is_some_and(|v| v == "1")
+    })
+}
+/// RAII guard for per-session temporary Gallery AppHost/workbench directories.
+#[derive(Debug)]
+pub(crate) struct SessionTempDir {
+    path: std::path::PathBuf,
+}
+impl SessionTempDir {
+    pub(crate) fn new(path: std::path::PathBuf) -> Self {
+        Self { path }
+    }
+    #[cfg(test)]
+    pub(crate) fn create(path: std::path::PathBuf) -> anyhow::Result<Self> {
+        std::fs::create_dir_all(&path)?;
+        Ok(Self::new(path))
+    }
+    #[cfg(test)]
+    pub(crate) fn path(&self) -> &std::path::Path {
+        &self.path
+    }
+}
+impl Drop for SessionTempDir {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.path);
     }
 }
 fn data_root() -> anyhow::Result<std::path::PathBuf> {
@@ -239,7 +274,7 @@ fn settings_owner_in(root: std::path::PathBuf) -> anyhow::Result<SettingsOwner> 
         "general/appearance/text-size",
     )
 }
-fn history_options() -> anyhow::Result<NavigationOptions> {
+fn history_options() -> anyhow::Result<(NavigationOptions, SessionTempDir)> {
     static NEXT: AtomicU64 = AtomicU64::new(1);
     let root = data_root()?;
     let history_id = format!(
@@ -247,21 +282,25 @@ fn history_options() -> anyhow::Result<NavigationOptions> {
         std::process::id(),
         NEXT.fetch_add(1, Ordering::Relaxed)
     );
-    Ok(NavigationOptions {
-        directory: root.join(&history_id),
-        history_id,
-        initial_entries: vec![entry(0)],
-        view_command: Some(|entry| {
-            anyhow::ensure!(entry.route == "gallery-document", "unknown Gallery route");
-            let index = entry
-                .params
-                .get("index")
-                .and_then(serde_json::Value::as_u64)
-                .filter(|index| *index < 4)
-                .ok_or_else(|| anyhow::anyhow!("unknown Gallery document"))?;
-            Ok(DOCUMENT_COMMAND + index)
-        }),
-    })
+    let directory = root.join(&history_id);
+    Ok((
+        NavigationOptions {
+            directory: directory.clone(),
+            history_id,
+            initial_entries: vec![entry(0)],
+            view_command: Some(|entry| {
+                anyhow::ensure!(entry.route == "gallery-document", "unknown Gallery route");
+                let index = entry
+                    .params
+                    .get("index")
+                    .and_then(serde_json::Value::as_u64)
+                    .filter(|index| *index < 4)
+                    .ok_or_else(|| anyhow::anyhow!("unknown Gallery document"))?;
+                Ok(DOCUMENT_COMMAND + index)
+            }),
+        },
+        SessionTempDir::new(directory),
+    ))
 }
 fn text(id: u64, value: impl Into<String>, role: TextRole) -> Content {
     let mut text = TextContent::new(value);
@@ -508,7 +547,7 @@ fn confirm_inspector_disclosures(host: &mut ContentHost, records: &[ContentActio
     }
     property_change
 }
-fn assemble(theme: Theme, settings: SettingsOwner) -> anyhow::Result<AppWindow> {
+fn assemble(theme: Theme, settings: SettingsOwner) -> anyhow::Result<(AppWindow, SessionTempDir)> {
     let documents = Rc::new(RefCell::new(documents()));
     let document = Rc::new(RefCell::new(
         ContentHost::new(document_content(&documents.borrow().items[0]))
@@ -671,10 +710,12 @@ fn assemble(theme: Theme, settings: SettingsOwner) -> anyhow::Result<AppWindow> 
             update_document(&mut inspector_document.borrow_mut(), item);
             let description = summary(item);
             update_navigation(&mut inspector_navigation.borrow_mut(), &state);
-            eprintln!(
-                "GALLERY_APPHOST_PROPERTY selected={selected} summary={}",
-                description
-            );
+            if diag_enabled() {
+                eprintln!(
+                    "GALLERY_APPHOST_PROPERTY selected={selected} summary={}",
+                    description
+                );
+            }
         });
     let focus = LocalContainer::from_source("gallery-focus", SharedContent(document))
         .title("Document")
@@ -697,10 +738,12 @@ fn assemble(theme: Theme, settings: SettingsOwner) -> anyhow::Result<AppWindow> 
             update_document(host, &state.items[index]);
             update_inspector(&mut focus_inspector.borrow_mut(), &state.items[index]);
             update_navigation(&mut focus_navigation.borrow_mut(), &state);
-            eprintln!(
-                "GALLERY_APPHOST_DOCUMENT selected={index} title={}",
-                state.items[index].title
-            );
+            if diag_enabled() {
+                eprintln!(
+                    "GALLERY_APPHOST_DOCUMENT selected={index} title={}",
+                    state.items[index].title
+                );
+            }
             Ok(())
         });
     let reading = LocalContainer::new("gallery-list", scroll(6000, stack(6001, vec![text(6002, "Reading notes", TextRole::UiHeading), field(ComponentId(6003), "Notes", "Keep a short note beside the current document."), text(6004, "Capture a question, an idea or a useful reference before the next meeting.", TextRole::UiBody)])))?.title("Notes").toolbar_host(ContainerToolbarHost::Container { position: ContainerToolbarPosition::Leading }).switcher_icon("tekes-note")
@@ -741,7 +784,8 @@ fn assemble(theme: Theme, settings: SettingsOwner) -> anyhow::Result<AppWindow> 
             )]),
         );
     presentation.focus_fraction = 0.5;
-    Ok(AppWindow::from_containers(
+    let (nav_options, session_dir) = history_options()?;
+    let app = AppWindow::from_containers(
         vec![
             nav.into(),
             focus.into(),
@@ -801,42 +845,48 @@ fn assemble(theme: Theme, settings: SettingsOwner) -> anyhow::Result<AppWindow> 
         .switcher_icon("tekes-file-text"),
     ])?
     .theme(theme)
-    .navigation(history_options()?)
-    .shared_settings(settings))
+    .navigation(nav_options)
+    .shared_settings(settings);
+    Ok((app, session_dir))
 }
 pub(super) fn open_request(
     theme: Theme,
     settings: SettingsOwner,
-) -> anyhow::Result<tekes_ui_app_host::WindowOpenRequest> {
-    Ok(tekes_ui_app_host::WindowOpenRequest {
-        app: assemble(theme, settings)?,
-        config: WindowConfig {
-            title: "TekesUI AppHost".into(),
-            unified_titlebar: true,
-            placement: tekes_ui_platform_macos::WindowPlacement::Auto {
-                need_120hz: false,
-                size_check: true,
+) -> anyhow::Result<(tekes_ui_app_host::WindowOpenRequest, SessionTempDir)> {
+    let (app, session_dir) = assemble(theme, settings)?;
+    Ok((
+        tekes_ui_app_host::WindowOpenRequest {
+            app,
+            config: WindowConfig {
+                title: "TekesUI AppHost".into(),
+                unified_titlebar: true,
+                placement: tekes_ui_platform_macos::WindowPlacement::Auto {
+                    need_120hz: false,
+                    size_check: true,
+                },
+                size: WindowSize {
+                    width: 1100.,
+                    height: 640.,
+                },
+                min_size: Some(WindowSize {
+                    width: 600.,
+                    height: 320.,
+                }),
+                ..Default::default()
             },
-            size: WindowSize {
-                width: 1100.,
-                height: 640.,
-            },
-            min_size: Some(WindowSize {
-                width: 600.,
-                height: 320.,
-            }),
-            ..Default::default()
         },
-    })
+        session_dir,
+    ))
 }
 
-pub fn open(
+pub(crate) fn open(
     parent: &Window,
     theme: Theme,
     settings: SettingsOwner,
-) -> anyhow::Result<WindowHandle> {
-    let request = open_request(theme, settings)?;
-    request.app.open(parent, request.config)
+) -> anyhow::Result<(WindowHandle, SessionTempDir)> {
+    let (request, session_dir) = open_request(theme, settings)?;
+    let handle = request.app.open(parent, request.config)?;
+    Ok((handle, session_dir))
 }
 
 #[cfg(test)]
@@ -857,11 +907,20 @@ mod tests {
         // Same production helper, including actual TOML, storage suffix and
         // canonical display binding; no environment or user preference changes.
         let owner = settings_owner_in(root.clone()).unwrap();
-        let first = assemble(Theme::LIGHT, owner.clone()).unwrap();
-        let second = assemble(Theme::DARK, owner.clone()).unwrap();
+        let (first, first_dir) = assemble(Theme::LIGHT, owner.clone()).unwrap();
+        let (second, second_dir) = assemble(Theme::DARK, owner.clone()).unwrap();
         assert!(root.join("settings/general/settings.toml.lock").is_file());
+        let first_path = first_dir.path().to_path_buf();
+        let second_path = second_dir.path().to_path_buf();
+        std::fs::create_dir_all(&first_path).unwrap();
+        std::fs::write(first_path.join("sentinel.txt"), b"ok").unwrap();
+        std::fs::create_dir_all(&second_path).unwrap();
         drop(first);
         drop(second);
+        drop(first_dir);
+        drop(second_dir);
+        assert!(!first_path.exists());
+        assert!(!second_path.exists());
         drop(owner);
         std::fs::remove_dir_all(root).unwrap();
     }
@@ -1111,7 +1170,7 @@ mod tests {
             visits[0].id, visits[2].id,
             "History requires unique visit ids for 0 -> 1 -> 0"
         );
-        let route = history_options().unwrap().view_command.unwrap();
+        let route = history_options().unwrap().0.view_command.unwrap();
         // Stored entries are reused by Back/Forward, so route identity must stay
         // in the document parameters independently of the visit identity.
         for position in [0, 1, 2, 1, 0, 1, 2] {
@@ -1182,7 +1241,7 @@ mod tests {
                 history.iter().all(|old| old.id != request.id),
                 "revisiting a document needs a distinct history entry id"
             );
-            let command = (history_options().unwrap().view_command.unwrap())(&request).unwrap();
+            let command = (history_options().unwrap().0.view_command.unwrap())(&request).unwrap();
             state.selected = (command - DOCUMENT_COMMAND) as usize;
             update_document(&mut document, &state.items[state.selected]);
             update_inspector(&mut inspector.borrow_mut(), &state.items[state.selected]);
@@ -1330,7 +1389,7 @@ mod tests {
         assert_eq!(source.take_navigation_request().unwrap().params["index"], 1);
         assert_eq!(source.take_navigation_request().unwrap().params["index"], 2);
         assert!(source.take_navigation_request().is_none());
-        let options = history_options().unwrap();
+        let (options, _dir_guard) = history_options().unwrap();
         for index in 0..state.items.len() {
             assert_eq!(
                 (options.view_command.unwrap())(&entry(index)).unwrap(),
@@ -1361,5 +1420,26 @@ mod tests {
             pending.borrow().is_empty(),
             "publication updates selection/content without another Push"
         );
+    }
+
+    #[test]
+    fn session_temp_dir_creates_and_cleans_up_on_drop() {
+        let dir = std::env::temp_dir().join(format!(
+            "gallery-session-raii-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let marker = dir.join("history.sqlite");
+        {
+            let guard = SessionTempDir::create(dir.clone()).unwrap();
+            assert_eq!(guard.path(), dir.as_path());
+            assert!(dir.is_dir());
+            std::fs::write(&marker, b"test").unwrap();
+            assert!(marker.is_file());
+        }
+        assert!(!dir.exists());
     }
 }

@@ -14,6 +14,7 @@ use tekes_ui_controls::{
     extended::{Axis, SplitView},
     layout_view::SplitViewView,
 };
+use tekes_ui_macos_bridge::WindowContentAccessibilityExt;
 use tekes_ui_platform_macos::{
     App, AppConfig, Event, KeyEvent, KeyEventKind, MenuBar, MouseButton, MouseEvent,
     MouseEventKind, Size as WindowSize, Window, WindowConfig, WindowHandler, WindowWake,
@@ -24,6 +25,7 @@ use tekes_ui_scene::{ImageId, ImageQuad, Point, Quad, Rect, Scene};
 use tekes_ui_tokens::Rgba;
 use tekes_ui_tokens::{Palette, Theme};
 const MIN_COLUMN: f32 = 120.;
+#[cfg(feature = "window-acceptance")]
 #[path = "window_acceptance.rs"]
 mod window_acceptance;
 #[path = "window_accessibility.rs"]
@@ -314,23 +316,33 @@ struct HostDiagnostics {
     draw_diagnostic: bool,
     diagnostic_event: u64,
     diagnostic_draw: u64,
+    #[cfg(feature = "window-acceptance")]
     acceptance: bool,
+    #[cfg(feature = "window-acceptance")]
     acceptance_shared: Option<window_acceptance::Shared>,
+    #[cfg(feature = "window-acceptance")]
     presentation_acceptance: Option<window_acceptance::PresentationAcceptance>,
+    #[cfg(feature = "window-acceptance")]
     acceptance_draws: u64,
+    #[cfg(feature = "window-acceptance")]
     step: u32,
 }
 
 impl HostDiagnostics {
-    fn new(acceptance: bool) -> Self {
+    fn new(_acceptance: bool) -> Self {
         Self {
             draw_diagnostic: std::env::var("TEKESUI_APPHOST_DRAW_DIAGNOSTIC").as_deref() == Ok("1"),
             diagnostic_event: 0,
             diagnostic_draw: 0,
-            acceptance,
+            #[cfg(feature = "window-acceptance")]
+            acceptance: _acceptance,
+            #[cfg(feature = "window-acceptance")]
             acceptance_shared: None,
+            #[cfg(feature = "window-acceptance")]
             presentation_acceptance: None,
+            #[cfg(feature = "window-acceptance")]
             acceptance_draws: 0,
+            #[cfg(feature = "window-acceptance")]
             step: 0,
         }
     }
@@ -411,12 +423,10 @@ impl Host {
         self
     }
     fn palette(&self) -> Palette {
-        let mut palette = self
-            .palette_source
-            .as_ref()
-            .map_or_else(|| self.theme.into(), |source| source.get());
-        palette.theme = self.theme;
-        palette
+        self.palette_source.as_ref().map_or_else(
+            || self.theme.into(),
+            |source| source.get().with_theme(self.theme),
+        )
     }
     pub(crate) fn new(
         module_ids: Vec<String>,
@@ -647,7 +657,7 @@ impl Host {
             if let Err(error) = nav.poll() {
                 nav.error = Some(error.to_string());
                 nav.host.input_open = false;
-                eprintln!("NAV_ERROR {error:#}");
+                host_diag!("NAV_ERROR {error:#}");
                 w.set_title(&format!("Navigation: {error}"));
             }
             if let Some(entry) = take_local_navigation_request(
@@ -740,7 +750,7 @@ impl Host {
             && self.layout.native_toolbar_geometry != Some(native_geometry)
         {
             self.layout.native_toolbar_geometry = Some(native_geometry);
-            eprintln!(
+            host_diag!(
                 "APPHOST_TOOLBAR_GEOMETRY native_height={} row_y={} paint_height={} allocation={} content_boundary={}",
                 native_geometry.0,
                 native_geometry.1,
@@ -826,13 +836,17 @@ impl Host {
                 p.frame_viewport = f.viewport;
                 p.frame_seq = f.seq;
                 p.pid = Some(f.pid);
-                if serde_json::to_value(&p.toolbar)? != serde_json::to_value(&f.toolbar)? {
+                if p.toolbar != f.toolbar {
                     p.toolbar_generation += 1;
                 }
                 p.toolbar = f.toolbar;
-                eprintln!(
+                host_diag!(
                     "FRAME panel={} pid={} seq={} viewport={} revision={}",
-                    p.id, f.pid, f.seq, f.viewport, f.revision
+                    p.id,
+                    f.pid,
+                    f.seq,
+                    f.viewport,
+                    f.revision
                 );
             }
         }
@@ -1153,6 +1167,7 @@ impl Host {
         self.layout.presentation_scroll_pending = false;
         let renderer_return = diagnostic.map(|_| std::time::Instant::now());
         let drawable_after = diagnostic.map(|_| w.drawable_serial());
+        #[cfg(feature = "window-acceptance")]
         if self.diagnostics.acceptance {
             self.diagnostics.acceptance_draws += 1;
         }
@@ -1209,7 +1224,7 @@ impl Host {
                 self.nav_mgr.navigation_title = Some(title);
             }
             if !self.nav_mgr.navigation_noticed {
-                eprintln!(
+                host_diag!(
                     "NAV_WINDOW_READY host_pid={} nav_status={:?} view_pids={:?} order={:?} toolbar={:?}",
                     std::process::id(),
                     nav.status(),
@@ -1382,6 +1397,7 @@ impl Host {
         }
         Ok(())
     }
+    #[cfg(feature = "window-acceptance")]
     fn accept_settings_window_parent(
         &mut self,
         w: &Window,
@@ -1441,6 +1457,7 @@ impl Host {
         }
         Ok(())
     }
+    #[cfg(feature = "window-acceptance")]
     fn accept(&mut self, w: &mut Window) -> Result<()> {
         if !self.diagnostics.acceptance {
             return Ok(());
@@ -1507,6 +1524,10 @@ impl Host {
                 w.native_window_number()
             );
         }
+        Ok(())
+    }
+    #[cfg(not(feature = "window-acceptance"))]
+    fn accept(&mut self, _w: &mut Window) -> Result<()> {
         Ok(())
     }
     /// Append the original hosts in their final native renderer painter order.
@@ -1625,6 +1646,7 @@ impl Host {
         if self.owns_native_titlebar_drag_event(&event) {
             return Ok(());
         }
+        #[cfg(feature = "window-acceptance")]
         if !self.settings_mgr.is_settings_window
             && matches!(&event, Event::Created)
             && let Some((shared, scope)) = self
@@ -1664,6 +1686,7 @@ impl Host {
                 });
             }
         }
+        #[cfg(feature = "window-acceptance")]
         if self
             .diagnostics
             .acceptance_shared
@@ -1682,6 +1705,7 @@ impl Host {
             w.request_redraw();
             return Ok(());
         }
+        #[cfg(feature = "window-acceptance")]
         if self.settings_mgr.is_settings_window
             && self.diagnostics.acceptance_shared.is_some()
             && matches!(
@@ -2034,7 +2058,7 @@ impl Host {
                 }
                 w.set_menu_bar(&self.menu_bar())
                     .map_err(|error| anyhow::anyhow!("AppHost menu: {error}"))?;
-                eprintln!(
+                host_diag!(
                     "TOOLBAR_WINDOW_ACTIVE window={} active=true",
                     self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
                         .mounted_toolbar
@@ -2056,7 +2080,7 @@ impl Host {
                 if let Some(header) = &mut self.layout.presentation_tabs {
                     header.set_window_active(false);
                 }
-                eprintln!(
+                host_diag!(
                     "TOOLBAR_WINDOW_ACTIVE window={} active=false",
                     self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
                         .mounted_toolbar
@@ -2189,7 +2213,8 @@ impl WindowHandler for Host {
             );
         }
         if let Err(e) = result {
-            eprintln!("HOST_ERROR {e:#}");
+            host_diag!("HOST_ERROR {e:#}");
+            #[cfg(feature = "window-acceptance")]
             if let Some(shared) = &self.diagnostics.acceptance_shared {
                 shared.fail(format!("HOST_ERROR {e:#}"));
                 if let Ok(result) = shared.0.lock()
@@ -2199,6 +2224,7 @@ impl WindowHandler for Host {
                 }
             }
             w.set_title(&format!("AppHost error: {e}"));
+            #[cfg(feature = "window-acceptance")]
             if let Some(probe) = &self.diagnostics.presentation_acceptance {
                 probe.shared.fail(format!("{e:#}"));
                 eprintln!(
@@ -2206,6 +2232,7 @@ impl WindowHandler for Host {
                     self.diagnostics.step, self.diagnostics.acceptance_draws
                 );
             }
+            #[cfg(feature = "window-acceptance")]
             if self.diagnostics.acceptance_shared.is_some()
                 || self.diagnostics.presentation_acceptance.is_some()
             {
@@ -2277,27 +2304,35 @@ pub(crate) fn run(mut app: crate::AppWindow, acceptance: bool) -> Result<()> {
         "expected one, two or three preselected modules"
     );
     host.mount_initial_containers();
-    let has_settings = settings.is_some();
-    let settings_window_acceptance = acceptance
-        && has_settings
-        && std::env::var("TEKESUI_SETTINGS_WINDOW_ACCEPTANCE").as_deref() == Ok("1");
-    if settings_window_acceptance {
-        host.diagnostics.acceptance_shared = Some(window_acceptance::Shared::new());
+    #[cfg(feature = "window-acceptance")]
+    {
+        let has_settings = settings.is_some();
+        let settings_window_acceptance = acceptance
+            && has_settings
+            && std::env::var("TEKESUI_SETTINGS_WINDOW_ACCEPTANCE").as_deref() == Ok("1");
+        if settings_window_acceptance {
+            host.diagnostics.acceptance_shared = Some(window_acceptance::Shared::new());
+        }
+        let presentation_acceptance = acceptance
+            && std::env::var("TEKESUI_PRESENTATION_WINDOW_ACCEPTANCE").as_deref() == Ok("1");
+        ensure!(
+            !presentation_acceptance || host.layout.presentation.is_some(),
+            "presentation acceptance requires from_containers"
+        );
+        ensure!(
+            !(presentation_acceptance && settings_window_acceptance),
+            "choose one finite window acceptance scope"
+        );
+        if presentation_acceptance {
+            host.diagnostics.presentation_acceptance =
+                Some(window_acceptance::PresentationAcceptance::new());
+        }
     }
-    let presentation_acceptance =
-        acceptance && std::env::var("TEKESUI_PRESENTATION_WINDOW_ACCEPTANCE").as_deref() == Ok("1");
+    #[cfg(not(feature = "window-acceptance"))]
     ensure!(
-        !presentation_acceptance || host.layout.presentation.is_some(),
-        "presentation acceptance requires from_containers"
+        !acceptance,
+        "window acceptance requires building tekes-ui-app-host with feature \"window-acceptance\""
     );
-    ensure!(
-        !(presentation_acceptance && settings_window_acceptance),
-        "choose one finite window acceptance scope"
-    );
-    if presentation_acceptance {
-        host.diagnostics.presentation_acceptance =
-            Some(window_acceptance::PresentationAcceptance::new());
-    }
     host.configure_settings(settings)?;
     let menus = host.menu_bar();
     App::new(AppConfig {
@@ -3558,7 +3593,7 @@ mod settings_guard_tests {
             ))
             .join("settings.toml");
         let options = SettingsWindow::from_toml(
-            include_str!("../../tekes-ui-settings/tests/fixtures/layout.schema.toml"),
+            include_str!("test_fixtures/layout.schema.toml"),
             path.clone(),
         )
         .unwrap();
@@ -3767,7 +3802,7 @@ mod settings_close_input_tests {
     fn raw_number_draft_blocks_quit_and_close_commits_only_valid_input() {
         for text in ["999%", "125%"] {
             let (host, path) = fixture(include_str!(
-                "../../../examples/app-host-demo/settings.schema.toml"
+                "test_fixtures/app-host-demo.settings.schema.toml"
             ));
             let state = host.settings_mgr.settings.as_ref().unwrap();
             {
@@ -3820,9 +3855,7 @@ mod settings_close_input_tests {
     }
     #[test]
     fn marked_text_with_clean_draft_is_retained_when_close_or_quit_is_requested() {
-        let (host, path) = fixture(include_str!(
-            "../../tekes-ui-settings/tests/fixtures/layout.schema.toml"
-        ));
+        let (host, path) = fixture(include_str!("test_fixtures/layout.schema.toml"));
         let state = host.settings_mgr.settings.as_ref().unwrap();
         {
             let mut s = state.borrow_mut();
@@ -3862,9 +3895,7 @@ mod settings_close_input_tests {
             layout::MeasuredChild,
         };
         use tekes_ui_scene::Size;
-        let (host, path) = fixture(include_str!(
-            "../../tekes-ui-settings/tests/fixtures/layout.schema.toml"
-        ));
+        let (host, path) = fixture(include_str!("test_fixtures/layout.schema.toml"));
         {
             let mut state = host.settings_mgr.settings.as_ref().unwrap().borrow_mut();
             assert!(
@@ -3963,7 +3994,7 @@ mod shared_settings_owner_tests {
             ))
             .join("settings.toml");
         let options = SettingsWindow::from_toml(
-            include_str!("../../tekes-ui-settings/tests/fixtures/layout.schema.toml"),
+            include_str!("test_fixtures/layout.schema.toml"),
             path.clone(),
         )
         .unwrap()
@@ -4078,7 +4109,7 @@ mod shared_settings_owner_tests {
             ))
             .join("settings.toml");
         let options = SettingsWindow::from_toml(
-            include_str!("../../tekes-ui-settings/tests/fixtures/layout.schema.toml"),
+            include_str!("test_fixtures/layout.schema.toml"),
             path.clone(),
         )
         .unwrap();
