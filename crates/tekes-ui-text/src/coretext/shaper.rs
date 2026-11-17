@@ -25,11 +25,14 @@ use std::ptr::NonNull;
 
 use objc2_core_foundation::{
     CFArray, CFDictionary, CFMutableAttributedString, CFRange, CFRetained, CFString, CGPoint,
+    CGSize,
 };
-use objc2_core_text::{CTFont, CTLine, CTRun, CTTypesetter, kCTFontAttributeName};
+use objc2_core_text::{CTFont, CTLine, CTRun, CTRunStatus, CTTypesetter, kCTFontAttributeName};
 
 use super::fonts::CoreTextFonts;
-use crate::model::{FontInfo, FontRun, Line, Paragraph, ShapeOptions, ShapedGlyph, ShapedRun};
+use crate::model::{
+    FontInfo, FontRun, GraphemeSpan, Line, Paragraph, ShapeOptions, ShapedGlyph, ShapedRun,
+};
 use crate::style::TextStyle;
 use crate::traits::{FontFallback, Shaper};
 use crate::utf16::Utf16Map;
@@ -69,32 +72,215 @@ pub struct PreparedText {
     carets: RefCell<CaretCache>,
 }
 
+#[derive(Clone, Debug)]
+struct CachedLineGeometry {
+    carets: Vec<(usize, f64)>,
+    graphemes: Vec<GraphemeSpan>,
+}
+
 /// Width-independent CTLine caret geometry, keyed by the exact typesetter
 /// range. Bounded by caret entries, not by width count. No font-registry keys,
 /// selection state or visible-only data are cached here.
 #[derive(Debug, Default)]
 struct CaretCache {
-    entries: HashMap<(usize, usize), Vec<(usize, f64)>>,
+    entries: HashMap<(usize, usize), CachedLineGeometry>,
     order: VecDeque<(usize, usize)>,
     size: usize,
 }
 impl CaretCache {
-    fn insert(&mut self, key: (usize, usize), value: Vec<(usize, f64)>, budget: usize) {
-        if value.len() > budget {
+    fn insert(&mut self, key: (usize, usize), value: CachedLineGeometry, budget: usize) {
+        let weight = value.carets.len();
+        if weight > budget {
             return;
         }
-        while self.size + value.len() > budget {
+        while self.size + weight > budget {
             let Some(old) = self.order.pop_front() else {
                 break;
             };
             if let Some(removed) = self.entries.remove(&old) {
-                self.size -= removed.len();
+                self.size -= removed.carets.len();
             }
         }
-        self.size += value.len();
+        self.size += weight;
         self.entries.insert(key, value);
         self.order.push_back(key);
     }
+}
+
+#[derive(Clone, Copy, Debug)]
+struct RunSpan {
+    start: usize,
+    end: usize,
+    is_rtl: bool,
+    left: f64,
+    right: f64,
+}
+
+fn line_run_spans(line: &CTLine, trailing_whitespace: f64) -> Vec<RunSpan> {
+    let runs = runs_of(line);
+    let mut cursor = 0.0_f64;
+    if trailing_whitespace > 0.0
+        && let Some(first) = runs.first()
+    {
+        // SAFETY: read-only queries on immutable `CTRun` owned by `line`.
+        unsafe {
+            if first.status().contains(CTRunStatus::RightToLeft) && first.glyph_count() > 0 {
+                let mut pos = CGPoint { x: 0.0, y: 0.0 };
+                let mut adv = CGSize {
+                    width: 0.0,
+                    height: 0.0,
+                };
+                first.positions(CFRange::new(0, 1), NonNull::from(&mut pos));
+                first.advances(CFRange::new(0, 1), NonNull::from(&mut adv));
+                if pos.x < -1e-3 && pos.x + adv.width <= 1e-3 {
+                    let rw = first.typographic_bounds(
+                        CFRange::new(0, 0),
+                        std::ptr::null_mut(),
+                        std::ptr::null_mut(),
+                        std::ptr::null_mut(),
+                    );
+                    if rw.is_finite() {
+                        cursor = -rw;
+                    }
+                }
+            }
+        }
+    }
+    let mut spans = Vec::with_capacity(runs.len());
+    for run in runs {
+        // SAFETY: read-only queries on an immutable `CTRun` owned by `line`.
+        let (glyph_count, string_range, status, rw) = unsafe {
+            (
+                run.glyph_count(),
+                run.string_range(),
+                run.status(),
+                run.typographic_bounds(
+                    CFRange::new(0, 0),
+                    std::ptr::null_mut(),
+                    std::ptr::null_mut(),
+                    std::ptr::null_mut(),
+                ),
+            )
+        };
+        let width = if rw.is_finite() { rw.max(0.0) } else { 0.0 };
+        let left = cursor;
+        let right = cursor + width;
+        cursor = right;
+        if glyph_count <= 0 || string_range.location < 0 || string_range.length <= 0 {
+            continue;
+        }
+        let start = string_range.location as usize;
+        let end = start + string_range.length as usize;
+        spans.push(RunSpan {
+            start,
+            end,
+            is_rtl: status.contains(CTRunStatus::RightToLeft),
+            left,
+            right,
+        });
+    }
+    spans
+}
+
+fn run_edge_for_index(line: &CTLine, run: &RunSpan, index: usize) -> f64 {
+    if index == run.start {
+        if run.is_rtl { run.right } else { run.left }
+    } else if index == run.end {
+        if run.is_rtl { run.left } else { run.right }
+    } else {
+        // Strictly inside a single directional `CTRun`: primary offset is unambiguous.
+        // SAFETY: `index` lies strictly within `run.start..run.end` of `line`.
+        unsafe {
+            let x = line.offset_for_string_index(index as isize, std::ptr::null_mut());
+            x.clamp(run.left, run.right)
+        }
+    }
+}
+
+fn compute_line_geometry(
+    line: &CTLine,
+    utf16: Range<usize>,
+    grapheme_lengths: &[usize],
+    cf_text: &CFString,
+    trailing_whitespace: f64,
+) -> CachedLineGeometry {
+    let run_spans = line_run_spans(line, trailing_whitespace);
+    let mut graphemes = Vec::new();
+    let mut index = utf16.start;
+    while index < utf16.end {
+        let len = grapheme_lengths[index];
+        let step = if len == 0 {
+            grapheme_len_at(cf_text, index)
+        } else {
+            len
+        };
+        let g0 = index;
+        let g1 = (index + step).min(utf16.end);
+        let overlapping: Vec<&RunSpan> = run_spans
+            .iter()
+            .filter(|r| r.start < g1 && r.end > g0)
+            .collect();
+        let (x_start, x_end) = if overlapping.len() == 1 {
+            let r = overlapping[0];
+            (
+                run_edge_for_index(line, r, g0),
+                run_edge_for_index(line, r, g1),
+            )
+        } else if !overlapping.is_empty() {
+            let mut lo = f64::INFINITY;
+            let mut hi = f64::NEG_INFINITY;
+            for r in &overlapping {
+                let s = g0.max(r.start);
+                let e = g1.min(r.end);
+                let xa = run_edge_for_index(line, r, s);
+                let xb = run_edge_for_index(line, r, e);
+                lo = lo.min(xa.min(xb));
+                hi = hi.max(xa.max(xb));
+            }
+            if overlapping[0].is_rtl {
+                (hi, lo)
+            } else {
+                (lo, hi)
+            }
+        } else {
+            // Line-end control characters without glyph runs (e.g., hard newline).
+            // SAFETY: `g0` is within `line`'s string range.
+            let x = unsafe { line.offset_for_string_index(g0 as isize, std::ptr::null_mut()) };
+            (x, x)
+        };
+        graphemes.push(GraphemeSpan {
+            start: g0,
+            end: g1,
+            x_start,
+            x_end,
+        });
+        index = g1;
+    }
+
+    let carets = if let Some(first) = graphemes.first() {
+        let mut out = Vec::with_capacity(graphemes.len() + 2);
+        out.push((first.start, first.x_start));
+        for i in 0..graphemes.len() {
+            if i + 1 < graphemes.len() {
+                let b = graphemes[i].end;
+                let x_in = graphemes[i].x_end;
+                let x_out = graphemes[i + 1].x_start;
+                out.push((b, x_in));
+                if (x_in - x_out).abs() > 1e-4 {
+                    out.push((b, x_out));
+                }
+            } else {
+                out.push((graphemes[i].end, graphemes[i].x_end));
+            }
+        }
+        out
+    } else {
+        // SAFETY: `utf16.start` is valid on empty line.
+        let x = unsafe { line.offset_for_string_index(utf16.start as isize, std::ptr::null_mut()) };
+        vec![(utf16.start, x)]
+    };
+
+    CachedLineGeometry { carets, graphemes }
 }
 
 /// Read-only viewport layout. It retains full line geometry, but copies glyphs
@@ -463,46 +649,35 @@ impl CoreTextShaper {
             } else {
                 Vec::new()
             };
-            let carets = if display_viewport.is_none() {
+            let (carets, graphemes) = if display_viewport.is_none() {
                 let key = (utf16.start, utf16.end);
                 let cached = prepared.carets.borrow().entries.get(&key).cloned();
-                if let Some(carets) = cached {
-                    carets
+                if let Some(cached) = cached {
+                    (cached.carets, cached.graphemes)
                 } else {
-                    let mut carets = Vec::new();
-                    let mut index = utf16.start;
-                    while index < utf16.end {
-                        // SAFETY: same composed-character boundaries and primary
-                        // CoreText offsets as the uncached editable path.
-                        let x = unsafe {
-                            line.offset_for_string_index(index as isize, std::ptr::null_mut())
-                        };
-                        carets.push((index, x));
-                        let length = prepared.grapheme_lengths[index];
-                        index += if length == 0 {
-                            grapheme_len_at(&ts.cf_text, index)
-                        } else {
-                            length
-                        };
-                    }
-                    carets.push((utf16.end, unsafe {
-                        line.offset_for_string_index(utf16.end as isize, std::ptr::null_mut())
-                    }));
+                    let computed = compute_line_geometry(
+                        &line,
+                        utf16.clone(),
+                        &prepared.grapheme_lengths,
+                        &ts.cf_text,
+                        m.trailing_whitespace,
+                    );
                     prepared.carets.borrow_mut().insert(
                         key,
-                        carets.clone(),
+                        computed.clone(),
                         n.saturating_mul(4).max(64),
                     );
-                    carets
+                    (computed.carets, computed.graphemes)
                 }
             } else {
-                Vec::new()
+                (Vec::new(), Vec::new())
             };
             let has_newline =
                 text[map.byte_range(utf16.clone())].ends_with(['\n', '\r', '\u{2028}', '\u{2029}']);
             lines.push(Line {
                 has_newline,
                 carets,
+                graphemes,
                 index: lines.len(),
                 bytes: map.byte_range(utf16.clone()),
                 utf16,
@@ -540,6 +715,7 @@ impl CoreTextShaper {
                 width_trimmed: 0.0,
                 runs: Vec::new(),
                 carets: vec![(n, 0.0)],
+                graphemes: Vec::new(),
                 has_newline: false,
             });
             cursor_y += default_line_height + line_spacing;
@@ -694,29 +870,60 @@ mod tests {
                 if shaped.utf16.is_empty() {
                     continue;
                 }
-                let native = unsafe { prepared.typeset.typesetter.line(cf_range(&shaped.utf16)) };
-                let mut reference = Vec::new();
                 let mut index = shaped.utf16.start;
                 while index < shaped.utf16.end {
-                    reference.push((index, unsafe {
-                        native.offset_for_string_index(index as isize, std::ptr::null_mut())
-                    }));
-                    index += grapheme_len_at(&prepared.typeset.cf_text, index);
-                }
-                reference.push((shaped.utf16.end, unsafe {
-                    native.offset_for_string_index(shaped.utf16.end as isize, std::ptr::null_mut())
-                }));
-                assert_eq!(shaped.carets, reference);
-                for &(index, _) in &reference {
+                    assert!(
+                        shaped.carets.iter().any(|(c, _)| *c == index),
+                        "missing caret for grapheme start {index}"
+                    );
                     let caret = paragraph.caret_rect(index, 1.);
                     assert!(caret.origin.x.is_finite() && caret.origin.y.is_finite());
+                    index += grapheme_len_at(&prepared.typeset.cf_text, index);
                 }
+                assert!(
+                    shaped.carets.iter().any(|(c, _)| *c == shaped.utf16.end),
+                    "missing caret for line end {}",
+                    shaped.utf16.end
+                );
+                let caret = paragraph.caret_rect(shaped.utf16.end, 1.);
+                assert!(caret.origin.x.is_finite() && caret.origin.y.is_finite());
+
+                let mut visual: Vec<(f64, f64)> = shaped
+                    .graphemes
+                    .iter()
+                    .map(|g| {
+                        assert!(g.x_start.is_finite() && g.x_end.is_finite());
+                        (g.x_start.min(g.x_end), g.x_start.max(g.x_end))
+                    })
+                    .collect();
+                visual.sort_by(|a, b| a.0.total_cmp(&b.0));
+                let mut covered = 0.0_f64;
+                for (lo, hi) in visual {
+                    assert!(
+                        lo >= -1e-3 && lo <= covered + 1e-2,
+                        "grapheme span gap at [{lo}, {hi}] after {covered} on {:?}",
+                        shaped.utf16
+                    );
+                    covered = covered.max(hi);
+                }
+                assert!(
+                    (covered - shaped.width_trimmed).abs() < 1e-2
+                        || (covered >= shaped.width_trimmed - 1e-2
+                            && covered <= shaped.width + 1e-2),
+                    "grapheme span total {covered} vs width_trimmed={} width={}",
+                    shaped.width_trimmed,
+                    shaped.width
+                );
             }
             let cache = prepared.carets.borrow();
             assert!(cache.size <= prepared.typeset.utf16_len * 4);
             assert_eq!(
                 cache.size,
-                cache.entries.values().map(Vec::len).sum::<usize>()
+                cache
+                    .entries
+                    .values()
+                    .map(|entry| entry.carets.len())
+                    .sum::<usize>()
             );
             assert_eq!(cache.order.len(), cache.entries.len());
         }

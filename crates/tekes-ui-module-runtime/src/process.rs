@@ -1,5 +1,4 @@
 use anyhow::{Context, Result, ensure};
-use std::io::BufRead;
 use std::sync::Arc;
 use tekes_ui_app_protocol::{Frame, Request, VERSION};
 use tekes_ui_render::{Renderer, shared_surface_macos as gpu};
@@ -219,20 +218,18 @@ pub(crate) fn validate_view_request(r: &Request) -> Result<()> {
 pub fn run(mut module: Box<dyn crate::PanelModule>, endpoint: &str) -> Result<()> {
     let mut renderer = FrameRenderer::new()?;
     let mut atlas = GlyphAtlas::default();
-    let stdin = std::io::stdin();
-    let mut stdout = std::io::stdout().lock();
-    for line in stdin.lock().lines() {
-        let line = line?;
-        if line == "quit" {
+    let (mut input, mut output) = crate::pipes::worker_ipc()?;
+    while let Some(bytes) = crate::pipes::read_packet(&mut input)? {
+        if bytes == b"quit" {
             break;
         }
-        let request: Request = serde_json::from_str(&line)?;
+        let request: Request = serde_json::from_slice(&bytes)?;
         validate_view_request(&request)?;
         atlas.begin_frame();
         let mut scene = Scene::new();
         let state = module.update(&request, &mut scene, &mut atlas)?;
         let frame = renderer.render(&request, &scene, &mut atlas, state, endpoint)?;
-        crate::pipes::write_packet(&mut stdout, &serde_json::to_vec(&frame)?)?;
+        crate::pipes::write_packet(&mut output, &serde_json::to_vec(&frame)?)?;
     }
     Ok(())
 }

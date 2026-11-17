@@ -61,6 +61,7 @@ fn empty_line(template: &Line, base: &CTFont) -> Line {
         width_trimmed: 0.,
         runs: Vec::new(),
         carets: Vec::new(),
+        graphemes: Vec::new(),
         has_newline: false,
     }
 }
@@ -98,6 +99,11 @@ impl CoreTextShaper {
         options: LabelOptions,
         semantic: Option<&crate::SemanticLabel>,
     ) -> LabelLayout {
+        let spacing = if shape.line_spacing.is_finite() {
+            shape.line_spacing.max(0.)
+        } else {
+            0.
+        };
         let mut paragraph = match semantic {
             Some(label) => self.shape_prepared(&self.prepare_semantic_label(label, style), shape),
             None => self.shape(text, style, shape),
@@ -108,6 +114,7 @@ impl CoreTextShaper {
                 source: text.into(),
                 paragraph,
                 width,
+                line_spacing: spacing,
                 elided_utf16: Vec::new(),
             };
         }
@@ -154,6 +161,7 @@ impl CoreTextShaper {
                     line.utf16.end = cut;
                     line.bytes.end = map.byte_of(cut);
                     line.carets.retain(|(index, _)| *index <= cut);
+                    line.graphemes.retain(|g| g.end <= cut);
                     line.has_newline = false;
                     elided.push(cut..original_len);
                 }
@@ -231,11 +239,18 @@ impl CoreTextShaper {
                     .sum::<usize>();
                 // Native truncation is authoritative for shaping; source
                 // grapheme boundaries and one synthetic token remain checked.
-                if !boundaries.contains(&cut) || synthetic_glyphs != expected_token_glyphs {
-                    let previous = boundaries
-                        .iter()
-                        .copied()
-                        .rfind(|p| *p < end && *p >= start);
+                let cut_is_boundary = boundaries.binary_search(&cut).is_ok();
+                if !cut_is_boundary || synthetic_glyphs != expected_token_glyphs {
+                    let limit = if cut_is_boundary {
+                        cut.min(end)
+                    } else {
+                        cut.saturating_add(1).min(end)
+                    };
+                    let idx = boundaries.partition_point(|&p| p < limit);
+                    let previous = idx
+                        .checked_sub(1)
+                        .map(|i| boundaries[i])
+                        .filter(|&p| p >= start && p < end);
                     if let Some(previous) = previous {
                         end = previous;
                         continue;
@@ -277,17 +292,13 @@ impl CoreTextShaper {
                     width_trimmed: m.width - m.trailing_whitespace,
                     runs,
                     carets: Vec::new(),
+                    graphemes: Vec::new(),
                     has_newline: false,
                 };
                 elided.push(cut..omitted_end);
                 break;
             }
         }
-        let spacing = if shape.line_spacing.is_finite() {
-            shape.line_spacing.max(0.)
-        } else {
-            0.
-        };
         let mut y = 0.;
         for line in &mut paragraph.lines {
             line.top = y;
@@ -302,6 +313,7 @@ impl CoreTextShaper {
             source: text.into(),
             paragraph,
             width: measured,
+            line_spacing: spacing,
             elided_utf16: elided,
         }
     }

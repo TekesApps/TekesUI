@@ -204,8 +204,9 @@ fn blocked_view_fixture() -> anyhow::Result<bool> {
     {
         return Ok(false);
     }
+    let (mut input, _ipc_output) = tekes_ui_module_runtime::take_worker_ipc_for_test()?;
     let mut request = String::new();
-    std::io::stdin().read_line(&mut request)?;
+    input.read_line(&mut request)?;
     let request: tekes_ui_app_protocol::Request = serde_json::from_str(&request)?;
     let marker =
         std::env::temp_dir().join(format!("tekesui-view-cancel-{}.ready", std::process::id()));

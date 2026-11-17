@@ -10,6 +10,7 @@ use objc2_metal::MTLDrawable;
 use objc2_quartz_core::{CACurrentMediaTime, CAMetalDrawable, CAMetalLayer};
 use std::{
     cell::RefCell,
+    collections::VecDeque,
     ptr::NonNull,
     sync::{
         Arc, Mutex,
@@ -22,6 +23,7 @@ pub struct PresentedFrame {
     pub acquired_at: f64,
     pub presented_at: f64,
 }
+pub(crate) const MAX_PRESENTED_FRAMES: usize = 8_192;
 #[derive(Debug, Default)]
 pub(crate) struct PresentationObserver {
     pub enabled: AtomicBool,
@@ -29,7 +31,7 @@ pub(crate) struct PresentationObserver {
     pub serial: AtomicU64,
     pub provided_drawables: AtomicU64,
     pub fallback_acquires: AtomicU64,
-    pub frames: Mutex<Vec<PresentedFrame>>,
+    pub frames: Mutex<VecDeque<PresentedFrame>>,
 }
 type Drawable = Retained<ProtocolObject<dyn CAMetalDrawable>>;
 thread_local! {
@@ -83,41 +85,52 @@ unsafe impl NSObjectProtocol for ObservedMetalLayer {}
 impl ObservedMetalLayer {
  #[unsafe(method_id(initWithLayer:))]
  fn init_with_layer(this:objc2::rc::Allocated<Self>,other:&AnyObject)->Retained<Self> {
-  let observer=other.downcast_ref::<Self>().map(|layer|layer.ivars().clone()).unwrap_or_default();
-  let this=this.set_ivars(observer);
-  // SAFETY: exact CALayer copy initializer; Rust state is copied before super.
-  unsafe{msg_send![super(this),initWithLayer:other]}
+  crate::ffi_boundary("ObservedMetalLayer::init_with_layer", || {
+   let observer=other.downcast_ref::<Self>().map(|layer|layer.ivars().clone()).unwrap_or_default();
+   let this=this.set_ivars(observer);
+   // SAFETY: exact CALayer copy initializer; Rust state is copied before super.
+   unsafe{msg_send![super(this),initWithLayer:other]}
+  })
  }
  #[unsafe(method_id(nextDrawable))]
  fn next_drawable(&self)->Option<Retained<ProtocolObject<dyn CAMetalDrawable>>> {
-  // SAFETY: exact CAMetalLayer nextDrawable ABI and ordinary retained result.
-  let provided=take_provided(self);
-  let is_provided=provided.is_some();
-  if self.ivars().enabled.load(Ordering::Relaxed) {
-   if provided.as_ref().is_some_and(|v|v.is_some()) { self.ivars().provided_drawables.fetch_add(1,Ordering::Relaxed); }
-   else if provided.is_none() { self.ivars().fallback_acquires.fetch_add(1,Ordering::Relaxed); }
-  }
-  let drawable:Option<Retained<ProtocolObject<dyn CAMetalDrawable>>>=match provided {
-   Some(drawable)=>drawable,
-   None=>unsafe{msg_send![super(self),nextDrawable]},
-  };
-  // CAMetalDisplayLink may acquire upcoming drawables internally. Observe only
-  // the one handed to our renderer, so serials refer to submitted frames.
-  let observe=is_provided || !self.ivars().metal_display_link.load(Ordering::Relaxed);
-  if let Some(drawable)=&drawable && observe && self.ivars().enabled.load(Ordering::Relaxed) {
-   let observer=self.ivars().clone();
-   let serial=observer.serial.fetch_add(1,Ordering::Relaxed)+1;
-   let acquired_at=CACurrentMediaTime();
-   let callback=RcBlock::new(move |d:NonNull<ProtocolObject<dyn MTLDrawable>>|{
-    // SAFETY: Metal guarantees a live drawable for the duration of its callback.
-    let presented_at=unsafe{d.as_ref()}.presentedTime();
-    if let Ok(mut frames)=observer.frames.lock(){frames.push(PresentedFrame{serial,acquired_at,presented_at});}
-   });
-   // SAFETY: Metal copies the valid block. It owns only an Arc, not the drawable
-   // or layer, so completing this callback cannot form a retain cycle.
-   unsafe{drawable.addPresentedHandler(RcBlock::as_ptr(&callback));}
-  }
-  drawable
+  crate::ffi_boundary("ObservedMetalLayer::next_drawable", || {
+   // SAFETY: exact CAMetalLayer nextDrawable ABI and ordinary retained result.
+   let provided=take_provided(self);
+   let is_provided=provided.is_some();
+   if self.ivars().enabled.load(Ordering::Relaxed) {
+    if provided.as_ref().is_some_and(|v|v.is_some()) { self.ivars().provided_drawables.fetch_add(1,Ordering::Relaxed); }
+    else if provided.is_none() { self.ivars().fallback_acquires.fetch_add(1,Ordering::Relaxed); }
+   }
+   let drawable:Option<Retained<ProtocolObject<dyn CAMetalDrawable>>>=match provided {
+    Some(drawable)=>drawable,
+    None=>unsafe{msg_send![super(self),nextDrawable]},
+   };
+   // CAMetalDisplayLink may acquire upcoming drawables internally. Observe only
+   // the one handed to our renderer, so serials refer to submitted frames.
+   let observe=is_provided || !self.ivars().metal_display_link.load(Ordering::Relaxed);
+   if let Some(drawable)=&drawable && observe && self.ivars().enabled.load(Ordering::Relaxed) {
+    let observer=self.ivars().clone();
+    let serial=observer.serial.fetch_add(1,Ordering::Relaxed)+1;
+    let acquired_at=CACurrentMediaTime();
+    let callback=RcBlock::new(move |d:NonNull<ProtocolObject<dyn MTLDrawable>>|{
+     crate::ffi_boundary("ObservedMetalLayer::presented_handler", || {
+      // SAFETY: Metal guarantees a live drawable for the duration of its callback.
+      let presented_at=unsafe{d.as_ref()}.presentedTime();
+      if let Ok(mut frames)=observer.frames.lock(){
+       while frames.len() >= MAX_PRESENTED_FRAMES {
+        frames.pop_front();
+       }
+       frames.push_back(PresentedFrame{serial,acquired_at,presented_at});
+      }
+     });
+    });
+    // SAFETY: Metal copies the valid block. It owns only an Arc, not the drawable
+    // or layer, so completing this callback cannot form a retain cycle.
+    unsafe{drawable.addPresentedHandler(RcBlock::as_ptr(&callback));}
+   }
+   drawable
+  })
  }
 });
 impl ObservedMetalLayer {

@@ -112,6 +112,7 @@ impl TextFieldContent {
     }
     pub fn set_placeholder(&mut self, placeholder: Option<String>) {
         self.placeholder = placeholder;
+        self.placeholder_cache = None;
     }
     pub fn set_clear_label(&mut self, label: impl Into<String>) -> Result<(), CompositionError> {
         let label = label.into();
@@ -530,7 +531,7 @@ impl Component for TextFieldContent {
             .intersection(&clip)
             .filter(|r| !r.is_empty());
         self.surface.trailing_action_width = if width > 0. { width + inset } else { 0. };
-        self.editor_frame = frame;
+        self.editor_frame = self.effective_frame(text, frame);
         self.editor_arrange(text, frame, clip);
         self.clear.button.frame_policy = crate::ButtonFramePolicy::Exact;
         if self.clear_clip.is_some() {
@@ -561,8 +562,11 @@ impl Component for TextFieldContent {
         }
         if self.query().is_empty()
             && !self.focused
-            && let Some(placeholder) = &self.placeholder
-            && let Some(visible) = self.surface.inner.intersection(&clip)
+            && self.placeholder.is_some()
+            && let Some(visible) = self
+                .surface
+                .visible_content()
+                .and_then(|vc| vc.intersection(&clip))
         {
             let ink = tekes_ui_tokens::surface_palette::resolve_surface_with_options(
                 theme.palette,
@@ -581,17 +585,62 @@ impl Component for TextFieldContent {
             .expect("validated original Search Surface")
             .helper
             .expect("original input helper ink");
-            // The original Search placeholder is a single unwrapped label,
-            // clipped to the real editor interior, never a second text owner.
-            if let Some(host) = text.text_surface_host() {
-                let paragraph = host.shape_surface(placeholder, self.surface.role, None);
-                let inner = self.surface.inner;
-                let origin = Point::new(
-                    inner.min_x().round(),
-                    (inner.center().y - paragraph.height as f32 * 0.5).round(),
-                );
+            let backing_scale = if text.backing_scale().is_finite() {
+                text.backing_scale().max(1.)
+            } else {
+                1.
+            };
+            let wrap_width = (self.surface.input.multiline && self.surface.wrap).then(|| {
+                ((self.surface.inner.size.width * backing_scale).floor() / backing_scale).max(1.)
+            });
+            let inner = self.surface.inner;
+            let role = self.surface.role;
+            let multiline = self.surface.input.multiline;
+            let alignment = self.surface.alignment;
+            if let Some(host) = text.text_surface_host()
+                && let Some(placeholder) = self.placeholder.as_deref()
+            {
+                let type_scale = host.type_scale();
+                let width_bits = wrap_width.map(f32::to_bits);
+                let type_scale_bits = type_scale.to_bits();
+                let cached = self.placeholder_cache.as_ref().is_some_and(|c| {
+                    c.text == placeholder
+                        && c.role == role
+                        && c.width_bits == width_bits
+                        && c.type_scale_bits == type_scale_bits
+                });
+                if !cached {
+                    let paragraph = host.shape_surface(placeholder, role, wrap_width);
+                    self.placeholder_cache = Some(super::adapters::CachedPlaceholder {
+                        text: placeholder.to_owned(),
+                        role,
+                        width_bits,
+                        type_scale_bits,
+                        paragraph,
+                    });
+                }
+                let paragraph = &self
+                    .placeholder_cache
+                    .as_ref()
+                    .expect("populated placeholder cache")
+                    .paragraph;
+                let base = paragraph.origin_in(inner, !multiline);
+                let align_dx = if !multiline && alignment != crate::TextSurfaceAlignment::Leading {
+                    (inner.size.width
+                        - paragraph.width as f32
+                        - tekes_ui_tokens::Stroke::Rule.value())
+                    .max(0.)
+                        * if alignment == crate::TextSurfaceAlignment::Center {
+                            0.5
+                        } else {
+                            1.0
+                        }
+                } else {
+                    0.
+                };
+                let origin = Point::new((base.x + align_dx).round(), base.y.round());
                 scene.push_clip(visible);
-                host.push_visible(scene, &paragraph, origin, ink, visible);
+                host.push_visible(scene, paragraph, origin, ink, visible);
                 scene.pop_clip();
             }
         }
@@ -978,4 +1027,171 @@ impl ContentHost {
 fn clearable_field(node: &Content) -> Option<&TextFieldContent> {
     node.component::<TextFieldContent>()
         .or_else(|| node.component::<SearchFieldContent>().map(|s| &s.editor))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{TextSurfaceHost, TextSurfaceTextRenderer};
+    use std::cell::Cell;
+    use std::rc::Rc;
+    use tekes_ui_scene::FontKey;
+    use tekes_ui_text::{FontInfo, Line, Paragraph, ShapedGlyph, ShapedRun};
+
+    struct PlaceholderTestRenderer {
+        shapes: Rc<Cell<usize>>,
+        pushes: Vec<(Point, Rect)>,
+    }
+
+    impl ButtonTextRenderer for PlaceholderTestRenderer {
+        fn text_surface_host(&mut self) -> Option<&mut dyn TextSurfaceHost> {
+            Some(self)
+        }
+        fn measure(&mut self, s: &str, r: proposal::TextRole, w: f32) -> Size {
+            Size::new(
+                (s.chars().count() as f32 * 8.).min(w),
+                r.style().line_height,
+            )
+        }
+        fn draw(
+            &mut self,
+            _: &mut Scene,
+            _: &str,
+            _: proposal::TextRole,
+            _: Rect,
+            _: ButtonTextAlign,
+            _: tekes_ui_tokens::Rgba,
+        ) {
+        }
+    }
+
+    impl TextSurfaceHost for PlaceholderTestRenderer {
+        fn shape_surface(
+            &mut self,
+            text: &str,
+            role: proposal::TextRole,
+            width: Option<f32>,
+        ) -> Rc<Paragraph> {
+            self.shapes.set(self.shapes.get() + 1);
+            let h = f64::from(role.style().line_height);
+            let w = (text.chars().count() as f64 * 8.).min(width.map_or(f64::MAX, f64::from));
+            let u16 = text.encode_utf16().count();
+            Rc::new(Paragraph {
+                lines: vec![Line {
+                    index: 0,
+                    utf16: 0..u16,
+                    bytes: 0..text.len(),
+                    ascent: h * 0.8,
+                    descent: h * 0.2,
+                    leading: 0.,
+                    height: h,
+                    top: 0.,
+                    baseline_y: h * 0.8,
+                    width: w,
+                    width_trimmed: w,
+                    runs: if text.is_empty() {
+                        vec![]
+                    } else {
+                        vec![ShapedRun {
+                            font: FontKey(1),
+                            utf16: 0..u16,
+                            glyphs: vec![ShapedGlyph {
+                                id: 1,
+                                x: 0.,
+                                y: 0.,
+                                utf16_index: 0,
+                                cluster_utf16: 0..1.min(u16),
+                            }],
+                        }]
+                    },
+                    carets: vec![(0, 0.), (u16, w)],
+                    graphemes: vec![],
+                    has_newline: false,
+                }],
+                height: h,
+                width: w,
+                default_line_height: h,
+                fonts: vec![FontInfo {
+                    key: FontKey(1),
+                    post_script_name: "Test".into(),
+                    size: f64::from(role.style().size),
+                    is_color: false,
+                }],
+                utf16_len: u16,
+            })
+        }
+    }
+
+    impl TextSurfaceTextRenderer for PlaceholderTestRenderer {
+        fn push_visible(
+            &mut self,
+            _: &mut Scene,
+            _: &Paragraph,
+            origin: Point,
+            _: tekes_ui_tokens::Rgba,
+            clip: Rect,
+        ) {
+            self.pushes.push((origin, clip));
+        }
+    }
+
+    #[test]
+    fn inline_clamps_arrange_width_and_placeholder_caches_aligned_multiline_layout() {
+        let shapes = Rc::new(Cell::new(0));
+        let mut renderer = PlaceholderTestRenderer {
+            shapes: shapes.clone(),
+            pushes: Vec::new(),
+        };
+        let mut inline = TextFieldContent::inline("Inline", "hi", 4.0);
+        let wide = Rect::new(10., 20., 300., 40.);
+        inline.arrange(&mut renderer, wide, wide);
+        let expected_w = proposal::TextRole::UiBody.style().size * 4.0;
+        assert!((inline.surface.outer.size.width - expected_w).abs() < 0.01);
+
+        let mut field = TextFieldContent::new("Search", "");
+        field.surface.input.multiline = true;
+        field.surface.wrap = true;
+        field.set_placeholder(Some("Hint".into()));
+        let frame = Rect::new(0., 0., 200., 120.);
+        field.viewport = TextViewport::Fixed(120.);
+        field.arrange(&mut renderer, frame, frame);
+        shapes.set(0);
+        field.paint(
+            &mut Scene::new(),
+            &mut renderer,
+            frame,
+            frame,
+            Palette::from(tekes_ui_tokens::Theme::LIGHT).into(),
+        );
+        assert_eq!(shapes.get(), 1);
+        let first_origin = renderer.pushes.last().unwrap().0;
+        // Multiline placeholder stays top-aligned inside `inner`.
+        assert!((first_origin.y - field.surface.inner.min_y().round()).abs() <= 1.0);
+
+        // Repaint without placeholder/role/scale change reuses cached paragraph.
+        field.paint(
+            &mut Scene::new(),
+            &mut renderer,
+            frame,
+            frame,
+            Palette::from(tekes_ui_tokens::Theme::LIGHT).into(),
+        );
+        assert_eq!(shapes.get(), 1);
+
+        // Single-line trailing alignment honors surface alignment.
+        let mut trailing = TextFieldContent::new("Align", "");
+        trailing.surface.alignment = crate::TextSurfaceAlignment::Trailing;
+        trailing.set_placeholder(Some("Hint".into()));
+        trailing.arrange(&mut renderer, Rect::new(0., 0., 200., 40.), frame);
+        renderer.pushes.clear();
+        trailing.paint(
+            &mut Scene::new(),
+            &mut renderer,
+            Rect::new(0., 0., 200., 40.),
+            frame,
+            Palette::from(tekes_ui_tokens::Theme::LIGHT).into(),
+        );
+        let origin = renderer.pushes.last().unwrap().0;
+        assert!(origin.x > trailing.surface.inner.min_x() + 100.);
+    }
 }

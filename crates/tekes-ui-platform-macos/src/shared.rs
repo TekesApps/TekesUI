@@ -36,14 +36,20 @@ use crate::view::TekesView;
 // Opt-in finite geometry receipts; no timings, display-rate sampling or timers.
 fn resize_review(message: std::fmt::Arguments<'_>) {
     #[cfg(debug_assertions)]
-    if let Some(path) = std::env::var_os("TEKESUI_RESIZE_REVIEW") {
-        use std::io::Write;
-        if let Ok(mut file) = std::fs::OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(path)
+    {
+        static RESIZE_REVIEW_PATH: std::sync::OnceLock<Option<std::ffi::OsString>> =
+            std::sync::OnceLock::new();
+        if let Some(path) =
+            RESIZE_REVIEW_PATH.get_or_init(|| std::env::var_os("TEKESUI_RESIZE_REVIEW"))
         {
-            let _ = writeln!(file, "{message}");
+            use std::io::Write;
+            if let Ok(mut file) = std::fs::OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(path)
+            {
+                let _ = writeln!(file, "{message}");
+            }
         }
     }
     #[cfg(not(debug_assertions))]
@@ -276,6 +282,7 @@ impl Shared {
         if self.dispatching.replace(true) {
             return;
         }
+        let _dispatch_guard = DispatchGuard(&self.dispatching);
         loop {
             let next = self.queue.borrow_mut().pop_front();
             let Some(QueuedEvent {
@@ -306,7 +313,12 @@ impl Shared {
                 frame.dispatch_time = objc2_quartz_core::CACurrentMediaTime();
             }
             let taken = self.handler.borrow_mut().take();
-            let Some(mut handler) = taken else { break };
+            let Some(handler) = taken else { break };
+            let mut handler_guard = HandlerGuard {
+                slot: &self.handler,
+                closed: &self.closed,
+                handler: Some(handler),
+            };
             if event == Event::Redraw {
                 self.redraw_count.set(self.redraw_count.get() + 1);
                 if let Some(objects) = self.objects.get() {
@@ -318,6 +330,7 @@ impl Shared {
                 }
             }
             let mut window = Window::new(self.clone());
+            let handler = handler_guard.handler.as_mut().expect("handler present");
             if let Some(frame) = drawable {
                 crate::presentation::with_provided_drawable(&frame.layer, frame.drawable, || {
                     handler.handle(event, &mut window)
@@ -325,15 +338,11 @@ impl Shared {
             } else {
                 handler.handle(event, &mut window);
             }
-            // Closing an auxiliary window does not end NSApp.run. Retire its
-            // handler only after the current callback returns, outside borrows.
-            if self.closed.get() {
-                drop(handler);
-            } else {
-                *self.handler.borrow_mut() = Some(handler);
-            }
+            // Closing an auxiliary window does not end NSApp.run. HandlerGuard
+            // retires or restores the handler when dropped outside borrows.
+            drop(handler_guard);
         }
-        self.dispatching.set(false);
+        drop(_dispatch_guard);
         // Explicit selftest AX readiness runs only outside the mutable handler.
         crate::selftest::run_published_step(self);
         // AppKit can synchronously resize through its whole zoom animation.
@@ -454,19 +463,21 @@ impl Shared {
                 );
             }
             extern "C" fn correct(context: *mut c_void) {
-                // SAFETY: one main-queue callback owns this Box, created below
-                // on the main thread. Weak is never accessed on another thread
-                // and does not keep a closed/dropped window alive.
-                let weak = unsafe { Box::from_raw(context.cast::<std::rc::Weak<Shared>>()) };
-                if let Some(shared) = weak.upgrade() {
-                    if !shared.closed.get() {
-                        // Keep pending set throughout this attempt: synchronous
-                        // notifications coalesce, and a failed attempt cannot
-                        // schedule itself into an unbounded retry loop.
-                        shared.align_toolbar_controls();
+                crate::ffi_boundary("Shared::align_toolbar_controls_correct", || {
+                    // SAFETY: one main-queue callback owns this Box, created below
+                    // on the main thread. Weak is never accessed on another thread
+                    // and does not keep a closed/dropped window alive.
+                    let weak = unsafe { Box::from_raw(context.cast::<std::rc::Weak<Shared>>()) };
+                    if let Some(shared) = weak.upgrade() {
+                        if !shared.closed.get() {
+                            // Keep pending set throughout this attempt: synchronous
+                            // notifications coalesce, and a failed attempt cannot
+                            // schedule itself into an unbounded retry loop.
+                            shared.align_toolbar_controls();
+                        }
+                        shared.toolbar_alignment_pending.set(false);
                     }
-                    shared.toolbar_alignment_pending.set(false);
-                }
+                });
             }
             let context = Box::into_raw(Box::new(Rc::downgrade(self))).cast();
             // SAFETY: same libdispatch main-queue mechanism as native wake and
@@ -522,7 +533,9 @@ impl Shared {
         self.titlebar_drag_origin.borrow_mut().take();
         self.animating.set(false);
         self.discard_metal_frames();
+        self.queue.borrow_mut().clear();
         if let Some(o) = self.objects.get() {
+            o.view.cancel_pending_performs();
             o.view.invalidate_display_link();
         }
         let handler = self.handler.borrow_mut().take();
@@ -632,7 +645,7 @@ impl Window {
     /// Enable optional drawable receipts for benchmarking; disabled in normal UI.
     pub fn set_presentation_timing(&self, enabled: bool) {
         if enabled && let Ok(mut frames) = self.shared.presentation.frames.lock() {
-            frames.reserve(16384);
+            frames.reserve(crate::presentation::MAX_PRESENTED_FRAMES);
         }
         self.shared
             .presentation
@@ -669,7 +682,16 @@ impl Window {
             .presentation
             .frames
             .lock()
-            .map(|v| v.clone())
+            .map(|v| v.iter().copied().collect())
+            .unwrap_or_default()
+    }
+
+    pub fn drain_presented_frames(&self) -> Vec<crate::PresentedFrame> {
+        self.shared
+            .presentation
+            .frames
+            .lock()
+            .map(|mut v| v.drain(..).collect())
             .unwrap_or_default()
     }
     /// Enable Started/Finished provenance around text-owner key-downs. Legacy
@@ -1187,8 +1209,35 @@ impl Window {
     }
 }
 
+struct DispatchGuard<'a>(&'a Cell<bool>);
+
+impl Drop for DispatchGuard<'_> {
+    fn drop(&mut self) {
+        self.0.set(false);
+    }
+}
+
+struct HandlerGuard<'a> {
+    slot: &'a RefCell<Option<Box<dyn WindowHandler>>>,
+    closed: &'a Cell<bool>,
+    handler: Option<Box<dyn WindowHandler>>,
+}
+
+impl Drop for HandlerGuard<'_> {
+    fn drop(&mut self) {
+        if let Some(handler) = self.handler.take() {
+            if self.closed.get() {
+                drop(handler);
+            } else {
+                *self.slot.borrow_mut() = Some(handler);
+            }
+        }
+    }
+}
+
 fn text_pasteboard() -> Retained<objc2_app_kit::NSPasteboard> {
-    if std::env::var("TEKES_SELFTEST").as_deref() == Ok("text") {
+    static SELFTEST_TEXT: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    if *SELFTEST_TEXT.get_or_init(|| std::env::var("TEKES_SELFTEST").as_deref() == Ok("text")) {
         // Native text smoke tests must not replace the user's general clipboard.
         objc2_app_kit::NSPasteboard::pasteboardWithName(&NSString::from_str(&format!(
             "TekesUI.TextSelftest.{}",
@@ -1196,5 +1245,64 @@ fn text_pasteboard() -> Retained<objc2_app_kit::NSPasteboard> {
         )))
     } else {
         objc2_app_kit::NSPasteboard::generalPasteboard()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::panic::{AssertUnwindSafe, catch_unwind};
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    struct DummyHandler(std::sync::Arc<AtomicUsize>);
+    impl WindowHandler for DummyHandler {
+        fn handle(&mut self, _event: Event, _window: &mut Window) {}
+    }
+    impl Drop for DummyHandler {
+        fn drop(&mut self) {
+            self.0.fetch_add(1, Ordering::Relaxed);
+        }
+    }
+
+    #[test]
+    fn dispatch_and_handler_guards_restore_state_on_panic() {
+        let dispatching = Cell::new(true);
+        let closed = Cell::new(false);
+        let drops = std::sync::Arc::new(AtomicUsize::new(0));
+        let slot: RefCell<Option<Box<dyn WindowHandler>>> =
+            RefCell::new(Some(Box::new(DummyHandler(drops.clone()))));
+
+        let result = catch_unwind(AssertUnwindSafe(|| {
+            let _dispatch = DispatchGuard(&dispatching);
+            let handler = slot.borrow_mut().take().unwrap();
+            let _handler_guard = HandlerGuard {
+                slot: &slot,
+                closed: &closed,
+                handler: Some(handler),
+            };
+            panic!("simulated callback unwind");
+        }));
+        assert!(result.is_err());
+        assert!(!dispatching.get());
+        assert!(slot.borrow().is_some());
+        assert_eq!(drops.load(Ordering::Relaxed), 0);
+
+        // When closed before unwinding, the handler is dropped instead of restored.
+        dispatching.set(true);
+        closed.set(true);
+        let result = catch_unwind(AssertUnwindSafe(|| {
+            let _dispatch = DispatchGuard(&dispatching);
+            let handler = slot.borrow_mut().take().unwrap();
+            let _handler_guard = HandlerGuard {
+                slot: &slot,
+                closed: &closed,
+                handler: Some(handler),
+            };
+            panic!("simulated unwind after close");
+        }));
+        assert!(result.is_err());
+        assert!(!dispatching.get());
+        assert!(slot.borrow().is_none());
+        assert_eq!(drops.load(Ordering::Relaxed), 1);
     }
 }

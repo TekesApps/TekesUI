@@ -10,6 +10,7 @@ static CREATED: AtomicBool = AtomicBool::new(false);
 struct Counter(u64);
 impl ProcessModule for Counter {
     fn started(&mut self, emitter: &ComponentEmitter) -> Result<()> {
+        println!("worker stdout diagnostic log");
         emitter.emit(ComponentEvent::Toolbar {
             revision: 1,
             scope: ToolbarScope::Window {
@@ -100,9 +101,9 @@ fn response(process: &ProcessComponent, id: u64) -> Result<Value> {
 }
 // Deliberately invalid peers exercise parent rejection without the normal worker driver.
 fn invalid_peer(mode: &str) -> Result<()> {
-    use std::io::Write;
+    let (mut input, mut ipc_output) = take_worker_ipc_for_test()?;
     let mut line = String::new();
-    std::io::stdin().read_line(&mut line)?;
+    input.read_line(&mut line)?;
     let ClientMessage::Start {
         session, required, ..
     } = serde_json::from_str(&line)?
@@ -124,8 +125,8 @@ fn invalid_peer(mode: &str) -> Result<()> {
     if mode == "fault-session" {
         packet.session.host_epoch += 1;
     }
-    println!("{}", serde_json::to_string(&packet)?);
-    std::io::stdout().flush()?;
+    writeln!(ipc_output, "{}", serde_json::to_string(&packet)?)?;
+    ipc_output.flush()?;
     if matches!(mode, "fault-window" | "fault-view") {
         packet.serial += 1;
         packet.output = Output::Event(ComponentEvent::Toolbar {
@@ -139,7 +140,7 @@ fn invalid_peer(mode: &str) -> Result<()> {
             },
             items: vec![],
         });
-        println!("{}", serde_json::to_string(&packet)?);
+        writeln!(ipc_output, "{}", serde_json::to_string(&packet)?)?;
     }
     if mode == "fault-response" {
         packet.serial += 1;
@@ -147,7 +148,7 @@ fn invalid_peer(mode: &str) -> Result<()> {
             request: 999,
             result: Ok(Value::Null),
         };
-        println!("{}", serde_json::to_string(&packet)?);
+        writeln!(ipc_output, "{}", serde_json::to_string(&packet)?)?;
     }
     if mode == "fault-overflow" {
         for serial in 2..100 {
@@ -156,29 +157,21 @@ fn invalid_peer(mode: &str) -> Result<()> {
                 topic: "flood".into(),
                 payload: Value::Null,
             });
-            println!("{}", serde_json::to_string(&packet)?);
+            writeln!(ipc_output, "{}", serde_json::to_string(&packet)?)?;
         }
     }
     if mode == "fault-large" {
-        std::io::stdout().write_all(&vec![b'x'; 1_048_577])?;
+        ipc_output.write_all(&vec![b'x'; 1_048_577])?;
     }
-    std::io::stdout().flush()?;
+    ipc_output.flush()?;
     loop {
         std::thread::park();
     }
 }
 fn raw_headless_curve_rejection() -> Result<u32> {
-    use std::io::{BufRead, BufReader, Write};
-    use std::process::{Command, Stdio};
-    let mut child = Command::new(std::env::current_exe()?)
-        .args(["--tekesui-component", "counter"])
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::inherit())
-        .spawn()?;
-    let pid = child.id();
-    let mut input = child.stdin.take().unwrap();
-    let mut output = BufReader::new(child.stdout.take().unwrap());
+    let mut child = spawn_raw_worker_for_test(&["--tekesui-component", "counter"], false)?;
+    let pid = child.pid;
+    let mut input = child.input.take().unwrap();
     let session = Session {
         module: "counter".into(),
         instance: 1001,
@@ -228,7 +221,7 @@ fn raw_headless_curve_rejection() -> Result<u32> {
     let (mut rejected, mut unchanged, mut stopped, mut saw_frame) = (false, false, false, false);
     loop {
         let mut line = String::new();
-        if output.read_line(&mut line)? == 0 {
+        if child.output.read_line(&mut line)? == 0 {
             break;
         }
         let packet: ServerMessage = serde_json::from_str(&line)?;
@@ -272,8 +265,9 @@ fn raw_headless_curve_rejection() -> Result<u32> {
             other => anyhow::bail!("unexpected Curve/headless output: {other:?}"),
         }
     }
+    let (success, _) = child.wait_with_stderr()?;
     ensure!(
-        child.wait()?.success() && rejected && unchanged && stopped && !saw_frame,
+        success && rejected && unchanged && stopped && !saw_frame,
         "headless Curve request was not refused before business/frame dispatch"
     );
     Ok(pid)
@@ -281,15 +275,8 @@ fn raw_headless_curve_rejection() -> Result<u32> {
 /// Raw packets bypass the parent's admission so this checks the actual worker
 /// dispatcher, including the existing fatal rejection for unnegotiated Content.
 fn raw_headless_content_rejection(body: RequestBody, context: bool) -> Result<()> {
-    use std::io::Write;
-    use std::process::{Command, Stdio};
-    let mut child = Command::new(std::env::current_exe()?)
-        .args(["--tekesui-component", "counter"])
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()?;
-    let mut input = child.stdin.take().unwrap();
+    let mut child = spawn_raw_worker_for_test(&["--tekesui-component", "counter"], true)?;
+    let mut input = child.input.take().unwrap();
     let session = Session {
         module: "counter".into(),
         instance: 1002,
@@ -327,13 +314,17 @@ fn raw_headless_content_rejection(body: RequestBody, context: bool) -> Result<()
         serde_json::to_writer(&mut input, &packet)?;
         input.write_all(b"\n")?;
     }
+    input.flush()?;
     drop(input);
-    let output = child.wait_with_output()?;
     let mut rejected = false;
     let mut unchanged = false;
     let mut stopped = false;
-    for line in std::str::from_utf8(&output.stdout)?.lines() {
-        let packet: ServerMessage = serde_json::from_str(line)?;
+    loop {
+        let mut line = String::new();
+        if child.output.read_line(&mut line)? == 0 {
+            break;
+        }
+        let packet: ServerMessage = serde_json::from_str(&line)?;
         ensure!(packet.session == session);
         match packet.output {
             Output::Ready { capabilities, .. } => ensure!(capabilities == Capabilities::HEADLESS),
@@ -362,14 +353,12 @@ fn raw_headless_content_rejection(body: RequestBody, context: bool) -> Result<()
             other => anyhow::bail!("unexpected unnegotiated Content output: {other:?}"),
         }
     }
+    let (success, stderr) = child.wait_with_stderr()?;
     if context {
-        ensure!(output.status.success() && rejected && unchanged && stopped);
+        ensure!(success && rejected && unchanged && stopped);
     } else {
-        ensure!(!output.status.success() && !unchanged && !stopped);
-        ensure!(
-            std::str::from_utf8(&output.stderr)?
-                .contains("Content input requires a negotiated View")
-        );
+        ensure!(!success && !unchanged && !stopped);
+        ensure!(stderr.contains("Content input requires a negotiated View"));
     }
     Ok(())
 }

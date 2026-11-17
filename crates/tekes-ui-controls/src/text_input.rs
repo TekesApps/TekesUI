@@ -239,6 +239,27 @@ impl TextInput {
             .filter(|c| !c.is_control() || (self.multiline && (*c == '\n' || *c == '\t')))
             .collect()
     }
+    fn scalar_floor(&self, utf16: usize) -> usize {
+        let mut n = 0;
+        for ch in self.text.chars() {
+            let len = ch.len_utf16();
+            if n + len > utf16 {
+                return n;
+            }
+            n += len;
+        }
+        n
+    }
+    fn scalar_ceil(&self, utf16: usize) -> usize {
+        let mut n = 0;
+        for ch in self.text.chars() {
+            if n >= utf16 {
+                return n;
+            }
+            n += ch.len_utf16();
+        }
+        n
+    }
     fn replace_raw(&mut self, range: Range<usize>, value: &str) -> Range<usize> {
         let range = self.normalized(range);
         let value = self.normalize_value(value);
@@ -250,8 +271,14 @@ impl TextInput {
         range.start..end
     }
     fn replace_raw_exact(&mut self, range: Range<usize>, value: &str) -> Range<usize> {
-        let start = range.start.min(self.len());
-        let end = range.end.max(start).min(self.len());
+        let raw_start = range.start.min(self.len());
+        let raw_end = range.end.max(raw_start).min(self.len());
+        let start = self.scalar_floor(raw_start);
+        let end = if raw_end > raw_start {
+            self.scalar_ceil(raw_end)
+        } else {
+            start
+        };
         let value = self.normalize_value(value);
         self.text
             .replace_range(self.byte(start)..self.byte(end), &value);
@@ -304,8 +331,14 @@ impl TextInput {
             .or(marked)
             .unwrap_or_else(|| self.selection());
         let range = if use_exact_range {
-            let start = range.start.min(self.len());
-            let end = range.end.max(start).min(self.len());
+            let raw_start = range.start.min(self.len());
+            let raw_end = range.end.max(raw_start).min(self.len());
+            let start = self.scalar_floor(raw_start);
+            let end = if raw_end > raw_start {
+                self.scalar_ceil(raw_end)
+            } else {
+                start
+            };
             start..end
         } else {
             self.normalized(range)
@@ -532,6 +565,24 @@ impl TextInput {
         self.anchor = anchor;
         self.caret = caret;
     }
+    fn next_unit_boundary(&self, direction: isize, word: bool) -> usize {
+        let positions = if word {
+            self.word_boundaries()
+        } else {
+            self.boundaries()
+        };
+        if direction < 0 {
+            positions
+                .into_iter()
+                .rfind(|n| *n < self.caret)
+                .unwrap_or(0)
+        } else {
+            positions
+                .into_iter()
+                .find(|n| *n > self.caret)
+                .unwrap_or(self.len())
+        }
+    }
     pub fn move_by(&mut self, direction: isize, extend: bool, word: bool) {
         self.advance_edit_epoch();
         if !extend && !self.selection().is_empty() {
@@ -543,39 +594,31 @@ impl TextInput {
             self.anchor = self.caret;
             return;
         }
-        let positions = if word {
-            self.word_boundaries()
-        } else {
-            self.boundaries()
-        };
-        let next = if direction < 0 {
-            positions
-                .into_iter()
-                .rfind(|n| *n < self.caret)
-                .unwrap_or(0)
-        } else {
-            positions
-                .into_iter()
-                .find(|n| *n > self.caret)
-                .unwrap_or(self.len())
-        };
+        let next = self.next_unit_boundary(direction, word);
         self.select(next, extend);
     }
     pub fn delete(&mut self, backward: bool, word: bool) -> bool {
         if self.read_only || self.disabled {
             return false;
         }
+        let selection = self.selection();
+        let target = if !selection.is_empty() {
+            selection
+        } else {
+            let next = self.next_unit_boundary(if backward { -1 } else { 1 }, word);
+            if next == self.caret {
+                return false;
+            }
+            self.caret.min(next)..self.caret.max(next)
+        };
+        if target.is_empty() {
+            return false;
+        }
         if self.marked.is_some() {
             self.unmark();
         }
         let original = self.snapshot();
-        if self.selection().is_empty() {
-            self.move_by(if backward { -1 } else { 1 }, true, word);
-        }
-        if self.selection().is_empty() {
-            return false;
-        }
-        let changed = self.insert("", None);
+        let changed = self.insert("", Some(target));
         if changed && let Some(last) = self.undo.last_mut() {
             *last = original;
         }
@@ -678,6 +721,7 @@ impl TextInput {
         self.text
             .replace_range(left_start..right_end, &(right + &left));
         self.advance_edit_epoch();
+        let end = self.boundary_after(end);
         self.anchor = end;
         self.caret = end;
         self.marked = None;
@@ -909,5 +953,35 @@ mod tests {
         assert!(input.apply_insert(prepared));
         assert_eq!(input.text, "xb");
         assert_eq!(input.selection(), 1..1);
+    }
+
+    #[test]
+    fn exact_surrogate_normalization_transpose_grapheme_ceil_and_noop_delete() {
+        // 1. Mid-surrogate replacement normalizes scalar boundaries without drifting marked range.
+        let mut input = TextInput::new("A😀B", false);
+        input.select(3, false);
+        assert!(input.preedit("Z", 1..1, Some(2..4)));
+        assert_eq!(input.text, "AZ");
+        assert_eq!(input.marked, Some(1..2));
+
+        // 2. Transposing CR across non-newline into CR+LF keeps caret at grapheme end (3, not 2).
+        let mut crlf = TextInput::new("\ra\n", true);
+        crlf.caret = 1;
+        crlf.anchor = 1;
+        assert!(crlf.transpose());
+        assert_eq!(crlf.text, "a\r\n");
+        assert_eq!(crlf.caret, 3);
+        assert_eq!(crlf.anchor, 3);
+
+        // 3. No-op delete at start/end preserves IME marked composition and edit_epoch.
+        let mut ime = TextInput::new("abc", false);
+        ime.select(0, false);
+        assert!(ime.preedit("p", 0..0, Some(0..0)));
+        ime.caret = 0;
+        ime.anchor = 0;
+        let before_rev = ime.edit_revision();
+        assert!(!ime.delete(true, false));
+        assert!(ime.marked.is_some());
+        assert_eq!(ime.edit_revision(), before_rev);
     }
 }

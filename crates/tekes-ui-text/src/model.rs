@@ -81,6 +81,15 @@ pub struct ShapedRun {
     pub glyphs: Vec<ShapedGlyph>,
 }
 
+/// Visual horizontal span of one extended grapheme cluster on a shaped line.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct GraphemeSpan {
+    pub start: usize,
+    pub end: usize,
+    pub x_start: f64,
+    pub x_end: f64,
+}
+
 /// 一行。
 #[derive(Clone, Debug, PartialEq)]
 pub struct Line {
@@ -104,6 +113,8 @@ pub struct Line {
     pub runs: Vec<ShapedRun>,
     /// UTF-16 caret boundaries and primary visual offsets returned by CoreText.
     pub carets: Vec<(usize, f64)>,
+    /// Visual bounds per logical grapheme cluster on this line (handles Bidi runs).
+    pub graphemes: Vec<GraphemeSpan>,
     /// This visual line ends with an explicit line break, rather than soft wrap.
     pub has_newline: bool,
 }

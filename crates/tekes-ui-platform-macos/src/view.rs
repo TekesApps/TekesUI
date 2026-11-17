@@ -64,58 +64,97 @@ define_class!(
     unsafe impl NSTextInputClient for TekesView {
         #[unsafe(method(insertText:replacementRange:))]
         unsafe fn insertText_replacementRange(&self,string:&objc2::runtime::AnyObject,replacement:objc2_foundation::NSRange) {
-            self.note_text_callback(false);
-            self.ivars().shared.dispatch(Event::TextCommit{text:input_string(string),replacement:input_range(replacement)});
+            crate::ffi_boundary("TekesView::insertText:replacementRange:", || {
+                self.note_text_callback(false);
+                self.ivars().shared.dispatch(Event::TextCommit{text:input_string(string),replacement:input_range(replacement)});
+            });
         }
         #[unsafe(method(doCommandBySelector:))]
         unsafe fn doCommandBySelector(&self,selector:objc2::runtime::Sel) {
-            self.note_text_callback(true);
-            self.ivars().shared.dispatch(Event::TextCommand(selector.name().to_string_lossy().into_owned()));
+            crate::ffi_boundary("TekesView::doCommandBySelector:", || {
+                self.note_text_callback(true);
+                self.ivars().shared.dispatch(Event::TextCommand(selector.name().to_string_lossy().into_owned()));
+            });
         }
         #[unsafe(method(setMarkedText:selectedRange:replacementRange:))]
         unsafe fn setMarkedText_selectedRange_replacementRange(&self,string:&objc2::runtime::AnyObject,selection:objc2_foundation::NSRange,replacement:objc2_foundation::NSRange) {
-            self.note_text_callback(false);
-            self.ivars().shared.dispatch(Event::TextPreedit{text:input_string(string),clauses:input_clauses(string),selection:selection.location..selection.location.saturating_add(selection.length),replacement:input_range(replacement)});
+            crate::ffi_boundary("TekesView::setMarkedText:selectedRange:replacementRange:", || {
+                self.note_text_callback(false);
+                self.ivars().shared.dispatch(Event::TextPreedit{text:input_string(string),clauses:input_clauses(string),selection:selection.location..selection.location.saturating_add(selection.length),replacement:input_range(replacement)});
+            });
         }
         #[unsafe(method(unmarkText))]
-        fn unmarkText(&self) {self.note_text_callback(false);self.ivars().shared.dispatch(Event::TextUnmark);}
+        fn unmarkText(&self) {
+            crate::ffi_boundary("TekesView::unmarkText", || {
+                self.note_text_callback(false);
+                self.ivars().shared.dispatch(Event::TextUnmark);
+            });
+        }
         #[unsafe(method(selectedRange))]
-        fn selectedRange(&self)->objc2_foundation::NSRange {self.ivars().shared.text_input.borrow().as_ref().map(|s|native_range(s.selection.clone())).unwrap_or(not_found())}
+        fn selectedRange(&self)->objc2_foundation::NSRange {
+            crate::ffi_boundary("TekesView::selectedRange", || {
+                self.ivars().shared.text_input.borrow().as_ref().map(|s|native_range(s.selection.clone())).unwrap_or(not_found())
+            })
+        }
         #[unsafe(method(markedRange))]
-        fn markedRange(&self)->objc2_foundation::NSRange {self.ivars().shared.text_input.borrow().as_ref().and_then(|s|s.marked.clone()).map(native_range).unwrap_or(not_found())}
+        fn markedRange(&self)->objc2_foundation::NSRange {
+            crate::ffi_boundary("TekesView::markedRange", || {
+                self.ivars().shared.text_input.borrow().as_ref().and_then(|s|s.marked.clone()).map(native_range).unwrap_or(not_found())
+            })
+        }
         #[unsafe(method(hasMarkedText))]
-        fn hasMarkedText(&self)->bool {self.ivars().shared.text_input.borrow().as_ref().is_some_and(|s|s.marked.is_some())}
+        fn hasMarkedText(&self)->bool {
+            crate::ffi_boundary("TekesView::hasMarkedText", || {
+                self.ivars().shared.text_input.borrow().as_ref().is_some_and(|s|s.marked.is_some())
+            })
+        }
         #[unsafe(method_id(attributedSubstringForProposedRange:actualRange:))]
         unsafe fn attributedSubstringForProposedRange_actualRange(&self,range:objc2_foundation::NSRange,actual:*mut objc2_foundation::NSRange)->Option<Retained<objc2_foundation::NSAttributedString>> {
-            (|| {
-            let state=self.ivars().shared.text_input.borrow();let state=state.as_ref()?;
-            if range.location==isize::MAX as usize {return None;}
-            let units:Vec<u16>=state.text.encode_utf16().collect();let mut start=range.location.min(units.len());let mut end=range.location.saturating_add(range.length).min(units.len());
-            let low=|u:u16|(0xDC00..=0xDFFF).contains(&u);
-            if start<units.len()&&start>0&&low(units[start]){start-=1;}
-            if end<units.len()&&end>0&&low(units[end]){end+=1;}
-            if start>end {return None;}
-            if !actual.is_null(){unsafe {*actual=objc2_foundation::NSRange::new(start,end-start);}}
-            Some(objc2_foundation::NSAttributedString::initWithString(objc2_foundation::NSAttributedString::alloc(),&objc2_foundation::NSString::from_str(&String::from_utf16_lossy(&units[start..end]))))
-            })()
+            crate::ffi_boundary("TekesView::attributedSubstringForProposedRange:actualRange:", || {
+                let state = self.ivars().shared.text_input.borrow();
+                let state = state.as_ref()?;
+                if range.location == isize::MAX as usize {
+                    return None;
+                }
+                let (start, end, slice) = crate::event::utf16_slice_clamped_expanding_surrogates(
+                    &state.text,
+                    range.location,
+                    range.location.saturating_add(range.length),
+                )?;
+                if !actual.is_null() {
+                    unsafe { *actual = objc2_foundation::NSRange::new(start, end - start); }
+                }
+                Some(objc2_foundation::NSAttributedString::initWithString(
+                    objc2_foundation::NSAttributedString::alloc(),
+                    &objc2_foundation::NSString::from_str(slice),
+                ))
+            })
         }
         #[unsafe(method_id(validAttributesForMarkedText))]
-        fn validAttributesForMarkedText(&self)->Retained<NSArray<objc2_foundation::NSAttributedStringKey>> {unsafe {NSArray::from_slice(&[objc2_app_kit::NSMarkedClauseSegmentAttributeName,objc2_app_kit::NSUnderlineStyleAttributeName])}}
+        fn validAttributesForMarkedText(&self)->Retained<NSArray<objc2_foundation::NSAttributedStringKey>> {
+            crate::ffi_boundary("TekesView::validAttributesForMarkedText", || {
+                unsafe {NSArray::from_slice(&[objc2_app_kit::NSMarkedClauseSegmentAttributeName,objc2_app_kit::NSUnderlineStyleAttributeName])}
+            })
+        }
         #[unsafe(method(firstRectForCharacterRange:actualRange:))]
         unsafe fn firstRectForCharacterRange_actualRange(&self,_range:objc2_foundation::NSRange,actual:*mut objc2_foundation::NSRange)->NSRect {
-            if !actual.is_null(){unsafe {*actual=not_found();}}
-            let geometry = _range.location.checked_add(_range.length).and_then(|end| {
-                self.ivars().shared.text_input.borrow().as_ref().and_then(|s| s.first_rect_for_range(_range.location..end))
-            });
-            let Some((covered, origin, size)) = geometry else {return NSRect::ZERO;};
-            if !actual.is_null(){unsafe {*actual=native_range(covered);}}
-            let rect=NSRect::new(objc2_foundation::NSPoint::new(origin.x,origin.y),NSSize::new(size.width,size.height));
-            let rect=self.convertRect_toView(rect,None);self.window().map_or(rect,|w|w.convertRectToScreen(rect))
+            crate::ffi_boundary("TekesView::firstRectForCharacterRange:actualRange:", || {
+                if !actual.is_null(){unsafe {*actual=not_found();}}
+                let geometry = _range.location.checked_add(_range.length).and_then(|end| {
+                    self.ivars().shared.text_input.borrow().as_ref().and_then(|s| s.first_rect_for_range(_range.location..end))
+                });
+                let Some((covered, origin, size)) = geometry else {return NSRect::ZERO;};
+                if !actual.is_null(){unsafe {*actual=native_range(covered);}}
+                let rect=NSRect::new(objc2_foundation::NSPoint::new(origin.x,origin.y),NSSize::new(size.width,size.height));
+                let rect=self.convertRect_toView(rect,None);self.window().map_or(rect,|w|w.convertRectToScreen(rect))
+            })
         }
         #[unsafe(method(characterIndexForPoint:))]
         fn characterIndexForPoint(&self,point:objc2_foundation::NSPoint)->usize {
-            let p=self.window().map_or(point,|w|w.convertPointFromScreen(point));let p=self.convertPoint_fromView(p,None);
-            self.ivars().shared.text_input.borrow().as_ref().and_then(|s|s.character_index_for_point(Point{x:p.x,y:p.y})).unwrap_or(isize::MAX as usize)
+            crate::ffi_boundary("TekesView::characterIndexForPoint:", || {
+                let p=self.window().map_or(point,|w|w.convertPointFromScreen(point));let p=self.convertPoint_fromView(p,None);
+                self.ivars().shared.text_input.borrow().as_ref().and_then(|s|s.character_index_for_point(Point{x:p.x,y:p.y})).unwrap_or(isize::MAX as usize)
+            })
         }
     }
 
@@ -125,22 +164,24 @@ define_class!(
     unsafe impl CAMetalDisplayLinkDelegate for TekesView {
         #[unsafe(method(metalDisplayLink:needsUpdate:))]
         fn metalDisplayLink_needsUpdate(&self, _link: &CAMetalDisplayLink, update: &CAMetalDisplayLinkUpdate) {
-            let callback_time = CACurrentMediaTime();
-            // A handler may stop/invalidate the link during this callback.
-            let _lifetime_guard = _link.retain();
-            let shared = &self.ivars().shared;
-            shared.link_callbacks.set(shared.link_callbacks.get() + 1);
-            let current = self.ivars().metal_link.borrow().clone();
-            if !current.as_ref().is_some_and(|link| std::ptr::eq(&**link, _link)) { return; }
-            if !shared.ready.get() || !shared.animating.get() || self.ivars().live_resizing.get() { return; }
-            shared.animation_frames.set(shared.animation_frames.get() + 1);
-            // Keep a missed callback from enlarging the nominal refresh budget.
-            let hz = self.window().and_then(|w| w.screen()).map_or(60, |s| s.maximumFramesPerSecond()).clamp(1, 120);
-            let interval = 1.0 / hz as f64;
-            let target = update.targetPresentationTimestamp();
-            let frame = AnimationFrame::new(target - interval, target, callback_time, interval)
-                .with_submission_deadline(update.targetTimestamp());
-            shared.dispatch_metal_frame(frame, self.metal_layer(), update.drawable());
+            crate::ffi_boundary("TekesView::metalDisplayLink:needsUpdate:", || {
+                let callback_time = CACurrentMediaTime();
+                // A handler may stop/invalidate the link during this callback.
+                let _lifetime_guard = _link.retain();
+                let shared = &self.ivars().shared;
+                shared.link_callbacks.set(shared.link_callbacks.get() + 1);
+                let current = self.ivars().metal_link.borrow().clone();
+                if !current.as_ref().is_some_and(|link| std::ptr::eq(&**link, _link)) { return; }
+                if !shared.ready.get() || !shared.animating.get() || self.ivars().live_resizing.get() { return; }
+                shared.animation_frames.set(shared.animation_frames.get() + 1);
+                // Keep a missed callback from enlarging the nominal refresh budget.
+                let hz = self.window().and_then(|w| w.screen()).map_or(60, |s| s.maximumFramesPerSecond()).clamp(1, 120);
+                let interval = 1.0 / hz as f64;
+                let target = update.targetPresentationTimestamp();
+                let frame = AnimationFrame::new(target - interval, target, callback_time, interval)
+                    .with_submission_deadline(update.targetTimestamp());
+                shared.dispatch_metal_frame(frame, self.metal_layer(), update.drawable());
+            });
         }
     }
 
@@ -148,70 +189,80 @@ define_class!(
 
         #[unsafe(method_id(accessibilityHitTest:))]
         fn content_accessibility_hit_test(&self, point: NSPoint) -> Option<Retained<objc2::runtime::AnyObject>> {
-            #[cfg(feature = "content-accessibility")]
-            {
-                let shared = &self.ivars().shared;
-                let snapshot = shared.content_geometry.borrow().clone();
-                if let Some(snapshot) = snapshot.filter(|s| s.is_current())
-                    && let Some(objects) = shared.objects.get()
-                    && let Some(key) = {
-                        let local = self.convertPoint_fromView(objects.window.convertPointFromScreen(point), None);
-                        snapshot.hit_test(crate::event::Point { x: local.x, y: local.y })
-                    }
-                    && let Some(element) = shared.accessibility_elements.borrow().get(&key).cloned()
+            crate::ffi_boundary("TekesView::accessibilityHitTest:", || {
+                #[cfg(feature = "content-accessibility")]
                 {
-                    Some(element.into())
-                } else {
-                    unsafe { msg_send![super(self), accessibilityHitTest: point] }
+                    let shared = &self.ivars().shared;
+                    let snapshot = shared.content_geometry.borrow().clone();
+                    if let Some(snapshot) = snapshot.filter(|s| s.is_current())
+                        && let Some(objects) = shared.objects.get()
+                        && let Some(key) = {
+                            let local = self.convertPoint_fromView(objects.window.convertPointFromScreen(point), None);
+                            snapshot.hit_test(crate::event::Point { x: local.x, y: local.y })
+                        }
+                        && let Some(element) = shared.accessibility_elements.borrow().get(&key).cloned()
+                    {
+                        Some(element.into())
+                    } else {
+                        unsafe { msg_send![super(self), accessibilityHitTest: point] }
+                    }
                 }
-            }
-            #[cfg(not(feature = "content-accessibility"))]
-            unsafe { msg_send![super(self), accessibilityHitTest: point] }
+                #[cfg(not(feature = "content-accessibility"))]
+                unsafe { msg_send![super(self), accessibilityHitTest: point] }
+            })
         }
         #[unsafe(method_id(accessibilityChildren))]
         fn accessibility_children(&self) -> Retained<objc2_foundation::NSArray> {
-            self.accessibility_children_snapshot()
+            crate::ffi_boundary("TekesView::accessibilityChildren", || {
+                self.accessibility_children_snapshot()
+            })
         }
 
         #[unsafe(method_id(accessibilityFocusedUIElement))]
         fn accessibility_focused_ui_element(&self) -> Retained<objc2::runtime::AnyObject> {
-            let shared = &self.ivars().shared;
-            #[cfg(feature="content-accessibility")]
-            let authorized=shared.content_geometry.borrow().as_ref().is_none_or(|p|p.is_current());
-            #[cfg(not(feature="content-accessibility"))]
-            let authorized=true;
-            let focused_key = shared
-                .accessibility_nodes
-                .borrow()
-                .iter()
-                .find(|node| !shared.closed.get() && authorized && node.focused)
-                .map(|node| node.key);
-            focused_key
-                .and_then(|key| shared.accessibility_elements.borrow().get(&key).cloned())
-                .map(Into::into)
-                .unwrap_or_else(|| self.retain().into())
+            crate::ffi_boundary("TekesView::accessibilityFocusedUIElement", || {
+                let shared = &self.ivars().shared;
+                #[cfg(feature="content-accessibility")]
+                let authorized=shared.content_geometry.borrow().as_ref().is_none_or(|p|p.is_current());
+                #[cfg(not(feature="content-accessibility"))]
+                let authorized=true;
+                let focused_key = shared
+                    .accessibility_nodes
+                    .borrow()
+                    .iter()
+                    .find(|node| !shared.closed.get() && authorized && node.focused)
+                    .map(|node| node.key);
+                focused_key
+                    .and_then(|key| shared.accessibility_elements.borrow().get(&key).cloned())
+                    .map(Into::into)
+                    .unwrap_or_else(|| self.retain().into())
+            })
         }
 
         #[unsafe(method(tekesStartMetalLink))]
         fn start_metal_link_deferred(&self) {
-            self.ivars().metal_start_pending.set(false);
-            let shared = &self.ivars().shared;
-            if !shared.closed.get() && shared.animating.get() && !self.ivars().live_resizing.get() {
-                if shared.can_dispatch_synchronously() {
-                    self.start_metal_link_now();
-                } else {
-                    self.schedule_metal_start();
+            crate::ffi_boundary("TekesView::tekesStartMetalLink", || {
+                self.ivars().metal_start_pending.set(false);
+                let shared = &self.ivars().shared;
+                if !shared.closed.get() && shared.animating.get() && !self.ivars().live_resizing.get() {
+                    if shared.can_dispatch_synchronously() {
+                        self.start_metal_link_now();
+                    } else {
+                        self.schedule_metal_start();
+                    }
                 }
-            }
+            });
         }
 
         #[unsafe(method(tekesCaretBlink))]
         fn caret_blink(&self) {
-            let active=self.ivars().shared.text_input.borrow().as_ref().is_some_and(|s|!s.read_only&&s.selection.is_empty());
-            if active && !self.ivars().shared.closed.get() {
-                self.ivars().shared.dispatch(Event::CaretBlink);
-                self.schedule_caret_blink();
-            } else {self.ivars().shared.caret_scheduled.set(false);}
+            crate::ffi_boundary("TekesView::tekesCaretBlink", || {
+                let active=self.ivars().shared.text_input.borrow().as_ref().is_some_and(|s|!s.read_only&&s.selection.is_empty());
+                if active && !self.ivars().shared.closed.get() {
+                    self.ivars().shared.dispatch(Event::CaretBlink);
+                    self.schedule_caret_blink();
+                } else {self.ivars().shared.caret_scheduled.set(false);}
+            });
         }
 
         // ---- 视图属性 ----
@@ -220,55 +271,59 @@ define_class!(
         /// 鼠标位置不需要手动 `height - y`。
         #[unsafe(method(isFlipped))]
         fn is_flipped(&self) -> bool {
-            true
+            crate::ffi_boundary("TekesView::isFlipped", || true)
         }
 
         #[unsafe(method_id(hitTest:))]
         fn hit_test(&self, point: NSPoint) -> Option<Retained<NSView>> {
-            let event = objc2_app_kit::NSApplication::sharedApplication(self.mtm()).currentEvent();
-            self.toolbar_hit_target(point, event.as_deref()).or_else(|| {
-                // SAFETY: unchanged native hit testing for every other point.
-                unsafe { msg_send![super(self), hitTest: point] }
+            crate::ffi_boundary("TekesView::hitTest:", || {
+                let event = objc2_app_kit::NSApplication::sharedApplication(self.mtm()).currentEvent();
+                self.toolbar_hit_target(point, event.as_deref()).or_else(|| {
+                    // SAFETY: unchanged native hit testing for every other point.
+                    unsafe { msg_send![super(self), hitTest: point] }
+                })
             })
         }
 
         /// 整个视图不透明，让窗口服务器不必混合下层。
         #[unsafe(method(isOpaque))]
         fn is_opaque(&self) -> bool {
-            true
+            crate::ffi_boundary("TekesView::isOpaque", || true)
         }
 
         #[unsafe(method(acceptsFirstResponder))]
         fn accepts_first_responder(&self) -> bool {
-            true
+            crate::ffi_boundary("TekesView::acceptsFirstResponder", || true)
         }
 
         /// 窗口未激活时的第一次点击也送达视图，而不只是激活窗口。
         #[unsafe(method(acceptsFirstMouse:))]
         fn accepts_first_mouse(&self, _event: Option<&NSEvent>) -> bool {
-            true
+            crate::ffi_boundary("TekesView::acceptsFirstMouse:", || true)
         }
 
         // ---- 层 ----
 
         #[unsafe(method(wantsUpdateLayer))]
         fn wants_update_layer(&self) -> bool {
-            true
+            crate::ffi_boundary("TekesView::wantsUpdateLayer", || true)
         }
 
         #[unsafe(method_id(makeBackingLayer))]
         fn make_backing_layer(&self) -> Retained<CALayer> {
-            let layer = crate::presentation::ObservedMetalLayer::new(self.ivars().shared.presentation.clone()).into_super();
-            // 渲染层按 gamma 空间混合，与 AppKit 一致，所以层的色彩空间标成 sRGB，
-            // 不让系统把显示器的色域再转换一次。
-            let srgb = CGColorSpace::with_name(Some(unsafe { kCGColorSpaceSRGB }));
-            layer.setColorspace(srgb.as_deref());
-            layer.setOpaque(true);
-            // drawableSize 归渲染器管（wgpu 配置 surface 时设置），平台层不碰；
-            // 在渲染器接管之前，CAMetalLayer 自己按 bounds * contentsScale 算。
-            layer.setContentsScale(self.scale_factor());
-            *self.ivars().layer.borrow_mut() = Some(layer.clone());
-            layer.into_super()
+            crate::ffi_boundary("TekesView::makeBackingLayer", || {
+                let layer = crate::presentation::ObservedMetalLayer::new(self.ivars().shared.presentation.clone()).into_super();
+                // 渲染层按 gamma 空间混合，与 AppKit 一致，所以层的色彩空间标成 sRGB，
+                // 不让系统把显示器的色域再转换一次。
+                let srgb = CGColorSpace::with_name(Some(unsafe { kCGColorSpaceSRGB }));
+                layer.setColorspace(srgb.as_deref());
+                layer.setOpaque(true);
+                // drawableSize 归渲染器管（wgpu 配置 surface 时设置），平台层不碰；
+                // 在渲染器接管之前，CAMetalLayer 自己按 bounds * contentsScale 算。
+                layer.setContentsScale(self.scale_factor());
+                *self.ivars().layer.borrow_mut() = Some(layer.clone());
+                layer.into_super()
+            })
         }
 
         /// 实测（macOS 26）：背衬层是 CAMetalLayer 时，`setNeedsDisplay:` 会被转成层的 needsDisplay，
@@ -278,71 +333,83 @@ define_class!(
         /// 照样投递 `Redraw`。
         #[unsafe(method(updateLayer))]
         fn update_layer(&self) {
-            let shared = &self.ivars().shared;
-            if !shared.ready.get() {
-                return;
-            }
-            shared.redraw_pending.set(false);
-            shared.dispatch(Event::Redraw);
+            crate::ffi_boundary("TekesView::updateLayer", || {
+                let shared = &self.ivars().shared;
+                if shared.closed.get() || !shared.ready.get() {
+                    return;
+                }
+                shared.redraw_pending.set(false);
+                shared.dispatch(Event::Redraw);
+            });
         }
 
         /// `request_redraw` 排进主 runloop（common modes）的一次性回调，合并后只投递一次 `Redraw`。
         /// 没有定时器，也没有 display link：runloop 在没有排队回调时停在 `mach_msg`。
         #[unsafe(method(tekesPerformRedraw))]
         fn perform_redraw(&self) {
-            let shared = &self.ivars().shared;
-            // 已经被同步重绘（缩放路径）满足的请求，这里不再重复。
-            if shared.ready.get() && shared.redraw_pending.replace(false) {
-                shared.dispatch(Event::Redraw);
-            }
+            crate::ffi_boundary("TekesView::tekesPerformRedraw", || {
+                let shared = &self.ivars().shared;
+                // 已经被同步重绘（缩放路径）满足的请求，这里不再重复。
+                if !shared.closed.get() && shared.ready.get() && shared.redraw_pending.replace(false) {
+                    shared.dispatch(Event::Redraw);
+                }
+            });
         }
 
         /// 显示链接的回调。第一件事是读时钟：`callback_time` 要尽量接近回调真正发生的时刻。
         /// 动画模式关着时（暂停之前已经排队的最后一次回调）只计数，不投递。
         #[unsafe(method(tekesDisplayLinkFired:))]
         fn display_link_fired(&self, link: &CADisplayLink) {
-            let callback_time = CACurrentMediaTime();
-            let shared = &self.ivars().shared;
-            shared.link_callbacks.set(shared.link_callbacks.get() + 1);
-            // Pausing CAD may leave one callback queued. Outside live resize
-            // only the Metal delegate may drive this opt-in renderer.
-            if Self::uses_metal_display_link() && !self.ivars().live_resizing.get() { return; }
-            if !shared.ready.get() || !shared.animating.get() {
-                return;
-            }
-            shared
-                .animation_frames
-                .set(shared.animation_frames.get() + 1);
-            let frame = AnimationFrame::new(
-                link.timestamp(),
-                link.targetTimestamp(),
-                callback_time,
-                link.duration(),
-            );
-            shared.dispatch(Event::AnimationFrame(frame));
+            crate::ffi_boundary("TekesView::tekesDisplayLinkFired:", || {
+                let callback_time = CACurrentMediaTime();
+                let shared = &self.ivars().shared;
+                shared.link_callbacks.set(shared.link_callbacks.get() + 1);
+                // Pausing CAD may leave one callback queued. Outside live resize
+                // only the Metal delegate may drive this opt-in renderer.
+                if Self::uses_metal_display_link() && !self.ivars().live_resizing.get() { return; }
+                if shared.closed.get() || !shared.ready.get() || !shared.animating.get() {
+                    return;
+                }
+                shared
+                    .animation_frames
+                    .set(shared.animation_frames.get() + 1);
+                let frame = AnimationFrame::new(
+                    link.timestamp(),
+                    link.targetTimestamp(),
+                    callback_time,
+                    link.duration(),
+                );
+                shared.dispatch(Event::AnimationFrame(frame));
+            });
         }
 
         // ---- 尺寸与缩放 ----
 
         #[unsafe(method(setFrameSize:))]
         fn set_frame_size(&self, size: NSSize) {
-            // SAFETY: 调用父类实现，签名一致。
-            let () = unsafe { msg_send![super(self), setFrameSize: size] };
-            self.sync_geometry(false);
+            crate::ffi_boundary("TekesView::setFrameSize:", || {
+                // SAFETY: 调用父类实现，签名一致。
+                let () = unsafe { msg_send![super(self), setFrameSize: size] };
+                self.sync_geometry(false);
+            });
         }
 
         #[unsafe(method(viewDidChangeBackingProperties))]
         fn view_did_change_backing_properties(&self) {
-            // SAFETY: 调用父类实现，签名一致。
-            let () = unsafe { msg_send![super(self), viewDidChangeBackingProperties] };
-            self.sync_geometry(false);
+            crate::ffi_boundary("TekesView::viewDidChangeBackingProperties", || {
+                // SAFETY: 调用父类实现，签名一致。
+                let () = unsafe { msg_send![super(self), viewDidChangeBackingProperties] };
+                self.sync_geometry(false);
+            });
         }
 
         #[unsafe(method(viewDidMoveToWindow))]
         fn view_did_move_to_window(&self) {
-            // SAFETY: 调用父类实现，签名一致。
-            let () = unsafe { msg_send![super(self), viewDidMoveToWindow] };
-            self.sync_geometry(false);
+            crate::ffi_boundary("TekesView::viewDidMoveToWindow", || {
+                // SAFETY: 调用父类实现，签名一致。
+                let () = unsafe { msg_send![super(self), viewDidMoveToWindow] };
+                self.sync_geometry(false);
+            });
         }
 
         // ---- 实时缩放 ----
@@ -354,183 +421,203 @@ define_class!(
 
         #[unsafe(method(viewWillStartLiveResize))]
         fn view_will_start_live_resize(&self) {
-            // SAFETY: 调用父类实现，签名一致。
-            let () = unsafe { msg_send![super(self), viewWillStartLiveResize] };
-            self.ivars().live_resizing.set(true);
-            if Self::uses_metal_display_link() {
-                self.stop_metal_link();
-                // CADisplayLink supplies timing without reserving drawables;
-                // keep animation moving while AppKit resizes/reconfigures.
-                if self.ivars().shared.animating.get() { self.set_display_link_running(true); }
-            }
-            self.metal_layer().setPresentsWithTransaction(true);
+            crate::ffi_boundary("TekesView::viewWillStartLiveResize", || {
+                // SAFETY: 调用父类实现，签名一致。
+                let () = unsafe { msg_send![super(self), viewWillStartLiveResize] };
+                self.ivars().live_resizing.set(true);
+                if Self::uses_metal_display_link() {
+                    self.stop_metal_link();
+                    // CADisplayLink supplies timing without reserving drawables;
+                    // keep animation moving while AppKit resizes/reconfigures.
+                    if self.ivars().shared.animating.get() { self.set_display_link_running(true); }
+                }
+                self.metal_layer().setPresentsWithTransaction(true);
+            });
         }
 
         #[unsafe(method(viewDidEndLiveResize))]
         fn view_did_end_live_resize(&self) {
-            // SAFETY: 调用父类实现，签名一致。
-            let () = unsafe { msg_send![super(self), viewDidEndLiveResize] };
-            self.metal_layer().setPresentsWithTransaction(false);
-            self.ivars().live_resizing.set(false);
-            if Self::uses_metal_display_link() && self.ivars().shared.animating.get() {
-                self.set_metal_display_link_running(true);
-            }
+            crate::ffi_boundary("TekesView::viewDidEndLiveResize", || {
+                // SAFETY: 调用父类实现，签名一致。
+                let () = unsafe { msg_send![super(self), viewDidEndLiveResize] };
+                self.metal_layer().setPresentsWithTransaction(false);
+                self.ivars().live_resizing.set(false);
+                if Self::uses_metal_display_link() && self.ivars().shared.animating.get() {
+                    self.set_metal_display_link_running(true);
+                }
+            });
         }
 
         // ---- 外观 ----
 
         #[unsafe(method(viewDidChangeEffectiveAppearance))]
         fn view_did_change_effective_appearance(&self) {
-            // SAFETY: 调用父类实现，签名一致。
-            let () = unsafe { msg_send![super(self), viewDidChangeEffectiveAppearance] };
-            self.ivars().shared.check_appearance(false);
+            crate::ffi_boundary("TekesView::viewDidChangeEffectiveAppearance", || {
+                // SAFETY: 调用父类实现，签名一致。
+                let () = unsafe { msg_send![super(self), viewDidChangeEffectiveAppearance] };
+                self.ivars().shared.check_appearance(false);
+            });
         }
 
         // ---- 跟踪区域：mouseMoved / mouseEntered / mouseExited ----
 
         #[unsafe(method(updateTrackingAreas))]
         fn update_tracking_areas(&self) {
-            // SAFETY: 调用父类实现，签名一致。
-            let () = unsafe { msg_send![super(self), updateTrackingAreas] };
-            let ivars = self.ivars();
-            if let Some(old) = ivars.tracking_area.borrow_mut().take() {
-                self.removeTrackingArea(&old);
-            }
-            // InVisibleRect：区域自动跟随可见矩形，尺寸变化时无需重建。
-            // ActiveInActiveApp：应用处于前台时就有 hover，不要求窗口是 key window。
-            let options = NSTrackingAreaOptions::MouseEnteredAndExited
-                | NSTrackingAreaOptions::MouseMoved
-                | NSTrackingAreaOptions::ActiveInActiveApp
-                | NSTrackingAreaOptions::InVisibleRect
-                | NSTrackingAreaOptions::CursorUpdate;
-            // SAFETY: owner 是 self，options 合法，userInfo 为 None。
-            let area = unsafe {
-                NSTrackingArea::initWithRect_options_owner_userInfo(
-                    NSTrackingArea::alloc(),
-                    self.bounds(),
-                    options,
-                    Some(self),
-                    None,
-                )
-            };
-            self.addTrackingArea(&area);
-            *ivars.tracking_area.borrow_mut() = Some(area);
-            // Cursor boundaries use the same published hit regions. Register
-            // tracking areas so AppKit sends cursorUpdate at interior edges,
-            // not only when the pointer enters the whole GPU view.
-            let old_areas = std::mem::take(&mut *ivars.cursor_tracking_areas.borrow_mut());
-            for old in old_areas { self.removeTrackingArea(&old); }
-            let regions = ivars.cursor_regions.borrow().clone();
-            let mut areas = Vec::new();
-            for region in regions {
-                let rect = NSRect::new(NSPoint::new(region.origin.x, region.origin.y),
-                    NSSize::new(region.size.width, region.size.height));
-                let options = NSTrackingAreaOptions::CursorUpdate
+            crate::ffi_boundary("TekesView::updateTrackingAreas", || {
+                // SAFETY: 调用父类实现，签名一致。
+                let () = unsafe { msg_send![super(self), updateTrackingAreas] };
+                let ivars = self.ivars();
+                if let Some(old) = ivars.tracking_area.borrow_mut().take() {
+                    self.removeTrackingArea(&old);
+                }
+                // InVisibleRect：区域自动跟随可见矩形，尺寸变化时无需重建。
+                // ActiveInActiveApp：应用处于前台时就有 hover，不要求窗口是 key window。
+                let options = NSTrackingAreaOptions::MouseEnteredAndExited
+                    | NSTrackingAreaOptions::MouseMoved
                     | NSTrackingAreaOptions::ActiveInActiveApp
-                    | NSTrackingAreaOptions::EnabledDuringMouseDrag;
-                // SAFETY: original view owner and public, valid region geometry.
-                let area = unsafe { NSTrackingArea::initWithRect_options_owner_userInfo(
-                    NSTrackingArea::alloc(), rect, options, Some(self), None) };
+                    | NSTrackingAreaOptions::InVisibleRect
+                    | NSTrackingAreaOptions::CursorUpdate;
+                // SAFETY: owner 是 self，options 合法，userInfo 为 None。
+                let area = unsafe {
+                    NSTrackingArea::initWithRect_options_owner_userInfo(
+                        NSTrackingArea::alloc(),
+                        self.bounds(),
+                        options,
+                        Some(self),
+                        None,
+                    )
+                };
                 self.addTrackingArea(&area);
-                areas.push(area);
-            }
-            *ivars.cursor_tracking_areas.borrow_mut() = areas;
+                *ivars.tracking_area.borrow_mut() = Some(area);
+                // Cursor boundaries use the same published hit regions. Register
+                // tracking areas so AppKit sends cursorUpdate at interior edges,
+                // not only when the pointer enters the whole GPU view.
+                let old_areas = std::mem::take(&mut *ivars.cursor_tracking_areas.borrow_mut());
+                for old in old_areas { self.removeTrackingArea(&old); }
+                let regions = ivars.cursor_regions.borrow().clone();
+                let mut areas = Vec::new();
+                for region in regions {
+                    let rect = NSRect::new(NSPoint::new(region.origin.x, region.origin.y),
+                        NSSize::new(region.size.width, region.size.height));
+                    let options = NSTrackingAreaOptions::CursorUpdate
+                        | NSTrackingAreaOptions::ActiveInActiveApp
+                        | NSTrackingAreaOptions::EnabledDuringMouseDrag;
+                    // SAFETY: original view owner and public, valid region geometry.
+                    let area = unsafe { NSTrackingArea::initWithRect_options_owner_userInfo(
+                        NSTrackingArea::alloc(), rect, options, Some(self), None) };
+                    self.addTrackingArea(&area);
+                    areas.push(area);
+                }
+                *ivars.cursor_tracking_areas.borrow_mut() = areas;
+            });
         }
 
         #[unsafe(method(cursorUpdate:))]
         fn cursor_update(&self, event: &NSEvent) {
-            let point = self.view_point(event);
-            let (_, cursor) = self.cursor_for_point(point);
-            cursor.set();
-            if self.trace_cursor("cursor-update", point) {
-                // Diagnostic-only, read-only sample after AppKit finishes the event.
-                unsafe {
-                    self.performSelector_withObject_afterDelay_inModes(
-                        sel!(tekesReviewCursor), None, 0.0,
-                        &NSArray::from_slice(&[NSRunLoopCommonModes]));
+            crate::ffi_boundary("TekesView::cursorUpdate:", || {
+                let point = self.view_point(event);
+                let (_, cursor) = self.cursor_for_point(point);
+                cursor.set();
+                if !self.ivars().shared.closed.get() && self.trace_cursor("cursor-update", point) {
+                    // Diagnostic-only, read-only sample after AppKit finishes the event.
+                    unsafe {
+                        self.performSelector_withObject_afterDelay_inModes(
+                            sel!(tekesReviewCursor), None, 0.0,
+                            &NSArray::from_slice(&[NSRunLoopCommonModes]));
+                    }
                 }
-            }
+            });
         }
 
         #[unsafe(method(tekesReviewCursor))]
         fn review_cursor_after_event(&self) {
-            if let Some(window) = self.window() {
-                let point = self.convertPoint_fromView(window.mouseLocationOutsideOfEventStream(), None);
-                self.trace_cursor("after-runloop", Point { x: point.x, y: point.y });
-            }
+            crate::ffi_boundary("TekesView::tekesReviewCursor", || {
+                if self.ivars().shared.closed.get() {
+                    return;
+                }
+                if let Some(window) = self.window() {
+                    let point = self.convertPoint_fromView(window.mouseLocationOutsideOfEventStream(), None);
+                    self.trace_cursor("after-runloop", Point { x: point.x, y: point.y });
+                }
+            });
         }
 
         // ---- 鼠标 ----
 
         #[unsafe(method(mouseDown:))]
         fn mouse_down(&self, e: &NSEvent) {
-            self.button_event(e, true);
+            crate::ffi_boundary("TekesView::mouseDown:", || self.button_event(e, true));
         }
         #[unsafe(method(mouseUp:))]
         fn mouse_up(&self, e: &NSEvent) {
-            self.button_event(e, false);
+            crate::ffi_boundary("TekesView::mouseUp:", || self.button_event(e, false));
         }
         #[unsafe(method(rightMouseDown:))]
         fn right_mouse_down(&self, e: &NSEvent) {
-            self.button_event(e, true);
+            crate::ffi_boundary("TekesView::rightMouseDown:", || self.button_event(e, true));
         }
         #[unsafe(method(rightMouseUp:))]
         fn right_mouse_up(&self, e: &NSEvent) {
-            self.button_event(e, false);
+            crate::ffi_boundary("TekesView::rightMouseUp:", || self.button_event(e, false));
         }
         #[unsafe(method(otherMouseDown:))]
         fn other_mouse_down(&self, e: &NSEvent) {
-            self.button_event(e, true);
+            crate::ffi_boundary("TekesView::otherMouseDown:", || self.button_event(e, true));
         }
         #[unsafe(method(otherMouseUp:))]
         fn other_mouse_up(&self, e: &NSEvent) {
-            self.button_event(e, false);
+            crate::ffi_boundary("TekesView::otherMouseUp:", || self.button_event(e, false));
         }
         #[unsafe(method(mouseDragged:))]
         fn mouse_dragged(&self, e: &NSEvent) {
-            self.drag_event(e);
+            crate::ffi_boundary("TekesView::mouseDragged:", || self.drag_event(e));
         }
         #[unsafe(method(rightMouseDragged:))]
         fn right_mouse_dragged(&self, e: &NSEvent) {
-            self.drag_event(e);
+            crate::ffi_boundary("TekesView::rightMouseDragged:", || self.drag_event(e));
         }
         #[unsafe(method(otherMouseDragged:))]
         fn other_mouse_dragged(&self, e: &NSEvent) {
-            self.drag_event(e);
+            crate::ffi_boundary("TekesView::otherMouseDragged:", || self.drag_event(e));
         }
         #[unsafe(method(mouseMoved:))]
         fn mouse_moved(&self, e: &NSEvent) {
-            self.mouse(e, MouseEventKind::Moved);
+            crate::ffi_boundary("TekesView::mouseMoved:", || self.mouse(e, MouseEventKind::Moved));
         }
         #[unsafe(method(mouseEntered:))]
         fn mouse_entered(&self, e: &NSEvent) {
-            self.mouse(e, MouseEventKind::Entered);
+            crate::ffi_boundary("TekesView::mouseEntered:", || self.mouse(e, MouseEventKind::Entered));
         }
         #[unsafe(method(mouseExited:))]
         fn mouse_exited(&self, e: &NSEvent) {
-            self.mouse(e, MouseEventKind::Exited);
+            crate::ffi_boundary("TekesView::mouseExited:", || self.mouse(e, MouseEventKind::Exited));
         }
 
         #[unsafe(method(scrollWheel:))]
         fn scroll_wheel(&self, e: &NSEvent) {
-            let ev = ScrollEvent {
-                timestamp: e.timestamp(),
-                delta: Vec2 {
-                    x: e.scrollingDeltaX(),
-                    y: e.scrollingDeltaY(),
-                },
-                precise: e.hasPreciseScrollingDeltas(),
-                phase: ScrollPhase::from_ns_phase(e.phase().bits()),
-                momentum_phase: ScrollPhase::from_ns_phase(e.momentumPhase().bits()),
-                inverted: e.isDirectionInvertedFromDevice(),
-                position: self.view_point(e),
-                modifiers: modifiers_of(e),
-            };
-            // Bounded native Others-scroll diagnosis: geometry/deltas only.
-            if std::env::var_os("TEKESUI_OTHERS_SCROLL_TRACE").is_some() {
-                eprintln!("OTHERS_SCROLL_NATIVE window={} event={ev:?}", e.windowNumber());
-            }
-            self.ivars().shared.dispatch(Event::Scroll(ev));
+            crate::ffi_boundary("TekesView::scrollWheel:", || {
+                let ev = ScrollEvent {
+                    timestamp: e.timestamp(),
+                    delta: Vec2 {
+                        x: e.scrollingDeltaX(),
+                        y: e.scrollingDeltaY(),
+                    },
+                    precise: e.hasPreciseScrollingDeltas(),
+                    phase: ScrollPhase::from_ns_phase(e.phase().bits()),
+                    momentum_phase: ScrollPhase::from_ns_phase(e.momentumPhase().bits()),
+                    inverted: e.isDirectionInvertedFromDevice(),
+                    position: self.view_point(e),
+                    modifiers: modifiers_of(e),
+                };
+                // Bounded native Others-scroll diagnosis: geometry/deltas only.
+                static OTHERS_SCROLL_TRACE: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+                if *OTHERS_SCROLL_TRACE
+                    .get_or_init(|| std::env::var_os("TEKESUI_OTHERS_SCROLL_TRACE").is_some())
+                {
+                    eprintln!("OTHERS_SCROLL_NATIVE window={} event={ev:?}", e.windowNumber());
+                }
+                self.ivars().shared.dispatch(Event::Scroll(ev));
+            });
         }
 
         // ---- 键盘 ----
@@ -541,43 +628,47 @@ define_class!(
 
         #[unsafe(method(keyDown:))]
         fn key_down(&self, e: &NSEvent) {
-            let editing = self.ivars().shared.text_input.borrow().is_some();
-            let key = self.key_data(e, KeyEventKind::Down);
-            // Delete and forward-delete have no raw ControlKey equivalent.
-            // Let AppKit resolve their modified bindings instead of losing
-            // Cmd+Delete or guessing a selector in each editor/consumer.
-            let text_binding = !key.modifiers.command || matches!(key.key_code, 51 | 117);
-            if editing {
-                let composing = self.ivars().shared.text_input.borrow().as_ref().is_some_and(|s|s.marked.is_some());
-                let started = self.ivars().text_keys.borrow_mut().begin(key.clone(),composing);
-                if let Some(crate::TextKeyEvent::Started(context)) = started {
-                    self.ivars().shared.dispatch(Event::TextKey(crate::TextKeyEvent::Started(context.clone())));
-                    let handled = if !text_binding {None}
-                        else {self.inputContext().map(|input|input.handleEvent(e))};
-                    // Never offer the same physical key to the input system twice.
-                    // Only a definite unhandled key (or deliberate Command route)
-                    // uses the existing raw-key fallback.
-                    let fallback = handled != Some(true)
-                        && self.ivars().text_keys.borrow().can_fallback(context.id);
-                    if fallback {self.ivars().shared.dispatch(Event::Key(key));}
-                    let finished = self.ivars().text_keys.borrow_mut().finish(context.id,handled);
-                    if let Some(finished) = finished {self.ivars().shared.dispatch(Event::TextKey(finished));}
-                    return;
+            crate::ffi_boundary("TekesView::keyDown:", || {
+                let editing = self.ivars().shared.text_input.borrow().is_some();
+                let key = self.key_data(e, KeyEventKind::Down);
+                // Delete and forward-delete have no raw ControlKey equivalent.
+                // Let AppKit resolve their modified bindings instead of losing
+                // Cmd+Delete or guessing a selector in each editor/consumer.
+                let text_binding = !key.modifiers.command || matches!(key.key_code, 51 | 117);
+                if editing {
+                    let composing = self.ivars().shared.text_input.borrow().as_ref().is_some_and(|s|s.marked.is_some());
+                    let started = self.ivars().text_keys.borrow_mut().begin(key.clone(),composing);
+                    if let Some(crate::TextKeyEvent::Started(context)) = started {
+                        self.ivars().shared.dispatch(Event::TextKey(crate::TextKeyEvent::Started(context.clone())));
+                        let handled = if !text_binding {None}
+                            else {self.inputContext().map(|input|input.handleEvent(e))};
+                        // Never offer the same physical key to the input system twice.
+                        // Only a definite unhandled key (or deliberate Command route)
+                        // uses the existing raw-key fallback.
+                        let fallback = handled != Some(true)
+                            && self.ivars().text_keys.borrow().can_fallback(context.id);
+                        if fallback {self.ivars().shared.dispatch(Event::Key(key));}
+                        let finished = self.ivars().text_keys.borrow_mut().finish(context.id,handled);
+                        if let Some(finished) = finished {self.ivars().shared.dispatch(Event::TextKey(finished));}
+                        return;
+                    }
                 }
-            }
-            if editing && text_binding {
-                self.interpretKeyEvents(&NSArray::from_slice(&[e]));
-            } else {self.ivars().shared.dispatch(Event::Key(key));}
+                if editing && text_binding {
+                    self.interpretKeyEvents(&NSArray::from_slice(&[e]));
+                } else {self.ivars().shared.dispatch(Event::Key(key));}
+            });
         }
         #[unsafe(method(keyUp:))]
         fn key_up(&self, e: &NSEvent) {
-            self.key_event(e, KeyEventKind::Up);
+            crate::ffi_boundary("TekesView::keyUp:", || self.key_event(e, KeyEventKind::Up));
         }
         #[unsafe(method(flagsChanged:))]
         fn flags_changed(&self, e: &NSEvent) {
-            self.ivars()
-                .shared
-                .dispatch(Event::ModifiersChanged(modifiers_of(e)));
+            crate::ffi_boundary("TekesView::flagsChanged:", || {
+                self.ivars()
+                    .shared
+                    .dispatch(Event::ModifiersChanged(modifiers_of(e)));
+            });
         }
     }
 );
@@ -637,7 +728,11 @@ impl TekesView {
     fn trace_cursor(&self, stage: &str, point: Point) -> bool {
         // Opt-in tracing must also work on the exact release candidate. Without
         // this environment variable there is no file I/O or deferred sampling.
-        if let Some(path) = std::env::var_os("TEKESUI_CURSOR_REVIEW") {
+        static CURSOR_REVIEW_PATH: std::sync::OnceLock<Option<std::ffi::OsString>> =
+            std::sync::OnceLock::new();
+        if let Some(path) =
+            CURSOR_REVIEW_PATH.get_or_init(|| std::env::var_os("TEKESUI_CURSOR_REVIEW"))
+        {
             use std::io::Write;
             if let Ok(mut file) = std::fs::OpenOptions::new()
                 .create(true)
@@ -853,6 +948,9 @@ impl TekesView {
     }
 
     pub(crate) fn schedule_caret_blink(&self) {
+        if self.ivars().shared.closed.get() {
+            return;
+        }
         // SAFETY: main thread, selector has no arguments, common runloop modes.
         unsafe {
             self.performSelector_withObject_afterDelay_inModes(
@@ -897,6 +995,9 @@ impl TekesView {
 
     /// 在主 runloop 上排一次 `tekesPerformRedraw`。同一时刻是否已排由调用方用 `redraw_pending` 保证。
     pub(crate) fn schedule_redraw(&self) {
+        if self.ivars().shared.closed.get() {
+            return;
+        }
         // SAFETY: selector 是上面定义的无参方法；modes 数组里是 AppKit 导出的全局常量。
         unsafe {
             let modes = NSArray::from_slice(&[NSRunLoopCommonModes]);
@@ -950,7 +1051,9 @@ impl TekesView {
     }
 
     fn uses_metal_display_link() -> bool {
-        std::env::var("TEKES_METAL_DISPLAY_LINK").as_deref() == Ok("1")
+        static USE_METAL_DISPLAY_LINK: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+        *USE_METAL_DISPLAY_LINK
+            .get_or_init(|| std::env::var("TEKES_METAL_DISPLAY_LINK").as_deref() == Ok("1"))
     }
 
     /// CAMetalDisplayLink owns layer drawable-count configuration while alive.
@@ -992,6 +1095,9 @@ impl TekesView {
     }
 
     fn schedule_metal_start(&self) {
+        if self.ivars().shared.closed.get() {
+            return;
+        }
         if !self.ivars().metal_start_pending.replace(true) {
             // SAFETY: exact zero-argument selector on this main-thread view.
             unsafe {
@@ -1038,6 +1144,19 @@ impl TekesView {
         if let Some(link) = cad {
             link.invalidate();
         }
+    }
+
+    /// Cancels delayed `performSelector:` callbacks queued on this view during teardown.
+    pub(crate) fn cancel_pending_performs(&self) {
+        // SAFETY: `self` inherits from `NSObject` via `NSView` -> `NSResponder`;
+        // cancelling pending perform requests avoids delayed callbacks after close.
+        unsafe {
+            let target: &objc2_foundation::NSObject = self;
+            objc2_foundation::NSObject::cancelPreviousPerformRequestsWithTarget(target);
+        }
+        self.ivars().metal_start_pending.set(false);
+        self.ivars().shared.redraw_pending.set(false);
+        self.ivars().shared.caret_scheduled.set(false);
     }
 
     /// 确保背衬层已经创建并返回它。

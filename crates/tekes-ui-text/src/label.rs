@@ -37,6 +37,7 @@ pub struct LabelLayout {
     pub(crate) source: String,
     pub(crate) paragraph: Paragraph,
     pub(crate) width: f64,
+    pub(crate) line_spacing: f64,
     pub(crate) elided_utf16: Vec<Range<usize>>,
 }
 impl LabelLayout {
@@ -47,15 +48,20 @@ impl LabelLayout {
             return self;
         }
         let mut top = 0.;
-        for line in &mut self.paragraph.lines {
+        let count = self.paragraph.lines.len();
+        for (idx, line) in self.paragraph.lines.iter_mut().enumerate() {
             let height = line.height.max(minimum);
             line.top = top;
             line.height = height;
             line.baseline_y = top + (height - line.ascent - line.descent) * 0.5 + line.ascent;
             top += height;
+            if idx + 1 < count {
+                top += self.line_spacing;
+            }
         }
-        self.paragraph.height = top.max(minimum);
-        self.paragraph.default_line_height = minimum;
+        let default_lh = self.paragraph.default_line_height.max(minimum);
+        self.paragraph.default_line_height = default_lh;
+        self.paragraph.height = default_lh.max(top);
         self
     }
     pub fn source(&self) -> &str {

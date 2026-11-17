@@ -4,7 +4,7 @@ use anyhow::{Result, bail, ensure};
 use serde_json::Value;
 use std::{
     collections::{HashMap, HashSet, VecDeque},
-    io::{BufReader, Write},
+    io::Write,
     sync::{
         Arc, Condvar, Mutex,
         atomic::{AtomicU64, Ordering},
@@ -267,7 +267,7 @@ pub fn run_component_worker_from_args(
     let found: Vec<_> = definitions.iter().filter(|d| d.id == args[2]).collect();
     ensure!(found.len() == 1, "unknown or ambiguous component");
     let definition = found[0];
-    let mut input = BufReader::new(std::io::stdin());
+    let (mut input, output) = pipes::worker_ipc()?;
     let bytes =
         pipes::read_packet(&mut input)?.ok_or_else(|| anyhow::anyhow!("missing handshake"))?;
     let (version, session, required, attach) = match serde_json::from_slice(&bytes)? {
@@ -311,7 +311,7 @@ pub fn run_component_worker_from_args(
         }),
         window,
         sink: Arc::new(Mutex::new(Sink {
-            writer: Box::new(std::io::stdout()),
+            writer: Box::new(output),
             serial: 0,
             toolbar: None,
             view_revision: 0,
@@ -1591,6 +1591,7 @@ fn connection(
     };
     let pipes::Pipes {
         child,
+        pid,
         mut input,
         mut output,
     } = {
@@ -1601,10 +1602,16 @@ fn connection(
         {
             arguments.extend(["--window", binding.as_str()]);
         }
-        pipes::spawn(&arguments)?
+        #[cfg(target_os = "macos")]
+        {
+            pipes::spawn_with_receiver(&arguments, receiver.as_ref())?
+        }
+        #[cfg(not(target_os = "macos"))]
+        {
+            pipes::spawn(&arguments)?
+        }
     };
-    let pid = child.id();
-    shared.child.install(child)?;
+    shared.child.install_spawned(child)?;
     if shared.state.lock().unwrap().abort {
         shared.kill();
         return Ok(());

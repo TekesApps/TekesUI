@@ -59,3 +59,23 @@ pub use shared::{Window, WindowHandler};
 mod presentation;
 #[cfg(target_os = "macos")]
 pub use presentation::PresentedFrame;
+
+/// Contain Rust panics at Objective-C / C FFI callback entrypoints so unwinding
+/// never crosses foreign stack frames (which is undefined behavior).
+#[cfg(target_os = "macos")]
+pub(crate) fn ffi_boundary<R>(context: &'static str, f: impl FnOnce() -> R) -> R {
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(f)) {
+        Ok(value) => value,
+        Err(payload) => {
+            let message = if let Some(s) = payload.downcast_ref::<&str>() {
+                *s
+            } else if let Some(s) = payload.downcast_ref::<String>() {
+                s.as_str()
+            } else {
+                "non-string panic payload"
+            };
+            eprintln!("tekes-ui-platform-macos fatal panic in {context}: {message}");
+            std::process::abort();
+        }
+    }
+}

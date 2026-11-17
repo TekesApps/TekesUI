@@ -136,6 +136,7 @@ mod tests {
                 }],
             }],
             carets: vec![],
+            graphemes: vec![],
             has_newline: false,
         }
     }

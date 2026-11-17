@@ -226,6 +226,15 @@ pub enum TextViewport {
     Grow { min: f32, max: f32 },
 }
 
+#[derive(Clone, Debug)]
+pub(super) struct CachedPlaceholder {
+    pub(super) text: String,
+    pub(super) role: proposal::TextRole,
+    pub(super) width_bits: Option<u32>,
+    pub(super) type_scale_bits: u32,
+    pub(super) paragraph: std::rc::Rc<tekes_ui_text::Paragraph>,
+}
+
 #[derive(Debug)]
 pub struct TextFieldContent {
     pub field: Field,
@@ -249,6 +258,7 @@ pub struct TextFieldContent {
     pub(super) editor_captured: bool,
     pub(super) preserve_focus: bool,
     pub(super) placeholder: Option<String>,
+    pub(super) placeholder_cache: Option<CachedPlaceholder>,
     pub(super) last_action: Option<SearchAction>,
     inline_width_em: Option<f32>,
     pub(super) focused: bool,
@@ -294,6 +304,7 @@ impl TextFieldContent {
             editor_captured: false,
             preserve_focus: false,
             placeholder: None,
+            placeholder_cache: None,
             last_action: None,
             inline_width_em: None,
             focused: false,
@@ -389,12 +400,27 @@ impl TextFieldContent {
         }
         presentation
     }
+    pub(super) fn effective_frame(&self, t: &mut dyn ButtonTextRenderer, f: Rect) -> Rect {
+        if let Some(em) = self.inline_width_em {
+            let max_w = (t.resolved_font_size(proposal::TextRole::UiBody) * em).max(0.);
+            Rect::new(
+                f.origin.x,
+                f.origin.y,
+                f.size.width.min(max_w),
+                f.size.height,
+            )
+        } else {
+            f
+        }
+    }
+
     pub(super) fn field_layout(
         &mut self,
         t: &mut dyn ButtonTextRenderer,
         f: Rect,
         c: Rect,
     ) -> crate::feedback_view::FieldLayout {
+        let f = self.effective_frame(t, f);
         if !self.show_metadata || self.surface.presentation == TextSurfacePresentation::Content {
             let type_scale = t.text_surface_host().map_or(1., |host| host.type_scale());
             let minimum = self.surface.minimum_outer_height(type_scale);
@@ -549,6 +575,7 @@ impl TextFieldContent {
         c: Rect,
         theme: ContentTheme,
     ) {
+        let f = self.effective_frame(t, f);
         // Arrangement owns the exact viewport. Paint must not shape/resize a
         // second time or derive a different slot from an unrelated height.
         if self.show_metadata && self.surface.presentation == TextSurfacePresentation::Field {
@@ -1497,6 +1524,7 @@ mod prepared_field_tests {
                             width_trimmed: 600.,
                             runs: vec![],
                             carets: vec![(0, 0.), (1, 300.), (2, 600.)],
+                            graphemes: vec![],
                             has_newline: false,
                         }],
                         width: 600.,
@@ -1613,6 +1641,7 @@ mod prepared_field_tests {
                         width_trimmed: width,
                         runs: vec![],
                         carets: (0..=len).map(|i| (i, i as f64 * 7.)).collect(),
+                        graphemes: vec![],
                         has_newline: false,
                     }],
                     width,

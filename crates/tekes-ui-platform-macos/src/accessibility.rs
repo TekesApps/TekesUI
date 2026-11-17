@@ -143,44 +143,106 @@ impl AccessibilityTextLayout {
     /// Reject partial, stale or malformed layouts rather than expose invented
     /// line numbers. Empty documents still have one shaped empty line.
     pub fn is_valid(&self) -> bool {
-        let units: Vec<_> = self.state.text.encode_utf16().collect();
-        let len = units.len();
-        let boundary = |index| {
-            index <= len
-                && !units
-                    .get(index)
-                    .is_some_and(|u| (0xDC00..=0xDFFF).contains(u))
-        };
-        let mut end = 0;
         if self.lines.is_empty() {
             return false;
         }
+        let mut prev_end = 0usize;
         for (i, line) in self.lines.iter().enumerate() {
-            if line.start != end
-                || line.end > len
+            if line.start != prev_end
                 || line.end < line.start
                 || (line.is_empty() && i + 1 != self.lines.len())
-                || !boundary(line.start)
-                || !boundary(line.end)
             {
                 return false;
             }
-            end = line.end;
+            prev_end = line.end;
         }
-        end == len
-            && self.state.carets.iter().all(|(index, p, size)| {
-                *index <= len
-                    && boundary(*index)
-                    && p.x.is_finite()
-                    && p.y.is_finite()
-                    && size.width.is_finite()
-                    && size.height.is_finite()
-                    && size.height > 0.
-            })
+        let doc_len = prev_end;
+        let mut carets_sorted = true;
+        let mut last_caret = 0usize;
+        for (index, p, size) in &self.state.carets {
+            if *index > doc_len
+                || !p.x.is_finite()
+                || !p.y.is_finite()
+                || !size.width.is_finite()
+                || !size.height.is_finite()
+                || size.height <= 0.
+            {
+                return false;
+            }
+            if *index < last_caret {
+                carets_sorted = false;
+            }
+            last_caret = *index;
+        }
+
+        let mut line_idx = 0usize;
+        let mut caret_idx = 0usize;
+        let mut has_surrogate = false;
+        let mut u16_pos = 0usize;
+        for ch in self.state.text.chars() {
+            while line_idx < self.lines.len() && self.lines[line_idx].end == u16_pos {
+                line_idx += 1;
+            }
+            if carets_sorted {
+                while caret_idx < self.state.carets.len()
+                    && self.state.carets[caret_idx].0 == u16_pos
+                {
+                    caret_idx += 1;
+                }
+            }
+            let len = ch.len_utf16();
+            if len == 2 {
+                has_surrogate = true;
+                let mid = u16_pos + 1;
+                if self.lines.get(line_idx).is_some_and(|line| line.end == mid) {
+                    return false;
+                }
+                if carets_sorted && self.state.carets.get(caret_idx).is_some_and(|c| c.0 == mid) {
+                    return false;
+                }
+            }
+            u16_pos += len;
+        }
+        while line_idx < self.lines.len() && self.lines[line_idx].end == u16_pos {
+            line_idx += 1;
+        }
+        if carets_sorted {
+            while caret_idx < self.state.carets.len() && self.state.carets[caret_idx].0 == u16_pos {
+                caret_idx += 1;
+            }
+        }
+        if line_idx != self.lines.len() || doc_len != u16_pos {
+            return false;
+        }
+        if !carets_sorted {
+            if has_surrogate {
+                let mut sorted_carets: Vec<usize> = self.state.carets.iter().map(|c| c.0).collect();
+                sorted_carets.sort_unstable();
+                let mut ci = 0usize;
+                let mut pos = 0usize;
+                for ch in self.state.text.chars() {
+                    while ci < sorted_carets.len() && sorted_carets[ci] == pos {
+                        ci += 1;
+                    }
+                    if ci < sorted_carets.len()
+                        && sorted_carets[ci] == pos + 1
+                        && ch.len_utf16() == 2
+                    {
+                        return false;
+                    }
+                    pos += ch.len_utf16();
+                }
+            }
+        } else if caret_idx != self.state.carets.len() {
+            return false;
+        }
+        true
     }
 
     pub fn line_for_index(&self, index: usize) -> Option<usize> {
-        if !self.is_valid() || text_in_range(&self.state.text, index..index).is_none() {
+        if !self.is_valid()
+            || crate::event::utf16_slice_exact(&self.state.text, index..index).is_none()
+        {
             return None;
         }
         // A soft-wrap boundary belongs to the following line; end-of-document
@@ -200,7 +262,7 @@ impl AccessibilityTextLayout {
         if !self.is_valid() {
             return None;
         }
-        let len = self.state.text.encode_utf16().count();
+        let len = crate::event::utf16_len(&self.state.text);
         if index > len {
             return None;
         }
@@ -283,9 +345,8 @@ impl AccessibilityTextLayout {
     /// Bounding frame of the requested range across all shaped lines. No
     /// focused editor fallback, string-based line estimation, or screen scaling.
     pub fn frame_for_range(&self, range: std::ops::Range<usize>) -> Option<crate::placement::Rect> {
-        self.line_for_index(range.start)?;
-        text_in_range(&self.state.text, range.clone())?;
         let first_line = self.line_for_index(range.start)?;
+        crate::event::utf16_slice_exact(&self.state.text, range.clone())?;
         let mut bounds: Option<crate::placement::Rect> = None;
         for (index, line) in self.lines.iter().enumerate().skip(first_line) {
             if index > first_line && line.start >= range.end {
@@ -299,11 +360,14 @@ impl AccessibilityTextLayout {
                 .filter(|c| c.0 == line.start)
                 .map(|c| c.1.y)
                 .max_by(f64::total_cmp)?;
-            let mut state = self.state.clone();
-            state.carets.retain(|c| (c.1.y - y).abs() < 0.01);
-            state.caret_index = usize::MAX;
-            let (_, origin, size) =
-                state.first_rect_for_range(range.start.max(line.start)..range.end.min(line.end))?;
+            let (_, origin, size) = crate::event::TextInputState::first_rect_for_validated_range(
+                self.state
+                    .carets
+                    .iter()
+                    .filter(|c| (c.1.y - y).abs() < 0.01),
+                None,
+                range.start.max(line.start)..range.end.min(line.end),
+            )?;
             let frame = crate::placement::Rect { origin, size };
             bounds = Some(match bounds {
                 None => frame,
@@ -325,17 +389,8 @@ impl AccessibilityTextLayout {
     }
 }
 
-fn text_in_range(text: &str, range: std::ops::Range<usize>) -> Option<String> {
-    let units: Vec<_> = text.encode_utf16().collect();
-    for index in [range.start, range.end] {
-        if units
-            .get(index)
-            .is_some_and(|u| (0xDC00..=0xDFFF).contains(u))
-        {
-            return None;
-        }
-    }
-    String::from_utf16(units.get(range)?).ok()
+fn text_in_range(text: &str, range: std::ops::Range<usize>) -> Option<&str> {
+    crate::event::utf16_slice_exact(text, range)
 }
 
 /// The actual raw Window snapshot admission policy, shared with headless tests.
@@ -462,221 +517,262 @@ pub(crate) mod native {
         impl NativeAccessibilityElement {
             #[unsafe(method(isAccessibilityElement))]
             fn isAccessibilityElement(&self) -> bool {
-                #[cfg(feature = "content-accessibility")]
-                let structural = self.ivars().shared.upgrade().is_some_and(|shared| {
-                    shared
-                        .content_geometry
-                        .borrow()
-                        .as_ref()
-                        .is_some_and(|s| s.structural_only.contains(&self.ivars().key))
-                });
-                #[cfg(not(feature = "content-accessibility"))]
-                let structural = false;
-                !structural && self.node().is_some()
+                crate::ffi_boundary("NativeAccessibilityElement::isAccessibilityElement", || {
+                    #[cfg(feature = "content-accessibility")]
+                    let structural = self.ivars().shared.upgrade().is_some_and(|shared| {
+                        shared
+                            .content_geometry
+                            .borrow()
+                            .as_ref()
+                            .is_some_and(|s| s.structural_only.contains(&self.ivars().key))
+                    });
+                    #[cfg(not(feature = "content-accessibility"))]
+                    let structural = false;
+                    !structural && self.node().is_some()
+                })
             }
 
             #[unsafe(method_id(accessibilityRole))]
             fn accessibilityRole(&self) -> Retained<NSAccessibilityRole> {
-                let role = unsafe {
-                    match self
-                        .node()
-                        .map(|n| n.role)
-                        .unwrap_or(AccessibilityRole::Group)
-                    {
-                        AccessibilityRole::Slider(_) => objc2_app_kit::NSAccessibilitySliderRole,
-                        AccessibilityRole::ProgressIndicator(_) => {
-                            objc2_app_kit::NSAccessibilityProgressIndicatorRole
+                crate::ffi_boundary("NativeAccessibilityElement::accessibilityRole", || {
+                    let role = unsafe {
+                        match self
+                            .node()
+                            .map(|n| n.role)
+                            .unwrap_or(AccessibilityRole::Group)
+                        {
+                            AccessibilityRole::Slider(_) => {
+                                objc2_app_kit::NSAccessibilitySliderRole
+                            }
+                            AccessibilityRole::ProgressIndicator(_) => {
+                                objc2_app_kit::NSAccessibilityProgressIndicatorRole
+                            }
+                            AccessibilityRole::Splitter(_) => {
+                                objc2_app_kit::NSAccessibilitySplitterRole
+                            }
+                            AccessibilityRole::Group => objc2_app_kit::NSAccessibilityGroupRole,
+                            AccessibilityRole::StaticText => {
+                                objc2_app_kit::NSAccessibilityStaticTextRole
+                            }
+                            AccessibilityRole::Image => objc2_app_kit::NSAccessibilityImageRole,
+                            AccessibilityRole::Button => objc2_app_kit::NSAccessibilityButtonRole,
+                            AccessibilityRole::Link => objc2_app_kit::NSAccessibilityLinkRole,
+                            AccessibilityRole::Switch | AccessibilityRole::Checkbox => {
+                                objc2_app_kit::NSAccessibilityCheckBoxRole
+                            }
+                            AccessibilityRole::RadioButton => {
+                                objc2_app_kit::NSAccessibilityRadioButtonRole
+                            }
+                            AccessibilityRole::RadioGroup => {
+                                objc2_app_kit::NSAccessibilityRadioGroupRole
+                            }
+                            AccessibilityRole::TextField | AccessibilityRole::SearchField => {
+                                objc2_app_kit::NSAccessibilityTextFieldRole
+                            }
+                            AccessibilityRole::TextArea => {
+                                objc2_app_kit::NSAccessibilityTextAreaRole
+                            }
+                            AccessibilityRole::ComboBox => {
+                                objc2_app_kit::NSAccessibilityComboBoxRole
+                            }
+                            AccessibilityRole::List => objc2_app_kit::NSAccessibilityListRole,
+                            AccessibilityRole::ListItem
+                            | AccessibilityRole::TreeItem { .. }
+                            | AccessibilityRole::TableRow { .. } => {
+                                objc2_app_kit::NSAccessibilityRowRole
+                            }
+                            AccessibilityRole::Tree => objc2_app_kit::NSAccessibilityOutlineRole,
+                            AccessibilityRole::Table => objc2_app_kit::NSAccessibilityTableRole,
+                            AccessibilityRole::TableColumn { .. } => {
+                                objc2_app_kit::NSAccessibilityColumnRole
+                            }
+                            AccessibilityRole::TableColumnHeader { .. } => {
+                                objc2_app_kit::NSAccessibilityButtonRole
+                            }
+                            AccessibilityRole::TableCell { .. } => {
+                                objc2_app_kit::NSAccessibilityCellRole
+                            }
+                            AccessibilityRole::Dialog => objc2_app_kit::NSAccessibilityGroupRole,
+                            AccessibilityRole::Menu => objc2_app_kit::NSAccessibilityMenuRole,
+                            AccessibilityRole::MenuButton => {
+                                objc2_app_kit::NSAccessibilityMenuButtonRole
+                            }
+                            AccessibilityRole::PopUpButton => {
+                                objc2_app_kit::NSAccessibilityPopUpButtonRole
+                            }
+                            AccessibilityRole::MenuItem => {
+                                objc2_app_kit::NSAccessibilityMenuItemRole
+                            }
+                            AccessibilityRole::Tab => objc2_app_kit::NSAccessibilityRadioButtonRole,
+                            AccessibilityRole::TabGroup => {
+                                objc2_app_kit::NSAccessibilityTabGroupRole
+                            }
                         }
-                        AccessibilityRole::Splitter(_) => {
-                            objc2_app_kit::NSAccessibilitySplitterRole
-                        }
-                        AccessibilityRole::Group => objc2_app_kit::NSAccessibilityGroupRole,
-                        AccessibilityRole::StaticText => {
-                            objc2_app_kit::NSAccessibilityStaticTextRole
-                        }
-                        AccessibilityRole::Image => objc2_app_kit::NSAccessibilityImageRole,
-                        AccessibilityRole::Button => objc2_app_kit::NSAccessibilityButtonRole,
-                        AccessibilityRole::Link => objc2_app_kit::NSAccessibilityLinkRole,
-                        AccessibilityRole::Switch | AccessibilityRole::Checkbox => {
-                            objc2_app_kit::NSAccessibilityCheckBoxRole
-                        }
-                        AccessibilityRole::RadioButton => {
-                            objc2_app_kit::NSAccessibilityRadioButtonRole
-                        }
-                        AccessibilityRole::RadioGroup => {
-                            objc2_app_kit::NSAccessibilityRadioGroupRole
-                        }
-                        AccessibilityRole::TextField | AccessibilityRole::SearchField => {
-                            objc2_app_kit::NSAccessibilityTextFieldRole
-                        }
-                        AccessibilityRole::TextArea => objc2_app_kit::NSAccessibilityTextAreaRole,
-                        AccessibilityRole::ComboBox => objc2_app_kit::NSAccessibilityComboBoxRole,
-                        AccessibilityRole::List => objc2_app_kit::NSAccessibilityListRole,
-                        AccessibilityRole::ListItem
-                        | AccessibilityRole::TreeItem { .. }
-                        | AccessibilityRole::TableRow { .. } => {
-                            objc2_app_kit::NSAccessibilityRowRole
-                        }
-                        AccessibilityRole::Tree => objc2_app_kit::NSAccessibilityOutlineRole,
-                        AccessibilityRole::Table => objc2_app_kit::NSAccessibilityTableRole,
-                        AccessibilityRole::TableColumn { .. } => {
-                            objc2_app_kit::NSAccessibilityColumnRole
-                        }
-                        AccessibilityRole::TableColumnHeader { .. } => {
-                            objc2_app_kit::NSAccessibilityButtonRole
-                        }
-                        AccessibilityRole::TableCell { .. } => {
-                            objc2_app_kit::NSAccessibilityCellRole
-                        }
-                        AccessibilityRole::Dialog => objc2_app_kit::NSAccessibilityGroupRole,
-                        AccessibilityRole::Menu => objc2_app_kit::NSAccessibilityMenuRole,
-                        AccessibilityRole::MenuButton => {
-                            objc2_app_kit::NSAccessibilityMenuButtonRole
-                        }
-                        AccessibilityRole::PopUpButton => {
-                            objc2_app_kit::NSAccessibilityPopUpButtonRole
-                        }
-                        AccessibilityRole::MenuItem => objc2_app_kit::NSAccessibilityMenuItemRole,
-                        AccessibilityRole::Tab => objc2_app_kit::NSAccessibilityRadioButtonRole,
-                        AccessibilityRole::TabGroup => objc2_app_kit::NSAccessibilityTabGroupRole,
-                    }
-                };
-                role.retain()
+                    };
+                    role.retain()
+                })
             }
 
             #[unsafe(method_id(accessibilitySubrole))]
             fn accessibilitySubrole(&self) -> Retained<NSString> {
-                if self
-                    .node()
-                    .is_some_and(|n| n.role == AccessibilityRole::Dialog)
-                {
-                    unsafe { objc2_app_kit::NSAccessibilityDialogSubrole.retain() }
-                } else if self
-                    .node()
-                    .is_some_and(|n| matches!(n.role, AccessibilityRole::TreeItem { .. }))
-                {
-                    unsafe { objc2_app_kit::NSAccessibilityOutlineRowSubrole.retain() }
-                } else if self
-                    .node()
-                    .is_some_and(|n| n.role == AccessibilityRole::SearchField)
-                {
-                    unsafe { objc2_app_kit::NSAccessibilitySearchFieldSubrole.retain() }
-                } else {
-                    NSString::from_str("")
-                }
+                crate::ffi_boundary("NativeAccessibilityElement::accessibilitySubrole", || {
+                    if self
+                        .node()
+                        .is_some_and(|n| n.role == AccessibilityRole::Dialog)
+                    {
+                        unsafe { objc2_app_kit::NSAccessibilityDialogSubrole.retain() }
+                    } else if self
+                        .node()
+                        .is_some_and(|n| matches!(n.role, AccessibilityRole::TreeItem { .. }))
+                    {
+                        unsafe { objc2_app_kit::NSAccessibilityOutlineRowSubrole.retain() }
+                    } else if self
+                        .node()
+                        .is_some_and(|n| n.role == AccessibilityRole::SearchField)
+                    {
+                        unsafe { objc2_app_kit::NSAccessibilitySearchFieldSubrole.retain() }
+                    } else {
+                        NSString::from_str("")
+                    }
+                })
             }
 
             #[unsafe(method_id(accessibilityLabel))]
             fn accessibilityLabel(&self) -> Retained<NSString> {
-                NSString::from_str(&self.node().map(|n| n.label).unwrap_or_default())
+                crate::ffi_boundary("NativeAccessibilityElement::accessibilityLabel", || {
+                    NSString::from_str(&self.node().map(|n| n.label).unwrap_or_default())
+                })
             }
 
             #[unsafe(method_id(accessibilityValue))]
             fn accessibilityValue(&self) -> Option<Retained<objc2::runtime::AnyObject>> {
-                let node = self.node();
-                if node.as_ref().is_some_and(|node| {
-                    matches!(node.role, AccessibilityRole::ProgressIndicator(None))
-                }) {
-                    None
-                } else {
-                    Some(match node {
-                        Some(node)
-                            if matches!(
-                                node.role,
-                                AccessibilityRole::Switch
-                                    | AccessibilityRole::Checkbox
-                                    | AccessibilityRole::RadioButton
-                            ) =>
-                        {
-                            objc2_foundation::NSNumber::new_i32(
-                                if node.role == AccessibilityRole::Checkbox
-                                    && node.value.as_deref() == Some("mixed")
-                                {
-                                    -1
-                                } else {
-                                    i32::from(node.selected)
-                                },
-                            )
-                            .into()
-                        }
-                        Some(node)
-                            if matches!(
-                                node.role,
-                                AccessibilityRole::Slider(_) | AccessibilityRole::Splitter(_)
-                            ) =>
-                        {
-                            objc2_foundation::NSNumber::new_f64(
-                                node.value.and_then(|v| v.parse::<f64>().ok()).unwrap_or(0.),
-                            )
-                            .into()
-                        }
-                        Some(node)
-                            if matches!(
-                                node.role,
-                                AccessibilityRole::ProgressIndicator(Some(_))
-                            ) =>
-                        {
-                            objc2_foundation::NSNumber::new_f64(
-                                node.value
-                                    .expect("validated known progress value")
-                                    .parse::<f64>()
-                                    .expect("validated numeric progress"),
-                            )
-                            .into()
-                        }
-                        Some(node) => NSString::from_str(&node.value.unwrap_or_default()).into(),
-                        None => NSString::from_str("").into(),
-                    })
-                }
+                crate::ffi_boundary("NativeAccessibilityElement::accessibilityValue", || {
+                    let node = self.node();
+                    if node.as_ref().is_some_and(|node| {
+                        matches!(node.role, AccessibilityRole::ProgressIndicator(None))
+                    }) {
+                        None
+                    } else {
+                        Some(match node {
+                            Some(node)
+                                if matches!(
+                                    node.role,
+                                    AccessibilityRole::Switch
+                                        | AccessibilityRole::Checkbox
+                                        | AccessibilityRole::RadioButton
+                                ) =>
+                            {
+                                objc2_foundation::NSNumber::new_i32(
+                                    if node.role == AccessibilityRole::Checkbox
+                                        && node.value.as_deref() == Some("mixed")
+                                    {
+                                        -1
+                                    } else {
+                                        i32::from(node.selected)
+                                    },
+                                )
+                                .into()
+                            }
+                            Some(node)
+                                if matches!(
+                                    node.role,
+                                    AccessibilityRole::Slider(_) | AccessibilityRole::Splitter(_)
+                                ) =>
+                            {
+                                objc2_foundation::NSNumber::new_f64(
+                                    node.value.and_then(|v| v.parse::<f64>().ok()).unwrap_or(0.),
+                                )
+                                .into()
+                            }
+                            Some(node)
+                                if matches!(
+                                    node.role,
+                                    AccessibilityRole::ProgressIndicator(Some(_))
+                                ) =>
+                            {
+                                objc2_foundation::NSNumber::new_f64(
+                                    node.value
+                                        .expect("validated known progress value")
+                                        .parse::<f64>()
+                                        .expect("validated numeric progress"),
+                                )
+                                .into()
+                            }
+                            Some(node) => {
+                                NSString::from_str(&node.value.unwrap_or_default()).into()
+                            }
+                            None => NSString::from_str("").into(),
+                        })
+                    }
+                })
             }
 
             #[unsafe(method_id(accessibilityHelp))]
             fn accessibilityHelp(&self) -> Retained<NSString> {
-                NSString::from_str(&self.node().and_then(|n| n.description).unwrap_or_default())
+                crate::ffi_boundary("NativeAccessibilityElement::accessibilityHelp", || {
+                    NSString::from_str(&self.node().and_then(|n| n.description).unwrap_or_default())
+                })
             }
 
             #[unsafe(method(accessibilityNumberOfCharacters))]
             fn accessibilityNumberOfCharacters(&self) -> isize {
-                self.node()
-                    .and_then(|n| n.value)
-                    .map_or(0, |v| v.encode_utf16().count() as isize)
+                crate::ffi_boundary(
+                    "NativeAccessibilityElement::accessibilityNumberOfCharacters",
+                    || {
+                        self.node()
+                            .and_then(|n| n.value)
+                            .map_or(0, |v| crate::event::utf16_len(&v) as isize)
+                    },
+                )
             }
 
             #[unsafe(method(accessibilitySelectedTextRange))]
             fn accessibilitySelectedTextRange(&self) -> NSRange {
-                self.node()
-                    .and_then(|n| n.text_selection)
-                    .map_or(NSRange::new(isize::MAX as usize, 0), |r| {
-                        NSRange::new(r.start, r.end - r.start)
-                    })
+                crate::ffi_boundary(
+                    "NativeAccessibilityElement::accessibilitySelectedTextRange",
+                    || {
+                        self.node()
+                            .and_then(|n| n.text_selection)
+                            .map_or(NSRange::new(isize::MAX as usize, 0), |r| {
+                                NSRange::new(r.start, r.end - r.start)
+                            })
+                    },
+                )
             }
 
             #[unsafe(method_id(accessibilitySelectedText))]
             fn accessibilitySelectedText(&self) -> Option<Retained<NSString>> {
-                (|| {
-                    let node = self.node()?;
-                    let value = super::text_in_range(node.value.as_deref()?, node.text_selection?)?;
-                    Some(NSString::from_str(&value))
-                })()
+                crate::ffi_boundary(
+                    "NativeAccessibilityElement::accessibilitySelectedText",
+                    || {
+                        let node = self.node()?;
+                        let value =
+                            super::text_in_range(node.value.as_deref()?, node.text_selection?)?;
+                        Some(NSString::from_str(value))
+                    },
+                )
             }
 
             #[unsafe(method_id(accessibilityStringForRange:))]
             fn accessibilityStringForRange(&self, range: NSRange) -> Option<Retained<NSString>> {
-                (|| {
-                    let node = self.node()?;
-                    if !matches!(
-                        node.role,
-                        AccessibilityRole::TextField
-                            | AccessibilityRole::SearchField
-                            | AccessibilityRole::TextArea
-                            | AccessibilityRole::ComboBox
-                    ) {
-                        return None;
-                    }
-                    let end = range.location.checked_add(range.length)?;
-                    super::text_in_range(node.value.as_deref()?, range.location..end)
-                        .map(|v| NSString::from_str(&v))
-                })()
+                crate::ffi_boundary(
+                    "NativeAccessibilityElement::accessibilityStringForRange:",
+                    || {
+                        let node = self.node()?;
+                        if !matches!(
+                            node.role,
+                            AccessibilityRole::TextField
+                                | AccessibilityRole::SearchField
+                                | AccessibilityRole::TextArea
+                                | AccessibilityRole::ComboBox
+                        ) {
+                            return None;
+                        }
+                        let end = range.location.checked_add(range.length)?;
+                        super::text_in_range(node.value.as_deref()?, range.location..end)
+                            .map(NSString::from_str)
+                    },
+                )
             }
 
             #[unsafe(method_id(accessibilityAttributedStringForRange:))]
@@ -684,207 +780,260 @@ pub(crate) mod native {
                 &self,
                 range: NSRange,
             ) -> Option<Retained<NSAttributedString>> {
-                self.trace_text(&format!("attributed-string {range:?}"));
-                NSAccessibility::accessibilityStringForRange(self, range).map(|text| {
-                    NSAttributedString::initWithString(NSAttributedString::alloc(), &text)
-                })
+                crate::ffi_boundary(
+                    "NativeAccessibilityElement::accessibilityAttributedStringForRange:",
+                    || {
+                        self.trace_text(&format!("attributed-string {range:?}"));
+                        NSAccessibility::accessibilityStringForRange(self, range).map(|text| {
+                            NSAttributedString::initWithString(NSAttributedString::alloc(), &text)
+                        })
+                    },
+                )
             }
 
             #[unsafe(method_id(accessibilitySelectedTextRanges))]
             fn accessibilitySelectedTextRanges(&self) -> Option<Retained<NSArray<NSValue>>> {
-                (|| {
-                    let node = self.node()?;
-                    if !matches!(
-                        node.role,
-                        AccessibilityRole::TextField
-                            | AccessibilityRole::SearchField
-                            | AccessibilityRole::TextArea
-                            | AccessibilityRole::ComboBox
-                    ) {
-                        return None;
-                    }
-                    let r = node.text_selection?;
-                    let value = unsafe { NSValue::valueWithRange(NSRange::new(r.start, r.len())) };
-                    Some(NSArray::from_retained_slice(&[value]))
-                })()
+                crate::ffi_boundary(
+                    "NativeAccessibilityElement::accessibilitySelectedTextRanges",
+                    || {
+                        let node = self.node()?;
+                        if !matches!(
+                            node.role,
+                            AccessibilityRole::TextField
+                                | AccessibilityRole::SearchField
+                                | AccessibilityRole::TextArea
+                                | AccessibilityRole::ComboBox
+                        ) {
+                            return None;
+                        }
+                        let r = node.text_selection?;
+                        let value =
+                            unsafe { NSValue::valueWithRange(NSRange::new(r.start, r.len())) };
+                        Some(NSArray::from_retained_slice(&[value]))
+                    },
+                )
             }
 
             #[unsafe(method(setAccessibilitySelectedTextRanges:))]
             fn setAccessibilitySelectedTextRanges(&self, ranges: Option<&NSArray>) {
-                self.trace_text("set-selection-ranges");
-                let Some(ranges) = ranges.filter(|r| r.count() == 1) else {
-                    return;
-                };
-                let Some(value) = ranges.firstObject() else {
-                    return;
-                };
-                let Some(value) = value.downcast_ref::<NSValue>() else {
-                    return;
-                };
-                let template = unsafe { NSValue::valueWithRange(NSRange::new(0, 0)) };
-                // AX clients are external: an arbitrary NSValue is not a range.
-                let correct_type = unsafe {
-                    std::ffi::CStr::from_ptr(value.objCType().as_ptr())
-                        == std::ffi::CStr::from_ptr(template.objCType().as_ptr())
-                };
-                if correct_type {
-                    NSAccessibility::setAccessibilitySelectedTextRange(self, unsafe {
-                        value.rangeValue()
-                    });
-                }
+                crate::ffi_boundary(
+                    "NativeAccessibilityElement::setAccessibilitySelectedTextRanges:",
+                    || {
+                        self.trace_text("set-selection-ranges");
+                        let Some(ranges) = ranges.filter(|r| r.count() == 1) else {
+                            return;
+                        };
+                        let Some(value) = ranges.firstObject() else {
+                            return;
+                        };
+                        let Some(value) = value.downcast_ref::<NSValue>() else {
+                            return;
+                        };
+                        let template = unsafe { NSValue::valueWithRange(NSRange::new(0, 0)) };
+                        // AX clients are external: an arbitrary NSValue is not a range.
+                        let correct_type = unsafe {
+                            std::ffi::CStr::from_ptr(value.objCType().as_ptr())
+                                == std::ffi::CStr::from_ptr(template.objCType().as_ptr())
+                        };
+                        if correct_type {
+                            NSAccessibility::setAccessibilitySelectedTextRange(self, unsafe {
+                                value.rangeValue()
+                            });
+                        }
+                    },
+                );
             }
 
             #[unsafe(method(accessibilityVisibleCharacterRange))]
             fn accessibilityVisibleCharacterRange(&self) -> NSRange {
-                self.trace_text("visible-character-range");
-                let range = self
-                    .node()
-                    .and_then(|n| self.text_layout()?.visible_range(n.frame));
-                Self::native_range(range)
+                crate::ffi_boundary(
+                    "NativeAccessibilityElement::accessibilityVisibleCharacterRange",
+                    || {
+                        self.trace_text("visible-character-range");
+                        let range = self
+                            .node()
+                            .and_then(|n| self.text_layout()?.visible_range(n.frame));
+                        Self::native_range(range)
+                    },
+                )
             }
 
             #[unsafe(method(accessibilityRangeForIndex:))]
             fn accessibilityRangeForIndex(&self, index: isize) -> NSRange {
-                self.trace_text(&format!("range-for-index {index}"));
-                Self::native_range(
-                    usize::try_from(index)
-                        .ok()
-                        .and_then(|i| self.text_layout()?.range_for_index(i)),
+                crate::ffi_boundary(
+                    "NativeAccessibilityElement::accessibilityRangeForIndex:",
+                    || {
+                        self.trace_text(&format!("range-for-index {index}"));
+                        Self::native_range(
+                            usize::try_from(index)
+                                .ok()
+                                .and_then(|i| self.text_layout()?.range_for_index(i)),
+                        )
+                    },
                 )
             }
 
             #[unsafe(method(accessibilityRangeForPosition:))]
             fn accessibilityRangeForPosition(&self, point: NSPoint) -> NSRange {
-                self.trace_text(&format!("range-for-position {point:?}"));
-                let Some((shared, node)) = self.shared_and_node() else {
-                    return Self::native_range(None);
-                };
-                let Some(objects) = shared.objects.get() else {
-                    return Self::native_range(None);
-                };
-                let local = objects
-                    .view
-                    .convertPoint_fromView(objects.window.convertPointFromScreen(point), None);
-                #[cfg(feature = "content-accessibility")]
-                if shared.content_geometry.borrow().as_ref().is_some_and(|s| {
-                    !s.contains(
-                        node.key,
-                        crate::event::Point {
-                            x: local.x,
-                            y: local.y,
-                        },
-                    )
-                }) {
-                    return Self::native_range(None);
-                }
-                let f = node.frame;
-                if local.x < f.origin.x
-                    || local.y < f.origin.y
-                    || local.x >= f.origin.x + f.size.width
-                    || local.y >= f.origin.y + f.size.height
-                {
-                    return Self::native_range(None);
-                }
-                Self::native_range(self.text_layout().and_then(|l| {
-                    l.range_for_position(crate::event::Point {
-                        x: local.x,
-                        y: local.y,
-                    })
-                }))
+                crate::ffi_boundary(
+                    "NativeAccessibilityElement::accessibilityRangeForPosition:",
+                    || {
+                        self.trace_text(&format!("range-for-position {point:?}"));
+                        let Some((shared, node)) = self.shared_and_node() else {
+                            return Self::native_range(None);
+                        };
+                        let Some(objects) = shared.objects.get() else {
+                            return Self::native_range(None);
+                        };
+                        let local = objects.view.convertPoint_fromView(
+                            objects.window.convertPointFromScreen(point),
+                            None,
+                        );
+                        #[cfg(feature = "content-accessibility")]
+                        if shared.content_geometry.borrow().as_ref().is_some_and(|s| {
+                            !s.contains(
+                                node.key,
+                                crate::event::Point {
+                                    x: local.x,
+                                    y: local.y,
+                                },
+                            )
+                        }) {
+                            return Self::native_range(None);
+                        }
+                        let f = node.frame;
+                        if local.x < f.origin.x
+                            || local.y < f.origin.y
+                            || local.x >= f.origin.x + f.size.width
+                            || local.y >= f.origin.y + f.size.height
+                        {
+                            return Self::native_range(None);
+                        }
+                        Self::native_range(self.text_layout().and_then(|l| {
+                            l.range_for_position(crate::event::Point {
+                                x: local.x,
+                                y: local.y,
+                            })
+                        }))
+                    },
+                )
             }
 
             #[unsafe(method(accessibilityLineForIndex:))]
             fn accessibilityLineForIndex(&self, index: isize) -> isize {
-                self.trace_text(&format!("line-for-index {index}"));
-                usize::try_from(index)
-                    .ok()
-                    .and_then(|i| self.text_layout()?.line_for_index(i))
-                    .and_then(|i| isize::try_from(i).ok())
-                    .unwrap_or(isize::MAX)
+                crate::ffi_boundary(
+                    "NativeAccessibilityElement::accessibilityLineForIndex:",
+                    || {
+                        self.trace_text(&format!("line-for-index {index}"));
+                        usize::try_from(index)
+                            .ok()
+                            .and_then(|i| self.text_layout()?.line_for_index(i))
+                            .and_then(|i| isize::try_from(i).ok())
+                            .unwrap_or(isize::MAX)
+                    },
+                )
             }
 
             #[unsafe(method(accessibilityRangeForLine:))]
             fn accessibilityRangeForLine(&self, line: isize) -> NSRange {
-                self.trace_text(&format!("range-for-line {line}"));
-                usize::try_from(line)
-                    .ok()
-                    .and_then(|i| self.text_layout()?.range_for_line(i))
-                    .map_or(NSRange::new(isize::MAX as usize, 0), |r| {
-                        NSRange::new(r.start, r.len())
-                    })
+                crate::ffi_boundary(
+                    "NativeAccessibilityElement::accessibilityRangeForLine:",
+                    || {
+                        self.trace_text(&format!("range-for-line {line}"));
+                        usize::try_from(line)
+                            .ok()
+                            .and_then(|i| self.text_layout()?.range_for_line(i))
+                            .map_or(NSRange::new(isize::MAX as usize, 0), |r| {
+                                NSRange::new(r.start, r.len())
+                            })
+                    },
+                )
             }
 
             #[unsafe(method(accessibilityInsertionPointLineNumber))]
             fn accessibilityInsertionPointLineNumber(&self) -> isize {
-                self.text_layout()
-                    .and_then(|l| l.line_for_index(l.state.caret_index))
-                    .and_then(|i| isize::try_from(i).ok())
-                    .unwrap_or(isize::MAX)
+                crate::ffi_boundary(
+                    "NativeAccessibilityElement::accessibilityInsertionPointLineNumber",
+                    || {
+                        self.text_layout()
+                            .and_then(|l| l.line_for_index(l.state.caret_index))
+                            .and_then(|i| isize::try_from(i).ok())
+                            .unwrap_or(isize::MAX)
+                    },
+                )
             }
 
             #[unsafe(method(accessibilityFrameForRange:))]
             fn accessibilityFrameForRange(&self, range: NSRange) -> NSRect {
-                self.trace_text(&format!("frame-for-range {range:?}"));
-                // A retained old element must not borrow the next publication's
-                // same-key geometry after lawful recovery.
-                if self.node().is_none() {
-                    return NSRect::ZERO;
-                }
-                let Some(end) = range.location.checked_add(range.length) else {
-                    return NSRect::ZERO;
-                };
-                #[cfg(feature = "content-accessibility")]
-                let frame = {
-                    let snapshot_frame = self.ivars().shared.upgrade().and_then(|shared| {
-                        shared
-                            .content_geometry
-                            .borrow()
-                            .as_ref()
-                            .map(|s| s.frame_for_range(self.ivars().key, range.location..end))
-                    });
-                    snapshot_frame.unwrap_or_else(|| {
-                        self.text_layout()
-                            .and_then(|l| l.frame_for_range(range.location..end))
-                    })
-                };
-                #[cfg(not(feature = "content-accessibility"))]
-                let frame = self
-                    .text_layout()
-                    .and_then(|l| l.frame_for_range(range.location..end));
-                let Some(frame) = frame else {
-                    return NSRect::ZERO;
-                };
-                let Some(shared) = self.ivars().shared.upgrade() else {
-                    return NSRect::ZERO;
-                };
-                let Some(objects) = shared.objects.get() else {
-                    return NSRect::ZERO;
-                };
-                let local = NSRect::new(
-                    NSPoint::new(frame.origin.x, frame.origin.y),
-                    NSSize::new(frame.size.width, frame.size.height),
-                );
-                let window_rect = objects.view.convertRect_toView(local, None);
-                objects.window.convertRectToScreen(window_rect)
+                crate::ffi_boundary(
+                    "NativeAccessibilityElement::accessibilityFrameForRange:",
+                    || {
+                        self.trace_text(&format!("frame-for-range {range:?}"));
+                        // A retained old element must not borrow the next publication's
+                        // same-key geometry after lawful recovery.
+                        if self.node().is_none() {
+                            return NSRect::ZERO;
+                        }
+                        let Some(end) = range.location.checked_add(range.length) else {
+                            return NSRect::ZERO;
+                        };
+                        #[cfg(feature = "content-accessibility")]
+                        let frame = {
+                            let snapshot_frame = self.ivars().shared.upgrade().and_then(|shared| {
+                                shared.content_geometry.borrow().as_ref().map(|s| {
+                                    s.frame_for_range(self.ivars().key, range.location..end)
+                                })
+                            });
+                            snapshot_frame.unwrap_or_else(|| {
+                                self.text_layout()
+                                    .and_then(|l| l.frame_for_range(range.location..end))
+                            })
+                        };
+                        #[cfg(not(feature = "content-accessibility"))]
+                        let frame = self
+                            .text_layout()
+                            .and_then(|l| l.frame_for_range(range.location..end));
+                        let Some(frame) = frame else {
+                            return NSRect::ZERO;
+                        };
+                        let Some(shared) = self.ivars().shared.upgrade() else {
+                            return NSRect::ZERO;
+                        };
+                        let Some(objects) = shared.objects.get() else {
+                            return NSRect::ZERO;
+                        };
+                        let local = NSRect::new(
+                            NSPoint::new(frame.origin.x, frame.origin.y),
+                            NSSize::new(frame.size.width, frame.size.height),
+                        );
+                        let window_rect = objects.view.convertRect_toView(local, None);
+                        objects.window.convertRectToScreen(window_rect)
+                    },
+                )
             }
 
             #[unsafe(method(setAccessibilitySelectedTextRange:))]
             fn setAccessibilitySelectedTextRange(&self, range: NSRange) {
-                self.trace_text(&format!("set-selection {range:?}"));
-                let Some(end) = range.location.checked_add(range.length) else {
-                    return;
-                };
-                if self.node().is_some_and(|n| {
-                    matches!(
-                        n.role,
-                        AccessibilityRole::TextField
-                            | AccessibilityRole::SearchField
-                            | AccessibilityRole::TextArea
-                            | AccessibilityRole::ComboBox
-                    ) && n.text_selection.is_some()
-                }) {
-                    self.dispatch(AccessibilityAction::SetSelection(range.location..end));
-                }
+                crate::ffi_boundary(
+                    "NativeAccessibilityElement::setAccessibilitySelectedTextRange:",
+                    || {
+                        self.trace_text(&format!("set-selection {range:?}"));
+                        let Some(end) = range.location.checked_add(range.length) else {
+                            return;
+                        };
+                        if self.node().is_some_and(|n| {
+                            matches!(
+                                n.role,
+                                AccessibilityRole::TextField
+                                    | AccessibilityRole::SearchField
+                                    | AccessibilityRole::TextArea
+                                    | AccessibilityRole::ComboBox
+                            ) && n.text_selection.is_some()
+                        }) {
+                            self.dispatch(AccessibilityAction::SetSelection(range.location..end));
+                        }
+                    },
+                );
             }
 
             #[unsafe(method(setAccessibilitySelectedText:))]
@@ -892,18 +1041,25 @@ pub(crate) mod native {
                 &self,
                 value: Option<&objc2::runtime::AnyObject>,
             ) {
-                if self.node().is_some_and(|n| {
-                    matches!(
-                        n.role,
-                        AccessibilityRole::TextField
-                            | AccessibilityRole::SearchField
-                            | AccessibilityRole::TextArea
-                            | AccessibilityRole::ComboBox
-                    ) && !n.read_only
-                }) && let Some(value) = value.and_then(|v| v.downcast_ref::<NSString>())
-                {
-                    self.dispatch(AccessibilityAction::ReplaceSelectedText(value.to_string()));
-                }
+                crate::ffi_boundary(
+                    "NativeAccessibilityElement::setAccessibilitySelectedText:",
+                    || {
+                        if self.node().is_some_and(|n| {
+                            matches!(
+                                n.role,
+                                AccessibilityRole::TextField
+                                    | AccessibilityRole::SearchField
+                                    | AccessibilityRole::TextArea
+                                    | AccessibilityRole::ComboBox
+                            ) && !n.read_only
+                        }) && let Some(value) = value.and_then(|v| v.downcast_ref::<NSString>())
+                        {
+                            self.dispatch(AccessibilityAction::ReplaceSelectedText(
+                                value.to_string(),
+                            ));
+                        }
+                    },
+                );
             }
 
             #[unsafe(method_id(accessibilityHitTest:))]
@@ -911,315 +1067,430 @@ pub(crate) mod native {
                 &self,
                 point: NSPoint,
             ) -> Option<Retained<objc2::runtime::AnyObject>> {
-                #[cfg(feature = "content-accessibility")]
-                {
-                    if let Some((shared, _)) = self.shared_and_node()
-                        && shared
-                            .content_geometry
-                            .borrow()
-                            .as_ref()
-                            .is_some_and(|s| s.is_current())
-                        && let Some(objects) = shared.objects.get()
+                crate::ffi_boundary("NativeAccessibilityElement::accessibilityHitTest:", || {
+                    #[cfg(feature = "content-accessibility")]
                     {
-                        unsafe { msg_send![&*objects.view, accessibilityHitTest:point] }
-                    } else {
-                        unsafe { msg_send![super(self), accessibilityHitTest:point] }
+                        if let Some((shared, _)) = self.shared_and_node()
+                            && shared
+                                .content_geometry
+                                .borrow()
+                                .as_ref()
+                                .is_some_and(|s| s.is_current())
+                            && let Some(objects) = shared.objects.get()
+                        {
+                            unsafe { msg_send![&*objects.view, accessibilityHitTest:point] }
+                        } else {
+                            unsafe { msg_send![super(self), accessibilityHitTest:point] }
+                        }
                     }
-                }
-                #[cfg(not(feature = "content-accessibility"))]
-                unsafe {
-                    msg_send![super(self), accessibilityHitTest:point]
-                }
+                    #[cfg(not(feature = "content-accessibility"))]
+                    unsafe {
+                        msg_send![super(self), accessibilityHitTest:point]
+                    }
+                })
             }
             #[unsafe(method(accessibilityFrame))]
             fn accessibilityFrame(&self) -> NSRect {
-                let Some((shared, node)) = self.shared_and_node() else {
-                    return NSRect::ZERO;
-                };
-                #[cfg(feature = "content-accessibility")]
-                if shared
-                    .content_geometry
-                    .borrow()
-                    .as_ref()
-                    .is_some_and(|s| !s.is_current())
-                {
-                    return NSRect::ZERO;
-                }
-                let local = NSRect::new(
-                    NSPoint::new(node.frame.origin.x, node.frame.origin.y),
-                    NSSize::new(node.frame.size.width, node.frame.size.height),
-                );
-                let Some(objects) = shared.objects.get() else {
-                    return NSRect::ZERO;
-                };
-                let window_rect = objects.view.convertRect_toView(local, None);
-                objects.window.convertRectToScreen(window_rect)
+                crate::ffi_boundary("NativeAccessibilityElement::accessibilityFrame", || {
+                    let Some((shared, node)) = self.shared_and_node() else {
+                        return NSRect::ZERO;
+                    };
+                    #[cfg(feature = "content-accessibility")]
+                    if shared
+                        .content_geometry
+                        .borrow()
+                        .as_ref()
+                        .is_some_and(|s| !s.is_current())
+                    {
+                        return NSRect::ZERO;
+                    }
+                    let local = NSRect::new(
+                        NSPoint::new(node.frame.origin.x, node.frame.origin.y),
+                        NSSize::new(node.frame.size.width, node.frame.size.height),
+                    );
+                    let Some(objects) = shared.objects.get() else {
+                        return NSRect::ZERO;
+                    };
+                    let window_rect = objects.view.convertRect_toView(local, None);
+                    objects.window.convertRectToScreen(window_rect)
+                })
             }
 
             #[unsafe(method_id(accessibilityParent))]
             fn accessibilityParent(&self) -> Option<Retained<objc2::runtime::AnyObject>> {
-                match self.shared_and_node() {
-                    Some((shared, node)) => match node.parent {
-                        Some(parent) => shared
-                            .accessibility_elements
-                            .borrow()
-                            .get(&parent)
-                            .map(|e| e.retain().into()),
-                        None => shared.objects.get().map(|o| o.view.retain().into()),
+                crate::ffi_boundary(
+                    "NativeAccessibilityElement::accessibilityParent",
+                    || match self.shared_and_node() {
+                        Some((shared, node)) => match node.parent {
+                            Some(parent) => shared
+                                .accessibility_elements
+                                .borrow()
+                                .get(&parent)
+                                .map(|e| e.retain().into()),
+                            None => shared.objects.get().map(|o| o.view.retain().into()),
+                        },
+                        None => None,
                     },
-                    None => None,
-                }
+                )
             }
 
             #[unsafe(method_id(accessibilityChildren))]
             fn accessibilityChildren(&self) -> Retained<NSArray> {
-                let parent = self.shared_and_node().map(|(_, n)| n.key);
-                self.elements_for_parent(parent)
+                crate::ffi_boundary("NativeAccessibilityElement::accessibilityChildren", || {
+                    let parent = self.shared_and_node().map(|(_, n)| n.key);
+                    self.elements_for_parent(parent)
+                })
             }
 
             #[unsafe(method(isAccessibilityEnabled))]
             fn accessibilityEnabled(&self) -> bool {
-                self.node().is_some_and(|n| n.enabled)
+                crate::ffi_boundary("NativeAccessibilityElement::isAccessibilityEnabled", || {
+                    self.node().is_some_and(|n| n.enabled)
+                })
             }
 
             #[unsafe(method(isAccessibilityRequired))]
             fn accessibilityRequired(&self) -> bool {
-                self.node().is_some_and(|n| n.required)
+                crate::ffi_boundary(
+                    "NativeAccessibilityElement::isAccessibilityRequired",
+                    || self.node().is_some_and(|n| n.required),
+                )
             }
 
             #[unsafe(method(isAccessibilityFocused))]
             fn isAccessibilityFocused(&self) -> bool {
-                self.node().is_some_and(|n| n.focused)
+                crate::ffi_boundary("NativeAccessibilityElement::isAccessibilityFocused", || {
+                    self.node().is_some_and(|n| n.focused)
+                })
             }
 
             #[unsafe(method(isAccessibilitySelected))]
             fn accessibilitySelected(&self) -> bool {
-                self.node().is_some_and(|n| n.selected)
+                crate::ffi_boundary(
+                    "NativeAccessibilityElement::isAccessibilitySelected",
+                    || self.node().is_some_and(|n| n.selected),
+                )
             }
 
             #[unsafe(method(isAccessibilityExpanded))]
             fn accessibilityExpanded(&self) -> bool {
-                self.node().and_then(|n| n.expanded).unwrap_or(false)
+                crate::ffi_boundary(
+                    "NativeAccessibilityElement::isAccessibilityExpanded",
+                    || self.node().and_then(|n| n.expanded).unwrap_or(false),
+                )
             }
 
             #[unsafe(method(setAccessibilityExpanded:))]
             fn accessibilitySetExpanded(&self, expanded: bool) {
-                if self.node().is_some_and(|n| {
-                    (matches!(n.role, AccessibilityRole::TreeItem { .. })
-                        || matches!(
-                            n.role,
-                            AccessibilityRole::ComboBox | AccessibilityRole::PopUpButton
-                        ))
-                        && n.expanded.is_some()
-                }) {
-                    self.dispatch(AccessibilityAction::SetExpanded(expanded));
-                }
+                crate::ffi_boundary(
+                    "NativeAccessibilityElement::setAccessibilityExpanded:",
+                    || {
+                        if self.node().is_some_and(|n| {
+                            (matches!(n.role, AccessibilityRole::TreeItem { .. })
+                                || matches!(
+                                    n.role,
+                                    AccessibilityRole::ComboBox | AccessibilityRole::PopUpButton
+                                ))
+                                && n.expanded.is_some()
+                        }) {
+                            self.dispatch(AccessibilityAction::SetExpanded(expanded));
+                        }
+                    },
+                );
             }
             #[unsafe(method(isAccessibilityDisclosed))]
             fn accessibilityDisclosed(&self) -> bool {
-                self.node().and_then(|n| n.expanded).unwrap_or(false)
+                crate::ffi_boundary(
+                    "NativeAccessibilityElement::isAccessibilityDisclosed",
+                    || self.node().and_then(|n| n.expanded).unwrap_or(false),
+                )
             }
             #[unsafe(method(setAccessibilityDisclosed:))]
             fn accessibilitySetDisclosed(&self, expanded: bool) {
-                if self.node().is_some_and(|n| {
-                    matches!(n.role, AccessibilityRole::TreeItem { .. }) && n.expanded.is_some()
-                }) {
-                    self.dispatch(AccessibilityAction::SetExpanded(expanded));
-                }
+                crate::ffi_boundary(
+                    "NativeAccessibilityElement::setAccessibilityDisclosed:",
+                    || {
+                        if self.node().is_some_and(|n| {
+                            matches!(n.role, AccessibilityRole::TreeItem { .. })
+                                && n.expanded.is_some()
+                        }) {
+                            self.dispatch(AccessibilityAction::SetExpanded(expanded));
+                        }
+                    },
+                );
             }
             #[unsafe(method(accessibilityDisclosureLevel))]
             fn accessibilityDisclosureLevel(&self) -> isize {
-                match self.node().map(|n| n.role) {
-                    Some(AccessibilityRole::TreeItem { level }) => {
-                        level.try_into().unwrap_or(isize::MAX)
-                    }
-                    _ => 0,
-                }
+                crate::ffi_boundary(
+                    "NativeAccessibilityElement::accessibilityDisclosureLevel",
+                    || match self.node().map(|n| n.role) {
+                        Some(AccessibilityRole::TreeItem { level }) => {
+                            level.try_into().unwrap_or(isize::MAX)
+                        }
+                        _ => 0,
+                    },
+                )
             }
             #[unsafe(method(accessibilityIndex))]
             fn accessibilityIndex(&self) -> isize {
-                match self.node().map(|n| n.role) {
-                    Some(
-                        AccessibilityRole::TableRow { index }
-                        | AccessibilityRole::TableColumn { index }
-                        | AccessibilityRole::TableColumnHeader { index, .. },
-                    ) => index.try_into().unwrap_or(isize::MAX),
-                    _ => 0,
-                }
+                crate::ffi_boundary(
+                    "NativeAccessibilityElement::accessibilityIndex",
+                    || match self.node().map(|n| n.role) {
+                        Some(
+                            AccessibilityRole::TableRow { index }
+                            | AccessibilityRole::TableColumn { index }
+                            | AccessibilityRole::TableColumnHeader { index, .. },
+                        ) => index.try_into().unwrap_or(isize::MAX),
+                        _ => 0,
+                    },
+                )
             }
             #[unsafe(method(accessibilityRowIndexRange))]
             fn accessibilityRowIndexRange(&self) -> NSRange {
-                match self.node().map(|n| n.role) {
-                    Some(AccessibilityRole::TableCell { row, .. }) => NSRange::new(row, 1),
-                    _ => NSRange::new(0, 0),
-                }
+                crate::ffi_boundary(
+                    "NativeAccessibilityElement::accessibilityRowIndexRange",
+                    || match self.node().map(|n| n.role) {
+                        Some(AccessibilityRole::TableCell { row, .. }) => NSRange::new(row, 1),
+                        _ => NSRange::new(0, 0),
+                    },
+                )
             }
             #[unsafe(method(accessibilityColumnIndexRange))]
             fn accessibilityColumnIndexRange(&self) -> NSRange {
-                match self.node().map(|n| n.role) {
-                    Some(AccessibilityRole::TableCell { column, .. }) => NSRange::new(column, 1),
-                    _ => NSRange::new(0, 0),
-                }
+                crate::ffi_boundary(
+                    "NativeAccessibilityElement::accessibilityColumnIndexRange",
+                    || match self.node().map(|n| n.role) {
+                        Some(AccessibilityRole::TableCell { column, .. }) => {
+                            NSRange::new(column, 1)
+                        }
+                        _ => NSRange::new(0, 0),
+                    },
+                )
             }
             #[unsafe(method(accessibilitySortDirection))]
             fn accessibilitySortDirection(&self) -> objc2_app_kit::NSAccessibilitySortDirection {
-                use super::AccessibilitySortDirection as D;
-                match self.node().map(|n| n.role) {
-                    Some(AccessibilityRole::TableColumnHeader {
-                        sort: Some(D::Ascending),
-                        ..
-                    }) => objc2_app_kit::NSAccessibilitySortDirection::Ascending,
-                    Some(AccessibilityRole::TableColumnHeader {
-                        sort: Some(D::Descending),
-                        ..
-                    }) => objc2_app_kit::NSAccessibilitySortDirection::Descending,
-                    _ => objc2_app_kit::NSAccessibilitySortDirection::Unknown,
-                }
+                crate::ffi_boundary(
+                    "NativeAccessibilityElement::accessibilitySortDirection",
+                    || {
+                        use super::AccessibilitySortDirection as D;
+                        match self.node().map(|n| n.role) {
+                            Some(AccessibilityRole::TableColumnHeader {
+                                sort: Some(D::Ascending),
+                                ..
+                            }) => objc2_app_kit::NSAccessibilitySortDirection::Ascending,
+                            Some(AccessibilityRole::TableColumnHeader {
+                                sort: Some(D::Descending),
+                                ..
+                            }) => objc2_app_kit::NSAccessibilitySortDirection::Descending,
+                            _ => objc2_app_kit::NSAccessibilitySortDirection::Unknown,
+                        }
+                    },
+                )
             }
             #[unsafe(method_id(accessibilityRows))]
             fn accessibilityRows(&self) -> Retained<NSArray> {
-                self.collection_rows()
+                crate::ffi_boundary("NativeAccessibilityElement::accessibilityRows", || {
+                    self.collection_rows()
+                })
             }
             #[unsafe(method_id(accessibilityVisibleRows))]
             fn accessibilityVisibleRows(&self) -> Retained<NSArray> {
-                self.collection_rows()
+                crate::ffi_boundary(
+                    "NativeAccessibilityElement::accessibilityVisibleRows",
+                    || self.collection_rows(),
+                )
             }
             #[unsafe(method_id(accessibilitySelectedRows))]
             fn accessibilitySelectedRows(&self) -> Retained<NSArray> {
-                self.collection_elements(|n| {
-                    n.selected
-                        && matches!(
-                            n.role,
-                            AccessibilityRole::TreeItem { .. } | AccessibilityRole::TableRow { .. }
-                        )
-                })
+                crate::ffi_boundary(
+                    "NativeAccessibilityElement::accessibilitySelectedRows",
+                    || {
+                        self.collection_elements(|n| {
+                            n.selected
+                                && matches!(
+                                    n.role,
+                                    AccessibilityRole::TreeItem { .. }
+                                        | AccessibilityRole::TableRow { .. }
+                                )
+                        })
+                    },
+                )
             }
             #[unsafe(method_id(accessibilityColumns))]
             fn accessibilityColumns(&self) -> Retained<NSArray> {
-                self.collection_elements(|n| {
-                    matches!(n.role, AccessibilityRole::TableColumn { .. })
+                crate::ffi_boundary("NativeAccessibilityElement::accessibilityColumns", || {
+                    self.collection_elements(|n| {
+                        matches!(n.role, AccessibilityRole::TableColumn { .. })
+                    })
                 })
             }
             #[unsafe(method_id(accessibilityVisibleColumns))]
             fn accessibilityVisibleColumns(&self) -> Retained<NSArray> {
-                self.collection_elements(|n| {
-                    matches!(n.role, AccessibilityRole::TableColumn { .. })
-                })
+                crate::ffi_boundary(
+                    "NativeAccessibilityElement::accessibilityVisibleColumns",
+                    || {
+                        self.collection_elements(|n| {
+                            matches!(n.role, AccessibilityRole::TableColumn { .. })
+                        })
+                    },
+                )
             }
             #[unsafe(method_id(accessibilityColumnHeaderUIElements))]
             fn accessibilityColumnHeaderUIElements(&self) -> Retained<NSArray> {
-                self.collection_elements(|n| {
-                    matches!(n.role, AccessibilityRole::TableColumnHeader { .. })
-                })
+                crate::ffi_boundary(
+                    "NativeAccessibilityElement::accessibilityColumnHeaderUIElements",
+                    || {
+                        self.collection_elements(|n| {
+                            matches!(n.role, AccessibilityRole::TableColumnHeader { .. })
+                        })
+                    },
+                )
             }
             #[unsafe(method_id(accessibilityDisclosedRows))]
             fn accessibilityDisclosedRows(&self) -> Retained<NSArray> {
-                self.elements_for_parent(Some(self.ivars().key))
+                crate::ffi_boundary(
+                    "NativeAccessibilityElement::accessibilityDisclosedRows",
+                    || self.elements_for_parent(Some(self.ivars().key)),
+                )
             }
             #[unsafe(method_id(accessibilityDisclosedByRow))]
             fn accessibilityDisclosedByRow(&self) -> Option<Retained<objc2::runtime::AnyObject>> {
-                self.disclosed_by_row()
+                crate::ffi_boundary(
+                    "NativeAccessibilityElement::accessibilityDisclosedByRow",
+                    || self.disclosed_by_row(),
+                )
             }
 
             #[unsafe(method_id(accessibilityMinValue))]
             fn accessibilityMinValue(&self) -> Option<Retained<objc2_foundation::NSNumber>> {
-                match self.node().map(|n| n.role) {
-                    Some(
-                        AccessibilityRole::Slider(range)
-                        | AccessibilityRole::Splitter(range)
-                        | AccessibilityRole::ProgressIndicator(Some(range)),
-                    ) => Some(objc2_foundation::NSNumber::new_f64(range.minimum())),
-                    _ => None,
-                }
+                crate::ffi_boundary("NativeAccessibilityElement::accessibilityMinValue", || {
+                    match self.node().map(|n| n.role) {
+                        Some(
+                            AccessibilityRole::Slider(range)
+                            | AccessibilityRole::Splitter(range)
+                            | AccessibilityRole::ProgressIndicator(Some(range)),
+                        ) => Some(objc2_foundation::NSNumber::new_f64(range.minimum())),
+                        _ => None,
+                    }
+                })
             }
             #[unsafe(method_id(accessibilityMaxValue))]
             fn accessibilityMaxValue(&self) -> Option<Retained<objc2_foundation::NSNumber>> {
-                match self.node().map(|n| n.role) {
-                    Some(
-                        AccessibilityRole::Slider(range)
-                        | AccessibilityRole::Splitter(range)
-                        | AccessibilityRole::ProgressIndicator(Some(range)),
-                    ) => Some(objc2_foundation::NSNumber::new_f64(range.maximum())),
-                    _ => None,
-                }
+                crate::ffi_boundary("NativeAccessibilityElement::accessibilityMaxValue", || {
+                    match self.node().map(|n| n.role) {
+                        Some(
+                            AccessibilityRole::Slider(range)
+                            | AccessibilityRole::Splitter(range)
+                            | AccessibilityRole::ProgressIndicator(Some(range)),
+                        ) => Some(objc2_foundation::NSNumber::new_f64(range.maximum())),
+                        _ => None,
+                    }
+                })
             }
             #[unsafe(method(accessibilityPerformIncrement))]
             fn accessibilityPerformIncrement(&self) -> bool {
-                self.node().is_some_and(|n| {
-                    matches!(
-                        n.role,
-                        AccessibilityRole::Slider(_) | AccessibilityRole::Splitter(_)
-                    ) && !n.read_only
-                }) && self.dispatch(AccessibilityAction::Increment)
+                crate::ffi_boundary(
+                    "NativeAccessibilityElement::accessibilityPerformIncrement",
+                    || {
+                        self.node().is_some_and(|n| {
+                            matches!(
+                                n.role,
+                                AccessibilityRole::Slider(_) | AccessibilityRole::Splitter(_)
+                            ) && !n.read_only
+                        }) && self.dispatch(AccessibilityAction::Increment)
+                    },
+                )
             }
             #[unsafe(method(accessibilityPerformDecrement))]
             fn accessibilityPerformDecrement(&self) -> bool {
-                self.node().is_some_and(|n| {
-                    matches!(
-                        n.role,
-                        AccessibilityRole::Slider(_) | AccessibilityRole::Splitter(_)
-                    ) && !n.read_only
-                }) && self.dispatch(AccessibilityAction::Decrement)
+                crate::ffi_boundary(
+                    "NativeAccessibilityElement::accessibilityPerformDecrement",
+                    || {
+                        self.node().is_some_and(|n| {
+                            matches!(
+                                n.role,
+                                AccessibilityRole::Slider(_) | AccessibilityRole::Splitter(_)
+                            ) && !n.read_only
+                        }) && self.dispatch(AccessibilityAction::Decrement)
+                    },
+                )
             }
 
             #[unsafe(method(accessibilityPerformPress))]
             fn accessibilityPerformPress(&self) -> bool {
-                self.node()
-                    .is_some_and(|node| Self::is_pressable(node.role))
-                    && self.dispatch(AccessibilityAction::Press)
+                crate::ffi_boundary(
+                    "NativeAccessibilityElement::accessibilityPerformPress",
+                    || {
+                        self.node()
+                            .is_some_and(|node| Self::is_pressable(node.role))
+                            && self.dispatch(AccessibilityAction::Press)
+                    },
+                )
             }
 
             #[unsafe(method(accessibilityPerformShowMenu))]
             fn accessibilityPerformShowMenu(&self) -> bool {
-                self.node().is_some_and(|node| node.can_show_menu)
-                    && self.dispatch(AccessibilityAction::ShowMenu)
+                crate::ffi_boundary(
+                    "NativeAccessibilityElement::accessibilityPerformShowMenu",
+                    || {
+                        self.node().is_some_and(|node| node.can_show_menu)
+                            && self.dispatch(AccessibilityAction::ShowMenu)
+                    },
+                )
             }
 
             #[unsafe(method(setAccessibilityValue:))]
             unsafe fn accessibilitySetValue(&self, value: Option<&objc2::runtime::AnyObject>) {
-                let Some((_, node)) = self.shared_and_node() else {
-                    return;
-                };
-                if !node.enabled || node.read_only {
-                    return;
-                }
-                if matches!(
-                    node.role,
-                    AccessibilityRole::Slider(_) | AccessibilityRole::Splitter(_)
-                ) {
-                    if let Some(value) = value
-                        .and_then(|v| v.downcast_ref::<objc2_foundation::NSNumber>())
-                        .map(|v| v.as_f64())
-                        .filter(|v| v.is_finite())
-                    {
+                crate::ffi_boundary("NativeAccessibilityElement::setAccessibilityValue:", || {
+                    let Some((_, node)) = self.shared_and_node() else {
+                        return;
+                    };
+                    if !node.enabled || node.read_only {
+                        return;
+                    }
+                    if matches!(
+                        node.role,
+                        AccessibilityRole::Slider(_) | AccessibilityRole::Splitter(_)
+                    ) {
+                        if let Some(value) = value
+                            .and_then(|v| v.downcast_ref::<objc2_foundation::NSNumber>())
+                            .map(|v| v.as_f64())
+                            .filter(|v| v.is_finite())
+                        {
+                            self.dispatch(AccessibilityAction::SetValue(value.to_string()));
+                        }
+                        return;
+                    }
+                    if !matches!(
+                        node.role,
+                        AccessibilityRole::TextField
+                            | AccessibilityRole::SearchField
+                            | AccessibilityRole::TextArea
+                            | AccessibilityRole::ComboBox
+                    ) {
+                        return;
+                    }
+                    if let Some(value) = value.and_then(|value| value.downcast_ref::<NSString>()) {
                         self.dispatch(AccessibilityAction::SetValue(value.to_string()));
                     }
-                    return;
-                }
-                if !matches!(
-                    node.role,
-                    AccessibilityRole::TextField
-                        | AccessibilityRole::SearchField
-                        | AccessibilityRole::TextArea
-                        | AccessibilityRole::ComboBox
-                ) {
-                    return;
-                }
-                if let Some(value) = value.and_then(|value| value.downcast_ref::<NSString>()) {
-                    self.dispatch(AccessibilityAction::SetValue(value.to_string()));
-                }
+                });
             }
 
             #[unsafe(method(setAccessibilityFocused:))]
             fn accessibilitySetFocused(&self, focused: bool) {
-                self.trace_text(&format!("set-focus {focused}"));
-                if focused
-                    && self
-                        .node()
-                        .is_some_and(|node| Self::is_focusable(node.role))
-                {
-                    self.dispatch(AccessibilityAction::Focus);
-                }
+                crate::ffi_boundary(
+                    "NativeAccessibilityElement::setAccessibilityFocused:",
+                    || {
+                        self.trace_text(&format!("set-focus {focused}"));
+                        if focused
+                            && self
+                                .node()
+                                .is_some_and(|node| Self::is_focusable(node.role))
+                        {
+                            self.dispatch(AccessibilityAction::Focus);
+                        }
+                    },
+                );
             }
 
             #[unsafe(method(isAccessibilitySelectorAllowed:))]
@@ -1227,178 +1498,184 @@ pub(crate) mod native {
                 &self,
                 selector: objc2::runtime::Sel,
             ) -> objc2::runtime::Bool {
-                let Some(node) = self.node() else {
-                    return objc2::runtime::Bool::NO;
-                };
-                if matches!(
-                    node.role,
-                    AccessibilityRole::TextField
-                        | AccessibilityRole::SearchField
-                        | AccessibilityRole::TextArea
-                        | AccessibilityRole::ComboBox
-                ) {
-                    self.trace_text(&format!(
-                        "allowed-query {}",
-                        selector.name().to_string_lossy()
-                    ));
-                }
-                if selector == sel!(isAccessibilityRequired) {
-                    return objc2::runtime::Bool::YES;
-                }
-                if selector == sel!(setAccessibilityRequired:) {
-                    return objc2::runtime::Bool::NO;
-                }
-                let disclosure = matches!(node.role, AccessibilityRole::TreeItem { .. });
-                let attribute = if selector == sel!(accessibilityLineForIndex:)
-                    || selector == sel!(accessibilityRangeForLine:)
-                    || selector == sel!(accessibilityInsertionPointLineNumber)
-                    || selector == sel!(accessibilityFrameForRange:)
-                    || selector == sel!(accessibilityRangeForIndex:)
-                    || selector == sel!(accessibilityRangeForPosition:)
-                    || selector == sel!(accessibilityVisibleCharacterRange)
-                {
-                    Some(self.text_layout().is_some())
-                } else if selector == sel!(accessibilityAttributedStringForRange:)
-                    || selector == sel!(accessibilitySelectedTextRanges)
-                {
-                    Some(
-                        matches!(
+                crate::ffi_boundary(
+                    "NativeAccessibilityElement::isAccessibilitySelectorAllowed:",
+                    || {
+                        let Some(node) = self.node() else {
+                            return objc2::runtime::Bool::NO;
+                        };
+                        if matches!(
                             node.role,
                             AccessibilityRole::TextField
                                 | AccessibilityRole::SearchField
                                 | AccessibilityRole::TextArea
                                 | AccessibilityRole::ComboBox
-                        ) && if selector == sel!(accessibilityAttributedStringForRange:) {
-                            node.value.is_some()
+                        ) {
+                            self.trace_text(&format!(
+                                "allowed-query {}",
+                                selector.name().to_string_lossy()
+                            ));
+                        }
+                        if selector == sel!(isAccessibilityRequired) {
+                            return objc2::runtime::Bool::YES;
+                        }
+                        if selector == sel!(setAccessibilityRequired:) {
+                            return objc2::runtime::Bool::NO;
+                        }
+                        let disclosure = matches!(node.role, AccessibilityRole::TreeItem { .. });
+                        let attribute = if selector == sel!(accessibilityLineForIndex:)
+                            || selector == sel!(accessibilityRangeForLine:)
+                            || selector == sel!(accessibilityInsertionPointLineNumber)
+                            || selector == sel!(accessibilityFrameForRange:)
+                            || selector == sel!(accessibilityRangeForIndex:)
+                            || selector == sel!(accessibilityRangeForPosition:)
+                            || selector == sel!(accessibilityVisibleCharacterRange)
+                        {
+                            Some(self.text_layout().is_some())
+                        } else if selector == sel!(accessibilityAttributedStringForRange:)
+                            || selector == sel!(accessibilitySelectedTextRanges)
+                        {
+                            Some(
+                                matches!(
+                                    node.role,
+                                    AccessibilityRole::TextField
+                                        | AccessibilityRole::SearchField
+                                        | AccessibilityRole::TextArea
+                                        | AccessibilityRole::ComboBox
+                                ) && if selector == sel!(accessibilityAttributedStringForRange:) {
+                                    node.value.is_some()
+                                } else {
+                                    node.text_selection.is_some()
+                                },
+                            )
+                        } else if selector == sel!(isAccessibilityExpanded) {
+                            Some(node.expanded.is_some())
+                        } else if selector == sel!(isAccessibilityDisclosed) {
+                            Some(disclosure && node.expanded.is_some())
+                        } else if selector == sel!(accessibilityDisclosureLevel)
+                            || selector == sel!(accessibilityDisclosedByRow)
+                            || selector == sel!(accessibilityDisclosedRows)
+                        {
+                            Some(disclosure)
+                        } else if selector == sel!(accessibilityRows)
+                            || selector == sel!(accessibilityVisibleRows)
+                        {
+                            Some(matches!(
+                                node.role,
+                                AccessibilityRole::Tree
+                                    | AccessibilityRole::Table
+                                    | AccessibilityRole::TableColumn { .. }
+                            ))
+                        } else if selector == sel!(accessibilityColumns)
+                            || selector == sel!(accessibilityVisibleColumns)
+                            || selector == sel!(accessibilityColumnHeaderUIElements)
+                            || selector == sel!(accessibilitySelectedRows)
+                        {
+                            Some(matches!(
+                                node.role,
+                                AccessibilityRole::Tree
+                                    | AccessibilityRole::Table
+                                    | AccessibilityRole::TableColumn { .. }
+                            ))
+                        } else if selector == sel!(accessibilityIndex) {
+                            Some(matches!(
+                                node.role,
+                                AccessibilityRole::TableColumn { .. }
+                                    | AccessibilityRole::TableColumnHeader { .. }
+                                    | AccessibilityRole::TableRow { .. }
+                            ))
+                        } else if selector == sel!(accessibilitySortDirection) {
+                            Some(matches!(
+                                node.role,
+                                AccessibilityRole::TableColumnHeader { .. }
+                            ))
+                        } else if selector == sel!(accessibilityRowIndexRange)
+                            || selector == sel!(accessibilityColumnIndexRange)
+                        {
+                            Some(matches!(node.role, AccessibilityRole::TableCell { .. }))
                         } else {
-                            node.text_selection.is_some()
-                        },
-                    )
-                } else if selector == sel!(isAccessibilityExpanded) {
-                    Some(node.expanded.is_some())
-                } else if selector == sel!(isAccessibilityDisclosed) {
-                    Some(disclosure && node.expanded.is_some())
-                } else if selector == sel!(accessibilityDisclosureLevel)
-                    || selector == sel!(accessibilityDisclosedByRow)
-                    || selector == sel!(accessibilityDisclosedRows)
-                {
-                    Some(disclosure)
-                } else if selector == sel!(accessibilityRows)
-                    || selector == sel!(accessibilityVisibleRows)
-                {
-                    Some(matches!(
-                        node.role,
-                        AccessibilityRole::Tree
-                            | AccessibilityRole::Table
-                            | AccessibilityRole::TableColumn { .. }
-                    ))
-                } else if selector == sel!(accessibilityColumns)
-                    || selector == sel!(accessibilityVisibleColumns)
-                    || selector == sel!(accessibilityColumnHeaderUIElements)
-                    || selector == sel!(accessibilitySelectedRows)
-                {
-                    Some(matches!(
-                        node.role,
-                        AccessibilityRole::Tree
-                            | AccessibilityRole::Table
-                            | AccessibilityRole::TableColumn { .. }
-                    ))
-                } else if selector == sel!(accessibilityIndex) {
-                    Some(matches!(
-                        node.role,
-                        AccessibilityRole::TableColumn { .. }
-                            | AccessibilityRole::TableColumnHeader { .. }
-                            | AccessibilityRole::TableRow { .. }
-                    ))
-                } else if selector == sel!(accessibilitySortDirection) {
-                    Some(matches!(
-                        node.role,
-                        AccessibilityRole::TableColumnHeader { .. }
-                    ))
-                } else if selector == sel!(accessibilityRowIndexRange)
-                    || selector == sel!(accessibilityColumnIndexRange)
-                {
-                    Some(matches!(node.role, AccessibilityRole::TableCell { .. }))
-                } else {
-                    None
-                };
-                if let Some(allowed) = attribute {
-                    return objc2::runtime::Bool::new(allowed);
-                }
-                let mutation = selector == sel!(setAccessibilityExpanded:)
-                    || selector == sel!(setAccessibilityDisclosed:)
-                    || selector == sel!(accessibilityPerformPress)
-                    || selector == sel!(accessibilityPerformShowMenu)
-                    || selector == sel!(setAccessibilityValue:)
-                    || selector == sel!(setAccessibilitySelectedText:)
-                    || selector == sel!(setAccessibilitySelectedTextRange:)
-                    || selector == sel!(setAccessibilitySelectedTextRanges:)
-                    || selector == sel!(setAccessibilityFocused:)
-                    || selector == sel!(accessibilityPerformIncrement)
-                    || selector == sel!(accessibilityPerformDecrement);
-                if !mutation {
-                    return unsafe {
-                        msg_send![super(self), isAccessibilitySelectorAllowed: selector]
-                    };
-                }
-                let allowed = self.node().is_some_and(|node| {
-                    node.enabled
-                        && Self::collection_has_action_geometry(&node)
-                        && (((selector == sel!(setAccessibilityExpanded:)
-                            || selector == sel!(setAccessibilityDisclosed:))
-                            && (matches!(node.role, AccessibilityRole::TreeItem { .. })
-                                || (selector == sel!(setAccessibilityExpanded:)
-                                    && matches!(
-                                        node.role,
-                                        AccessibilityRole::ComboBox
-                                            | AccessibilityRole::PopUpButton
-                                    )))
-                            && node.expanded.is_some())
-                            || (selector == sel!(accessibilityPerformPress)
-                                && Self::is_pressable(node.role))
-                            || (selector == sel!(accessibilityPerformShowMenu)
-                                && node.can_show_menu)
-                            || (selector == sel!(setAccessibilityValue:)
-                                && matches!(
-                                    node.role,
-                                    AccessibilityRole::TextField
-                                        | AccessibilityRole::SearchField
-                                        | AccessibilityRole::TextArea
-                                        | AccessibilityRole::ComboBox
-                                        | AccessibilityRole::Slider(_)
-                                        | AccessibilityRole::Splitter(_)
-                                )
-                                && !node.read_only)
-                            || (selector == sel!(setAccessibilitySelectedText:)
-                                && matches!(
-                                    node.role,
-                                    AccessibilityRole::TextField
-                                        | AccessibilityRole::SearchField
-                                        | AccessibilityRole::TextArea
-                                        | AccessibilityRole::ComboBox
-                                )
-                                && !node.read_only)
-                            || ((selector == sel!(accessibilityPerformIncrement)
-                                || selector == sel!(accessibilityPerformDecrement))
-                                && matches!(
-                                    node.role,
-                                    AccessibilityRole::Slider(_) | AccessibilityRole::Splitter(_)
-                                )
-                                && !node.read_only)
-                            || ((selector == sel!(setAccessibilitySelectedTextRange:)
-                                || selector == sel!(setAccessibilitySelectedTextRanges:))
-                                && matches!(
-                                    node.role,
-                                    AccessibilityRole::TextField
-                                        | AccessibilityRole::SearchField
-                                        | AccessibilityRole::TextArea
-                                        | AccessibilityRole::ComboBox
-                                )
-                                && node.text_selection.is_some())
-                            || (selector == sel!(setAccessibilityFocused:)
-                                && Self::is_focusable(node.role)))
-                });
-                objc2::runtime::Bool::new(allowed)
+                            None
+                        };
+                        if let Some(allowed) = attribute {
+                            return objc2::runtime::Bool::new(allowed);
+                        }
+                        let mutation = selector == sel!(setAccessibilityExpanded:)
+                            || selector == sel!(setAccessibilityDisclosed:)
+                            || selector == sel!(accessibilityPerformPress)
+                            || selector == sel!(accessibilityPerformShowMenu)
+                            || selector == sel!(setAccessibilityValue:)
+                            || selector == sel!(setAccessibilitySelectedText:)
+                            || selector == sel!(setAccessibilitySelectedTextRange:)
+                            || selector == sel!(setAccessibilitySelectedTextRanges:)
+                            || selector == sel!(setAccessibilityFocused:)
+                            || selector == sel!(accessibilityPerformIncrement)
+                            || selector == sel!(accessibilityPerformDecrement);
+                        if !mutation {
+                            return unsafe {
+                                msg_send![super(self), isAccessibilitySelectorAllowed: selector]
+                            };
+                        }
+                        let allowed = self.node().is_some_and(|node| {
+                            node.enabled
+                                && Self::collection_has_action_geometry(&node)
+                                && (((selector == sel!(setAccessibilityExpanded:)
+                                    || selector == sel!(setAccessibilityDisclosed:))
+                                    && (matches!(node.role, AccessibilityRole::TreeItem { .. })
+                                        || (selector == sel!(setAccessibilityExpanded:)
+                                            && matches!(
+                                                node.role,
+                                                AccessibilityRole::ComboBox
+                                                    | AccessibilityRole::PopUpButton
+                                            )))
+                                    && node.expanded.is_some())
+                                    || (selector == sel!(accessibilityPerformPress)
+                                        && Self::is_pressable(node.role))
+                                    || (selector == sel!(accessibilityPerformShowMenu)
+                                        && node.can_show_menu)
+                                    || (selector == sel!(setAccessibilityValue:)
+                                        && matches!(
+                                            node.role,
+                                            AccessibilityRole::TextField
+                                                | AccessibilityRole::SearchField
+                                                | AccessibilityRole::TextArea
+                                                | AccessibilityRole::ComboBox
+                                                | AccessibilityRole::Slider(_)
+                                                | AccessibilityRole::Splitter(_)
+                                        )
+                                        && !node.read_only)
+                                    || (selector == sel!(setAccessibilitySelectedText:)
+                                        && matches!(
+                                            node.role,
+                                            AccessibilityRole::TextField
+                                                | AccessibilityRole::SearchField
+                                                | AccessibilityRole::TextArea
+                                                | AccessibilityRole::ComboBox
+                                        )
+                                        && !node.read_only)
+                                    || ((selector == sel!(accessibilityPerformIncrement)
+                                        || selector == sel!(accessibilityPerformDecrement))
+                                        && matches!(
+                                            node.role,
+                                            AccessibilityRole::Slider(_)
+                                                | AccessibilityRole::Splitter(_)
+                                        )
+                                        && !node.read_only)
+                                    || ((selector == sel!(setAccessibilitySelectedTextRange:)
+                                        || selector == sel!(setAccessibilitySelectedTextRanges:))
+                                        && matches!(
+                                            node.role,
+                                            AccessibilityRole::TextField
+                                                | AccessibilityRole::SearchField
+                                                | AccessibilityRole::TextArea
+                                                | AccessibilityRole::ComboBox
+                                        )
+                                        && node.text_selection.is_some())
+                                    || (selector == sel!(setAccessibilityFocused:)
+                                        && Self::is_focusable(node.role)))
+                        });
+                        objc2::runtime::Bool::new(allowed)
+                    },
+                )
             }
         }
     );
@@ -1412,7 +1689,8 @@ pub(crate) mod native {
 
         // Explicit opt-in native diagnostic; no event synthesis or polling.
         fn trace_text(&self, detail: &str) {
-            if std::env::var_os("TEKESUI_TRACE_AX").is_some() {
+            static TRACE_AX: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+            if *TRACE_AX.get_or_init(|| std::env::var_os("TEKESUI_TRACE_AX").is_some()) {
                 eprintln!(
                     "TEKESUI_AX component={} part={:?} {detail}",
                     self.ivars().key.component,
@@ -1694,7 +1972,7 @@ mod tests {
             n.value = Some("A😀中".into());
             n.text_selection = Some(1..3);
             assert!(validate_accessibility_nodes(&[n.clone()]));
-            assert_eq!(text_in_range("A😀中", 1..3).as_deref(), Some("😀"));
+            assert_eq!(text_in_range("A😀中", 1..3), Some("😀"));
             assert_eq!(text_in_range("A😀中", 1..2), None);
             assert_eq!(text_in_range("A😀中", 2..2), None);
             n.text_selection = Some(2..3);
@@ -2040,5 +2318,51 @@ mod tests {
         let mut zero_frame = node(1, None, None);
         zero_frame.frame.size.height = 0.0;
         assert!(!validate_accessibility_nodes(&[zero_frame]));
+    }
+
+    #[test]
+    fn ax_frame_and_hit_test_support_bidi_split_carets() {
+        use crate::event::{Point, Size, TextInputState};
+        let layout = AccessibilityTextLayout {
+            state: TextInputState {
+                text: "Hello שלום".into(),
+                carets: vec![
+                    (0, 0., 10.),
+                    (5, 32., 10.),
+                    (6, 36., 10.),
+                    (6, 68., 10.),
+                    (7, 57., 10.),
+                    (8, 50., 10.),
+                    (9, 46., 10.),
+                    (10, 36., 10.),
+                ]
+                .into_iter()
+                .map(|(i, x, y)| {
+                    (
+                        i,
+                        Point { x, y },
+                        Size {
+                            width: 1.,
+                            height: 18.,
+                        },
+                    )
+                })
+                .collect(),
+                ..Default::default()
+            },
+            lines: std::iter::once(0..10).collect(),
+        };
+        assert!(layout.is_valid());
+        let first_rtl = layout.frame_for_range(6..7).unwrap();
+        assert_eq!(first_rtl.origin, Point { x: 57., y: 10. });
+        assert_eq!(first_rtl.size.width, 11.);
+        assert_eq!(
+            layout.range_for_position(Point { x: 60., y: 15. }),
+            Some(6..7)
+        );
+        assert_eq!(
+            layout.range_for_position(Point { x: 34., y: 15. }),
+            Some(5..6)
+        );
     }
 }
