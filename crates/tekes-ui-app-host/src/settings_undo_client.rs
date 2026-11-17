@@ -1,9 +1,9 @@
-use crate::toolbar_source::ComponentSource;
-// Serial background coordinator. All pipe waits and disk IO stay off the UI thread.
+//! Serial in-process undo coordinator. All file locks and disk IO stay off the UI thread.
 use super::*;
+use crate::toolbar_source::ComponentSource;
 use std::{
     sync::mpsc::{self, Receiver, Sender},
-    time::{Duration, Instant},
+    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 use tekes_ui_module_runtime::{ProcessComponent, ProcessComponentOptions, ProcessStatus};
 use tekes_ui_platform_macos::WindowWake;
@@ -28,9 +28,222 @@ pub struct Completion {
     pub source: Option<ComponentSource>,
 }
 pub struct Client {
-    tx: Sender<Job>,
+    tx: Option<Sender<Job>>,
     pub rx: Receiver<Completion>,
+    worker: Option<std::thread::JoinHandle<()>>,
 }
+impl Drop for Client {
+    fn drop(&mut self) {
+        self.tx.take();
+        if let Some(worker) = self.worker.take() {
+            let _ = worker.join();
+        }
+    }
+}
+impl Client {
+    pub fn start(provider: FileProvider, namespace: String, window: u64, wake: WindowWake) -> Self {
+        Self::start_with_wake(provider, namespace, window, move || {
+            wake.wake();
+        })
+    }
+    pub(crate) fn start_with_wake(
+        provider: FileProvider,
+        namespace: String,
+        window: u64,
+        wake: impl Fn() + Send + Sync + 'static,
+    ) -> Self {
+        let (tx, jobs) = mpsc::channel();
+        let (results, rx) = mpsc::channel();
+        let undo_file = provider.path().with_file_name("undo.json");
+        let epoch = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map_or(1, |d| d.as_nanos() as u64);
+        let session = Session {
+            module: MODULE_ID.into(),
+            instance: 1,
+            host_epoch: epoch,
+        };
+        let worker = std::thread::Builder::new()
+            .name("apphost-settings-undo".into())
+            .spawn(move || {
+                let mut undo = InProcessUndo::new(session, window);
+                let run = |job: Job, undo: &mut InProcessUndo| -> Completion {
+                    let restore = matches!(job, Job::Step { .. });
+                    let mut submission = match &job {
+                        Job::Save { submission, .. } => Some(submission.clone()),
+                        _ => None,
+                    };
+                    let mut ready = true;
+                    let result = (|| -> std::result::Result<Snapshot, CommitFailure> {
+                        let failure = |e: anyhow::Error| CommitFailure {
+                            message: format!("{e:#}"),
+                            unknown: false,
+                        };
+                        let state = if restore {
+                            let state = undo.current().map_err(failure)?;
+                            ensure_result(
+                                provider.load().map_err(failure)? == state.current,
+                                "configuration changed since toolbar registration",
+                            )?;
+                            state
+                        } else {
+                            let current = provider.load().map_err(failure)?;
+                            undo.open_or_reconcile(
+                                undo_file.clone(),
+                                namespace.clone(),
+                                current,
+                            )
+                            .map_err(failure)?
+                        };
+                        match job {
+                            Job::Recover => Ok(state.current),
+                            Job::Save {
+                                submission: ref task,
+                                query: true,
+                            } => {
+                                let saved = provider
+                                    .query(task)
+                                    .map_err(|e| CommitFailure {
+                                        message: format!("{e:#}"),
+                                        unknown: true,
+                                    })?
+                                    .ok_or_else(|| CommitFailure {
+                                        message:
+                                            "Original save is not confirmed; configuration preserved"
+                                                .into(),
+                                        unknown: true,
+                                    })?;
+                                if state.current != saved {
+                                    ensure_result(
+                                        state.current.revision == task.expected_revision
+                                            && saved.revision == task.expected_revision + 1
+                                            && saved.last_commit_id == task.commit_id,
+                                        "history/config reconciliation mismatch",
+                                    )?;
+                                    undo.commit_atomic(
+                                        Kind::Save,
+                                        state.current.clone(),
+                                        saved.clone(),
+                                    )
+                                    .map_err(|e| CommitFailure {
+                                        message: format!(
+                                            "Saved; history confirmation unresolved: {e:#}"
+                                        ),
+                                        unknown: true,
+                                    })?;
+                                }
+                                Ok(saved)
+                            }
+                            Job::Save {
+                                submission: ref task,
+                                query: false,
+                            } => {
+                                ensure_result(
+                                    state.current.revision == task.expected_revision,
+                                    "stale save base",
+                                )?;
+                                let snapshot = match provider.commit_checked(task) {
+                                    Ok(s) => s,
+                                    Err(error) => {
+                                        if error.unknown {
+                                            undo.invalidate();
+                                        }
+                                        return Err(error);
+                                    }
+                                };
+                                undo.commit_atomic(Kind::Save, state.current, snapshot.clone())
+                                    .map_err(|e| CommitFailure {
+                                        message: format!(
+                                            "Saved; history confirmation unresolved: {e:#}"
+                                        ),
+                                        unknown: true,
+                                    })?;
+                                Ok(snapshot)
+                            }
+                            Job::Step {
+                                command,
+                                ref source,
+                            } => {
+                                let (kind, prepared) = undo
+                                    .prepare_step(source, command, &state.current)
+                                    .map_err(failure)?;
+                                let task = Submission::replacement(&state.current, &prepared)
+                                    .map_err(failure)?;
+                                submission = Some(task.clone());
+                                let snapshot = match provider.commit_checked(&task) {
+                                    Ok(s) => s,
+                                    Err(error) => {
+                                        if error.unknown {
+                                            undo.invalidate();
+                                        }
+                                        return Err(error);
+                                    }
+                                };
+                                undo.commit_atomic(kind, state.current, snapshot.clone())
+                                    .map_err(|e| CommitFailure {
+                                        message: format!(
+                                            "Saved; history confirmation unresolved: {e:#}"
+                                        ),
+                                        unknown: true,
+                                    })?;
+                                Ok(snapshot)
+                            }
+                        }
+                    })();
+                    if let Err(err) = &result
+                        && !err.unknown
+                        && submission.is_none()
+                    {
+                        ready = false;
+                    }
+                    let (actions, source) = undo.toolbar_state(ready);
+                    Completion {
+                        submission,
+                        restore,
+                        result,
+                        actions,
+                        source,
+                    }
+                };
+                let initial = run(Job::Recover, &mut undo);
+                if results.send(initial).is_err() {
+                    return;
+                }
+                wake();
+                while let Ok(job) = jobs.recv() {
+                    let completion = run(job, &mut undo);
+                    if results.send(completion).is_err() {
+                        break;
+                    }
+                    wake();
+                }
+            })
+            .ok();
+        Self {
+            tx: Some(tx),
+            rx,
+            worker,
+        }
+    }
+    pub fn send(&self, job: Job) -> Result<()> {
+        self.tx
+            .as_ref()
+            .context("history coordinator stopped")?
+            .send(job)
+            .context("history coordinator stopped")
+    }
+}
+fn ensure_result(ok: bool, message: &str) -> std::result::Result<(), CommitFailure> {
+    if ok {
+        Ok(())
+    } else {
+        Err(CommitFailure {
+            message: message.into(),
+            unknown: false,
+        })
+    }
+}
+
 struct Worker {
     process: ProcessComponent,
     actions: Vec<ToolbarAction>,
@@ -38,9 +251,7 @@ struct Worker {
 }
 impl Worker {
     fn spawn(window: u64) -> Result<Self> {
-        let epoch = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)?
-            .as_nanos() as u64;
+        let epoch = SystemTime::now().duration_since(UNIX_EPOCH)?.as_nanos() as u64;
         let process = ProcessComponent::spawn_in_window(
             ProcessComponentOptions::new(MODULE_ID, epoch),
             window,
@@ -105,178 +316,10 @@ impl Worker {
         })
     }
 }
-impl Client {
-    pub fn start(provider: FileProvider, namespace: String, window: u64, wake: WindowWake) -> Self {
-        let (tx, jobs) = mpsc::channel();
-        let (results, rx) = mpsc::channel();
-        std::thread::spawn(move || {
-            let mut worker: Option<Worker> = None;
-            let run = |job: Job, worker: &mut Option<Worker>| -> Completion {
-                let restore = matches!(job, Job::Step { .. });
-                let mut submission = match &job {
-                    Job::Save { submission, .. } => Some(submission.clone()),
-                    _ => None,
-                };
-                let result = (|| -> std::result::Result<Snapshot, CommitFailure> {
-                    let failure = |e: anyhow::Error| CommitFailure {
-                        message: format!("{e:#}"),
-                        unknown: false,
-                    };
-                    if worker
-                        .as_ref()
-                        .is_some_and(|w| !matches!(w.process.status(), ProcessStatus::Ready { .. }))
-                    {
-                        *worker = None;
-                    }
-                    if restore && worker.is_none() {
-                        return Err(failure(anyhow::anyhow!(
-                            "Original history worker is unavailable; recover before retry"
-                        )));
-                    }
-                    if worker.is_none() {
-                        *worker = Some(Worker::spawn(window).map_err(failure)?);
-                    }
-                    let w = worker.as_mut().unwrap();
-                    let state = if restore {
-                        let state = w.current.clone().ok_or_else(|| {
-                            failure(anyhow::anyhow!("No acknowledged history state"))
-                        })?;
-                        ensure_result(
-                            provider.load().map_err(failure)? == state.current,
-                            "configuration changed since toolbar registration",
-                        )?;
-                        state
-                    } else {
-                        w.open(&provider, &namespace).map_err(failure)?
-                    };
-                    match job {
-                        Job::Recover => return Ok(state.current),
-                        Job::Save {
-                            submission: ref task,
-                            query: true,
-                        } => {
-                            let saved = provider
-                                .query(task)
-                                .map_err(|e| CommitFailure {
-                                    message: format!("{e:#}"),
-                                    unknown: true,
-                                })?
-                                .ok_or_else(|| CommitFailure {
-                                    message:
-                                        "Original save is not confirmed; configuration preserved"
-                                            .into(),
-                                    unknown: true,
-                                })?;
-                            // Open reconciles journal against the visible Provider snapshot first.
-                            ensure_result(
-                                state.current == saved,
-                                "history/config reconciliation mismatch",
-                            )?;
-                            return Ok(saved);
-                        }
-                        Job::Save {
-                            submission: ref task,
-                            query: false,
-                        } => {
-                            ensure_result(
-                                state.current.revision == task.expected_revision,
-                                "stale save base",
-                            )?;
-                            let after = Snapshot {
-                                revision: task.expected_revision + 1,
-                                last_commit_id: task.commit_id.clone(),
-                                overrides: task.overrides.clone(),
-                            };
-                            w.rpc(Command::Prepare {
-                                before: state.current,
-                                after,
-                            })
-                            .map_err(failure)?;
-                        }
-                        Job::Step {
-                            command,
-                            ref source,
-                        } => {
-                            let id = source.invoke(&w.process, command).map_err(failure)?;
-                            let prepared =
-                                w.wait(id).map_err(failure)?.prepared.ok_or_else(|| {
-                                    failure(anyhow::anyhow!("history produced no operation"))
-                                })?;
-                            submission = Some(
-                                Submission::replacement(&state.current, &prepared)
-                                    .map_err(failure)?,
-                            );
-                        }
-                    }
-                    let task = submission.as_ref().unwrap();
-                    let snapshot = match provider.commit_checked(task) {
-                        Ok(s) => s,
-                        Err(error) => {
-                            // Reopen resolves an abandoned prepare when the Provider write certainly failed.
-                            if !error.unknown {
-                                let _ = w.open(&provider, &namespace);
-                            }
-                            return Err(error);
-                        }
-                    };
-                    w.rpc(Command::Confirm {
-                        current: snapshot.clone(),
-                    })
-                    .map_err(|e| CommitFailure {
-                        message: format!("Saved; history confirmation unresolved: {e:#}"),
-                        unknown: true,
-                    })?;
-                    Ok(snapshot)
-                })();
-                let actions = worker
-                    .as_ref()
-                    .map(|w| w.actions.clone())
-                    .unwrap_or_default();
-                Completion {
-                    submission,
-                    restore,
-                    result,
-                    actions,
-                    source: worker
-                        .as_ref()
-                        .and_then(|w| ComponentSource::current(&w.process)),
-                }
-            };
-            let initial = run(Job::Recover, &mut worker);
-            if results.send(initial).is_err() {
-                return;
-            }
-            wake.wake();
-            while let Ok(job) = jobs.recv() {
-                let completion = run(job, &mut worker);
-                if results.send(completion).is_err() {
-                    break;
-                }
-                wake.wake();
-            }
-            if let Some(w) = worker {
-                w.process.close();
-            }
-        });
-        Self { tx, rx }
-    }
-    pub fn send(&self, job: Job) -> Result<()> {
-        self.tx.send(job).context("history coordinator stopped")
-    }
-}
-fn ensure_result(ok: bool, message: &str) -> std::result::Result<(), CommitFailure> {
-    if ok {
-        Ok(())
-    } else {
-        Err(CommitFailure {
-            message: message.into(),
-            unknown: false,
-        })
-    }
-}
 
-/// Executed by the consuming test app, so the actual component executable/factory is tested.
+/// Executed by the consuming test app, so both in-process Client and component factory are tested.
 pub fn verify() -> Result<()> {
+    verify_in_process_client()?;
     let directory = std::env::temp_dir().join(format!(
         "tekes-settings-undo-ipc-{}-{}",
         std::process::id(),
@@ -392,4 +435,86 @@ pub fn verify() -> Result<()> {
         "SETTINGS_UNDO_IPC_PASS {status:?}: prepare abort, lost confirmation restart, saved undo/redo, toolbar registration"
     );
     Ok(())
+}
+
+fn verify_in_process_client() -> Result<()> {
+    let directory = std::env::temp_dir().join(format!(
+        "tekes-settings-undo-inproc-{}-{}",
+        std::process::id(),
+        SystemTime::now().duration_since(UNIX_EPOCH)?.as_nanos()
+    ));
+    let provider = FileProvider::open(directory.join("settings.toml"), "inproc".into())?;
+    let client = Client::start_with_wake(provider.clone(), "inproc".into(), 1, || {});
+    let init = client
+        .rx
+        .recv_timeout(Duration::from_secs(5))
+        .context("in-process initial recover timeout")?;
+    let base = init.result.map_err(|e| anyhow::anyhow!(e.message))?;
+    ensure!(!directory.join("undo.pending").exists());
+    let mut after = base.clone();
+    after.revision += 1;
+    after.last_commit_id = "inproc-save-1".into();
+    after.overrides.insert("value".into(), 42.into());
+    client.send(Job::Save {
+        submission: Submission::replacement(&base, &after)?,
+        query: false,
+    })?;
+    let saved_completion = client
+        .rx
+        .recv_timeout(Duration::from_secs(5))
+        .context("in-process save timeout")?;
+    let stale_source = init.source.clone().context("missing initial source")?;
+    let current_source = saved_completion
+        .source
+        .clone()
+        .context("missing save source")?;
+    ensure!(saved_completion.result.is_ok());
+    ensure!(!directory.join("undo.pending").exists());
+    // Stale source registration from before the save must be rejected.
+    client.send(Job::Step {
+        command: UNDO,
+        source: stale_source,
+    })?;
+    let stale_undo = client
+        .rx
+        .recv_timeout(Duration::from_secs(5))
+        .context("stale undo response timeout")?;
+    ensure!(
+        stale_undo.result.is_err(),
+        "stale in-process source accepted"
+    );
+    // Valid undo -> redo roundtrip.
+    client.send(Job::Step {
+        command: UNDO,
+        source: current_source,
+    })?;
+    let undone = client
+        .rx
+        .recv_timeout(Duration::from_secs(5))
+        .context("undo timeout")?;
+    ensure!(undone.result.is_ok());
+    let redo_source = undone.source.clone().context("missing redo source")?;
+    client.send(Job::Step {
+        command: REDO,
+        source: redo_source,
+    })?;
+    let redone = client
+        .rx
+        .recv_timeout(Duration::from_secs(5))
+        .context("redo timeout")?;
+    ensure!(redone.result.is_ok());
+    drop(client);
+    drop(provider);
+    fs::remove_dir_all(directory)?;
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn in_process_client_handles_save_undo_redo_and_rejects_stale_source() {
+        verify_in_process_client().unwrap();
+    }
 }

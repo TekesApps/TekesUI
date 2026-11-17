@@ -130,6 +130,25 @@ pub fn import_frame(
     )
 }
 
+pub(crate) fn import_frame_with_guard(
+    context: &tekes_ui_render::gpu::GpuContext,
+    frame: &mut ReceivedFrame,
+) -> Result<(
+    wgpu::Texture,
+    tekes_ui_render::shared_surface_macos::SharedSurfaceUseGuard,
+)> {
+    let right = frame
+        .right
+        .take()
+        .context("frame surface right already consumed")?;
+    gpu::import_owned_with_guard(
+        context,
+        (frame.pixel_width, frame.pixel_height),
+        right,
+        frame.registry,
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

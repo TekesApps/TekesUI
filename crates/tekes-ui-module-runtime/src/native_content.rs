@@ -39,11 +39,42 @@ impl ProcessContentSnapshot {
     pub(crate) fn belongs_to(&self, session: &Session, view: u64) -> bool {
         self.stamp.session == *session && self.stamp.view == view
     }
+    pub(crate) fn belongs_to_viewport(&self, session: &Session, view: u64, viewport: u64) -> bool {
+        self.belongs_to(session, view) && self.stamp.viewport == viewport
+    }
     /// The immutable projection's Curve identity, when it was produced from an
     /// exact verified frame. This is diagnostic identity only; mutable calls
     /// still require the live `ProcessContentBridge` and child admission.
     pub fn curve_stamp(&self) -> Option<&crate::component::curve::QueryStamp> {
         self.stamp.curve.as_ref()
+    }
+    fn from_stamp_and_reply(stamp: Stamp, reply: wire::Reply) -> Result<Self> {
+        let text = project(&stamp, &reply)?;
+        Ok(Self { stamp, reply, text })
+    }
+    pub(crate) fn from_wire(
+        process: &ProcessComponent,
+        view: u64,
+        viewport: u64,
+        frame: Rect,
+        clip: Rect,
+        reply: wire::Reply,
+    ) -> Result<Self> {
+        ensure!(
+            reply.view == view && reply.viewport == viewport,
+            "stale native Content reply"
+        );
+        Self::from_stamp_and_reply(
+            Stamp {
+                session: process.session().clone(),
+                view,
+                viewport,
+                frame,
+                clip,
+                curve: None,
+            },
+            reply,
+        )
     }
     pub(crate) fn from_curve(
         process: &ProcessComponent,
@@ -61,16 +92,17 @@ impl ProcessContentSnapshot {
                 && reply.viewport == viewport,
             "stale Curve Content projection"
         );
-        let stamp = Stamp {
-            session: process.session().clone(),
-            view,
-            viewport,
-            frame,
-            clip,
-            curve: Some(curve),
-        };
-        let text = project(&stamp, &reply)?;
-        Ok(Self { stamp, reply, text })
+        Self::from_stamp_and_reply(
+            Stamp {
+                session: process.session().clone(),
+                view,
+                viewport,
+                frame,
+                clip,
+                curve: Some(curve),
+            },
+            reply,
+        )
     }
     pub(crate) fn native_binding(&self) -> Option<Vec<u8>> {
         self.reply.focused?;
@@ -239,6 +271,12 @@ impl<'a> ProcessContentBridge<'a> {
             },
         )
     }
+    pub(crate) fn cancel_pointer_capture(&self) -> Result<ProcessContentSnapshot> {
+        self.send(None, None, 0, None, wire::Input::CancelPointerCapture)
+    }
+    pub(crate) fn cancel(&self) -> Result<ProcessContentSnapshot> {
+        self.send(None, None, 0, None, wire::Input::Cancel)
+    }
     /// Internal re-projection after allocation acknowledgement, not an input
     /// retry. Public retained callbacks still require their exact old stamp.
     pub(crate) fn refresh_allocation(
@@ -252,6 +290,14 @@ impl<'a> ProcessContentBridge<'a> {
             previous.stamp.session == self.stamp.session && previous.stamp.view == self.stamp.view,
             "stale native Content session/View"
         );
+        if previous.stamp.viewport == self.stamp.viewport
+            && previous.stamp.curve == self.stamp.curve
+        {
+            return ProcessContentSnapshot::from_stamp_and_reply(
+                self.stamp.clone(),
+                previous.reply.clone(),
+            );
+        }
         let current = self.snapshot()?;
         ensure!(
             previous.reply.focused == current.reply.focused

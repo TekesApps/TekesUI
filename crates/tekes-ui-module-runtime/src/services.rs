@@ -644,6 +644,10 @@ struct State {
     incoming: VecDeque<ServerMessage>,
     pending: HashSet<u64>,
     curve_pending: HashMap<u64, CurvePending>,
+    internal_requests: HashSet<u64>,
+    discard_replies: HashSet<u64>,
+    correlated_responses: HashMap<u64, Result<Value, String>>,
+    curve_replies: HashMap<u64, ServerMessage>,
     // Existing RPC reply routing: these callers wait on changed, not the UI.
     synchronous_content: HashSet<u64>,
     toolbar: Vec<ToolbarAction>,
@@ -651,12 +655,58 @@ struct State {
     toolbar_window: u64,
     toolbar_declaration: Option<ServerMessage>,
     view_revision: u64,
+    remote_view_invalidated: bool,
     native: Option<ViewCapabilities>,
     expected_view: Option<u64>,
     layer_view: Option<u64>,
     stop_id: Option<u64>,
     #[cfg(target_os = "macos")]
     renders: HashMap<u64, (tekes_ui_app_protocol::Request, crate::view::Lease)>,
+}
+fn insert_bounded<V>(map: &mut HashMap<u64, V>, key: u64, value: V) {
+    if map.len() >= CAPACITY
+        && let Some(&oldest) = map.keys().min()
+    {
+        map.remove(&oldest);
+    }
+    map.insert(key, value);
+}
+impl State {
+    /// Route a response packet out of `incoming` when discarded or internally correlated.
+    /// Returns `(internal_routed, discarded)`.
+    fn route_generic_reply(
+        &mut self,
+        request: u64,
+        result: &Result<Value, String>,
+    ) -> (bool, bool) {
+        let is_internal = self.internal_requests.remove(&request);
+        let is_discarded = self.discard_replies.remove(&request);
+        if is_discarded {
+            (false, true)
+        } else if is_internal {
+            insert_bounded(&mut self.correlated_responses, request, result.clone());
+            (true, false)
+        } else {
+            (false, false)
+        }
+    }
+    fn route_curve_reply(
+        &mut self,
+        request: u64,
+        discard_curve_reply: bool,
+        packet: &ServerMessage,
+    ) -> (bool, bool) {
+        let is_internal = self.internal_requests.remove(&request);
+        let is_discarded = self.discard_replies.remove(&request);
+        if discard_curve_reply || is_discarded {
+            (false, true)
+        } else if is_internal {
+            insert_bounded(&mut self.curve_replies, request, packet.clone());
+            (true, false)
+        } else {
+            (false, false)
+        }
+    }
 }
 struct Shared {
     state: Mutex<State>,
@@ -693,6 +743,10 @@ impl Shared {
             s.incoming.clear();
             s.pending.clear();
             s.curve_pending.clear();
+            s.internal_requests.clear();
+            s.discard_replies.clear();
+            s.correlated_responses.clear();
+            s.curve_replies.clear();
             s.synchronous_content.clear();
             s.toolbar.clear();
             s.toolbar_declaration = None;
@@ -785,12 +839,17 @@ impl ProcessComponent {
                 incoming: VecDeque::new(),
                 pending: HashSet::new(),
                 curve_pending: HashMap::new(),
+                internal_requests: HashSet::new(),
+                discard_replies: HashSet::new(),
+                correlated_responses: HashMap::new(),
+                curve_replies: HashMap::new(),
                 synchronous_content: HashSet::new(),
                 toolbar: Vec::new(),
                 toolbar_revision: 0,
                 toolbar_window: 0,
                 toolbar_declaration: None,
                 view_revision: 0,
+                remote_view_invalidated: false,
                 native: None,
                 expected_view,
                 layer_view: None,
@@ -845,6 +904,10 @@ impl ProcessComponent {
                     state.toolbar_declaration = None;
                     state.pending.clear();
                     state.curve_pending.clear();
+                    state.internal_requests.clear();
+                    state.discard_replies.clear();
+                    state.correlated_responses.clear();
+                    state.curve_replies.clear();
                     state.synchronous_content.clear();
                     #[cfg(target_os = "macos")]
                     {
@@ -937,6 +1000,12 @@ impl ProcessComponent {
         self.view().is_ok_and(|view| view.take_invalidated())
     }
     #[cfg(target_os = "macos")]
+    pub(crate) fn take_remote_view_invalidated(&self) -> bool {
+        self.service().is_ok_and(|shared| {
+            std::mem::take(&mut shared.state.lock().unwrap().remote_view_invalidated)
+        })
+    }
+    #[cfg(target_os = "macos")]
     pub fn has_pending_view_updates(&self) -> bool {
         let incoming = self
             .service()
@@ -1019,6 +1088,9 @@ impl ProcessComponent {
     pub fn take_curve_reply(&self, request: u64) -> Option<ServerMessage> {
         let shared = self.service().ok()?;
         let mut state = shared.state.lock().unwrap();
+        if let Some(packet) = state.curve_replies.remove(&request) {
+            return Some(packet);
+        }
         let index = state.incoming.iter().position(|packet| {
             matches!(packet.output, Output::CurveReplyV1 { request: actual, .. } if actual == request)
         })?;
@@ -1030,6 +1102,9 @@ impl ProcessComponent {
     pub fn take_response(&self, request: u64) -> Option<Result<serde_json::Value>> {
         let shared = self.service().ok()?;
         let mut state = shared.state.lock().unwrap();
+        if let Some(result) = state.correlated_responses.remove(&request) {
+            return Some(result.map_err(anyhow::Error::msg));
+        }
         let index = state.incoming.iter().position(|packet| {
             matches!(packet.output, Output::Response { request: actual, .. } if actual == request)
         })?;
@@ -1129,6 +1204,7 @@ impl ProcessComponent {
                 body: curve::RequestBodyV1::ContentQuery { query },
             }),
             true,
+            true,
         )?;
         let shared = self.service()?;
         let deadline = std::time::Instant::now() + timeout;
@@ -1139,10 +1215,7 @@ impl ProcessComponent {
                 "Content process unavailable: {:?}",
                 state.status
             );
-            if let Some(index) = state.incoming.iter().position(|packet| {
-                matches!(packet.output, Output::CurveReplyV1 { request, .. } if request == id)
-            }) {
-                let packet = state.incoming.remove(index).unwrap();
+            if let Some(packet) = state.curve_replies.remove(&id) {
                 let Output::CurveReplyV1 { view, reply, .. } = packet.output else {
                     unreachable!("query reply search filters Curve responses")
                 };
@@ -1174,6 +1247,7 @@ impl ProcessComponent {
                 if let Some(pending) = state.curve_pending.get_mut(&id) {
                     pending.discard_reply = true;
                 }
+                state.discard_replies.insert(id);
                 state.synchronous_content.remove(&id);
                 anyhow::bail!("Curve Content query timed out");
             };
@@ -1210,7 +1284,7 @@ impl ProcessComponent {
         } else {
             RequestBody::Content(request)
         };
-        let id = self.enqueue_request(origin, body, true)?;
+        let id = self.enqueue_request(origin, body, true, true)?;
         let shared = self.service()?;
         let deadline = std::time::Instant::now() + timeout;
         let mut state = shared.state.lock().unwrap();
@@ -1220,49 +1294,47 @@ impl ProcessComponent {
                 "Content process unavailable: {:?}",
                 state.status
             );
-            if let Some(index) = state.incoming.iter().position(|p| match &p.output {
-                Output::Response { request, .. } => *request == id,
-                Output::CurveReplyV1 { request, .. } => *request == id,
-                _ => false,
-            }) {
-                let packet = state.incoming.remove(index).unwrap();
-                let reply = match packet.output {
-                    Output::Response { result, .. } if expected_curve.is_none() => {
-                        let reply: content::Reply =
-                            serde_json::from_value(result.map_err(anyhow::Error::msg)?)?;
-                        reply
-                    }
-                    Output::CurveReplyV1 { view, reply, .. }
-                        if let Some(stamp) = &expected_curve =>
-                    {
-                        ensure!(view == stamp.view, "mismatched Curve Content View");
-                        match reply {
-                            curve::CurveReply::ContentInput {
-                                transaction_id,
-                                stamp: actual,
-                                outcome,
-                            } => {
-                                ensure!(
-                                    transaction_id == 0 && &actual == stamp,
-                                    "mismatched Curve Content input identity"
-                                );
-                                match outcome {
-                                    curve::ContentInputOutcome::Applied { reply } => *reply,
-                                    curve::ContentInputOutcome::Failed { message } => {
-                                        anyhow::bail!(
-                                            "Curve Content input failed after dispatch: {message}"
-                                        )
-                                    }
+            let reply = if expected_curve.is_none() {
+                state.correlated_responses.remove(&id).map(|result| {
+                    let value = result.map_err(anyhow::Error::msg)?;
+                    let reply: content::Reply = serde_json::from_value(value)?;
+                    Ok(reply)
+                })
+            } else {
+                state.curve_replies.remove(&id).map(|packet| {
+                    let stamp = expected_curve.as_ref().expect("curve stamp checked");
+                    let Output::CurveReplyV1 { view, reply, .. } = packet.output else {
+                        anyhow::bail!("wrong Content reply lane");
+                    };
+                    ensure!(view == stamp.view, "mismatched Curve Content View");
+                    match reply {
+                        curve::CurveReply::ContentInput {
+                            transaction_id,
+                            stamp: actual,
+                            outcome,
+                        } => {
+                            ensure!(
+                                transaction_id == 0 && &actual == stamp,
+                                "mismatched Curve Content input identity"
+                            );
+                            match outcome {
+                                curve::ContentInputOutcome::Applied { reply } => Ok(*reply),
+                                curve::ContentInputOutcome::Failed { message } => {
+                                    anyhow::bail!(
+                                        "Curve Content input failed after dispatch: {message}"
+                                    )
                                 }
                             }
-                            curve::CurveReply::Rejected { code, .. } => {
-                                anyhow::bail!("Curve Content input rejected: {code:?}")
-                            }
-                            _ => anyhow::bail!("unexpected Curve Content input reply"),
                         }
+                        curve::CurveReply::Rejected { code, .. } => {
+                            anyhow::bail!("Curve Content input rejected: {code:?}")
+                        }
+                        _ => anyhow::bail!("unexpected Curve Content input reply"),
                     }
-                    _ => anyhow::bail!("wrong Content reply lane"),
-                };
+                })
+            };
+            if let Some(reply) = reply {
+                let reply = reply?;
                 ensure!(
                     (reply.view, reply.viewport) == expected,
                     "mismatched Content reply geometry"
@@ -1277,13 +1349,12 @@ impl ProcessComponent {
                 return Ok(reply);
             }
             let Some(remaining) = deadline.checked_duration_since(std::time::Instant::now()) else {
-                // A later reply belongs to the ordinary public drain after this
-                // caller stops waiting. Never replay its original input.
-                if expected_curve.is_some()
-                    && let Some(pending) = state.curve_pending.get_mut(&id)
-                {
+                // Discard timed-out/superseded replies inside the reader instead of
+                // accumulating them in the 64-slot public event queue. Never replay input.
+                if let Some(pending) = state.curve_pending.get_mut(&id) {
                     pending.discard_reply = true;
                 }
+                state.discard_replies.insert(id);
                 state.synchronous_content.remove(&id);
                 anyhow::bail!("Content query timed out; input not replayed");
             };
@@ -1291,16 +1362,37 @@ impl ProcessComponent {
             state = next;
         }
     }
+    #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+    pub(crate) fn request_internal(&self, body: RequestBody) -> Result<u64> {
+        self.enqueue_request(&self.session, body, false, true)
+    }
+    #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+    pub(crate) fn discard_response(&self, request: u64) {
+        let Ok(shared) = self.service() else {
+            return;
+        };
+        let mut state = shared.state.lock().unwrap();
+        state.correlated_responses.remove(&request);
+        state.curve_replies.remove(&request);
+        state.internal_requests.remove(&request);
+        if state.pending.contains(&request) {
+            state.discard_replies.insert(request);
+            if let Some(pending) = state.curve_pending.get_mut(&request) {
+                pending.discard_reply = true;
+            }
+        }
+    }
     /// Keep the event-time owner when callbacks outlive a mount or a process.
     /// Latest-session convenience calls must not retarget a retained UI action.
     pub fn request_from(&self, origin: &Session, body: RequestBody) -> Result<u64> {
-        self.enqueue_request(origin, body, false)
+        self.enqueue_request(origin, body, false, false)
     }
     fn enqueue_request(
         &self,
         origin: &Session,
         body: RequestBody,
         synchronous_content: bool,
+        internal_reply: bool,
     ) -> Result<u64> {
         let content_input = match &body {
             RequestBody::Content(request) => Some(&request.input),
@@ -1495,6 +1587,9 @@ impl ProcessComponent {
                 },
             );
         }
+        if internal_reply || synchronous_content {
+            state.internal_requests.insert(id);
+        }
         if synchronous_content {
             state.synchronous_content.insert(id);
         }
@@ -1535,6 +1630,10 @@ impl ProcessComponent {
             state.incoming.clear();
             state.pending.clear();
             state.curve_pending.clear();
+            state.internal_requests.clear();
+            state.discard_replies.clear();
+            state.correlated_responses.clear();
+            state.curve_replies.clear();
             state.synchronous_content.clear();
             state.toolbar.clear();
             state.toolbar_declaration = None;
@@ -1805,6 +1904,8 @@ fn connection(
         let mut synchronous_content = false;
         let mut content_changed = false;
         let mut discard_curve_reply = false;
+        let mut internal_routed = false;
+        let mut discarded = false;
         match &packet.output {
             Output::Ready {
                 pid: actual,
@@ -1878,6 +1979,7 @@ fn connection(
                                 );
                                 ensure!(*revision > state.view_revision, "stale View invalidation");
                                 state.view_revision = *revision;
+                                state.remote_view_invalidated = true;
                                 invalidated = true;
                             }
                             _ => (),
@@ -1900,6 +2002,7 @@ fn connection(
                             ensure!(result.is_ok(), "Stop rejected");
                             stopped = true;
                         }
+                        (internal_routed, discarded) = state.route_generic_reply(*request, result);
                     }
                     Output::CurveReplyV1 {
                         request,
@@ -1940,15 +2043,17 @@ fn connection(
                             } if reply.changed
                         );
                         synchronous_content = state.synchronous_content.remove(request);
+                        (internal_routed, discarded) =
+                            state.route_curve_reply(*request, discard_curve_reply, &packet);
                     }
                     Output::Fatal { message } => bail!("worker fatal: {message}"),
                     _ => bail!("unnegotiated output"),
                 }
             }
         }
-        // View invalidation is a coalesced redraw signal, not business output.
-        // It must not fill the service-event queue while the View is hidden.
-        if !invalidated && !discard_curve_reply {
+        // View invalidation, discarded replies, and SDK-correlated internal replies
+        // must never fill the 64-slot public business-event queue.
+        if !invalidated && !discard_curve_reply && !discarded && !internal_routed {
             ensure!(
                 state.incoming.len() < CAPACITY,
                 "component output queue full"
@@ -1960,9 +2065,9 @@ fn connection(
         drop(state);
         #[cfg(target_os = "macos")]
         if let Some(view) = shared.view.get() {
-            if invalidated || content_changed {
+            if invalidated || (content_changed && !discarded) {
                 view.invalidate();
-            } else if !synchronous_content {
+            } else if !synchronous_content && !discarded {
                 view.remote_status(status);
             }
         }
@@ -1970,7 +2075,7 @@ fn connection(
         // A changed result still uses view.invalidate() at that caller; a
         // read-only native query must not schedule a new UI query in a loop.
         shared.changed.notify_all();
-        if !invalidated && !synchronous_content {
+        if !invalidated && !synchronous_content && !discarded {
             shared.notify();
         }
     }
@@ -2000,12 +2105,17 @@ mod tests {
                 incoming: VecDeque::new(),
                 pending: HashSet::new(),
                 curve_pending: HashMap::new(),
+                internal_requests: HashSet::new(),
+                discard_replies: HashSet::new(),
+                correlated_responses: HashMap::new(),
+                curve_replies: HashMap::new(),
                 synchronous_content: HashSet::new(),
                 toolbar: Vec::new(),
                 toolbar_revision: 0,
                 toolbar_window: 0,
                 toolbar_declaration: None,
                 view_revision: 0,
+                remote_view_invalidated: false,
                 native: None,
                 expected_view: Some(1),
                 layer_view: None,
@@ -3127,5 +3237,61 @@ mod tests {
                 }
             ));
         }
+    }
+
+    #[test]
+    fn timed_out_and_internal_replies_never_overflow_public_incoming_queue() {
+        let mut state = State {
+            status: ProcessStatus::Ready {
+                pid: 1,
+                capabilities: Capabilities::HEADLESS,
+            },
+            abort: false,
+            stopping: false,
+            next: 1,
+            outgoing: VecDeque::new(),
+            incoming: VecDeque::new(),
+            pending: HashSet::new(),
+            curve_pending: HashMap::new(),
+            internal_requests: HashSet::new(),
+            discard_replies: HashSet::new(),
+            correlated_responses: HashMap::new(),
+            curve_replies: HashMap::new(),
+            synchronous_content: HashSet::new(),
+            toolbar: Vec::new(),
+            toolbar_revision: 0,
+            toolbar_window: 0,
+            toolbar_declaration: None,
+            view_revision: 0,
+            remote_view_invalidated: false,
+            native: None,
+            expected_view: Some(1),
+            layer_view: None,
+            stop_id: None,
+            #[cfg(target_os = "macos")]
+            renders: HashMap::new(),
+        };
+        // Simulate 120 timed-out synchronous Content queries followed by 120 unconsumed internal replies.
+        for id in 1..=120 {
+            state.internal_requests.insert(id);
+            state.discard_replies.insert(id);
+            let (internal_routed, discarded) = state.route_generic_reply(id, &Ok(Value::Null));
+            assert!(!internal_routed && discarded);
+        }
+        assert!(state.correlated_responses.is_empty());
+        assert!(state.incoming.is_empty());
+
+        for id in 121..=240 {
+            state.internal_requests.insert(id);
+            let (internal_routed, discarded) = state.route_generic_reply(id, &Ok(Value::from(id)));
+            assert!(internal_routed && !discarded);
+        }
+        assert!(state.incoming.is_empty());
+        assert_eq!(state.correlated_responses.len(), CAPACITY);
+        assert_eq!(
+            state.correlated_responses.get(&240),
+            Some(&Ok(Value::from(240)))
+        );
+        assert!(!state.correlated_responses.contains_key(&121));
     }
 }

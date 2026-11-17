@@ -15,11 +15,11 @@ impl Host {
         if pointer.button.is_none() || pointer.is_primary() {
             return Ok(false);
         }
-        if self.is_settings_window
-            || self.sidebar_motion.needs_frame()
+        if self.settings_mgr.is_settings_window
+            || self.layout.sidebar_motion.needs_frame()
             || self.open_toolbar().is_some()
-            || self.settings.as_ref().is_some_and(|s| s.borrow().open)
             || self
+                .nav_mgr
                 .navigation
                 .as_ref()
                 .is_some_and(|n| n.busy || !n.host.input_open)
@@ -27,7 +27,7 @@ impl Host {
             return Ok(false);
         }
         if matches!(pointer.phase, PointerPhase::Drag | PointerPhase::Up) {
-            for panel in &mut self.panels {
+            for panel in &mut self.panel_mgr.panels {
                 if let Some(local) = &mut panel.local
                     && local
                         .captured_pointer_event(*pointer, &mut self.text)?
@@ -39,10 +39,10 @@ impl Host {
             return Ok(false);
         }
         let index = if pointer.phase == PointerPhase::Down {
-            self.panels.iter().position(|panel| {
+            self.panel_mgr.panels.iter().position(|panel| {
                 panel.local.is_some()
                     && panel.content_frame().contains(pointer.position)
-                    && (self.presentation.is_none() || panel.clip.contains(pointer.position))
+                    && (self.layout.presentation.is_none() || panel.clip.contains(pointer.position))
                     && panel.frame_viewport == panel.viewport
                     && panel.frame_size == panel.content_size()
             })
@@ -50,7 +50,7 @@ impl Host {
             None
         };
         let Some(index) = index else { return Ok(false) };
-        let response = self.panels[index]
+        let response = self.panel_mgr.panels[index]
             .local
             .as_mut()
             .unwrap()
@@ -64,21 +64,23 @@ impl Host {
     }
     /// Resolve the declared destination only while ordinary input may change focus.
     fn available_search_entry(&mut self) -> Option<(usize, ComponentId)> {
-        if self.sidebar_motion.needs_frame()
+        if self.layout.sidebar_motion.needs_frame()
             || self.open_toolbar().is_some()
             || self
+                .nav_mgr
                 .navigation
                 .as_ref()
                 .is_some_and(|n| n.busy || !n.host.input_open)
             || self.composition_in_progress()
             || self
+                .layout
                 .presentation_tabs
                 .as_ref()
                 .is_some_and(|tabs| tabs.content_host().input_overlay_owner().is_some())
         {
             return None;
         }
-        for panel in &mut self.panels {
+        for panel in &mut self.panel_mgr.panels {
             if let Some(local) = &mut panel.local {
                 let mut overlay = false;
                 local.with_host(&mut |host| overlay = host.input_overlay_owner().is_some());
@@ -87,7 +89,8 @@ impl Host {
                 }
             }
         }
-        self.panels
+        self.panel_mgr
+            .panels
             .iter_mut()
             .enumerate()
             .find_map(|(index, panel)| {
@@ -108,8 +111,8 @@ impl Host {
         let Some((index, _)) = self.available_search_entry() else {
             return Ok(false);
         };
-        let id = self.panels[index].module_id.clone();
-        if let Some(state) = &mut self.presentation {
+        let id = self.panel_mgr.panels[index].module_id.clone();
+        if let Some(state) = &mut self.layout.presentation {
             if state.nav_bar_id() == Some(id.as_str()) {
                 if !state.nav_bar_visible() {
                     state.toggle_nav_bar()?;
@@ -125,9 +128,9 @@ impl Host {
                 }
             }
             self.cancel_toolbar_input();
-            self.drag_split = None;
-            self.outer_view.cancel(&mut self.outer);
-            self.inner_view.cancel(&mut self.inner);
+            self.layout.drag_split = None;
+            self.layout.outer_view.cancel(&mut self.layout.outer);
+            self.layout.inner_view.cancel(&mut self.layout.inner);
         }
         Ok(true)
     }
@@ -136,11 +139,11 @@ impl Host {
         let Some((index, target)) = self.available_search_entry() else {
             return Ok(false);
         };
-        if self.panels[index].bounds.is_empty() {
+        if self.panel_mgr.panels[index].bounds.is_empty() {
             return Ok(false);
         }
         let mut accepted = false;
-        self.panels[index]
+        self.panel_mgr.panels[index]
             .local
             .as_mut()
             .unwrap()
@@ -152,10 +155,10 @@ impl Host {
             return Ok(false);
         }
         self.set_toolbar_focus(None, false);
-        if let Some(tabs) = &mut self.presentation_tabs {
+        if let Some(tabs) = &mut self.layout.presentation_tabs {
             tabs.blur();
         }
-        for (other, panel) in self.panels.iter_mut().enumerate() {
+        for (other, panel) in self.panel_mgr.panels.iter_mut().enumerate() {
             if other != index {
                 if let Some(local) = &mut panel.local {
                     local.with_host(&mut |host| {
@@ -166,7 +169,7 @@ impl Host {
                 }
             }
         }
-        self.focused = index;
+        self.layout.focused = index;
         Ok(true)
     }
     /// Prepare all original Hosts in actual paint order; toolbar is composited last.
@@ -184,11 +187,12 @@ impl Host {
         self.toolbar_accessibility_nodes(active); // refresh original stamped target map
         let mut fragments = Vec::new();
         if self.open_toolbar().is_none() {
-            for (i, panel) in self.panels.iter_mut().enumerate() {
+            for (i, panel) in self.panel_mgr.panels.iter_mut().enumerate() {
                 if panel.bounds.size.width <= 0.
-                    || (self.is_settings_window
+                    || (self.settings_mgr.is_settings_window
                         && i == 0
-                        && (!self.leading_visible || self.sidebar_motion.needs_frame()))
+                        && (!self.layout.leading_visible
+                            || self.layout.sidebar_motion.needs_frame()))
                 {
                     continue;
                 }
@@ -200,10 +204,11 @@ impl Host {
             }
         }
         let modal = self
+            .panel_mgr
             .panels
             .iter()
             .position(|panel| panel.mounted_toolbar.modal());
-        for (index, panel) in self.panels.iter().enumerate() {
+        for (index, panel) in self.panel_mgr.panels.iter().enumerate() {
             if modal.is_some_and(|owner| owner != index)
                 || panel.mounted_toolbar.host.semantics().is_empty()
             {
@@ -217,6 +222,7 @@ impl Host {
                         .map(|(target, part)| (*target, Some(part.index))),
                 ) {
                     if let Some((key, _, _)) = self
+                        .toolbar_mgr
                         .toolbar_ax
                         .iter()
                         .find(|(_, i, t)| *i == index && *t == target)
@@ -252,9 +258,10 @@ impl Host {
         active: bool,
     ) -> Option<tekes_ui_platform_macos::TextInputState> {
         if !active
-            || self.sidebar_motion.needs_frame()
+            || self.layout.sidebar_motion.needs_frame()
             || self.open_toolbar().is_some()
             || self
+                .layout
                 .presentation_tabs
                 .as_ref()
                 .is_some_and(|tabs| tabs.content_host().focused().is_some())
@@ -262,14 +269,14 @@ impl Host {
             return None;
         }
         if let Some(state) = crate::columns::text_state(
-            self.panels[self.toolbar_index]
+            self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
                 .mounted_toolbar
                 .host
                 .content_host(),
         ) {
             return Some(state);
         }
-        if self.panels[self.toolbar_index]
+        if self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
             .mounted_toolbar
             .host
             .content_host()
@@ -279,8 +286,9 @@ impl Host {
             return None;
         }
         let mut state = None;
-        self.panels
-            .get_mut(self.focused)?
+        self.panel_mgr
+            .panels
+            .get_mut(self.layout.focused)?
             .local
             .as_mut()?
             .with_host(&mut |h| state = crate::columns::text_state(h));
@@ -289,12 +297,14 @@ impl Host {
     pub(super) fn local_content_event(&mut self, event: &Event, w: &Window) -> Result<bool> {
         if !w.is_active()
             || self
+                .layout
                 .presentation_tabs
                 .as_ref()
                 .is_some_and(|tabs| tabs.content_host().focused().is_some())
-            || self.sidebar_motion.needs_frame()
+            || self.layout.sidebar_motion.needs_frame()
             || self.open_toolbar().is_some()
             || self
+                .nav_mgr
                 .navigation
                 .as_ref()
                 .is_some_and(|n| n.busy || !n.host.input_open)
@@ -311,7 +321,7 @@ impl Host {
             let Some(index) = owner.0.checked_sub(1).and_then(|i| usize::try_from(i).ok()) else {
                 return Ok(false);
             };
-            let Some(panel) = self.panels.get_mut(index) else {
+            let Some(panel) = self.panel_mgr.panels.get_mut(index) else {
                 return Ok(false);
             };
             if panel.bounds.size.width <= 0. {
@@ -328,7 +338,7 @@ impl Host {
             });
             if consumed {
                 local.dispatch_actions();
-                self.focused = index;
+                self.layout.focused = index;
                 self.set_toolbar_focus(None, false);
             }
             return Ok(consumed);
@@ -343,24 +353,24 @@ impl Host {
     ) -> Result<bool> {
         let index = if let Event::Scroll(s) = event {
             let point = Point::new(s.position.x as f32, s.position.y as f32);
-            self.panels.iter().position(|p| {
+            self.panel_mgr.panels.iter().position(|p| {
                 p.local.is_some()
                     && p.content_frame().contains(point)
-                    && (self.presentation.is_none() || p.clip.contains(point))
+                    && (self.layout.presentation.is_none() || p.clip.contains(point))
             })
-        } else if self.panels[self.toolbar_index]
+        } else if self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
             .mounted_toolbar
             .host
             .content_host()
             .focused()
             .is_none()
         {
-            Some(self.focused)
+            Some(self.layout.focused)
         } else {
             None
         };
         let Some(local) = index
-            .and_then(|i| self.panels.get_mut(i))
+            .and_then(|i| self.panel_mgr.panels.get_mut(i))
             .and_then(|p| p.local.as_mut())
         else {
             return Ok(false);
@@ -493,7 +503,7 @@ mod tests {
             .collect();
         let mut window = AppWindow::from_columns(columns).unwrap().into_host(false);
         assert!(window.mount_columns());
-        for (i, panel) in window.panels.iter_mut().enumerate() {
+        for (i, panel) in window.panel_mgr.panels.iter_mut().enumerate() {
             panel
                 .geometry_with_header(Rect::new(i as f32 * 200., 0., 200., 260.), 1., 52., 0.)
                 .unwrap();
@@ -555,7 +565,7 @@ mod tests {
                 ))
                 .unwrap()
         );
-        window.panels[0]
+        window.panel_mgr.panels[0]
             .local
             .as_mut()
             .unwrap()
@@ -575,7 +585,7 @@ mod tests {
                 assert_eq!(events[1].position, Point::new(300., 20.));
                 assert!(host.pointer_capture().is_none());
             });
-        window.panels[1]
+        window.panel_mgr.panels[1]
             .local
             .as_mut()
             .unwrap()
@@ -590,7 +600,7 @@ mod tests {
                 )
             });
         assert!(window.local_secondary_pointer(&down).unwrap());
-        window.panels[0].local.as_mut().unwrap().cancel();
+        window.panel_mgr.panels[0].local.as_mut().unwrap().cancel();
         assert!(
             !window
                 .local_secondary_pointer(&mouse(
@@ -603,7 +613,7 @@ mod tests {
                 ))
                 .unwrap()
         );
-        window.is_settings_window = true;
+        window.settings_mgr.is_settings_window = true;
         assert!(!window.local_secondary_pointer(&down).unwrap());
     }
     #[test]
@@ -629,13 +639,13 @@ mod tests {
         .unwrap();
         let mut host = app.into_host(false);
         assert!(host.mount_columns());
-        assert_eq!(host.panels.len(), 3);
-        assert!(host.panels[0].local.is_some());
-        assert!(host.panels[1].local.is_none());
-        assert!(host.panels[2].local.is_some());
-        assert!(host.panels[0].launch_tx.is_none());
-        assert!(host.panels[1].launch_tx.is_some());
-        assert!(host.panels.iter().all(|p| p.pid.is_none()));
+        assert_eq!(host.panel_mgr.panels.len(), 3);
+        assert!(host.panel_mgr.panels[0].local.is_some());
+        assert!(host.panel_mgr.panels[1].local.is_none());
+        assert!(host.panel_mgr.panels[2].local.is_some());
+        assert!(!host.panel_mgr.panels[0].needs_launch());
+        assert!(host.panel_mgr.panels[1].needs_launch());
+        assert!(host.panel_mgr.panels.iter().all(|p| p.pid.is_none()));
     }
 }
 
@@ -677,7 +687,7 @@ mod window_publication_tests {
         ];
         let mut window = AppWindow::from_columns(columns).unwrap().into_host(false);
         assert!(window.mount_columns());
-        for (i, panel) in window.panels.iter_mut().enumerate() {
+        for (i, panel) in window.panel_mgr.panels.iter_mut().enumerate() {
             panel.bounds = Rect::new(i as f32 * 180., 40., 180., 150.);
             let mut result = None;
             panel.local.as_mut().unwrap().with_host(&mut |h| {
@@ -692,13 +702,13 @@ mod window_publication_tests {
             result.unwrap().unwrap();
         }
         let source = Source::Panel {
-            instance: window.panels[0].instance,
+            instance: window.panel_mgr.panels[0].instance,
             index: 0,
             module: "curve".into(),
             pid: None,
             generation: 0,
         };
-        window.panels[window.toolbar_index]
+        window.panel_mgr.panels[window.toolbar_mgr.toolbar_index]
             .mounted_toolbar
             .sync(
                 Rect::new(0., 0., 360., 200.),
@@ -725,12 +735,16 @@ mod window_publication_tests {
                 }],
             )
             .unwrap();
-        window.panels[window.toolbar_index]
+        window.panel_mgr.panels[window.toolbar_mgr.toolbar_index]
             .mounted_toolbar
             .host
             .render(&mut Scene::new(), &mut window.text, Theme::LIGHT.into())
             .unwrap();
-        assert!(!window.panels[window.toolbar_index].mounted_toolbar.modal());
+        assert!(
+            !window.panel_mgr.panels[window.toolbar_mgr.toolbar_index]
+                .mounted_toolbar
+                .modal()
+        );
         let publication = window.content_accessibility_publication(true).unwrap();
         let composer = publication
             .nodes()
@@ -759,7 +773,7 @@ mod window_publication_tests {
         assert_eq!(
             publication.owner(overflow),
             Some(ContentAccessibilityOwner(
-                Host::toolbar_accessibility_owner(window.toolbar_index)
+                Host::toolbar_accessibility_owner(window.toolbar_mgr.toolbar_index)
             ))
         );
         assert!(
@@ -767,19 +781,23 @@ mod window_publication_tests {
                 .toolbar_accessibility_action(true, overflow, AccessibilityAction::Press)
                 .unwrap()
         );
-        window.panels[window.toolbar_index]
+        window.panel_mgr.panels[window.toolbar_mgr.toolbar_index]
             .mounted_toolbar
             .host
             .render(&mut Scene::new(), &mut window.text, Theme::LIGHT.into())
             .unwrap();
-        assert!(window.panels[window.toolbar_index].mounted_toolbar.modal());
+        assert!(
+            window.panel_mgr.panels[window.toolbar_mgr.toolbar_index]
+                .mounted_toolbar
+                .modal()
+        );
         let modal = window.content_accessibility_publication(true).unwrap();
         assert!(modal.owner(composer).is_none());
         assert!(modal.owner(body).is_none());
         assert!(!modal.nodes().is_empty());
         assert!(modal.nodes().iter().all(|n| modal.owner(n.key)
             == Some(ContentAccessibilityOwner(
-                Host::toolbar_accessibility_owner(window.toolbar_index)
+                Host::toolbar_accessibility_owner(window.toolbar_mgr.toolbar_index)
             ))));
         assert!(
             window
@@ -831,7 +849,7 @@ mod local_clipboard_tests {
             .unwrap()
             .into_host(false);
         assert!(host.mount_columns());
-        let local = host.panels[0].local.as_mut().unwrap();
+        let local = host.panel_mgr.panels[0].local.as_mut().unwrap();
         let frame = Rect::new(0., 40., 300., 160.);
         local
             .render(
@@ -876,7 +894,7 @@ mod local_clipboard_tests {
             .unwrap()
             .into_host(false);
         assert!(host.mount_columns());
-        for (index, panel) in host.panels.iter_mut().enumerate() {
+        for (index, panel) in host.panel_mgr.panels.iter_mut().enumerate() {
             let frame = Rect::new(index as f32 * 320., 40., 300., 160.);
             panel.bounds = frame;
             panel
@@ -892,8 +910,8 @@ mod local_clipboard_tests {
                 )
                 .unwrap();
         }
-        host.focused = 1;
-        host.panels[1]
+        host.layout.focused = 1;
+        host.panel_mgr.panels[1]
             .local
             .as_mut()
             .unwrap()
@@ -903,14 +921,14 @@ mod local_clipboard_tests {
         assert!(Host::is_search_shortcut(&shortcut("f")));
         assert!(!Host::is_search_shortcut(&shortcut("g")));
         assert!(host.focus_registered_search().unwrap());
-        assert_eq!(host.focused, 0);
-        host.panels[1]
+        assert_eq!(host.layout.focused, 0);
+        host.panel_mgr.panels[1]
             .local
             .as_mut()
             .unwrap()
             .with_host(&mut |host| assert!(host.focused().is_none()));
         // Match the production redraw before subsequent native text input.
-        for panel in &mut host.panels {
+        for panel in &mut host.panel_mgr.panels {
             let frame = panel.bounds;
             panel
                 .local
@@ -936,8 +954,8 @@ mod local_clipboard_tests {
             )
             .unwrap()
         );
-        let frame = host.panels[0].bounds;
-        host.panels[0]
+        let frame = host.panel_mgr.panels[0].bounds;
+        host.panel_mgr.panels[0]
             .local
             .as_mut()
             .unwrap()
@@ -950,7 +968,7 @@ mod local_clipboard_tests {
             )
             .unwrap();
         assert!(host.local_text_state(true).is_some());
-        host.panels[0]
+        host.panel_mgr.panels[0]
             .local
             .as_mut()
             .unwrap()
@@ -961,7 +979,7 @@ mod local_clipboard_tests {
                 );
                 assert!(crate::columns::text_state(host).is_some());
             });
-        host.panels[1]
+        host.panel_mgr.panels[1]
             .local
             .as_mut()
             .unwrap()
@@ -983,7 +1001,7 @@ mod local_clipboard_tests {
         )
         .unwrap();
         assert!(!host.focus_registered_search().unwrap());
-        host.panels[0]
+        host.panel_mgr.panels[0]
             .local
             .as_mut()
             .unwrap()
@@ -1012,12 +1030,13 @@ mod local_clipboard_tests {
         assert!(host.mount_columns());
         let paint = |host: &mut Host| {
             let layout = host
+                .layout
                 .presentation
                 .as_ref()
                 .unwrap()
                 .layout(Rect::new(0., 40., 900., 600.));
             let frames = host.apply_presentation_layout(layout).unwrap();
-            for (panel, frame) in host.panels.iter_mut().zip(frames) {
+            for (panel, frame) in host.panel_mgr.panels.iter_mut().zip(frames) {
                 panel.bounds = frame;
                 if !frame.is_empty() {
                     panel
@@ -1038,15 +1057,15 @@ mod local_clipboard_tests {
         paint(&mut host);
         host.toggle_visibility(0).unwrap();
         paint(&mut host);
-        assert!(!host.presentation.as_ref().unwrap().nav_bar_visible());
-        assert!(host.panels[0].bounds.is_empty());
+        assert!(!host.layout.presentation.as_ref().unwrap().nav_bar_visible());
+        assert!(host.panel_mgr.panels[0].bounds.is_empty());
         assert!(host.reveal_registered_search().unwrap());
         paint(&mut host);
-        assert!(host.presentation.as_ref().unwrap().nav_bar_visible());
-        assert!(!host.panels[0].bounds.is_empty());
+        assert!(host.layout.presentation.as_ref().unwrap().nav_bar_visible());
+        assert!(!host.panel_mgr.panels[0].bounds.is_empty());
         assert!(host.focus_registered_search().unwrap());
         paint(&mut host);
-        assert_eq!(host.focused, 0);
+        assert_eq!(host.layout.focused, 0);
         assert!(host.local_text_state(true).is_some());
         assert!(
             host.local_content_input(
@@ -1058,10 +1077,14 @@ mod local_clipboard_tests {
             )
             .unwrap()
         );
-        host.panels[0].local.as_mut().unwrap().with_host(&mut |h| {
-            assert_eq!(h.focused(), Some(ComponentId(1)));
-            assert_eq!(h.text_surface(ComponentId(1)).unwrap().input.text, "found");
-        });
+        host.panel_mgr.panels[0]
+            .local
+            .as_mut()
+            .unwrap()
+            .with_host(&mut |h| {
+                assert_eq!(h.focused(), Some(ComponentId(1)));
+                assert_eq!(h.text_surface(ComponentId(1)).unwrap().input.text, "found");
+            });
     }
     #[test]
     fn registered_search_rejects_duplicate_missing_and_disabled_targets() {
@@ -1080,8 +1103,8 @@ mod local_clipboard_tests {
             .into_host(false);
         host.mount_columns();
         let frame = Rect::new(0., 40., 300., 100.);
-        host.panels[0].bounds = frame;
-        let local = host.panels[0].local.as_mut().unwrap();
+        host.panel_mgr.panels[0].bounds = frame;
+        let local = host.panel_mgr.panels[0].local.as_mut().unwrap();
         local
             .render(
                 &mut Scene::new(),
@@ -1093,7 +1116,7 @@ mod local_clipboard_tests {
             .unwrap();
         local.options.search_entry = Some(ComponentId(99));
         assert!(!host.focus_registered_search().unwrap());
-        let local = host.panels[0].local.as_mut().unwrap();
+        let local = host.panel_mgr.panels[0].local.as_mut().unwrap();
         local.options.search_entry = Some(ComponentId(1));
         local.with_host(&mut |host| {
             host.get_mut(ComponentId(1))
@@ -1103,7 +1126,7 @@ mod local_clipboard_tests {
                 .set_availability(false, true);
         });
         assert!(!host.focus_registered_search().unwrap());
-        host.panels[0]
+        host.panel_mgr.panels[0]
             .local
             .as_mut()
             .unwrap()
@@ -1111,17 +1134,21 @@ mod local_clipboard_tests {
     }
     fn value(host: &mut Host) -> String {
         let mut value = String::new();
-        host.panels[0].local.as_mut().unwrap().with_host(&mut |h| {
-            value = h
-                .get(ComponentId(1))
-                .unwrap()
-                .component::<TextFieldContent>()
-                .unwrap()
-                .surface
-                .input
-                .text
-                .clone();
-        });
+        host.panel_mgr.panels[0]
+            .local
+            .as_mut()
+            .unwrap()
+            .with_host(&mut |h| {
+                value = h
+                    .get(ComponentId(1))
+                    .unwrap()
+                    .component::<TextFieldContent>()
+                    .unwrap()
+                    .surface
+                    .input
+                    .text
+                    .clone();
+            });
         value
     }
     #[test]
@@ -1172,9 +1199,13 @@ mod local_clipboard_tests {
                     .unwrap()
             );
             assert_eq!(value(&mut host), "abc");
-            host.panels[0].local.as_mut().unwrap().with_host(&mut |h| {
-                assert_eq!(h.focused_text().unwrap().input.selection(), selection);
-            });
+            host.panel_mgr.panels[0]
+                .local
+                .as_mut()
+                .unwrap()
+                .with_host(&mut |h| {
+                    assert_eq!(h.focused_text().unwrap().input.selection(), selection);
+                });
             assert_eq!(clipboard.clipboard_text(), before);
             assert!(clipboard.writes.borrow().is_empty());
         }
@@ -1236,7 +1267,7 @@ mod local_clipboard_tests {
                     .unwrap()
                     .into_host(false);
                 assert!(host.mount_columns());
-                let local = host.panels[0].local.as_mut().unwrap();
+                let local = host.panel_mgr.panels[0].local.as_mut().unwrap();
                 let frame = Rect::new(0., 40., 300., 160.);
                 local
                     .render(
@@ -1344,20 +1375,24 @@ mod local_clipboard_tests {
             ] {
                 let mut host = host(1..3);
                 let clipboard = Clipboard::new(Some("keep"));
-                host.panels[0].local.as_mut().unwrap().with_host(&mut |h| {
-                    let input = &mut h
-                        .get_mut(ComponentId(1))
-                        .unwrap()
-                        .component_mut::<TextFieldContent>()
-                        .unwrap()
-                        .surface
-                        .input;
-                    match mode {
-                        "readonly" => input.read_only = true,
-                        "disabled" => input.disabled = true,
-                        _ => input.marked = Some(1..3),
-                    }
-                });
+                host.panel_mgr.panels[0]
+                    .local
+                    .as_mut()
+                    .unwrap()
+                    .with_host(&mut |h| {
+                        let input = &mut h
+                            .get_mut(ComponentId(1))
+                            .unwrap()
+                            .component_mut::<TextFieldContent>()
+                            .unwrap()
+                            .surface
+                            .input;
+                        match mode {
+                            "readonly" => input.read_only = true,
+                            "disabled" => input.disabled = true,
+                            _ => input.marked = Some(1..3),
+                        }
+                    });
                 assert!(host.local_content_input(&event, &clipboard).unwrap());
                 assert_eq!(value(&mut host), "abc", "{mode}");
                 assert_eq!(
@@ -1374,18 +1409,22 @@ mod local_clipboard_tests {
         for command in ["cut:", "copy:"] {
             let mut host = host(1..3);
             let clipboard = Clipboard::new(Some("keep"));
-            host.panels[0].local.as_mut().unwrap().with_host(&mut |h| {
-                let input = &mut h
-                    .get_mut(ComponentId(1))
-                    .unwrap()
-                    .component_mut::<TextFieldContent>()
-                    .unwrap()
-                    .surface
-                    .input;
-                input.text = "A😀B".into();
-                input.select_range(1..3);
-                input.read_only = command == "copy:";
-            });
+            host.panel_mgr.panels[0]
+                .local
+                .as_mut()
+                .unwrap()
+                .with_host(&mut |h| {
+                    let input = &mut h
+                        .get_mut(ComponentId(1))
+                        .unwrap()
+                        .component_mut::<TextFieldContent>()
+                        .unwrap()
+                        .surface
+                        .input;
+                    input.text = "A😀B".into();
+                    input.select_range(1..3);
+                    input.read_only = command == "copy:";
+                });
             host.local_content_input(&Event::TextCommand(command.into()), &clipboard)
                 .unwrap();
             assert_eq!(
@@ -1399,46 +1438,54 @@ mod local_clipboard_tests {
     fn local_clipboard_keeps_text_service_layout_for_noop_and_edit() {
         let mut host = host(3..3);
         let clipboard = Clipboard::new(Some("keep"));
-        host.panels[0].local.as_mut().unwrap().with_host(&mut |h| {
-            h.get_mut(ComponentId(1))
-                .unwrap()
-                .component_mut::<TextFieldContent>()
-                .unwrap()
-                .surface
-                .invalidate_text_layout();
-        });
+        host.panel_mgr.panels[0]
+            .local
+            .as_mut()
+            .unwrap()
+            .with_host(&mut |h| {
+                h.get_mut(ComponentId(1))
+                    .unwrap()
+                    .component_mut::<TextFieldContent>()
+                    .unwrap()
+                    .surface
+                    .invalidate_text_layout();
+            });
         host.local_content_input(&Event::TextCommand("cut:".into()), &clipboard)
             .unwrap();
-        host.panels[0].local.as_mut().unwrap().with_host(&mut |h| {
-            assert!(h.focused_text().unwrap().paragraph.is_some());
-            // The same service scope prepares before a platform snapshot/claim,
-            // and refreshes again after the dispatch mutates the original field.
-            h.get_mut(ComponentId(1))
-                .unwrap()
-                .component_mut::<TextFieldContent>()
-                .unwrap()
-                .surface
-                .invalidate_text_layout();
-            h.with_text_input(&mut host.text, |h| {
+        host.panel_mgr.panels[0]
+            .local
+            .as_mut()
+            .unwrap()
+            .with_host(&mut |h| {
                 assert!(h.focused_text().unwrap().paragraph.is_some());
-                h.event(&ContentEvent::Commit {
-                    text: "!".into(),
-                    replacement: None,
-                });
-            })
-            .unwrap();
-            assert!(h.focused_text().unwrap().paragraph.is_some());
-            assert_eq!(h.focused_text().unwrap().input.text, "abc!");
-            assert_eq!(
-                h.focused_text()
+                // The same service scope prepares before a platform snapshot/claim,
+                // and refreshes again after the dispatch mutates the original field.
+                h.get_mut(ComponentId(1))
                     .unwrap()
-                    .paragraph
-                    .as_ref()
+                    .component_mut::<TextFieldContent>()
                     .unwrap()
-                    .utf16_len,
-                4
-            );
-        });
+                    .surface
+                    .invalidate_text_layout();
+                h.with_text_input(&mut host.text, |h| {
+                    assert!(h.focused_text().unwrap().paragraph.is_some());
+                    h.event(&ContentEvent::Commit {
+                        text: "!".into(),
+                        replacement: None,
+                    });
+                })
+                .unwrap();
+                assert!(h.focused_text().unwrap().paragraph.is_some());
+                assert_eq!(h.focused_text().unwrap().input.text, "abc!");
+                assert_eq!(
+                    h.focused_text()
+                        .unwrap()
+                        .paragraph
+                        .as_ref()
+                        .unwrap()
+                        .utf16_len,
+                    4
+                );
+            });
     }
 }
 
@@ -1500,7 +1547,7 @@ mod local_scroll_tests {
             .into_host(false);
         assert!(host.mount_columns());
         let frame = Rect::new(0., 40., 300., 160.);
-        let panel = &mut host.panels[0];
+        let panel = &mut host.panel_mgr.panels[0];
         panel.bounds = frame;
         panel.geometry.content = frame;
         panel.content_padding = 0.;
@@ -1519,14 +1566,18 @@ mod local_scroll_tests {
         (host, events)
     }
     fn scroll(host: &mut Host, mut visit: impl FnMut(&mut ScrollContent)) {
-        host.panels[0].local.as_mut().unwrap().with_host(&mut |h| {
-            visit(
-                h.get_mut(ComponentId(1))
-                    .unwrap()
-                    .component_mut::<ScrollContent>()
-                    .unwrap(),
-            );
-        });
+        host.panel_mgr.panels[0]
+            .local
+            .as_mut()
+            .unwrap()
+            .with_host(&mut |h| {
+                visit(
+                    h.get_mut(ComponentId(1))
+                        .unwrap()
+                        .component_mut::<ScrollContent>()
+                        .unwrap(),
+                );
+            });
     }
     fn native(phase: ScrollPhase, momentum_phase: ScrollPhase, y: f64) -> ScrollEvent {
         ScrollEvent {
@@ -1560,7 +1611,7 @@ mod local_scroll_tests {
             .into_host(false);
         assert!(host.mount_columns());
         let frame = Rect::new(0., 40., 300., 160.);
-        let panel = &mut host.panels[0];
+        let panel = &mut host.panel_mgr.panels[0];
         panel.bounds = frame;
         panel.geometry.content = frame;
         panel.content_padding = 0.;
@@ -1581,25 +1632,33 @@ mod local_scroll_tests {
         });
         let offset = |host: &mut Host| {
             let mut y = 0.;
-            host.panels[0].local.as_mut().unwrap().with_host(&mut |h| {
-                y = h.text_surface(ComponentId(1)).unwrap().scroll.offset.y;
-            });
+            host.panel_mgr.panels[0]
+                .local
+                .as_mut()
+                .unwrap()
+                .with_host(&mut |h| {
+                    y = h.text_surface(ComponentId(1)).unwrap().scroll.offset.y;
+                });
             y
         };
         send(&mut host, native(ScrollPhase::Began, ScrollPhase::None, 0.));
         assert_eq!(offset(&mut host), 0.);
         let mut event = native(ScrollPhase::Changed, ScrollPhase::None, -20.);
         event.position.y = 145.; // Outside the 90pt editor, inside the same 160pt container.
-        host.panels[0].local.as_mut().unwrap().with_host(&mut |h| {
-            assert!(
-                !h.text_surface(ComponentId(1))
-                    .unwrap()
-                    .outer
-                    .contains(Point::new(100., 145.))
-            );
-        });
+        host.panel_mgr.panels[0]
+            .local
+            .as_mut()
+            .unwrap()
+            .with_host(&mut |h| {
+                assert!(
+                    !h.text_surface(ComponentId(1))
+                        .unwrap()
+                        .outer
+                        .contains(Point::new(100., 145.))
+                );
+            });
         assert!(
-            host.panels[0]
+            host.panel_mgr.panels[0]
                 .content_frame()
                 .contains(Point::new(100., 145.))
         );
@@ -1709,16 +1768,20 @@ mod local_scroll_tests {
                 });
             }
             if reading {
-                host.panels[0].local.as_mut().unwrap().with_host(&mut |h| {
-                    h.set_scroll_reading_document(
-                        ComponentId(1),
-                        "reader",
-                        1,
-                        vec![ComponentId(2)],
-                        |_| (),
-                    )
-                    .unwrap();
-                });
+                host.panel_mgr.panels[0]
+                    .local
+                    .as_mut()
+                    .unwrap()
+                    .with_host(&mut |h| {
+                        h.set_scroll_reading_document(
+                            ComponentId(1),
+                            "reader",
+                            1,
+                            vec![ComponentId(2)],
+                            |_| (),
+                        )
+                        .unwrap();
+                    });
                 scroll(&mut host, |s| {
                     assert!(s.follow_latest());
                 });

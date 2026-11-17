@@ -2,7 +2,14 @@
 //! navigation history; changing a position cannot clone or retarget them.
 use crate::columns::{Column, Container, ContainerOptions};
 use anyhow::{Result, ensure};
-use tekes_ui_scene::Rect;
+use tekes_ui_controls::{
+    ScrollArea, ScrollPolicy,
+    composition::{
+        Component, ComponentId, Content, ContentEvent, ContentHost, ScrollContent, StackContent,
+    },
+    extended::{Axis, Stack},
+};
+use tekes_ui_scene::{Point, Rect, Size};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum OthersTab {
@@ -120,6 +127,87 @@ impl PresentationOptions {
         self
     }
 }
+struct OthersListScroll {
+    host: ContentHost,
+}
+impl OthersListScroll {
+    fn from_scroll(mut scroll: ScrollArea) -> Self {
+        scroll.set_scroll_policy(ScrollPolicy::Disabled, ScrollPolicy::Auto);
+        scroll.set_reduced_motion(true);
+        let child = Content::new(
+            ComponentId(2),
+            StackContent {
+                model: Stack {
+                    axis: Axis::Vertical,
+                    gap: 0.,
+                },
+                children: Vec::new(),
+                flexible_child: None,
+            },
+        );
+        let host = ContentHost::new(Content::new(
+            ComponentId(1),
+            ScrollContent::new(scroll, child),
+        ))
+        .expect("Others list ScrollContent host");
+        Self { host }
+    }
+    fn new() -> Self {
+        Self::from_scroll(ScrollArea::default())
+    }
+    fn scroll_content(&self) -> &ScrollContent {
+        self.host
+            .get(ComponentId(1))
+            .and_then(|node| node.component::<ScrollContent>())
+            .expect("Others list ScrollContent")
+    }
+    fn scroll_content_mut(&mut self) -> &mut ScrollContent {
+        self.host
+            .get_mut(ComponentId(1))
+            .and_then(|node| node.component_mut::<ScrollContent>())
+            .expect("Others list ScrollContent")
+    }
+    fn sync_bounds(&mut self, viewport_height: f32, total_height: f32) {
+        self.scroll_content_mut().scroll.layout(
+            Size::new(1., viewport_height.max(0.)),
+            Size::new(1., total_height.max(0.)),
+        );
+    }
+    fn wheel(&mut self, delta: f32, precise: bool, viewport_height: f32, total_height: f32) {
+        self.sync_bounds(viewport_height, total_height);
+        let _ = Component::event(
+            self.scroll_content_mut(),
+            &ContentEvent::Scroll {
+                position: Point::default(),
+                delta: Point::new(0., delta),
+                precise,
+                begin: false,
+                end: false,
+                momentum: false,
+                time: 0.,
+            },
+        );
+    }
+    fn scroll_by(&mut self, delta: f32, viewport_height: f32, total_height: f32) {
+        self.sync_bounds(viewport_height, total_height);
+        self.scroll_content_mut().scroll.scroll_by(0., delta);
+    }
+    fn offset_y(&self) -> f32 {
+        self.scroll_content().scroll.offset.y
+    }
+}
+impl Clone for OthersListScroll {
+    fn clone(&self) -> Self {
+        Self::from_scroll(self.scroll_content().scroll.clone())
+    }
+}
+impl std::fmt::Debug for OthersListScroll {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("OthersListScroll")
+            .field("offset_y", &self.offset_y())
+            .finish()
+    }
+}
 #[derive(Clone, Debug)]
 struct Member {
     id: String,
@@ -131,7 +219,7 @@ pub struct PresentationState {
     nav_visible: bool,
     members: Vec<Member>,
     list_order: Vec<String>,
-    list_scroll: f32,
+    list_scroll: OthersListScroll,
     others_expanded: bool,
     /// Temporary Focus selection; Others keeps its last destination for collapse.
     expanded_focus: Option<OthersTab>,
@@ -278,7 +366,7 @@ impl PresentationState {
             nav_visible: true,
             members,
             list_order,
-            list_scroll: 0.,
+            list_scroll: OthersListScroll::new(),
             others_expanded: false,
             expanded_focus: None,
         };
@@ -558,23 +646,22 @@ impl PresentationState {
     }
     /// Native wheel admission; programmatic scroll_list offsets remain points.
     pub(crate) fn scroll_list_wheel(&mut self, delta: f32, precise: bool, viewport_height: f32) {
-        let step = if precise {
-            1.
-        } else {
-            tekes_ui_tokens::proposal::metric("size", "size-row-height").expect("JSON metric")
-        };
-        self.scroll_list(delta * step, viewport_height);
+        if !delta.is_finite() || !viewport_height.is_finite() {
+            return;
+        }
+        let height: f32 = self.list_ids().iter().map(|id| self.list_height(id)).sum();
+        self.list_scroll
+            .wheel(delta, precise, viewport_height, height);
     }
     pub fn scroll_list(&mut self, delta: f32, viewport_height: f32) {
         if !delta.is_finite() || !viewport_height.is_finite() {
             return;
         }
         let height: f32 = self.list_ids().iter().map(|id| self.list_height(id)).sum();
-        self.list_scroll =
-            (self.list_scroll + delta).clamp(0., (height - viewport_height.max(0.)).max(0.));
+        self.list_scroll.scroll_by(delta, viewport_height, height);
     }
     pub fn list_scroll(&self) -> f32 {
-        self.list_scroll
+        self.list_scroll.offset_y()
     }
     pub fn set_nav_width(&mut self, width: f32) -> Result<()> {
         ensure!(width.is_finite() && width > 0., "invalid NavBar width");
@@ -754,7 +841,9 @@ impl PresentationState {
                 layout.list_viewport = Some(viewport);
                 let ids = self.list_ids();
                 let total: f32 = ids.iter().map(|id| self.list_height(id)).sum();
-                let scroll = self.list_scroll.min((total - viewport.size.height).max(0.));
+                let scroll = self
+                    .list_scroll()
+                    .min((total - viewport.size.height).max(0.));
                 let mut item_y = viewport.min_y() - scroll;
                 for id in ids {
                     let height = self.list_height(id);

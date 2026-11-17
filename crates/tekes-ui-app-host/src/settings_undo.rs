@@ -18,6 +18,7 @@ use tekes_ui_settings::Snapshot;
 pub const MODULE_ID: &str = "settings-undo";
 pub const UNDO: u64 = 0x5501;
 pub const REDO: u64 = 0x5502;
+pub const MAX_JOURNAL_ENTRIES: usize = 128;
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Command {
     Open {
@@ -47,7 +48,7 @@ struct Change {
     after: Snapshot,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
-enum Kind {
+pub(crate) enum Kind {
     Save,
     Undo,
     Redo,
@@ -86,18 +87,22 @@ impl Store {
             .open(file.with_extension("undo.lock"))?;
         lock.try_lock()
             .context("Settings history already has a writer")?;
-        let journal = match fs::read(&file) {
-            Ok(bytes) => {
-                serde_json::from_slice::<Journal>(&bytes).context("invalid history; preserved")?
-            }
-            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Journal {
-                version: 1,
-                namespace: namespace.clone(),
-                current: current.clone(),
-                entries: vec![],
-                cursor: 0,
-                pending: None,
-            },
+        let (existed, journal) = match fs::read(&file) {
+            Ok(bytes) => (
+                true,
+                serde_json::from_slice::<Journal>(&bytes).context("invalid history; preserved")?,
+            ),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => (
+                false,
+                Journal {
+                    version: 1,
+                    namespace: namespace.clone(),
+                    current: current.clone(),
+                    entries: vec![],
+                    cursor: 0,
+                    pending: None,
+                },
+            ),
             Err(e) => return Err(e.into()),
         };
         ensure!(
@@ -149,7 +154,9 @@ impl Store {
                 store.journal.current == current,
                 "config changed outside history; refusing stale undo"
             );
-            store.persist(store.journal.clone())?;
+            if !existed {
+                store.persist(store.journal.clone())?;
+            }
         }
         Ok(store)
     }
@@ -202,51 +209,14 @@ impl Store {
             return self.persist(next);
         };
         ensure!(current == pending.change.after, "mismatched save receipt");
-        match pending.kind {
-            Kind::Save => {
-                if pending.change.before.overrides != current.overrides {
-                    next.entries.truncate(next.cursor);
-                    next.entries.push(pending.change);
-                    next.cursor += 1;
-                }
-            }
-            Kind::Undo => {
-                next.cursor = next.cursor.checked_sub(1).context("invalid undo cursor")?
-            }
-            Kind::Redo => {
-                ensure!(next.cursor < next.entries.len(), "invalid redo cursor");
-                next.cursor += 1;
-            }
-        }
-        next.current = current;
+        apply_change_to_journal(&mut next, pending.kind, pending.change, current)?;
         self.persist(next)
     }
     fn step(&mut self, command: u64) -> Result<()> {
         let j = &self.journal;
         ensure!(j.pending.is_none(), "history busy");
-        let (kind, target) = match command {
-            UNDO if j.cursor > 0 => (Kind::Undo, j.entries[j.cursor - 1].before.overrides.clone()),
-            REDO if j.cursor < j.entries.len() => {
-                (Kind::Redo, j.entries[j.cursor].after.overrides.clone())
-            }
-            _ => bail!("no available undo/redo"),
-        };
-        let before = j.current.clone();
-        let after = Snapshot {
-            revision: before
-                .revision
-                .checked_add(1)
-                .context("revision exhausted")?,
-            last_commit_id: format!(
-                "undo-{}-{}",
-                std::process::id(),
-                std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)?
-                    .as_nanos()
-            ),
-            overrides: target,
-        };
-        self.prepare(kind, before, after)
+        let (kind, after) = resolve_step_snapshot(j, command)?;
+        self.prepare(kind, j.current.clone(), after)
     }
     fn reply(&self) -> Reply {
         let j = &self.journal;
@@ -256,6 +226,203 @@ impl Store {
             can_undo: j.pending.is_none() && j.cursor > 0,
             can_redo: j.pending.is_none() && j.cursor < j.entries.len(),
         }
+    }
+}
+fn push_bounded_entry(next: &mut Journal, change: Change) {
+    next.entries.truncate(next.cursor);
+    next.entries.push(change);
+    next.cursor += 1;
+    if next.entries.len() > MAX_JOURNAL_ENTRIES {
+        let excess = next.entries.len() - MAX_JOURNAL_ENTRIES;
+        next.entries.drain(..excess);
+        next.cursor = next.cursor.saturating_sub(excess);
+    }
+}
+fn apply_change_to_journal(
+    next: &mut Journal,
+    kind: Kind,
+    change: Change,
+    current: Snapshot,
+) -> Result<()> {
+    match kind {
+        Kind::Save => {
+            if change.before.overrides != current.overrides {
+                push_bounded_entry(next, change);
+            }
+        }
+        Kind::Undo => {
+            next.cursor = next.cursor.checked_sub(1).context("invalid undo cursor")?;
+        }
+        Kind::Redo => {
+            ensure!(next.cursor < next.entries.len(), "invalid redo cursor");
+            next.cursor += 1;
+        }
+    }
+    next.current = current;
+    Ok(())
+}
+fn resolve_step_snapshot(j: &Journal, command: u64) -> Result<(Kind, Snapshot)> {
+    let (kind, target) = match command {
+        UNDO if j.cursor > 0 => (Kind::Undo, j.entries[j.cursor - 1].before.overrides.clone()),
+        REDO if j.cursor < j.entries.len() => {
+            (Kind::Redo, j.entries[j.cursor].after.overrides.clone())
+        }
+        _ => bail!("no available undo/redo"),
+    };
+    let before = &j.current;
+    let after = Snapshot {
+        revision: before
+            .revision
+            .checked_add(1)
+            .context("revision exhausted")?,
+        last_commit_id: format!(
+            "undo-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)?
+                .as_nanos()
+        ),
+        overrides: target,
+    };
+    Ok((kind, after))
+}
+pub(crate) fn build_toolbar_actions(reply: Option<&Reply>, enabled: bool) -> Vec<ToolbarAction> {
+    [
+        (
+            UNDO,
+            "tekes-undo",
+            "Undo",
+            reply.is_some_and(|r| r.can_undo),
+        ),
+        (
+            REDO,
+            "tekes-redo",
+            "Redo",
+            reply.is_some_and(|r| r.can_redo),
+        ),
+    ]
+    .into_iter()
+    .map(|(id, icon, name, action_enabled)| ToolbarAction {
+        command: tekes_ui_app_protocol::ToolbarItem {
+            id,
+            title: String::new(),
+            enabled: action_enabled && enabled,
+            geometry_dependent: false,
+        },
+        icon: Some(icon.into()),
+        accessible_name: Some(name.into()),
+        tooltip: Some(name.into()),
+    })
+    .collect()
+}
+#[cfg(target_os = "macos")]
+pub(crate) struct InProcessUndo {
+    store: Option<Store>,
+    session: Session,
+    window: u64,
+    registration: u64,
+}
+#[cfg(target_os = "macos")]
+impl InProcessUndo {
+    pub fn new(session: Session, window: u64) -> Self {
+        Self {
+            store: None,
+            session,
+            window,
+            registration: 0,
+        }
+    }
+    pub fn open_or_reconcile(
+        &mut self,
+        file: PathBuf,
+        namespace: String,
+        current: Snapshot,
+    ) -> Result<Reply> {
+        if let Some(store) = &self.store
+            && store.file == file
+            && store.journal.namespace == namespace
+            && store.journal.pending.is_none()
+            && store.journal.current == current
+        {
+            if self.registration == 0 {
+                self.registration = 1;
+            }
+            return Ok(store.reply());
+        }
+        self.store = None;
+        let store = Store::open(file, namespace, current)?;
+        let reply = store.reply();
+        self.store = Some(store);
+        self.registration = self.registration.max(1);
+        Ok(reply)
+    }
+    pub fn invalidate(&mut self) {
+        self.store = None;
+    }
+    pub fn current(&self) -> Result<Reply> {
+        Ok(self.store.as_ref().context("history not opened")?.reply())
+    }
+    pub fn prepare_step(
+        &self,
+        source: &crate::toolbar_source::ComponentSource,
+        command: u64,
+        current: &Snapshot,
+    ) -> Result<(Kind, Snapshot)> {
+        ensure!(
+            self.window != 0 && self.registration != 0,
+            "history toolbar unavailable"
+        );
+        source.validate(&self.session, self.registration, self.window)?;
+        let store = self.store.as_ref().context("history not opened")?;
+        ensure!(
+            store.journal.pending.is_none() && store.journal.current == *current,
+            "stale undo baseline"
+        );
+        resolve_step_snapshot(&store.journal, command)
+    }
+    pub fn commit_atomic(
+        &mut self,
+        kind: Kind,
+        before: Snapshot,
+        confirmed: Snapshot,
+    ) -> Result<Reply> {
+        let store = self.store.as_mut().context("history not opened")?;
+        ensure!(
+            store.journal.pending.is_none() && store.journal.current == before,
+            "history busy or stale base"
+        );
+        let mut next = store.journal.clone();
+        apply_change_to_journal(
+            &mut next,
+            kind,
+            Change {
+                before,
+                after: confirmed.clone(),
+            },
+            confirmed,
+        )?;
+        store.persist(next)?;
+        self.registration += 1;
+        Ok(store.reply())
+    }
+    pub fn toolbar_state(
+        &self,
+        enabled: bool,
+    ) -> (
+        Vec<ToolbarAction>,
+        Option<crate::toolbar_source::ComponentSource>,
+    ) {
+        let reply = self.store.as_ref().map(Store::reply);
+        let actions = build_toolbar_actions(reply.as_ref(), enabled && self.window != 0);
+        let source =
+            (self.store.is_some() && self.window != 0 && self.registration != 0).then(|| {
+                crate::toolbar_source::ComponentSource {
+                    session: self.session.clone(),
+                    registration: self.registration,
+                    window: self.window,
+                }
+            });
+        (actions, source)
     }
 }
 #[derive(Default)]
@@ -310,33 +477,7 @@ impl ProcessModule for UndoModule {
         }
         let reply = self.store.as_ref().map(Store::reply);
         self.revision += 1;
-        let items = [
-            (
-                UNDO,
-                "tekes-undo",
-                "Undo",
-                reply.as_ref().is_some_and(|r| r.can_undo),
-            ),
-            (
-                REDO,
-                "tekes-redo",
-                "Redo",
-                reply.as_ref().is_some_and(|r| r.can_redo),
-            ),
-        ]
-        .into_iter()
-        .map(|(id, icon, name, enabled)| ToolbarAction {
-            command: tekes_ui_app_protocol::ToolbarItem {
-                id,
-                title: String::new(),
-                enabled: enabled && !self.failed,
-                geometry_dependent: false,
-            },
-            icon: Some(icon.into()),
-            accessible_name: Some(name.into()),
-            tooltip: Some(name.into()),
-        })
-        .collect();
+        let items = build_toolbar_actions(reply.as_ref(), !self.failed);
         e.emit(ComponentEvent::Toolbar {
             revision: self.revision,
             scope: ToolbarScope::Window {
@@ -468,5 +609,47 @@ mod lossless_snapshot_tests {
             parent_dir(Path::new("nested/history.json")),
             Path::new("nested")
         );
+    }
+
+    #[test]
+    fn journal_caps_entries_at_capacity_preserving_cursor_continuity() {
+        let path = std::env::temp_dir()
+            .join(format!(
+                "tekes-undo-cap-{}-{}",
+                std::process::id(),
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_nanos()
+            ))
+            .join("undo.json");
+        let base = Snapshot::default();
+        let mut s = Store::open(path.clone(), "cap".into(), base.clone()).unwrap();
+        let mut cur = base;
+        let total = MAX_JOURNAL_ENTRIES + 8;
+        for i in 1..=total {
+            let mut next = cur.clone();
+            next.revision += 1;
+            next.last_commit_id = format!("c-{i}");
+            next.overrides.insert("value".into(), (i as i64).into());
+            s.prepare(Kind::Save, cur, next.clone()).unwrap();
+            s.finish(next.clone()).unwrap();
+            cur = next;
+        }
+        assert_eq!(s.journal.entries.len(), MAX_JOURNAL_ENTRIES);
+        assert_eq!(s.journal.cursor, MAX_JOURNAL_ENTRIES);
+        assert_eq!(
+            s.journal.entries[0]
+                .after
+                .overrides
+                .get("value")
+                .and_then(|v| v.as_integer()),
+            Some(9)
+        );
+        drop(s);
+        let reopened = Store::open(path.clone(), "cap".into(), cur).unwrap();
+        assert_eq!(reopened.journal.entries.len(), MAX_JOURNAL_ENTRIES);
+        drop(reopened);
+        fs::remove_dir_all(path.parent().unwrap()).unwrap();
     }
 }

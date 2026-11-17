@@ -2,11 +2,12 @@
 //! This is not remote keyboard/IME/AX support or the final Content adapter.
 use crate::{
     ModuleProcess, ProcessControl, ProcessStatus, ReceivedFrame, component::Capabilities,
-    import_frame,
+    parent::import_frame_with_guard,
 };
 use anyhow::{Result, ensure};
 use std::{
     collections::VecDeque,
+    os::fd::{AsRawFd, OwnedFd},
     sync::{
         Arc, Condvar, Mutex, Weak,
         atomic::{AtomicBool, Ordering},
@@ -15,14 +16,97 @@ use std::{
     time::Duration,
 };
 use tekes_ui_app_protocol::{Frame, InputKind, Request, VERSION};
-use tekes_ui_render::gpu::{GpuContext, GpuImage};
+use tekes_ui_render::{
+    gpu::{GpuContext, GpuImage},
+    shared_surface_macos::SharedSurfaceUseGuard,
+};
 const INPUT_CAPACITY: usize = 256;
 const FRAME_CAPACITY: usize = 2;
+
+mod kqueue_sys {
+    use std::os::fd::{FromRawFd, OwnedFd, RawFd};
+
+    pub(super) const EVFILT_PROC: i16 = -5;
+    pub(super) const EVFILT_USER: i16 = -10;
+    pub(super) const EV_ADD: u16 = 0x0001;
+    pub(super) const EV_ONESHOT: u16 = 0x0010;
+    pub(super) const EV_CLEAR: u16 = 0x0020;
+    pub(super) const EV_ERROR: u16 = 0x4000;
+    pub(super) const NOTE_EXIT: u32 = 0x8000_0000;
+    pub(super) const NOTE_TRIGGER: u32 = 0x0100_0000;
+    pub(super) const ESRCH: i32 = 3;
+    pub(super) const EINTR: i32 = 4;
+
+    #[repr(C)]
+    #[derive(Clone, Copy, Default)]
+    pub(super) struct Kevent64 {
+        pub ident: u64,
+        pub filter: i16,
+        pub flags: u16,
+        pub fflags: u32,
+        pub data: i64,
+        pub udata: u64,
+        pub ext: [u64; 2],
+    }
+
+    #[repr(C)]
+    pub(super) struct Timespec {
+        pub tv_sec: isize,
+        pub tv_nsec: isize,
+    }
+
+    unsafe extern "C" {
+        pub(super) fn kqueue() -> RawFd;
+        pub(super) fn kevent64(
+            kq: RawFd,
+            changelist: *const Kevent64,
+            nchanges: i32,
+            eventlist: *mut Kevent64,
+            nevents: i32,
+            flags: u32,
+            timeout: *const Timespec,
+        ) -> i32;
+    }
+
+    pub(super) fn create() -> std::io::Result<OwnedFd> {
+        // SAFETY: `kqueue()` allocates a fresh kernel event queue descriptor with no pointers.
+        let fd = unsafe { kqueue() };
+        if fd < 0 {
+            return Err(std::io::Error::last_os_error());
+        }
+        // SAFETY: `fd` is a valid owned kqueue descriptor just returned by `kqueue()`.
+        Ok(unsafe { OwnedFd::from_raw_fd(fd) })
+    }
+}
+
+fn trigger_user_kq(kq: &OwnedFd) {
+    let wake = kqueue_sys::Kevent64 {
+        ident: 1,
+        filter: kqueue_sys::EVFILT_USER,
+        flags: 0,
+        fflags: kqueue_sys::NOTE_TRIGGER,
+        ..Default::default()
+    };
+    // SAFETY: `kq` is a live kqueue fd and `wake` points to one initialized stack `Kevent64`.
+    let _ = unsafe {
+        kqueue_sys::kevent64(
+            kq.as_raw_fd(),
+            &wake,
+            1,
+            std::ptr::null_mut(),
+            0,
+            0,
+            std::ptr::null(),
+        )
+    };
+}
+
 struct State {
     queue: VecDeque<Request>,
     frames: VecDeque<ViewFrame>,
     status: ProcessStatus,
     closed: bool,
+    worker_exited: bool,
     outstanding: usize,
     last_seq: Option<u64>,
     identity: Option<u32>,
@@ -38,10 +122,18 @@ struct Core {
     wake: Arc<dyn Fn() + Send + Sync>,
     work: Option<Arc<dyn Fn() + Send + Sync>>,
     retirement: Mutex<Option<mpsc::SyncSender<Retired>>>,
+    exit_kq: Mutex<Option<Arc<OwnedFd>>>,
 }
 impl Core {
     fn notify(&self) {
         let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| (self.wake)()));
+    }
+    fn mark_worker_exited(&self) {
+        {
+            let mut state = self.state.lock().unwrap();
+            state.worker_exited = true;
+        }
+        self.changed.notify_all();
     }
     fn terminate(&self, failure: Option<String>) {
         let frames = {
@@ -61,6 +153,9 @@ impl Core {
         drop(frames);
         self.control.cancel();
         self.retirement.lock().unwrap().take();
+        if let Some(kq) = self.exit_kq.lock().unwrap().take() {
+            trigger_user_kq(&kq);
+        }
         self.changed.notify_all();
         self.notify();
     }
@@ -139,11 +234,12 @@ impl ViewFrame {
             !owner.control.is_cancelled(),
             "View frame belongs to a closed instance"
         );
-        let texture = import_frame(context, &mut frame)?;
+        let (texture, guard) = import_frame_with_guard(context, &mut frame)?;
         let image = context.import_image(texture)?;
         Ok(ViewImage {
             metadata: frame.into_metadata(),
             image: Some(image),
+            surface_guard: Some(guard),
             context: context.clone(),
             lease: Some(lease),
             curve,
@@ -157,6 +253,7 @@ impl ViewFrame {
 pub struct ViewImage {
     metadata: Frame,
     image: Option<GpuImage>,
+    surface_guard: Option<SharedSurfaceUseGuard>,
     context: GpuContext,
     lease: Option<Lease>,
     curve: Option<crate::component::curve::FrameStamp>,
@@ -189,6 +286,9 @@ impl Drop for ViewImage {
             .on_submitted_work_done(move || callback.store(true, Ordering::Release));
         core.retire(Retired {
             _image: self.image.take().unwrap(),
+            // Keep `_surface_guard` strictly after `_image` so Metal textures drop
+            // before decrementing the kernel IOSurface use count.
+            _surface_guard: self.surface_guard.take(),
             _lease: lease,
             context: self.context.clone(),
             done,
@@ -197,6 +297,7 @@ impl Drop for ViewImage {
 }
 struct Retired {
     _image: GpuImage,
+    _surface_guard: Option<SharedSurfaceUseGuard>,
     _lease: Lease,
     context: GpuContext,
     done: Arc<AtomicBool>,
@@ -237,7 +338,7 @@ fn retire_loop(core: Weak<Core>, rx: mpsc::Receiver<Retired>) {
 /// Nonblocking queued V1 View connection. Protocol capabilities are limited to
 /// Layout, primary pointer, Cancel and toolbar Command. Services and toolbar
 /// changes independent of a rendered frame still require the V2 View adapter.
-pub(crate) struct ViewConnection {
+pub struct ViewConnection {
     core: Arc<Core>,
 }
 impl ViewConnection {
@@ -252,6 +353,7 @@ impl ViewConnection {
                 frames: VecDeque::new(),
                 status: ProcessStatus::Starting,
                 closed: false,
+                worker_exited: false,
                 outstanding: 0,
                 last_seq: None,
                 identity: None,
@@ -265,6 +367,7 @@ impl ViewConnection {
             wake,
             work,
             retirement: Mutex::new(None),
+            exit_kq: Mutex::new(None),
         })
     }
     pub(crate) fn remote(
@@ -336,9 +439,16 @@ impl ViewConnection {
         module: impl Into<String>,
         wake: impl Fn() + Send + Sync + 'static,
     ) -> Result<Self> {
+        Self::spawn_with_control(module, ProcessControl::new(), wake)
+    }
+    pub fn spawn_with_control(
+        module: impl Into<String>,
+        control: ProcessControl,
+        wake: impl Fn() + Send + Sync + 'static,
+    ) -> Result<Self> {
         let module = module.into();
         ensure!(!module.is_empty(), "empty module identity");
-        let core = Self::core(ProcessControl::new(), Arc::new(wake), None);
+        let core = Self::core(control, Arc::new(wake), None);
         let work = core.clone();
         std::thread::Builder::new()
             .name("view-launch-request".into())
@@ -359,6 +469,26 @@ impl ViewConnection {
                 work.notify();
             })?;
         Ok(Self { core })
+    }
+    #[doc(hidden)]
+    pub fn new_inert() -> Self {
+        Self {
+            core: Self::core(ProcessControl::new(), Arc::new(|| {}), None),
+        }
+    }
+    #[doc(hidden)]
+    pub fn queued_requests(&self) -> Vec<Request> {
+        self.core
+            .state
+            .lock()
+            .unwrap()
+            .queue
+            .iter()
+            .cloned()
+            .collect()
+    }
+    pub fn control(&self) -> &ProcessControl {
+        &self.core.control
     }
     pub fn status(&self) -> ProcessStatus {
         self.core.state.lock().unwrap().status.clone()
@@ -466,15 +596,138 @@ impl Drop for ViewConnection {
         self.close();
     }
 }
+struct ExitWatch {
+    kq: Arc<OwnedFd>,
+    handle: Option<std::thread::JoinHandle<()>>,
+}
+
+impl ExitWatch {
+    fn start(core: &Arc<Core>, pid: u32) -> Result<Self> {
+        let kq = Arc::new(kqueue_sys::create()?);
+        let user_add = kqueue_sys::Kevent64 {
+            ident: 1,
+            filter: kqueue_sys::EVFILT_USER,
+            flags: kqueue_sys::EV_ADD | kqueue_sys::EV_CLEAR,
+            ..Default::default()
+        };
+        // SAFETY: `kq` is valid and `user_add` is an initialized stack `Kevent64`.
+        let rc = unsafe {
+            kqueue_sys::kevent64(
+                kq.as_raw_fd(),
+                &user_add,
+                1,
+                std::ptr::null_mut(),
+                0,
+                0,
+                std::ptr::null(),
+            )
+        };
+        ensure!(
+            rc >= 0,
+            "register kqueue wake failed: {}",
+            std::io::Error::last_os_error()
+        );
+        let proc_add = kqueue_sys::Kevent64 {
+            ident: u64::from(pid),
+            filter: kqueue_sys::EVFILT_PROC,
+            flags: kqueue_sys::EV_ADD | kqueue_sys::EV_ONESHOT,
+            fflags: kqueue_sys::NOTE_EXIT,
+            ..Default::default()
+        };
+        // SAFETY: `kq` is valid and `proc_add` registers `EVFILT_PROC` for child `pid`.
+        let proc_rc = unsafe {
+            kqueue_sys::kevent64(
+                kq.as_raw_fd(),
+                &proc_add,
+                1,
+                std::ptr::null_mut(),
+                0,
+                0,
+                std::ptr::null(),
+            )
+        };
+        if proc_rc < 0 {
+            let err = std::io::Error::last_os_error();
+            if err.raw_os_error() == Some(kqueue_sys::ESRCH) {
+                core.mark_worker_exited();
+                return Ok(Self { kq, handle: None });
+            }
+            anyhow::bail!("register kqueue proc exit failed: {err}");
+        }
+        *core.exit_kq.lock().unwrap() = Some(Arc::clone(&kq));
+        if core.state.lock().unwrap().closed {
+            core.exit_kq.lock().unwrap().take();
+            return Ok(Self { kq, handle: None });
+        }
+        let watch_core = Arc::downgrade(core);
+        let watch_kq = Arc::clone(&kq);
+        let handle = std::thread::Builder::new()
+            .name("view-exit-watch".into())
+            .spawn(move || {
+                let mut event = kqueue_sys::Kevent64::default();
+                loop {
+                    // SAFETY: blocks on valid `watch_kq` writing at most 1 event to stack `event`.
+                    let rc = unsafe {
+                        kqueue_sys::kevent64(
+                            watch_kq.as_raw_fd(),
+                            std::ptr::null(),
+                            0,
+                            &mut event,
+                            1,
+                            0,
+                            std::ptr::null(),
+                        )
+                    };
+                    if rc < 0 {
+                        let err = std::io::Error::last_os_error();
+                        if err.raw_os_error() == Some(kqueue_sys::EINTR) {
+                            continue;
+                        }
+                        break;
+                    }
+                    if rc == 0 {
+                        continue;
+                    }
+                    if event.filter == kqueue_sys::EVFILT_PROC
+                        || (event.flags & kqueue_sys::EV_ERROR != 0)
+                    {
+                        if let Some(core) = watch_core.upgrade() {
+                            core.mark_worker_exited();
+                        }
+                        break;
+                    }
+                    if event.filter == kqueue_sys::EVFILT_USER {
+                        break;
+                    }
+                }
+            })?;
+        Ok(Self {
+            kq,
+            handle: Some(handle),
+        })
+    }
+}
+
+impl Drop for ExitWatch {
+    fn drop(&mut self) {
+        trigger_user_kq(&self.kq);
+        if let Some(handle) = self.handle.take() {
+            let _ = handle.join();
+        }
+    }
+}
+
 fn view_loop(core: &Arc<Core>, module: &str) -> Result<()> {
     let mut process = ModuleProcess::spawn_with_control(module, core.control.clone())?;
+    let pid = process.pid();
+    let _exit_watch = ExitWatch::start(core, pid)?;
     {
         let mut state = core.state.lock().unwrap();
         if state.closed {
             return Ok(());
         }
         state.status = ProcessStatus::Ready {
-            pid: process.pid(),
+            pid,
             capabilities: Capabilities {
                 services: false,
                 toolbar: true,
@@ -486,22 +739,19 @@ fn view_loop(core: &Arc<Core>, module: &str) -> Result<()> {
     loop {
         let request = {
             let mut state = core.state.lock().unwrap();
-            while !state.closed && (state.queue.is_empty() || state.outstanding == FRAME_CAPACITY) {
-                state = core
-                    .changed
-                    .wait_timeout(state, Duration::from_millis(50))
-                    .unwrap()
-                    .0;
-                if !state.closed {
-                    ensure!(
-                        !core.control.exited()?,
-                        "View worker exited while idle or backpressured"
-                    );
-                }
+            while !state.closed
+                && !state.worker_exited
+                && (state.queue.is_empty() || state.outstanding == FRAME_CAPACITY)
+            {
+                state = core.changed.wait(state).unwrap();
             }
             if state.closed {
                 return Ok(());
             }
+            ensure!(
+                !state.worker_exited && !core.control.exited()?,
+                "View worker exited while idle or backpressured"
+            );
             let request = state.queue.pop_front().unwrap();
             state.outstanding += 1;
             request

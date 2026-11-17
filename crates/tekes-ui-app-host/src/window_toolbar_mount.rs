@@ -1,9 +1,6 @@
 //! Native-window adapter: declaration data in, original invocations out.
 use super::*;
-use crate::{
-    toolbar_source::ComponentSource,
-    window_toolbar::{Contents, Declaration, Source},
-};
+use crate::window_toolbar::{Contents, Declaration, Source};
 use tekes_ui_controls::composition::{
     ToolbarButtonDeclaration as ButtonDecl, ToolbarGroupOverflow as Overflow,
     ToolbarPlacement as Placement, ToolbarRegion,
@@ -12,6 +9,32 @@ pub(super) struct ToolbarBand {
     pub y: f32,
     pub height: f32,
     pub native_leading: f32,
+}
+pub(super) struct ToolbarMountState {
+    pub(super) toolbar_index: usize,
+    pub(super) toolbar_hover_index: Option<usize>,
+    pub(super) toolbar_ax: Vec<(
+        tekes_ui_platform_macos::AccessibilityKey,
+        usize,
+        tekes_ui_controls::composition::ToolbarAccessibilityTarget,
+    )>,
+    pub(super) toolbar_ax_next: u64,
+    pub(super) toolbar_focus: Option<ToolbarTarget>,
+    pub(super) toolbar_focus_visible: bool,
+    pub(super) toolbar_focus_lease: Option<(u64, crate::window_toolbar::Source)>,
+}
+impl ToolbarMountState {
+    pub(super) fn new() -> Self {
+        Self {
+            toolbar_index: 0,
+            toolbar_hover_index: None,
+            toolbar_ax: Vec::new(),
+            toolbar_ax_next: 1 << 63,
+            toolbar_focus: None,
+            toolbar_focus_visible: false,
+            toolbar_focus_lease: None,
+        }
+    }
 }
 impl Host {
     pub(super) fn sync_toolbar(
@@ -22,7 +45,7 @@ impl Host {
         band: ToolbarBand,
         title: String,
     ) -> Result<()> {
-        if self.presentation.is_some() {
+        if self.layout.presentation.is_some() {
             return self.sync_container_toolbars(
                 w.is_active(),
                 whole,
@@ -36,7 +59,7 @@ impl Host {
             native_leading: safe,
         } = band;
         let center_slot = usize::from(frames.len() >= 2);
-        let center = self.order[center_slot];
+        let center = self.layout.order[center_slot];
         let mut declarations = vec![];
         let mut add = |id, region: ComponentId, placement, order, contents, source| {
             declarations.push(Declaration {
@@ -51,7 +74,7 @@ impl Host {
         for (side, on, slot, icon, collapsed, label) in [
             (
                 0,
-                self.leading_visible,
+                self.layout.leading_visible,
                 ComponentId(91020),
                 "tekes-side-bar",
                 "tekes-side-bar-collapsed",
@@ -59,7 +82,7 @@ impl Host {
             ),
             (
                 1,
-                self.trailing_visible,
+                self.layout.trailing_visible,
                 ComponentId(91021),
                 "tekes-side-panel",
                 "tekes-side-panel-collapsed",
@@ -100,11 +123,12 @@ impl Host {
             );
         }
         let open = self
+            .nav_mgr
             .navigation
             .as_ref()
             .is_none_or(|n| n.host.input_open && !n.busy && n.error.is_none());
-        if let Some(nav) = &self.navigation
-            && let Some(source) = ComponentSource::current(&nav.process)
+        if let Some(nav) = &self.nav_mgr.navigation
+            && let Some(source) = nav.toolbar_source()
         {
             let mut buttons = vec![];
             let mut templates = vec![];
@@ -141,7 +165,7 @@ impl Host {
             Contents::Title(title),
             Source::Title,
         );
-        if let Some(state) = &self.settings {
+        if let Some(state) = &self.settings_mgr.settings {
             let state = state.borrow();
             if let Some(source) = &state.toolbar_source {
                 let mut buttons = vec![];
@@ -168,8 +192,8 @@ impl Host {
                 );
             }
         }
-        for (slot, &index) in self.order.iter().enumerate() {
-            let p = &self.panels[index];
+        for (slot, &index) in self.layout.order.iter().enumerate() {
+            let p = &self.panel_mgr.panels[index];
             if frames[slot].size.width <= 0. || p.toolbar.is_empty() {
                 continue;
             }
@@ -184,7 +208,7 @@ impl Host {
                         text: a.title.clone(),
                         hint: Some(a.title.clone()),
                         enabled: open
-                            && !self.sidebar_motion.needs_frame()
+                            && !self.layout.sidebar_motion.needs_frame()
                             && p.failed.is_none()
                             && a.enabled
                             && (!a.geometry_dependent || p.frame_viewport == p.viewport),
@@ -224,16 +248,17 @@ impl Host {
         // Containers own the shared Toolbar instances. Window contributes only
         // placement and authenticated command sources to the selected container.
         let visible = |index: usize| {
-            self.order
+            self.layout
+                .order
                 .iter()
                 .position(|&i| i == index)
                 .is_some_and(|slot| frames[slot].size.width > 0.)
         };
-        let mut owned = vec![Vec::new(); self.panels.len()];
+        let mut owned = vec![Vec::new(); self.panel_mgr.panels.len()];
         for mut declaration in declarations {
             let (owner, region) = match &declaration.source {
                 Source::Panel { index, .. } if visible(*index) => {
-                    match self.panels[*index].options.toolbar_host {
+                    match self.panel_mgr.panels[*index].options.toolbar_host {
                         crate::ContainerToolbarHost::Window => (center, ComponentId(u64::MAX - 18)),
                         crate::ContainerToolbarHost::Container { .. } => {
                             (*index, ComponentId(91000 + *index as u64))
@@ -246,11 +271,12 @@ impl Host {
             declaration.region = region;
             owned[owner].push(declaration);
         }
-        for (index, panel) in self.panels.iter_mut().enumerate() {
+        for (index, panel) in self.panel_mgr.panels.iter_mut().enumerate() {
             let mut regions = Vec::new();
             // Settings syncs its native-top toolbar before publishing panel
             // bounds. The current allocation, not last draw's bounds, owns it.
             let frame = self
+                .layout
                 .order
                 .iter()
                 .position(|&owner| owner == index)
@@ -287,12 +313,16 @@ impl Host {
         Ok(())
     }
     pub(super) fn drain_toolbar_commands(&mut self) -> Result<()> {
-        for invocation in self.panels[self.toolbar_index]
+        for invocation in self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
             .mounted_toolbar
             .host
             .drain_commands()
         {
-            if invocation.window != self.panels[self.toolbar_index].mounted_toolbar.window {
+            if invocation.window
+                != self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
+                    .mounted_toolbar
+                    .window
+            {
                 continue;
             }
             eprintln!(
@@ -300,61 +330,64 @@ impl Host {
                 invocation.window, invocation.command, invocation.input, invocation.source
             );
             let mut exchanged = false;
-            let result =
-                match invocation.source {
-                    Source::Visibility(side) => self.toggle_visibility(side),
-                    Source::Navigation(source) => {
-                        if self.prepare_settings_item_navigation() {
-                            self.navigation
-                                .as_mut()
-                                .map_or(Ok(()), |nav| nav.invoke(&source, invocation.command))
-                        } else {
-                            Ok(())
-                        }
+            let result = match invocation.source {
+                Source::Visibility(side) => self.toggle_visibility(side),
+                Source::Navigation(source) => {
+                    if self.prepare_settings_item_navigation() {
+                        self.nav_mgr
+                            .navigation
+                            .as_mut()
+                            .map_or(Ok(()), |nav| nav.invoke(&source, invocation.command))
+                    } else {
+                        Ok(())
                     }
-                    Source::WorkspaceSwitch { focus, other } => self
-                        .switch_workspace_focus(focus, other)
-                        .map(|changed| exchanged = changed),
-                    Source::Title => Err(anyhow::anyhow!("title has no command binding")),
-                    Source::Expand {
-                        container,
-                        expanded,
-                    } => self
-                        .toggle_others_expansion(&container, expanded)
-                        .map(|changed| exchanged = changed),
-                    Source::Undo(source) => self.settings.as_ref().map_or(Ok(()), |s| {
-                        s.borrow_mut().undo_action(invocation.command, &source)
-                    }),
-                    Source::Panel {
-                        instance,
-                        index,
-                        module,
-                        pid,
-                        generation,
-                    } => {
-                        if self.navigation.as_ref().is_some_and(|nav| {
-                            !nav.host.input_open || nav.busy || nav.error.is_some()
-                        }) {
-                            Ok(())
-                        } else if let Some(p) = self.panels.get(index)
-                            && p.instance == instance
-                            && p.module_id == module
-                            && p.pid == pid
-                            && p.toolbar_generation == generation
+                }
+                Source::WorkspaceSwitch { focus, other } => self
+                    .switch_workspace_focus(focus, other)
+                    .map(|changed| exchanged = changed),
+                Source::Title => Err(anyhow::anyhow!("title has no command binding")),
+                Source::Expand {
+                    container,
+                    expanded,
+                } => self
+                    .toggle_others_expansion(&container, expanded)
+                    .map(|changed| exchanged = changed),
+                Source::Undo(source) => self.settings_mgr.settings.as_ref().map_or(Ok(()), |s| {
+                    s.borrow_mut().undo_action(invocation.command, &source)
+                }),
+                Source::Panel {
+                    instance,
+                    index,
+                    module,
+                    pid,
+                    generation,
+                } => {
+                    if self
+                        .nav_mgr
+                        .navigation
+                        .as_ref()
+                        .is_some_and(|nav| !nav.host.input_open || nav.busy || nav.error.is_some())
+                    {
+                        Ok(())
+                    } else if let Some(p) = self.panel_mgr.panels.get(index)
+                        && p.instance == instance
+                        && p.module_id == module
+                        && p.pid == pid
+                        && p.toolbar_generation == generation
+                    {
+                        if self.layout.presentation.is_some()
+                            && p.options.focus_switch_command == Some(invocation.command)
                         {
-                            if self.presentation.is_some()
-                                && p.options.focus_switch_command == Some(invocation.command)
-                            {
-                                self.switch_container_focus(index)
-                                    .map(|changed| exchanged = changed)
-                            } else {
-                                self.panels[index].command(invocation.command)
-                            }
+                            self.switch_container_focus(index)
+                                .map(|changed| exchanged = changed)
                         } else {
-                            Ok(())
+                            self.panel_mgr.panels[index].command(invocation.command)
                         }
+                    } else {
+                        Ok(())
                     }
-                };
+                }
+            };
             if let Err(error) = result {
                 eprintln!("TOOLBAR_COMMAND_REJECTED {error:#}");
             }
@@ -372,7 +405,7 @@ impl Host {
         if matches!(event, Event::Focus(false) | Event::CloseRequested) {
             self.clear_toolbar_hover();
         }
-        if self.panels.is_empty() {
+        if self.panel_mgr.panels.is_empty() {
             return Ok(false);
         }
         if matches!(
@@ -384,11 +417,12 @@ impl Host {
                 | Event::TextUnmark
                 | Event::TextCommand(_)
         ) && let Some(index) = self
+            .panel_mgr
             .panels
             .iter()
             .position(|p| p.mounted_toolbar.host.content_host().focused().is_some())
         {
-            self.toolbar_index = index;
+            self.toolbar_mgr.toolbar_index = index;
         }
         if let Event::Key(key) = event {
             let input = toolbar_key(key.clone());
@@ -403,12 +437,12 @@ impl Host {
                 .and_then(|p| p.owner(*target))
                 .is_none_or(|owner| {
                     owner.0 < Self::toolbar_accessibility_owner(0)
-                        || owner.0 >= Self::toolbar_accessibility_owner(self.panels.len())
+                        || owner.0 >= Self::toolbar_accessibility_owner(self.panel_mgr.panels.len())
                 })
             {
                 return Ok(false);
             }
-            let before = self.panels[self.toolbar_index]
+            let before = self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
                 .mounted_toolbar
                 .host
                 .content_host()
@@ -416,35 +450,38 @@ impl Host {
             let handled =
                 self.toolbar_accessibility_action(w.is_active(), *target, action.clone())?;
             if handled
-                && self.panels[self.toolbar_index]
+                && self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
                     .mounted_toolbar
                     .host
                     .content_host()
                     .focused()
                     != before
-                && self.panels[self.toolbar_index]
+                && self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
                     .mounted_toolbar
                     .host
                     .content_host()
                     .focused()
                     .is_some()
             {
-                for p in &mut self.panels {
+                for p in &mut self.panel_mgr.panels {
                     if let Some(local) = &mut p.local {
                         local.with_host(&mut |h| h.cancel());
                     }
                 }
             }
             return Ok(handled
-                || self.panels[self.toolbar_index].mounted_toolbar.modal()
-                || self.panels[self.toolbar_index]
+                || self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
+                    .mounted_toolbar
+                    .modal()
+                || self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
                     .mounted_toolbar
                     .host
                     .semantics()
                     .is_empty());
         }
-        let body_capture =
-            self.drag_split.is_some() || self.pressed.is_some() || self.settings_pointer.is_some();
+        let body_capture = self.layout.drag_split.is_some()
+            || self.layout.pressed.is_some()
+            || self.settings_mgr.settings_pointer.is_some();
         if body_capture
             && matches!(event,Event::Mouse(m) if matches!(m.kind,MouseEventKind::Dragged{..}|MouseEventKind::Up{..}))
         {
@@ -453,18 +490,20 @@ impl Host {
         // An original body control owns its complete key/IME sequence, even
         // when it is not a text editor (for example a Settings MenuButton).
         // Settings plain Tab first visits its existing cross-scope coordinator.
-        let settings_tab = self.is_settings_window
+        let settings_tab = self.settings_mgr.is_settings_window
             && matches!(event, Event::Key(key)
                 if key.kind == KeyEventKind::Down && key.key_code == 48
                     && !key.modifiers.command && !key.modifiers.control
                     && !key.modifiers.alt);
-        if self.panels[self.toolbar_index]
+        if self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
             .mounted_toolbar
             .host
             .content_host()
             .focused()
             .is_none()
-            && !self.panels[self.toolbar_index].mounted_toolbar.modal()
+            && !self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
+                .mounted_toolbar
+                .modal()
             && !settings_tab
             && matches!(
                 event,
@@ -477,7 +516,7 @@ impl Host {
             )
         {
             let mut body_focus = false;
-            for panel in &mut self.panels {
+            for panel in &mut self.panel_mgr.panels {
                 if let Some(local) = &mut panel.local {
                     local.with_host(&mut |h| body_focus |= h.focused().is_some());
                 }
@@ -489,7 +528,7 @@ impl Host {
         let Some(input) = native_toolbar_event(event) else {
             return Ok(false);
         };
-        let previous_focus = self.panels[self.toolbar_index]
+        let previous_focus = self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
             .mounted_toolbar
             .host
             .content_host()
@@ -506,41 +545,41 @@ impl Host {
             !self.dispatch_toolbar(owner, &input)?
         } else {
             self.update_toolbar_hover(None, &input)?;
-            self.panels[self.toolbar_index]
+            self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
                 .mounted_toolbar
                 .host
                 .event_with_text(&input, &mut self.text)
                 .map_err(|e| anyhow::anyhow!("toolbar input: {e:?}"))?;
             self.drain_toolbar_commands()?;
-            !self.panels[self.toolbar_index]
+            !self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
                 .mounted_toolbar
                 .host
                 .event_bubbled()
         };
-        if self.panels[self.toolbar_index]
+        if self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
             .mounted_toolbar
             .host
             .content_host()
             .focused()
             .is_some()
         {
-            self.blur_other_toolbars(self.toolbar_index);
+            self.blur_other_toolbars(self.toolbar_mgr.toolbar_index);
         }
         if blocked
-            && self.panels[self.toolbar_index]
+            && self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
                 .mounted_toolbar
                 .host
                 .content_host()
                 .focused()
                 .is_some()
-            && self.panels[self.toolbar_index]
+            && self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
                 .mounted_toolbar
                 .host
                 .content_host()
                 .focused()
                 != previous_focus
         {
-            for p in &mut self.panels {
+            for p in &mut self.panel_mgr.panels {
                 if let Some(local) = &mut p.local {
                     local.with_host(&mut |host| {
                         host.cancel();
@@ -552,7 +591,7 @@ impl Host {
         {
             self.set_toolbar_focus(None, false);
         }
-        let focus_changed = self.panels[self.toolbar_index]
+        let focus_changed = self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
             .mounted_toolbar
             .host
             .content_host()
@@ -646,20 +685,22 @@ impl Host {
         | ToolbarTarget::Contribution { presenter, .. } = target
         {
             return self
+                .panel_mgr
                 .panels
                 .get(presenter)
                 .filter(|panel| panel.mounted_toolbar.source(group).is_some())
                 .map(|_| presenter);
         }
-        self.panels
+        self.panel_mgr
+            .panels
             .iter()
             .position(|p| p.mounted_toolbar.source(group).is_some())
     }
     pub(super) fn select_toolbar_container(&mut self, index: usize) {
-        self.toolbar_index = index;
+        self.toolbar_mgr.toolbar_index = index;
     }
     pub(super) fn blur_other_toolbars(&mut self, index: usize) {
-        for (other, panel) in self.panels.iter_mut().enumerate() {
+        for (other, panel) in self.panel_mgr.panels.iter_mut().enumerate() {
             if other != index
                 && panel
                     .mounted_toolbar
@@ -673,9 +714,9 @@ impl Host {
         }
     }
     pub(super) fn toolbar_groups(&self) -> Vec<ToolbarTarget> {
-        if self.presentation.is_some() {
+        if self.layout.presentation.is_some() {
             let mut groups = Vec::new();
-            for (presenter, panel) in self.panels.iter().enumerate() {
+            for (presenter, panel) in self.panel_mgr.panels.iter().enumerate() {
                 for (group, source) in panel.mounted_toolbar.contributions() {
                     let target = match source {
                         Source::Panel { index, .. }
@@ -708,7 +749,7 @@ impl Host {
                 let position = |target: ToolbarTarget| {
                     self.toolbar_container(target)
                         .and_then(|index| {
-                            self.panels[index]
+                            self.panel_mgr.panels[index]
                                 .mounted_toolbar
                                 .host
                                 .content_host()
@@ -723,19 +764,20 @@ impl Host {
             return groups;
         }
         let mut groups = Vec::new();
-        if self.presentation.is_none() && self.panels.len() >= 2 {
+        if self.layout.presentation.is_none() && self.panel_mgr.panels.len() >= 2 {
             groups.push(ToolbarTarget::Visibility(0));
         }
-        if self.navigation.is_some() {
+        if self.nav_mgr.navigation.is_some() {
             groups.push(ToolbarTarget::Navigation);
         }
         groups.extend(
-            self.order
+            self.layout
+                .order
                 .iter()
-                .filter(|&&i| i < self.panels.len())
+                .filter(|&&i| i < self.panel_mgr.panels.len())
                 .map(|&i| ToolbarTarget::Panel(i)),
         );
-        for (presenter, panel) in self.panels.iter().enumerate() {
+        for (presenter, panel) in self.panel_mgr.panels.iter().enumerate() {
             for (group, source) in panel.mounted_toolbar.contributions() {
                 if let Source::Panel { index, .. } = source
                     && group != Self::toolbar_group(ToolbarTarget::Panel(*index))
@@ -744,27 +786,28 @@ impl Host {
                 }
             }
         }
-        if self.presentation.is_none() && self.panels.len() == 3 {
+        if self.layout.presentation.is_none() && self.panel_mgr.panels.len() == 3 {
             groups.push(ToolbarTarget::Visibility(1));
         }
         groups
     }
     pub(super) fn actual_toolbar_owner(&self) -> Option<ToolbarTarget> {
         let focused = self
+            .panel_mgr
             .panels
-            .get(self.toolbar_index)?
+            .get(self.toolbar_mgr.toolbar_index)?
             .mounted_toolbar
             .host
             .content_host()
             .focused()?;
         self.toolbar_groups().into_iter().find(|&owner| {
-            self.toolbar_container(owner) == Some(self.toolbar_index)
+            self.toolbar_container(owner) == Some(self.toolbar_mgr.toolbar_index)
                 && Self::toolbar_control(owner) == focused
         })
     }
     pub(super) fn remember_toolbar_focus(&mut self, visible: Option<bool>) {
         let Some(owner) = self.actual_toolbar_owner() else {
-            if self.panels[self.toolbar_index]
+            if self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
                 .mounted_toolbar
                 .host
                 .content_host()
@@ -773,12 +816,12 @@ impl Host {
             {
                 // Another actual shared group (e.g. config Undo) now owns focus.
                 // Old Panel return intent must not steal it on the next draw.
-                self.toolbar_focus = None;
-                self.toolbar_focus_lease = None;
+                self.toolbar_mgr.toolbar_focus = None;
+                self.toolbar_mgr.toolbar_focus_lease = None;
             }
             return;
         };
-        let Some(mount) = self.panels[self.toolbar_index]
+        let Some(mount) = self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
             .mounted_toolbar
             .host
             .content_host()
@@ -786,22 +829,22 @@ impl Host {
         else {
             return;
         };
-        let Some(source) = self.panels[self.toolbar_index]
+        let Some(source) = self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
             .mounted_toolbar
             .source(Self::toolbar_group(owner))
             .cloned()
         else {
             return;
         };
-        self.toolbar_focus = Some(owner);
-        self.toolbar_focus_lease = Some((mount, source));
+        self.toolbar_mgr.toolbar_focus = Some(owner);
+        self.toolbar_mgr.toolbar_focus_lease = Some((mount, source));
         if let Some(visible) = visible {
-            self.toolbar_focus_visible = visible;
+            self.toolbar_mgr.toolbar_focus_visible = visible;
         }
     }
     fn original_panel_binding(&self, target: ToolbarTarget) -> Option<(usize, usize)> {
         let presenter = self.toolbar_container(target)?;
-        let Source::Panel { index, .. } = self.panels[presenter]
+        let Source::Panel { index, .. } = self.panel_mgr.panels[presenter]
             .mounted_toolbar
             .source(Self::toolbar_group(target))?
         else {
@@ -812,7 +855,7 @@ impl Host {
     fn toolbar_control_visible(&self, target: ToolbarTarget) -> bool {
         self.toolbar_container(target)
             .and_then(|index| {
-                self.panels[index]
+                self.panel_mgr.panels[index]
                     .mounted_toolbar
                     .host
                     .content_host()
@@ -827,34 +870,39 @@ impl Host {
             })
     }
     pub(super) fn toolbar_available(&self, target: ToolbarTarget) -> bool {
-        if self.presentation.is_some() || matches!(target, ToolbarTarget::Contribution { .. }) {
+        if self.layout.presentation.is_some()
+            || matches!(target, ToolbarTarget::Contribution { .. })
+        {
             if let Some((owner, _)) = self.original_panel_binding(target) {
-                return self.panels[owner].failed.is_none()
+                return self.panel_mgr.panels[owner].failed.is_none()
                     && self.toolbar_control_visible(target)
                     && self
+                        .nav_mgr
                         .navigation
                         .as_ref()
                         .is_none_or(|nav| nav.host.input_open && !nav.busy && nav.error.is_none());
             }
             return match target {
                 ToolbarTarget::Contribution { presenter, group } => {
-                    self.panels.get(presenter).is_some_and(|panel| {
+                    self.panel_mgr.panels.get(presenter).is_some_and(|panel| {
                         panel.mounted_toolbar.source(group).is_some()
                             && self.toolbar_control_visible(target)
                     })
                 }
                 ToolbarTarget::Navigation => self
+                    .nav_mgr
                     .navigation
                     .as_ref()
                     .is_some_and(|nav| nav.host.input_open && !nav.busy && nav.error.is_none()),
                 ToolbarTarget::Visibility(side) => {
-                    self.presentation.as_ref().is_some_and(|state| {
+                    self.layout.presentation.as_ref().is_some_and(|state| {
                         if side == 0 {
                             state.nav_bar_id().is_some()
                         } else {
                             state.others().is_some()
                         }
                     }) && self
+                        .nav_mgr
                         .navigation
                         .as_ref()
                         .is_none_or(|nav| nav.host.input_open && !nav.busy && nav.error.is_none())
@@ -865,22 +913,24 @@ impl Host {
         match target {
             ToolbarTarget::Contribution { .. } => false,
             ToolbarTarget::Visibility(side) => {
-                self.panels.len() == 3 || self.panels.len() == 2 && side == 0
+                self.panel_mgr.panels.len() == 3 || self.panel_mgr.panels.len() == 2 && side == 0
             }
             ToolbarTarget::Navigation => self
+                .nav_mgr
                 .navigation
                 .as_ref()
                 .is_some_and(|n| n.host.input_open && !n.busy && n.error.is_none()),
             ToolbarTarget::Panel(i) | ToolbarTarget::Retained { owner: i, .. } => {
-                self.panels.get(i).is_some_and(|p| {
+                self.panel_mgr.panels.get(i).is_some_and(|p| {
                     p.bounds.size.width > 0.
-                        && !self.sidebar_motion.needs_frame()
-                        && (self.panels.len() < 2
-                            || (i != self.order[0] || self.leading_visible)
-                                && (self.panels.len() != 3
-                                    || i != self.order[2]
-                                    || self.trailing_visible))
+                        && !self.layout.sidebar_motion.needs_frame()
+                        && (self.panel_mgr.panels.len() < 2
+                            || (i != self.layout.order[0] || self.layout.leading_visible)
+                                && (self.panel_mgr.panels.len() != 3
+                                    || i != self.layout.order[2]
+                                    || self.layout.trailing_visible))
                         && self
+                            .nav_mgr
                             .navigation
                             .as_ref()
                             .is_none_or(|n| n.host.input_open && !n.busy)
@@ -889,14 +939,17 @@ impl Host {
         }
     }
     pub(super) fn toolbar_temporarily_blocked(&self, target: ToolbarTarget) -> bool {
-        if self.presentation.is_some() || matches!(target, ToolbarTarget::Contribution { .. }) {
+        if self.layout.presentation.is_some()
+            || matches!(target, ToolbarTarget::Contribution { .. })
+        {
             return self
                 .original_panel_binding(target)
                 .is_some_and(|(owner, _)| {
-                    let panel = &self.panels[owner];
+                    let panel = &self.panel_mgr.panels[owner];
                     panel.failed.is_none()
                         && self.toolbar_control_visible(target)
                         && (self
+                            .nav_mgr
                             .navigation
                             .as_ref()
                             .is_some_and(|nav| nav.busy && nav.error.is_none())
@@ -904,23 +957,24 @@ impl Host {
                 });
         }
         let navigating = self
+            .nav_mgr
             .navigation
             .as_ref()
             .is_some_and(|n| n.busy && n.error.is_none());
         match target {
             ToolbarTarget::Navigation => navigating,
             ToolbarTarget::Panel(i) | ToolbarTarget::Retained { owner: i, .. } => {
-                self.panels.get(i).is_some_and(|p| {
+                self.panel_mgr.panels.get(i).is_some_and(|p| {
                     (navigating
-                        || self.sidebar_motion.needs_frame()
+                        || self.layout.sidebar_motion.needs_frame()
                         || p.frame_viewport != p.viewport)
                         && p.failed.is_none()
                         && p.bounds.size.width > 0.
-                        && (self.panels.len() < 2
-                            || (i != self.order[0] || self.leading_visible)
-                                && (self.panels.len() != 3
-                                    || i != self.order[2]
-                                    || self.trailing_visible))
+                        && (self.panel_mgr.panels.len() < 2
+                            || (i != self.layout.order[0] || self.layout.leading_visible)
+                                && (self.panel_mgr.panels.len() != 3
+                                    || i != self.layout.order[2]
+                                    || self.layout.trailing_visible))
                 })
             }
             ToolbarTarget::Visibility(_) | ToolbarTarget::Contribution { .. } => false,
@@ -932,7 +986,7 @@ impl Host {
             .filter(|&owner| {
                 self.toolbar_available(owner)
                     && self.toolbar_container(owner).is_some_and(|index| {
-                        self.panels[index]
+                        self.panel_mgr.panels[index]
                             .mounted_toolbar
                             .host
                             .content_host()
@@ -949,23 +1003,23 @@ impl Host {
     pub(super) fn set_toolbar_focus(&mut self, target: Option<ToolbarTarget>, visible: bool) {
         let target = target.filter(|t| self.toolbar_focus_targets().contains(t));
         let Some(owner) = target else {
-            for panel in &mut self.panels {
+            for panel in &mut self.panel_mgr.panels {
                 panel.mounted_toolbar.host.blur();
             }
-            self.toolbar_focus = None;
-            self.toolbar_focus_lease = None;
-            self.toolbar_focus_visible = false;
+            self.toolbar_mgr.toolbar_focus = None;
+            self.toolbar_mgr.toolbar_focus_lease = None;
+            self.toolbar_mgr.toolbar_focus_visible = false;
             return;
         };
         let Some(index) = self.toolbar_container(owner) else {
             return;
         };
         self.blur_other_toolbars(index);
-        if let Some(tabs) = &mut self.presentation_tabs {
+        if let Some(tabs) = &mut self.layout.presentation_tabs {
             tabs.blur();
         }
         self.select_toolbar_container(index);
-        let Some(target) = self.panels[self.toolbar_index]
+        let Some(target) = self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
             .mounted_toolbar
             .host
             .semantics()
@@ -975,14 +1029,14 @@ impl Host {
         else {
             return;
         };
-        if self.panels[self.toolbar_index]
+        if self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
             .mounted_toolbar
             .host
             .restore_focus(target, visible)
         {
             self.remember_toolbar_focus(Some(visible));
             if let Some((original, _)) = self.original_panel_binding(owner) {
-                self.focused = original;
+                self.layout.focused = original;
             }
         }
     }
@@ -991,20 +1045,20 @@ impl Host {
             self.cancel_toolbar_input();
             return;
         }
-        let Some(owner) = self.toolbar_focus else {
+        let Some(owner) = self.toolbar_mgr.toolbar_focus else {
             return;
         };
-        let Some((mount, source)) = self.toolbar_focus_lease.as_ref() else {
+        let Some((mount, source)) = self.toolbar_mgr.toolbar_focus_lease.as_ref() else {
             return;
         };
         // Never renew a lease from a reused numeric ID or a replaced source.
-        let same = self.panels[self.toolbar_index]
+        let same = self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
             .mounted_toolbar
             .host
             .content_host()
             .semantic_mount(Self::toolbar_control(owner))
             == Some(*mount)
-            && self.panels[self.toolbar_index]
+            && self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
                 .mounted_toolbar
                 .source(Self::toolbar_group(owner))
                 == Some(source);
@@ -1019,47 +1073,51 @@ impl Host {
             self.cancel_toolbar_input();
             return;
         }
-        if self.panels[self.toolbar_index]
+        if self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
             .mounted_toolbar
             .host
             .content_host()
             .focused()
             .is_none()
         {
-            self.set_toolbar_focus(Some(owner), self.toolbar_focus_visible);
+            self.set_toolbar_focus(Some(owner), self.toolbar_mgr.toolbar_focus_visible);
         }
     }
     pub(super) fn open_toolbar(&self) -> Option<ToolbarTarget> {
-        self.panels.iter().enumerate().find_map(|(index, panel)| {
-            let owner = panel
-                .mounted_toolbar
-                .host
-                .content_host()
-                .input_overlay_owner()?
-                .0;
-            self.toolbar_groups()
-                .into_iter()
-                .find(|&target| {
-                    self.toolbar_container(target) == Some(index)
-                        && Self::toolbar_control(target) == owner
-                })
-                .or_else(|| {
-                    owner
-                        .0
-                        .checked_sub(1)
-                        .map(ComponentId)
-                        .filter(|group| panel.mounted_toolbar.source(*group).is_some())
-                        .map(|group| ToolbarTarget::Contribution {
-                            presenter: index,
-                            group,
-                        })
-                })
-        })
+        self.panel_mgr
+            .panels
+            .iter()
+            .enumerate()
+            .find_map(|(index, panel)| {
+                let owner = panel
+                    .mounted_toolbar
+                    .host
+                    .content_host()
+                    .input_overlay_owner()?
+                    .0;
+                self.toolbar_groups()
+                    .into_iter()
+                    .find(|&target| {
+                        self.toolbar_container(target) == Some(index)
+                            && Self::toolbar_control(target) == owner
+                    })
+                    .or_else(|| {
+                        owner
+                            .0
+                            .checked_sub(1)
+                            .map(ComponentId)
+                            .filter(|group| panel.mounted_toolbar.source(*group).is_some())
+                            .map(|group| ToolbarTarget::Contribution {
+                                presenter: index,
+                                group,
+                            })
+                    })
+            })
     }
     fn clear_toolbar_hover(&mut self) {
-        if let Some(index) = self.toolbar_hover_index.take() {
+        if let Some(index) = self.toolbar_mgr.toolbar_hover_index.take() {
             // A hover exit does not revoke the original keyboard focus owner.
-            self.panels[index]
+            self.panel_mgr.panels[index]
                 .mounted_toolbar
                 .host
                 .event(&ContentEvent::PointerMove(Point::new(f32::MIN, f32::MIN)));
@@ -1072,10 +1130,10 @@ impl Host {
             || matches!(event, ContentEvent::PointerMove(_));
         if !hover
             || self.open_toolbar().is_some()
-            || self.pressed.is_some()
-            || self.drag_split.is_some()
-            || self.settings_pointer.is_some()
-            || self.panels.iter().any(|panel| {
+            || self.layout.pressed.is_some()
+            || self.layout.drag_split.is_some()
+            || self.settings_mgr.settings_pointer.is_some()
+            || self.panel_mgr.panels.iter().any(|panel| {
                 panel
                     .mounted_toolbar
                     .host
@@ -1086,24 +1144,24 @@ impl Host {
         {
             return Ok(());
         }
-        if self.toolbar_hover_index != target {
-            if let Some(index) = self.toolbar_hover_index.take() {
+        if self.toolbar_mgr.toolbar_hover_index != target {
+            if let Some(index) = self.toolbar_mgr.toolbar_hover_index.take() {
                 // Container and keyboard routes are independent. Deliver the
                 // real outside point only to the previous hover owner.
-                self.panels[index]
+                self.panel_mgr.panels[index]
                     .mounted_toolbar
                     .host
                     .event_with_text(event, &mut self.text)
                     .map_err(|error| anyhow::anyhow!("toolbar hover leave: {error:?}"))?;
             }
-            self.toolbar_hover_index = target;
+            self.toolbar_mgr.toolbar_hover_index = target;
         }
         Ok(())
     }
     pub(super) fn cancel_toolbar_input(&mut self) {
         self.clear_toolbar_hover();
         self.remember_toolbar_focus(None);
-        self.panels[self.toolbar_index]
+        self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
             .mounted_toolbar
             .host
             .event(&ContentEvent::Cancel);
@@ -1120,22 +1178,22 @@ impl Host {
             return Ok(true);
         };
         self.select_toolbar_container(index);
-        let before = self.panels[self.toolbar_index]
+        let before = self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
             .mounted_toolbar
             .host
             .content_host()
             .focused();
-        self.panels[self.toolbar_index]
+        self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
             .mounted_toolbar
             .host
             .event_with_text(event, &mut self.text)
             .map_err(|e| anyhow::anyhow!("toolbar input: {e:?}"))?;
-        let bubbles = self.panels[self.toolbar_index]
+        let bubbles = self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
             .mounted_toolbar
             .host
             .event_bubbled();
         self.drain_toolbar_commands()?;
-        if self.panels[self.toolbar_index]
+        if self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
             .mounted_toolbar
             .host
             .content_host()
@@ -1161,6 +1219,7 @@ impl Host {
             return Ok(consumed);
         }
         let header_focused = self
+            .layout
             .presentation_tabs
             .as_ref()
             .is_some_and(|header| header.content_host().focused().is_some());
@@ -1178,7 +1237,7 @@ impl Host {
                 if targets.is_empty() {
                     return Ok(false);
                 }
-                self.presentation_tabs.as_mut().unwrap().blur();
+                self.layout.presentation_tabs.as_mut().unwrap().blur();
                 self.set_toolbar_focus(
                     if reverse {
                         targets.last()
@@ -1191,8 +1250,10 @@ impl Host {
                 return Ok(self.actual_toolbar_owner().is_some());
             }
             let groups = self.toolbar_groups();
-            let current = self.actual_toolbar_owner().or(self.toolbar_focus);
-            let crosses_header = self.presentation_layout.tabs.is_some()
+            let current = self
+                .actual_toolbar_owner()
+                .or(self.toolbar_mgr.toolbar_focus);
+            let crosses_header = self.layout.presentation_layout.tabs.is_some()
                 && (if reverse {
                     current.is_none() || current == targets.first().copied()
                 } else {
@@ -1226,7 +1287,7 @@ impl Host {
                 });
             self.set_toolbar_focus(next, true);
             return Ok(next.is_some()
-                && self.panels[self.toolbar_index]
+                && self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
                     .mounted_toolbar
                     .host
                     .content_host()
@@ -1238,22 +1299,24 @@ impl Host {
         }
         if key.down
             && key.key == Some(ControlKey::Escape)
-            && !self.panels[self.toolbar_index].mounted_toolbar.modal()
+            && !self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
+                .mounted_toolbar
+                .modal()
         {
             self.cancel_toolbar_input();
             self.reconcile_toolbar_focus(true);
-            return Ok(!self.panels[self.toolbar_index]
+            return Ok(!self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
                 .mounted_toolbar
                 .host
                 .event_bubbled());
         }
-        let previous = self.panels[self.toolbar_index]
+        let previous = self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
             .mounted_toolbar
             .host
             .content_host()
             .focused();
         let traversal = key.down && matches!(key.key, Some(ControlKey::Tab { .. }));
-        self.panels[self.toolbar_index]
+        self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
             .mounted_toolbar
             .host
             .event_with_text(&ContentEvent::KeyInput(key), &mut self.text)
@@ -1261,7 +1324,7 @@ impl Host {
         self.drain_toolbar_commands()?;
         self.remember_toolbar_focus(
             (traversal
-                || self.panels[self.toolbar_index]
+                || self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
                     .mounted_toolbar
                     .host
                     .content_host()
@@ -1269,7 +1332,7 @@ impl Host {
                     != previous)
                 .then_some(true),
         );
-        Ok(!self.panels[self.toolbar_index]
+        Ok(!self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
             .mounted_toolbar
             .host
             .event_bubbled())
@@ -1283,7 +1346,7 @@ impl Host {
             .find(|&owner| {
                 self.toolbar_available(owner)
                     && self.toolbar_container(owner).is_some_and(|index| {
-                        self.panels[index]
+                        self.panel_mgr.panels[index]
                             .mounted_toolbar
                             .host
                             .content_host()
@@ -1297,7 +1360,8 @@ impl Host {
             .or_else(|| {
                 // Service/configuration contributions belong to their actual mounted
                 // container too; the last keyboard route is not a pointer target.
-                self.panels
+                self.panel_mgr
+                    .panels
                     .iter()
                     .enumerate()
                     .find_map(|(presenter, panel)| {
@@ -1352,18 +1416,18 @@ impl Host {
         let toolbar_index = self
             .toolbar_container(ToolbarTarget::Panel(index))
             .unwrap_or(index);
-        let previous = self.panels[index].viewport;
-        self.panels[index].geometry_with_layout(bounds, scale, geometry)?;
-        if self.panels[index].viewport != previous {
+        let previous = self.panel_mgr.panels[index].viewport;
+        self.panel_mgr.panels[index].geometry_with_layout(bounds, scale, geometry)?;
+        if self.panel_mgr.panels[index].viewport != previous {
             let owner = ToolbarTarget::Panel(index);
-            if self.panels[toolbar_index]
+            if self.panel_mgr.panels[toolbar_index]
                 .mounted_toolbar
                 .host
                 .content_host()
                 .get(Self::toolbar_control(owner))
                 .is_some()
             {
-                self.panels[toolbar_index]
+                self.panel_mgr.panels[toolbar_index]
                     .mounted_toolbar
                     .host
                     .update_component::<ToolbarControl>(
@@ -1381,7 +1445,7 @@ impl Host {
 #[cfg(test)]
 mod integration_tests {
     use super::*;
-    use crate::{AppWindow, LocalContainer};
+    use crate::{AppWindow, LocalContainer, toolbar_source::ComponentSource};
     use tekes_ui_controls::composition::{Content, TextContent, ToolbarPlacement, ToolbarRegion};
     fn mounted_contribution_fixture(
         service: bool,
@@ -1416,8 +1480,8 @@ mod integration_tests {
             .unwrap()
             .into_host(false);
         host.mount_initial_containers();
-        host.panels[0].bounds = Rect::new(0., 0., 280., 180.);
-        host.panels[1].bounds = Rect::new(300., 0., 640., 180.);
+        host.panel_mgr.panels[0].bounds = Rect::new(0., 0., 280., 180.);
+        host.panel_mgr.panels[1].bounds = Rect::new(300., 0., 640., 180.);
         let source = if service {
             Source::Undo(ComponentSource {
                 session: tekes_ui_module_runtime::component::Session {
@@ -1426,11 +1490,11 @@ mod integration_tests {
                     host_epoch: 1,
                 },
                 registration: 4,
-                window: host.panels[0].mounted_toolbar.window,
+                window: host.panel_mgr.panels[0].mounted_toolbar.window,
             })
         } else {
             Source::Panel {
-                instance: host.panels[0].instance,
+                instance: host.panel_mgr.panels[0].instance,
                 index: 0,
                 module: "owner".into(),
                 pid: None,
@@ -1458,7 +1522,7 @@ mod integration_tests {
         (host, declaration, count)
     }
     fn mount_actual_contribution(host: &mut Host, declaration: Declaration) {
-        host.panels[1]
+        host.panel_mgr.panels[1]
             .mounted_toolbar
             .sync(
                 Rect::new(0., 0., 1000., 200.),
@@ -1469,14 +1533,14 @@ mod integration_tests {
                 vec![declaration],
             )
             .unwrap();
-        host.panels[1]
+        host.panel_mgr.panels[1]
             .mounted_toolbar
             .host
             .render(&mut Scene::new(), &mut host.text, Theme::LIGHT.into())
             .unwrap();
     }
     fn contribution_button_point(host: &Host) -> Point {
-        host.panels[1]
+        host.panel_mgr.panels[1]
             .mounted_toolbar
             .host
             .semantics()
@@ -1493,7 +1557,7 @@ mod integration_tests {
         for theme in Theme::ALL {
             let (mut host, declaration, calls) = mounted_contribution_fixture(false);
             host = host.with_theme(theme);
-            host.panels[0]
+            host.panel_mgr.panels[0]
                 .mounted_toolbar
                 .sync(
                     Rect::new(0., 0., 1000., 200.),
@@ -1524,7 +1588,7 @@ mod integration_tests {
             let paint = |host: &mut Host| {
                 std::array::from_fn::<_, 2, _>(|index| {
                     let mut scene = Scene::new();
-                    host.panels[index]
+                    host.panel_mgr.panels[index]
                         .mounted_toolbar
                         .host
                         .render(&mut scene, &mut host.text, palette)
@@ -1534,7 +1598,7 @@ mod integration_tests {
             };
             paint(&mut host);
             let frame = |host: &Host, index: usize, name: &str| {
-                host.panels[index]
+                host.panel_mgr.panels[index]
                     .mounted_toolbar
                     .host
                     .semantics()
@@ -1574,7 +1638,7 @@ mod integration_tests {
                 })
             };
             if keyboard_interleave {
-                let target = host.panels[1]
+                let target = host.panel_mgr.panels[1]
                     .mounted_toolbar
                     .host
                     .semantics()
@@ -1587,13 +1651,14 @@ mod integration_tests {
                     .unwrap()
                     .target;
                 assert!(
-                    host.panels[1]
+                    host.panel_mgr.panels[1]
                         .mounted_toolbar
                         .host
                         .restore_focus(target, true)
                 );
             }
             let focus_before: Vec<_> = host
+                .panel_mgr
                 .panels
                 .iter()
                 .map(|panel| panel.mounted_toolbar.host.content_host().focused())
@@ -1609,6 +1674,7 @@ mod integration_tests {
                 // before calling this original key dispatcher. Pointer hover
                 // must retain its own owner through that keyboard selection.
                 let focused = host
+                    .panel_mgr
                     .panels
                     .iter()
                     .position(|panel| {
@@ -1631,7 +1697,7 @@ mod integration_tests {
                     characters_ignoring_modifiers: String::new(),
                 })
                 .unwrap();
-                assert_eq!(host.toolbar_index, 1);
+                assert_eq!(host.toolbar_mgr.toolbar_index, 1);
             }
             let owner_b = host.toolbar_target_at(b.center()).unwrap();
             host.dispatch_toolbar(owner_b, &hover(b.center())).unwrap();
@@ -1642,7 +1708,8 @@ mod integration_tests {
             );
             assert!(has_fill(&scenes[1], b, colors("hover")));
             assert_eq!(
-                host.panels
+                host.panel_mgr
+                    .panels
                     .iter()
                     .map(|panel| { panel.mounted_toolbar.host.content_host().focused() })
                     .collect::<Vec<_>>(),
@@ -1654,7 +1721,7 @@ mod integration_tests {
             // the real outside point to the last container, without Cancel.
             let outside = hover(Point::new(500., 150.));
             assert!(host.toolbar_target_at(Point::new(500., 150.)).is_none());
-            host.panels[host.toolbar_index]
+            host.panel_mgr.panels[host.toolbar_mgr.toolbar_index]
                 .mounted_toolbar
                 .host
                 .event_with_text(&outside, &mut host.text)
@@ -1667,19 +1734,24 @@ mod integration_tests {
             let scenes = paint(&mut host);
             assert!(has_fill(&scenes[0], a, colors("rest")));
             assert_eq!(
-                host.panels
+                host.panel_mgr
+                    .panels
                     .iter()
                     .map(|panel| { panel.mounted_toolbar.host.content_host().focused() })
                     .collect::<Vec<_>>(),
                 focus_before,
                 "hover-only cleanup must not blur the keyboard owner"
             );
-            assert_eq!(host.toolbar_hover_index, None);
+            assert_eq!(host.toolbar_mgr.toolbar_hover_index, None);
             // Whole-input cancellation retains its existing ContentHost
             // contract: unlike a pointer-only exit, it also clears focus.
             host.cancel_toolbar_input();
             assert_eq!(
-                host.panels[1].mounted_toolbar.host.content_host().focused(),
+                host.panel_mgr.panels[1]
+                    .mounted_toolbar
+                    .host
+                    .content_host()
+                    .focused(),
                 None
             );
             host.dispatch_toolbar(owner_b, &ContentEvent::PointerDown(b.center()))
@@ -1704,7 +1776,7 @@ mod integration_tests {
     #[test]
     fn mounted_undo_pointer_routes_to_its_actual_container_from_leading_route() {
         let (mut host, _, _) = mounted_contribution_fixture(true);
-        assert_eq!(host.toolbar_index, 0);
+        assert_eq!(host.toolbar_mgr.toolbar_index, 0);
         let point = contribution_button_point(&host);
         let owner = host
             .toolbar_target_at(point)
@@ -1723,13 +1795,17 @@ mod integration_tests {
                 .dispatch_toolbar(owner, &ContentEvent::PointerDown(point))
                 .unwrap()
         );
-        assert_eq!(host.toolbar_index, 1);
+        assert_eq!(host.toolbar_mgr.toolbar_index, 1);
         assert_eq!(
-            host.panels[1].mounted_toolbar.host.content_host().focused(),
+            host.panel_mgr.panels[1]
+                .mounted_toolbar
+                .host
+                .content_host()
+                .focused(),
             Some(ComponentId(92301))
         );
         assert!(
-            host.panels[0]
+            host.panel_mgr.panels[0]
                 .mounted_toolbar
                 .host
                 .content_host()
@@ -1742,7 +1818,7 @@ mod integration_tests {
                 .unwrap()
         );
         assert!(
-            host.panels[1]
+            host.panel_mgr.panels[1]
                 .mounted_toolbar
                 .host
                 .drain_commands()
@@ -1828,7 +1904,7 @@ mod integration_tests {
         assert!(window.mount_columns());
         let viewport = Rect::new(0., 0., 500., 200.);
         let source = Source::Panel {
-            instance: window.panels[0].instance,
+            instance: window.panel_mgr.panels[0].instance,
             index: 0,
             module: "owner-0".into(),
             pid: None,
@@ -1851,7 +1927,7 @@ mod integration_tests {
             ),
             source,
         };
-        window.panels[window.toolbar_index]
+        window.panel_mgr.panels[window.toolbar_mgr.toolbar_index]
             .mounted_toolbar
             .sync(
                 viewport,
@@ -1862,7 +1938,7 @@ mod integration_tests {
                 vec![declaration],
             )
             .unwrap();
-        window.panels[window.toolbar_index]
+        window.panel_mgr.panels[window.toolbar_mgr.toolbar_index]
             .mounted_toolbar
             .host
             .render(&mut Scene::new(), &mut window.text, Theme::LIGHT.into())
@@ -1873,8 +1949,8 @@ mod integration_tests {
             .find(|n| n.label == "Do work")
             .unwrap()
             .key;
-        window.order.swap(0, 1); // presentation and current selection are not command sources
-        window.focused = 1;
+        window.layout.order.swap(0, 1); // presentation and current selection are not command sources
+        window.layout.focused = 1;
         assert!(
             window
                 .toolbar_accessibility_action(
@@ -1886,7 +1962,7 @@ mod integration_tests {
         );
         window.drain_toolbar_commands().unwrap();
         assert_eq!(&*counts.borrow(), &[(0, 7)]);
-        window.panels[0].toolbar_generation += 1;
+        window.panel_mgr.panels[0].toolbar_generation += 1;
         assert!(
             window
                 .toolbar_accessibility_action(
@@ -1901,7 +1977,7 @@ mod integration_tests {
             &[(0, 7)],
             "retired generation was executed"
         );
-        window.panels[window.toolbar_index]
+        window.panel_mgr.panels[window.toolbar_mgr.toolbar_index]
             .mounted_toolbar
             .host
             .set_window_active(false);

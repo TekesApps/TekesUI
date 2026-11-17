@@ -51,7 +51,7 @@ impl Host {
         if std::env::var_os("TEKESUI_OTHERS_SCROLL_TRACE").is_none() {
             return;
         }
-        let Some(host) = &self.presentation_tabs else {
+        let Some(host) = &self.layout.presentation_tabs else {
             eprintln!("OTHERS_SCROLL_STATE stage={stage} mounted=false");
             return;
         };
@@ -78,7 +78,7 @@ impl Host {
         );
     }
     fn switcher_items(&self) -> Vec<Item> {
-        let state = self.presentation.as_ref().unwrap();
+        let state = self.layout.presentation.as_ref().unwrap();
         state
             .tabs()
             .into_iter()
@@ -86,6 +86,7 @@ impl Host {
                 let (key, title) = match &tab {
                     OthersTab::Container(id) => {
                         let panel = self
+                            .panel_mgr
                             .panels
                             .iter()
                             .find(|panel| panel.module_id == *id)
@@ -108,7 +109,7 @@ impl Host {
             .collect()
     }
     pub(super) fn presentation_creation_frame(&self) -> Option<Rect> {
-        let state = self.presentation.as_ref()?;
+        let state = self.layout.presentation.as_ref()?;
         if !state.others_visible()
             || state.others_expanded()
             || !state.others_ids().is_empty()
@@ -116,8 +117,9 @@ impl Host {
         {
             return None;
         }
-        let tabs = self.presentation_layout.tabs?;
+        let tabs = self.layout.presentation_layout.tabs?;
         let height = self
+            .layout
             .presentation_layout
             .frames
             .iter()
@@ -125,9 +127,16 @@ impl Host {
             .fold(tabs.max_y(), f32::max);
         Some(Rect::new(
             tabs.min_x(),
-            self.container_window_boundary.unwrap_or(tabs.max_y()),
+            self.layout
+                .container_window_boundary
+                .unwrap_or(tabs.max_y()),
             tabs.size.width,
-            (height - self.container_window_boundary.unwrap_or(tabs.max_y())).max(0.),
+            (height
+                - self
+                    .layout
+                    .container_window_boundary
+                    .unwrap_or(tabs.max_y()))
+            .max(0.),
         ))
     }
     pub(super) fn presentation_switcher_regions(
@@ -163,8 +172,9 @@ impl Host {
         };
         let creation = self.creation_entries();
         let regular = tekes_ui_tokens::Spacing::Regular.value();
-        let structural = self.presentation_tabs.is_none()
+        let structural = self.layout.presentation_tabs.is_none()
             || self
+                .layout
                 .presentation_switcher
                 .items
                 .iter()
@@ -172,9 +182,10 @@ impl Host {
                 .ne(visible
                     .iter()
                     .map(|item| (&item.key, &item.title, item.closable)))
-            || self.presentation_switcher.creation != creation;
+            || self.layout.presentation_switcher.creation != creation;
         let selected = visible.iter().position(|item| item.selected).unwrap_or(0);
         let uncommitted_selection = self
+            .layout
             .presentation_tabs
             .as_ref()
             .and_then(|host| host.content_host().get(STRIP))
@@ -182,22 +193,23 @@ impl Host {
             .is_some_and(|strip| strip.selected() != selected);
         let selection_changed = uncommitted_selection
             || structural
-            || self.presentation_switcher.width != frame.size.width
+            || self.layout.presentation_switcher.width != frame.size.width
             || self
+                .layout
                 .presentation_switcher
                 .items
                 .iter()
                 .map(|item| item.selected)
                 .ne(visible.iter().map(|item| item.selected));
-        if self.presentation_tabs.is_none() {
-            self.presentation_tabs = Some(
+        if self.layout.presentation_tabs.is_none() {
+            self.layout.presentation_tabs = Some(
                 ToolbarHost::new(ComponentId(999_998), OWNER, whole)
                     .map_err(|e| anyhow::anyhow!("switcher toolbar: {e:?}"))?,
             );
         }
         let choices = self.creation_choices();
         let regions = self.presentation_switcher_regions(frame, whole);
-        let host = self.presentation_tabs.as_mut().unwrap();
+        let host = self.layout.presentation_tabs.as_mut().unwrap();
         host.set_focus_wrap(false);
         host.set_regions(OWNER, whole, regions)
             .map_err(|e| anyhow::anyhow!("switcher regions: {e:?}"))?;
@@ -282,13 +294,16 @@ impl Host {
             })
             .map_err(|e| anyhow::anyhow!("switcher reveal: {e:?}"))?;
         }
-        if !structural && self.presentation_switcher.viewport != whole && !creation.is_empty() {
+        if !structural
+            && self.layout.presentation_switcher.viewport != whole
+            && !creation.is_empty()
+        {
             host.update_component::<MenuContent>(GROUP, CREATE, |menu| {
                 menu.set_popup_viewport(Some(whole))
             })
             .map_err(|e| anyhow::anyhow!("creation popup viewport: {e:?}"))?;
         }
-        if self.presentation_switcher.grid != grid {
+        if self.layout.presentation_switcher.grid != grid {
             if !grid.is_empty() {
                 let mut children = Vec::new();
                 let mut bindings = Vec::new();
@@ -355,7 +370,7 @@ impl Host {
                     .map_err(|e| anyhow::anyhow!("creation grid remove: {e:?}"))?;
             }
         }
-        self.presentation_switcher = SwitcherState {
+        self.layout.presentation_switcher = SwitcherState {
             items: visible,
             grid,
             creation,
@@ -412,22 +427,24 @@ mod tests {
     fn paint(host: &mut Host, width: f32) {
         let whole = Rect::new(0., 0., 1200., 700.);
         let layout = host
+            .layout
             .presentation
             .as_ref()
             .unwrap()
             .layout_with_toolbar(whole, 48.);
         let frames = host.apply_presentation_layout(layout).unwrap();
-        for (panel, frame) in host.panels.iter_mut().zip(frames) {
+        for (panel, frame) in host.panel_mgr.panels.iter_mut().zip(frames) {
             panel.bounds = frame;
         }
-        if let Some(frame) = &mut host.presentation_layout.tabs {
+        if let Some(frame) = &mut host.layout.presentation_layout.tabs {
             frame.size.width = width;
         }
         host.paint_presentation(&mut Scene::new(), whole, Theme::LIGHT.into())
             .unwrap();
     }
     fn target(host: &Host, name: &str) -> (ToolbarAccessibilityTarget, Rect) {
-        host.presentation_tabs
+        host.layout
+            .presentation_tabs
             .as_ref()
             .unwrap()
             .semantics()
@@ -474,12 +491,14 @@ mod tests {
         let point = target(host, name).1.center();
         native_pointer(host, point, true);
         let capture = host
+            .layout
             .presentation_tabs
             .as_ref()
             .unwrap()
             .content_host()
             .pointer_capture();
         let mount = host
+            .layout
             .presentation_tabs
             .as_ref()
             .unwrap()
@@ -489,7 +508,8 @@ mod tests {
             .mount_identity();
         paint(host, width);
         assert_eq!(
-            host.presentation_tabs
+            host.layout
+                .presentation_tabs
                 .as_ref()
                 .unwrap()
                 .content_host()
@@ -500,7 +520,8 @@ mod tests {
             "unchanged paint must not remount the original trigger"
         );
         assert_eq!(
-            host.presentation_tabs
+            host.layout
+                .presentation_tabs
                 .as_ref()
                 .unwrap()
                 .content_host()
@@ -514,20 +535,20 @@ mod tests {
     #[test]
     fn expanded_focus_tab_click_preserves_content_identity_and_restore_target() {
         let mut host = fixture();
-        let identities: Vec<_> = host.panels.iter().map(|p| p.instance).collect();
+        let identities: Vec<_> = host.panel_mgr.panels.iter().map(|p| p.instance).collect();
         paint(&mut host, 600.);
         assert!(host.toggle_others_expansion("inspector", false).unwrap());
         paint(&mut host, 600.);
         assert_eq!(
-            host.presentation_switcher.items[0].tab,
+            host.layout.presentation_switcher.items[0].tab,
             OthersTab::Container("focus".into())
         );
-        assert_eq!(host.presentation_switcher.items.len(), 4);
+        assert_eq!(host.layout.presentation_switcher.items.len(), 4);
         click_with_paint(&mut host, "focus", 600.);
-        assert!(host.panels[0].logically_visible);
-        assert_eq!(host.panels[0].bounds.size.width, 1200.);
-        assert!(!host.panels[1].logically_visible);
-        host.panels[0]
+        assert!(host.panel_mgr.panels[0].logically_visible);
+        assert_eq!(host.panel_mgr.panels[0].bounds.size.width, 1200.);
+        assert!(!host.panel_mgr.panels[1].logically_visible);
+        host.panel_mgr.panels[0]
             .local
             .as_mut()
             .unwrap()
@@ -542,9 +563,10 @@ mod tests {
                     "Original 0"
                 );
             });
-        assert!(!host.presentation_switcher.items[0].closable);
+        assert!(!host.layout.presentation_switcher.items[0].closable);
         assert!(
-            host.presentation_tabs
+            host.layout
+                .presentation_tabs
                 .as_ref()
                 .unwrap()
                 .semantics()
@@ -555,11 +577,11 @@ mod tests {
         assert!(host.close_container("focus").is_err());
         click_with_paint(&mut host, "Close second", 600.);
         assert_eq!(
-            host.presentation.as_ref().unwrap().selected_tab(),
+            host.layout.presentation.as_ref().unwrap().selected_tab(),
             Some(&OthersTab::Container("focus".into()))
         );
         click_with_paint(&mut host, "first", 600.);
-        assert!(host.panels[2].logically_visible);
+        assert!(host.panel_mgr.panels[2].logically_visible);
         click_with_paint(&mut host, "focus", 600.);
         assert!(
             !host.toggle_others_expansion("first", true).unwrap(),
@@ -567,17 +589,25 @@ mod tests {
         );
         assert!(host.toggle_others_expansion("focus", true).unwrap());
         paint(&mut host, 600.);
-        assert!(host.panels[0].logically_visible && host.panels[2].logically_visible);
+        assert!(
+            host.panel_mgr.panels[0].logically_visible
+                && host.panel_mgr.panels[2].logically_visible
+        );
         assert_eq!(
-            host.presentation.as_ref().unwrap().selected_tab(),
+            host.layout.presentation.as_ref().unwrap().selected_tab(),
             Some(&OthersTab::Container("first".into()))
         );
         assert_eq!(
-            host.panels.iter().map(|p| p.instance).collect::<Vec<_>>(),
+            host.panel_mgr
+                .panels
+                .iter()
+                .map(|p| p.instance)
+                .collect::<Vec<_>>(),
             identities
         );
         assert!(
-            host.presentation_switcher
+            host.layout
+                .presentation_switcher
                 .items
                 .iter()
                 .all(|item| item.tab != OthersTab::Container("focus".into()))
@@ -589,7 +619,8 @@ mod tests {
         let mut host = fixture();
         paint(&mut host, 180.);
         let scroll_offset = |host: &Host| {
-            host.presentation_tabs
+            host.layout
+                .presentation_tabs
                 .as_ref()
                 .unwrap()
                 .content_host()
@@ -603,14 +634,16 @@ mod tests {
         };
         let initial = scroll_offset(&host);
         let original_title = host
+            .layout
             .presentation_tabs
             .as_ref()
             .unwrap()
             .content_host()
-            .get(host.presentation_switcher.items[0].key)
+            .get(host.layout.presentation_switcher.items[0].key)
             .unwrap()
             .frame();
         let point = host
+            .layout
             .presentation_tabs
             .as_ref()
             .unwrap()
@@ -633,7 +666,13 @@ mod tests {
                 },
                 modifiers: Default::default(),
             });
-            assert!(host.presentation_layout.tabs.unwrap().contains(point));
+            assert!(
+                host.layout
+                    .presentation_layout
+                    .tabs
+                    .unwrap()
+                    .contains(point)
+            );
             let input = super::super::window_toolbar_mount::native_toolbar_event(&event).unwrap();
             assert!(host.presentation_tab_input(&input).unwrap());
             let after_input = scroll_offset(&host);
@@ -644,11 +683,12 @@ mod tests {
                 "draw must not reveal the selected tab over a user wheel"
             );
             let title = host
+                .layout
                 .presentation_tabs
                 .as_ref()
                 .unwrap()
                 .content_host()
-                .get(host.presentation_switcher.items[0].key)
+                .get(host.layout.presentation_switcher.items[0].key)
                 .unwrap()
                 .frame();
             if delta < 0. {
@@ -670,6 +710,7 @@ mod tests {
         paint(&mut host, 180.);
         let create = target(&host, "Create Container").1;
         let viewport = host
+            .layout
             .presentation_tabs
             .as_ref()
             .unwrap()
@@ -680,7 +721,8 @@ mod tests {
         assert!(viewport.max_x() <= create.min_x());
         assert!(create.max_x() <= host.presentation_switcher_frame().unwrap().max_x());
         let offset = |host: &Host| {
-            host.presentation_tabs
+            host.layout
+                .presentation_tabs
                 .as_ref()
                 .unwrap()
                 .content_host()
@@ -693,8 +735,9 @@ mod tests {
                 .x
         };
         let before = offset(&host);
-        let title_id = host.presentation_switcher.items[0].key;
+        let title_id = host.layout.presentation_switcher.items[0].key;
         let before_title = host
+            .layout
             .presentation_tabs
             .as_ref()
             .unwrap()
@@ -723,6 +766,7 @@ mod tests {
         paint(&mut host, 180.);
         assert_eq!(offset(&host), before + 7.);
         let after_title = host
+            .layout
             .presentation_tabs
             .as_ref()
             .unwrap()
@@ -749,7 +793,8 @@ mod tests {
         // A press spanning paint retains the fixed original menu owner.
         click_with_paint(&mut host, "Create Container", 180.);
         assert!(
-            host.presentation_tabs
+            host.layout
+                .presentation_tabs
                 .as_ref()
                 .unwrap()
                 .content_host()
@@ -760,13 +805,15 @@ mod tests {
     #[test]
     fn t65_visible_tab_press_survives_paint_when_selected_tab_is_scrolled_offscreen() {
         let mut host = fixture();
-        host.presentation
+        host.layout
+            .presentation
             .as_mut()
             .unwrap()
             .select_tab(OthersTab::Container("second".into()))
             .unwrap();
         paint(&mut host, 180.);
         let node = host
+            .layout
             .presentation_tabs
             .as_ref()
             .unwrap()
@@ -789,8 +836,9 @@ mod tests {
             .unwrap()
         );
         paint(&mut host, 180.);
-        let selected_key = host.presentation_switcher.items.last().unwrap().key;
+        let selected_key = host.layout.presentation_switcher.items.last().unwrap().key;
         let selected_frame = host
+            .layout
             .presentation_tabs
             .as_ref()
             .unwrap()
@@ -805,6 +853,7 @@ mod tests {
         let point = target(&host, "inspector").1.center();
         native_pointer(&mut host, point, true);
         let capture = host
+            .layout
             .presentation_tabs
             .as_ref()
             .unwrap()
@@ -814,12 +863,13 @@ mod tests {
         assert_eq!(capture.0, STRIP);
         paint(&mut host, 180.);
         assert_eq!(
-            host.presentation.as_ref().unwrap().selected_tab(),
+            host.layout.presentation.as_ref().unwrap().selected_tab(),
             Some(&OthersTab::Container("second".into())),
             "down must not commit selection"
         );
         assert_eq!(
-            host.presentation_tabs
+            host.layout
+                .presentation_tabs
                 .as_ref()
                 .unwrap()
                 .content_host()
@@ -830,24 +880,41 @@ mod tests {
         native_pointer(&mut host, point, false);
         paint(&mut host, 180.);
         assert_eq!(
-            host.presentation.as_ref().unwrap().selected_tab(),
+            host.layout.presentation.as_ref().unwrap().selected_tab(),
             Some(&OthersTab::Container("inspector".into()))
         );
     }
     #[test]
     fn t64_each_instance_has_text_tab_and_close_does_not_select_sibling() {
         let mut host = fixture();
-        let original: Vec<_> = host.panels.iter().map(|panel| panel.instance).collect();
+        let original: Vec<_> = host
+            .panel_mgr
+            .panels
+            .iter()
+            .map(|panel| panel.instance)
+            .collect();
         paint(&mut host, 600.);
-        assert_eq!(host.presentation_switcher.items.len(), 3);
-        let before = host.presentation.as_ref().unwrap().selected_tab().cloned();
+        assert_eq!(host.layout.presentation_switcher.items.len(), 3);
+        let before = host
+            .layout
+            .presentation
+            .as_ref()
+            .unwrap()
+            .selected_tab()
+            .cloned();
         click_with_paint(&mut host, "Close second", 600.);
         assert_eq!(
-            host.presentation.as_ref().unwrap().selected_tab().cloned(),
+            host.layout
+                .presentation
+                .as_ref()
+                .unwrap()
+                .selected_tab()
+                .cloned(),
             before
         );
         assert!(
             !host
+                .layout
                 .presentation
                 .as_ref()
                 .unwrap()
@@ -855,7 +922,8 @@ mod tests {
                 .contains(&"second".into())
         );
         assert_eq!(
-            host.panels
+            host.panel_mgr
+                .panels
                 .iter()
                 .map(|panel| panel.instance)
                 .collect::<Vec<_>>(),
@@ -863,7 +931,7 @@ mod tests {
         );
         click_with_paint(&mut host, "first", 600.);
         assert_eq!(
-            host.presentation.as_ref().unwrap().selected_tab(),
+            host.layout.presentation.as_ref().unwrap().selected_tab(),
             Some(&OthersTab::Container("first".into()))
         );
     }
@@ -872,13 +940,14 @@ mod tests {
         let mut host = fixture();
         paint(&mut host, 600.);
         let old = target(&host, "Close first").0;
-        host.presentation
+        host.layout
+            .presentation
             .as_mut()
             .unwrap()
             .select_tab(OthersTab::Container("second".into()))
             .unwrap();
         paint(&mut host, 120.);
-        let header = host.presentation_tabs.as_ref().unwrap();
+        let header = host.layout.presentation_tabs.as_ref().unwrap();
         let scroll = header
             .content_host()
             .get(SCROLL)
@@ -892,6 +961,7 @@ mod tests {
         paint(&mut host, 120.);
         assert!(
             !host
+                .layout
                 .presentation_tabs
                 .as_mut()
                 .unwrap()
@@ -899,7 +969,8 @@ mod tests {
                 .consumed
         );
         assert!(
-            host.presentation
+            host.layout
+                .presentation
                 .as_ref()
                 .unwrap()
                 .others_ids()
@@ -919,7 +990,7 @@ mod tests {
         let mut host = Host::from_containers(members, false, None, Some(options()));
         host.mount_columns();
         paint(&mut host, 600.);
-        host.panels[0]
+        host.panel_mgr.panels[0]
             .local
             .as_mut()
             .unwrap()
@@ -943,10 +1014,17 @@ mod tests {
                 });
             });
         assert!(host.composition_in_progress());
-        let before = host.presentation.as_ref().unwrap().selected_tab().cloned();
+        let before = host
+            .layout
+            .presentation
+            .as_ref()
+            .unwrap()
+            .selected_tab()
+            .cloned();
         let other = target(&host, "first").0;
         assert!(
-            host.presentation_tabs
+            host.layout
+                .presentation_tabs
                 .as_mut()
                 .unwrap()
                 .accessibility_action(other, AccessibilityAction::Press)
@@ -955,10 +1033,16 @@ mod tests {
         host.apply_tab_selection().unwrap();
         paint(&mut host, 600.);
         assert_eq!(
-            host.presentation.as_ref().unwrap().selected_tab().cloned(),
+            host.layout
+                .presentation
+                .as_ref()
+                .unwrap()
+                .selected_tab()
+                .cloned(),
             before
         );
         let strip = host
+            .layout
             .presentation_tabs
             .as_ref()
             .unwrap()
@@ -973,16 +1057,21 @@ mod tests {
     #[test]
     fn t64_title_lanes_are_natural_and_bounded_without_more_menu() {
         let mut host = fixture();
-        host.panels[1].options.title = Some("I".into());
-        host.panels[2].options.title =
+        host.panel_mgr.panels[1].options.title = Some("I".into());
+        host.panel_mgr.panels[2].options.title =
             Some("A deliberately very long title repeated beyond the title maximum".into());
         paint(&mut host, 600.);
         let short = target(&host, "I").1;
-        let long = target(&host, host.panels[2].options.title.as_deref().unwrap()).1;
+        let long = target(
+            &host,
+            host.panel_mgr.panels[2].options.title.as_deref().unwrap(),
+        )
+        .1;
         assert!(long.size.width > short.size.width);
         assert!(long.size.width < tekes_ui_controls::composition::TAB_TITLE_MAX_WIDTH + 80.);
         assert!(
-            host.presentation_tabs
+            host.layout
+                .presentation_tabs
                 .as_ref()
                 .unwrap()
                 .semantics()
@@ -1003,7 +1092,8 @@ mod tests {
             .collect();
         let mut host = Host::from_containers(members, false, None, Some(options()));
         host.mount_columns();
-        host.presentation
+        host.layout
+            .presentation
             .as_mut()
             .unwrap()
             .select_tab(OthersTab::List)
@@ -1022,7 +1112,8 @@ mod tests {
         )
         .unwrap();
         assert!(
-            host.presentation_tabs
+            host.layout
+                .presentation_tabs
                 .as_ref()
                 .unwrap()
                 .semantics()
@@ -1030,8 +1121,8 @@ mod tests {
                 .flat_map(|node| &node.parts)
                 .all(|(_, part)| !part.semantics.name.starts_with("Close "))
         );
-        for index in 1..host.panels.len() {
-            let panel = &mut host.panels[index];
+        for index in 1..host.panel_mgr.panels.len() {
+            let panel = &mut host.panel_mgr.panels[index];
             super::super::window_presentation::render_test_tabs(
                 &mut panel.mounted_toolbar.host,
                 &mut Scene::new(),

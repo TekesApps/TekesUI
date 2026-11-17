@@ -1,15 +1,19 @@
-//! Nonblocking window adapter. The module alone owns history and files.
+//! Nonblocking in-process window adapter. The bounded navigation state and store run on a dedicated coordinator thread without spawning a child OS process.
 use crate::{navigation::*, toolbar_source::ComponentSource};
 use anyhow::{Context, Result, bail, ensure};
 use serde_json::json;
 use std::{
     collections::{HashMap, VecDeque},
+    sync::{
+        Arc, Mutex,
+        mpsc::{self, Sender},
+    },
     time::{SystemTime, UNIX_EPOCH},
 };
-use tekes_ui_module_runtime::{
-    ProcessComponent, ProcessComponentOptions, ProcessStatus, component::*,
-};
+use tekes_ui_module_runtime::{ProcessStatus, component::*};
 use tekes_ui_platform_macos::WindowWake;
+
+const MAX_TRACE_BYTES: u64 = 1024 * 1024;
 
 pub struct NavigationOptions {
     pub directory: std::path::PathBuf,
@@ -33,8 +37,17 @@ impl Publication {
         }
     }
 }
+struct SharedNavigationState {
+    events: VecDeque<Output>,
+    toolbar_source: Option<ComponentSource>,
+    status: ProcessStatus,
+}
 pub struct WindowNavigation {
-    pub process: ProcessComponent,
+    session: Session,
+    request_tx: Option<Sender<(u64, RequestBody)>>,
+    worker: Option<std::thread::JoinHandle<()>>,
+    shared: Arc<Mutex<SharedNavigationState>>,
+    next_request: u64,
     pub host: NavigationHost,
     pub busy: bool,
     pub publication: Option<Publication>,
@@ -46,39 +59,110 @@ pub struct WindowNavigation {
     seed: VecDeque<Entry>,
     transaction: Option<Transaction>,
     pub error: Option<String>,
-    trace_tx: std::sync::mpsc::SyncSender<String>,
+    trace_tx: Option<std::sync::mpsc::SyncSender<String>>,
+    trace_worker: Option<std::thread::JoinHandle<()>>,
+}
+impl Drop for WindowNavigation {
+    fn drop(&mut self) {
+        self.request_tx.take();
+        self.trace_tx.take();
+        if let Some(handle) = self.worker.take() {
+            let _ = handle.join();
+        }
+        if let Some(handle) = self.trace_worker.take() {
+            let _ = handle.join();
+        }
+    }
 }
 impl WindowNavigation {
     pub fn new(options: NavigationOptions, wake: WindowWake, window: u64) -> Result<Self> {
         let epoch = SystemTime::now().duration_since(UNIX_EPOCH)?.as_nanos() as u64;
-        let process = ProcessComponent::spawn_in_window(
-            ProcessComponentOptions::new(MODULE_ID, epoch),
-            window,
-            move || {
-                wake.wake();
-            },
-        )?;
-        let host = NavigationHost::new(process.session().clone());
+        let session = Session {
+            module: MODULE_ID.into(),
+            instance: 1,
+            host_epoch: epoch,
+        };
+        let status = ProcessStatus::Ready {
+            pid: std::process::id(),
+            capabilities: Capabilities::HEADLESS,
+        };
+        let shared = Arc::new(Mutex::new(SharedNavigationState {
+            events: VecDeque::new(),
+            toolbar_source: None,
+            status,
+        }));
+        let (request_tx, request_rx) = mpsc::channel::<(u64, RequestBody)>();
+        let actor_shared = shared.clone();
+        let actor_session = session.clone();
+        let actor_wake = wake.clone();
+        let worker = std::thread::Builder::new()
+            .name("apphost-navigation".into())
+            .spawn(move || {
+                let mut module = NavigationModule::new_in_process();
+                while let Ok((id, request)) = request_rx.recv() {
+                    let (reply, toolbar) = module.handle_in_process(request, &actor_session);
+                    let mut guard = actor_shared.lock().unwrap();
+                    if let Some((revision, win, items)) = toolbar {
+                        guard.toolbar_source = Some(ComponentSource {
+                            session: actor_session.clone(),
+                            registration: revision,
+                            window: win,
+                        });
+                        guard
+                            .events
+                            .push_back(Output::Event(ComponentEvent::Toolbar {
+                                revision,
+                                scope: ToolbarScope::Window { window: win },
+                                items,
+                            }));
+                    }
+                    let result = reply
+                        .and_then(|value| Ok(serde_json::to_value(value)?))
+                        .map_err(|error| error.to_string());
+                    guard.events.push_back(Output::Response {
+                        request: id,
+                        result,
+                    });
+                    drop(guard);
+                    actor_wake.wake();
+                }
+                actor_shared.lock().unwrap().status = ProcessStatus::Closed;
+            })?;
+        wake.wake();
+        let host = NavigationHost::new(session.clone());
         let (trace_tx, trace_rx) = std::sync::mpsc::sync_channel::<String>(256);
         let trace_path = options.directory.join("window-events.jsonl");
-        std::thread::spawn(move || {
-            use std::io::Write;
-            if let Some(parent) = trace_path.parent() {
-                let _ = std::fs::create_dir_all(parent);
-            }
-            if let Ok(mut file) = std::fs::OpenOptions::new()
-                .create(true)
-                .append(true)
-                .open(trace_path)
-            {
-                while let Ok(line) = trace_rx.recv() {
-                    let _ = writeln!(file, "{line}");
-                    let _ = file.flush();
+        let trace_worker = std::thread::Builder::new()
+            .name("apphost-nav-trace".into())
+            .spawn(move || {
+                if let Some(parent) = trace_path.parent() {
+                    let _ = std::fs::create_dir_all(parent);
                 }
-            }
-        });
+                let mut file = std::fs::OpenOptions::new()
+                    .create(true)
+                    .append(true)
+                    .open(&trace_path)
+                    .ok();
+                let mut bytes_written = file
+                    .as_ref()
+                    .and_then(|f| f.metadata().ok())
+                    .map_or(0, |m| m.len());
+                while let Ok(line) = trace_rx.recv() {
+                    append_bounded_trace_line(
+                        &trace_path,
+                        &mut file,
+                        &mut bytes_written,
+                        &line,
+                        MAX_TRACE_BYTES,
+                    );
+                }
+            })?;
         Ok(Self {
-            process,
+            session,
+            request_tx: Some(request_tx),
+            worker: Some(worker),
+            shared,
+            next_request: 0,
             host,
             window,
             busy: true,
@@ -90,15 +174,37 @@ impl WindowNavigation {
             seed: VecDeque::new(),
             transaction: None,
             error: None,
-            trace_tx,
+            trace_tx: Some(trace_tx),
+            trace_worker: Some(trace_worker),
         })
     }
+    pub fn status(&self) -> ProcessStatus {
+        self.shared.lock().unwrap().status.clone()
+    }
+    pub(crate) fn toolbar_source(&self) -> Option<ComponentSource> {
+        self.shared.lock().unwrap().toolbar_source.clone()
+    }
     pub fn trace(&self, value: serde_json::Value) {
-        let _ = self.trace_tx.try_send(value.to_string());
+        if let Some(tx) = &self.trace_tx {
+            let _ = tx.try_send(value.to_string());
+        }
+    }
+    fn enqueue_request(&mut self, body: RequestBody) -> Result<u64> {
+        self.next_request = self
+            .next_request
+            .checked_add(1)
+            .context("navigation request ID exhausted")?;
+        let id = self.next_request;
+        self.request_tx
+            .as_ref()
+            .context("navigation coordinator stopped")?
+            .send((id, body))
+            .context("navigation coordinator stopped")?;
+        Ok(id)
     }
     pub fn send(&mut self, command: Command) -> Result<()> {
         self.trace(json!({"event":"send","command":command}));
-        let id = self.process.request(RequestBody::Message {
+        let id = self.enqueue_request(RequestBody::Message {
             topic: "navigation".into(),
             payload: serde_json::to_value(&command)?,
         })?;
@@ -110,7 +216,7 @@ impl WindowNavigation {
         if self.error.is_some() {
             return Ok(());
         }
-        if !self.opened && matches!(self.process.status(), ProcessStatus::Ready { .. }) {
+        if !self.opened && matches!(self.status(), ProcessStatus::Ready { .. }) {
             self.opened = true;
             self.send(Command::Open {
                 directory: self.options.directory.clone(),
@@ -118,8 +224,9 @@ impl WindowNavigation {
                 window: self.window,
             })?;
         }
-        for p in self.process.drain_events() {
-            match p.output {
+        let events: Vec<_> = self.shared.lock().unwrap().events.drain(..).collect();
+        for output in events {
+            match output {
                 Output::Event(ComponentEvent::Toolbar {
                     scope: ToolbarScope::Window { window },
                     items,
@@ -136,7 +243,7 @@ impl WindowNavigation {
                 _ => {}
             }
         }
-        if let ProcessStatus::Failed { message } = self.process.status() {
+        if let ProcessStatus::Failed { message } = self.status() {
             bail!("navigation worker: {message}");
         }
         if !self.busy
@@ -219,7 +326,7 @@ impl WindowNavigation {
         let publication = self.publication.take().context("no pending publication")?;
         let context = format!(
             "window:{}:{}",
-            self.process.session().host_epoch,
+            self.session.host_epoch,
             document_label(publication.target())?
         );
         match publication {
@@ -239,11 +346,46 @@ impl WindowNavigation {
         if self.busy || !self.host.input_open || self.error.is_some() {
             return Ok(());
         }
-        let id = source.invoke(&self.process, command)?;
+        ensure!(source.session == self.session, "stale navigation session");
+        let id = self.enqueue_request(RequestBody::Invoke {
+            command,
+            registration: source.registration,
+            window: source.window,
+        })?;
         self.pending.insert(id, Command::Inspect);
         self.busy = true;
         self.trace(json!({"event":"toolbar-invocation","command":command,"session":source.session,"registration":source.registration,"window":source.window}));
         Ok(())
+    }
+}
+fn append_bounded_trace_line(
+    path: &std::path::Path,
+    file: &mut Option<std::fs::File>,
+    bytes_written: &mut u64,
+    line: &str,
+    max_bytes: u64,
+) {
+    use std::io::Write;
+    let line_len = line.len() as u64 + 1;
+    if *bytes_written > 0 && bytes_written.saturating_add(line_len) > max_bytes {
+        if let Some(mut old) = file.take() {
+            let _ = old.flush();
+        }
+        let rotated = std::path::PathBuf::from(format!("{}.1", path.display()));
+        let _ = std::fs::rename(path, rotated);
+        *file = std::fs::OpenOptions::new()
+            .create(true)
+            .write(true)
+            .truncate(true)
+            .open(path)
+            .ok();
+        *bytes_written = 0;
+    }
+    if let Some(active) = file.as_mut()
+        && writeln!(active, "{line}").is_ok()
+    {
+        let _ = active.flush();
+        *bytes_written = bytes_written.saturating_add(line_len);
     }
 }
 fn document_label(target: Option<&Entry>) -> Result<String> {
@@ -272,5 +414,40 @@ mod tests {
             params: json!({"document_id":"a"}),
         };
         assert_eq!(document_label(Some(&entry)).unwrap(), "Document A");
+    }
+    #[test]
+    fn trace_log_rotates_past_byte_cap() {
+        let dir = std::env::temp_dir().join(format!(
+            "tekes-nav-trace-{}-{}",
+            std::process::id(),
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("window-events.jsonl");
+        let mut file = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&path)
+            .ok();
+        let mut bytes_written = 0;
+        for i in 0..8 {
+            append_bounded_trace_line(
+                &path,
+                &mut file,
+                &mut bytes_written,
+                &format!("entry-{i:02}"),
+                24,
+            );
+        }
+        drop(file);
+        let active = std::fs::read_to_string(&path).unwrap();
+        let rotated = std::fs::read_to_string(dir.join("window-events.jsonl.1")).unwrap();
+        assert!(active.len() <= 24);
+        assert!(rotated.len() <= 24);
+        assert!(active.contains("entry-07"));
+        std::fs::remove_dir_all(dir).unwrap();
     }
 }

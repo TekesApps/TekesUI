@@ -28,3 +28,15 @@ pub(crate) fn import_owned(
     let surface = surface.ok_or_else(|| anyhow!("lookup received IOSurface right failed"))?;
     shared_surface_macos::import(context, size, &surface, registry)
 }
+
+pub(crate) fn import_owned_with_guard(
+    context: &GpuContext,
+    size: (u32, u32),
+    right: crate::transport::OwnedSendRight,
+    registry: u64,
+) -> Result<(wgpu::Texture, shared_surface_macos::SharedSurfaceUseGuard)> {
+    let surface = IOSurfaceRef::lookup_from_mach_port(right.name());
+    drop(right);
+    let surface = surface.ok_or_else(|| anyhow!("lookup received IOSurface right failed"))?;
+    shared_surface_macos::import_with_guard(context, size, surface, registry)
+}

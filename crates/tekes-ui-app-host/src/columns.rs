@@ -4,8 +4,10 @@ use anyhow::Result;
 use tekes_ui_controls::{
     ButtonTextRenderer, ControlMotionContext,
     composition::{
-        Content, ContentActionRecord, ContentEvent, ContentHost, ContentResponse, PointerEvent,
+        Component, ComponentId, Content, ContentActionRecord, ContentEvent, ContentHost,
+        ContentResponse, Lifecycle, PointerEvent, StackContent,
     },
+    extended::{Axis, Stack},
 };
 use tekes_ui_scene::{Rect, Scene};
 use tekes_ui_tokens::Palette;
@@ -46,6 +48,10 @@ pub trait ContainerContent {
     /// Called only while its input gate is open; publications must not push again.
     fn take_navigation_request(&mut self) -> Option<crate::navigation::Entry> {
         None
+    }
+    /// Start any lazy process backing owned by this container when first shown.
+    fn start_process(&mut self, _wake: tekes_ui_platform_macos::WindowWake) -> Result<()> {
+        Ok(())
     }
     /// Consume an explicitly activated request once, while ordinary window input
     /// is available. The current native appearance is supplied for new windows.
@@ -227,6 +233,12 @@ impl LocalContainer {
             self.active = active;
             self.with_host(&mut |_| {});
         }
+    }
+    pub(crate) fn start_process(
+        &mut self,
+        wake: tekes_ui_platform_macos::WindowWake,
+    ) -> Result<()> {
+        self.source.start_process(wake)
     }
     pub(crate) fn prepare_render(&mut self) {
         self.source.prepare_for_render();
@@ -411,9 +423,17 @@ pub struct RetainedButton {
     pub command: u64,
     pub target: String,
 }
+#[derive(Clone)]
+pub(crate) enum ProcessBacking {
+    V1(crate::ModuleDefinition),
+    V2 {
+        definition: crate::ComponentDefinition,
+        component_options: Option<crate::ProcessComponentOptions>,
+    },
+}
 /// The factory remains compiled into the consumer; no runtime module discovery.
 pub struct ProcessContainer {
-    pub(crate) definition: crate::ModuleDefinition,
+    pub(crate) backing: ProcessBacking,
     pub(crate) instance_id: String,
     pub(crate) options: ContainerOptions,
 }
@@ -426,9 +446,31 @@ impl ProcessContainer {
     pub fn new(definition: crate::ModuleDefinition) -> Self {
         Self {
             instance_id: definition.id.into(),
-            definition,
+            backing: ProcessBacking::V1(definition),
             options: ContainerOptions::default(),
         }
+    }
+    /// Converge a V2 `ProcessComponent` container (`tekes_ui_module_runtime::ProcessContainer`)
+    /// into AppWindow assembly alongside existing V1 `ModuleDefinition` containers.
+    pub fn from_component(definition: crate::ComponentDefinition) -> Self {
+        Self {
+            instance_id: definition.id.into(),
+            backing: ProcessBacking::V2 {
+                definition,
+                component_options: None,
+            },
+            options: ContainerOptions::default(),
+        }
+    }
+    /// Supply explicit `ProcessComponentOptions` when backed by a V2 `ComponentDefinition`.
+    pub fn component_options(mut self, options: crate::ProcessComponentOptions) -> Self {
+        if let ProcessBacking::V2 {
+            component_options, ..
+        } = &mut self.backing
+        {
+            *component_options = Some(options);
+        }
+        self
     }
     pub fn options(mut self, options: ContainerOptions) -> Self {
         self.options = options;
@@ -474,6 +516,150 @@ impl ProcessContainer {
             target: target.into(),
         });
         self
+    }
+}
+
+struct PendingV2Mount {
+    module_id: String,
+    instance: u64,
+    window_id: u64,
+    custom_options: Option<crate::ProcessComponentOptions>,
+}
+
+/// Adapts V2 `tekes_ui_module_runtime::ProcessContainer` onto `LocalContainer`'s
+/// `ContainerContent` lifecycle so V2 remote components render, resize, handle
+/// input, and reap uniformly inside `AppWindow`.
+pub(crate) struct V2ProcessContainerContent {
+    host: ContentHost,
+    pending: Option<PendingV2Mount>,
+    mounted: bool,
+    last_active: bool,
+    last_scale: Option<f32>,
+}
+
+impl V2ProcessContainerContent {
+    pub(crate) fn new(
+        module_id: &str,
+        instance: u64,
+        window_id: u64,
+        custom_options: Option<crate::ProcessComponentOptions>,
+    ) -> Self {
+        // Defer spawning the OS worker until `Panel::start` runs on visibility.
+        let placeholder = Content::new(
+            ComponentId(1),
+            StackContent {
+                model: Stack {
+                    axis: Axis::Vertical,
+                    gap: 0.,
+                },
+                children: Vec::new(),
+                flexible_child: None,
+            },
+        );
+        let mut host = ContentHost::new(placeholder).expect("V2 placeholder host");
+        host.set_action_events(true);
+        Self {
+            host,
+            pending: Some(PendingV2Mount {
+                module_id: module_id.to_owned(),
+                instance,
+                window_id,
+                custom_options,
+            }),
+            mounted: false,
+            last_active: true,
+            last_scale: None,
+        }
+    }
+}
+
+impl Drop for V2ProcessContainerContent {
+    fn drop(&mut self) {
+        if self.mounted
+            && let Some(container) = self
+                .host
+                .get_mut(ComponentId(1))
+                .and_then(|node| node.component_mut::<tekes_ui_module_runtime::ProcessContainer>())
+        {
+            Component::lifecycle(container, Lifecycle::Unmounted);
+        }
+    }
+}
+
+impl ContainerContent for V2ProcessContainerContent {
+    fn with_host(&mut self, visit: &mut dyn FnMut(&mut ContentHost)) {
+        visit(&mut self.host);
+    }
+
+    fn prepare_for_render(&mut self) {
+        if !self.mounted {
+            return;
+        }
+        let active = self.host.is_window_active();
+        if self.last_active != active
+            && let Some(container) = self
+                .host
+                .get_mut(ComponentId(1))
+                .and_then(|node| node.component_mut::<tekes_ui_module_runtime::ProcessContainer>())
+        {
+            self.last_active = active;
+            container.set_window_active(active);
+        }
+    }
+
+    fn prepare_resources(&mut self, context: &mut ContainerRenderContext<'_>) -> Result<()> {
+        if !self.mounted {
+            return Ok(());
+        }
+        let scale = context.scale.clamp(0.5, 4.);
+        let active = self.host.is_window_active();
+        if let Some(container) = self
+            .host
+            .get_mut(ComponentId(1))
+            .and_then(|node| node.component_mut::<tekes_ui_module_runtime::ProcessContainer>())
+        {
+            if self.last_active != active {
+                self.last_active = active;
+                container.set_window_active(active);
+            }
+            if self.last_scale != Some(scale) {
+                self.last_scale = Some(scale);
+                container.set_scale(scale)?;
+            }
+            container.prepare(context.renderer)?;
+        }
+        Ok(())
+    }
+
+    fn start_process(&mut self, wake: tekes_ui_platform_macos::WindowWake) -> Result<()> {
+        let Some(pending) = self.pending.take() else {
+            return Ok(());
+        };
+        let active = self.host.is_window_active();
+        let mut options = pending.custom_options.unwrap_or_else(|| {
+            crate::ProcessComponentOptions::new(pending.module_id, pending.instance.max(1))
+        });
+        options.required.services = true;
+        options.required.toolbar = true;
+        options.required.view = true;
+        if options.view.is_none() {
+            options = options.with_view(
+                pending.window_id.max(1),
+                pending.instance.max(1),
+                tekes_ui_module_runtime::component::ViewCapabilities::default(),
+            );
+        }
+        let container = tekes_ui_module_runtime::ProcessContainer::new_view(options, move || {
+            wake.wake();
+        })?;
+        let mut host = ContentHost::new(Content::new(ComponentId(1), container))
+            .map_err(|e| anyhow::anyhow!("V2 ProcessContainer mount: {e:?}"))?;
+        host.set_action_events(true);
+        host.set_window_active(active);
+        self.host = host;
+        self.mounted = true;
+        self.last_active = active;
+        Ok(())
     }
 }
 /// A stable window container backed by local Content or a fixed process factory.

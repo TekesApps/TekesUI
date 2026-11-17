@@ -105,6 +105,39 @@ impl VerifiedFrameOutput {
     }
 }
 
+/// A GPU submission handle from a successful finite parent-boundary proof
+/// rendered directly into a caller-owned BGRA8 texture without CPU readback.
+pub struct VerifiedTextureSubmission {
+    submission: wgpu::SubmissionIndex,
+    receipt: BoundaryProofReceipt,
+}
+
+impl std::fmt::Debug for VerifiedTextureSubmission {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("VerifiedTextureSubmission")
+            .field("dimensions_px", &self.receipt.size_px)
+            .field("frame_sequence", &self.receipt.frame_sequence)
+            .field("states_visited", &self.receipt.states_visited)
+            .field("containment_checks", &self.receipt.containment_checks)
+            .field("axis_witness_attempts", &self.receipt.axis_witness_attempts)
+            .field(
+                "class_b_background_primitive",
+                &self.receipt.class_b_background_primitive,
+            )
+            .finish()
+    }
+}
+
+impl VerifiedTextureSubmission {
+    pub fn dimensions_px(&self) -> (u32, u32) {
+        self.receipt.size_px
+    }
+
+    pub fn into_submission_index(self) -> wgpu::SubmissionIndex {
+        self.submission
+    }
+}
+
 // Diagnostic A/B only. Normal applications retain the measured FIFO default.
 // wgpu Metal uses desired latency + 1 drawables; never disable display sync.
 fn frame_latency() -> u32 {
@@ -786,23 +819,7 @@ impl Renderer {
     ///
     /// `size_px` 是像素尺寸，`scale` 是逻辑点到像素的比例：scene 里 10pt 的矩形在
     /// scale 2 下占 20 个像素。用的管线和着色器与 [`render`](Renderer::render) 完全相同。
-    /// Render into a caller-owned BGRA8 target on this renderer's device,
-    /// without CPU readback. Caller owns external synchronization and lifetime.
-    pub fn render_to_texture(
-        &mut self,
-        scene: &Scene,
-        atlas: &mut GlyphAtlas,
-        texture: &wgpu::Texture,
-        scale: f32,
-        clear: Rgba,
-    ) -> Result<wgpu::SubmissionIndex, RenderError> {
-        if let Some(error) = scene.composition_error() {
-            return Err(RenderError::SceneComposition(error));
-        }
-        self.validate_controlled_images(scene)?;
-        self.collect_retired_images();
-        let size = (texture.width(), texture.height());
-        check_size(size, scale)?;
+    fn validate_external_target(&self, texture: &wgpu::Texture) -> Result<(), RenderError> {
         if texture.format() != COLOR_FORMAT
             || texture.sample_count() != 1
             || texture.dimension() != wgpu::TextureDimension::D2
@@ -822,12 +839,123 @@ impl Renderer {
                 "external target timing is not supported",
             ));
         }
-        self.gpu
-            .prepare_frame(&self.device, scene, atlas, size, scale, clear)?;
+        Ok(())
+    }
+
+    fn submit_to_texture(
+        &mut self,
+        scene: &Scene,
+        atlas: &mut GlyphAtlas,
+        texture: &wgpu::Texture,
+        size: (u32, u32),
+        scale: f32,
+        clear: Rgba,
+    ) -> wgpu::SubmissionIndex {
         let view = texture.create_view(&Default::default());
         let mut encoder = self.device.create_command_encoder(&Default::default());
         self.encode_scene(&mut encoder, &view, size, scale, scene, atlas, clear);
-        Ok(self.queue.submit([encoder.finish()]))
+        self.queue.submit([encoder.finish()])
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn prepare_parent_boundary_proof(
+        &mut self,
+        scene: &Scene,
+        atlas: &mut GlyphAtlas,
+        size_px: (u32, u32),
+        scale: f32,
+        clear: Rgba,
+        parent_shapes: std::sync::Arc<[ClipShape]>,
+        proof_limits: BoundaryProofLimits,
+        output_header_bytes: u64,
+    ) -> Result<(u64, BoundaryProofReceipt), RenderError> {
+        if let Some(error) = scene.composition_error() {
+            return Err(RenderError::SceneComposition(error));
+        }
+        self.validate_controlled_images(scene)?;
+        if !(1..=4096).contains(&size_px.0)
+            || !(1..=4096).contains(&size_px.1)
+            || !(scale == 0.25 || scale == 0.5 || scale == 1.0 || scale == 2.0 || scale == 4.0)
+        {
+            return Err(RenderError::InvalidClipFrame(
+                "outside finite parent-boundary proof domain",
+            ));
+        }
+        check_size(size_px, scale)?;
+        self.check_target_dimensions(
+            size_px,
+            "offscreen dimensions exceed device max texture dimension",
+        )?;
+        if !(clear.r == 0.0 && clear.g == 0.0 && clear.b == 0.0 && clear.a == 0.0) {
+            return Err(RenderError::InvalidClipFrame(
+                "boundary proof requires transparent black clear",
+            ));
+        }
+        let frame_sequence = self.next_boundary_frame_sequence.checked_add(1).ok_or(
+            RenderError::InvalidClipFrame("boundary frame sequence exhausted"),
+        )?;
+        let proof = self.gpu.prepare_frame_with_parent_boundary_proof(
+            &self.device,
+            scene,
+            atlas,
+            size_px,
+            scale,
+            clear,
+            &parent_shapes,
+            proof_limits,
+            output_header_bytes,
+        )?;
+        let clip_budget = self.gpu.clip_budget;
+        let records = u64::try_from(proof.safe_rects_px.len())
+            .map_err(|_| RenderError::ClipBudgetExceeded("boundary proof records"))?
+            .checked_add(u64::from(proof.class_b_background_primitive.is_some()))
+            .ok_or(RenderError::ClipBudgetExceeded("boundary proof records"))?;
+        if records > clip_budget.max_shapes || records > clip_budget.max_records {
+            return Err(RenderError::ClipBudgetExceeded("boundary proof records"));
+        }
+        if proof.proof_bytes > clip_budget.max_upload_bytes {
+            return Err(RenderError::ClipBudgetExceeded("boundary proof bytes"));
+        }
+        Ok((
+            frame_sequence,
+            BoundaryProofReceipt {
+                renderer_id: self.id,
+                frame_sequence,
+                size_px,
+                scale,
+                parent_shapes,
+                safe_rects_px: proof.safe_rects_px,
+                class_b_background_primitive: proof.class_b_background_primitive,
+                states_visited: proof.states_visited,
+                containment_checks: proof.containment_checks,
+                axis_witness_attempts: proof.axis_witness_attempts,
+                zero_scissor_skips: proof.zero_scissor_skips,
+                proof_work: proof.work,
+            },
+        ))
+    }
+
+    /// Render into a caller-owned BGRA8 target on this renderer's device,
+    /// without CPU readback. Caller owns external synchronization and lifetime.
+    pub fn render_to_texture(
+        &mut self,
+        scene: &Scene,
+        atlas: &mut GlyphAtlas,
+        texture: &wgpu::Texture,
+        scale: f32,
+        clear: Rgba,
+    ) -> Result<wgpu::SubmissionIndex, RenderError> {
+        if let Some(error) = scene.composition_error() {
+            return Err(RenderError::SceneComposition(error));
+        }
+        self.validate_controlled_images(scene)?;
+        self.collect_retired_images();
+        let size = (texture.width(), texture.height());
+        check_size(size, scale)?;
+        self.validate_external_target(texture)?;
+        self.gpu
+            .prepare_frame(&self.device, scene, atlas, size, scale, clear)?;
+        Ok(self.submit_to_texture(scene, atlas, texture, size, scale, clear))
     }
 
     pub fn render_to_rgba8(
@@ -839,6 +967,39 @@ impl Renderer {
         clear: Rgba,
     ) -> Result<Vec<u8>, RenderError> {
         self.render_to_rgba8_with_gpu(scene, atlas, size_px, scale, clear, |_| Ok(()))
+    }
+
+    /// Rasterize a child-local Scene directly into a caller-owned BGRA8
+    /// target for explicit independent-layer composition without CPU readback.
+    pub fn render_layer_to_texture(
+        &mut self,
+        scene: &Scene,
+        atlas: &mut GlyphAtlas,
+        texture: &wgpu::Texture,
+        scale: f32,
+    ) -> Result<wgpu::SubmissionIndex, RenderError> {
+        if let Some(error) = scene.composition_error() {
+            return Err(RenderError::SceneComposition(error));
+        }
+        self.validate_controlled_images(scene)?;
+        self.validate_external_target(texture)?;
+        let size_px = (texture.width(), texture.height());
+        check_size(size_px, scale)?;
+        self.check_target_dimensions(
+            size_px,
+            "offscreen dimensions exceed device max texture dimension",
+        )?;
+        self.gpu
+            .prepare_layer_frame(&self.device, scene, atlas, size_px, scale)?;
+        self.collect_retired_images();
+        Ok(self.submit_to_texture(
+            scene,
+            atlas,
+            texture,
+            size_px,
+            scale,
+            Rgba::new(0., 0., 0., 0.),
+        ))
     }
 
     /// Rasterize a child-local Scene for explicit independent-layer composition.
@@ -886,6 +1047,43 @@ impl Renderer {
         })
     }
 
+    /// Render directly into a caller-owned BGRA8 texture when each prepared
+    /// drawable satisfies the finite interior Class A or target-aligned
+    /// single-background Class B contract, without GPU->CPU pixel readback.
+    #[allow(clippy::too_many_arguments)]
+    pub fn render_to_texture_with_parent_boundary_proof(
+        &mut self,
+        scene: &Scene,
+        atlas: &mut GlyphAtlas,
+        texture: &wgpu::Texture,
+        scale: f32,
+        clear: Rgba,
+        parent_shapes: std::sync::Arc<[ClipShape]>,
+        proof_limits: BoundaryProofLimits,
+    ) -> Result<VerifiedTextureSubmission, RenderError> {
+        self.validate_external_target(texture)?;
+        let size_px = (texture.width(), texture.height());
+        let (frame_sequence, receipt) = self.prepare_parent_boundary_proof(
+            scene,
+            atlas,
+            size_px,
+            scale,
+            clear,
+            parent_shapes,
+            proof_limits,
+            std::mem::size_of::<VerifiedTextureSubmission>() as u64,
+        )?;
+        // All proof and receipt-budget refusals happen before retired-resource
+        // collection, atlas sync, or any queue write.
+        self.collect_retired_images();
+        let submission = self.submit_to_texture(scene, atlas, texture, size_px, scale, clear);
+        self.next_boundary_frame_sequence = frame_sequence;
+        Ok(VerifiedTextureSubmission {
+            submission,
+            receipt,
+        })
+    }
+
     /// Render only when each prepared drawable satisfies the finite interior
     /// Class A or target-aligned single-background Class B contract. Every
     /// other drawable must still satisfy Class A; this does not authorize a
@@ -901,53 +1099,16 @@ impl Renderer {
         parent_shapes: std::sync::Arc<[ClipShape]>,
         proof_limits: BoundaryProofLimits,
     ) -> Result<VerifiedFrameOutput, RenderError> {
-        if let Some(error) = scene.composition_error() {
-            return Err(RenderError::SceneComposition(error));
-        }
-        self.validate_controlled_images(scene)?;
-        if !(1..=4096).contains(&size_px.0)
-            || !(1..=4096).contains(&size_px.1)
-            || !(scale == 0.25 || scale == 0.5 || scale == 1.0 || scale == 2.0 || scale == 4.0)
-        {
-            return Err(RenderError::InvalidClipFrame(
-                "outside finite parent-boundary proof domain",
-            ));
-        }
-        check_size(size_px, scale)?;
-        self.check_target_dimensions(
-            size_px,
-            "offscreen dimensions exceed device max texture dimension",
-        )?;
-        if !(clear.r == 0.0 && clear.g == 0.0 && clear.b == 0.0 && clear.a == 0.0) {
-            return Err(RenderError::InvalidClipFrame(
-                "boundary proof requires transparent black clear",
-            ));
-        }
-        let frame_sequence = self.next_boundary_frame_sequence.checked_add(1).ok_or(
-            RenderError::InvalidClipFrame("boundary frame sequence exhausted"),
-        )?;
-        let proof = self.gpu.prepare_frame_with_parent_boundary_proof(
-            &self.device,
+        let (frame_sequence, receipt) = self.prepare_parent_boundary_proof(
             scene,
             atlas,
             size_px,
             scale,
             clear,
-            &parent_shapes,
+            parent_shapes,
             proof_limits,
             std::mem::size_of::<VerifiedFrameOutput>() as u64,
         )?;
-        let clip_budget = self.gpu.clip_budget;
-        let records = u64::try_from(proof.safe_rects_px.len())
-            .map_err(|_| RenderError::ClipBudgetExceeded("boundary proof records"))?
-            .checked_add(u64::from(proof.class_b_background_primitive.is_some()))
-            .ok_or(RenderError::ClipBudgetExceeded("boundary proof records"))?;
-        if records > clip_budget.max_shapes || records > clip_budget.max_records {
-            return Err(RenderError::ClipBudgetExceeded("boundary proof records"));
-        }
-        if proof.proof_bytes > clip_budget.max_upload_bytes {
-            return Err(RenderError::ClipBudgetExceeded("boundary proof bytes"));
-        }
         let readback_layout =
             checked_readback_layout(size_px, self.device.limits().max_buffer_size)?;
 
@@ -967,23 +1128,7 @@ impl Renderer {
             |_| Ok(()),
         )?;
         self.next_boundary_frame_sequence = frame_sequence;
-        Ok(VerifiedFrameOutput {
-            pixels,
-            receipt: BoundaryProofReceipt {
-                renderer_id: self.id,
-                frame_sequence,
-                size_px,
-                scale,
-                parent_shapes,
-                safe_rects_px: proof.safe_rects_px,
-                class_b_background_primitive: proof.class_b_background_primitive,
-                states_visited: proof.states_visited,
-                containment_checks: proof.containment_checks,
-                axis_witness_attempts: proof.axis_witness_attempts,
-                zero_scissor_skips: proof.zero_scissor_skips,
-                proof_work: proof.work,
-            },
-        })
+        Ok(VerifiedFrameOutput { pixels, receipt })
     }
 
     /// Offscreen counterpart of render_with_gpu, for snapshots and GPU image
