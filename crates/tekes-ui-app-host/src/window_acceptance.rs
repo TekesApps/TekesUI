@@ -13,6 +13,7 @@ impl super::Host {
             || !w.is_key_window()
             || w.is_occluded()
             || self
+                .nav_mgr
                 .navigation
                 .as_ref()
                 .is_some_and(|n| n.busy || !n.host.input_open || n.error.is_some())
@@ -20,8 +21,8 @@ impl super::Host {
             w.request_redraw();
             return Ok(());
         }
-        if self.step == 24 {
-            if !self.leading_visible {
+        if self.diagnostics.step == 24 {
+            if !self.layout.leading_visible {
                 self.set_toolbar_focus(Some(ToolbarTarget::Visibility(0)), true);
                 for down in [true, false] {
                     self.toolbar_key_input(ContentKeyEvent {
@@ -35,22 +36,22 @@ impl super::Host {
                     })?;
                 }
                 anyhow::ensure!(
-                    self.leading_visible,
+                    self.layout.leading_visible,
                     "original leading toggle did not activate"
                 );
             }
-            self.step = 25;
+            self.diagnostics.step = 25;
             w.request_redraw();
-        } else if (25..=26).contains(&self.step)
-            && !self.sidebar_motion.needs_frame()
-            && self.panels.iter().all(|p| {
+        } else if (25..=26).contains(&self.diagnostics.step)
+            && !self.layout.sidebar_motion.needs_frame()
+            && self.panel_mgr.panels.iter().all(|p| {
                 p.bounds.size.width > 0.
                     && p.frame_viewport == p.viewport
                     && (p.local.is_some() || (p.pid.is_some() && p.image.is_some()))
             })
         {
-            if self.step == 25 {
-                if self.panels[2].local.is_some() {
+            if self.diagnostics.step == 25 {
+                if self.panel_mgr.panels[2].local.is_some() {
                     let publication = w
                         .content_accessibility_publication()
                         .ok_or_else(|| anyhow::anyhow!("mixed publication missing"))?;
@@ -81,11 +82,11 @@ impl super::Host {
                         );
                     }
                 }
-                self.step = 26;
+                self.diagnostics.step = 26;
                 w.request_redraw();
             } else {
                 let mut local_input = None;
-                if let Some(local) = &mut self.panels[2].local {
+                if let Some(local) = &mut self.panel_mgr.panels[2].local {
                     local.with_host(&mut |h| {
                         local_input = h.focused_text().map(|s| s.input.text.clone())
                     });
@@ -94,11 +95,15 @@ impl super::Host {
                         "mixed text/focus not retained"
                     );
                 }
-                self.step = 27;
+                self.diagnostics.step = 27;
                 eprintln!(
                     "COLUMNS_WINDOW_READY panels={} pids={:?} leading_expanded=true local_input={} physical_input=false native_window={}",
-                    self.panels.len(),
-                    self.panels.iter().map(|p| p.pid).collect::<Vec<_>>(),
+                    self.panel_mgr.panels.len(),
+                    self.panel_mgr
+                        .panels
+                        .iter()
+                        .map(|p| p.pid)
+                        .collect::<Vec<_>>(),
                     local_input.is_some(),
                     w.native_window_number()
                 );
@@ -239,13 +244,15 @@ impl PresentationAcceptance {
 }
 impl super::Host {
     fn acceptance_index(&self, id: &str) -> anyhow::Result<usize> {
-        self.panels
+        self.panel_mgr
+            .panels
             .iter()
             .position(|panel| panel.module_id == id)
             .ok_or_else(|| anyhow::anyhow!("presentation fixture container missing: {id}"))
     }
     fn acceptance_identities(&mut self) -> Vec<(u64, Option<u32>, Option<usize>)> {
-        self.panels
+        self.panel_mgr
+            .panels
             .iter_mut()
             .map(|panel| {
                 let mut original = None;
@@ -265,7 +272,7 @@ impl super::Host {
     ) -> anyhow::Result<()> {
         eprintln!(
             "PRESENTATION_ACCEPTANCE_INPUT step={} automated_native=true event={event:?}",
-            self.step
+            self.diagnostics.step
         );
         self.event(event, w)
     }
@@ -289,7 +296,12 @@ impl super::Host {
         });
         self.draw(w)?;
         for action in ["Redraw", "Mouse", "Key", "AX"] {
-            let header = self.presentation_tabs.as_ref().unwrap().content_host();
+            let header = self
+                .layout
+                .presentation_tabs
+                .as_ref()
+                .unwrap()
+                .content_host();
             // Authenticate the original native handle while its publication is
             // current. The wheel burst below retires that geometry lease.
             let ax_target = if action == "AX" {
@@ -334,13 +346,13 @@ impl super::Host {
             let before = scroll.offset.x;
             let delta = if before + 3. < limit { 1. } else { -1. };
             let point = node.frame().center();
-            let title = self.presentation_switcher.items[0].key;
+            let title = self.layout.presentation_switcher.items[0].key;
             let title_before = header.get(title).unwrap().frame();
-            let draws = self.acceptance_draws;
+            let draws = self.diagnostics.acceptance_draws;
             for sample in 0..3 {
                 self.acceptance_input(
                     Event::Scroll(ScrollEvent {
-                        timestamp: self.motion_epoch.elapsed().as_secs_f64(),
+                        timestamp: self.layout.motion_epoch.elapsed().as_secs_f64(),
                         delta: Vec2 { x: -delta, y: 0. },
                         precise: true,
                         phase: if sample == 0 {
@@ -359,7 +371,12 @@ impl super::Host {
                     w,
                 )?;
             }
-            let header = self.presentation_tabs.as_ref().unwrap().content_host();
+            let header = self
+                .layout
+                .presentation_tabs
+                .as_ref()
+                .unwrap()
+                .content_host();
             let offset = header
                 .get(SCROLL)
                 .unwrap()
@@ -373,7 +390,8 @@ impl super::Host {
                 "queued native samples lost or rescaled point deltas"
             );
             ensure!(
-                self.presentation_scroll_pending && self.acceptance_draws == draws,
+                self.layout.presentation_scroll_pending
+                    && self.diagnostics.acceptance_draws == draws,
                 "header burst synchronously drew before the queued callback"
             );
             ensure!(
@@ -384,10 +402,11 @@ impl super::Host {
                 "Redraw" => {
                     self.acceptance_input(Event::Redraw, w)?;
                     ensure!(
-                        self.acceptance_draws == draws + 1,
+                        self.diagnostics.acceptance_draws == draws + 1,
                         "burst did not share one redraw"
                     );
                     let title_after = self
+                        .layout
                         .presentation_tabs
                         .as_ref()
                         .unwrap()
@@ -403,6 +422,7 @@ impl super::Host {
                 }
                 "Mouse" => {
                     let point = self
+                        .layout
                         .presentation_tabs
                         .as_ref()
                         .unwrap()
@@ -413,7 +433,8 @@ impl super::Host {
                         .center();
                     self.acceptance_click(Point::new(point.x, point.y), w)?;
                     ensure!(
-                        self.presentation_tabs
+                        self.layout
+                            .presentation_tabs
                             .as_ref()
                             .unwrap()
                             .content_host()
@@ -433,7 +454,8 @@ impl super::Host {
                         w,
                     )?;
                     ensure!(
-                        self.presentation_tabs
+                        self.layout
+                            .presentation_tabs
                             .as_ref()
                             .unwrap()
                             .content_host()
@@ -444,7 +466,8 @@ impl super::Host {
                 }
                 "Key" => {
                     ensure!(
-                        self.presentation_tabs
+                        self.layout
+                            .presentation_tabs
                             .as_ref()
                             .unwrap()
                             .content_host()
@@ -467,7 +490,8 @@ impl super::Host {
                         w,
                     )?;
                     ensure!(
-                        self.presentation_tabs
+                        self.layout
+                            .presentation_tabs
                             .as_ref()
                             .unwrap()
                             .content_host()
@@ -486,7 +510,8 @@ impl super::Host {
                         w,
                     )?;
                     ensure!(
-                        self.presentation_tabs
+                        self.layout
+                            .presentation_tabs
                             .as_ref()
                             .unwrap()
                             .content_host()
@@ -498,12 +523,13 @@ impl super::Host {
                 _ => unreachable!(),
             }
             ensure!(
-                !self.presentation_scroll_pending && self.acceptance_draws > draws,
+                !self.layout.presentation_scroll_pending
+                    && self.diagnostics.acceptance_draws > draws,
                 "{action} did not flush pending header geometry"
             );
             eprintln!(
                 "PRESENTATION_SCROLL_QUEUE_PASS action={action} samples=3 offset_before={before} offset_after_input={offset} draws_before={draws} draws_after={} automated_native=true physical_input=false",
-                self.acceptance_draws
+                self.diagnostics.acceptance_draws
             );
         }
         w.set_content_size(original_size);
@@ -532,7 +558,7 @@ impl super::Host {
     ) -> anyhow::Result<(String, Option<std::ops::Range<usize>>)> {
         let index = self.acceptance_index(id)?;
         let mut value = None;
-        self.panels[index]
+        self.panel_mgr.panels[index]
             .local
             .as_mut()
             .ok_or_else(|| anyhow::anyhow!("{id} is not local"))?
@@ -577,14 +603,14 @@ impl super::Host {
         presenter: usize,
         command: u64,
     ) -> anyhow::Result<tekes_ui_scene::Point> {
-        let title = &self.panels[owner]
+        let title = &self.panel_mgr.panels[owner]
             .toolbar
             .iter()
             .find(|item| item.id == command)
             .ok_or_else(|| anyhow::anyhow!("original command missing: {owner}/{command}"))?
             .title;
         let control = Self::toolbar_control(super::ToolbarTarget::Panel(owner));
-        self.panels[presenter].mounted_toolbar.host.semantics().into_iter()
+        self.panel_mgr.panels[presenter].mounted_toolbar.host.semantics().into_iter()
             .find(|node| node.node.id == control).into_iter().flat_map(|node| node.parts)
             .find(|(_, part)| part.semantics.name == *title && !part.semantics.disabled)
             .map(|(_, part)| part.frame.center())
@@ -621,7 +647,7 @@ impl super::Host {
         Ok(())
     }
     fn acceptance_command_count(&self, owner: usize, command: u64) -> usize {
-        self.panels[owner]
+        self.panel_mgr.panels[owner]
             .acceptance_commands
             .as_ref()
             .map_or(0, |trace| {
@@ -656,19 +682,25 @@ impl super::Host {
             w.request_redraw();
             return Ok(());
         }
-        if let Some(nav) = &self.navigation
+        if let Some(nav) = &self.nav_mgr.navigation
             && let Some(error) = &nav.error
         {
             anyhow::bail!("navigation failed: {error}");
         }
-        if let Some(panel) = self.panels.iter().find(|panel| panel.failed.is_some()) {
+        if let Some(panel) = self
+            .panel_mgr
+            .panels
+            .iter()
+            .find(|panel| panel.failed.is_some())
+        {
             anyhow::bail!("container {} failed: {:?}", panel.module_id, panel.failed);
         }
         let ready = self
+            .nav_mgr
             .navigation
             .as_ref()
             .is_some_and(|nav| !nav.busy && nav.host.input_open)
-            && self.panels.iter().all(|panel| {
+            && self.panel_mgr.panels.iter().all(|panel| {
                 panel.bounds.size.width <= 0.
                     || panel.frame_viewport == panel.viewport
                         && (panel.local.is_some() || panel.pid.is_some() && panel.image.is_some())
@@ -681,7 +713,7 @@ impl super::Host {
         // assumes an initially hidden remote; today's demo initially shows List.
         // Do not weaken that probe's assertions or report its PASS for this run.
         if std::env::var("TEKESUI_PRESENTATION_SCROLL_ACCEPTANCE").as_deref() == Ok("1") {
-            let state = self.presentation.as_ref().unwrap();
+            let state = self.layout.presentation.as_ref().unwrap();
             ensure!(
                 state.focus_id() == "notes"
                     && state.nav_bar_id() == Some("navbar")
@@ -700,15 +732,16 @@ impl super::Host {
         let tools = self.acceptance_index("tools")?;
         let remote = self.acceptance_index("demo-first")?;
         let plain = self.acceptance_index("plain")?;
-        if self.step > 0 {
+        if self.diagnostics.step > 0 {
             ensure!(
                 self.acceptance_identities() == probe.identities,
                 "presentation recreated a container, local host or original worker PID"
             );
         }
-        match self.step {
+        match self.diagnostics.step {
             0 => {
                 let state = self
+                    .layout
                     .presentation
                     .as_ref()
                     .ok_or_else(|| anyhow::anyhow!("presentation fixture missing"))?;
@@ -719,13 +752,13 @@ impl super::Host {
                     "requires the mixed nav-others demo"
                 );
                 ensure!(
-                    self.panels[remote].pid.is_some()
-                        && self.panels[remote].bounds.size.width == 0.,
+                    self.panel_mgr.panels[remote].pid.is_some()
+                        && self.panel_mgr.panels[remote].bounds.size.width == 0.,
                     "initial hidden remote reply not observed"
                 );
                 probe.identities = self.acceptance_identities();
                 probe.original_size = Some(w.size());
-                for panel in &mut self.panels {
+                for panel in &mut self.panel_mgr.panels {
                     panel.acceptance_commands = Some(Vec::new());
                 }
                 eprintln!(
@@ -765,7 +798,7 @@ impl super::Host {
                 self.acceptance_menu("Promote tools", w)?;
             }
             3 => {
-                let state = self.presentation.as_ref().unwrap();
+                let state = self.layout.presentation.as_ref().unwrap();
                 ensure!(
                     state.focus_id() == "tools"
                         && state.others_ids().iter().any(|id| id == "notes"),
@@ -776,20 +809,20 @@ impl super::Host {
                     "promotion lost original text"
                 );
                 self.acceptance_menu("Select plain", w)?;
-                probe.others = self.presentation.as_ref().unwrap().others().cloned();
+                probe.others = self.layout.presentation.as_ref().unwrap().others().cloned();
                 self.acceptance_menu("Show / Hide Others", w)?;
             }
             4 => {
                 ensure!(
-                    !self.presentation.as_ref().unwrap().others_visible()
-                        && self.presentation_layout.tabs.is_none(),
+                    !self.layout.presentation.as_ref().unwrap().others_visible()
+                        && self.layout.presentation_layout.tabs.is_none(),
                     "others off retained a painted tab region"
                 );
                 self.acceptance_menu("Show / Hide Others", w)?;
             }
             5 => {
                 ensure!(
-                    self.presentation.as_ref().unwrap().others() == probe.others.as_ref(),
+                    self.layout.presentation.as_ref().unwrap().others() == probe.others.as_ref(),
                     "others off/on lost selection or order"
                 );
                 self.acceptance_menu("Promote notes", w)?;
@@ -797,8 +830,8 @@ impl super::Host {
             }
             6 => {
                 ensure!(
-                    self.presentation.as_ref().unwrap().focus_id() == "notes"
-                        && self.panels[tools].bounds.size.width == 0.,
+                    self.layout.presentation.as_ref().unwrap().focus_id() == "notes"
+                        && self.panel_mgr.panels[tools].bounds.size.width == 0.,
                     "retained owner must be hidden"
                 );
                 let first = self.acceptance_button_point(tools, notes, 101)?;
@@ -819,11 +852,11 @@ impl super::Host {
             }
             7 => {
                 ensure!(
-                    self.panels[notes]
+                    self.panel_mgr.panels[notes]
                         .mounted_toolbar
                         .source(Self::toolbar_group(super::ToolbarTarget::Panel(tools)))
                         .is_none()
-                        && self.panels[remote]
+                        && self.panel_mgr.panels[remote]
                             .mounted_toolbar
                             .source(Self::toolbar_group(super::ToolbarTarget::Panel(tools)))
                             .is_none(),
@@ -839,10 +872,12 @@ impl super::Host {
             }
             8 => {
                 ensure!(
-                    self.presentation.as_ref().unwrap().selected_tab() == Some(&OthersTab::List),
+                    self.layout.presentation.as_ref().unwrap().selected_tab()
+                        == Some(&OthersTab::List),
                     "List did not become the selected special Tab"
                 );
                 probe.list_order = self
+                    .layout
                     .presentation
                     .as_ref()
                     .unwrap()
@@ -863,12 +898,13 @@ impl super::Host {
                     w,
                 )?;
                 let viewport = self
+                    .layout
                     .presentation_layout
                     .list_viewport
                     .ok_or_else(|| anyhow::anyhow!("List viewport missing"))?;
                 self.acceptance_input(
                     Event::Scroll(tekes_ui_platform_macos::ScrollEvent {
-                        timestamp: self.motion_epoch.elapsed().as_secs_f64(),
+                        timestamp: self.layout.motion_epoch.elapsed().as_secs_f64(),
                         delta: tekes_ui_platform_macos::Vec2 { x: 0., y: -80. },
                         precise: true,
                         phase: tekes_ui_platform_macos::ScrollPhase::Began,
@@ -885,15 +921,15 @@ impl super::Host {
             }
             9 => {
                 ensure!(
-                    self.presentation.as_ref().unwrap().list_scroll() > 0.,
+                    self.layout.presentation.as_ref().unwrap().list_scroll() > 0.,
                     "List scroll did not reach production layout"
                 );
                 ensure!(
                     self.acceptance_text("tools")? == ("リスト".into(), Some(0..3)),
                     "List scroll changed original editor/preedit"
                 );
-                let viewport = self.presentation_layout.list_viewport.unwrap();
-                let panel = &self.panels[tools];
+                let viewport = self.layout.presentation_layout.list_viewport.unwrap();
+                let panel = &self.panel_mgr.panels[tools];
                 ensure!(
                     panel.bounds.min_y() < viewport.min_y()
                         && panel.clip.min_y() >= viewport.min_y()
@@ -926,6 +962,7 @@ impl super::Host {
             }
             10 => {
                 let order: Vec<_> = self
+                    .layout
                     .presentation
                     .as_ref()
                     .unwrap()
@@ -943,8 +980,8 @@ impl super::Host {
                     self.acceptance_text("tools")? == ("リスト".into(), None),
                     "List reorder lost editor contents"
                 );
-                let viewport = self.presentation_layout.list_viewport.unwrap();
-                for panel in &self.panels {
+                let viewport = self.layout.presentation_layout.list_viewport.unwrap();
+                for panel in &self.panel_mgr.panels {
                     if panel.bounds.size.width > 0.
                         && panel.module_id != "notes"
                         && panel.module_id != "navbar"
@@ -960,7 +997,8 @@ impl super::Host {
             }
             11 => {
                 ensure!(
-                    self.presentation
+                    self.layout
+                        .presentation
                         .as_ref()
                         .unwrap()
                         .list_ids()
@@ -981,8 +1019,9 @@ impl super::Host {
                     "native resize did not settle"
                 );
                 let (safe, leading) = w.titlebar_safe_area();
-                let focus = self.presentation.as_ref().unwrap().focus_id();
+                let focus = self.layout.presentation.as_ref().unwrap().focus_id();
                 let focus_frame = self
+                    .layout
                     .presentation_layout
                     .frames
                     .iter()
@@ -993,7 +1032,7 @@ impl super::Host {
                     focus_frame.min_y() == 0.,
                     "top focus retained an extra titlebar gap"
                 );
-                for panel in &self.panels {
+                for panel in &self.panel_mgr.panels {
                     if panel.bounds.min_y() == 0.
                         && panel.clip.min_y() == 0.
                         && panel.bounds.size.width > 0.
@@ -1019,7 +1058,7 @@ impl super::Host {
                         }
                     }
                 }
-                if let Some(tabs) = self.presentation_layout.tabs {
+                if let Some(tabs) = self.layout.presentation_layout.tabs {
                     ensure!(
                         tabs.min_x() > focus_frame.max_x(),
                         "Others is not to the right of focus"
@@ -1034,8 +1073,8 @@ impl super::Host {
                     w.scale(),
                     w.drawable_size(),
                     safe,
-                    self.presentation_layout.frames,
-                    self.presentation_layout.clips
+                    self.layout.presentation_layout.frames,
+                    self.layout.presentation_layout.clips
                 );
                 self.acceptance_menu("Select plain", w)?;
             }
@@ -1052,7 +1091,7 @@ impl super::Host {
             }
             14 => {
                 ensure!(
-                    self.focused == plain
+                    self.layout.focused == plain
                         && self.acceptance_text("plain")? == ("handoff".into(), None)
                         && self.acceptance_text("notes")? == ("かな".into(), None),
                     "production focus handoff routed text to a previous owner"
@@ -1061,15 +1100,17 @@ impl super::Host {
             }
             15 => {
                 ensure!(
-                    self.panels[notes].bounds.size.width == 0.
-                        && self.panels[remote].bounds.size.width == 0.,
+                    self.panel_mgr.panels[notes].bounds.size.width == 0.
+                        && self.panel_mgr.panels[remote].bounds.size.width == 0.,
                     "both original navigation recipients must remain hidden"
                 );
                 probe.navigation_target = self
+                    .nav_mgr
                     .navigation
                     .as_ref()
                     .and_then(|nav| nav.host.target.as_ref().map(|entry| entry.id.clone()));
                 let title = self
+                    .nav_mgr
                     .navigation
                     .as_ref()
                     .unwrap()
@@ -1090,10 +1131,10 @@ impl super::Host {
                     .toolbar_container(super::ToolbarTarget::Navigation)
                     .ok_or_else(|| anyhow::anyhow!("navigation toolbar not mounted"))?;
                 ensure!(
-                    self.panels[presenter].module_id == "navbar",
+                    self.panel_mgr.panels[presenter].module_id == "navbar",
                     "requires the explicit acceptance-only Navbar navigation fixture"
                 );
-                let point = self.panels[presenter]
+                let point = self.panel_mgr.panels[presenter]
                     .mounted_toolbar
                     .host
                     .semantics()
@@ -1110,43 +1151,50 @@ impl super::Host {
             }
             16 => {
                 let target = self
+                    .nav_mgr
                     .navigation
                     .as_ref()
                     .and_then(|nav| nav.host.target.as_ref().map(|entry| entry.id.clone()));
                 ensure!(
                     target != probe.navigation_target
-                        && self.navigation_order.is_none()
-                        && self.navigation_ack.is_none(),
+                        && self.nav_mgr.navigation_order.is_none()
+                        && self.nav_mgr.navigation_ack.is_none(),
                     "hidden targets navigation did not commit"
                 );
-                let remote_trace = self.panels[remote].acceptance_commands.as_ref().unwrap();
+                let remote_trace = self.panel_mgr.panels[remote]
+                    .acceptance_commands
+                    .as_ref()
+                    .unwrap();
                 ensure!(
                     remote_trace.len() == 1,
                     "hidden remote navigation command was lost or duplicated"
                 );
                 let (command, sequence) = remote_trace[0];
                 ensure!(
-                    self.panels[remote].frame_seq >= sequence
+                    self.panel_mgr.panels[remote].frame_seq >= sequence
                         && self.acceptance_command_count(notes, command) == 1
                         && self.acceptance_command_count(tools, command) == 0
                         && self.acceptance_command_count(plain, command) == 0,
                     "navigation failed its explicit targets/real remote reply contract"
                 );
                 ensure!(
-                    self.panels[remote].bounds == Rect::default()
-                        && self.panels[notes].bounds == Rect::default(),
+                    self.panel_mgr.panels[remote].bounds == Rect::default()
+                        && self.panel_mgr.panels[notes].bounds == Rect::default(),
                     "navigation implicitly revealed its hidden target"
                 );
                 eprintln!(
                     "PRESENTATION_ACCEPTANCE_HIDDEN_NAV command={} sequence={} reply={} pid={:?} target={target:?} local_once=true remote_once=true automated_native=true",
-                    command, sequence, self.panels[remote].frame_seq, self.panels[remote].pid
+                    command,
+                    sequence,
+                    self.panel_mgr.panels[remote].frame_seq,
+                    self.panel_mgr.panels[remote].pid
                 );
                 self.acceptance_menu("Promote notes", w)?;
             }
             17 => {
                 ensure!(
-                    self.presentation.as_ref().unwrap().focus_id() == "notes"
-                        && self.panels[notes].bounds.size.width > 0.
+                    self.layout.presentation.as_ref().unwrap().focus_id() == "notes"
+                        && self.panel_mgr.panels[notes].bounds.size.width > 0.
                         && self.acceptance_text("notes")? == ("かな".into(), None)
                         && self.acceptance_text("tools")? == ("リスト".into(), None),
                     "revealing original targets lost presentation or editor state"
@@ -1157,16 +1205,17 @@ impl super::Host {
             }
             18 => {
                 ensure!(
-                    self.acceptance_draws >= 18,
+                    self.diagnostics.acceptance_draws >= 18,
                     "scenario did not render the real native Window"
                 );
                 probe.shared.transition(Stage::Done);
                 eprintln!(
                     "PRESENTATION_ACCEPTANCE_PASS steps=19 draws={} automated_native=true os_ime=false physical_input=false system_menu_operation=false native_window={} identities={:?} commands={:?}",
-                    self.acceptance_draws,
+                    self.diagnostics.acceptance_draws,
                     w.native_window_number(),
                     probe.identities,
-                    self.panels
+                    self.panel_mgr
+                        .panels
                         .iter()
                         .map(|panel| (&panel.module_id, &panel.acceptance_commands))
                         .collect::<Vec<_>>()
@@ -1174,17 +1223,20 @@ impl super::Host {
                 w.close();
                 return Ok(());
             }
-            _ => anyhow::bail!("unknown presentation acceptance step {}", self.step),
+            _ => anyhow::bail!(
+                "unknown presentation acceptance step {}",
+                self.diagnostics.step
+            ),
         }
         eprintln!(
             "PRESENTATION_ACCEPTANCE_STEP step={} draws={} focused={} focus={} elapsed_ms={}",
-            self.step,
-            self.acceptance_draws,
-            self.focused,
-            self.presentation.as_ref().unwrap().focus_id(),
+            self.diagnostics.step,
+            self.diagnostics.acceptance_draws,
+            self.layout.focused,
+            self.layout.presentation.as_ref().unwrap().focus_id(),
             probe.shared.0.lock().unwrap().started.elapsed().as_millis()
         );
-        self.step += 1;
+        self.diagnostics.step += 1;
         w.request_redraw();
         Ok(())
     }
@@ -1227,7 +1279,7 @@ mod presentation_trace_tests {
         });
         let mut host = Host::from_columns(vec![local.into()], false, None);
         host.mount_initial_containers();
-        let panel = &mut host.panels[0];
+        let panel = &mut host.panel_mgr.panels[0];
         panel.command(42).unwrap();
         assert!(
             panel.acceptance_commands.is_none(),

@@ -24,6 +24,18 @@ impl ComponentSource {
             None
         }
     }
+    pub fn validate(
+        &self,
+        session: &Session,
+        registration: u64,
+        window: u64,
+    ) -> anyhow::Result<()> {
+        anyhow::ensure!(
+            self.session == *session && self.registration == registration && self.window == window,
+            "stale or mismatched toolbar source"
+        );
+        Ok(())
+    }
     pub fn invoke(&self, process: &ProcessComponent, command: u64) -> anyhow::Result<u64> {
         process.request_from(
             &self.session,

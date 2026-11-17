@@ -17,6 +17,15 @@ use tekes_ui_controls::{
 use tekes_ui_render::{Renderer, gpu::GpuImageRegistration};
 use tekes_ui_scene::{ImageQuad, Point, Rect, Scene, Size};
 
+const UI_CONTENT_TIMEOUT: std::time::Duration = std::time::Duration::from_millis(100);
+
+#[derive(Clone, Copy)]
+enum AsyncContentSlot {
+    Cancel,
+    Scope,
+    Hover,
+}
+
 fn trace_layer(args: std::fmt::Arguments<'_>) {
     if std::env::var_os("TEKESUI_PROCESS_LAYER_TRACE").is_some() {
         eprintln!(
@@ -76,6 +85,12 @@ pub struct ProcessContainer {
     content_preserves_focus: bool,
     content_reading_scroll: bool,
     geometry_input_pending: bool,
+    pending_scope_request: Option<(u64, u64)>,
+    pending_cancel_request: Option<(u64, u64)>,
+    pending_hover_request: Option<(u64, u64)>,
+    remote_invalidation_pending: bool,
+    scope_dirty: bool,
+    frame_needs_scope: bool,
     pending_content: std::collections::VecDeque<PendingContentInput>,
     pending_content_bytes: usize,
     // One original latest native-finish receipt, not another input/focus model.
@@ -434,7 +449,8 @@ impl ProcessContainerFrameHandle {
                 },
             },
         };
-        let query_request = process.request(crate::component::RequestBody::CurveV1(envelope))?;
+        let query_request =
+            process.request_internal(crate::component::RequestBody::CurveV1(envelope))?;
         let image = frame.import(&renderer.gpu_context())?;
         resources.pending_curve_frame = Some(PendingCurveFrame {
             image,
@@ -638,6 +654,12 @@ impl ProcessContainer {
             content_preserves_focus: false,
             content_reading_scroll: false,
             geometry_input_pending: false,
+            pending_scope_request: None,
+            pending_cancel_request: None,
+            pending_hover_request: None,
+            remote_invalidation_pending: false,
+            scope_dirty: false,
+            frame_needs_scope: false,
             pending_content: Default::default(),
             pending_content_bytes: 0,
             deferred_key_result: None,
@@ -731,7 +753,8 @@ impl ProcessContainer {
                     "View handshake missing"
                 );
                 let envelope = curve_negotiation_envelope(view);
-                let request = process.request(crate::component::RequestBody::CurveV1(envelope))?;
+                let request =
+                    process.request_internal(crate::component::RequestBody::CurveV1(envelope))?;
                 self.curve_request = Some((request, 0));
                 self.curve_preflight = CurvePreflight::Negotiating;
                 Ok(false)
@@ -851,7 +874,7 @@ impl ProcessContainer {
             ..FrameResources::default()
         }));
         if let (Some(native), Some(context)) = (&self.native, self.view_context.as_ref()) {
-            match process.request(crate::component::RequestBody::SetViewContext {
+            match process.request_internal(crate::component::RequestBody::SetViewContext {
                 view: native.view,
                 context: context.clone(),
             }) {
@@ -902,10 +925,11 @@ impl ProcessContainer {
             self.cancel_geometry_input();
         }
         if let Some(process) = &self.process {
-            let request = process.request(crate::component::RequestBody::SetViewContext {
-                view,
-                context: context.clone(),
-            })?;
+            let request =
+                process.request_internal(crate::component::RequestBody::SetViewContext {
+                    view,
+                    context: context.clone(),
+                })?;
             self.frame_resources
                 .lock()
                 .unwrap()
@@ -1096,23 +1120,55 @@ impl ProcessContainer {
     fn cancel(&mut self) {
         self.semantic_projection.revoke();
         self.accessibility_focus = false;
-        // Lifecycle cancellation must finish in the original Content actor
-        // before a later release can be delivered. A render-only Cancel can be
-        // pending behind image work even though the pipe already accepted it.
-        let typed = self.content_pointer_enabled()
-            || self.content_keyboard_enabled()
-            || self.content_scroll_enabled()
-            || self.content_accessibility_enabled();
-        let acknowledged = if typed && self.input_ready() {
-            let result = (|| -> Result<_> {
-                let bridge = self.native_content_bridge(std::time::Duration::from_secs(1))?;
-                // Cancellation revokes the current lifecycle, not a retained
-                // input callback. Query its current authority; never replay input.
-                let current = self.fresh_content_snapshot(&bridge)?;
-                bridge.request(&current, crate::component::content::Input::Cancel)
-            })();
+        self.discard_async_content_requests();
+        let typed = self.typed_content_enabled();
+        let idle_current_snapshot = typed
+            && self.curve_geometry.is_none()
+            && self.geometry_ready()
+            && !self.geometry_input_pending
+            && !self.scope_dirty
+            && !self.content_captured()
+            && !self.content_focused
+            && !self.remote_overlay()
+            && self
+                .process
+                .as_ref()
+                .zip(self.native.as_ref())
+                .is_some_and(|(process, native)| {
+                    self.content_snapshot.as_ref().is_some_and(|snapshot| {
+                        snapshot.belongs_to_viewport(process.session(), native.view, self.viewport)
+                    })
+                });
+        let acknowledged = if idle_current_snapshot {
+            if let (Some(process), Some(native)) = (&self.process, &self.native)
+                && let Ok(id) = process.request_internal(crate::component::RequestBody::Content(
+                    crate::component::content::Request {
+                        view: native.view,
+                        viewport: self.viewport,
+                        owner: None,
+                        focus_epoch: 0,
+                        text_binding: None,
+                        capture: None,
+                        input: crate::component::content::Input::Cancel,
+                    },
+                ))
+            {
+                process.discard_response(id);
+            }
+            true
+        } else if typed && self.geometry_ready() {
+            let result = self
+                .geometry_content_bridge(UI_CONTENT_TIMEOUT)
+                .and_then(|bridge| bridge.cancel());
             match result {
-                Ok(_) => true,
+                Ok(next) => {
+                    self.accept_content(next);
+                    self.geometry_input_pending = false;
+                    self.remote_invalidation_pending = false;
+                    self.scope_dirty = false;
+                    self.frame_needs_scope = false;
+                    true
+                }
                 Err(error) => {
                     self.error = Some(error.to_string());
                     false
@@ -1124,24 +1180,26 @@ impl ProcessContainer {
         self.toolbar.control.cancel();
         self.pointer_focus = None;
         self.pressed = false;
-        self.content_snapshot = None;
         self.content_bubbles = None;
         self.content_preserves_focus = false;
-        self.geometry_input_pending = false;
         self.pending_content.clear();
         self.pending_content_bytes = 0;
         self.deferred_key_result = None;
-        if !acknowledged && let Some(process) = &self.process {
-            match process.cancel_view_input() {
-                Ok(Some(seq)) => self.seq = self.seq.max(seq),
-                Ok(None) => (),
-                Err(error) => self.error = Some(error.to_string()),
-            }
-            // Typed fallback stays unavailable until the ordered Cancel/Layout
-            // has produced an acknowledged new allocation. Never race an old Up
-            // against a cancellation merely queued behind GPU work.
-            if typed {
-                self.geometry_dirty = true;
+        if !acknowledged {
+            self.content_snapshot = None;
+            self.geometry_input_pending = false;
+            self.remote_invalidation_pending = false;
+            self.scope_dirty = typed;
+            self.frame_needs_scope = false;
+            if let Some(process) = &self.process {
+                match process.cancel_view_input() {
+                    Ok(Some(seq)) => self.seq = self.seq.max(seq),
+                    Ok(None) => (),
+                    Err(error) => self.error = Some(error.to_string()),
+                }
+                if typed {
+                    self.geometry_dirty = true;
+                }
             }
         }
     }
@@ -1188,7 +1246,24 @@ impl ProcessContainer {
         })
     }
     pub fn input_ready(&self) -> bool {
-        self.geometry_ready() && !self.geometry_input_pending
+        if !self.geometry_ready() || self.geometry_input_pending {
+            return false;
+        }
+        if self.curve_geometry.is_none() && self.typed_content_enabled() {
+            let Some((process, native)) = self.process.as_ref().zip(self.native.as_ref()) else {
+                return false;
+            };
+            let snapshot_current = self.content_snapshot.as_ref().is_some_and(|snapshot| {
+                snapshot.belongs_to_viewport(process.session(), native.view, self.viewport)
+            });
+            if !snapshot_current || self.pending_cancel_request.is_some() {
+                return false;
+            }
+            if !self.content_captured() && self.scope_dirty {
+                return false;
+            }
+        }
+        true
     }
     fn geometry_ready(&self) -> bool {
         let resources = self.frame_resources.lock().unwrap();
@@ -1301,7 +1376,7 @@ impl ProcessContainer {
             self.error = None;
             (self.wake)();
         }
-        let Some(process) = &self.process else {
+        let Some(process) = self.process.as_ref().cloned() else {
             renderer.collect_retired_images();
             return Ok(false);
         };
@@ -1314,13 +1389,19 @@ impl ProcessContainer {
             .frame_resources
             .lock()
             .unwrap()
-            .consume_context_responses(process)?
+            .consume_context_responses(&process)?
         {
             return Ok(false);
         }
         let invalidated = process.take_view_invalidated();
+        if process.take_remote_view_invalidated() {
+            self.remote_invalidation_pending = true;
+        }
         if invalidated {
             self.repaint_dirty = true;
+            if self.curve_geometry.is_none() && self.content_accessibility_enabled() {
+                self.semantic_projection.dirty();
+            }
             (self.wake)();
         }
         let old = self
@@ -1343,33 +1424,226 @@ impl ProcessContainer {
             }
             selected = Some(frame);
         }
-        let Some(frame) = selected else {
-            // Business updates may open/close original overlays before a new
-            // image is presented. Publish input authority on the same wake.
-            if (invalidated || self.content_accessibility_enabled()) && self.input_ready() {
-                self.refresh_content_scope()?;
+        let imported = if let Some(frame) = selected {
+            let image = frame.import(&renderer.gpu_context())?;
+            let mut resources = self.frame_resources.lock().unwrap();
+            if let Some(registration) = &resources.registration {
+                renderer.replace_owned_gpu_image(registration, image.image())?;
+            } else {
+                resources.registration = Some(renderer.register_owned_gpu_image(image.image())?);
             }
-            renderer.collect_retired_images();
-            return Ok(false);
-        };
-        let image = frame.import(&renderer.gpu_context())?;
-        let mut resources = self.frame_resources.lock().unwrap();
-        if let Some(registration) = &resources.registration {
-            renderer.replace_owned_gpu_image(registration, image.image())?;
+            resources.image = Some(image);
+            drop(resources);
+            let snapshot_current = self.native.as_ref().is_some_and(|native| {
+                self.content_snapshot.as_ref().is_some_and(|snapshot| {
+                    snapshot.belongs_to_viewport(process.session(), native.view, self.viewport)
+                })
+            });
+            if self.curve_geometry.is_none() && self.typed_content_enabled() {
+                self.frame_needs_scope = true;
+                if self.remote_invalidation_pending || !snapshot_current {
+                    self.scope_dirty = true;
+                }
+            }
+            self.remote_invalidation_pending = false;
+            true
         } else {
-            resources.registration = Some(renderer.register_owned_gpu_image(image.image())?);
+            false
+        };
+        if let Err(error) = self
+            .harvest_async_content_responses()
+            .and_then(|()| self.enqueue_async_content_requests())
+        {
+            self.error = Some(error.to_string());
+            return Err(error);
         }
-        resources.image = Some(image);
-        drop(resources);
-        if self.geometry_input_pending && self.geometry_ready() {
-            self.acknowledge_geometry_cancel()?;
-        }
-        if self.input_ready() {
+        if self.input_ready() && !self.pending_content.is_empty() {
             self.flush_pending_content()?;
-            self.refresh_content_scope()?;
+        }
+        if imported {
+            (self.wake)();
+            return Ok(true);
+        }
+        renderer.collect_retired_images();
+        Ok(false)
+    }
+    fn typed_content_enabled(&self) -> bool {
+        self.content_pointer_enabled()
+            || self.content_keyboard_enabled()
+            || self.content_scroll_enabled()
+            || self.content_accessibility_enabled()
+    }
+    fn discard_async_content_requests(&mut self) {
+        for slot in [
+            self.pending_scope_request.take(),
+            self.pending_cancel_request.take(),
+            self.pending_hover_request.take(),
+        ] {
+            if let Some((id, _)) = slot
+                && let Some(process) = &self.process
+            {
+                process.discard_response(id);
+            }
+        }
+    }
+    fn non_curve_frame_current(&self) -> bool {
+        let resources = self.frame_resources.lock().unwrap();
+        resources.image.as_ref().is_some_and(|image| {
+            image.metadata().viewport == self.viewport
+                && image.metadata().seq >= resources.expected_seq
+        })
+    }
+    fn harvest_async_content_responses(&mut self) -> Result<()> {
+        for kind in [
+            AsyncContentSlot::Cancel,
+            AsyncContentSlot::Scope,
+            AsyncContentSlot::Hover,
+        ] {
+            self.harvest_async_slot(kind)?;
+        }
+        Ok(())
+    }
+    fn harvest_async_slot(&mut self, kind: AsyncContentSlot) -> Result<()> {
+        let Some((process, native)) = self.process.clone().zip(self.native.clone()) else {
+            return Ok(());
+        };
+        let slot = match kind {
+            AsyncContentSlot::Cancel => &mut self.pending_cancel_request,
+            AsyncContentSlot::Scope => &mut self.pending_scope_request,
+            AsyncContentSlot::Hover => &mut self.pending_hover_request,
+        };
+        let Some((request_id, request_viewport)) = *slot else {
+            return Ok(());
+        };
+        if request_viewport != self.viewport {
+            *slot = None;
+            process.discard_response(request_id);
+            return Ok(());
+        }
+        let Some(result) = process.take_response(request_id) else {
+            return Ok(());
+        };
+        *slot = None;
+        let value = match result {
+            Ok(value) => value,
+            Err(error) => {
+                if matches!(kind, AsyncContentSlot::Hover) {
+                    return Ok(());
+                }
+                if error.root_cause().to_string()
+                    == tekes_ui_app_protocol::component::content::GEOMETRY_PENDING
+                {
+                    self.semantic_projection.dirty();
+                    self.frame_needs_scope = true;
+                    let snapshot_current = self.content_snapshot.as_ref().is_some_and(|snapshot| {
+                        snapshot.belongs_to_viewport(process.session(), native.view, self.viewport)
+                    });
+                    if !snapshot_current {
+                        self.scope_dirty = true;
+                    }
+                    (self.wake)();
+                    return Ok(());
+                }
+                return Err(error);
+            }
+        };
+        let reply: crate::component::content::Reply = match serde_json::from_value(value) {
+            Ok(reply) => reply,
+            Err(_) if matches!(kind, AsyncContentSlot::Hover) => return Ok(()),
+            Err(error) => return Err(error.into()),
+        };
+        if reply.viewport != self.viewport || reply.view != native.view {
+            return Ok(());
+        }
+        let snapshot = match crate::ProcessContentSnapshot::from_wire(
+            &process,
+            native.view,
+            request_viewport,
+            self.view_frame,
+            self.clip,
+            reply,
+        ) {
+            Ok(snapshot) => snapshot,
+            Err(_) if matches!(kind, AsyncContentSlot::Hover) => return Ok(()),
+            Err(error) => return Err(error),
+        };
+        let response = self.accept_content(snapshot);
+        match kind {
+            AsyncContentSlot::Cancel => {
+                if response.changed {
+                    self.repaint_dirty = true;
+                }
+                self.geometry_input_pending = false;
+                self.remote_invalidation_pending = false;
+                self.scope_dirty = false;
+                self.frame_needs_scope = false;
+            }
+            AsyncContentSlot::Scope => {
+                self.scope_dirty = false;
+            }
+            AsyncContentSlot::Hover => {
+                if response.changed {
+                    self.repaint_dirty = true;
+                }
+            }
         }
         (self.wake)();
-        Ok(true)
+        Ok(())
+    }
+    fn enqueue_async_content_requests(&mut self) -> Result<()> {
+        if self.curve_geometry.is_some()
+            || !self.geometry_ready()
+            || !self.non_curve_frame_current()
+        {
+            return Ok(());
+        }
+        let Some((process, native)) = self.process.clone().zip(self.native.clone()) else {
+            return Ok(());
+        };
+        if self.geometry_input_pending && self.pending_cancel_request.is_none() {
+            let id = process.request_internal(crate::component::RequestBody::Content(
+                crate::component::content::Request {
+                    view: native.view,
+                    viewport: self.viewport,
+                    owner: None,
+                    focus_epoch: 0,
+                    text_binding: None,
+                    capture: None,
+                    input: crate::component::content::Input::CancelPointerCapture,
+                },
+            ))?;
+            self.pending_cancel_request = Some((id, self.viewport));
+        } else if self.typed_content_enabled() && !self.geometry_input_pending {
+            let snapshot_current = self.content_snapshot.as_ref().is_some_and(|snapshot| {
+                snapshot.belongs_to_viewport(process.session(), native.view, self.viewport)
+            });
+            let needs_scope = self.scope_dirty
+                || self.frame_needs_scope
+                || (self.content_accessibility_enabled()
+                    && self.semantic_projection.needs_refresh())
+                || !snapshot_current;
+            if needs_scope && self.pending_scope_request.is_none() {
+                let input = if self.content_accessibility_enabled() {
+                    crate::component::content::Input::Semantics
+                } else {
+                    crate::component::content::Input::Snapshot
+                };
+                let id = process.request_internal(crate::component::RequestBody::Content(
+                    crate::component::content::Request {
+                        view: native.view,
+                        viewport: self.viewport,
+                        owner: None,
+                        focus_epoch: 0,
+                        text_binding: None,
+                        capture: None,
+                        input,
+                    },
+                ))?;
+                self.frame_needs_scope = false;
+                self.pending_scope_request = Some((id, self.viewport));
+            }
+        }
+        Ok(())
     }
     /// Apply only the original non-frame service updates for a preflighted
     /// curve child. The Host must then perform its ordinary render/layout; this
@@ -1584,79 +1858,11 @@ impl ProcessContainer {
                     )
             })
     }
-    fn refresh_content_scope(&mut self) -> Result<()> {
-        if self.curve_geometry.is_some() {
-            ensure!(
-                self.content_snapshot
-                    .as_ref()
-                    .is_some_and(|snapshot| snapshot.curve_stamp().is_some()),
-                "current verified Curve projection unavailable"
-            );
-            return Ok(());
-        }
-        if !self.content_pointer_enabled()
-            && !self.content_keyboard_enabled()
-            && !self.content_scroll_enabled()
-            && !self.content_accessibility_enabled()
-        {
-            return Ok(());
-        }
-        let bridge = self.native_content_bridge(std::time::Duration::from_secs(1))?;
-        let result = if self.content_accessibility_enabled() {
-            bridge.semantics()
-        } else {
-            bridge.snapshot()
-        };
-        match result {
-            Ok(snapshot) => {
-                self.accept_content(snapshot);
-            }
-            // Keep the last authoritative barrier while existing layout/frame
-            // acknowledgement completes. Never replay or retarget input here.
-            Err(error)
-                if error.root_cause().to_string()
-                    == tekes_ui_app_protocol::component::content::GEOMETRY_PENDING =>
-            {
-                self.semantic_projection.dirty();
-            }
-            Err(error) => return Err(error),
-        }
-        Ok(())
-    }
-    fn fresh_content_snapshot(
-        &self,
-        bridge: &crate::ProcessContentBridge<'_>,
-    ) -> Result<crate::ProcessContentSnapshot> {
-        if self.curve_geometry.is_some() {
-            ensure!(
-                self.input_ready(),
-                "verified Curve input projection unavailable"
-            );
-            self.content_snapshot
-                .clone()
-                .context("verified Curve content projection missing")
-        } else {
-            bridge.snapshot()
-        }
-    }
     fn query_content(&self) -> Option<crate::ProcessContentSnapshot> {
         if !(self.content_focused || self.remote_overlay()) || !self.available() {
             return None;
         }
-        let current = if self.curve_geometry.is_some() {
-            // Read-only logical text and binding outlive a frame regrant.
-            // text_input_snapshot separately withdraws stale caret geometry;
-            // mutable callbacks still use exact current admission or the
-            // existing same-owner/binding deferred-input validation.
-            self.content_snapshot.clone()?
-        } else if self.input_ready() {
-            self.native_content_bridge(std::time::Duration::from_secs(1))
-                .ok()?
-                .snapshot()
-                .ok()?
-        } else {
-            self.content_snapshot.clone()?
-        };
+        let current = self.content_snapshot.clone()?;
         if !current.belongs_to(self.process.as_ref()?.session(), self.native.as_ref()?.view) {
             return None;
         }
@@ -1775,13 +1981,56 @@ impl ProcessContainer {
         }
         response
     }
+    fn dispatch_async_hover_pointer(&mut self, pointer: &PointerEvent) -> ContentResponse {
+        let Some((process, native, snapshot)) = (|| {
+            Some((
+                self.process.clone()?,
+                self.native.clone()?,
+                self.content_snapshot.clone()?,
+            ))
+        })() else {
+            return ContentResponse::default();
+        };
+        if let Some((old_id, _)) = self.pending_hover_request.take() {
+            process.discard_response(old_id);
+        }
+        let input = match crate::native_content::pointer_input(pointer, self.view_frame) {
+            Ok(input) => input,
+            Err(error) => {
+                self.error = Some(error.to_string());
+                return ContentResponse::default();
+            }
+        };
+        let request = crate::component::content::Request {
+            view: native.view,
+            viewport: self.viewport,
+            owner: snapshot.reply().focused,
+            focus_epoch: snapshot.reply().focus_epoch,
+            text_binding: snapshot.reply().text_binding.clone(),
+            capture: None,
+            input,
+        };
+        match process.request_internal(crate::component::RequestBody::Content(request)) {
+            Ok(id) => self.pending_hover_request = Some((id, self.viewport)),
+            Err(error) => self.error = Some(error.to_string()),
+        }
+        ContentResponse::default()
+    }
     fn content_pointer(&mut self, pointer: &PointerEvent) -> ContentResponse {
+        if self.curve_geometry.is_none()
+            && !self.content_captured()
+            && !self.remote_overlay()
+            && matches!(pointer.phase, PointerPhase::Move | PointerPhase::Exit)
+        {
+            return self.dispatch_async_hover_pointer(pointer);
+        }
         let result = (|| -> Result<_> {
-            let bridge = self.native_content_bridge(std::time::Duration::from_secs(1))?;
-            let previous = match &self.content_snapshot {
-                Some(snapshot) => bridge.refresh_allocation(snapshot)?,
-                None => self.fresh_content_snapshot(&bridge)?,
-            };
+            let bridge = self.native_content_bridge(UI_CONTENT_TIMEOUT)?;
+            let snapshot = self
+                .content_snapshot
+                .as_ref()
+                .context("content projection unavailable")?;
+            let previous = bridge.refresh_allocation(snapshot)?;
             bridge.pointer(&previous, pointer)
         })();
         match result {
@@ -1798,11 +2047,8 @@ impl ProcessContainer {
         self.semantic_projection.dirty();
         self.accessibility_focus = false;
         self.content_reading_scroll = false;
-        if !self.content_pointer_enabled()
-            && !self.content_keyboard_enabled()
-            && !self.content_scroll_enabled()
-            && !self.content_accessibility_enabled()
-        {
+        self.discard_async_content_requests();
+        if !self.typed_content_enabled() {
             self.cancel();
             return ContentResponse::default();
         }
@@ -1810,27 +2056,10 @@ impl ProcessContainer {
         self.pointer_focus = None;
         self.pressed = false;
         self.geometry_input_pending = true;
-        if self.geometry_ready()
-            && let Err(error) = self.acknowledge_geometry_cancel()
-        {
-            self.error = Some(error.to_string());
-            self.geometry_dirty = true;
-        }
+        self.scope_dirty = true;
+        self.frame_needs_scope = false;
         self.content_bubbles = Some(false);
         ContentResponse::consumed(true)
-    }
-    fn acknowledge_geometry_cancel(&mut self) -> Result<()> {
-        let next = {
-            let bridge = self.geometry_content_bridge(std::time::Duration::from_secs(1))?;
-            let current = self.fresh_content_snapshot(&bridge)?;
-            bridge.request(
-                &current,
-                crate::component::content::Input::CancelPointerCapture,
-            )?
-        };
-        self.accept_content(next);
-        self.geometry_input_pending = false;
-        Ok(())
     }
     fn queue_content(&mut self, input: crate::component::content::Input) -> ContentResponse {
         self.content_bubbles = Some(false);
@@ -1937,19 +2166,16 @@ impl ProcessContainer {
                     None
                 };
             let result = (|| -> Result<_> {
-                let bridge = self.native_content_bridge(std::time::Duration::from_secs(1))?;
+                let bridge = self.native_content_bridge(UI_CONTENT_TIMEOUT)?;
+                let snapshot = self
+                    .content_snapshot
+                    .as_ref()
+                    .context("content projection unavailable")?;
+                let current = bridge.refresh_allocation(snapshot)?;
                 let finishing = matches!(
                     pending.input,
                     crate::component::content::Input::TextKeyEnd { .. }
                 );
-                let current = if finishing {
-                    self.fresh_content_snapshot(&bridge)?
-                } else {
-                    match &self.content_snapshot {
-                        Some(snapshot) => bridge.refresh_allocation(snapshot)?,
-                        None => self.fresh_content_snapshot(&bridge)?,
-                    }
-                };
                 trace_layer(format_args!(
                     "event=deferred_delivery view={} old_capture={:?} current_capture={:?} old_owner={:?} current_owner={:?} stamp={:?}",
                     pending.view,
@@ -2010,9 +2236,9 @@ impl ProcessContainer {
                     ));
                     // Observe the current owner for future fresh intent, without
                     // applying any of the rejected old callbacks to that owner.
-                    if let Ok(bridge) =
-                        self.native_content_bridge(std::time::Duration::from_secs(1))
-                        && let Ok(current) = self.fresh_content_snapshot(&bridge)
+                    if self.curve_geometry.is_none()
+                        && let Ok(bridge) = self.native_content_bridge(UI_CONTENT_TIMEOUT)
+                        && let Ok(current) = bridge.cancel_pointer_capture()
                     {
                         self.accept_content(current);
                     }
@@ -2060,22 +2286,12 @@ impl ProcessContainer {
         input: crate::component::content::Input,
     ) -> ContentResponse {
         let result = (|| -> Result<_> {
-            let bridge = self.native_content_bridge(std::time::Duration::from_secs(1))?;
-            // Started is fresh native intent, not a retained editing callback.
-            // Capture the current original child lease; subsequent callbacks
-            // remain fenced by the parent frame and this retained snapshot.
-            let previous = if matches!(
-                input,
-                crate::component::content::Input::TextKeyEnd { .. }
-                    | crate::component::content::Input::TextKeyStart { .. }
-            ) {
-                self.fresh_content_snapshot(&bridge)?
-            } else {
-                match &self.content_snapshot {
-                    Some(snapshot) => bridge.refresh_allocation(snapshot)?,
-                    None => self.fresh_content_snapshot(&bridge)?,
-                }
-            };
+            let bridge = self.native_content_bridge(UI_CONTENT_TIMEOUT)?;
+            let snapshot = self
+                .content_snapshot
+                .as_ref()
+                .context("content projection unavailable")?;
+            let previous = bridge.refresh_allocation(snapshot)?;
             match input {
                 crate::component::content::Input::Scroll(scroll) => {
                     bridge.scroll(&previous, scroll)
@@ -2091,17 +2307,27 @@ impl ProcessContainer {
     fn content_failure(&mut self, error: anyhow::Error) -> ContentResponse {
         // A failed delivery is cancelled, never resnapshotted and replayed.
         self.cancel_geometry_input();
+        if self.curve_geometry.is_none()
+            && self.geometry_ready()
+            && let Ok(bridge) = self.geometry_content_bridge(UI_CONTENT_TIMEOUT)
+            && let Ok(next) = bridge.cancel_pointer_capture()
+        {
+            self.accept_content(next);
+            self.geometry_input_pending = false;
+            self.scope_dirty = false;
+        }
         self.error = Some(error.to_string());
         self.content_bubbles = Some(false);
         ContentResponse::default()
     }
     fn focus_content(&mut self, focused: bool, visible: bool) {
         let result = (|| -> Result<_> {
-            let bridge = self.native_content_bridge(std::time::Duration::from_secs(1))?;
-            // This is a new explicit focus/blur intent, not a retained native
-            // callback. Layout may have applied the original overlay's pending
-            // focus since the cached reply; capture its current authority once.
-            let previous = self.fresh_content_snapshot(&bridge)?;
+            let bridge = self.native_content_bridge(UI_CONTENT_TIMEOUT)?;
+            let snapshot = self
+                .content_snapshot
+                .as_ref()
+                .context("content projection unavailable")?;
+            let previous = bridge.refresh_allocation(snapshot)?;
             let target = focused
                 .then(|| {
                     previous
@@ -2121,12 +2347,6 @@ impl ProcessContainer {
         match result {
             Ok(next) => {
                 self.accept_content(next);
-                if self.content_accessibility_enabled()
-                    && self.input_ready()
-                    && let Err(error) = self.refresh_content_scope()
-                {
-                    self.error = Some(error.to_string());
-                }
             }
             Err(error) => {
                 self.content_failure(error);
@@ -2219,7 +2439,7 @@ impl ProcessContainer {
             .process
             .as_ref()
             .expect("negotiated process exists")
-            .request(crate::component::RequestBody::CurveV1(envelope))?;
+            .request_internal(crate::component::RequestBody::CurveV1(envelope))?;
         trace_layer(format_args!(
             "event=grant_send view={} request={} proposal={} gp={} viewport={} allocation={} layout={} capture={:?}",
             view,
@@ -2397,11 +2617,9 @@ impl Component for ProcessContainer {
                         reason: crate::component::curve::RevokeReasonWire::ParentGeometryChanged,
                     },
                 };
-                match self
-                    .process
-                    .as_ref()
-                    .map(|process| process.request(crate::component::RequestBody::CurveV1(revoke)))
-                {
+                match self.process.as_ref().map(|process| {
+                    process.request_internal(crate::component::RequestBody::CurveV1(revoke))
+                }) {
                     Some(Ok(request)) => self
                         .frame_resources
                         .lock()
@@ -2542,8 +2760,12 @@ impl Component for ProcessContainer {
             .is_some_and(|key| key.disposition == TextKeyDisposition::Deferred)
         {
             let result = (|| -> Result<_> {
-                let bridge = self.native_content_bridge(std::time::Duration::from_secs(1))?;
-                let current = self.fresh_content_snapshot(&bridge)?;
+                let bridge = self.native_content_bridge(UI_CONTENT_TIMEOUT)?;
+                let snapshot = self
+                    .content_snapshot
+                    .as_ref()
+                    .context("content projection unavailable")?;
+                let current = bridge.refresh_allocation(snapshot)?;
                 bridge.request(
                     &current,
                     crate::component::content::Input::TextKeyResult { id },
@@ -3038,6 +3260,7 @@ impl Component for ProcessContainer {
                 // including a Revoke sent by the Host's preceding context None.
                 *resources = FrameResources::default();
                 drop(resources);
+                self.discard_async_content_requests();
                 self.process = None;
                 self.curve_preflight = CurvePreflight::Unrequested;
                 self.curve_request = None;
@@ -3048,6 +3271,9 @@ impl Component for ProcessContainer {
                 self.content_focused = false;
                 self.content_bubbles = None;
                 self.geometry_input_pending = false;
+                self.remote_invalidation_pending = false;
+                self.scope_dirty = false;
+                self.frame_needs_scope = false;
                 self.pending_content.clear();
                 self.pending_content_bytes = 0;
                 (self.wake)();
@@ -3161,7 +3387,7 @@ impl Component for ProcessContainer {
             A::ReplaceSelectedText(v) => W::ReplaceSelectedText(v.clone()),
         };
         let result = (|| -> Result<_> {
-            self.native_content_bridge(std::time::Duration::from_secs(1))?
+            self.native_content_bridge(UI_CONTENT_TIMEOUT)?
                 .accessibility_action(&snapshot, target, child_part, action)
         })();
         match result {
@@ -3173,18 +3399,16 @@ impl Component for ProcessContainer {
                 if requested {
                     self.pointer_focus = Some(false);
                 }
-                if self.input_ready()
-                    && let Err(error) = self.refresh_content_scope()
-                {
-                    self.semantic_projection.dirty();
-                    self.error = Some(error.to_string());
-                }
                 response
             }
             Err(error) => {
-                // A stale AX callback must not cancel a newer editor/gesture.
+                // A stale AX callback must not cancel a newer editor/gesture or
+                // poison a healthy Ready worker while prepare refreshes semantics.
                 self.semantic_projection.dirty();
-                self.error = Some(error.to_string());
+                if !self.available() {
+                    self.error = Some(error.to_string());
+                }
+                (self.wake)();
                 ContentResponse::default()
             }
         }

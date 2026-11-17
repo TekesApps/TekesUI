@@ -200,10 +200,19 @@ pub(crate) fn event(input: &wire::Input) -> Option<ContentEvent> {
         wire::Input::Cancel => Some(ContentEvent::Cancel),
     }
 }
+#[cfg(test)]
 pub(crate) fn dispatch(
     host: &mut ContentHost,
     text: &mut dyn ButtonTextRenderer,
     request: wire::Request,
+) -> Result<wire::Reply> {
+    dispatch_with_semantics(host, text, request, false)
+}
+pub(crate) fn dispatch_with_semantics(
+    host: &mut ContentHost,
+    text: &mut dyn ButtonTextRenderer,
+    request: wire::Request,
+    include_semantics: bool,
 ) -> Result<wire::Reply> {
     let focus_before = host.focused();
     let query_only = matches!(
@@ -217,16 +226,21 @@ pub(crate) fn dispatch(
                 serial,
             })
     };
-    // Finish is an original key-frame cleanup, not a new edit. The original
-    // host validates its immutable key ID, owner/mount/focus/binding snapshot
-    // before any fallback; a stale frame finishes as Cancelled.
+    // Finish is an original key-frame cleanup, not a new edit. CancelPointerCapture
+    // is a host fence, and TextKeyStart/Focus/EnterFocus represent fresh parent intent.
+    // Retained callbacks keep strict owner/mount/focus/binding/capture lease checks.
     if !matches!(
         request.input,
         wire::Input::Snapshot
             | wire::Input::Semantics
             | wire::Input::ReadingState { .. }
+            | wire::Input::TextKeyStart { .. }
             | wire::Input::TextKeyEnd { .. }
             | wire::Input::TextKeyResult { .. }
+            | wire::Input::Focus { .. }
+            | wire::Input::EnterFocus { .. }
+            | wire::Input::CancelPointerCapture
+            | wire::Input::Cancel
     ) {
         let focused = host.focused().and_then(|id| target(host, id));
         let expected = if matches!(request.input, wire::Input::Pointer(_)) {
@@ -258,9 +272,6 @@ pub(crate) fn dispatch(
     if let wire::Input::Scroll(scroll) = &request.input {
         ensure!(scroll.is_valid(), "invalid Content scroll input");
     }
-    let semantics = matches!(request.input, wire::Input::Semantics)
-        .then(|| crate::content_accessibility::snapshot(host))
-        .transpose()?;
     let reading = crate::content_reading::dispatch(host, text, &request.input)?;
     let event = event(&request.input);
     // The outer ContentHost owns traversal between containers. Original child
@@ -323,6 +334,13 @@ pub(crate) fn dispatch(
     } else {
         (ContentResponse::default(), false)
     };
+    let semantics = if matches!(request.input, wire::Input::Semantics) {
+        Some(crate::content_accessibility::snapshot(host)?)
+    } else if include_semantics {
+        crate::content_accessibility::snapshot(host).ok()
+    } else {
+        None
+    };
     let focused = host.focused().and_then(|id| target(host, id));
     let projected = focused
         .zip(host.text_input_snapshot())
@@ -341,7 +359,7 @@ pub(crate) fn dispatch(
                 .map(|(index, r)| (index, rect(r)))
                 .collect(),
         });
-    let reply = wire::Reply {
+    let mut reply = wire::Reply {
         view: request.view,
         viewport: request.viewport,
         consumed: response.consumed,
@@ -412,6 +430,10 @@ pub(crate) fn dispatch(
             serde_json::to_vec(&reply)?.len() <= crate::pipes::MAX_PACKET / 2,
             "Content semantic reply exceeds transport budget"
         );
+    } else if reply.semantics.is_some()
+        && serde_json::to_vec(&reply)?.len() > crate::pipes::MAX_PACKET / 2
+    {
+        reply.semantics = None;
     }
     Ok(reply)
 }

@@ -14,6 +14,7 @@ use tekes_ui_module_runtime::{ComponentEmitter, ProcessModule, component::*};
 pub const MODULE_ID: &str = "navigation";
 pub const BACK: u64 = 0x4e01;
 pub const FORWARD: u64 = 0x4e02;
+pub const MAX_HISTORY_ENTRIES: usize = 256;
 /// Faults are only enabled by the dedicated acceptance executable's factory.
 #[derive(Default)]
 pub struct NavigationModule {
@@ -28,8 +29,15 @@ pub struct NavigationModule {
     toolbar_state: Option<(bool, bool)>,
     sequence: u64,
     fault: Fault,
+    in_process: bool,
 }
 impl NavigationModule {
+    pub fn new_in_process() -> Self {
+        Self {
+            in_process: true,
+            ..Self::default()
+        }
+    }
     pub fn acceptance(fault: Fault) -> Self {
         Self {
             fault,
@@ -55,9 +63,9 @@ impl NavigationModule {
     fn s(&self) -> Result<&Store> {
         self.store.as_ref().context("navigation not opened")
     }
-    fn toolbar(&mut self, e: &ComponentEmitter) -> Result<()> {
+    fn next_toolbar(&mut self) -> Result<Option<(u64, u64, Vec<ToolbarAction>)>> {
         if self.window == 0 {
-            return Ok(());
+            return Ok(None);
         }
         let enabled = self.ready && self.pending.is_none();
         let h = self.h()?;
@@ -66,7 +74,7 @@ impl NavigationModule {
             enabled && h.cursor.is_some_and(|i| i + 1 < h.entries.len()),
         );
         if self.toolbar_state == Some(projection) {
-            return Ok(());
+            return Ok(None);
         }
         self.toolbar_state = Some(projection);
         self.registration += 1;
@@ -87,13 +95,17 @@ impl NavigationModule {
             tooltip: Some(name.into()),
         })
         .collect();
-        e.emit(ComponentEvent::Toolbar {
-            revision: self.registration,
-            scope: ToolbarScope::Window {
-                window: self.window,
-            },
-            items,
-        })
+        Ok(Some((self.registration, self.window, items)))
+    }
+    fn toolbar(&mut self, e: &ComponentEmitter) -> Result<()> {
+        if let Some((revision, window, items)) = self.next_toolbar()? {
+            e.emit(ComponentEvent::Toolbar {
+                revision,
+                scope: ToolbarScope::Window { window },
+                items,
+            })?;
+        }
+        Ok(())
     }
     fn finish(&mut self) -> Result<Reply> {
         let p = self.pending.as_ref().context("no pending transaction")?;
@@ -102,7 +114,13 @@ impl NavigationModule {
         self.history = Some(candidate.clone());
         // Cleanup is after the commit point: a cleanup error cannot turn a
         // durable history commit into an execution/persistence failure.
-        if self.fault != Fault::BeforeCleanup && self.s()?.clear_pending().is_ok() {
+        if self.in_process && self.fault == Fault::None {
+            if !self.s()?.root.join("nav.pending.json").exists()
+                || self.s()?.clear_pending().is_ok()
+            {
+                self.pending = None;
+            }
+        } else if self.fault != Fault::BeforeCleanup && self.s()?.clear_pending().is_ok() {
             self.pending = None;
         }
         Ok(Reply::HistoryCommitted(candidate))
@@ -171,7 +189,9 @@ impl NavigationModule {
         };
         self.pending = Some(p.clone());
         let result = (|| {
-            self.s()?.save_pending(&p)?;
+            if !(self.in_process && self.fault == Fault::None) {
+                self.s()?.save_pending(&p)?;
+            }
             self.finish()
         })();
         if result.is_err() {
@@ -244,7 +264,9 @@ impl NavigationModule {
                 };
                 // If journal durability fails, conservatively freeze until explicit recovery.
                 self.pending = Some(pending.clone());
-                if let Err(error) = self.s()?.save_pending(&pending) {
+                if !(self.in_process && self.fault == Fault::None)
+                    && let Err(error) = self.s()?.save_pending(&pending)
+                {
                     self.ready = false;
                     return Err(error);
                 }
@@ -279,7 +301,11 @@ impl NavigationModule {
                         .is_some_and(|p| p.transaction == tx && p.applied.is_none()),
                     "unknown/already applied transaction"
                 );
-                self.s()?.clear_pending()?;
+                if !(self.in_process && self.fault == Fault::None)
+                    || self.s()?.root.join("nav.pending.json").exists()
+                {
+                    self.s()?.clear_pending()?;
+                }
                 self.pending = None;
                 Ok(Reply::Aborted)
             }
@@ -293,7 +319,11 @@ impl NavigationModule {
                             .is_some_and(|p| p.transaction == tx && p.applied.is_none()),
                     "unknown/already applied transaction"
                 );
-                self.s()?.clear_pending()?;
+                if !(self.in_process && self.fault == Fault::None)
+                    || self.s()?.root.join("nav.pending.json").exists()
+                {
+                    self.s()?.clear_pending()?;
+                }
                 self.pending = None;
                 Ok(Reply::Aborted)
             }
@@ -325,19 +355,51 @@ impl NavigationModule {
         }
     }
 }
+impl NavigationModule {
+    fn parse_request(&self, request: RequestBody, in_process: bool) -> Result<Command> {
+        match request {
+            RequestBody::Message { topic, payload } if topic == "navigation" => {
+                Ok(serde_json::from_value(payload)?)
+            }
+            RequestBody::Invoke {
+                command,
+                registration,
+                window,
+            } => {
+                if in_process {
+                    ensure!(
+                        window != 0 && window == self.window && registration == self.registration,
+                        "stale navigation toolbar registration"
+                    );
+                }
+                match command {
+                    BACK => Ok(Command::Navigate(Action::Back)),
+                    FORWARD => Ok(Command::Navigate(Action::Forward)),
+                    _ => bail!("unknown navigation action"),
+                }
+            }
+            _ => bail!("unsupported navigation request"),
+        }
+    }
+    pub(crate) fn handle_in_process(
+        &mut self,
+        request: RequestBody,
+        session: &Session,
+    ) -> InProcessOutcome {
+        let result = (|| -> Result<Reply> {
+            let cmd = self.parse_request(request, true)?;
+            self.command(cmd, session)
+        })();
+        let toolbar = self.next_toolbar().ok().flatten();
+        (result, toolbar)
+    }
+}
+
+pub(crate) type InProcessToolbarUpdate = (u64, u64, Vec<ToolbarAction>);
+pub(crate) type InProcessOutcome = (Result<Reply>, Option<InProcessToolbarUpdate>);
 impl ProcessModule for NavigationModule {
     fn handle(&mut self, request: RequestBody, e: &ComponentEmitter) -> Result<Value> {
-        let command = match request {
-            RequestBody::Message { topic, payload } if topic == "navigation" => {
-                serde_json::from_value(payload)?
-            }
-            RequestBody::Invoke { command, .. } => match command {
-                BACK => Command::Navigate(Action::Back),
-                FORWARD => Command::Navigate(Action::Forward),
-                _ => bail!("unknown navigation action"),
-            },
-            _ => bail!("unsupported navigation request"),
-        };
+        let command = self.parse_request(request, false)?;
         let result = self.command(command, e.session());
         self.toolbar(e)?;
         result.and_then(|r| Ok(serde_json::to_value(r)?))
@@ -349,6 +411,10 @@ fn candidate(old: &History, action: &Action, id: &str) -> Result<History> {
         Action::Push(entry) => {
             h.entries.truncate(h.cursor.map_or(0, |i| i + 1));
             h.entries.push(entry.clone());
+            if h.entries.len() > MAX_HISTORY_ENTRIES {
+                let excess = h.entries.len() - MAX_HISTORY_ENTRIES;
+                h.entries.drain(..excess);
+            }
             h.cursor = Some(h.entries.len() - 1);
         }
         Action::Back => {
@@ -374,5 +440,116 @@ pub fn definition() -> tekes_ui_module_runtime::ComponentDefinition {
         id: MODULE_ID,
         capabilities: Capabilities::HEADLESS,
         create,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn in_process_navigation_caps_history_and_commits_single_write() {
+        let dir = std::env::temp_dir().join(format!(
+            "tekes-nav-inproc-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let session = Session {
+            module: MODULE_ID.into(),
+            instance: 1,
+            host_epoch: 7,
+        };
+        let mut module = NavigationModule::new_in_process();
+        let (reply, _) = module.handle_in_process(
+            RequestBody::Message {
+                topic: "navigation".into(),
+                payload: serde_json::to_value(Command::Open {
+                    directory: dir.clone(),
+                    history_id: "test-nav".into(),
+                    window: 1,
+                })
+                .unwrap(),
+            },
+            &session,
+        );
+        let offer = match reply.unwrap() {
+            Reply::RestoreOffer(offer) => offer,
+            other => panic!("unexpected reply: {other:?}"),
+        };
+        let mut host = NavigationHost::new(session.clone());
+        let applied = host
+            .restore(offer, |_| Ok("window:7:empty".into()))
+            .unwrap();
+        let (reply, _) = module.handle_in_process(
+            RequestBody::Message {
+                topic: "navigation".into(),
+                payload: serde_json::to_value(Command::RecoveryApplied(applied)).unwrap(),
+            },
+            &session,
+        );
+        let ready = match reply.unwrap() {
+            Reply::RecoveryReady(r) => r,
+            other => panic!("unexpected reply: {other:?}"),
+        };
+        host.ready(&ready).unwrap();
+
+        let total = MAX_HISTORY_ENTRIES + 10;
+        let mut last_history = None;
+        for i in 0..total {
+            let entry = Entry {
+                id: format!("entry-{i}"),
+                route: "doc".into(),
+                params: json!({ "index": i }),
+            };
+            let (reply, _) = module.handle_in_process(
+                RequestBody::Message {
+                    topic: "navigation".into(),
+                    payload: serde_json::to_value(Command::Navigate(Action::Push(entry))).unwrap(),
+                },
+                &session,
+            );
+            let tx = match reply.unwrap() {
+                Reply::Execute(tx) => tx,
+                other => panic!("unexpected reply: {other:?}"),
+            };
+            assert!(
+                !dir.join("nav.pending.json").exists(),
+                "in-process Navigate must not write nav.pending.json"
+            );
+            let receipt = host
+                .execute(tx.clone(), |_| Ok("window:7:doc".into()))
+                .unwrap();
+            let (reply, _) = module.handle_in_process(
+                RequestBody::Message {
+                    topic: "navigation".into(),
+                    payload: serde_json::to_value(Command::Applied(receipt)).unwrap(),
+                },
+                &session,
+            );
+            let history = match reply.unwrap() {
+                Reply::HistoryCommitted(h) => h,
+                other => panic!("unexpected reply: {other:?}"),
+            };
+            assert!(
+                !dir.join("nav.pending.json").exists(),
+                "in-process commit must not create nav.pending.json"
+            );
+            host.committed(&tx, &history).unwrap();
+            last_history = Some(history);
+        }
+        let history = last_history.unwrap();
+        assert_eq!(history.entries.len(), MAX_HISTORY_ENTRIES);
+        assert_eq!(history.cursor, Some(MAX_HISTORY_ENTRIES - 1));
+        assert_eq!(history.entries[0].id, "entry-10");
+        assert_eq!(
+            history.entries[MAX_HISTORY_ENTRIES - 1].id,
+            format!("entry-{}", total - 1)
+        );
+        drop(module);
+        std::fs::remove_dir_all(dir).unwrap();
     }
 }

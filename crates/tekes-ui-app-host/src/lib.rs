@@ -47,7 +47,7 @@ pub mod legacy {
 }
 #[cfg(target_os = "macos")]
 pub use navigation_window::NavigationOptions;
-pub use tekes_ui_module_runtime::ModuleDefinition;
+pub use tekes_ui_module_runtime::{ComponentDefinition, ModuleDefinition, ProcessComponentOptions};
 
 /// Fixed build-time assembly, not a dynamic plugin registry.
 pub struct AppProfile {
@@ -73,12 +73,42 @@ fn validate(profile: &AppProfile) -> anyhow::Result<()> {
     Ok(())
 }
 
+fn validate_components(
+    profile: &AppProfile,
+    components: &[ComponentDefinition],
+) -> anyhow::Result<()> {
+    let mut ids = std::collections::HashSet::new();
+    for component in components {
+        anyhow::ensure!(
+            !component.id.is_empty()
+                && component
+                    .id
+                    .bytes()
+                    .all(|b| b.is_ascii_alphanumeric() || b"-_.".contains(&b)),
+            "invalid component ID"
+        );
+        anyhow::ensure!(
+            component.capabilities.view,
+            "V2 process component requires view capability: {}",
+            component.id
+        );
+        anyhow::ensure!(
+            !profile.modules.iter().any(|m| m.id == component.id),
+            "component ID conflicts with V1 module ID: {}",
+            component.id
+        );
+        ids.insert(component.id);
+    }
+    Ok(())
+}
+
 /// Fixed local/process column assembly over the shared native window shell.
 #[cfg(target_os = "macos")]
 pub struct AppWindow {
     theme: tekes_ui_tokens::Theme,
     palette_source: Option<std::rc::Rc<std::cell::Cell<tekes_ui_tokens::Palette>>>,
     profile: AppProfile,
+    components: Vec<ComponentDefinition>,
     columns: Option<Vec<Column>>,
     navigation: Option<NavigationOptions>,
     settings: Option<settings::SettingsConfiguration>,
@@ -99,6 +129,7 @@ impl AppWindow {
             theme: tekes_ui_tokens::Theme::LIGHT,
             palette_source: None,
             profile,
+            components: Vec::new(),
             columns: None,
             navigation: None,
             settings: None,
@@ -108,17 +139,23 @@ impl AppWindow {
     }
     pub fn from_columns(columns: Vec<Column>) -> anyhow::Result<Self> {
         columns::validate(&columns)?;
-        let modules = columns
-            .iter()
-            .filter_map(|c| match c {
-                Column::ProcessContainer(p) => Some(p.definition),
-                _ => None,
-            })
-            .collect();
+        let mut modules = Vec::new();
+        let mut components = Vec::new();
+        for column in &columns {
+            if let Column::ProcessContainer(process) = column {
+                match &process.backing {
+                    columns::ProcessBacking::V1(definition) => modules.push(*definition),
+                    columns::ProcessBacking::V2 { definition, .. } => components.push(*definition),
+                }
+            }
+        }
+        let profile = AppProfile { modules };
+        validate_components(&profile, &components)?;
         Ok(Self {
             theme: tekes_ui_tokens::Theme::LIGHT,
             palette_source: None,
-            profile: AppProfile { modules },
+            profile,
+            components,
             columns: Some(columns),
             navigation: None,
             settings: None,
@@ -134,17 +171,23 @@ impl AppWindow {
     ) -> anyhow::Result<Self> {
         PresentationState::new(&containers, presentation.clone())?;
         let columns: Vec<Column> = containers.into_iter().map(Column::from).collect();
-        let modules = columns
-            .iter()
-            .filter_map(|c| match c {
-                Column::ProcessContainer(p) => Some(p.definition),
-                _ => None,
-            })
-            .collect();
+        let mut modules = Vec::new();
+        let mut components = Vec::new();
+        for column in &columns {
+            if let Column::ProcessContainer(process) = column {
+                match &process.backing {
+                    columns::ProcessBacking::V1(definition) => modules.push(*definition),
+                    columns::ProcessBacking::V2 { definition, .. } => components.push(*definition),
+                }
+            }
+        }
+        let profile = AppProfile { modules };
+        validate_components(&profile, &components)?;
         Ok(Self {
             theme: tekes_ui_tokens::Theme::LIGHT,
             palette_source: None,
-            profile: AppProfile { modules },
+            profile,
+            components,
             columns: Some(columns),
             navigation: None,
             settings: None,
@@ -195,11 +238,24 @@ impl AppWindow {
         );
         for definition in factories.iter().filter_map(ContainerFactory::definition) {
             anyhow::ensure!(
-                !self.profile.modules.iter().any(|m| m.id == definition.id),
+                !self.profile.modules.iter().any(|m| m.id == definition.id)
+                    && !self.components.iter().any(|c| c.id == definition.id),
                 "worker factory registered more than once: {}",
                 definition.id
             );
             self.profile.modules.push(definition);
+        }
+        for definition in factories
+            .iter()
+            .filter_map(ContainerFactory::component_definition)
+        {
+            anyhow::ensure!(
+                !self.profile.modules.iter().any(|m| m.id == definition.id)
+                    && !self.components.iter().any(|c| c.id == definition.id),
+                "component factory registered more than once: {}",
+                definition.id
+            );
+            self.components.push(definition);
         }
         self.container_factories = factories;
         Ok(self)
@@ -249,6 +305,7 @@ impl AppWindow {
             self.navigation.is_some(),
             self.presentation.as_ref(),
         )?;
+        validate_components(&self.profile, &self.components)?;
         let settings = self.settings.take();
         self.into_host(false).open(parent, config, settings)
     }
@@ -263,6 +320,7 @@ impl AppWindow {
     pub fn run_with_args(self, args: &[String]) -> anyhow::Result<()> {
         run_columns(
             self.profile,
+            self.components,
             self.columns,
             self.navigation,
             self.settings,
@@ -319,6 +377,7 @@ fn run_internal(
 ) -> anyhow::Result<()> {
     run_columns(
         profile,
+        Vec::new(),
         None,
         navigation,
         settings,
@@ -358,6 +417,7 @@ fn validate_assembly(
 #[allow(clippy::too_many_arguments)]
 fn run_columns(
     profile: AppProfile,
+    components: Vec<ComponentDefinition>,
     columns: Option<Vec<Column>>,
     navigation: Option<NavigationOptions>,
     settings: Option<settings::SettingsConfiguration>,
@@ -373,7 +433,17 @@ fn run_columns(
         navigation.is_some(),
         presentation.as_ref(),
     )?;
-    if run_component_worker_from_args(args)? {
+    validate_components(&profile, &components)?;
+    let mut all_components = vec![navigation::definition(), settings_undo::definition()];
+    for component in &components {
+        if !all_components
+            .iter()
+            .any(|existing| existing.id == component.id)
+        {
+            all_components.push(*component);
+        }
+    }
+    if tekes_ui_module_runtime::run_component_worker_from_args(&all_components, args)? {
         return Ok(());
     }
     if args.get(1).map(String::as_str) == Some("--worker") {
@@ -389,6 +459,7 @@ fn run_columns(
     window::run(
         AppWindow {
             profile,
+            components,
             columns,
             navigation,
             settings,

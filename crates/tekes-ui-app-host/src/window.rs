@@ -1,16 +1,9 @@
 use crate::{
-    module_process::ModuleProcess,
     navigation_window::{NavigationOptions, WindowNavigation},
     text::Text,
 };
 use anyhow::{Result, ensure};
-use std::{
-    collections::VecDeque,
-    sync::{
-        Arc, Condvar, Mutex,
-        mpsc::{self, Receiver, SyncSender},
-    },
-};
+use std::sync::mpsc::{self, Receiver, SyncSender};
 use tekes_ui_app_protocol::{InputKind, Request, ToolbarItem, VERSION};
 use tekes_ui_controls::{
     ControlKey, ToolbarControl,
@@ -41,6 +34,10 @@ mod window_columns;
 mod window_container_geometry;
 #[path = "window_creation.rs"]
 mod window_creation;
+#[path = "window_layout.rs"]
+mod window_layout;
+#[path = "window_panels.rs"]
+mod window_panels;
 #[path = "window_presentation.rs"]
 mod window_presentation;
 #[path = "window_settings.rs"]
@@ -49,6 +46,7 @@ mod window_settings;
 mod window_switcher;
 #[path = "window_toolbar_mount.rs"]
 mod window_toolbar_mount;
+use window_panels::Panel;
 /// Same allocation used by the accepted public toolbar-split consumer:
 /// shared typography measures the row; the platform supplies its native center.
 /// Only the content boundary rounds outward to the drawable pixel grid.
@@ -273,363 +271,6 @@ fn presented_frames(frames: &[Rect], whole: Rect, progress: [f32; 2], scale: f32
     }
     result
 }
-struct Inbox {
-    queue: Mutex<VecDeque<Request>>,
-    cv: Condvar,
-    closed: std::sync::atomic::AtomicBool,
-}
-struct Pending {
-    frame: tekes_ui_module_runtime::ReceivedFrame,
-    ack: SyncSender<()>,
-}
-struct Panel {
-    content_icons: tekes_ui_controls::composition::SvgIconCache,
-    id: u32,
-    instance: u64,
-    local: Option<crate::LocalContainer>,
-    inbox: Arc<Inbox>,
-    process: tekes_ui_module_runtime::ProcessControl,
-    rx: Receiver<Result<Pending, String>>,
-    image: Option<ImageId>,
-    frame_size: (u32, u32),
-    frame_pixels: (u32, u32),
-    viewport: u64,
-    frame_viewport: u64,
-    frame_seq: u64,
-    scale: f32,
-    bounds: Rect,
-    mounted_toolbar: crate::window_toolbar::MountedToolbar,
-    options: crate::ContainerOptions,
-    clip: Rect,
-    logically_visible: bool,
-    toolbar_generation: u64,
-    geometry: window_container_geometry::ContainerGeometry,
-    content_padding: f32,
-    toolbar: Vec<ToolbarItem>,
-    seq: u64,
-    failed: Option<String>,
-    pid: Option<u32>,
-    module_id: String,
-    worker_id: String,
-    dispose_when_closed: bool,
-    retired: bool,
-    launch_tx: Option<SyncSender<Result<Pending, String>>>,
-    acceptance_commands: Option<Vec<(u64, u64)>>,
-}
-impl Panel {
-    fn new(id: u32, module_id: String) -> Self {
-        static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
-        let instance = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        let inbox = Arc::new(Inbox {
-            queue: Mutex::new(VecDeque::new()),
-            cv: Condvar::new(),
-            closed: std::sync::atomic::AtomicBool::new(false),
-        });
-        let process = tekes_ui_module_runtime::ProcessControl::new();
-        let (tx, rx) = mpsc::sync_channel(1);
-        Self {
-            content_icons: Default::default(),
-            id,
-            instance,
-            local: None,
-            worker_id: module_id.clone(),
-            dispose_when_closed: false,
-            retired: false,
-            module_id,
-            launch_tx: Some(tx),
-            acceptance_commands: None,
-            inbox,
-            process,
-            rx,
-            image: None,
-            frame_size: (0, 0),
-            frame_pixels: (0, 0),
-            viewport: 0,
-            frame_viewport: 0,
-            frame_seq: 0,
-            scale: 1.,
-            bounds: Rect::default(),
-            mounted_toolbar: crate::window_toolbar::MountedToolbar::new(),
-            options: crate::ContainerOptions::default(),
-            clip: Rect::default(),
-            logically_visible: true,
-            toolbar_generation: 0,
-            geometry: Default::default(),
-            content_padding: 0.,
-            toolbar: Vec::new(),
-            seq: 0,
-            failed: None,
-            pid: None,
-        }
-    }
-    fn start(&mut self, wake: WindowWake) {
-        if self.retired || self.local.is_some() {
-            return;
-        }
-        let Some(tx) = self.launch_tx.take() else {
-            return;
-        };
-        let work = self.inbox.clone();
-        let control = self.process.clone();
-        let module_id = self.worker_id.clone();
-        std::thread::spawn(move || {
-            let run = || -> Result<()> {
-                let mut c = ModuleProcess::spawn_with_control(&module_id, control)?;
-                // At most two immutable frames may be outstanding. Prepare the
-                // next while the previous frame is being imported/presented;
-                // completion acknowledgements still bound GPU resource lifetime.
-                let mut outstanding = VecDeque::new();
-                loop {
-                    if outstanding.len() == 2 {
-                        let done: Receiver<()> = outstanding.pop_front().unwrap();
-                        loop {
-                            match done.recv_timeout(std::time::Duration::from_millis(20)) {
-                                Ok(()) => break,
-                                Err(mpsc::RecvTimeoutError::Disconnected) => return Ok(()),
-                                Err(mpsc::RecvTimeoutError::Timeout) => {
-                                    if work.closed.load(std::sync::atomic::Ordering::Acquire) {
-                                        return Ok(());
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    let request = {
-                        let mut q = work.queue.lock().unwrap();
-                        while q.is_empty()
-                            && !work.closed.load(std::sync::atomic::Ordering::Acquire)
-                        {
-                            q = work.cv.wait(q).unwrap();
-                        }
-                        if work.closed.load(std::sync::atomic::Ordering::Acquire) {
-                            break;
-                        }
-                        q.pop_front().unwrap()
-                    };
-                    let frame = c.request(&request)?;
-                    let (at, ar) = mpsc::sync_channel(1);
-                    if tx.send(Ok(Pending { frame, ack: at })).is_err() {
-                        break;
-                    }
-                    outstanding.push_back(ar);
-                    wake.wake();
-                }
-                Ok(())
-            };
-            if let Err(e) = run() {
-                let _ = tx.send(Err(format!("{e:#}")));
-                wake.wake();
-            }
-        });
-    }
-    fn next_pending(&mut self) -> Option<Result<Pending, String>> {
-        if self.retired {
-            None
-        } else {
-            self.rx.try_recv().ok()
-        }
-    }
-    fn retire(&mut self, mut unregister: impl FnMut(ImageId)) {
-        self.retired = true;
-        self.mounted_toolbar.host.blur();
-        self.mounted_toolbar = crate::window_toolbar::MountedToolbar::new();
-        if let Some(local) = &mut self.local {
-            local.set_active(false);
-            local.cancel();
-        }
-        self.local = None;
-        self.process.cancel();
-        self.inbox
-            .closed
-            .store(true, std::sync::atomic::Ordering::Release);
-        self.inbox.cv.notify_all();
-        self.inbox.queue.lock().unwrap().clear();
-        self.launch_tx = None;
-        // Dropping the original receiver releases already queued frame leases;
-        // a producer completing concurrently can only fail its original send.
-        self.rx = mpsc::sync_channel(1).1;
-        self.toolbar.clear();
-        if let Some(image) = self.image.take() {
-            unregister(image);
-        }
-        self.content_icons = Default::default();
-        self.logically_visible = false;
-    }
-    fn request(&mut self, kind: InputKind, x: f32, y: f32) -> Result<()> {
-        if self.retired || self.failed.is_some() || self.launch_tx.is_some() {
-            return Ok(());
-        }
-        if kind == InputKind::Command {
-            if let Some(item) = self.toolbar.first() {
-                return self.command(item.id);
-            }
-            return Ok(());
-        }
-        self.enqueue(kind, x, y, None)
-    }
-    fn command(&mut self, id: u64) -> Result<()> {
-        let Some(item) = self.toolbar.iter().find(|item| item.id == id) else {
-            return Ok(());
-        };
-        if self.failed.is_some()
-            || !item.enabled
-            || (item.geometry_dependent && self.frame_viewport != self.viewport)
-        {
-            return Ok(());
-        }
-        self.enqueue(InputKind::Command, 0., 0., Some(id))
-    }
-    fn enqueue(&mut self, kind: InputKind, x: f32, y: f32, command: Option<u64>) -> Result<()> {
-        if self.retired {
-            return Ok(());
-        }
-        if let Some(local) = &mut self.local {
-            if let Some(command) = command {
-                local.command(command)?;
-            }
-            if kind == InputKind::Cancel {
-                local.cancel();
-            }
-            self.seq += 1;
-            if let Some(command) = command
-                && let Some(trace) = &mut self.acceptance_commands
-            {
-                trace.push((command, self.seq));
-            }
-            return Ok(());
-        }
-        self.seq += 1;
-        let r = Request {
-            version: VERSION,
-            command,
-            seq: self.seq,
-            viewport: self.viewport,
-            kind,
-            x,
-            y,
-            width: self.content_size().0,
-            height: self.content_size().1,
-            identity: self.id,
-            scale: self.scale,
-        };
-        let mut q = self.inbox.queue.lock().unwrap();
-        if kind == InputKind::Layout
-            && let Some(last) = q.back_mut()
-            && last.kind == InputKind::Layout
-        {
-            *last = r;
-            self.inbox.cv.notify_one();
-            return Ok(());
-        }
-        ensure!(q.len() < 256, "input queue full");
-        q.push_back(r);
-        if let Some(command) = command
-            && let Some(trace) = &mut self.acceptance_commands
-        {
-            trace.push((command, self.seq));
-        }
-        self.inbox.cv.notify_one();
-        Ok(())
-    }
-    fn cancel_geometry_input(&mut self) -> Result<()> {
-        if let Some(local) = &mut self.local {
-            local.with_host(&mut |host| {
-                host.cancel_pointer_capture();
-            });
-            self.seq += 1;
-            Ok(())
-        } else {
-            self.request(InputKind::Cancel, 0., 0.)
-        }
-    }
-    fn content_frame(&self) -> Rect {
-        let body = self.geometry.content;
-        let inset = self.content_padding;
-        Rect::new(
-            body.min_x() + inset,
-            body.min_y() + inset,
-            (body.size.width - 2. * inset).max(0.),
-            (body.size.height - 2. * inset).max(0.),
-        )
-    }
-    fn content_size(&self) -> (u32, u32) {
-        let content = self.content_frame();
-        (
-            content.size.width.max(1.) as u32,
-            content.size.height.max(1.) as u32,
-        )
-    }
-    fn content_point(&self, point: Point) -> Point {
-        let content = self.content_frame();
-        Point::new(point.x - content.min_x(), point.y - content.min_y())
-    }
-    fn content_inset(&self) -> f32 {
-        self.geometry.insets.top
-    }
-    #[cfg(test)]
-    fn geometry_with_header(
-        &mut self,
-        bounds: Rect,
-        scale: f32,
-        toolbar_height: f32,
-        header_extra: f32,
-    ) -> Result<()> {
-        self.geometry_with_layout(
-            bounds,
-            scale,
-            window_container_geometry::ContainerGeometry::legacy(
-                bounds,
-                toolbar_height + header_extra,
-            ),
-        )
-    }
-    fn geometry_with_layout(
-        &mut self,
-        bounds: Rect,
-        scale: f32,
-        geometry: window_container_geometry::ContainerGeometry,
-    ) -> Result<()> {
-        let previous = self.content_size();
-        let scale_changed = self.scale != scale;
-        self.bounds = bounds;
-        self.scale = scale;
-        self.geometry = geometry;
-        let changed = previous != self.content_size() || scale_changed;
-        if changed {
-            // A height-only content resize can leave the toolbar paint frame
-            // unchanged. Revoke old arms before advancing viewport ownership.
-
-            self.viewport += 1;
-            eprintln!(
-                "GEOMETRY panel={} viewport={} width={:.3} height={:.3} toolbar_height={:.3} scale={:.3}",
-                self.id,
-                self.viewport,
-                bounds.size.width,
-                bounds.size.height,
-                self.geometry.insets.top,
-                scale
-            );
-            eprintln!(
-                "CONTAINER_CONTENT id={} padding={} toolbar_boundary={} frame={:?}",
-                self.module_id,
-                self.content_padding,
-                self.bounds.min_y() + self.content_inset(),
-                self.content_frame()
-            );
-            self.request(InputKind::Layout, 0., 0.)?;
-        }
-        Ok(())
-    }
-}
-impl Drop for Panel {
-    fn drop(&mut self) {
-        self.process.cancel();
-        self.inbox
-            .closed
-            .store(true, std::sync::atomic::Ordering::Release);
-        self.inbox.cv.notify_all();
-    }
-}
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum ToolbarTarget {
     Visibility(usize),
@@ -645,49 +286,7 @@ enum ToolbarTarget {
     },
 }
 
-pub struct Host {
-    theme: Theme,
-    palette_source: Option<std::rc::Rc<std::cell::Cell<Palette>>>,
-    draw_diagnostic: bool,
-    diagnostic_event: u64,
-    diagnostic_draw: u64,
-    presentation_icons: tekes_ui_controls::composition::SvgIconCache,
-    presentation_chrome_edges: [Rect; 2],
-    native_toolbar_geometry: Option<(f32, f32, f32, f32)>,
-    settings: Option<std::rc::Rc<std::cell::RefCell<crate::settings::SettingsSurface>>>,
-    settings_back: bool,
-    settings_options: Option<crate::settings::SettingsOptions>,
-    settings_child: Option<tekes_ui_platform_macos::WindowHandle>,
-    is_settings_window: bool,
-    settings_frames: Vec<Rect>,
-    settings_top: f32,
-    settings_pointer: Option<bool>,
-    settings_owner: Option<crate::settings::SettingsOwner>,
-    settings_display: Option<window_settings::SettingsDisplayBinding>,
-    settings_loading: Option<window_settings::SettingsLoad>,
-    leading_visible: bool,
-    sidebar_motion: crate::sidebar_motion::SidebarMotion,
-    motion_epoch: std::time::Instant,
-    reduced_motion: bool,
-    trailing_visible: bool,
-    toolbar_index: usize,
-    toolbar_hover_index: Option<usize>,
-    presentation: Option<crate::PresentationState>,
-    presentation_layout: crate::PresentationLayout,
-    presentation_tabs:
-        Option<tekes_ui_controls::composition::ToolbarHost<window_switcher::SwitcherAction>>,
-    presentation_switcher: window_switcher::SwitcherState,
-    presentation_scroll_pending: bool,
-    container_window_boundary: Option<f32>,
-    toolbar_ax: Vec<(
-        tekes_ui_platform_macos::AccessibilityKey,
-        usize,
-        tekes_ui_controls::composition::ToolbarAccessibilityTarget,
-    )>,
-    toolbar_ax_next: u64,
-    toolbar_focus: Option<ToolbarTarget>,
-    toolbar_focus_visible: bool,
-    toolbar_focus_lease: Option<(u64, crate::window_toolbar::Source)>,
+struct NavigationCoordinator {
     navigation_options: Option<NavigationOptions>,
     navigation: Option<WindowNavigation>,
     navigation_ack: Option<Receiver<()>>,
@@ -695,33 +294,64 @@ pub struct Host {
     navigation_content_seq: Vec<(usize, u64)>,
     navigation_noticed: bool,
     navigation_title: Option<String>,
-    module_ids: Vec<String>,
-    column_definitions: Option<Vec<crate::Column>>,
-    container_factories: Vec<crate::container_factory::RegisteredFactory>,
-    panels: Vec<Panel>,
-    renderer: Option<Renderer>,
-    text: Text,
-    outer: SplitView,
-    inner: SplitView,
-    outer_view: SplitViewView,
-    inner_view: SplitViewView,
-    drag_split: Option<usize>,
-    // AppKit starts an asynchronous WindowServer drag and may omit mouse-up.
-    // This owns only unclaimed left-drag events, never content captures.
-    native_titlebar_drag: bool,
-    pressed: Option<usize>,
-    focused: usize,
-    completion: Option<SyncSender<Vec<SyncSender<()>>>>,
-    order: Vec<usize>,
+}
+
+impl NavigationCoordinator {
+    fn new(navigation_options: Option<NavigationOptions>) -> Self {
+        Self {
+            navigation_options,
+            navigation: None,
+            navigation_ack: None,
+            navigation_order: None,
+            navigation_content_seq: Vec::new(),
+            navigation_noticed: false,
+            navigation_title: None,
+        }
+    }
+}
+
+struct HostDiagnostics {
+    draw_diagnostic: bool,
+    diagnostic_event: u64,
+    diagnostic_draw: u64,
     acceptance: bool,
     acceptance_shared: Option<window_acceptance::Shared>,
     presentation_acceptance: Option<window_acceptance::PresentationAcceptance>,
     acceptance_draws: u64,
     step: u32,
 }
+
+impl HostDiagnostics {
+    fn new(acceptance: bool) -> Self {
+        Self {
+            draw_diagnostic: std::env::var("TEKESUI_APPHOST_DRAW_DIAGNOSTIC").as_deref() == Ok("1"),
+            diagnostic_event: 0,
+            diagnostic_draw: 0,
+            acceptance,
+            acceptance_shared: None,
+            presentation_acceptance: None,
+            acceptance_draws: 0,
+            step: 0,
+        }
+    }
+}
+
+pub struct Host {
+    theme: Theme,
+    palette_source: Option<std::rc::Rc<std::cell::Cell<Palette>>>,
+    renderer: Option<Renderer>,
+    text: Text,
+    completion: Option<SyncSender<SyncSender<()>>>,
+    layout: window_layout::WindowLayoutState,
+    panel_mgr: window_panels::PanelManagerState,
+    toolbar_mgr: window_toolbar_mount::ToolbarMountState,
+    settings_mgr: window_settings::SettingsHostState,
+    nav_mgr: NavigationCoordinator,
+    diagnostics: HostDiagnostics,
+}
 impl Host {
     fn visible_text_cursor_regions(&mut self) -> Vec<Rect> {
-        if let Some(tabs) = &self.presentation_tabs
+        if let Some(tabs) = &self.layout.presentation_tabs
             && tabs.content_host().input_overlay_owner().is_some()
         {
             return tabs.content_host().text_cursor_regions();
@@ -729,16 +359,16 @@ impl Host {
         if let Some(target) = self.open_toolbar()
             && let Some(index) = self.toolbar_container(target)
         {
-            return self.panels[index]
+            return self.panel_mgr.panels[index]
                 .mounted_toolbar
                 .host
                 .content_host()
                 .text_cursor_regions();
         }
         let mut regions = Vec::new();
-        for panel in &mut self.panels {
+        for panel in &mut self.panel_mgr.panels {
             if !panel.bounds.is_empty() {
-                let clip = if self.presentation.is_some() {
+                let clip = if self.layout.presentation.is_some() {
                     panel
                         .content_frame()
                         .intersection(&panel.clip)
@@ -797,69 +427,15 @@ impl Host {
         Self {
             theme: Theme::LIGHT,
             palette_source: None,
-            draw_diagnostic: std::env::var("TEKESUI_APPHOST_DRAW_DIAGNOSTIC").as_deref() == Ok("1"),
-            diagnostic_event: 0,
-            diagnostic_draw: 0,
-            presentation_icons: Default::default(),
-            presentation_chrome_edges: [Rect::default(); 2],
-            native_toolbar_geometry: None,
-            settings: None,
-            settings_back: false,
-            settings_options: None,
-            settings_child: None,
-            is_settings_window: false,
-            settings_frames: Vec::new(),
-            settings_top: 0.,
-            settings_pointer: None,
-            settings_owner: None,
-            settings_display: None,
-            settings_loading: None,
-            leading_visible: n != 3,
-            sidebar_motion: crate::sidebar_motion::SidebarMotion::new(n != 3, true),
-            motion_epoch: std::time::Instant::now(),
-            reduced_motion: false,
-            trailing_visible: true,
-            toolbar_index: 0,
-            toolbar_hover_index: None,
-            presentation: None,
-            presentation_layout: crate::PresentationLayout::default(),
-            presentation_tabs: None,
-            presentation_switcher: window_switcher::SwitcherState::default(),
-            presentation_scroll_pending: false,
-            container_window_boundary: None,
-            toolbar_ax: vec![],
-            toolbar_ax_next: 1 << 63,
-            toolbar_focus: None,
-            toolbar_focus_visible: false,
-            toolbar_focus_lease: None,
-            navigation_options,
-            navigation: None,
-            navigation_ack: None,
-            navigation_order: None,
-            navigation_content_seq: Vec::new(),
-            navigation_noticed: false,
-            navigation_title: None,
-            module_ids,
-            column_definitions: None,
-            container_factories: Vec::new(),
-            panels: Vec::new(),
             renderer: None,
             text: Text::new(),
-            outer: SplitView::new(1. / 3.),
-            inner: SplitView::new(2. / 3.),
-            outer_view: SplitViewView::new(Axis::Horizontal),
-            inner_view: SplitViewView::new(Axis::Horizontal),
-            drag_split: None,
-            native_titlebar_drag: false,
-            pressed: None,
-            focused: if n >= 2 { 1 } else { 0 },
             completion: None,
-            order: (0..n).collect(),
-            acceptance,
-            acceptance_shared: None,
-            presentation_acceptance: None,
-            acceptance_draws: 0,
-            step: 0,
+            layout: window_layout::WindowLayoutState::new(n),
+            panel_mgr: window_panels::PanelManagerState::new(module_ids),
+            toolbar_mgr: window_toolbar_mount::ToolbarMountState::new(),
+            settings_mgr: window_settings::SettingsHostState::new(),
+            nav_mgr: NavigationCoordinator::new(navigation_options),
+            diagnostics: HostDiagnostics::new(acceptance),
         }
     }
     pub(crate) fn from_columns(
@@ -869,7 +445,7 @@ impl Host {
     ) -> Self {
         let ids = columns.iter().map(|c| c.id().to_owned()).collect();
         let mut host = Self::new(ids, acceptance, navigation);
-        host.column_definitions = Some(columns);
+        host.panel_mgr.column_definitions = Some(columns);
         host
     }
     pub(crate) fn from_containers(
@@ -885,47 +461,26 @@ impl Host {
         });
         let mut host = Self::from_columns(columns, acceptance, navigation);
         if let Some(state) = &state {
-            host.focused = host
+            host.layout.focused = host
+                .panel_mgr
                 .module_ids
                 .iter()
                 .position(|id| id == state.focus_id())
                 .unwrap();
-            host.leading_visible = true;
+            host.layout.leading_visible = true;
         }
         if state.is_some() {
-            host.inner_view = SplitViewView::new(Axis::Horizontal);
+            host.layout.inner_view = SplitViewView::new(Axis::Horizontal);
         }
-        host.presentation = state;
+        host.layout.presentation = state;
         host
     }
     fn mount_column(&self, index: usize, column: crate::Column) -> Panel {
-        let mut panel = Panel::new(index as u32, column.id().to_owned());
-        panel.options = column.options().clone();
-        if self
-            .presentation
-            .as_ref()
-            .is_some_and(|state| state.nav_bar_id() != Some(panel.module_id.as_str()))
-        {
-            panel.content_padding = tekes_ui_tokens::Spacing::Loose.value();
-        }
-        if let Some(padding) = panel.options.content_padding {
-            panel.content_padding = padding;
-        }
-        match column {
-            crate::Column::Container(container) => {
-                panel.toolbar = container.toolbar.clone();
-                panel.local = Some(container);
-                panel.launch_tx = None;
-            }
-            crate::Column::ProcessContainer(container) => {
-                panel.worker_id = container.definition.id.into()
-            }
-        }
-        panel
+        Panel::from_column(index, column, self.layout.presentation.as_ref())
     }
     pub(super) fn mount_columns(&mut self) -> bool {
-        if let Some(columns) = self.column_definitions.take() {
-            self.panels = columns
+        if let Some(columns) = self.panel_mgr.column_definitions.take() {
+            self.panel_mgr.panels = columns
                 .into_iter()
                 .enumerate()
                 .map(|(i, column)| self.mount_column(i, column))
@@ -937,11 +492,12 @@ impl Host {
     /// Mount original container records once, before any service binds their
     /// Toolbar identities. GPU/window initialization must not recreate them.
     fn mount_initial_containers(&mut self) {
-        if !self.panels.is_empty() {
+        if !self.panel_mgr.panels.is_empty() {
             return;
         }
         if !self.mount_columns() {
-            self.panels = self
+            self.panel_mgr.panels = self
+                .panel_mgr
                 .module_ids
                 .iter()
                 .cloned()
@@ -954,7 +510,7 @@ impl Host {
         if self.renderer.is_some() {
             return Ok(());
         }
-        if self.draw_diagnostic {
+        if self.diagnostics.draw_diagnostic {
             w.set_presentation_timing(true);
         }
         let renderer = unsafe {
@@ -962,33 +518,37 @@ impl Host {
         }?;
         w.set_text_key_events(true);
         let device = renderer.gpu_context().device().clone();
-        let (tx, rx) = mpsc::sync_channel::<Vec<SyncSender<()>>>(16);
+        let (tx, rx) = mpsc::sync_channel::<SyncSender<()>>(16);
         let completion_wake = w.wake_proxy();
         std::thread::spawn(move || {
-            while let Ok(acks) = rx.recv() {
+            while let Ok(ack) = rx.recv() {
                 if device.poll(wgpu::PollType::wait_indefinitely()).is_err() {
                     break;
                 }
-                for ack in acks {
-                    let _ = ack.send(());
-                }
+                let _ = ack.send(());
                 completion_wake.wake();
             }
         });
         self.completion = Some(tx);
         self.renderer = Some(renderer);
         self.mount_initial_containers();
-        if let Some(options) = self.navigation_options.take() {
+        if let Some(options) = self.nav_mgr.navigation_options.take() {
             let index = self
+                .layout
                 .presentation
                 .as_ref()
                 .and_then(|state| state.navigation_toolbar_id())
-                .and_then(|id| self.module_ids.iter().position(|candidate| candidate == id))
+                .and_then(|id| {
+                    self.panel_mgr
+                        .module_ids
+                        .iter()
+                        .position(|candidate| candidate == id)
+                })
                 .unwrap_or(0);
-            self.navigation = Some(WindowNavigation::new(
+            self.nav_mgr.navigation = Some(WindowNavigation::new(
                 options,
                 w.wake_proxy(),
-                self.panels[index].mounted_toolbar.window,
+                self.panel_mgr.panels[index].mounted_toolbar.window,
             )?);
         }
         Ok(())
@@ -997,20 +557,27 @@ impl Host {
         // A hidden presentation frame can retain an origin and height. Keep
         // that canonical allocation: replacing it with default would make the
         // next identical layout cancel the still-visible Window toolbar again.
-        self.panels[index].bounds = bounds;
-        if let Some(local) = &mut self.panels[index].local {
+        self.panel_mgr.panels[index].bounds = bounds;
+        if let Some(local) = &mut self.panel_mgr.panels[index].local {
             local.set_active(false);
         }
-        if self.focused == index && !self.panels[index].logically_visible {
-            self.focused = self
+        if self.layout.focused == index && !self.panel_mgr.panels[index].logically_visible {
+            self.layout.focused = self
+                .layout
                 .presentation
                 .as_ref()
-                .and_then(|state| self.module_ids.iter().position(|id| id == state.focus_id()))
+                .and_then(|state| {
+                    self.panel_mgr
+                        .module_ids
+                        .iter()
+                        .position(|id| id == state.focus_id())
+                })
                 .unwrap_or_else(|| {
-                    self.order
-                        .get(usize::from(self.order.len() >= 2))
+                    self.layout
+                        .order
+                        .get(usize::from(self.layout.order.len() >= 2))
                         .copied()
-                        .or_else(|| self.order.first().copied())
+                        .or_else(|| self.layout.order.first().copied())
                         .unwrap_or(0)
                 });
         }
@@ -1018,27 +585,27 @@ impl Host {
     fn draw(&mut self, w: &Window) -> Result<()> {
         // One opt-in summary at the end avoids synchronous stage logging inside
         // the measured layout path. These are CPU boundaries, not presentation.
-        let diagnostic = self.draw_diagnostic.then(|| {
-            self.diagnostic_draw += 1;
+        let diagnostic = self.diagnostics.draw_diagnostic.then(|| {
+            self.diagnostics.diagnostic_draw += 1;
             (
                 std::time::Instant::now(),
-                self.diagnostic_event,
-                self.diagnostic_draw,
+                self.diagnostics.diagnostic_event,
+                self.diagnostics.diagnostic_draw,
             )
         });
         self.init(w)?;
         self.sync_settings_display(w)?;
-        if !self.is_settings_window {
+        if !self.settings_mgr.is_settings_window {
             self.poll_settings_open(w)?;
             if w.is_active()
-                && !self.sidebar_motion.needs_frame()
-                && !self.settings.as_ref().is_some_and(|s| s.borrow().open)
+                && !self.layout.sidebar_motion.needs_frame()
                 && self
+                    .nav_mgr
                     .navigation
                     .as_ref()
                     .is_none_or(|nav| !nav.busy && nav.host.input_open && nav.publication.is_none())
             {
-                for panel in &mut self.panels {
+                for panel in &mut self.panel_mgr.panels {
                     if let Some(local) = &mut panel.local
                         && let Some(request) = local.take_window_open_request(self.theme)?
                     {
@@ -1048,29 +615,32 @@ impl Host {
                 }
             }
         }
-        self.text
-            .begin_frame(self.motion_epoch.elapsed(), self.reduced_motion);
-        if self.is_settings_window {
+        self.text.begin_frame(
+            self.layout.motion_epoch.elapsed(),
+            self.layout.reduced_motion,
+        );
+        if self.settings_mgr.is_settings_window {
             // This probe covers the ordinary AppHost draw below, not Settings'
             // separate renderer. Event timing still bounds the delegated call.
             return self.draw_settings(w);
         }
         let initialized = diagnostic.map(|_| std::time::Instant::now());
-        let progress = self.sidebar_motion.sample(
-            self.motion_epoch.elapsed(),
-            self.reduced_motion,
+        let progress = self.layout.sidebar_motion.sample(
+            self.layout.motion_epoch.elapsed(),
+            self.layout.reduced_motion,
             w.is_active(),
         )?;
-        let transitioning = self.sidebar_motion.needs_frame();
-        if let Some(nav) = &mut self.navigation {
+        let transitioning = self.layout.sidebar_motion.needs_frame();
+        if let Some(nav) = &mut self.nav_mgr.navigation {
             if self
+                .nav_mgr
                 .navigation_ack
                 .as_ref()
                 .is_some_and(|ack| ack.try_recv().is_ok())
             {
-                self.navigation_ack = None;
-                self.navigation_order = None;
-                self.navigation_content_seq.clear();
+                self.nav_mgr.navigation_ack = None;
+                self.nav_mgr.navigation_order = None;
+                self.nav_mgr.navigation_content_seq.clear();
 
                 nav.published()?;
             }
@@ -1081,42 +651,45 @@ impl Host {
                 w.set_title(&format!("Navigation: {error}"));
             }
             if let Some(entry) = take_local_navigation_request(
-                &mut self.panels,
+                &mut self.panel_mgr.panels,
                 !nav.busy && nav.host.input_open && nav.publication.is_none(),
             ) {
                 nav.send(crate::navigation::Command::Navigate(
                     crate::navigation::Action::Push(entry),
                 ))?;
             }
-            if self.navigation_order.is_none()
+            if self.nav_mgr.navigation_order.is_none()
                 && let Some(label) = nav.publication_label()?
             {
-                self.pressed = None;
-                self.panels[self.toolbar_index]
+                self.layout.pressed = None;
+                self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
                     .mounted_toolbar
                     .host
                     .event(&ContentEvent::Cancel);
-                for p in &mut self.panels {
+                for p in &mut self.panel_mgr.panels {
                     p.request(InputKind::Cancel, 0., 0.)?;
                 }
                 let title = format!("TekesUI AppHost · {label}");
                 w.set_title(&title);
-                self.navigation_title = Some(title);
-                self.navigation_order = Some(self.order.clone());
+                self.nav_mgr.navigation_title = Some(title);
+                self.nav_mgr.navigation_order = Some(self.layout.order.clone());
                 if let Some(command) = nav.publication_view_command()? {
-                    let targets: Vec<usize> = if let Some(state) = &self.presentation {
+                    let targets: Vec<usize> = if let Some(state) = &self.layout.presentation {
                         state
                             .navigation_targets()
                             .iter()
                             .filter_map(|id| {
-                                self.module_ids.iter().position(|candidate| candidate == id)
+                                self.panel_mgr
+                                    .module_ids
+                                    .iter()
+                                    .position(|candidate| candidate == id)
                             })
                             .collect()
                     } else {
-                        vec![self.order[usize::from(self.panels.len() >= 2)]]
+                        vec![self.layout.order[usize::from(self.panel_mgr.panels.len() >= 2)]]
                     };
                     for index in targets {
-                        let panel = &mut self.panels[index];
+                        let panel = &mut self.panel_mgr.panels[index];
                         panel.start(w.wake_proxy());
                         panel.enqueue(InputKind::Command, 0., 0., Some(command))?;
                         // Local commands finish synchronously. Hidden locals have
@@ -1124,15 +697,15 @@ impl Host {
                         if panel.local.is_none()
                             || panel.bounds.size.width > 0. && panel.bounds.size.height > 0.
                         {
-                            self.navigation_content_seq.push((index, panel.seq));
+                            self.nav_mgr.navigation_content_seq.push((index, panel.seq));
                         }
                         nav.trace(serde_json::json!({"event":"navigation-view-command","panel":index,"command":command,"seq":panel.seq}));
                     }
                 }
             }
         }
-        self.outer.min_pane = MIN_COLUMN;
-        self.inner.min_pane = MIN_COLUMN;
+        self.layout.outer.min_pane = MIN_COLUMN;
+        self.layout.inner.min_pane = MIN_COLUMN;
         let mut scene = Scene::new();
         let mut toolbar_scene = Scene::new();
         let mut toolbar_overlays = Scene::new();
@@ -1155,7 +728,7 @@ impl Host {
         // during resize and must not become extra padding on the leading pane.
         let controls_floor = native_center.map_or(0., |center| 2. * center as f32);
         let content_boundary = (toolbar_y + toolbar_paint_height).max(controls_floor);
-        self.container_window_boundary = Some(content_boundary);
+        self.layout.container_window_boundary = Some(content_boundary);
 
         let native_geometry = (
             native_height as f32,
@@ -1163,8 +736,10 @@ impl Host {
             toolbar_paint_height,
             toolbar_height,
         );
-        if self.presentation.is_some() && self.native_toolbar_geometry != Some(native_geometry) {
-            self.native_toolbar_geometry = Some(native_geometry);
+        if self.layout.presentation.is_some()
+            && self.layout.native_toolbar_geometry != Some(native_geometry)
+        {
+            self.layout.native_toolbar_geometry = Some(native_geometry);
             eprintln!(
                 "APPHOST_TOOLBAR_GEOMETRY native_height={} row_y={} paint_height={} allocation={} content_boundary={}",
                 native_geometry.0,
@@ -1178,14 +753,23 @@ impl Host {
         // Keep component defaults intact; the consumer chooses no frame/shadow.
         let palette = self.palette();
         scene.push_quad(Quad::new(whole, palette.color("surface-1").unwrap()));
-        let mut frames = if self.panels.len() == 1 {
+        let mut frames = if self.panel_mgr.panels.len() == 1 {
             vec![whole]
-        } else if self.panels.len() == 2 {
-            let layout = self.outer_view.arrange(&mut self.outer, whole, None);
+        } else if self.panel_mgr.panels.len() == 2 {
+            let layout = self
+                .layout
+                .outer_view
+                .arrange(&mut self.layout.outer, whole, None);
             vec![layout.leading.frame(), layout.trailing.frame()]
         } else {
-            let a = self.outer_view.arrange(&mut self.outer, whole, None);
-            let b = self.inner_view.arrange(&mut self.inner, whole, None);
+            let a = self
+                .layout
+                .outer_view
+                .arrange(&mut self.layout.outer, whole, None);
+            let b = self
+                .layout
+                .inner_view
+                .arrange(&mut self.layout.inner, whole, None);
             vec![
                 a.leading.frame(),
                 Rect::new(
@@ -1197,10 +781,10 @@ impl Host {
                 b.trailing.frame(),
             ]
         };
-        if self.panels.len() >= 2 {
+        if self.panel_mgr.panels.len() >= 2 {
             frames = presented_frames(&frames, whole, progress, w.scale() as f32);
         }
-        if self.presentation.is_some() {
+        if self.layout.presentation.is_some() {
             frames = self.presentation_frames(
                 whole,
                 w,
@@ -1213,61 +797,53 @@ impl Host {
             )?;
         }
         self.text.scale = w.scale() as f32;
-        let mut acks = Vec::new();
         let renderer = self.renderer.as_mut().unwrap();
-        for p in &mut self.panels {
-            while let Some(result) = p.next_pending() {
-                match result {
-                    Err(e) => {
-                        eprintln!("PANEL_FAILED id={} {e}", p.id);
-                        p.failed = Some(e);
-                    }
-                    Ok(received) => {
-                        let mut f = received.frame;
-                        // A continuous resize may always be one viewport ahead
-                        // of the producer. Present monotonic progress instead of
-                        // starving every completed frame until pointer release.
-                        // Geometry-dependent input remains gated below.
-                        if f.viewport < p.frame_viewport
-                            || f.viewport > p.viewport
-                            || f.seq <= p.frame_seq
-                        {
-                            drop(f);
-                            let _ = received.ack.send(());
-                            continue;
-                        }
-                        let texture =
-                            tekes_ui_module_runtime::import_frame(&renderer.gpu_context(), &mut f)?;
-                        let f = f.into_metadata();
-                        let image = renderer.gpu_context().import_image(texture)?;
-                        let id = renderer.register_gpu_image(&image)?;
-                        if let Some(old) = p.image.replace(id) {
-                            renderer.unregister_image(old);
-                        }
-                        p.frame_size = (f.width, f.height);
-                        p.frame_pixels = (f.pixel_width, f.pixel_height);
-                        p.frame_viewport = f.viewport;
-                        p.frame_seq = f.seq;
-                        p.pid = Some(f.pid);
-                        if serde_json::to_value(&p.toolbar)? != serde_json::to_value(&f.toolbar)? {
-                            p.toolbar_generation += 1;
-                        }
-                        p.toolbar = f.toolbar;
-                        eprintln!(
-                            "FRAME panel={} pid={} seq={} viewport={} revision={}",
-                            p.id, f.pid, f.seq, f.viewport, f.revision
-                        );
-                        acks.push(received.ack);
-                    }
+        for p in &mut self.panel_mgr.panels {
+            let mut latest = None;
+            for frame in p.poll_status_and_frames() {
+                let meta = frame.metadata();
+                // A continuous resize may always be one viewport ahead of the
+                // producer. Present monotonic progress instead of starving
+                // every completed frame until pointer release. Geometry-
+                // dependent input remains gated below.
+                if meta.viewport >= p.frame_viewport
+                    && meta.viewport <= p.viewport
+                    && meta.seq > p.frame_seq
+                {
+                    latest = Some(frame);
                 }
+            }
+            if let Some(frame) = latest {
+                let f = frame.metadata().clone();
+                let view_image = frame.import(&renderer.gpu_context())?;
+                let id = renderer.register_gpu_image(view_image.image())?;
+                if let Some(old) = p.image.replace(id) {
+                    renderer.unregister_image(old);
+                }
+                p.view_image = Some(view_image);
+                p.frame_size = (f.width, f.height);
+                p.frame_pixels = (f.pixel_width, f.pixel_height);
+                p.frame_viewport = f.viewport;
+                p.frame_seq = f.seq;
+                p.pid = Some(f.pid);
+                if serde_json::to_value(&p.toolbar)? != serde_json::to_value(&f.toolbar)? {
+                    p.toolbar_generation += 1;
+                }
+                p.toolbar = f.toolbar;
+                eprintln!(
+                    "FRAME panel={} pid={} seq={} viewport={} revision={}",
+                    p.id, f.pid, f.seq, f.viewport, f.revision
+                );
             }
         }
         let _ = renderer;
         let panel_input_open = self
+            .nav_mgr
             .navigation
             .as_ref()
             .is_none_or(|nav| nav.host.input_open && !nav.busy);
         let title = self
+            .nav_mgr
             .navigation
             .as_ref()
             .and_then(|n| n.title())
@@ -1275,33 +851,33 @@ impl Host {
             .to_owned();
         for (slot, bounds) in frames.iter().enumerate() {
             if bounds.size.width > 0. {
-                let index = self.order[slot];
-                self.panels[index].start(w.wake_proxy());
+                let index = self.layout.order[slot];
+                self.panel_mgr.panels[index].start(w.wake_proxy());
                 let geometry = self.container_geometry(index, *bounds, content_boundary)?;
                 self.panel_geometry_layout(index, *bounds, scale, geometry)?;
             }
         }
         let geometry_ready = diagnostic.map(|_| std::time::Instant::now());
         for (slot, bounds) in frames.iter().enumerate() {
-            let index = self.order[slot];
+            let index = self.layout.order[slot];
             if bounds.size.width <= 0. {
                 self.retire_hidden_content(index, *bounds);
                 continue;
             }
-            let p = &mut self.panels[index];
+            let p = &mut self.panel_mgr.panels[index];
             let content = p.content_frame();
-            if self.presentation.is_some() {
+            if self.layout.presentation.is_some() {
                 scene.push_clip(p.clip);
             }
             scene.push_quad(Quad::new(
                 p.geometry.content,
                 palette.color("surface-panel").unwrap(),
             ));
-            if self.presentation.is_some() {
+            if self.layout.presentation.is_some() {
                 scene.pop_clip();
             }
             if let Some(local) = &mut p.local {
-                let clip = if self.presentation.is_some() {
+                let clip = if self.layout.presentation.is_some() {
                     content.intersection(&p.clip).unwrap_or_default()
                 } else {
                     content
@@ -1327,7 +903,7 @@ impl Host {
                 p.frame_size = p.content_size();
             }
             if let Some(id) = p.image {
-                scene.push_clip(if self.presentation.is_some() {
+                scene.push_clip(if self.layout.presentation.is_some() {
                     content.intersection(&p.clip).unwrap_or_default()
                 } else {
                     content
@@ -1345,7 +921,7 @@ impl Host {
             }
         }
         let body_scene_ready = diagnostic.map(|_| std::time::Instant::now());
-        if self.presentation.is_some() {
+        if self.layout.presentation.is_some() {
             scene.push_quad(Quad::new(
                 Rect::new(
                     whole.min_x(),
@@ -1367,21 +943,22 @@ impl Host {
             },
             title,
         )?;
-        let toolbar_order: Vec<_> = if let Some(state) = &self.presentation {
+        let toolbar_order: Vec<_> = if let Some(state) = &self.layout.presentation {
             let focus = self
+                .panel_mgr
                 .panels
                 .iter()
                 .position(|panel| panel.module_id == state.focus_id())
                 .unwrap();
-            (0..self.panels.len())
+            (0..self.panel_mgr.panels.len())
                 .filter(|index| *index != focus)
                 .chain(std::iter::once(focus))
                 .collect()
         } else {
-            (0..self.panels.len()).collect()
+            (0..self.panel_mgr.panels.len()).collect()
         };
         for &index in &toolbar_order {
-            let panel = &mut self.panels[index];
+            let panel = &mut self.panel_mgr.panels[index];
             with_content_icons(
                 self.renderer.as_mut().unwrap(),
                 &mut panel.mounted_toolbar.icons,
@@ -1397,6 +974,7 @@ impl Host {
         }
         self.reconcile_toolbar_focus(w.is_active());
         if self
+            .panel_mgr
             .panels
             .iter()
             .any(|panel| panel.mounted_toolbar.host.needs_render())
@@ -1404,7 +982,7 @@ impl Host {
             toolbar_scene = Scene::new();
             toolbar_overlays = Scene::new();
             for &index in &toolbar_order {
-                let panel = &mut self.panels[index];
+                let panel = &mut self.panel_mgr.panels[index];
                 with_content_icons(
                     self.renderer.as_mut().unwrap(),
                     &mut panel.mounted_toolbar.icons,
@@ -1421,10 +999,10 @@ impl Host {
         }
         let toolbar_scene_ready = diagnostic.map(|_| std::time::Instant::now());
         let mut toolbar_controls = Vec::new();
-        for panel in &self.panels {
+        for panel in &self.panel_mgr.panels {
             toolbar_controls.extend(panel.mounted_toolbar.host.content_host().pointer_regions());
         }
-        if let Some(tabs) = self.presentation_layout.tabs {
+        if let Some(tabs) = self.layout.presentation_layout.tabs {
             toolbar_controls.push(tabs);
         }
         let band = Some(Rect::new(
@@ -1441,11 +1019,13 @@ impl Host {
                 toolbar_paint_height,
             ));
         }
-        self.outer_view
+        self.layout
+            .outer_view
             .set_toolbar_region(band, &toolbar_controls, &mut self.text);
-        self.inner_view
+        self.layout
+            .inner_view
             .set_toolbar_region(band, &toolbar_controls, &mut self.text);
-        if self.presentation.is_none() && frames.len() >= 2 && self.leading_visible {
+        if self.layout.presentation.is_none() && frames.len() >= 2 && self.layout.leading_visible {
             if transitioning && frames.len() == 3 {
                 let gap = Rect::new(
                     frames[0].max_x(),
@@ -1453,24 +1033,27 @@ impl Host {
                     (frames[1].min_x() - frames[0].max_x()).max(0.),
                     whole.size.height,
                 );
-                self.outer_view.paint_presented_divider(
+                self.layout.outer_view.paint_presented_divider(
                     &mut scene,
-                    &self.outer,
+                    &self.layout.outer,
                     toolbar_divider_frame(gap, toolbar_y),
                     palette,
                     w.scale() as f32,
                 );
             } else if !transitioning {
-                self.outer_view.paint_presented_divider(
+                self.layout.outer_view.paint_presented_divider(
                     &mut scene,
-                    &self.outer,
-                    toolbar_divider_frame(self.outer_view.layout().divider.frame(), toolbar_y),
+                    &self.layout.outer,
+                    toolbar_divider_frame(
+                        self.layout.outer_view.layout().divider.frame(),
+                        toolbar_y,
+                    ),
                     palette,
                     scale,
                 );
             }
         }
-        if self.presentation.is_none() && frames.len() == 3 && self.trailing_visible {
+        if self.layout.presentation.is_none() && frames.len() == 3 && self.layout.trailing_visible {
             if transitioning {
                 let gap = Rect::new(
                     frames[1].max_x(),
@@ -1478,42 +1061,45 @@ impl Host {
                     (frames[2].min_x() - frames[1].max_x()).max(0.),
                     whole.size.height,
                 );
-                self.inner_view.paint_presented_divider(
+                self.layout.inner_view.paint_presented_divider(
                     &mut scene,
-                    &self.inner,
+                    &self.layout.inner,
                     toolbar_divider_frame(gap, toolbar_y),
                     palette,
                     w.scale() as f32,
                 );
             } else {
-                self.inner_view.paint_presented_divider(
+                self.layout.inner_view.paint_presented_divider(
                     &mut scene,
-                    &self.inner,
-                    toolbar_divider_frame(self.inner_view.layout().divider.frame(), toolbar_y),
+                    &self.layout.inner,
+                    toolbar_divider_frame(
+                        self.layout.inner_view.layout().divider.frame(),
+                        toolbar_y,
+                    ),
                     palette,
                     scale,
                 );
             }
         }
-        if self.presentation.is_some() {
+        if self.layout.presentation.is_some() {
             self.paint_presentation(&mut presentation_scene, whole, palette)?;
         }
         let mut resize_regions = Vec::new();
-        if self.presentation.is_none()
+        if self.layout.presentation.is_none()
             && frames.len() >= 2
-            && self.leading_visible
+            && self.layout.leading_visible
             && !transitioning
         {
-            resize_regions.extend(self.outer_view.resize_regions(&self.outer));
+            resize_regions.extend(self.layout.outer_view.resize_regions(&self.layout.outer));
         }
-        if self.presentation.is_none()
+        if self.layout.presentation.is_none()
             && frames.len() == 3
-            && self.trailing_visible
+            && self.layout.trailing_visible
             && !transitioning
         {
-            resize_regions.extend(self.inner_view.resize_regions(&self.inner));
+            resize_regions.extend(self.layout.inner_view.resize_regions(&self.layout.inner));
         }
-        if self.presentation.is_some() {
+        if self.layout.presentation.is_some() {
             resize_regions.extend(self.presentation_resize_regions());
         }
         let mut cursor_regions: Vec<_> = self
@@ -1564,46 +1150,19 @@ impl Host {
             &mut self.text.atlas,
             palette.color("surface-1").unwrap(),
         )?;
-        self.presentation_scroll_pending = false;
+        self.layout.presentation_scroll_pending = false;
         let renderer_return = diagnostic.map(|_| std::time::Instant::now());
         let drawable_after = diagnostic.map(|_| w.drawable_serial());
-        if self.acceptance {
-            self.acceptance_draws += 1;
+        if self.diagnostics.acceptance {
+            self.diagnostics.acceptance_draws += 1;
         }
-        if let Some(settings) = &self.settings
-            && settings.borrow().open
-        {
-            use tekes_ui_platform_macos::content_accessibility::{
-                ContentAccessibilityOwner, ContentAccessibilitySnapshot,
-                WindowAccessibilityPublication,
-            };
-            let publication = if w.is_active() {
-                ContentAccessibilitySnapshot::from_host(&settings.borrow().form.host).and_then(
-                    |snapshot| {
-                        WindowAccessibilityPublication::prepare(vec![(
-                            ContentAccessibilityOwner(u64::MAX),
-                            snapshot,
-                        )])
-                    },
-                )
-            } else {
-                WindowAccessibilityPublication::prepare(Vec::new())
-            };
-            w.set_content_accessibility_publication(publication);
-            w.set_text_input_state(if w.is_active() {
-                settings.borrow().text_state()
-            } else {
-                None
-            });
-        } else {
-            w.set_content_accessibility_publication(
-                self.content_accessibility_publication(w.is_active() && panel_input_open),
-            );
-            w.set_text_input_state(self.local_text_state(w.is_active() && panel_input_open));
-        }
+        w.set_content_accessibility_publication(
+            self.content_accessibility_publication(w.is_active() && panel_input_open),
+        );
+        w.set_text_input_state(self.local_text_state(w.is_active() && panel_input_open));
         if cfg!(debug_assertions)
             && (transitioning || w.is_animating())
-            && let Some(nav) = &self.navigation
+            && let Some(nav) = &self.nav_mgr.navigation
         {
             nav.trace(serde_json::json!({
                 "event":"sidebar-layout-sample", "progress":progress,
@@ -1612,13 +1171,14 @@ impl Host {
                 "bounds":frames.iter().map(|r| [r.min_x(),r.min_y(),r.size.width,r.size.height]).collect::<Vec<_>>()
             }));
         }
-        if self.navigation_order.is_some()
-            && self.navigation_ack.is_none()
+        if self.nav_mgr.navigation_order.is_some()
+            && self.nav_mgr.navigation_ack.is_none()
             && self
+                .nav_mgr
                 .navigation_content_seq
                 .iter()
-                .all(|&(index, seq)| self.panels[index].frame_seq >= seq)
-            && self.panels.iter().all(|p| {
+                .all(|&(index, seq)| self.panel_mgr.panels[index].frame_seq >= seq)
+            && self.panel_mgr.panels.iter().all(|p| {
                 p.bounds.size.width <= 0.
                     || ((p.local.is_some() || p.image.is_some())
                         && p.frame_viewport == p.viewport
@@ -1626,17 +1186,14 @@ impl Host {
             })
         {
             let (tx, rx) = mpsc::sync_channel(1);
-            acks.push(tx);
-            self.navigation_ack = Some(rx);
-        }
-        if !acks.is_empty() {
             self.completion
                 .as_ref()
                 .unwrap()
-                .try_send(acks)
+                .try_send(tx)
                 .map_err(|_| anyhow::anyhow!("GPU completion backlog"))?;
+            self.nav_mgr.navigation_ack = Some(rx);
         }
-        if let Some(nav) = &self.navigation
+        if let Some(nav) = &self.nav_mgr.navigation
             && nav.host.input_open
             && !nav.busy
         {
@@ -1647,27 +1204,31 @@ impl Host {
                 .map(|e| e.id.as_str())
                 .unwrap_or("empty");
             let title = format!("TekesUI AppHost · {name}");
-            if self.navigation_title.as_ref() != Some(&title) {
+            if self.nav_mgr.navigation_title.as_ref() != Some(&title) {
                 w.set_title(&title);
-                self.navigation_title = Some(title);
+                self.nav_mgr.navigation_title = Some(title);
             }
-            if !self.navigation_noticed {
+            if !self.nav_mgr.navigation_noticed {
                 eprintln!(
                     "NAV_WINDOW_READY host_pid={} nav_status={:?} view_pids={:?} order={:?} toolbar={:?}",
                     std::process::id(),
-                    nav.process.status(),
-                    self.panels.iter().map(|p| p.pid).collect::<Vec<_>>(),
-                    self.order,
-                    self.panels[self.toolbar_index]
+                    nav.status(),
+                    self.panel_mgr
+                        .panels
+                        .iter()
+                        .map(|p| p.pid)
+                        .collect::<Vec<_>>(),
+                    self.layout.order,
+                    self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
                         .mounted_toolbar
                         .host
                         .content_host()
                         .pointer_regions()
                 );
-                self.navigation_noticed = true;
+                self.nav_mgr.navigation_noticed = true;
             }
         }
-        let local_needs_frame = self.panels.iter_mut().any(|p| {
+        let local_needs_frame = self.panel_mgr.panels.iter_mut().any(|p| {
             let mut needs = false;
             if p.bounds.size.width > 0.
                 && let Some(local) = &mut p.local
@@ -1677,11 +1238,12 @@ impl Host {
             needs
         });
         let animate = (self
+            .panel_mgr
             .panels
             .iter()
             .any(|p| p.mounted_toolbar.host.needs_render())
             || local_needs_frame
-            || self.sidebar_motion.needs_frame()
+            || self.layout.sidebar_motion.needs_frame()
             || self.text.animation_requested())
             && w.is_active();
         if !w.set_animating(animate) && animate {
@@ -1731,15 +1293,15 @@ impl Host {
             // Layout changes invalidate old pointer/Space geometry, but keep
             // the original focused component and worker processes.
             self.cancel_toolbar_input();
-            if let Some(nav) = &self.navigation {
+            if let Some(nav) = &self.nav_mgr.navigation {
                 nav.trace(serde_json::json!({"event":"window-typography","body_size":next,"type_scale":self.text.type_scale()}));
             }
         }
         true
     }
     fn toggle_visibility(&mut self, side: usize) -> Result<()> {
-        if self.presentation.is_some() {
-            if self.panels.iter_mut().any(|panel| {
+        if self.layout.presentation.is_some() {
+            if self.panel_mgr.panels.iter_mut().any(|panel| {
                 let mut marked = false;
                 if let Some(local) = &mut panel.local {
                     local.with_host(&mut |host| {
@@ -1752,22 +1314,22 @@ impl Host {
             }) {
                 return Ok(());
             }
-            let state = self.presentation.as_mut().unwrap();
+            let state = self.layout.presentation.as_mut().unwrap();
             if side == 0 {
                 state.toggle_nav_bar()?;
             } else {
                 state.toggle_others()?;
             }
             self.cancel_toolbar_input();
-            self.drag_split = None;
-            self.outer_view.cancel(&mut self.outer);
-            self.inner_view.cancel(&mut self.inner);
+            self.layout.drag_split = None;
+            self.layout.outer_view.cancel(&mut self.layout.outer);
+            self.layout.inner_view.cancel(&mut self.layout.inner);
             return Ok(());
         }
 
-        if self.is_settings_window
+        if self.settings_mgr.is_settings_window
             && side == 0
-            && let Some(settings) = &mut self.settings
+            && let Some(settings) = &mut self.settings_mgr.settings
         {
             let mut settings = settings.borrow_mut();
             settings.sidebar.host.cancel();
@@ -1775,48 +1337,48 @@ impl Host {
         }
 
         if side == 0 {
-            self.leading_visible = !self.leading_visible;
+            self.layout.leading_visible = !self.layout.leading_visible;
         } else {
-            self.trailing_visible = !self.trailing_visible;
+            self.layout.trailing_visible = !self.layout.trailing_visible;
         }
-        self.sidebar_motion.retarget(
+        self.layout.sidebar_motion.retarget(
             side,
             if side == 0 {
-                self.leading_visible
+                self.layout.leading_visible
             } else {
-                self.trailing_visible
+                self.layout.trailing_visible
             },
-            self.motion_epoch.elapsed(),
+            self.layout.motion_epoch.elapsed(),
         )?;
-        if let Some(i) = self.pressed.take() {
-            self.panels[i].request(InputKind::Cancel, 0., 0.)?;
+        if let Some(i) = self.layout.pressed.take() {
+            self.panel_mgr.panels[i].request(InputKind::Cancel, 0., 0.)?;
         }
         self.cancel_toolbar_input();
-        self.drag_split = None;
-        self.outer_view.cancel(&mut self.outer);
-        self.inner_view.cancel(&mut self.inner);
-        for panel in &mut self.panels {
+        self.layout.drag_split = None;
+        self.layout.outer_view.cancel(&mut self.layout.outer);
+        self.layout.inner_view.cancel(&mut self.layout.inner);
+        for panel in &mut self.panel_mgr.panels {
             if let Some(local) = &mut panel.local {
                 local.cancel();
             }
         }
         let slot = if side == 0 { 0 } else { 2 };
         let hidden = if side == 0 {
-            !self.leading_visible
+            !self.layout.leading_visible
         } else {
-            !self.trailing_visible
+            !self.layout.trailing_visible
         };
-        if hidden && !self.is_settings_window {
-            let i = self.order[slot];
-            self.panels[i].request(InputKind::Cancel, 0., 0.)?;
+        if hidden && !self.settings_mgr.is_settings_window {
+            let i = self.layout.order[slot];
+            self.panel_mgr.panels[i].request(InputKind::Cancel, 0., 0.)?;
             // Keep paint alive until the reveal reaches zero; input is gated
             // below immediately and the worker remains mounted for reopening.
-            if self.focused == i {
-                self.focused = self.order[1];
+            if self.layout.focused == i {
+                self.layout.focused = self.layout.order[1];
             }
         }
-        if let Some(nav) = &self.navigation {
-            nav.trace(serde_json::json!({"event":"panel-visibility","leading":self.leading_visible,"trailing":self.trailing_visible,"pids":self.panels.iter().map(|p|p.pid).collect::<Vec<_>>()}));
+        if let Some(nav) = &self.nav_mgr.navigation {
+            nav.trace(serde_json::json!({"event":"panel-visibility","leading":self.layout.leading_visible,"trailing":self.layout.trailing_visible,"pids":self.panel_mgr.panels.iter().map(|p|p.pid).collect::<Vec<_>>()}));
         }
         Ok(())
     }
@@ -1843,6 +1405,7 @@ impl Host {
             }
             window_acceptance::Stage::Closing
                 if self
+                    .settings_mgr
                     .settings_child
                     .as_ref()
                     .is_some_and(|child| child.is_closed())
@@ -1861,6 +1424,7 @@ impl Host {
             }
             window_acceptance::Stage::Failed
                 if self
+                    .settings_mgr
                     .settings_child
                     .as_ref()
                     .is_none_or(|child| child.is_closed()) =>
@@ -1878,27 +1442,27 @@ impl Host {
         Ok(())
     }
     fn accept(&mut self, w: &mut Window) -> Result<()> {
-        if !self.acceptance {
+        if !self.diagnostics.acceptance {
             return Ok(());
         }
-        if let Some(mut probe) = self.presentation_acceptance.take() {
+        if let Some(mut probe) = self.diagnostics.presentation_acceptance.take() {
             let result = self.accept_presentation(w, &mut probe);
             if let Err(error) = &result {
                 probe.shared.fail(format!("{error:#}"));
             }
-            self.presentation_acceptance = Some(probe);
+            self.diagnostics.presentation_acceptance = Some(probe);
             return result;
         }
-        if let Some(shared) = self.acceptance_shared.clone() {
+        if let Some(shared) = self.diagnostics.acceptance_shared.clone() {
             return self.accept_settings_window_parent(w, &shared);
         }
-        if self.step >= 24
-            && self.panels.len() == 3
+        if self.diagnostics.step >= 24
+            && self.panel_mgr.panels.len() == 3
             && std::env::var("TEKESUI_COLUMNS_WINDOW_ACCEPTANCE").as_deref() == Ok("1")
         {
             return self.accept_columns(w);
         }
-        if self.panels.iter().any(|p| {
+        if self.panel_mgr.panels.iter().any(|p| {
             p.bounds.size.width > 0.
                 && (p.local.is_none() && (p.pid.is_none() || p.image.is_none()))
         }) {
@@ -1906,30 +1470,40 @@ impl Host {
         }
         // This exercises the same Host dispatch/render path but is deliberately
         // reported as automated native-window acceptance, not physical input.
-        if self.step == 0 {
-            self.step = 1;
-            self.panels[self.focused].request(InputKind::Command, 0., 0.)?;
-        } else if self.step < 22 {
-            self.step += 1;
+        if self.diagnostics.step == 0 {
+            self.diagnostics.step = 1;
+            self.panel_mgr.panels[self.layout.focused].request(InputKind::Command, 0., 0.)?;
+        } else if self.diagnostics.step < 22 {
+            self.diagnostics.step += 1;
             // Drive a resize burst faster than workers can produce frames,
             // exercising coalescing and the bounded two-frame pipeline.
             w.set_content_size(WindowSize {
-                width: 1000. + ((self.step * 37) % 200) as f64,
-                height: 600. + ((self.step * 11) % 60) as f64,
+                width: 1000. + ((self.diagnostics.step * 37) % 200) as f64,
+                height: 600. + ((self.diagnostics.step * 11) % 60) as f64,
             });
-        } else if self.step == 22 {
-            self.step = 23;
+        } else if self.diagnostics.step == 22 {
+            self.diagnostics.step = 23;
             w.set_content_size(WindowSize {
                 width: 1100.,
                 height: 640.,
             });
-        } else if self.step == 23 && self.panels.iter().all(|p| p.frame_viewport == p.viewport) {
-            self.step = 24;
+        } else if self.diagnostics.step == 23
+            && self
+                .panel_mgr
+                .panels
+                .iter()
+                .all(|p| p.frame_viewport == p.viewport)
+        {
+            self.diagnostics.step = 24;
             w.set_title("TekesUI AppHost — native window ready");
             eprintln!(
                 "NATIVE_WINDOW_READY panels={} pids={:?} resize_burst=21 max_inflight_per_panel=2 physical_input=false native_window={}",
-                self.panels.len(),
-                self.panels.iter().map(|p| p.pid).collect::<Vec<_>>(),
+                self.panel_mgr.panels.len(),
+                self.panel_mgr
+                    .panels
+                    .iter()
+                    .map(|p| p.pid)
+                    .collect::<Vec<_>>(),
                 w.native_window_number()
             );
         }
@@ -1955,12 +1529,13 @@ impl Host {
     /// original controls, splitters and body input have had their turn.
     pub(super) fn toolbar_chrome_at(&self, p: Point) -> bool {
         p.y >= 0.
-            && (self.presentation.is_some()
+            && (self.layout.presentation.is_some()
                 && self
+                    .layout
                     .container_window_boundary
                     .is_some_and(|boundary| p.y < boundary)
-                || self.panels.iter().any(|panel| {
-                    if self.presentation.is_some() {
+                || self.panel_mgr.panels.iter().any(|panel| {
+                    if self.layout.presentation.is_some() {
                         panel
                             .geometry
                             .toolbar
@@ -1981,15 +1556,15 @@ impl Host {
         match event {
             Event::Mouse(mouse) => match mouse.kind {
                 MouseEventKind::Down { .. } | MouseEventKind::Up { .. } | MouseEventKind::Moved => {
-                    self.native_titlebar_drag = false
+                    self.layout.native_titlebar_drag = false
                 }
                 MouseEventKind::Dragged {
                     button: MouseButton::Left,
-                } if self.native_titlebar_drag
-                    && self.drag_split.is_none()
-                    && self.pressed.is_none()
-                    && self.settings_pointer.is_none()
-                    && self.panels.iter().all(|panel| {
+                } if self.layout.native_titlebar_drag
+                    && self.layout.drag_split.is_none()
+                    && self.layout.pressed.is_none()
+                    && self.settings_mgr.settings_pointer.is_none()
+                    && self.panel_mgr.panels.iter().all(|panel| {
                         panel
                             .mounted_toolbar
                             .host
@@ -1998,6 +1573,7 @@ impl Host {
                             .is_none()
                     })
                     && self
+                        .layout
                         .presentation_tabs
                         .as_ref()
                         .is_none_or(|tabs| tabs.content_host().pointer_capture().is_none()) =>
@@ -2006,7 +1582,7 @@ impl Host {
                 }
                 _ => {}
             },
-            Event::Focus(false) | Event::CloseRequested => self.native_titlebar_drag = false,
+            Event::Focus(false) | Event::CloseRequested => self.layout.native_titlebar_drag = false,
             _ => {}
         }
         false
@@ -2019,7 +1595,7 @@ impl Host {
             Event::CloseRequested => false,
             _ => w.is_active(),
         };
-        for panel in &mut self.panels {
+        for panel in &mut self.panel_mgr.panels {
             if let Some(local) = &mut panel.local {
                 local.set_active(active && panel.logically_visible && panel.bounds.size.width > 0.);
             }
@@ -2028,7 +1604,7 @@ impl Host {
             dark,
             increase_contrast,
         } = &event
-            && let Some(binding) = &mut self.settings_display
+            && let Some(binding) = &mut self.settings_mgr.settings_display
         {
             binding.system_theme = Theme {
                 appearance: if *dark {
@@ -2049,14 +1625,16 @@ impl Host {
         if self.owns_native_titlebar_drag_event(&event) {
             return Ok(());
         }
-        if !self.is_settings_window
+        if !self.settings_mgr.is_settings_window
             && matches!(&event, Event::Created)
             && let Some((shared, scope)) = self
+                .diagnostics
                 .presentation_acceptance
                 .as_ref()
                 .map(|probe| (probe.shared.clone(), "presentation"))
                 .or_else(|| {
-                    self.acceptance_shared
+                    self.diagnostics
+                        .acceptance_shared
                         .clone()
                         .map(|shared| (shared, "Settings-only"))
                 })
@@ -2087,24 +1665,25 @@ impl Host {
             }
         }
         if self
+            .diagnostics
             .acceptance_shared
             .as_ref()
             .is_some_and(|s| s.stage() == window_acceptance::Stage::Opening)
-            && !self.is_settings_window
+            && !self.settings_mgr.is_settings_window
             && matches!(&event, Event::Redraw | Event::Wake)
         {
             self.event(
                 Event::Command(tekes_ui_platform_macos::CommandId(0x534554)),
                 w,
             )?;
-            if let Some(shared) = &self.acceptance_shared {
+            if let Some(shared) = &self.diagnostics.acceptance_shared {
                 shared.transition(window_acceptance::Stage::AwaitingShown);
             }
             w.request_redraw();
             return Ok(());
         }
-        if self.is_settings_window
-            && self.acceptance_shared.is_some()
+        if self.settings_mgr.is_settings_window
+            && self.diagnostics.acceptance_shared.is_some()
             && matches!(
                 &event,
                 Event::Redraw | Event::Wake | Event::AnimationFrame(_)
@@ -2115,11 +1694,12 @@ impl Host {
         // Wheel input retires the published geometry lease. Refresh a pending
         // header before checking AX ownership, then apply the same rejection
         // to the newly published identities (including retired targets).
-        if self.presentation_scroll_pending && matches!(&event, Event::Accessibility { .. }) {
+        if self.layout.presentation_scroll_pending && matches!(&event, Event::Accessibility { .. })
+        {
             if std::env::var_os("TEKESUI_OTHERS_SCROLL_TRACE").is_some() {
                 eprintln!(
                     "OTHERS_SCROLL_FLUSH input=AX before_draw={}",
-                    self.diagnostic_draw
+                    self.diagnostics.diagnostic_draw
                 );
             }
             self.draw(w)?;
@@ -2139,11 +1719,11 @@ impl Host {
         ) || matches!(&event,Event::Key(k) if k.kind==KeyEventKind::Down && k.modifiers.command && k.characters_ignoring_modifiers==",")
         {
             self.cancel_toolbar_input();
-            if let Some(i) = self.pressed.take() {
-                self.panels[i].request(InputKind::Cancel, 0., 0.)?;
+            if let Some(i) = self.layout.pressed.take() {
+                self.panel_mgr.panels[i].request(InputKind::Cancel, 0., 0.)?;
             }
-            self.drag_split = None;
-            if self.is_settings_window {
+            self.layout.drag_split = None;
+            if self.settings_mgr.is_settings_window {
                 w.request_redraw();
                 return Ok(());
             }
@@ -2174,7 +1754,7 @@ impl Host {
         }
         // A queued wheel paint can be overtaken by a click or key action.
         // Publish the moved tab geometry before those inputs choose a target.
-        if self.presentation_scroll_pending
+        if self.layout.presentation_scroll_pending
             && matches!(&event, Event::Mouse(_) | Event::Key(_) | Event::TextKey(_))
         {
             if std::env::var_os("TEKESUI_OTHERS_SCROLL_TRACE").is_some() {
@@ -2184,7 +1764,7 @@ impl Host {
                 };
                 eprintln!(
                     "OTHERS_SCROLL_FLUSH input={input} before_draw={}",
-                    self.diagnostic_draw
+                    self.diagnostics.diagnostic_draw
                 );
             }
             self.draw(w)?;
@@ -2195,16 +1775,19 @@ impl Host {
             return Ok(());
         }
         if self.presentation_event(&event, w)? {
-            if matches!(&event, Event::Scroll(scroll) if self.presentation_layout.tabs.is_some_and(|frame| frame.contains(Point::new(scroll.position.x as f32, scroll.position.y as f32))))
+            if matches!(&event, Event::Scroll(scroll) if self.layout.presentation_layout.tabs.is_some_and(|frame| frame.contains(Point::new(scroll.position.x as f32, scroll.position.y as f32))))
             {
                 // Apply every native delta immediately, but coalesce painting on
                 // the existing runloop redraw path. A header wheel must not
                 // synchronously render all containers and submit a GPU frame
                 // for every input sample. Pointer/selection geometry stays on
                 // the synchronous path below.
-                self.presentation_scroll_pending = true;
+                self.layout.presentation_scroll_pending = true;
                 if std::env::var_os("TEKESUI_OTHERS_SCROLL_TRACE").is_some() {
-                    eprintln!("OTHERS_SCROLL_QUEUED draw={}", self.diagnostic_draw);
+                    eprintln!(
+                        "OTHERS_SCROLL_QUEUED draw={}",
+                        self.diagnostics.diagnostic_draw
+                    );
                 }
                 w.request_redraw();
             } else {
@@ -2218,12 +1801,16 @@ impl Host {
             return Ok(());
         }
 
-        if self.settings.as_ref().is_some_and(|s| s.borrow().open)
+        if self
+            .settings_mgr
+            .settings
+            .as_ref()
+            .is_some_and(|s| s.borrow().open)
             && self.settings_event(&event, w)?
         {
             return Ok(());
         }
-        if !self.is_settings_window && self.local_content_event(&event, w)? {
+        if !self.settings_mgr.is_settings_window && self.local_content_event(&event, w)? {
             w.request_redraw();
             return Ok(());
         }
@@ -2233,22 +1820,22 @@ impl Host {
                 m.kind,
                 MouseEventKind::Down { .. } | MouseEventKind::Up { .. }
             )
-            && let Some(nav) = &self.navigation
+            && let Some(nav) = &self.nav_mgr.navigation
         {
             nav.trace(serde_json::json!({"event":"mouse","kind":format!("{:?}",m.kind),"x":m.position.x,"y":m.position.y,"active":w.is_active(),"key_window":w.is_key_window()}));
         }
         if cfg!(debug_assertions)
             && let Event::Key(key) = &event
-            && let Some(nav) = &self.navigation
+            && let Some(nav) = &self.nav_mgr.navigation
         {
-            nav.trace(serde_json::json!({"event":"window-toolbar-key","code":key.key_code,"kind":format!("{:?}",key.kind),"active":w.is_active(),"owner":format!("{:?}",self.panels[self.toolbar_index].mounted_toolbar.host.content_host().focused())}));
+            nav.trace(serde_json::json!({"event":"window-toolbar-key","code":key.key_code,"kind":format!("{:?}",key.kind),"active":w.is_active(),"owner":format!("{:?}",self.panel_mgr.panels[self.toolbar_mgr.toolbar_index].mounted_toolbar.host.content_host().focused())}));
         }
         match event {
             Event::Created | Event::Redraw | Event::Wake | Event::AnimationFrame(_) => {
                 self.draw(w)?
             }
             Event::Resized { .. } => {
-                if let Some(header) = &mut self.presentation_tabs {
+                if let Some(header) = &mut self.layout.presentation_tabs {
                     header.event(&ContentEvent::Cancel);
                 }
                 self.cancel_toolbar_input();
@@ -2262,57 +1849,73 @@ impl Host {
                         button: MouseButton::Left,
                         click_count,
                     } => {
-                        if self.presentation.is_none()
-                            && self.panels.len() >= 2
-                            && self.leading_visible
-                            && !self.sidebar_motion.needs_frame()
-                            && self.outer_view.pointer_down(p, &mut self.outer)
+                        if self.layout.presentation.is_none()
+                            && self.panel_mgr.panels.len() >= 2
+                            && self.layout.leading_visible
+                            && !self.layout.sidebar_motion.needs_frame()
+                            && self
+                                .layout
+                                .outer_view
+                                .pointer_down(p, &mut self.layout.outer)
                         {
                             self.cancel_toolbar_input();
-                            self.drag_split = Some(0);
-                        } else if self.presentation.is_none()
-                            && self.panels.len() == 3
-                            && self.trailing_visible
-                            && !self.sidebar_motion.needs_frame()
-                            && self.inner_view.pointer_down(p, &mut self.inner)
+                            self.layout.drag_split = Some(0);
+                        } else if self.layout.presentation.is_none()
+                            && self.panel_mgr.panels.len() == 3
+                            && self.layout.trailing_visible
+                            && !self.layout.sidebar_motion.needs_frame()
+                            && self
+                                .layout
+                                .inner_view
+                                .pointer_down(p, &mut self.layout.inner)
                         {
                             self.cancel_toolbar_input();
-                            self.drag_split = Some(1);
-                        } else if let Some(i) = self.panels.iter().enumerate().position(|(i, v)| {
-                            !self.sidebar_motion.needs_frame()
-                                && (self.presentation.is_some()
-                                    || (self.leading_visible || i != self.order[0])
-                                        && (self.panels.len() < 3
-                                            || self.trailing_visible
-                                            || i != self.order[2]))
-                                && (self.presentation.is_none() || v.clip.contains(p))
-                                && v.content_frame().contains(p)
-                        }) {
-                            for (other, panel) in self.panels.iter_mut().enumerate() {
+                            self.layout.drag_split = Some(1);
+                        } else if let Some(i) =
+                            self.panel_mgr.panels.iter().enumerate().position(|(i, v)| {
+                                !self.layout.sidebar_motion.needs_frame()
+                                    && (self.layout.presentation.is_some()
+                                        || (self.layout.leading_visible
+                                            || i != self.layout.order[0])
+                                            && (self.panel_mgr.panels.len() < 3
+                                                || self.layout.trailing_visible
+                                                || i != self.layout.order[2]))
+                                    && (self.layout.presentation.is_none() || v.clip.contains(p))
+                                    && v.content_frame().contains(p)
+                            })
+                        {
+                            for (other, panel) in self.panel_mgr.panels.iter_mut().enumerate() {
                                 if other != i
                                     && let Some(local) = &mut panel.local
                                 {
                                     local.cancel();
                                 }
                             }
-                            self.focused = i;
-                            if let Some(tabs) = &mut self.presentation_tabs {
+                            self.layout.focused = i;
+                            if let Some(tabs) = &mut self.layout.presentation_tabs {
                                 tabs.blur();
                             }
                             self.set_toolbar_focus(None, false);
                             if self
+                                .nav_mgr
                                 .navigation
                                 .as_ref()
                                 .is_none_or(|nav| nav.host.input_open && !nav.busy)
-                                && self.panels[i].frame_viewport == self.panels[i].viewport
-                                && self.panels[i].frame_size == self.panels[i].content_size()
+                                && self.panel_mgr.panels[i].frame_viewport
+                                    == self.panel_mgr.panels[i].viewport
+                                && self.panel_mgr.panels[i].frame_size
+                                    == self.panel_mgr.panels[i].content_size()
                             {
-                                self.pressed = Some(i);
-                                if let Some(local) = &mut self.panels[i].local {
+                                self.layout.pressed = Some(i);
+                                if let Some(local) = &mut self.panel_mgr.panels[i].local {
                                     local.event(&content_event, &mut self.text)?;
                                 }
-                                let point = self.panels[i].content_point(p);
-                                self.panels[i].request(InputKind::PointerDown, point.x, point.y)?;
+                                let point = self.panel_mgr.panels[i].content_point(p);
+                                self.panel_mgr.panels[i].request(
+                                    InputKind::PointerDown,
+                                    point.x,
+                                    point.y,
+                                )?;
                             }
                         } else if self.toolbar_chrome_at(p) {
                             // Empty segmented toolbar chrome is not child
@@ -2324,7 +1927,7 @@ impl Host {
                                 // Only a successful native handoff owns future
                                 // drag samples. Keep this down's existing paint
                                 // so focus/hover cancellation is acknowledged.
-                                self.native_titlebar_drag = w.try_begin_titlebar_drag();
+                                self.layout.native_titlebar_drag = w.try_begin_titlebar_drag();
                             }
                         }
                     }
@@ -2332,58 +1935,76 @@ impl Host {
                         button: MouseButton::Left,
                         ..
                     } => {
-                        self.outer_view.pointer_up(&mut self.outer);
-                        self.inner_view.pointer_up(&mut self.inner);
-                        self.drag_split = None;
-                        if let Some(i) = self.pressed.take() {
-                            if let Some(local) = &mut self.panels[i].local {
+                        self.layout.outer_view.pointer_up(&mut self.layout.outer);
+                        self.layout.inner_view.pointer_up(&mut self.layout.inner);
+                        self.layout.drag_split = None;
+                        if let Some(i) = self.layout.pressed.take() {
+                            if let Some(local) = &mut self.panel_mgr.panels[i].local {
                                 local.event(&content_event, &mut self.text)?;
                             }
-                            let point = self.panels[i].content_point(p);
-                            self.panels[i].request(InputKind::PointerUp, point.x, point.y)?;
+                            let point = self.panel_mgr.panels[i].content_point(p);
+                            self.panel_mgr.panels[i].request(
+                                InputKind::PointerUp,
+                                point.x,
+                                point.y,
+                            )?;
                         }
                     }
                     MouseEventKind::Dragged {
                         button: MouseButton::Left,
-                    } => match self.drag_split {
+                    } => match self.layout.drag_split {
                         Some(0) => {
-                            self.outer_view.pointer_move(p, &mut self.outer);
-                            let whole = self.outer_view.layout().frame.frame();
-                            let second_x = if self.panels.len() == 2 {
+                            self.layout
+                                .outer_view
+                                .pointer_move(p, &mut self.layout.outer);
+                            let whole = self.layout.outer_view.layout().frame.frame();
+                            let second_x = if self.panel_mgr.panels.len() == 2 {
                                 whole.max_x()
                             } else {
-                                self.inner.layout(whole, Axis::Horizontal).1.min_x()
+                                self.layout.inner.layout(whole, Axis::Horizontal).1.min_x()
                             };
-                            let limit = (second_x - self.outer.divider - MIN_COLUMN)
-                                / (whole.size.width - self.outer.divider);
-                            self.outer.set_ratio(self.outer.ratio().min(limit));
+                            let limit = (second_x - self.layout.outer.divider - MIN_COLUMN)
+                                / (whole.size.width - self.layout.outer.divider);
+                            self.layout
+                                .outer
+                                .set_ratio(self.layout.outer.ratio().min(limit));
                         }
                         Some(1) => {
-                            self.inner_view.pointer_move(p, &mut self.inner);
-                            let whole = self.inner_view.layout().frame.frame();
-                            let first_x = self.outer.layout(whole, Axis::Horizontal).1.max_x();
-                            let limit =
-                                (first_x + MIN_COLUMN) / (whole.size.width - self.inner.divider);
-                            self.inner.set_ratio(self.inner.ratio().max(limit));
+                            self.layout
+                                .inner_view
+                                .pointer_move(p, &mut self.layout.inner);
+                            let whole = self.layout.inner_view.layout().frame.frame();
+                            let first_x =
+                                self.layout.outer.layout(whole, Axis::Horizontal).1.max_x();
+                            let limit = (first_x + MIN_COLUMN)
+                                / (whole.size.width - self.layout.inner.divider);
+                            self.layout
+                                .inner
+                                .set_ratio(self.layout.inner.ratio().max(limit));
                         }
                         _ => {
-                            if let Some(i) = self.pressed {
-                                if let Some(local) = &mut self.panels[i].local {
+                            if let Some(i) = self.layout.pressed {
+                                if let Some(local) = &mut self.panel_mgr.panels[i].local {
                                     local.event(&content_event, &mut self.text)?;
                                 }
-                                let point = self.panels[i].content_point(p);
-                                self.panels[i].request(InputKind::PointerMove, point.x, point.y)?;
+                                let point = self.panel_mgr.panels[i].content_point(p);
+                                self.panel_mgr.panels[i].request(
+                                    InputKind::PointerMove,
+                                    point.x,
+                                    point.y,
+                                )?;
                             }
                         }
                     },
                     MouseEventKind::Moved | MouseEventKind::Entered | MouseEventKind::Exited => {
-                        let local_input_open = !self.sidebar_motion.needs_frame()
+                        let local_input_open = !self.layout.sidebar_motion.needs_frame()
                             && self.open_toolbar().is_none()
                             && self
+                                .nav_mgr
                                 .navigation
                                 .as_ref()
                                 .is_none_or(|n| n.host.input_open && !n.busy);
-                        for panel in &mut self.panels {
+                        for panel in &mut self.panel_mgr.panels {
                             if panel.bounds.size.width > 0.
                                 && local_input_open
                                 && let Some(local) = &mut panel.local
@@ -2404,58 +2025,70 @@ impl Host {
                 w.request_redraw();
             }
             Event::SystemMotionChanged(reduced) => {
-                self.reduced_motion = reduced;
+                self.layout.reduced_motion = reduced;
                 w.request_redraw();
             }
             Event::Focus(true) => {
-                if let Some(header) = &mut self.presentation_tabs {
+                if let Some(header) = &mut self.layout.presentation_tabs {
                     header.set_window_active(true);
                 }
                 w.set_menu_bar(&self.menu_bar())
                     .map_err(|error| anyhow::anyhow!("AppHost menu: {error}"))?;
                 eprintln!(
                     "TOOLBAR_WINDOW_ACTIVE window={} active=true",
-                    self.panels[self.toolbar_index].mounted_toolbar.window
+                    self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
+                        .mounted_toolbar
+                        .window
                 );
-                self.panels[self.toolbar_index]
+                self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
                     .mounted_toolbar
                     .host
                     .set_window_active(true);
-                self.outer_view.set_window_active(true, &mut self.outer);
-                self.inner_view.set_window_active(true, &mut self.inner);
+                self.layout
+                    .outer_view
+                    .set_window_active(true, &mut self.layout.outer);
+                self.layout
+                    .inner_view
+                    .set_window_active(true, &mut self.layout.inner);
                 w.request_redraw();
             }
             Event::Focus(false) => {
-                if let Some(header) = &mut self.presentation_tabs {
+                if let Some(header) = &mut self.layout.presentation_tabs {
                     header.set_window_active(false);
                 }
                 eprintln!(
                     "TOOLBAR_WINDOW_ACTIVE window={} active=false",
-                    self.panels[self.toolbar_index].mounted_toolbar.window
+                    self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
+                        .mounted_toolbar
+                        .window
                 );
                 self.remember_toolbar_focus(None);
-                self.panels[self.toolbar_index]
+                self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
                     .mounted_toolbar
                     .host
                     .set_window_active(false);
-                self.sidebar_motion.sample(
-                    self.motion_epoch.elapsed(),
-                    self.reduced_motion,
+                self.layout.sidebar_motion.sample(
+                    self.layout.motion_epoch.elapsed(),
+                    self.layout.reduced_motion,
                     false,
                 )?;
                 w.set_animating(false);
-                if let Some(i) = self.pressed.take() {
-                    self.panels[i].request(InputKind::Cancel, 0., 0.)?;
+                if let Some(i) = self.layout.pressed.take() {
+                    self.panel_mgr.panels[i].request(InputKind::Cancel, 0., 0.)?;
                 }
-                for panel in &mut self.panels {
+                for panel in &mut self.panel_mgr.panels {
                     if let Some(local) = &mut panel.local {
                         local.cancel();
                     }
                 }
-                self.outer_view.set_window_active(false, &mut self.outer);
-                self.inner_view.set_window_active(false, &mut self.inner);
+                self.layout
+                    .outer_view
+                    .set_window_active(false, &mut self.layout.outer);
+                self.layout
+                    .inner_view
+                    .set_window_active(false, &mut self.layout.inner);
                 w.set_cursor_regions(Vec::new());
-                self.drag_split = None;
+                self.layout.drag_split = None;
                 // Resign-active does not schedule a paint. Revoke the native
                 // snapshot now without restarting rendering or animations.
                 w.set_content_accessibility_publication(None);
@@ -2468,7 +2101,7 @@ impl Host {
 }
 impl WindowHandler for Host {
     fn allows_app_quit(&self) -> bool {
-        self.settings.as_ref().is_none_or(|s| {
+        self.settings_mgr.settings.as_ref().is_none_or(|s| {
             let s = s.borrow();
             s.clean_for_close() || s.failed_close_prompted
         })
@@ -2478,7 +2111,9 @@ impl WindowHandler for Host {
         // The existing observer reports actual drawable presentation on a
         // separate CA clock. Join by window/serial; do not subtract Instant.
         // Flush outside a drag so copying receipts cannot perturb its timing.
-        if self.draw_diagnostic && matches!(&event, Event::CloseRequested | Event::Focus(false)) {
+        if self.diagnostics.draw_diagnostic
+            && matches!(&event, Event::CloseRequested | Event::Focus(false))
+        {
             eprintln!(
                 "APPHOST_SCREEN_DIAGNOSTIC pid={} window={} native_frame={:?} screen_id={:?} screen_info={:?} scale={} size={:?}",
                 std::process::id(),
@@ -2498,8 +2133,8 @@ impl WindowHandler for Host {
                 w.presented_frames(),
             );
         }
-        let diagnostic = self.draw_diagnostic.then(|| {
-            self.diagnostic_event += 1;
+        let diagnostic = self.diagnostics.draw_diagnostic.then(|| {
+            self.diagnostics.diagnostic_event += 1;
             let begin = std::time::Instant::now();
             // MouseEvent does not expose NSEvent.timestamp. This marks receipt
             // at the Host handler, after the platform's event queue.
@@ -2518,7 +2153,12 @@ impl WindowHandler for Host {
                 Event::AnimationFrame(_) => "AnimationFrame".into(),
                 _ => "Other".into(),
             };
-            (begin, self.diagnostic_event, self.diagnostic_draw, kind)
+            (
+                begin,
+                self.diagnostics.diagnostic_event,
+                self.diagnostics.diagnostic_draw,
+                kind,
+            )
         });
         let acceptance_tick = matches!(
             &event,
@@ -2543,14 +2183,14 @@ impl WindowHandler for Host {
                 w.native_window_number(),
                 event,
                 draws_before,
-                self.diagnostic_draw,
+                self.diagnostics.diagnostic_draw,
                 end.duration_since(begin).as_nanos(),
                 result.is_ok(),
             );
         }
         if let Err(e) = result {
             eprintln!("HOST_ERROR {e:#}");
-            if let Some(shared) = &self.acceptance_shared {
+            if let Some(shared) = &self.diagnostics.acceptance_shared {
                 shared.fail(format!("HOST_ERROR {e:#}"));
                 if let Ok(result) = shared.0.lock()
                     && let Some(wake) = &result.parent_wake
@@ -2559,14 +2199,16 @@ impl WindowHandler for Host {
                 }
             }
             w.set_title(&format!("AppHost error: {e}"));
-            if let Some(probe) = &self.presentation_acceptance {
+            if let Some(probe) = &self.diagnostics.presentation_acceptance {
                 probe.shared.fail(format!("{e:#}"));
                 eprintln!(
                     "PRESENTATION_ACCEPTANCE_FAIL step={} draws={} automated_native=true physical_input=false error={e:#}",
-                    self.step, self.acceptance_draws
+                    self.diagnostics.step, self.diagnostics.acceptance_draws
                 );
             }
-            if self.acceptance_shared.is_some() || self.presentation_acceptance.is_some() {
+            if self.diagnostics.acceptance_shared.is_some()
+                || self.diagnostics.presentation_acceptance.is_some()
+            {
                 w.close();
             }
         }
@@ -2584,16 +2226,17 @@ impl Host {
             Some(crate::settings::SettingsConfiguration::Shared(owner)) => Some(owner),
             None => None,
         };
-        self.settings_options = owner.as_ref().map(|owner| owner.0.borrow().options.clone());
-        self.settings_display = owner
+        self.settings_mgr.settings_options =
+            owner.as_ref().map(|owner| owner.0.borrow().options.clone());
+        self.settings_mgr.settings_display = owner
             .as_ref()
             .and_then(|owner| window_settings::SettingsDisplayBinding::new(owner, self.theme));
-        self.settings_owner = owner;
+        self.settings_mgr.settings_owner = owner;
         Ok(())
     }
     fn menu_bar(&self) -> MenuBar {
         let mut menus = MenuBar::default();
-        if self.settings_options.is_some() || self.is_settings_window {
+        if self.settings_mgr.settings_options.is_some() || self.settings_mgr.is_settings_window {
             menus.menus.push(
                 tekes_ui_platform_macos::Menu::new(
                     "Settings",
@@ -2608,7 +2251,7 @@ impl Host {
                 .in_application_menu(),
             );
         }
-        if self.presentation.is_some() {
+        if self.layout.presentation.is_some() {
             menus.menus.push(self.presentation_menu());
         }
         menus
@@ -2630,7 +2273,7 @@ pub(crate) fn run(mut app: crate::AppWindow, acceptance: bool) -> Result<()> {
     let settings = app.settings.take();
     let mut host = app.into_host(acceptance);
     ensure!(
-        host.presentation.is_some() || (1..=3).contains(&host.module_ids.len()),
+        host.layout.presentation.is_some() || (1..=3).contains(&host.panel_mgr.module_ids.len()),
         "expected one, two or three preselected modules"
     );
     host.mount_initial_containers();
@@ -2639,12 +2282,12 @@ pub(crate) fn run(mut app: crate::AppWindow, acceptance: bool) -> Result<()> {
         && has_settings
         && std::env::var("TEKESUI_SETTINGS_WINDOW_ACCEPTANCE").as_deref() == Ok("1");
     if settings_window_acceptance {
-        host.acceptance_shared = Some(window_acceptance::Shared::new());
+        host.diagnostics.acceptance_shared = Some(window_acceptance::Shared::new());
     }
     let presentation_acceptance =
         acceptance && std::env::var("TEKESUI_PRESENTATION_WINDOW_ACCEPTANCE").as_deref() == Ok("1");
     ensure!(
-        !presentation_acceptance || host.presentation.is_some(),
+        !presentation_acceptance || host.layout.presentation.is_some(),
         "presentation acceptance requires from_containers"
     );
     ensure!(
@@ -2652,7 +2295,8 @@ pub(crate) fn run(mut app: crate::AppWindow, acceptance: bool) -> Result<()> {
         "choose one finite window acceptance scope"
     );
     if presentation_acceptance {
-        host.presentation_acceptance = Some(window_acceptance::PresentationAcceptance::new());
+        host.diagnostics.presentation_acceptance =
+            Some(window_acceptance::PresentationAcceptance::new());
     }
     host.configure_settings(settings)?;
     let menus = host.menu_bar();
@@ -2785,11 +2429,11 @@ mod toolbar_geometry_tests {
         .unwrap()
         .into_host(false);
         host.mount_columns();
-        assert_eq!(host.panels[0].content_padding, 0.);
+        assert_eq!(host.panel_mgr.panels[0].content_padding, 0.);
         let bounds = Rect::new(0., 0., 300., 260.);
         host.panel_geometry(0, bounds, 1., 48., 0.).unwrap();
-        let frame = host.panels[0].content_frame();
-        host.panels[0]
+        let frame = host.panel_mgr.panels[0].content_frame();
+        host.panel_mgr.panels[0]
             .local
             .as_mut()
             .unwrap()
@@ -2801,7 +2445,7 @@ mod toolbar_geometry_tests {
                 Theme::LIGHT.into(),
             )
             .unwrap();
-        host.panels[0]
+        host.panel_mgr.panels[0]
             .local
             .as_mut()
             .unwrap()
@@ -2843,10 +2487,9 @@ mod toolbar_geometry_tests {
         // serialization at the production queue boundary, not request()'s
         // deliberately unopened launch gate.
         panel.enqueue(InputKind::Layout, 0., 0., None).unwrap();
-        let queued = panel.inbox.queue.lock().unwrap();
-        let request = queued.back().unwrap();
+        let queued = panel.queued_requests();
+        let request = queued.last().unwrap();
         assert_eq!((request.width, request.height), panel.content_size());
-        drop(queued);
         panel.local = Some(
             crate::LocalContainer::new(
                 "hidden-worker",
@@ -2921,7 +2564,7 @@ mod toolbar_geometry_tests {
     }
     #[test]
     fn navigation_gate_preserves_rapid_consumer_requests_and_original_wire_geometry() {
-        use std::{cell::RefCell, rc::Rc};
+        use std::{cell::RefCell, collections::VecDeque, rc::Rc};
         struct Pending {
             host: ContentHost,
             entries: Rc<RefCell<VecDeque<crate::navigation::Entry>>>,
@@ -2957,22 +2600,22 @@ mod toolbar_geometry_tests {
             None,
         );
         host.mount_columns();
-        assert!(take_local_navigation_request(&mut host.panels, false).is_none());
+        assert!(take_local_navigation_request(&mut host.panel_mgr.panels, false).is_none());
         assert_eq!(entries.borrow().len(), 2);
         assert_eq!(
-            take_local_navigation_request(&mut host.panels, true)
+            take_local_navigation_request(&mut host.panel_mgr.panels, true)
                 .unwrap()
                 .id,
             "doc0"
         );
-        assert!(take_local_navigation_request(&mut host.panels, false).is_none());
+        assert!(take_local_navigation_request(&mut host.panel_mgr.panels, false).is_none());
         assert_eq!(
-            take_local_navigation_request(&mut host.panels, true)
+            take_local_navigation_request(&mut host.panel_mgr.panels, true)
                 .unwrap()
                 .id,
             "doc1"
         );
-        assert!(take_local_navigation_request(&mut host.panels, true).is_none());
+        assert!(take_local_navigation_request(&mut host.panel_mgr.panels, true).is_none());
         let outer = Rect::new(20., 30., 400., 300.);
         let inner = content_geometry(outer, 48.);
         assert_eq!(inner, Rect::new(20., 78., 400., 252.));
@@ -3000,10 +2643,10 @@ mod toolbar_geometry_tests {
     fn dormant_panel_has_no_process_and_drops_pre_mount_input() {
         let mut p = Panel::new(0, "demo-first".into());
         assert!(p.process.pid().is_none());
-        assert!(p.launch_tx.is_some());
+        assert!(p.needs_launch());
         p.request(InputKind::Cancel, 0., 0.).unwrap();
         p.request(InputKind::PointerDown, 20., 20.).unwrap();
-        assert!(p.inbox.queue.lock().unwrap().is_empty());
+        assert!(p.queued_requests().is_empty());
         assert_eq!(p.seq, 0);
         assert!(p.process.pid().is_none());
     }
@@ -3139,7 +2782,7 @@ mod window_focus_tests {
     };
     fn render(h: &mut Host) {
         let palette = h.palette();
-        for panel in &mut h.panels {
+        for panel in &mut h.panel_mgr.panels {
             panel
                 .mounted_toolbar
                 .host
@@ -3163,7 +2806,7 @@ mod window_focus_tests {
                     Source::Visibility(side),
                 ),
                 ToolbarTarget::Panel(i) => {
-                    let p = &h.panels[i];
+                    let p = &h.panel_mgr.panels[i];
                     (
                         Rect::new(
                             p.bounds.min_x(),
@@ -3220,7 +2863,7 @@ mod window_focus_tests {
             });
         }
         h.remember_toolbar_focus(None);
-        for (index, panel) in h.panels.iter_mut().enumerate() {
+        for (index, panel) in h.panel_mgr.panels.iter_mut().enumerate() {
             let owned: Vec<_> = declarations
                 .iter()
                 .filter(|declaration| match declaration.source {
@@ -3246,11 +2889,11 @@ mod window_focus_tests {
     fn fixture() -> Host {
         let ids = (0..3).map(|i| format!("window-test-{i}")).collect();
         let mut h = Host::new(ids, false, None);
-        h.panels = (0..3)
+        h.panel_mgr.panels = (0..3)
             .map(|i| Panel::new(i, format!("window-test-{i}")))
             .collect();
-        h.leading_visible = true;
-        for (i, p) in h.panels.iter_mut().enumerate() {
+        h.layout.leading_visible = true;
+        for (i, p) in h.panel_mgr.panels.iter_mut().enumerate() {
             p.bounds = Rect::new(80. + i as f32 * 240., 0., 240., 300.);
             p.geometry = window_container_geometry::ContainerGeometry::legacy(p.bounds, 66.);
             p.toolbar = vec![
@@ -3292,7 +2935,7 @@ mod window_focus_tests {
             host.mount_columns();
             let mut body = Scene::new();
             let frame = Rect::new(0., 0., 300., 100.);
-            host.panels[0]
+            host.panel_mgr.panels[0]
                 .local
                 .as_mut()
                 .unwrap()
@@ -3306,7 +2949,7 @@ mod window_focus_tests {
             );
             let mut toolbar = fixture().with_theme(theme);
             let mut scene = Scene::new();
-            for panel in &mut toolbar.panels {
+            for panel in &mut toolbar.panel_mgr.panels {
                 panel
                     .mounted_toolbar
                     .host
@@ -3341,15 +2984,13 @@ mod window_focus_tests {
         .unwrap();
     }
     fn commands(h: &Host) -> Vec<(usize, u64)> {
-        h.panels
+        h.panel_mgr
+            .panels
             .iter()
             .enumerate()
             .flat_map(|(i, p)| {
-                p.inbox
-                    .queue
-                    .lock()
-                    .unwrap()
-                    .iter()
+                p.queued_requests()
+                    .into_iter()
                     .filter(|r| r.kind == InputKind::Command)
                     .map(|r| (i, r.command.unwrap()))
                     .collect::<Vec<_>>()
@@ -3373,6 +3014,7 @@ mod window_focus_tests {
         h.set_toolbar_focus(Some(owner), false);
         render(&mut h);
         let snapshots: Vec<_> = h
+            .panel_mgr
             .panels
             .iter()
             .map(|p| {
@@ -3389,11 +3031,11 @@ mod window_focus_tests {
         });
         assert!(!h.owns_native_titlebar_drag_event(&drag));
         // Production assigns this only from try_begin_titlebar_drag's result.
-        h.native_titlebar_drag = true;
+        h.layout.native_titlebar_drag = true;
         for _ in 0..7 {
             assert!(h.owns_native_titlebar_drag_event(&drag));
         }
-        for (panel, before) in h.panels.iter().zip(snapshots) {
+        for (panel, before) in h.panel_mgr.panels.iter().zip(snapshots) {
             assert!(!panel.mounted_toolbar.host.needs_render());
             assert!(before.is_current());
             assert_eq!(
@@ -3407,7 +3049,7 @@ mod window_focus_tests {
                 before.generation
             );
         }
-        assert_eq!(h.toolbar_focus, Some(owner));
+        assert_eq!(h.toolbar_mgr.toolbar_focus, Some(owner));
         assert!(commands(&h).is_empty());
     }
     #[test]
@@ -3428,11 +3070,11 @@ mod window_focus_tests {
             }),
             Event::Focus(false),
         ] {
-            h.native_titlebar_drag = true;
+            h.layout.native_titlebar_drag = true;
             assert!(!h.owns_native_titlebar_drag_event(&end));
             assert!(!h.owns_native_titlebar_drag_event(&drag));
         }
-        h.native_titlebar_drag = true;
+        h.layout.native_titlebar_drag = true;
         for event in [
             Event::Resized {
                 size: WindowSize {
@@ -3458,20 +3100,20 @@ mod window_focus_tests {
         let point = Point::new(110., 26.);
         h.dispatch_toolbar(owner, &ContentEvent::PointerDown(point))
             .unwrap();
-        let index = h.toolbar_index;
-        let capture = h.panels[index]
+        let index = h.toolbar_mgr.toolbar_index;
+        let capture = h.panel_mgr.panels[index]
             .mounted_toolbar
             .host
             .content_host()
             .pointer_capture();
         assert!(capture.is_some());
-        h.native_titlebar_drag = true;
+        h.layout.native_titlebar_drag = true;
         let drag = native_drag_mouse(MouseEventKind::Dragged {
             button: MouseButton::Left,
         });
         assert!(!h.owns_native_titlebar_drag_event(&drag));
         assert_eq!(
-            h.panels[index]
+            h.panel_mgr.panels[index]
                 .mounted_toolbar
                 .host
                 .content_host()
@@ -3483,22 +3125,25 @@ mod window_focus_tests {
         assert_eq!(commands(&h), vec![(0, 7)]);
 
         let whole = Rect::new(0., 0., 1000., 400.);
-        h.outer_view.arrange(&mut h.outer, whole, Some(whole));
-        let divider = h.outer_view.layout().divider.frame();
+        h.layout
+            .outer_view
+            .arrange(&mut h.layout.outer, whole, Some(whole));
+        let divider = h.layout.outer_view.layout().divider.frame();
         let start = Point::new(divider.min_x() + divider.size.width / 2., 200.);
-        assert!(h.outer_view.pointer_down(start, &mut h.outer));
-        h.drag_split = Some(0);
+        assert!(h.layout.outer_view.pointer_down(start, &mut h.layout.outer));
+        h.layout.drag_split = Some(0);
         assert!(!h.owns_native_titlebar_drag_event(&drag));
         assert!(
-            h.outer_view
-                .pointer_move(Point::new(start.x + 30., start.y), &mut h.outer)
+            h.layout
+                .outer_view
+                .pointer_move(Point::new(start.x + 30., start.y), &mut h.layout.outer)
         );
-        assert!(h.outer_view.pointer_up(&mut h.outer));
-        h.drag_split = None;
-        h.pressed = Some(1);
+        assert!(h.layout.outer_view.pointer_up(&mut h.layout.outer));
+        h.layout.drag_split = None;
+        h.layout.pressed = Some(1);
         assert!(!h.owns_native_titlebar_drag_event(&drag));
-        assert_eq!(h.pressed, Some(1));
-        h.pressed = None;
+        assert_eq!(h.layout.pressed, Some(1));
+        h.layout.pressed = None;
         assert!(h.owns_native_titlebar_drag_event(&drag));
     }
     #[test]
@@ -3514,11 +3159,14 @@ mod window_focus_tests {
         assert_eq!(h.toolbar_focus_targets(), targets);
         for target in targets.iter().chain(targets.iter().take(1)) {
             key(&mut h, ControlKey::Tab { reverse: false }, true);
-            assert_eq!(h.toolbar_focus, Some(*target));
+            assert_eq!(h.toolbar_mgr.toolbar_focus, Some(*target));
             assert_eq!(focused_groups(&h), vec![*target]);
         }
         key(&mut h, ControlKey::Tab { reverse: true }, true);
-        assert_eq!(h.toolbar_focus, Some(ToolbarTarget::Visibility(1)));
+        assert_eq!(
+            h.toolbar_mgr.toolbar_focus,
+            Some(ToolbarTarget::Visibility(1))
+        );
         assert!(commands(&h).is_empty());
     }
     #[test]
@@ -3563,19 +3211,19 @@ mod window_focus_tests {
         let mut h = fixture();
         h.set_toolbar_focus(Some(ToolbarTarget::Panel(0)), true);
         key(&mut h, ControlKey::Space, true);
-        h.leading_visible = false;
+        h.layout.leading_visible = false;
         h.reconcile_toolbar_focus(true);
         key(&mut h, ControlKey::Space, false);
-        assert_eq!(h.toolbar_focus, None);
+        assert_eq!(h.toolbar_mgr.toolbar_focus, None);
         assert!(commands(&h).is_empty());
         assert!(!h.toolbar_focus_targets().contains(&ToolbarTarget::Panel(0)));
-        h.leading_visible = true;
-        h.order = vec![2, 0, 1];
+        h.layout.leading_visible = true;
+        h.layout.order = vec![2, 0, 1];
         refresh(&mut h, None);
         h.set_toolbar_focus(Some(ToolbarTarget::Panel(0)), true);
         key(&mut h, ControlKey::Tab { reverse: false }, true);
-        assert_eq!(h.toolbar_focus, Some(ToolbarTarget::Panel(1)));
-        h.panels[1].toolbar = vec![ToolbarItem {
+        assert_eq!(h.toolbar_mgr.toolbar_focus, Some(ToolbarTarget::Panel(1)));
+        h.panel_mgr.panels[1].toolbar = vec![ToolbarItem {
             id: 7,
             title: "Disabled".into(),
             enabled: false,
@@ -3583,7 +3231,7 @@ mod window_focus_tests {
         }];
         refresh(&mut h, None);
         h.reconcile_toolbar_focus(true);
-        assert_eq!(h.toolbar_focus, None);
+        assert_eq!(h.toolbar_mgr.toolbar_focus, None);
         assert!(commands(&h).is_empty());
     }
     #[test]
@@ -3597,15 +3245,15 @@ mod window_focus_tests {
         assert_eq!(h.open_toolbar(), Some(owner));
         refresh(&mut h, Some(1));
         key(&mut h, ControlKey::Tab { reverse: false }, true);
-        assert_eq!(h.toolbar_focus, Some(owner));
+        assert_eq!(h.toolbar_mgr.toolbar_focus, Some(owner));
         let p = Point::new(24., 26.);
         assert_eq!(h.toolbar_target_at(p), Some(owner));
         h.dispatch_toolbar(owner, &ContentEvent::PointerDown(p))
             .unwrap();
         h.dispatch_toolbar(owner, &ContentEvent::PointerUp(p))
             .unwrap();
-        assert!(h.leading_visible);
-        assert!(h.trailing_visible);
+        assert!(h.layout.leading_visible);
+        assert!(h.layout.trailing_visible);
         assert!(commands(&h).is_empty());
         assert_eq!(h.open_toolbar(), None);
     }
@@ -3618,7 +3266,7 @@ mod window_focus_tests {
         h.dispatch_toolbar(owner, &ContentEvent::PointerDown(p))
             .unwrap();
         assert_eq!(
-            h.panels[h.toolbar_index]
+            h.panel_mgr.panels[h.toolbar_mgr.toolbar_index]
                 .mounted_toolbar
                 .host
                 .content_host()
@@ -3631,7 +3279,7 @@ mod window_focus_tests {
             .unwrap();
         assert!(commands(&h).is_empty());
         assert_eq!(
-            h.panels[h.toolbar_index]
+            h.panel_mgr.panels[h.toolbar_mgr.toolbar_index]
                 .mounted_toolbar
                 .host
                 .content_host()
@@ -3641,7 +3289,7 @@ mod window_focus_tests {
         let mut h = Host::new(vec!["empty".into()], false, None);
         key(&mut h, ControlKey::Tab { reverse: false }, true);
         key(&mut h, ControlKey::Tab { reverse: true }, true);
-        assert_eq!(h.toolbar_focus, None);
+        assert_eq!(h.toolbar_mgr.toolbar_focus, None);
     }
     #[test]
     fn temporary_input_barrier_restores_logical_owner_but_never_old_arm_or_stolen_focus() {
@@ -3649,31 +3297,38 @@ mod window_focus_tests {
         let owner = ToolbarTarget::Panel(1);
         h.set_toolbar_focus(Some(owner), true);
         key(&mut h, ControlKey::Space, true);
-        h.sidebar_motion
+        h.layout
+            .sidebar_motion
             .retarget(0, true, std::time::Duration::from_secs(1))
             .unwrap();
-        assert!(h.sidebar_motion.needs_frame());
+        assert!(h.layout.sidebar_motion.needs_frame());
         h.reconcile_toolbar_focus(true);
-        assert_eq!(h.toolbar_focus, Some(owner));
+        assert_eq!(h.toolbar_mgr.toolbar_focus, Some(owner));
         assert!(focused_groups(&h).is_empty());
         key(&mut h, ControlKey::Escape, true);
-        assert_eq!(h.toolbar_focus, Some(owner));
+        assert_eq!(h.toolbar_mgr.toolbar_focus, Some(owner));
         key(&mut h, ControlKey::Space, false);
         assert!(commands(&h).is_empty());
-        h.sidebar_motion
+        h.layout
+            .sidebar_motion
             .sample(std::time::Duration::from_secs(2), false, true)
             .unwrap();
         h.reconcile_toolbar_focus(true);
         assert_eq!(focused_groups(&h), vec![owner]);
         key(&mut h, ControlKey::Space, false);
         assert!(commands(&h).is_empty());
-        h.sidebar_motion
+        h.layout
+            .sidebar_motion
             .retarget(0, false, std::time::Duration::from_secs(3))
             .unwrap();
         h.reconcile_toolbar_focus(true);
         key(&mut h, ControlKey::Tab { reverse: false }, true);
-        assert_eq!(h.toolbar_focus, Some(ToolbarTarget::Visibility(1)));
-        h.sidebar_motion
+        assert_eq!(
+            h.toolbar_mgr.toolbar_focus,
+            Some(ToolbarTarget::Visibility(1))
+        );
+        h.layout
+            .sidebar_motion
             .sample(std::time::Duration::from_secs(4), false, true)
             .unwrap();
         h.reconcile_toolbar_focus(true);
@@ -3695,7 +3350,7 @@ mod window_focus_tests {
         for reverse in [false, true] {
             let mut h = fixture();
             h.set_toolbar_focus(None, false);
-            for panel in &mut h.panels {
+            for panel in &mut h.panel_mgr.panels {
                 panel
                     .mounted_toolbar
                     .host
@@ -3739,7 +3394,11 @@ mod window_focus_tests {
             .unwrap()
             .into_host(false);
         h.mount_initial_containers();
-        assert_eq!(h.panels.len(), 1, "legal public local Container is mounted");
+        assert_eq!(
+            h.panel_mgr.panels.len(),
+            1,
+            "legal public local Container is mounted"
+        );
         assert!(h.toolbar_focus_targets().is_empty());
         assert!(!h.toolbar_key_input(native_tab(false)).unwrap());
         assert!(focused_groups(&h).is_empty());
@@ -3750,7 +3409,7 @@ mod window_focus_tests {
         h.set_toolbar_focus(Some(ToolbarTarget::Panel(1)), false);
         render(&mut h);
         assert!(
-            !h.panels[h.toolbar_index]
+            !h.panel_mgr.panels[h.toolbar_mgr.toolbar_index]
                 .mounted_toolbar
                 .host
                 .needs_render()
@@ -3768,9 +3427,9 @@ mod window_focus_tests {
             characters_ignoring_modifiers: String::new(),
         })
         .unwrap();
-        assert_eq!(h.toolbar_focus, Some(ToolbarTarget::Panel(1)));
+        assert_eq!(h.toolbar_mgr.toolbar_focus, Some(ToolbarTarget::Panel(1)));
         assert!(
-            !h.panels[h.toolbar_index]
+            !h.panel_mgr.panels[h.toolbar_mgr.toolbar_index]
                 .mounted_toolbar
                 .host
                 .needs_render()
@@ -3780,7 +3439,7 @@ mod window_focus_tests {
     #[test]
     fn unavailable_toolbar_rejects_action_but_leaves_native_chrome_drag_available() {
         let mut h = fixture();
-        h.leading_visible = false;
+        h.layout.leading_visible = false;
         let owner = ToolbarTarget::Panel(0);
         assert!(
             h.dispatch_toolbar(owner, &ContentEvent::PointerDown(Point::new(110., 26.)))
@@ -3796,15 +3455,15 @@ mod window_focus_tests {
         let owner = ToolbarTarget::Panel(1);
         h.set_toolbar_focus(Some(owner), true);
         key(&mut h, ControlKey::Space, true);
-        h.panels[1].viewport = 1;
-        for item in &mut h.panels[1].toolbar {
+        h.panel_mgr.panels[1].viewport = 1;
+        for item in &mut h.panel_mgr.panels[1].toolbar {
             item.geometry_dependent = true;
         }
         refresh(&mut h, None);
         h.reconcile_toolbar_focus(true);
-        assert_eq!(h.toolbar_focus, Some(owner));
+        assert_eq!(h.toolbar_mgr.toolbar_focus, Some(owner));
         assert!(focused_groups(&h).is_empty());
-        h.panels[1].frame_viewport = 1;
+        h.panel_mgr.panels[1].frame_viewport = 1;
         refresh(&mut h, None);
         h.reconcile_toolbar_focus(true);
         assert_eq!(focused_groups(&h), vec![owner]);
@@ -3823,7 +3482,7 @@ mod window_focus_tests {
         h.panel_geometry(1, Rect::new(320., 0., 240., 320.), 1., 66., 0.)
             .unwrap();
         assert_eq!(
-            h.panels[h.toolbar_index]
+            h.panel_mgr.panels[h.toolbar_mgr.toolbar_index]
                 .mounted_toolbar
                 .host
                 .content_host()
@@ -3832,7 +3491,7 @@ mod window_focus_tests {
         );
         render(&mut h);
         h.reconcile_toolbar_focus(true);
-        assert_eq!(h.toolbar_focus, Some(owner));
+        assert_eq!(h.toolbar_mgr.toolbar_focus, Some(owner));
         key(&mut h, ControlKey::Space, false);
         assert!(commands(&h).is_empty());
         key(&mut h, ControlKey::Space, true);
@@ -3875,8 +3534,8 @@ mod settings_layout_tests {
     #[test]
     fn settings_layout_reuses_only_leading_visibility_toolbar_and_can_block_quit() {
         let mut h = Host::new(vec![], false, None);
-        h.is_settings_window = true;
-        assert_eq!(h.panels.len(), 0);
+        h.settings_mgr.is_settings_window = true;
+        assert_eq!(h.panel_mgr.panels.len(), 0);
     }
 }
 
@@ -3918,17 +3577,23 @@ mod settings_guard_tests {
         assert_ne!(first.id, repeat.id);
         assert_eq!(first.params, repeat.params);
         let mut host = Host::new(vec![], false, None);
-        host.is_settings_window = true;
-        host.settings_back = surface.exclusive;
-        host.settings = Some(std::rc::Rc::new(std::cell::RefCell::new(surface)));
+        host.settings_mgr.is_settings_window = true;
+        host.settings_mgr.settings_back = surface.exclusive;
+        host.settings_mgr.settings = Some(std::rc::Rc::new(std::cell::RefCell::new(surface)));
         assert!(host.allows_app_quit());
         {
-            let mut state = host.settings.as_ref().unwrap().borrow_mut();
+            let mut state = host.settings_mgr.settings.as_ref().unwrap().borrow_mut();
             let s = &mut *state;
             s.draft.edit(&s.schema.settings[0], "Changed".into());
         }
         assert!(!host.allows_app_quit());
-        host.settings.as_ref().unwrap().borrow_mut().draft.cancel();
+        host.settings_mgr
+            .settings
+            .as_ref()
+            .unwrap()
+            .borrow_mut()
+            .draft
+            .cancel();
         assert!(host.allows_app_quit());
         drop(host);
         std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
@@ -3946,8 +3611,8 @@ mod settings_toolbar_focus_tests {
     #[test]
     fn actual_config_group_focus_retires_old_panel_return_intent() {
         let mut host = Host::new(vec!["panel".into()], false, None);
-        host.panels = vec![Panel::new(0, "panel".into())];
-        host.panels[0].bounds = Rect::new(0., 0., 240., 300.);
+        host.panel_mgr.panels = vec![Panel::new(0, "panel".into())];
+        host.panel_mgr.panels[0].bounds = Rect::new(0., 0., 240., 300.);
         let source = ComponentSource {
             session: tekes_ui_module_runtime::component::Session {
                 module: crate::settings_undo::MODULE_ID.into(),
@@ -3955,7 +3620,9 @@ mod settings_toolbar_focus_tests {
                 host_epoch: 1,
             },
             registration: 1,
-            window: host.panels[host.toolbar_index].mounted_toolbar.window,
+            window: host.panel_mgr.panels[host.toolbar_mgr.toolbar_index]
+                .mounted_toolbar
+                .window,
         };
         let button = |id, name: &str| {
             Contents::Commands(
@@ -3969,8 +3636,8 @@ mod settings_toolbar_focus_tests {
                 ToolbarGroupOverflow::Together,
             )
         };
-        let instance = host.panels[0].instance;
-        host.panels[host.toolbar_index]
+        let instance = host.panel_mgr.panels[0].instance;
+        host.panel_mgr.panels[host.toolbar_mgr.toolbar_index]
             .mounted_toolbar
             .sync(
                 Rect::new(0., 0., 480., 300.),
@@ -4004,14 +3671,17 @@ mod settings_toolbar_focus_tests {
                 ],
             )
             .unwrap();
-        host.panels[host.toolbar_index]
+        host.panel_mgr.panels[host.toolbar_mgr.toolbar_index]
             .mounted_toolbar
             .host
             .render(&mut Scene::new(), &mut host.text, Theme::LIGHT.into())
             .unwrap();
         host.set_toolbar_focus(Some(ToolbarTarget::Panel(0)), true);
-        assert_eq!(host.toolbar_focus, Some(ToolbarTarget::Panel(0)));
-        let undo = host.panels[host.toolbar_index]
+        assert_eq!(
+            host.toolbar_mgr.toolbar_focus,
+            Some(ToolbarTarget::Panel(0))
+        );
+        let undo = host.panel_mgr.panels[host.toolbar_mgr.toolbar_index]
             .mounted_toolbar
             .host
             .semantics()
@@ -4020,17 +3690,17 @@ mod settings_toolbar_focus_tests {
             .unwrap()
             .target;
         assert!(
-            host.panels[host.toolbar_index]
+            host.panel_mgr.panels[host.toolbar_mgr.toolbar_index]
                 .mounted_toolbar
                 .host
                 .restore_focus(undo, true)
         );
         host.remember_toolbar_focus(Some(true));
         host.reconcile_toolbar_focus(true);
-        assert_eq!(host.toolbar_focus, None);
-        assert!(host.toolbar_focus_lease.is_none());
+        assert_eq!(host.toolbar_mgr.toolbar_focus, None);
+        assert!(host.toolbar_mgr.toolbar_focus_lease.is_none());
         assert_eq!(
-            host.panels[host.toolbar_index]
+            host.panel_mgr.panels[host.toolbar_mgr.toolbar_index]
                 .mounted_toolbar
                 .host
                 .content_host()
@@ -4090,7 +3760,7 @@ mod settings_close_input_tests {
             );
         }
         let mut host = Host::new(vec![], false, None);
-        host.settings = Some(std::rc::Rc::new(std::cell::RefCell::new(surface)));
+        host.settings_mgr.settings = Some(std::rc::Rc::new(std::cell::RefCell::new(surface)));
         (host, path)
     }
     #[test]
@@ -4099,7 +3769,7 @@ mod settings_close_input_tests {
             let (host, path) = fixture(include_str!(
                 "../../../examples/app-host-demo/settings.schema.toml"
             ));
-            let state = host.settings.as_ref().unwrap();
+            let state = host.settings_mgr.settings.as_ref().unwrap();
             {
                 let mut s = state.borrow_mut();
                 let form = &mut s.form.host;
@@ -4153,7 +3823,7 @@ mod settings_close_input_tests {
         let (host, path) = fixture(include_str!(
             "../../tekes-ui-settings/tests/fixtures/layout.schema.toml"
         ));
-        let state = host.settings.as_ref().unwrap();
+        let state = host.settings_mgr.settings.as_ref().unwrap();
         {
             let mut s = state.borrow_mut();
             assert!(s.form.host.focus(Some(ComponentId(100)), true));
@@ -4196,7 +3866,7 @@ mod settings_close_input_tests {
             "../../tekes-ui-settings/tests/fixtures/layout.schema.toml"
         ));
         {
-            let mut state = host.settings.as_ref().unwrap().borrow_mut();
+            let mut state = host.settings_mgr.settings.as_ref().unwrap().borrow_mut();
             assert!(
                 state
                     .form
@@ -4308,22 +3978,29 @@ mod shared_settings_owner_tests {
             .configure_settings(Some(SettingsConfiguration::Shared(owner.clone())))
             .unwrap();
         assert!(Rc::ptr_eq(
-            &first.settings_owner.as_ref().unwrap().0,
-            &second.settings_owner.as_ref().unwrap().0
+            &first.settings_mgr.settings_owner.as_ref().unwrap().0,
+            &second.settings_mgr.settings_owner.as_ref().unwrap().0
         ));
         assert!(
             SettingsOwner::new(options.clone()).is_err(),
             "separate owners must respect the existing writer lock"
         );
 
-        let ticket = first.settings_owner.as_ref().unwrap().begin_load().unwrap();
+        let ticket = first
+            .settings_mgr
+            .settings_owner
+            .as_ref()
+            .unwrap()
+            .begin_load()
+            .unwrap();
         let (_sender, receiver) = mpsc::channel();
-        first.settings_loading = Some(window_settings::SettingsLoad {
+        first.settings_mgr.settings_loading = Some(window_settings::SettingsLoad {
             _ticket: ticket,
             receiver,
         });
         assert!(
             second
+                .settings_mgr
                 .settings_owner
                 .as_ref()
                 .unwrap()
@@ -4333,6 +4010,7 @@ mod shared_settings_owner_tests {
         );
         drop(first); // Equivalent owner/receiver release to native Shared::finish.
         let next = second
+            .settings_mgr
             .settings_owner
             .as_ref()
             .unwrap()
@@ -4363,8 +4041,8 @@ mod shared_settings_owner_tests {
     #[test]
     fn settings_child_keeps_standard_application_settings_command_without_owner_cycle() {
         let mut child = Host::new(vec![], false, None);
-        child.is_settings_window = true;
-        assert!(child.settings_owner.is_none());
+        child.settings_mgr.is_settings_window = true;
+        assert!(child.settings_mgr.settings_owner.is_none());
         let bar = child.menu_bar();
         assert_eq!(bar.menus.len(), 1);
         assert!(bar.menus[0].application_menu);
@@ -4382,12 +4060,12 @@ mod shared_settings_owner_tests {
     #[test]
     fn empty_order_retire_hidden_content_and_failed_close_prompted_allows_app_quit() {
         let mut host = Host::new(vec!["panel".into()], false, None);
-        host.panels = vec![Panel::new(0, "panel".into())];
-        host.panels[0].logically_visible = false;
-        host.order.clear();
-        host.focused = 0;
+        host.panel_mgr.panels = vec![Panel::new(0, "panel".into())];
+        host.panel_mgr.panels[0].logically_visible = false;
+        host.layout.order.clear();
+        host.layout.focused = 0;
         host.retire_hidden_content(0, Rect::default());
-        assert_eq!(host.focused, 0);
+        assert_eq!(host.layout.focused, 0);
 
         let path = std::env::temp_dir()
             .join(format!(
@@ -4417,11 +4095,12 @@ mod shared_settings_owner_tests {
         surface
             .draft
             .edit(&surface.schema.settings[0], "Changed".into());
-        host.is_settings_window = true;
-        host.settings = Some(Rc::new(std::cell::RefCell::new(surface)));
+        host.settings_mgr.is_settings_window = true;
+        host.settings_mgr.settings = Some(Rc::new(std::cell::RefCell::new(surface)));
 
         assert!(!host.allows_app_quit());
-        host.settings
+        host.settings_mgr
+            .settings
             .as_ref()
             .unwrap()
             .borrow_mut()

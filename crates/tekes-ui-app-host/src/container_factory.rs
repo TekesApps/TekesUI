@@ -1,5 +1,8 @@
 //! Explicit consumer-owned factories. Worker factories remain compiled into the app.
-use crate::{Container, ContainerOptions, LocalContainer, ModuleDefinition, ProcessContainer};
+use crate::{
+    ComponentDefinition, Container, ContainerOptions, LocalContainer, ModuleDefinition,
+    ProcessContainer,
+};
 use anyhow::Result;
 use std::rc::Rc;
 
@@ -14,6 +17,7 @@ type LocalFactory = Rc<dyn Fn(&str) -> Result<LocalContainer>>;
 enum Factory {
     Local(LocalFactory),
     Process(ModuleDefinition, ContainerOptions),
+    Component(ComponentDefinition, ContainerOptions),
 }
 /// A registered creatable type, separate from every stable instance identity.
 #[derive(Clone)]
@@ -57,6 +61,24 @@ impl ContainerFactory {
             factory: Factory::Process(definition, options),
         }
     }
+    pub fn process_component(
+        id: impl Into<String>,
+        title: impl Into<String>,
+        multiplicity: ContainerMultiplicity,
+        definition: ComponentDefinition,
+        options: ContainerOptions,
+    ) -> Self {
+        Self {
+            id: id.into(),
+            title: title.into(),
+            icon: options
+                .switcher_icon
+                .clone()
+                .unwrap_or_else(|| "tekes-file-generic".into()),
+            multiplicity,
+            factory: Factory::Component(definition, options),
+        }
+    }
     pub fn switcher_icon(mut self, icon: impl Into<String>) -> Self {
         self.icon = icon.into();
         self
@@ -67,6 +89,12 @@ impl ContainerFactory {
             _ => None,
         }
     }
+    pub(crate) fn component_definition(&self) -> Option<ComponentDefinition> {
+        match self.factory {
+            Factory::Component(definition, _) => Some(definition),
+            _ => None,
+        }
+    }
     pub(crate) fn create(&self, id: &str, ordinal: u64) -> Result<Container> {
         let mut container = match &self.factory {
             Factory::Local(create) => Container::Local(create(id)?),
@@ -74,6 +102,12 @@ impl ContainerFactory {
                 .instance_id(id)
                 .options(options.clone())
                 .into(),
+            Factory::Component(definition, options) => {
+                ProcessContainer::from_component(*definition)
+                    .instance_id(id)
+                    .options(options.clone())
+                    .into()
+            }
         };
         anyhow::ensure!(
             container.id() == id,
@@ -104,6 +138,21 @@ pub(crate) fn validate(factories: &[ContainerFactory]) -> Result<()> {
             crate::validate(&crate::AppProfile {
                 modules: vec![definition],
             })?;
+        }
+        if let Some(component) = factory.component_definition() {
+            anyhow::ensure!(
+                !component.id.is_empty()
+                    && component
+                        .id
+                        .bytes()
+                        .all(|b| b.is_ascii_alphanumeric() || b"-_.".contains(&b)),
+                "invalid component ID"
+            );
+            anyhow::ensure!(
+                component.capabilities.view,
+                "V2 process component factory requires view capability: {}",
+                component.id
+            );
         }
         anyhow::ensure!(
             !factory.id.is_empty()

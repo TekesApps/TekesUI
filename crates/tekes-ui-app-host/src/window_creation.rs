@@ -5,7 +5,7 @@ impl Host {
         mut self,
         factories: Vec<crate::ContainerFactory>,
     ) -> Self {
-        self.container_factories = factories
+        self.panel_mgr.container_factories = factories
             .into_iter()
             .map(|definition| crate::container_factory::RegisteredFactory {
                 definition,
@@ -17,13 +17,14 @@ impl Host {
     }
     pub(super) fn creation_choices(&self) -> Vec<(String, String, String, bool)> {
         let mut choices = Vec::new();
-        if let Some(state) = &self.presentation {
-            for panel in &self.panels {
+        if let Some(state) = &self.layout.presentation {
+            for panel in &self.panel_mgr.panels {
                 if panel.dispose_when_closed
                     || panel.retired
                     || state.nav_bar_id() == Some(panel.module_id.as_str())
                     || state.focus_id() == panel.module_id
                     || self
+                        .panel_mgr
                         .container_factories
                         .iter()
                         .any(|factory| factory.single.as_ref() == Some(&panel.module_id))
@@ -43,13 +44,14 @@ impl Host {
                 ));
             }
         }
-        choices.extend(self.container_factories.iter().map(|factory| {
+        choices.extend(self.panel_mgr.container_factories.iter().map(|factory| {
             (
                 format!("create:{}", factory.definition.id),
                 factory.definition.title.clone(),
                 factory.definition.icon.clone(),
                 factory.single.as_ref().is_some_and(|id| {
-                    self.presentation
+                    self.layout
+                        .presentation
                         .as_ref()
                         .is_some_and(|s| s.focus_id() == id)
                 }),
@@ -78,7 +80,7 @@ impl Host {
             "creation choice is no longer available"
         );
         if let Some(id) = value.strip_prefix("open:") {
-            let state = self.presentation.as_mut().unwrap();
+            let state = self.layout.presentation.as_mut().unwrap();
             state.open(id)?;
             if !state.others_visible() {
                 state.toggle_others()?;
@@ -89,11 +91,13 @@ impl Host {
         Ok(())
     }
     pub(super) fn close_container(&mut self, id: &str) -> Result<()> {
-        self.presentation
+        self.layout
+            .presentation
             .as_mut()
             .ok_or_else(|| anyhow::anyhow!("container close requires presentation"))?
             .close(id)?;
         let Some(index) = self
+            .panel_mgr
             .panels
             .iter()
             .position(|panel| panel.module_id == id && panel.dispose_when_closed)
@@ -101,29 +105,35 @@ impl Host {
             return Ok(());
         };
         let renderer = &mut self.renderer;
-        self.panels[index].retire(|image| {
+        self.panel_mgr.panels[index].retire(|image| {
             if let Some(renderer) = renderer {
                 renderer.unregister_image(image);
             }
         });
-        self.presentation.as_mut().unwrap().retire_created(id);
+        self.layout
+            .presentation
+            .as_mut()
+            .unwrap()
+            .retire_created(id);
         Ok(())
     }
     pub(super) fn create_container(&mut self, factory_id: &str) -> Result<String> {
         self.mount_initial_containers();
         let index = self
+            .panel_mgr
             .container_factories
             .iter()
             .position(|f| f.definition.id == factory_id)
             .ok_or_else(|| anyhow::anyhow!("unknown container factory: {factory_id}"))?;
         ensure!(
-            self.presentation
+            self.layout
+                .presentation
                 .as_ref()
                 .is_some_and(|s| s.others().is_some()),
             "creation requires Others"
         );
-        if let Some(id) = self.container_factories[index].single.clone() {
-            let state = self.presentation.as_mut().unwrap();
+        if let Some(id) = self.panel_mgr.container_factories[index].single.clone() {
+            let state = self.layout.presentation.as_mut().unwrap();
             ensure!(state.focus_id() != id, "single instance is already Focus");
             state.open(&id)?;
             if !state.others_visible() {
@@ -131,18 +141,19 @@ impl Host {
             }
             return Ok(id);
         }
-        let factory = self.container_factories[index].definition.clone();
+        let factory = self.panel_mgr.container_factories[index].definition.clone();
         let (id, ordinal) = loop {
-            let serial = self.container_factories[index].next_instance;
-            self.container_factories[index].next_instance += 1;
+            let serial = self.panel_mgr.container_factories[index].next_instance;
+            self.panel_mgr.container_factories[index].next_instance += 1;
             let id = format!("{}-instance-{serial}", factory.id);
-            if !self.panels.iter().any(|p| p.module_id == id) {
+            if !self.panel_mgr.panels.iter().any(|p| p.module_id == id) {
                 break (id, serial);
             }
         };
         let container = factory.create(&id, ordinal)?;
         crate::columns::validate_ids(
-            self.panels
+            self.panel_mgr
+                .panels
                 .iter()
                 .map(|p| (p.module_id.as_str(), &p.options))
                 .chain(std::iter::once((
@@ -150,19 +161,19 @@ impl Host {
                     container.container_options(),
                 ))),
         )?;
-        let state = self.presentation.as_mut().unwrap();
+        let state = self.layout.presentation.as_mut().unwrap();
         state.register_created(&container, &factory);
         state.open(&id)?;
         if !state.others_visible() {
             state.toggle_others()?;
         }
-        let mut panel = self.mount_column(self.panels.len(), container.into());
+        let mut panel = self.mount_column(self.panel_mgr.panels.len(), container.into());
         panel.dispose_when_closed = factory.multiplicity == crate::ContainerMultiplicity::Multiple;
-        self.module_ids.push(id.clone());
-        self.order.push(self.panels.len());
-        self.panels.push(panel);
+        self.panel_mgr.module_ids.push(id.clone());
+        self.layout.order.push(self.panel_mgr.panels.len());
+        self.panel_mgr.panels.push(panel);
         if factory.multiplicity == crate::ContainerMultiplicity::Single {
-            self.container_factories[index].single = Some(id.clone());
+            self.panel_mgr.container_factories[index].single = Some(id.clone());
         }
         Ok(id)
     }
@@ -208,25 +219,36 @@ mod tests {
             }),
         ]);
         let single = host.create_container("inspector").unwrap();
-        let original_instance = host.panels[1].instance;
-        host.panels[1].seq = 27;
+        let original_instance = host.panel_mgr.panels[1].instance;
+        host.panel_mgr.panels[1].seq = 27;
         host.close_container(&single).unwrap();
         assert_eq!(host.create_container("inspector").unwrap(), single);
         assert_eq!(constructed.get(), 1);
-        assert_eq!(host.panels[1].instance, original_instance);
-        assert_eq!(host.panels[1].seq, 27);
+        assert_eq!(host.panel_mgr.panels[1].instance, original_instance);
+        assert_eq!(host.panel_mgr.panels[1].seq, 27);
         let first = host.create_container("notes").unwrap();
         let second = host.create_container("notes").unwrap();
         assert_ne!(first, second);
-        assert_ne!(host.panels[2].instance, host.panels[3].instance);
+        assert_ne!(
+            host.panel_mgr.panels[2].instance,
+            host.panel_mgr.panels[3].instance
+        );
         host.close_container(&first).unwrap();
-        assert!(host.panels[2].local.is_none());
-        assert!(host.panels[2].process.is_cancelled());
-        assert!(host.presentation.as_mut().unwrap().open(&first).is_err());
+        assert!(host.panel_mgr.panels[2].local.is_none());
+        assert!(host.panel_mgr.panels[2].process.is_cancelled());
+        assert!(
+            host.layout
+                .presentation
+                .as_mut()
+                .unwrap()
+                .open(&first)
+                .is_err()
+        );
         let third = host.create_container("notes").unwrap();
         assert_ne!(third, first);
         assert!(
-            host.presentation
+            host.layout
+                .presentation
                 .as_ref()
                 .unwrap()
                 .others_ids()
@@ -234,13 +256,14 @@ mod tests {
         );
         assert!(
             !host
+                .layout
                 .presentation
                 .as_ref()
                 .unwrap()
                 .others_ids()
                 .contains(&first)
         );
-        assert_eq!(host.panels[2].module_id, first);
+        assert_eq!(host.panel_mgr.panels[2].module_id, first);
     }
     #[test]
     fn registered_process_instances_keep_worker_factory_separate_from_container_identity() {
@@ -261,43 +284,48 @@ mod tests {
         let a = host.create_container("documents").unwrap();
         let b = host.create_container("documents").unwrap();
         assert_ne!(a, b);
-        assert_eq!(host.panels[1].worker_id, definition.id);
-        assert_eq!(host.panels[2].worker_id, definition.id);
-        assert_eq!(host.panels[1].module_id, a);
-        assert_eq!(host.panels[2].module_id, b);
-        assert_ne!(host.panels[1].instance, host.panels[2].instance);
+        assert_eq!(host.panel_mgr.panels[1].worker_id, definition.id);
+        assert_eq!(host.panel_mgr.panels[2].worker_id, definition.id);
+        assert_eq!(host.panel_mgr.panels[1].module_id, a);
+        assert_eq!(host.panel_mgr.panels[2].module_id, b);
+        assert_ne!(
+            host.panel_mgr.panels[1].instance,
+            host.panel_mgr.panels[2].instance
+        );
         host.close_container(&a).unwrap();
-        assert!(host.panels[1].process.is_cancelled());
-        assert!(!host.panels[2].process.is_cancelled());
-        assert_eq!(host.presentation.as_ref().unwrap().others_ids(), &[b]);
+        assert!(host.panel_mgr.panels[1].process.is_cancelled());
+        assert!(!host.panel_mgr.panels[2].process.is_cancelled());
+        assert_eq!(
+            host.layout.presentation.as_ref().unwrap().others_ids(),
+            &[b]
+        );
     }
     #[test]
     fn retired_multiple_releases_pending_images_and_rejects_late_input_at_original_boundaries() {
         let mut panel = Panel::new(0, "retired".into());
-        let (tx, rx) = mpsc::sync_channel(1);
-        panel.rx = rx;
-        tx.send(Err("already queued result".into())).unwrap();
+        panel.mark_started_inert_for_test();
         panel.image = Some(ImageId(73));
-        panel.launch_tx = None;
         panel.request(InputKind::Cancel, 0., 0.).unwrap();
-        assert_eq!(panel.inbox.queue.lock().unwrap().len(), 1);
+        assert_eq!(panel.queued_requests().len(), 1);
         let mut removed = Vec::new();
         panel.retire(|image| removed.push(image));
         assert_eq!(removed, vec![ImageId(73)]);
         assert!(panel.image.is_none());
-        assert!(panel.next_pending().is_none());
-        assert!(tx.send(Err("late result".into())).is_err());
+        assert!(panel.poll_status_and_frames().is_empty());
+        assert!(panel.queued_requests().is_empty());
+        assert!(panel.process.is_cancelled());
         for _ in 0..300 {
             panel.request(InputKind::Cancel, 0., 0.).unwrap();
         }
         panel.enqueue(InputKind::Command, 0., 0., Some(1)).unwrap();
-        assert!(panel.inbox.queue.lock().unwrap().is_empty());
+        assert!(panel.queued_requests().is_empty());
         assert!(panel.retired);
     }
     fn refresh(host: &mut Host) -> Scene {
         host.mount_initial_containers();
         let whole = Rect::new(0., 0., 1200., 700.);
         let layout = host
+            .layout
             .presentation
             .as_ref()
             .unwrap()
@@ -314,7 +342,7 @@ mod tests {
             40.,
         )
         .unwrap();
-        for panel in &mut host.panels {
+        for panel in &mut host.panel_mgr.panels {
             super::super::window_presentation::render_test_tabs(
                 &mut panel.mounted_toolbar.host,
                 &mut Scene::new(),
@@ -338,9 +366,10 @@ mod tests {
         Rect,
     ) {
         let nodes = if grid {
-            host.presentation_tabs.as_ref().unwrap().semantics()
+            host.layout.presentation_tabs.as_ref().unwrap().semantics()
         } else {
-            host.panels
+            host.panel_mgr
+                .panels
                 .iter()
                 .flat_map(|p| p.mounted_toolbar.host.semantics())
                 .collect()
@@ -418,32 +447,53 @@ mod tests {
         let (old, bounds) = node(&host, "Create Working Notes", true);
         assert!(bounds.min_y() >= 48.);
         click(&mut host, bounds.center(), true);
-        assert_eq!(host.panels.len(), 2);
-        let first = host.presentation.as_ref().unwrap().others_ids()[0].clone();
-        assert_eq!(host.order, vec![0, 1]);
-        host.presentation.as_mut().unwrap().toggle_others().unwrap();
+        assert_eq!(host.panel_mgr.panels.len(), 2);
+        let first = host.layout.presentation.as_ref().unwrap().others_ids()[0].clone();
+        assert_eq!(host.layout.order, vec![0, 1]);
+        host.layout
+            .presentation
+            .as_mut()
+            .unwrap()
+            .toggle_others()
+            .unwrap();
         refresh(&mut host);
         assert_eq!(
-            host.presentation.as_ref().unwrap().others_ids(),
+            host.layout.presentation.as_ref().unwrap().others_ids(),
             std::slice::from_ref(&first)
         );
-        host.presentation.as_mut().unwrap().toggle_others().unwrap();
+        host.layout
+            .presentation
+            .as_mut()
+            .unwrap()
+            .toggle_others()
+            .unwrap();
         host.close_container(&first).unwrap();
         refresh(&mut host);
         assert!(
             !host
+                .layout
                 .presentation_tabs
                 .as_mut()
                 .unwrap()
                 .accessibility_action(old, AccessibilityAction::Press)
                 .consumed
         );
-        assert!(host.presentation.as_ref().unwrap().others_ids().is_empty());
+        assert!(
+            host.layout
+                .presentation
+                .as_ref()
+                .unwrap()
+                .others_ids()
+                .is_empty()
+        );
         let fresh = node(&host, "Create Working Notes", true).1.center();
         click(&mut host, fresh, true);
-        assert_eq!(host.panels.len(), 3);
-        assert_ne!(host.presentation.as_ref().unwrap().others_ids()[0], first);
-        assert!(host.panels[1].retired);
+        assert_eq!(host.panel_mgr.panels.len(), 3);
+        assert_ne!(
+            host.layout.presentation.as_ref().unwrap().others_ids()[0],
+            first
+        );
+        assert!(host.panel_mgr.panels[1].retired);
     }
     #[test]
     fn registered_creation_chevron_menu_cancel_preserves_selection_and_choice_creates_once() {
@@ -453,7 +503,8 @@ mod tests {
         let menu = node(&host, "Create Container", true).1.center();
         click(&mut host, menu, true);
         assert!(
-            host.presentation_tabs
+            host.layout
+                .presentation_tabs
                 .as_ref()
                 .unwrap()
                 .content_host()
@@ -466,9 +517,9 @@ mod tests {
         })
         .unwrap();
         refresh(&mut host);
-        assert_eq!(host.panels.len(), 2);
+        assert_eq!(host.panel_mgr.panels.len(), 2);
         assert_eq!(
-            host.presentation.as_ref().unwrap().selected_tab(),
+            host.layout.presentation.as_ref().unwrap().selected_tab(),
             Some(&crate::OthersTab::Container(first.clone()))
         );
         click(&mut host, menu, true);
@@ -478,11 +529,11 @@ mod tests {
             "popup rows escape the tab strip viewport"
         );
         click(&mut host, row.center(), true);
-        assert_eq!(host.panels.len(), 3);
-        let second = host.presentation.as_ref().unwrap().others_ids()[1].clone();
+        assert_eq!(host.panel_mgr.panels.len(), 3);
+        let second = host.layout.presentation.as_ref().unwrap().others_ids()[1].clone();
         assert_ne!(first, second);
         assert_eq!(
-            host.presentation.as_ref().unwrap().selected_tab(),
+            host.layout.presentation.as_ref().unwrap().selected_tab(),
             Some(&crate::OthersTab::Container(second.clone()))
         );
         let old = node(&host, "Working Notes 1", true).0;
@@ -491,6 +542,7 @@ mod tests {
         refresh(&mut host);
         assert!(
             !host
+                .layout
                 .presentation_tabs
                 .as_mut()
                 .unwrap()
@@ -501,11 +553,12 @@ mod tests {
                 .consumed
         );
         assert_eq!(
-            host.presentation.as_ref().unwrap().selected_tab(),
+            host.layout.presentation.as_ref().unwrap().selected_tab(),
             Some(&crate::OthersTab::Container(third))
         );
         assert!(
-            host.presentation
+            host.layout
+                .presentation
                 .as_ref()
                 .unwrap()
                 .others_ids()
@@ -532,9 +585,9 @@ mod tests {
         .unwrap()
         .into_host(false);
         refresh(&mut host);
-        let instance = host.panels[1].instance;
+        let instance = host.panel_mgr.panels[1].instance;
         let text = &mut host.text;
-        let local = host.panels[1].local.as_mut().unwrap();
+        let local = host.panel_mgr.panels[1].local.as_mut().unwrap();
         let frame = Rect::new(0., 0., 300., 200.);
         local
             .render(&mut Scene::new(), text, frame, frame, Theme::LIGHT.into())
@@ -556,9 +609,9 @@ mod tests {
         assert!(host.creation_entries().iter().any(|entry| matches!(entry, tekes_ui_controls::composition::MenuEntry::Item { value, .. } if value == "open:inspector")));
         let point = node(&host, "Open Inspector", true).1.center();
         click(&mut host, point, true);
-        assert_eq!(host.panels.len(), 2);
-        assert_eq!(host.panels[1].instance, instance);
-        host.panels[1]
+        assert_eq!(host.panel_mgr.panels.len(), 2);
+        assert_eq!(host.panel_mgr.panels[1].instance, instance);
+        host.panel_mgr.panels[1]
             .local
             .as_mut()
             .unwrap()
@@ -575,7 +628,7 @@ mod tests {
                 );
             });
         assert_eq!(
-            host.presentation.as_ref().unwrap().selected_tab(),
+            host.layout.presentation.as_ref().unwrap().selected_tab(),
             Some(&crate::OthersTab::Container("inspector".into()))
         );
     }
@@ -609,7 +662,8 @@ mod tests {
         let point = node(&host, "Touch", false).1.center();
         click(&mut host, point, false);
         assert_eq!(*calls.borrow(), vec![second.clone()]);
-        host.presentation
+        host.layout
+            .presentation
             .as_mut()
             .unwrap()
             .select_tab(crate::OthersTab::Container(first.clone()))
@@ -622,7 +676,7 @@ mod tests {
         host.create_container("notes").unwrap();
         refresh(&mut host);
         assert!(
-            !host.panels[0]
+            !host.panel_mgr.panels[0]
                 .mounted_toolbar
                 .host
                 .accessibility_action(
@@ -650,7 +704,7 @@ mod tests {
             ),
         ]);
         let scratch = host.create_container("scratch").unwrap();
-        let state = host.presentation.as_mut().unwrap();
+        let state = host.layout.presentation.as_mut().unwrap();
         assert!(
             !state.tabs().contains(&crate::OthersTab::List),
             "creation without list_height must not invent aggregate eligibility"
@@ -668,7 +722,7 @@ mod tests {
         host.apply_presentation_layout(layout).unwrap();
 
         let reading = host.create_container("reading").unwrap();
-        let state = host.presentation.as_mut().unwrap();
+        let state = host.layout.presentation.as_mut().unwrap();
         assert!(state.tabs().contains(&crate::OthersTab::List));
         assert!(
             !state
@@ -696,7 +750,7 @@ mod tests {
         assert_eq!(frames[2].size.height, 240.);
         host.close_container(&reading).unwrap();
         assert_eq!(
-            host.presentation.as_ref().unwrap().tabs(),
+            host.layout.presentation.as_ref().unwrap().tabs(),
             vec![crate::OthersTab::Container(scratch)]
         );
     }
@@ -735,20 +789,21 @@ mod tests {
             .unwrap()
             .into_host(false);
         refresh(&mut host);
-        let instance = host.panels[1].instance;
+        let instance = host.panel_mgr.panels[1].instance;
         assert_eq!(
-            host.presentation.as_ref().unwrap().tabs(),
+            host.layout.presentation.as_ref().unwrap().tabs(),
             vec![OthersTab::Container("inspector".into()), OthersTab::List]
         );
         assert!(
-            host.presentation
+            host.layout
+                .presentation
                 .as_mut()
                 .unwrap()
                 .select_tab(OthersTab::Container("reading".into()))
                 .is_err()
         );
         // Per-instance tabs never expose List members as separate destinations.
-        let parts = host.presentation_tabs.as_ref().unwrap().semantics();
+        let parts = host.layout.presentation_tabs.as_ref().unwrap().semantics();
         assert!(
             parts
                 .iter()
@@ -770,17 +825,18 @@ mod tests {
         host.open_creation_choice("open:reading").unwrap();
         refresh(&mut host);
         assert_eq!(
-            host.presentation.as_ref().unwrap().selected_tab(),
+            host.layout.presentation.as_ref().unwrap().selected_tab(),
             Some(&OthersTab::List)
         );
         assert_eq!(
-            host.presentation.as_ref().unwrap().list_ids(),
+            host.layout.presentation.as_ref().unwrap().list_ids(),
             vec!["reading", "reference"]
         );
         host.close_container("reading").unwrap();
         refresh(&mut host);
         assert!(
-            host.presentation
+            host.layout
+                .presentation
                 .as_ref()
                 .unwrap()
                 .tabs()
@@ -789,16 +845,17 @@ mod tests {
         host.close_container("reference").unwrap();
         refresh(&mut host);
         assert_eq!(
-            host.presentation.as_ref().unwrap().tabs(),
+            host.layout.presentation.as_ref().unwrap().tabs(),
             vec![OthersTab::Container("inspector".into())]
         );
         assert_eq!(
-            host.presentation.as_ref().unwrap().selected_tab(),
+            host.layout.presentation.as_ref().unwrap().selected_tab(),
             Some(&OthersTab::Container("inspector".into()))
         );
-        assert_eq!(host.panels[1].instance, instance);
+        assert_eq!(host.panel_mgr.panels[1].instance, instance);
         assert!(
             !host
+                .layout
                 .presentation_tabs
                 .as_ref()
                 .unwrap()
@@ -817,7 +874,8 @@ mod tests {
         let trigger = node(&host, "Create Container", true).1.center();
         click(&mut host, trigger, true);
         assert!(
-            host.presentation_tabs
+            host.layout
+                .presentation_tabs
                 .as_ref()
                 .unwrap()
                 .content_host()
@@ -826,7 +884,7 @@ mod tests {
         );
         let mut legacy = Scene::new();
         render_test_tabs(
-            host.presentation_tabs.as_mut().unwrap(),
+            host.layout.presentation_tabs.as_mut().unwrap(),
             &mut legacy,
             &mut host.text,
             Theme::LIGHT.into(),
@@ -835,7 +893,7 @@ mod tests {
         let mut base = Scene::new();
         let mut overlays = Scene::new();
         render_test_tabs_layers(
-            host.presentation_tabs.as_mut().unwrap(),
+            host.layout.presentation_tabs.as_mut().unwrap(),
             &mut base,
             &mut overlays,
             &mut host.text,
@@ -859,7 +917,8 @@ mod tests {
         .unwrap();
         refresh(&mut host);
         assert!(
-            host.presentation_tabs
+            host.layout
+                .presentation_tabs
                 .as_ref()
                 .unwrap()
                 .content_host()
@@ -867,7 +926,7 @@ mod tests {
                 .is_none()
         );
         assert_eq!(
-            host.presentation.as_ref().unwrap().selected_tab(),
+            host.layout.presentation.as_ref().unwrap().selected_tab(),
             Some(&crate::OthersTab::Container(scratch))
         );
         assert_eq!(node(&host, "Scratchpad", true).0, before);

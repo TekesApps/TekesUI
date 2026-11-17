@@ -385,39 +385,50 @@ impl ContentHost {
                 // continuation, never replaying an older navigation later.
                 self.deferred_text_key = None;
                 self.completed_text_key = None;
-                self.text_keys.push(KeyFrame {
-                    id: *id,
-                    owner: self.focused,
-                    focus_epoch: self.focus_epoch,
-                    mount: self
-                        .focused
+                let owner = self.focused;
+                let focus_epoch = self.focus_epoch;
+                let mount = owner
+                    .and_then(|id| self.root.find_active(id))
+                    .map(|c| c.mount);
+                let delegated = owner
+                    .and_then(|id| self.root.find_active(id))
+                    .is_some_and(|c| c.component.delegates_text_keys());
+                self.help.suppress();
+                let response = if delegated {
+                    self.deliver_native_owner(owner, mount, event)
+                } else {
+                    ContentResponse::consumed(false)
+                };
+                let still_owner = self.focused == owner
+                    && self.focus_epoch == focus_epoch
+                    && owner
                         .and_then(|id| self.root.find_active(id))
-                        .map(|c| c.mount),
-                    binding: self.native_key_binding(),
-                    delegated: self
-                        .focused
-                        .and_then(|id| self.root.find_active(id))
-                        .is_some_and(|c| c.component.delegates_text_keys()),
-                    input_context_consumed: false,
-                    key: key.clone(),
-                    composing: *composing
-                        || self
+                        .map(|c| c.mount)
+                        == mount;
+                let binding = still_owner.then(|| self.native_key_binding()).flatten();
+                let composing = *composing
+                    || (still_owner
+                        && (self
                             .focused_text()
                             .is_some_and(|s| s.input.marked.is_some())
-                        || self
-                            .focused
-                            .and_then(|id| self.root.find(id))
-                            .is_some_and(|c| c.component.composing()),
+                            || owner
+                                .and_then(|id| self.root.find(id))
+                                .is_some_and(|c| c.component.composing())));
+                self.text_keys.push(KeyFrame {
+                    id: *id,
+                    owner,
+                    focus_epoch,
+                    mount,
+                    binding,
+                    delegated,
+                    input_context_consumed: false,
+                    key: key.clone(),
+                    composing,
                     text: false,
                     handled: false,
                     candidate: false,
                 });
-                self.help.suppress();
-                if self.text_keys.last().is_some_and(|f| f.delegated) {
-                    let frame = self.text_keys.last().unwrap();
-                    return self.deliver_native_owner(frame.owner, frame.mount, event);
-                }
-                return ContentResponse::consumed(false);
+                return response;
             }
             ContentEvent::TextKeyEnd {
                 id,

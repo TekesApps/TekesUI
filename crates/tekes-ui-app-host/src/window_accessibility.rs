@@ -12,14 +12,15 @@ impl Host {
         if !active {
             return Vec::new();
         }
-        let old = std::mem::take(&mut self.toolbar_ax);
+        let old = std::mem::take(&mut self.toolbar_mgr.toolbar_ax);
         let mut mapped = Vec::new();
         let mut nodes = Vec::new();
         let modal = self
+            .panel_mgr
             .panels
             .iter()
             .position(|panel| panel.mounted_toolbar.modal());
-        for (index, panel) in self.panels.iter().enumerate() {
+        for (index, panel) in self.panel_mgr.panels.iter().enumerate() {
             if modal.is_some_and(|owner| owner != index)
                 || panel.mounted_toolbar.host.semantics().is_empty()
             {
@@ -40,10 +41,11 @@ impl Host {
                         .map(|(key, _, _)| *key)
                         .unwrap_or_else(|| {
                             let key = AccessibilityKey {
-                                component: self.toolbar_ax_next,
+                                component: self.toolbar_mgr.toolbar_ax_next,
                                 part: None,
                             };
-                            self.toolbar_ax_next = self
+                            self.toolbar_mgr.toolbar_ax_next = self
+                                .toolbar_mgr
                                 .toolbar_ax_next
                                 .checked_add(1)
                                 .expect("native toolbar identity exhausted");
@@ -68,7 +70,7 @@ impl Host {
             };
             nodes.extend_from_slice(snapshot.nodes());
         }
-        self.toolbar_ax = mapped;
+        self.toolbar_mgr.toolbar_ax = mapped;
         nodes
     }
     pub(super) fn toolbar_accessibility_action(
@@ -81,6 +83,7 @@ impl Host {
             return Ok(false);
         }
         let Some((index, target)) = self
+            .toolbar_mgr
             .toolbar_ax
             .iter()
             .find(|(candidate, _, _)| *candidate == key)
@@ -100,17 +103,17 @@ impl Host {
             AccessibilityAction::ReplaceSelectedText(value) => Action::ReplaceSelectedText(value),
             AccessibilityAction::SetExpanded(_) => return Ok(false),
         };
-        let before = self.panels[self.toolbar_index]
+        let before = self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
             .mounted_toolbar
             .host
             .content_host()
             .focused();
-        let response = self.panels[self.toolbar_index]
+        let response = self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
             .mounted_toolbar
             .host
             .accessibility_action(target, action);
         self.drain_toolbar_commands()?;
-        if self.panels[index]
+        if self.panel_mgr.panels[index]
             .mounted_toolbar
             .host
             .content_host()
@@ -120,7 +123,7 @@ impl Host {
             self.blur_other_toolbars(index);
         }
         self.remember_toolbar_focus(
-            (self.panels[self.toolbar_index]
+            (self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
                 .mounted_toolbar
                 .host
                 .content_host()

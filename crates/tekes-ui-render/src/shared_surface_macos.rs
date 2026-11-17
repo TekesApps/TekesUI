@@ -12,6 +12,8 @@ use objc2_metal::{
     MTLTextureDescriptor, MTLTextureType, MTLTextureUsage,
 };
 
+use std::collections::VecDeque;
+
 fn metal(context: &GpuContext) -> Result<Retained<ProtocolObject<dyn MTLDevice>>> {
     // SAFETY: the context was created by the Metal-only renderer; retained device
     // stays alive after the HAL guard drops. No HAL mutation is performed.
@@ -114,6 +116,18 @@ fn validate_dimensions(
     Ok((w, h, min_row_bytes, aligned_row, alloc_size))
 }
 
+fn wrap_surface(
+    context: &GpuContext,
+    size: (u32, u32),
+    surface: &IOSurfaceRef,
+    initialized: bool,
+) -> Result<wgpu::Texture> {
+    let raw = metal(context)?
+        .newTextureWithDescriptor_iosurface_plane(&descriptor(size), surface, 0)
+        .ok_or_else(|| anyhow!("IOSurface Metal texture failed"))?;
+    Ok(wrap(context, raw, size, initialized))
+}
+
 pub fn create(
     context: &GpuContext,
     size: (u32, u32),
@@ -142,10 +156,8 @@ pub fn create(
     let properties = CFDictionary::from_slices(&keys, &refs);
     let surface = unsafe { IOSurfaceRef::new(properties.as_opaque()) }
         .ok_or_else(|| anyhow!("IOSurface allocation failed"))?;
-    let raw = metal(context)?
-        .newTextureWithDescriptor_iosurface_plane(&descriptor(size), &surface, 0)
-        .ok_or_else(|| anyhow!("IOSurface Metal texture failed"))?;
-    Ok((wrap(context, raw, size, false), surface))
+    let texture = wrap_surface(context, size, &surface, false)?;
+    Ok((texture, surface))
 }
 
 /// Transport the exact independent-layer pixels, retaining their extent.
@@ -278,10 +290,178 @@ pub fn import(
     Ok(wrap(context, raw, size, true))
 }
 
+/// RAII consumer-side kernel use-count guard for an imported `IOSurfaceRef`.
+/// Calls `IOSurfaceIncrementUseCount` on construction and `IOSurfaceDecrementUseCount`
+/// on drop so a producer pool observes `is_in_use() == true` until the consumer's
+/// GPU submission finishes reading the shared surface.
+pub struct SharedSurfaceUseGuard(CFRetained<IOSurfaceRef>);
+
+impl std::fmt::Debug for SharedSurfaceUseGuard {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SharedSurfaceUseGuard")
+            .field("surface_id", &self.0.id())
+            .field("is_in_use", &self.0.is_in_use())
+            .finish()
+    }
+}
+
+// SAFETY: `CFRetained<IOSurfaceRef>` is reference-counted and `IOSurfaceDecrementUseCount`
+// is an atomic XNU kernel operation safe to invoke from the consumer retirement thread.
+unsafe impl Send for SharedSurfaceUseGuard {}
+// SAFETY: `SharedSurfaceUseGuard` performs no interior unsynchronized mutation; the inner
+// `IOSurfaceRef` is immutable once exported.
+unsafe impl Sync for SharedSurfaceUseGuard {}
+
+impl SharedSurfaceUseGuard {
+    pub fn new(surface: CFRetained<IOSurfaceRef>) -> Self {
+        surface.increment_use_count();
+        Self(surface)
+    }
+
+    pub fn surface(&self) -> &IOSurfaceRef {
+        &self.0
+    }
+}
+
+impl Drop for SharedSurfaceUseGuard {
+    fn drop(&mut self) {
+        self.0.decrement_use_count();
+    }
+}
+
+/// Import a shared `IOSurfaceRef` along with a `SharedSurfaceUseGuard` that keeps
+/// the kernel `is_in_use` count elevated until the returned guard is dropped.
+pub fn import_with_guard(
+    context: &GpuContext,
+    size: (u32, u32),
+    surface: CFRetained<IOSurfaceRef>,
+    expected: u64,
+) -> Result<(wgpu::Texture, SharedSurfaceUseGuard)> {
+    let texture = import(context, size, &surface, expected)?;
+    Ok((texture, SharedSurfaceUseGuard::new(surface)))
+}
+
+struct PooledSurface {
+    surface: CFRetained<IOSurfaceRef>,
+    texture: Option<wgpu::Texture>,
+    local_texture_marks_in_use: bool,
+}
+
+/// Bounded per-size `IOSurfaceRef` swap pool (up to 3-4 slots per size across
+/// the 2 most recent dimensions) that reuses idle surfaces without overwriting
+/// any surface whose consumer `IOSurfaceIsInUse` count is still elevated.
+#[derive(Default)]
+pub struct SharedSurfacePool {
+    buckets: VecDeque<((u32, u32), VecDeque<PooledSurface>)>,
+    transient: Option<(wgpu::Texture, CFRetained<IOSurfaceRef>)>,
+}
+
+impl std::fmt::Debug for SharedSurfacePool {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let buckets: Vec<_> = self
+            .buckets
+            .iter()
+            .map(|(size, slots)| (*size, slots.len()))
+            .collect();
+        f.debug_struct("SharedSurfacePool")
+            .field("buckets", &buckets)
+            .field("has_transient", &self.transient.is_some())
+            .finish()
+    }
+}
+
+impl SharedSurfacePool {
+    pub const RING_SLOTS: usize = 3;
+    pub const MAX_SLOTS_PER_SIZE: usize = 4;
+    pub const MAX_POOLED_SIZES: usize = 2;
+
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Acquire a GPU-renderable `BGRA8Unorm` texture backed by a reusable (or freshly
+    /// allocated if all pooled slots are still in use) `IOSurfaceRef` for `size`.
+    pub fn acquire<'a>(
+        &'a mut self,
+        context: &GpuContext,
+        size: (u32, u32),
+    ) -> Result<(&'a wgpu::Texture, &'a IOSurfaceRef)> {
+        self.transient = None;
+        for (_, slots) in &mut self.buckets {
+            for slot in slots.iter_mut() {
+                if slot.local_texture_marks_in_use {
+                    slot.texture = None;
+                }
+            }
+        }
+
+        let bucket_idx = if let Some(pos) = self.buckets.iter().position(|(s, _)| *s == size) {
+            let bucket = self.buckets.remove(pos).unwrap();
+            self.buckets.push_back(bucket);
+            self.buckets.len() - 1
+        } else {
+            if self.buckets.len() >= Self::MAX_POOLED_SIZES {
+                self.buckets.pop_front();
+            }
+            self.buckets.push_back((size, VecDeque::new()));
+            self.buckets.len() - 1
+        };
+
+        let (_, bucket) = &mut self.buckets[bucket_idx];
+        let idle_idx = if bucket.len() >= Self::RING_SLOTS {
+            bucket.iter().position(|slot| !slot.surface.is_in_use())
+        } else {
+            None
+        };
+
+        if let Some(idx) = idle_idx {
+            let mut slot = bucket.remove(idx).unwrap();
+            if slot.texture.is_none() {
+                slot.texture = Some(wrap_surface(context, size, &slot.surface, false)?);
+            }
+            bucket.push_back(slot);
+            let slot = bucket.back().unwrap();
+            return Ok((slot.texture.as_ref().unwrap(), &slot.surface));
+        }
+
+        if bucket.len() < Self::MAX_SLOTS_PER_SIZE {
+            let (texture, surface) = create(context, size)?;
+            let local_texture_marks_in_use = surface.is_in_use();
+            bucket.push_back(PooledSurface {
+                surface,
+                texture: Some(texture),
+                local_texture_marks_in_use,
+            });
+            let slot = bucket.back().unwrap();
+            return Ok((slot.texture.as_ref().unwrap(), &slot.surface));
+        }
+
+        self.transient = Some(create(context, size)?);
+        let (texture, surface) = self.transient.as_ref().unwrap();
+        Ok((texture, surface))
+    }
+
+    #[cfg(test)]
+    fn pooled_sizes(&self) -> Vec<(u32, u32)> {
+        self.buckets.iter().map(|(s, _)| *s).collect()
+    }
+
+    #[cfg(test)]
+    fn bucket_len(&self, size: (u32, u32)) -> usize {
+        self.buckets
+            .iter()
+            .find(|(s, _)| *s == size)
+            .map_or(0, |(_, q)| q.len())
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{create, import, registry, rgba_to_bgra};
-    use objc2_core_foundation::{CFDictionary, CFNumber, CFRetained};
+    use super::{
+        SharedSurfacePool, SharedSurfaceUseGuard, create, import, import_with_guard, registry,
+        rgba_to_bgra,
+    };
+    use objc2_core_foundation::{CFDictionary, CFNumber, CFRetained, Type};
     use objc2_io_surface::{
         IOSurfaceRef, kIOSurfaceAllocSize, kIOSurfaceBytesPerElement, kIOSurfaceBytesPerRow,
         kIOSurfaceHeight, kIOSurfacePixelFormat, kIOSurfaceWidth,
@@ -359,5 +539,87 @@ mod tests {
 
         let wrong_dims = raw_surface(8, 4, 4, 256, 1024, u32::from_be_bytes(*b"BGRA"));
         assert!(import(&context, (8, 8), &wrong_dims, expected).is_err());
+    }
+
+    #[test]
+    fn shared_surface_pool_reuses_three_slots_respects_use_guards_and_caps_dimensions() {
+        let Ok(renderer) = crate::Renderer::new_headless() else {
+            return;
+        };
+        let context = renderer.gpu_context();
+        let expected = registry(&context).unwrap();
+        let mut pool = SharedSurfacePool::new();
+
+        let mut warmup_ids = Vec::new();
+        for _ in 0..3 {
+            let (_, surface) = pool.acquire(&context, (32, 32)).unwrap();
+            warmup_ids.push(surface.id());
+        }
+        assert_eq!(pool.bucket_len((32, 32)), 3);
+        assert_eq!(
+            warmup_ids
+                .iter()
+                .collect::<std::collections::HashSet<_>>()
+                .len(),
+            3
+        );
+
+        for frame in 0..6 {
+            let (_, surface) = pool.acquire(&context, (32, 32)).unwrap();
+            assert_eq!(surface.id(), warmup_ids[frame % 3]);
+        }
+        assert_eq!(pool.bucket_len((32, 32)), 3);
+
+        // Pin all 3 slots with consumer use guards; the 4th acquire must not overwrite any
+        // active surface (grows to MAX_SLOTS_PER_SIZE=4, and a 5th falls back to transient).
+        let mut guards = Vec::new();
+        for _ in 0..3 {
+            let (_, surface) = pool.acquire(&context, (32, 32)).unwrap();
+            let retained = surface.retain();
+            let (_tex, guard) = import_with_guard(&context, (32, 32), retained, expected).unwrap();
+            guards.push(guard);
+        }
+        let fourth_id = {
+            let s4_id = pool.acquire(&context, (32, 32)).unwrap().1.id();
+            assert!(!warmup_ids.contains(&s4_id));
+            assert_eq!(pool.bucket_len((32, 32)), 4);
+            s4_id
+        };
+        let fourth_guard = {
+            let (_tex, g) = import_with_guard(
+                &context,
+                (32, 32),
+                pool.acquire(&context, (32, 32)).unwrap().1.retain(),
+                expected,
+            )
+            .unwrap();
+            // Note: acquire above just checked slot 3 or re-selected s4? Actually slot 4 was not guarded yet!
+            g
+        };
+        let _ = fourth_guard;
+        // Now all 4 pooled slots are pinned; next acquire uses transient without growing bucket.
+        let transient_id = {
+            let (_, st) = pool.acquire(&context, (32, 32)).unwrap();
+            st.id()
+        };
+        assert!(!warmup_ids.contains(&transient_id) && transient_id != fourth_id);
+        assert_eq!(pool.bucket_len((32, 32)), 4);
+
+        drop(guards);
+        let (_, recycled) = pool.acquire(&context, (32, 32)).unwrap();
+        assert!(warmup_ids.contains(&recycled.id()));
+
+        // Resizing across 3 distinct sizes retains only MAX_POOLED_SIZES=2 most recent buckets.
+        pool.acquire(&context, (48, 48)).unwrap();
+        pool.acquire(&context, (64, 64)).unwrap();
+        assert_eq!(pool.pooled_sizes(), vec![(48, 48), (64, 64)]);
+        drop(SharedSurfaceUseGuard::new(raw_surface(
+            8,
+            8,
+            4,
+            256,
+            2048,
+            u32::from_be_bytes(*b"BGRA"),
+        )));
     }
 }

@@ -552,15 +552,19 @@ pub(crate) fn run(
                                     })?;
                                     continue;
                                 }
-                                let outcome =
-                                    match crate::content_input::dispatch(host, text, *request) {
-                                        Ok(reply) => ContentInputOutcome::Applied {
-                                            reply: Box::new(reply),
-                                        },
-                                        Err(error) => ContentInputOutcome::Failed {
-                                            message: error.to_string(),
-                                        },
-                                    };
+                                let outcome = match crate::content_input::dispatch_with_semantics(
+                                    host,
+                                    text,
+                                    *request,
+                                    attach.required.accessibility,
+                                ) {
+                                    Ok(reply) => ContentInputOutcome::Applied {
+                                        reply: Box::new(reply),
+                                    },
+                                    Err(error) => ContentInputOutcome::Failed {
+                                        message: error.to_string(),
+                                    },
+                                };
                                 let geometry_changed = host.external_curve_ack()
                                     != Some((frame_stamp.gp, frame_stamp.gc));
                                 emitter.output(Output::CurveReplyV1 {
@@ -742,17 +746,11 @@ pub(crate) fn run(
                             let (host, text) = module
                                 .content()
                                 .ok_or_else(|| anyhow::anyhow!("original Content unavailable"))?;
-                            if negotiated_curve.is_some() {
-                                let (_, gp, gc) = active_curve_grant
-                                    .ok_or_else(|| anyhow::anyhow!(content::GEOMETRY_PENDING))?;
-                                ensure!(
-                                    host.external_curve_ack()
-                                        .is_some_and(|current| { current == (gp, gc) }),
-                                    content::GEOMETRY_PENDING
-                                );
-                            }
-                            serde_json::to_value(crate::content_input::dispatch(
-                                host, text, request,
+                            serde_json::to_value(crate::content_input::dispatch_with_semantics(
+                                host,
+                                text,
+                                request,
+                                attach.required.accessibility,
                             )?)
                             .map_err(Into::into)
                         })()

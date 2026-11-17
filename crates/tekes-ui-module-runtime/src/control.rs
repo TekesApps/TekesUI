@@ -118,9 +118,34 @@ struct State {
     cancelled: AtomicBool,
     installed: AtomicBool,
 }
+impl Drop for State {
+    fn drop(&mut self) {
+        self.cancelled.store(true, Ordering::Release);
+        let Some(mut child) = self.child.lock().unwrap().take() else {
+            return;
+        };
+        child.kill();
+        if !matches!(child.try_wait(), Ok(true)) {
+            let pending = Arc::new(Mutex::new(Some(child)));
+            let bg = Arc::clone(&pending);
+            if std::thread::Builder::new()
+                .name("process-control-reap".into())
+                .spawn(move || {
+                    if let Some(mut c) = bg.lock().unwrap().take() {
+                        c.wait();
+                    }
+                })
+                .is_err()
+                && let Some(mut c) = pending.lock().unwrap().take()
+            {
+                c.wait();
+            }
+        }
+    }
+}
 /// A cloneable cancellation handle, created before launching a worker thread.
 /// `cancel` signals/terminates only; pipe reads, GPU waits and waitpid are never
-/// performed on its caller. The transport owner reaps on its background thread.
+/// performed on its caller. The last owner kills and reaps any un-reaped child.
 #[derive(Clone, Debug, Default)]
 pub struct ProcessControl(Arc<State>);
 impl ProcessControl {
@@ -172,6 +197,47 @@ impl ProcessControl {
         if let Some(mut child) = child {
             child.kill();
             child.wait();
+        }
+    }
+}
+
+#[cfg(all(test, target_os = "macos"))]
+mod tests {
+    use super::*;
+    use std::process::{Command, Stdio};
+    use std::time::{Duration, Instant};
+
+    #[test]
+    fn dropping_last_process_control_kills_and_reaps_installed_child() {
+        let child = Command::new("/bin/sleep")
+            .arg("30")
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()
+            .expect("spawn sleep");
+        let pid = child.id() as i32;
+        let control = ProcessControl::new();
+        control.install(child).unwrap();
+        let clone = control.clone();
+        drop(control);
+        // Process must still be alive while a clone holds ProcessControl.
+        assert_eq!(unsafe { sys::kill(pid, 0) }, 0);
+        drop(clone);
+
+        let deadline = Instant::now() + Duration::from_secs(2);
+        let mut status = 0i32;
+        loop {
+            let rc = unsafe { sys::waitpid(pid, &mut status, sys::WNOHANG) };
+            let kill_rc = unsafe { sys::kill(pid, 0) };
+            if rc < 0 && kill_rc < 0 {
+                break;
+            }
+            assert!(
+                Instant::now() < deadline,
+                "dropped ProcessControl left child pid={pid} alive or unreaped"
+            );
+            std::thread::sleep(Duration::from_millis(5));
         }
     }
 }

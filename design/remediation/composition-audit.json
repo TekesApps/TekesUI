@@ -2048,8 +2048,8 @@
   ],
   "source_sha256": {
     "DESIGN.md": "0085e260e7f5e511470dc90a2a7ae1d91671b92b7c928864ff160d0bd0a6167b",
-    "crates/tekes-ui-app-host/src/lib.rs": "1bd5b37e1d890cdd08b564e0eef6e7f2874cd80c3683fa566034af3e8fa97742",
-    "crates/tekes-ui-app-host/src/window.rs": "ec8ff9e131110a5982b18a9c65ed6177b58dd899fd9149a1a4809c467eb3aad2",
+    "crates/tekes-ui-app-host/src/lib.rs": "49a4a2388f5e9cab31e5b7929f8c69c63a20ece972d8db24ac993f62e63c2fa8",
+    "crates/tekes-ui-app-host/src/window.rs": "0c998d67989d051540e557d91bfc82cbd3d2192b0731ffe645d1c8259d631655",
     "crates/tekes-ui-app-host/src/window_toolbar.rs": "cce68a2c70994a98b941c7614f830f5222e4f0c1b68820eef09d20c22c8360ff",
     "crates/tekes-ui-controls/src/chart.rs": "9e3e5dd1e9d62f358cb74201a254f4165b81e4b79c3a97f0a74bde6f591e983c",
     "crates/tekes-ui-controls/src/collections_view.rs": "028fd9e9469c6746bd5a25c8dff1d9dae461b41c9f76cff0d5207206d9db7004",
@@ -2067,7 +2067,7 @@
     "crates/tekes-ui-controls/src/composition/empty_state.rs": "83cc914c7497d7ca3ac2bd39bab0178d20c5451d9747a1da1e8ea0b0beaf4518",
     "crates/tekes-ui-controls/src/composition/help.rs": "0ff05ea2ee135ecb418f5a87b4687db9379a3b53792c225cfb650a3f400b058e",
     "crates/tekes-ui-controls/src/composition/icon.rs": "f91053beb8ae4d481cb912d721f7d15afc65859da7aecbc016d6e44baf1c2e77",
-    "crates/tekes-ui-controls/src/composition/key.rs": "931e220d625f6d04dd6d36b023199169c619f32fe99c4530dda3e41718b4b407",
+    "crates/tekes-ui-controls/src/composition/key.rs": "e1bf7e3bcd5b8062abdd6259dff6d08057fb9a6f7d214d473abae35f3cc8bb85",
     "crates/tekes-ui-controls/src/composition/label.rs": "4b202e0281e1e33f9714e1cc9470a59ba5f1a54c9e1dd48045b8491437405887",
     "crates/tekes-ui-controls/src/composition/link.rs": "17a6b5a9d7efc52cde5f0d7c7c0f6ebd735640fb0ae6dd5c8e9aac08a80276ad",
     "crates/tekes-ui-controls/src/composition/menu.rs": "8d420abf3c9dad32bdadc5e11662c7cf5086300fef9bc60b5a730d1f399a95ba",
@@ -2232,9 +2232,9 @@
     "docs/design/datatable-public-content-20261024.md": "812988af6954e21b11d6aca4fe769bfb405f26f256685c400f88cc28ef377cf9",
     "docs/design/disclosure-public-content-20261024.md": "1d9a5e8149c04ab5320ffe8639026034b25dfdd267c38631dd8f9c3f2b078f39",
     "docs/design/media-viewer-design-20261031.md": "1b3205a11b7d11f67c8d628e9a7c684283ddfea46a1fb5c54097d86ab11d52b0",
-    "crates/tekes-ui-app-host/src/columns.rs": "76bce19424d71637f97881dfa1128194c289e2b9cbc6842e45f854ab96bcebe4",
-    "crates/tekes-ui-app-host/src/presentation.rs": "c2de5c8778fc3e17d8ffb74cbb99229ed0f038075600c87482ad014032f6c9bf",
-    "crates/tekes-ui-app-host/src/window_presentation.rs": "a36b03f15ddc5f8bd2e38646eeb677869f99518adefc26ca9f7123e4d4c54c1c",
+    "crates/tekes-ui-app-host/src/columns.rs": "ca92e0bc82c5d2fed60fe2d2b9015edb8937c022c38598e90b47f8aa209ed767",
+    "crates/tekes-ui-app-host/src/presentation.rs": "18f2bf9bd591f971da1579eac4c5f4f57f8d844fa88312d6453e22599acfb9a9",
+    "crates/tekes-ui-app-host/src/window_presentation.rs": "9c4c8d80e66a1cc52c48cb548bfbaf9a350c6287dac834d1763f76c9d6e78bf9",
     "crates/tekes-ui-controls/src/composition/toolbar_host.rs": "00bae218b96330f113bf3f19d7f5642d99c2751bdda73fdb68c26cd9a1be0eb4",
     "crates/tekes-ui-controls/src/composition/tab_strip.rs": "4add005d907baa98192cfe199730d74697bf72d8906c6b1024c8afb0aff980bb",
     "crates/tekes-ui-controls/src/composition/inspection.rs": "2408c26fdb67d0af7da76f5198aa7bb9c889225fc5a4f910375803a8541ed1ef",
@@ -2245,9 +2245,10 @@
     "crates/tekes-ui-gallery/src/gallery/workbench/search_input.rs": "c91faa40f3f7befc12d0daad2ca15fc32f45745e62e1053d244120b920670c2f",
     "crates/tekes-ui-gallery/src/gallery/workbench/select_story.rs": "a4d8d398d26711bfa24f8600b2ce70ba7768ca5e9b40f88f49e02d4e413a1c9f",
     "crates/tekes-ui-gallery/src/gallery/workbench/search_host.rs": "354d60f31470abb2df195e37f5cd0a45742b2cb1797e4ffd4ccec9ab37f24471",
-    "crates/tekes-ui-app-host/src/window_columns.rs": "89854ae102929dc4b78d91f9fbd3ce30291d70c03f2d63c3612446d3c58acf36",
+    "crates/tekes-ui-app-host/src/window_columns.rs": "70555bfbfae41939247a80de14fb226d46f002722fab1ddb7fce9ce195ea82c9",
     "examples/composition-consumer/tests/rich_content.rs": "c9aec8dde76fb44253509d96c2ec57a5c390f223498e0fd80122cabbc654f01e",
-    "crates/tekes-ui-controls/src/composition/key_value_table.rs": "3ac33957c77d68ab54404fb353e9bfc6e973754568ded09f8b2d4ac72156c43d"
+    "crates/tekes-ui-controls/src/composition/key_value_table.rs": "3ac33957c77d68ab54404fb353e9bfc6e973754568ded09f8b2d4ac72156c43d",
+    "crates/tekes-ui-app-host/src/window_panels.rs": "e057956b546fdbb144d3d801f9b0a5f3fb0638f08cc7b02a9253c97a086ef199"
   },
   "remaining": [
     "Collections49 public adapter/support paths recovered in thisf4df candidate; actual compatible compilation/consumer/IPC acceptance and publication remain Main gates. Tree/Table and keyed List slots remain finite passive contracts, not arbitrary interactive content or virtualization.",
@@ -2667,7 +2668,7 @@
     },
     {
       "path": "crates/tekes-ui-app-host/src/lib.rs",
-      "line": 131,
+      "line": 168,
       "anchor": "pub fn from_containers("
     },
     {
@@ -2677,27 +2678,27 @@
     },
     {
       "path": "crates/tekes-ui-app-host/src/window.rs",
-      "line": 1393,
+      "line": 970,
       "anchor": ".render_layers(&mut toolbar_scene, &mut toolbar_overlays, text, palette)"
     },
     {
-      "path": "crates/tekes-ui-app-host/src/window.rs",
-      "line": 301,
-      "anchor": "mounted_toolbar: crate::window_toolbar::MountedToolbar,"
+      "path": "crates/tekes-ui-app-host/src/window_panels.rs",
+      "line": 40,
+      "anchor": "pub(super) mounted_toolbar: crate::window_toolbar::MountedToolbar,"
     },
     {
       "path": "crates/tekes-ui-app-host/src/columns.rs",
-      "line": 66,
+      "line": 72,
       "anchor": "pub struct LocalContainer {"
     },
     {
       "path": "crates/tekes-ui-app-host/src/presentation.rs",
-      "line": 129,
+      "line": 217,
       "anchor": "pub struct PresentationState {"
     },
     {
       "path": "crates/tekes-ui-app-host/src/window_presentation.rs",
-      "line": 1337,
+      "line": 1438,
       "anchor": "pub(super) fn sync_container_toolbars("
     },
     {

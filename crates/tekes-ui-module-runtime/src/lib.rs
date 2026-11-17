@@ -65,7 +65,7 @@ pub use tekes_ui_app_protocol::component;
 #[cfg(target_os = "macos")]
 mod view;
 #[cfg(target_os = "macos")]
-pub(crate) use view::ViewConnection;
+pub use view::ViewConnection;
 #[cfg(target_os = "macos")]
 pub use view::{ViewFrame, ViewImage};
 

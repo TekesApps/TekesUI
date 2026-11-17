@@ -1,8 +1,10 @@
 //! Host execution receipts and local input gate; never owns entries/cursor/nav.json.
 use super::*;
 use anyhow::{Result, ensure};
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, VecDeque};
 use tekes_ui_module_runtime::component::Session;
+
+pub const MAX_RETIRED_TRANSACTIONS: usize = 256;
 
 pub struct NavigationHost {
     pub session: Session,
@@ -11,6 +13,7 @@ pub struct NavigationHost {
     pub input_open: bool,
     receipts: HashMap<String, Applied>,
     retired: HashSet<String>,
+    retired_order: VecDeque<String>,
     failures: HashMap<String, (Transaction, String)>,
     offer: Option<RecoveryApplied>,
 }
@@ -23,8 +26,19 @@ impl NavigationHost {
             input_open: false,
             receipts: HashMap::new(),
             retired: HashSet::new(),
+            retired_order: VecDeque::new(),
             failures: HashMap::new(),
             offer: None,
+        }
+    }
+    fn insert_retired(&mut self, id: String) {
+        if self.retired.insert(id.clone()) {
+            self.retired_order.push_back(id);
+            while self.retired_order.len() > MAX_RETIRED_TRANSACTIONS {
+                if let Some(evicted) = self.retired_order.pop_front() {
+                    self.retired.remove(&evicted);
+                }
+            }
         }
     }
     /// New nav instance, same Host: unresolved receipts survive the rebind.
@@ -132,7 +146,7 @@ impl NavigationHost {
     pub fn aborted(&mut self, tx: &Transaction) -> Result<()> {
         self.failed_receipt(tx)?;
         self.failures.remove(&tx.navigation_id);
-        self.retired.insert(tx.navigation_id.clone());
+        self.insert_retired(tx.navigation_id.clone());
         Ok(())
     }
     pub fn committed(&mut self, tx: &Transaction, h: &History) -> Result<()> {
@@ -151,7 +165,34 @@ impl NavigationHost {
             ensure!(old.transaction == *tx, "receipt mismatch");
         }
         self.receipts.remove(&tx.navigation_id);
-        self.retired.insert(tx.navigation_id.clone());
+        self.insert_retired(tx.navigation_id.clone());
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn retired_transactions_evict_fifo_at_capacity() {
+        let session = Session {
+            module: "navigation".into(),
+            instance: 1,
+            host_epoch: 1,
+        };
+        let mut host = NavigationHost::new(session);
+        for i in 0..(MAX_RETIRED_TRANSACTIONS + 5) {
+            host.insert_retired(format!("tx-{i}"));
+        }
+        assert_eq!(host.retired.len(), MAX_RETIRED_TRANSACTIONS);
+        assert_eq!(host.retired_order.len(), MAX_RETIRED_TRANSACTIONS);
+        assert!(!host.retired.contains("tx-0"));
+        assert!(!host.retired.contains("tx-4"));
+        assert!(host.retired.contains("tx-5"));
+        assert!(
+            host.retired
+                .contains(&format!("tx-{}", MAX_RETIRED_TRANSACTIONS + 4))
+        );
     }
 }
