@@ -7,10 +7,8 @@ use tekes_ui_controls::{
     composition::*,
     extended::{Axis, Stack},
 };
-use tekes_ui_platform_macos::{
-    AccessibilityAction as Native,
-    content_accessibility::{content_action, content_key},
-};
+use tekes_ui_macos_bridge::content_accessibility::{content_action, content_key};
+use tekes_ui_platform_macos::AccessibilityAction as Native;
 use tekes_ui_scene::{Point, Primitive, Rect, Scene};
 use tekes_ui_tokens::{Palette, Theme, surface_palette::surface_names};
 fn render(h: &mut ContentHost, t: &mut coretext::Text) {

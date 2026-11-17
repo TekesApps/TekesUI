@@ -21,9 +21,9 @@ fn main() {}
 fn main() {
     use tekes_ui_composition_consumer::hover_preview::Transcript;
     use tekes_ui_controls::composition::ContentEvent;
+    use tekes_ui_macos_bridge::content_accessibility as ax;
     use tekes_ui_platform_macos::{
         self as p, App, AppConfig, Event, MenuBar, Window, WindowConfig, WindowHandler,
-        content_accessibility as ax,
     };
     use tekes_ui_render::Renderer;
     use tekes_ui_scene::{Point, Rect, Scene};

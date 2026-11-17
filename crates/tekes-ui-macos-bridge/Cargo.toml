@@ -1,0 +1,54 @@
+[package]
+name = "tekes-ui-macos-bridge"
+description = "TekesUI macOS 平台层与 controls 之间的薄桥接层（AX 投射、单进程输入翻译、CoreText 文本宿主）"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[features]
+default = []
+selftest = ["tekes-ui-platform-macos/selftest"]
+
+[dependencies]
+tekes-ui-platform-macos = { workspace = true }
+tekes-ui-controls = { workspace = true }
+tekes-ui-scene = { workspace = true }
+tekes-ui-tokens = { workspace = true }
+tekes-ui-text = { workspace = true }
+
+[dev-dependencies]
+serde_json.workspace = true
+
+[target.'cfg(target_os = "macos")'.dev-dependencies]
+objc2.workspace = true
+objc2-foundation = { workspace = true, features = ["NSValue"] }
+objc2-app-kit = { workspace = true, features = [
+    "objc2-core-graphics",
+    "NSScrollView",
+    "NSClipView",
+    "NSScroller",
+    "NSColor",
+    "NSBezierPath",
+    "NSStringDrawing",
+    "NSTextView",
+    "NSText",
+    "NSFont",
+    "NSFontDescriptor",
+    "NSParagraphStyle",
+] }
+objc2-quartz-core = { workspace = true, features = ["CATransaction"] }
+objc2-core-graphics = { workspace = true, features = ["CGColor", "CGBitmapContext", "CGContext", "CGImage"] }
+
+[[test]]
+name = "link_native_publication"
+harness = false
+required-features = ["selftest"]
+
+[[example]]
+name = "ax_modal_lifecycle"
+required-features = ["selftest"]

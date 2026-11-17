@@ -9,7 +9,8 @@ rust-version.workspace = true
 publish = false
 
 [features]
-composition-review = ["dep:tekes-ui-composition-consumer"]
+selftest = ["tekes-ui-platform-macos/selftest", "tekes-ui-macos-bridge/selftest"]
+composition-review = ["dep:tekes-ui-composition-consumer", "selftest"]
 
 [target.'cfg(target_os = "macos")'.dependencies]
 tekes-ui-module-runtime = { path = "../tekes-ui-module-runtime" }
@@ -23,7 +24,8 @@ tekes-ui-icons = { path = "../tekes-ui-icons" }
 tekes-ui-motion = {path="../tekes-ui-motion"}
 tekes-ui-tokens.workspace = true
 tekes-ui-scene.workspace = true
-tekes-ui-platform-macos = { workspace = true, features = ["content-accessibility"] }
+tekes-ui-platform-macos = { workspace = true }
+tekes-ui-macos-bridge = { workspace = true }
 tekes-ui-render.workspace = true
 tekes-ui-text.workspace = true
 png.workspace = true
@@ -36,9 +38,15 @@ workspace = true
 
 [build-dependencies]
 serde_json.workspace = true
+sha2.workspace = true
+tekes-ui-design-export = { path = "../tekes-ui-design-export" }
 
 [dev-dependencies]
 tekes-ui-composition-consumer = { path = "../../examples/composition-consumer" }
 
 [target.'cfg(target_os = "macos")'.dev-dependencies]
 objc2-foundation = { workspace = true, features = ["NSUserDefaults", "NSString", "NSArray"] }
+
+[[example]]
+name = "metal_reentrant_resize"
+required-features = ["selftest"]

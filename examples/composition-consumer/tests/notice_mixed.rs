@@ -10,10 +10,8 @@ use tekes_ui_controls::{
     composition::*,
     extended::{Banner, NoticeTone, Toast},
 };
-use tekes_ui_platform_macos::{
-    AccessibilityAction as NativeAction,
-    content_accessibility::{content_action, content_key},
-};
+use tekes_ui_macos_bridge::content_accessibility::{content_action, content_key};
+use tekes_ui_platform_macos::AccessibilityAction as NativeAction;
 use tekes_ui_scene::{Rect, Scene};
 use tekes_ui_tokens::{Palette, Theme, surface_palette::surface_names};
 const NOTICE: ComponentId = ComponentId(79010);

@@ -18,9 +18,9 @@ fn main() {}
 fn main() {
     use tekes_ui_composition_consumer::context_menu::{DRAFT, MENU_A, MENU_B, Sidebar};
     use tekes_ui_controls::composition::{ContentEvent, MenuContent, TextFieldContent};
+    use tekes_ui_macos_bridge::content_accessibility as ax;
     use tekes_ui_platform_macos::{
         self as p, App, AppConfig, Event, MenuBar, Window, WindowConfig, WindowHandler,
-        content_accessibility as ax,
     };
     use tekes_ui_render::Renderer;
     use tekes_ui_scene::{Point, Rect, Scene};

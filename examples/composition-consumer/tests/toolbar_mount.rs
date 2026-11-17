@@ -161,18 +161,24 @@ fn moving_original_group_keeps_hints_and_arbitrary_progress_has_original_semanti
     );
     let original_mount = h.content_host().semantic_mount(EDIT_CONTROL);
     let old_geometry = h.content_host().geometry_snapshot().unwrap();
-    let old_publication = tekes_ui_platform_macos::content_accessibility::WindowAccessibilityPublication::prepare(vec![(
-        tekes_ui_platform_macos::content_accessibility::ContentAccessibilityOwner(1),
-        tekes_ui_platform_macos::content_accessibility::ContentAccessibilitySnapshot::from_host(h.content_host()).unwrap(),
+    let old_publication = tekes_ui_macos_bridge::content_accessibility::WindowAccessibilityPublication::prepare(vec![(
+        tekes_ui_macos_bridge::content_accessibility::ContentAccessibilityOwner(1),
+        tekes_ui_macos_bridge::content_accessibility::ContentAccessibilitySnapshot::from_host(h.content_host()).unwrap(),
     )]).unwrap();
     h.move_group(EDIT, MAIN, ToolbarPlacement::PrimaryAction, 3)
         .unwrap();
     assert!(!old_geometry.is_current());
     assert!(!old_publication.is_current());
-    assert_eq!(h.content_host().semantic_mount(EDIT_CONTROL), original_mount);
+    assert_eq!(
+        h.content_host().semantic_mount(EDIT_CONTROL),
+        original_mount
+    );
     assert!(h.content_host().geometry_snapshot().is_none());
     draw(&mut h, &mut t);
-    assert_eq!(h.content_host().semantic_mount(EDIT_CONTROL), original_mount);
+    assert_eq!(
+        h.content_host().semantic_mount(EDIT_CONTROL),
+        original_mount
+    );
     let (_, r) = part(&h, "Undo");
     assert!(r.max_x() < 495.);
     h.event(&ContentEvent::PointerMove(r.center()));

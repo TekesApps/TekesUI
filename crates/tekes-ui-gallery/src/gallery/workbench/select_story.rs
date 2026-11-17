@@ -199,7 +199,7 @@ impl SelectStoryHost {
             .collect()
     }
     pub(super) fn native_nodes(&self) -> Vec<N> {
-        let mut nodes = tekes_ui_platform_macos::content_accessibility::content_nodes(&self.host);
+        let mut nodes = tekes_ui_macos_bridge::content_accessibility::content_nodes(&self.host);
         let current: HashSet<_> = nodes.iter().map(|n| n.key).collect();
         let mut keys = self.projection.borrow_mut();
         keys.retain(|key, _| current.contains(key));
@@ -240,7 +240,7 @@ impl SelectStoryHost {
             .find_map(|(a, b)| (*b == key).then_some(*a));
         original
             .map(|key| {
-                tekes_ui_platform_macos::content_accessibility::content_action(
+                tekes_ui_macos_bridge::content_accessibility::content_action(
                     &mut self.host,
                     key,
                     action,

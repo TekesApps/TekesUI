@@ -234,9 +234,13 @@ impl Host {
                 }
             }
             if panel.bounds != frame {
-                eprintln!(
+                host_diag!(
                     "CONTAINER_GEOMETRY id={} frame={:?} clip={:?} instance={} pid={:?}",
-                    panel.module_id, frame, panel.clip, panel.instance, panel.pid
+                    panel.module_id,
+                    frame,
+                    panel.clip,
+                    panel.instance,
+                    panel.pid
                 );
                 // Geometry changes revoke only the affected container's transient
                 // input. Ordinary repaints do not touch its editor or IME state.
@@ -461,7 +465,7 @@ impl Host {
     }
     pub(super) fn switch_container_focus(&mut self, index: usize) -> Result<bool> {
         if self.composition_in_progress() {
-            eprintln!("PRESENTATION_REJECTED composition-in-progress");
+            host_diag!("PRESENTATION_REJECTED composition-in-progress");
             return Ok(false);
         }
         let owner = &self.panel_mgr.panels[index].module_id;
@@ -479,7 +483,7 @@ impl Host {
             .as_mut()
             .unwrap()
             .promote(&target)?;
-        eprintln!(
+        host_diag!(
             "PRESENTATION_SWITCH owner={owner} target={target} focus={}",
             self.layout.presentation.as_ref().unwrap().focus_id()
         );
@@ -563,7 +567,7 @@ impl Host {
             && *command <= COMMAND_BASE + self.panel_mgr.module_ids.len() as u32 * 6
         {
             if self.composition_in_progress() {
-                eprintln!("PRESENTATION_REJECTED composition-in-progress");
+                host_diag!("PRESENTATION_REJECTED composition-in-progress");
                 return Ok(true);
             }
             if *command > COMMAND_BASE {
@@ -571,7 +575,7 @@ impl Host {
                 if value % 6 == 3 {
                     let id = self.panel_mgr.module_ids[value / 6].clone();
                     if let Err(error) = self.close_container(&id) {
-                        eprintln!("PRESENTATION_REJECTED {error:#}");
+                        host_diag!("PRESENTATION_REJECTED {error:#}");
                     }
                     return Ok(true);
                 }
@@ -614,9 +618,9 @@ impl Host {
                 }
             };
             if let Err(error) = result {
-                eprintln!("PRESENTATION_REJECTED {error:#}");
+                host_diag!("PRESENTATION_REJECTED {error:#}");
             } else {
-                eprintln!(
+                host_diag!(
                     "PRESENTATION_CHANGED focus={} others={:?}",
                     state.focus_id(),
                     state.others()
@@ -635,7 +639,8 @@ impl Host {
                 return Ok(true);
             }
             if let Event::Accessibility { target, .. } = event {
-                let owned = w.content_accessibility_publication().is_some_and(|publication| publication.owner(*target) == Some(tekes_ui_platform_macos::content_accessibility::ContentAccessibilityOwner(TABS_OWNER)));
+                use tekes_ui_macos_bridge::WindowContentAccessibilityExt;
+                let owned = w.content_accessibility_publication().is_some_and(|publication| publication.owner(*target) == Some(tekes_ui_macos_bridge::content_accessibility::ContentAccessibilityOwner(TABS_OWNER)));
                 if !owned {
                     return Ok(true);
                 }
@@ -728,17 +733,18 @@ impl Host {
         if matches!(event, Event::Mouse(mouse) if matches!(mouse.kind, MouseEventKind::Down {..}) && (self.layout.presentation_layout.tabs.is_some_and(|frame| frame.contains(Point::new(mouse.position.x as f32, mouse.position.y as f32))) || creation_frame.is_some_and(|frame| frame.contains(Point::new(mouse.position.x as f32, mouse.position.y as f32)))))
             && self.composition_in_progress()
         {
-            eprintln!("PRESENTATION_REJECTED composition-in-progress");
+            host_diag!("PRESENTATION_REJECTED composition-in-progress");
             return Ok(true);
         }
         let Some(host) = &mut self.layout.presentation_tabs else {
             return Ok(false);
         };
+        use tekes_ui_macos_bridge::WindowContentAccessibilityExt;
         if let Event::Accessibility { target, action } = event
             && let Some(publication) = w.content_accessibility_publication()
             && publication.owner(*target)
                 == Some(
-                    tekes_ui_platform_macos::content_accessibility::ContentAccessibilityOwner(
+                    tekes_ui_macos_bridge::content_accessibility::ContentAccessibilityOwner(
                         TABS_OWNER,
                     ),
                 )
@@ -752,7 +758,7 @@ impl Host {
                             .map(|(target, part)| (target, Some(part.index))),
                     )
                     .find_map(|(stamp, part)| {
-                        (tekes_ui_platform_macos::content_accessibility::content_key(
+                        (tekes_ui_macos_bridge::content_accessibility::content_key(
                             host.content_host(),
                             id,
                             part,
@@ -855,7 +861,7 @@ impl Host {
             .drain_commands();
         for record in records {
             if self.composition_in_progress() {
-                eprintln!("PRESENTATION_REJECTED composition-in-progress");
+                host_diag!("PRESENTATION_REJECTED composition-in-progress");
                 continue;
             }
             use super::window_switcher::SwitcherAction;
@@ -903,10 +909,10 @@ impl Host {
     pub(super) fn presentation_tabs_publication(
         &self,
     ) -> Option<(
-        tekes_ui_platform_macos::content_accessibility::ContentAccessibilityOwner,
-        tekes_ui_platform_macos::content_accessibility::ContentAccessibilitySnapshot,
+        tekes_ui_macos_bridge::content_accessibility::ContentAccessibilityOwner,
+        tekes_ui_macos_bridge::content_accessibility::ContentAccessibilitySnapshot,
     )> {
-        use tekes_ui_platform_macos::content_accessibility::{
+        use tekes_ui_macos_bridge::content_accessibility::{
             ContentAccessibilityOwner, ContentAccessibilitySnapshot,
         };
         self.layout.presentation_layout.tabs?;

@@ -1,10 +1,11 @@
-#![cfg(all(target_os = "macos", feature = "content-accessibility"))]
+#![cfg(target_os = "macos")]
 
 use tekes_ui_controls::{
     ButtonTextAlign, ButtonTextRenderer, TextSurfaceHost, TextSurfaceTextRenderer,
     composition::{ComboBoxContent, ComponentId, Content, ContentEvent, ContentHost},
 };
-use tekes_ui_platform_macos::{AccessibilityAction, AccessibilityRole, content_accessibility::*};
+use tekes_ui_macos_bridge::content_accessibility::*;
+use tekes_ui_platform_macos::{AccessibilityAction, AccessibilityRole};
 use tekes_ui_scene::{Rect, Scene, Size};
 use tekes_ui_tokens::{Rgba, Theme, proposal};
 
@@ -127,7 +128,7 @@ fn original_combo_owner_publishes_and_routes_its_single_editable_text_state() {
     assert!(layout.is_valid());
 }
 
-#[path = "../../tekes-ui-module-runtime/src/combo_bridge_fixture.rs"]
+#[path = "support/combo_bridge_fixture.rs"]
 mod combo_fixture;
 
 #[test]

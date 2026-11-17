@@ -608,12 +608,14 @@ impl TextDemo {
         }
     }
 
+    #[cfg(feature = "selftest")]
     pub(super) fn scroll_reference_state(&self) -> Option<[f32; 2]> {
         let surface = self.surfaces.last()?;
         Some([surface.scroll.offset.y, surface.scroll.visual_offset().y])
     }
 
     /// Benchmark-only snapshot of the actual retained layout; never reshapes text.
+    #[cfg(feature = "selftest")]
     pub(super) fn scroll_reference_fixture(&self) -> Option<serde_json::Value> {
         let s = self.surfaces.last()?;
         let paragraph = s.paragraph.as_ref()?;
@@ -645,10 +647,12 @@ impl TextDemo {
         }))
     }
 
+    #[cfg(any(test, feature = "selftest"))]
     pub fn scroll_metrics(&self) -> (f32, f32) {
         let s = self.surfaces.last().unwrap();
         (s.scroll.limit().y, s.inner.size.height)
     }
+    #[cfg(any(test, feature = "selftest"))]
     pub fn scroll_to(&mut self, offset: f32) {
         self.stop_following();
         let s = self.surfaces.last_mut().unwrap();
@@ -812,6 +816,7 @@ impl TextDemo {
             .then(|| self.surfaces[0].visible_frame())
             .flatten()
     }
+    #[cfg(any(test, feature = "selftest"))]
     pub(crate) fn visible_frame_at(&self, index: usize) -> Option<Rect> {
         self.surfaces.get(index)?.visible_frame()
     }

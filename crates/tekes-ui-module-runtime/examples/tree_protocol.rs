@@ -345,7 +345,7 @@ fn main() -> Result<()> {
         let _ = container(&h)
             .native_content_bridge(Duration::from_secs(2))?
             .semantics()?;
-        let _ = tekes_ui_platform_macos::content_accessibility::content_nodes(&h);
+        let _ = tekes_ui_macos_bridge::content_accessibility::content_nodes(&h);
     }
     ensure!(
         message(container(&h), "inspect")? == unchanged,
@@ -436,7 +436,7 @@ fn main() -> Result<()> {
         );
     }
     ready(&mut h, &mut gpu)?;
-    let native = tekes_ui_platform_macos::content_accessibility::content_nodes(&h);
+    let native = tekes_ui_macos_bridge::content_accessibility::content_nodes(&h);
     let root = native
         .iter()
         .find(|n| n.label == "node1")
@@ -444,7 +444,7 @@ fn main() -> Result<()> {
     ensure!(root.role == tekes_ui_platform_macos::AccessibilityRole::TreeItem { level: 0 });
     let key = root.key;
     ensure!(
-        tekes_ui_platform_macos::content_accessibility::content_action(
+        tekes_ui_macos_bridge::content_accessibility::content_action(
             &mut h,
             key,
             tekes_ui_platform_macos::AccessibilityAction::SetExpanded(false)

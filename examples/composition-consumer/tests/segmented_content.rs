@@ -334,9 +334,8 @@ fn real_composer_marked_selection_and_binding_gate_before_original_view() {
 
 #[test]
 fn real_native_projection_routes_tokens_and_rejects_stale_mounts() {
-    use tekes_ui_platform_macos::{
-        AccessibilityAction as A, AccessibilityRole as R, content_accessibility as ax,
-    };
+    use tekes_ui_macos_bridge::content_accessibility as ax;
+    use tekes_ui_platform_macos::{AccessibilityAction as A, AccessibilityRole as R};
     let parent = ComponentId(1);
     let mut h = ContentHost::new(Content::new(
         parent,

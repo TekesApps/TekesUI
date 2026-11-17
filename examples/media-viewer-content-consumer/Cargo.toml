@@ -15,7 +15,8 @@ tekes-ui-text = { path = "../../crates/tekes-ui-text" }
 tekes-ui-render = { path = "../../crates/tekes-ui-render" }
 
 [target.'cfg(target_os = "macos")'.dev-dependencies]
-tekes-ui-platform-macos = { path = "../../crates/tekes-ui-platform-macos", features = ["content-accessibility"] }
+tekes-ui-platform-macos = { path = "../../crates/tekes-ui-platform-macos", features = ["selftest"] }
+tekes-ui-macos-bridge = { path = "../../crates/tekes-ui-macos-bridge", features = ["selftest"] }
 resvg = { version = "0.48.0", default-features = false }
 
 # Direct imports for the opt-in consumer-native AX selector witness only.

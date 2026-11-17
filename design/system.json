@@ -329,10 +329,10 @@
         "design/system.schema.json": "af11f7ef0f9f4b495181d72f0b8b4a3cb274e79fe3ce9e98d4d82b6aaa396393",
         "design/theme/artifact-lock.schema.json": "642653ddc482c053402ad6abe2f14c6d836ea282e16c709ca85792f8a435b32a",
         "design/theme/data-plot-pairs.json": "b75e6e57c155d596ba60a086406aa91cfa087009e6200847db1bbd25c2d442c7",
-        "design/theme/rules.json": "1b44512ec7a61a3e9032cce1d2e902129e3346af8266649232856834b90ab07d",
+        "design/theme/rules.json": "50b9f24026584e0c8e28c85c31a57e435bb71d22b3c939e3727cc6ea36bddf1a",
         "design/theme/rules.schema.json": "01c7c08a6ebd48db78e3e0a59f2f67b5f978b80b4acf8fcd00680cb254718dd6",
         "design/theme/theme.schema.json": "4c7d0f7195088487c4bf02b4b01a500baf1958caf6f6f62a436d9b5b37ea8f68",
-        "scripts/generate-theme-system.py": "83e89ae9776fb91da12e8ebfbd12a67df7baf9c54d2435105f7d641c93439d7b",
+        "scripts/generate-theme-system.py": "fc002028f85aa1a3636c2cba339ddc673caaab7969ad7dc9aa0c00d74b4e1d78",
         "scripts/merge-design-system.py": "668cc598b1a5f0802c3fc10e27e60ed36701a6c545c713f563bcbf0dc7491ea2"
       },
       "neutral_base_allowed_roles": [

@@ -506,7 +506,8 @@ pub(super) fn matrix(
         )
         .height as f32
         + 18.0;
-    let palette = Palette::new(ctx.theme, s.brand).expect("registered Gallery brand");
+    let palette = crate::gallery::brands::brand_palette(ctx.theme, s.brand)
+        .expect("registered Gallery brand");
     let scale = ctx.text.type_scale();
     let icons = GalleryIconRenderer::native(ctx);
     let mut text = MatrixText { ctx, icons };

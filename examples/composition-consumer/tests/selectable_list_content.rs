@@ -191,9 +191,8 @@ fn real_text_icon_keep_mount_theme_override_clear_and_default_display_share_arra
 }
 #[test]
 fn shared_platform_adapter_uses_same_visible_positive_list_parts_and_real_focus_press_owner() {
-    use tekes_ui_platform_macos::{
-        AccessibilityAction as A, AccessibilityRole as R, content_accessibility as bridge,
-    };
+    use tekes_ui_macos_bridge::content_accessibility as bridge;
+    use tekes_ui_platform_macos::{AccessibilityAction as A, AccessibilityRole as R};
     let mut h = build().unwrap();
     h.set_action_events(true);
     let mut text = coretext::Text::new(1.);

@@ -1,0 +1,73 @@
+schema_version = 1
+namespace = "apphost-demo"
+provider = "demo.settings"
+
+[[pages]]
+id = "general"
+label = "通用"
+
+[[groups]]
+id = "workspace"
+page = "general"
+label = "工作区"
+
+[[groups.items]]
+id = "general"
+label = "基本设置"
+
+[[groups.items.fields]]
+id = "workspace-name"
+path = ["workspace", "name"]
+label = "工作区名称"
+type = "string"
+default = "My Workspace"
+
+[[groups.items.fields]]
+id = "autosave"
+path = ["workspace", "autosave"]
+label = "自动保存"
+type = "boolean"
+default = true
+
+[[groups]]
+id = "reading"
+page = "general"
+label = "阅读"
+
+[[groups.items]]
+id = "text"
+label = "文本与语言"
+
+[[groups.items.fields]]
+id = "language"
+path = ["reading", "language"]
+label = "语言"
+type = "enum"
+default = "system"
+options = [
+  { value = "system", label = "跟随系统" },
+  { value = "zh", label = "简体中文" },
+  { value = "en", label = "English" },
+]
+
+[[groups.items.fields]]
+id = "font-size"
+path = ["reading", "font_size"]
+label = "字号"
+type = "integer"
+default = 14
+min = 10
+max = 32
+
+[[groups.items]]
+id = "advanced"
+label = "高级排版"
+
+[[groups.items.fields]]
+id = "line-spacing"
+path = ["reading", "advanced", "line_spacing"]
+label = "行距倍数"
+type = "decimal"
+default = 1.5
+min = 1.0
+max = 3.0

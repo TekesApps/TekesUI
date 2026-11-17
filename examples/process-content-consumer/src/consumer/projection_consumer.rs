@@ -129,7 +129,8 @@ fn message(c: &ProcessContainer, topic: &str) -> Result<serde_json::Value> {
     result.unwrap().map_err(anyhow::Error::msg)
 }
 fn native_metadata(h: &ContentHost, id: ComponentId) -> Result<()> {
-    use tekes_ui_platform_macos::{AccessibilityRole, content_accessibility as native};
+    use tekes_ui_macos_bridge::content_accessibility as native;
+    use tekes_ui_platform_macos::AccessibilityRole;
     let edit = part(h, id, "Message")?;
     let history = part(h, id, "History")?;
     let slider = part(h, id, "Level")?;

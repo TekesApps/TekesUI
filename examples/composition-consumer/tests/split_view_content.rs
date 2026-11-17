@@ -1557,7 +1557,7 @@ fn splitter_non_binary_minimum_domain_accepts_decimal_endpoint_through_strict_sc
     #[cfg(target_os = "macos")]
     {
         host.set_window_active(true);
-        let native = tekes_ui_platform_macos::content_accessibility::content_nodes(&host);
+        let native = tekes_ui_macos_bridge::content_accessibility::content_nodes(&host);
         let node = native
             .iter()
             .find(|node| node.key.component == host.semantic_mount(id(5)).unwrap())

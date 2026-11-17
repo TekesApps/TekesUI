@@ -151,7 +151,7 @@ mod migration_tests {
     }
 }
 pub mod palette;
-pub use palette::{Palette, PaletteSource};
+pub use palette::{CustomPaletteSource, Palette, PaletteSource};
 
 #[cfg(test)]
 mod effect_binding_tests {

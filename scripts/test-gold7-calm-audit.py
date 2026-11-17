@@ -102,9 +102,46 @@ class Gold7CalmAuditTests(unittest.TestCase):
         )
         self.assertEqual(proc.returncode, 0, proc.stderr)
         payload = json.loads(proc.stdout)
-        self.assertEqual(payload["mode"], "read-only-advisory")
+        self.assertEqual(payload["mode"], "regression-gate")
+        self.assertEqual(payload["status"], "pass")
+        self.assertEqual(payload["violations"], [])
+        self.assertEqual(
+            payload["allowlisted_profiles"]["secondary_text"],
+            ["data-category-label", "quiet"],
+        )
         after = {p: hashlib.sha256(p.read_bytes()).hexdigest() for p in tracked}
         self.assertEqual(before, after)
+
+    def test_scan_components_rejects_non_input_border_and_controls_bypass(self):
+        root = self.staged_root()
+        rules_path = root / "design/theme/rules.json"
+        rules = json.loads(rules_path.read_text(encoding="utf-8"))
+        rules["profiles"]["skeleton"]["rest"]["boundary"] = "border"
+        rules["profiles"]["progress-track"]["rest"]["text"] = "secondary-text"
+        rules_path.write_text(json.dumps(rules, indent=2), encoding="utf-8")
+
+        fake_ctrl = root / "crates/tekes-ui-controls/src/fake_control.rs"
+        fake_ctrl.parent.mkdir(parents=True, exist_ok=True)
+        fake_ctrl.write_text('let _ = palette.color("border");\n', encoding="utf-8")
+
+        proc = subprocess.run(
+            [sys.executable, str(SCRIPT), "--root", str(root), "--scan-components", "--json"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(proc.returncode, 1)
+        payload = json.loads(proc.stdout)
+        self.assertEqual(payload["status"], "fail")
+        codes = {v["code"] for v in payload["violations"]}
+        self.assertEqual(
+            codes,
+            {
+                "NON_INPUT_PROFILE_BORDER",
+                "NON_INPUT_PROFILE_SECONDARY_TEXT",
+                "CONTROLS_RAW_PALETTE_BYPASS",
+            },
+        )
 
 
 if __name__ == "__main__":

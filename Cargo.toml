@@ -24,6 +24,7 @@ pollster = "1"
 png = "0.17"
 sha2 = "0.11"
 tekes-ui-platform-macos = { path = "crates/tekes-ui-platform-macos" }
+tekes-ui-macos-bridge = { path = "crates/tekes-ui-macos-bridge" }
 objc2 = { version = "0.6.5", default-features = false, features = ["std"] }
 objc2-foundation = { version = "0.3.2", default-features = false, features = ["std"] }
 objc2-app-kit = { version = "0.3.2", default-features = false, features = ["std"] }

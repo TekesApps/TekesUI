@@ -1,15 +1,12 @@
-#![cfg(feature = "content-accessibility")]
 #[path = "support/ax_modal_fixture.rs"]
 mod fixture;
 use fixture::*;
 use tekes_ui_controls::composition::{ContentResponse, SwitchContent};
-use tekes_ui_platform_macos::{
-    AccessibilityAction, AccessibilityRole,
-    content_accessibility::{
-        ContentAccessibilityOwner, ContentAccessibilitySnapshot, WindowAccessibilityPublication,
-        content_action, content_key, content_nodes,
-    },
+use tekes_ui_macos_bridge::content_accessibility::{
+    ContentAccessibilityOwner, ContentAccessibilitySnapshot, WindowAccessibilityPublication,
+    content_action, content_key, content_nodes,
 };
+use tekes_ui_platform_macos::{AccessibilityAction, AccessibilityRole};
 
 #[test]
 fn original_modal_scope_withdraws_background_and_restores_original_invoker() {

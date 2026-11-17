@@ -117,7 +117,7 @@ impl WindowAccessibilityPublication {
     pub fn is_valid(&self) -> bool {
         self.is_current()
             && self.fragments.iter().all(|(_, s)| s.is_valid())
-            && crate::accessibility::validate_accessibility_nodes_with_geometry(
+            && tekes_ui_platform_macos::validate_accessibility_nodes_with_geometry(
                 &self.nodes,
                 &self.owners.keys().copied().collect(),
             )
@@ -144,7 +144,7 @@ impl WindowAccessibilityPublication {
         &self,
         key: AccessibilityKey,
         range: std::ops::Range<usize>,
-    ) -> Option<crate::Rect> {
+    ) -> Option<Rect> {
         self.owner(key)?;
         self.fragments[*self.owners.get(&key)?]
             .1
@@ -183,12 +183,94 @@ impl WindowAccessibilityPublication {
     }
     /// Revoke every clone before replacing or rejecting a batch. Retained native
     /// objects and saved publication handles can never recover their old authority.
-    pub(crate) fn revoke(&self) {
+    pub fn revoke(&self) {
         self.authority.store(false, Ordering::Release);
     }
     pub(crate) fn revoked() -> Self {
         let result = Self::prepare(Vec::new()).expect("empty publication");
         result.revoke();
         result
+    }
+}
+
+impl tekes_ui_platform_macos::AccessibilityGeometryLease for WindowAccessibilityPublication {
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+    fn is_current(&self) -> bool {
+        WindowAccessibilityPublication::is_current(self)
+    }
+    fn is_valid(&self) -> bool {
+        WindowAccessibilityPublication::is_valid(self)
+    }
+    fn revoke(&self) {
+        WindowAccessibilityPublication::revoke(self);
+    }
+    fn nodes(&self) -> &[AccessibilityNode] {
+        WindowAccessibilityPublication::nodes(self)
+    }
+    fn text_layouts(&self) -> Option<&HashMap<AccessibilityKey, AccessibilityTextLayout>> {
+        WindowAccessibilityPublication::text_layouts(self)
+    }
+    fn is_structural_only(&self, key: AccessibilityKey) -> bool {
+        self.is_current() && self.structural_only.contains(&key)
+    }
+    fn contains(&self, key: AccessibilityKey, point: Point) -> bool {
+        WindowAccessibilityPublication::contains(self, key, point)
+    }
+    fn hit_test(&self, point: Point) -> Option<AccessibilityKey> {
+        WindowAccessibilityPublication::hit_test(self, point)
+    }
+    fn frame_for_range(
+        &self,
+        key: AccessibilityKey,
+        range: std::ops::Range<usize>,
+    ) -> Option<Rect> {
+        WindowAccessibilityPublication::frame_for_range(self, key, range)
+    }
+    fn authorizes_target(&self, target: AccessibilityKey) -> bool {
+        self.owner(target).is_some()
+    }
+}
+
+/// Extension methods binding [`WindowAccessibilityPublication`] and
+/// [`ContentAccessibilitySnapshot`] to [`tekes_ui_platform_macos::Window`].
+#[cfg(target_os = "macos")]
+pub trait WindowContentAccessibilityExt {
+    fn set_content_accessibility_snapshot(&self, snapshot: ContentAccessibilitySnapshot) -> bool;
+    fn set_content_accessibility_publication(
+        &self,
+        publication: Option<WindowAccessibilityPublication>,
+    ) -> bool;
+    fn content_accessibility_publication(&self) -> Option<WindowAccessibilityPublication>;
+}
+
+#[cfg(target_os = "macos")]
+impl WindowContentAccessibilityExt for tekes_ui_platform_macos::Window {
+    fn set_content_accessibility_snapshot(&self, snapshot: ContentAccessibilitySnapshot) -> bool {
+        self.set_content_accessibility_publication(WindowAccessibilityPublication::prepare(vec![(
+            ContentAccessibilityOwner(0),
+            snapshot,
+        )]))
+    }
+
+    fn set_content_accessibility_publication(
+        &self,
+        publication: Option<WindowAccessibilityPublication>,
+    ) -> bool {
+        let lease = publication.map(|p| {
+            std::rc::Rc::new(p)
+                as std::rc::Rc<dyn tekes_ui_platform_macos::AccessibilityGeometryLease>
+        });
+        self.set_accessibility_geometry_lease(lease)
+    }
+
+    fn content_accessibility_publication(&self) -> Option<WindowAccessibilityPublication> {
+        self.accessibility_geometry_lease().and_then(|lease| {
+            lease
+                .as_any()
+                .downcast_ref::<WindowAccessibilityPublication>()
+                .cloned()
+        })
     }
 }

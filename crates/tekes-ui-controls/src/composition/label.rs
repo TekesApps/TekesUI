@@ -39,6 +39,7 @@ pub(super) struct LabelRenderer<'a> {
     state: &'a mut LabelState,
     clip: Rect,
     palette: Option<Palette>,
+    surface: &'static str,
 }
 impl<'a> LabelRenderer<'a> {
     pub fn new(
@@ -51,10 +52,12 @@ impl<'a> LabelRenderer<'a> {
             state,
             clip,
             palette: None,
+            surface: "canvas",
         }
     }
-    pub fn with_palette(mut self, palette: Palette) -> Self {
-        self.palette = Some(palette);
+    pub fn with_theme(mut self, theme: ContentTheme) -> Self {
+        self.palette = Some(theme.palette);
+        self.surface = theme.surface();
         self
     }
     pub(super) fn failed(&self) -> bool {
@@ -232,13 +235,34 @@ impl ButtonTextRenderer for LabelRenderer<'_> {
                             let color = match role {
                                 LabelForeground::Inherited => ink,
                                 LabelForeground::Secondary => {
-                                    palette.color("secondary-text").expect("foreground role")
+                                    tekes_ui_tokens::surface_palette::resolve_surface(
+                                        palette,
+                                        self.surface,
+                                        "data-category-label",
+                                        "rest",
+                                    )
+                                    .expect("label secondary Surface packet")
+                                    .text
                                 }
                                 LabelForeground::Positive => {
-                                    palette.color("status-succeeded").expect("foreground role")
+                                    tekes_ui_tokens::surface_palette::resolve_surface(
+                                        palette,
+                                        self.surface,
+                                        "content-status-succeeded",
+                                        "rest",
+                                    )
+                                    .expect("label positive Surface packet")
+                                    .text
                                 }
                                 LabelForeground::Negative => {
-                                    palette.color("status-failed").expect("foreground role")
+                                    tekes_ui_tokens::surface_palette::resolve_surface(
+                                        palette,
+                                        self.surface,
+                                        "content-status-failed",
+                                        "rest",
+                                    )
+                                    .expect("label negative Surface packet")
+                                    .text
                                 }
                             };
                             let mut part_line = line.clone();

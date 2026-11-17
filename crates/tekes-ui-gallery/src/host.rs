@@ -12,7 +12,16 @@ use tekes_ui_scene::Scene;
 use tekes_ui_tokens::{Appearance, Contrast, Theme};
 
 use crate::gallery::{Change, Command, Gallery};
+#[cfg(feature = "selftest")]
 use crate::perf::{FrameCtx, Perf};
+
+fn gallery_diag_enabled() -> bool {
+    static ENABLED: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *ENABLED.get_or_init(|| {
+        std::env::var_os("TEKESUI_GALLERY_DIAGNOSTICS").is_some_and(|v| v == "1")
+            || std::env::var_os("TEKESUI_APPHOST_DIAGNOSTICS").is_some_and(|v| v == "1")
+    })
+}
 
 #[derive(Debug)]
 pub struct Host {
@@ -20,6 +29,7 @@ pub struct Host {
     wake_acceptance: Option<crate::wake_acceptance::WakeAcceptance>,
     gallery: Gallery,
     apphost_settings: Option<tekes_ui_app_host::SettingsOwner>,
+    apphost_sessions: Vec<crate::gallery::apphost::SessionTempDir>,
     scene: Scene,
     renderer: Option<Renderer>,
     /// `TEKES_LOG_EVENTS` 设了就把事件和重绘次数打到 stderr，用来核对空闲时不重绘。
@@ -29,6 +39,7 @@ pub struct Host {
     start: Instant,
     redraws: u64,
     /// `TEKES_PERF` 开着时的性能 harness（见 `perf.rs`）。
+    #[cfg(feature = "selftest")]
     perf: Option<Perf>,
     pending_redraw: bool,
     last_animation_target: Option<f64>,
@@ -43,6 +54,7 @@ impl Host {
             wake_acceptance: crate::wake_acceptance::WakeAcceptance::from_env(),
             gallery,
             apphost_settings: None,
+            apphost_sessions: Vec::new(),
             scene: Scene::new(),
             renderer: None,
             log: std::env::var("TEKES_LOG_EVENTS").is_ok()
@@ -50,6 +62,7 @@ impl Host {
             log_all: std::env::var("TEKES_LOG_EVENTS").is_ok_and(|v| v == "all"),
             start: Instant::now(),
             redraws: 0,
+            #[cfg(feature = "selftest")]
             perf: None,
             pending_redraw: false,
             last_animation_target: None,
@@ -59,6 +72,7 @@ impl Host {
     }
 
     /// 挂上性能 harness：窗口创建后它接管动画和渲染，直到写完报告。
+    #[cfg(feature = "selftest")]
     pub fn with_perf(mut self, perf: Option<Perf>) -> Host {
         self.perf = perf;
         self
@@ -101,6 +115,7 @@ impl Host {
     fn sync_animation(&mut self, window: &Window, animate: bool) {
         // A performance run owns its display link, including its stopped cooldown.
         // System preference and mouse events must never restart or stop that link.
+        #[cfg(feature = "selftest")]
         if self.perf.is_some() {
             return;
         }
@@ -200,6 +215,7 @@ impl WindowHandler for Host {
                     Ok(r) => self.renderer = Some(r),
                     Err(e) => eprintln!("创建渲染器失败：{e}"),
                 }
+                #[cfg(feature = "selftest")]
                 if let (Some(p), Some(r)) = (self.perf.as_mut(), self.renderer.as_mut()) {
                     p.begin(window, r);
                 }
@@ -225,6 +241,7 @@ impl WindowHandler for Host {
             } => {
                 self.gallery
                     .set_view_size(size.width as f32, size.height as f32);
+                #[cfg(feature = "selftest")]
                 if let Some(perf) = &mut self.perf {
                     perf.resize(size.width as f32, size.height as f32);
                 }
@@ -236,6 +253,7 @@ impl WindowHandler for Host {
                     r.resize(*drawable_size, *scale as f32);
                 }
             }
+            #[cfg(feature = "selftest")]
             Event::Redraw if self.perf.is_some() => {
                 if let (Some(perf), Some(renderer)) = (self.perf.as_mut(), self.renderer.as_mut()) {
                     perf.poll_presentation_drain(&mut FrameCtx {
@@ -251,6 +269,7 @@ impl WindowHandler for Host {
             }
             Event::Redraw => self.redraw(window),
             Event::AnimationFrame(f) => {
+                #[cfg(feature = "selftest")]
                 if let (Some(p), Some(r)) = (self.perf.as_mut(), self.renderer.as_mut()) {
                     let mut ctx = FrameCtx {
                         scene: &mut self.scene,
@@ -259,26 +278,27 @@ impl WindowHandler for Host {
                         theme: self.gallery.theme(),
                     };
                     p.frame(*f, &mut ctx);
-                } else {
-                    let dt = self
-                        .last_animation_target
-                        .map_or(f.refresh_interval, |previous| {
-                            (f.target_timestamp - previous).max(0.0)
-                        });
-                    self.last_animation_target = Some(f.target_timestamp);
-                    let animated = self.gallery.animate(dt as f32);
-                    let pending = std::mem::take(&mut self.pending_redraw);
-                    if animated || pending {
-                        self.redraw(window);
-                    }
-                    let animate = self.gallery.needs_animation();
-                    if !animate {
-                        self.last_animation_target = None;
-                    }
-                    self.sync_animation(window, animate);
+                    return;
                 }
+                let dt = self
+                    .last_animation_target
+                    .map_or(f.refresh_interval, |previous| {
+                        (f.target_timestamp - previous).max(0.0)
+                    });
+                self.last_animation_target = Some(f.target_timestamp);
+                let animated = self.gallery.animate(dt as f32);
+                let pending = std::mem::take(&mut self.pending_redraw);
+                if animated || pending {
+                    self.redraw(window);
+                }
+                let animate = self.gallery.needs_animation();
+                if !animate {
+                    self.last_animation_target = None;
+                }
+                self.sync_animation(window, animate);
             }
             Event::SystemMotionChanged(reduced) => {
+                #[cfg(feature = "selftest")]
                 if let Some(perf) = &mut self.perf {
                     perf.set_reduced_motion(*reduced);
                 }
@@ -302,6 +322,7 @@ impl WindowHandler for Host {
                         Contrast::Standard
                     },
                 };
+                #[cfg(feature = "selftest")]
                 if let Some(perf) = &mut self.perf {
                     perf.set_system_theme(system);
                 }
@@ -318,6 +339,7 @@ impl WindowHandler for Host {
                     self.sync_animation(window, self.gallery.needs_animation());
                 }
             }
+            #[cfg(feature = "selftest")]
             Event::CloseRequested if self.perf.as_ref().is_some_and(Perf::is_active) => {
                 if let (Some(p), Some(r)) = (self.perf.as_mut(), self.renderer.as_mut()) {
                     p.on_close_requested(window, r);
@@ -379,7 +401,9 @@ impl WindowHandler for Host {
             }
             Event::Focus(active) => {
                 if *active {
-                    if let Err(error) = window.set_menu_bar(&self.gallery.menu_bar()) {
+                    if let Err(error) = window.set_menu_bar(&self.gallery.menu_bar())
+                        && (self.log || gallery_diag_enabled())
+                    {
                         eprintln!("GALLERY_MENU_ERROR {error}");
                     }
                     self.sync_chrome(window);
@@ -445,8 +469,17 @@ impl WindowHandler for Host {
                 )
             })();
             match result {
-                Ok(_) => eprintln!("GALLERY_APPHOST_OPENED theme={:?}", self.gallery.theme()),
-                Err(error) => eprintln!("GALLERY_APPHOST_OPEN_FAILED {error:#}"),
+                Ok((_handle, session_dir)) => {
+                    self.apphost_sessions.push(session_dir);
+                    if self.log || gallery_diag_enabled() {
+                        eprintln!("GALLERY_APPHOST_OPENED theme={:?}", self.gallery.theme());
+                    }
+                }
+                Err(error) => {
+                    if self.log || gallery_diag_enabled() {
+                        eprintln!("GALLERY_APPHOST_OPEN_FAILED {error:#}");
+                    }
+                }
             }
         }
         #[cfg(feature = "composition-review")]

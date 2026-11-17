@@ -49,7 +49,7 @@ fn implemented_component_state_and_variant_stories_render_at_each_viewport_posit
         .ok()
         .map(|value| value.parse().expect("numeric existing brand index"))
         .unwrap_or(0);
-    assert!(tekes_ui_tokens::Palette::new(Theme::LIGHT, brand).is_some());
+    assert!(crate::gallery::brands::brand_palette(Theme::LIGHT, brand).is_some());
     let mut cases = Vec::new();
     for theme in Theme::ALL {
         let theme_name = theme_slug(theme);

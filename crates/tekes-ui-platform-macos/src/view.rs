@@ -190,25 +190,20 @@ define_class!(
         #[unsafe(method_id(accessibilityHitTest:))]
         fn content_accessibility_hit_test(&self, point: NSPoint) -> Option<Retained<objc2::runtime::AnyObject>> {
             crate::ffi_boundary("TekesView::accessibilityHitTest:", || {
-                #[cfg(feature = "content-accessibility")]
-                {
-                    let shared = &self.ivars().shared;
-                    let snapshot = shared.content_geometry.borrow().clone();
-                    if let Some(snapshot) = snapshot.filter(|s| s.is_current())
-                        && let Some(objects) = shared.objects.get()
-                        && let Some(key) = {
-                            let local = self.convertPoint_fromView(objects.window.convertPointFromScreen(point), None);
-                            snapshot.hit_test(crate::event::Point { x: local.x, y: local.y })
-                        }
-                        && let Some(element) = shared.accessibility_elements.borrow().get(&key).cloned()
-                    {
-                        Some(element.into())
-                    } else {
-                        unsafe { msg_send![super(self), accessibilityHitTest: point] }
+                let shared = &self.ivars().shared;
+                let snapshot = shared.content_geometry.borrow().clone();
+                if let Some(snapshot) = snapshot.filter(|s| s.is_current())
+                    && let Some(objects) = shared.objects.get()
+                    && let Some(key) = {
+                        let local = self.convertPoint_fromView(objects.window.convertPointFromScreen(point), None);
+                        snapshot.hit_test(crate::event::Point { x: local.x, y: local.y })
                     }
+                    && let Some(element) = shared.accessibility_elements.borrow().get(&key).cloned()
+                {
+                    Some(element.into())
+                } else {
+                    unsafe { msg_send![super(self), accessibilityHitTest: point] }
                 }
-                #[cfg(not(feature = "content-accessibility"))]
-                unsafe { msg_send![super(self), accessibilityHitTest: point] }
             })
         }
         #[unsafe(method_id(accessibilityChildren))]
@@ -222,10 +217,11 @@ define_class!(
         fn accessibility_focused_ui_element(&self) -> Retained<objc2::runtime::AnyObject> {
             crate::ffi_boundary("TekesView::accessibilityFocusedUIElement", || {
                 let shared = &self.ivars().shared;
-                #[cfg(feature="content-accessibility")]
-                let authorized=shared.content_geometry.borrow().as_ref().is_none_or(|p|p.is_current());
-                #[cfg(not(feature="content-accessibility"))]
-                let authorized=true;
+                let authorized = shared
+                    .content_geometry
+                    .borrow()
+                    .as_ref()
+                    .is_none_or(|p| p.is_current());
                 let focused_key = shared
                     .accessibility_nodes
                     .borrow()
@@ -1183,6 +1179,7 @@ impl TekesView {
     }
 
     /// Selftest-only observation; counts actual positive Metal presentation receipts.
+    #[cfg(feature = "selftest")]
     pub(crate) fn selftest_presented_count(&self) -> u64 {
         let observer = &self.ivars().shared.presentation;
         observer

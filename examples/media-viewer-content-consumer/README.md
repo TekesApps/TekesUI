@@ -43,8 +43,8 @@ GPU tests live in `tekes-ui-controls`; this consumer does not duplicate them.
 
 ## Native boundary
 
-The normal native example explicitly enables the platform's existing
-`content-accessibility` feature. It uses public snapshot/publication/dispatch and
+The normal native example explicitly uses the public `tekes-ui-macos-bridge`
+boundary (and platform `selftest`). It uses public snapshot/publication/dispatch and
 original key/pointer translation; it is not an AX-free executable. It does not use
 `ax_modal_lifecycle`, AX experiment observers, private event injection or TEMP
 tracing. The platform APIs it calls already exist on public baseline `04992fa`.

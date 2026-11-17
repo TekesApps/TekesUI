@@ -188,9 +188,8 @@ fn cross_owner_set_expanded_rejects_marked_composer_then_opens_and_focuses_once(
 
 #[test]
 fn actual_native_select_adapter_role_closed_open_same_owner_and_option_once() {
-    use tekes_ui_platform_macos::{
-        AccessibilityAction as Action, AccessibilityRole, content_accessibility as native,
-    };
+    use tekes_ui_macos_bridge::content_accessibility as native;
+    use tekes_ui_platform_macos::{AccessibilityAction as Action, AccessibilityRole};
     let mut t = coretext::Text::new(1.);
     t.services = true;
     t.reduced_motion = true;
@@ -444,9 +443,8 @@ fn original_menu_unknown_strict_action_is_not_default_authorized() {
 
 #[test]
 fn native_empty_and_duplicate_labels_remain_legal_original_select_options() {
-    use tekes_ui_platform_macos::{
-        AccessibilityAction as Action, AccessibilityRole, content_accessibility as native,
-    };
+    use tekes_ui_macos_bridge::content_accessibility as native;
+    use tekes_ui_platform_macos::{AccessibilityAction as Action, AccessibilityRole};
     let mut h = ContentHost::new(Content::new(
         SELECT,
         SelectContent::new("Mode", vec!["".into(), "".into()]),

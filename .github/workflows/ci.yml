@@ -45,6 +45,11 @@ jobs:
           python3 -I scripts/check-design-baseline.py --self-test
           python3 scripts/merge-design-system.py --check
           python3 scripts/check-design-system.py
+          python3 scripts/generate-theme-system.py --check
+          python3 .agents/skills/gold7-calm-audit/scripts/audit_gold7_calm.py --check
+          python3 .agents/skills/gold7-calm-audit/scripts/audit_gold7_calm.py --scan-components --check
+          python3 scripts/test-gold7-calm-audit.py
+          python3 scripts/check-composition-audit.py
           cargo run --locked -p tekes-ui-design-export -- --generate design/tokens.json "$RUNNER_TEMP/tokens.rs"
           cargo run --locked -p tekes-ui-design-export -- --check design/tokens.json "$RUNNER_TEMP/tokens.rs"
       - run: cargo fmt --check
@@ -98,11 +103,16 @@ jobs:
         run: |
           cargo clippy -p tekes-ui-controls --features bitmap-images --all-targets --locked -- -D warnings
           cargo test -p tekes-ui-controls --features bitmap-images --lib --test component_registry_api --test bitmap_content_consumer --locked
-          cargo clippy -p tekes-ui-platform-macos --features content-accessibility --all-targets --locked -- -D warnings
-          cargo test -p tekes-ui-platform-macos --features content-accessibility --lib --locked
-          cargo test -p tekes-ui-platform-macos --features content-accessibility --test link_native --locked
+          cargo clippy -p tekes-ui-platform-macos --features selftest --all-targets --locked -- -D warnings
+          cargo clippy -p tekes-ui-macos-bridge --features selftest --all-targets --locked -- -D warnings
+          cargo clippy -p tekes-ui-app-host --features window-acceptance --all-targets --locked -- -D warnings
+          cargo clippy -p tekes-ui-gallery --features selftest,composition-review --all-targets --locked -- -D warnings
+          cargo test --locked -p tekes-ui-platform-macos --features selftest --lib
+          cargo test --locked -p tekes-ui-platform-macos --features selftest --test link_native
+          cargo test --locked -p tekes-ui-macos-bridge --features selftest --test ax_modal_projection --test combobox_accessibility --test content_accessibility --test panel_projection --test link_native_publication
+          cargo test --locked -p tekes-ui-macos-bridge --features selftest --examples
           # Compile the #205 staged AX entry point; native acceptance uses allocated local windows.
-          cargo build -p tekes-ui-platform-macos --features content-accessibility --example ax205_staged_acceptance --locked --offline
+          cargo build -p tekes-ui-macos-bridge --features selftest --example ax205_staged_acceptance --locked --offline
           # Issue 127 AC5: compile the actual optional-bitmap proof consumer.
           # GPU cases remain explicit local locked runs; the original Toolbar positive is still open.
           cargo clippy --manifest-path examples/composition-consumer/Cargo.toml --features bitmap-images --test parent_boundary_proof --locked --offline -- -D warnings

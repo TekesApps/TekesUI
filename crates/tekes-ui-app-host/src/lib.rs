@@ -1,4 +1,6 @@
 //! Shared native AppHost. Consumers supply fixed native module factories.
+#[macro_use]
+mod diagnostics;
 #[cfg(target_os = "macos")]
 pub mod gpu;
 #[cfg(target_os = "macos")]
@@ -311,7 +313,39 @@ impl AppWindow {
     }
 
     pub fn run(self) -> anyhow::Result<()> {
-        self.run_with_args(&std::env::args().collect::<Vec<_>>())
+        let args: Vec<String> = std::env::args().collect();
+        run_columns(
+            self.profile,
+            self.components,
+            self.columns,
+            self.navigation,
+            self.settings,
+            self.presentation,
+            self.theme,
+            self.palette_source,
+            self.container_factories,
+            &args,
+            RunMode::Consumer,
+        )
+    }
+
+    /// Launch this window under the finite `window-acceptance` test driver.
+    #[cfg(feature = "window-acceptance")]
+    pub fn run_window_acceptance(self) -> anyhow::Result<()> {
+        let args: Vec<String> = std::env::args().collect();
+        run_columns(
+            self.profile,
+            self.components,
+            self.columns,
+            self.navigation,
+            self.settings,
+            self.presentation,
+            self.theme,
+            self.palette_source,
+            self.container_factories,
+            &args,
+            RunMode::WindowAcceptance,
+        )
     }
 
     /// Run with explicit startup arguments, including the executable at argv[0].
@@ -329,8 +363,18 @@ impl AppWindow {
             self.palette_source,
             self.container_factories,
             args,
+            RunMode::ValidateArgs,
         )
     }
+}
+
+#[cfg(target_os = "macos")]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum RunMode {
+    Consumer,
+    ValidateArgs,
+    #[cfg(feature = "window-acceptance")]
+    WindowAcceptance,
 }
 
 /// Dispatch the fixed headless AppHost services before an embedding app creates
@@ -386,6 +430,7 @@ fn run_internal(
         None,
         Vec::new(),
         &std::env::args().collect::<Vec<_>>(),
+        RunMode::Consumer,
     )
 }
 #[cfg(target_os = "macos")]
@@ -426,6 +471,7 @@ fn run_columns(
     palette_source: Option<std::rc::Rc<std::cell::Cell<tekes_ui_tokens::Palette>>>,
     factories: Vec<ContainerFactory>,
     args: &[String],
+    mode: RunMode,
 ) -> anyhow::Result<()> {
     validate_assembly(
         &profile,
@@ -455,7 +501,7 @@ fn run_columns(
             .ok_or_else(|| anyhow::anyhow!("worker module not in fixed profile"))?;
         return tekes_ui_module_runtime::run((definition.create)(), &args[3]);
     }
-    let acceptance = window_acceptance_from_args(args)?;
+    let acceptance = resolve_acceptance(mode, args)?;
     window::run(
         AppWindow {
             profile,
@@ -472,9 +518,19 @@ fn run_columns(
     )
 }
 #[cfg(target_os = "macos")]
+fn resolve_acceptance(mode: RunMode, args: &[String]) -> anyhow::Result<bool> {
+    match mode {
+        RunMode::Consumer => Ok(false),
+        RunMode::ValidateArgs => window_acceptance_from_args(args),
+        #[cfg(feature = "window-acceptance")]
+        RunMode::WindowAcceptance => Ok(true),
+    }
+}
+#[cfg(target_os = "macos")]
 fn window_acceptance_from_args(args: &[String]) -> anyhow::Result<bool> {
     match args.get(1).map(String::as_str) {
         None => Ok(false),
+        #[cfg(feature = "window-acceptance")]
         Some("--window-acceptance") if args.len() == 2 => Ok(true),
         _ => anyhow::bail!("fixed-profile app accepts no runtime module discovery or selection"),
     }
@@ -500,7 +556,24 @@ mod hosted_window_tests {
         // Reproduces the native Gallery launch failure at the same run gate.
         assert!(window_acceptance_from_args(&args(&["gallery", "--apphost"])).is_err());
         assert!(!window_acceptance_from_args(&args(&["gallery"])).unwrap());
+        #[cfg(feature = "window-acceptance")]
         assert!(window_acceptance_from_args(&args(&["gallery", "--window-acceptance"])).unwrap());
+        #[cfg(not(feature = "window-acceptance"))]
+        assert!(window_acceptance_from_args(&args(&["gallery", "--window-acceptance"])).is_err());
+        // Consumer AppWindow::run does not reject arbitrary host CLI flags or enable acceptance.
+        assert!(
+            !resolve_acceptance(
+                RunMode::Consumer,
+                &args(&[
+                    "app",
+                    "--open",
+                    "doc.tekes",
+                    "-psn_0_1234",
+                    "--window-acceptance"
+                ]),
+            )
+            .unwrap()
+        );
         for tail in [
             vec!["--modules", "unknown"],
             vec!["unknown"],

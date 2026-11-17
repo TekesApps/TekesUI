@@ -3,10 +3,8 @@ use super::Host;
 use anyhow::Result;
 use std::collections::HashMap;
 use tekes_ui_controls::composition::AccessibilityAction as Action;
-use tekes_ui_platform_macos::{
-    AccessibilityAction, AccessibilityKey, AccessibilityNode,
-    content_accessibility::{ContentAccessibilitySnapshot, content_key},
-};
+use tekes_ui_macos_bridge::content_accessibility::{ContentAccessibilitySnapshot, content_key};
+use tekes_ui_platform_macos::{AccessibilityAction, AccessibilityKey, AccessibilityNode};
 impl Host {
     pub(super) fn toolbar_accessibility_nodes(&mut self, active: bool) -> Vec<AccessibilityNode> {
         if !active {

@@ -1,6 +1,7 @@
 //! Original fixture with real glyph rendering and one native window adapter.
 use super::*;
 use tekes_ui_controls::{TextSurfaceHost, TextSurfaceTextRenderer};
+use tekes_ui_macos_bridge::WindowContentAccessibilityExt;
 use tekes_ui_platform_macos as native;
 use tekes_ui_render::Renderer;
 use tekes_ui_scene::{Point, Size};
@@ -614,7 +615,7 @@ impl Host {
         // A clipped child may have zero visible bounds; raw node publication
         // deliberately cannot authorize those nodes and rejects the whole batch.
         let publication = self.tree.as_ref().and_then(|tree| {
-            use native::content_accessibility::{
+            use tekes_ui_macos_bridge::content_accessibility::{
                 ContentAccessibilityOwner, ContentAccessibilitySnapshot,
                 WindowAccessibilityPublication,
             };
@@ -848,8 +849,10 @@ impl Host {
             .and_then(tekes_ui_controls::composition::PanelContent::geometry)
             .context("B2 parent Host has no arranged PanelGeometry")?;
         let accessibility =
-            native::content_accessibility::ContentAccessibilitySnapshot::from_host(tree)
-                .context("B2 current parent accessibility snapshot unavailable")?;
+            tekes_ui_macos_bridge::content_accessibility::ContentAccessibilitySnapshot::from_host(
+                tree,
+            )
+            .context("B2 current parent accessibility snapshot unavailable")?;
         let nodes = accessibility.nodes();
         let button = nodes
             .iter()
@@ -936,8 +939,10 @@ impl Host {
             return Ok(());
         };
         let accessibility =
-            native::content_accessibility::ContentAccessibilitySnapshot::from_host(tree)
-                .context("B2 current parent accessibility snapshot unavailable")?;
+            tekes_ui_macos_bridge::content_accessibility::ContentAccessibilitySnapshot::from_host(
+                tree,
+            )
+            .context("B2 current parent accessibility snapshot unavailable")?;
         let nodes = accessibility.nodes();
         let button = nodes
             .iter()
@@ -1292,7 +1297,9 @@ impl Host {
         if self.review_directory.is_none() {
             return Ok(());
         }
-        let nodes = native::content_accessibility::content_nodes(self.tree.as_ref().unwrap());
+        let nodes = tekes_ui_macos_bridge::content_accessibility::content_nodes(
+            self.tree.as_ref().unwrap(),
+        );
         let named = |label: &str| {
             let mut found: Vec<_> = nodes
                 .iter()
@@ -1532,7 +1539,7 @@ impl Host {
                 "caret_size":[s.caret_size.width,s.caret_size.height],"read_only":s.read_only
             })
         });
-        let nodes = native::content_accessibility::content_nodes(tree);
+        let nodes = tekes_ui_macos_bridge::content_accessibility::content_nodes(tree);
         let snapshot = serde_json::json!({"phase":phase,"parent_pid":std::process::id(),
             "focused_container":tree.focused().map(|id|id.0),"window_active":w.is_active(),
             "window_size":[w.size().width,w.size().height],"placement":format!("{:?}",w.placement_report()),
@@ -2385,8 +2392,10 @@ pub(super) fn independent_layer_roundtrip() -> Result<serde_json::Value> {
         "settled original editor text projection differs from its real input state"
     );
     let parent_accessibility =
-        native::content_accessibility::ContentAccessibilitySnapshot::from_host(&host)
-            .context("settled actual parent Host accessibility publication missing")?;
+        tekes_ui_macos_bridge::content_accessibility::ContentAccessibilitySnapshot::from_host(
+            &host,
+        )
+        .context("settled actual parent Host accessibility publication missing")?;
     let container_mount = host
         .semantic_mount(ids[0])
         .context("original parent container mount missing")?;
@@ -2455,8 +2464,10 @@ pub(super) fn independent_layer_roundtrip() -> Result<serde_json::Value> {
     );
     let _ = settled_scene(&mut host, &mut renderer, &mut text, &ids, frame, &context)?;
     let recovered_editor =
-        native::content_accessibility::ContentAccessibilitySnapshot::from_host(&host)
-            .context("current editor target publication missing")?;
+        tekes_ui_macos_bridge::content_accessibility::ContentAccessibilitySnapshot::from_host(
+            &host,
+        )
+        .context("current editor target publication missing")?;
     ensure!(
         recovered_editor
             .nodes()
@@ -2496,8 +2507,10 @@ pub(super) fn independent_layer_roundtrip() -> Result<serde_json::Value> {
     );
     let other_mount = host.semantic_mount(ids[1]).unwrap();
     let current_parent =
-        native::content_accessibility::ContentAccessibilitySnapshot::from_host(&host)
-            .context("marked parent publication missing")?;
+        tekes_ui_macos_bridge::content_accessibility::ContentAccessibilitySnapshot::from_host(
+            &host,
+        )
+        .context("marked parent publication missing")?;
     let other_node = current_parent
         .nodes()
         .iter()
@@ -2546,7 +2559,7 @@ pub(super) fn independent_layer_roundtrip() -> Result<serde_json::Value> {
             .component::<tekes_ui_module_runtime::ProcessContainer>()
             .unwrap(),
     )?;
-    let rejected = native::content_accessibility::content_action(
+    let rejected = tekes_ui_macos_bridge::content_accessibility::content_action(
         &mut host,
         other_editor,
         native::AccessibilityAction::Focus,
@@ -2714,8 +2727,10 @@ pub(super) fn independent_layer_roundtrip() -> Result<serde_json::Value> {
         "current native B2 caret did not recover after clock publication"
     );
     let current_parent =
-        native::content_accessibility::ContentAccessibilitySnapshot::from_host(&host)
-            .context("current parent button publication missing")?;
+        tekes_ui_macos_bridge::content_accessibility::ContentAccessibilitySnapshot::from_host(
+            &host,
+        )
+        .context("current parent button publication missing")?;
     let button_node = current_parent
         .nodes()
         .iter()
@@ -2898,8 +2913,10 @@ pub(super) fn independent_layer_roundtrip() -> Result<serde_json::Value> {
         "sibling-interleave original Button did not activate exactly once"
     );
     let current_parent =
-        native::content_accessibility::ContentAccessibilitySnapshot::from_host(&host)
-            .context("post-click parent publication missing")?;
+        tekes_ui_macos_bridge::content_accessibility::ContentAccessibilitySnapshot::from_host(
+            &host,
+        )
+        .context("post-click parent publication missing")?;
     let button_key = current_parent
         .nodes()
         .iter()
@@ -2922,8 +2939,10 @@ pub(super) fn independent_layer_roundtrip() -> Result<serde_json::Value> {
         tekes_ui_module_runtime::view_context_palette(&context)?,
     )?;
     let transitional =
-        native::content_accessibility::ContentAccessibilitySnapshot::from_host(&host)
-            .context("AX transition parent groups missing")?;
+        tekes_ui_macos_bridge::content_accessibility::ContentAccessibilitySnapshot::from_host(
+            &host,
+        )
+        .context("AX transition parent groups missing")?;
     ensure!(
         !transitional
             .nodes()
@@ -2931,7 +2950,7 @@ pub(super) fn independent_layer_roundtrip() -> Result<serde_json::Value> {
             .any(|node| node.key == button_key),
         "unpublished clock frame retained mutating child AX authority"
     );
-    let refused = native::content_accessibility::content_action(
+    let refused = tekes_ui_macos_bridge::content_accessibility::content_action(
         &mut host,
         button_key,
         native::AccessibilityAction::Press,
@@ -2943,7 +2962,10 @@ pub(super) fn independent_layer_roundtrip() -> Result<serde_json::Value> {
         "unpublished original AX key changed business state"
     );
     let _ = settled_scene(&mut host, &mut renderer, &mut text, &ids, frame, &context)?;
-    let recovered = native::content_accessibility::ContentAccessibilitySnapshot::from_host(&host)
+    let recovered =
+        tekes_ui_macos_bridge::content_accessibility::ContentAccessibilitySnapshot::from_host(
+            &host,
+        )
         .context("AX ready parent snapshot missing")?;
     ensure!(
         recovered
@@ -2952,7 +2974,7 @@ pub(super) fn independent_layer_roundtrip() -> Result<serde_json::Value> {
             .any(|node| node.key == button_key && node.label == "Auxiliary"),
         "original AX key did not recover after actual clock publication"
     );
-    let ax = native::content_accessibility::content_action(
+    let ax = tekes_ui_macos_bridge::content_accessibility::content_action(
         &mut host,
         button_key,
         native::AccessibilityAction::Press,

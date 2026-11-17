@@ -6,10 +6,7 @@ use tekes_ui_scene::{Rect, Scene, Size};
 use tekes_ui_settings::{Draft, FileProvider, Schema, SettingsForm, Snapshot};
 use tekes_ui_tokens::{Rgba, proposal};
 fn schema() -> Schema {
-    Schema::parse(include_str!(
-        "../../../examples/app-host-demo/settings.schema.toml"
-    ))
-    .unwrap()
+    Schema::parse(include_str!("fixtures/app-host-demo.settings.schema.toml")).unwrap()
 }
 fn number(form: &mut SettingsForm) -> &mut NumberFieldContent {
     form.host

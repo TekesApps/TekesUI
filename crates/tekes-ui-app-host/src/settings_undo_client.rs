@@ -261,7 +261,7 @@ impl Worker {
         loop {
             match process.status() {
                 ProcessStatus::Ready { pid, .. } => {
-                    eprintln!("SETTINGS_UNDO_READY pid={pid}");
+                    host_diag!("SETTINGS_UNDO_READY pid={pid}");
                     break;
                 }
                 ProcessStatus::Starting if Instant::now() < deadline => {

@@ -3301,15 +3301,21 @@ fn draw_chart_labels(
     geometry: &ChartGeometry,
     palette: Palette,
 ) {
+    let plot =
+        tekes_ui_tokens::surface_palette::resolve_surface(palette, "canvas", "data-plot", "rest")
+            .expect("chart plot Surface packet");
+    let category_packet = tekes_ui_tokens::surface_palette::resolve_surface(
+        palette,
+        "canvas",
+        "data-category-label",
+        "rest",
+    )
+    .expect("chart category Surface packet");
     draw_chart_labels_with_inks(scene, text, geometry, |category| {
         if category {
-            palette
-                .color("secondary-text")
-                .expect("DS secondary text token")
+            category_packet.text
         } else {
-            palette
-                .color("primary-text")
-                .expect("DS primary text token")
+            plot.text
         }
     });
 }
@@ -4341,10 +4347,17 @@ mod tests {
                 .iter()
                 .all(|(_, rect, _)| rect.size.width == 16.0 && rect.size.height == 16.0)
         );
-        let expected_ink = Palette::from(Theme::LIGHT).color("secondary-text").unwrap();
+        let expected_ink = tekes_ui_tokens::surface_palette::resolve_surface(
+            Palette::from(Theme::LIGHT),
+            "canvas",
+            "action-quiet",
+            "rest",
+        )
+        .unwrap()
+        .icon;
         assert!(
             icons.0.iter().all(|(_, _, tint)| *tint == expected_ink),
-            "Quiet/rest icon tint: actual={:?}, expected secondary-text={:?}",
+            "Quiet/rest icon tint: actual={:?}, expected={:?}",
             icons.0,
             expected_ink
         );

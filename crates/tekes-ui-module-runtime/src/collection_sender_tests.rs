@@ -74,7 +74,7 @@ mod tree_wire_tests {
         .unwrap();
         let snap = snapshot(&h).expect("public Tree must publish through module runtime");
         assert_eq!(snap[0].parts.len(), 2);
-        let native = tekes_ui_platform_macos::content_accessibility::content_nodes(&h);
+        let native = tekes_ui_macos_bridge::content_accessibility::content_nodes(&h);
         assert!(
             native
                 .iter()
@@ -82,7 +82,7 @@ mod tree_wire_tests {
         );
         let root = native.iter().find(|n| n.label == "node1").unwrap().key;
         assert!(
-            tekes_ui_platform_macos::content_accessibility::content_action(
+            tekes_ui_macos_bridge::content_accessibility::content_action(
                 &mut h,
                 root,
                 tekes_ui_platform_macos::AccessibilityAction::SetExpanded(false)
@@ -280,7 +280,7 @@ mod datatable_content_snapshot_tests {
         assert!(table.text_layout.is_none());
         assert!(table.parts.iter().all(|part| part.text_layout.is_none()));
 
-        let native = tekes_ui_platform_macos::content_accessibility::content_nodes(&host);
+        let native = tekes_ui_macos_bridge::content_accessibility::content_nodes(&host);
         use tekes_ui_platform_macos::AccessibilityRole as NativeRole;
         let native_table = native
             .iter()
@@ -311,7 +311,7 @@ mod datatable_content_snapshot_tests {
 
         let before = serde_json::to_vec(&snapshot(&host).unwrap()).unwrap();
         for key in [column.key, cell.key] {
-            let response = tekes_ui_platform_macos::content_accessibility::content_action(
+            let response = tekes_ui_macos_bridge::content_accessibility::content_action(
                 &mut host,
                 key,
                 tekes_ui_platform_macos::AccessibilityAction::Press,

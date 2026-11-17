@@ -583,7 +583,7 @@ mod lossless_snapshot_tests {
     #[test]
     fn unknown_toml_datetime_and_nested_values_survive_history_transport() {
         let schema = tekes_ui_settings::Schema::parse(include_str!(
-            "../../../examples/app-host-demo/settings.schema.toml"
+            "test_fixtures/app-host-demo.settings.schema.toml"
         ))
         .unwrap();
         let file =

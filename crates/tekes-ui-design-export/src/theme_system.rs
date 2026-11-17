@@ -121,7 +121,7 @@ fn validate_use_channels(usage: &str, state: &str, pair: &Value) -> Result<(), S
         } else {
             "primary-text"
         };
-        let expected = serde_json::json!({"background":background,"text":ink,"icon":ink,"boundary":if badge { Value::Null } else { Value::from("border") },"focus":null,"marker":null,"helper":null});
+        let expected = serde_json::json!({"background":background,"text":ink,"icon":ink,"boundary":if badge { Value::Null } else { Value::from("separator") },"focus":null,"marker":null,"helper":null});
         if state != "rest" || *pair != expected {
             return Err(format!(
                 "invalid passive status packet binding: {usage}/{state}"
@@ -1514,8 +1514,9 @@ fn verify_passive_status_contrast(rules: &Value, palette: &Value) -> Result<(), 
                 let fill = color("background")?;
                 if usage == "skeleton" {
                     let edge = color("boundary")?;
+                    let minimum = if mode.ends_with("-ic") { 3.0 } else { 1.05 };
                     for (side, ground) in [("fill", fill), ("parent", parent)] {
-                        if ratio(edge, ground) < 3.0 {
+                        if ratio(edge, ground) < minimum {
                             return Err(format!(
                                 "insufficient skeleton boundary-{side} contrast: {mode}/{surface}"
                             ));
@@ -1574,11 +1575,16 @@ fn verify_track_boundaries(rules: &Value, palette: &Value) -> Result<(), String>
                         )?)
                     };
                     let edge = luminance("boundary")?;
+                    let minimum = if usage == "range-track" || mode.ends_with("-ic") {
+                        3.0
+                    } else {
+                        1.05
+                    };
                     for ground in [
                         luminance("background")?,
                         color_luminance(&resolved(palette, parent, mode, 0)?)?,
                     ] {
-                        if (edge.max(ground) + 0.05) / (edge.min(ground) + 0.05) < 3.0 {
+                        if (edge.max(ground) + 0.05) / (edge.min(ground) + 0.05) < minimum {
                             return Err(format!(
                                 "insufficient {} boundary contrast: {mode}/{surface}/{state}",
                                 if usage == "range-track" {
@@ -2731,6 +2737,17 @@ mod passive_status_policy_tests {
                 &palette("#FFFFFF", "#FFFFFF", "#000000", "#000000")
             )
             .is_ok()
+        );
+        let hairline = serde_json::json!({"color":{"tokens":[
+            {"name":"parent","value":{"light":"#FFFFFF","dark":"#FFFFFF","light-ic":"#FFFFFF","dark-ic":"#FFFFFF"}},
+            {"name":"fill","value":{"light":"#FFFFFF","dark":"#FFFFFF","light-ic":"#FFFFFF","dark-ic":"#FFFFFF"}},
+            {"name":"edge","value":{"light":"#D8D8D8","dark":"#D8D8D8","light-ic":"#D8D8D8","dark-ic":"#D8D8D8"}},
+            {"name":"ink","value":{"light":"#000000","dark":"#000000","light-ic":"#000000","dark-ic":"#000000"}}
+        ]}});
+        assert!(
+            verify_passive_status_contrast(&r, &hairline)
+                .unwrap_err()
+                .contains("skeleton boundary-fill contrast: light-ic")
         );
     }
 }

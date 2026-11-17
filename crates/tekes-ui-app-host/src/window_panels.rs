@@ -153,7 +153,7 @@ impl Panel {
         }
         if let Some(local) = &mut self.local {
             if let Err(error) = local.start_process(wake.clone()) {
-                eprintln!("PANEL_FAILED id={} {error:#}", self.id);
+                host_diag!("PANEL_FAILED id={} {error:#}", self.id);
                 self.failed = Some(format!("{error:#}"));
                 wake.wake();
             }
@@ -179,7 +179,7 @@ impl Panel {
                 for request in queued {
                     if let Err(error) = connection.enqueue(request) {
                         let message = format!("{error:#}");
-                        eprintln!("PANEL_FAILED id={} {message}", self.id);
+                        host_diag!("PANEL_FAILED id={} {message}", self.id);
                         self.failed = Some(message);
                         break;
                     }
@@ -188,7 +188,7 @@ impl Panel {
             }
             Err(error) => {
                 let message = format!("{error:#}");
-                eprintln!("PANEL_FAILED id={} {message}", self.id);
+                host_diag!("PANEL_FAILED id={} {message}", self.id);
                 self.failed = Some(message);
                 self.connection = None;
                 wake.wake();
@@ -206,7 +206,7 @@ impl Panel {
         if let ProcessStatus::Failed { message } = connection.status()
             && self.failed.is_none()
         {
-            eprintln!("PANEL_FAILED id={} {message}", self.id);
+            host_diag!("PANEL_FAILED id={} {message}", self.id);
             self.failed = Some(message);
         }
         connection.drain_frames()
@@ -411,7 +411,7 @@ impl Panel {
             // A height-only content resize can leave the toolbar paint frame
             // unchanged. Revoke old arms before advancing viewport ownership.
             self.viewport += 1;
-            eprintln!(
+            host_diag!(
                 "GEOMETRY panel={} viewport={} width={:.3} height={:.3} toolbar_height={:.3} scale={:.3}",
                 self.id,
                 self.viewport,
@@ -420,7 +420,7 @@ impl Panel {
                 self.geometry.insets.top,
                 scale
             );
-            eprintln!(
+            host_diag!(
                 "CONTAINER_CONTENT id={} padding={} toolbar_boundary={} frame={:?}",
                 self.module_id,
                 self.content_padding,

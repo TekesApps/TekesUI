@@ -110,7 +110,7 @@ impl BrandPreview {
         let gap = 8.;
         let columns = if width < 480. { 2 } else { 4 };
         let cell_w = ((width - gap * (columns as f32 - 1.)) / columns as f32).max(0.);
-        let directions = tekes_ui_tokens::palette::gallery_brand_directions();
+        let directions = crate::gallery::brands::gallery_brand_directions();
         let mut row_heights = vec![34.0_f32; directions.len().div_ceil(columns)];
         for (index, direction) in directions.iter().enumerate() {
             let height = text
@@ -133,7 +133,7 @@ impl BrandPreview {
         } else {
             ((width - card_gap) / 2.).max(0.)
         };
-        let applied_preset = tekes_ui_tokens::palette::gallery_brand_preset(applied_brand);
+        let applied_preset = crate::gallery::brands::gallery_brand_preset(applied_brand);
         let current_h = self.measure_card_height(
             text,
             card_w,
@@ -144,7 +144,7 @@ impl BrandPreview {
             density,
         );
         let preview_index = self.candidate.unwrap_or(applied_brand);
-        let preview_preset = tekes_ui_tokens::palette::gallery_brand_preset(preview_index);
+        let preview_preset = crate::gallery::brands::gallery_brand_preset(preview_index);
         let preview_title = if self.candidate.is_some() {
             "Candidate preview"
         } else {
@@ -182,8 +182,9 @@ impl BrandPreview {
         let x = frame.min_x();
         let y = frame.min_y();
         let w = frame.size.width.max(0.);
-        let current = Palette::new(ctx.theme, applied_brand).expect("registered Gallery brand");
-        let directions = tekes_ui_tokens::palette::gallery_brand_directions();
+        let current = crate::gallery::brands::brand_palette(ctx.theme, applied_brand)
+            .expect("registered Gallery brand");
+        let directions = crate::gallery::brands::gallery_brand_directions();
         let title_h = measure(
             ctx.text,
             "Choose a hue direction",
@@ -263,10 +264,11 @@ impl BrandPreview {
             self.cancel_inactive_buttons();
             return;
         }
-        let applied = tekes_ui_tokens::palette::gallery_brand_preset(applied_brand);
+        let applied = crate::gallery::brands::gallery_brand_preset(applied_brand);
         let preview_index = self.candidate.unwrap_or(applied_brand);
-        let preview_preset = tekes_ui_tokens::palette::gallery_brand_preset(preview_index);
-        let preview = Palette::new(ctx.theme, preview_index).expect("registered Gallery brand");
+        let preview_preset = crate::gallery::brands::gallery_brand_preset(preview_index);
+        let preview = crate::gallery::brands::brand_palette(ctx.theme, preview_index)
+            .expect("registered Gallery brand");
         let card_gap = 12.;
         let stacked = w < 720.;
         let card_w = if stacked {
@@ -586,7 +588,7 @@ impl BrandPreview {
         text: &mut super::super::text::TextEngine,
         width: f32,
         brand_index: usize,
-        preset: Option<&tekes_ui_tokens::palette::GalleryBrandPreset>,
+        preset: Option<&crate::gallery::brands::GalleryBrandPreset>,
         title: &str,
         controls: bool,
         density: usize,
@@ -595,7 +597,7 @@ impl BrandPreview {
         let title_h = measure(text, title, proposal::TextRole::UiBody, inner_w);
         let detail = preset.map_or_else(
             || {
-                tekes_ui_tokens::palette::gallery_brand_preset(brand_index).map_or_else(
+                crate::gallery::brands::gallery_brand_preset(brand_index).map_or_else(
                     || "Consumer reference".to_owned(),
                     |item| item.name.to_owned(),
                 )
@@ -968,13 +970,12 @@ impl BrandPreview {
 
     fn activate(&mut self, id: usize) -> Option<Option<usize>> {
         self.input.blur();
-        if (FAMILY_FIRST..FAMILY_FIRST + tekes_ui_tokens::palette::gallery_brand_directions().len())
+        if (FAMILY_FIRST..FAMILY_FIRST + crate::gallery::brands::gallery_brand_directions().len())
             .contains(&id)
         {
-            let direction =
-                &tekes_ui_tokens::palette::gallery_brand_directions()[id - FAMILY_FIRST];
+            let direction = &crate::gallery::brands::gallery_brand_directions()[id - FAMILY_FIRST];
             self.direction = Some(direction.id.to_string());
-            self.candidate = tekes_ui_tokens::palette::gallery_brand_presets()
+            self.candidate = crate::gallery::brands::gallery_brand_presets()
                 .iter()
                 .find(|preset| preset.recommended_for_direction.contains(&direction.id))
                 .map(|preset| preset.palette_index);
@@ -1303,7 +1304,7 @@ mod tests {
     fn narrow_large_text_layout_measures_to_all_interactive_controls() {
         let mut preview = BrandPreview {
             direction: Some("red".into()),
-            candidate: tekes_ui_tokens::palette::gallery_brand_presets()
+            candidate: crate::gallery::brands::gallery_brand_presets()
                 .iter()
                 .find(|preset| preset.id == "rose")
                 .map(|preset| preset.palette_index),

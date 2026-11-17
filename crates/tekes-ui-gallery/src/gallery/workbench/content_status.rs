@@ -51,7 +51,8 @@ pub(crate) fn matrix(
     clip: Rect,
     mut y: f32,
 ) -> f32 {
-    let palette = Palette::new(ctx.theme, s.brand).expect("registered Gallery brand");
+    let palette = crate::gallery::brands::brand_palette(ctx.theme, s.brand)
+        .expect("registered Gallery brand");
     scene.push_clip(clip);
     for (status, focus, title) in CASES {
         let h = ctx

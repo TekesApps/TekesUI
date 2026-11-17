@@ -191,9 +191,7 @@ impl Preview3D {
             let asset = if let Some(path) = std::env::var_os("TEKESUI_SCENE3D_ASSET") {
                 Asset3D::load(path)?
             } else {
-                Asset3D::from_slice(include_bytes!(
-                    "../../../tekes-ui-3d/assets/rubiks-cube.glb"
-                ))?
+                Asset3D::from_slice(include_bytes!("../../assets/rubiks-cube.glb"))?
             };
             let mut view = Scene3D::new(asset);
             if view.asset().clips().len() > 0 {
@@ -308,6 +306,7 @@ impl Preview3D {
             false
         }
     }
+    #[cfg(any(test, feature = "selftest"))]
     pub(super) fn start_rotation(&mut self, animate_clip: bool) {
         if let Some(Ok(state)) = &mut self.loaded {
             state.spin = true;
@@ -319,6 +318,7 @@ impl Preview3D {
             }
         }
     }
+    #[cfg(any(test, feature = "selftest"))]
     pub(super) fn frame_work(&self) -> (u64, usize) {
         match &self.loaded {
             Some(Ok(state)) => (

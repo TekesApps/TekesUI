@@ -16,15 +16,15 @@
     "design/source/base.tokens.json": "c2e36ebaf4030c7443656435220f5aa34113507c345e2ff5ab6e9414c44e5582",
     "design/source/contrast-pairs.json": "cc1fb9772f7ce9c672c79f5b3812b20aa9c2149cb09635350d26d69d00536370",
     "design/source/token-metadata.json": "88c7ca5bbf033c3abd39425fe220b06cdd137904ee812517c5119608d2d54cd9",
-    "design/system.json": "07d2ee582650f052f9d4240bd4ce82d34ddfb6303f403337246edcfb098ebe56",
+    "design/system.json": "efb5b4cfa3e461630c7f93aa7d801266b12febe7eafd2c92525fb9f2e786f1a8",
     "design/system.schema.json": "af11f7ef0f9f4b495181d72f0b8b4a3cb274e79fe3ce9e98d4d82b6aaa396393",
     "design/theme/artifact-lock.schema.json": "642653ddc482c053402ad6abe2f14c6d836ea282e16c709ca85792f8a435b32a",
     "design/theme/data-plot-pairs.json": "b75e6e57c155d596ba60a086406aa91cfa087009e6200847db1bbd25c2d442c7",
-    "design/theme/rules.json": "1b44512ec7a61a3e9032cce1d2e902129e3346af8266649232856834b90ab07d",
+    "design/theme/rules.json": "50b9f24026584e0c8e28c85c31a57e435bb71d22b3c939e3727cc6ea36bddf1a",
     "design/theme/rules.schema.json": "01c7c08a6ebd48db78e3e0a59f2f67b5f978b80b4acf8fcd00680cb254718dd6",
     "design/theme/theme.schema.json": "4c7d0f7195088487c4bf02b4b01a500baf1958caf6f6f62a436d9b5b37ea8f68",
     "design/theme/themes.json": "4b43f832f75825e6714d14a4f052948a67c5df78f5926fc62d22fd14e33b7df3",
-    "scripts/generate-theme-system.py": "83e89ae9776fb91da12e8ebfbd12a67df7baf9c54d2435105f7d641c93439d7b",
+    "scripts/generate-theme-system.py": "fc002028f85aa1a3636c2cba339ddc673caaab7969ad7dc9aa0c00d74b4e1d78",
     "scripts/merge-design-system.py": "668cc598b1a5f0802c3fc10e27e60ed36701a6c545c713f563bcbf0dc7491ea2"
   },
   "instances": [
@@ -886,7 +886,7 @@
               },
               "selected": {
                 "background": "#262623",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -904,7 +904,7 @@
               },
               "selected-hover": {
                 "background": "#2A2A27",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -913,7 +913,7 @@
               },
               "selected-pressed": {
                 "background": "#292926",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -2047,7 +2047,7 @@
             "progress-track": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -2282,7 +2282,7 @@
             "skeleton": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -2785,7 +2785,7 @@
               },
               "selected": {
                 "background": "#262623",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -2803,7 +2803,7 @@
               },
               "selected-hover": {
                 "background": "#2A2A27",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -2812,7 +2812,7 @@
               },
               "selected-pressed": {
                 "background": "#292926",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -3946,7 +3946,7 @@
             "progress-track": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -4181,7 +4181,7 @@
             "skeleton": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -4684,7 +4684,7 @@
               },
               "selected": {
                 "background": "#262623",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -4702,7 +4702,7 @@
               },
               "selected-hover": {
                 "background": "#2A2A27",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -4711,7 +4711,7 @@
               },
               "selected-pressed": {
                 "background": "#292926",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -5845,7 +5845,7 @@
             "progress-track": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -6080,7 +6080,7 @@
             "skeleton": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -6583,7 +6583,7 @@
               },
               "selected": {
                 "background": "#262623",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -6601,7 +6601,7 @@
               },
               "selected-hover": {
                 "background": "#2A2A27",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -6610,7 +6610,7 @@
               },
               "selected-pressed": {
                 "background": "#292926",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -7744,7 +7744,7 @@
             "progress-track": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -7979,7 +7979,7 @@
             "skeleton": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -8482,7 +8482,7 @@
               },
               "selected": {
                 "background": "#262623",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -8500,7 +8500,7 @@
               },
               "selected-hover": {
                 "background": "#2A2A27",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -8509,7 +8509,7 @@
               },
               "selected-pressed": {
                 "background": "#292926",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -9643,7 +9643,7 @@
             "progress-track": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -9878,7 +9878,7 @@
             "skeleton": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -10381,7 +10381,7 @@
               },
               "selected": {
                 "background": "#262623",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -10399,7 +10399,7 @@
               },
               "selected-hover": {
                 "background": "#2A2A27",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -10408,7 +10408,7 @@
               },
               "selected-pressed": {
                 "background": "#292926",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -11542,7 +11542,7 @@
             "progress-track": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -11777,7 +11777,7 @@
             "skeleton": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -12280,7 +12280,7 @@
               },
               "selected": {
                 "background": "#262623",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -12298,7 +12298,7 @@
               },
               "selected-hover": {
                 "background": "#2A2A27",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -12307,7 +12307,7 @@
               },
               "selected-pressed": {
                 "background": "#292926",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -13441,7 +13441,7 @@
             "progress-track": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -13676,7 +13676,7 @@
             "skeleton": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -14181,7 +14181,7 @@
               },
               "selected": {
                 "background": "#414C4C",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -14199,7 +14199,7 @@
               },
               "selected-hover": {
                 "background": "#465151",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -14208,7 +14208,7 @@
               },
               "selected-pressed": {
                 "background": "#4C4740",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -15342,7 +15342,7 @@
             "progress-track": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -15577,7 +15577,7 @@
             "skeleton": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -16080,7 +16080,7 @@
               },
               "selected": {
                 "background": "#414C4C",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -16098,7 +16098,7 @@
               },
               "selected-hover": {
                 "background": "#465151",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -16107,7 +16107,7 @@
               },
               "selected-pressed": {
                 "background": "#4C4740",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -17241,7 +17241,7 @@
             "progress-track": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -17476,7 +17476,7 @@
             "skeleton": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -17979,7 +17979,7 @@
               },
               "selected": {
                 "background": "#414C4C",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -17997,7 +17997,7 @@
               },
               "selected-hover": {
                 "background": "#465151",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -18006,7 +18006,7 @@
               },
               "selected-pressed": {
                 "background": "#4C4740",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -19140,7 +19140,7 @@
             "progress-track": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -19375,7 +19375,7 @@
             "skeleton": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -19878,7 +19878,7 @@
               },
               "selected": {
                 "background": "#414C4C",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -19896,7 +19896,7 @@
               },
               "selected-hover": {
                 "background": "#465151",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -19905,7 +19905,7 @@
               },
               "selected-pressed": {
                 "background": "#4C4740",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -21039,7 +21039,7 @@
             "progress-track": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -21274,7 +21274,7 @@
             "skeleton": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -21777,7 +21777,7 @@
               },
               "selected": {
                 "background": "#414C4C",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -21795,7 +21795,7 @@
               },
               "selected-hover": {
                 "background": "#465151",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -21804,7 +21804,7 @@
               },
               "selected-pressed": {
                 "background": "#4C4740",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -22938,7 +22938,7 @@
             "progress-track": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -23173,7 +23173,7 @@
             "skeleton": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -23676,7 +23676,7 @@
               },
               "selected": {
                 "background": "#414C4C",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -23694,7 +23694,7 @@
               },
               "selected-hover": {
                 "background": "#465151",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -23703,7 +23703,7 @@
               },
               "selected-pressed": {
                 "background": "#4C4740",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -24837,7 +24837,7 @@
             "progress-track": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -25072,7 +25072,7 @@
             "skeleton": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -25575,7 +25575,7 @@
               },
               "selected": {
                 "background": "#414C4C",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -25593,7 +25593,7 @@
               },
               "selected-hover": {
                 "background": "#465151",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -25602,7 +25602,7 @@
               },
               "selected-pressed": {
                 "background": "#4C4740",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -26736,7 +26736,7 @@
             "progress-track": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -26971,7 +26971,7 @@
             "skeleton": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -27476,7 +27476,7 @@
               },
               "selected": {
                 "background": "#ECEAE5",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -27494,7 +27494,7 @@
               },
               "selected-hover": {
                 "background": "#E7E5E0",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -27503,7 +27503,7 @@
               },
               "selected-pressed": {
                 "background": "#E7E5E0",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -28637,7 +28637,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
@@ -28872,7 +28872,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
@@ -29375,7 +29375,7 @@
               },
               "selected": {
                 "background": "#ECEAE5",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -29393,7 +29393,7 @@
               },
               "selected-hover": {
                 "background": "#E7E5E0",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -29402,7 +29402,7 @@
               },
               "selected-pressed": {
                 "background": "#E7E5E0",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -30536,7 +30536,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
@@ -30771,7 +30771,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
@@ -31274,7 +31274,7 @@
               },
               "selected": {
                 "background": "#ECEAE5",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -31292,7 +31292,7 @@
               },
               "selected-hover": {
                 "background": "#E7E5E0",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -31301,7 +31301,7 @@
               },
               "selected-pressed": {
                 "background": "#E7E5E0",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -32435,7 +32435,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
@@ -32670,7 +32670,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
@@ -33173,7 +33173,7 @@
               },
               "selected": {
                 "background": "#ECEAE5",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -33191,7 +33191,7 @@
               },
               "selected-hover": {
                 "background": "#E7E5E0",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -33200,7 +33200,7 @@
               },
               "selected-pressed": {
                 "background": "#E7E5E0",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -34334,7 +34334,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
@@ -34569,7 +34569,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
@@ -35072,7 +35072,7 @@
               },
               "selected": {
                 "background": "#ECEAE5",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -35090,7 +35090,7 @@
               },
               "selected-hover": {
                 "background": "#E7E5E0",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -35099,7 +35099,7 @@
               },
               "selected-pressed": {
                 "background": "#E7E5E0",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -36233,7 +36233,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
@@ -36468,7 +36468,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
@@ -36971,7 +36971,7 @@
               },
               "selected": {
                 "background": "#ECEAE5",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -36989,7 +36989,7 @@
               },
               "selected-hover": {
                 "background": "#E7E5E0",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -36998,7 +36998,7 @@
               },
               "selected-pressed": {
                 "background": "#E7E5E0",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -38132,7 +38132,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
@@ -38367,7 +38367,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
@@ -38870,7 +38870,7 @@
               },
               "selected": {
                 "background": "#ECEAE5",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -38888,7 +38888,7 @@
               },
               "selected-hover": {
                 "background": "#E7E5E0",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -38897,7 +38897,7 @@
               },
               "selected-pressed": {
                 "background": "#E7E5E0",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -40031,7 +40031,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
@@ -40266,7 +40266,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
@@ -40771,7 +40771,7 @@
               },
               "selected": {
                 "background": "#D8DEDE",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -40789,7 +40789,7 @@
               },
               "selected-hover": {
                 "background": "#CCD5D5",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -40798,7 +40798,7 @@
               },
               "selected-pressed": {
                 "background": "#D0CEC8",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -41932,7 +41932,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
@@ -42167,7 +42167,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
@@ -42670,7 +42670,7 @@
               },
               "selected": {
                 "background": "#D8DEDE",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -42688,7 +42688,7 @@
               },
               "selected-hover": {
                 "background": "#CCD5D5",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -42697,7 +42697,7 @@
               },
               "selected-pressed": {
                 "background": "#D0CEC8",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -43831,7 +43831,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
@@ -44066,7 +44066,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
@@ -44569,7 +44569,7 @@
               },
               "selected": {
                 "background": "#D8DEDE",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -44587,7 +44587,7 @@
               },
               "selected-hover": {
                 "background": "#CCD5D5",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -44596,7 +44596,7 @@
               },
               "selected-pressed": {
                 "background": "#D0CEC8",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -45730,7 +45730,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
@@ -45965,7 +45965,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
@@ -46468,7 +46468,7 @@
               },
               "selected": {
                 "background": "#D8DEDE",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -46486,7 +46486,7 @@
               },
               "selected-hover": {
                 "background": "#CCD5D5",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -46495,7 +46495,7 @@
               },
               "selected-pressed": {
                 "background": "#D0CEC8",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -47629,7 +47629,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
@@ -47864,7 +47864,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
@@ -48367,7 +48367,7 @@
               },
               "selected": {
                 "background": "#D8DEDE",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -48385,7 +48385,7 @@
               },
               "selected-hover": {
                 "background": "#CCD5D5",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -48394,7 +48394,7 @@
               },
               "selected-pressed": {
                 "background": "#D0CEC8",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -49528,7 +49528,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
@@ -49763,7 +49763,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
@@ -50266,7 +50266,7 @@
               },
               "selected": {
                 "background": "#D8DEDE",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -50284,7 +50284,7 @@
               },
               "selected-hover": {
                 "background": "#CCD5D5",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -50293,7 +50293,7 @@
               },
               "selected-pressed": {
                 "background": "#D0CEC8",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -51427,7 +51427,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
@@ -51662,7 +51662,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
@@ -52165,7 +52165,7 @@
               },
               "selected": {
                 "background": "#D8DEDE",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -52183,7 +52183,7 @@
               },
               "selected-hover": {
                 "background": "#CCD5D5",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -52192,7 +52192,7 @@
               },
               "selected-pressed": {
                 "background": "#D0CEC8",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -53326,7 +53326,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
@@ -53561,7 +53561,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
@@ -53881,7 +53881,7 @@
       "provenance": {
         "brand_config": "design/brand/config.json",
         "brand_config_sha256": "155eceec64c3aa33f4bc6b58a6ef7a1b071384b1dbbb55075a223e460d16e8a8",
-        "contract_sha256": "d60beec00933af90cca179564c3451fbc82d7f1f2d0508085128e5273cf929e9",
+        "contract_sha256": "e3803de06967013dd143cd318b27697d16f0849137061241792d77b2cffa88f0",
         "contract_version": "1.0.0",
         "overrides": {
           "neutral_base": {},
@@ -54749,7 +54749,7 @@
               },
               "selected": {
                 "background": "#262623",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -54767,7 +54767,7 @@
               },
               "selected-hover": {
                 "background": "#2A2A27",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -54776,7 +54776,7 @@
               },
               "selected-pressed": {
                 "background": "#292926",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -55910,7 +55910,7 @@
             "progress-track": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -56145,7 +56145,7 @@
             "skeleton": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -56648,7 +56648,7 @@
               },
               "selected": {
                 "background": "#262623",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -56666,7 +56666,7 @@
               },
               "selected-hover": {
                 "background": "#2A2A27",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -56675,7 +56675,7 @@
               },
               "selected-pressed": {
                 "background": "#292926",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -57809,7 +57809,7 @@
             "progress-track": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -58044,7 +58044,7 @@
             "skeleton": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -58547,7 +58547,7 @@
               },
               "selected": {
                 "background": "#262623",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -58565,7 +58565,7 @@
               },
               "selected-hover": {
                 "background": "#2A2A27",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -58574,7 +58574,7 @@
               },
               "selected-pressed": {
                 "background": "#292926",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -59708,7 +59708,7 @@
             "progress-track": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -59943,7 +59943,7 @@
             "skeleton": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -60446,7 +60446,7 @@
               },
               "selected": {
                 "background": "#262623",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -60464,7 +60464,7 @@
               },
               "selected-hover": {
                 "background": "#2A2A27",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -60473,7 +60473,7 @@
               },
               "selected-pressed": {
                 "background": "#292926",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -61607,7 +61607,7 @@
             "progress-track": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -61842,7 +61842,7 @@
             "skeleton": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -62345,7 +62345,7 @@
               },
               "selected": {
                 "background": "#262623",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -62363,7 +62363,7 @@
               },
               "selected-hover": {
                 "background": "#2A2A27",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -62372,7 +62372,7 @@
               },
               "selected-pressed": {
                 "background": "#292926",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -63506,7 +63506,7 @@
             "progress-track": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -63741,7 +63741,7 @@
             "skeleton": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -64244,7 +64244,7 @@
               },
               "selected": {
                 "background": "#262623",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -64262,7 +64262,7 @@
               },
               "selected-hover": {
                 "background": "#2A2A27",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -64271,7 +64271,7 @@
               },
               "selected-pressed": {
                 "background": "#292926",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -65405,7 +65405,7 @@
             "progress-track": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -65640,7 +65640,7 @@
             "skeleton": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -66143,7 +66143,7 @@
               },
               "selected": {
                 "background": "#262623",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -66161,7 +66161,7 @@
               },
               "selected-hover": {
                 "background": "#2A2A27",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -66170,7 +66170,7 @@
               },
               "selected-pressed": {
                 "background": "#292926",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -67304,7 +67304,7 @@
             "progress-track": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -67539,7 +67539,7 @@
             "skeleton": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -68044,7 +68044,7 @@
               },
               "selected": {
                 "background": "#414C4C",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -68062,7 +68062,7 @@
               },
               "selected-hover": {
                 "background": "#465151",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -68071,7 +68071,7 @@
               },
               "selected-pressed": {
                 "background": "#4C4740",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -69205,7 +69205,7 @@
             "progress-track": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -69440,7 +69440,7 @@
             "skeleton": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -69943,7 +69943,7 @@
               },
               "selected": {
                 "background": "#414C4C",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -69961,7 +69961,7 @@
               },
               "selected-hover": {
                 "background": "#465151",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -69970,7 +69970,7 @@
               },
               "selected-pressed": {
                 "background": "#4C4740",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -71104,7 +71104,7 @@
             "progress-track": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -71339,7 +71339,7 @@
             "skeleton": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -71842,7 +71842,7 @@
               },
               "selected": {
                 "background": "#414C4C",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -71860,7 +71860,7 @@
               },
               "selected-hover": {
                 "background": "#465151",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -71869,7 +71869,7 @@
               },
               "selected-pressed": {
                 "background": "#4C4740",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -73003,7 +73003,7 @@
             "progress-track": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -73238,7 +73238,7 @@
             "skeleton": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -73741,7 +73741,7 @@
               },
               "selected": {
                 "background": "#414C4C",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -73759,7 +73759,7 @@
               },
               "selected-hover": {
                 "background": "#465151",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -73768,7 +73768,7 @@
               },
               "selected-pressed": {
                 "background": "#4C4740",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -74902,7 +74902,7 @@
             "progress-track": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -75137,7 +75137,7 @@
             "skeleton": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -75640,7 +75640,7 @@
               },
               "selected": {
                 "background": "#414C4C",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -75658,7 +75658,7 @@
               },
               "selected-hover": {
                 "background": "#465151",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -75667,7 +75667,7 @@
               },
               "selected-pressed": {
                 "background": "#4C4740",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -76801,7 +76801,7 @@
             "progress-track": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -77036,7 +77036,7 @@
             "skeleton": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -77539,7 +77539,7 @@
               },
               "selected": {
                 "background": "#414C4C",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -77557,7 +77557,7 @@
               },
               "selected-hover": {
                 "background": "#465151",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -77566,7 +77566,7 @@
               },
               "selected-pressed": {
                 "background": "#4C4740",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -78700,7 +78700,7 @@
             "progress-track": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -78935,7 +78935,7 @@
             "skeleton": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -79438,7 +79438,7 @@
               },
               "selected": {
                 "background": "#414C4C",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -79456,7 +79456,7 @@
               },
               "selected-hover": {
                 "background": "#465151",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -79465,7 +79465,7 @@
               },
               "selected-pressed": {
                 "background": "#4C4740",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -80599,7 +80599,7 @@
             "progress-track": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -80834,7 +80834,7 @@
             "skeleton": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -81339,7 +81339,7 @@
               },
               "selected": {
                 "background": "#ECEAE5",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -81357,7 +81357,7 @@
               },
               "selected-hover": {
                 "background": "#E7E5E0",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -81366,7 +81366,7 @@
               },
               "selected-pressed": {
                 "background": "#E7E5E0",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -82500,7 +82500,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
@@ -82735,7 +82735,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
@@ -83238,7 +83238,7 @@
               },
               "selected": {
                 "background": "#ECEAE5",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -83256,7 +83256,7 @@
               },
               "selected-hover": {
                 "background": "#E7E5E0",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -83265,7 +83265,7 @@
               },
               "selected-pressed": {
                 "background": "#E7E5E0",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -84399,7 +84399,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
@@ -84634,7 +84634,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
@@ -85137,7 +85137,7 @@
               },
               "selected": {
                 "background": "#ECEAE5",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -85155,7 +85155,7 @@
               },
               "selected-hover": {
                 "background": "#E7E5E0",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -85164,7 +85164,7 @@
               },
               "selected-pressed": {
                 "background": "#E7E5E0",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -86298,7 +86298,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
@@ -86533,7 +86533,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
@@ -87036,7 +87036,7 @@
               },
               "selected": {
                 "background": "#ECEAE5",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -87054,7 +87054,7 @@
               },
               "selected-hover": {
                 "background": "#E7E5E0",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -87063,7 +87063,7 @@
               },
               "selected-pressed": {
                 "background": "#E7E5E0",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -88197,7 +88197,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
@@ -88432,7 +88432,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
@@ -88935,7 +88935,7 @@
               },
               "selected": {
                 "background": "#ECEAE5",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -88953,7 +88953,7 @@
               },
               "selected-hover": {
                 "background": "#E7E5E0",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -88962,7 +88962,7 @@
               },
               "selected-pressed": {
                 "background": "#E7E5E0",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -90096,7 +90096,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
@@ -90331,7 +90331,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
@@ -90834,7 +90834,7 @@
               },
               "selected": {
                 "background": "#ECEAE5",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -90852,7 +90852,7 @@
               },
               "selected-hover": {
                 "background": "#E7E5E0",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -90861,7 +90861,7 @@
               },
               "selected-pressed": {
                 "background": "#E7E5E0",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -91995,7 +91995,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
@@ -92230,7 +92230,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
@@ -92733,7 +92733,7 @@
               },
               "selected": {
                 "background": "#ECEAE5",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -92751,7 +92751,7 @@
               },
               "selected-hover": {
                 "background": "#E7E5E0",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -92760,7 +92760,7 @@
               },
               "selected-pressed": {
                 "background": "#E7E5E0",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -93894,7 +93894,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
@@ -94129,7 +94129,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
@@ -94634,7 +94634,7 @@
               },
               "selected": {
                 "background": "#D8DEDE",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -94652,7 +94652,7 @@
               },
               "selected-hover": {
                 "background": "#CCD5D5",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -94661,7 +94661,7 @@
               },
               "selected-pressed": {
                 "background": "#D0CEC8",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -95795,7 +95795,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
@@ -96030,7 +96030,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
@@ -96533,7 +96533,7 @@
               },
               "selected": {
                 "background": "#D8DEDE",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -96551,7 +96551,7 @@
               },
               "selected-hover": {
                 "background": "#CCD5D5",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -96560,7 +96560,7 @@
               },
               "selected-pressed": {
                 "background": "#D0CEC8",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -97694,7 +97694,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
@@ -97929,7 +97929,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
@@ -98432,7 +98432,7 @@
               },
               "selected": {
                 "background": "#D8DEDE",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -98450,7 +98450,7 @@
               },
               "selected-hover": {
                 "background": "#CCD5D5",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -98459,7 +98459,7 @@
               },
               "selected-pressed": {
                 "background": "#D0CEC8",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -99593,7 +99593,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
@@ -99828,7 +99828,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
@@ -100331,7 +100331,7 @@
               },
               "selected": {
                 "background": "#D8DEDE",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -100349,7 +100349,7 @@
               },
               "selected-hover": {
                 "background": "#CCD5D5",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -100358,7 +100358,7 @@
               },
               "selected-pressed": {
                 "background": "#D0CEC8",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -101492,7 +101492,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
@@ -101727,7 +101727,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
@@ -102230,7 +102230,7 @@
               },
               "selected": {
                 "background": "#D8DEDE",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -102248,7 +102248,7 @@
               },
               "selected-hover": {
                 "background": "#CCD5D5",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -102257,7 +102257,7 @@
               },
               "selected-pressed": {
                 "background": "#D0CEC8",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -103391,7 +103391,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
@@ -103626,7 +103626,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
@@ -104129,7 +104129,7 @@
               },
               "selected": {
                 "background": "#D8DEDE",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -104147,7 +104147,7 @@
               },
               "selected-hover": {
                 "background": "#CCD5D5",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -104156,7 +104156,7 @@
               },
               "selected-pressed": {
                 "background": "#D0CEC8",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -105290,7 +105290,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
@@ -105525,7 +105525,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
@@ -106028,7 +106028,7 @@
               },
               "selected": {
                 "background": "#D8DEDE",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -106046,7 +106046,7 @@
               },
               "selected-hover": {
                 "background": "#CCD5D5",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -106055,7 +106055,7 @@
               },
               "selected-pressed": {
                 "background": "#D0CEC8",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -107189,7 +107189,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
@@ -107424,7 +107424,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
@@ -107744,7 +107744,7 @@
       "provenance": {
         "brand_config": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/examples/example-blue.json",
         "brand_config_sha256": "e89eb95c16e4e2c964588b2a7eab7e24364e183b493cf3859f7bc7da7ab230bd",
-        "contract_sha256": "d60beec00933af90cca179564c3451fbc82d7f1f2d0508085128e5273cf929e9",
+        "contract_sha256": "e3803de06967013dd143cd318b27697d16f0849137061241792d77b2cffa88f0",
         "contract_version": "1.0.0",
         "overrides": {
           "neutral_base": {},
@@ -108612,7 +108612,7 @@
               },
               "selected": {
                 "background": "#262623",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -108630,7 +108630,7 @@
               },
               "selected-hover": {
                 "background": "#2A2A27",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -108639,7 +108639,7 @@
               },
               "selected-pressed": {
                 "background": "#292926",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -109773,7 +109773,7 @@
             "progress-track": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -110008,7 +110008,7 @@
             "skeleton": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -110511,7 +110511,7 @@
               },
               "selected": {
                 "background": "#262623",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -110529,7 +110529,7 @@
               },
               "selected-hover": {
                 "background": "#2A2A27",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -110538,7 +110538,7 @@
               },
               "selected-pressed": {
                 "background": "#292926",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -111672,7 +111672,7 @@
             "progress-track": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -111907,7 +111907,7 @@
             "skeleton": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -112410,7 +112410,7 @@
               },
               "selected": {
                 "background": "#262623",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -112428,7 +112428,7 @@
               },
               "selected-hover": {
                 "background": "#2A2A27",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -112437,7 +112437,7 @@
               },
               "selected-pressed": {
                 "background": "#292926",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -113571,7 +113571,7 @@
             "progress-track": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -113806,7 +113806,7 @@
             "skeleton": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -114309,7 +114309,7 @@
               },
               "selected": {
                 "background": "#262623",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -114327,7 +114327,7 @@
               },
               "selected-hover": {
                 "background": "#2A2A27",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -114336,7 +114336,7 @@
               },
               "selected-pressed": {
                 "background": "#292926",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -115470,7 +115470,7 @@
             "progress-track": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -115705,7 +115705,7 @@
             "skeleton": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -116208,7 +116208,7 @@
               },
               "selected": {
                 "background": "#262623",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -116226,7 +116226,7 @@
               },
               "selected-hover": {
                 "background": "#2A2A27",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -116235,7 +116235,7 @@
               },
               "selected-pressed": {
                 "background": "#292926",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -117369,7 +117369,7 @@
             "progress-track": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -117604,7 +117604,7 @@
             "skeleton": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -118107,7 +118107,7 @@
               },
               "selected": {
                 "background": "#262623",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -118125,7 +118125,7 @@
               },
               "selected-hover": {
                 "background": "#2A2A27",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -118134,7 +118134,7 @@
               },
               "selected-pressed": {
                 "background": "#292926",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -119268,7 +119268,7 @@
             "progress-track": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -119503,7 +119503,7 @@
             "skeleton": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -120006,7 +120006,7 @@
               },
               "selected": {
                 "background": "#262623",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -120024,7 +120024,7 @@
               },
               "selected-hover": {
                 "background": "#2A2A27",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -120033,7 +120033,7 @@
               },
               "selected-pressed": {
                 "background": "#292926",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": "#7F7C75",
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -121167,7 +121167,7 @@
             "progress-track": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -121402,7 +121402,7 @@
             "skeleton": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#78756E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
@@ -121907,7 +121907,7 @@
               },
               "selected": {
                 "background": "#414C4C",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -121925,7 +121925,7 @@
               },
               "selected-hover": {
                 "background": "#465151",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -121934,7 +121934,7 @@
               },
               "selected-pressed": {
                 "background": "#4C4740",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -123068,7 +123068,7 @@
             "progress-track": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -123303,7 +123303,7 @@
             "skeleton": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -123806,7 +123806,7 @@
               },
               "selected": {
                 "background": "#414C4C",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -123824,7 +123824,7 @@
               },
               "selected-hover": {
                 "background": "#465151",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -123833,7 +123833,7 @@
               },
               "selected-pressed": {
                 "background": "#4C4740",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -124967,7 +124967,7 @@
             "progress-track": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -125202,7 +125202,7 @@
             "skeleton": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -125705,7 +125705,7 @@
               },
               "selected": {
                 "background": "#414C4C",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -125723,7 +125723,7 @@
               },
               "selected-hover": {
                 "background": "#465151",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -125732,7 +125732,7 @@
               },
               "selected-pressed": {
                 "background": "#4C4740",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -126866,7 +126866,7 @@
             "progress-track": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -127101,7 +127101,7 @@
             "skeleton": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -127604,7 +127604,7 @@
               },
               "selected": {
                 "background": "#414C4C",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -127622,7 +127622,7 @@
               },
               "selected-hover": {
                 "background": "#465151",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -127631,7 +127631,7 @@
               },
               "selected-pressed": {
                 "background": "#4C4740",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -128765,7 +128765,7 @@
             "progress-track": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -129000,7 +129000,7 @@
             "skeleton": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -129503,7 +129503,7 @@
               },
               "selected": {
                 "background": "#414C4C",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -129521,7 +129521,7 @@
               },
               "selected-hover": {
                 "background": "#465151",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -129530,7 +129530,7 @@
               },
               "selected-pressed": {
                 "background": "#4C4740",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -130664,7 +130664,7 @@
             "progress-track": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -130899,7 +130899,7 @@
             "skeleton": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -131402,7 +131402,7 @@
               },
               "selected": {
                 "background": "#414C4C",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -131420,7 +131420,7 @@
               },
               "selected-hover": {
                 "background": "#465151",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -131429,7 +131429,7 @@
               },
               "selected-pressed": {
                 "background": "#4C4740",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -132563,7 +132563,7 @@
             "progress-track": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -132798,7 +132798,7 @@
             "skeleton": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -133301,7 +133301,7 @@
               },
               "selected": {
                 "background": "#414C4C",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -133319,7 +133319,7 @@
               },
               "selected-hover": {
                 "background": "#465151",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -133328,7 +133328,7 @@
               },
               "selected-pressed": {
                 "background": "#4C4740",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -134462,7 +134462,7 @@
             "progress-track": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -134697,7 +134697,7 @@
             "skeleton": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
@@ -135202,7 +135202,7 @@
               },
               "selected": {
                 "background": "#ECEAE5",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -135220,7 +135220,7 @@
               },
               "selected-hover": {
                 "background": "#E7E5E0",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -135229,7 +135229,7 @@
               },
               "selected-pressed": {
                 "background": "#E7E5E0",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -136363,7 +136363,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
@@ -136598,7 +136598,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
@@ -137101,7 +137101,7 @@
               },
               "selected": {
                 "background": "#ECEAE5",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -137119,7 +137119,7 @@
               },
               "selected-hover": {
                 "background": "#E7E5E0",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -137128,7 +137128,7 @@
               },
               "selected-pressed": {
                 "background": "#E7E5E0",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -138262,7 +138262,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
@@ -138497,7 +138497,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
@@ -139000,7 +139000,7 @@
               },
               "selected": {
                 "background": "#ECEAE5",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -139018,7 +139018,7 @@
               },
               "selected-hover": {
                 "background": "#E7E5E0",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -139027,7 +139027,7 @@
               },
               "selected-pressed": {
                 "background": "#E7E5E0",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -140161,7 +140161,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
@@ -140396,7 +140396,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
@@ -140899,7 +140899,7 @@
               },
               "selected": {
                 "background": "#ECEAE5",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -140917,7 +140917,7 @@
               },
               "selected-hover": {
                 "background": "#E7E5E0",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -140926,7 +140926,7 @@
               },
               "selected-pressed": {
                 "background": "#E7E5E0",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -142060,7 +142060,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
@@ -142295,7 +142295,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
@@ -142798,7 +142798,7 @@
               },
               "selected": {
                 "background": "#ECEAE5",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -142816,7 +142816,7 @@
               },
               "selected-hover": {
                 "background": "#E7E5E0",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -142825,7 +142825,7 @@
               },
               "selected-pressed": {
                 "background": "#E7E5E0",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -143959,7 +143959,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
@@ -144194,7 +144194,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
@@ -144697,7 +144697,7 @@
               },
               "selected": {
                 "background": "#ECEAE5",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -144715,7 +144715,7 @@
               },
               "selected-hover": {
                 "background": "#E7E5E0",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -144724,7 +144724,7 @@
               },
               "selected-pressed": {
                 "background": "#E7E5E0",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -145858,7 +145858,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
@@ -146093,7 +146093,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
@@ -146596,7 +146596,7 @@
               },
               "selected": {
                 "background": "#ECEAE5",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -146614,7 +146614,7 @@
               },
               "selected-hover": {
                 "background": "#E7E5E0",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -146623,7 +146623,7 @@
               },
               "selected-pressed": {
                 "background": "#E7E5E0",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": "#7C7972",
                 "helper": null,
                 "icon": "#34322F",
@@ -147757,7 +147757,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
@@ -147992,7 +147992,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#838079",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
@@ -148497,7 +148497,7 @@
               },
               "selected": {
                 "background": "#D8DEDE",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -148515,7 +148515,7 @@
               },
               "selected-hover": {
                 "background": "#CCD5D5",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -148524,7 +148524,7 @@
               },
               "selected-pressed": {
                 "background": "#D0CEC8",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -149658,7 +149658,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
@@ -149893,7 +149893,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
@@ -150396,7 +150396,7 @@
               },
               "selected": {
                 "background": "#D8DEDE",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -150414,7 +150414,7 @@
               },
               "selected-hover": {
                 "background": "#CCD5D5",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -150423,7 +150423,7 @@
               },
               "selected-pressed": {
                 "background": "#D0CEC8",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -151557,7 +151557,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
@@ -151792,7 +151792,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
@@ -152295,7 +152295,7 @@
               },
               "selected": {
                 "background": "#D8DEDE",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -152313,7 +152313,7 @@
               },
               "selected-hover": {
                 "background": "#CCD5D5",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -152322,7 +152322,7 @@
               },
               "selected-pressed": {
                 "background": "#D0CEC8",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -153456,7 +153456,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
@@ -153691,7 +153691,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
@@ -154194,7 +154194,7 @@
               },
               "selected": {
                 "background": "#D8DEDE",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -154212,7 +154212,7 @@
               },
               "selected-hover": {
                 "background": "#CCD5D5",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -154221,7 +154221,7 @@
               },
               "selected-pressed": {
                 "background": "#D0CEC8",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -155355,7 +155355,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
@@ -155590,7 +155590,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
@@ -156093,7 +156093,7 @@
               },
               "selected": {
                 "background": "#D8DEDE",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -156111,7 +156111,7 @@
               },
               "selected-hover": {
                 "background": "#CCD5D5",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -156120,7 +156120,7 @@
               },
               "selected-pressed": {
                 "background": "#D0CEC8",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -157254,7 +157254,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
@@ -157489,7 +157489,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
@@ -157992,7 +157992,7 @@
               },
               "selected": {
                 "background": "#D8DEDE",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -158010,7 +158010,7 @@
               },
               "selected-hover": {
                 "background": "#CCD5D5",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -158019,7 +158019,7 @@
               },
               "selected-pressed": {
                 "background": "#D0CEC8",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -159153,7 +159153,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
@@ -159388,7 +159388,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
@@ -159891,7 +159891,7 @@
               },
               "selected": {
                 "background": "#D8DEDE",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -159909,7 +159909,7 @@
               },
               "selected-hover": {
                 "background": "#CCD5D5",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -159918,7 +159918,7 @@
               },
               "selected-pressed": {
                 "background": "#D0CEC8",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#141412",
@@ -161052,7 +161052,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
@@ -161287,7 +161287,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
@@ -161607,7 +161607,7 @@
       "provenance": {
         "brand_config": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/examples/example-clay.json",
         "brand_config_sha256": "c5a2160d582d90e0488810e66a6b7185c6bb3ff84876eed468c84a1d7e85ca52",
-        "contract_sha256": "d60beec00933af90cca179564c3451fbc82d7f1f2d0508085128e5273cf929e9",
+        "contract_sha256": "e3803de06967013dd143cd318b27697d16f0849137061241792d77b2cffa88f0",
         "contract_version": "1.0.0",
         "overrides": {
           "neutral_base": {},
@@ -162567,7 +162567,7 @@
               },
               "selected": {
                 "background": "#262623",
-                "boundary": "#A3A39E",
+                "boundary": "#2C2C28",
                 "focus": "#B0B0AC",
                 "helper": null,
                 "icon": "#E7E7E7",
@@ -162585,7 +162585,7 @@
               },
               "selected-hover": {
                 "background": "#2A2A27",
-                "boundary": "#A3A39E",
+                "boundary": "#2C2C28",
                 "focus": "#B0B0AC",
                 "helper": null,
                 "icon": "#E7E7E7",
@@ -162594,7 +162594,7 @@
               },
               "selected-pressed": {
                 "background": "#292926",
-                "boundary": "#A3A39E",
+                "boundary": "#2C2C28",
                 "focus": "#B0B0AC",
                 "helper": null,
                 "icon": "#E7E7E7",
@@ -163728,7 +163728,7 @@
             "progress-track": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#A3A39E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#E7E7E7",
@@ -163963,7 +163963,7 @@
             "skeleton": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#A3A39E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#E7E7E7",
@@ -164466,7 +164466,7 @@
               },
               "selected": {
                 "background": "#262623",
-                "boundary": "#A3A39E",
+                "boundary": "#2C2C28",
                 "focus": "#B0B0AC",
                 "helper": null,
                 "icon": "#E7E7E7",
@@ -164484,7 +164484,7 @@
               },
               "selected-hover": {
                 "background": "#2A2A27",
-                "boundary": "#A3A39E",
+                "boundary": "#2C2C28",
                 "focus": "#B0B0AC",
                 "helper": null,
                 "icon": "#E7E7E7",
@@ -164493,7 +164493,7 @@
               },
               "selected-pressed": {
                 "background": "#292926",
-                "boundary": "#A3A39E",
+                "boundary": "#2C2C28",
                 "focus": "#B0B0AC",
                 "helper": null,
                 "icon": "#E7E7E7",
@@ -165627,7 +165627,7 @@
             "progress-track": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#A3A39E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#E7E7E7",
@@ -165862,7 +165862,7 @@
             "skeleton": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#A3A39E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#E7E7E7",
@@ -166365,7 +166365,7 @@
               },
               "selected": {
                 "background": "#262623",
-                "boundary": "#A3A39E",
+                "boundary": "#2C2C28",
                 "focus": "#B0B0AC",
                 "helper": null,
                 "icon": "#E7E7E7",
@@ -166383,7 +166383,7 @@
               },
               "selected-hover": {
                 "background": "#2A2A27",
-                "boundary": "#A3A39E",
+                "boundary": "#2C2C28",
                 "focus": "#B0B0AC",
                 "helper": null,
                 "icon": "#E7E7E7",
@@ -166392,7 +166392,7 @@
               },
               "selected-pressed": {
                 "background": "#292926",
-                "boundary": "#A3A39E",
+                "boundary": "#2C2C28",
                 "focus": "#B0B0AC",
                 "helper": null,
                 "icon": "#E7E7E7",
@@ -167526,7 +167526,7 @@
             "progress-track": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#A3A39E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#E7E7E7",
@@ -167761,7 +167761,7 @@
             "skeleton": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#A3A39E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#E7E7E7",
@@ -168264,7 +168264,7 @@
               },
               "selected": {
                 "background": "#262623",
-                "boundary": "#A3A39E",
+                "boundary": "#2C2C28",
                 "focus": "#B0B0AC",
                 "helper": null,
                 "icon": "#E7E7E7",
@@ -168282,7 +168282,7 @@
               },
               "selected-hover": {
                 "background": "#2A2A27",
-                "boundary": "#A3A39E",
+                "boundary": "#2C2C28",
                 "focus": "#B0B0AC",
                 "helper": null,
                 "icon": "#E7E7E7",
@@ -168291,7 +168291,7 @@
               },
               "selected-pressed": {
                 "background": "#292926",
-                "boundary": "#A3A39E",
+                "boundary": "#2C2C28",
                 "focus": "#B0B0AC",
                 "helper": null,
                 "icon": "#E7E7E7",
@@ -169425,7 +169425,7 @@
             "progress-track": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#A3A39E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#E7E7E7",
@@ -169660,7 +169660,7 @@
             "skeleton": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#A3A39E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#E7E7E7",
@@ -170163,7 +170163,7 @@
               },
               "selected": {
                 "background": "#262623",
-                "boundary": "#A3A39E",
+                "boundary": "#2C2C28",
                 "focus": "#B0B0AC",
                 "helper": null,
                 "icon": "#E7E7E7",
@@ -170181,7 +170181,7 @@
               },
               "selected-hover": {
                 "background": "#2A2A27",
-                "boundary": "#A3A39E",
+                "boundary": "#2C2C28",
                 "focus": "#B0B0AC",
                 "helper": null,
                 "icon": "#E7E7E7",
@@ -170190,7 +170190,7 @@
               },
               "selected-pressed": {
                 "background": "#292926",
-                "boundary": "#A3A39E",
+                "boundary": "#2C2C28",
                 "focus": "#B0B0AC",
                 "helper": null,
                 "icon": "#E7E7E7",
@@ -171324,7 +171324,7 @@
             "progress-track": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#A3A39E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#E7E7E7",
@@ -171559,7 +171559,7 @@
             "skeleton": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#A3A39E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#E7E7E7",
@@ -172062,7 +172062,7 @@
               },
               "selected": {
                 "background": "#262623",
-                "boundary": "#A3A39E",
+                "boundary": "#2C2C28",
                 "focus": "#B0B0AC",
                 "helper": null,
                 "icon": "#E7E7E7",
@@ -172080,7 +172080,7 @@
               },
               "selected-hover": {
                 "background": "#2A2A27",
-                "boundary": "#A3A39E",
+                "boundary": "#2C2C28",
                 "focus": "#B0B0AC",
                 "helper": null,
                 "icon": "#E7E7E7",
@@ -172089,7 +172089,7 @@
               },
               "selected-pressed": {
                 "background": "#292926",
-                "boundary": "#A3A39E",
+                "boundary": "#2C2C28",
                 "focus": "#B0B0AC",
                 "helper": null,
                 "icon": "#E7E7E7",
@@ -173223,7 +173223,7 @@
             "progress-track": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#A3A39E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#E7E7E7",
@@ -173458,7 +173458,7 @@
             "skeleton": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#A3A39E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#E7E7E7",
@@ -173961,7 +173961,7 @@
               },
               "selected": {
                 "background": "#262623",
-                "boundary": "#A3A39E",
+                "boundary": "#2C2C28",
                 "focus": "#B0B0AC",
                 "helper": null,
                 "icon": "#E7E7E7",
@@ -173979,7 +173979,7 @@
               },
               "selected-hover": {
                 "background": "#2A2A27",
-                "boundary": "#A3A39E",
+                "boundary": "#2C2C28",
                 "focus": "#B0B0AC",
                 "helper": null,
                 "icon": "#E7E7E7",
@@ -173988,7 +173988,7 @@
               },
               "selected-pressed": {
                 "background": "#292926",
-                "boundary": "#A3A39E",
+                "boundary": "#2C2C28",
                 "focus": "#B0B0AC",
                 "helper": null,
                 "icon": "#E7E7E7",
@@ -175122,7 +175122,7 @@
             "progress-track": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#A3A39E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#E7E7E7",
@@ -175357,7 +175357,7 @@
             "skeleton": {
               "rest": {
                 "background": "#1E1E1B",
-                "boundary": "#A3A39E",
+                "boundary": "#2C2C28",
                 "focus": null,
                 "helper": null,
                 "icon": "#E7E7E7",
@@ -175862,7 +175862,7 @@
               },
               "selected": {
                 "background": "#414C4C",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#EEEEEE",
@@ -175880,7 +175880,7 @@
               },
               "selected-hover": {
                 "background": "#465151",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#EEEEEE",
@@ -175889,7 +175889,7 @@
               },
               "selected-pressed": {
                 "background": "#4C4740",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#EEEEEE",
@@ -177023,7 +177023,7 @@
             "progress-track": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#EEEEEE",
@@ -177258,7 +177258,7 @@
             "skeleton": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#EEEEEE",
@@ -177761,7 +177761,7 @@
               },
               "selected": {
                 "background": "#414C4C",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#EEEEEE",
@@ -177779,7 +177779,7 @@
               },
               "selected-hover": {
                 "background": "#465151",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#EEEEEE",
@@ -177788,7 +177788,7 @@
               },
               "selected-pressed": {
                 "background": "#4C4740",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#EEEEEE",
@@ -178922,7 +178922,7 @@
             "progress-track": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#EEEEEE",
@@ -179157,7 +179157,7 @@
             "skeleton": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#EEEEEE",
@@ -179660,7 +179660,7 @@
               },
               "selected": {
                 "background": "#414C4C",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#EEEEEE",
@@ -179678,7 +179678,7 @@
               },
               "selected-hover": {
                 "background": "#465151",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#EEEEEE",
@@ -179687,7 +179687,7 @@
               },
               "selected-pressed": {
                 "background": "#4C4740",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#EEEEEE",
@@ -180821,7 +180821,7 @@
             "progress-track": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#EEEEEE",
@@ -181056,7 +181056,7 @@
             "skeleton": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#EEEEEE",
@@ -181559,7 +181559,7 @@
               },
               "selected": {
                 "background": "#414C4C",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#EEEEEE",
@@ -181577,7 +181577,7 @@
               },
               "selected-hover": {
                 "background": "#465151",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#EEEEEE",
@@ -181586,7 +181586,7 @@
               },
               "selected-pressed": {
                 "background": "#4C4740",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#EEEEEE",
@@ -182720,7 +182720,7 @@
             "progress-track": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#EEEEEE",
@@ -182955,7 +182955,7 @@
             "skeleton": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#EEEEEE",
@@ -183458,7 +183458,7 @@
               },
               "selected": {
                 "background": "#414C4C",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#EEEEEE",
@@ -183476,7 +183476,7 @@
               },
               "selected-hover": {
                 "background": "#465151",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#EEEEEE",
@@ -183485,7 +183485,7 @@
               },
               "selected-pressed": {
                 "background": "#4C4740",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#EEEEEE",
@@ -184619,7 +184619,7 @@
             "progress-track": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#EEEEEE",
@@ -184854,7 +184854,7 @@
             "skeleton": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#EEEEEE",
@@ -185357,7 +185357,7 @@
               },
               "selected": {
                 "background": "#414C4C",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#EEEEEE",
@@ -185375,7 +185375,7 @@
               },
               "selected-hover": {
                 "background": "#465151",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#EEEEEE",
@@ -185384,7 +185384,7 @@
               },
               "selected-pressed": {
                 "background": "#4C4740",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#EEEEEE",
@@ -186518,7 +186518,7 @@
             "progress-track": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#EEEEEE",
@@ -186753,7 +186753,7 @@
             "skeleton": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#EEEEEE",
@@ -187256,7 +187256,7 @@
               },
               "selected": {
                 "background": "#414C4C",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#EEEEEE",
@@ -187274,7 +187274,7 @@
               },
               "selected-hover": {
                 "background": "#465151",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#EEEEEE",
@@ -187283,7 +187283,7 @@
               },
               "selected-pressed": {
                 "background": "#4C4740",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": "#FFFFFF",
                 "helper": null,
                 "icon": "#EEEEEE",
@@ -188417,7 +188417,7 @@
             "progress-track": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#EEEEEE",
@@ -188652,7 +188652,7 @@
             "skeleton": {
               "rest": {
                 "background": "#171715",
-                "boundary": "#C8C0B4",
+                "boundary": "#9C9488",
                 "focus": null,
                 "helper": null,
                 "icon": "#EEEEEE",
@@ -189157,7 +189157,7 @@
               },
               "selected": {
                 "background": "#ECEAE5",
-                "boundary": "#444444",
+                "boundary": "#E4E2DC",
                 "focus": "#5E5E5B",
                 "helper": null,
                 "icon": "#181818",
@@ -189175,7 +189175,7 @@
               },
               "selected-hover": {
                 "background": "#E7E5E0",
-                "boundary": "#444444",
+                "boundary": "#E4E2DC",
                 "focus": "#5E5E5B",
                 "helper": null,
                 "icon": "#181818",
@@ -189184,7 +189184,7 @@
               },
               "selected-pressed": {
                 "background": "#E7E5E0",
-                "boundary": "#444444",
+                "boundary": "#E4E2DC",
                 "focus": "#5E5E5B",
                 "helper": null,
                 "icon": "#181818",
@@ -190318,7 +190318,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#444444",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#181818",
@@ -190553,7 +190553,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#444444",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#181818",
@@ -191056,7 +191056,7 @@
               },
               "selected": {
                 "background": "#ECEAE5",
-                "boundary": "#444444",
+                "boundary": "#E4E2DC",
                 "focus": "#5E5E5B",
                 "helper": null,
                 "icon": "#181818",
@@ -191074,7 +191074,7 @@
               },
               "selected-hover": {
                 "background": "#E7E5E0",
-                "boundary": "#444444",
+                "boundary": "#E4E2DC",
                 "focus": "#5E5E5B",
                 "helper": null,
                 "icon": "#181818",
@@ -191083,7 +191083,7 @@
               },
               "selected-pressed": {
                 "background": "#E7E5E0",
-                "boundary": "#444444",
+                "boundary": "#E4E2DC",
                 "focus": "#5E5E5B",
                 "helper": null,
                 "icon": "#181818",
@@ -192217,7 +192217,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#444444",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#181818",
@@ -192452,7 +192452,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#444444",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#181818",
@@ -192955,7 +192955,7 @@
               },
               "selected": {
                 "background": "#ECEAE5",
-                "boundary": "#444444",
+                "boundary": "#E4E2DC",
                 "focus": "#5E5E5B",
                 "helper": null,
                 "icon": "#181818",
@@ -192973,7 +192973,7 @@
               },
               "selected-hover": {
                 "background": "#E7E5E0",
-                "boundary": "#444444",
+                "boundary": "#E4E2DC",
                 "focus": "#5E5E5B",
                 "helper": null,
                 "icon": "#181818",
@@ -192982,7 +192982,7 @@
               },
               "selected-pressed": {
                 "background": "#E7E5E0",
-                "boundary": "#444444",
+                "boundary": "#E4E2DC",
                 "focus": "#5E5E5B",
                 "helper": null,
                 "icon": "#181818",
@@ -194116,7 +194116,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#444444",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#181818",
@@ -194351,7 +194351,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#444444",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#181818",
@@ -194854,7 +194854,7 @@
               },
               "selected": {
                 "background": "#ECEAE5",
-                "boundary": "#444444",
+                "boundary": "#E4E2DC",
                 "focus": "#5E5E5B",
                 "helper": null,
                 "icon": "#181818",
@@ -194872,7 +194872,7 @@
               },
               "selected-hover": {
                 "background": "#E7E5E0",
-                "boundary": "#444444",
+                "boundary": "#E4E2DC",
                 "focus": "#5E5E5B",
                 "helper": null,
                 "icon": "#181818",
@@ -194881,7 +194881,7 @@
               },
               "selected-pressed": {
                 "background": "#E7E5E0",
-                "boundary": "#444444",
+                "boundary": "#E4E2DC",
                 "focus": "#5E5E5B",
                 "helper": null,
                 "icon": "#181818",
@@ -196015,7 +196015,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#444444",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#181818",
@@ -196250,7 +196250,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#444444",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#181818",
@@ -196753,7 +196753,7 @@
               },
               "selected": {
                 "background": "#ECEAE5",
-                "boundary": "#444444",
+                "boundary": "#E4E2DC",
                 "focus": "#5E5E5B",
                 "helper": null,
                 "icon": "#181818",
@@ -196771,7 +196771,7 @@
               },
               "selected-hover": {
                 "background": "#E7E5E0",
-                "boundary": "#444444",
+                "boundary": "#E4E2DC",
                 "focus": "#5E5E5B",
                 "helper": null,
                 "icon": "#181818",
@@ -196780,7 +196780,7 @@
               },
               "selected-pressed": {
                 "background": "#E7E5E0",
-                "boundary": "#444444",
+                "boundary": "#E4E2DC",
                 "focus": "#5E5E5B",
                 "helper": null,
                 "icon": "#181818",
@@ -197914,7 +197914,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#444444",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#181818",
@@ -198149,7 +198149,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#444444",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#181818",
@@ -198652,7 +198652,7 @@
               },
               "selected": {
                 "background": "#ECEAE5",
-                "boundary": "#444444",
+                "boundary": "#E4E2DC",
                 "focus": "#5E5E5B",
                 "helper": null,
                 "icon": "#181818",
@@ -198670,7 +198670,7 @@
               },
               "selected-hover": {
                 "background": "#E7E5E0",
-                "boundary": "#444444",
+                "boundary": "#E4E2DC",
                 "focus": "#5E5E5B",
                 "helper": null,
                 "icon": "#181818",
@@ -198679,7 +198679,7 @@
               },
               "selected-pressed": {
                 "background": "#E7E5E0",
-                "boundary": "#444444",
+                "boundary": "#E4E2DC",
                 "focus": "#5E5E5B",
                 "helper": null,
                 "icon": "#181818",
@@ -199813,7 +199813,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#444444",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#181818",
@@ -200048,7 +200048,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#444444",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#181818",
@@ -200551,7 +200551,7 @@
               },
               "selected": {
                 "background": "#ECEAE5",
-                "boundary": "#444444",
+                "boundary": "#E4E2DC",
                 "focus": "#5E5E5B",
                 "helper": null,
                 "icon": "#181818",
@@ -200569,7 +200569,7 @@
               },
               "selected-hover": {
                 "background": "#E7E5E0",
-                "boundary": "#444444",
+                "boundary": "#E4E2DC",
                 "focus": "#5E5E5B",
                 "helper": null,
                 "icon": "#181818",
@@ -200578,7 +200578,7 @@
               },
               "selected-pressed": {
                 "background": "#E7E5E0",
-                "boundary": "#444444",
+                "boundary": "#E4E2DC",
                 "focus": "#5E5E5B",
                 "helper": null,
                 "icon": "#181818",
@@ -201712,7 +201712,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#444444",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#181818",
@@ -201947,7 +201947,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FDFCFA",
-                "boundary": "#444444",
+                "boundary": "#E4E2DC",
                 "focus": null,
                 "helper": null,
                 "icon": "#181818",
@@ -202452,7 +202452,7 @@
               },
               "selected": {
                 "background": "#D8DEDE",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#111111",
@@ -202470,7 +202470,7 @@
               },
               "selected-hover": {
                 "background": "#CCD5D5",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#111111",
@@ -202479,7 +202479,7 @@
               },
               "selected-pressed": {
                 "background": "#D0CEC8",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#111111",
@@ -203613,7 +203613,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#111111",
@@ -203848,7 +203848,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#111111",
@@ -204351,7 +204351,7 @@
               },
               "selected": {
                 "background": "#D8DEDE",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#111111",
@@ -204369,7 +204369,7 @@
               },
               "selected-hover": {
                 "background": "#CCD5D5",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#111111",
@@ -204378,7 +204378,7 @@
               },
               "selected-pressed": {
                 "background": "#D0CEC8",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#111111",
@@ -205512,7 +205512,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#111111",
@@ -205747,7 +205747,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#111111",
@@ -206250,7 +206250,7 @@
               },
               "selected": {
                 "background": "#D8DEDE",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#111111",
@@ -206268,7 +206268,7 @@
               },
               "selected-hover": {
                 "background": "#CCD5D5",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#111111",
@@ -206277,7 +206277,7 @@
               },
               "selected-pressed": {
                 "background": "#D0CEC8",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#111111",
@@ -207411,7 +207411,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#111111",
@@ -207646,7 +207646,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#111111",
@@ -208149,7 +208149,7 @@
               },
               "selected": {
                 "background": "#D8DEDE",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#111111",
@@ -208167,7 +208167,7 @@
               },
               "selected-hover": {
                 "background": "#CCD5D5",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#111111",
@@ -208176,7 +208176,7 @@
               },
               "selected-pressed": {
                 "background": "#D0CEC8",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#111111",
@@ -209310,7 +209310,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#111111",
@@ -209545,7 +209545,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#111111",
@@ -210048,7 +210048,7 @@
               },
               "selected": {
                 "background": "#D8DEDE",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#111111",
@@ -210066,7 +210066,7 @@
               },
               "selected-hover": {
                 "background": "#CCD5D5",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#111111",
@@ -210075,7 +210075,7 @@
               },
               "selected-pressed": {
                 "background": "#D0CEC8",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#111111",
@@ -211209,7 +211209,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#111111",
@@ -211444,7 +211444,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#111111",
@@ -211947,7 +211947,7 @@
               },
               "selected": {
                 "background": "#D8DEDE",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#111111",
@@ -211965,7 +211965,7 @@
               },
               "selected-hover": {
                 "background": "#CCD5D5",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#111111",
@@ -211974,7 +211974,7 @@
               },
               "selected-pressed": {
                 "background": "#D0CEC8",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#111111",
@@ -213108,7 +213108,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#111111",
@@ -213343,7 +213343,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#111111",
@@ -213846,7 +213846,7 @@
               },
               "selected": {
                 "background": "#D8DEDE",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#111111",
@@ -213864,7 +213864,7 @@
               },
               "selected-hover": {
                 "background": "#CCD5D5",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#111111",
@@ -213873,7 +213873,7 @@
               },
               "selected-pressed": {
                 "background": "#D0CEC8",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": "#111111",
                 "helper": null,
                 "icon": "#111111",
@@ -215007,7 +215007,7 @@
             "progress-track": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#111111",
@@ -215242,7 +215242,7 @@
             "skeleton": {
               "rest": {
                 "background": "#FFFFFF",
-                "boundary": "#4E4A41",
+                "boundary": "#8C867D",
                 "focus": null,
                 "helper": null,
                 "icon": "#111111",
@@ -215562,7 +215562,7 @@
       "provenance": {
         "brand_config": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/examples/example-blue.json",
         "brand_config_sha256": "e89eb95c16e4e2c964588b2a7eab7e24364e183b493cf3859f7bc7da7ab230bd",
-        "contract_sha256": "d60beec00933af90cca179564c3451fbc82d7f1f2d0508085128e5273cf929e9",
+        "contract_sha256": "e3803de06967013dd143cd318b27697d16f0849137061241792d77b2cffa88f0",
         "contract_version": "1.0.0",
         "overrides": {
           "neutral_base": {
@@ -215712,10 +215712,10 @@
       "design/system.schema.json": "af11f7ef0f9f4b495181d72f0b8b4a3cb274e79fe3ce9e98d4d82b6aaa396393",
       "design/theme/artifact-lock.schema.json": "642653ddc482c053402ad6abe2f14c6d836ea282e16c709ca85792f8a435b32a",
       "design/theme/data-plot-pairs.json": "b75e6e57c155d596ba60a086406aa91cfa087009e6200847db1bbd25c2d442c7",
-      "design/theme/rules.json": "1b44512ec7a61a3e9032cce1d2e902129e3346af8266649232856834b90ab07d",
+      "design/theme/rules.json": "50b9f24026584e0c8e28c85c31a57e435bb71d22b3c939e3727cc6ea36bddf1a",
       "design/theme/rules.schema.json": "01c7c08a6ebd48db78e3e0a59f2f67b5f978b80b4acf8fcd00680cb254718dd6",
       "design/theme/theme.schema.json": "4c7d0f7195088487c4bf02b4b01a500baf1958caf6f6f62a436d9b5b37ea8f68",
-      "scripts/generate-theme-system.py": "83e89ae9776fb91da12e8ebfbd12a67df7baf9c54d2435105f7d641c93439d7b",
+      "scripts/generate-theme-system.py": "fc002028f85aa1a3636c2cba339ddc673caaab7969ad7dc9aa0c00d74b4e1d78",
       "scripts/merge-design-system.py": "668cc598b1a5f0802c3fc10e27e60ed36701a6c545c713f563bcbf0dc7491ea2"
     },
     "rules_version": "1.10.0",

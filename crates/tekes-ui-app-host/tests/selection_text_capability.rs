@@ -1,9 +1,8 @@
 #![cfg(target_os = "macos")]
-#[path = "../../../examples/composition-consumer/tests/support/coretext.rs"]
-mod coretext;
 // AppHost now consumes the platform snapshot directly (window_accessibility.rs).
 use tekes_ui_controls::{ButtonTextRenderer, TextSurface, composition::*, layout::MeasuredChild};
-use tekes_ui_platform_macos::{AccessibilityRole, content_accessibility as platform};
+use tekes_ui_macos_bridge::{content_accessibility as platform, coretext_host::CoreTextHost};
+use tekes_ui_platform_macos::AccessibilityRole;
 use tekes_ui_scene::{Rect, Scene, Size};
 use tekes_ui_tokens::Theme;
 
@@ -113,8 +112,10 @@ fn original_coretext_surface_cannot_turn_selection_roles_into_text_owners_in_pub
     ] {
         let (mut h, id) = host(role);
         let frame = Rect::new(0., 0., 300., 100.);
-        let mut text = coretext::Text::new(1.);
-        text.services = true;
+        let mut text = CoreTextHost::new()
+            .with_type_scale(1.0)
+            .with_backing_scale(2.0)
+            .with_text_services(true);
         h.render(
             &mut Scene::new(),
             &mut text,

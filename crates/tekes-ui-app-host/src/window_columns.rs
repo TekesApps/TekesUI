@@ -176,9 +176,8 @@ impl Host {
     pub(super) fn content_accessibility_publication(
         &mut self,
         active: bool,
-    ) -> Option<tekes_ui_platform_macos::content_accessibility::WindowAccessibilityPublication>
-    {
-        use tekes_ui_platform_macos::content_accessibility::{
+    ) -> Option<tekes_ui_macos_bridge::content_accessibility::WindowAccessibilityPublication> {
+        use tekes_ui_macos_bridge::content_accessibility::{
             ContentAccessibilityOwner, ContentAccessibilitySnapshot, WindowAccessibilityPublication,
         };
         if !active {
@@ -228,7 +227,7 @@ impl Host {
                         .find(|(_, i, t)| *i == index && *t == target)
                     {
                         keys.insert(
-                            tekes_ui_platform_macos::content_accessibility::content_key(
+                            tekes_ui_macos_bridge::content_accessibility::content_key(
                                 panel.mounted_toolbar.host.content_host(),
                                 node.node.id,
                                 part,
@@ -312,6 +311,7 @@ impl Host {
             return Ok(false);
         }
         if let Event::Accessibility { target, action } = event {
+            use tekes_ui_macos_bridge::WindowContentAccessibilityExt;
             let Some(publication) = w.content_accessibility_publication() else {
                 return Ok(false);
             };
@@ -400,7 +400,7 @@ impl Host {
             | Event::TextCommand(_) => local.window_event(event, w, &mut self.text),
             Event::Scroll(s) => {
                 if std::env::var_os("TEKESUI_APPHOST_BODY_SCROLL_TRACE").is_some() {
-                    eprintln!(
+                    host_diag!(
                         "APPHOST_BODY_SCROLL owner={} position={:?} delta={:?} precise={} phase={:?} momentum={:?} timestamp={}",
                         local.id(),
                         s.position,
@@ -433,19 +433,26 @@ mod tests {
         };
         let dark = make(tekes_ui_tokens::Theme::DARK);
         let light = make(tekes_ui_tokens::Theme::LIGHT);
-        let brand = tekes_ui_tokens::palette::gallery_brand_presets()
-            .iter()
-            .find(|p| p.palette_index != 0)
-            .unwrap()
-            .palette_index;
-        source.set(Palette::new(tekes_ui_tokens::Theme::LIGHT_INCREASED, brand).unwrap());
+        fn custom_accent(
+            _id: usize,
+            role: &str,
+            _theme: tekes_ui_tokens::Theme,
+        ) -> Option<tekes_ui_tokens::Rgba> {
+            (role == "action-primary-ground").then(|| tekes_ui_tokens::Rgba::rgb8(18, 52, 86))
+        }
+        let custom =
+            tekes_ui_tokens::CustomPaletteSource::new(9, "window-column-test", custom_accent);
+        source.set(Palette::from_custom(
+            tekes_ui_tokens::Theme::LIGHT_INCREASED,
+            custom,
+        ));
         assert_eq!(
             dark.palette(),
-            Palette::new(tekes_ui_tokens::Theme::DARK, brand).unwrap()
+            Palette::from_custom(tekes_ui_tokens::Theme::DARK, custom)
         );
         assert_eq!(
             light.palette(),
-            Palette::new(tekes_ui_tokens::Theme::LIGHT, brand).unwrap()
+            Palette::from_custom(tekes_ui_tokens::Theme::LIGHT, custom)
         );
         assert_eq!(
             source.get().theme,
@@ -658,9 +665,8 @@ mod window_publication_tests {
     use tekes_ui_controls::composition::{
         ToolbarButtonDeclaration as ButtonDecl, ToolbarGroupOverflow as Overflow,
     };
-    use tekes_ui_platform_macos::{
-        AccessibilityAction, AccessibilityRole, content_accessibility::ContentAccessibilityOwner,
-    };
+    use tekes_ui_macos_bridge::content_accessibility::ContentAccessibilityOwner;
+    use tekes_ui_platform_macos::{AccessibilityAction, AccessibilityRole};
     use tekes_ui_tokens::Theme;
     #[test]
     fn actual_apphost_three_hosts_keep_original_owners_and_open_toolbar_excludes_background() {

@@ -551,7 +551,7 @@ mod tests {
     }
     #[test]
     fn historical_a8_channels_remain_preserved_as_evidence_only() {
-        let text = include_str!("../../tekes-ui-tokens/tests/approved-a8-channels.txt");
+        let text = include_str!("../tests/approved-a8-channels.txt");
         assert_eq!(text.lines().count(), 508);
         assert_eq!(numeric_channels(&document()).unwrap().len(), 508);
     }

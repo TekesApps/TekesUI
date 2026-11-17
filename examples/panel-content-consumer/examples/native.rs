@@ -3,12 +3,6 @@
 #[path = "../tests/support/coretext.rs"]
 mod coretext;
 #[cfg(target_os = "macos")]
-#[path = "../../composition-consumer/examples/support/native_key.rs"]
-mod native_key;
-#[cfg(target_os = "macos")]
-#[path = "../../composition-consumer/examples/support/native_pointer.rs"]
-mod native_pointer;
-#[cfg(target_os = "macos")]
 #[path = "../tests/support/panel_fixture.rs"]
 mod panel_fixture;
 
@@ -25,9 +19,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Content, ContentEvent, ContentHost, ContentResponse, PanelContent, PointerPhase,
         ScrollContent, TextFieldContent,
     };
+    use tekes_ui_macos_bridge::{
+        WindowContentAccessibilityExt,
+        content_accessibility::ContentAccessibilitySnapshot,
+        content_input::{translate_key, translate_pointer, translate_text_key},
+    };
     use tekes_ui_platform_macos::{
         self as p, App, AppConfig, Event, MenuBar, Window, WindowConfig, WindowHandler,
-        content_accessibility::ContentAccessibilitySnapshot,
     };
     use tekes_ui_render::Renderer;
     use tekes_ui_scene::{Point, Rect, Scene};
@@ -555,7 +553,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     );
                 }
                 Event::Mouse(mouse) => {
-                    let event = native_pointer::translate(mouse);
+                    let event = translate_pointer(mouse);
                     let point = match &event {
                         ContentEvent::Pointer(pointer) => Some(pointer.position),
                         _ => None,
@@ -692,7 +690,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     let response = self
                         .tree
                         .event_with_text(
-                            &ContentEvent::KeyInput(native_key::key(key)),
+                            &ContentEvent::KeyInput(translate_key(key)),
                             &mut self.text,
                         )
                         .expect("original ContentHost accepted native key event");
@@ -707,7 +705,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Event::TextKey(event) => {
                     let response = self
                         .tree
-                        .event_with_text(&native_key::translate(event), &mut self.text)
+                        .event_with_text(&translate_text_key(event), &mut self.text)
                         .expect("original ContentHost accepted native text-key marker");
                     self.record(window, "text-key", Some(response), None);
                 }

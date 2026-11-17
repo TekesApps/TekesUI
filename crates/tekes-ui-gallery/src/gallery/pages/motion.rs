@@ -295,6 +295,7 @@ pub struct Layout {
     reading_inside_stage: bool,
 }
 impl Layout {
+    #[cfg(any(test, feature = "selftest"))]
     pub fn new(content: Rect) -> Self {
         let mut text = crate::gallery::text::TextEngine::new();
         Self::for_state(content, &MotionPreview::default(), &mut text)

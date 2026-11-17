@@ -742,8 +742,125 @@ mod tests {
 }
 
 #[cfg(test)]
-#[path = "../../../examples/composition-consumer/tests/support/coretext.rs"]
-pub(crate) mod combo_coretext;
+pub(crate) mod combo_coretext {
+    use tekes_ui_controls::{
+        ButtonTextAlign, ButtonTextRenderer, ControlMotionContext, TextSurfaceHost,
+        TextSurfaceTextRenderer,
+    };
+    use tekes_ui_macos_bridge::coretext_host::CoreTextHost;
+    use tekes_ui_scene::{Point, Rect, Scene, Size};
+    use tekes_ui_text::{LabelLayout, LabelOptions, Paragraph, SemanticLabel};
+    use tekes_ui_tokens::{Rgba, proposal};
+
+    pub struct Text {
+        host: CoreTextHost,
+        pub services: bool,
+    }
+
+    impl Text {
+        pub fn new(scale: f32) -> Self {
+            Self {
+                host: CoreTextHost::new()
+                    .with_type_scale(scale)
+                    .with_backing_scale(2.)
+                    .with_text_services(false),
+                services: false,
+            }
+        }
+        fn sync(&mut self) {
+            self.host.services_enabled = self.services;
+            if self.services && self.host.motion_context.is_none() {
+                self.host.motion_context = Some(ControlMotionContext {
+                    now: std::time::Duration::ZERO,
+                    reduced_motion: true,
+                });
+            }
+        }
+    }
+
+    impl ButtonTextRenderer for Text {
+        fn request_animation_frame(&mut self) {
+            self.host.request_animation_frame();
+        }
+        fn text_surface_host(&mut self) -> Option<&mut dyn TextSurfaceHost> {
+            self.sync();
+            self.host.text_surface_host()
+        }
+        fn motion_context(&self) -> Option<ControlMotionContext> {
+            self.services.then_some(ControlMotionContext {
+                now: std::time::Duration::ZERO,
+                reduced_motion: true,
+            })
+        }
+        fn measure(&mut self, s: &str, r: proposal::TextRole, w: f32) -> Size {
+            self.sync();
+            self.host.measure(s, r, w)
+        }
+        fn resolved_font_size(&mut self, r: proposal::TextRole) -> f32 {
+            self.host.resolved_font_size(r)
+        }
+        fn backing_scale(&self) -> f32 {
+            self.host.backing_scale()
+        }
+        fn draw(
+            &mut self,
+            scene: &mut Scene,
+            s: &str,
+            r: proposal::TextRole,
+            frame: Rect,
+            align: ButtonTextAlign,
+            ink: Rgba,
+        ) {
+            self.sync();
+            self.host.draw(scene, s, r, frame, align, ink);
+        }
+    }
+
+    impl TextSurfaceHost for Text {
+        fn type_scale(&self) -> f32 {
+            self.host.type_scale
+        }
+        fn shape_surface(
+            &mut self,
+            s: &str,
+            r: proposal::TextRole,
+            w: Option<f32>,
+        ) -> std::rc::Rc<Paragraph> {
+            self.host.shape_surface(s, r, w)
+        }
+        fn shape_label(
+            &mut self,
+            s: &str,
+            r: proposal::TextRole,
+            w: f32,
+            options: LabelOptions,
+        ) -> Option<std::rc::Rc<LabelLayout>> {
+            self.host.shape_label(s, r, w, options)
+        }
+        fn shape_semantic_label(
+            &mut self,
+            s: &SemanticLabel,
+            r: proposal::TextRole,
+            w: f32,
+            options: LabelOptions,
+        ) -> Option<std::rc::Rc<LabelLayout>> {
+            self.host.shape_semantic_label(s, r, w, options)
+        }
+    }
+
+    impl TextSurfaceTextRenderer for Text {
+        fn push_visible(
+            &mut self,
+            scene: &mut Scene,
+            p: &Paragraph,
+            origin: Point,
+            ink: Rgba,
+            clip: Rect,
+        ) {
+            self.host.push_visible(scene, p, origin, ink, clip);
+        }
+    }
+}
 #[cfg(test)]
 #[path = "combo_bridge_fixture.rs"]
 mod combo_fixture;

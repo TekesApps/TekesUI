@@ -879,6 +879,17 @@ name = "tekes-ui-icons"
 version = "0.3.34"
 
 [[package]]
+name = "tekes-ui-macos-bridge"
+version = "0.3.34"
+dependencies = [
+ "tekes-ui-controls",
+ "tekes-ui-platform-macos",
+ "tekes-ui-scene",
+ "tekes-ui-text",
+ "tekes-ui-tokens",
+]
+
+[[package]]
 name = "tekes-ui-module-runtime"
 version = "0.3.34"
 dependencies = [
@@ -888,6 +899,7 @@ dependencies = [
  "serde_json",
  "tekes-ui-app-protocol",
  "tekes-ui-controls",
+ "tekes-ui-macos-bridge",
  "tekes-ui-platform-macos",
  "tekes-ui-render",
  "tekes-ui-scene",
@@ -924,8 +936,6 @@ dependencies = [
  "objc2-foundation",
  "objc2-metal",
  "objc2-quartz-core",
- "tekes-ui-controls",
- "tekes-ui-scene",
 ]
 
 [[package]]
@@ -973,7 +983,6 @@ name = "tekes-ui-tokens"
 version = "0.3.34"
 dependencies = [
  "serde_json",
- "sha2",
  "tekes-ui-design-export",
 ]
 
