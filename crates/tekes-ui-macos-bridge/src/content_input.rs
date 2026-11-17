@@ -6,7 +6,7 @@ use crate::content_accessibility::content_action;
 #[cfg(target_os = "macos")]
 use tekes_ui_controls::{ButtonTextRenderer, composition::CompositionError};
 use tekes_ui_controls::{
-    ControlKey,
+    ControlKey, TextEditCommand,
     composition::{
         ContentEvent, ContentHost, ContentKeyEvent, ContentResponse, ContentWheelEvent,
         ContentWheelPhase, InputModifiers, PointerButton, PointerEvent, PointerPhase,
@@ -16,9 +16,85 @@ use tekes_ui_controls::{
 use tekes_ui_platform_macos::Window;
 use tekes_ui_platform_macos::{
     Event, KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind, Point, ScrollEvent,
-    ScrollPhase, Size, TextInputState, TextKeyDisposition, TextKeyEvent,
+    ScrollPhase, Size, TextEditCommand as NativeTextEditCommand, TextInputState,
+    TextKeyDisposition, TextKeyEvent,
 };
 use tekes_ui_scene::{Point as ScenePoint, Rect as SceneRect};
+
+macro_rules! convert_text_command {
+    ($cmd:expr, $($variant:ident),+ $(,)?) => {
+        match $cmd {
+            $(NativeTextEditCommand::$variant => TextEditCommand::$variant,)+
+        }
+    };
+}
+
+/// Convert a platform text command to the cross-platform control command.
+pub fn translate_text_command(command: NativeTextEditCommand) -> TextEditCommand {
+    convert_text_command!(
+        command,
+        MoveLeft,
+        MoveLeftAndModifySelection,
+        MoveRight,
+        MoveRightAndModifySelection,
+        MoveWordLeft,
+        MoveWordLeftAndModifySelection,
+        MoveWordRight,
+        MoveWordRightAndModifySelection,
+        MoveUp,
+        MoveUpAndModifySelection,
+        MoveDown,
+        MoveDownAndModifySelection,
+        MoveToBeginningOfLine,
+        MoveToBeginningOfLineAndModifySelection,
+        MoveToEndOfLine,
+        MoveToEndOfLineAndModifySelection,
+        MoveToBeginningOfParagraph,
+        MoveToBeginningOfParagraphAndModifySelection,
+        MoveToEndOfParagraph,
+        MoveToEndOfParagraphAndModifySelection,
+        MoveParagraphBackwardAndModifySelection,
+        MoveParagraphForwardAndModifySelection,
+        MoveToBeginningOfDocument,
+        MoveToBeginningOfDocumentAndModifySelection,
+        MoveToEndOfDocument,
+        MoveToEndOfDocumentAndModifySelection,
+        PageUp,
+        PageDown,
+        SelectAll,
+        SelectLine,
+        SelectParagraph,
+        DeleteSelection,
+        DeleteBackward,
+        DeleteBackwardDecomposing,
+        DeleteForward,
+        DeleteWordBackward,
+        DeleteWordForward,
+        DeleteToBeginningOfLine,
+        DeleteToEndOfLine,
+        DeleteToBeginningOfParagraph,
+        DeleteToEndOfParagraph,
+        Yank,
+        Transpose,
+        InsertNewline,
+        InsertLineBreak,
+        InsertNewlineIgnoringFieldEditor,
+        InsertTab,
+        InsertBacktab,
+        InsertTabIgnoringFieldEditor,
+        CancelOperation,
+        Undo,
+        Redo,
+        Cut,
+        Copy,
+        Paste,
+    )
+}
+
+/// Parse an AppKit `doCommandBySelector:` name into a cross-platform control command.
+pub fn parse_objc_text_command(selector: &str) -> Option<TextEditCommand> {
+    NativeTextEditCommand::from_objc_selector(selector).map(translate_text_command)
+}
 
 fn translate_modifiers(modifiers: tekes_ui_platform_macos::Modifiers) -> InputModifiers {
     InputModifiers {
@@ -289,13 +365,13 @@ pub fn content_event(event: &Event) -> Option<ContentEvent> {
                     .to_ascii_lowercase()
                     .as_str()
                 {
-                    "a" => Some("selectAll:"),
-                    "z" if key.modifiers.shift => Some("redo:"),
-                    "z" => Some("undo:"),
+                    "a" => Some(TextEditCommand::SelectAll),
+                    "z" if key.modifiers.shift => Some(TextEditCommand::Redo),
+                    "z" => Some(TextEditCommand::Undo),
                     _ => None,
                 };
                 if let Some(command) = command {
-                    return Some(ContentEvent::TextCommand(command.into()));
+                    return Some(ContentEvent::TextCommand(command));
                 }
             }
             Some(ContentEvent::KeyInput(translate_key(key.clone())))
@@ -317,7 +393,9 @@ pub fn content_event(event: &Event) -> Option<ContentEvent> {
             replacement: replacement.clone(),
         }),
         Event::TextUnmark => Some(ContentEvent::Unmark),
-        Event::TextCommand(command) => Some(ContentEvent::TextCommand(command.clone())),
+        Event::TextCommand(command) => {
+            Some(ContentEvent::TextCommand(translate_text_command(*command)))
+        }
         _ => None,
     }
 }
@@ -374,10 +452,17 @@ fn dispatch_content_event(
     if let Event::Scroll(scroll) = event {
         return content_wheel_event(scroll).map(|wheel| host.wheel_event(&wheel));
     }
+    #[cfg(target_os = "macos")]
+    #[derive(Clone, Copy, PartialEq, Eq)]
+    enum ClipboardCommand {
+        Copy,
+        Cut,
+        Paste,
+    }
     let command = match event {
-        Event::TextCommand(command) if matches!(command.as_str(), "copy:" | "cut:" | "paste:") => {
-            Some(command.as_str())
-        }
+        Event::TextCommand(NativeTextEditCommand::Copy) => Some(ClipboardCommand::Copy),
+        Event::TextCommand(NativeTextEditCommand::Cut) => Some(ClipboardCommand::Cut),
+        Event::TextCommand(NativeTextEditCommand::Paste) => Some(ClipboardCommand::Paste),
         Event::Key(key)
             if key.kind == KeyEventKind::Down
                 && key.modifiers.command
@@ -385,9 +470,9 @@ fn dispatch_content_event(
                 && !key.modifiers.alt =>
         {
             match key.characters_ignoring_modifiers.as_str() {
-                "c" | "C" => Some("copy:"),
-                "x" | "X" => Some("cut:"),
-                "v" | "V" => Some("paste:"),
+                "c" | "C" => Some(ClipboardCommand::Copy),
+                "x" | "X" => Some(ClipboardCommand::Cut),
+                "v" | "V" => Some(ClipboardCommand::Paste),
                 _ => None,
             }
         }
@@ -403,7 +488,7 @@ fn dispatch_content_event(
         {
             return Some(ContentResponse::consumed(false));
         }
-        if command == "paste:" {
+        if command == ClipboardCommand::Paste {
             return Some(if !snapshot.read_only {
                 clipboard
                     .clipboard_text()
@@ -418,13 +503,14 @@ fn dispatch_content_event(
                 ContentResponse::consumed(false)
             });
         }
-        if snapshot.selection.is_empty() || (command == "cut:" && snapshot.read_only) {
+        if snapshot.selection.is_empty() || (command == ClipboardCommand::Cut && snapshot.read_only)
+        {
             return Some(ContentResponse::consumed(false));
         }
         let utf16: Vec<_> = snapshot.text.encode_utf16().collect();
         let selected = String::from_utf16(&utf16[snapshot.selection.clone()]).ok()?;
         clipboard.set_clipboard_text(&selected);
-        return Some(if command == "cut:" {
+        return Some(if command == ClipboardCommand::Cut {
             host.event(&ContentEvent::Commit {
                 text: String::new(),
                 replacement: Some(snapshot.selection),
@@ -563,7 +649,11 @@ mod tests {
         };
         assert_eq!(
             content_event(&Event::Key(cmd_z)),
-            Some(ContentEvent::TextCommand("redo:".into()))
+            Some(ContentEvent::TextCommand(TextEditCommand::Redo))
+        );
+        assert_eq!(
+            parse_objc_text_command("moveToLeftEndOfLine:"),
+            Some(TextEditCommand::MoveToBeginningOfLine)
         );
     }
 }

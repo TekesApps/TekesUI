@@ -728,22 +728,24 @@ impl Component for NumberFieldContent {
                     characters_ignoring_modifiers: String::new(),
                 });
             }
-            ContentEvent::TextCommand(command) if !self.composing() => match command.as_str() {
-                "moveUp:" | "moveDown:" => {
-                    let changed = self.step(command == "moveUp:");
+            ContentEvent::TextCommand(command) if !self.composing() => match command {
+                TextEditCommand::MoveUp | TextEditCommand::MoveDown => {
+                    let changed = self.step(*command == TextEditCommand::MoveUp);
                     return ContentResponse {
                         activated: changed,
                         ..ContentResponse::consumed(changed)
                     };
                 }
-                "insertNewline:" | "insertLineBreak:" => {
+                TextEditCommand::InsertNewline | TextEditCommand::InsertLineBreak => {
                     let changed = self.commit(NumberCommitReason::Submit);
                     return ContentResponse {
                         activated: changed,
                         ..ContentResponse::consumed(true)
                     };
                 }
-                "cancelOperation:" => return ContentResponse::consumed(self.cancel_edit()),
+                TextEditCommand::CancelOperation => {
+                    return ContentResponse::consumed(self.cancel_edit());
+                }
                 _ => {}
             },
             ContentEvent::Cancel => {

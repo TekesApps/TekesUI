@@ -447,7 +447,7 @@ fn readonly_keyboard_navigation_pauses_parent_even_when_no_parent_reveal_is_need
         assert!(parent(&host).is_following_latest());
         let before = parent(&host).scroll.offset;
         let event = if command {
-            ContentEvent::TextCommand("moveDown:".into())
+            ContentEvent::TextCommand(tekes_ui_controls::TextEditCommand::MoveDown)
         } else {
             ContentEvent::Key {
                 key: tekes_ui_controls::ControlKey::Down,
@@ -618,7 +618,9 @@ fn cancelled_native_callback_cannot_pause_the_new_original_readonly_owner() {
         .unwrap()
         .follow_latest();
     let before = host.text_surface(other).unwrap().input.external_baseline();
-    host.event(&ContentEvent::TextCommand("moveDown:".into()));
+    host.event(&ContentEvent::TextCommand(
+        tekes_ui_controls::TextEditCommand::MoveDown,
+    ));
     let response = host.event(&ContentEvent::TextKeyEnd {
         id: 530002,
         input_context_consumed: false,

@@ -370,10 +370,18 @@ impl WindowHandler for Host {
                 }
             }
             Event::TextCommand(command)
-                if matches!(command.as_str(), "copy:" | "paste:" | "cut:") =>
+                if matches!(
+                    command,
+                    tekes_ui_platform_macos::TextEditCommand::Copy
+                        | tekes_ui_platform_macos::TextEditCommand::Paste
+                        | tekes_ui_platform_macos::TextEditCommand::Cut
+                ) =>
             {
                 let clipboard = window.clipboard_text();
-                let (change, copied) = self.gallery.text_command(command, clipboard.as_deref());
+                let (change, copied) = self.gallery.text_command(
+                    tekes_ui_macos_bridge::translate_text_command(*command),
+                    clipboard.as_deref(),
+                );
                 if let Some(text) = copied {
                     window.set_clipboard_text(&text);
                 }
@@ -387,9 +395,9 @@ impl WindowHandler for Host {
                     && self.gallery.text_input_state().is_some() =>
             {
                 let command = match k.key_code {
-                    7 => "cut:",
-                    8 => "copy:",
-                    _ => "paste:",
+                    7 => tekes_ui_controls::TextEditCommand::Cut,
+                    8 => tekes_ui_controls::TextEditCommand::Copy,
+                    _ => tekes_ui_controls::TextEditCommand::Paste,
                 };
                 let clipboard = window.clipboard_text();
                 let (change, copied) = self.gallery.text_command(command, clipboard.as_deref());

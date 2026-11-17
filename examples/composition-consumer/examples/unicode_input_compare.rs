@@ -287,11 +287,20 @@ fn main() {
                     self.input(ContentEvent::Unmark, window);
                 }
                 Event::TextCommand(command) => {
-                    self.record("command", json!({"selector":command}), window);
-                    if command == "paste:" {
+                    self.record(
+                        "command",
+                        json!({"selector": format!("{command:?}")}),
+                        window,
+                    );
+                    if command == tekes_ui_platform_macos::TextEditCommand::Paste {
                         self.paste(window);
                     } else {
-                        self.input(ContentEvent::TextCommand(command), window);
+                        self.input(
+                            ContentEvent::TextCommand(
+                                tekes_ui_macos_bridge::translate_text_command(command),
+                            ),
+                            window,
+                        );
                     }
                 }
                 Event::Accessibility { target, action } => {

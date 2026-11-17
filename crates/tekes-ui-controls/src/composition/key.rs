@@ -1,5 +1,7 @@
 //! Keyboard provenance and editor routing in the existing composition host.
-use super::{ComponentId, ContentEvent, ContentHost, ContentResponse, InputModifiers};
+use super::{
+    ComponentId, ContentEvent, ContentHost, ContentResponse, InputModifiers, TextEditCommand,
+};
 use crate::ControlKey;
 
 /// Lossless host key data. `key` is the portable control-key interpretation;
@@ -307,9 +309,9 @@ impl ContentHost {
         let ContentEvent::TextCommand(command) = event else {
             return None;
         };
-        let key = match command.as_str() {
-            "moveUp:" => ControlKey::Up,
-            "moveDown:" => ControlKey::Down,
+        let key = match command {
+            TextEditCommand::MoveUp => ControlKey::Up,
+            TextEditCommand::MoveDown => ControlKey::Down,
             _ => return None,
         };
         let mut input = self
@@ -539,29 +541,33 @@ impl ContentHost {
             let candidate = match event {
                 ContentEvent::KeyInput(key) if key.down && *key == frame.key => true,
                 ContentEvent::Key { key, down: true } => Some(*key) == frame.key.key,
-                ContentEvent::TextCommand(command) => match command.as_str() {
-                    "insertNewline:" | "insertLineBreak:" => {
+                ContentEvent::TextCommand(command) => match command {
+                    TextEditCommand::InsertNewline | TextEditCommand::InsertLineBreak => {
                         frame.key.key == Some(ControlKey::Enter)
                     }
                     // Numeric wrappers and text editors share this once-only
                     // boundary. A candidate-confirming arrow must not step a
                     // number after insertText has just cleared marked text.
-                    "moveUp:" | "moveDown:" => {
+                    TextEditCommand::MoveUp | TextEditCommand::MoveDown => {
                         let m = frame.key.modifiers;
                         !m.command
                             && !m.alt
                             && !m.control
                             && !m.shift
                             && frame.key.key
-                                == Some(if command == "moveUp:" {
+                                == Some(if *command == TextEditCommand::MoveUp {
                                     ControlKey::Up
                                 } else {
                                     ControlKey::Down
                                 })
                     }
-                    "insertTab:" => frame.key.key == Some(ControlKey::Tab { reverse: false }),
-                    "insertBacktab:" => frame.key.key == Some(ControlKey::Tab { reverse: true }),
-                    "cancelOperation:" => {
+                    TextEditCommand::InsertTab => {
+                        frame.key.key == Some(ControlKey::Tab { reverse: false })
+                    }
+                    TextEditCommand::InsertBacktab => {
+                        frame.key.key == Some(ControlKey::Tab { reverse: true })
+                    }
+                    TextEditCommand::CancelOperation => {
                         frame.key.key == Some(ControlKey::Escape)
                             && self.focused_text().is_none_or(|s| s.input.marked.is_none())
                     }

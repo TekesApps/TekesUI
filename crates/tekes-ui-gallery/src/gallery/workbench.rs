@@ -2243,7 +2243,7 @@ impl Workbench {
     pub fn text_command(
         &mut self,
         i: usize,
-        command: &str,
+        command: tekes_ui_controls::TextEditCommand,
         clipboard: Option<&str>,
         text: &mut super::text::TextEngine,
     ) -> (bool, Option<String>) {
@@ -2272,15 +2272,15 @@ impl Workbench {
         };
         let mut copied = None;
         let changed = match command {
-            "copy:" => {
+            tekes_ui_controls::TextEditCommand::Copy => {
                 copied = input.clipboard_selection();
                 false
             }
-            "cut:" => {
+            tekes_ui_controls::TextEditCommand::Cut => {
                 copied = input.clipboard_selection();
                 input.cut()
             }
-            "paste:" => input.paste(clipboard.unwrap_or("")),
+            tekes_ui_controls::TextEditCommand::Paste => input.paste(clipboard.unwrap_or("")),
             _ => input.command(command).unwrap_or(false),
         };
         input.refresh(text);
@@ -4494,11 +4494,13 @@ impl Workbench {
             && s.focus == Some(1000)
             && s.input.state().is_none_or(|state| state.marked.is_none())
         {
-            let key = match command.as_str() {
-                "moveDown:" => Some(ControlKey::Down),
-                "moveUp:" => Some(ControlKey::Up),
-                "insertNewline:" => Some(ControlKey::Enter),
-                "cancelOperation:" => Some(ControlKey::Escape),
+            let key = match command {
+                tekes_ui_platform_macos::TextEditCommand::MoveDown => Some(ControlKey::Down),
+                tekes_ui_platform_macos::TextEditCommand::MoveUp => Some(ControlKey::Up),
+                tekes_ui_platform_macos::TextEditCommand::InsertNewline => Some(ControlKey::Enter),
+                tekes_ui_platform_macos::TextEditCommand::CancelOperation => {
+                    Some(ControlKey::Escape)
+                }
                 _ => None,
             };
             if let Some(key) = key
@@ -6277,7 +6279,9 @@ mod interaction_tests {
         gallery.set_reduced_motion(true);
         gallery.build_scene(&mut Scene::new());
         click(&mut gallery, i, 1000);
-        gallery.handle_input(&Event::TextCommand("selectAll:".into()));
+        gallery.handle_input(&Event::TextCommand(
+            tekes_ui_platform_macos::TextEditCommand::SelectAll,
+        ));
         gallery.handle_input(&Event::TextCommit {
             text: "Settings Theme draft".into(),
             replacement: None,
@@ -6968,13 +6972,17 @@ mod interaction_tests {
         );
 
         gallery.navigation_search.focus_field();
-        gallery.handle_input(&Event::TextCommand("insertTab:".into()));
+        gallery.handle_input(&Event::TextCommand(
+            tekes_ui_platform_macos::TextEditCommand::InsertTab,
+        ));
         gallery.handle_input(&key(48, true));
         for _ in 0..gallery.workbench.tab_stop_ids(i).len() + 1 {
             if gallery.workbench.focused_control_id(i) == Some(1000) {
                 break;
             }
-            gallery.handle_input(&Event::TextCommand("insertTab:".into()));
+            gallery.handle_input(&Event::TextCommand(
+                tekes_ui_platform_macos::TextEditCommand::InsertTab,
+            ));
             gallery.build_scene(&mut Scene::new());
         }
         assert_eq!(gallery.workbench.focused_control_id(i), Some(1000));
@@ -7700,7 +7708,10 @@ mod interaction_tests {
             if selected == 0 || selected == 79 {
                 let detail = &mut workbench.state(i).detail;
                 detail.focus_field();
-                assert_eq!(detail.command("selectAll:"), Some(true));
+                assert_eq!(
+                    detail.command(tekes_ui_controls::TextEditCommand::SelectAll),
+                    Some(true)
+                );
                 let selection = detail.state().unwrap().selection;
                 assert!(!selection.is_empty());
                 detail.blur();
@@ -7838,7 +7849,11 @@ mod interaction_tests {
                 );
             } else {
                 assert!(w.focus_control(i, 1000).is_some());
-                w.handle(i, &Event::TextCommand("selectAll:".into()), &mut text);
+                w.handle(
+                    i,
+                    &Event::TextCommand(tekes_ui_platform_macos::TextEditCommand::SelectAll),
+                    &mut text,
+                );
                 w.handle(
                     i,
                     &Event::TextCommit {
@@ -8636,15 +8651,20 @@ mod interaction_tests {
         click_brand_preview(&mut w, i, 721, &mut t);
         assert!(w.text_state(i).is_none());
         let before = w.brand_preview.input_value().to_owned();
-        for command in ["copy:", "cut:", "paste:", "undo:"] {
+        for command in [
+            tekes_ui_controls::TextEditCommand::Copy,
+            tekes_ui_controls::TextEditCommand::Cut,
+            tekes_ui_controls::TextEditCommand::Paste,
+            tekes_ui_controls::TextEditCommand::Undo,
+        ] {
             let (changed, copied) = w.text_command(i, command, Some("background paste"), &mut t);
             assert!(
                 !changed,
-                "{command} must be blocked while the modal is open"
+                "{command:?} must be blocked while the modal is open"
             );
             assert!(
                 copied.is_none(),
-                "{command} must not read the background selection"
+                "{command:?} must not read the background selection"
             );
         }
         let scroll = Event::Scroll(ScrollEvent {
@@ -11136,7 +11156,11 @@ mod interaction_tests {
         );
         // In the platform legacy editing path Return reaches the editor as
         // a selector, without Event::Key. A selector alone must not submit.
-        w.handle(i, &Event::TextCommand("insertNewline:".into()), &mut text);
+        w.handle(
+            i,
+            &Event::TextCommand(tekes_ui_platform_macos::TextEditCommand::InsertNewline),
+            &mut text,
+        );
         assert!(
             !w.state(i)
                 .log
@@ -11181,7 +11205,11 @@ mod interaction_tests {
                     &mut text,
                 );
             } else {
-                w.handle(i, &Event::TextCommand("insertNewline:".into()), &mut text);
+                w.handle(
+                    i,
+                    &Event::TextCommand(tekes_ui_platform_macos::TextEditCommand::InsertNewline),
+                    &mut text,
+                );
             }
             w.handle(
                 i,
@@ -11400,7 +11428,9 @@ mod interaction_tests {
         ));
         gallery.handle_input(&mouse(frame.center(), true));
         gallery.handle_input(&mouse(frame.center(), false));
-        gallery.handle_input(&Event::TextCommand("selectAll:".into()));
+        gallery.handle_input(&Event::TextCommand(
+            tekes_ui_platform_macos::TextEditCommand::SelectAll,
+        ));
         gallery.handle_input(&Event::TextCommit {
             text: "Renamed project".into(),
             replacement: None,
@@ -11471,7 +11501,9 @@ mod interaction_tests {
         gallery.build_scene(&mut Scene::new());
         gallery.handle_input(&mouse(frame.center(), true));
         gallery.handle_input(&mouse(frame.center(), false));
-        gallery.handle_input(&Event::TextCommand("selectAll:".into()));
+        gallery.handle_input(&Event::TextCommand(
+            tekes_ui_platform_macos::TextEditCommand::SelectAll,
+        ));
         gallery.handle_input(&Event::TextCommit {
             text: String::new(),
             replacement: None,
@@ -11763,15 +11795,21 @@ mod interaction_tests {
             .collect::<String>();
         gallery.handle_input(&mouse(frame.center(), true));
         gallery.handle_input(&mouse(frame.center(), false));
-        gallery.handle_input(&Event::TextCommand("selectAll:".into()));
+        gallery.handle_input(&Event::TextCommand(
+            tekes_ui_platform_macos::TextEditCommand::SelectAll,
+        ));
         gallery.handle_input(&Event::TextCommit {
             text: source.clone(),
             replacement: None,
         });
         gallery.build_scene(&mut Scene::new());
-        gallery.handle_input(&Event::TextCommand("moveToBeginningOfDocument:".into()));
+        gallery.handle_input(&Event::TextCommand(
+            tekes_ui_platform_macos::TextEditCommand::MoveToBeginningOfDocument,
+        ));
         for _ in 0..4 {
-            gallery.handle_input(&Event::TextCommand("moveRightAndModifySelection:".into()));
+            gallery.handle_input(&Event::TextCommand(
+                tekes_ui_platform_macos::TextEditCommand::MoveRightAndModifySelection,
+            ));
         }
         gallery.build_scene(&mut Scene::new());
         assert!(gallery.workbench.state(i).input.scroll_metrics().0 > 96.);
@@ -11805,12 +11843,16 @@ mod interaction_tests {
         gallery.build_scene(&mut Scene::new());
         gallery.handle_input(&mouse(frame.center(), true));
         gallery.handle_input(&mouse(frame.center(), false));
-        gallery.handle_input(&Event::TextCommand("selectAll:".into()));
+        gallery.handle_input(&Event::TextCommand(
+            tekes_ui_platform_macos::TextEditCommand::SelectAll,
+        ));
         gallery.handle_input(&Event::TextCommit {
             text: "Edited\nnotes".into(),
             replacement: None,
         });
-        gallery.handle_input(&Event::TextCommand("insertNewline:".into()));
+        gallery.handle_input(&Event::TextCommand(
+            tekes_ui_platform_macos::TextEditCommand::InsertNewline,
+        ));
         gallery.build_scene(&mut Scene::new());
         assert_eq!(gallery.workbench.state(i).input.query(), "Edited\nnotes\n");
         scene.clear();
@@ -12423,11 +12465,18 @@ mod interaction_tests {
             &mut t,
         );
         assert!(w.state(i).input.query().contains("项目"));
-        w.text_command(i, "undo:", None, &mut t);
+        w.text_command(i, tekes_ui_controls::TextEditCommand::Undo, None, &mut t);
         assert_eq!(w.state(i).input.query(), "Studio");
-        w.text_command(i, "selectAll:", None, &mut t);
+        w.text_command(
+            i,
+            tekes_ui_controls::TextEditCommand::SelectAll,
+            None,
+            &mut t,
+        );
         assert_eq!(
-            w.text_command(i, "copy:", None, &mut t).1.as_deref(),
+            w.text_command(i, tekes_ui_controls::TextEditCommand::Copy, None, &mut t)
+                .1
+                .as_deref(),
             Some("Studio")
         );
         click(&mut w, i, 10, &mut t);
@@ -12668,7 +12717,9 @@ mod interaction_tests {
         gallery.build_scene(&mut Scene::new());
         // Empty input validation is the actual form submit path, not a synthetic error state.
         click(&mut gallery, i, 1000);
-        gallery.handle_input(&Event::TextCommand("selectAll:".into()));
+        gallery.handle_input(&Event::TextCommand(
+            tekes_ui_platform_macos::TextEditCommand::SelectAll,
+        ));
         gallery.handle_input(&Event::TextCommit {
             text: String::new(),
             replacement: None,
@@ -12731,9 +12782,13 @@ mod interaction_tests {
         assert!(gallery.workbench.state(i).draft_attempt.is_none());
         assert_eq!(gallery.workbench.state(i).input.query(), "Theme draft");
         click(&mut gallery, i, 1000);
-        gallery.handle_input(&Event::TextCommand("moveToBeginningOfDocument:".into()));
+        gallery.handle_input(&Event::TextCommand(
+            tekes_ui_platform_macos::TextEditCommand::MoveToBeginningOfDocument,
+        ));
         for _ in 0..5 {
-            gallery.handle_input(&Event::TextCommand("moveRightAndModifySelection:".into()));
+            gallery.handle_input(&Event::TextCommand(
+                tekes_ui_platform_macos::TextEditCommand::MoveRightAndModifySelection,
+            ));
         }
         gallery.build_scene(&mut Scene::new());
         let frame = gallery.workbench.state(i).input.frame_at(0).unwrap();
@@ -12908,7 +12963,12 @@ mod interaction_tests {
         let i = index("form");
         w.state(i).open_draft_fixture(path.clone());
         click(&mut w, i, 1000, &mut text);
-        w.text_command(i, "selectAll:", None, &mut text);
+        w.text_command(
+            i,
+            tekes_ui_controls::TextEditCommand::SelectAll,
+            None,
+            &mut text,
+        );
         w.handle(
             i,
             &Event::TextCommit {
@@ -12935,8 +12995,18 @@ mod interaction_tests {
         // Edit while the older revision is in flight: its ack must not claim
         // the newer input was saved or clear that durable draft.
         click(&mut w, i, 1000, &mut text);
-        w.text_command(i, "selectAll:", None, &mut text);
-        w.text_command(i, "paste:", Some("Newer draft"), &mut text);
+        w.text_command(
+            i,
+            tekes_ui_controls::TextEditCommand::SelectAll,
+            None,
+            &mut text,
+        );
+        w.text_command(
+            i,
+            tekes_ui_controls::TextEditCommand::Paste,
+            Some("Newer draft"),
+            &mut text,
+        );
         click(&mut w, i, 21, &mut text);
         assert_eq!(w.state(i).phase, Phase::Ready);
         assert_eq!(w.state(i).input.query(), "Newer draft");
@@ -12988,7 +13058,9 @@ mod interaction_tests {
         assert_eq!(gallery.workbench.state(i).phase, Phase::Ready);
         assert!(gallery.workbench.state(i).draft_fixture.is_none());
         click(&mut gallery, i, 1000);
-        gallery.handle_input(&Event::TextCommand("selectAll:".into()));
+        gallery.handle_input(&Event::TextCommand(
+            tekes_ui_platform_macos::TextEditCommand::SelectAll,
+        ));
         gallery.handle_input(&Event::TextCommit {
             text: "Async draft".into(),
             replacement: None,
@@ -13014,9 +13086,13 @@ mod interaction_tests {
             }
             assert_eq!(gallery.workbench.state(i).phase, phase);
             click(&mut gallery, i, 1000);
-            gallery.handle_input(&Event::TextCommand("moveToBeginningOfDocument:".into()));
+            gallery.handle_input(&Event::TextCommand(
+                tekes_ui_platform_macos::TextEditCommand::MoveToBeginningOfDocument,
+            ));
             for _ in 0..5 {
-                gallery.handle_input(&Event::TextCommand("moveRightAndModifySelection:".into()));
+                gallery.handle_input(&Event::TextCommand(
+                    tekes_ui_platform_macos::TextEditCommand::MoveRightAndModifySelection,
+                ));
             }
             gallery.build_scene(&mut Scene::new());
             let before = gallery
@@ -16578,8 +16654,16 @@ mod interaction_tests {
         for theme in Theme::ALL {
             let popup = w.state(i).input.combo().popup_layout().unwrap().clone();
             w.handle(i, &move_pointer(popup.popup.origin), &mut text);
-            w.handle(i, &Event::TextCommand("moveUp:".into()), &mut text);
-            w.handle(i, &Event::TextCommand("moveDown:".into()), &mut text);
+            w.handle(
+                i,
+                &Event::TextCommand(tekes_ui_platform_macos::TextEditCommand::MoveUp),
+                &mut text,
+            );
+            w.handle(
+                i,
+                &Event::TextCommand(tekes_ui_platform_macos::TextEditCommand::MoveDown),
+                &mut text,
+            );
             for hovered in [false, true] {
                 if hovered {
                     w.handle(i, &move_pointer(popup.items[0].frame.center()), &mut text);
@@ -16677,8 +16761,16 @@ mod interaction_tests {
                 );
             }
         }
-        w.handle(i, &Event::TextCommand("moveDown:".into()), &mut text);
-        w.handle(i, &Event::TextCommand("insertNewline:".into()), &mut text);
+        w.handle(
+            i,
+            &Event::TextCommand(tekes_ui_platform_macos::TextEditCommand::MoveDown),
+            &mut text,
+        );
+        w.handle(
+            i,
+            &Event::TextCommand(tekes_ui_platform_macos::TextEditCommand::InsertNewline),
+            &mut text,
+        );
         build(&mut w, i, &mut text);
         assert_eq!(w.state(i).input.combo().model().selected, Some(2));
         assert_eq!(w.state(i).input.query(), "Comfortable");
@@ -16691,7 +16783,11 @@ mod interaction_tests {
                 .count(),
             1
         );
-        w.handle(i, &Event::TextCommand("selectAll:".into()), &mut text);
+        w.handle(
+            i,
+            &Event::TextCommand(tekes_ui_platform_macos::TextEditCommand::SelectAll),
+            &mut text,
+        );
         w.handle(
             i,
             &Event::TextCommit {
@@ -16710,10 +16806,18 @@ mod interaction_tests {
                 .all(|n| n.role != tekes_ui_platform_macos::AccessibilityRole::MenuItem)
         );
         assert_eq!(w.state(i).input.combo().model().selected, Some(2));
-        w.handle(i, &Event::TextCommand("cancelOperation:".into()), &mut text);
+        w.handle(
+            i,
+            &Event::TextCommand(tekes_ui_platform_macos::TextEditCommand::CancelOperation),
+            &mut text,
+        );
         assert!(!w.state(i).input.combo().model().open);
         assert_eq!(w.state(i).input.query(), "absent");
-        w.handle(i, &Event::TextCommand("selectAll:".into()), &mut text);
+        w.handle(
+            i,
+            &Event::TextCommand(tekes_ui_platform_macos::TextEditCommand::SelectAll),
+            &mut text,
+        );
         w.handle(
             i,
             &Event::TextCommit {
@@ -16795,9 +16899,15 @@ mod interaction_tests {
                 expected_count
             );
             assert!(!w.accessibility_action(i, options[1].key, &A::Press, &mut text));
-            assert!(w.text_command(i, "undo:", None, &mut text).0);
+            assert!(
+                w.text_command(i, tekes_ui_controls::TextEditCommand::Undo, None, &mut text)
+                    .0
+            );
             assert_eq!(w.state(i).input.query(), "sa");
-            assert!(w.text_command(i, "redo:", None, &mut text).0);
+            assert!(
+                w.text_command(i, tekes_ui_controls::TextEditCommand::Redo, None, &mut text)
+                    .0
+            );
             assert_eq!(w.state(i).input.query(), "same");
         }
         w.state(i).log.clear();
@@ -16960,14 +17070,11 @@ mod interaction_tests {
             // fallback; a callback-free fallback is deferred by the original Host.
             let disposition = match route {
                 "selector" | "selection" => {
-                    gallery.handle_input(&Event::TextCommand(
-                        if route == "selection" {
-                            "moveLeftAndModifySelection:"
-                        } else {
-                            "moveLeft:"
-                        }
-                        .into(),
-                    ));
+                    gallery.handle_input(&Event::TextCommand(if route == "selection" {
+                        tekes_ui_platform_macos::TextEditCommand::MoveLeftAndModifySelection
+                    } else {
+                        tekes_ui_platform_macos::TextEditCommand::MoveLeft
+                    }));
                     assert_eq!(gallery.text_input_state().unwrap().caret_index, 3);
                     TextKeyDisposition::CommandDispatched
                 }
@@ -17052,13 +17159,21 @@ mod interaction_tests {
         assert_eq!(workbench.text_state(i).unwrap().text, "Com");
         assert!(workbench.text_state(i).unwrap().marked.is_none());
 
-        assert!(workbench.handle(i, &Event::TextCommand("moveDown:".into()), &mut text));
+        assert!(workbench.handle(
+            i,
+            &Event::TextCommand(tekes_ui_platform_macos::TextEditCommand::MoveDown),
+            &mut text
+        ));
         build(&mut workbench, i, &mut text);
         assert_eq!(workbench.state(i).focus, Some(1000));
         assert_eq!(workbench.text_state(i).unwrap().text, "Com");
         assert_eq!(workbench.state(i).input.combo().model().active, Some(2));
 
-        assert!(workbench.handle(i, &Event::TextCommand("insertNewline:".into()), &mut text));
+        assert!(workbench.handle(
+            i,
+            &Event::TextCommand(tekes_ui_platform_macos::TextEditCommand::InsertNewline),
+            &mut text
+        ));
         assert!(!workbench.state(i).input.combo().model().open);
         assert_eq!(workbench.state(i).focus, Some(1000));
         assert_eq!(workbench.text_state(i).unwrap().text, "Comfortable");
@@ -17098,7 +17213,11 @@ mod interaction_tests {
         assert!(combo_option(&mut w, i, 1).is_some());
         assert!(combo_option(&mut w, i, 2).is_some());
 
-        w.handle(i, &Event::TextCommand("insertNewline:".into()), &mut text);
+        w.handle(
+            i,
+            &Event::TextCommand(tekes_ui_platform_macos::TextEditCommand::InsertNewline),
+            &mut text,
+        );
         build(&mut w, i, &mut text);
         assert!(!w.state(i).input.combo().model().open);
         assert!(
@@ -17616,7 +17735,11 @@ mod interaction_tests {
             &mut text,
         );
         assert_eq!(workbench.state(i).extended.command.combo.query, "Open");
-        assert!(workbench.handle(i, &Event::TextCommand("cancelOperation:".into()), &mut text));
+        assert!(workbench.handle(
+            i,
+            &Event::TextCommand(tekes_ui_platform_macos::TextEditCommand::CancelOperation),
+            &mut text
+        ));
         assert!(!workbench.state(i).extended.command.combo.open);
         assert_eq!(workbench.state(i).focus, Some(20));
         assert!(workbench.text_state(i).is_none());
@@ -17628,8 +17751,17 @@ mod interaction_tests {
             },
             &mut text
         ));
-        assert!(!workbench.handle(i, &Event::TextCommand("paste:".into()), &mut text));
-        let (changed, _) = workbench.text_command(i, "paste:", Some("stale"), &mut text);
+        assert!(!workbench.handle(
+            i,
+            &Event::TextCommand(tekes_ui_platform_macos::TextEditCommand::Paste),
+            &mut text
+        ));
+        let (changed, _) = workbench.text_command(
+            i,
+            tekes_ui_controls::TextEditCommand::Paste,
+            Some("stale"),
+            &mut text,
+        );
         assert!(!changed);
         assert!(!workbench.state(i).extended.command.combo.open);
         assert_eq!(workbench.state(i).extended.command.combo.query, "Open");
@@ -17706,7 +17838,11 @@ mod interaction_tests {
             },
             &mut text,
         );
-        workbench.handle(i, &Event::TextCommand("cancelOperation:".into()), &mut text);
+        workbench.handle(
+            i,
+            &Event::TextCommand(tekes_ui_platform_macos::TextEditCommand::CancelOperation),
+            &mut text,
+        );
         assert!(
             workbench.state(i).extended.command.combo.open,
             "IME cancel must not dismiss the palette"
@@ -17721,7 +17857,11 @@ mod interaction_tests {
             },
             &mut text,
         );
-        assert!(workbench.handle(i, &Event::TextCommand("insertNewline:".into()), &mut text));
+        assert!(workbench.handle(
+            i,
+            &Event::TextCommand(tekes_ui_platform_macos::TextEditCommand::InsertNewline),
+            &mut text
+        ));
         assert!(!workbench.state(i).extended.command.combo.open);
         assert_eq!(workbench.state(i).focus, Some(20));
         assert!(workbench.text_state(i).is_none());

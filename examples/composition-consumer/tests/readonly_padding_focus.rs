@@ -149,7 +149,7 @@ fn direct_readonly_pointer_selection_stays_original_and_cannot_edit_or_mark() {
             clauses: vec![],
             replacement: None,
         },
-        ContentEvent::TextCommand("deleteBackward:".into()),
+        ContentEvent::TextCommand(tekes_ui_controls::TextEditCommand::DeleteBackward),
     ] {
         host.event(&event);
         assert_eq!(

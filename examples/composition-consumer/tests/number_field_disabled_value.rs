@@ -154,17 +154,23 @@ fn dirty_refusal_cancel_and_undo_keep_the_same_original_numeric_transactions() {
     field_mut(&mut host).set_disabled(false);
     assert!(field_mut(&mut host).cancel_edit());
     assert_eq!(field(&host).edit_state().text, "10%");
-    host.event(&ContentEvent::TextCommand("undo:".into()));
+    host.event(&ContentEvent::TextCommand(
+        tekes_ui_controls::TextEditCommand::Undo,
+    ));
     assert_eq!(field(&host).edit_state().text, "12");
     assert_eq!(
         field_mut(&mut host).set_value(20.),
         Err(NumberValueError::Editing)
     );
-    host.event(&ContentEvent::TextCommand("redo:".into()));
+    host.event(&ContentEvent::TextCommand(
+        tekes_ui_controls::TextEditCommand::Redo,
+    ));
     assert_eq!(field(&host).edit_state().text, "10%");
     assert_eq!(field_mut(&mut host).set_value(20.), Ok(true));
     assert_eq!(field_mut(&mut host).drain_value_changes().count(), 0);
-    host.event(&ContentEvent::TextCommand("undo:".into()));
+    host.event(&ContentEvent::TextCommand(
+        tekes_ui_controls::TextEditCommand::Undo,
+    ));
     assert_eq!(field(&host).value(), 20.);
     assert_eq!(field(&host).edit_state().text, "10%");
     assert!(field(&host).edit_state().dirty);
@@ -179,7 +185,9 @@ fn dirty_refusal_cancel_and_undo_keep_the_same_original_numeric_transactions() {
             reason: NumberCommitReason::Submit
         }]
     );
-    host.event(&ContentEvent::TextCommand("redo:".into()));
+    host.event(&ContentEvent::TextCommand(
+        tekes_ui_controls::TextEditCommand::Redo,
+    ));
     assert_eq!(field(&host).edit_state().text, "20%");
     assert_eq!(field(&host).value(), 10.);
     assert!(field_mut(&mut host).cancel_edit());
@@ -212,7 +220,9 @@ fn marked_refusal_preserves_preedit_until_the_original_cancel_path() {
     assert!(!field_mut(&mut host).cancel_edit());
     assert!(!field_mut(&mut host).commit(NumberCommitReason::Submit));
     field_mut(&mut host).set_disabled(false);
-    host.event(&ContentEvent::TextCommand("cancelOperation:".into()));
+    host.event(&ContentEvent::TextCommand(
+        tekes_ui_controls::TextEditCommand::CancelOperation,
+    ));
     assert!(!field(&host).composing());
     assert_eq!(field(&host).edit_state().text, "10%");
     assert_eq!(field_mut(&mut host).set_value(20.), Ok(true));

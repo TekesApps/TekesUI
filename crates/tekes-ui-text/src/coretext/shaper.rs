@@ -548,6 +548,38 @@ impl Shaper for CoreTextShaper {
     fn shape(&mut self, text: &str, style: &TextStyle, options: &ShapeOptions) -> Paragraph {
         self.shape_prepared(&self.prepare(text, style), options)
     }
+
+    fn shape_label(
+        &mut self,
+        text: &str,
+        style: &TextStyle,
+        shape: &ShapeOptions,
+        options: crate::LabelOptions,
+    ) -> crate::LabelLayout {
+        self.shape_label_inner(text, style, shape, options, None)
+    }
+
+    fn shape_semantic_label(
+        &mut self,
+        label: &crate::SemanticLabel,
+        style: &TextStyle,
+        shape: &ShapeOptions,
+        options: crate::LabelOptions,
+    ) -> crate::LabelLayout {
+        self.shape_label_inner(label.text(), style, shape, options, Some(label))
+    }
+}
+
+impl crate::PreparedShaper for CoreTextShaper {
+    type Prepared = PreparedText;
+
+    fn prepare(&self, text: &str, style: &TextStyle) -> Self::Prepared {
+        CoreTextShaper::prepare(self, text, style)
+    }
+
+    fn shape_prepared(&mut self, prepared: &Self::Prepared, options: &ShapeOptions) -> Paragraph {
+        CoreTextShaper::shape_prepared(self, prepared, options)
+    }
 }
 
 impl CoreTextShaper {

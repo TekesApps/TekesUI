@@ -1162,8 +1162,11 @@ mod local_clipboard_tests {
         let mut host = host(3..3);
         let clipboard = Clipboard::new(Some("keep"));
         assert!(
-            host.local_content_input(&Event::TextCommand("cut:".into()), &clipboard)
-                .unwrap()
+            host.local_content_input(
+                &Event::TextCommand(tekes_ui_platform_macos::TextEditCommand::Cut),
+                &clipboard,
+            )
+            .unwrap()
         );
         assert_eq!(value(&mut host), "abc");
         assert_eq!(clipboard.clipboard_text().as_deref(), Some("keep"));
@@ -1174,8 +1177,11 @@ mod local_clipboard_tests {
         let mut host = host(1..3);
         let clipboard = Clipboard::new(None);
         assert!(
-            host.local_content_input(&Event::TextCommand("paste:".into()), &clipboard)
-                .unwrap()
+            host.local_content_input(
+                &Event::TextCommand(tekes_ui_platform_macos::TextEditCommand::Paste),
+                &clipboard,
+            )
+            .unwrap()
         );
         assert_eq!(value(&mut host), "abc");
         assert_eq!(clipboard.clipboard_text(), None);
@@ -1334,7 +1340,10 @@ mod local_clipboard_tests {
     #[test]
     fn local_clipboard_native_span_raw_and_selector_edit_once() {
         use tekes_ui_platform_macos::{TextKeyContext, TextKeyDisposition, TextKeyEvent};
-        for (letter, command, expected) in [("x", "cut:", "a"), ("v", "paste:", "aNEW")] {
+        for (letter, command, expected) in [
+            ("x", tekes_ui_platform_macos::TextEditCommand::Cut, "a"),
+            ("v", tekes_ui_platform_macos::TextEditCommand::Paste, "aNEW"),
+        ] {
             let mut host = host(1..3);
             let clipboard = Clipboard::new(Some("NEW"));
             let Event::Key(key) = shortcut(letter) else {
@@ -1348,7 +1357,7 @@ mod local_clipboard_tests {
             for event in [
                 Event::TextKey(TextKeyEvent::Started(context.clone())),
                 Event::Key(key),
-                Event::TextCommand(command.into()),
+                Event::TextCommand(command),
                 Event::TextKey(TextKeyEvent::Finished {
                     context,
                     input_context_handled: None,
@@ -1365,8 +1374,11 @@ mod local_clipboard_tests {
                 if letter == "x" { vec!["bc"] } else { vec![] }
             );
             // One undo restores the complete edit; a second native callback did not edit.
-            host.local_content_input(&Event::TextCommand("undo:".into()), &clipboard)
-                .unwrap();
+            host.local_content_input(
+                &Event::TextCommand(tekes_ui_platform_macos::TextEditCommand::Undo),
+                &clipboard,
+            )
+            .unwrap();
             assert_eq!(value(&mut host), "abc");
         }
     }
@@ -1376,8 +1388,8 @@ mod local_clipboard_tests {
             for event in [
                 shortcut("x"),
                 shortcut("v"),
-                Event::TextCommand("cut:".into()),
-                Event::TextCommand("paste:".into()),
+                Event::TextCommand(tekes_ui_platform_macos::TextEditCommand::Cut),
+                Event::TextCommand(tekes_ui_platform_macos::TextEditCommand::Paste),
             ] {
                 let mut host = host(1..3);
                 let clipboard = Clipboard::new(Some("keep"));
@@ -1412,7 +1424,10 @@ mod local_clipboard_tests {
     }
     #[test]
     fn local_clipboard_cut_uses_exact_utf16_selection_and_copy_keeps_readonly_text() {
-        for command in ["cut:", "copy:"] {
+        for command in [
+            tekes_ui_platform_macos::TextEditCommand::Cut,
+            tekes_ui_platform_macos::TextEditCommand::Copy,
+        ] {
             let mut host = host(1..3);
             let clipboard = Clipboard::new(Some("keep"));
             host.panel_mgr.panels[0]
@@ -1429,13 +1444,17 @@ mod local_clipboard_tests {
                         .input;
                     input.text = "A😀B".into();
                     input.select_range(1..3);
-                    input.read_only = command == "copy:";
+                    input.read_only = command == tekes_ui_platform_macos::TextEditCommand::Copy;
                 });
-            host.local_content_input(&Event::TextCommand(command.into()), &clipboard)
+            host.local_content_input(&Event::TextCommand(command), &clipboard)
                 .unwrap();
             assert_eq!(
                 value(&mut host),
-                if command == "cut:" { "AB" } else { "A😀B" }
+                if command == tekes_ui_platform_macos::TextEditCommand::Cut {
+                    "AB"
+                } else {
+                    "A😀B"
+                }
             );
             assert_eq!(clipboard.writes.borrow().as_slice(), ["😀"]);
         }
@@ -1456,8 +1475,11 @@ mod local_clipboard_tests {
                     .surface
                     .invalidate_text_layout();
             });
-        host.local_content_input(&Event::TextCommand("cut:".into()), &clipboard)
-            .unwrap();
+        host.local_content_input(
+            &Event::TextCommand(tekes_ui_platform_macos::TextEditCommand::Cut),
+            &clipboard,
+        )
+        .unwrap();
         host.panel_mgr.panels[0]
             .local
             .as_mut()

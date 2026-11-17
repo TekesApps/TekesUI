@@ -128,8 +128,12 @@ fn measuring_and_resizing_preserves_ime_selection_history_and_reading_state() {
             .key(),
         "reading"
     );
-    f.event(&ContentEvent::TextCommand("cancelOperation:".into()));
-    f.event(&ContentEvent::TextCommand("undo:".into()));
+    f.event(&ContentEvent::TextCommand(
+        tekes_ui_controls::TextEditCommand::CancelOperation,
+    ));
+    f.event(&ContentEvent::TextCommand(
+        tekes_ui_controls::TextEditCommand::Undo,
+    ));
     assert_eq!(f.field(COMPOSER).surface.input.text, "");
 }
 #[test]
@@ -248,7 +252,9 @@ fn readonly_fill_uses_original_selection_and_rejects_user_edits() {
     let mut f = ViewportFixture::new();
     render(&mut f, 400., 600.);
     f.host.focus(Some(TRANSCRIPT), true);
-    f.event(&ContentEvent::TextCommand("selectAll:".into()));
+    f.event(&ContentEvent::TextCommand(
+        tekes_ui_controls::TextEditCommand::SelectAll,
+    ));
     let original = f.field(TRANSCRIPT).surface.input.text.clone();
     assert_eq!(f.field(TRANSCRIPT).surface.input.selected_text(), original);
     assert!(
@@ -258,7 +264,9 @@ fn readonly_fill_uses_original_selection_and_rejects_user_edits() {
         })
         .changed
     );
-    f.event(&ContentEvent::TextCommand("deleteBackward:".into()));
+    f.event(&ContentEvent::TextCommand(
+        tekes_ui_controls::TextEditCommand::DeleteBackward,
+    ));
     assert_eq!(f.field(TRANSCRIPT).surface.input.text, original);
     assert_eq!(f.field(TRANSCRIPT).surface.input.selected_text(), original);
 }

@@ -1322,7 +1322,9 @@ mod consumer {
         };
         host.focus(None, false);
         host.event(&entry_tab(998));
-        host.event(&ContentEvent::TextCommand("insertTab:".into()));
+        host.event(&ContentEvent::TextCommand(
+            tekes_ui_controls::TextEditCommand::InsertTab,
+        ));
         ensure!(
             host.event(&ContentEvent::TextKeyEnd {
                 id: 998,
@@ -1340,7 +1342,9 @@ mod consumer {
             "clear_focus",
         )?;
         host.event(&entry_tab(999));
-        host.event(&ContentEvent::TextCommand("insertTab:".into()));
+        host.event(&ContentEvent::TextCommand(
+            tekes_ui_controls::TextEditCommand::InsertTab,
+        ));
         ensure!(
             host.event(&ContentEvent::TextKeyEnd {
                 id: 999,
@@ -1393,7 +1397,9 @@ mod consumer {
             input_context_consumed: handled,
         };
         host.event(&tekes_ui_module_runtime::content_event(&start(1001, false)).unwrap());
-        host.event(&ContentEvent::TextCommand("insertNewline:".into()));
+        host.event(&ContentEvent::TextCommand(
+            tekes_ui_controls::TextEditCommand::InsertNewline,
+        ));
         let submitted = host.event(&finish(1001, false));
         ensure!(
             submitted
@@ -1445,7 +1451,9 @@ mod consumer {
             text: "你".into(),
             replacement: None,
         });
-        host.event(&ContentEvent::TextCommand("insertNewline:".into()));
+        host.event(&ContentEvent::TextCommand(
+            tekes_ui_controls::TextEditCommand::InsertNewline,
+        ));
         let confirmed = host.event(&finish(1002, true));
         ensure!(
             confirmed
@@ -1618,7 +1626,9 @@ mod consumer {
                 context.key.characters_ignoring_modifiers = "\t".into();
             }
             host.event(&tekes_ui_module_runtime::content_event(&native).unwrap());
-            host.event(&ContentEvent::TextCommand("insertTab:".into()));
+            host.event(&ContentEvent::TextCommand(
+                tekes_ui_controls::TextEditCommand::InsertTab,
+            ));
             host.event(&finish(key_id, false));
         }
         ensure!(
@@ -1875,7 +1885,9 @@ mod consumer {
         host.event(&tekes_ui_module_runtime::content_event(&native_tab(1016)).unwrap());
         let inner_frame = Rect::new(99., 69., 615., 246.);
         ensure!(!tick(&mut host, &mut renderer, &ids, inner_frame)?);
-        host.event(&ContentEvent::TextCommand("insertTab:".into()));
+        host.event(&ContentEvent::TextCommand(
+            tekes_ui_controls::TextEditCommand::InsertTab,
+        ));
         ensure!(
             host.event(&finish(1016, false))
                 .text_key
@@ -1916,7 +1928,9 @@ mod consumer {
         host.event(&tekes_ui_module_runtime::content_event(&native_tab(1017)).unwrap());
         let pending_tab_frame = Rect::new(100., 70., 610., 245.);
         ensure!(!tick(&mut host, &mut renderer, &ids, pending_tab_frame)?);
-        host.event(&ContentEvent::TextCommand("insertTab:".into()));
+        host.event(&ContentEvent::TextCommand(
+            tekes_ui_controls::TextEditCommand::InsertTab,
+        ));
         ensure!(
             host.event(&finish(1017, false))
                 .text_key
@@ -2349,7 +2363,9 @@ mod consumer {
             },
             composing: false,
         });
-        host.event(&ContentEvent::TextCommand("insertBacktab:".into()));
+        host.event(&ContentEvent::TextCommand(
+            tekes_ui_controls::TextEditCommand::InsertBacktab,
+        ));
         let boundary = host.event(&ContentEvent::TextKeyEnd {
             id: 8001,
             input_context_consumed: false,

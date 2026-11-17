@@ -627,10 +627,13 @@ mod tests {
                 .is_none()
         );
         assert_eq!(story.state.input.combo().model().filtered(), vec![1, 2]);
-        for command in ["moveDown:", "insertNewline:"] {
+        for command in [
+            tekes_ui_controls::TextEditCommand::MoveDown,
+            tekes_ui_controls::TextEditCommand::InsertNewline,
+        ] {
             story
                 .host_mut()
-                .event_with_text(&ContentEvent::TextCommand(command.into()), &mut text)
+                .event_with_text(&ContentEvent::TextCommand(command), &mut text)
                 .unwrap();
             story.after_host_visit();
             render(&mut story, &mut text);

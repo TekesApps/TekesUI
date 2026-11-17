@@ -1203,7 +1203,11 @@ fn main() {
         }
         // Host clipboard access stays outside the reusable editor. Actual edits
         // go through the same ContentHost/TextInput transactions as typed text.
-        fn clipboard_command(&mut self, w: &Window, command: &str) {
+        fn clipboard_command(
+            &mut self,
+            w: &Window,
+            command: tekes_ui_platform_macos::TextEditCommand,
+        ) {
             if !w.is_active() {
                 return;
             }
@@ -1213,7 +1217,7 @@ fn main() {
             if surface.input.disabled || surface.input.marked.is_some() {
                 return;
             }
-            if command == "copy:" {
+            if command == tekes_ui_platform_macos::TextEditCommand::Copy {
                 self.copy_selection(w);
                 return;
             }
@@ -1222,14 +1226,14 @@ fn main() {
             }
             let replacement = surface.input.selection();
             match command {
-                "cut:" if !replacement.is_empty() => {
+                tekes_ui_platform_macos::TextEditCommand::Cut if !replacement.is_empty() => {
                     self.copy_selection(w);
                     self.dispatch(Event::TextCommit {
                         text: String::new(),
                         replacement: Some(replacement),
                     });
                 }
-                "paste:" => {
+                tekes_ui_platform_macos::TextEditCommand::Paste => {
                     if let Some(text) = w.clipboard_text() {
                         self.dispatch(Event::TextCommit {
                             text,
@@ -1280,19 +1284,23 @@ fn main() {
                     replacement,
                 },
                 Event::TextUnmark => C::Unmark,
-                Event::TextCommand(s) => C::TextCommand(s),
+                Event::TextCommand(s) => {
+                    C::TextCommand(tekes_ui_macos_bridge::translate_text_command(s))
+                }
                 Event::Key(k) => {
                     // This minimal host has no Edit menu. Dispatch standard
                     // editing shortcuts to the same public text command API.
                     if k.kind == KeyEventKind::Down && k.modifiers.command {
                         let command = match k.key_code {
-                            0 => Some("selectAll:"),
-                            6 if k.modifiers.shift => Some("redo:"),
-                            6 => Some("undo:"),
+                            0 => Some(tekes_ui_platform_macos::TextEditCommand::SelectAll),
+                            6 if k.modifiers.shift => {
+                                Some(tekes_ui_platform_macos::TextEditCommand::Redo)
+                            }
+                            6 => Some(tekes_ui_platform_macos::TextEditCommand::Undo),
                             _ => None,
                         };
                         if let Some(command) = command {
-                            return self.dispatch(Event::TextCommand(command.into()));
+                            return self.dispatch(Event::TextCommand(command));
                         }
                     }
                     C::KeyInput(crate::native_key::key(k))
@@ -1713,17 +1721,22 @@ fn main() {
                         && matches!(key.key_code, 7..=9) =>
                 {
                     let command = match key.key_code {
-                        7 => "cut:",
-                        8 => "copy:",
-                        _ => "paste:",
+                        7 => tekes_ui_platform_macos::TextEditCommand::Cut,
+                        8 => tekes_ui_platform_macos::TextEditCommand::Copy,
+                        _ => tekes_ui_platform_macos::TextEditCommand::Paste,
                     };
                     self.clipboard_command(w, command);
                     self.redraw(w);
                 }
                 Event::TextCommand(command)
-                    if matches!(command.as_str(), "copy:" | "cut:" | "paste:") =>
+                    if matches!(
+                        command,
+                        tekes_ui_platform_macos::TextEditCommand::Copy
+                            | tekes_ui_platform_macos::TextEditCommand::Cut
+                            | tekes_ui_platform_macos::TextEditCommand::Paste
+                    ) =>
                 {
-                    self.clipboard_command(w, &command);
+                    self.clipboard_command(w, command);
                     self.redraw(w);
                 }
                 Event::Accessibility { target, action } => {

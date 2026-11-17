@@ -216,7 +216,9 @@ impl Host {
                 replacement,
             },
             Event::TextUnmark => C::Unmark,
-            Event::TextCommand(c) => C::TextCommand(c),
+            Event::TextCommand(c) => {
+                C::TextCommand(tekes_ui_macos_bridge::translate_text_command(c))
+            }
             Event::Key(k) => C::KeyInput(native_key::key(k)),
             _ => return false,
         };

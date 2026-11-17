@@ -321,9 +321,9 @@ impl Component for Trigger {
                 r.consumed = e.consumed;
                 r
             }
-            ContentEvent::TextCommand(command)
-                if matches!(command.as_str(), "insertNewline:" | "insertLineBreak:") =>
-            {
+            ContentEvent::TextCommand(
+                TextEditCommand::InsertNewline | TextEditCommand::InsertLineBreak,
+            ) => {
                 let e = self
                     .view
                     .request_key_event(ControlKey::Enter, true, &self.model);

@@ -579,6 +579,154 @@ impl TextInputState {
     }
 }
 
+/// 平台无关的文本编辑命令，从 AppKit `NSStandardKeyBindingResponding` selector
+/// 归一化而来。所有 Objective-C selector 字符串解析均收敛在本类型内。
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum TextEditCommand {
+    MoveLeft,
+    MoveLeftAndModifySelection,
+    MoveRight,
+    MoveRightAndModifySelection,
+    MoveWordLeft,
+    MoveWordLeftAndModifySelection,
+    MoveWordRight,
+    MoveWordRightAndModifySelection,
+    MoveUp,
+    MoveUpAndModifySelection,
+    MoveDown,
+    MoveDownAndModifySelection,
+    MoveToBeginningOfLine,
+    MoveToBeginningOfLineAndModifySelection,
+    MoveToEndOfLine,
+    MoveToEndOfLineAndModifySelection,
+    MoveToBeginningOfParagraph,
+    MoveToBeginningOfParagraphAndModifySelection,
+    MoveToEndOfParagraph,
+    MoveToEndOfParagraphAndModifySelection,
+    MoveParagraphBackwardAndModifySelection,
+    MoveParagraphForwardAndModifySelection,
+    MoveToBeginningOfDocument,
+    MoveToBeginningOfDocumentAndModifySelection,
+    MoveToEndOfDocument,
+    MoveToEndOfDocumentAndModifySelection,
+    PageUp,
+    PageDown,
+    SelectAll,
+    SelectLine,
+    SelectParagraph,
+    DeleteSelection,
+    DeleteBackward,
+    DeleteBackwardDecomposing,
+    DeleteForward,
+    DeleteWordBackward,
+    DeleteWordForward,
+    DeleteToBeginningOfLine,
+    DeleteToEndOfLine,
+    DeleteToBeginningOfParagraph,
+    DeleteToEndOfParagraph,
+    Yank,
+    Transpose,
+    InsertNewline,
+    InsertLineBreak,
+    InsertNewlineIgnoringFieldEditor,
+    InsertTab,
+    InsertBacktab,
+    InsertTabIgnoringFieldEditor,
+    CancelOperation,
+    Undo,
+    Redo,
+    Cut,
+    Copy,
+    Paste,
+}
+
+impl TextEditCommand {
+    /// Parse an AppKit `doCommandBySelector:` name into a platform-neutral editing command.
+    pub fn from_objc_selector(selector: &str) -> Option<Self> {
+        Some(match selector {
+            "moveLeft:" | "moveBackward:" => Self::MoveLeft,
+            "moveLeftAndModifySelection:" | "moveBackwardAndModifySelection:" => {
+                Self::MoveLeftAndModifySelection
+            }
+            "moveRight:" | "moveForward:" => Self::MoveRight,
+            "moveRightAndModifySelection:" | "moveForwardAndModifySelection:" => {
+                Self::MoveRightAndModifySelection
+            }
+            "moveWordLeft:" | "moveWordBackward:" => Self::MoveWordLeft,
+            "moveWordLeftAndModifySelection:" | "moveWordBackwardAndModifySelection:" => {
+                Self::MoveWordLeftAndModifySelection
+            }
+            "moveWordRight:" | "moveWordForward:" => Self::MoveWordRight,
+            "moveWordRightAndModifySelection:" | "moveWordForwardAndModifySelection:" => {
+                Self::MoveWordRightAndModifySelection
+            }
+            "moveUp:" => Self::MoveUp,
+            "moveUpAndModifySelection:" => Self::MoveUpAndModifySelection,
+            "moveDown:" => Self::MoveDown,
+            "moveDownAndModifySelection:" => Self::MoveDownAndModifySelection,
+            "moveToBeginningOfLine:" | "moveToLeftEndOfLine:" => Self::MoveToBeginningOfLine,
+            "moveToBeginningOfLineAndModifySelection:"
+            | "moveToLeftEndOfLineAndModifySelection:" => {
+                Self::MoveToBeginningOfLineAndModifySelection
+            }
+            "moveToEndOfLine:" | "moveToRightEndOfLine:" => Self::MoveToEndOfLine,
+            "moveToEndOfLineAndModifySelection:" | "moveToRightEndOfLineAndModifySelection:" => {
+                Self::MoveToEndOfLineAndModifySelection
+            }
+            "moveToBeginningOfParagraph:" => Self::MoveToBeginningOfParagraph,
+            "moveToBeginningOfParagraphAndModifySelection:" => {
+                Self::MoveToBeginningOfParagraphAndModifySelection
+            }
+            "moveToEndOfParagraph:" => Self::MoveToEndOfParagraph,
+            "moveToEndOfParagraphAndModifySelection:" => {
+                Self::MoveToEndOfParagraphAndModifySelection
+            }
+            "moveParagraphBackwardAndModifySelection:" => {
+                Self::MoveParagraphBackwardAndModifySelection
+            }
+            "moveParagraphForwardAndModifySelection:" => {
+                Self::MoveParagraphForwardAndModifySelection
+            }
+            "moveToBeginningOfDocument:" => Self::MoveToBeginningOfDocument,
+            "moveToBeginningOfDocumentAndModifySelection:" => {
+                Self::MoveToBeginningOfDocumentAndModifySelection
+            }
+            "moveToEndOfDocument:" => Self::MoveToEndOfDocument,
+            "moveToEndOfDocumentAndModifySelection:" => Self::MoveToEndOfDocumentAndModifySelection,
+            "pageUp:" | "scrollPageUp:" => Self::PageUp,
+            "pageDown:" | "scrollPageDown:" => Self::PageDown,
+            "selectAll:" => Self::SelectAll,
+            "selectLine:" => Self::SelectLine,
+            "selectParagraph:" => Self::SelectParagraph,
+            "delete:" => Self::DeleteSelection,
+            "deleteBackward:" => Self::DeleteBackward,
+            "deleteBackwardByDecomposingPreviousCharacter:" => Self::DeleteBackwardDecomposing,
+            "deleteForward:" => Self::DeleteForward,
+            "deleteWordBackward:" => Self::DeleteWordBackward,
+            "deleteWordForward:" => Self::DeleteWordForward,
+            "deleteToBeginningOfLine:" => Self::DeleteToBeginningOfLine,
+            "deleteToEndOfLine:" => Self::DeleteToEndOfLine,
+            "deleteToBeginningOfParagraph:" => Self::DeleteToBeginningOfParagraph,
+            "deleteToEndOfParagraph:" => Self::DeleteToEndOfParagraph,
+            "yank:" => Self::Yank,
+            "transpose:" => Self::Transpose,
+            "insertNewline:" => Self::InsertNewline,
+            "insertLineBreak:" => Self::InsertLineBreak,
+            "insertNewlineIgnoringFieldEditor:" => Self::InsertNewlineIgnoringFieldEditor,
+            "insertTab:" => Self::InsertTab,
+            "insertBacktab:" => Self::InsertBacktab,
+            "insertTabIgnoringFieldEditor:" => Self::InsertTabIgnoringFieldEditor,
+            "cancelOperation:" => Self::CancelOperation,
+            "undo:" => Self::Undo,
+            "redo:" => Self::Redo,
+            "cut:" => Self::Cut,
+            "copy:" => Self::Copy,
+            "paste:" => Self::Paste,
+            _ => return None,
+        })
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
 pub enum Event {
@@ -622,7 +770,9 @@ pub enum Event {
     },
     TextUnmark,
     CaretBlink,
-    TextCommand(String),
+    /// 标准文本框与输入法路由后的编辑命令，已从 AppKit `NSStandardKeyBindingResponding`
+    /// Objective-C selector 收敛为强类型命令；未知 selector 在平台边界忽略。
+    TextCommand(TextEditCommand),
     /// 修饰键变化（`flagsChanged`）。
     ModifiersChanged(Modifiers),
     /// 窗口成为或不再是 key window。
@@ -997,6 +1147,54 @@ mod issue102_no_geometry_tests {
         assert_eq!(
             state.character_index_for_point(Point { x: 59., y: 9. }),
             Some(7)
+        );
+    }
+
+    #[test]
+    fn objc_selectors_map_all_supported_editing_commands_and_aliases() {
+        assert_eq!(
+            TextEditCommand::from_objc_selector("moveBackward:"),
+            Some(TextEditCommand::MoveLeft)
+        );
+        assert_eq!(
+            TextEditCommand::from_objc_selector("moveLeftAndModifySelection:"),
+            Some(TextEditCommand::MoveLeftAndModifySelection)
+        );
+        assert_eq!(
+            TextEditCommand::from_objc_selector("moveBackwardAndModifySelection:"),
+            Some(TextEditCommand::MoveLeftAndModifySelection)
+        );
+        assert_eq!(
+            TextEditCommand::from_objc_selector("moveToLeftEndOfLine:"),
+            Some(TextEditCommand::MoveToBeginningOfLine)
+        );
+        assert_eq!(
+            TextEditCommand::from_objc_selector("moveToRightEndOfLineAndModifySelection:"),
+            Some(TextEditCommand::MoveToEndOfLineAndModifySelection)
+        );
+        assert_eq!(
+            TextEditCommand::from_objc_selector("scrollPageUp:"),
+            Some(TextEditCommand::PageUp)
+        );
+        assert_eq!(
+            TextEditCommand::from_objc_selector("scrollPageDown:"),
+            Some(TextEditCommand::PageDown)
+        );
+        assert_eq!(
+            TextEditCommand::from_objc_selector("deleteBackwardByDecomposingPreviousCharacter:"),
+            Some(TextEditCommand::DeleteBackwardDecomposing)
+        );
+        assert_eq!(
+            TextEditCommand::from_objc_selector("insertNewlineIgnoringFieldEditor:"),
+            Some(TextEditCommand::InsertNewlineIgnoringFieldEditor)
+        );
+        assert_eq!(
+            TextEditCommand::from_objc_selector("insertTabIgnoringFieldEditor:"),
+            Some(TextEditCommand::InsertTabIgnoringFieldEditor)
+        );
+        assert_eq!(
+            TextEditCommand::from_objc_selector("unknownSelector:"),
+            None
         );
     }
 }

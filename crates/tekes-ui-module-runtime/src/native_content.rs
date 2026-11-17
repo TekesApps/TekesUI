@@ -874,7 +874,12 @@ pub(crate) fn content_input(
             replacement: replacement.clone(),
         },
         E::Unmark => wire::Input::Unmark,
-        E::TextCommand(command) => wire::Input::TextCommand(command.clone()),
+        E::TextCommand(command) => {
+            wire::Input::TextCommand(crate::content_input::map_text_edit_command!(
+                *command,
+                tekes_ui_controls::TextEditCommand => wire::TextEditCommand
+            ))
+        }
         E::TextKeyStart { id, key, composing } => wire::Input::TextKeyStart {
             id: *id,
             key: content_key(key),
@@ -940,7 +945,12 @@ fn native_input(event: &native::Event) -> Option<wire::Input> {
             replacement: replacement.clone(),
         },
         native::Event::TextUnmark => wire::Input::Unmark,
-        native::Event::TextCommand(command) => wire::Input::TextCommand(command.clone()),
+        native::Event::TextCommand(command) => {
+            wire::Input::TextCommand(crate::content_input::map_text_edit_command!(
+                *command,
+                native::TextEditCommand => wire::TextEditCommand
+            ))
+        }
         _ => return None,
     })
 }

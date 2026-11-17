@@ -3108,7 +3108,9 @@ mod tests {
             assert_eq!(host.focused(), Some(value));
             dispatch_content_window_event_with_text(
                 host,
-                &tekes_ui_platform_macos::Event::TextCommand("copy:".into()),
+                &tekes_ui_platform_macos::Event::TextCommand(
+                    tekes_ui_platform_macos::TextEditCommand::Copy,
+                ),
                 &clipboard,
                 &mut text,
             )
@@ -3249,7 +3251,9 @@ mod tests {
             host.accessibility_action(frame_id, None, AccessibilityAction::SetSelection(0..len));
             dispatch_content_window_event_with_text(
                 host,
-                &tekes_ui_platform_macos::Event::TextCommand("copy:".into()),
+                &tekes_ui_platform_macos::Event::TextCommand(
+                    tekes_ui_platform_macos::TextEditCommand::Copy,
+                ),
                 &clipboard,
                 &mut text,
             )
@@ -3687,10 +3691,10 @@ mod tests {
                 "tui.number-field"
             );
             host.event(&ContentEvent::TextCommand(
-                "moveToBeginningOfDocument:".into(),
+                tekes_ui_controls::TextEditCommand::MoveToBeginningOfDocument,
             ));
             host.event(&ContentEvent::TextCommand(
-                "moveToEndOfDocumentAndModifySelection:".into(),
+                tekes_ui_controls::TextEditCommand::MoveToEndOfDocumentAndModifySelection,
             ));
             let input = &host.text_surface(DOCUMENT_READER).unwrap().input;
             assert_eq!(input.selected_text(), input.text);

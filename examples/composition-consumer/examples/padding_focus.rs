@@ -437,9 +437,12 @@ fn main() {
                     window,
                 ),
                 Event::TextUnmark => self.event(ContentEvent::Unmark, window),
-                Event::TextCommand(command) => {
-                    self.event(ContentEvent::TextCommand(command), window)
-                }
+                Event::TextCommand(command) => self.event(
+                    ContentEvent::TextCommand(tekes_ui_macos_bridge::translate_text_command(
+                        command,
+                    )),
+                    window,
+                ),
                 Event::Accessibility { target, action } => {
                     ax::content_action(&mut self.tree, target, action);
                     self.actions.extend(self.tree.drain_action_records());

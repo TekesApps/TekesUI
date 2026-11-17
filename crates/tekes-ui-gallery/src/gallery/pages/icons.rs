@@ -1123,7 +1123,7 @@ mod catalogue_review {
                     // Reuse the actual search surface; only its input state is scripted.
                     let mut search = crate::gallery::text_demo::TextDemo::search_fixture();
                     if !query.is_empty() {
-                        search.command("insertTab:");
+                        search.command(tekes_ui_controls::TextEditCommand::InsertTab);
                         search.paste(query);
                         search.blur();
                     }

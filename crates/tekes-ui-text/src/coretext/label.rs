@@ -91,7 +91,7 @@ impl CoreTextShaper {
         self.shape_label_inner(label.text(), style, shape, options, Some(label))
     }
 
-    fn shape_label_inner(
+    pub(super) fn shape_label_inner(
         &mut self,
         text: &str,
         style: &TextStyle,

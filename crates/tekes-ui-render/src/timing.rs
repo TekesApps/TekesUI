@@ -33,7 +33,10 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicU8, Ordering};
 use std::time::Duration;
 
-#[cfg(target_os = "macos")]
+/// Host clock callback used by [`Renderer::observe_gpu_work_done_host`](crate::Renderer::observe_gpu_work_done_host)
+/// to stamp completion-callback arrival times without embedding platform clock APIs in `tekes-ui-render`.
+pub type HostTimeClock = Arc<dyn Fn() -> f64 + Send + Sync>;
+
 type WorkDoneHostObservations = Arc<std::sync::Mutex<Vec<(u64, f64)>>>;
 
 /// 回读槽的数量：同时在途的带 GPU 计时的帧数上限。
@@ -94,8 +97,7 @@ pub(crate) struct Timing {
     /// 最近一次画出的帧的编号。
     last_frame: Option<u64>,
     /// Opt-in completion-notification observations, keyed by already assigned frame.
-    #[cfg(target_os = "macos")]
-    work_done_host: Option<WorkDoneHostObservations>,
+    work_done_host: Option<(WorkDoneHostObservations, HostTimeClock)>,
 }
 
 /// 这一帧占用的槽。
@@ -139,20 +141,17 @@ impl Timing {
             waiting: VecDeque::new(),
             done: Vec::new(),
             last_frame: None,
-            #[cfg(target_os = "macos")]
             work_done_host: None,
         }
     }
 
-    #[cfg(target_os = "macos")]
-    pub fn observe_work_done_host(&mut self) {
-        self.work_done_host = Some(Arc::new(std::sync::Mutex::new(Vec::new())));
+    pub fn observe_work_done_host(&mut self, clock: HostTimeClock) {
+        self.work_done_host = Some((Arc::new(std::sync::Mutex::new(Vec::new())), clock));
     }
 
     /// Snapshot of (FrameTiming.frame, callback_observed_host_s), not GPU end times.
-    #[cfg(target_os = "macos")]
     pub fn work_done_host_observations(&self) -> Option<Result<Vec<(u64, f64)>, &'static str>> {
-        self.work_done_host.as_ref().map(|store| {
+        self.work_done_host.as_ref().map(|(store, _)| {
             store
                 .lock()
                 .map(|rows| rows.clone())
@@ -198,17 +197,17 @@ impl Timing {
         };
         let state = g.slots[t.0].state.clone();
         state.store(SUBMITTED, Ordering::Release);
-        #[cfg(target_os = "macos")]
-        let observation = self.work_done_host.as_ref().map(Arc::clone);
-        #[cfg(target_os = "macos")]
+        let observation = self
+            .work_done_host
+            .as_ref()
+            .map(|(store, clock)| (Arc::clone(store), Arc::clone(clock)));
         let frame = timing.frame;
         queue.on_submitted_work_done(move || {
             state.store(WORK_DONE, Ordering::Release);
-            #[cfg(target_os = "macos")]
-            if let Some(store) = &observation {
+            if let Some((store, clock)) = &observation {
                 // This callback is delivered by a later poll/submit. GPU work
                 // finished no later than this host time; it may finish earlier.
-                let observed = objc2_quartz_core::CACurrentMediaTime();
+                let observed = clock();
                 if let Ok(mut rows) = store.lock() {
                     rows.push((frame, observed));
                 }

@@ -372,12 +372,17 @@ impl StoryTextHost {
     }
     pub(super) fn command(
         &mut self,
-        command: &str,
+        command: tekes_ui_controls::TextEditCommand,
         clipboard: Option<&str>,
         text: &mut TextEngine,
     ) -> (bool, Option<String>) {
-        if !matches!(command, "copy:" | "cut:" | "paste:") {
-            let r = self.deliver(&ContentEvent::TextCommand(command.into()), text);
+        if !matches!(
+            command,
+            tekes_ui_controls::TextEditCommand::Copy
+                | tekes_ui_controls::TextEditCommand::Cut
+                | tekes_ui_controls::TextEditCommand::Paste
+        ) {
+            let r = self.deliver(&ContentEvent::TextCommand(command), text);
             return (r.changed, None);
         }
         let Some(snapshot) = self.host.claim_clipboard_input() else {
@@ -385,17 +390,20 @@ impl StoryTextHost {
         };
         let selected =
             (!snapshot.selection.is_empty()).then(|| self.original_input().selected_text());
-        if command == "copy:" {
+        if command == tekes_ui_controls::TextEditCommand::Copy {
             return (false, selected);
         }
         if snapshot.read_only {
             return (false, None);
         }
-        if command == "cut:" {
+        if command == tekes_ui_controls::TextEditCommand::Cut {
             if selected.is_none() {
                 return (false, None);
             }
-            let r = self.deliver(&ContentEvent::TextCommand("deleteBackward:".into()), text);
+            let r = self.deliver(
+                &ContentEvent::TextCommand(tekes_ui_controls::TextEditCommand::DeleteBackward),
+                text,
+            );
             return (r.changed, selected);
         }
         let Some(value) = clipboard else {
@@ -504,7 +512,9 @@ impl StoryTextHost {
                 replacement: replacement.clone(),
             },
             Event::TextUnmark if focused => ContentEvent::Unmark,
-            Event::TextCommand(c) if focused => ContentEvent::TextCommand(c.clone()),
+            Event::TextCommand(c) if focused => {
+                ContentEvent::TextCommand(tekes_ui_macos_bridge::translate_text_command(*c))
+            }
             Event::CaretBlink if focused => return Some(true),
             _ => return None,
         };

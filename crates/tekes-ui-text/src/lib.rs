@@ -27,7 +27,9 @@
 //! - [`compare`]：带容差的像素对比和差异热图（comparison-method 第 2.1 节）；
 //! - [`coretext::render_oracle`]：用 CoreText 直绘的对照图，检验 atlas 和 GPU 路径。
 
+#[cfg(feature = "qa")]
 pub mod compare;
+#[cfg(feature = "qa")]
 pub mod export;
 mod geometry;
 pub mod label;
@@ -45,7 +47,7 @@ pub use model::{
 };
 pub use push::{push_paragraph, push_paragraph_visible};
 pub use style::{FontFamily, TextStyle};
-pub use traits::{FontFallback, Rasterizer, Shaper};
+pub use traits::{FontFallback, GenericPreparedText, PreparedShaper, Rasterizer, Shaper};
 
 pub use label::{
     LabelForeground, LabelForegroundRun, LabelLayout, LabelOptions, LabelOverflow,

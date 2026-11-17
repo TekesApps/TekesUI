@@ -90,7 +90,9 @@ fn independent_composed_editor_focus_draft_and_undo_survive_history_prepend() {
     let delta = f.surface.input.len() - old_len;
     let after = f.surface.caret_doc(anchor.utf16 + delta).min_y() - f.surface.scroll.offset.y;
     assert!((after - y).abs() <= 1.);
-    f.controls.event(&ContentEvent::TextCommand("undo:".into()));
+    f.controls.event(&ContentEvent::TextCommand(
+        tekes_ui_controls::TextEditCommand::Undo,
+    ));
     assert_ne!(f.controls.text_surface(EDITOR).unwrap().input.text, before);
 }
 #[test]

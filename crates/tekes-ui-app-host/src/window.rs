@@ -3809,7 +3809,9 @@ mod settings_close_input_tests {
                 let mut s = state.borrow_mut();
                 let form = &mut s.form.host;
                 assert!(form.focus(Some(ComponentId(101)), true));
-                form.event(&ContentEvent::TextCommand("selectAll:".into()));
+                form.event(&ContentEvent::TextCommand(
+                    tekes_ui_controls::TextEditCommand::SelectAll,
+                ));
                 form.event(&ContentEvent::Commit {
                     text: text.into(),
                     replacement: None,

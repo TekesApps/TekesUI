@@ -199,7 +199,9 @@ fn plain_content_token_dependencies_exclude_form_chrome_and_metadata() {
                         &mut Text,
                         f,
                         f,
-                        Palette::new(theme, brand).expect("registered Gallery brand").into(),
+                        Palette::new(theme, brand)
+                            .expect("registered Gallery brand")
+                            .into(),
                     );
                 });
                 for (family, id) in &reads {
@@ -249,7 +251,7 @@ fn focusing_and_navigating_document_reveals_caret_through_parent_not_entire_bloc
     let response = s
         .host
         .event_with_text(
-            &ContentEvent::TextCommand("moveToEndOfDocument:".into()),
+            &ContentEvent::TextCommand(tekes_ui_controls::TextEditCommand::MoveToEndOfDocument),
             &mut Text,
         )
         .unwrap();
@@ -275,7 +277,9 @@ fn focusing_and_navigating_document_reveals_caret_through_parent_not_entire_bloc
     assert!(
         s.host
             .event_with_text(
-                &ContentEvent::TextCommand("moveToBeginningOfDocument:".into()),
+                &ContentEvent::TextCommand(
+                    tekes_ui_controls::TextEditCommand::MoveToBeginningOfDocument
+                ),
                 &mut Text
             )
             .unwrap()

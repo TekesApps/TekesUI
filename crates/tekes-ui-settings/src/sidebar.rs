@@ -531,8 +531,12 @@ mod search_focus_tests {
 
         // Clearing query to empty and blurring cancels search cleanly.
         assert!(sidebar.host.focus(Some(ComponentId(6)), true));
-        sidebar.event(&ContentEvent::TextCommand("selectAll:".into()));
-        sidebar.event(&ContentEvent::TextCommand("deleteBackward:".into()));
+        sidebar.event(&ContentEvent::TextCommand(
+            tekes_ui_controls::TextEditCommand::SelectAll,
+        ));
+        sidebar.event(&ContentEvent::TextCommand(
+            tekes_ui_controls::TextEditCommand::DeleteBackward,
+        ));
         sidebar.host.focus(None, false);
         sidebar.sync_search().unwrap();
         assert!(sidebar.search_button.is_none());

@@ -156,8 +156,9 @@ fn combo_box_retained_public_composition_keeps_query_source_indices_and_real_com
     assert_eq!(actions[0].action.source, ContentActionSource::Pointer);
     draw(&mut s, &mut text, Theme::DARK_INCREASED);
     assert!(!s.is_presented());
-    s.host
-        .event(&ContentEvent::TextCommand("selectAll:".into()));
+    s.host.event(&ContentEvent::TextCommand(
+        tekes_ui_controls::TextEditCommand::SelectAll,
+    ));
     s.host.event(&ContentEvent::Commit {
         text: "B".into(),
         replacement: None,
@@ -181,8 +182,9 @@ fn combo_box_retained_public_composition_keeps_query_source_indices_and_real_com
         1,
         "confirming the same original value remains an event"
     );
-    s.host
-        .event(&ContentEvent::TextCommand("selectAll:".into()));
+    s.host.event(&ContentEvent::TextCommand(
+        tekes_ui_controls::TextEditCommand::SelectAll,
+    ));
     s.host.event(&ContentEvent::Commit {
         text: "B".into(),
         replacement: None,

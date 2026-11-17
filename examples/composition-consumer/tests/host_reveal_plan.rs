@@ -125,8 +125,11 @@ fn setup() -> (ContentHost, Text) {
     paint(&mut h, &mut t);
     assert!(h.focus(Some(FIELD), true));
     paint(&mut h, &mut t);
-    h.event_with_text(&ContentEvent::TextCommand("selectAll:".into()), &mut t)
-        .unwrap();
+    h.event_with_text(
+        &ContentEvent::TextCommand(tekes_ui_controls::TextEditCommand::SelectAll),
+        &mut t,
+    )
+    .unwrap();
     paint(&mut h, &mut t);
     let input = &h.text_surface(FIELD).unwrap().input;
     assert_ne!(input.anchor, input.caret);
@@ -827,8 +830,11 @@ fn focus_old_and_new_owner_paths_ignore_unplanned_mutable_getter_siblings() {
         let mut t = Text::new(true);
         paint(&mut h, &mut t);
         assert!(h.focus(Some(FIELD), true));
-        h.event_with_text(&ContentEvent::TextCommand("selectAll:".into()), &mut t)
-            .unwrap();
+        h.event_with_text(
+            &ContentEvent::TextCommand(tekes_ui_controls::TextEditCommand::SelectAll),
+            &mut t,
+        )
+        .unwrap();
         paint(&mut h, &mut t);
         let mount = h.semantic_mount(FIELD);
         let value = h.text_surface(FIELD).unwrap().input.text.clone();

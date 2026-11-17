@@ -193,9 +193,19 @@ fn public_marked_updates_retain_the_same_editor_selection_and_undo() {
     assert!(key(&mut h, ControlKey::Escape).consumed);
     assert!(!model(&h).model().open);
     assert!(h.drain_actions().is_empty());
-    assert!(h.event(&ContentEvent::TextCommand("undo:".into())).consumed);
+    assert!(
+        h.event(&ContentEvent::TextCommand(
+            tekes_ui_controls::TextEditCommand::Undo
+        ))
+        .consumed
+    );
     assert_eq!(h.focused_text().unwrap().input.text, "");
-    assert!(h.event(&ContentEvent::TextCommand("redo:".into())).consumed);
+    assert!(
+        h.event(&ContentEvent::TextCommand(
+            tekes_ui_controls::TextEditCommand::Redo
+        ))
+        .consumed
+    );
     assert_eq!(h.focused_text().unwrap().input.text, "Com");
 }
 #[test]

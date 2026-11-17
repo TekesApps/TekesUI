@@ -1475,7 +1475,9 @@ fn accessibility_text_selection_reuses_editor_graphemes_undo_and_composition_pri
         .consumed
     );
     assert_eq!(host.focused_text().unwrap().input.text, "A你中");
-    host.event(&ContentEvent::TextCommand("undo:".into()));
+    host.event(&ContentEvent::TextCommand(
+        tekes_ui_controls::TextEditCommand::Undo,
+    ));
     assert_eq!(host.focused_text().unwrap().input.text, "A😀e\u{301}中");
     assert_eq!(host.focused_text().unwrap().input.selection(), 1..5);
     assert!(!act(&mut host, AccessibilityAction::SetSelection(0..999)).consumed);
@@ -1517,7 +1519,9 @@ fn accessibility_text_selection_reuses_editor_graphemes_undo_and_composition_pri
     }
     assert_eq!(host.focused_text().unwrap().input.text, before);
     assert!(host.focused_text().unwrap().input.marked.is_some());
-    host.event(&ContentEvent::TextCommand("undo:".into()));
+    host.event(&ContentEvent::TextCommand(
+        tekes_ui_controls::TextEditCommand::Undo,
+    ));
     assert_eq!(host.focused_text().unwrap().input.text, "A😀e\u{301}中");
     assert_eq!(host.focused_text().unwrap().input.selection(), 5..6);
     assert!(host.focused_text().unwrap().input.marked.is_none());
@@ -1559,7 +1563,9 @@ fn input_blur_finalizes_the_draft_and_dialog_reopen_has_no_stale_composition() {
     host.show_dialog(ids::DIALOG).unwrap();
     render(&mut host, &mut text);
     assert!(host.focused_text().unwrap().input.marked.is_none());
-    host.event(&ContentEvent::TextCommand("undo:".into()));
+    host.event(&ContentEvent::TextCommand(
+        tekes_ui_controls::TextEditCommand::Undo,
+    ));
     assert_eq!(host.focused_text().unwrap().input.text, "draft");
 }
 
@@ -1926,7 +1932,9 @@ fn composed_reading_policy_keeps_history_and_keyboard_latest_does_not_steal_focu
             < 0.01
     );
     assert!(host.focus(Some(ids::DIALOG_SAVE), true));
-    let latest = host.event(&ContentEvent::TextCommand("insertNewline:".into()));
+    let latest = host.event(&ContentEvent::TextCommand(
+        tekes_ui_controls::TextEditCommand::InsertNewline,
+    ));
     assert!(latest.activated);
     let field = host
         .get_mut(ids::DIALOG_FIELD)
@@ -2033,7 +2041,9 @@ fn real_editor_keeps_unsaved_input_and_retries_the_frozen_public_draft() {
             Ok(())
         })
         .unwrap();
-    host.event(&ContentEvent::TextCommand("selectAll:".into()));
+    host.event(&ContentEvent::TextCommand(
+        tekes_ui_controls::TextEditCommand::SelectAll,
+    ));
     host.event(&ContentEvent::Commit {
         text: "new typing".into(),
         replacement: None,
@@ -2159,17 +2169,46 @@ fn native_text_backend_action_views_honor_model_changes_between_host_events() {
     let mut icon = Button::new(tekes_ui_scene::ImageId(1)).with_accessible_name("Create item");
     let icon_frame = Rect::new(0., 0., 40., 40.);
     icon.arrange(&mut text, icon_frame, icon_frame);
-    icon.paint(&mut Scene::new(), &mut text, icon_frame, icon_frame, palette.into());
-    assert!(icon.event(&ContentEvent::PointerDown(icon_frame.center())).consumed);
+    icon.paint(
+        &mut Scene::new(),
+        &mut text,
+        icon_frame,
+        icon_frame,
+        palette.into(),
+    );
+    assert!(
+        icon.event(&ContentEvent::PointerDown(icon_frame.center()))
+            .consumed
+    );
     // Controlled application state arrives between pointer down and release.
     icon.button.state.loading = true;
-    assert!(!icon.event(&ContentEvent::PointerUp(icon_frame.center())).activated);
+    assert!(
+        !icon
+            .event(&ContentEvent::PointerUp(icon_frame.center()))
+            .activated
+    );
     assert!(icon.button.state.loading);
     icon.button.state.loading = false;
-    icon.paint(&mut Scene::new(), &mut text, icon_frame, icon_frame, palette.into());
-    assert!(!icon.event(&ContentEvent::PointerUp(icon_frame.center())).activated);
-    assert!(icon.event(&ContentEvent::PointerDown(icon_frame.center())).consumed);
-    assert!(icon.event(&ContentEvent::PointerUp(icon_frame.center())).activated);
+    icon.paint(
+        &mut Scene::new(),
+        &mut text,
+        icon_frame,
+        icon_frame,
+        palette.into(),
+    );
+    assert!(
+        !icon
+            .event(&ContentEvent::PointerUp(icon_frame.center()))
+            .activated
+    );
+    assert!(
+        icon.event(&ContentEvent::PointerDown(icon_frame.center()))
+            .consumed
+    );
+    assert!(
+        icon.event(&ContentEvent::PointerUp(icon_frame.center()))
+            .activated
+    );
     let mut link = Link::default();
     let mut link_view = LinkView::default();
     let link_frame = Rect::new(60., 0., 240., 40.);
@@ -2300,7 +2339,10 @@ fn native_text_icon_defaults_resolve_shared_tokens_and_preserve_explicit_layout(
     // The approved shared DS rule replaces compact/default presets and a
     // caller-supplied20px artwork size; explicit allocation remains supported.
     for scale in [1., 1.5] {
-        let mut text = HostText { type_scale: scale, ..HostText::default() };
+        let mut text = HostText {
+            type_scale: scale,
+            ..HostText::default()
+        };
         let mut model = Button::new(tekes_ui_scene::ImageId(1)).with_accessible_name("Create item");
         let natural = model.measure(&mut text, Size::new(f32::MAX, f32::MAX)).size;
         let side = proposal::metric("size", "size-icon-standard").unwrap() * scale;
@@ -2313,16 +2355,38 @@ fn native_text_icon_defaults_resolve_shared_tokens_and_preserve_explicit_layout(
         ] {
             model.arrange(&mut text, frame, frame);
             let mut scene = Scene::new();
-            model.paint(&mut scene, &mut text, frame, frame, Palette::from(Theme::LIGHT).into());
+            model.paint(
+                &mut scene,
+                &mut text,
+                frame,
+                frame,
+                Palette::from(Theme::LIGHT).into(),
+            );
             assert_eq!(model.button.layout().unwrap().frame, frame);
-            let icon = scene.primitives().iter().find_map(|p| match p {
-                tekes_ui_scene::Primitive::Image(image) if image.image == tekes_ui_scene::ImageId(1) => Some(image.rect),
-                _ => None,
-            }).expect("real image Button must retain its artwork");
+            let icon = scene
+                .primitives()
+                .iter()
+                .find_map(|p| match p {
+                    tekes_ui_scene::Primitive::Image(image)
+                        if image.image == tekes_ui_scene::ImageId(1) =>
+                    {
+                        Some(image.rect)
+                    }
+                    _ => None,
+                })
+                .expect("real image Button must retain its artwork");
             assert_eq!(icon.size, Size::new(side, side));
             assert_eq!(icon.center(), frame.center());
-            assert!(model.event(&ContentEvent::PointerDown(frame.center())).consumed);
-            assert!(model.event(&ContentEvent::PointerUp(frame.center())).activated);
+            assert!(
+                model
+                    .event(&ContentEvent::PointerDown(frame.center()))
+                    .consumed
+            );
+            assert!(
+                model
+                    .event(&ContentEvent::PointerUp(frame.center()))
+                    .activated
+            );
         }
     }
 }
@@ -2517,7 +2581,9 @@ fn retained_content_status_changes_cancel_hidden_ime_input_without_losing_the_dr
         assert!(
             scenario
                 .host
-                .event(&ContentEvent::TextCommand("undo:".into()))
+                .event(&ContentEvent::TextCommand(
+                    tekes_ui_controls::TextEditCommand::Undo
+                ))
                 .consumed
         );
         assert_eq!(
@@ -3004,10 +3070,7 @@ fn rich_dialog_restores_only_the_original_mounted_invoker() {
                     host.remove(ids::DIALOG_INVOKER).unwrap();
                     host.insert(
                         ids::DIALOG_SCREEN,
-                        Content::new(
-                            ids::DIALOG_INVOKER,
-                            Button::new("Replacement invoker"),
-                        ),
+                        Content::new(ids::DIALOG_INVOKER, Button::new("Replacement invoker")),
                     )
                     .unwrap();
                 }

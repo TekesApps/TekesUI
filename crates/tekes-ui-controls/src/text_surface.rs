@@ -15,12 +15,212 @@ use crate::{
     ContainerLayout, ControlState, Insets, ScrollArea, ScrollGeometry, ScrollPolicy, TextInput,
 };
 
+/// 平台无关的文本编辑命令，供控件与组合组件使用。
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum TextEditCommand {
+    MoveLeft,
+    MoveLeftAndModifySelection,
+    MoveRight,
+    MoveRightAndModifySelection,
+    MoveWordLeft,
+    MoveWordLeftAndModifySelection,
+    MoveWordRight,
+    MoveWordRightAndModifySelection,
+    MoveUp,
+    MoveUpAndModifySelection,
+    MoveDown,
+    MoveDownAndModifySelection,
+    MoveToBeginningOfLine,
+    MoveToBeginningOfLineAndModifySelection,
+    MoveToEndOfLine,
+    MoveToEndOfLineAndModifySelection,
+    MoveToBeginningOfParagraph,
+    MoveToBeginningOfParagraphAndModifySelection,
+    MoveToEndOfParagraph,
+    MoveToEndOfParagraphAndModifySelection,
+    MoveParagraphBackwardAndModifySelection,
+    MoveParagraphForwardAndModifySelection,
+    MoveToBeginningOfDocument,
+    MoveToBeginningOfDocumentAndModifySelection,
+    MoveToEndOfDocument,
+    MoveToEndOfDocumentAndModifySelection,
+    PageUp,
+    PageDown,
+    SelectAll,
+    SelectLine,
+    SelectParagraph,
+    DeleteSelection,
+    DeleteBackward,
+    DeleteBackwardDecomposing,
+    DeleteForward,
+    DeleteWordBackward,
+    DeleteWordForward,
+    DeleteToBeginningOfLine,
+    DeleteToEndOfLine,
+    DeleteToBeginningOfParagraph,
+    DeleteToEndOfParagraph,
+    Yank,
+    Transpose,
+    InsertNewline,
+    InsertLineBreak,
+    InsertNewlineIgnoringFieldEditor,
+    InsertTab,
+    InsertBacktab,
+    InsertTabIgnoringFieldEditor,
+    CancelOperation,
+    Undo,
+    Redo,
+    Cut,
+    Copy,
+    Paste,
+}
+
+impl TextEditCommand {
+    /// Whether this command is a caret/selection movement command.
+    pub const fn is_movement(self) -> bool {
+        matches!(
+            self,
+            Self::MoveLeft
+                | Self::MoveLeftAndModifySelection
+                | Self::MoveRight
+                | Self::MoveRightAndModifySelection
+                | Self::MoveWordLeft
+                | Self::MoveWordLeftAndModifySelection
+                | Self::MoveWordRight
+                | Self::MoveWordRightAndModifySelection
+                | Self::MoveUp
+                | Self::MoveUpAndModifySelection
+                | Self::MoveDown
+                | Self::MoveDownAndModifySelection
+                | Self::MoveToBeginningOfLine
+                | Self::MoveToBeginningOfLineAndModifySelection
+                | Self::MoveToEndOfLine
+                | Self::MoveToEndOfLineAndModifySelection
+                | Self::MoveToBeginningOfParagraph
+                | Self::MoveToBeginningOfParagraphAndModifySelection
+                | Self::MoveToEndOfParagraph
+                | Self::MoveToEndOfParagraphAndModifySelection
+                | Self::MoveParagraphBackwardAndModifySelection
+                | Self::MoveParagraphForwardAndModifySelection
+                | Self::MoveToBeginningOfDocument
+                | Self::MoveToBeginningOfDocumentAndModifySelection
+                | Self::MoveToEndOfDocument
+                | Self::MoveToEndOfDocumentAndModifySelection
+        )
+    }
+
+    /// Whether this command extends the active selection.
+    pub const fn extends_selection(self) -> bool {
+        matches!(
+            self,
+            Self::MoveLeftAndModifySelection
+                | Self::MoveRightAndModifySelection
+                | Self::MoveWordLeftAndModifySelection
+                | Self::MoveWordRightAndModifySelection
+                | Self::MoveUpAndModifySelection
+                | Self::MoveDownAndModifySelection
+                | Self::MoveToBeginningOfLineAndModifySelection
+                | Self::MoveToEndOfLineAndModifySelection
+                | Self::MoveToBeginningOfParagraphAndModifySelection
+                | Self::MoveToEndOfParagraphAndModifySelection
+                | Self::MoveParagraphBackwardAndModifySelection
+                | Self::MoveParagraphForwardAndModifySelection
+                | Self::MoveToBeginningOfDocumentAndModifySelection
+                | Self::MoveToEndOfDocumentAndModifySelection
+        )
+    }
+
+    /// Toggle the selection-extension variant for paired movement commands.
+    pub const fn with_extend_selection(self, extend: bool) -> Self {
+        match (self, extend) {
+            (Self::MoveLeft | Self::MoveLeftAndModifySelection, true) => {
+                Self::MoveLeftAndModifySelection
+            }
+            (Self::MoveLeft | Self::MoveLeftAndModifySelection, false) => Self::MoveLeft,
+            (Self::MoveRight | Self::MoveRightAndModifySelection, true) => {
+                Self::MoveRightAndModifySelection
+            }
+            (Self::MoveRight | Self::MoveRightAndModifySelection, false) => Self::MoveRight,
+            (Self::MoveWordLeft | Self::MoveWordLeftAndModifySelection, true) => {
+                Self::MoveWordLeftAndModifySelection
+            }
+            (Self::MoveWordLeft | Self::MoveWordLeftAndModifySelection, false) => {
+                Self::MoveWordLeft
+            }
+            (Self::MoveWordRight | Self::MoveWordRightAndModifySelection, true) => {
+                Self::MoveWordRightAndModifySelection
+            }
+            (Self::MoveWordRight | Self::MoveWordRightAndModifySelection, false) => {
+                Self::MoveWordRight
+            }
+            (Self::MoveUp | Self::MoveUpAndModifySelection, true) => Self::MoveUpAndModifySelection,
+            (Self::MoveUp | Self::MoveUpAndModifySelection, false) => Self::MoveUp,
+            (Self::MoveDown | Self::MoveDownAndModifySelection, true) => {
+                Self::MoveDownAndModifySelection
+            }
+            (Self::MoveDown | Self::MoveDownAndModifySelection, false) => Self::MoveDown,
+            (Self::MoveToBeginningOfLine | Self::MoveToBeginningOfLineAndModifySelection, true) => {
+                Self::MoveToBeginningOfLineAndModifySelection
+            }
+            (
+                Self::MoveToBeginningOfLine | Self::MoveToBeginningOfLineAndModifySelection,
+                false,
+            ) => Self::MoveToBeginningOfLine,
+            (Self::MoveToEndOfLine | Self::MoveToEndOfLineAndModifySelection, true) => {
+                Self::MoveToEndOfLineAndModifySelection
+            }
+            (Self::MoveToEndOfLine | Self::MoveToEndOfLineAndModifySelection, false) => {
+                Self::MoveToEndOfLine
+            }
+            (
+                Self::MoveToBeginningOfParagraph
+                | Self::MoveToBeginningOfParagraphAndModifySelection,
+                true,
+            ) => Self::MoveToBeginningOfParagraphAndModifySelection,
+            (
+                Self::MoveToBeginningOfParagraph
+                | Self::MoveToBeginningOfParagraphAndModifySelection,
+                false,
+            ) => Self::MoveToBeginningOfParagraph,
+            (Self::MoveToEndOfParagraph | Self::MoveToEndOfParagraphAndModifySelection, true) => {
+                Self::MoveToEndOfParagraphAndModifySelection
+            }
+            (Self::MoveToEndOfParagraph | Self::MoveToEndOfParagraphAndModifySelection, false) => {
+                Self::MoveToEndOfParagraph
+            }
+            (
+                Self::MoveToBeginningOfDocument | Self::MoveToBeginningOfDocumentAndModifySelection,
+                true,
+            ) => Self::MoveToBeginningOfDocumentAndModifySelection,
+            (
+                Self::MoveToBeginningOfDocument | Self::MoveToBeginningOfDocumentAndModifySelection,
+                false,
+            ) => Self::MoveToBeginningOfDocument,
+            (Self::MoveToEndOfDocument | Self::MoveToEndOfDocumentAndModifySelection, true) => {
+                Self::MoveToEndOfDocumentAndModifySelection
+            }
+            (Self::MoveToEndOfDocument | Self::MoveToEndOfDocumentAndModifySelection, false) => {
+                Self::MoveToEndOfDocument
+            }
+            _ => self,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum KillCommand {
+    BeginningOfLine,
+    EndOfLine,
+    BeginningOfParagraph,
+    EndOfParagraph,
+}
+
 #[derive(Clone)]
 struct KillBuffer {
     text: String,
     owner: u64,
     after_epoch: u64,
-    selector: Option<&'static str>,
+    command: Option<KillCommand>,
 }
 fn with_kill_buffer<T>(f: impl FnOnce(&RefCell<Option<KillBuffer>>) -> T) -> T {
     thread_local! {
@@ -597,7 +797,7 @@ impl TextSurface {
             });
         }
     }
-    fn kill_command_range(&mut self, range: Range<usize>, selector: &'static str) -> bool {
+    fn kill_command_range(&mut self, range: Range<usize>, command: KillCommand) -> bool {
         if self.input.read_only || self.input.disabled || self.input.marked.is_some() {
             return false;
         }
@@ -618,17 +818,17 @@ impl TextSurface {
         let coalesces = previous.as_ref().is_some_and(|previous| {
             previous.owner == before.0
                 && previous.after_epoch == before.1
-                && previous.selector == Some(selector)
+                && previous.command == Some(command)
         });
         if !self.input.delete_range(range) {
             return false;
         }
         let text = if let Some(previous) = previous.filter(|_| coalesces) {
-            match selector {
-                "deleteToEndOfLine:"
-                | "deleteToBeginningOfLine:"
-                | "deleteToBeginningOfParagraph:" => removed + &previous.text,
-                _ => previous.text + &removed,
+            match command {
+                KillCommand::EndOfLine
+                | KillCommand::BeginningOfLine
+                | KillCommand::BeginningOfParagraph => removed + &previous.text,
+                KillCommand::EndOfParagraph => previous.text + &removed,
             }
         } else {
             removed
@@ -639,7 +839,7 @@ impl TextSurface {
                 text,
                 owner: after.0,
                 after_epoch: after.1,
-                selector: Some(selector),
+                command: Some(command),
             });
         });
         true
@@ -652,7 +852,7 @@ impl TextSurface {
             if let Some(buffer) = buffer.borrow_mut().as_mut()
                 && buffer.owner == owner
             {
-                buffer.selector = None;
+                buffer.command = None;
             }
         });
     }
@@ -770,10 +970,15 @@ impl TextSurface {
     /// Arrange/refresh text before visual navigation; ContentHost::event_with_text
     /// supplies that barrier using the caller's existing shaping backend.
     /// Marked text remains owned by IME except explicit Cancel/Undo/Redo.
-    pub fn command(&mut self, command: &str) -> Option<bool> {
+    pub fn command(&mut self, command: TextEditCommand) -> Option<bool> {
         if self.input.disabled
             || (self.input.marked.is_some()
-                && !matches!(command, "cancelOperation:" | "undo:" | "redo:"))
+                && !matches!(
+                    command,
+                    TextEditCommand::CancelOperation
+                        | TextEditCommand::Undo
+                        | TextEditCommand::Redo
+                ))
         {
             return None;
         }
@@ -784,129 +989,117 @@ impl TextSurface {
             self.input.marked.clone(),
         );
         let caret = self.caret();
-        let extend = command.contains("AndModifySelection");
+        let extend = command.extends_selection();
         match command {
-            "moveToBeginningOfLine:"
-            | "moveToBeginningOfLineAndModifySelection:"
-            | "moveToLeftEndOfLine:"
-            | "moveToLeftEndOfLineAndModifySelection:" => {
+            TextEditCommand::MoveToBeginningOfLine
+            | TextEditCommand::MoveToBeginningOfLineAndModifySelection => {
                 self.move_visual(-1, true, extend)?;
             }
-            "moveToEndOfLine:"
-            | "moveToEndOfLineAndModifySelection:"
-            | "moveToRightEndOfLine:"
-            | "moveToRightEndOfLineAndModifySelection:" => {
+            TextEditCommand::MoveToEndOfLine
+            | TextEditCommand::MoveToEndOfLineAndModifySelection => {
                 self.move_visual(1, true, extend)?;
             }
-            "moveToBeginningOfParagraph:" | "moveToBeginningOfParagraphAndModifySelection:" => {
+            TextEditCommand::MoveToBeginningOfParagraph
+            | TextEditCommand::MoveToBeginningOfParagraphAndModifySelection => {
                 self.navigation = None;
                 let range = self.input.paragraph_content_range_at(self.input.caret);
                 self.input.select(range.start, extend);
             }
-            "moveToEndOfParagraph:" | "moveToEndOfParagraphAndModifySelection:" => {
+            TextEditCommand::MoveToEndOfParagraph
+            | TextEditCommand::MoveToEndOfParagraphAndModifySelection => {
                 self.navigation = None;
                 let range = self.input.paragraph_content_range_at(self.input.caret);
                 self.input.select(range.end, extend);
             }
-            "moveParagraphBackwardAndModifySelection:" => {
+            TextEditCommand::MoveParagraphBackwardAndModifySelection => {
                 self.navigation = None;
                 let target = self.paragraph_backward_target();
                 self.input.select(target, extend);
             }
-            "moveParagraphForwardAndModifySelection:" => {
+            TextEditCommand::MoveParagraphForwardAndModifySelection => {
                 self.navigation = None;
                 let target = self.input.paragraph_range_at(self.input.caret).end;
                 self.input.select(target, extend);
             }
-            "moveUp:" | "moveUpAndModifySelection:" => {
+            TextEditCommand::MoveUp | TextEditCommand::MoveUpAndModifySelection => {
                 self.move_visual(-1, false, extend)?;
             }
-            "moveDown:" | "moveDownAndModifySelection:" => {
+            TextEditCommand::MoveDown | TextEditCommand::MoveDownAndModifySelection => {
                 self.move_visual(1, false, extend)?;
             }
-            "selectAll:" => {
+            TextEditCommand::SelectAll => {
                 self.navigation = None;
                 self.input.select_all();
             }
-            "selectLine:" => {
+            TextEditCommand::SelectLine => {
                 let (start, _, end) = self.visual_line_bounds()?;
                 self.navigation = None;
                 self.input.select_range(start..end);
             }
-            "selectParagraph:" => {
+            TextEditCommand::SelectParagraph => {
                 self.navigation = None;
                 let range = self.input.paragraph_range_at(self.input.caret);
                 self.input.select_range(range);
             }
-            "moveToBeginningOfDocument:" | "moveToBeginningOfDocumentAndModifySelection:" => {
+            TextEditCommand::MoveToBeginningOfDocument
+            | TextEditCommand::MoveToBeginningOfDocumentAndModifySelection => {
                 self.navigation = None;
                 self.input.select(0, extend);
             }
-            "moveToEndOfDocument:" | "moveToEndOfDocumentAndModifySelection:" => {
+            TextEditCommand::MoveToEndOfDocument
+            | TextEditCommand::MoveToEndOfDocumentAndModifySelection => {
                 self.navigation = None;
                 self.input.select(self.input.len(), extend);
             }
-            "moveLeft:"
-            | "moveLeftAndModifySelection:"
-            | "moveBackward:"
-            | "moveBackwardAndModifySelection:" => {
+            TextEditCommand::MoveLeft | TextEditCommand::MoveLeftAndModifySelection => {
                 self.navigation = None;
                 self.input.move_by(-1, extend, false);
             }
-            "moveRight:"
-            | "moveRightAndModifySelection:"
-            | "moveForward:"
-            | "moveForwardAndModifySelection:" => {
+            TextEditCommand::MoveRight | TextEditCommand::MoveRightAndModifySelection => {
                 self.navigation = None;
                 self.input.move_by(1, extend, false);
             }
-            "moveWordLeft:"
-            | "moveWordLeftAndModifySelection:"
-            | "moveWordBackward:"
-            | "moveWordBackwardAndModifySelection:" => {
+            TextEditCommand::MoveWordLeft | TextEditCommand::MoveWordLeftAndModifySelection => {
                 self.navigation = None;
                 self.input.move_by(-1, extend, true);
             }
-            "moveWordRight:"
-            | "moveWordRightAndModifySelection:"
-            | "moveWordForward:"
-            | "moveWordForwardAndModifySelection:" => {
+            TextEditCommand::MoveWordRight | TextEditCommand::MoveWordRightAndModifySelection => {
                 self.navigation = None;
                 self.input.move_by(1, extend, true);
             }
-            "deleteBackward:" => {
+            TextEditCommand::DeleteBackward => {
                 self.navigation = None;
                 self.ordinary_delete(true, false);
             }
-            "deleteBackwardByDecomposingPreviousCharacter:" => {
+            TextEditCommand::DeleteBackwardDecomposing => {
                 self.navigation = None;
                 let before = self.input.edit_revision();
                 self.input.delete_backward_by_decomposing_previous();
                 self.rebase_kill_after_ordinary_edit(before);
             }
-            "deleteForward:" => {
+            TextEditCommand::DeleteForward => {
                 self.navigation = None;
                 self.ordinary_delete(false, false);
             }
-            "delete:" => {
+            TextEditCommand::DeleteSelection => {
                 self.navigation = None;
                 self.delete_selection();
             }
-            "transpose:" => {
+            TextEditCommand::Transpose => {
                 self.navigation = None;
                 self.input.transpose();
             }
-            "deleteToBeginningOfLine:" => {
+            TextEditCommand::DeleteToBeginningOfLine => {
                 if self.input.selection().is_empty() {
                     let (start, _, _) = self.visual_line_bounds()?;
                     self.navigation = None;
-                    self.kill_command_range(start..self.input.caret, "deleteToBeginningOfLine:");
+                    self.kill_command_range(start..self.input.caret, KillCommand::BeginningOfLine);
                 } else {
                     self.navigation = None;
-                    self.kill_command_range(0..0, "deleteToBeginningOfLine:");
+                    self.kill_command_range(0..0, KillCommand::BeginningOfLine);
                 }
             }
-            "deleteToEndOfLine:" => {
+            TextEditCommand::DeleteToEndOfLine => {
                 if self.input.selection().is_empty() {
                     let (_, content_end, native_end) = self.visual_line_bounds()?;
                     let paragraph = self.input.paragraph_range_at(self.input.caret);
@@ -920,21 +1113,21 @@ impl TextSurface {
                         content_end
                     };
                     self.navigation = None;
-                    self.kill_command_range(self.input.caret..end, "deleteToEndOfLine:");
+                    self.kill_command_range(self.input.caret..end, KillCommand::EndOfLine);
                 } else {
                     self.navigation = None;
-                    self.kill_command_range(0..0, "deleteToEndOfLine:");
+                    self.kill_command_range(0..0, KillCommand::EndOfLine);
                 }
             }
-            "deleteToBeginningOfParagraph:" => {
+            TextEditCommand::DeleteToBeginningOfParagraph => {
                 let range = self.input.paragraph_content_range_at(self.input.caret);
                 self.navigation = None;
                 self.kill_command_range(
                     range.start..self.input.caret,
-                    "deleteToBeginningOfParagraph:",
+                    KillCommand::BeginningOfParagraph,
                 );
             }
-            "deleteToEndOfParagraph:" => {
+            TextEditCommand::DeleteToEndOfParagraph => {
                 let contents = self.input.paragraph_content_range_at(self.input.caret);
                 let paragraph = self.input.paragraph_range_at(self.input.caret);
                 let separator_len = paragraph.end.saturating_sub(contents.end);
@@ -946,41 +1139,43 @@ impl TextSurface {
                     contents.end
                 };
                 self.navigation = None;
-                self.kill_command_range(self.input.caret..end, "deleteToEndOfParagraph:");
+                self.kill_command_range(self.input.caret..end, KillCommand::EndOfParagraph);
             }
-            "deleteWordBackward:" => {
+            TextEditCommand::DeleteWordBackward => {
                 self.navigation = None;
                 self.ordinary_delete(true, true);
             }
-            "deleteWordForward:" => {
+            TextEditCommand::DeleteWordForward => {
                 self.navigation = None;
                 self.ordinary_delete(false, true);
             }
-            "undo:" => {
+            TextEditCommand::Undo => {
                 self.navigation = None;
                 self.input.undo();
             }
-            "redo:" => {
+            TextEditCommand::Redo => {
                 self.navigation = None;
                 self.input.redo();
             }
-            "cancelOperation:" => {
+            TextEditCommand::CancelOperation => {
                 self.navigation = None;
                 self.input.cancel_composition();
             }
-            "insertNewline:" | "insertLineBreak:" | "insertNewlineIgnoringFieldEditor:" => {
+            TextEditCommand::InsertNewline
+            | TextEditCommand::InsertLineBreak
+            | TextEditCommand::InsertNewlineIgnoringFieldEditor => {
                 self.navigation = None;
                 if self.input.multiline {
                     self.input.insert("\n", None);
                 }
             }
-            "insertTabIgnoringFieldEditor:" => {
+            TextEditCommand::InsertTabIgnoringFieldEditor => {
                 self.navigation = None;
                 if self.input.multiline {
                     self.input.insert("\t", None);
                 }
             }
-            "yank:" => {
+            TextEditCommand::Yank => {
                 self.navigation = None;
                 self.yank();
             }
@@ -2315,5 +2510,44 @@ mod tests {
                 && caret.min_x() >= vis_before.min_x() - 0.01,
             "caret {caret:?} should scroll into clipped visible_content {vis_before:?}"
         );
+    }
+
+    #[test]
+    fn text_edit_command_helpers_and_surface_kill_ring_work_without_selectors() {
+        assert!(TextEditCommand::MoveLeft.is_movement());
+        assert!(TextEditCommand::MoveParagraphForwardAndModifySelection.is_movement());
+        assert!(!TextEditCommand::PageUp.is_movement());
+        assert!(!TextEditCommand::SelectAll.is_movement());
+        assert!(TextEditCommand::MoveWordRightAndModifySelection.extends_selection());
+        assert!(!TextEditCommand::MoveWordRight.extends_selection());
+        assert_eq!(
+            TextEditCommand::MoveToEndOfLine.with_extend_selection(true),
+            TextEditCommand::MoveToEndOfLineAndModifySelection
+        );
+        assert_eq!(
+            TextEditCommand::MoveToEndOfLineAndModifySelection.with_extend_selection(false),
+            TextEditCommand::MoveToEndOfLine
+        );
+
+        let mut surface = TextSurface::new("hello world", true, false);
+        assert_eq!(surface.command(TextEditCommand::InsertTab), None);
+        assert_eq!(surface.command(TextEditCommand::SelectAll), Some(true));
+        assert_eq!(surface.input.selection(), 0..11);
+        assert_eq!(
+            surface.command(TextEditCommand::MoveToBeginningOfDocument),
+            Some(true)
+        );
+        assert_eq!(
+            surface.command(TextEditCommand::DeleteWordForward),
+            Some(true)
+        );
+        assert_eq!(surface.input.text, " world");
+        assert_eq!(
+            surface.command(TextEditCommand::DeleteToEndOfParagraph),
+            Some(true)
+        );
+        assert_eq!(surface.input.text, "");
+        assert_eq!(surface.command(TextEditCommand::Yank), Some(true));
+        assert_eq!(surface.input.text, " world");
     }
 }

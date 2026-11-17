@@ -222,7 +222,10 @@ fn text_area_primary_retained_themes_keep_multiline_selection_scroll_and_real_in
         assert_input(&scene, frame, theme.into(), text.backing);
     }
     area.input.select(area.input.len(), false);
-    assert_eq!(area.command("insertNewline:"), Some(true));
+    assert_eq!(
+        area.command(tekes_ui_controls::TextEditCommand::InsertNewline),
+        Some(true)
+    );
     assert!(area.input.text.ends_with("\n\n"));
 }
 fn render_host(host: &mut ContentHost, text: &mut coretext::Text, theme: Theme) -> Scene {

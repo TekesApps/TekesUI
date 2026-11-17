@@ -732,9 +732,9 @@ impl Component for Button {
                 r.consumed = true;
                 r.changed = true
             }
-            ContentEvent::TextCommand(command)
-                if matches!(command.as_str(), "insertNewline:" | "insertLineBreak:") =>
-            {
+            ContentEvent::TextCommand(
+                TextEditCommand::InsertNewline | TextEditCommand::InsertLineBreak,
+            ) => {
                 r.activated = self.button.key(ControlKey::Enter, true);
                 r.consumed = true;
                 r.changed = true;
@@ -1023,7 +1023,7 @@ mod tests {
                 button.button.state.disabled = !loading;
                 button.button.state.loading = loading;
                 let observed = if text_command {
-                    ContentEvent::TextCommand("insertNewline:".into())
+                    ContentEvent::TextCommand(TextEditCommand::InsertNewline)
                 } else {
                     ContentEvent::Key {
                         key: ControlKey::Enter,

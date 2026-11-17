@@ -617,7 +617,9 @@ fn a_real_editor_retains_undo_history_and_selection_after_item_navigation() {
         let baseline = f.host.focused_text().unwrap().input.external_baseline();
         f.navigate(TARGET, navigation, &mut t).unwrap();
         composer_unchanged(&f, &baseline);
-        f.host.event(&ContentEvent::TextCommand("undo:".into()));
+        f.host.event(&ContentEvent::TextCommand(
+            tekes_ui_controls::TextEditCommand::Undo,
+        ));
         assert_eq!(f.host.focused_text().unwrap().input.text, old);
     }
 }
@@ -675,7 +677,9 @@ struct MovingBox {
 }
 impl Component for MovingBox {
     fn host_reveal_passthrough(&self) -> bool {
-        self.children.len() == 1 && self.shift.is_finite() && self.arranged_shift == Some(self.shift)
+        self.children.len() == 1
+            && self.shift.is_finite()
+            && self.arranged_shift == Some(self.shift)
     }
     fn children(&self) -> &[Content] {
         &self.children
