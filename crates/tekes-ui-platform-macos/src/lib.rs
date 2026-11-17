@@ -27,8 +27,8 @@ pub use accessibility::{
 pub use config::{AppConfig, WindowConfig};
 pub use event::{
     AnimationFrame, CursorIcon, CursorRegion, Event, KeyEvent, KeyEventKind, Modifiers,
-    MouseButton, MouseEvent, MouseEventKind, Point, ScrollEvent, ScrollPhase, Size, TextInputState,
-    Vec2,
+    MouseButton, MouseEvent, MouseEventKind, Point, ScrollEvent, ScrollPhase, Size,
+    TextEditCommand, TextInputState, Vec2,
 };
 pub use menu::{CommandId, KeyEquivalent, Menu, MenuBar, MenuCommand, MenuError, MenuItem};
 pub use placement::{Layout, PlacementReport, Rect, ScreenChoice, ScreenInfo, WindowPlacement};
@@ -58,6 +58,12 @@ pub use shared::{Window, WindowHandler};
 mod presentation;
 #[cfg(target_os = "macos")]
 pub use presentation::PresentedFrame;
+
+/// Read the macOS host monotonic media time in seconds (`CACurrentMediaTime`).
+#[cfg(target_os = "macos")]
+pub fn current_media_time() -> f64 {
+    objc2_quartz_core::CACurrentMediaTime()
+}
 
 /// Contain Rust panics at Objective-C / C FFI callback entrypoints so unwinding
 /// never crosses foreign stack frames (which is undefined behavior).

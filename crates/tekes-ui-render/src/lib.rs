@@ -140,7 +140,7 @@ pub use clip::{BoundaryProofLimits, CLIP_GEOMETRY_VERSION, ClipFrameBudget};
 pub use error::RenderError;
 pub use renderer::{LayerFrameOutput, Renderer, VerifiedFrameOutput, VerifiedTextureSubmission};
 pub use stats::{DROP_THRESHOLD, Distribution, DropReport, FrameSample, FrameStats};
-pub use timing::FrameTiming;
+pub use timing::{FrameTiming, HostTimeClock};
 
 #[cfg(all(target_os = "macos", feature = "macos-shared-surface"))]
 pub mod shared_surface_macos;

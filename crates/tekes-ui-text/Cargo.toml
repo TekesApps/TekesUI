@@ -7,11 +7,15 @@ license.workspace = true
 repository.workspace = true
 rust-version.workspace = true
 
+[features]
+default = []
+qa = ["dep:serde", "dep:serde_json"]
+
 [dependencies]
 tekes-ui-tokens.workspace = true
 tekes-ui-scene.workspace = true
-serde.workspace = true
-serde_json.workspace = true
+serde = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
 unicode-segmentation = "1.13.3"
 
 [target.'cfg(target_os = "macos")'.dependencies]
@@ -22,6 +26,31 @@ objc2-core-text = { workspace = true, features = ["CTFont", "CTFontDescriptor", 
 [dev-dependencies]
 tekes-ui-render.workspace = true
 png.workspace = true
+
+[[test]]
+name = "export"
+path = "tests/export.rs"
+required-features = ["qa"]
+
+[[test]]
+name = "e2e_oracle"
+path = "tests/e2e_oracle.rs"
+required-features = ["qa"]
+
+[[test]]
+name = "shape"
+path = "tests/shape.rs"
+required-features = ["qa"]
+
+[[test]]
+name = "label_native_probe"
+path = "tests/label_native_probe.rs"
+required-features = ["qa"]
+
+[[test]]
+name = "label_layout_gpu"
+path = "tests/label_layout_gpu.rs"
+required-features = ["qa"]
 
 [lints]
 workspace = true

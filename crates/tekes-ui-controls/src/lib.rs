@@ -42,8 +42,8 @@ pub use text_input::{
     TextInput,
 };
 pub use text_surface::{
-    ReflowAnchor, TextSurface, TextSurfaceAlignment, TextSurfaceHost, TextSurfacePresentation,
-    TextSurfaceTextRenderer,
+    ReflowAnchor, TextEditCommand, TextSurface, TextSurfaceAlignment, TextSurfaceHost,
+    TextSurfacePresentation, TextSurfaceTextRenderer,
 };
 pub use toolbar::{ToolbarAction, ToolbarControl, ToolbarIconAction};
 mod widgets;

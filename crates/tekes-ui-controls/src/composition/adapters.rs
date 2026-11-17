@@ -698,7 +698,11 @@ impl TextFieldContent {
                     };
                 }
                 result = ContentResponse::consumed(
-                    plain && self.surface.command("insertNewline:").unwrap_or(false),
+                    plain
+                        && self
+                            .surface
+                            .command(TextEditCommand::InsertNewline)
+                            .unwrap_or(false),
                 );
             }
             Some(ControlKey::Tab { reverse })
@@ -721,32 +725,34 @@ impl TextFieldContent {
                     reading.stop_following(&mut self.surface);
                 }
                 let command = match key.key {
-                    Some(ControlKey::Left) if modifiers.command => "moveToBeginningOfLine",
-                    Some(ControlKey::Right) if modifiers.command => "moveToEndOfLine",
-                    Some(ControlKey::Left) if modifiers.alt => "moveWordLeft",
-                    Some(ControlKey::Right) if modifiers.alt => "moveWordRight",
-                    Some(ControlKey::Left) => "moveLeft",
-                    Some(ControlKey::Right) => "moveRight",
-                    Some(ControlKey::Up) if modifiers.command => "moveToBeginningOfDocument",
-                    Some(ControlKey::Down) if modifiers.command => "moveToEndOfDocument",
+                    Some(ControlKey::Left) if modifiers.command => {
+                        TextEditCommand::MoveToBeginningOfLine
+                    }
+                    Some(ControlKey::Right) if modifiers.command => {
+                        TextEditCommand::MoveToEndOfLine
+                    }
+                    Some(ControlKey::Left) if modifiers.alt => TextEditCommand::MoveWordLeft,
+                    Some(ControlKey::Right) if modifiers.alt => TextEditCommand::MoveWordRight,
+                    Some(ControlKey::Left) => TextEditCommand::MoveLeft,
+                    Some(ControlKey::Right) => TextEditCommand::MoveRight,
+                    Some(ControlKey::Up) if modifiers.command => {
+                        TextEditCommand::MoveToBeginningOfDocument
+                    }
+                    Some(ControlKey::Down) if modifiers.command => {
+                        TextEditCommand::MoveToEndOfDocument
+                    }
                     Some(ControlKey::Up | ControlKey::Down)
                         if modifiers.alt || modifiers.control =>
                     {
                         return ContentResponse::default();
                     }
-                    Some(ControlKey::Up) => "moveUp",
-                    Some(ControlKey::Down) => "moveDown",
+                    Some(ControlKey::Up) => TextEditCommand::MoveUp,
+                    Some(ControlKey::Down) => TextEditCommand::MoveDown,
                     _ => unreachable!(),
                 };
-                let command = format!(
-                    "{command}{}:",
-                    if modifiers.shift {
-                        "AndModifySelection"
-                    } else {
-                        ""
-                    }
-                );
-                let changed = self.surface.command(&command);
+                let changed = self
+                    .surface
+                    .command(command.with_extend_selection(modifiers.shift));
                 result = ContentResponse {
                     consumed: changed.is_some(),
                     changed: changed.unwrap_or(false),
@@ -848,12 +854,12 @@ impl TextFieldContent {
                 );
             }
             ContentEvent::TextCommand(c) => {
-                if (c.starts_with("move") || c == "selectAll:")
+                if (c.is_movement() || *c == TextEditCommand::SelectAll)
                     && let Some(reading) = &mut self.reading
                 {
                     reading.stop_following(&mut self.surface);
                 }
-                let changed = self.surface.command(c);
+                let changed = self.surface.command(*c);
                 r = ContentResponse {
                     consumed: changed.is_some(),
                     changed: changed.unwrap_or(false),
@@ -878,10 +884,10 @@ impl TextFieldContent {
                     reading.stop_following(&mut self.surface);
                 }
                 let command = match key {
-                    ControlKey::Left => "moveLeft:",
-                    ControlKey::Right => "moveRight:",
-                    ControlKey::Up => "moveUp:",
-                    ControlKey::Down => "moveDown:",
+                    ControlKey::Left => TextEditCommand::MoveLeft,
+                    ControlKey::Right => TextEditCommand::MoveRight,
+                    ControlKey::Up => TextEditCommand::MoveUp,
+                    ControlKey::Down => TextEditCommand::MoveDown,
                     _ => unreachable!(),
                 };
                 let changed = self.surface.command(command);

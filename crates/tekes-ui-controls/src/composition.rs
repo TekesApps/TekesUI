@@ -143,6 +143,7 @@ mod text_query;
 pub use overlay_scope::OverlayScope;
 mod toolbar_content;
 mod toolbar_host;
+pub use crate::TextEditCommand;
 use crate::extended::{Axis, Grid, Stack};
 use crate::layout::{AlignmentOverride, MeasuredChild, layout_measured_children};
 use crate::paint::ButtonVariant;
@@ -236,7 +237,7 @@ pub enum ContentEvent {
         replacement: Option<Range<usize>>,
     },
     Unmark,
-    TextCommand(String),
+    TextCommand(crate::TextEditCommand),
     Cancel,
 }
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -3089,7 +3090,7 @@ impl ContentHost {
                 down: true,
             }
         ) || matches!(&*routed, ContentEvent::TextCommand(command)
-            if command.starts_with("move") || command == "selectAll:");
+            if command.is_movement() || *command == TextEditCommand::SelectAll);
         // A consumed key is a reading intent only if the original reader
         // accepted navigation, not merely because an IME/host barrier consumed it.
         let delivered_navigation = navigation && self.event_bubbled.is_some()
@@ -3333,10 +3334,10 @@ impl ContentHost {
             return ContentResponse::consumed(false);
         }
         if let ContentEvent::TextCommand(command) = event {
-            let key = match command.as_str() {
-                "insertTab:" => Some(ControlKey::Tab { reverse: false }),
-                "insertBacktab:" => Some(ControlKey::Tab { reverse: true }),
-                "cancelOperation:"
+            let key = match command {
+                TextEditCommand::InsertTab => Some(ControlKey::Tab { reverse: false }),
+                TextEditCommand::InsertBacktab => Some(ControlKey::Tab { reverse: true }),
+                TextEditCommand::CancelOperation
                     if self.focused_text().is_none_or(|s| s.input.marked.is_none()) =>
                 {
                     Some(ControlKey::Escape)

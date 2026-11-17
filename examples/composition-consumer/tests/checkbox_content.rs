@@ -577,8 +577,11 @@ fn registered_checkbox_requires_original_caller_revision_after_real_exposure_ren
 fn actual_composer_marked_binding_selection_barrier_and_local_updates() {
     let (mut h, mut t, _) = mixed();
     assert!(h.focus(Some(EDITOR), true));
-    h.event_with_text(&ContentEvent::TextCommand("selectAll:".into()), &mut t)
-        .unwrap();
+    h.event_with_text(
+        &ContentEvent::TextCommand(tekes_ui_controls::TextEditCommand::SelectAll),
+        &mut t,
+    )
+    .unwrap();
     h.event_with_text(
         &ContentEvent::Preedit {
             text: "ni".into(),

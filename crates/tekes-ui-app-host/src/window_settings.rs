@@ -1041,7 +1041,10 @@ impl Host {
                     },
                     w,
                 )?;
-                self.event(Event::TextCommand("selectAll:".into()), w)?;
+                self.event(
+                    Event::TextCommand(tekes_ui_platform_macos::TextEditCommand::SelectAll),
+                    w,
+                )?;
                 shared.transition(window_acceptance::Stage::Editing);
                 w.request_redraw();
             }
@@ -1060,7 +1063,10 @@ impl Host {
                     },
                     w,
                 )?;
-                self.event(Event::TextCommand("insertNewline:".into()), w)?;
+                self.event(
+                    Event::TextCommand(tekes_ui_platform_macos::TextEditCommand::InsertNewline),
+                    w,
+                )?;
                 shared.transition(window_acceptance::Stage::Saving);
                 w.request_redraw();
             }
@@ -1727,12 +1733,16 @@ impl Host {
             return Ok(true);
         }
         if let Event::TextCommand(command) = event
-            && matches!(command.as_str(), "insertTab:" | "insertBacktab:")
+            && matches!(
+                command,
+                tekes_ui_platform_macos::TextEditCommand::InsertTab
+                    | tekes_ui_platform_macos::TextEditCommand::InsertBacktab
+            )
             && self.open_toolbar().is_none()
         {
             self.settings_scope_tab(
-                command == "insertBacktab:",
-                &ContentEvent::TextCommand(command.clone()),
+                *command == tekes_ui_platform_macos::TextEditCommand::InsertBacktab,
+                &ContentEvent::TextCommand(tekes_ui_macos_bridge::translate_text_command(*command)),
             )?;
             w.set_text_input_state(
                 self.settings_mgr
@@ -1747,7 +1757,10 @@ impl Host {
         }
         let cancel_search = matches!(event, Event::Key(key)
             if key.kind == KeyEventKind::Down && key.key_code == 53)
-            || matches!(event, Event::TextCommand(command) if command == "cancelOperation:");
+            || matches!(
+                event,
+                Event::TextCommand(tekes_ui_platform_macos::TextEditCommand::CancelOperation)
+            );
         if cancel_search
             && self
                 .settings_mgr
@@ -1877,17 +1890,16 @@ impl Host {
                     if settings.form.host.focused_text().is_some() {
                         match shortcut.as_str() {
                             "a" => {
-                                routed = Some(ContentEvent::TextCommand("selectAll:".into()));
+                                routed = Some(ContentEvent::TextCommand(
+                                    tekes_ui_controls::TextEditCommand::SelectAll,
+                                ));
                             }
                             "z" => {
-                                routed = Some(ContentEvent::TextCommand(
-                                    if key.modifiers.shift {
-                                        "redo:"
-                                    } else {
-                                        "undo:"
-                                    }
-                                    .into(),
-                                ));
+                                routed = Some(ContentEvent::TextCommand(if key.modifiers.shift {
+                                    tekes_ui_controls::TextEditCommand::Redo
+                                } else {
+                                    tekes_ui_controls::TextEditCommand::Undo
+                                }));
                             }
                             "c" | "x" => {
                                 if let Some(surface) = settings.form.host.focused_text()
@@ -1896,7 +1908,7 @@ impl Host {
                                     w.set_clipboard_text(&surface.input.selected_text());
                                     if shortcut == "x" {
                                         routed = Some(ContentEvent::TextCommand(
-                                            "deleteBackward:".into(),
+                                            tekes_ui_controls::TextEditCommand::DeleteBackward,
                                         ));
                                     }
                                 }
@@ -1961,9 +1973,8 @@ impl Host {
                 })
             }
             Event::TextUnmark => routed = Some(ContentEvent::Unmark),
-            Event::TextCommand(command)
-                if command == "cancelOperation:"
-                    && !settings.form.number_editing()
+            Event::TextCommand(tekes_ui_platform_macos::TextEditCommand::CancelOperation)
+                if !settings.form.number_editing()
                     && !settings.form.has_open_menu()
                     && settings
                         .form
@@ -1973,27 +1984,34 @@ impl Host {
             {
                 intents.push(FormIntent::Cancel)
             }
-            Event::TextCommand(command) => {
-                if command == "copy:" || command == "cut:" {
+            Event::TextCommand(command) => match command {
+                tekes_ui_platform_macos::TextEditCommand::Copy
+                | tekes_ui_platform_macos::TextEditCommand::Cut => {
                     if let Some(surface) = settings.form.host.focused_text()
                         && !surface.input.selection().is_empty()
                     {
                         w.set_clipboard_text(&surface.input.selected_text());
-                        if command == "cut:" {
-                            routed = Some(ContentEvent::TextCommand("deleteBackward:".into()));
+                        if *command == tekes_ui_platform_macos::TextEditCommand::Cut {
+                            routed = Some(ContentEvent::TextCommand(
+                                tekes_ui_controls::TextEditCommand::DeleteBackward,
+                            ));
                         }
                     }
-                } else if command == "paste:" {
+                }
+                tekes_ui_platform_macos::TextEditCommand::Paste => {
                     if let Some(text) = w.clipboard_text() {
                         routed = Some(ContentEvent::Commit {
                             text,
                             replacement: None,
                         });
                     }
-                } else {
-                    routed = Some(ContentEvent::TextCommand(command.clone()));
                 }
-            }
+                _ => {
+                    routed = Some(ContentEvent::TextCommand(
+                        tekes_ui_macos_bridge::translate_text_command(*command),
+                    ));
+                }
+            },
             Event::Accessibility { target, action } => {
                 let Some(publication) = w.content_accessibility_publication() else {
                     return Ok(false);
@@ -2968,9 +2986,9 @@ mod navigation_input_tests {
                     replacement: None,
                 });
             } else {
-                s.form
-                    .host
-                    .event(&ContentEvent::TextCommand("selectAll:".into()));
+                s.form.host.event(&ContentEvent::TextCommand(
+                    tekes_ui_controls::TextEditCommand::SelectAll,
+                ));
                 s.form.host.event(&ContentEvent::Commit {
                     text: "99".into(),
                     replacement: None,
@@ -3021,9 +3039,9 @@ mod navigation_input_tests {
         if marked {
             s.form.host.event(&ContentEvent::Unmark);
         } else {
-            s.form
-                .host
-                .event(&ContentEvent::TextCommand("selectAll:".into()));
+            s.form.host.event(&ContentEvent::TextCommand(
+                tekes_ui_controls::TextEditCommand::SelectAll,
+            ));
             s.form.host.event(&ContentEvent::Commit {
                 text: "18".into(),
                 replacement: None,
@@ -3460,10 +3478,9 @@ mod navigation_input_tests {
         {
             let mut state = host.settings_mgr.settings.as_ref().unwrap().borrow_mut();
             assert!(state.form.host.focus(Some(ComponentId(102)), true));
-            state
-                .form
-                .host
-                .event(&ContentEvent::TextCommand("selectAll:".into()));
+            state.form.host.event(&ContentEvent::TextCommand(
+                tekes_ui_controls::TextEditCommand::SelectAll,
+            ));
             state.form.host.event(&ContentEvent::Commit {
                 text: "18".into(),
                 replacement: None,
@@ -4332,8 +4349,10 @@ mod form_keyboard_owner_tests {
             .unwrap();
         host.settings_form_input(&ContentEvent::PointerUp(field))
             .unwrap();
-        host.settings_form_input(&ContentEvent::TextCommand("selectAll:".into()))
-            .unwrap();
+        host.settings_form_input(&ContentEvent::TextCommand(
+            tekes_ui_controls::TextEditCommand::SelectAll,
+        ))
+        .unwrap();
         host.settings_form_input(&ContentEvent::Commit {
             text: "Retained draft".into(),
             replacement: None,
@@ -4490,8 +4509,11 @@ mod form_keyboard_owner_tests {
         ))
         .unwrap();
         host.settings_form_input(&started).unwrap();
-        host.settings_scope_tab(false, &ContentEvent::TextCommand("insertTab:".into()))
-            .unwrap();
+        host.settings_scope_tab(
+            false,
+            &ContentEvent::TextCommand(tekes_ui_controls::TextEditCommand::InsertTab),
+        )
+        .unwrap();
         assert_eq!(surface.borrow().form.host.focused(), Some(ComponentId(101)));
         assert!(host.actual_toolbar_owner().is_none());
         let finished =
@@ -4531,8 +4553,10 @@ mod form_keyboard_owner_tests {
             }
             assert_eq!(surface.borrow().form.host.focused(), Some(ComponentId(101)));
             if case == "invalid" {
-                host.settings_form_input(&ContentEvent::TextCommand("selectAll:".into()))
-                    .unwrap();
+                host.settings_form_input(&ContentEvent::TextCommand(
+                    tekes_ui_controls::TextEditCommand::SelectAll,
+                ))
+                .unwrap();
                 host.settings_form_input(&ContentEvent::Commit {
                     text: "999".into(),
                     replacement: None,
@@ -4560,8 +4584,11 @@ mod form_keyboard_owner_tests {
             .unwrap();
             // InputContextConsumed means the input context supplied no callbacks.
             if case != "input-consumed" {
-                host.settings_scope_tab(false, &ContentEvent::TextCommand("insertTab:".into()))
-                    .unwrap();
+                host.settings_scope_tab(
+                    false,
+                    &ContentEvent::TextCommand(tekes_ui_controls::TextEditCommand::InsertTab),
+                )
+                .unwrap();
             }
             let finished = ContentEvent::TextKeyEnd {
                 id: 1,
@@ -4600,8 +4627,11 @@ mod form_keyboard_owner_tests {
             composing: false,
         })
         .unwrap();
-        host.settings_scope_tab(true, &ContentEvent::TextCommand("insertBacktab:".into()))
-            .unwrap();
+        host.settings_scope_tab(
+            true,
+            &ContentEvent::TextCommand(tekes_ui_controls::TextEditCommand::InsertBacktab),
+        )
+        .unwrap();
         assert_eq!(surface.borrow().form.host.focused(), Some(ComponentId(101)));
         let finished = ContentEvent::TextKeyEnd {
             id: 1,
@@ -4625,8 +4655,10 @@ mod form_keyboard_owner_tests {
             assert!(host.toolbar_key_input(key(48, true)).unwrap());
         }
         assert_eq!(surface.borrow().form.host.focused(), Some(ComponentId(101)));
-        host.settings_form_input(&ContentEvent::TextCommand("selectAll:".into()))
-            .unwrap();
+        host.settings_form_input(&ContentEvent::TextCommand(
+            tekes_ui_controls::TextEditCommand::SelectAll,
+        ))
+        .unwrap();
         host.settings_form_input(&ContentEvent::Commit {
             text: "999".into(),
             replacement: None,

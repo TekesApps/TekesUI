@@ -1036,7 +1036,7 @@ impl BrandPreview {
 
     pub(super) fn text_command(
         &mut self,
-        command: &str,
+        command: tekes_ui_controls::TextEditCommand,
         clipboard: Option<&str>,
         text: &mut super::super::text::TextEngine,
     ) -> (bool, Option<String>) {
@@ -1045,15 +1045,15 @@ impl BrandPreview {
         }
         let mut copied = None;
         let changed = match command {
-            "copy:" => {
+            tekes_ui_controls::TextEditCommand::Copy => {
                 copied = self.input.clipboard_selection();
                 false
             }
-            "cut:" => {
+            tekes_ui_controls::TextEditCommand::Cut => {
                 copied = self.input.clipboard_selection();
                 self.input.cut()
             }
-            "paste:" => self.input.paste(clipboard.unwrap_or("")),
+            tekes_ui_controls::TextEditCommand::Paste => self.input.paste(clipboard.unwrap_or("")),
             _ => self.input.command(command).unwrap_or(false),
         };
         self.input.refresh(text);

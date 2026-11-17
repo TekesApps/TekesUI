@@ -144,10 +144,10 @@ fn cross_block_unicode_selection_copy_commands_and_readonly_guards_use_original_
         text
     );
     host.event(&ContentEvent::TextCommand(
-        "moveToBeginningOfDocument:".into(),
+        tekes_ui_controls::TextEditCommand::MoveToBeginningOfDocument,
     ));
     host.event(&ContentEvent::TextCommand(
-        "moveToEndOfDocumentAndModifySelection:".into(),
+        tekes_ui_controls::TextEditCommand::MoveToEndOfDocumentAndModifySelection,
     ));
     assert_eq!(
         host.text_surface(f::MARKDOWN)
@@ -172,7 +172,7 @@ fn cross_block_unicode_selection_copy_commands_and_readonly_guards_use_original_
             clauses: vec![],
             replacement: None,
         },
-        ContentEvent::TextCommand("deleteBackward:".into()),
+        ContentEvent::TextCommand(tekes_ui_controls::TextEditCommand::DeleteBackward),
     ] {
         host.event(&event);
         assert_eq!(

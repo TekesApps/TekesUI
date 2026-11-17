@@ -1121,7 +1121,10 @@ mod tests {
             .unwrap();
         *next.borrow_mut() = "next draw".into();
         container
-            .event(&ContentEvent::TextCommand("selectAll:".into()), &mut text)
+            .event(
+                &ContentEvent::TextCommand(tekes_ui_controls::TextEditCommand::SelectAll),
+                &mut text,
+            )
             .unwrap();
         container.with_host(&mut |host| {
             assert_eq!(host.focused(), Some(ComponentId(1)));
@@ -1166,8 +1169,11 @@ mod tests {
         c.with_host(&mut |h| {
             h.focus(Some(ComponentId(1)), false);
         });
-        c.event(&ContentEvent::TextCommand("selectAll:".into()), &mut text)
-            .unwrap();
+        c.event(
+            &ContentEvent::TextCommand(tekes_ui_controls::TextEditCommand::SelectAll),
+            &mut text,
+        )
+        .unwrap();
         c.event(
             &ContentEvent::Commit {
                 text: "本地 mixed".into(),

@@ -247,13 +247,13 @@ impl Host {
             },
             Event::TextUnmark => C::Unmark,
             Event::TextCommand(c) => {
-                if c == "copy:" {
+                if c == tekes_ui_platform_macos::TextEditCommand::Copy {
                     if let Some(surface) = self.fixture.host.focused_text() {
                         w.set_clipboard_text(&surface.input.selected_text());
                     }
                     return;
                 }
-                if c == "paste:" {
+                if c == tekes_ui_platform_macos::TextEditCommand::Paste {
                     if let Some(text) = w.clipboard_text() {
                         self.input(
                             Event::TextCommit {
@@ -265,20 +265,22 @@ impl Host {
                     }
                     return;
                 }
-                C::TextCommand(c)
+                C::TextCommand(tekes_ui_macos_bridge::translate_text_command(c))
             }
             Event::Key(k) => {
                 if k.kind == KeyEventKind::Down && k.modifiers.command {
                     let command = match k.key_code {
-                        0 => Some("selectAll:"),
-                        6 if k.modifiers.shift => Some("redo:"),
-                        6 => Some("undo:"),
-                        8 => Some("copy:"),
-                        9 => Some("paste:"),
+                        0 => Some(tekes_ui_platform_macos::TextEditCommand::SelectAll),
+                        6 if k.modifiers.shift => {
+                            Some(tekes_ui_platform_macos::TextEditCommand::Redo)
+                        }
+                        6 => Some(tekes_ui_platform_macos::TextEditCommand::Undo),
+                        8 => Some(tekes_ui_platform_macos::TextEditCommand::Copy),
+                        9 => Some(tekes_ui_platform_macos::TextEditCommand::Paste),
                         _ => None,
                     };
                     if let Some(command) = command {
-                        return self.input(Event::TextCommand(command.into()), w);
+                        return self.input(Event::TextCommand(command), w);
                     }
                 }
                 C::KeyInput(native_key::key(k))

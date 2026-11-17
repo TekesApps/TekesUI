@@ -83,8 +83,8 @@ fn field_mut(h: &mut ContentHost) -> &mut TextFieldContent {
         .component_mut::<TextFieldContent>()
         .unwrap()
 }
-fn text_command(h: &mut ContentHost, command: &str) -> bool {
-    h.event_with_text(&ContentEvent::TextCommand(command.into()), &mut Text)
+fn text_command(h: &mut ContentHost, command: tekes_ui_controls::TextEditCommand) -> bool {
+    h.event_with_text(&ContentEvent::TextCommand(command), &mut Text)
         .unwrap()
         .consumed
 }
@@ -93,11 +93,15 @@ fn multiline_line_edge_is_not_document_edge() {
     let mut h = host("first\nsecond\nlast", 500.);
     field_mut(&mut h).surface.input.select(9, false);
     assert!(
-        h.event(&ContentEvent::TextCommand("moveToBeginningOfLine:".into()))
-            .consumed
+        h.event(&ContentEvent::TextCommand(
+            tekes_ui_controls::TextEditCommand::MoveToBeginningOfLine
+        ))
+        .consumed
     );
     assert_eq!(field(&h).surface.input.caret, 6);
-    h.event(&ContentEvent::TextCommand("moveToEndOfLine:".into()));
+    h.event(&ContentEvent::TextCommand(
+        tekes_ui_controls::TextEditCommand::MoveToEndOfLine,
+    ));
     assert_eq!(field(&h).surface.input.caret, 12);
 }
 #[test]
@@ -105,19 +109,23 @@ fn vertical_movement_keeps_preferred_column_across_a_short_line() {
     let mut h = host("abcdef\nx\nabcdef", 500.);
     field_mut(&mut h).surface.input.select(5, false);
     assert!(
-        h.event(&ContentEvent::TextCommand("moveDown:".into()))
-            .consumed
+        h.event(&ContentEvent::TextCommand(
+            tekes_ui_controls::TextEditCommand::MoveDown
+        ))
+        .consumed
     );
     assert_eq!(field(&h).surface.input.caret, 8);
-    h.event(&ContentEvent::TextCommand("moveDown:".into()));
+    h.event(&ContentEvent::TextCommand(
+        tekes_ui_controls::TextEditCommand::MoveDown,
+    ));
     assert_eq!(field(&h).surface.input.caret, 14);
     h.event(&ContentEvent::TextCommand(
-        "moveUpAndModifySelection:".into(),
+        tekes_ui_controls::TextEditCommand::MoveUpAndModifySelection,
     ));
     assert_eq!(field(&h).surface.input.anchor, 14);
     assert_eq!(field(&h).surface.input.caret, 8);
     h.event(&ContentEvent::TextCommand(
-        "moveUpAndModifySelection:".into(),
+        tekes_ui_controls::TextEditCommand::MoveUpAndModifySelection,
     ));
     assert_eq!(field(&h).surface.input.caret, 5);
 }
@@ -127,11 +135,15 @@ fn soft_line_end_keeps_caret_on_that_visual_line_and_preserves_affinity() {
     let line = field(&h).surface.paragraph.as_ref().unwrap().lines[0].clone();
     assert!(!line.has_newline);
     field_mut(&mut h).surface.input.select(2, false);
-    h.event(&ContentEvent::TextCommand("moveToEndOfLine:".into()));
+    h.event(&ContentEvent::TextCommand(
+        tekes_ui_controls::TextEditCommand::MoveToEndOfLine,
+    ));
     let s = &field(&h).surface;
     assert_eq!(s.input.caret, line.utf16.end);
     assert_eq!(s.caret_doc(s.input.caret).min_y(), line.top as f32);
-    h.event(&ContentEvent::TextCommand("moveDown:".into()));
+    h.event(&ContentEvent::TextCommand(
+        tekes_ui_controls::TextEditCommand::MoveDown,
+    ));
     let s = &field(&h).surface;
     assert!(s.caret_doc(s.input.caret).min_y() > line.top as f32);
 }
@@ -151,14 +163,22 @@ fn delete_to_visual_line_start_preserves_soft_wrap_prefix_and_undo_selection() {
         .surface
         .input
         .select(line.utf16.start + 1, false);
-    assert!(h.event(&ContentEvent::TextCommand("moveToEndOfLine:".into())).consumed);
-    assert_eq!(field(&h).surface.caret_doc(line.utf16.end).min_y(), line.top as f32);
+    assert!(
+        h.event(&ContentEvent::TextCommand(
+            tekes_ui_controls::TextEditCommand::MoveToEndOfLine
+        ))
+        .consumed
+    );
+    assert_eq!(
+        field(&h).surface.caret_doc(line.utf16.end).min_y(),
+        line.top as f32
+    );
     let start = line.utf16.start;
     let end = line.utf16.end;
     let expected = format!("{}{}", &value[..start], &value[end..]);
     assert!(
         h.event(&ContentEvent::TextCommand(
-            "deleteToBeginningOfLine:".into()
+            tekes_ui_controls::TextEditCommand::DeleteToBeginningOfLine
         ))
         .consumed
     );
@@ -172,7 +192,7 @@ fn delete_to_visual_line_start_preserves_soft_wrap_prefix_and_undo_selection() {
     field_mut(&mut h).surface.input.select_range(1..4);
     assert!(
         h.event(&ContentEvent::TextCommand(
-            "deleteToBeginningOfLine:".into()
+            tekes_ui_controls::TextEditCommand::DeleteToBeginningOfLine
         ))
         .consumed
     );
@@ -195,35 +215,43 @@ fn paragraph_navigation_selection_and_delete_use_logical_crlf_boundaries() {
     field_mut(&mut h).surface.input.select(11, false);
     assert!(
         h.event(&ContentEvent::TextCommand(
-            "moveToBeginningOfParagraph:".into()
+            tekes_ui_controls::TextEditCommand::MoveToBeginningOfParagraph
         ))
         .consumed
     );
     assert_eq!(field(&h).surface.input.caret, 7);
     assert!(
-        h.event(&ContentEvent::TextCommand("moveToEndOfParagraph:".into()))
-            .consumed
+        h.event(&ContentEvent::TextCommand(
+            tekes_ui_controls::TextEditCommand::MoveToEndOfParagraph
+        ))
+        .consumed
     );
     assert_eq!(field(&h).surface.input.caret, 15);
 
     field_mut(&mut h).surface.input.select(11, false);
     assert!(
-        h.event(&ContentEvent::TextCommand("selectLine:".into()))
-            .consumed
+        h.event(&ContentEvent::TextCommand(
+            tekes_ui_controls::TextEditCommand::SelectLine
+        ))
+        .consumed
     );
     assert_eq!(field(&h).surface.input.selected_text(), "😀second\r\n");
 
     field_mut(&mut h).surface.input.select(11, false);
     assert!(
-        h.event(&ContentEvent::TextCommand("selectParagraph:".into()))
-            .consumed
+        h.event(&ContentEvent::TextCommand(
+            tekes_ui_controls::TextEditCommand::SelectParagraph
+        ))
+        .consumed
     );
     assert_eq!(field(&h).surface.input.selected_text(), "😀second\r\n");
 
     field_mut(&mut h).surface.input.select(11, false);
     assert!(
-        h.event(&ContentEvent::TextCommand("deleteToEndOfParagraph:".into()))
-            .consumed
+        h.event(&ContentEvent::TextCommand(
+            tekes_ui_controls::TextEditCommand::DeleteToEndOfParagraph
+        ))
+        .consumed
     );
     assert_eq!(field(&h).surface.input.text, "first\r\n😀se\r\nlast");
     assert!(field_mut(&mut h).surface.input.undo());
@@ -237,15 +265,17 @@ fn line_deletion_respects_hard_break_read_only_and_marked_text() {
     field_mut(&mut h).surface.input.select(3, false);
     assert!(
         h.event(&ContentEvent::TextCommand(
-            "deleteToBeginningOfLine:".into()
+            tekes_ui_controls::TextEditCommand::DeleteToBeginningOfLine
         ))
         .consumed
     );
     assert_eq!(field(&h).surface.input.text, "ab\ncd\nef");
 
     assert!(
-        h.event(&ContentEvent::TextCommand("deleteToEndOfLine:".into()))
-            .consumed
+        h.event(&ContentEvent::TextCommand(
+            tekes_ui_controls::TextEditCommand::DeleteToEndOfLine
+        ))
+        .consumed
     );
     assert_eq!(field(&h).surface.input.text, "ab\n\nef");
 
@@ -253,7 +283,7 @@ fn line_deletion_respects_hard_break_read_only_and_marked_text() {
     field_mut(&mut h).surface.input.read_only = true;
     let before = field(&h).surface.input.text.clone();
     h.event(&ContentEvent::TextCommand(
-        "deleteToBeginningOfLine:".into(),
+        tekes_ui_controls::TextEditCommand::DeleteToBeginningOfLine,
     ));
     assert_eq!(field(&h).surface.input.text, before);
 
@@ -261,7 +291,9 @@ fn line_deletion_respects_hard_break_read_only_and_marked_text() {
     field_mut(&mut h).surface.input.preedit("mark", 4..4, None);
     let before = field(&h).surface.input.text.clone();
     let marked = field(&h).surface.input.marked.clone();
-    h.event(&ContentEvent::TextCommand("deleteToEndOfLine:".into()));
+    h.event(&ContentEvent::TextCommand(
+        tekes_ui_controls::TextEditCommand::DeleteToEndOfLine,
+    ));
     assert_eq!(field(&h).surface.input.text, before);
     assert_eq!(field(&h).surface.input.marked, marked);
 }
@@ -271,8 +303,10 @@ fn crlf_line_end_command_matches_native_selection_and_line_boundary() {
     let mut h = host("first\r\nsecond\r\nlast", 500.);
     field_mut(&mut h).surface.input.select(10, false);
     assert!(
-        h.event(&ContentEvent::TextCommand("deleteToEndOfLine:".into()))
-            .consumed
+        h.event(&ContentEvent::TextCommand(
+            tekes_ui_controls::TextEditCommand::DeleteToEndOfLine
+        ))
+        .consumed
     );
     assert_eq!(field(&h).surface.input.text, "first\r\nseclast");
     assert!(field_mut(&mut h).surface.input.undo());
@@ -282,12 +316,15 @@ fn crlf_line_end_command_matches_native_selection_and_line_boundary() {
 
 #[test]
 fn delete_to_line_or_paragraph_end_at_boundary_removes_the_terminating_break() {
-    for command in ["deleteToEndOfLine:", "deleteToEndOfParagraph:"] {
+    for command in [
+        tekes_ui_controls::TextEditCommand::DeleteToEndOfLine,
+        tekes_ui_controls::TextEditCommand::DeleteToEndOfParagraph,
+    ] {
         let mut h = host("ab\ncd\nef", 500.);
         // Position exactly at the content end, before its line/paragraph break.
         field_mut(&mut h).surface.input.select(5, false);
-        assert!(h.event(&ContentEvent::TextCommand(command.into())).consumed);
-        assert_eq!(field(&h).surface.input.text, "ab\ncdef", "{command}");
+        assert!(h.event(&ContentEvent::TextCommand(command)).consumed);
+        assert_eq!(field(&h).surface.input.text, "ab\ncdef", "{command:?}");
         assert!(field_mut(&mut h).surface.input.undo());
         assert_eq!(field(&h).surface.input.text, "ab\ncd\nef");
         assert_eq!(field(&h).surface.input.selection(), 5..5);
@@ -300,7 +337,7 @@ fn paragraph_backward_forward_selection_and_native_line_edge_aliases() {
     field_mut(&mut h).surface.input.select(9, false);
     assert!(
         h.event(&ContentEvent::TextCommand(
-            "moveParagraphBackwardAndModifySelection:".into()
+            tekes_ui_controls::TextEditCommand::MoveParagraphBackwardAndModifySelection
         ))
         .consumed
     );
@@ -308,7 +345,7 @@ fn paragraph_backward_forward_selection_and_native_line_edge_aliases() {
     assert_eq!(field(&h).surface.input.caret, 7);
     assert!(
         h.event(&ContentEvent::TextCommand(
-            "moveParagraphForwardAndModifySelection:".into()
+            tekes_ui_controls::TextEditCommand::MoveParagraphForwardAndModifySelection
         ))
         .consumed
     );
@@ -320,7 +357,7 @@ fn paragraph_backward_forward_selection_and_native_line_edge_aliases() {
     field_mut(&mut h).surface.input.select(7, false);
     assert!(
         h.event(&ContentEvent::TextCommand(
-            "moveParagraphBackwardAndModifySelection:".into()
+            tekes_ui_controls::TextEditCommand::MoveParagraphBackwardAndModifySelection
         ))
         .consumed
     );
@@ -329,13 +366,17 @@ fn paragraph_backward_forward_selection_and_native_line_edge_aliases() {
 
     field_mut(&mut h).surface.input.select(9, false);
     assert!(
-        h.event(&ContentEvent::TextCommand("moveToLeftEndOfLine:".into()))
-            .consumed
+        h.event(&ContentEvent::TextCommand(
+            tekes_ui_macos_bridge::parse_objc_text_command("moveToLeftEndOfLine:").unwrap()
+        ))
+        .consumed
     );
     assert_eq!(field(&h).surface.input.caret, 7);
     assert!(
-        h.event(&ContentEvent::TextCommand("moveToRightEndOfLine:".into()))
-            .consumed
+        h.event(&ContentEvent::TextCommand(
+            tekes_ui_macos_bridge::parse_objc_text_command("moveToRightEndOfLine:").unwrap()
+        ))
+        .consumed
     );
     assert_eq!(field(&h).surface.input.caret, 13);
 }
@@ -362,8 +403,10 @@ fn transpose_swaps_whole_graphemes_and_is_one_undo_transaction() {
         let mut h = host(value, 500.);
         field_mut(&mut h).surface.input.select(caret, false);
         assert!(
-            h.event(&ContentEvent::TextCommand("transpose:".into()))
-                .consumed
+            h.event(&ContentEvent::TextCommand(
+                tekes_ui_controls::TextEditCommand::Transpose
+            ))
+            .consumed
         );
         assert_eq!(field(&h).surface.input.text, expected);
         assert_eq!(field(&h).surface.input.caret, expected_caret);
@@ -375,8 +418,10 @@ fn transpose_swaps_whole_graphemes_and_is_one_undo_transaction() {
     let mut h = host("alpha beta gamma", 500.);
     field_mut(&mut h).surface.input.select_range(3..7);
     assert!(
-        h.event(&ContentEvent::TextCommand("transpose:".into()))
-            .consumed
+        h.event(&ContentEvent::TextCommand(
+            tekes_ui_controls::TextEditCommand::Transpose
+        ))
+        .consumed
     );
     assert_eq!(field(&h).surface.input.text, "alpha beta gamma");
     assert_eq!(field(&h).surface.input.selection(), 3..7);
@@ -401,7 +446,7 @@ fn decomposing_backward_delete_removes_the_final_nfd_scalar_and_undoes() {
         field_mut(&mut h).surface.input.select(end, false);
         assert!(
             h.event(&ContentEvent::TextCommand(
-                "deleteBackwardByDecomposingPreviousCharacter:".into()
+                tekes_ui_controls::TextEditCommand::DeleteBackwardDecomposing
             ))
             .consumed
         );
@@ -424,14 +469,14 @@ fn decomposing_delete_treats_crlf_atomically_and_selection_as_one_range() {
     field_mut(&mut h).surface.input.select(4, false);
     assert!(
         h.event(&ContentEvent::TextCommand(
-            "deleteBackwardByDecomposingPreviousCharacter:".into()
+            tekes_ui_controls::TextEditCommand::DeleteBackwardDecomposing
         ))
         .consumed
     );
     assert_eq!(field(&h).surface.input.text, "a\r\n");
     assert!(
         h.event(&ContentEvent::TextCommand(
-            "deleteBackwardByDecomposingPreviousCharacter:".into()
+            tekes_ui_controls::TextEditCommand::DeleteBackwardDecomposing
         ))
         .consumed
     );
@@ -445,7 +490,7 @@ fn decomposing_delete_treats_crlf_atomically_and_selection_as_one_range() {
     field_mut(&mut h).surface.input.select_range(0..2);
     assert!(
         h.event(&ContentEvent::TextCommand(
-            "deleteBackwardByDecomposingPreviousCharacter:".into()
+            tekes_ui_controls::TextEditCommand::DeleteBackwardDecomposing
         ))
         .consumed
     );
@@ -457,19 +502,34 @@ fn decomposing_delete_treats_crlf_atomically_and_selection_as_one_range() {
 fn paragraph_kill_appends_and_repeated_yank_reuses_the_shared_value() {
     let mut h = host("alpha beta\ngamma delta\nomega", 500.);
     field_mut(&mut h).surface.input.select(6, false);
-    assert!(text_command(&mut h, "deleteToEndOfParagraph:"));
+    assert!(text_command(
+        &mut h,
+        tekes_ui_controls::TextEditCommand::DeleteToEndOfParagraph
+    ));
     assert_eq!(field(&h).surface.input.text, "alpha \ngamma delta\nomega");
-    assert!(text_command(&mut h, "deleteToEndOfParagraph:"));
+    assert!(text_command(
+        &mut h,
+        tekes_ui_controls::TextEditCommand::DeleteToEndOfParagraph
+    ));
     assert_eq!(field(&h).surface.input.text, "alpha gamma delta\nomega");
-    assert!(text_command(&mut h, "deleteToEndOfParagraph:"));
+    assert!(text_command(
+        &mut h,
+        tekes_ui_controls::TextEditCommand::DeleteToEndOfParagraph
+    ));
     assert_eq!(field(&h).surface.input.text, "alpha \nomega");
 
-    assert!(text_command(&mut h, "yank:"));
+    assert!(text_command(
+        &mut h,
+        tekes_ui_controls::TextEditCommand::Yank
+    ));
     assert_eq!(
         field(&h).surface.input.text,
         "alpha beta\ngamma delta\nomega"
     );
-    assert!(text_command(&mut h, "yank:"));
+    assert!(text_command(
+        &mut h,
+        tekes_ui_controls::TextEditCommand::Yank
+    ));
     assert_eq!(
         field(&h).surface.input.text,
         "alpha beta\ngamma deltabeta\ngamma delta\nomega"
@@ -480,11 +540,23 @@ fn paragraph_kill_appends_and_repeated_yank_reuses_the_shared_value() {
 fn line_kill_prepends_and_switching_kill_selector_resets_coalescing() {
     let mut h = host("alpha beta\ngamma delta\nomega", 500.);
     field_mut(&mut h).surface.input.select(6, false);
-    assert!(text_command(&mut h, "deleteToEndOfLine:"));
-    assert!(text_command(&mut h, "deleteToEndOfLine:"));
-    assert!(text_command(&mut h, "deleteToEndOfLine:"));
+    assert!(text_command(
+        &mut h,
+        tekes_ui_controls::TextEditCommand::DeleteToEndOfLine
+    ));
+    assert!(text_command(
+        &mut h,
+        tekes_ui_controls::TextEditCommand::DeleteToEndOfLine
+    ));
+    assert!(text_command(
+        &mut h,
+        tekes_ui_controls::TextEditCommand::DeleteToEndOfLine
+    ));
     assert_eq!(field(&h).surface.input.text, "alpha \nomega");
-    assert!(text_command(&mut h, "yank:"));
+    assert!(text_command(
+        &mut h,
+        tekes_ui_controls::TextEditCommand::Yank
+    ));
     assert_eq!(
         field(&h).surface.input.text,
         "alpha gamma delta\nbeta\nomega"
@@ -492,9 +564,18 @@ fn line_kill_prepends_and_switching_kill_selector_resets_coalescing() {
 
     let mut h = host("alpha beta\ngamma delta\nomega", 500.);
     field_mut(&mut h).surface.input.select(6, false);
-    assert!(text_command(&mut h, "deleteToEndOfParagraph:"));
-    assert!(text_command(&mut h, "deleteToEndOfLine:"));
-    assert!(text_command(&mut h, "yank:"));
+    assert!(text_command(
+        &mut h,
+        tekes_ui_controls::TextEditCommand::DeleteToEndOfParagraph
+    ));
+    assert!(text_command(
+        &mut h,
+        tekes_ui_controls::TextEditCommand::DeleteToEndOfLine
+    ));
+    assert!(text_command(
+        &mut h,
+        tekes_ui_controls::TextEditCommand::Yank
+    ));
     assert_eq!(field(&h).surface.input.text, "alpha \ngamma delta\nomega");
 }
 
@@ -502,10 +583,22 @@ fn line_kill_prepends_and_switching_kill_selector_resets_coalescing() {
 fn ordinary_deletes_rebase_kill_chain_but_insert_and_move_break_it() {
     let mut h = host("alpha beta\ngamma delta\nomega", 500.);
     field_mut(&mut h).surface.input.select(6, false);
-    assert!(text_command(&mut h, "deleteToEndOfParagraph:"));
-    assert!(text_command(&mut h, "deleteBackward:"));
-    assert!(text_command(&mut h, "deleteToEndOfParagraph:"));
-    assert!(text_command(&mut h, "yank:"));
+    assert!(text_command(
+        &mut h,
+        tekes_ui_controls::TextEditCommand::DeleteToEndOfParagraph
+    ));
+    assert!(text_command(
+        &mut h,
+        tekes_ui_controls::TextEditCommand::DeleteBackward
+    ));
+    assert!(text_command(
+        &mut h,
+        tekes_ui_controls::TextEditCommand::DeleteToEndOfParagraph
+    ));
+    assert!(text_command(
+        &mut h,
+        tekes_ui_controls::TextEditCommand::Yank
+    ));
     assert_eq!(
         field(&h).surface.input.text,
         "alphabeta\ngamma delta\nomega"
@@ -513,7 +606,10 @@ fn ordinary_deletes_rebase_kill_chain_but_insert_and_move_break_it() {
 
     let mut h = host("alpha beta\ngamma delta\nomega", 500.);
     field_mut(&mut h).surface.input.select(6, false);
-    assert!(text_command(&mut h, "deleteToEndOfParagraph:"));
+    assert!(text_command(
+        &mut h,
+        tekes_ui_controls::TextEditCommand::DeleteToEndOfParagraph
+    ));
     assert!(
         h.event(&ContentEvent::Commit {
             text: "X".into(),
@@ -521,16 +617,34 @@ fn ordinary_deletes_rebase_kill_chain_but_insert_and_move_break_it() {
         })
         .consumed
     );
-    assert!(text_command(&mut h, "deleteToEndOfParagraph:"));
-    assert!(text_command(&mut h, "yank:"));
+    assert!(text_command(
+        &mut h,
+        tekes_ui_controls::TextEditCommand::DeleteToEndOfParagraph
+    ));
+    assert!(text_command(
+        &mut h,
+        tekes_ui_controls::TextEditCommand::Yank
+    ));
     assert_eq!(field(&h).surface.input.text, "alpha X\ngamma delta\nomega");
 
     let mut h = host("alpha beta\ngamma delta\nomega", 500.);
     field_mut(&mut h).surface.input.select(6, false);
-    assert!(text_command(&mut h, "deleteToEndOfParagraph:"));
-    assert!(text_command(&mut h, "moveToEndOfParagraph:"));
-    assert!(text_command(&mut h, "deleteToEndOfParagraph:"));
-    assert!(text_command(&mut h, "yank:"));
+    assert!(text_command(
+        &mut h,
+        tekes_ui_controls::TextEditCommand::DeleteToEndOfParagraph
+    ));
+    assert!(text_command(
+        &mut h,
+        tekes_ui_controls::TextEditCommand::MoveToEndOfParagraph
+    ));
+    assert!(text_command(
+        &mut h,
+        tekes_ui_controls::TextEditCommand::DeleteToEndOfParagraph
+    ));
+    assert!(text_command(
+        &mut h,
+        tekes_ui_controls::TextEditCommand::Yank
+    ));
     assert_eq!(field(&h).surface.input.text, "alpha \ngamma delta\nomega");
 }
 
@@ -538,18 +652,30 @@ fn ordinary_deletes_rebase_kill_chain_but_insert_and_move_break_it() {
 fn kill_value_is_shared_across_editors_but_new_owner_kill_replaces_it() {
     let mut owner = host("alpha beta\ngamma", 500.);
     field_mut(&mut owner).surface.input.select(6, false);
-    assert!(text_command(&mut owner, "deleteToEndOfParagraph:"));
+    assert!(text_command(
+        &mut owner,
+        tekes_ui_controls::TextEditCommand::DeleteToEndOfParagraph
+    ));
 
     let mut other = host("target ", 500.);
     field_mut(&mut other).surface.input.select(7, false);
-    assert!(text_command(&mut other, "yank:"));
+    assert!(text_command(
+        &mut other,
+        tekes_ui_controls::TextEditCommand::Yank
+    ));
     assert_eq!(field(&other).surface.input.text, "target beta");
 
     let mut other = host("target ", 500.);
     field_mut(&mut other).surface.input.select(7, false);
-    assert!(text_command(&mut other, "deleteToBeginningOfParagraph:"));
+    assert!(text_command(
+        &mut other,
+        tekes_ui_controls::TextEditCommand::DeleteToBeginningOfParagraph
+    ));
     assert_eq!(field(&other).surface.input.text, "");
-    assert!(text_command(&mut other, "yank:"));
+    assert!(text_command(
+        &mut other,
+        tekes_ui_controls::TextEditCommand::Yank
+    ));
     assert_eq!(field(&other).surface.input.text, "target ");
 }
 
@@ -557,14 +683,26 @@ fn kill_value_is_shared_across_editors_but_new_owner_kill_replaces_it() {
 fn another_editors_move_does_not_break_the_original_owner_kill_chain() {
     let mut owner = host("alpha beta\ngamma", 500.);
     field_mut(&mut owner).surface.input.select(6, false);
-    assert!(text_command(&mut owner, "deleteToEndOfParagraph:"));
+    assert!(text_command(
+        &mut owner,
+        tekes_ui_controls::TextEditCommand::DeleteToEndOfParagraph
+    ));
 
     let mut other = host("target ", 500.);
     field_mut(&mut other).surface.input.select(7, false);
-    assert!(text_command(&mut other, "moveLeft:"));
+    assert!(text_command(
+        &mut other,
+        tekes_ui_controls::TextEditCommand::MoveLeft
+    ));
 
-    assert!(text_command(&mut owner, "deleteToEndOfParagraph:"));
-    assert!(text_command(&mut owner, "yank:"));
+    assert!(text_command(
+        &mut owner,
+        tekes_ui_controls::TextEditCommand::DeleteToEndOfParagraph
+    ));
+    assert!(text_command(
+        &mut owner,
+        tekes_ui_controls::TextEditCommand::Yank
+    ));
     assert_eq!(field(&owner).surface.input.text, "alpha beta\ngamma");
 }
 
@@ -572,18 +710,33 @@ fn another_editors_move_does_not_break_the_original_owner_kill_chain() {
 fn crlf_kill_yank_preserves_bytes_and_crlf_paragraph_tail_is_noop() {
     let mut h = host("first\r\nsecond\r\nlast", 500.);
     field_mut(&mut h).surface.input.select(3, false);
-    assert!(text_command(&mut h, "deleteToEndOfParagraph:"));
+    assert!(text_command(
+        &mut h,
+        tekes_ui_controls::TextEditCommand::DeleteToEndOfParagraph
+    ));
     assert_eq!(field(&h).surface.input.text, "fir\r\nsecond\r\nlast");
-    assert!(text_command(&mut h, "deleteToEndOfParagraph:"));
+    assert!(text_command(
+        &mut h,
+        tekes_ui_controls::TextEditCommand::DeleteToEndOfParagraph
+    ));
     assert_eq!(field(&h).surface.input.text, "fir\r\nsecond\r\nlast");
-    assert!(text_command(&mut h, "yank:"));
+    assert!(text_command(
+        &mut h,
+        tekes_ui_controls::TextEditCommand::Yank
+    ));
     assert_eq!(field(&h).surface.input.text, "first\r\nsecond\r\nlast");
 
     let mut h = host("first\r\nsecond\r\nlast", 500.);
     field_mut(&mut h).surface.input.select_range(3..9);
-    assert!(text_command(&mut h, "deleteToEndOfParagraph:"));
+    assert!(text_command(
+        &mut h,
+        tekes_ui_controls::TextEditCommand::DeleteToEndOfParagraph
+    ));
     assert_eq!(field(&h).surface.input.text, "fircond\r\nlast");
-    assert!(text_command(&mut h, "yank:"));
+    assert!(text_command(
+        &mut h,
+        tekes_ui_controls::TextEditCommand::Yank
+    ));
     assert_eq!(field(&h).surface.input.text, "first\r\nsecond\r\nlast");
 }
 
@@ -591,21 +744,37 @@ fn crlf_kill_yank_preserves_bytes_and_crlf_paragraph_tail_is_noop() {
 fn delete_selector_only_deletes_a_selection_and_ignoring_field_editor_aliases_work() {
     let mut h = host("alpha beta gamma", 500.);
     field_mut(&mut h).surface.input.select(10, false);
-    assert!(text_command(&mut h, "delete:"));
+    assert!(text_command(
+        &mut h,
+        tekes_ui_macos_bridge::parse_objc_text_command("delete:").unwrap()
+    ));
     assert_eq!(field(&h).surface.input.text, "alpha beta gamma");
     field_mut(&mut h).surface.input.select_range(3..10);
-    assert!(text_command(&mut h, "delete:"));
+    assert!(text_command(
+        &mut h,
+        tekes_ui_macos_bridge::parse_objc_text_command("delete:").unwrap()
+    ));
     assert_eq!(field(&h).surface.input.text, "alp gamma");
     assert!(field_mut(&mut h).surface.input.undo());
     assert_eq!(field(&h).surface.input.selection(), 3..10);
 
     let mut h = host("ab", 500.);
     field_mut(&mut h).surface.input.select(1, false);
-    assert!(text_command(&mut h, "insertNewlineIgnoringFieldEditor:"));
-    assert!(text_command(&mut h, "moveBackward:"));
+    assert!(text_command(
+        &mut h,
+        tekes_ui_macos_bridge::parse_objc_text_command("insertNewlineIgnoringFieldEditor:")
+            .unwrap()
+    ));
+    assert!(text_command(
+        &mut h,
+        tekes_ui_macos_bridge::parse_objc_text_command("moveBackward:").unwrap()
+    ));
     assert_eq!(field(&h).surface.input.text, "a\nb");
     assert_eq!(field(&h).surface.input.caret, 1);
-    assert!(text_command(&mut h, "insertTabIgnoringFieldEditor:"));
+    assert!(text_command(
+        &mut h,
+        tekes_ui_macos_bridge::parse_objc_text_command("insertTabIgnoringFieldEditor:").unwrap()
+    ));
     assert_eq!(field(&h).surface.input.text, "a\t\nb");
 }
 
@@ -615,26 +784,32 @@ fn empty_paragraph_edges_remain_on_the_break_and_delete_as_one_transaction() {
     field_mut(&mut h).surface.input.select(6, false);
     assert!(
         h.event(&ContentEvent::TextCommand(
-            "moveToBeginningOfParagraph:".into()
+            tekes_ui_controls::TextEditCommand::MoveToBeginningOfParagraph
         ))
         .consumed
     );
     assert_eq!(field(&h).surface.input.caret, 6);
     assert!(
-        h.event(&ContentEvent::TextCommand("moveToEndOfParagraph:".into()))
-            .consumed
+        h.event(&ContentEvent::TextCommand(
+            tekes_ui_controls::TextEditCommand::MoveToEndOfParagraph
+        ))
+        .consumed
     );
     assert_eq!(field(&h).surface.input.caret, 6);
     assert!(
-        h.event(&ContentEvent::TextCommand("selectParagraph:".into()))
-            .consumed
+        h.event(&ContentEvent::TextCommand(
+            tekes_ui_controls::TextEditCommand::SelectParagraph
+        ))
+        .consumed
     );
     assert_eq!(field(&h).surface.input.selected_text(), "\n");
 
     field_mut(&mut h).surface.input.select(6, false);
     assert!(
-        h.event(&ContentEvent::TextCommand("deleteToEndOfParagraph:".into()))
-            .consumed
+        h.event(&ContentEvent::TextCommand(
+            tekes_ui_controls::TextEditCommand::DeleteToEndOfParagraph
+        ))
+        .consumed
     );
     assert_eq!(field(&h).surface.input.text, "first\nlast");
     assert!(field_mut(&mut h).surface.input.undo());
@@ -658,13 +833,15 @@ fn stale_geometry_is_never_guessed_and_existing_backend_refreshes_consecutive_co
     field_mut(&mut h).surface.input.insert("new\n", Some(0..0));
     let caret = field(&h).surface.input.caret;
     assert!(
-        !h.event(&ContentEvent::TextCommand("moveToEndOfLine:".into()))
-            .consumed
+        !h.event(&ContentEvent::TextCommand(
+            tekes_ui_controls::TextEditCommand::MoveToEndOfLine
+        ))
+        .consumed
     );
     assert_eq!(field(&h).surface.input.caret, caret);
     assert!(
         h.event_with_text(
-            &ContentEvent::TextCommand("moveToEndOfLine:".into()),
+            &ContentEvent::TextCommand(tekes_ui_controls::TextEditCommand::MoveToEndOfLine),
             &mut Text
         )
         .unwrap()
@@ -680,8 +857,11 @@ fn stale_geometry_is_never_guessed_and_existing_backend_refreshes_consecutive_co
         &mut Text,
     )
     .unwrap();
-    h.event_with_text(&ContentEvent::TextCommand("moveUp:".into()), &mut Text)
-        .unwrap();
+    h.event_with_text(
+        &ContentEvent::TextCommand(tekes_ui_controls::TextEditCommand::MoveUp),
+        &mut Text,
+    )
+    .unwrap();
     assert!(field(&h).surface.input.caret < 9);
 }
 #[test]
@@ -712,7 +892,9 @@ fn metadata_and_selection_aliases_share_line_geometry_and_legal_utf16_boundaries
                 .input
                 .select(line.utf16.start, false);
             h.event_with_text(
-                &ContentEvent::TextCommand("moveToEndOfLineAndModifySelection:".into()),
+                &ContentEvent::TextCommand(
+                    tekes_ui_controls::TextEditCommand::MoveToEndOfLineAndModifySelection,
+                ),
                 &mut Text,
             )
             .unwrap();
@@ -776,8 +958,11 @@ fn one_native_vertical_chain_does_not_repeat_and_replacement_cancels_button_fall
         &mut Text,
     )
     .unwrap();
-    h.event_with_text(&ContentEvent::TextCommand("moveDown:".into()), &mut Text)
-        .unwrap();
+    h.event_with_text(
+        &ContentEvent::TextCommand(tekes_ui_controls::TextEditCommand::MoveDown),
+        &mut Text,
+    )
+    .unwrap();
     let r = h
         .event_with_text(
             &ContentEvent::TextKeyEnd {
@@ -801,10 +986,7 @@ fn one_native_vertical_chain_does_not_repeat_and_replacement_cancels_button_fall
     let button = ComponentId(11);
     let mut h = ContentHost::new(Content::new(
         root,
-        ListContent::new(
-            "root",
-            vec![Content::new(button, Button::new("old"))],
-        ),
+        ListContent::new("root", vec![Content::new(button, Button::new("old"))]),
     ))
     .unwrap();
     let frame = Rect::new(0., 0., 400., 300.);
@@ -823,7 +1005,9 @@ fn one_native_vertical_chain_does_not_repeat_and_replacement_cancels_button_fall
         key: key(ControlKey::Enter),
         composing: false,
     });
-    h.event(&ContentEvent::TextCommand("insertNewline:".into()));
+    h.event(&ContentEvent::TextCommand(
+        tekes_ui_controls::TextEditCommand::InsertNewline,
+    ));
     h.get_mut(root)
         .unwrap()
         .component_mut::<ListContent>()
@@ -892,7 +1076,10 @@ fn combo_callback_only_arrows_keep_overlay_priority_and_ime_keeps_editor_ownersh
         )
         .unwrap();
     s.host
-        .event_with_text(&ContentEvent::TextCommand("moveDown:".into()), &mut Text)
+        .event_with_text(
+            &ContentEvent::TextCommand(tekes_ui_controls::TextEditCommand::MoveDown),
+            &mut Text,
+        )
         .unwrap();
     s.host
         .event_with_text(
@@ -928,7 +1115,10 @@ fn combo_callback_only_arrows_keep_overlay_priority_and_ime_keeps_editor_ownersh
         )
         .unwrap();
     s.host
-        .event_with_text(&ContentEvent::TextCommand("moveUp:".into()), &mut Text)
+        .event_with_text(
+            &ContentEvent::TextCommand(tekes_ui_controls::TextEditCommand::MoveUp),
+            &mut Text,
+        )
         .unwrap();
     s.host
         .event_with_text(
@@ -991,7 +1181,7 @@ fn combo_selection_is_activation_even_when_its_semantic_role_is_text_input() {
         .unwrap();
     s.host
         .event_with_text(
-            &ContentEvent::TextCommand("insertNewline:".into()),
+            &ContentEvent::TextCommand(tekes_ui_controls::TextEditCommand::InsertNewline),
             &mut Text,
         )
         .unwrap();
@@ -1027,14 +1217,22 @@ fn navigation_uses_original_field_tokens_in_all_themes_and_brands() {
                 field_mut(&mut h).surface.input.select(5, false);
                 let rect = Rect::new(30., 40., 500., 250.);
                 let (scene, lookups) = tekes_ui_tokens::audit::capture(|| {
-                    h.event_with_text(&ContentEvent::TextCommand("moveDown:".into()), &mut Text)
-                        .unwrap();
+                    h.event_with_text(
+                        &ContentEvent::TextCommand(tekes_ui_controls::TextEditCommand::MoveDown),
+                        &mut Text,
+                    )
+                    .unwrap();
                     assert_eq!(field(&h).surface.input.caret, 8);
-                    h.event_with_text(&ContentEvent::TextCommand("moveDown:".into()), &mut Text)
-                        .unwrap();
+                    h.event_with_text(
+                        &ContentEvent::TextCommand(tekes_ui_controls::TextEditCommand::MoveDown),
+                        &mut Text,
+                    )
+                    .unwrap();
                     assert_eq!(field(&h).surface.input.caret, 14);
                     h.event_with_text(
-                        &ContentEvent::TextCommand("moveUpAndModifySelection:".into()),
+                        &ContentEvent::TextCommand(
+                            tekes_ui_controls::TextEditCommand::MoveUpAndModifySelection,
+                        ),
                         &mut Text,
                     )
                     .unwrap();
@@ -1074,7 +1272,9 @@ fn empty_line_kill_keeps_the_existing_shared_yank_value() {
     let mut source = host("KNOWN-SEED", 500.);
     assert!(
         source
-            .event(&ContentEvent::TextCommand("deleteToEndOfParagraph:".into()))
+            .event(&ContentEvent::TextCommand(
+                tekes_ui_controls::TextEditCommand::DeleteToEndOfParagraph
+            ))
             .consumed
     );
     assert_eq!(field(&source).surface.input.text, "");
@@ -1082,14 +1282,16 @@ fn empty_line_kill_keeps_the_existing_shared_yank_value() {
     assert!(
         target
             .event(&ContentEvent::TextCommand(
-                "deleteToBeginningOfLine:".into()
+                tekes_ui_controls::TextEditCommand::DeleteToBeginningOfLine
             ))
             .consumed
     );
     assert_eq!(field(&target).surface.input.text, "target");
     assert!(
         target
-            .event(&ContentEvent::TextCommand("yank:".into()))
+            .event(&ContentEvent::TextCommand(
+                tekes_ui_controls::TextEditCommand::Yank
+            ))
             .consumed
     );
     assert_eq!(field(&target).surface.input.text, "KNOWN-SEEDtarget");

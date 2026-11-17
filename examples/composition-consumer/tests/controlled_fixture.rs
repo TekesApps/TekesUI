@@ -13,12 +13,15 @@ fn actual_buttons_drive_versioned_clear_undo_and_document_isolation() {
     let original = f.editor().input.text.clone();
     activate(&mut f, CLEAR);
     assert!(f.editor().input.text.is_empty());
-    f.event(&E::TextCommand("undo:".into()));
+    f.event(&E::TextCommand(tekes_ui_controls::TextEditCommand::Undo));
     assert_eq!(f.editor().input.text, original);
     activate(&mut f, SWITCH);
     assert_eq!(f.authority().identity, "B");
     assert_eq!(f.editor().input.text, "B 草稿");
-    assert!(!f.event(&E::TextCommand("undo:".into())).changed);
+    assert!(
+        !f.event(&E::TextCommand(tekes_ui_controls::TextEditCommand::Undo))
+            .changed
+    );
     activate(&mut f, SWITCH);
     assert_eq!(f.authority().identity, "A");
     assert_eq!(f.editor().input.text, original);
@@ -48,7 +51,9 @@ fn actual_delayed_authority_response_cannot_overwrite_local_edits_or_another_doc
 fn actual_increment_button_maps_the_existing_utf16_selection_without_resetting_history() {
     let mut f = ControlledEditorFixture::new();
     let original = f.editor().input.text.clone();
-    f.event(&E::TextCommand("selectAll:".into()));
+    f.event(&E::TextCommand(
+        tekes_ui_controls::TextEditCommand::SelectAll,
+    ));
     let before = f.editor().input.selection();
     activate(&mut f, PREFIX);
     assert_eq!(f.editor().input.text, format!("前{original}"));

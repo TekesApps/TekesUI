@@ -105,7 +105,9 @@ fn search_retained_public_inline_content_keeps_query_theme_geometry_and_edit_cle
         assert_eq!(node.semantics.name, "Search");
         assert_eq!(node.semantics.value.as_deref(), Some("notes 文档"));
     }
-    host.event(&ContentEvent::TextCommand("selectAll:".into()));
+    host.event(&ContentEvent::TextCommand(
+        tekes_ui_controls::TextEditCommand::SelectAll,
+    ));
     assert!(
         host.event(&ContentEvent::Commit {
             text: "readme 查询".into(),
@@ -118,10 +120,14 @@ fn search_retained_public_inline_content_keeps_query_theme_geometry_and_edit_cle
         host.semantics()[0].semantics.value.as_deref(),
         Some("readme 查询")
     );
-    host.event(&ContentEvent::TextCommand("selectAll:".into()));
+    host.event(&ContentEvent::TextCommand(
+        tekes_ui_controls::TextEditCommand::SelectAll,
+    ));
     assert!(
-        host.event(&ContentEvent::TextCommand("deleteBackward:".into()))
-            .changed
+        host.event(&ContentEvent::TextCommand(
+            tekes_ui_controls::TextEditCommand::DeleteBackward
+        ))
+        .changed
     );
     draw(&mut host, &mut text, Theme::DARK_INCREASED);
     assert_eq!(host.semantics()[0].semantics.value.as_deref(), Some(""));

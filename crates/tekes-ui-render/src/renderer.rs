@@ -4,8 +4,10 @@ use crate::clip::BoundaryProofLimits;
 use crate::common::COLOR_FORMAT;
 use crate::error::RenderError;
 use crate::frame::{FrameCounts, Pipelines};
-use crate::timing::{FrameTiming, SlotTicket, Timing};
+use crate::timing::{FrameTiming, HostTimeClock, SlotTicket, Timing};
+#[cfg(target_os = "macos")]
 use std::ffi::c_void;
+#[cfg(target_os = "macos")]
 use std::ptr::NonNull;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant};
@@ -231,6 +233,7 @@ struct SurfaceState {
 /// 并且 `presentsWithTransaction` 的同步上屏也要求在主线程。
 pub struct Renderer {
     id: u64,
+    #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
     instance: wgpu::Instance,
     device: wgpu::Device,
     queue: wgpu::Queue,
@@ -255,9 +258,24 @@ impl std::fmt::Debug for Renderer {
     }
 }
 
+#[cfg(any(target_os = "macos", target_os = "ios"))]
+fn default_backends() -> wgpu::Backends {
+    wgpu::Backends::METAL
+}
+
+#[cfg(target_os = "windows")]
+fn default_backends() -> wgpu::Backends {
+    wgpu::Backends::DX12 | wgpu::Backends::VULKAN
+}
+
+#[cfg(not(any(target_os = "macos", target_os = "ios", target_os = "windows")))]
+fn default_backends() -> wgpu::Backends {
+    wgpu::Backends::VULKAN | wgpu::Backends::GL
+}
+
 fn new_instance() -> wgpu::Instance {
     let mut desc = wgpu::InstanceDescriptor::new_without_display_handle();
-    desc.backends = wgpu::Backends::METAL;
+    desc.backends = wgpu::Backends::from_env().unwrap_or_else(default_backends);
     wgpu::Instance::new(desc)
 }
 
@@ -1326,17 +1344,15 @@ impl Renderer {
     }
 
     /// Benchmark only: timestamp the existing work-done notification, not GPU end.
-    #[cfg(target_os = "macos")]
-    pub fn observe_gpu_work_done_host(&mut self) -> Result<(), &'static str> {
+    pub fn observe_gpu_work_done_host(&mut self, clock: HostTimeClock) -> Result<(), &'static str> {
         self.timing
             .as_mut()
             .ok_or("frame_timing_not_enabled")?
-            .observe_work_done_host();
+            .observe_work_done_host(clock);
         Ok(())
     }
 
     /// Rows are (FrameTiming.frame, callback_observed_host_s); missing stays missing.
-    #[cfg(target_os = "macos")]
     pub fn gpu_work_done_host_observations(&self) -> Option<Result<Vec<(u64, f64)>, &'static str>> {
         self.timing
             .as_ref()
@@ -1703,5 +1719,55 @@ mod boundary_readback_layout_tests {
             ))
         );
         assert!(!called.get());
+    }
+
+    #[test]
+    fn default_backends_match_target_platform_and_are_non_empty() {
+        let backends = default_backends();
+        assert!(!backends.is_empty());
+        #[cfg(any(target_os = "macos", target_os = "ios"))]
+        assert_eq!(backends, wgpu::Backends::METAL);
+        #[cfg(target_os = "windows")]
+        assert_eq!(backends, wgpu::Backends::DX12 | wgpu::Backends::VULKAN);
+        #[cfg(not(any(target_os = "macos", target_os = "ios", target_os = "windows")))]
+        assert_eq!(backends, wgpu::Backends::VULKAN | wgpu::Backends::GL);
+    }
+
+    #[test]
+    fn observe_gpu_work_done_host_uses_injected_clock() {
+        let mut renderer = Renderer::new_headless().expect("actual headless GPU required");
+        assert_eq!(
+            renderer.observe_gpu_work_done_host(std::sync::Arc::new(|| 0.0)),
+            Err("frame_timing_not_enabled")
+        );
+
+        renderer.set_frame_timing(true);
+        let ticks = std::sync::Arc::new(std::sync::atomic::AtomicU64::new(0));
+        let ticks_clock = std::sync::Arc::clone(&ticks);
+        renderer
+            .observe_gpu_work_done_host(std::sync::Arc::new(move || {
+                let n = ticks_clock.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                42.5 + n as f64
+            }))
+            .expect("frame timing should be enabled");
+
+        let mut atlas = GlyphAtlas::default();
+        let scene = Scene::new();
+        renderer
+            .render_to_rgba8(&scene, &mut atlas, (16, 16), 1.0, Rgba::gray(0.0))
+            .expect("offscreen render should succeed");
+        let mut drained = Vec::new();
+        renderer.drain_frame_timings(&mut drained, true);
+        assert_eq!(drained.len(), 1);
+
+        let rows = renderer
+            .gpu_work_done_host_observations()
+            .expect("observations should be active")
+            .expect("observations should succeed");
+        if renderer.gpu_timing_supported() {
+            assert_eq!(rows, vec![(drained[0].frame, 42.5)]);
+        } else {
+            assert!(rows.is_empty());
+        }
     }
 }

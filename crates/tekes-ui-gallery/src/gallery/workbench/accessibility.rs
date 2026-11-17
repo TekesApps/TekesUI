@@ -1109,7 +1109,9 @@ mod tests {
         assert!(g.accessibility_action(key(i, 20), &A::Press).redraw);
         paint(&mut g);
         assert_eq!(g.workbench.states[&i].focus, Some(20));
-        g.handle_input(&Event::TextCommand("insertTab:".into()));
+        g.handle_input(&Event::TextCommand(
+            tekes_ui_platform_macos::TextEditCommand::InsertTab,
+        ));
         assert!(g.workbench.states[&i].extended.popover.open);
         assert_eq!(g.workbench.states[&i].focus, Some(21));
         paint(&mut g);
@@ -1118,10 +1120,14 @@ mod tests {
                 .iter()
                 .any(|n| n.key == key(i, 21) && n.focused)
         );
-        g.handle_input(&Event::TextCommand("insertBacktab:".into()));
+        g.handle_input(&Event::TextCommand(
+            tekes_ui_platform_macos::TextEditCommand::InsertBacktab,
+        ));
         assert!(g.workbench.states[&i].extended.popover.open);
         assert_eq!(g.workbench.states[&i].focus, Some(20));
-        g.handle_input(&Event::TextCommand("insertTab:".into()));
+        g.handle_input(&Event::TextCommand(
+            tekes_ui_platform_macos::TextEditCommand::InsertTab,
+        ));
         // Non-editable controls receive native key down/up, not text selectors.
         use tekes_ui_platform_macos::{KeyEvent, KeyEventKind, Modifiers};
         for kind in [KeyEventKind::Down, KeyEventKind::Up] {
@@ -2395,7 +2401,9 @@ mod field_area_host_migration_tests {
                     .any(|(k, _)| *k == key),
                 "the same native editor publishes its formal text layout"
             );
-            g.handle_input(&Event::TextCommand("selectAll:".into()));
+            g.handle_input(&Event::TextCommand(
+                tekes_ui_platform_macos::TextEditCommand::SelectAll,
+            ));
             let initial = g.text_input_state().unwrap().text;
             let context = TextKeyContext {
                 id: 27501,
@@ -2439,7 +2447,9 @@ mod field_area_host_migration_tests {
                 "Finished must not replay commit"
             );
             assert_eq!(finished.selection, committed.selection);
-            g.handle_input(&Event::TextCommand("undo:".into()));
+            g.handle_input(&Event::TextCommand(
+                tekes_ui_platform_macos::TextEditCommand::Undo,
+            ));
             assert_eq!(g.workbench.state(i).input.query(), initial);
         }
     }

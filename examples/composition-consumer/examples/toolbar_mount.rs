@@ -292,7 +292,9 @@ fn main() {
                     self.draw(w);
                 }
                 Event::TextCommand(command) => {
-                    self.toolbar.event(&ContentEvent::TextCommand(command));
+                    self.toolbar.event(&ContentEvent::TextCommand(
+                        tekes_ui_macos_bridge::translate_text_command(command),
+                    ));
                     self.actions();
                     self.draw(w);
                 }

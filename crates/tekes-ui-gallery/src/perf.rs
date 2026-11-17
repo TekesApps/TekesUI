@@ -647,7 +647,9 @@ impl Perf {
             renderer.set_frame_timing_cpu_only();
         }
         if self.work_done_host_requested
-            && let Err(error) = renderer.observe_gpu_work_done_host()
+            && let Err(error) = renderer.observe_gpu_work_done_host(std::sync::Arc::new(
+                tekes_ui_platform_macos::current_media_time,
+            ))
         {
             eprintln!("GPU work-done observation unavailable: {error}");
         }

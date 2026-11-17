@@ -603,6 +603,17 @@
       "reason": "Shared controlled plain-text synchronization on existing TextInput/TextSurface: caller-owned DraftRevision, immutable instance baseline, atomic selection/history policy and typed conflict. No standalone component or business/session ownership."
     },
     {
+      "api": "tekes_ui_controls::TextEditCommand",
+      "category": "component-support",
+      "components": [
+        "tui.text",
+        "tui.text-field",
+        "tui.text-area",
+        "tui.search-field"
+      ],
+      "reason": "Platform-neutral text editing command enum replacing raw AppKit selector strings at TextSurface and ContentEvent boundaries; no standalone component or route."
+    },
+    {
       "api": "tekes_ui_controls::TextInput",
       "category": "component-support",
       "components": [
@@ -2353,6 +2364,12 @@
         "tui.text"
       ],
       "reason": "Experimental composition adapter for the existing component family, exercised by the independent composition consumer; does not imply every family has migrated or native acceptance passed."
+    },
+    {
+      "api": "tekes_ui_controls::composition::TextEditCommand",
+      "category": "composition",
+      "components": [],
+      "reason": "Re-export of the platform-neutral TextEditCommand enum for ContentEvent::TextCommand at the Component/ContentHost boundary; no editor state machine or additional component."
     },
     {
       "api": "tekes_ui_controls::composition::TextFieldContent",

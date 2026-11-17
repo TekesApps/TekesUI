@@ -416,7 +416,9 @@ fn new_gallery(route: &str, index: usize, theme: Theme, scale: f32) -> Gallery {
 fn set_query(gallery: &mut Gallery, index: usize, query: &str) {
     gallery.build_scene(&mut Scene::new());
     assert!(gallery.workbench.focus_control(index, 1000).is_some());
-    gallery.handle_input(&Event::TextCommand("selectAll:".into()));
+    gallery.handle_input(&Event::TextCommand(
+        tekes_ui_platform_macos::TextEditCommand::SelectAll,
+    ));
     gallery.handle_input(&Event::TextCommit {
         text: query.to_owned(),
         replacement: None,

@@ -27,7 +27,7 @@ tekes-ui-scene.workspace = true
 tekes-ui-platform-macos = { workspace = true }
 tekes-ui-macos-bridge = { workspace = true }
 tekes-ui-render.workspace = true
-tekes-ui-text.workspace = true
+tekes-ui-text = { path = "../tekes-ui-text", features = ["qa"] }
 png.workspace = true
 serde_json.workspace = true
 unicode-segmentation = "1"

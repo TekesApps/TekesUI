@@ -71,7 +71,7 @@ impl super::Host {
                             target,
                             action: AccessibilityAction::Focus,
                         },
-                        Event::TextCommand("selectAll:".into()),
+                        Event::TextCommand(tekes_ui_platform_macos::TextEditCommand::SelectAll),
                         Event::TextCommit {
                             text: "mixed 本地输入验收".into(),
                             replacement: None,
@@ -768,7 +768,10 @@ impl super::Host {
                     probe.identities
                 );
                 self.acceptance_focus_text("notes", w)?;
-                self.acceptance_input(Event::TextCommand("selectAll:".into()), w)?;
+                self.acceptance_input(
+                    Event::TextCommand(tekes_ui_platform_macos::TextEditCommand::SelectAll),
+                    w,
+                )?;
                 self.acceptance_input(
                     Event::TextPreedit {
                         text: "かな".into(),
@@ -889,7 +892,10 @@ impl super::Host {
                     .collect();
                 probe.toolbar_point = Some(self.acceptance_button_point(tools, tools, 101)?);
                 self.acceptance_focus_text("tools", w)?;
-                self.acceptance_input(Event::TextCommand("selectAll:".into()), w)?;
+                self.acceptance_input(
+                    Event::TextCommand(tekes_ui_platform_macos::TextEditCommand::SelectAll),
+                    w,
+                )?;
                 self.acceptance_input(
                     Event::TextPreedit {
                         text: "リスト".into(),
@@ -1082,7 +1088,10 @@ impl super::Host {
             }
             13 => {
                 self.acceptance_focus_text("plain", w)?;
-                self.acceptance_input(Event::TextCommand("selectAll:".into()), w)?;
+                self.acceptance_input(
+                    Event::TextCommand(tekes_ui_platform_macos::TextEditCommand::SelectAll),
+                    w,
+                )?;
                 self.acceptance_input(
                     Event::TextCommit {
                         text: "handoff".into(),

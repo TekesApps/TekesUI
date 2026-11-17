@@ -312,7 +312,9 @@ fn ime_blocks_numeric_operations_and_native_key_chain_cannot_commit_candidate() 
         text: "125".into(),
         replacement: Some(0..4),
     });
-    h.event(&ContentEvent::TextCommand("insertNewline:".into()));
+    h.event(&ContentEvent::TextCommand(
+        tekes_ui_controls::TextEditCommand::InsertNewline,
+    ));
     h.event(&ContentEvent::TextKeyEnd {
         id: 1,
         input_context_consumed: false,
@@ -326,9 +328,13 @@ fn ime_blocks_numeric_operations_and_native_key_chain_cannot_commit_candidate() 
 fn text_undo_redo_selection_and_alignment_keep_original_surface() {
     let mut h = fixture();
     replace(&mut h, "125");
-    h.event(&ContentEvent::TextCommand("undo:".into()));
+    h.event(&ContentEvent::TextCommand(
+        tekes_ui_controls::TextEditCommand::Undo,
+    ));
     assert_eq!(field(&h).edit_state().text, "100%");
-    h.event(&ContentEvent::TextCommand("redo:".into()));
+    h.event(&ContentEvent::TextCommand(
+        tekes_ui_controls::TextEditCommand::Redo,
+    ));
     assert_eq!(field(&h).edit_state().text, "125");
     h.accessibility_action(PERCENT, None, AccessibilityAction::SetSelection(0..2));
     assert_eq!(h.text_surface(PERCENT).unwrap().input.selected_text(), "12");
@@ -414,7 +420,9 @@ fn candidate_confirming_arrow_does_not_step_but_plain_native_arrow_steps_once() 
         text: "125".into(),
         replacement: Some(0..4),
     });
-    h.event(&ContentEvent::TextCommand("moveUp:".into()));
+    h.event(&ContentEvent::TextCommand(
+        tekes_ui_controls::TextEditCommand::MoveUp,
+    ));
     h.event(&ContentEvent::TextKeyEnd {
         id: 1,
         input_context_consumed: false,
@@ -425,7 +433,9 @@ fn candidate_confirming_arrow_does_not_step_but_plain_native_arrow_steps_once() 
         key: up.clone(),
         composing: false,
     });
-    h.event(&ContentEvent::TextCommand("moveUp:".into()));
+    h.event(&ContentEvent::TextCommand(
+        tekes_ui_controls::TextEditCommand::MoveUp,
+    ));
     h.event(&ContentEvent::KeyInput(up));
     h.event(&ContentEvent::TextKeyEnd {
         id: 2,

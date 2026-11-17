@@ -113,16 +113,16 @@ fn end(h: &mut ContentHost, id: u64) -> ContentResponse {
         input_context_consumed: false,
     })
 }
-fn command(h: &mut ContentHost, c: &str) -> ContentResponse {
-    h.event(&ContentEvent::TextCommand(c.into()))
+fn command(h: &mut ContentHost, c: tekes_ui_controls::TextEditCommand) -> ContentResponse {
+    h.event(&ContentEvent::TextCommand(c))
 }
 #[test]
 fn ordinary_callbacks_edit_multiline_but_never_invent_submission() {
     for multi in [false, true] {
         let mut h = host(multi);
         field_mut(&mut h).submit_policy = TextSubmitPolicy::Enter;
-        assert!(!command(&mut h, "insertNewline:").activated);
-        assert!(!command(&mut h, "insertLineBreak:").activated);
+        assert!(!command(&mut h, tekes_ui_controls::TextEditCommand::InsertNewline).activated);
+        assert!(!command(&mut h, tekes_ui_controls::TextEditCommand::InsertLineBreak).activated);
         assert_eq!(
             field(&h).surface.input.text,
             if multi { "\n\n" } else { "" }
@@ -138,8 +138,8 @@ fn one_chain_has_one_newline_even_with_duplicate_selector_and_raw_key() {
     let mut h = host(true);
     let k = key(ControlKey::Enter);
     start(&mut h, 1, k.clone(), false);
-    command(&mut h, "insertNewline:");
-    command(&mut h, "insertLineBreak:");
+    command(&mut h, tekes_ui_controls::TextEditCommand::InsertNewline);
+    command(&mut h, tekes_ui_controls::TextEditCommand::InsertLineBreak);
     h.event(&ContentEvent::KeyInput(k));
     assert_eq!(field(&h).surface.input.text, "");
     let r = end(&mut h, 1);
@@ -162,7 +162,7 @@ fn configured_submit_is_an_intent_only_and_repeat_or_replay_cannot_send_twice() 
             k.modifiers.command = policy == TextSubmitPolicy::CommandEnter;
             k.repeat = id == 2;
             start(&mut h, id, k.clone(), false);
-            command(&mut h, "insertNewline:");
+            command(&mut h, tekes_ui_controls::TextEditCommand::InsertNewline);
             h.event(&ContentEvent::KeyInput(k));
             let r = end(&mut h, id);
             assert_eq!(r.activated, id == 1);
@@ -198,9 +198,9 @@ fn commit_unmark_and_control_selectors_never_escape_a_starting_composition() {
             });
             start(&mut h, 1, key(control), true);
             let selector = match control {
-                ControlKey::Enter => "insertNewline:",
-                ControlKey::Tab { .. } => "insertTab:",
-                _ => "cancelOperation:",
+                ControlKey::Enter => tekes_ui_controls::TextEditCommand::InsertNewline,
+                ControlKey::Tab { .. } => tekes_ui_controls::TextEditCommand::InsertTab,
+                _ => tekes_ui_controls::TextEditCommand::CancelOperation,
             };
             if !commit_first {
                 command(&mut h, selector);
@@ -233,9 +233,9 @@ fn tab_insertion_precedes_existing_focus_fallback_and_backtab_policy_is_explicit
         command(
             &mut h,
             if reverse {
-                "insertBacktab:"
+                tekes_ui_controls::TextEditCommand::InsertBacktab
             } else {
-                "insertTab:"
+                tekes_ui_controls::TextEditCommand::InsertTab
             },
         );
         end(&mut h, id);
@@ -244,7 +244,7 @@ fn tab_insertion_precedes_existing_focus_fallback_and_backtab_policy_is_explicit
     assert_eq!(field(&h).surface.input.text, "\t");
     field_mut(&mut h).tab_policy = TextTabPolicy::Navigate;
     start(&mut h, 3, key(ControlKey::Tab { reverse: false }), false);
-    command(&mut h, "insertTab:");
+    command(&mut h, tekes_ui_controls::TextEditCommand::InsertTab);
     let r = end(&mut h, 3);
     assert_eq!(h.focused(), Some(OTHER));
     assert_eq!(
@@ -266,7 +266,7 @@ fn focus_change_cancels_the_original_chain_and_never_edits_the_new_owner() {
         text: "late".into(),
         replacement: None,
     });
-    command(&mut h, "insertNewline:");
+    command(&mut h, tekes_ui_controls::TextEditCommand::InsertNewline);
     let r = end(&mut h, 1);
     assert_eq!(
         r.text_key.unwrap().disposition,
@@ -291,8 +291,8 @@ fn opaque_input_consumption_and_actual_edit_acknowledgement_block_submission() {
         TextKeyDisposition::InputConsumed
     );
     start(&mut h, 2, key(ControlKey::Enter), false);
-    assert!(command(&mut h, "deleteBackward:").consumed);
-    command(&mut h, "insertNewline:");
+    assert!(command(&mut h, tekes_ui_controls::TextEditCommand::DeleteBackward).consumed);
+    command(&mut h, tekes_ui_controls::TextEditCommand::InsertNewline);
     let r = end(&mut h, 2);
     assert!(!r.activated);
     assert_eq!(
@@ -307,7 +307,7 @@ fn modifiers_key_up_shift_return_and_unknown_commands_keep_their_meaning() {
     let mut shift = key(ControlKey::Enter);
     shift.modifiers.shift = true;
     start(&mut h, 1, shift, false);
-    command(&mut h, "insertLineBreak:");
+    command(&mut h, tekes_ui_controls::TextEditCommand::InsertLineBreak);
     let r = end(&mut h, 1);
     assert!(!r.activated);
     assert_eq!(field(&h).surface.input.text, "\n");
@@ -315,7 +315,11 @@ fn modifiers_key_up_shift_return_and_unknown_commands_keep_their_meaning() {
     up.down = false;
     assert!(!h.event(&ContentEvent::KeyInput(up)).activated);
     start(&mut h, 2, key(ControlKey::Enter), false);
-    command(&mut h, "unknownSelector:");
+    assert_eq!(
+        tekes_ui_macos_bridge::parse_objc_text_command("unknownSelector:"),
+        None
+    );
+    command(&mut h, tekes_ui_controls::TextEditCommand::PageUp);
     let r = end(&mut h, 2);
     assert!(!r.activated);
     assert_eq!(
@@ -340,7 +344,7 @@ fn returning_focus_to_the_same_id_does_not_resurrect_a_late_native_key() {
         text: "late".into(),
         replacement: None,
     });
-    command(&mut h, "insertNewline:");
+    command(&mut h, tekes_ui_controls::TextEditCommand::InsertNewline);
     let r = end(&mut h, 1);
     assert!(!r.activated);
     assert_eq!(
@@ -538,9 +542,9 @@ fn actual_public_editor_policies_keep_shared_surfaces_and_record_bounded_token_r
                         command(
                             &mut h,
                             if policy == "tab" {
-                                "insertTab:"
+                                tekes_ui_controls::TextEditCommand::InsertTab
                             } else {
-                                "insertNewline:"
+                                tekes_ui_controls::TextEditCommand::InsertNewline
                             },
                         );
                     }

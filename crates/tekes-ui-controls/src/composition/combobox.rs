@@ -507,10 +507,12 @@ impl Component for ComboBoxContent {
         if !self.editor.composing()
             && let ContentEvent::TextCommand(command) = e
         {
-            let key = match command.as_str() {
-                "insertNewline:" | "insertLineBreak:" => Some(ControlKey::Enter),
-                "moveUp:" => Some(ControlKey::Up),
-                "moveDown:" => Some(ControlKey::Down),
+            let key = match command {
+                TextEditCommand::InsertNewline | TextEditCommand::InsertLineBreak => {
+                    Some(ControlKey::Enter)
+                }
+                TextEditCommand::MoveUp => Some(ControlKey::Up),
+                TextEditCommand::MoveDown => Some(ControlKey::Down),
                 _ => None,
             };
             if let Some(key) = key {
@@ -550,7 +552,12 @@ impl Component for ComboBoxContent {
     }
     fn overlay_event(&mut self, e: &ContentEvent) -> ContentResponse {
         if !self.editor.composing()
-            && matches!(e, ContentEvent::TextCommand(c) if c == "insertNewline:" || c == "insertLineBreak:")
+            && matches!(
+                e,
+                ContentEvent::TextCommand(
+                    TextEditCommand::InsertNewline | TextEditCommand::InsertLineBreak
+                )
+            )
         {
             return self.combo_key(ControlKey::Enter, true);
         }

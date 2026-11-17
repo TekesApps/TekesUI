@@ -826,7 +826,7 @@ mod autosave_restore_tests {
             .form
             .host
             .event_with_text(
-                &ContentEvent::TextCommand("selectAll:".into()),
+                &ContentEvent::TextCommand(tekes_ui_controls::TextEditCommand::SelectAll),
                 &mut crate::text::Text::new(),
             )
             .unwrap();

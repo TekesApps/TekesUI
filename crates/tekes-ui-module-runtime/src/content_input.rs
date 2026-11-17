@@ -2,13 +2,92 @@
 use anyhow::{Result, ensure};
 use tekes_ui_app_protocol::component::content as wire;
 use tekes_ui_controls::{
-    ButtonTextRenderer, ControlKey,
+    ButtonTextRenderer, ControlKey, TextEditCommand,
     composition::{
         ComponentId, ContentEvent, ContentHost, ContentKeyEvent, ContentResponse, InputModifiers,
         PointerButton, PointerEvent, PointerPhase, TextKeyDisposition,
     },
 };
 use tekes_ui_scene::{Point, Rect};
+
+macro_rules! map_text_edit_command {
+    ($cmd:expr, $src:path => $dst:path) => {{
+        use $dst as Dst;
+        use $src as Src;
+        match $cmd {
+            Src::MoveLeft => Dst::MoveLeft,
+            Src::MoveLeftAndModifySelection => Dst::MoveLeftAndModifySelection,
+            Src::MoveRight => Dst::MoveRight,
+            Src::MoveRightAndModifySelection => Dst::MoveRightAndModifySelection,
+            Src::MoveWordLeft => Dst::MoveWordLeft,
+            Src::MoveWordLeftAndModifySelection => Dst::MoveWordLeftAndModifySelection,
+            Src::MoveWordRight => Dst::MoveWordRight,
+            Src::MoveWordRightAndModifySelection => Dst::MoveWordRightAndModifySelection,
+            Src::MoveUp => Dst::MoveUp,
+            Src::MoveUpAndModifySelection => Dst::MoveUpAndModifySelection,
+            Src::MoveDown => Dst::MoveDown,
+            Src::MoveDownAndModifySelection => Dst::MoveDownAndModifySelection,
+            Src::MoveToBeginningOfLine => Dst::MoveToBeginningOfLine,
+            Src::MoveToBeginningOfLineAndModifySelection => {
+                Dst::MoveToBeginningOfLineAndModifySelection
+            }
+            Src::MoveToEndOfLine => Dst::MoveToEndOfLine,
+            Src::MoveToEndOfLineAndModifySelection => Dst::MoveToEndOfLineAndModifySelection,
+            Src::MoveToBeginningOfParagraph => Dst::MoveToBeginningOfParagraph,
+            Src::MoveToBeginningOfParagraphAndModifySelection => {
+                Dst::MoveToBeginningOfParagraphAndModifySelection
+            }
+            Src::MoveToEndOfParagraph => Dst::MoveToEndOfParagraph,
+            Src::MoveToEndOfParagraphAndModifySelection => {
+                Dst::MoveToEndOfParagraphAndModifySelection
+            }
+            Src::MoveParagraphBackwardAndModifySelection => {
+                Dst::MoveParagraphBackwardAndModifySelection
+            }
+            Src::MoveParagraphForwardAndModifySelection => {
+                Dst::MoveParagraphForwardAndModifySelection
+            }
+            Src::MoveToBeginningOfDocument => Dst::MoveToBeginningOfDocument,
+            Src::MoveToBeginningOfDocumentAndModifySelection => {
+                Dst::MoveToBeginningOfDocumentAndModifySelection
+            }
+            Src::MoveToEndOfDocument => Dst::MoveToEndOfDocument,
+            Src::MoveToEndOfDocumentAndModifySelection => {
+                Dst::MoveToEndOfDocumentAndModifySelection
+            }
+            Src::PageUp => Dst::PageUp,
+            Src::PageDown => Dst::PageDown,
+            Src::SelectAll => Dst::SelectAll,
+            Src::SelectLine => Dst::SelectLine,
+            Src::SelectParagraph => Dst::SelectParagraph,
+            Src::DeleteSelection => Dst::DeleteSelection,
+            Src::DeleteBackward => Dst::DeleteBackward,
+            Src::DeleteBackwardDecomposing => Dst::DeleteBackwardDecomposing,
+            Src::DeleteForward => Dst::DeleteForward,
+            Src::DeleteWordBackward => Dst::DeleteWordBackward,
+            Src::DeleteWordForward => Dst::DeleteWordForward,
+            Src::DeleteToBeginningOfLine => Dst::DeleteToBeginningOfLine,
+            Src::DeleteToEndOfLine => Dst::DeleteToEndOfLine,
+            Src::DeleteToBeginningOfParagraph => Dst::DeleteToBeginningOfParagraph,
+            Src::DeleteToEndOfParagraph => Dst::DeleteToEndOfParagraph,
+            Src::Yank => Dst::Yank,
+            Src::Transpose => Dst::Transpose,
+            Src::InsertNewline => Dst::InsertNewline,
+            Src::InsertLineBreak => Dst::InsertLineBreak,
+            Src::InsertNewlineIgnoringFieldEditor => Dst::InsertNewlineIgnoringFieldEditor,
+            Src::InsertTab => Dst::InsertTab,
+            Src::InsertBacktab => Dst::InsertBacktab,
+            Src::InsertTabIgnoringFieldEditor => Dst::InsertTabIgnoringFieldEditor,
+            Src::CancelOperation => Dst::CancelOperation,
+            Src::Undo => Dst::Undo,
+            Src::Redo => Dst::Redo,
+            Src::Cut => Dst::Cut,
+            Src::Copy => Dst::Copy,
+            Src::Paste => Dst::Paste,
+        }
+    }};
+}
+pub(crate) use map_text_edit_command;
 
 fn key(value: wire::KeyEvent) -> ContentKeyEvent {
     ContentKeyEvent {
@@ -196,7 +275,12 @@ pub(crate) fn event(input: &wire::Input) -> Option<ContentEvent> {
             replacement: replacement.clone(),
         }),
         wire::Input::Unmark => Some(ContentEvent::Unmark),
-        wire::Input::TextCommand(command) => Some(ContentEvent::TextCommand(command.clone())),
+        wire::Input::TextCommand(command) => {
+            Some(ContentEvent::TextCommand(map_text_edit_command!(
+                *command,
+                wire::TextEditCommand => TextEditCommand
+            )))
+        }
         wire::Input::Cancel => Some(ContentEvent::Cancel),
     }
 }

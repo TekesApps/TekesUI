@@ -73,7 +73,11 @@ define_class!(
         unsafe fn doCommandBySelector(&self,selector:objc2::runtime::Sel) {
             crate::ffi_boundary("TekesView::doCommandBySelector:", || {
                 self.note_text_callback(true);
-                self.ivars().shared.dispatch(Event::TextCommand(selector.name().to_string_lossy().into_owned()));
+                if let Some(command) = crate::event::TextEditCommand::from_objc_selector(
+                    &selector.name().to_string_lossy(),
+                ) {
+                    self.ivars().shared.dispatch(Event::TextCommand(command));
+                }
             });
         }
         #[unsafe(method(setMarkedText:selectedRange:replacementRange:))]

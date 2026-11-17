@@ -41,6 +41,23 @@ pub struct LabelLayout {
     pub(crate) elided_utf16: Vec<Range<usize>>,
 }
 impl LabelLayout {
+    /// Construct a [`LabelLayout`] from any [`crate::Shaper`] backend's shaped [`Paragraph`].
+    pub fn new(
+        source: impl Into<String>,
+        paragraph: Paragraph,
+        width: f64,
+        line_spacing: f64,
+        elided_utf16: Vec<Range<usize>>,
+    ) -> Self {
+        Self {
+            source: source.into(),
+            paragraph,
+            width,
+            line_spacing,
+            elided_utf16,
+        }
+    }
+
     /// Apply the host design system's minimum line box without changing glyph
     /// advances, visible rows, source identity or native fallback-font metrics.
     pub fn with_min_line_height(mut self, minimum: f64) -> Self {

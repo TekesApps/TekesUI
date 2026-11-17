@@ -751,7 +751,10 @@ mod tests {
         assert_eq!(page.host().focused(), Some(ComponentId(27501)));
         render(page, text);
         page.host_mut()
-            .event_with_text(&ContentEvent::TextCommand("selectAll:".into()), text)
+            .event_with_text(
+                &ContentEvent::TextCommand(tekes_ui_controls::TextEditCommand::SelectAll),
+                text,
+            )
             .unwrap();
         render(page, text);
         page.host_mut()

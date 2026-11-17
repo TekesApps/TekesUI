@@ -1,5 +1,5 @@
 use tekes_ui_controls::{
-    ButtonTextAlign, ButtonTextRenderer,
+    ButtonTextAlign, ButtonTextRenderer, TextEditCommand,
     composition::{Component, ComponentId, ContentEvent, NumberFieldContent, NumberValidation},
 };
 use tekes_ui_scene::{Rect, Scene, Size};
@@ -18,7 +18,7 @@ fn number(form: &mut SettingsForm) -> &mut NumberFieldContent {
 fn type_value(form: &mut SettingsForm, text: &str) {
     let n = number(form);
     n.set_focus(true, true);
-    n.event(&ContentEvent::TextCommand("selectAll:".into()));
+    n.event(&ContentEvent::TextCommand(TextEditCommand::SelectAll));
     n.event(&ContentEvent::Commit {
         text: text.into(),
         replacement: None,
@@ -38,7 +38,7 @@ fn only_committed_numbers_reach_save_and_cancel_keeps_saved_value() {
     );
     form.collect(&s, &mut draft);
     assert!(!draft.dirty());
-    number(&mut form).event(&ContentEvent::TextCommand("insertNewline:".into()));
+    number(&mut form).event(&ContentEvent::TextCommand(TextEditCommand::InsertNewline));
     form.collect(&s, &mut draft);
     assert_eq!(draft.display(field), "125");
     let path = std::env::temp_dir()
@@ -60,7 +60,7 @@ fn only_committed_numbers_reach_save_and_cancel_keeps_saved_value() {
         Some(125)
     );
     type_value(&mut form, "200");
-    number(&mut form).event(&ContentEvent::TextCommand("cancelOperation:".into()));
+    number(&mut form).event(&ContentEvent::TextCommand(TextEditCommand::CancelOperation));
     form.collect(&s, &mut draft);
     assert!(!draft.dirty());
     assert_eq!(number(&mut form).value(), 125.);

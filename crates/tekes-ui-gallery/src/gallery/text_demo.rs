@@ -1165,10 +1165,10 @@ impl TextDemo {
                     _ => return None,
                 }
             }
-            Event::TextCommand(command)
-                if self.reading_button_focus.is_some()
-                    && matches!(command.as_str(), "insertNewline:" | "insertLineBreak:") =>
-            {
+            Event::TextCommand(
+                tekes_ui_platform_macos::TextEditCommand::InsertNewline
+                | tekes_ui_platform_macos::TextEditCommand::InsertLineBreak,
+            ) if self.reading_button_focus.is_some() => {
                 let index = self.reading_button_focus.unwrap();
                 if self.reading_buttons[index].key(ControlKey::Enter, true) {
                     activated = Some(index);
@@ -1362,35 +1362,37 @@ impl TextDemo {
                 self.surfaces[i].input.unmark();
                 Some(true)
             }
-            Event::TextCommand(command) => self.command(command),
+            Event::TextCommand(command) => {
+                self.command(tekes_ui_macos_bridge::translate_text_command(*command))
+            }
             Event::Key(k)
                 if k.kind == KeyEventKind::Down && self.focus.is_some() && k.modifiers.command =>
             {
                 let command = match k.key_code {
-                    0 => "selectAll:",
+                    0 => tekes_ui_controls::TextEditCommand::SelectAll,
                     6 => {
                         if k.modifiers.shift {
-                            "redo:"
+                            tekes_ui_controls::TextEditCommand::Redo
                         } else {
-                            "undo:"
+                            tekes_ui_controls::TextEditCommand::Undo
                         }
                     }
                     123 => {
                         if k.modifiers.shift {
-                            "moveToBeginningOfLineAndModifySelection:"
+                            tekes_ui_controls::TextEditCommand::MoveToBeginningOfLineAndModifySelection
                         } else {
-                            "moveToBeginningOfLine:"
+                            tekes_ui_controls::TextEditCommand::MoveToBeginningOfLine
                         }
                     }
                     124 => {
                         if k.modifiers.shift {
-                            "moveToEndOfLineAndModifySelection:"
+                            tekes_ui_controls::TextEditCommand::MoveToEndOfLineAndModifySelection
                         } else {
-                            "moveToEndOfLine:"
+                            tekes_ui_controls::TextEditCommand::MoveToEndOfLine
                         }
                     }
-                    125 => "moveToEndOfDocument:",
-                    126 => "moveToBeginningOfDocument:",
+                    125 => tekes_ui_controls::TextEditCommand::MoveToEndOfDocument,
+                    126 => tekes_ui_controls::TextEditCommand::MoveToBeginningOfDocument,
                     _ => return Some(false),
                 };
                 self.command(command)
@@ -1398,29 +1400,37 @@ impl TextDemo {
             _ => None,
         }
     }
-    pub fn command(&mut self, command: &str) -> Option<bool> {
+    pub fn command(&mut self, command: tekes_ui_controls::TextEditCommand) -> Option<bool> {
         if matches!(
             command,
-            "moveUp:"
-                | "moveUpAndModifySelection:"
-                | "moveToBeginningOfDocument:"
-                | "moveToBeginningOfDocumentAndModifySelection:"
-                | "pageUp:"
-                | "scrollPageUp:"
+            tekes_ui_controls::TextEditCommand::MoveUp
+                | tekes_ui_controls::TextEditCommand::MoveUpAndModifySelection
+                | tekes_ui_controls::TextEditCommand::MoveToBeginningOfDocument
+                | tekes_ui_controls::TextEditCommand::MoveToBeginningOfDocumentAndModifySelection
+                | tekes_ui_controls::TextEditCommand::PageUp
         ) {
             self.stop_following();
         }
-        if self.surfaces[0].reading.is_some() && matches!(command, "insertTab:" | "insertBacktab:")
+        if self.surfaces[0].reading.is_some()
+            && matches!(
+                command,
+                tekes_ui_controls::TextEditCommand::InsertTab
+                    | tekes_ui_controls::TextEditCommand::InsertBacktab
+            )
         {
-            let backwards = command == "insertBacktab:";
+            let backwards = command == tekes_ui_controls::TextEditCommand::InsertBacktab;
             if self.tab_would_leave(backwards) {
                 return None;
             }
             self.advance_focus(backwards);
             return Some(true);
         }
-        if matches!(command, "insertTab:" | "insertBacktab:") {
-            let backwards = command == "insertBacktab:";
+        if matches!(
+            command,
+            tekes_ui_controls::TextEditCommand::InsertTab
+                | tekes_ui_controls::TextEditCommand::InsertBacktab
+        ) {
+            let backwards = command == tekes_ui_controls::TextEditCommand::InsertBacktab;
             if self.tab_would_leave(backwards) {
                 return None;
             }
@@ -1437,9 +1447,14 @@ impl TextDemo {
         self.reveal_pending = true;
         let s = &mut self.surfaces[i];
         match command {
-            "pageDown:" | "pageUp:" | "scrollPageDown:" | "scrollPageUp:" => {
+            tekes_ui_controls::TextEditCommand::PageDown
+            | tekes_ui_controls::TextEditCommand::PageUp => {
                 self.reveal_pending = false;
-                let sign = if command.contains("Up") { -1. } else { 1. };
+                let sign = if command == tekes_ui_controls::TextEditCommand::PageUp {
+                    -1.
+                } else {
+                    1.
+                };
                 let amount = s.inner.size.height * 0.9 * sign;
                 s.scroll.scroll_by(0., amount);
             }
@@ -1609,7 +1624,10 @@ mod tests {
         reading_layout(&mut demo, &mut text, 400.);
         demo.focus_edge(true);
         assert_eq!(
-            demo.handle(&Event::TextCommand("insertNewline:".into()), None),
+            demo.handle(
+                &Event::TextCommand(tekes_ui_platform_macos::TextEditCommand::InsertNewline),
+                None,
+            ),
             Some(true)
         );
         assert!(
@@ -1644,7 +1662,10 @@ mod tests {
                 .is_following_latest()
         );
         assert_eq!(demo.reading_button_focus, Some(1));
-        demo.handle(&Event::TextCommand("insertLineBreak:".into()), None);
+        demo.handle(
+            &Event::TextCommand(tekes_ui_platform_macos::TextEditCommand::InsertLineBreak),
+            None,
+        );
         reading_layout(&mut demo, &mut text, 400.);
         assert_eq!(demo.focus, None);
         assert_eq!(demo.reading_button_focus, Some(1));
@@ -1828,7 +1849,7 @@ mod tests {
         demo.handle(&pointer(down, append), Some(append));
         demo.handle(&pointer(up, append), Some(append));
         assert!(demo.query().contains("Update 1."));
-        demo.command("insertTab:");
+        demo.command(tekes_ui_controls::TextEditCommand::InsertTab);
         assert_eq!(demo.reading_button_focus, Some(1));
         let enter = Event::Key(tekes_ui_platform_macos::KeyEvent {
             kind: KeyEventKind::Down,
@@ -1874,12 +1895,19 @@ mod tests {
         assert_eq!(editor.focused_frame(), Some(first));
         assert_eq!(editor.focus, Some(0));
         assert!(!editor.tab_would_leave(false));
-        assert_eq!(editor.command("insertTab:"), Some(true));
+        assert_eq!(
+            editor.command(tekes_ui_controls::TextEditCommand::InsertTab),
+            Some(true)
+        );
         assert_eq!(editor.focus, Some(1));
         let last = editor.focused_frame().expect("last editor frame");
         assert_eq!(last, editor.frame_at(1).unwrap());
         assert!(editor.tab_would_leave(false));
-        assert_eq!(editor.command("insertTab:"), None, "forward edge bubbles");
+        assert_eq!(
+            editor.command(tekes_ui_controls::TextEditCommand::InsertTab),
+            None,
+            "forward edge bubbles"
+        );
         assert_eq!(
             editor.focus,
             Some(1),
@@ -1887,11 +1915,14 @@ mod tests {
         );
 
         assert!(!editor.tab_would_leave(true));
-        assert_eq!(editor.command("insertBacktab:"), Some(true));
+        assert_eq!(
+            editor.command(tekes_ui_controls::TextEditCommand::InsertBacktab),
+            Some(true)
+        );
         assert_eq!(editor.focus, Some(0));
         assert!(editor.tab_would_leave(true));
         assert_eq!(
-            editor.command("insertBacktab:"),
+            editor.command(tekes_ui_controls::TextEditCommand::InsertBacktab),
             None,
             "reverse edge bubbles"
         );
@@ -1927,7 +1958,10 @@ mod tests {
             );
             demo.focus_edge(false).expect("first TextSurface frame");
             if advance {
-                assert_eq!(demo.command("insertTab:"), Some(true));
+                assert_eq!(
+                    demo.command(tekes_ui_controls::TextEditCommand::InsertTab),
+                    Some(true)
+                );
             }
             let surface_index = demo.focus.expect("TextSurface keyboard focus");
             let outer = demo.focused_frame().expect("focused surface frame");
@@ -2003,13 +2037,22 @@ mod tests {
             assert_eq!(Some(body), demo.frame_at(0));
             assert_eq!(demo.focus, Some(0));
             assert!(demo.state().unwrap().read_only);
-            assert_eq!(demo.command("selectAll:"), Some(true));
+            assert_eq!(
+                demo.command(tekes_ui_controls::TextEditCommand::SelectAll),
+                Some(true)
+            );
             assert_eq!(demo.clipboard_selection().as_deref(), Some(demo.query()));
             assert!(!demo.tab_would_leave(false));
-            assert_eq!(demo.command("insertTab:"), Some(true));
+            assert_eq!(
+                demo.command(tekes_ui_controls::TextEditCommand::InsertTab),
+                Some(true)
+            );
             assert_eq!(demo.reading_button_focus, Some(0));
             assert!(!demo.tab_would_leave(false));
-            assert_eq!(demo.command("insertTab:"), Some(true));
+            assert_eq!(
+                demo.command(tekes_ui_controls::TextEditCommand::InsertTab),
+                Some(true)
+            );
             assert_eq!(demo.reading_button_focus, Some(1));
             let last = demo.focused_frame().expect("second real button frame");
             assert_eq!(
@@ -2017,19 +2060,31 @@ mod tests {
                 demo.reading_buttons[1].layout().map(|l| l.frame)
             );
             assert!(demo.tab_would_leave(false));
-            assert_eq!(demo.command("insertTab:"), None);
+            assert_eq!(
+                demo.command(tekes_ui_controls::TextEditCommand::InsertTab),
+                None
+            );
             assert_eq!(demo.reading_button_focus, Some(1));
             assert!(demo.tab_would_leave(false));
 
             assert!(!demo.tab_would_leave(true));
-            assert_eq!(demo.command("insertBacktab:"), Some(true));
+            assert_eq!(
+                demo.command(tekes_ui_controls::TextEditCommand::InsertBacktab),
+                Some(true)
+            );
             assert_eq!(demo.reading_button_focus, Some(0));
             assert!(!demo.tab_would_leave(true));
-            assert_eq!(demo.command("insertBacktab:"), Some(true));
+            assert_eq!(
+                demo.command(tekes_ui_controls::TextEditCommand::InsertBacktab),
+                Some(true)
+            );
             assert_eq!(demo.focus, Some(0));
             assert_eq!(demo.reading_button_focus, None);
             assert!(demo.tab_would_leave(true));
-            assert_eq!(demo.command("insertBacktab:"), None);
+            assert_eq!(
+                demo.command(tekes_ui_controls::TextEditCommand::InsertBacktab),
+                None
+            );
             assert_eq!(demo.focus, Some(0));
             demo.clear_focus();
             assert_eq!(demo.focused_frame(), None);
@@ -2440,9 +2495,13 @@ mod tests {
         let point = Point::new(inner.min_x() + 4., inner.min_y() + 4.);
         gallery.handle_input(&mouse(point, true));
         gallery.handle_input(&mouse(point, false));
-        gallery.handle_input(&Event::TextCommand("moveToBeginningOfDocument:".into()));
+        gallery.handle_input(&Event::TextCommand(
+            tekes_ui_platform_macos::TextEditCommand::MoveToBeginningOfDocument,
+        ));
         for _ in 0..4 {
-            gallery.handle_input(&Event::TextCommand("moveRightAndModifySelection:".into()));
+            gallery.handle_input(&Event::TextCommand(
+                tekes_ui_platform_macos::TextEditCommand::MoveRightAndModifySelection,
+            ));
         }
         gallery.build_scene(&mut Scene::new());
         assert_eq!(gallery.text_view.focus, Some(0));
@@ -2486,7 +2545,9 @@ mod tests {
             text: "forbidden".into(),
             replacement: None,
         });
-        gallery.handle_input(&Event::TextCommand("deleteBackward:".into()));
+        gallery.handle_input(&Event::TextCommand(
+            tekes_ui_platform_macos::TextEditCommand::DeleteBackward,
+        ));
         assert_eq!(gallery.text_view.surfaces[0].input.text, source);
         let height = gallery.text_view.surfaces[0]
             .paragraph
@@ -2707,7 +2768,7 @@ mod tests {
         let mut text = TextEngine::new();
         layout(&mut d, &mut text);
         d.focus = Some(1);
-        d.command("selectAll:");
+        d.command(tekes_ui_controls::TextEditCommand::SelectAll);
         d.handle(
             &Event::TextCommit {
                 text: "原始".into(),
@@ -2736,17 +2797,17 @@ mod tests {
         );
         d.refresh(&mut text);
         assert_eq!(d.state().unwrap().text, "原始清晰");
-        d.command("undo:");
+        d.command(tekes_ui_controls::TextEditCommand::Undo);
         d.refresh(&mut text);
         assert_eq!(d.state().unwrap().text, "原始");
-        d.command("selectAll:");
+        d.command(tekes_ui_controls::TextEditCommand::SelectAll);
         assert_eq!(d.clipboard_selection().as_deref(), Some("原始"));
         d.focus = Some(0);
         let original = d.surfaces[0].input.text.clone();
         assert!(!d.paste("不能写入"));
         assert_eq!(d.surfaces[0].input.text, original);
         d.focus = Some(2);
-        d.command("moveToEndOfDocument:");
+        d.command(tekes_ui_controls::TextEditCommand::MoveToEndOfDocument);
         d.refresh(&mut text);
         let s = &d.surfaces[2];
         assert!(s.scroll.offset.y > 0.0);
@@ -3214,7 +3275,12 @@ mod pixel_review {
                                 }
                                 "latest" => {
                                     demo.focus_edge(true);
-                                    demo.handle(&Event::TextCommand("insertNewline:".into()), None);
+                                    demo.handle(
+                                        &Event::TextCommand(
+                                            tekes_ui_platform_macos::TextEditCommand::InsertNewline,
+                                        ),
+                                        None,
+                                    );
                                 }
                                 _ => {}
                             }

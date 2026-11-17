@@ -661,7 +661,9 @@ pub(super) fn native_toolbar_event(event: &Event) -> Option<ContentEvent> {
             },
         },
         Event::TextUnmark => ContentEvent::Unmark,
-        Event::TextCommand(command) => ContentEvent::TextCommand(command.clone()),
+        Event::TextCommand(command) => {
+            ContentEvent::TextCommand(tekes_ui_macos_bridge::translate_text_command(*command))
+        }
         _ => return None,
     })
 }

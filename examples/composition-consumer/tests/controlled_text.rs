@@ -311,7 +311,9 @@ fn a_controlled_revision_or_document_change_fences_the_native_key_even_without_a
             text: "late".into(),
             replacement: None,
         });
-        host.event(&ContentEvent::TextCommand("insertNewline:".into()));
+        host.event(&ContentEvent::TextCommand(
+            tekes_ui_controls::TextEditCommand::InsertNewline,
+        ));
         let response = host.event(&ContentEvent::TextKeyEnd {
             id: 1,
             input_context_consumed: false,

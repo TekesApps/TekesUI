@@ -68,11 +68,7 @@ fn paint(f: &mut ActionFixture) {
         .unwrap();
 }
 fn button(f: &ActionFixture, id: ComponentId) -> &Button {
-    f.host
-        .get(id)
-        .unwrap()
-        .component::<Button>()
-        .unwrap()
+    f.host.get(id).unwrap().component::<Button>().unwrap()
 }
 #[test]
 fn pointer_keyboard_and_ax_have_one_concrete_target_and_correct_source() {
@@ -304,7 +300,9 @@ fn native_key_chain_emits_once_at_actual_dispatch_not_for_each_callback_or_repla
         key: key.clone(),
         composing: false,
     });
-    f.event(&ContentEvent::TextCommand("insertNewline:".into()));
+    f.event(&ContentEvent::TextCommand(
+        tekes_ui_controls::TextEditCommand::InsertNewline,
+    ));
     f.event(&ContentEvent::KeyInput(key));
     assert!(f.delivered.is_empty());
     f.event(&ContentEvent::TextKeyEnd {

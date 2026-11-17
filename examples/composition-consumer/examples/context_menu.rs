@@ -244,7 +244,12 @@ fn main() {
                 Event::TextCommand(command) => {
                     self.sidebar
                         .host
-                        .event_with_text(&ContentEvent::TextCommand(command), &mut self.text)
+                        .event_with_text(
+                            &ContentEvent::TextCommand(
+                                tekes_ui_macos_bridge::translate_text_command(command),
+                            ),
+                            &mut self.text,
+                        )
                         .unwrap();
                 }
                 Event::Accessibility { target, action } => {

@@ -1596,8 +1596,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .unwrap();
                 }
                 Event::TextCommand(command) => {
-                    tree.event_with_text(&ContentEvent::TextCommand(command), &mut self.text)
-                        .unwrap();
+                    tree.event_with_text(
+                        &ContentEvent::TextCommand(tekes_ui_macos_bridge::translate_text_command(
+                            command,
+                        )),
+                        &mut self.text,
+                    )
+                    .unwrap();
                 }
                 Event::Accessibility { target, action } => {
                     let response = window

@@ -201,7 +201,9 @@ fn unmounted_composing_editor_finalizes_visible_draft_and_retains_undo_on_owned_
         );
         assert_eq!(host.text_surface(id).unwrap().input.text, visible);
         assert!(host.focus(Some(id), true));
-        host.event(&ContentEvent::TextCommand("undo:".into()));
+        host.event(&ContentEvent::TextCommand(
+            tekes_ui_controls::TextEditCommand::Undo,
+        ));
         assert_eq!(host.text_surface(id).unwrap().input.text, original);
     }
 }

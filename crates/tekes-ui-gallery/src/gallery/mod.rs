@@ -375,9 +375,9 @@ impl Gallery {
         }
 
         let command = if reverse {
-            "insertBacktab:"
+            tekes_ui_controls::TextEditCommand::InsertBacktab
         } else {
-            "insertTab:"
+            tekes_ui_controls::TextEditCommand::InsertTab
         };
         let (changed, frame) = match page {
             Page::Text => {
@@ -1163,21 +1163,23 @@ impl Gallery {
     }
     pub fn text_command(
         &mut self,
-        command: &str,
+        command: tekes_ui_controls::TextEditCommand,
         clipboard: Option<&str>,
     ) -> (Change, Option<String>) {
         if self.navigation_search.state().is_some() {
             let mut copied = None;
             let changed = match command {
-                "copy:" => {
+                tekes_ui_controls::TextEditCommand::Copy => {
                     copied = self.navigation_search.clipboard_selection();
                     false
                 }
-                "cut:" => {
+                tekes_ui_controls::TextEditCommand::Cut => {
                     copied = self.navigation_search.clipboard_selection();
                     self.navigation_search.cut()
                 }
-                "paste:" => self.navigation_search.paste(clipboard.unwrap_or("")),
+                tekes_ui_controls::TextEditCommand::Paste => {
+                    self.navigation_search.paste(clipboard.unwrap_or(""))
+                }
                 _ => self.navigation_search.command(command).unwrap_or(false),
             };
             self.navigation_search.refresh(&mut self.text);
@@ -1201,15 +1203,15 @@ impl Gallery {
         };
         let mut copied = None;
         let changed = match command {
-            "copy:" => {
+            tekes_ui_controls::TextEditCommand::Copy => {
                 copied = editor.clipboard_selection();
                 false
             }
-            "cut:" => {
+            tekes_ui_controls::TextEditCommand::Cut => {
                 copied = editor.clipboard_selection();
                 editor.cut()
             }
-            "paste:" => editor.paste(clipboard.unwrap_or("")),
+            tekes_ui_controls::TextEditCommand::Paste => editor.paste(clipboard.unwrap_or("")),
             _ => editor.command(command).unwrap_or(false),
         };
         editor.refresh(&mut self.text);
@@ -1494,8 +1496,13 @@ impl Gallery {
             key.key_code = 36;
             return self.handle_input(&Event::Key(key));
         }
-        let tab_selector = matches!(event, Event::TextCommand(command)
-            if matches!(command.as_str(), "insertTab:" | "insertBacktab:"));
+        let tab_selector = matches!(
+            event,
+            Event::TextCommand(
+                tekes_ui_platform_macos::TextEditCommand::InsertTab
+                    | tekes_ui_platform_macos::TextEditCommand::InsertBacktab
+            )
+        );
         let tab_key = matches!(event, Event::Key(key)
             if key.kind == KeyEventKind::Down && key.key_code == 48);
         if (tab_selector || tab_key)
@@ -1516,7 +1523,7 @@ impl Gallery {
             // Gallery scope transitions run whether the host emitted KeyDown
             // or only insertTab:/insertBacktab:. Composition remains owned by
             // the active text service.
-            let reverse = command == "insertBacktab:";
+            let reverse = *command == tekes_ui_platform_macos::TextEditCommand::InsertBacktab;
             return self.handle_input(&Event::Key(tekes_ui_platform_macos::KeyEvent {
                 kind: KeyEventKind::Down,
                 key_code: 48,
@@ -2584,8 +2591,12 @@ mod tests {
             text: "Com".into(),
             replacement: None,
         });
-        g.handle_input(&Event::TextCommand("moveDown:".into()));
-        g.handle_input(&Event::TextCommand("insertNewline:".into()));
+        g.handle_input(&Event::TextCommand(
+            tekes_ui_platform_macos::TextEditCommand::MoveDown,
+        ));
+        g.handle_input(&Event::TextCommand(
+            tekes_ui_platform_macos::TextEditCommand::InsertNewline,
+        ));
         assert_eq!(g.text_input_state().unwrap().text, "Comfortable");
 
         // Reopen through the actual input hit, then let AppKit's text-input
@@ -2597,7 +2608,9 @@ mod tests {
             _ => unreachable!(),
         };
         assert!(g.workbench.combo_popup_open(i));
-        g.handle_input(&Event::TextCommand("insertTab:".into()));
+        g.handle_input(&Event::TextCommand(
+            tekes_ui_platform_macos::TextEditCommand::InsertTab,
+        ));
 
         assert!(!g.workbench.combo_popup_open(i));
         assert!(g.navigation_search.state().is_some());
@@ -2655,7 +2668,9 @@ mod tests {
         g.build_scene(&mut Scene::new());
 
         g.navigation_search.focus_field();
-        g.handle_input(&Event::TextCommand("insertTab:".into()));
+        g.handle_input(&Event::TextCommand(
+            tekes_ui_platform_macos::TextEditCommand::InsertTab,
+        ));
         assert_eq!(g.navigation_focus, Some(page));
         assert!(g.navigation_search.state().is_none());
         assert_eq!(g.workbench.focused_control_id(i), None);
@@ -2680,13 +2695,17 @@ mod tests {
             "entering the page leaves the Nav focus scope"
         );
         let first = g.workbench.focused_control_id(i);
-        g.handle_input(&Event::TextCommand("insertTab:".into()));
+        g.handle_input(&Event::TextCommand(
+            tekes_ui_platform_macos::TextEditCommand::InsertTab,
+        ));
         let second = g.workbench.focused_control_id(i);
         assert_ne!(
             first, second,
             "native insertTab advances the story sequence"
         );
-        g.handle_input(&Event::TextCommand("insertTab:".into()));
+        g.handle_input(&Event::TextCommand(
+            tekes_ui_platform_macos::TextEditCommand::InsertTab,
+        ));
         assert_ne!(
             second,
             g.workbench.focused_control_id(i),
@@ -2707,10 +2726,14 @@ mod tests {
         );
         assert_eq!(g.workbench.focused_control_id(i), None);
         assert!(g.navigation_search.state().is_some());
-        g.handle_input(&Event::TextCommand("insertBacktab:".into()));
+        g.handle_input(&Event::TextCommand(
+            tekes_ui_platform_macos::TextEditCommand::InsertBacktab,
+        ));
         assert!(g.workbench.focused_control_id(i).is_some());
         for _ in 0..32 {
-            g.handle_input(&Event::TextCommand("insertBacktab:".into()));
+            g.handle_input(&Event::TextCommand(
+                tekes_ui_platform_macos::TextEditCommand::InsertBacktab,
+            ));
             g.build_scene(&mut Scene::new());
             if g.navigation_focus.is_some() {
                 break;
@@ -2735,7 +2758,9 @@ mod tests {
             Some(false),
             "navigation uses legacy text input"
         );
-        g.handle_input(&Event::TextCommand("insertBacktab:".into()));
+        g.handle_input(&Event::TextCommand(
+            tekes_ui_platform_macos::TextEditCommand::InsertBacktab,
+        ));
         assert!(g.workbench.focused_control_id(i).is_some());
         assert_eq!(
             g.text_key_events(),
@@ -2750,7 +2775,9 @@ mod tests {
         assert!(g.open_route(&format!("{}/playground", workbench::entry(search).slug())));
         g.build_scene(&mut Scene::new());
         g.navigation_search.focus_field();
-        g.handle_input(&Event::TextCommand("insertTab:".into()));
+        g.handle_input(&Event::TextCommand(
+            tekes_ui_platform_macos::TextEditCommand::InsertTab,
+        ));
         g.handle_input(&key(48, Modifiers::NONE));
         // The story begins with its Docs/Playground/etc. buttons, not the
         // input. Follow the registered Tab order and render each reveal.
@@ -2795,7 +2822,9 @@ mod tests {
                     tekes_ui_platform_macos::TextKeyEvent::Started(context.clone()),
                 ));
                 assert_eq!(g.text_key_events(), None);
-                g.handle_input(&Event::TextCommand("insertTab:".into()));
+                g.handle_input(&Event::TextCommand(
+                    tekes_ui_platform_macos::TextEditCommand::InsertTab,
+                ));
                 assert_eq!(
                     g.text_key_events(),
                     None,
@@ -2813,7 +2842,9 @@ mod tests {
             } else {
                 assert_eq!(g.text_key_events(), Some(false));
                 if g.text_input_state().is_some() {
-                    g.handle_input(&Event::TextCommand("insertTab:".into()));
+                    g.handle_input(&Event::TextCommand(
+                        tekes_ui_platform_macos::TextEditCommand::InsertTab,
+                    ));
                 } else {
                     g.handle_input(&key(48, Modifiers::NONE));
                 }
@@ -2829,7 +2860,9 @@ mod tests {
             Some(false),
             "Finished applies the new text owner mode"
         );
-        g.handle_input(&Event::TextCommand("insertTab:".into()));
+        g.handle_input(&Event::TextCommand(
+            tekes_ui_platform_macos::TextEditCommand::InsertTab,
+        ));
         g.handle_input(&key(48, Modifiers::NONE));
         // The story begins with its Docs/Playground/etc. buttons, not the
         // input. Follow the registered Tab order and render each reveal.
@@ -2872,7 +2905,9 @@ mod tests {
         gallery.build_scene(&mut Scene::new());
 
         gallery.navigation_search.focus_field();
-        gallery.handle_input(&Event::TextCommand("insertTab:".into()));
+        gallery.handle_input(&Event::TextCommand(
+            tekes_ui_platform_macos::TextEditCommand::InsertTab,
+        ));
         gallery.handle_input(&key(48, Modifiers::NONE));
         let stops = gallery.workbench.tab_stop_ids(i);
         assert!(
@@ -2884,7 +2919,9 @@ mod tests {
         // translate frames with the origin captured by the last actual layout,
         // even after earlier events changed the viewport offset.
         for _ in 1..stops.len() {
-            gallery.handle_input(&Event::TextCommand("insertTab:".into()));
+            gallery.handle_input(&Event::TextCommand(
+                tekes_ui_platform_macos::TextEditCommand::InsertTab,
+            ));
         }
         assert_eq!(
             gallery.workbench.focused_control_id(i),
@@ -2901,7 +2938,9 @@ mod tests {
 
         let stops = gallery.workbench.tab_stop_ids(i);
         for _ in 1..stops.len() {
-            gallery.handle_input(&Event::TextCommand("insertBacktab:".into()));
+            gallery.handle_input(&Event::TextCommand(
+                tekes_ui_platform_macos::TextEditCommand::InsertBacktab,
+            ));
         }
         assert_eq!(
             gallery.workbench.focused_control_id(i),
@@ -2946,9 +2985,9 @@ mod tests {
                 let focus = gallery.leaf_focused_frame(Page::TextEditing);
                 let offset = gallery.viewport.offset;
                 let selector = if reverse {
-                    "insertBacktab:"
+                    tekes_ui_platform_macos::TextEditCommand::InsertBacktab
                 } else {
-                    "insertTab:"
+                    tekes_ui_platform_macos::TextEditCommand::InsertTab
                 };
                 let modifiers = Modifiers {
                     shift: reverse,
@@ -2956,7 +2995,7 @@ mod tests {
                 };
                 // The native selector path is the regression. Raw Tab must
                 // observe the same composition boundary, not create another owner.
-                for event in [Event::TextCommand(selector.into()), key(48, modifiers)] {
+                for event in [Event::TextCommand(selector), key(48, modifiers)] {
                     assert_eq!(gallery.handle_input(&event), Change::NONE);
                     let after = gallery.text_input_state().unwrap();
                     assert_eq!(after.text, before.text);
@@ -2967,7 +3006,7 @@ mod tests {
                     assert!(gallery.navigation_focus.is_none());
                 }
                 gallery.handle_input(&Event::TextUnmark);
-                gallery.handle_input(&Event::TextCommand(selector.into()));
+                gallery.handle_input(&Event::TextCommand(selector));
                 assert_ne!(gallery.leaf_focused_frame(Page::TextEditing), focus);
                 assert!(gallery.text_input_state().unwrap().marked.is_none());
             }
@@ -2991,24 +3030,26 @@ mod tests {
                 if gallery.workbench.focused_control_id(i) == Some(1000) {
                     break;
                 }
-                gallery.handle_input(&Event::TextCommand("insertTab:".into()));
+                gallery.handle_input(&Event::TextCommand(
+                    tekes_ui_platform_macos::TextEditCommand::InsertTab,
+                ));
                 gallery.build_scene(&mut Scene::new());
             }
             assert_eq!(gallery.workbench.focused_control_id(i), Some(1000));
             let before = gallery.text_input_state().unwrap();
             let selector = if reverse {
-                "insertBacktab:"
+                tekes_ui_platform_macos::TextEditCommand::InsertBacktab
             } else {
-                "insertTab:"
+                tekes_ui_platform_macos::TextEditCommand::InsertTab
             };
             let return_selector = if reverse {
-                "insertTab:"
+                tekes_ui_platform_macos::TextEditCommand::InsertTab
             } else {
-                "insertBacktab:"
+                tekes_ui_platform_macos::TextEditCommand::InsertBacktab
             };
-            gallery.handle_input(&Event::TextCommand(selector.into()));
+            gallery.handle_input(&Event::TextCommand(selector));
             assert_ne!(gallery.workbench.focused_control_id(i), Some(1000));
-            gallery.handle_input(&Event::TextCommand(return_selector.into()));
+            gallery.handle_input(&Event::TextCommand(return_selector));
             assert_eq!(gallery.workbench.focused_control_id(i), Some(1000));
             let after = gallery.text_input_state().unwrap();
             assert_eq!(
@@ -3035,13 +3076,17 @@ mod tests {
             gallery.build_scene(&mut Scene::new());
 
             gallery.navigation_search.focus_field();
-            gallery.handle_input(&Event::TextCommand("insertTab:".into()));
+            gallery.handle_input(&Event::TextCommand(
+                tekes_ui_platform_macos::TextEditCommand::InsertTab,
+            ));
             assert_eq!(gallery.navigation_focus, Some(page));
             gallery.handle_input(&key(48, Modifiers::NONE));
             let has_story_chrome = gallery.workbench.focused_control_id(i).is_some();
 
             for _ in 0..24 {
-                gallery.handle_input(&Event::TextCommand("insertTab:".into()));
+                gallery.handle_input(&Event::TextCommand(
+                    tekes_ui_platform_macos::TextEditCommand::InsertTab,
+                ));
                 if gallery.workbench.focused_control_id(i).is_none()
                     && gallery.leaf_focused_frame(gallery.content_page()).is_some()
                 {
@@ -3061,14 +3106,18 @@ mod tests {
                 "{renderer} leaf focus is revealed: {first_leaf:?} vs {visible:?}"
             );
 
-            gallery.handle_input(&Event::TextCommand("insertBacktab:".into()));
+            gallery.handle_input(&Event::TextCommand(
+                tekes_ui_platform_macos::TextEditCommand::InsertBacktab,
+            ));
             assert!(gallery.leaf_focused_frame(leaf).is_none());
             assert_eq!(
                 gallery.workbench.focused_control_id(i).is_some(),
                 has_story_chrome,
                 "Shift+Tab returns to the previous mounted scope"
             );
-            gallery.handle_input(&Event::TextCommand("insertTab:".into()));
+            gallery.handle_input(&Event::TextCommand(
+                tekes_ui_platform_macos::TextEditCommand::InsertTab,
+            ));
             if !has_story_chrome {
                 assert_eq!(gallery.navigation_focus, Some(page));
                 gallery.handle_input(&key(48, Modifiers::NONE));
@@ -3076,7 +3125,9 @@ mod tests {
             assert!(gallery.leaf_focused_frame(leaf).is_some());
 
             for _ in 0..24 {
-                gallery.handle_input(&Event::TextCommand("insertTab:".into()));
+                gallery.handle_input(&Event::TextCommand(
+                    tekes_ui_platform_macos::TextEditCommand::InsertTab,
+                ));
                 if gallery.navigation_search.state().is_some() {
                     break;
                 }
@@ -3102,14 +3153,18 @@ mod tests {
         gallery.set_view_size(720., 512.);
         gallery.build_scene(&mut Scene::new());
         gallery.navigation_search.focus_field();
-        gallery.handle_input(&Event::TextCommand("insertTab:".into()));
+        gallery.handle_input(&Event::TextCommand(
+            tekes_ui_platform_macos::TextEditCommand::InsertTab,
+        ));
         assert_eq!(gallery.navigation_focus, Some(page));
         gallery.handle_input(&key(48, Modifiers::NONE));
         assert!(gallery.navigation_focus.is_none());
         assert!(gallery.leaf_focused_frame(Page::TextEditing).is_some());
         assert!(gallery.text_input_state().is_some());
         for _ in 0..24 {
-            gallery.handle_input(&Event::TextCommand("insertTab:".into()));
+            gallery.handle_input(&Event::TextCommand(
+                tekes_ui_platform_macos::TextEditCommand::InsertTab,
+            ));
             if gallery.navigation_search.state().is_some() {
                 break;
             }
@@ -3129,7 +3184,9 @@ mod tests {
         g.set_view_size(720., 240.);
         g.build_scene(&mut Scene::new());
         g.navigation_search.focus_field();
-        g.handle_input(&Event::TextCommand("insertTab:".into()));
+        g.handle_input(&Event::TextCommand(
+            tekes_ui_platform_macos::TextEditCommand::InsertTab,
+        ));
         assert_eq!(g.navigation_focus, Some(Page::Workbench(motion)));
         g.handle_input(&key(48, Modifiers::NONE));
         assert_eq!(
@@ -3192,8 +3249,12 @@ mod tests {
         assert_eq!(g.text_input_state().unwrap().text, "Com");
         // NSTextInputClient delivers these as selector commands instead of
         // ordinary key-down events when its editable input owns focus.
-        g.handle_input(&Event::TextCommand("moveDown:".into()));
-        g.handle_input(&Event::TextCommand("insertNewline:".into()));
+        g.handle_input(&Event::TextCommand(
+            tekes_ui_platform_macos::TextEditCommand::MoveDown,
+        ));
+        g.handle_input(&Event::TextCommand(
+            tekes_ui_platform_macos::TextEditCommand::InsertNewline,
+        ));
         assert_eq!(
             g.text_input_state().unwrap().text,
             "Comfortable",
@@ -3220,12 +3281,20 @@ mod tests {
             .redraw
         );
         assert_eq!(g.icon_search.query(), "vRoN");
-        g.text_command("selectAll:", None);
-        assert_eq!(g.text_command("copy:", None).1.as_deref(), Some("vRoN"));
-        g.text_command("paste:", Some("missing-icon"));
+        g.text_command(tekes_ui_controls::TextEditCommand::SelectAll, None);
+        assert_eq!(
+            g.text_command(tekes_ui_controls::TextEditCommand::Copy, None)
+                .1
+                .as_deref(),
+            Some("vRoN")
+        );
+        g.text_command(
+            tekes_ui_controls::TextEditCommand::Paste,
+            Some("missing-icon"),
+        );
         assert_eq!(g.icon_search.query(), "missing-icon");
-        g.text_command("selectAll:", None);
-        g.text_command("cut:", None);
+        g.text_command(tekes_ui_controls::TextEditCommand::SelectAll, None);
+        g.text_command(tekes_ui_controls::TextEditCommand::Cut, None);
         assert_eq!(g.icon_search.query(), "");
         g.handle_input(&Event::TextPreedit {
             clauses: Vec::new(),
@@ -3924,7 +3993,10 @@ mod tests {
         g.build_scene(&mut Scene::new());
         g.handle_input(&key(48, Modifiers::NONE));
         g.handle_input(&key(48, Modifiers::NONE));
-        g.text_command("moveToEndOfDocument:", None);
+        g.text_command(
+            tekes_ui_controls::TextEditCommand::MoveToEndOfDocument,
+            None,
+        );
         g.build_scene(&mut Scene::new());
         let state = g.text_input_state().unwrap();
         let bounds = g.viewport.bounds();
@@ -3951,7 +4023,10 @@ mod tests {
             g.text_input_state().is_some(),
             "visible editor field receives focus"
         );
-        g.text_command("moveToEndOfDocument:", None);
+        g.text_command(
+            tekes_ui_controls::TextEditCommand::MoveToEndOfDocument,
+            None,
+        );
         g.build_scene(&mut Scene::new());
 
         let state = g
@@ -4059,7 +4134,10 @@ mod tests {
             g.text_input_state().is_some(),
             "visible reading surface receives focus"
         );
-        g.text_command("moveToEndOfDocument:", None);
+        g.text_command(
+            tekes_ui_controls::TextEditCommand::MoveToEndOfDocument,
+            None,
+        );
         g.build_scene(&mut Scene::new());
         let state = g.text_input_state().expect("focused read-only TextSurface");
         assert_eq!(state.caret_index, state.text.len());

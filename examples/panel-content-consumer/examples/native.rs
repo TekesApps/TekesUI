@@ -745,7 +745,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
                 Event::TextCommand(command) => {
                     self.tree
-                        .event_with_text(&ContentEvent::TextCommand(command), &mut self.text)
+                        .event_with_text(
+                            &ContentEvent::TextCommand(
+                                tekes_ui_macos_bridge::translate_text_command(command),
+                            ),
+                            &mut self.text,
+                        )
                         .expect("original ContentHost accepted native text command");
                     let actions = self.tree.drain_action_records();
                     self.record(

@@ -16,8 +16,9 @@ pub mod coretext_host;
 #[cfg(target_os = "macos")]
 pub use content_accessibility::WindowContentAccessibilityExt;
 pub use content_input::{
-    ContentClipboard, content_event, content_text_input_state, content_wheel_event, translate_key,
-    translate_pointer, translate_text_key,
+    ContentClipboard, content_event, content_text_input_state, content_wheel_event,
+    parse_objc_text_command, translate_key, translate_pointer, translate_text_command,
+    translate_text_key,
 };
 #[cfg(target_os = "macos")]
 pub use content_input::{dispatch_content_window_event, dispatch_content_window_event_with_text};

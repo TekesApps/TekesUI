@@ -131,9 +131,13 @@ fn keyboard_submit_and_pointer_clear_are_once_only_and_keep_the_original_owner()
         Some(binding)
     );
     assert!(f.host.drain_actions().is_empty());
-    f.host.event(&ContentEvent::TextCommand("undo:".into()));
+    f.host.event(&ContentEvent::TextCommand(
+        tekes_ui_controls::TextEditCommand::Undo,
+    ));
     assert_eq!(f.search().query(), "A😀B");
-    f.host.event(&ContentEvent::TextCommand("redo:".into()));
+    f.host.event(&ContentEvent::TextCommand(
+        tekes_ui_controls::TextEditCommand::Redo,
+    ));
     assert_eq!(f.search().query(), "");
     f.collect();
     assert_eq!(f.delivered.len(), 2);
@@ -299,8 +303,9 @@ fn native_start_end_consumption_and_marked_enter_do_not_submit_twice() {
         key: key(false),
         composing: false,
     });
-    f.host
-        .event(&ContentEvent::TextCommand("insertNewline:".into()));
+    f.host.event(&ContentEvent::TextCommand(
+        tekes_ui_controls::TextEditCommand::InsertNewline,
+    ));
     f.host.event(&ContentEvent::TextKeyEnd {
         id: 1,
         input_context_consumed: false,
@@ -350,7 +355,9 @@ fn stale_baseline_including_edit_undo_aba_is_atomic() {
         .capture_search_command(SEARCH, SearchCommandKind::Clear)
         .unwrap();
     commit(&mut f, "new");
-    f.host.event(&ContentEvent::TextCommand("undo:".into()));
+    f.host.event(&ContentEvent::TextCommand(
+        tekes_ui_controls::TextEditCommand::Undo,
+    ));
     assert_eq!(f.search().query(), "draft");
     let before = state(&f);
     assert_eq!(
@@ -498,8 +505,9 @@ fn selection_backspace_and_reading_sibling_keep_original_state() {
             .accessibility_action(SEARCH, None, AccessibilityAction::SetSelection(1..3))
             .consumed
     );
-    f.host
-        .event(&ContentEvent::TextCommand("deleteBackward:".into()));
+    f.host.event(&ContentEvent::TextCommand(
+        tekes_ui_controls::TextEditCommand::DeleteBackward,
+    ));
     assert_eq!(f.search().query(), "AB");
     {
         let history = f
@@ -751,8 +759,9 @@ fn local_command_cannot_clear_between_original_native_key_start_and_end() {
     );
     assert_eq!(state(&f), before);
     assert!(f.host.drain_actions().is_empty());
-    f.host
-        .event(&ContentEvent::TextCommand("insertNewline:".into()));
+    f.host.event(&ContentEvent::TextCommand(
+        tekes_ui_controls::TextEditCommand::InsertNewline,
+    ));
     f.host.event(&ContentEvent::TextKeyEnd {
         id: 71,
         input_context_consumed: false,

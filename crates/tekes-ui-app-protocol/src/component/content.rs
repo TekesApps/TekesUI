@@ -105,6 +105,66 @@ impl ScrollEvent {
             && self.time >= 0.
     }
 }
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TextEditCommand {
+    MoveLeft,
+    MoveLeftAndModifySelection,
+    MoveRight,
+    MoveRightAndModifySelection,
+    MoveWordLeft,
+    MoveWordLeftAndModifySelection,
+    MoveWordRight,
+    MoveWordRightAndModifySelection,
+    MoveUp,
+    MoveUpAndModifySelection,
+    MoveDown,
+    MoveDownAndModifySelection,
+    MoveToBeginningOfLine,
+    MoveToBeginningOfLineAndModifySelection,
+    MoveToEndOfLine,
+    MoveToEndOfLineAndModifySelection,
+    MoveToBeginningOfParagraph,
+    MoveToBeginningOfParagraphAndModifySelection,
+    MoveToEndOfParagraph,
+    MoveToEndOfParagraphAndModifySelection,
+    MoveParagraphBackwardAndModifySelection,
+    MoveParagraphForwardAndModifySelection,
+    MoveToBeginningOfDocument,
+    MoveToBeginningOfDocumentAndModifySelection,
+    MoveToEndOfDocument,
+    MoveToEndOfDocumentAndModifySelection,
+    PageUp,
+    PageDown,
+    SelectAll,
+    SelectLine,
+    SelectParagraph,
+    DeleteSelection,
+    DeleteBackward,
+    DeleteBackwardDecomposing,
+    DeleteForward,
+    DeleteWordBackward,
+    DeleteWordForward,
+    DeleteToBeginningOfLine,
+    DeleteToEndOfLine,
+    DeleteToBeginningOfParagraph,
+    DeleteToEndOfParagraph,
+    Yank,
+    Transpose,
+    InsertNewline,
+    InsertLineBreak,
+    InsertNewlineIgnoringFieldEditor,
+    InsertTab,
+    InsertBacktab,
+    InsertTabIgnoringFieldEditor,
+    CancelOperation,
+    Undo,
+    Redo,
+    Cut,
+    Copy,
+    Paste,
+}
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", content = "data", deny_unknown_fields)]
 pub enum Input {
@@ -165,7 +225,7 @@ pub enum Input {
         replacement: Option<Range<usize>>,
     },
     Unmark,
-    TextCommand(String),
+    TextCommand(TextEditCommand),
     Cancel,
     /// Revoke original pointer capture without ending composition or focus.
     CancelPointerCapture,
@@ -357,5 +417,22 @@ mod scroll_tests {
         for time in [f64::NAN, f64::INFINITY, -1.] {
             assert!(!ScrollEvent { time, ..event }.is_valid());
         }
+    }
+
+    #[test]
+    fn text_edit_command_serializes_as_snake_case_and_rejects_objc_selectors() {
+        let cmd = Input::TextCommand(TextEditCommand::SelectAll);
+        let value = serde_json::to_value(&cmd).unwrap();
+        assert_eq!(
+            value,
+            serde_json::json!({ "kind": "TextCommand", "data": "select_all" })
+        );
+        assert_eq!(serde_json::from_value::<Input>(value).unwrap(), cmd);
+        assert!(
+            serde_json::from_value::<Input>(
+                serde_json::json!({ "kind": "TextCommand", "data": "selectAll:" })
+            )
+            .is_err()
+        );
     }
 }

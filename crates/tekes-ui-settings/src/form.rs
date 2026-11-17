@@ -235,7 +235,9 @@ impl SettingsForm {
                             number.set_borderless(true);
                             if parsed.is_none() {
                                 number.set_focus(true, false);
-                                number.event(&ContentEvent::TextCommand("selectAll:".into()));
+                                number.event(&ContentEvent::TextCommand(
+                                    tekes_ui_controls::TextEditCommand::SelectAll,
+                                ));
                                 number.event(&ContentEvent::Commit {
                                     text: raw.clone(),
                                     replacement: None,

@@ -23,7 +23,9 @@ jobs:
           node --test crates/tekes-ui-icons/web/icons.test.mjs
       - name: Fetch pinned dependencies for offline consumers
         run: |
+          rustup target add x86_64-unknown-linux-gnu
           cargo fetch --locked
+          cargo fetch --locked --target x86_64-unknown-linux-gnu
           cargo fetch --locked --manifest-path examples/composition-consumer/Cargo.toml
           cargo fetch --locked --manifest-path examples/panel-content-consumer/Cargo.toml
           cargo fetch --locked --manifest-path examples/brand-consumer/Cargo.toml
@@ -55,6 +57,21 @@ jobs:
       - run: cargo fmt --check
       - id: workspace_clippy
         run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - name: Cross-platform boundary clippy (x86_64-unknown-linux-gnu, Issue 335)
+        run: |
+          cargo clippy --target x86_64-unknown-linux-gnu \
+            -p tekes-ui-tokens \
+            -p tekes-ui-scene \
+            -p tekes-ui-motion \
+            -p tekes-ui-icons \
+            -p tekes-ui-text \
+            -p tekes-ui-render \
+            -p tekes-ui-controls \
+            -p tekes-ui-app-protocol \
+            -p tekes-ui-settings \
+            --locked --offline -- -D warnings
+          cargo clippy -p tekes-ui-text --no-default-features --all-targets --locked --offline -- -D warnings
+          cargo test -p tekes-ui-text --no-default-features --locked --offline
       - name: Workspace correctness tests (performance deferred)
         env:
           TEKESUI_FRAGMENT_GPU_OUT: ${{ runner.temp }}/tekesui-fragment-gpu

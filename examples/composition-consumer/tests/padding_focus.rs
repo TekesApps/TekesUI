@@ -115,7 +115,9 @@ fn already_focused_padding_preserves_preedit_selection_and_undo() {
         click(&mut h, p);
         assert_eq!(h.focused_text().unwrap().input.external_baseline(), before);
         if !composing {
-            h.event(&ContentEvent::TextCommand("undo:".into()));
+            h.event(&ContentEvent::TextCommand(
+                tekes_ui_controls::TextEditCommand::Undo,
+            ));
             assert_eq!(h.focused_text().unwrap().input.text, "Draft A😀B");
         }
     }
@@ -591,7 +593,9 @@ fn padding_intent_preserves_original_key_epoch_and_undo_chain() {
         text: "你".into(),
         replacement: None,
     });
-    h.event(&ContentEvent::TextCommand("undo:".into()));
+    h.event(&ContentEvent::TextCommand(
+        tekes_ui_controls::TextEditCommand::Undo,
+    ));
     assert!(h.focused_text().unwrap().input.text.contains("retained"));
 }
 

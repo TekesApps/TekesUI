@@ -142,17 +142,21 @@ impl Host {
                 replacement,
             },
             Event::TextUnmark => C::Unmark,
-            Event::TextCommand(c) => C::TextCommand(c),
+            Event::TextCommand(c) => {
+                C::TextCommand(tekes_ui_macos_bridge::translate_text_command(c))
+            }
             Event::Key(k) => {
                 if k.kind == KeyEventKind::Down && k.modifiers.command {
                     let command = match k.key_code {
-                        0 => Some("selectAll:"),
-                        6 if k.modifiers.shift => Some("redo:"),
-                        6 => Some("undo:"),
+                        0 => Some(tekes_ui_platform_macos::TextEditCommand::SelectAll),
+                        6 if k.modifiers.shift => {
+                            Some(tekes_ui_platform_macos::TextEditCommand::Redo)
+                        }
+                        6 => Some(tekes_ui_platform_macos::TextEditCommand::Undo),
                         _ => None,
                     };
                     if let Some(command) = command {
-                        return self.input(Event::TextCommand(command.into()), w);
+                        return self.input(Event::TextCommand(command), w);
                     }
                 }
                 C::KeyInput(native_key::key(k))

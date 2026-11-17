@@ -169,7 +169,10 @@ fn text_surface_retained_themes_preserve_readonly_source_selection_copy_and_real
     assert_eq!(surface.input.selected_text(), "Read");
     assert_readonly_scene(&scene, &surface, Theme::DARK_INCREASED.into(), text.backing);
     assert!(!surface.input.insert("forbidden", None));
-    assert_eq!(surface.command("deleteBackward:"), Some(false));
+    assert_eq!(
+        surface.command(tekes_ui_controls::TextEditCommand::DeleteBackward),
+        Some(false)
+    );
     assert_eq!(surface.input.text, source);
     assert!(surface.scroll.scroll_by(0., 100.));
     assert!(surface.scroll.offset.y > 0.);
