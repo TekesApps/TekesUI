@@ -192,7 +192,9 @@ fn known_write_failure_is_not_unknown_and_does_not_replace_original() {
     let mut draft = Draft::new(Snapshot::default());
     draft.edit(&s.settings[0], "Test".into());
     let request = draft.submit(&s, "failure".into()).unwrap();
-    std::fs::create_dir(path.with_extension("pending")).unwrap();
+    let mut pending = path.as_os_str().to_os_string();
+    pending.push(".pending");
+    std::fs::create_dir(PathBuf::from(pending)).unwrap();
     let error = provider.commit_checked(&request).unwrap_err();
     assert!(!error.unknown);
     assert!(!path.exists());
@@ -223,4 +225,53 @@ fn apphost_general_defaults_only_include_appearance_and_text_zoom() {
         s.items().map(|(id, _)| id).collect::<Vec<_>>(),
         vec!["general/appearance"]
     );
+}
+
+#[test]
+fn provider_appends_lock_rejects_empty_commit_id_and_handles_bare_relative_path() {
+    let path = temp();
+    let s = schema();
+    let provider = FileProvider::open(path.clone(), s.namespace.clone()).unwrap();
+    let mut expected_lock = path.as_os_str().to_os_string();
+    expected_lock.push(".lock");
+    assert!(PathBuf::from(expected_lock).is_file());
+
+    let mut draft = Draft::new(Snapshot::default());
+    draft.edit(&s.settings[0], "First".into());
+    let empty_id = draft.submit(&s, "".into()).unwrap();
+    assert!(provider.query(&empty_id).is_err());
+    assert!(provider.commit_checked(&empty_id).is_err());
+
+    let bad_snap = Snapshot {
+        revision: 1,
+        last_commit_id: "bad".into(),
+        overrides: toml::from_str("[reading]\nfont_size = \"oops\"\n").unwrap(),
+    };
+    let req = tekes_ui_settings::Submission::replacement(&Snapshot::default(), &bad_snap).unwrap();
+    provider.commit(&req).unwrap();
+    assert!(provider.load_validated(&s).is_err());
+    drop(provider);
+    std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
+
+    // Bare relative filename ("settings.toml") without directory component must succeed.
+    struct RestoreCwd(PathBuf);
+    impl Drop for RestoreCwd {
+        fn drop(&mut self) {
+            let _ = std::env::set_current_dir(&self.0);
+        }
+    }
+    let dir = temp().parent().unwrap().to_path_buf();
+    std::fs::create_dir_all(&dir).unwrap();
+    let _guard = RestoreCwd(std::env::current_dir().unwrap());
+    std::env::set_current_dir(&dir).unwrap();
+    let result =
+        FileProvider::open(PathBuf::from("settings.toml"), s.namespace.clone()).and_then(|p| {
+            let mut d = Draft::new(Snapshot::default());
+            d.edit(&s.settings[0], "Rel".into());
+            let sub = d.submit(&s, "rel-1".into())?;
+            p.commit(&sub)
+        });
+    drop(_guard);
+    assert!(result.is_ok(), "{result:?}");
+    std::fs::remove_dir_all(&dir).unwrap();
 }

@@ -8,9 +8,15 @@ use tekes_ui_tokens::{Palette, Theme, proposal};
 #[ignore = "explicit actual GPU evidence; fresh output directory required"]
 fn select_content_matches_original_view_pixels_clip_and_positive_text_ink() {
     let out = std::path::PathBuf::from(
-        std::env::var_os("TEKESUI_SELECT89_GPU_OUT").expect("fresh SSD output"),
+        std::env::var_os("TEKESUI_SELECT89_GPU_OUT").expect("fresh output directory required"),
     );
-    assert!(out.starts_with("/Volumes/HP P900/DEV/TekesUI/artifacts/issue-89/"));
+    assert!(
+        !out.as_os_str().is_empty()
+            && !out
+                .components()
+                .any(|c| c == std::path::Component::ParentDir),
+        "safe output directory required"
+    );
     assert!(!out.exists());
     std::fs::create_dir_all(&out).unwrap();
     let mut gpu = tekes_ui_render::Renderer::new_headless().unwrap();

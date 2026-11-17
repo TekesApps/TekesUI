@@ -85,11 +85,15 @@ impl Component for PipelineInk {
 fn out_dir() -> std::path::PathBuf {
     let root = std::path::PathBuf::from(
         std::env::var_os("TEKESUI_PANEL82_GPU_ARTIFACT_DIR")
-            .expect("set fresh main7ab8e32 Issue #82 SSD output directory"),
+            .expect("set fresh Issue #82 output directory"),
     );
-    assert!(root.starts_with(
-        "/Volumes/HP P900/DEV/TekesUI/artifacts/issue-82/"
-    ));
+    assert!(
+        !root.as_os_str().is_empty()
+            && !root
+                .components()
+                .any(|c| c == std::path::Component::ParentDir),
+        "safe GPU artifact directory required"
+    );
     std::fs::create_dir_all(&root).unwrap();
     root
 }

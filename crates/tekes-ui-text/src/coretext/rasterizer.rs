@@ -103,27 +103,50 @@ impl Rasterizer for CoreTextRasterizer {
         }
 
         // 墨迹边界（设备像素，y 向上，原点在字形原点）向外取整，再加边距。
-        let min_x = (rect.origin.x * scale).floor() as i64 - i64::from(PADDING);
-        let min_y = (rect.origin.y * scale).floor() as i64 - i64::from(PADDING);
-        let max_x = ((rect.origin.x + rect.size.width) * scale).ceil() as i64 + i64::from(PADDING);
-        let max_y = ((rect.origin.y + rect.size.height) * scale).ceil() as i64 + i64::from(PADDING);
-        let (w, h) = (max_x - min_x, max_y - min_y);
+        let bounds = [
+            (rect.origin.x * scale).floor(),
+            (rect.origin.y * scale).floor(),
+            ((rect.origin.x + rect.size.width) * scale).ceil(),
+            ((rect.origin.y + rect.size.height) * scale).ceil(),
+        ];
+        let limit_lo = f64::from(i32::MIN / 2);
+        let limit_hi = f64::from(i32::MAX / 2);
+        if bounds
+            .iter()
+            .any(|v| !v.is_finite() || *v < limit_lo || *v > limit_hi)
+        {
+            return None;
+        }
+        let pad = i64::from(PADDING);
+        let min_x = (bounds[0] as i64).checked_sub(pad)?;
+        let min_y = (bounds[1] as i64).checked_sub(pad)?;
+        let max_x = (bounds[2] as i64).checked_add(pad)?;
+        let max_y = (bounds[3] as i64).checked_add(pad)?;
+        let left = i32::try_from(min_x).ok()?;
+        let top = i32::try_from(max_y).ok()?.checked_neg()?;
+        let w = max_x.checked_sub(min_x)?;
+        let h = max_y.checked_sub(min_y)?;
         if w <= 0 || h <= 0 || w > MAX_SIDE || h > MAX_SIDE {
             return None;
         }
-        let (w, h) = (w as usize, h as usize);
+        let w_usize = usize::try_from(w).ok()?;
+        let h_usize = usize::try_from(h).ok()?;
+        let width = u32::try_from(w_usize).ok()?;
+        let height = u32::try_from(h_usize).ok()?;
+        let stride = w_usize.checked_mul(4)?;
+        let byte_len = stride.checked_mul(h_usize)?;
 
         let space = CGColorSpace::new_device_rgb()?;
-        let mut pixels = vec![0u8; w * h * 4];
+        let mut pixels = vec![0u8; byte_len];
         // SAFETY: pixels 的大小是 w * h * 4，行距 w * 4；上下文在本函数结束前释放，
         // 之后才会动 pixels。
         let ctx = unsafe {
             CGBitmapContextCreate(
                 pixels.as_mut_ptr().cast::<c_void>(),
-                w,
-                h,
+                w_usize,
+                h_usize,
                 8,
-                w * 4,
+                stride,
                 Some(&space),
                 bgra_bitmap_info(),
             )
@@ -160,11 +183,11 @@ impl Rasterizer for CoreTextRasterizer {
         drop(ctx);
 
         Some(RasterGlyph {
-            left: min_x as i32,
+            left,
             // 位图第 0 行是顶部，y 向下；顶边在原点之上 max_y 个像素。
-            top: -(max_y as i32),
-            width: w as u32,
-            height: h as u32,
+            top,
+            width,
+            height,
             format: if is_color {
                 RasterFormat::Color
             } else {

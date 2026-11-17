@@ -2151,12 +2151,15 @@ mod layout_tests {
             .unwrap();
         let output = Some(std::path::PathBuf::from(
             std::env::var_os("TEKESUI_EMPTY_STATE_OUT")
-                .expect("fresh SSD output required for explicit EmptyState GPU capture"),
+                .expect("fresh output directory required for explicit EmptyState GPU capture"),
         ));
         let path = output.as_ref().unwrap();
         assert!(
-            path.starts_with("/Volumes/HP P900/DEV/TekesUI/artifacts"),
-            "SSD evidence output required"
+            !path.as_os_str().is_empty()
+                && !path
+                    .components()
+                    .any(|c| c == std::path::Component::ParentDir),
+            "safe output directory required"
         );
         std::fs::create_dir(path).expect("fresh output directory required");
         let mut renderer = tekes_ui_render::Renderer::new_headless().expect("real GPU required");
@@ -2362,10 +2365,17 @@ mod layout_tests {
         use tekes_ui_scene::Primitive;
         use tekes_ui_tokens::{Palette, Theme, proposal};
         let output = Some(std::path::PathBuf::from(
-            std::env::var_os("TEKESUI_NOTICE_ALIGNMENT_OUT").expect("fresh SSD output required"),
+            std::env::var_os("TEKESUI_NOTICE_ALIGNMENT_OUT")
+                .expect("fresh output directory required"),
         ));
         let path = output.as_ref().unwrap();
-        assert!(path.starts_with("/Volumes/HP P900/DEV/TekesUI/artifacts"));
+        assert!(
+            !path.as_os_str().is_empty()
+                && !path
+                    .components()
+                    .any(|c| c == std::path::Component::ParentDir),
+            "safe output directory required"
+        );
         std::fs::create_dir(path).expect("fresh output required");
         let mut renderer = tekes_ui_render::Renderer::new_headless().expect("real GPU required");
         let mut records = Vec::new();
@@ -3396,10 +3406,16 @@ mod layout_tests {
     fn issue79_original_gallery_mounted_notices_actual_gpu_and_clock() {
         use std::time::Duration;
         let output = Some(std::path::PathBuf::from(
-            std::env::var_os("TEKESUI_EMPTY_STATE_OUT").expect("fresh SSD output required"),
+            std::env::var_os("TEKESUI_EMPTY_STATE_OUT").expect("fresh output directory required"),
         ));
         let path = output.as_ref().unwrap();
-        assert!(path.starts_with("/Volumes/HP P900/DEV/TekesUI/artifacts"));
+        assert!(
+            !path.as_os_str().is_empty()
+                && !path
+                    .components()
+                    .any(|c| c == std::path::Component::ParentDir),
+            "safe output directory required"
+        );
         std::fs::create_dir(path).expect("fresh output required");
         let mut gpu = tekes_ui_render::Renderer::new_headless().expect("actual GPU required");
         let mut cases = vec![];
@@ -3546,9 +3562,15 @@ mod layout_tests {
     #[ignore = "explicit actual GPU capture with fresh SSD output"]
     fn issue79_static_matrix_and_variants_use_actual_content_without_a_clock() {
         let output = std::path::PathBuf::from(
-            std::env::var_os("TEKESUI_NOTICE_STATIC_OUT").expect("fresh SSD output required"),
+            std::env::var_os("TEKESUI_NOTICE_STATIC_OUT").expect("fresh output directory required"),
         );
-        assert!(output.starts_with("/Volumes/HP P900/DEV/TekesUI/artifacts"));
+        assert!(
+            !output.as_os_str().is_empty()
+                && !output
+                    .components()
+                    .any(|c| c == std::path::Component::ParentDir),
+            "safe output directory required"
+        );
         std::fs::create_dir(&output).expect("fresh output required");
         let mut gpu = tekes_ui_render::Renderer::new_headless().expect("actual GPU required");
         let mut count = 0;

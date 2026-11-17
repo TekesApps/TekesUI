@@ -342,10 +342,10 @@ fn transform_primitive(
             image.opacity *= alpha;
         }
         Primitive::TransformedImage(image) => {
+            if !image.rotation.is_finite() {
+                return Err(FragmentError::UnsupportedTransform);
+            }
             if translated {
-                if image.rotation != 0. {
-                    return Err(FragmentError::UnsupportedTransform);
-                }
                 image.quad.rect = translated_rect(image.quad.rect, delta)?;
             }
             image.quad.opacity *= alpha;
@@ -357,10 +357,10 @@ fn transform_primitive(
             image.opacity *= alpha;
         }
         Primitive::ControlledTransformedImage { quad: image, .. } => {
+            if !image.rotation.is_finite() {
+                return Err(FragmentError::UnsupportedTransform);
+            }
             if translated {
-                if image.rotation != 0. {
-                    return Err(FragmentError::UnsupportedTransform);
-                }
                 image.quad.rect = translated_rect(image.quad.rect, delta)?;
             }
             image.quad.opacity *= alpha;

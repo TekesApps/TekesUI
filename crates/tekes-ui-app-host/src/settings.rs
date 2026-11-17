@@ -210,6 +210,7 @@ pub(crate) struct SettingsSurface {
     pub toolbar_window: u64,
     due: Option<Instant>,
     failed_generation: Option<u64>,
+    pub(crate) failed_close_prompted: bool,
     close_after_save: bool,
     unresolved: Option<Submission>,
     message: String,
@@ -261,6 +262,7 @@ impl SettingsSurface {
             toolbar_window: 1,
             due: None,
             failed_generation: None,
+            failed_close_prompted: false,
             close_after_save: false,
             unresolved: None,
             message: String::new(),
@@ -412,8 +414,14 @@ impl SettingsSurface {
         })
     }
     pub fn navigation_options(&self) -> crate::NavigationOptions {
+        let parent = self
+            .provider
+            .path()
+            .parent()
+            .filter(|p| !p.as_os_str().is_empty())
+            .unwrap_or_else(|| std::path::Path::new("."));
         crate::NavigationOptions {
-            directory: self.provider.path().parent().unwrap().join("navigation"),
+            directory: parent.join("navigation"),
             history_id: format!("settings:{}", self.schema.namespace),
             initial_entries: vec![self.entry(&self.selected).expect("validated item")],
             view_command: None,
@@ -438,6 +446,19 @@ impl SettingsSurface {
             && !self.form.has_number_draft()
             && !self.composition_active()
     }
+    pub fn discard_changes(&mut self) {
+        self.form.cancel_edits();
+        self.draft = Draft::new(self.draft.base.clone());
+        self.last_edit_generation = self.draft.generation;
+        self.failed_generation = None;
+        self.failed_close_prompted = false;
+        self.unresolved = None;
+        self.restoring = false;
+        self.due = None;
+        self.message.clear();
+        self.form.replace_values(&self.view_schema, &self.draft);
+        self.refresh();
+    }
     pub fn close_requested(&mut self) -> bool {
         if self.composition_active() {
             self.close_after_save = false;
@@ -448,6 +469,18 @@ impl SettingsSurface {
         if !self.form.flush_numbers(&self.view_schema, &mut self.draft) {
             self.close_after_save = false;
             self.message = "请修正数值，或按 Escape 取消当前输入。".into();
+            self.refresh();
+            return false;
+        }
+        if !self.pending && self.failed_generation.is_some() {
+            if self.failed_close_prompted {
+                self.discard_changes();
+                self.close_after_save = false;
+                self.open = false;
+                return true;
+            }
+            self.failed_close_prompted = true;
+            self.close_after_save = false;
             self.refresh();
             return false;
         }
@@ -535,7 +568,15 @@ impl SettingsSurface {
                 FormIntent::Cancel => {
                     self.close_requested();
                 }
-                // Autosave has no Reset or draft-discard command.
+                FormIntent::Discard if !self.pending => {
+                    let closing = self.close_after_save || self.failed_close_prompted;
+                    self.discard_changes();
+                    self.close_after_save = false;
+                    if closing {
+                        self.open = false;
+                    }
+                }
+                // Autosave has no Reset.
                 _ => {}
             }
         }
@@ -618,6 +659,7 @@ impl SettingsSurface {
                     self.restoring = false;
                     self.unresolved = None;
                     self.failed_generation = None;
+                    self.failed_close_prompted = false;
                     self.message.clear();
                     if self.draft.dirty() {
                         self.due = Some(Instant::now() + Duration::from_millis(300));
@@ -630,7 +672,8 @@ impl SettingsSurface {
                     }
                 }
                 Err(error) => {
-                    self.message = format!("{} — Retry", error.message);
+                    self.failed_close_prompted = self.close_after_save;
+                    self.message = format!("{} — Retry or Discard", error.message);
                     self.failed_generation = Some(self.draft.generation);
                     self.due = None;
                     self.close_after_save = false;
@@ -660,6 +703,7 @@ impl SettingsSurface {
         if self.draft.generation != self.last_edit_generation {
             self.last_edit_generation = self.draft.generation;
             self.failed_generation = None;
+            self.failed_close_prompted = false;
             if self.unresolved.is_none() {
                 self.message.clear();
                 self.due = Some(Instant::now() + Duration::from_millis(300));
@@ -723,6 +767,85 @@ mod autosave_restore_tests {
         newer.accept(&surface.schema, &restore, target).unwrap();
         assert_eq!(newer.display(&field), "120");
         assert!(newer.dirty());
+        drop(surface);
+        std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
+    }
+
+    #[test]
+    fn failed_save_prompts_once_then_second_close_or_discard_discards_dirty_number() {
+        use tekes_ui_controls::composition::{ComponentId, ContentEvent};
+        use tekes_ui_scene::{Rect, Scene};
+        use tekes_ui_tokens::Theme;
+
+        let path = std::env::temp_dir()
+            .join(format!(
+                "settings-failed-close-prompt-{}-{}",
+                std::process::id(),
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_nanos()
+            ))
+            .join("settings.toml");
+        let options = SettingsWindow::from_toml(
+            include_str!("../../../examples/app-host-demo/settings.schema.toml"),
+            path.clone(),
+        )
+        .unwrap();
+        let provider = FileProvider::open(path.clone(), options.schema.namespace.clone()).unwrap();
+        let mut surface = SettingsSurface::new(options, provider, Snapshot::default()).unwrap();
+        surface.show();
+
+        let field = surface.schema.settings[1].clone();
+        surface.draft.edit(&field, "120".into());
+        surface.failed_generation = Some(surface.draft.generation);
+        surface.message = "disk full — Retry or Discard".into();
+        surface.refresh();
+
+        assert!(!surface.close_requested());
+        assert!(surface.open);
+        assert!(surface.failed_close_prompted);
+
+        assert!(surface.close_requested());
+        assert!(!surface.open);
+        assert!(!surface.draft.dirty());
+        assert!(!surface.failed_close_prompted);
+
+        surface.show();
+        surface
+            .form
+            .render(
+                &mut Scene::new(),
+                &mut crate::text::Text::new(),
+                Rect::new(0., 0., 620., 400.),
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
+        assert!(surface.form.host.focus(Some(ComponentId(101)), true));
+        surface
+            .form
+            .host
+            .event_with_text(
+                &ContentEvent::TextCommand("selectAll:".into()),
+                &mut crate::text::Text::new(),
+            )
+            .unwrap();
+        surface
+            .form
+            .host
+            .event_with_text(
+                &ContentEvent::Commit {
+                    text: "140%".into(),
+                    replacement: None,
+                },
+                &mut crate::text::Text::new(),
+            )
+            .unwrap();
+        assert!(surface.form.has_number_draft());
+        surface.discard_changes();
+        assert!(!surface.form.has_number_draft());
+        assert!(surface.clean_for_close());
+
         drop(surface);
         std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
     }

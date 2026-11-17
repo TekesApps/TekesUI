@@ -264,8 +264,9 @@ fn unsupported_scale_opacity_rotation_and_numeric_translation_are_atomic() {
         },
         0.5,
     ));
+    let mut translated = caller.clone();
     assert_eq!(
-        caller.try_append_fragment(
+        translated.try_append_fragment(
             &rotated,
             Default::default(),
             FragmentTransform {
@@ -273,9 +274,36 @@ fn unsupported_scale_opacity_rotation_and_numeric_translation_are_atomic() {
                 ..Default::default()
             }
         ),
-        Err(FragmentError::UnsupportedTransform)
+        Ok(())
     );
-    assert_eq!(caller, before);
+    assert!(matches!(
+        translated.primitives().last(),
+        Some(Primitive::TransformedImage(img))
+            if img.quad.rect == Rect::new(1., 1., 2., 2.) && img.rotation == 0.5
+    ));
+    for bad_rot in [f32::NAN, f32::INFINITY] {
+        let mut invalid = Scene::new();
+        invalid.push_transformed_image(TransformedImageQuad::new(
+            ImageQuad {
+                rect: Rect::new(0., 0., 2., 2.),
+                image: ImageId(1),
+                opacity: 1.,
+            },
+            bad_rot,
+        ));
+        assert_eq!(
+            caller.try_append_fragment(
+                &invalid,
+                Default::default(),
+                FragmentTransform {
+                    translation: Point::new(1., 1.),
+                    ..Default::default()
+                }
+            ),
+            Err(FragmentError::UnsupportedTransform)
+        );
+        assert_eq!(caller, before);
+    }
 }
 #[test]
 fn first_scene_error_clone_clear_and_failed_fragment_are_explicit() {

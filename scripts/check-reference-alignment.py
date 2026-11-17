@@ -14,6 +14,7 @@ import hashlib
 import importlib
 import importlib.util
 import json
+import os
 import re
 from pathlib import Path
 import subprocess
@@ -142,9 +143,10 @@ def audit():
             errors.append(f"unknown component mapping: {component['id']}")
         if component['native_acceptance'] != 'unverified':
             errors.append(f"native acceptance needs separate evidence: {component['id']}")
-    attachment = Path(contract['source']['path'])
+    source_ref = os.environ.get('TEKESUI_REFERENCE_ATTACHMENT_PATH') or contract['source']['path']
+    attachment = None if source_ref.startswith('external://') else Path(source_ref)
     provenance = 'unverified: original local attachment is unavailable on this host'
-    if attachment.is_file():
+    if attachment is not None and attachment.is_file():
         provenance = 'pass' if hashlib.sha256(attachment.read_bytes()).hexdigest() == contract['source']['sha256'] else 'fail'
         if provenance == 'fail':
             errors.append('attachment SHA256 differs from the reviewed document')

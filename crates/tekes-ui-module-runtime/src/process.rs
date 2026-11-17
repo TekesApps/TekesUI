@@ -63,7 +63,8 @@ impl FrameRenderer {
             revision: state.revision,
             toolbar: state.toolbar,
         };
-        crate::transport::send(endpoint, surface.create_mach_port())?;
+        // SAFETY: `IOSurfaceRef::create_mach_port()` returns one freshly retained Mach send right owned here.
+        unsafe { crate::transport::send(endpoint, surface.create_mach_port())? };
         Ok(frame)
     }
 
@@ -122,7 +123,8 @@ impl FrameRenderer {
             toolbar: state.toolbar,
         };
         let _texture = texture;
-        crate::transport::send(endpoint, surface.create_mach_port())?;
+        // SAFETY: `IOSurfaceRef::create_mach_port()` returns one freshly retained Mach send right owned here.
+        unsafe { crate::transport::send(endpoint, surface.create_mach_port())? };
         Ok(frame)
     }
     /// Produce the transported frame from the same pixels whose Scene passed
@@ -190,7 +192,8 @@ impl FrameRenderer {
         // The IOSurface contains the same verified pixels with only the required
         // RGBA-to-BGRA channel-order conversion; alpha is unchanged.
         let _texture = texture;
-        crate::transport::send(endpoint, surface.create_mach_port())?;
+        // SAFETY: `IOSurfaceRef::create_mach_port()` returns one freshly retained Mach send right owned here.
+        unsafe { crate::transport::send(endpoint, surface.create_mach_port())? };
         Ok(frame)
     }
 }

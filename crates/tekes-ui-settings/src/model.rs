@@ -111,9 +111,18 @@ impl Schema {
         let mut selected = self.clone();
         selected.pages[0].label = item.label.clone();
         selected.settings.retain(|f| f.item == item_id);
-        selected
-            .groups
-            .retain(|g| selected.settings.iter().any(|f| f.group == g.id));
+        let mut keep_groups: BTreeSet<String> =
+            selected.settings.iter().map(|f| f.group.clone()).collect();
+        let mut cursor: Vec<String> = keep_groups.iter().cloned().collect();
+        while let Some(group_id) = cursor.pop() {
+            if let Some(group) = self.groups.iter().find(|g| g.id == group_id)
+                && let Some(parent_id) = &group.parent
+                && keep_groups.insert(parent_id.clone())
+            {
+                cursor.push(parent_id.clone());
+            }
+        }
+        selected.groups.retain(|g| keep_groups.contains(&g.id));
         Ok(selected)
     }
 

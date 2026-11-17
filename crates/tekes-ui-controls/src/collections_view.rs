@@ -919,8 +919,8 @@ impl ListView {
         if !self.layout.items.iter().any(|item| item.id == id) || id >= model.count {
             return CollectionEvent::Ignored;
         }
-        self.state.focus_visible = true;
         if key == ControlKey::Enter {
+            self.state.focus_visible = true;
             model.select(id);
             return CollectionEvent::Activated(id);
         }
@@ -928,8 +928,9 @@ impl ListView {
             key,
             ControlKey::Up | ControlKey::Down | ControlKey::Home | ControlKey::End
         ) {
-            return CollectionEvent::Handled;
+            return CollectionEvent::Ignored;
         }
+        self.state.focus_visible = true;
         // Ancestor clipping limits pointer hits, not logical keyboard targets.
         // Hosts use the focused row frame to reveal content after navigation.
         let ids = self
@@ -1854,8 +1855,8 @@ impl TreeView {
         {
             return CollectionEvent::Ignored;
         }
-        self.state.focus_visible = true;
         if key == ControlKey::Enter {
+            self.state.focus_visible = true;
             model.select(id);
             return CollectionEvent::Activated(id);
         }
@@ -1868,8 +1869,9 @@ impl TreeView {
                 | ControlKey::Left
                 | ControlKey::Right
         ) {
-            return CollectionEvent::Handled;
+            return CollectionEvent::Ignored;
         }
+        self.state.focus_visible = true;
         if matches!(
             key,
             ControlKey::Up | ControlKey::Down | ControlKey::Home | ControlKey::End
@@ -2607,9 +2609,9 @@ impl DataTableView {
         if !mounted {
             return CollectionEvent::Ignored;
         }
-        self.state.focus_visible = true;
         if let Some(column) = self.focused_header {
             if key == ControlKey::Enter {
+                self.state.focus_visible = true;
                 return if model.sort_by(column) {
                     CollectionEvent::Changed
                 } else {
@@ -2617,6 +2619,7 @@ impl DataTableView {
                 };
             }
             if matches!(key, ControlKey::Left | ControlKey::Right) && model.columns > 0 {
+                self.state.focus_visible = true;
                 // Use the same mounted/live intersection as rows: source
                 // growth does not publish geometry for new columns yet.
                 let ids = self
@@ -2635,7 +2638,7 @@ impl DataTableView {
                 self.focus_header_impl(next, true);
                 return CollectionEvent::Changed;
             }
-            return CollectionEvent::Handled;
+            return CollectionEvent::Ignored;
         }
         if key == ControlKey::Enter {
             let Some(id) = self.state.focused else {
@@ -2644,15 +2647,23 @@ impl DataTableView {
             if !self.layout.rows.iter().any(|row| row.id == id) {
                 return CollectionEvent::Ignored;
             }
+            self.state.focus_visible = true;
             return if model.select_row(id) {
                 CollectionEvent::Changed
             } else {
                 CollectionEvent::Activated(id)
             };
         }
+        if !matches!(
+            key,
+            ControlKey::Home | ControlKey::End | ControlKey::Up | ControlKey::Down
+        ) {
+            return CollectionEvent::Ignored;
+        }
         if self.layout.rows.is_empty() {
             return CollectionEvent::Ignored;
         }
+        self.state.focus_visible = true;
         let visible_rows = self
             .layout
             .rows
@@ -3346,10 +3357,19 @@ fn chart_text_frame(
         TextAlignment::Center => (slot, ButtonTextAlign::Center),
         TextAlignment::Leading => (slot, ButtonTextAlign::Leading),
         TextAlignment::Trailing => {
-            let width = text
-                .measure(value, proposal::TextRole::UiCaption, slot.size.width)
-                .width
-                .clamp(0.0, slot.size.width);
+            let max_width = if slot.size.width.is_finite() {
+                slot.size.width.max(0.0)
+            } else {
+                0.0
+            };
+            let measured = text
+                .measure(value, proposal::TextRole::UiCaption, max_width)
+                .width;
+            let width = if measured.is_finite() {
+                measured.clamp(0.0, max_width)
+            } else {
+                0.0
+            };
             (
                 Rect::new(slot.max_x() - width, slot.min_y(), width, slot.size.height),
                 ButtonTextAlign::Leading,
@@ -4113,6 +4133,74 @@ mod tests {
             CollectionEvent::Ignored
         );
         assert_eq!(tree.selected, None);
+    }
+
+    #[test]
+    fn collection_views_ignore_tab_without_marking_focus_visible_and_chart_frame_clamps_nan() {
+        let mut scene = Scene::new();
+        let mut text = FixedText { height: 14. };
+        let palette = Palette::from(Theme::LIGHT);
+        let frame = Rect::new(0., 0., 240., 240.);
+
+        let mut list = List::new(2);
+        let mut list_view = ListView::new();
+        list_view.render(
+            &mut scene,
+            &mut text,
+            &list,
+            &["one".into(), "two".into()],
+            frame,
+            None,
+            palette,
+        );
+        list_view.focus(0, false);
+        assert_eq!(
+            list_view.key(ControlKey::Tab { reverse: false }, true, &mut list),
+            CollectionEvent::Ignored
+        );
+        assert!(!list_view.state.focus_visible);
+
+        let mut tree = Tree::default();
+        tree.add("one", None);
+        let mut tree_view = TreeView::new();
+        tree_view.render(&mut scene, &mut text, &tree, frame, None, palette);
+        tree_view.focus(0, false);
+        assert_eq!(
+            tree_view.key(ControlKey::Tab { reverse: true }, true, &mut tree),
+            CollectionEvent::Ignored
+        );
+        assert!(!tree_view.state.focus_visible);
+
+        let mut table = DataTable::new(1, 1);
+        let mut table_view = DataTableView::new();
+        table_view.render(
+            &mut scene,
+            &mut text,
+            &table,
+            &["header".into()],
+            &[vec!["row".into()]],
+            &[0],
+            frame,
+            None,
+            palette,
+        );
+        table_view.focus_row(0, false);
+        assert_eq!(
+            table_view.key(ControlKey::Tab { reverse: false }, true, &mut table),
+            CollectionEvent::Ignored
+        );
+        assert!(!table_view.state.focus_visible);
+
+        for width in [-10.0, f32::NAN] {
+            let (rect, _) = super::chart_text_frame(
+                &mut text,
+                "100",
+                Rect::new(0.0, 0.0, width, 16.0),
+                tekes_ui_tokens::proposal::layout::TextAlignment::Trailing,
+            );
+            assert!(rect.size.width.is_finite());
+            assert!(rect.size.width >= 0.0);
+        }
     }
 
     #[test]

@@ -271,8 +271,14 @@ impl Pipelines {
                 Primitive::Glyphs(run) => {
                     let start = self.glyph.staging.len() as u32;
                     for g in &run.glyphs {
-                        // 页号超出当前纹理层数：这个字形不是这个 atlas 编出来的，跳过。
-                        if g.glyph.page >= atlas_layers {
+                        // 页号或区域超出当前有效 atlas：跳过非本 atlas 的字形。
+                        if g.glyph.page >= atlas_layers
+                            || g.glyph.page >= atlas.page_count()
+                            || u64::from(g.glyph.x) + u64::from(g.glyph.width)
+                                > u64::from(atlas.page_size())
+                            || u64::from(g.glyph.y) + u64::from(g.glyph.height)
+                                > u64::from(atlas.page_size())
+                        {
                             continue;
                         }
                         if let Some(inst) = GlyphInstance::new(g.origin, &g.glyph, run.color, scale)

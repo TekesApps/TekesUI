@@ -147,21 +147,26 @@ define_class!(
     impl TekesView {
 
         #[unsafe(method_id(accessibilityHitTest:))]
-        fn content_accessibility_hit_test(&self,point:NSPoint)->Option<Retained<objc2::runtime::AnyObject>> {
-            #[cfg(feature="content-accessibility")]
-            { (|| {
-                let shared=&self.ivars().shared;
-                let snapshot=shared.content_geometry.borrow().clone();
-                if let Some(snapshot)=snapshot {
-                    let objects=shared.objects.get()?;
-                    let local=self.convertPoint_fromView(objects.window.convertPointFromScreen(point),None);
-                    let key=snapshot.hit_test(crate::event::Point{x:local.x,y:local.y})?;
-                    return shared.accessibility_elements.borrow().get(&key).cloned().map(Into::into);
+        fn content_accessibility_hit_test(&self, point: NSPoint) -> Option<Retained<objc2::runtime::AnyObject>> {
+            #[cfg(feature = "content-accessibility")]
+            {
+                let shared = &self.ivars().shared;
+                let snapshot = shared.content_geometry.borrow().clone();
+                if let Some(snapshot) = snapshot.filter(|s| s.is_current())
+                    && let Some(objects) = shared.objects.get()
+                    && let Some(key) = {
+                        let local = self.convertPoint_fromView(objects.window.convertPointFromScreen(point), None);
+                        snapshot.hit_test(crate::event::Point { x: local.x, y: local.y })
+                    }
+                    && let Some(element) = shared.accessibility_elements.borrow().get(&key).cloned()
+                {
+                    Some(element.into())
+                } else {
+                    unsafe { msg_send![super(self), accessibilityHitTest: point] }
                 }
-                unsafe { msg_send![super(self), accessibilityHitTest:point] }
-            })() }
-            #[cfg(not(feature="content-accessibility"))]
-            unsafe { msg_send![super(self), accessibilityHitTest:point] }
+            }
+            #[cfg(not(feature = "content-accessibility"))]
+            unsafe { msg_send![super(self), accessibilityHitTest: point] }
         }
         #[unsafe(method_id(accessibilityChildren))]
         fn accessibility_children(&self) -> Retained<objc2_foundation::NSArray> {
@@ -784,25 +789,7 @@ impl TekesView {
             });
         }
         drop(elements);
-        #[cfg(feature = "content-accessibility")]
-        let publication_changed = shared.content_geometry.borrow().is_some();
-        #[cfg(not(feature = "content-accessibility"))]
-        let publication_changed = false;
-        let structural = publication_changed
-            || nodes.len() != previous.len()
-            || nodes.iter().zip(previous).any(|(a, b)| {
-                a.key != b.key
-                    || a.parent != b.parent
-                    || a.role != b.role
-                    || a.frame != b.frame
-                    || a.label != b.label
-                    || a.description != b.description
-                    || a.enabled != b.enabled
-                    || a.expanded != b.expanded
-                    || a.invalid != b.invalid
-                    || a.required != b.required
-                    || a.read_only != b.read_only
-            });
+        let structural = is_structural_accessibility_change(&nodes, previous);
         let focus_changed = nodes.iter().find(|n| n.focused).map(|n| n.key)
             != previous.iter().find(|n| n.focused).map(|n| n.key);
         // Editing changes are not structural layout changes. Announce the real
@@ -1245,5 +1232,74 @@ fn resize_cursor(horizontal: bool) -> Retained<objc2_app_kit::NSCursor> {
         (false, true) => NSCursor::rowResizeCursor(),
         (true, false) => NSCursor::resizeLeftRightCursor(),
         (false, false) => NSCursor::resizeUpDownCursor(),
+    }
+}
+
+pub(crate) fn is_structural_accessibility_change(
+    nodes: &[crate::accessibility::AccessibilityNode],
+    previous: &[crate::accessibility::AccessibilityNode],
+) -> bool {
+    nodes.len() != previous.len()
+        || nodes.iter().zip(previous).any(|(a, b)| {
+            a.key != b.key
+                || a.parent != b.parent
+                || a.role != b.role
+                || a.frame != b.frame
+                || a.label != b.label
+                || a.description != b.description
+                || a.enabled != b.enabled
+                || a.expanded != b.expanded
+                || a.invalid != b.invalid
+                || a.required != b.required
+                || a.read_only != b.read_only
+        })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_structural_accessibility_change;
+    use crate::accessibility::{AccessibilityKey, AccessibilityNode, AccessibilityRole};
+    use crate::event::{Point, Size};
+    use crate::placement::Rect;
+
+    fn text_node(value: &str, selection: std::ops::Range<usize>) -> AccessibilityNode {
+        AccessibilityNode {
+            key: AccessibilityKey {
+                component: 1,
+                part: None,
+            },
+            parent: None,
+            role: AccessibilityRole::TextField,
+            frame: Rect {
+                origin: Point::default(),
+                size: Size {
+                    width: 120.0,
+                    height: 32.0,
+                },
+            },
+            label: "Search".into(),
+            value: Some(value.into()),
+            description: None,
+            enabled: true,
+            focused: true,
+            selected: false,
+            expanded: None,
+            invalid: false,
+            required: false,
+            text_selection: Some(selection),
+            read_only: false,
+            can_show_menu: false,
+        }
+    }
+
+    #[test]
+    fn text_value_and_selection_edits_are_not_structural_layout_changes() {
+        let before = [text_node("a", 1..1)];
+        let after = [text_node("ab", 2..2)];
+        assert!(!is_structural_accessibility_change(&after, &before));
+
+        let mut moved = after.clone();
+        moved[0].frame.size.width = 160.0;
+        assert!(is_structural_accessibility_change(&moved, &before));
     }
 }

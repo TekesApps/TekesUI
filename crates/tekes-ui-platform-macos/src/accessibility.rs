@@ -913,16 +913,18 @@ pub(crate) mod native {
             ) -> Option<Retained<objc2::runtime::AnyObject>> {
                 #[cfg(feature = "content-accessibility")]
                 {
-                    (|| {
-                        let (shared, _) = self.shared_and_node()?;
-                        if shared.content_geometry.borrow().is_some() {
-                            let objects = shared.objects.get()?;
-                            return unsafe {
-                                msg_send![&*objects.view, accessibilityHitTest:point]
-                            };
-                        }
+                    if let Some((shared, _)) = self.shared_and_node()
+                        && shared
+                            .content_geometry
+                            .borrow()
+                            .as_ref()
+                            .is_some_and(|s| s.is_current())
+                        && let Some(objects) = shared.objects.get()
+                    {
+                        unsafe { msg_send![&*objects.view, accessibilityHitTest:point] }
+                    } else {
                         unsafe { msg_send![super(self), accessibilityHitTest:point] }
-                    })()
+                    }
                 }
                 #[cfg(not(feature = "content-accessibility"))]
                 unsafe {
@@ -955,24 +957,18 @@ pub(crate) mod native {
             }
 
             #[unsafe(method_id(accessibilityParent))]
-            fn accessibilityParent(&self) -> Retained<objc2::runtime::AnyObject> {
-                let object: Retained<objc2::runtime::AnyObject> = match self.shared_and_node() {
+            fn accessibilityParent(&self) -> Option<Retained<objc2::runtime::AnyObject>> {
+                match self.shared_and_node() {
                     Some((shared, node)) => match node.parent {
                         Some(parent) => shared
                             .accessibility_elements
                             .borrow()
                             .get(&parent)
-                            .map(|e| e.retain().into())
-                            .unwrap_or_else(|| objc2_foundation::NSNull::null().into()),
-                        None => shared
-                            .objects
-                            .get()
-                            .map(|o| o.view.retain().into())
-                            .unwrap_or_else(|| objc2_foundation::NSNull::null().into()),
+                            .map(|e| e.retain().into()),
+                        None => shared.objects.get().map(|o| o.view.retain().into()),
                     },
-                    None => objc2_foundation::NSNull::null().into(),
-                };
-                object
+                    None => None,
+                }
             }
 
             #[unsafe(method_id(accessibilityChildren))]

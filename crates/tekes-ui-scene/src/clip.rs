@@ -77,6 +77,19 @@ impl ClipShape {
         for r in &mut v[4..] {
             *r = r.clamp(0.0, limit);
         }
+        // Flush near-zero spring/scroll residuals in origin and corner radii that
+        // fall below the 24-bit dynamic range relative to the clip's extent.
+        let extent = v[2].max(v[3]);
+        for idx in [0, 1, 4, 5, 6, 7] {
+            let c = v[idx];
+            if c != 0.0
+                && (c.abs() < 2_f32.powi(-60)
+                    || (extent >= 2_f32.powi(-20)
+                        && f64::from(c.abs()) < f64::from(extent) * 2_f64.powi(-24)))
+            {
+                v[idx] = 0.0;
+            }
+        }
         // Supported nonzero normalized components: [2^-60,2^60], with largest/
         // smallest <=2^24. The latter leaves <=48 significant lattice bits across
         // f32 inputs, so f64 endpoints/centers (a few sums) remain exact. Squared
@@ -371,7 +384,7 @@ impl ClipShape {
             return Err(ClipError::InvalidInput);
         }
         let b = f64::from(border.max(0.0));
-        let v = self.values();
+        let mut v = self.values();
         let empty = self.is_empty() || 2.0 * b >= v[2] || 2.0 * b >= v[3];
         if empty {
             return Ok(InnerClipShape {
@@ -380,12 +393,17 @@ impl ClipShape {
                 empty: true,
             });
         }
-        let mut nonzero: Vec<_> = self
-            .values()
-            .into_iter()
-            .filter(|x| *x != 0.0)
-            .map(f64::abs)
-            .collect();
+        let extent = v[2].max(v[3]);
+        for idx in [0, 1, 4, 5, 6, 7] {
+            let c = v[idx];
+            if c != 0.0
+                && (c.abs() < 2_f64.powi(-60)
+                    || (extent >= 2_f64.powi(-20) && c.abs() < extent * 2_f64.powi(-24)))
+            {
+                v[idx] = 0.0;
+            }
+        }
+        let mut nonzero: Vec<_> = v.into_iter().filter(|x| *x != 0.0).map(f64::abs).collect();
         if b != 0.0 {
             nonzero.push(b);
         }

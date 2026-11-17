@@ -1006,7 +1006,13 @@ impl Host {
                 .presentation
                 .as_ref()
                 .and_then(|state| self.module_ids.iter().position(|id| id == state.focus_id()))
-                .unwrap_or_else(|| self.order[usize::from(self.order.len() >= 2)]);
+                .unwrap_or_else(|| {
+                    self.order
+                        .get(usize::from(self.order.len() >= 2))
+                        .copied()
+                        .or_else(|| self.order.first().copied())
+                        .unwrap_or(0)
+                });
         }
     }
     fn draw(&mut self, w: &Window) -> Result<()> {
@@ -2464,7 +2470,7 @@ impl WindowHandler for Host {
     fn allows_app_quit(&self) -> bool {
         self.settings.as_ref().is_none_or(|s| {
             let s = s.borrow();
-            s.clean_for_close()
+            s.clean_for_close() || s.failed_close_prompted
         })
     }
 
@@ -4371,5 +4377,58 @@ mod shared_settings_owner_tests {
             command.key_equivalent,
             Some(tekes_ui_platform_macos::KeyEquivalent::command(','))
         );
+    }
+
+    #[test]
+    fn empty_order_retire_hidden_content_and_failed_close_prompted_allows_app_quit() {
+        let mut host = Host::new(vec!["panel".into()], false, None);
+        host.panels = vec![Panel::new(0, "panel".into())];
+        host.panels[0].logically_visible = false;
+        host.order.clear();
+        host.focused = 0;
+        host.retire_hidden_content(0, Rect::default());
+        assert_eq!(host.focused, 0);
+
+        let path = std::env::temp_dir()
+            .join(format!(
+                "settings-failed-close-{}-{}",
+                std::process::id(),
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_nanos()
+            ))
+            .join("settings.toml");
+        let options = SettingsWindow::from_toml(
+            include_str!("../../tekes-ui-settings/tests/fixtures/layout.schema.toml"),
+            path.clone(),
+        )
+        .unwrap();
+        let provider =
+            tekes_ui_settings::FileProvider::open(path.clone(), options.schema.namespace.clone())
+                .unwrap();
+        let mut surface = crate::settings::SettingsSurface::new(
+            options,
+            provider,
+            tekes_ui_settings::Snapshot::default(),
+        )
+        .unwrap();
+        surface.show();
+        surface
+            .draft
+            .edit(&surface.schema.settings[0], "Changed".into());
+        host.is_settings_window = true;
+        host.settings = Some(Rc::new(std::cell::RefCell::new(surface)));
+
+        assert!(!host.allows_app_quit());
+        host.settings
+            .as_ref()
+            .unwrap()
+            .borrow_mut()
+            .failed_close_prompted = true;
+        assert!(host.allows_app_quit());
+
+        drop(host);
+        std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
     }
 }

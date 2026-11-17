@@ -1,11 +1,12 @@
 //! Single-writer local provider. Run load/commit/query on a worker, never the UI thread.
-use crate::{Snapshot, Submission};
+use crate::{Schema, Snapshot, Submission};
 use anyhow::{Context, Result, ensure};
 use serde::{Deserialize, Serialize};
 use std::{
+    ffi::OsString,
     fs::{self, File, OpenOptions},
     io::Write,
-    path::PathBuf,
+    path::{Path, PathBuf},
     sync::{Arc, Mutex},
 };
 
@@ -34,16 +35,30 @@ impl std::fmt::Display for CommitFailure {
     }
 }
 impl std::error::Error for CommitFailure {}
+fn parent_dir(path: &Path) -> &Path {
+    path.parent()
+        .filter(|p| !p.as_os_str().is_empty())
+        .unwrap_or_else(|| Path::new("."))
+}
+
+fn sidecar_path(path: &Path, suffix: &str) -> PathBuf {
+    let mut os = OsString::from(path.as_os_str());
+    os.push(suffix);
+    PathBuf::from(os)
+}
+
 impl FileProvider {
     pub fn open(path: PathBuf, namespace: String) -> Result<Self> {
-        let parent = path.parent().context("Settings file needs parent")?;
-        fs::create_dir_all(parent)?;
+        let parent = parent_dir(&path);
+        if parent != Path::new(".") {
+            fs::create_dir_all(parent)?;
+        }
         let writer = OpenOptions::new()
             .create(true)
             .truncate(false)
             .read(true)
             .write(true)
-            .open(path.with_extension("lock"))?;
+            .open(sidecar_path(&path, ".lock"))?;
         writer
             .try_lock()
             .context("Settings provider already has a writer")?;
@@ -57,7 +72,7 @@ impl FileProvider {
     pub fn path(&self) -> &std::path::Path {
         &self.path
     }
-    pub fn load(&self) -> Result<Snapshot> {
+    fn load_unlocked(&self) -> Result<Snapshot> {
         let source = match fs::read_to_string(&self.path) {
             Ok(s) => s,
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(Snapshot::default()),
@@ -79,6 +94,18 @@ impl FileProvider {
             overrides: table,
         })
     }
+    pub fn load(&self) -> Result<Snapshot> {
+        let _gate = self
+            .gate
+            .lock()
+            .map_err(|_| anyhow::anyhow!("provider poisoned"))?;
+        self.load_unlocked()
+    }
+    pub fn load_validated(&self, schema: &Schema) -> Result<Snapshot> {
+        let snapshot = self.load()?;
+        schema.validate_snapshot(&snapshot)?;
+        Ok(snapshot)
+    }
     pub fn commit(&self, submission: &Submission) -> Result<Snapshot> {
         self.commit_checked(submission).map_err(Into::into)
     }
@@ -92,7 +119,11 @@ impl FileProvider {
         })?;
         let mut replaced = false;
         let result = (|| -> Result<Snapshot> {
-            let current = self.load()?;
+            ensure!(
+                !submission.commit_id.trim().is_empty(),
+                "commit ID must not be empty"
+            );
+            let current = self.load_unlocked()?;
             // Identify duplicates before comparing expected revision.
             if current.last_commit_id == submission.commit_id {
                 ensure!(
@@ -104,7 +135,7 @@ impl FileProvider {
                     "commit ID reused with different revision"
                 );
                 replaced = true;
-                File::open(self.path.parent().unwrap())?.sync_all()?;
+                File::open(parent_dir(&self.path))?.sync_all()?;
                 return Ok(current);
             }
             ensure!(
@@ -127,7 +158,7 @@ impl FileProvider {
             };
             table.insert("_tekes".into(), toml::Value::try_from(metadata)?);
             let source = toml::to_string_pretty(&table)?;
-            let temp = self.path.with_extension("pending");
+            let temp = sidecar_path(&self.path, ".pending");
             let mut file = OpenOptions::new()
                 .create(true)
                 .truncate(true)
@@ -142,7 +173,7 @@ impl FileProvider {
             file.sync_all()?;
             fs::rename(&temp, &self.path)?;
             replaced = true;
-            File::open(self.path.parent().unwrap())?
+            File::open(parent_dir(&self.path))?
                 .sync_all()
                 .context("replacement durability unknown; query original commit")?;
             Ok(next)
@@ -155,15 +186,19 @@ impl FileProvider {
     /// Last unretired commit is sufficient for this serial, local-only prototype.
     /// This is not the full Host-crash journal for remote Provider/action recovery.
     pub fn query(&self, submission: &Submission) -> Result<Option<Snapshot>> {
+        ensure!(
+            !submission.commit_id.trim().is_empty(),
+            "commit ID must not be empty"
+        );
         let _gate = self
             .gate
             .lock()
             .map_err(|_| anyhow::anyhow!("provider poisoned"))?;
-        let current = self.load()?;
+        let current = self.load_unlocked()?;
         if current.last_commit_id == submission.commit_id
             && current.overrides == submission.overrides
         {
-            File::open(self.path.parent().unwrap())?.sync_all()?;
+            File::open(parent_dir(&self.path))?.sync_all()?;
             Ok(Some(current))
         } else {
             Ok(None)

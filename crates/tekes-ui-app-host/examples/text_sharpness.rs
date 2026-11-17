@@ -11,7 +11,23 @@ use tekes_ui_text::{
     push_paragraph,
 };
 use tekes_ui_tokens::Rgba;
-macro_rules! diag { ($($arg:tt)*) => {{ use std::io::Write; let mut f=std::fs::OpenOptions::new().create(true).append(true).open("/Users/frankqin/.codex/worktrees/gallery-design-baseline/TekesUI/target/text-window-compare/rust-runtime.log").unwrap(); writeln!(f,$($arg)*).unwrap(); }}; }
+macro_rules! diag {
+    ($($arg:tt)*) => {{
+        use std::io::Write;
+        let path = std::env::var_os("TEKESUI_TEXT_SHARPNESS_LOG")
+            .map(std::path::PathBuf::from)
+            .unwrap_or_else(|| std::env::temp_dir().join("tekesui-text-sharpness.log"));
+        if let Some(parent) = path.parent() {
+            let _ = std::fs::create_dir_all(parent);
+        }
+        let mut f = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(path)
+            .unwrap();
+        writeln!(f, $($arg)*).unwrap();
+    }};
+}
 struct Probe {
     renderer: Option<Renderer>,
     fonts: CoreTextFonts,

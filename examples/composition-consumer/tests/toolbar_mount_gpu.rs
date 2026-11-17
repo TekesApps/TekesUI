@@ -11,10 +11,13 @@ fn original_multi_group_progress_and_help_render_on_actual_metal_at_narrow_width
     let mut gpu = tekes_ui_render::Renderer::new_headless().unwrap();
     let output = std::env::var_os("TEKESUI_TOOLBAR_MOUNT_GPU_OUT").map(std::path::PathBuf::from);
     if let Some(output) = &output {
-        let root = std::path::Path::new("/Volumes/HP P900/DEV/TekesUI/artifacts/issue-136/toolbar69-main2fdddf8-intake/gpu");
-        assert!(output.is_absolute() && output.starts_with(root)
-            && !output.components().any(|c| c == std::path::Component::ParentDir),
-            "GPU output must use the coordinated SSD artifact directory");
+        assert!(
+            !output.as_os_str().is_empty()
+                && !output
+                    .components()
+                    .any(|c| c == std::path::Component::ParentDir),
+            "safe GPU artifact directory required"
+        );
         std::fs::create_dir_all(output).unwrap();
     }
     let mut frames = 0;

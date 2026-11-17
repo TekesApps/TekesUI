@@ -1,10 +1,10 @@
 {
   "format": "tekesui-reference-alignment-report/1",
   "date": "2026-10-16",
-  "source_commit": "ac73d6e21eaaa934e11bc7be7f01092c08c43780",
+  "source_commit": "89816275399b774b56a0a1de335384bb85940a68",
   "source_state": "working-tree; hashes identify audited inputs, not a clean commit",
   "inputs_sha256": {
-    "design/behavior/reference-alignment.json": "ab611945579b71db47e5cab3d3f9a67a89216fffd50f6f1f640a2e9e8e98f318",
+    "design/behavior/reference-alignment.json": "a90eb874483f9543b8187a38af0bfe15d870560870214997c8911754a7208c4c",
     "design/brand/apricot.json": "07442028268d7673e89fd1287b9b235e9765418610d73205650f627a049d12ce",
     "design/brand/config.json": "155eceec64c3aa33f4bc6b58a6ef7a1b071384b1dbbb55075a223e460d16e8a8",
     "design/brand/gallery.json": "ba7cc2b8678d71fa397f99faa51f03733d5ae68ff384f5ce822bd07cd52d5e14",
@@ -33,9 +33,9 @@
     "design/source/token-metadata.json": "88c7ca5bbf033c3abd39425fe220b06cdd137904ee812517c5119608d2d54cd9",
     "design/tokens.json": "e137091a3b2a342b0f92f264d3c1915ef422b5588a1408ff482a608e9700818c",
     "docs/design/reference-alignment-20261016.md": "7d3da18b3656794b1025966ecd1a71dce943eca58aaa26e5bf6e567f14561cb8",
-    "scripts/check-reference-alignment.py": "dc780035aa04d26eef568a42e8f5bba0b21b78365c1e46957db5b99b672ae9a6"
+    "scripts/check-reference-alignment.py": "c7a76320488ff3b709c2b2f1082b7ee7ab4a2f68d899b3320bc21a2696d4bd80"
   },
-  "attachment_provenance": "pass",
+  "attachment_provenance": "unverified: original local attachment is unavailable on this host",
   "static_result": "pass",
   "profiles": [
     {

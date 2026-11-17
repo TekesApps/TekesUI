@@ -82,7 +82,12 @@ fn r_v_source_index_and_ordinal_are_distinct_navigation_ignores_clip() {
         v.key_keyed(ControlKey::Enter, true, &mut m),
         E::Activated(4)
     );
-    assert_eq!(v.key_keyed(ControlKey::Space, true, &mut m), E::Handled);
+    assert_eq!(v.key_keyed(ControlKey::Up, true, &mut m), E::Handled);
+    assert_eq!(v.key_keyed(ControlKey::Space, true, &mut m), E::Ignored);
+    assert_eq!(
+        v.key_keyed(ControlKey::Tab { reverse: false }, true, &mut m),
+        E::Ignored
+    );
     assert_eq!(v.key_keyed(ControlKey::Down, false, &mut m), E::Ignored);
 }
 #[test]

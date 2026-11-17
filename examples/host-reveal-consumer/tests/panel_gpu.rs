@@ -59,10 +59,16 @@ fn scene(primitives: Vec<Primitive>, scale: f32, theme: Theme) -> Scene {
 fn gpu_artifact_dir() -> std::path::PathBuf {
     let out = std::path::PathBuf::from(
         std::env::var_os("TEKESUI_PANEL81_GPU_ARTIFACT_DIR")
-            .expect("set a fresh SSD Issue #81 GPU artifact directory"),
+            .expect("set a fresh Issue #81 GPU artifact directory"),
     );
-    assert!(out.starts_with("/Volumes/HP P900/DEV/TekesUI/artifacts/issue-81/"));
-    std::fs::create_dir_all(&out).expect("create SSD Panel GPU artifact directory");
+    assert!(
+        !out.as_os_str().is_empty()
+            && !out
+                .components()
+                .any(|c| c == std::path::Component::ParentDir),
+        "safe GPU artifact directory required"
+    );
+    std::fs::create_dir_all(&out).expect("create Panel GPU artifact directory");
     out
 }
 

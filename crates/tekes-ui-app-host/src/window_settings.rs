@@ -64,11 +64,18 @@ impl SettingsDisplayBinding {
             if state.preferences.is_none()
                 && let Some(owner) = self.owner.upgrade()
             {
-                let provider = owner.borrow().provider.clone();
+                let (provider, schema) = {
+                    let owner = owner.borrow();
+                    (owner.provider.clone(), owner.options.schema.clone())
+                };
                 let (sender, receiver) = mpsc::channel();
                 let read_wake = (*wake).clone();
                 std::thread::spawn(move || {
-                    let _ = sender.send(provider.load().map_err(|error| format!("{error:#}")));
+                    let _ = sender.send(
+                        provider
+                            .load_validated(&schema)
+                            .map_err(|error| format!("{error:#}")),
+                    );
                     read_wake.wake();
                 });
                 self.loading = Some(receiver);
@@ -570,11 +577,18 @@ impl Host {
         let Some(ticket) = owner.begin_load() else {
             return Ok(());
         };
-        let provider = owner.0.borrow().provider.clone();
+        let (provider, schema) = {
+            let owner = owner.0.borrow();
+            (owner.provider.clone(), owner.options.schema.clone())
+        };
         let (tx, rx) = mpsc::channel();
         let wake = w.wake_proxy();
         std::thread::spawn(move || {
-            let _ = tx.send(provider.load().map_err(|e| format!("{e:#}")));
+            let _ = tx.send(
+                provider
+                    .load_validated(&schema)
+                    .map_err(|e| format!("{e:#}")),
+            );
             wake.wake();
         });
         self.settings_loading = Some(SettingsLoad {
@@ -1271,6 +1285,7 @@ impl Host {
             &mut scene,
             context,
         )?;
+        let mut sidebar_content_rect = None;
         if frames[0].size.width > 32. {
             // The sidebar owns its fixed header and scrolling List padding,
             // just like Gallery navigation. Do not inset its List a second time.
@@ -1286,6 +1301,7 @@ impl Host {
                     leading as f32,
                 ),
             );
+            sidebar_content_rect = Some(rect);
             self.panels[0].bounds = frames[0];
             let panel = &mut self.panels[0];
             let local = panel.local.as_mut().unwrap();
@@ -1380,27 +1396,71 @@ impl Host {
         } else {
             None
         });
+        let mut cursor_regions = if !active || !input_open {
+            Vec::new()
+        } else if let Some(target) = self.open_toolbar()
+            && let Some(index) = self.toolbar_container(target)
+        {
+            self.panels[index]
+                .mounted_toolbar
+                .host
+                .content_host()
+                .text_cursor_regions()
+        } else {
+            let mut regions = Vec::new();
+            let state = shared_settings.borrow();
+            regions.extend(
+                state
+                    .form
+                    .host
+                    .text_cursor_regions()
+                    .into_iter()
+                    .filter_map(|r| r.intersection(&form_content)),
+            );
+            if let Some(sidebar_rect) = sidebar_content_rect {
+                regions.extend(
+                    state
+                        .sidebar
+                        .host
+                        .text_cursor_regions()
+                        .into_iter()
+                        .filter_map(|r| r.intersection(&sidebar_rect)),
+                );
+            }
+            regions
+        }
+        .into_iter()
+        .map(|r| tekes_ui_platform_macos::CursorRegion {
+            origin: tekes_ui_platform_macos::Point {
+                x: r.min_x().into(),
+                y: r.min_y().into(),
+            },
+            size: WindowSize {
+                width: r.size.width.into(),
+                height: r.size.height.into(),
+            },
+            icon: tekes_ui_platform_macos::CursorIcon::IBeam,
+        })
+        .collect::<Vec<_>>();
         let resize_regions = if self.leading_visible && !transitioning {
             self.outer_view.resize_regions(&self.outer)
         } else {
             vec![]
         };
-        w.set_cursor_regions(
-            resize_regions
-                .into_iter()
-                .map(|(r, _)| tekes_ui_platform_macos::CursorRegion {
-                    origin: tekes_ui_platform_macos::Point {
-                        x: r.min_x().into(),
-                        y: r.min_y().into(),
-                    },
-                    size: WindowSize {
-                        width: r.size.width.into(),
-                        height: r.size.height.into(),
-                    },
-                    icon: tekes_ui_platform_macos::CursorIcon::ResizeHorizontal,
-                })
-                .collect(),
-        );
+        cursor_regions.extend(resize_regions.into_iter().map(|(r, _)| {
+            tekes_ui_platform_macos::CursorRegion {
+                origin: tekes_ui_platform_macos::Point {
+                    x: r.min_x().into(),
+                    y: r.min_y().into(),
+                },
+                size: WindowSize {
+                    width: r.size.width.into(),
+                    height: r.size.height.into(),
+                },
+                icon: tekes_ui_platform_macos::CursorIcon::ResizeHorizontal,
+            }
+        }));
+        w.set_cursor_regions(cursor_regions);
         let animate = (self.acceptance_shared.as_ref().is_some_and(|s| {
             !matches!(
                 s.stage(),
@@ -1539,7 +1599,7 @@ impl Host {
             && self
                 .settings
                 .as_ref()
-                .is_some_and(|state| state.borrow().sidebar.host.focused() == Some(ComponentId(6)))
+                .is_some_and(|state| state.borrow().sidebar.host.focused().is_some())
             && self
                 .settings
                 .as_ref()
@@ -1614,10 +1674,18 @@ impl Host {
                     position: Point::new(s.position.x as f32, s.position.y as f32),
                     delta: Point::new(-s.delta.x as f32, -s.delta.y as f32),
                     precise: s.precise,
-                    begin: false,
-                    end: false,
-                    momentum: false,
-                    time: self.motion_epoch.elapsed().as_secs_f64(),
+                    begin: matches!(s.phase, tekes_ui_platform_macos::ScrollPhase::Began),
+                    end: matches!(
+                        s.phase,
+                        tekes_ui_platform_macos::ScrollPhase::Ended
+                            | tekes_ui_platform_macos::ScrollPhase::Cancelled
+                    ),
+                    momentum: s.momentum_phase != tekes_ui_platform_macos::ScrollPhase::None,
+                    time: if s.timestamp > 0.0 {
+                        s.timestamp
+                    } else {
+                        self.motion_epoch.elapsed().as_secs_f64()
+                    },
                 };
                 if self.leading_visible
                     && self.settings_frames.first().is_some_and(|r| {
@@ -1643,26 +1711,48 @@ impl Host {
                     .host
                     .focused_text()
                     .is_some_and(|s| s.input.marked.is_some());
-                if key.kind == KeyEventKind::Down
-                    && key.modifiers.command
-                    && settings.form.host.focused_text().is_some()
-                {
-                    let command = match key
-                        .characters_ignoring_modifiers
-                        .to_ascii_lowercase()
-                        .as_str()
-                    {
-                        "a" => Some("selectAll:"),
-                        "z" => Some(if key.modifiers.shift {
-                            "redo:"
-                        } else {
-                            "undo:"
-                        }),
-                        _ => None,
-                    };
-                    if key.characters_ignoring_modifiers == "z"
-                        && settings.form.host.focused_text().is_none()
-                    {
+                if key.kind == KeyEventKind::Down && key.modifiers.command {
+                    let shortcut = key.characters_ignoring_modifiers.to_ascii_lowercase();
+                    if settings.form.host.focused_text().is_some() {
+                        match shortcut.as_str() {
+                            "a" => {
+                                routed = Some(ContentEvent::TextCommand("selectAll:".into()));
+                            }
+                            "z" => {
+                                routed = Some(ContentEvent::TextCommand(
+                                    if key.modifiers.shift {
+                                        "redo:"
+                                    } else {
+                                        "undo:"
+                                    }
+                                    .into(),
+                                ));
+                            }
+                            "c" | "x" => {
+                                if let Some(surface) = settings.form.host.focused_text()
+                                    && !surface.input.selection().is_empty()
+                                {
+                                    w.set_clipboard_text(&surface.input.selected_text());
+                                    if shortcut == "x" {
+                                        routed = Some(ContentEvent::TextCommand(
+                                            "deleteBackward:".into(),
+                                        ));
+                                    }
+                                }
+                            }
+                            "v" => {
+                                if let Some(text) = w.clipboard_text() {
+                                    routed = Some(ContentEvent::Commit {
+                                        text,
+                                        replacement: None,
+                                    });
+                                }
+                            }
+                            _ => {
+                                routed = Some(ContentEvent::KeyInput(toolbar_key(key.clone())));
+                            }
+                        }
+                    } else if shortcut == "z" {
                         if let Some(source) = settings.toolbar_source.clone() {
                             settings.undo_action(
                                 if key.modifiers.shift {
@@ -1672,26 +1762,6 @@ impl Host {
                                 },
                                 &source,
                             )?;
-                        }
-                    } else if let Some(command) = command {
-                        routed = Some(ContentEvent::TextCommand(command.into()));
-                    } else if key.characters_ignoring_modifiers == "c"
-                        || key.characters_ignoring_modifiers == "x"
-                    {
-                        if let Some(surface) = settings.form.host.focused_text()
-                            && !surface.input.selection().is_empty()
-                        {
-                            w.set_clipboard_text(&surface.input.selected_text());
-                            if key.characters_ignoring_modifiers == "x" {
-                                routed = Some(ContentEvent::TextCommand("deleteBackward:".into()));
-                            }
-                        }
-                    } else if key.characters_ignoring_modifiers == "v" {
-                        if let Some(text) = w.clipboard_text() {
-                            routed = Some(ContentEvent::Commit {
-                                text,
-                                replacement: None,
-                            });
                         }
                     } else {
                         routed = Some(ContentEvent::KeyInput(toolbar_key(key.clone())));
@@ -1821,8 +1891,11 @@ impl Host {
                 return Ok(false);
             }
             Event::QuitRequested => {
-                settings.close_requested();
-                settings.intents(vec![], w.wake_proxy())?;
+                if settings.close_requested() {
+                    w.close();
+                } else {
+                    settings.intents(vec![], w.wake_proxy())?;
+                }
                 w.request_redraw();
                 return Ok(true);
             }
@@ -2529,7 +2602,6 @@ mod pinned_header_tests {
         sidebar.event(&ContentEvent::PointerDown(chip));
         sidebar.event(&ContentEvent::PointerUp(chip));
         sidebar
-            .host
             .event_with_text(
                 &ContentEvent::Commit {
                     text: "行距倍数".into(),
@@ -2553,6 +2625,23 @@ mod pinned_header_tests {
         sidebar.select(&route);
         render_header(&mut sidebar, &mut text, frame);
         sidebar.event(&ContentEvent::PointerUp(result));
+        assert!(sidebar.host.get(ComponentId(6)).is_some());
+        assert_eq!(sidebar.host.focused(), Some(ComponentId(103)));
+        {
+            let list = sidebar
+                .host
+                .get(ComponentId(103))
+                .unwrap()
+                .component::<tekes_ui_controls::composition::KeyedSelectableListContent>()
+                .unwrap();
+            assert_eq!(list.semantic_parts().len(), 1);
+            assert_eq!(
+                list.selected_key(),
+                Some(tekes_ui_controls::extended::ListItemKey(3))
+            );
+        }
+        assert!(sidebar.cancel_search().unwrap());
+        render_header(&mut sidebar, &mut text, frame);
         assert!(sidebar.host.get(ComponentId(6)).is_none());
         assert!(sidebar.host.get(ComponentId(4)).is_some());
         assert!(sidebar.host.get(ComponentId(10)).is_some());
@@ -4055,9 +4144,14 @@ mod form_keyboard_owner_tests {
             "Retained draft"
         );
         assert_eq!(state.sidebar.host.focused(), None);
+        assert!(state.sidebar.host.get(ComponentId(6)).is_some());
+        drop(state);
+        assert!(surface.borrow_mut().sidebar.cancel_search().unwrap());
+        let state = surface.borrow();
         assert!(state.sidebar.host.get(ComponentId(6)).is_none());
         assert!(state.sidebar.host.get(ComponentId(4)).is_some());
         assert!(state.sidebar.host.get(ComponentId(10)).is_some());
+        assert_eq!(state.form.host.focused(), Some(ComponentId(100)));
         drop(state);
         drop(host);
         drop(surface);

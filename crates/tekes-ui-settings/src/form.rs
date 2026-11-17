@@ -1,15 +1,15 @@
 use crate::{Draft, FieldPresentation, FieldType, Schema};
 #[path = "form_row.rs"]
 mod form_row;
-use anyhow::Result;
+use anyhow::{Context as _, Result};
 use tekes_ui_controls::{
     Button, ButtonTextRenderer, ScrollArea, TextSurface, TextSurfaceAlignment,
     TextSurfacePresentation,
     composition::{
-        ComponentId, Content, ContentActionPayload, ContentEvent, ContentHost, DecimalNumberFormat,
-        MenuContent, MenuEntry, NumberCommitReason, NumberFieldContent, NumberValidation,
-        RadioGroupContent, ScrollContent, StackContent, SwitchContent, TextContent,
-        TextFieldContent,
+        Component, ComponentId, Content, ContentActionPayload, ContentEvent, ContentHost,
+        DecimalNumberFormat, MenuContent, MenuEntry, NumberCommitReason, NumberFieldContent,
+        NumberFormat, NumberParseError, NumberValidation, RadioGroupContent, ScrollContent,
+        StackContent, SwitchContent, TextContent, TextFieldContent,
     },
     extended::{Axis, Stack},
 };
@@ -20,11 +20,120 @@ const STATUS: ComponentId = ComponentId(2);
 const RESET: ComponentId = ComponentId(3);
 const CANCEL: ComponentId = ComponentId(4);
 const APPLY: ComponentId = ComponentId(5);
+const DISCARD: ComponentId = ComponentId(6);
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum FormIntent {
     Apply,
     Cancel,
     Reset,
+    Discard,
+}
+/// Number formatter for integer fields that rejects fractional decimal input.
+#[derive(Clone, Debug, Default)]
+struct IntegerNumberFormat {
+    suffix: String,
+}
+impl IntegerNumberFormat {
+    fn strip_suffix<'a>(&self, text: &'a str) -> &'a str {
+        if self.suffix.is_empty() {
+            text.trim()
+        } else if let Some(stem) = text.strip_suffix(&self.suffix) {
+            stem.trim()
+        } else if let Some(stem) = text.trim().strip_suffix(&self.suffix) {
+            stem.trim()
+        } else if !self.suffix.trim().is_empty()
+            && let Some(stem) = text.trim().strip_suffix(self.suffix.trim())
+        {
+            stem.trim()
+        } else {
+            text.trim()
+        }
+    }
+}
+impl NumberFormat for IntegerNumberFormat {
+    fn width_sample(&self, digits: &str) -> String {
+        format!("{digits}{}", self.suffix)
+    }
+    fn format(&self, value: f64) -> String {
+        if value.is_finite()
+            && value.fract() == 0.0
+            && value >= i64::MIN as f64
+            && value <= i64::MAX as f64
+        {
+            format!("{}{}", value as i64, self.suffix)
+        } else {
+            format!("{value}{}", self.suffix)
+        }
+    }
+    fn parse(&self, text: &str) -> std::result::Result<f64, NumberParseError> {
+        let text = self.strip_suffix(text);
+        if text.is_empty() || matches!(text, "+" | "-") {
+            return Err(NumberParseError::Incomplete);
+        }
+        if !text
+            .bytes()
+            .enumerate()
+            .all(|(i, byte)| byte.is_ascii_digit() || (i == 0 && matches!(byte, b'+' | b'-')))
+        {
+            return Err(NumberParseError::Invalid);
+        }
+        let value = text.parse::<i64>().map_err(|_| NumberParseError::Invalid)?;
+        let as_f64 = value as f64;
+        if as_f64.is_finite() && as_f64 as i64 == value {
+            Ok(as_f64)
+        } else {
+            Err(NumberParseError::Invalid)
+        }
+    }
+}
+fn validated_numeric_default(field: &crate::Field) -> Result<f64> {
+    field
+        .default
+        .as_float()
+        .or_else(|| field.default.as_integer().map(|v| v as f64))
+        .or(field.min)
+        .filter(|v| v.is_finite())
+        .with_context(|| format!("{}: invalid numeric default", field.id))
+}
+fn parse_valid_numeric(field: &crate::Field, raw: &str) -> Option<f64> {
+    field
+        .parse_input(raw)
+        .ok()
+        .and_then(|v| v.as_float().or_else(|| v.as_integer().map(|i| i as f64)))
+        .filter(|v| v.is_finite())
+}
+fn build_number_control(field: &crate::Field, initial: f64) -> Result<NumberFieldContent> {
+    let min = field
+        .min
+        .with_context(|| format!("{}: missing numeric min", field.id))?;
+    let max = field
+        .max
+        .with_context(|| format!("{}: missing numeric max", field.id))?;
+    let step = field.step.unwrap_or(1.);
+    match field.kind {
+        FieldType::Integer => NumberFieldContent::new(
+            &field.label,
+            initial,
+            min,
+            max,
+            step,
+            IntegerNumberFormat {
+                suffix: field.suffix.clone(),
+            },
+        ),
+        FieldType::Decimal => NumberFieldContent::new(
+            &field.label,
+            initial,
+            min,
+            max,
+            step,
+            DecimalNumberFormat {
+                suffix: field.suffix.clone(),
+            },
+        ),
+        _ => None,
+    }
+    .with_context(|| format!("{}: invalid numeric control configuration", field.id))
 }
 /// One persistent component tree. Drafts contain values; TextField owns editing/IME.
 #[derive(Debug)]
@@ -56,6 +165,7 @@ impl SettingsForm {
         Self::build(schema, draft, true)
     }
     fn build(schema: &Schema, draft: &Draft, autosave: bool) -> Result<Self> {
+        schema.validate_snapshot(&draft.base)?;
         let ids: Vec<_> = (0..schema.settings.len())
             .map(|i| ComponentId(100 + i as u64))
             .collect();
@@ -64,7 +174,7 @@ impl SettingsForm {
             draft: &Draft,
             ids: &[ComponentId],
             parent: Option<&str>,
-        ) -> Vec<Content> {
+        ) -> Result<Vec<Content>> {
             let mut children = vec![];
             for (group_index, group) in schema
                 .groups
@@ -91,9 +201,8 @@ impl SettingsForm {
                                 f.options.iter().map(|o| o.label.clone()).collect(),
                             );
                             radio.set_axis(Axis::Horizontal);
-                            radio
-                                .set_selected(f.options.iter().position(|o| o.value == raw))
-                                .expect("validated enum selection");
+                            let _ =
+                                radio.set_selected(f.options.iter().position(|o| o.value == raw));
                             Content::new(ids[index], radio)
                         }
                         FieldType::Enum => {
@@ -109,26 +218,31 @@ impl SettingsForm {
                                     .map(|o| MenuEntry::item(&o.value, &o.label))
                                     .collect(),
                             )
-                            .expect("validated enum");
+                            .map_err(|e| anyhow::anyhow!("Settings menu: {e:?}"))?;
                             Content::new(ids[index], menu)
                         }
                         FieldType::Integer | FieldType::Decimal
                             if f.step.is_some() || !f.suffix.is_empty() =>
                         {
-                            let mut number = NumberFieldContent::new(
-                                &f.label,
-                                raw.parse().expect("validated numeric value"),
-                                f.min.unwrap(),
-                                f.max.unwrap(),
-                                f.step.unwrap_or(1.),
-                                DecimalNumberFormat {
-                                    suffix: f.suffix.clone(),
-                                },
-                            )
-                            .expect("validated numeric configuration");
+                            let parsed = parse_valid_numeric(f, &raw);
+                            let initial = match parsed {
+                                Some(value) => value,
+                                None => validated_numeric_default(f)?,
+                            };
+                            let mut number = build_number_control(f, initial)?;
                             number.set_input_digits(3);
                             number.set_alignment(TextSurfaceAlignment::Trailing);
                             number.set_borderless(true);
+                            if parsed.is_none() {
+                                number.set_focus(true, false);
+                                number.event(&ContentEvent::TextCommand("selectAll:".into()));
+                                number.event(&ContentEvent::Commit {
+                                    text: raw.clone(),
+                                    replacement: None,
+                                });
+                                number.set_focus(false, false);
+                                let _ = number.drain_value_changes();
+                            }
                             Content::new(ids[index], number)
                         }
                         _ => {
@@ -145,7 +259,7 @@ impl SettingsForm {
                         Content::new(ComponentId(base + 1), TextContent::new(&f.label))
                             .with_help(&f.description)
                             .with_label_layout(Default::default())
-                            .expect("Text label supports wrapping"),
+                            .map_err(|e| anyhow::anyhow!("Text label layout: {e:?}"))?,
                     ];
                     rows.push(Content::new(
                         ComponentId(base),
@@ -171,11 +285,11 @@ impl SettingsForm {
                         },
                     ));
                 }
-                children.extend(groups(schema, draft, ids, Some(&group.id)));
+                children.extend(groups(schema, draft, ids, Some(&group.id))?);
             }
-            children
+            Ok(children)
         }
-        let children = groups(schema, draft, &ids, None);
+        let children = groups(schema, draft, &ids, None)?;
         let mut scroll =
             ScrollContent::new(ScrollArea::default(), stack(20, Axis::Vertical, children));
         scroll.viewport_height = Some(390.);
@@ -304,6 +418,7 @@ impl SettingsForm {
                 APPLY => Some(FormIntent::Apply),
                 CANCEL => Some(FormIntent::Cancel),
                 RESET => Some(FormIntent::Reset),
+                DISCARD => Some(FormIntent::Discard),
                 _ => None,
             })
             .collect()
@@ -390,6 +505,20 @@ impl SettingsForm {
                 .is_some_and(|m| m.menu.is_open())
         })
     }
+    pub fn cancel_edits(&mut self) {
+        self.host.cancel();
+        self.host.focus(None, false);
+        for id in &self.field_ids {
+            if let Some(number) = self
+                .host
+                .get_mut(*id)
+                .and_then(|node| node.component_mut::<NumberFieldContent>())
+            {
+                number.cancel_edit();
+                let _ = number.drain_value_changes();
+            }
+        }
+    }
     pub fn replace_values(&mut self, schema: &Schema, draft: &Draft) {
         self.host.cancel();
         self.host.focus(None, false);
@@ -401,14 +530,19 @@ impl SettingsForm {
                 field.surface.presentation = TextSurfacePresentation::Content;
                 field.surface.alignment = TextSurfaceAlignment::Trailing;
             } else if let Some(number) = node.component_mut::<NumberFieldContent>() {
+                // Drain any commit generated by the blur above before syncing the target value.
+                let _ = number.drain_value_changes();
                 // Preserve a genuinely newer in-progress edit during history reconciliation.
-                let _ = number.set_value(raw.parse().expect("validated numeric snapshot"));
+                let target =
+                    parse_valid_numeric(f, &raw).or_else(|| validated_numeric_default(f).ok());
+                if let Some(target) = target {
+                    let _ = number.set_value(target);
+                }
+                let _ = number.drain_value_changes();
             } else if let Some(switch) = node.component_mut::<SwitchContent>() {
                 switch.model.checked = raw == "true";
             } else if let Some(radio) = node.component_mut::<RadioGroupContent>() {
-                radio
-                    .set_selected(f.options.iter().position(|o| o.value == raw))
-                    .expect("validated enum snapshot");
+                let _ = radio.set_selected(f.options.iter().position(|o| o.value == raw));
             } else if let Some(menu) = node.component_mut::<MenuContent>() {
                 let label = f
                     .options
@@ -416,17 +550,16 @@ impl SettingsForm {
                     .find(|o| o.value == raw)
                     .map_or(raw.as_str(), |o| o.label.as_str());
                 *menu = MenuContent::new(label, vec![]);
-                menu.set_entries(
+                let _ = menu.set_entries(
                     f.options
                         .iter()
                         .map(|o| MenuEntry::item(&o.value, &o.label))
                         .collect(),
-                )
-                .expect("validated enum");
+                );
             }
         }
     }
-    /// A transient error/retry row appears only when saving needs attention.
+    /// A transient error/retry/discard row appears only when saving needs attention.
     pub fn save_error(&mut self, message: Option<&str>, busy: bool) {
         if !self.autosave {
             return;
@@ -436,19 +569,23 @@ impl SettingsForm {
             return;
         }
         self.save_error = state;
-        let root = self
-            .host
-            .get_mut(ROOT)
-            .unwrap()
-            .component_mut::<StackContent>()
-            .unwrap();
-        root.children.retain(|c| c.id() == ComponentId(11));
+        let _ = self.host.remove(STATUS);
+        let _ = self.host.remove(APPLY);
+        let _ = self.host.remove(DISCARD);
         if let Some(message) = message {
-            root.children
-                .push(Content::new(STATUS, TextContent::new(message)));
+            self.host
+                .insert(ROOT, Content::new(STATUS, TextContent::new(message)))
+                .expect("Settings root accepts error status");
             let mut retry = Button::new("Retry");
             retry.button.state.disabled = busy;
-            root.children.push(Content::new(APPLY, retry));
+            self.host
+                .insert(ROOT, Content::new(APPLY, retry))
+                .expect("Settings root accepts retry button");
+            let mut discard = Button::new("Discard");
+            discard.button.state.disabled = busy;
+            self.host
+                .insert(ROOT, Content::new(DISCARD, discard))
+                .expect("Settings root accepts discard button");
         }
     }
     pub fn status(&mut self, message: &str, dirty: bool, busy: bool) {
