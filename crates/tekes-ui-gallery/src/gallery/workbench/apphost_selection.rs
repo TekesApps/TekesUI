@@ -110,7 +110,7 @@ pub(super) fn matrix(renderer: &'static str) -> Vec<Content> {
     if matches!(renderer, "toolbar" | "number-field" | "tabs") {
         return super::basic_states::apphost_matrix(renderer);
     }
-    let content: Vec<Content> = extended::matrix_states(renderer)
+    extended::matrix_states(renderer)
         .into_iter()
         .enumerate()
         .flat_map(|(i, (name, state))| {
@@ -126,17 +126,7 @@ pub(super) fn matrix(renderer: &'static str) -> Vec<Content> {
                 ),
             ]
         })
-        .collect();
-    #[cfg(any(test, feature = "composition-review"))]
-    let content = {
-        let mut content = content;
-        if renderer == "slider" {
-            // Original independent fixture applies Increment then Right: 50 -> 60.
-            content.push(tekes_ui_composition_consumer::slider_content::fixture_content(60.));
-        }
-        content
-    };
-    content
+        .collect()
 }
 pub(super) fn playground(renderer: &str, state: &StoryState) -> Vec<Content> {
     if renderer == "command-palette" {

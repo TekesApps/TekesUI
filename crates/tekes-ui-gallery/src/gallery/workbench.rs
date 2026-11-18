@@ -5,7 +5,7 @@ mod master_host;
 mod select_story;
 #[cfg(test)]
 mod select_story_tests;
-#[cfg(feature = "composition-review")]
+#[cfg(feature = "selftest")]
 pub(crate) mod settings_native207;
 use select_story::SelectStoryHost;
 mod apphost_actions;
@@ -32,8 +32,6 @@ pub(super) mod apphost_story;
 pub(crate) mod apphost_text_pages;
 mod basic_states;
 mod brand_preview;
-#[cfg(any(test, feature = "composition-review"))]
-pub(super) mod content_status;
 #[cfg(test)]
 mod draft_capture;
 mod durable_draft;
@@ -3134,17 +3132,6 @@ impl Workbench {
                 }
             }
             y = body.max_y() + 24.;
-        }
-        #[cfg(any(test, feature = "composition-review"))]
-        if e.renderer() == "tabs" {
-            y = content_status::matrix(
-                tekes_ui_composition_consumer::content_status::Kind::Tabs,
-                s,
-                ctx,
-                scene,
-                c,
-                y + 24.,
-            );
         }
         s.document_bottom = y;
         s.hits.retain(|(id, _)| *id <= 6);

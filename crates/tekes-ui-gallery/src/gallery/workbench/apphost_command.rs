@@ -92,13 +92,8 @@ impl Component for Fixture {
         }
         self.control.paint(s, &mut FixtureText(t), f, c, theme);
         self.control.view.options.set_reduced_motion(true);
-        self.control.paint_overlay(
-            s,
-            &mut FixtureText(t),
-            f,
-            c.intersection(&f).unwrap_or_default(),
-            theme,
-        );
+        self.control
+            .paint_overlay(s, &mut FixtureText(t), f, c, theme);
         let message = if self.title == "Selected · last executed command" {
             Some(format!("Last command: {}", self.control.model.combo.query))
         } else if self.open && self.control.model.combo.filtered().is_empty() {
@@ -119,7 +114,7 @@ impl Component for Fixture {
     }
 }
 pub(super) fn matrix() -> Vec<Content> {
-    let rows: Vec<_> = CASES
+    CASES
         .into_iter()
         .enumerate()
         .flat_map(|(i, (title, query, open, disabled))| {
@@ -175,56 +170,5 @@ pub(super) fn matrix() -> Vec<Content> {
                 ),
             ]
         })
-        .collect();
-    #[cfg(any(test, feature = "composition-review"))]
-    let rows = {
-        use std::{cell::Cell, rc::Rc};
-        use tekes_ui_composition_consumer::{
-            command_status::fixture_content, content_status::Status,
-        };
-        let mut rows = rows;
-        for (i, (status, cached, title)) in [
-            (
-                Status::Loading,
-                true,
-                "Loading commands · retained query consumer",
-            ),
-            (
-                Status::Error,
-                true,
-                "Refresh failed · query and commands retained",
-            ),
-            (
-                Status::Loading,
-                false,
-                "Initial command lookup · no cached results",
-            ),
-        ]
-        .into_iter()
-        .enumerate()
-        {
-            let base = 121300 + i as u64 * 10;
-            rows.push(Content::new(ComponentId(base), TextContent::new(title)));
-            rows.push(fixture_content(
-                [
-                    ComponentId(base + 1),
-                    ComponentId(base + 2),
-                    ComponentId(base + 3),
-                ],
-                if cached {
-                    vec![
-                        "Open file".into(),
-                        "Open settings".into(),
-                        "Close window".into(),
-                    ]
-                } else {
-                    vec![]
-                },
-                Rc::new(Cell::new(status)),
-                Some("Open"),
-            ));
-        }
-        rows
-    };
-    rows
+        .collect()
 }

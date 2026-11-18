@@ -108,7 +108,7 @@ impl AppHostDocuments {
             .content_padding(16.),
         )
     }
-    fn select_section(&mut self, section: usize) {
+    pub(crate) fn select_section(&mut self, section: usize) {
         if self.section == section {
             return;
         }

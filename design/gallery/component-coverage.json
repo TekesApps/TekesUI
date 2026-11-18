@@ -459,42 +459,24 @@
         },
         {
           "state": "loading",
-          "fixture": "source-reviewed",
+          "fixture": "unverified",
           "runtime": "public-api-verified",
           "experience": "unverified",
-          "note": "Real caller-owned public composition, distinct content status and header focus; scoped API evidence, no builtin adapter/default Gallery migration/native AX claim.",
-          "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench/content_status.rs",
-            "anchor": "pub(crate) const CASES:",
-            "story": "states",
-            "note": "Actual independent consumer appears in existing States routes for tests and explicit composition-review build.Uses public Progress/Banner/EmptyState and retained input/active contract; default Gallery remains unchanged."
-          }
+          "note": "Caller-owned status/refresh fixture lives in standalone examples/composition-consumer and is no longer injected into Gallery behind composition-review/test gating; Gallery renders identical component trees under cargo run and cargo test."
         },
         {
           "state": "error",
-          "fixture": "source-reviewed",
+          "fixture": "unverified",
           "runtime": "public-api-verified",
           "experience": "unverified",
-          "note": "Real caller-owned public composition, distinct content status and header focus; scoped API evidence, no builtin adapter/default Gallery migration/native AX claim.",
-          "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench/content_status.rs",
-            "anchor": "pub(crate) const CASES:",
-            "story": "states",
-            "note": "Actual independent consumer appears in existing States routes for tests and explicit composition-review build.Uses public Progress/Banner/EmptyState and retained input/active contract; default Gallery remains unchanged."
-          }
+          "note": "Caller-owned status/refresh fixture lives in standalone examples/composition-consumer and is no longer injected into Gallery behind composition-review/test gating; Gallery renders identical component trees under cargo run and cargo test."
         },
         {
           "state": "empty",
-          "fixture": "source-reviewed",
+          "fixture": "unverified",
           "runtime": "public-api-verified",
           "experience": "unverified",
-          "note": "Real caller-owned public composition, distinct content status and header focus; scoped API evidence, no builtin adapter/default Gallery migration/native AX claim.",
-          "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench/content_status.rs",
-            "anchor": "pub(crate) const CASES:",
-            "story": "states",
-            "note": "Actual independent consumer appears in existing States routes for tests and explicit composition-review build.Uses public Progress/Banner/EmptyState and retained input/active contract; default Gallery remains unchanged."
-          }
+          "note": "Caller-owned status/refresh fixture lives in standalone examples/composition-consumer and is no longer injected into Gallery behind composition-review/test gating; Gallery renders identical component trees under cargo run and cargo test."
         }
       ],
       "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/content-status.json",
@@ -1713,29 +1695,17 @@
         },
         {
           "state": "loading",
-          "fixture": "source-reviewed",
+          "fixture": "unverified",
           "runtime": "public-api-verified",
           "experience": "unverified",
-          "note": "Independent retained query refresh reuses original TextFieldContent/ComboBoxView and existing Progress/Banner. IME/draft/selection/focus/value/candidate retained for status-only updates; async failure distinct from field validation; four themes/three brands. Live native async/motion/AX incomplete.",
-          "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
-            "anchor": "fn combo_box(",
-            "story": "states",
-            "note": "Measured independent caller with real original components mounted through ContentHost; composition-review/test gated; no new async runtime protocol or token."
-          }
+          "note": "Caller-owned status/refresh fixture lives in standalone examples/composition-consumer and is no longer injected into Gallery behind composition-review/test gating; Gallery renders identical component trees under cargo run and cargo test."
         },
         {
           "state": "error",
-          "fixture": "source-reviewed",
+          "fixture": "unverified",
           "runtime": "public-api-verified",
           "experience": "unverified",
-          "note": "Independent retained query refresh reuses original TextFieldContent/ComboBoxView and existing Progress/Banner. IME/draft/selection/focus/value/candidate retained for status-only updates; async failure distinct from field validation; four themes/three brands. Live native async/motion/AX incomplete.",
-          "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
-            "anchor": "fn combo_box(",
-            "story": "states",
-            "note": "Measured independent caller with real original components mounted through ContentHost; composition-review/test gated; no new async runtime protocol or token."
-          }
+          "note": "Caller-owned status/refresh fixture lives in standalone examples/composition-consumer and is no longer injected into Gallery behind composition-review/test gating; Gallery renders identical component trees under cargo run and cargo test."
         },
         {
           "state": "open",
@@ -1812,12 +1782,12 @@
           "fixture": "source-reviewed",
           "runtime": "public-api-verified",
           "experience": "unverified",
-          "note": "Original SliderView plus public SliderContent in independent ContentHost; real range/actions/ownership and CoreText sibling; actual token reads four themes/three brands. Shared range adapter implemented; native role/bounds/actions bridge compiled, actual AX/VoiceOver not accepted.",
+          "note": "Original SliderView in Gallery plus standalone SliderContent in examples/composition-consumer; real range/actions/ownership and CoreText sibling; actual token reads four themes/three brands. Shared range adapter implemented; native role/bounds/actions bridge compiled, actual AX/VoiceOver not accepted.",
           "evidence": {
             "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
             "anchor": "\"slider\" => vec![",
             "story": "states",
-            "note": "Original View state matrix plus composition-review/test public SliderContent specimen; independent consumer confirms original model/view and retained Content IDs. Native AX acceptance separate."
+            "note": "Original SliderView state matrix in Gallery; independent public SliderContent consumer fixture lives in standalone examples/composition-consumer/src/slider_content.rs."
           }
         },
         {
@@ -1825,12 +1795,12 @@
           "fixture": "source-reviewed",
           "runtime": "public-api-verified",
           "experience": "unverified",
-          "note": "Original SliderView plus public SliderContent in independent ContentHost; real range/actions/ownership and CoreText sibling; actual token reads four themes/three brands. Shared range adapter implemented; native role/bounds/actions bridge compiled, actual AX/VoiceOver not accepted.",
+          "note": "Original SliderView in Gallery plus standalone SliderContent in examples/composition-consumer; real range/actions/ownership and CoreText sibling; actual token reads four themes/three brands. Shared range adapter implemented; native role/bounds/actions bridge compiled, actual AX/VoiceOver not accepted.",
           "evidence": {
             "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
             "anchor": "\"slider\" => vec![",
             "story": "states",
-            "note": "Original View state matrix plus composition-review/test public SliderContent specimen; independent consumer confirms original model/view and retained Content IDs. Native AX acceptance separate."
+            "note": "Original SliderView state matrix in Gallery; independent public SliderContent consumer fixture lives in standalone examples/composition-consumer/src/slider_content.rs."
           }
         },
         {
@@ -1838,12 +1808,12 @@
           "fixture": "source-reviewed",
           "runtime": "public-api-verified",
           "experience": "unverified",
-          "note": "Original SliderView plus public SliderContent in independent ContentHost; real range/actions/ownership and CoreText sibling; actual token reads four themes/three brands. Shared range adapter implemented; native role/bounds/actions bridge compiled, actual AX/VoiceOver not accepted.",
+          "note": "Original SliderView in Gallery plus standalone SliderContent in examples/composition-consumer; real range/actions/ownership and CoreText sibling; actual token reads four themes/three brands. Shared range adapter implemented; native role/bounds/actions bridge compiled, actual AX/VoiceOver not accepted.",
           "evidence": {
             "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
             "anchor": "\"slider\" => vec![",
             "story": "states",
-            "note": "Original View state matrix plus composition-review/test public SliderContent specimen; independent consumer confirms original model/view and retained Content IDs. Native AX acceptance separate."
+            "note": "Original SliderView state matrix in Gallery; independent public SliderContent consumer fixture lives in standalone examples/composition-consumer/src/slider_content.rs."
           }
         },
         {
@@ -1851,12 +1821,12 @@
           "fixture": "source-reviewed",
           "runtime": "public-api-verified",
           "experience": "unverified",
-          "note": "Original SliderView plus public SliderContent in independent ContentHost; real range/actions/ownership and CoreText sibling; actual token reads four themes/three brands. Shared range adapter implemented; native role/bounds/actions bridge compiled, actual AX/VoiceOver not accepted.",
+          "note": "Original SliderView in Gallery plus standalone SliderContent in examples/composition-consumer; real range/actions/ownership and CoreText sibling; actual token reads four themes/three brands. Shared range adapter implemented; native role/bounds/actions bridge compiled, actual AX/VoiceOver not accepted.",
           "evidence": {
             "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
             "anchor": "\"slider\" => vec![",
             "story": "states",
-            "note": "Original View state matrix plus composition-review/test public SliderContent specimen; independent consumer confirms original model/view and retained Content IDs. Native AX acceptance separate."
+            "note": "Original SliderView state matrix in Gallery; independent public SliderContent consumer fixture lives in standalone examples/composition-consumer/src/slider_content.rs."
           }
         },
         {
@@ -1864,12 +1834,12 @@
           "fixture": "source-reviewed",
           "runtime": "public-api-verified",
           "experience": "unverified",
-          "note": "Original SliderView plus public SliderContent in independent ContentHost; real range/actions/ownership and CoreText sibling; actual token reads four themes/three brands. Shared range adapter implemented; native role/bounds/actions bridge compiled, actual AX/VoiceOver not accepted.",
+          "note": "Original SliderView in Gallery plus standalone SliderContent in examples/composition-consumer; real range/actions/ownership and CoreText sibling; actual token reads four themes/three brands. Shared range adapter implemented; native role/bounds/actions bridge compiled, actual AX/VoiceOver not accepted.",
           "evidence": {
             "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
             "anchor": "\"slider\" => vec![",
             "story": "states",
-            "note": "Original View state matrix plus composition-review/test public SliderContent specimen; independent consumer confirms original model/view and retained Content IDs. Native AX acceptance separate."
+            "note": "Original SliderView state matrix in Gallery; independent public SliderContent consumer fixture lives in standalone examples/composition-consumer/src/slider_content.rs."
           }
         },
         {
@@ -1877,12 +1847,12 @@
           "fixture": "source-reviewed",
           "runtime": "public-api-verified",
           "experience": "unverified",
-          "note": "Original SliderView plus public SliderContent in independent ContentHost; real range/actions/ownership and CoreText sibling; actual token reads four themes/three brands. Shared range adapter implemented; native role/bounds/actions bridge compiled, actual AX/VoiceOver not accepted.",
+          "note": "Original SliderView in Gallery plus standalone SliderContent in examples/composition-consumer; real range/actions/ownership and CoreText sibling; actual token reads four themes/three brands. Shared range adapter implemented; native role/bounds/actions bridge compiled, actual AX/VoiceOver not accepted.",
           "evidence": {
             "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
             "anchor": "\"slider\" => vec![",
             "story": "states",
-            "note": "Original View state matrix plus composition-review/test public SliderContent specimen; independent consumer confirms original model/view and retained Content IDs. Native AX acceptance separate."
+            "note": "Original SliderView state matrix in Gallery; independent public SliderContent consumer fixture lives in standalone examples/composition-consumer/src/slider_content.rs."
           }
         }
       ],
@@ -2610,29 +2580,17 @@
         },
         {
           "state": "loading",
-          "fixture": "source-reviewed",
+          "fixture": "unverified",
           "runtime": "public-api-verified",
           "experience": "unverified",
-          "note": "Independent caller background refresh with cached options: original SelectView split paint, ContentHost/Stack and shared Progress/Banner; retains selected value/focus/candidate; async failure differs from validation. Four themes/three brands. Live native async interaction and full motion remain unverified. Gallery consumer specimens are explicitly composition-review/test gated; default Gallery states do not include this experimental caller integration.",
-          "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
-            "anchor": "fn select(",
-            "story": "states",
-            "note": "Measured independent public Select consumer for loading and refresh failure; real original View mounted through Component/ContentHost; no new runtime status or token. Explicit composition-review/test gate reuses existing consumer review boundary."
-          }
+          "note": "Caller-owned status/refresh fixture lives in standalone examples/composition-consumer and is no longer injected into Gallery behind composition-review/test gating; Gallery renders identical component trees under cargo run and cargo test."
         },
         {
           "state": "error",
-          "fixture": "source-reviewed",
+          "fixture": "unverified",
           "runtime": "public-api-verified",
           "experience": "unverified",
-          "note": "Original SelectView: empty options cancel popup/press without inventing a value; validation error projects existing shared boundary and permits repair. Four themes/three brands; async content failure/loading and full experience remain separate.",
-          "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
-            "anchor": "fn select(",
-            "story": "states",
-            "note": "Measured original View specimens; empty set has caller caption and no popup; validation uses original SelectView.set_error. No new tokens/status protocol or placeholder fake option."
-          }
+          "note": "Caller-owned status/refresh fixture lives in standalone examples/composition-consumer and is no longer injected into Gallery behind composition-review/test gating; Gallery renders identical component trees under cargo run and cargo test."
         },
         {
           "state": "open",
@@ -2892,42 +2850,24 @@
         },
         {
           "state": "loading",
-          "fixture": "source-reviewed",
+          "fixture": "unverified",
           "runtime": "public-api-verified",
           "experience": "unverified",
-          "note": "Real caller-owned public composition, distinct content status and header focus; scoped API evidence, no builtin adapter/default Gallery migration/native AX claim.",
-          "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench/content_status.rs",
-            "anchor": "pub(crate) const CASES:",
-            "story": "states",
-            "note": "Actual independent consumer appears in existing States routes for tests and explicit composition-review build.Uses public Progress/Banner/EmptyState and retained input/active contract; default Gallery remains unchanged."
-          }
+          "note": "Caller-owned status/refresh fixture lives in standalone examples/composition-consumer and is no longer injected into Gallery behind composition-review/test gating; Gallery renders identical component trees under cargo run and cargo test."
         },
         {
           "state": "error",
-          "fixture": "source-reviewed",
+          "fixture": "unverified",
           "runtime": "public-api-verified",
           "experience": "unverified",
-          "note": "Real caller-owned public composition, distinct content status and header focus; scoped API evidence, no builtin adapter/default Gallery migration/native AX claim.",
-          "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench/content_status.rs",
-            "anchor": "pub(crate) const CASES:",
-            "story": "states",
-            "note": "Actual independent consumer appears in existing States routes for tests and explicit composition-review build.Uses public Progress/Banner/EmptyState and retained input/active contract; default Gallery remains unchanged."
-          }
+          "note": "Caller-owned status/refresh fixture lives in standalone examples/composition-consumer and is no longer injected into Gallery behind composition-review/test gating; Gallery renders identical component trees under cargo run and cargo test."
         },
         {
           "state": "empty",
-          "fixture": "source-reviewed",
+          "fixture": "unverified",
           "runtime": "public-api-verified",
           "experience": "unverified",
-          "note": "Real caller-owned public composition, distinct content status and header focus; scoped API evidence, no builtin adapter/default Gallery migration/native AX claim.",
-          "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench/content_status.rs",
-            "anchor": "pub(crate) const CASES:",
-            "story": "states",
-            "note": "Actual independent consumer appears in existing States routes for tests and explicit composition-review build.Uses public Progress/Banner/EmptyState and retained input/active contract; default Gallery remains unchanged."
-          }
+          "note": "Caller-owned status/refresh fixture lives in standalone examples/composition-consumer and is no longer injected into Gallery behind composition-review/test gating; Gallery renders identical component trees under cargo run and cargo test."
         }
       ],
       "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/content-status.json",
@@ -3164,29 +3104,17 @@
         },
         {
           "state": "loading",
-          "fixture": "source-reviewed",
+          "fixture": "unverified",
           "runtime": "public-api-verified",
           "experience": "unverified",
-          "note": "Independent caller mounts original CommandPaletteView trigger/results and TextFieldContent; existing Status/Progress/Banner; retained and initial-empty command sources; status changes preserve query/IME/selection/candidate; execute/dismiss restore original trigger focus. Four themes/three brands. Native live async/full motion/AX unverified.",
-          "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
-            "anchor": "fn command_palette(",
-            "story": "states",
-            "note": "Measured independent public caller specimens; composition-review/test gated. No new async protocol/token or default Gallery migration."
-          }
+          "note": "Caller-owned status/refresh fixture lives in standalone examples/composition-consumer and is no longer injected into Gallery behind composition-review/test gating; Gallery renders identical component trees under cargo run and cargo test."
         },
         {
           "state": "error",
-          "fixture": "source-reviewed",
+          "fixture": "unverified",
           "runtime": "public-api-verified",
           "experience": "unverified",
-          "note": "Independent caller mounts original CommandPaletteView trigger/results and TextFieldContent; existing Status/Progress/Banner; retained and initial-empty command sources; status changes preserve query/IME/selection/candidate; execute/dismiss restore original trigger focus. Four themes/three brands. Native live async/full motion/AX unverified.",
-          "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
-            "anchor": "fn command_palette(",
-            "story": "states",
-            "note": "Measured independent public caller specimens; composition-review/test gated. No new async protocol/token or default Gallery migration."
-          }
+          "note": "Caller-owned status/refresh fixture lives in standalone examples/composition-consumer and is no longer injected into Gallery behind composition-review/test gating; Gallery renders identical component trees under cargo run and cargo test."
         },
         {
           "state": "open",

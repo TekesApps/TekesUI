@@ -1436,48 +1436,6 @@ impl ExtendedStory {
             }
         }
         scene.pop_clip();
-        #[cfg(any(test, feature = "composition-review"))]
-        if e.renderer() == "slider" {
-            use tekes_ui_composition_consumer::slider_content::{RANGE, ROOT, build};
-            use tekes_ui_controls::composition::{AccessibilityAction, ContentEvent};
-            let mut sample = build().expect("independent public range composition");
-            sample.focus(Some(RANGE), true);
-            sample.accessibility_action(RANGE, None, AccessibilityAction::Increment);
-            sample.event(&ContentEvent::Key {
-                key: ControlKey::Right,
-                down: true,
-            });
-            let available = c.inset(tekes_ui_tokens::Spacing::Regular.value());
-            let w = available.size.width.min(420.);
-            let size = sample
-                .get_mut(ROOT)
-                .unwrap()
-                .measure(ctx.text, tekes_ui_scene::Size::new(w, 4096.))
-                .size;
-            let frame = Rect::new(c.min_x() + 12., s.document_bottom + 24., w, size.height);
-            sample
-                .render(
-                    scene,
-                    ctx.text,
-                    frame,
-                    c,
-                    crate::gallery::brands::brand_palette(ctx.theme, s.brand)
-                        .expect("registered Gallery brand"),
-                )
-                .unwrap();
-            s.document_bottom = frame.max_y() + 12.;
-        }
-        #[cfg(any(test, feature = "composition-review"))]
-        if e.renderer() == "disclosure" {
-            s.document_bottom = super::content_status::matrix(
-                tekes_ui_composition_consumer::content_status::Kind::Disclosure,
-                s,
-                ctx,
-                scene,
-                c,
-                s.document_bottom + 24.,
-            );
-        }
     }
 
     pub(super) fn behaviors(

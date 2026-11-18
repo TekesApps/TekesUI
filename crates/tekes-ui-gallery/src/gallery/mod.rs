@@ -4729,6 +4729,3 @@ mod tests {
         assert_ne!(c, build(&mut text, &mut st, 1.0));
     }
 }
-
-#[cfg(test)]
-mod composition_acceptance;

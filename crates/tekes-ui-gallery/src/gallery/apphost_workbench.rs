@@ -920,11 +920,48 @@ fn directory_page(page: &str) -> &str {
         page
     }
 }
-fn known_page(page: &str) -> bool {
-    workbench::entries()
+fn story_section(story: &str) -> Option<usize> {
+    match story {
+        "docs" => Some(0),
+        "playground" => Some(1),
+        "states" => Some(2),
+        "behaviors" => Some(3),
+        "edge-cases" => Some(4),
+        "variants" => Some(5),
+        _ => None,
+    }
+}
+fn resolve_route(raw: &str) -> anyhow::Result<(String, usize)> {
+    let (slug, story) = raw.split_once('/').unwrap_or((raw, "playground"));
+    let section =
+        story_section(story).ok_or_else(|| anyhow::anyhow!("unknown Gallery route: {raw}"))?;
+    if workbench::apphost_quality::category_for_slug(slug).is_some() {
+        anyhow::ensure!(
+            matches!(story, "docs" | "playground"),
+            "unknown Gallery route: {raw}"
+        );
+        return Ok((slug.to_owned(), section));
+    }
+    let entry = workbench::entries()
         .iter()
-        .any(|entry| entry.slug() == page)
-        || workbench::apphost_quality::category_for_slug(page).is_some()
+        .find(|entry| {
+            entry.slug() == slug || (!entry.component().is_empty() && entry.component() == slug)
+        })
+        .ok_or_else(|| anyhow::anyhow!("unknown Gallery route: {raw}"))?;
+    anyhow::ensure!(entry.supports_story(story), "unknown Gallery route: {raw}");
+    Ok((entry.slug().to_owned(), section))
+}
+fn open_route_host(
+    raw: &str,
+    palette: &Rc<Cell<Palette>>,
+) -> anyhow::Result<(String, MountedPage)> {
+    let (page, section) = resolve_route(raw)?;
+    let mut host = page_host(&page, palette)?;
+    host.select_section(section);
+    Ok((page, host))
+}
+fn known_page(page: &str) -> bool {
+    resolve_route(page).is_ok()
 }
 pub fn specimens(page: &str) -> &'static [Specimen] {
     if let Some(items) = quality_specimens(page) {
@@ -1019,6 +1056,7 @@ pub struct WorkbenchState {
     palette: Rc<Cell<Palette>>,
     current: u64,
     visits: Vec<Selection>,
+    visit_sections: Vec<Option<usize>>,
     pages: HashMap<String, Rc<RefCell<MountedPage>>>,
     pending: VecDeque<tekes_ui_app_host::navigation::Entry>,
     inspected: Option<(String, ComponentId, u64)>,
@@ -1098,8 +1136,14 @@ impl WorkbenchState {
             params: serde_json::json!({"visit": visit, "specimen": selection.specimen, "document_id": selection.document_id}),
         }
     }
-    fn navigate(&mut self, page: &str) {
-        if self.selection().page == page {
+    fn navigate(&mut self, route: &str) {
+        let explicit = route.contains('/');
+        let (canonical, section) = match resolve_route(route) {
+            Ok((slug, section)) => (slug, explicit.then_some(section)),
+            Err(_) => (route.to_owned(), None),
+        };
+        let page = canonical.as_str();
+        if self.selection().page == page && section.is_none() {
             return;
         }
         // Each visit retains its own chooser selection, including repeated routes.
@@ -1114,6 +1158,7 @@ impl WorkbenchState {
         );
         let visit = self.visits.len() as u64;
         self.visits.push(selection);
+        self.visit_sections.push(section);
         self.pending.push_back(self.entry(visit));
     }
     fn select(&mut self, key: Option<&str>) {
@@ -1139,6 +1184,9 @@ impl WorkbenchState {
                 page.clone(),
                 Rc::new(RefCell::new(page_host(&page, &self.palette)?)),
             );
+        }
+        if let Some(Some(section)) = self.visit_sections.get(visit as usize).copied() {
+            self.pages[&page].borrow_mut().select_section(section);
         }
         self.current = visit;
         Ok(())
@@ -1207,6 +1255,20 @@ impl std::ops::DerefMut for MountedPage {
             Self::Icons(story) => &mut story.host,
             Self::Documents(story) => &mut story.host,
             Self::Foundations(story) => &mut story.host,
+        }
+    }
+}
+impl MountedPage {
+    fn select_section(&mut self, section: usize) {
+        match self {
+            Self::Feedback(story) => story.select_section(section),
+            Self::Patterns(story) => story.select_section(section),
+            Self::Story(story) => story.select_section(section),
+            Self::Basic(story) => story.select_section(section),
+            Self::Scene3D(story) => story.select_section(section),
+            Self::Icons(story) => story.select_section(section),
+            Self::Documents(story) => story.select_section(section),
+            Self::Brand(_) | Self::Plain(_) | Self::Motion(_) | Self::Foundations(_) => {}
         }
     }
 }
@@ -2359,8 +2421,11 @@ fn panel(
 }
 fn assemble_with_session_path() -> anyhow::Result<(AppWindow, std::path::PathBuf)> {
     let page = std::env::var("TEKESUI_GALLERY_PAGE").unwrap_or_else(|_| SEARCH_ROUTE.into());
+    assemble_for_route(&page)
+}
+fn assemble_for_route(raw_route: &str) -> anyhow::Result<(AppWindow, std::path::PathBuf)> {
     let palette = Rc::new(Cell::new(Palette::from(tekes_ui_tokens::Theme::LIGHT)));
-    let host = page_host(&page, &palette)?;
+    let (page, host) = open_route_host(raw_route, &palette)?;
     let settings = super::apphost::settings_owner()?;
     let root = std::env::var_os("TEKESUI_APPHOST_DATA_DIR")
         .map(std::path::PathBuf::from)
@@ -2379,6 +2444,9 @@ fn assemble_with_session_path() -> anyhow::Result<(AppWindow, std::path::PathBuf
         palette: palette.clone(),
         current: 0,
         visits: vec![Selection::new(&page, None)],
+        visit_sections: vec![story_section(
+            raw_route.split_once('/').map_or("playground", |(_, s)| s),
+        )],
         pages: HashMap::from([(page, Rc::new(RefCell::new(host)))]),
         pending: VecDeque::new(),
         inspected: None,
@@ -2529,6 +2597,7 @@ mod tests {
             palette: palette.clone(),
             current: 0,
             visits: vec![Selection::new(page, None)],
+            visit_sections: vec![None],
             pages: HashMap::from([(
                 page.into(),
                 Rc::new(RefCell::new(page_host(page, &palette).unwrap())),
@@ -4507,5 +4576,122 @@ mod tests {
             state.borrow().selection().specimen.as_deref(),
             Some("original-field")
         );
+    }
+
+    #[test]
+    fn apphost_supports_slug_and_story_startup_routes() {
+        use tekes_ui_controls::composition::{IconImage, IconRenderError, WithIconRenderer};
+        use tekes_ui_controls::layout_view::IconRenderer;
+
+        struct TestIcons;
+        impl IconRenderer for TestIcons {
+            fn resource_identity(&self) -> Option<u64> {
+                Some(1)
+            }
+            fn register_icon_bitmap(
+                &mut self,
+                _: &[u8],
+                _: u32,
+                _: u32,
+            ) -> Result<IconImage, IconRenderError> {
+                Ok(IconImage::new(tekes_ui_scene::ImageId(1), Rc::new(())))
+            }
+            fn prepare_icon(
+                &mut self,
+                _: &str,
+                _: f32,
+                _: f32,
+                _: tekes_ui_tokens::Rgba,
+            ) -> Result<IconImage, IconRenderError> {
+                Ok(IconImage::new(tekes_ui_scene::ImageId(2), Rc::new(())))
+            }
+            fn draw_icon(
+                &mut self,
+                _: &mut tekes_ui_scene::Scene,
+                _: &str,
+                _: tekes_ui_scene::Rect,
+                _: tekes_ui_tokens::Rgba,
+            ) {
+            }
+        }
+
+        let palette = Rc::new(Cell::new(Palette::from(tekes_ui_tokens::Theme::LIGHT)));
+        for (raw, canonical_page) in [
+            ("component-button/playground", "component-button"),
+            ("component-dialog/behaviors", "component-dialog"),
+            ("example-settings", "example-settings"),
+            ("example-settings/edge-cases", "example-settings"),
+            ("component-text-field/states", "component-text-field"),
+            ("component-icon/docs", "component-icon"),
+            ("component-text/behaviors", "component-text"),
+            ("component-scene3d/docs", "component-scene3d"),
+            ("tui.button/variants", "component-button"),
+            ("components-actions", "components-actions"),
+        ] {
+            let (app, session_dir) = assemble_for_route(raw)
+                .unwrap_or_else(|e| panic!("expected route {raw} to assemble: {e:#}"));
+            drop(app);
+            let _ = std::fs::remove_dir_all(&session_dir);
+
+            let (resolved, _) =
+                open_route_host(raw, &palette).unwrap_or_else(|e| panic!("{raw}: {e:#}"));
+            assert_eq!(resolved, canonical_page);
+        }
+
+        let mut text = super::super::text::TextEngine::new();
+        text.set_motion_enabled(true);
+        text.set_motion_context(std::time::Duration::ZERO, true);
+        let mut icons = TestIcons;
+        let frame = tekes_ui_scene::Rect::new(0., 0., 740., 900.);
+        for entry in workbench::entries() {
+            for story in [
+                "docs",
+                "playground",
+                "states",
+                "behaviors",
+                "edge-cases",
+                "variants",
+            ] {
+                let route = format!("{}/{story}", entry.slug());
+                if entry.supports_story(story) {
+                    let (resolved, mut mounted) = open_route_host(&route, &palette)
+                        .unwrap_or_else(|e| panic!("{route}: {e:#}"));
+                    assert_eq!(resolved, entry.slug());
+                    mounted
+                        .render(
+                            &mut tekes_ui_scene::Scene::new(),
+                            &mut WithIconRenderer::new(&mut text, &mut icons),
+                            frame,
+                            frame,
+                            tekes_ui_tokens::Theme::LIGHT.into(),
+                        )
+                        .unwrap_or_else(|e| panic!("{route} render: {e:?}"));
+                } else {
+                    assert!(
+                        open_route_host(&route, &palette).is_err(),
+                        "{route} must fail"
+                    );
+                }
+            }
+        }
+
+        for invalid in [
+            "unknown-route",
+            "component-button/",
+            "component-button/unknown",
+            "component-button/docs/extra",
+            "foundation-tokens/states",
+            "component-scene3d/behaviors",
+            "component-stack/edge-cases",
+            "components-actions/states",
+        ] {
+            let err = open_route_host(invalid, &palette)
+                .err()
+                .expect("invalid route must fail");
+            assert!(
+                err.to_string().contains("unknown Gallery route"),
+                "unexpected error for {invalid}: {err:#}"
+            );
+        }
     }
 }

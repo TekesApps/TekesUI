@@ -214,7 +214,10 @@ impl AppHostPatterns {
         field.viewport = TextViewport::Fill;
         Content::new(DETAIL, field)
     }
-    fn select_section(&mut self, section: usize) {
+    pub(crate) fn select_section(&mut self, section: usize) {
+        if self.state.section == section && matches!(section, 1 | 4) == self.retained.is_none() {
+            return;
+        }
         self.host_mut().focus(None, false);
         let old = self.host_mut().remove(BODY).unwrap();
         if self.retained.is_none() {

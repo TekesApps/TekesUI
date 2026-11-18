@@ -10,7 +10,6 @@ publish = false
 
 [features]
 selftest = ["tekes-ui-platform-macos/selftest", "tekes-ui-macos-bridge/selftest"]
-composition-review = ["dep:tekes-ui-composition-consumer", "selftest"]
 
 [target.'cfg(target_os = "macos")'.dependencies]
 tekes-ui-module-runtime = { path = "../tekes-ui-module-runtime" }
@@ -19,7 +18,6 @@ tekes-ui-app-host = { path = "../tekes-ui-app-host" }
 tekes-ui-app-protocol = { path = "../tekes-ui-app-protocol" }
 tekes-ui-controls = { workspace = true, features = ["inspection"] }
 tekes-ui-scene3d = { path = "../tekes-ui-scene3d" }
-tekes-ui-composition-consumer = { path = "../../examples/composition-consumer", optional = true }
 tekes-ui-icons = { path = "../tekes-ui-icons" }
 tekes-ui-motion = {path="../tekes-ui-motion"}
 tekes-ui-tokens.workspace = true
@@ -40,9 +38,6 @@ workspace = true
 serde_json.workspace = true
 sha2.workspace = true
 tekes-ui-design-export = { path = "../tekes-ui-design-export" }
-
-[dev-dependencies]
-tekes-ui-composition-consumer = { path = "../../examples/composition-consumer" }
 
 [target.'cfg(target_os = "macos")'.dev-dependencies]
 objc2-foundation = { workspace = true, features = ["NSUserDefaults", "NSString", "NSArray"] }

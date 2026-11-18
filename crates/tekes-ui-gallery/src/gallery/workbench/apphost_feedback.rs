@@ -1104,6 +1104,32 @@ impl FeedbackStory {
             .into();
         }
     }
+    pub(crate) fn select_section(&mut self, section: usize) {
+        if self.state.section == section {
+            return;
+        }
+        self.replace_section(section + 1);
+    }
+    fn replace_section(&mut self, command: usize) {
+        if self.entry.renderer() == "dialog" && self.host.get(OVERLAY).is_some() {
+            self.host.close_dialog();
+            self.host.remove(OVERLAY).expect("mounted Dialog overlay");
+            self.dialog_open = false;
+        }
+
+        self.state.activate(command, self.entry.renderer());
+        self.host.remove(BODY).expect("feedback body mounted");
+        self.host
+            .insert(ROWS, Self::body(self.entry, &self.state))
+            .expect("feedback body IDs");
+        if self.entry.renderer() == "dialog" && matches!(self.state.section, 1 | 3 | 4) {
+            self.host
+                .insert(DIALOG_VIEWPORT, Self::dialog())
+                .expect("Dialog viewport slot");
+        }
+
+        self.apply_disabled();
+    }
     pub(crate) fn after_host_visit(&mut self) {
         let dialog_open = self
             .host
@@ -1135,25 +1161,7 @@ impl FeedbackStory {
                 continue;
             }
             if (COMMAND..=COMMAND + 6).contains(&id.0) {
-                if self.entry.renderer() == "dialog" && self.host.get(OVERLAY).is_some() {
-                    self.host.close_dialog();
-                    self.host.remove(OVERLAY).expect("mounted Dialog overlay");
-                    self.dialog_open = false;
-                }
-
-                self.state
-                    .activate((id.0 - COMMAND) as usize, self.entry.renderer());
-                self.host.remove(BODY).expect("feedback body mounted");
-                self.host
-                    .insert(ROWS, Self::body(self.entry, &self.state))
-                    .expect("feedback body IDs");
-                if self.entry.renderer() == "dialog" && matches!(self.state.section, 1 | 3 | 4) {
-                    self.host
-                        .insert(DIALOG_VIEWPORT, Self::dialog())
-                        .expect("Dialog viewport slot");
-                }
-
-                self.apply_disabled();
+                self.replace_section((id.0 - COMMAND) as usize);
                 continue;
             }
             match (self.entry.renderer(), id) {

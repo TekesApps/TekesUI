@@ -444,6 +444,19 @@ impl AppHostScene3D {
             )
         }
     }
+    pub(crate) fn select_section(&mut self, section: usize) {
+        let playground = section != 0;
+        if self.playground != playground {
+            self.playground = playground;
+            self.host.remove(BODY).expect("original Scene3D body");
+            self.host
+                .insert(
+                    ROWS,
+                    Self::body(self.entry, self.playground, self.state.clone()),
+                )
+                .expect("unique Scene3D body");
+        }
+    }
     pub(crate) fn after_host_visit(&mut self) {
         for record in self.host.drain_action_records() {
             if record.action.kind != ContentActionKind::Activate {
@@ -456,16 +469,7 @@ impl AppHostScene3D {
                     state.last_time = None;
                     let _ = self.host.get_mut(SPECIMEN);
                 }
-                Some(n @ 1..=2) if self.playground != (n == 2) => {
-                    self.playground = n == 2;
-                    self.host.remove(BODY).expect("original Scene3D body");
-                    self.host
-                        .insert(
-                            ROWS,
-                            Self::body(self.entry, self.playground, self.state.clone()),
-                        )
-                        .expect("unique Scene3D body");
-                }
+                Some(n @ 1..=2) => self.select_section((n - 1) as usize),
                 _ => {}
             }
         }
