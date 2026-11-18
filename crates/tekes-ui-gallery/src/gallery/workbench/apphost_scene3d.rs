@@ -515,6 +515,18 @@ impl AppHostScene3D {
         );
         Ok(())
     }
+    #[cfg(feature = "selftest")]
+    pub(crate) fn start_rotation(&mut self, animate_clip: bool) {
+        self.state.borrow_mut().preview.start_rotation(animate_clip);
+    }
+    #[cfg(feature = "selftest")]
+    pub(crate) fn diagnostics(&self) -> serde_json::Value {
+        self.state.borrow().preview.diagnostics()
+    }
+    #[cfg(feature = "selftest")]
+    pub(crate) fn frame_work(&self) -> (u64, usize) {
+        self.state.borrow().preview.frame_work()
+    }
 }
 
 #[cfg(test)]

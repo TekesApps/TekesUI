@@ -45,3 +45,7 @@ objc2-foundation = { workspace = true, features = ["NSUserDefaults", "NSString",
 [[example]]
 name = "metal_reentrant_resize"
 required-features = ["selftest"]
+
+[[example]]
+name = "settings_native207"
+required-features = ["selftest"]

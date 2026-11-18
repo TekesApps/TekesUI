@@ -1,8 +1,7 @@
 //! The native Gallery icon catalogue, reusing the component renderer.
-use super::{
-    PageCtx,
-    showcase::{Icon, draw_native_icon},
-};
+#[cfg(test)]
+use super::PageCtx;
+use super::showcase::{Icon, draw_native_icon};
 use crate::gallery::icon_catalog::{IconCatalog, preview_sizes};
 use tekes_ui_controls::layout_view::{IconRenderer, IconView};
 use tekes_ui_scene::{ImageId, ImageQuad, Quad, Rect, Scene, Size};
@@ -75,6 +74,7 @@ impl IconText for crate::gallery::text::TextEngine {
     }
 }
 
+#[cfg(test)]
 pub fn search_rect(content: Rect) -> Rect {
     Rect::new(content.min_x(), content.min_y(), content.size.width, 40.0)
 }
@@ -103,15 +103,6 @@ enum GalleryIconArtwork {
 pub(crate) struct GalleryIconRenderer {
     theme: tekes_ui_tokens::Theme,
     artwork: GalleryIconArtwork,
-}
-
-impl GalleryIconRenderer {
-    pub(crate) fn native(ctx: &mut PageCtx<'_>) -> Self {
-        Self {
-            theme: ctx.theme,
-            artwork: GalleryIconArtwork::Native,
-        }
-    }
 }
 
 impl IconRenderer for GalleryIconRenderer {
@@ -298,6 +289,7 @@ fn scaled_card_text_layout(
         size_label_height,
     }
 }
+#[cfg(test)]
 pub fn extent(catalog: &IconCatalog, query: &str, width: f32) -> Size {
     extent_at_scale(catalog, query, width, 1.0)
 }
@@ -314,6 +306,7 @@ pub fn extent_at_scale(catalog: &IconCatalog, query: &str, width: f32, type_scal
             .max(super::super::layout::PAGE_CONTENT.size.height),
     )
 }
+#[cfg(test)]
 pub fn visible_legacy(
     catalog: &IconCatalog,
     query: &str,
@@ -341,9 +334,7 @@ pub fn visible_legacy_at_scale(
         })
         .collect()
 }
-pub fn build(ctx: &mut PageCtx<'_>, content: Rect, scene: &mut Scene, query: &str) {
-    build_catalog(ctx, content, scene, query, &IconCatalog::default(), content);
-}
+#[cfg(test)]
 pub fn build_catalog(
     ctx: &mut PageCtx<'_>,
     content: Rect,

@@ -7,12 +7,21 @@
 //! 列头、行头、窗格标题、节标题都是真文字（`tekes-ui-text`，字号取自 `TextRole`），排在固定大小的槽里，
 //! 布局不随文字变化。
 
-use tekes_ui_scene::{Point, Quad, Rect, Scene, Size};
-use tekes_ui_tokens::{ColorRole, CornerRadius, Rgba, Spacing, Stroke, TextRole, Theme};
+#[cfg(test)]
+use tekes_ui_scene::Quad;
+#[cfg(test)]
+use tekes_ui_scene::Scene;
+use tekes_ui_scene::{Point, Rect, Size};
+use tekes_ui_tokens::{ColorRole, Spacing, TextRole};
+#[cfg(test)]
+use tekes_ui_tokens::{CornerRadius, Rgba, Stroke, Theme};
 
-use super::text::{LabelStyle, TextEngine};
+use super::text::LabelStyle;
+#[cfg(test)]
+use super::text::TextEngine;
 
 /// 节标题样式：`SectionHeader`（11pt 粗），次要文字色。
+#[cfg(test)]
 pub const SECTION_STYLE: LabelStyle =
     LabelStyle::new(TextRole::SectionHeader, ColorRole::SecondaryText);
 /// 列头、行头、窗格标题样式：`RowMeta`（11pt），次要文字色。
@@ -53,12 +62,16 @@ impl ComponentState {
 }
 
 /// 节标题：一个槽，返回槽下沿（内容从这里往下排）。
+#[cfg(test)]
 pub const SECTION_HEADER_H: f32 = 18.0;
 /// 节标题槽的宽度。
+#[cfg(test)]
 pub const SECTION_HEADER_W: f32 = 240.0;
 /// 节标题槽的高度。
+#[cfg(test)]
 pub const SECTION_SLOT_H: f32 = 14.0;
 
+#[cfg(test)]
 pub fn draw_section_header(
     scene: &mut Scene,
     theme: Theme,
@@ -76,6 +89,7 @@ pub fn draw_section_header(
     );
 }
 
+#[cfg(test)]
 const fn transparent() -> Rgba {
     Rgba::new(0.0, 0.0, 0.0, 0.0)
 }
@@ -83,12 +97,14 @@ const fn transparent() -> Rgba {
 /// 状态矩阵。左边一列行头槽，上面一行列头槽，中间是 `rows x 5` 的单元格。
 ///
 /// 所有尺寸都是常量，行数以外不随内容变化。
+#[cfg(test)]
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct StateMatrix {
     pub origin: Point,
     pub rows: usize,
 }
 
+#[cfg(test)]
 impl StateMatrix {
     pub const ROW_LABEL_W: f32 = 96.0;
     pub const CELL: Size = Size::new(120.0, 56.0);
@@ -197,6 +213,7 @@ pub const PANE_TITLES: [&str; 3] = ["TekesUI 实时", "参照图", "差异热图
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SlotLayout {
     /// 左右并排（默认；窗格 280 x 200）。
+    #[cfg(test)]
     Horizontal,
     /// 上下叠放。静态文字页用它：700 pt 宽的文字放不下三个并排的窗格。
     Vertical,
@@ -222,11 +239,13 @@ pub struct ReferenceSlot {
 }
 
 impl ReferenceSlot {
+    #[cfg(test)]
     pub const PANE: Size = Size::new(280.0, 200.0);
     pub const HEADER_H: f32 = 14.0;
     const GAP: f32 = Spacing::Relaxed.value();
     const HEADER_GAP: f32 = Spacing::Regular.value();
 
+    #[cfg(test)]
     pub const fn new(origin: Point, show_diff: bool) -> ReferenceSlot {
         ReferenceSlot {
             origin,
@@ -250,6 +269,7 @@ impl ReferenceSlot {
         }
     }
 
+    #[cfg(test)]
     pub fn pane_count(&self) -> usize {
         if self.show_diff { 3 } else { 2 }
     }
@@ -272,6 +292,7 @@ impl ReferenceSlot {
     fn block_origin(&self, i: usize) -> Point {
         let i = i as f32;
         match self.layout {
+            #[cfg(test)]
             SlotLayout::Horizontal => Point::new(
                 self.origin.x + i * (self.pane.width + Self::GAP),
                 self.origin.y,
@@ -300,6 +321,7 @@ impl ReferenceSlot {
     }
 
     /// 画出整个槽。`titles[i]` 是第 `i` 个窗格的标题；`live(scene, pane)` 在第一个窗格里画 TekesUI 的实时内容。
+    #[cfg(test)]
     pub fn draw(
         &self,
         scene: &mut Scene,

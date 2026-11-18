@@ -38,13 +38,6 @@ pub const ROW_LABEL_SLOT: Size = Size::new(
 
 /// 页面区左缘（目录列右侧再留 `Section`）。
 pub const PAGE_X: f32 = CATALOG_W + Spacing::Section.value();
-/// 页面标题槽（放页面名）。
-pub const PAGE_TITLE_SLOT: Rect = Rect::new(
-    PAGE_X,
-    Spacing::Section.value(),
-    ControlSize::TruncationSlot.value(),
-    proposal::TextRole::UiHeading.style().line_height,
-);
 /// 页面内容区。页面内部再按自己的栅格排版。
 pub const PAGE_CONTENT: Rect = Rect::new(
     PAGE_X,

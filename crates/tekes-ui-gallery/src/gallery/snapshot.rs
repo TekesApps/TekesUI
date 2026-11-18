@@ -1,35 +1,46 @@
-//! 无头快照：用 `Renderer::new_headless` 把每一页在每个主题、每个缩放下渲染成 PNG。
+//! Headless AppHost snapshots: render canonical AppHost Gallery routes to PNGs
+//! using `Renderer::new_headless` and `tekes_ui_app_host::HostedWindow`.
 //!
-//! 文件名 `<页>-<主题>@<缩放>x.png`，例如 `primitives-dark-ic@2x.png`。
-//! 页名与主题名见 `Page::slug`、`theme_slug`。尺寸是 JSON 捕获框乘缩放。
-//! 这是以后自动对比（章程第 2 节）共用的固定夹具：同样的输入逐字节得到同样的 PNG。
-//!
-//! 静态文字页固定为默认状态：夹具 sentences-a、宽度 700，**不带参照目录**（参照窗格是占位文字，
-//! 差异窗格写“需要参照图才能比较”），所以快照与环境变量 `TEKESUI_REFERENCE_DIR` 无关。
+//! File names follow `<route-slug>-<theme>@<scale>x.png`. Static text snapshots
+//! force `StaticText::new(None)` so output is independent of `TEKESUI_REFERENCE_DIR`.
 
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::time::Duration;
 
 use tekes_ui_render::{RenderError, Renderer};
-use tekes_ui_scene::Scene;
+use tekes_ui_scene::Rect;
 use tekes_ui_tokens::Theme;
 
+use super::apphost_workbench::HeadlessGallery;
 use super::layout::{FRAME_H, FRAME_W};
 use super::locale::Locale;
 use super::motion_preview::PresetCatalog;
-use super::static_text::StaticText;
-use super::text::TextEngine;
 use super::theme::theme_slug;
-use super::{Gallery, Page, PageCtx, compose};
+use super::workbench;
 
-/// 默认要输出的缩放。
+/// Default snapshot scales.
 pub const SCALES: [u32; 2] = [2, 1];
+
+/// Representative AppHost routes exported when `TEKESUI_GALLERY_PAGE` is unset.
+pub const DEFAULT_ROUTES: &[&str] = &[
+    "foundation-tokens",
+    "foundation-shape",
+    "foundation-typography",
+    "foundation-motion",
+    "component-button",
+    "component-text-field",
+    "component-scroll-area",
+    "component-icon",
+    "lab-calibration",
+];
 
 #[derive(Debug)]
 pub enum SnapshotError {
     Render(RenderError),
     Png(png::EncodingError),
     Io(std::io::Error),
+    Host(anyhow::Error),
     MotionHasNoRenderedButtons,
 }
 
@@ -39,6 +50,7 @@ impl std::fmt::Display for SnapshotError {
             SnapshotError::Render(e) => write!(f, "渲染失败：{e}"),
             SnapshotError::Png(e) => write!(f, "PNG 编码失败：{e}"),
             SnapshotError::Io(e) => write!(f, "写文件失败：{e}"),
+            SnapshotError::Host(e) => write!(f, "AppHost 快照失败：{e:#}"),
             SnapshotError::MotionHasNoRenderedButtons => {
                 write!(f, "Motion 快照没有构建真实可交互按钮")
             }
@@ -63,30 +75,44 @@ impl From<std::io::Error> for SnapshotError {
         SnapshotError::Io(e)
     }
 }
-
-pub fn file_name(page: Page, theme: Theme, scale: u32) -> String {
-    format!("{}-{}@{}x.png", page.slug(), theme_slug(theme), scale)
+impl From<anyhow::Error> for SnapshotError {
+    fn from(e: anyhow::Error) -> Self {
+        SnapshotError::Host(e)
+    }
 }
 
-/// 渲染一页，返回 PNG 字节。`static_text` 用 `StaticText::new(None)` 的默认状态。
-pub fn render_png(
+pub fn route_file_name(route_slug: &str, theme: Theme, scale: u32) -> String {
+    format!("{route_slug}-{}@{scale}x.png", theme_slug(theme))
+}
+
+/// Render a single AppHost Gallery route at `FRAME_W x FRAME_H` pt to PNG bytes.
+pub fn render_route_png(
     renderer: &mut Renderer,
-    text: &mut TextEngine,
-    static_text: &mut StaticText,
-    page: Page,
+    gallery: &mut HeadlessGallery,
+    raw_route: &str,
     theme: Theme,
     scale: u32,
-) -> Result<Vec<u8>, SnapshotError> {
-    if is_motion_snapshot_page(page) {
-        let locale = text.locale();
-        let type_scale = text.type_scale();
+) -> Result<(String, Vec<u8>), SnapshotError> {
+    gallery.switch_route(raw_route)?;
+    let slug = gallery.state().borrow().current_route().to_owned();
+    gallery.set_theme(theme);
+    gallery.window_mut().set_type_scale(1.0);
+    gallery.window_mut().set_motion_elapsed(Duration::ZERO);
+    if slug == "lab-calibration" {
+        gallery
+            .state()
+            .borrow_mut()
+            .clear_calibration_reference_dir();
+    }
+    if slug == "foundation-motion" {
+        let locale = Locale::default();
         let snapshot = render_motion_case(
             renderer,
             MotionSnapshotRequest {
-                requested_page: page,
+                requested_route: raw_route,
                 theme,
                 locale,
-                type_scale,
+                type_scale: 1.0,
                 pixel_scale: scale,
                 width: FRAME_W,
                 catalog: PresetCatalog::Apple,
@@ -95,45 +121,111 @@ pub fn render_png(
         if snapshot.case["rendered_button_count"].as_u64().unwrap_or(0) == 0 {
             return Err(SnapshotError::MotionHasNoRenderedButtons);
         }
-        return Ok(snapshot.png);
+        return Ok((slug, snapshot.png));
     }
-    text.set_scale(scale as f32);
-    text.begin_frame();
-    let mut scene = Scene::new();
-    {
-        let mut ctx = PageCtx {
-            theme,
-            text: &mut *text,
-            static_text,
-        };
-        compose(page, None, &mut ctx, &mut scene);
-    }
-    let size = (FRAME_W as u32 * scale, FRAME_H as u32 * scale);
-    let rgba = renderer.render_to_rgba8(
-        &scene,
-        text.atlas_mut(),
-        size,
-        scale as f32,
-        Gallery::background(theme),
-    )?;
-    encode_png(&rgba, size.0, size.1)
+    let size_pt = (FRAME_W as u32, FRAME_H as u32);
+    let rgba = gallery
+        .window_mut()
+        .render_headless_rgba8(renderer, size_pt, scale)?;
+    Ok((
+        slug,
+        encode_png(&rgba, size_pt.0 * scale, size_pt.1 * scale)?,
+    ))
 }
 
-fn is_motion_snapshot_page(page: Page) -> bool {
-    match page {
-        Page::Motion => true,
-        Page::Workbench(index) => super::workbench::entry(index).renderer() == "motion",
-        _ => false,
+#[derive(Debug)]
+struct MotionSnapshot {
+    png: Vec<u8>,
+    case: serde_json::Value,
+}
+
+#[derive(Clone, Copy)]
+struct MotionSnapshotRequest<'a> {
+    requested_route: &'a str,
+    theme: Theme,
+    locale: Locale,
+    type_scale: f32,
+    pixel_scale: u32,
+    width: f32,
+    catalog: PresetCatalog,
+}
+
+/// Captures Motion stories through the real AppHost Gallery container stack.
+fn render_motion_case(
+    renderer: &mut Renderer,
+    request: MotionSnapshotRequest<'_>,
+) -> Result<MotionSnapshot, SnapshotError> {
+    let MotionSnapshotRequest {
+        requested_route,
+        theme,
+        locale,
+        type_scale,
+        pixel_scale,
+        width,
+        catalog,
+    } = request;
+    let mut gallery = HeadlessGallery::open("foundation-motion/playground")?;
+    gallery.set_theme(theme);
+    gallery.window_mut().set_type_scale(type_scale);
+    gallery.window_mut().set_motion_elapsed(Duration::ZERO);
+    gallery.state().borrow_mut().set_locale(locale);
+    gallery.state().borrow_mut().with_current_page(|page| {
+        if let Some(motion) = page.motion_mut() {
+            motion.select_catalog(catalog);
+        }
+    });
+
+    let whole = Rect::new(0.0, 0.0, width, FRAME_H);
+    let (scene, clear) =
+        gallery
+            .window_mut()
+            .build_headless_scene(renderer, whole, pixel_scale as f32, true)?;
+
+    let diag = gallery.state().borrow().with_current_page_ref(|page| {
+        page.motion()
+            .map(|motion| motion.motion_case_diagnostics())
+            .unwrap_or(serde_json::Value::Null)
+    });
+    let rendered_button_count = diag["rendered_button_count"].as_u64().unwrap_or(0);
+    if rendered_button_count == 0 {
+        return Err(SnapshotError::MotionHasNoRenderedButtons);
     }
+
+    let output_size = (width as u32 * pixel_scale, FRAME_H as u32 * pixel_scale);
+    let rgba = renderer.render_to_rgba8(
+        &scene,
+        gallery.window_mut().glyph_atlas_mut(),
+        output_size,
+        pixel_scale as f32,
+        clear,
+    )?;
+    let rendered_page = gallery.state().borrow().current_route().to_owned();
+    let case = serde_json::json!({
+        "requested_page": requested_route,
+        "rendered_page": rendered_page,
+        "theme": theme_slug(theme),
+        "locale": locale_slug(locale),
+        "width": width,
+        "height": FRAME_H,
+        "type_scale": type_scale,
+        "pixel_scale": pixel_scale,
+        "catalog": catalog_slug(catalog),
+        "document_extent": diag["document_extent"],
+        "scroll_range": diag["scroll_range"],
+        "scene_primitives": scene.len(),
+        "rendered_button_count": rendered_button_count,
+        "visible_button_count": diag["visible_button_count"],
+        "buttons": diag["buttons"],
+    });
+    Ok(MotionSnapshot {
+        png: encode_png(&rgba, output_size.0, output_size.1)?,
+        case,
+    })
 }
 
 #[cfg(test)]
 fn export_motion_matrix(renderer: &mut Renderer, root: &Path) -> Result<usize, SnapshotError> {
-    use super::workbench;
-
     fs::create_dir_all(root)?;
-    let page = workbench::route("foundation-motion/playground")
-        .ok_or(SnapshotError::MotionHasNoRenderedButtons)?;
     let mut manifest_cases = Vec::new();
     let mut count = 0;
     for theme in Theme::ALL {
@@ -149,7 +241,7 @@ fn export_motion_matrix(renderer: &mut Renderer, root: &Path) -> Result<usize, S
                         let motion = render_motion_case(
                             renderer,
                             MotionSnapshotRequest {
-                                requested_page: page,
+                                requested_route: "foundation-motion/playground",
                                 theme,
                                 locale,
                                 type_scale,
@@ -199,130 +291,6 @@ fn export_motion_matrix(renderer: &mut Renderer, root: &Path) -> Result<usize, S
     Ok(count)
 }
 
-#[derive(Debug)]
-struct MotionSnapshot {
-    png: Vec<u8>,
-    case: serde_json::Value,
-}
-
-#[derive(Clone, Copy)]
-struct MotionSnapshotRequest {
-    requested_page: Page,
-    theme: Theme,
-    locale: Locale,
-    type_scale: f32,
-    pixel_scale: u32,
-    width: f32,
-    catalog: PresetCatalog,
-}
-
-/// Canonical and legacy Motion captures share the actual Gallery host renderer
-/// so their buttons, chrome, viewport and live component models are present.
-fn render_motion_case(
-    renderer: &mut Renderer,
-    request: MotionSnapshotRequest,
-) -> Result<MotionSnapshot, SnapshotError> {
-    let MotionSnapshotRequest {
-        requested_page,
-        theme,
-        locale,
-        type_scale,
-        pixel_scale,
-        width,
-        catalog,
-    } = request;
-    let mut gallery = Gallery::with_static_text(StaticText::new(None));
-    gallery.theme.system = theme;
-    gallery.set_locale(locale);
-    gallery.text.set_scale(pixel_scale as f32);
-    gallery.workbench.text_scale = if type_scale >= 1.375 {
-        2
-    } else if type_scale >= 1.125 {
-        1
-    } else {
-        0
-    };
-    gallery.motion.select_catalog(catalog);
-
-    // Preserve canonical Workbench routes where supplied. The old Motion ID
-    // maps to the canonical story because only it owns the full live page host.
-    gallery.page = match requested_page {
-        Page::Motion => super::workbench::route("foundation-motion/playground")
-            .ok_or(SnapshotError::MotionHasNoRenderedButtons)?,
-        page => page,
-    };
-    gallery.set_view_size(width, FRAME_H);
-    gallery.prepare(renderer, pixel_scale as f32);
-    let mut scene = Scene::new();
-    gallery.build_scene(&mut scene);
-
-    let actions = super::pages::motion::Layout::for_state(
-        gallery.live_content_bounds(),
-        &gallery.motion,
-        &mut gallery.text,
-    )
-    .state_actions(&gallery.motion);
-    let buttons: Vec<_> = actions
-        .iter()
-        .filter_map(|(action, _)| {
-            let id = super::pages::motion::Layout::action_id(*action);
-            let button = gallery.motion.button_models.get(&id)?;
-            let layout = button.layout()?;
-            let visible = layout.visible.filter(|rect| !rect.is_empty());
-            Some(serde_json::json!({
-                "id": format!("{id:016x}"),
-                "action": format!("{action:?}"),
-                "frame": rect_json(layout.frame),
-                "content": rect_json(layout.content),
-                "visible": visible.map(rect_json),
-                "label_size": {"width": layout.label_size.width, "height": layout.label_size.height},
-            }))
-        })
-        .collect();
-    if buttons.is_empty() {
-        return Err(SnapshotError::MotionHasNoRenderedButtons);
-    }
-
-    let output_size = (width as u32 * pixel_scale, FRAME_H as u32 * pixel_scale);
-    let rgba = renderer.render_to_rgba8(
-        &scene,
-        gallery.atlas_mut(),
-        output_size,
-        pixel_scale as f32,
-        Gallery::background(theme),
-    )?;
-    let case = serde_json::json!({
-        "requested_page": requested_page.slug(),
-        "rendered_page": gallery.page().slug(),
-        "theme": theme_slug(theme),
-        "locale": locale_slug(locale),
-        "width": width,
-        "height": FRAME_H,
-        "type_scale": gallery.text.type_scale(),
-        "pixel_scale": pixel_scale,
-        "catalog": catalog_slug(catalog),
-        "document_extent": gallery.page_document_height(),
-        "scroll_range": gallery.page_scroll_range(),
-        "scene_primitives": scene.len(),
-        "rendered_button_count": buttons.len(),
-        "visible_button_count": buttons.iter().filter(|button| !button["visible"].is_null()).count(),
-        "buttons": buttons,
-    });
-    Ok(MotionSnapshot {
-        png: encode_png(&rgba, output_size.0, output_size.1)?,
-        case,
-    })
-}
-
-fn rect_json(rect: tekes_ui_scene::Rect) -> serde_json::Value {
-    serde_json::json!({
-        "x": rect.min_x(),
-        "y": rect.min_y(),
-        "width": rect.size.width,
-        "height": rect.size.height,
-    })
-}
-
 fn locale_slug(locale: Locale) -> &'static str {
     match locale {
         Locale::En => "en",
@@ -353,25 +321,26 @@ fn encode_png(rgba: &[u8], w: u32, h: u32) -> Result<Vec<u8>, SnapshotError> {
     Ok(out)
 }
 
-/// 渲染全部页 x 主题 x 缩放，写进 `dir`，返回写出的文件。
+/// Export snapshots for all selected routes x themes x scales into `dir`.
 pub fn write_all(dir: &Path) -> Result<Vec<PathBuf>, SnapshotError> {
     fs::create_dir_all(dir)?;
+    let routes: Vec<String> = match std::env::var("TEKESUI_GALLERY_PAGE") {
+        Ok(value) if value == "all" => workbench::entries()
+            .iter()
+            .map(|entry| entry.slug().to_owned())
+            .collect(),
+        Ok(value) => vec![value],
+        Err(_) => DEFAULT_ROUTES.iter().map(|s| (*s).to_owned()).collect(),
+    };
     let mut renderer = Renderer::new_headless()?;
-    let mut text = TextEngine::new();
-    let mut static_text = StaticText::new(None);
+    let mut gallery = HeadlessGallery::open(&routes[0])?;
     let mut written = Vec::new();
-    for page in Page::ALL {
+    for route in &routes {
         for theme in Theme::ALL {
             for scale in SCALES {
-                let png = render_png(
-                    &mut renderer,
-                    &mut text,
-                    &mut static_text,
-                    page,
-                    theme,
-                    scale,
-                )?;
-                let path = dir.join(file_name(page, theme, scale));
+                let (slug, png) =
+                    render_route_png(&mut renderer, &mut gallery, route, theme, scale)?;
+                let path = dir.join(route_file_name(&slug, theme, scale));
                 fs::write(&path, png)?;
                 written.push(path);
             }
@@ -383,64 +352,69 @@ pub fn write_all(dir: &Path) -> Result<Vec<PathBuf>, SnapshotError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::gallery::text::TextEngine;
 
     #[test]
     fn file_names() {
         assert_eq!(
-            file_name(Page::Primitives, Theme::LIGHT, 2),
-            "primitives-light@2x.png"
+            route_file_name("foundation-tokens", Theme::LIGHT, 2),
+            "foundation-tokens-light@2x.png"
         );
         assert_eq!(
-            file_name(Page::Tokens, Theme::DARK_INCREASED, 1),
-            "tokens-dark-ic@1x.png"
+            route_file_name("foundation-tokens", Theme::DARK_INCREASED, 1),
+            "foundation-tokens-dark-ic@1x.png"
         );
         assert_eq!(
-            file_name(Page::StaticText, Theme::DARK, 2),
-            "static-text-dark@2x.png"
+            route_file_name("lab-calibration", Theme::DARK, 2),
+            "lab-calibration-dark@2x.png"
         );
+        for route in DEFAULT_ROUTES {
+            crate::gallery::apphost_workbench::resolve_route(route)
+                .unwrap_or_else(|e| panic!("DEFAULT_ROUTES entry {route} failed: {e}"));
+        }
     }
 
     #[test]
     fn ticking_number_gpu_frames_keep_fixed_width_and_finish() {
-        let mut renderer = Renderer::new_headless().expect("headless Metal renderer");
-        let mut gallery = Gallery::with_static_text(StaticText::new(None));
-        assert!(gallery.open_route("foundation-motion/playground"));
-        gallery.motion.select_catalog(PresetCatalog::TickingNumber);
-        gallery.set_view_size(1000.0, FRAME_H);
-        gallery.prepare(&mut renderer, 1.0);
-        gallery.build_scene(&mut Scene::new());
-        gallery.motion.ticking.set_target(546).unwrap();
+        let Ok(mut renderer) = Renderer::new_headless() else {
+            eprintln!("UNVERIFIED: no headless Metal adapter; skipping ticking number GPU test");
+            return;
+        };
+        let mut gallery = HeadlessGallery::open("foundation-motion/playground").unwrap();
+        gallery.state().borrow_mut().with_current_page(|page| {
+            let motion = page.motion_mut().unwrap();
+            motion.select_catalog(PresetCatalog::TickingNumber);
+        });
+        let size_pt = (1000_u32, FRAME_H as u32);
+        let whole = Rect::new(0.0, 0.0, size_pt.0 as f32, size_pt.1 as f32);
+        // Prime resources so Motion receives its initial runnable frame before retargeting.
+        gallery
+            .window_mut()
+            .build_headless_scene(&mut renderer, whole, 1.0, true)
+            .unwrap();
+        gallery.state().borrow_mut().with_current_page(|page| {
+            page.motion_mut().unwrap().set_ticking_target(546).unwrap();
+        });
+        let mut text = TextEngine::new();
         let mut widths = Vec::new();
         let mut images = Vec::new();
-        for (index, delta) in [0.0, 0.9, 1.0].into_iter().enumerate() {
-            gallery.animate(delta);
-            let mut scene = Scene::new();
-            gallery.build_scene(&mut scene);
-            widths.push(
-                gallery
-                    .motion
-                    .ticking
-                    .measure(
-                        &mut gallery.text,
-                        tekes_ui_tokens::proposal::TextRole::UiHeading,
-                    )
-                    .width,
-            );
-            let background = Gallery::background(gallery.theme.system);
-            let rgba = renderer
-                .render_to_rgba8(
-                    &scene,
-                    gallery.atlas_mut(),
-                    (1000, FRAME_H as u32),
-                    1.0,
-                    background,
-                )
+        let mut elapsed = Duration::ZERO;
+        for (index, delta) in [0.0_f64, 0.9, 1.0].into_iter().enumerate() {
+            elapsed += Duration::from_secs_f64(delta);
+            gallery.window_mut().set_motion_elapsed(elapsed);
+            let rgba = gallery
+                .window_mut()
+                .render_headless_rgba8(&mut renderer, size_pt, 1)
                 .unwrap();
+            let width = gallery.state().borrow().with_current_page_ref(|page| {
+                page.motion().unwrap().measure_ticking_width(&mut text)
+            });
+            widths.push(width);
             if let Ok(dir) = std::env::var("TEKESUI_TICKING_SNAPSHOT_OUT") {
                 fs::create_dir_all(&dir).unwrap();
                 fs::write(
                     Path::new(&dir).join(format!("ticking-{index}.png")),
-                    encode_png(&rgba, 1000, FRAME_H as u32).unwrap(),
+                    encode_png(&rgba, size_pt.0, size_pt.1).unwrap(),
                 )
                 .unwrap();
             }
@@ -450,11 +424,15 @@ mod tests {
         assert_eq!(widths[1], widths[2]);
         assert_ne!(images[0], images[1]);
         assert_ne!(images[1], images[2]);
-        assert_eq!(gallery.motion.ticking.value(), 546);
-        assert!(!gallery.motion.ticking.needs_animation());
+        let (value, animating) = gallery.state().borrow().with_current_page_ref(|page| {
+            let motion = page.motion().unwrap();
+            (motion.ticking_value(), motion.ticking_needs_animation())
+        });
+        assert_eq!(value, 546);
+        assert!(!animating);
     }
 
-    /// Set TEKESUI_MOTION_SNAPSHOT_OUT to export the real, full Gallery Motion
+    /// Set TEKESUI_MOTION_SNAPSHOT_OUT to export the real, full AppHost Motion
     /// matrix. A missing headless GPU is reported as unverified, never as pass.
     #[test]
     fn export_live_motion_matrix_when_requested() {
@@ -471,25 +449,22 @@ mod tests {
                 return;
             }
         };
-        // Keep one renderer for the complete matrix to exercise repeated atlas,
-        // texture and drawable reuse across every catalog and viewport size.
         let count = export_motion_matrix(&mut renderer, Path::new(&output)).unwrap();
         assert_eq!(count, 192);
         eprintln!("EXPORTED: {count} real Gallery Motion PNG/case pairs to {output}");
     }
 
     #[test]
-    fn legacy_and_canonical_motion_snapshots_use_live_gallery_buttons() {
+    fn apphost_motion_snapshots_use_live_gallery_buttons() {
         let Ok(mut renderer) = Renderer::new_headless() else {
             eprintln!("UNVERIFIED: no GPU adapter for live Motion snapshot path");
             return;
         };
-        let canonical = super::super::workbench::route("foundation-motion/playground").unwrap();
-        for requested in [Page::Motion, canonical] {
+        for requested in ["foundation-motion", "foundation-motion/playground"] {
             let rendered = render_motion_case(
                 &mut renderer,
                 MotionSnapshotRequest {
-                    requested_page: requested,
+                    requested_route: requested,
                     theme: Theme::LIGHT,
                     locale: Locale::En,
                     type_scale: 1.0,
@@ -512,702 +487,59 @@ mod tests {
         }
     }
 
-    /// 同一输入渲染两次，PNG 逐字节相同。没有 GPU 适配器时跳过。
+    /// Determinism: rendering the same AppHost route twice produces byte-identical PNGs.
     #[test]
     fn rendering_twice_is_byte_identical() {
         let Ok(mut renderer) = Renderer::new_headless() else {
             eprintln!("没有可用的 GPU 适配器，跳过");
             return;
         };
-        let mut text = TextEngine::new();
-        let mut st = StaticText::new(None);
-        for (page, theme, scale) in [
-            (Page::Primitives, Theme::LIGHT, 2),
-            (Page::Tokens, Theme::DARK_INCREASED, 1),
-            (Page::StaticText, Theme::LIGHT, 2),
-            (Page::StaticText, Theme::DARK, 1),
-            (Page::StaticText, Theme::DARK_INCREASED, 2),
+        let mut gallery = HeadlessGallery::open("foundation-tokens").unwrap();
+        for (route, theme, scale) in [
+            ("foundation-tokens", Theme::LIGHT, 2),
+            ("foundation-tokens", Theme::DARK_INCREASED, 1),
+            ("lab-calibration", Theme::LIGHT, 2),
+            ("lab-calibration", Theme::DARK, 1),
+            ("lab-calibration", Theme::DARK_INCREASED, 2),
         ] {
-            let a = render_png(&mut renderer, &mut text, &mut st, page, theme, scale).unwrap();
-            let b = render_png(&mut renderer, &mut text, &mut st, page, theme, scale).unwrap();
-            assert_eq!(a, b, "{page:?} {theme:?} {scale}x");
-            // 用新的渲染器、新的文字引擎再来一次，排除内部状态（atlas 打包顺序、标签缓存）的影响。
-            let mut fresh = Renderer::new_headless().unwrap();
-            let c = render_png(
-                &mut fresh,
-                &mut TextEngine::new(),
-                &mut StaticText::new(None),
-                page,
-                theme,
-                scale,
-            )
-            .unwrap();
-            assert_eq!(a, c, "{page:?} {theme:?} {scale}x（新渲染器）");
+            let (_, a) =
+                render_route_png(&mut renderer, &mut gallery, route, theme, scale).unwrap();
+            let (_, b) =
+                render_route_png(&mut renderer, &mut gallery, route, theme, scale).unwrap();
+            assert_eq!(a, b, "{route} {theme:?} {scale}x");
+            let mut fresh_renderer = Renderer::new_headless().unwrap();
+            let mut fresh_gallery = HeadlessGallery::open(route).unwrap();
+            let (_, c) =
+                render_route_png(&mut fresh_renderer, &mut fresh_gallery, route, theme, scale)
+                    .unwrap();
+            assert_eq!(a, c, "{route} {theme:?} {scale}x (fresh host/renderer)");
         }
     }
 
     #[test]
-    fn original_three_page_content_matches_the_committed_proposal_review() {
-        // CoreText's automatic CJK cascade depends on preferred languages.
-        // Run this historical fixture in its own process: changing defaults in
-        // the parallel test process would also change unrelated text tests.
-        // NSArgumentDomain is process-only; no system preference is written.
-        let profile: serde_json::Value = serde_json::from_str(include_str!(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/../../design/reviews/proposal1/reference-language-profile-20261019.json"
-        )))
-        .unwrap();
-        let expected: Vec<_> = profile["preferred_languages"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .map(|value| value.as_str().unwrap().to_owned())
-            .collect();
-        if std::env::var_os("TEKESUI_GOLDEN_REFERENCE_CHILD").is_none() {
-            let output = std::process::Command::new(std::env::current_exe().unwrap())
-                .args([
-                    "--exact",
-                    "gallery::snapshot::tests::original_three_page_content_matches_the_committed_proposal_review",
-                    "--nocapture",
-                    "--",
-                    "-AppleLanguages",
-                    &format!("({})", expected.join(",")),
-                ])
-                .env("TEKESUI_GOLDEN_REFERENCE_CHILD", "1")
-                .output()
-                .expect("launch isolated reference render");
-            let stdout = String::from_utf8_lossy(&output.stdout);
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            eprintln!("{stdout}{stderr}");
-            assert!(output.status.success(), "isolated historical render failed");
-            return;
-        }
-        let defaults = objc2_foundation::NSUserDefaults::standardUserDefaults();
-        let languages = defaults
-            .stringArrayForKey(&objc2_foundation::NSString::from_str("AppleLanguages"))
-            .map(|values| {
-                values
-                    .iter()
-                    .map(|value| value.to_string())
-                    .collect::<Vec<_>>()
-            });
-        eprintln!("reference AppleLanguages: {languages:?}");
-        assert_eq!(languages.as_deref(), Some(expected.as_slice()));
+    fn token_snapshot_scene_contains_current_theme_colors_without_reverse_mapping() {
         let Ok(mut renderer) = Renderer::new_headless() else {
-            eprintln!("UNVERIFIED: no GPU adapter for content regression");
+            eprintln!("没有可用的 GPU 适配器，跳过");
             return;
         };
-        fn rgba(bytes: Vec<u8>) -> (u32, Vec<u8>) {
-            let mut reader = png::Decoder::new(std::io::Cursor::new(bytes))
-                .read_info()
+        let mut gallery = HeadlessGallery::open("foundation-tokens").unwrap();
+        let whole = Rect::new(0.0, 0.0, FRAME_W, FRAME_H);
+        let mut clears = Vec::new();
+        for theme in [Theme::LIGHT, Theme::DARK] {
+            gallery.set_theme(theme);
+            let (scene, clear) = gallery
+                .window_mut()
+                .build_headless_scene(&mut renderer, whole, 1.0, true)
                 .unwrap();
-            let mut output = vec![0; reader.output_buffer_size()];
-            let frame = reader.next_frame(&mut output).unwrap();
-            assert_eq!(frame.color_type, png::ColorType::Rgba);
-            output.truncate(frame.buffer_size());
-            (frame.width, output)
+            let expected = tekes_ui_tokens::Palette::from(theme)
+                .color("surface-1")
+                .unwrap();
+            assert_eq!(clear, expected);
+            assert!(scene.primitives().iter().any(|p| {
+                matches!(p, tekes_ui_scene::Primitive::Quad(q) if q.fill == expected)
+            }));
+            clears.push(clear);
         }
-        let mut text = TextEngine::new();
-        text.set_locale(super::super::locale::Locale::Reference);
-        let mut fixture = StaticText::new(None);
-        let historical = Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../../design/reviews/proposal1/screenshots");
-        for page in [Page::Primitives, Page::Tokens, Page::StaticText] {
-            for theme in Theme::ALL {
-                for scale in SCALES {
-                    let name = file_name(page, theme, scale);
-                    let (width, before) = rgba(fs::read(historical.join(&name)).unwrap());
-                    text.set_scale(scale as f32);
-                    text.begin_frame();
-                    let mut original_scene = Scene::new();
-                    compose(
-                        page,
-                        None,
-                        &mut PageCtx {
-                            theme,
-                            text: &mut text,
-                            static_text: &mut fixture,
-                        },
-                        &mut original_scene,
-                    );
-                    // Reconstruct only the reviewed ordinary palette changes for the
-                    // immutable proposal1 historical PNG. Geometry, text, alpha,
-                    // primitive order and Increased Contrast remain unchanged.
-                    assert_eq!(
-                        tekes_ui_tokens::proposal::color("row-selection-hover", Theme::LIGHT),
-                        Some(tekes_ui_tokens::Rgba::rgb8(231, 229, 224))
-                    );
-                    assert_eq!(
-                        tekes_ui_tokens::proposal::color("row-selection-hover", Theme::DARK),
-                        Some(tekes_ui_tokens::Rgba::rgb8(42, 42, 39))
-                    );
-                    let ordinary_revision: Option<
-                        &[(&str, tekes_ui_tokens::Rgba, tekes_ui_tokens::Rgba)],
-                    > = if theme == Theme::LIGHT {
-                        Some(&[
-                            (
-                                "accent",
-                                tekes_ui_tokens::Rgba::rgb8(88, 88, 88),
-                                tekes_ui_tokens::Rgba::rgb8(80, 80, 80),
-                            ),
-                            (
-                                "border",
-                                tekes_ui_tokens::Rgba::rgb8(131, 128, 121),
-                                tekes_ui_tokens::Rgba::rgb8(115, 115, 112),
-                            ),
-                            (
-                                "border-focused",
-                                tekes_ui_tokens::Rgba::rgb8(124, 121, 114),
-                                tekes_ui_tokens::Rgba::rgb8(66, 66, 63),
-                            ),
-                            (
-                                "button-hover",
-                                tekes_ui_tokens::Rgba::rgb8(237, 235, 230),
-                                tekes_ui_tokens::Rgba::rgb8(233, 233, 231),
-                            ),
-                            (
-                                "button-pressed",
-                                tekes_ui_tokens::Rgba::rgb8(231, 229, 224),
-                                tekes_ui_tokens::Rgba::rgb8(221, 221, 218),
-                            ),
-                            (
-                                "diff-added-marker",
-                                tekes_ui_tokens::Rgba::rgb8(45, 104, 71),
-                                tekes_ui_tokens::Rgba::rgb8(33, 99, 63),
-                            ),
-                            (
-                                "diff-added-surface",
-                                tekes_ui_tokens::Rgba::rgb8(230, 239, 232),
-                                tekes_ui_tokens::Rgba::rgb8(229, 240, 232),
-                            ),
-                            (
-                                "diff-removed-marker",
-                                tekes_ui_tokens::Rgba::rgb8(158, 59, 62),
-                                tekes_ui_tokens::Rgba::rgb8(164, 47, 53),
-                            ),
-                            (
-                                "diff-removed-surface",
-                                tekes_ui_tokens::Rgba::rgb8(244, 232, 231),
-                                tekes_ui_tokens::Rgba::rgb8(248, 232, 232),
-                            ),
-                            (
-                                "document-canvas",
-                                tekes_ui_tokens::Rgba::rgb8(250, 249, 246),
-                                tekes_ui_tokens::Rgba::rgb8(252, 252, 251),
-                            ),
-                            (
-                                "primary-text",
-                                tekes_ui_tokens::Rgba::rgb8(52, 50, 47),
-                                tekes_ui_tokens::Rgba::rgb8(21, 21, 21),
-                            ),
-                            (
-                                "row-selection",
-                                tekes_ui_tokens::Rgba::rgb8(236, 234, 229),
-                                tekes_ui_tokens::Rgba::rgb8(230, 230, 228),
-                            ),
-                            (
-                                "secondary-text",
-                                tekes_ui_tokens::Rgba::rgb8(97, 94, 88),
-                                tekes_ui_tokens::Rgba::rgb8(82, 82, 82),
-                            ),
-                            (
-                                "selected-text",
-                                tekes_ui_tokens::Rgba::rgb8(30, 29, 27),
-                                tekes_ui_tokens::Rgba::rgb8(21, 21, 21),
-                            ),
-                            (
-                                "separator",
-                                tekes_ui_tokens::Rgba::rgb8(228, 226, 220),
-                                tekes_ui_tokens::Rgba::rgb8(223, 223, 221),
-                            ),
-                            (
-                                "status-running",
-                                tekes_ui_tokens::Rgba::rgb8(138, 82, 20),
-                                tekes_ui_tokens::Rgba::rgb8(138, 75, 0),
-                            ),
-                            (
-                                "surface-sidebar",
-                                tekes_ui_tokens::Rgba::rgb8(243, 242, 238),
-                                tekes_ui_tokens::Rgba::rgb8(245, 245, 243),
-                            ),
-                            (
-                                "tertiary-text",
-                                tekes_ui_tokens::Rgba::rgb8(122, 119, 112),
-                                tekes_ui_tokens::Rgba::rgb8(96, 96, 96),
-                            ),
-                            (
-                                "text-selection",
-                                tekes_ui_tokens::Rgba::rgb8(200, 213, 230),
-                                tekes_ui_tokens::Rgba::rgb8(201, 215, 234),
-                            ),
-                            (
-                                "warning",
-                                tekes_ui_tokens::Rgba::rgb8(232, 198, 104),
-                                tekes_ui_tokens::Rgba::rgb8(243, 206, 103),
-                            ),
-                            (
-                                "warning-foreground",
-                                tekes_ui_tokens::Rgba::rgb8(150, 70, 18),
-                                tekes_ui_tokens::Rgba::rgb8(160, 60, 0),
-                            ),
-                        ])
-                    } else if theme == Theme::DARK {
-                        Some(&[
-                            (
-                                "accent",
-                                tekes_ui_tokens::Rgba::rgb8(168, 168, 168),
-                                tekes_ui_tokens::Rgba::rgb8(190, 190, 190),
-                            ),
-                            (
-                                "border",
-                                tekes_ui_tokens::Rgba::rgb8(120, 117, 110),
-                                tekes_ui_tokens::Rgba::rgb8(163, 163, 158),
-                            ),
-                            (
-                                "border-focused",
-                                tekes_ui_tokens::Rgba::rgb8(127, 124, 117),
-                                tekes_ui_tokens::Rgba::rgb8(238, 238, 234),
-                            ),
-                            (
-                                "button-hover",
-                                tekes_ui_tokens::Rgba::rgb8(36, 36, 33),
-                                tekes_ui_tokens::Rgba::rgb8(39, 39, 38),
-                            ),
-                            (
-                                "button-pressed",
-                                tekes_ui_tokens::Rgba::rgb8(41, 41, 38),
-                                tekes_ui_tokens::Rgba::rgb8(50, 50, 49),
-                            ),
-                            (
-                                "diff-added-marker",
-                                tekes_ui_tokens::Rgba::rgb8(120, 179, 140),
-                                tekes_ui_tokens::Rgba::rgb8(150, 217, 172),
-                            ),
-                            (
-                                "diff-added-surface",
-                                tekes_ui_tokens::Rgba::rgb8(31, 45, 35),
-                                tekes_ui_tokens::Rgba::rgb8(35, 54, 42),
-                            ),
-                            (
-                                "diff-removed-marker",
-                                tekes_ui_tokens::Rgba::rgb8(212, 142, 142),
-                                tekes_ui_tokens::Rgba::rgb8(255, 177, 177),
-                            ),
-                            (
-                                "diff-removed-surface",
-                                tekes_ui_tokens::Rgba::rgb8(48, 34, 35),
-                                tekes_ui_tokens::Rgba::rgb8(59, 39, 41),
-                            ),
-                            (
-                                "document-canvas",
-                                tekes_ui_tokens::Rgba::rgb8(25, 25, 23),
-                                tekes_ui_tokens::Rgba::rgb8(21, 21, 21),
-                            ),
-                            (
-                                "primary-text",
-                                tekes_ui_tokens::Rgba::rgb8(212, 209, 201),
-                                tekes_ui_tokens::Rgba::rgb8(245, 245, 245),
-                            ),
-                            (
-                                "row-selection",
-                                tekes_ui_tokens::Rgba::rgb8(38, 38, 35),
-                                tekes_ui_tokens::Rgba::rgb8(42, 42, 41),
-                            ),
-                            (
-                                "secondary-text",
-                                tekes_ui_tokens::Rgba::rgb8(151, 148, 140),
-                                tekes_ui_tokens::Rgba::rgb8(163, 163, 163),
-                            ),
-                            (
-                                "selected-text",
-                                tekes_ui_tokens::Rgba::rgb8(242, 239, 232),
-                                tekes_ui_tokens::Rgba::rgb8(255, 255, 255),
-                            ),
-                            (
-                                "separator",
-                                tekes_ui_tokens::Rgba::rgb8(44, 44, 40),
-                                tekes_ui_tokens::Rgba::rgb8(53, 53, 51),
-                            ),
-                            (
-                                "status-running",
-                                tekes_ui_tokens::Rgba::rgb8(204, 155, 94),
-                                tekes_ui_tokens::Rgba::rgb8(245, 190, 116),
-                            ),
-                            (
-                                "surface-sidebar",
-                                tekes_ui_tokens::Rgba::rgb8(21, 21, 19),
-                                tekes_ui_tokens::Rgba::rgb8(11, 11, 10),
-                            ),
-                            (
-                                "tertiary-text",
-                                tekes_ui_tokens::Rgba::rgb8(126, 123, 116),
-                                tekes_ui_tokens::Rgba::rgb8(180, 180, 176),
-                            ),
-                            (
-                                "text-selection",
-                                tekes_ui_tokens::Rgba::rgb8(62, 80, 102),
-                                tekes_ui_tokens::Rgba::rgb8(66, 86, 111),
-                            ),
-                            (
-                                "transcript-input",
-                                tekes_ui_tokens::Rgba::rgb8(34, 34, 31),
-                                tekes_ui_tokens::Rgba::rgb8(32, 32, 30),
-                            ),
-                            (
-                                "warning",
-                                tekes_ui_tokens::Rgba::rgb8(207, 166, 78),
-                                tekes_ui_tokens::Rgba::rgb8(228, 183, 81),
-                            ),
-                            (
-                                "warning-foreground",
-                                tekes_ui_tokens::Rgba::rgb8(206, 145, 85),
-                                tekes_ui_tokens::Rgba::rgb8(255, 168, 92),
-                            ),
-                        ])
-                    } else {
-                        None
-                    };
-                    if let Some(revision) = ordinary_revision {
-                        for (i, &(role, current, _)) in revision.iter().enumerate() {
-                            assert_eq!(
-                                tekes_ui_tokens::proposal::color(role, theme),
-                                Some(current),
-                                "{role} / {theme:?}"
-                            );
-                            for &(other_role, other_current, _) in &revision[i + 1..] {
-                                assert_ne!(
-                                    (current.r, current.g, current.b),
-                                    (other_current.r, other_current.g, other_current.b),
-                                    "duplicate RGB mapping between {role} and {other_role} in {theme:?}"
-                                );
-                            }
-                        }
-                    }
-                    let restore_ordinary = |ink: tekes_ui_tokens::Rgba| {
-                        if ink.a == 0.0 {
-                            return ink;
-                        }
-                        if let Some(revision) = ordinary_revision {
-                            for &(_, current, historical) in revision {
-                                if ink.r == current.r && ink.g == current.g && ink.b == current.b {
-                                    return tekes_ui_tokens::Rgba {
-                                        a: ink.a,
-                                        ..historical
-                                    };
-                                }
-                            }
-                        }
-                        ink
-                    };
-                    let mut reference_color_scene = Scene::new();
-                    let mut changed_channels = 0;
-                    for primitive in original_scene.primitives() {
-                        match primitive {
-                            tekes_ui_scene::Primitive::Quad(quad) => {
-                                let mut reference = *quad;
-                                reference.fill = restore_ordinary(quad.fill);
-                                reference.border_color = restore_ordinary(quad.border_color);
-                                changed_channels += usize::from(reference.fill != quad.fill)
-                                    + usize::from(reference.border_color != quad.border_color);
-                                assert_eq!(
-                                    tekes_ui_scene::Quad {
-                                        fill: quad.fill,
-                                        border_color: quad.border_color,
-                                        ..reference
-                                    },
-                                    *quad
-                                );
-                                reference_color_scene.push_quad(reference);
-                            }
-                            tekes_ui_scene::Primitive::Glyphs(run) => {
-                                let mut reference = run.clone();
-                                reference.color = restore_ordinary(run.color);
-                                changed_channels += usize::from(reference.color != run.color);
-                                assert_eq!(reference.glyphs, run.glyphs, "glyph identity/position");
-                                reference_color_scene.push_glyphs(reference);
-                            }
-                            other => reference_color_scene.push(other.clone()),
-                        }
-                    }
-                    eprintln!("ordinary revision {name}: {changed_channels} channels");
-                    assert_eq!(
-                        reference_color_scene.primitives().len(),
-                        original_scene.primitives().len(),
-                        "primitive order/count retained"
-                    );
-                    let mut legacy_scene = Scene::new();
-                    let colors = tekes_ui_tokens::ColorRole::ALL
-                        .map(|role| restore_ordinary(role.resolve(theme)));
-                    let current_radius = tekes_ui_tokens::CornerRadius::concentric(
-                        tekes_ui_tokens::CornerRadius::Row.value(),
-                        tekes_ui_tokens::Spacing::Tight.value(),
-                    );
-                    let legacy_radius = tekes_ui_tokens::CornerRadius::Badge.value();
-                    assert_eq!(current_radius, 2.0, "corrected concentric radius");
-                    assert_eq!(legacy_radius, 4.0, "historical badge-floor radius");
-                    let mut concentric_swatches = 0;
-                    let mut concentric_swatch_quads = Vec::new();
-                    for primitive in reference_color_scene.primitives() {
-                        match primitive {
-                            tekes_ui_scene::Primitive::Quad(quad)
-                                if quad.rect.size.width == 80.0
-                                    && quad.rect.size.height == 48.0
-                                    && quad.border_width > 0.0
-                                    && quad.corner_radii
-                                        == tekes_ui_scene::CornerRadii::uniform(current_radius)
-                                    && colors.contains(&quad.fill) =>
-                            {
-                                concentric_swatches += 1;
-                                concentric_swatch_quads.push(*quad);
-                                legacy_scene.push_quad((*quad).with_corner_radius(legacy_radius));
-                            }
-                            other => legacy_scene.push(other.clone()),
-                        }
-                    }
-                    if page == Page::Tokens {
-                        assert_eq!(
-                            concentric_swatches,
-                            tekes_ui_tokens::ColorRole::ALL.len(),
-                            "only the complete set of token swatch inner quads is exempt"
-                        );
-                    } else {
-                        assert_eq!(concentric_swatches, 0, "non-token page swatch match");
-                    }
-                    let size = (FRAME_W as u32 * scale, FRAME_H as u32 * scale);
-                    let reference_background = restore_ordinary(Gallery::background(theme));
-                    // Still render the actual current scene. The historical
-                    // comparison below restores only the asserted Theme channel.
-                    let current = renderer
-                        .render_to_rgba8(
-                            &original_scene,
-                            text.atlas_mut(),
-                            size,
-                            scale as f32,
-                            Gallery::background(theme),
-                        )
-                        .unwrap();
-                    let after = renderer
-                        .render_to_rgba8(
-                            &reference_color_scene,
-                            text.atlas_mut(),
-                            size,
-                            scale as f32,
-                            reference_background,
-                        )
-                        .unwrap();
-                    let legacy = renderer
-                        .render_to_rgba8(
-                            &legacy_scene,
-                            text.atlas_mut(),
-                            size,
-                            scale as f32,
-                            reference_background,
-                        )
-                        .unwrap();
-                    let new_width = size.0;
-                    assert_eq!(width, new_width);
-                    assert_eq!(
-                        current.len(),
-                        after.len(),
-                        "{name} current image dimensions"
-                    );
-                    if ordinary_revision.is_none() {
-                        assert_eq!(changed_channels, 0, "{name} unchanged Theme channels");
-                        assert_eq!(current, after, "{name} unchanged Theme render");
-                    } else {
-                        assert!(changed_channels > 0, "{name} expected changed channels");
-                        assert_ne!(current, after, "{name} approved Theme changes are rendered");
-                    }
-                    assert_eq!(before.len(), after.len(), "{name} image dimensions");
-                    assert_eq!(before.len(), legacy.len(), "{name} legacy image dimensions");
-                    // Existing goldens stay unchanged. With only the declared Theme
-                    // channels restored, the sole remaining intentional pixel change
-                    // is the deliberate concentric-radius correction on the 27 Tokens swatches,
-                    // plus overlapping inner/outer AA on hairline borders. The legacy render
-                    // changes only those 27 inner radii back to the historical badge floor.
-                    // A radius-only delta is exact only where golden == legacy. Any residual
-                    // historical AA variance still has to satisfy the original ring-only,
-                    // 32-channel bound below.
-                    let in_overlap = |scene: &Scene, x: f32, y: f32| {
-                        scene.primitives().iter().any(|primitive| {
-                            let tekes_ui_scene::Primitive::Quad(q) = primitive else {
-                                return false;
-                            };
-                            if q.border_width <= 0.0 {
-                                return false;
-                            }
-                            let scale = scale as f32;
-                            let px = x - q.rect.center().x * scale;
-                            let py = y - q.rect.center().y * scale;
-                            let radius = if py > 0.0 {
-                                if px > 0.0 {
-                                    q.corner_radii.bottom_right
-                                } else {
-                                    q.corner_radii.bottom_left
-                                }
-                            } else if px > 0.0 {
-                                q.corner_radii.top_right
-                            } else {
-                                q.corner_radii.top_left
-                            } * scale;
-                            let radius = radius.clamp(
-                                0.0,
-                                q.rect.size.width.min(q.rect.size.height) * scale * 0.5,
-                            );
-                            let distance = |inset: f32, r: f32| {
-                                let dx = px.abs() - (q.rect.size.width * scale * 0.5 - inset) + r;
-                                let dy = py.abs() - (q.rect.size.height * scale * 0.5 - inset) + r;
-                                dx.max(dy).min(0.0) + dx.max(0.0).hypot(dy.max(0.0)) - r
-                            };
-                            let outer = (0.5 - distance(0.0, radius)).clamp(0.0, 1.0);
-                            let inner = (0.5
-                                - distance(
-                                    q.border_width * scale,
-                                    (radius - q.border_width * scale).max(0.0),
-                                ))
-                            .clamp(0.0, 1.0);
-                            outer > 0.0 && outer < 1.0 && inner > 0.0 && inner < 1.0
-                        })
-                    };
-                    let ring_coverage = |q: &tekes_ui_scene::Quad, radius: f32, x: f32, y: f32| {
-                        let scale = scale as f32;
-                        let px = x - q.rect.center().x * scale;
-                        let py = y - q.rect.center().y * scale;
-                        let radius = (radius * scale)
-                            .clamp(0.0, q.rect.size.width.min(q.rect.size.height) * scale * 0.5);
-                        let distance = |inset: f32, r: f32| {
-                            let dx = px.abs() - (q.rect.size.width * scale * 0.5 - inset) + r;
-                            let dy = py.abs() - (q.rect.size.height * scale * 0.5 - inset) + r;
-                            dx.max(dy).min(0.0) + dx.max(0.0).hypot(dy.max(0.0)) - r
-                        };
-                        let outer = (0.5 - distance(0.0, radius)).clamp(0.0, 1.0);
-                        let inner = (0.5
-                            - distance(
-                                q.border_width * scale,
-                                (radius - q.border_width * scale).max(0.0),
-                            ))
-                        .clamp(0.0, 1.0);
-                        (outer, inner)
-                    };
-                    let changed_swatch_coverage = |x: f32, y: f32| {
-                        concentric_swatch_quads.iter().find_map(|quad| {
-                            let current = ring_coverage(quad, current_radius, x, y);
-                            let legacy = ring_coverage(quad, legacy_radius, x, y);
-                            (current.0.to_bits() != legacy.0.to_bits()
-                                || current.1.to_bits() != legacy.1.to_bits())
-                            .then_some((quad.rect, current, legacy))
-                        })
-                    };
-                    let mut corrected = 0;
-                    let mut concentric_radius_pixels = 0;
-                    let mut concentric_radius_aa_pixels = 0;
-                    let mut concentric_quantized_aa_pixels = 0;
-                    // New directory entries are intentional; all other content remains exact.
-                    let start = super::super::layout::CATALOG_W as usize * scale as usize * 4;
-                    let stride = width as usize * 4;
-                    for (row, (a, b)) in before
-                        .chunks_exact(stride)
-                        .zip(after.chunks_exact(stride))
-                        .enumerate()
-                    {
-                        for (column, (old, new)) in a
-                            .chunks_exact(4)
-                            .zip(b.chunks_exact(4))
-                            .enumerate()
-                            .skip(start / 4)
-                        {
-                            let offset = row * stride + column * 4;
-                            let prior = &before[offset..offset + 4];
-                            let historic = &legacy[offset..offset + 4];
-                            if old != new {
-                                if new != historic {
-                                    if old == historic {
-                                        concentric_radius_pixels += 1;
-                                    } else {
-                                        assert!(
-                                            in_overlap(
-                                                &legacy_scene,
-                                                column as f32 + 0.5,
-                                                row as f32 + 0.5,
-                                            ),
-                                            "{name} radius/AA pixel outside legacy overlap ({column},{row})"
-                                        );
-                                        assert!(
-                                            prior
-                                                .iter()
-                                                .zip(historic)
-                                                .all(|(a, b)| a.abs_diff(*b) <= 32),
-                                            "{name} historical-to-legacy AA delta exceeds 32"
-                                        );
-                                        concentric_radius_aa_pixels += 1;
-                                    }
-                                } else {
-                                    assert!(
-                                        prior.iter().zip(new).all(|(a, b)| a.abs_diff(*b) <= 32),
-                                        "{name} excessive AA correction"
-                                    );
-                                    let x = column as f32 + 0.5;
-                                    let y = row as f32 + 0.5;
-                                    if in_overlap(&original_scene, x, y) {
-                                        corrected += 1;
-                                    } else {
-                                        let legacy_overlap = in_overlap(&legacy_scene, x, y);
-                                        let coverage = changed_swatch_coverage(x, y);
-                                        assert!(
-                                            legacy_overlap && coverage.is_some(),
-                                            "{name} unexpected pixel ({column},{row}) {old:?} -> {new:?}; legacy_overlap={legacy_overlap}, changed_swatch_coverage={coverage:?}"
-                                        );
-                                        if column == 819 && row == 92 {
-                                            let (frame, current_cov, legacy_cov) =
-                                                coverage.unwrap();
-                                            eprintln!(
-                                                "{name} pixel (819,92) matched swatch {frame:?} SDF: outer={:?}->{:?}, inner={:?}->{:?}, historical AA delta={:?}",
-                                                current_cov.0,
-                                                legacy_cov.0,
-                                                current_cov.1,
-                                                legacy_cov.1,
-                                                prior
-                                                    .iter()
-                                                    .zip(historic)
-                                                    .map(|(a, b)| a.abs_diff(*b))
-                                                    .collect::<Vec<_>>()
-                                            );
-                                        }
-                                        concentric_quantized_aa_pixels += 1;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    assert!(
-                        corrected < 2000,
-                        "{name}: correction affects too many pixels: {corrected}"
-                    );
-                    eprintln!(
-                        "{name}: {concentric_radius_pixels} exact concentric-radius pixels, {concentric_radius_aa_pixels} radius/legacy-AA pixels, {concentric_quantized_aa_pixels} quantized-radius/legacy-AA pixels, {corrected} current-AA overlap pixels; other original content exact"
-                    );
-                }
-            }
-        }
-    }
-
-    #[test]
-    fn png_has_expected_size() {
-        let Ok(mut renderer) = Renderer::new_headless() else {
-            return;
-        };
-        let bytes = render_png(
-            &mut renderer,
-            &mut TextEngine::new(),
-            &mut StaticText::new(None),
-            Page::Tokens,
-            Theme::LIGHT,
-            1,
-        )
-        .unwrap();
-        let decoder = png::Decoder::new(std::io::Cursor::new(bytes));
-        let reader = decoder.read_info().unwrap();
-        let info = reader.info();
-        assert_eq!((info.width, info.height), (FRAME_W as u32, FRAME_H as u32));
+        assert_ne!(clears[0], clears[1]);
     }
 }

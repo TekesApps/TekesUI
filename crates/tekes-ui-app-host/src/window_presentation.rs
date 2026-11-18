@@ -170,6 +170,22 @@ impl Host {
         band: window_toolbar_mount::ToolbarBand,
     ) -> Result<Vec<Rect>> {
         let (native_height, leading) = w.titlebar_safe_area();
+        self.presentation_frames_with_safe_area(
+            whole,
+            toolbar_height,
+            band,
+            native_height as f32,
+            leading as f32,
+        )
+    }
+    pub(super) fn presentation_frames_with_safe_area(
+        &mut self,
+        whole: Rect,
+        toolbar_height: f32,
+        band: window_toolbar_mount::ToolbarBand,
+        native_height: f32,
+        leading: f32,
+    ) -> Result<Vec<Rect>> {
         let mut layout = self
             .layout
             .presentation
@@ -179,12 +195,7 @@ impl Host {
         layout.tabs = layout.tabs.map(|frame| {
             avoid_native_controls(
                 Rect::new(frame.min_x(), band.y, frame.size.width, band.height),
-                Rect::new(
-                    whole.min_x(),
-                    whole.min_y(),
-                    leading as f32,
-                    native_height as f32,
-                ),
+                Rect::new(whole.min_x(), whole.min_y(), leading, native_height),
             )
         });
         self.apply_presentation_layout(layout)
@@ -275,6 +286,19 @@ impl Host {
         whole: Rect,
         palette: Palette,
     ) -> Result<()> {
+        let mut renderer = self.renderer.take();
+        let result =
+            self.paint_presentation_with_renderer(scene, whole, palette, renderer.as_mut());
+        self.renderer = renderer;
+        result
+    }
+    pub(super) fn paint_presentation_with_renderer(
+        &mut self,
+        scene: &mut Scene,
+        whole: Rect,
+        palette: Palette,
+        renderer: Option<&mut Renderer>,
+    ) -> Result<()> {
         let focus = self
             .layout
             .presentation_layout
@@ -355,7 +379,7 @@ impl Host {
         if let (Some(host), Some(_frame)) = (&mut self.layout.presentation_tabs, switcher_frame) {
             host.set_regions(TABS_OWNER, whole, switcher_regions.unwrap())
                 .map_err(|e| anyhow::anyhow!("container tabs region: {e:?}"))?;
-            if let Some(renderer) = &mut self.renderer {
+            if let Some(renderer) = renderer {
                 with_content_icons(
                     renderer,
                     &mut self.layout.presentation_icons,
@@ -1091,12 +1115,13 @@ impl Host {
             },
         )
     }
+    #[cfg(test)]
     pub(super) fn presentation_toolbar_declarations(&self) -> Vec<Vec<Declaration>> {
         self.presentation_toolbar_declarations_with_icons(self.renderer.is_some())
     }
     // Projection depends on whether the receiving text service can prepare the
     // original toolkit icons; it does not require constructing a GPU renderer.
-    fn presentation_toolbar_declarations_with_icons(
+    pub(super) fn presentation_toolbar_declarations_with_icons(
         &self,
         include_icons: bool,
     ) -> Vec<Vec<Declaration>> {
@@ -1448,21 +1473,64 @@ impl Host {
         band: window_toolbar_mount::ToolbarBand,
         native_height: f32,
     ) -> Result<()> {
-        self.sync_container_toolbars_with_icons(
+        let mut renderer = self.renderer.take();
+        let result = self.sync_container_toolbars_with_renderer(
             active,
             whole,
             band,
             native_height,
-            self.renderer.is_some(),
-        )
+            renderer.as_mut(),
+        );
+        self.renderer = renderer;
+        result
     }
-    fn sync_container_toolbars_with_icons(
+    #[cfg(test)]
+    pub(super) fn sync_container_toolbars_with_icons(
         &mut self,
         active: bool,
         whole: Rect,
         band: window_toolbar_mount::ToolbarBand,
         native_height: f32,
         include_icons: bool,
+    ) -> Result<()> {
+        let mut renderer = self.renderer.take();
+        let result = self.sync_container_toolbars_inner(
+            active,
+            whole,
+            band,
+            native_height,
+            include_icons,
+            renderer.as_mut(),
+        );
+        self.renderer = renderer;
+        result
+    }
+    pub(super) fn sync_container_toolbars_with_renderer(
+        &mut self,
+        active: bool,
+        whole: Rect,
+        band: window_toolbar_mount::ToolbarBand,
+        native_height: f32,
+        renderer: Option<&mut Renderer>,
+    ) -> Result<()> {
+        let include_icons = renderer.is_some();
+        self.sync_container_toolbars_inner(
+            active,
+            whole,
+            band,
+            native_height,
+            include_icons,
+            renderer,
+        )
+    }
+    fn sync_container_toolbars_inner(
+        &mut self,
+        active: bool,
+        whole: Rect,
+        band: window_toolbar_mount::ToolbarBand,
+        native_height: f32,
+        include_icons: bool,
+        renderer: Option<&mut Renderer>,
     ) -> Result<()> {
         let boundary = self
             .layout
@@ -1471,7 +1539,8 @@ impl Host {
         for index in 0..self.panel_mgr.panels.len() {
             let bounds = self.panel_mgr.panels[index].bounds;
             if bounds.size.width > 0. && bounds.size.height > 0. {
-                let geometry = self.container_geometry(index, bounds, boundary)?;
+                let geometry =
+                    self.container_geometry_with_icons(index, bounds, boundary, include_icons)?;
                 self.panel_geometry_layout(
                     index,
                     bounds,
@@ -1519,7 +1588,7 @@ impl Host {
         let palette = self.palette();
         let toolbar = &mut self.panel_mgr.panels[focus].mounted_toolbar;
         let mut measure = Scene::new();
-        if let Some(renderer) = &mut self.renderer {
+        if let Some(renderer) = renderer {
             with_content_icons(renderer, &mut toolbar.icons, &mut self.text, |text| {
                 toolbar
                     .host

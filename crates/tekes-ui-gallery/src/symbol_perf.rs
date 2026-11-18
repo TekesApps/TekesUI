@@ -1,8 +1,8 @@
 //! Symbol stress workloads use the actual Gallery controller, SVG adapter and
 //! renderer. Parameter/target changes are automated, not physical mouse events.
 use crate::gallery::{
-    Gallery,
     motion_preview::{MotionPreview, Parameter, PresetCatalog, symbol_assets::CANVAS},
+    text::TextEngine,
 };
 use serde_json::{Value, json};
 use std::time::Instant;
@@ -155,7 +155,7 @@ impl SymbolWorkload {
     }
     pub fn build(
         &mut self,
-        gallery: &mut Gallery,
+        text: &mut TextEngine,
         renderer: &mut Renderer,
         scene: &mut Scene,
         theme: Theme,
@@ -163,7 +163,7 @@ impl SymbolWorkload {
     ) {
         let start = Instant::now();
         let ink = proposal::render_color("primary-text", theme).unwrap();
-        gallery.text_mut().proposal_label_in(
+        text.proposal_label_in(
             scene,
             theme,
             Rect::new(24.0, 16.0, 1350.0, 26.0),

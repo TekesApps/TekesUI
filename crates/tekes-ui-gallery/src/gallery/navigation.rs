@@ -2,19 +2,27 @@
 use super::{Page, layout};
 use std::sync::OnceLock;
 use tekes_ui_controls::{
-    ButtonTextAlign, ButtonTextRenderer, ScrollArea,
+    ButtonTextAlign, ButtonTextRenderer,
     composition::{
-        AccessibilityAction, Component, ComponentId, Content, ContentActionPayload, ContentEvent,
-        ContentHost, ContentResponse, ContentSemantics, ContentTheme, KeyedSelectableListContent,
-        ListContent, ListDisplayUpdate, ListIntentKind, ListRowDisplay, ScrollContent,
-        StackContent,
+        Component, ComponentId, Content, ContentSemantics, ContentTheme,
+        KeyedSelectableListContent, ListContent, ListDisplayUpdate, ListRowDisplay, StackContent,
     },
     extended::{
         Axis, KeyedListItem, KeyedListSnapshot, ListBudget, ListDatasetKey, ListItemKey, Stack,
     },
     layout::MeasuredChild,
 };
-use tekes_ui_scene::{Point, Rect, Scene, Size};
+#[cfg(test)]
+use tekes_ui_controls::{
+    ScrollArea,
+    composition::{
+        AccessibilityAction, ContentActionPayload, ContentEvent, ContentHost, ContentResponse,
+        ListIntentKind, ScrollContent,
+    },
+};
+#[cfg(test)]
+use tekes_ui_scene::Point;
+use tekes_ui_scene::{Rect, Scene, Size};
 use tekes_ui_tokens::{Spacing, proposal};
 
 pub(super) const SCROLL: ComponentId = ComponentId(0x0047_414c_0010);
@@ -98,6 +106,7 @@ pub fn sections() -> &'static [Section] {
         all
     })
 }
+#[cfg(test)]
 pub fn pages() -> Vec<Page> {
     sections()
         .iter()
@@ -118,12 +127,62 @@ pub fn row(page: Page) -> Rect {
             layout::ROW_H,
         ))
 }
+#[cfg(test)]
 pub fn document_height() -> f32 {
     sections()
         .last()
         .and_then(|s| s.items.last())
         .map_or(0.0, |v| v.1.max_y() + Spacing::Loose.value())
 }
+#[cfg(not(test))]
+pub struct Navigation;
+#[cfg(not(test))]
+impl Navigation {
+    pub(super) fn list_id(section: &Section) -> ComponentId {
+        let index = sections()
+            .iter()
+            .position(|candidate| candidate.title == section.title)
+            .expect("filtered section retains original identity");
+        ComponentId(ITEMS_BASE + index as u64)
+    }
+    pub(super) fn group_id(section: &Section) -> ComponentId {
+        ComponentId(GROUP_BASE + section_slot(&section.title) as u64)
+    }
+    pub(super) fn filter_sections(query: &str) -> Vec<Section> {
+        let q = query.trim().to_lowercase();
+        let mut y = layout::CATALOG_TOP + 34.0 + Spacing::Loose.value();
+        let mut result = Vec::new();
+        for section in sections() {
+            let matched: Vec<_> = section
+                .items
+                .iter()
+                .filter(|(p, _)| {
+                    let Page::Workbench(i) = p;
+                    super::workbench::entry(*i).matches(&q)
+                })
+                .collect();
+            if matched.is_empty() {
+                continue;
+            }
+            let mut r = Section {
+                title: section.title.clone(),
+                rect: section.rect,
+                items: Vec::new(),
+            };
+            r.rect.origin.y = y;
+            y += r.rect.size.height;
+            for (p, rect) in matched {
+                let mut rect = *rect;
+                rect.origin.y = y;
+                r.items.push((*p, rect));
+                y += layout::ROW_H + layout::ROW_GAP;
+            }
+            result.push(r);
+        }
+        result
+    }
+}
+#[cfg(test)]
 #[derive(Debug)]
 pub struct Navigation {
     host: ContentHost,
@@ -133,6 +192,7 @@ pub struct Navigation {
     selected: Page,
     pending_focus: Option<Page>,
 }
+#[cfg(test)]
 impl Default for Navigation {
     fn default() -> Self {
         let selected = Page::Workbench(0);
@@ -149,6 +209,7 @@ impl Default for Navigation {
         n
     }
 }
+#[cfg(test)]
 impl Navigation {
     /// The navigation document begins below the fixed search field. Section
     /// rectangles remain in their existing local coordinates; the shared
@@ -249,9 +310,6 @@ impl Navigation {
                 .layout(frame.size, Size::new(layout::CATALOG_W, document_height));
         }
     }
-    pub fn bounds(&self) -> Rect {
-        Rect::new(0.0, 0.0, layout::CATALOG_W, self.height)
-    }
 
     /// A per-pass snapshot shared by sidebar drawing, clipping, culling, and
     /// hit testing. The full-height document preserves the existing scroll
@@ -309,10 +367,6 @@ impl Navigation {
         self.reveal(page);
         self.pending_focus = Some(page);
         true
-    }
-    pub fn clear_focus(&mut self) {
-        self.pending_focus = None;
-        self.host.focus(None, false);
     }
     pub fn selected_page(&self) -> Option<Page> {
         self.sections().iter().find_map(|section| {
@@ -385,6 +439,7 @@ impl Navigation {
         self.consume_selection();
         response
     }
+    #[cfg(test)]
     pub fn pointer_capture(&self) -> Option<(ComponentId, u64)> {
         self.host.pointer_capture()
     }
@@ -414,21 +469,6 @@ impl Navigation {
         self.consume_selection();
         response
     }
-    pub fn needs_animation(&self) -> bool {
-        self.scroll().needs_animation()
-    }
-    pub fn tick(&mut self, dt: f32) -> bool {
-        self.scroll_mut().tick(dt)
-    }
-    pub fn set_reduced_motion(&mut self, reduced: bool) -> bool {
-        self.scroll_mut().set_reduced_motion(reduced)
-    }
-    pub fn end_gesture(&mut self) {
-        self.scroll_mut().end_gesture();
-    }
-    pub fn cancel(&mut self) {
-        self.host.cancel();
-    }
     #[cfg(test)]
     pub fn offset(&self) -> Point {
         self.scroll().offset
@@ -456,9 +496,9 @@ impl Navigation {
             let matched: Vec<_> = section
                 .items
                 .iter()
-                .filter(|(p, _)| match p {
-                    Page::Workbench(i) => super::workbench::entry(*i).matches(&q),
-                    _ => false,
+                .filter(|(p, _)| {
+                    let Page::Workbench(i) = p;
+                    super::workbench::entry(*i).matches(&q)
                 })
                 .collect();
             if matched.is_empty() {
@@ -585,9 +625,6 @@ impl Navigation {
     pub fn pointer_up(&mut self, p: Point) -> ContentResponse {
         self.event(&ContentEvent::PointerUp(p))
     }
-    pub fn scroll_event(&mut self, event: ContentEvent) -> ContentResponse {
-        self.event(&event)
-    }
 }
 
 fn section_slot(title: &str) -> usize {
@@ -597,9 +634,7 @@ fn section_slot(title: &str) -> usize {
         .expect("Gallery section has stable identity")
 }
 fn page_key(page: Page) -> ListItemKey {
-    let Page::Workbench(index) = page else {
-        unreachable!("catalog contains Workbench pages")
-    };
+    let Page::Workbench(index) = page;
     ListItemKey(index as u64 + 1)
 }
 pub(super) fn section_content(section: &Section, selected: Page) -> Content {
@@ -680,6 +715,7 @@ pub(super) fn directory_content(sections: &[Section], selected: Page) -> Content
     }
     Content::new(SCROLL, scroll)
 }
+#[cfg(test)]
 fn content_host(sections: &[Section], selected: Page) -> ContentHost {
     let mut host = ContentHost::new(directory_content(sections, selected))
         .expect("Gallery navigation Content tree is valid");
@@ -687,6 +723,7 @@ fn content_host(sections: &[Section], selected: Page) -> ContentHost {
     host
 }
 
+#[cfg(test)]
 pub fn search_rect() -> Rect {
     Rect::new(
         layout::ROW_INSET_X,

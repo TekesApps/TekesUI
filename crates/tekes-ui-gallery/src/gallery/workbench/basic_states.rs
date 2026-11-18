@@ -3,14 +3,18 @@
 //! Every sample below gets a fresh production view and model. The Gallery's
 //! Playground state is therefore independent from these visual comparisons.
 
+#[cfg(test)]
 use super::{Entry, PageCtx, StoryState};
+#[cfg(test)]
+use tekes_ui_controls::extended::ControlFrame;
 use tekes_ui_controls::{
     ButtonTextRenderer, NumberField,
-    extended::ControlFrame,
     feedback_view::{NumberFieldView, ToolbarView},
 };
 use tekes_ui_scene::{Point, Rect, Scene};
-use tekes_ui_tokens::{ColorRole, Palette, proposal};
+#[cfg(test)]
+use tekes_ui_tokens::ColorRole;
+use tekes_ui_tokens::{Palette, proposal};
 
 #[derive(Clone, Copy)]
 enum ToolbarState {
@@ -96,6 +100,7 @@ pub(super) fn supports(renderer: &str) -> bool {
     matches!(renderer, "toolbar" | "number-field")
 }
 
+#[cfg(test)]
 pub(super) fn matrix(
     e: &Entry,
     s: &mut StoryState,
@@ -140,6 +145,7 @@ pub(super) fn matrix(
     s.document_bottom = (y + gutter + 8.).max(c.min_y());
 }
 
+#[cfg(test)]
 fn section_intro(
     ctx: &mut PageCtx<'_>,
     scene: &mut Scene,
@@ -175,6 +181,7 @@ fn section_intro(
     copy_y + copy_height + 18.
 }
 
+#[cfg(test)]
 fn draw_toolbar_grid(
     ctx: &mut PageCtx<'_>,
     scene: &mut Scene,
@@ -197,6 +204,7 @@ fn draw_toolbar_grid(
     )
 }
 
+#[cfg(test)]
 fn draw_number_grid(
     ctx: &mut PageCtx<'_>,
     scene: &mut Scene,
@@ -219,6 +227,7 @@ fn draw_number_grid(
     )
 }
 
+#[cfg(test)]
 fn draw_grid<S: Copy>(
     ctx: &mut PageCtx<'_>,
     scene: &mut Scene,
@@ -398,12 +407,14 @@ fn center(rect: Rect) -> Point {
     )
 }
 
+#[cfg(test)]
 fn measure_text(ctx: &mut PageCtx<'_>, text: &str, role: proposal::TextRole, width: f32) -> f32 {
     ctx.text
         .proposal_label(text, role, Some(width.max(0.)))
         .height as f32
 }
 
+#[cfg(test)]
 fn draw_text(
     ctx: &mut PageCtx<'_>,
     scene: &mut Scene,
@@ -416,6 +427,7 @@ fn draw_text(
         .proposal_wrapped_in(scene, ctx.theme, frame, text, role, color);
 }
 
+#[cfg(test)]
 fn grid_columns(width: f32) -> usize {
     if width >= 660. { 2 } else { 1 }
 }

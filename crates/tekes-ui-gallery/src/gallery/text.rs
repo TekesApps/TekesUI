@@ -8,11 +8,10 @@
 //! - scene 里的 `AtlasGlyph` 只在编出它的那一帧有效，而 Gallery 每次重绘都整个重编 scene，
 //!   所以 atlas 淘汰（`stats().evictions` 变化）不需要额外处理。
 
+use std::collections::{HashMap, VecDeque};
 use std::rc::Rc;
-use std::{
-    collections::{HashMap, VecDeque},
-    time::Duration,
-};
+#[cfg(test)]
+use std::time::Duration;
 
 use tekes_ui_controls::{
     ButtonLayout, ButtonModel, ButtonSize, ButtonTextAlign, ButtonTextRenderer,
@@ -128,6 +127,7 @@ impl TextEngine {
     pub fn type_scale(&self) -> f32 {
         self.core.type_scale
     }
+    #[cfg(test)]
     pub fn set_type_scale(&mut self, scale: f32) {
         if scale.is_finite() {
             self.core.type_scale = scale.clamp(1.0, 1.5);
@@ -136,36 +136,28 @@ impl TextEngine {
     pub fn locale(&self) -> super::locale::Locale {
         self.locale
     }
+    #[cfg(test)]
     pub fn set_locale(&mut self, locale: super::locale::Locale) {
         self.locale = locale;
-    }
-
-    #[cfg(test)]
-    pub fn untranslated_labels(&self) -> Vec<String> {
-        self.labels
-            .keys()
-            .filter(|key| key.locale == super::locale::Locale::En)
-            .filter_map(|key| {
-                let translated = key.locale.text(&key.text);
-                super::locale::has_cjk(&translated).then(|| translated.into_owned())
-            })
-            .collect()
     }
 
     pub fn scale(&self) -> f32 {
         self.core.scale
     }
 
+    #[cfg(any(test, feature = "selftest"))]
     pub fn set_scale(&mut self, scale: f32) {
         self.core.scale = scale;
     }
 
     /// 窗口用的 atlas（渲染器画之前上传它的脏区）。
+    #[cfg(any(test, feature = "selftest"))]
     pub fn atlas_mut(&mut self) -> &mut GlyphAtlas {
         &mut self.core.atlas
     }
 
     /// 每帧开头调用一次。
+    #[cfg(any(test, feature = "selftest"))]
     pub fn begin_frame(&mut self) {
         self.core.atlas.begin_frame();
         self.core.animation_requested = false;
@@ -173,6 +165,7 @@ impl TextEngine {
 
     /// Enable component motion for the live Gallery. Standalone fixtures keep
     /// the default static behavior unless a host explicitly opts in.
+    #[cfg(test)]
     pub fn set_motion_enabled(&mut self, enabled: bool) {
         self.motion_enabled = enabled;
         if enabled && self.core.motion_context.is_none() {
@@ -186,6 +179,7 @@ impl TextEngine {
         }
     }
 
+    #[cfg(test)]
     pub fn set_motion_context(&mut self, now: Duration, reduced_motion: bool) {
         self.core.motion_context = self.motion_enabled.then_some(ControlMotionContext {
             now,
@@ -193,21 +187,7 @@ impl TextEngine {
         });
     }
 
-    /// Static comparison fixtures borrow the host clock and snap their local
-    /// states. The caller restores this exact optional context afterwards.
-    pub(super) fn replace_fixture_motion_context(
-        &mut self,
-        context: Option<ControlMotionContext>,
-    ) -> Option<ControlMotionContext> {
-        std::mem::replace(&mut self.core.motion_context, context)
-    }
-
-    /// Immutable Search fixtures borrow the existing finite paragraph cache;
-    /// live editors retain the original document-local TextSurface cache.
-    pub(super) fn replace_fixture_surface_cache(&mut self, enabled: bool) -> bool {
-        std::mem::replace(&mut self.fixture_surface_cache, enabled)
-    }
-
+    #[cfg(test)]
     pub fn motion_frame_requested(&self) -> bool {
         self.core.animation_requested
     }
@@ -305,6 +285,7 @@ impl TextEngine {
 
     /// 在 `slot` 里画一行标签：水平 `align`，垂直居中，原点取整到整数 pt。
     /// 返回标签的宽度（pt），测试用来核对没有超出槽。
+    #[cfg(test)]
     pub fn label_in(
         &mut self,
         scene: &mut Scene,
@@ -320,6 +301,7 @@ impl TextEngine {
     }
 
     /// 多行标签（按 `slot` 宽度换行），顶对齐，原点取整。返回行数。
+    #[cfg(test)]
     pub fn wrapped_label_in(
         &mut self,
         scene: &mut Scene,

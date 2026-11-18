@@ -317,6 +317,29 @@ impl AppHostIcons {
     pub(crate) fn finish_resources(&mut self, _: &mut ContainerRenderContext<'_>) -> Result<()> {
         Ok(())
     }
+    #[cfg(feature = "selftest")]
+    pub(crate) fn scroll_metrics(&self) -> (f32, f32) {
+        self.host
+            .get(ROOT)
+            .and_then(|node| node.component::<ScrollContent>())
+            .map_or((0., 0.), |scroll| {
+                (
+                    scroll.scroll.limit().y,
+                    scroll.scroll.viewport_size().height,
+                )
+            })
+    }
+    #[cfg(feature = "selftest")]
+    pub(crate) fn scroll_to(&mut self, y: f32) {
+        if let Some(scroll) = self
+            .host
+            .get_mut(ROOT)
+            .and_then(|node| node.component_mut::<ScrollContent>())
+        {
+            let current = scroll.scroll.offset.y;
+            scroll.scroll.scroll_by(0., y - current);
+        }
+    }
 }
 
 #[cfg(test)]

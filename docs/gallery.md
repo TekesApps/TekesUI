@@ -286,3 +286,24 @@ on all four sides, separately from Toolbar geometry. Hiding one side expands foc
 Shared menu/tab selection uses fill, and text fields use an attached focus border. Existing
 platform/input-method and deferred verification boundaries remain separately
 recorded in Issues #229 and #245.
+
+## Unified AppHost Gallery & Retired Legacy Hosts (#337, #339)
+
+Default `cargo run -p tekes-ui-gallery` and `--apphost` both launch the single
+`AppHost` workbench (`gallery::apphost_workbench`, with panel hosts in
+`gallery::apphost_panels`). The retired Gen-1/Gen-2 workbench hosts are removed;
+passing `--legacy` exits with status `2` and directs callers to the default
+`AppHost` entry point.
+
+All automated Gallery entry points share that same `AppHost` workbench:
+
+- `--snapshot <dir>`: renders offscreen PNG sets through `HeadlessGallery`
+  backed by `apphost_workbench`.
+- `TEKES_SELFTEST` / `TEKES_PERF`: run on the `AppHost` harness
+  (`gallery::apphost_harness`) when `tekes-ui-gallery` is built with
+  `--features selftest` (omitting the feature prints an explicit hint and
+  exits with status `2`).
+- `examples/settings_native207.rs`: gated behind `--features selftest`
+  (`required-features = ["selftest"]`) so default workspace checks keep zero
+  dead-code suppressions.
+

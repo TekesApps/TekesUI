@@ -104,6 +104,89 @@ fn validate_components(
     Ok(())
 }
 
+#[cfg(target_os = "macos")]
+pub struct HostedWindow(window::Host);
+
+#[cfg(target_os = "macos")]
+impl std::fmt::Debug for HostedWindow {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("HostedWindow").finish_non_exhaustive()
+    }
+}
+
+#[cfg(target_os = "macos")]
+impl tekes_ui_platform_macos::WindowHandler for HostedWindow {
+    fn allows_app_quit(&self) -> bool {
+        self.0.allows_app_quit()
+    }
+
+    fn handle(
+        &mut self,
+        event: tekes_ui_platform_macos::Event,
+        window: &mut tekes_ui_platform_macos::Window,
+    ) {
+        self.0.handle(event, window);
+    }
+}
+
+#[cfg(target_os = "macos")]
+impl HostedWindow {
+    pub fn theme(&self) -> tekes_ui_tokens::Theme {
+        self.0.theme
+    }
+
+    pub fn set_theme(&mut self, theme: tekes_ui_tokens::Theme) {
+        self.0.theme = theme;
+    }
+
+    pub fn set_reduced_motion(&mut self, reduced: bool) {
+        self.0.set_reduced_motion(reduced);
+    }
+
+    pub fn set_motion_elapsed(&mut self, elapsed: std::time::Duration) {
+        self.0.set_headless_motion_elapsed(elapsed);
+    }
+
+    pub fn set_type_scale(&mut self, type_scale: f32) {
+        if type_scale.is_finite() && type_scale > 0. {
+            let baseline = tekes_ui_tokens::proposal::TextRole::UiBody.style().size;
+            self.0.text.set_body_size(baseline * type_scale);
+            self.0.text.type_scale = type_scale;
+        }
+    }
+
+    pub fn renderer_mut(&mut self) -> Option<&mut tekes_ui_render::Renderer> {
+        self.0.renderer.as_mut()
+    }
+
+    pub fn glyph_atlas_mut(&mut self) -> &mut tekes_ui_scene::GlyphAtlas {
+        &mut self.0.text.atlas
+    }
+
+    pub fn text_host_mut(&mut self) -> &mut tekes_ui_macos_bridge::coretext_host::CoreTextHost {
+        &mut self.0.text.0
+    }
+
+    pub fn build_headless_scene(
+        &mut self,
+        renderer: &mut tekes_ui_render::Renderer,
+        whole: tekes_ui_scene::Rect,
+        scale: f32,
+        active: bool,
+    ) -> anyhow::Result<(tekes_ui_scene::Scene, tekes_ui_tokens::Rgba)> {
+        self.0.build_headless_scene(renderer, whole, scale, active)
+    }
+
+    pub fn render_headless_rgba8(
+        &mut self,
+        renderer: &mut tekes_ui_render::Renderer,
+        size_pt: (u32, u32),
+        scale: u32,
+    ) -> anyhow::Result<Vec<u8>> {
+        self.0.render_headless_rgba8(renderer, size_pt, scale)
+    }
+}
+
 /// Fixed local/process column assembly over the shared native window shell.
 #[cfg(target_os = "macos")]
 pub struct AppWindow {
@@ -365,6 +448,27 @@ impl AppWindow {
             args,
             RunMode::ValidateArgs,
         )
+    }
+
+    /// Validate this window assembly and construct its [`HostedWindow`] handler
+    /// and [`tekes_ui_platform_macos::MenuBar`] without starting the native event loop.
+    pub fn into_window_handler(
+        mut self,
+    ) -> anyhow::Result<(tekes_ui_platform_macos::MenuBar, HostedWindow)> {
+        validate_assembly(
+            &self.profile,
+            self.columns.as_deref(),
+            self.navigation.is_some(),
+            self.presentation.as_ref(),
+        )?;
+        validate_components(&self.profile, &self.components)?;
+        let settings = self.settings.take();
+        let mut host = self.into_host(false);
+        host.mount_initial_containers();
+        host.configure_settings(settings)?;
+        let menus = host.menu_bar();
+        menus.validate()?;
+        Ok((menus, HostedWindow(host)))
     }
 }
 

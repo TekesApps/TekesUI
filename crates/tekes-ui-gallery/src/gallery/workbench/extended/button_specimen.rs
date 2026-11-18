@@ -1,21 +1,30 @@
 //! Gallery placement/resource adapter; the original public Button/ContentHost
 //! exclusively own actions, focus, capture, key timing, availability and AX.
+#[cfg(test)]
 use std::{cell::RefCell, rc::Rc};
 use tekes_ui_controls::{
-    ButtonTextRenderer, ControlKey,
-    composition::*,
-    layout::MeasuredChild,
-    layout_view::{ButtonComponentLayout, ComponentEvent, IconRenderer},
+    ButtonTextRenderer, composition::*, layout::MeasuredChild, layout_view::ButtonComponentLayout,
 };
-use tekes_ui_scene::{Point, Primitive, Rect, Scene, Size};
-use tekes_ui_tokens::{Palette, proposal};
+#[cfg(test)]
+use tekes_ui_controls::{
+    ControlKey,
+    layout_view::{ComponentEvent, IconRenderer},
+};
+use tekes_ui_scene::Size;
+#[cfg(test)]
+use tekes_ui_scene::{Point, Primitive, Rect, Scene};
+#[cfg(test)]
+use tekes_ui_tokens::Palette;
+use tekes_ui_tokens::proposal;
 const OWNER: ComponentId = ComponentId(1);
 const ICON_SLOT: ComponentId = ComponentId(2);
 
+#[cfg(test)]
 fn has_area(rect: Rect) -> bool {
     rect.size.width > 0. && rect.size.height > 0.
 }
 
+#[cfg(test)]
 #[derive(Clone, Copy, Debug)]
 struct IconPaint {
     frame: Rect,
@@ -23,6 +32,7 @@ struct IconPaint {
     tint: tekes_ui_tokens::Rgba,
 }
 
+#[cfg(test)]
 #[derive(Clone, Copy, Debug)]
 enum IconPaintState {
     Ready(IconPaint),
@@ -32,6 +42,7 @@ enum IconPaintState {
 
 #[derive(Clone, Debug, Default)]
 struct PassiveArtworkSlot {
+    #[cfg(test)]
     paint: Rc<RefCell<Option<IconPaintState>>>,
 }
 
@@ -52,6 +63,7 @@ impl Component for PassiveArtworkSlot {
         ))
     }
 
+    #[cfg(test)]
     fn paint(
         &mut self,
         _scene: &mut Scene,
@@ -79,6 +91,7 @@ impl Component for PassiveArtworkSlot {
     }
 }
 
+#[cfg(test)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum ArtworkPaintError {
     MissingSlotPaint,
@@ -86,6 +99,7 @@ pub(super) enum ArtworkPaintError {
     ProviderProducedNoArtwork,
 }
 
+#[cfg(test)]
 fn is_drawable_icon_output(primitive: &Primitive) -> bool {
     match primitive {
         Primitive::Quad(quad) => {
@@ -108,6 +122,7 @@ fn is_drawable_icon_output(primitive: &Primitive) -> bool {
 
 pub(crate) struct ButtonSpecimen {
     host: ContentHost,
+    #[cfg(test)]
     icon_paint: Rc<RefCell<Option<IconPaintState>>>,
 }
 impl Default for ButtonSpecimen {
@@ -117,6 +132,7 @@ impl Default for ButtonSpecimen {
 }
 impl ButtonSpecimen {
     pub fn new(name: &str) -> Self {
+        #[cfg(test)]
         let icon_paint = Rc::new(RefCell::new(None));
         Self {
             host: ContentHost::new(Content::new(
@@ -124,18 +140,21 @@ impl ButtonSpecimen {
                 Button::new(Content::new(
                     ICON_SLOT,
                     PassiveArtworkSlot {
+                        #[cfg(test)]
                         paint: Rc::clone(&icon_paint),
                     },
                 ))
                 .with_accessible_name(name),
             ))
             .expect("named original Button"),
+            #[cfg(test)]
             icon_paint,
         }
     }
     pub fn button(&self) -> &Button {
         self.host.get(OWNER).unwrap().component::<Button>().unwrap()
     }
+    #[cfg(test)]
     pub fn button_mut(&mut self) -> &mut Button {
         self.host
             .get_mut(OWNER)
@@ -174,6 +193,7 @@ impl ButtonSpecimen {
     /// The passive slot is measured, arranged, clipped and theme-resolved by
     /// the original Button/ContentHost. The existing renderer is invoked only
     /// after that host paint releases the Gallery text borrow.
+    #[cfg(test)]
     pub(super) fn draw_icon(
         &self,
         scene: &mut Scene,
@@ -244,6 +264,7 @@ impl ButtonSpecimen {
         }
         Ok(())
     }
+    #[cfg(test)]
     pub fn render(
         &mut self,
         scene: &mut Scene,
@@ -261,17 +282,16 @@ impl ButtonSpecimen {
     pub fn set_window_active(&mut self, active: bool) {
         self.host.set_window_active(active)
     }
+    #[cfg(test)]
     pub fn focus(&mut self, visible: bool) {
         self.host.focus(Some(OWNER), visible);
-    }
-    pub fn blur(&mut self) {
-        self.host.focus(None, false);
     }
     pub fn activate(&mut self) -> bool {
         self.host
             .accessibility_action(OWNER, None, AccessibilityAction::Press)
             .activated
     }
+    #[cfg(test)]
     pub fn key_event(&mut self, key: ControlKey, down: bool) -> ComponentEvent {
         let r = self.host.event(&ContentEvent::Key { key, down });
         ComponentEvent {
@@ -279,15 +299,11 @@ impl ButtonSpecimen {
             changed: r.activated,
         }
     }
-    pub fn key(&mut self, key: ControlKey, down: bool) -> bool {
-        self.key_event(key, down).changed
-    }
+    #[cfg(test)]
     pub fn pointer_down(&mut self, p: Point) -> bool {
         self.host.event(&ContentEvent::PointerDown(p)).consumed
     }
-    pub fn pointer_move(&mut self, p: Point) {
-        self.host.event(&ContentEvent::PointerMove(p));
-    }
+    #[cfg(test)]
     pub fn pointer_up(&mut self, p: Point) -> bool {
         self.host.event(&ContentEvent::PointerUp(p)).activated
     }

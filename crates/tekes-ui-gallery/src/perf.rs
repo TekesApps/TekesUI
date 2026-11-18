@@ -40,12 +40,16 @@ use serde_json::{Value, json};
 use tekes_ui_platform_macos::selftest::{self, Action};
 use tekes_ui_platform_macos::{AnimationFrame, Window};
 use tekes_ui_render::{Distribution, FrameSample, FrameStats, FrameTiming, Renderer};
-use tekes_ui_scene::{AtlasStats, GlyphRun, ImageQuad, Point, Primitive, Quad, Scene};
+use tekes_ui_scene::{AtlasStats, GlyphRun, ImageQuad, Point, Primitive, Quad, Rect, Scene};
 use tekes_ui_text::model::{Paragraph, ShapeOptions};
+use tekes_ui_text::push::push_paragraph;
 use tekes_ui_text::style::TextStyle;
+use tekes_ui_text::traits::Shaper;
 use tekes_ui_tokens::{ColorRole, Rgba, Theme};
 
-use crate::gallery::{Command, Gallery, Page};
+use crate::gallery::apphost_workbench::HeadlessGallery;
+use crate::gallery::text::TextEngine;
+use crate::gallery::workbench;
 
 /// 预热（动画开着、不记录）的秒数：让显示链接落到稳定的 120Hz、drawable 池就位。
 pub const WARMUP_S: f64 = 1.5;
@@ -481,8 +485,10 @@ pub struct Perf {
     work_done_host_requested: bool,
     plan: Plan,
     paragraphs: Vec<Paragraph>,
-    /// 私有的 Gallery（自带文字引擎和 atlas，窗口里的那个 Gallery 不参与），用来逐页编整屏，不影响窗口里的那个。
-    gallery: Gallery,
+    /// Standalone headless AppHost Gallery instance used by perf measurement so
+    /// frames stay isolated from window chrome events.
+    apphost: HeadlessGallery,
+    symbol_text: TextEngine,
     tmp: Scene,
     phase: Phase,
     first_target: Option<f64>,
@@ -521,6 +527,7 @@ pub struct Perf {
     /// 窗口信息（开始时记下）。
     window_info: Value,
     scale: f32,
+    view_w: f32,
     view_h: f32,
 }
 
@@ -537,22 +544,32 @@ const SENTENCES_A: &str = include_str!("../../../fixtures/text/sentences-a.txt")
 const LONG_PARAGRAPH: &str = include_str!("../../../fixtures/text/long-paragraph.txt");
 
 impl Perf {
+    fn route_for_content(content: ContentKind) -> Option<&'static str> {
+        match content {
+            ContentKind::Editor => Some("lab-internal-text"),
+            ContentKind::ScrollArea => Some("component-scroll-area"),
+            ContentKind::Icons => Some("component-icon"),
+            ContentKind::Motion => Some("foundation-motion/playground"),
+            ContentKind::Scene3d => Some("component-scene3d/playground"),
+            _ => None,
+        }
+    }
+
     /// 排版文字（一次，不计入测量）。
     pub fn new(cfg: PerfConfig) -> Perf {
-        let mut gallery = Gallery::new();
+        let initial_route = Self::route_for_content(cfg.content).unwrap_or("foundation-tokens");
+        let mut apphost = HeadlessGallery::open(initial_route).expect("AppHost Gallery perf route");
         let style = TextStyle::system(TextStyle::DEFAULT_SIZE);
         let options = ShapeOptions::with_width(TEXT_WIDTH);
-        let mut paragraphs: Vec<Paragraph> = SENTENCES_A
-            .lines()
-            .filter(|l| !l.is_empty())
-            .map(|l| gallery.text_mut().shape(l, &style, &options))
-            .collect();
-        paragraphs.extend(
-            LONG_PARAGRAPH
+        let paragraphs: Vec<Paragraph> = {
+            let text_host = apphost.window_mut().text_host_mut();
+            SENTENCES_A
                 .lines()
+                .chain(LONG_PARAGRAPH.lines())
                 .filter(|l| !l.is_empty())
-                .map(|l| gallery.text_mut().shape(l, &style, &options)),
-        );
+                .map(|l| text_host.shaper.shape(l, &style, &options))
+                .collect()
+        };
         let heights: Vec<f32> = paragraphs.iter().map(|p| p.height as f32).collect();
         let plan = plan_document(cfg.content, &heights);
         let path = cfg.out.clone().unwrap_or_else(|| {
@@ -579,7 +596,8 @@ impl Perf {
             cfg,
             plan,
             paragraphs,
-            gallery,
+            apphost,
+            symbol_text: TextEngine::new(),
             tmp: Scene::new(),
             phase: Phase::WarmUp,
             first_target: None,
@@ -614,32 +632,111 @@ impl Perf {
             path,
             window_info: Value::Null,
             scale: 2.0,
+            view_w: crate::gallery::CONTENT_WIDTH,
             view_h: SCREEN_H,
         }
     }
 
     pub fn set_reduced_motion(&mut self, reduced: bool) {
-        self.gallery.set_reduced_motion(reduced);
+        self.apphost.window_mut().set_reduced_motion(reduced);
     }
     pub fn set_system_theme(&mut self, theme: Theme) {
-        self.gallery.set_system_theme(theme);
+        self.apphost.set_theme(theme);
     }
     pub fn is_active(&self) -> bool {
         self.phase != Phase::Done
     }
 
-    /// 窗口和渲染器就绪后调用：开计时、预热 atlas、打开动画，并装一个看门狗，
-    /// 防止窗口被遮挡等原因导致显示链接不回调时无限等下去。
+    fn editor_scroll_metrics(&self) -> (f32, f32) {
+        self.apphost.state().borrow().with_current_page_ref(|page| {
+            page.documents()
+                .map_or((0.0, 0.0), |doc| doc.editor_scroll_metrics())
+        })
+    }
+
+    fn scroll_editor_to(&mut self, y: f32) {
+        self.apphost.state().borrow_mut().with_current_page(|page| {
+            if let Some(doc) = page.documents_mut() {
+                doc.scroll_editor_to(y);
+            }
+        });
+    }
+
+    fn page_scroll_metrics(&self) -> (f32, f32) {
+        self.apphost.state().borrow().with_current_page_ref(|page| {
+            if let Some(icons) = page.icons() {
+                icons.scroll_metrics()
+            } else if let Some(motion) = page.motion() {
+                motion.scroll_metrics()
+            } else {
+                (0.0, 0.0)
+            }
+        })
+    }
+
+    fn scroll_page_to(&mut self, y: f32) {
+        self.apphost.state().borrow_mut().with_current_page(|page| {
+            if let Some(icons) = page.icons_mut() {
+                icons.scroll_to(y);
+            }
+        });
+    }
+
+    fn page_document_height(&self) -> f32 {
+        let (limit, view) = self.page_scroll_metrics();
+        limit + view
+    }
+
+    fn page_scroll_range(&self) -> f32 {
+        self.page_scroll_metrics().0
+    }
+
+    fn scene3d_diagnostics(&self) -> Value {
+        self.apphost
+            .state()
+            .borrow()
+            .with_current_page_ref(|page| page.scene3d().map_or(Value::Null, |s| s.diagnostics()))
+    }
+
+    fn scene3d_frame_work(&self) -> (u64, usize) {
+        self.apphost
+            .state()
+            .borrow()
+            .with_current_page_ref(|page| page.scene3d().map_or((0, 0), |s| s.frame_work()))
+    }
+
+    fn scroll_reference_state(&self) -> Option<[f32; 2]> {
+        self.apphost
+            .state()
+            .borrow()
+            .with_current_page_ref(|page| page.documents().and_then(|d| d.scroll_reference_state()))
+    }
+
+    fn scroll_reference_fixture(&self) -> Option<Value> {
+        self.apphost.state().borrow().with_current_page_ref(|page| {
+            page.documents().and_then(|d| d.scroll_reference_fixture())
+        })
+    }
+
+    fn build_apphost_scene(&mut self, renderer: &mut Renderer) -> Scene {
+        let bounds = Rect::new(0.0, 0.0, self.view_w, self.view_h);
+        self.apphost
+            .window_mut()
+            .build_headless_scene(renderer, bounds, self.scale, true)
+            .map_or_else(|_| Scene::new(), |(scene, _)| scene)
+    }
+
     /// Window placement may resize after Created. The benchmark must use the
     /// same live content viewport as normal Gallery rendering and hit testing.
     pub fn resize(&mut self, width: f32, height: f32) {
+        self.view_w = width;
         self.view_h = height;
-        self.gallery.set_view_size(width, height);
     }
 
     pub fn begin(&mut self, window: &mut Window, renderer: &mut Renderer) {
         window.set_presentation_timing(true);
         self.scale = window.scale() as f32;
+        self.view_w = window.size().width as f32;
         self.view_h = window.size().height as f32;
         if self.measure_gpu {
             renderer.set_frame_timing(true);
@@ -655,45 +752,27 @@ impl Perf {
         }
         let t = Instant::now();
         self.prewarm(renderer);
-        if let Some(page) = match self.cfg.content {
-            ContentKind::Editor => Some(Page::TextEditing),
-            ContentKind::ScrollArea => Some(Page::ScrollArea),
-            ContentKind::Icons => Some(Page::Icons),
-            ContentKind::Motion => Some(Page::Motion),
-            _ => None,
-        } {
-            if std::env::var("TEKES_PERF_WORKBENCH").as_deref() == Ok("1") {
-                let route = match self.cfg.content {
-                    ContentKind::Editor => "lab-internal-text",
-                    ContentKind::ScrollArea => "component-scroll-area",
-                    ContentKind::Icons => "component-icon",
-                    ContentKind::Motion => "foundation-motion",
-                    _ => unreachable!(),
-                };
-                assert!(
-                    self.gallery.open_route(route),
-                    "benchmark must exercise a real registered route"
-                );
+        if let Some(route) = Self::route_for_content(self.cfg.content) {
+            self.apphost
+                .switch_route(route)
+                .expect("benchmark must exercise a real registered route");
+            let frames = if self.cfg.content == ContentKind::Scene3d {
+                2
             } else {
-                self.gallery.apply(Command::Page(page));
+                1
+            };
+            for _ in 0..frames {
+                let _ = self.build_apphost_scene(renderer);
             }
-            self.gallery
-                .set_view_size(window.size().width as f32, window.size().height as f32);
-            self.gallery.prepare(renderer, self.scale);
-            self.gallery.build_scene(&mut Scene::new());
-        }
-        if self.cfg.content == ContentKind::Scene3d {
-            assert!(self.gallery.open_route("component-scene3d/playground"));
-            self.gallery
-                .set_view_size(window.size().width as f32, window.size().height as f32);
-            // Layout chooses the physical viewport; settle it before timing.
-            for _ in 0..2 {
-                self.gallery.prepare(renderer, self.scale);
-                self.gallery.build_scene(&mut Scene::new());
+            if self.cfg.content == ContentKind::Scene3d {
+                let animate_clip =
+                    std::env::var("TEKES_PERF_SCENE3D_ANIMATION").as_deref() == Ok("1");
+                self.apphost.state().borrow_mut().with_current_page(|page| {
+                    if let Some(scene3d) = page.scene3d_mut() {
+                        scene3d.start_rotation(animate_clip);
+                    }
+                });
             }
-            self.gallery.start_scene3d_rotation(
-                std::env::var("TEKES_PERF_SCENE3D_ANIMATION").as_deref() == Ok("1"),
-            );
         }
         self.prewarm_ms = t.elapsed().as_secs_f64() * 1e3;
         self.window_info = match window.screen_info() {
@@ -738,26 +817,37 @@ impl Perf {
     /// 把每一页和全部段落过一遍，让字形都进 atlas（首次光栅化的成本不进滚动测量）。
     fn prewarm(&mut self, renderer: &mut Renderer) {
         let mut scene = Scene::new();
-        for page in Page::ALL {
+        for i in 0..workbench::entries().len() {
             self.tmp.clear();
-            self.screen(page.index(), Theme::default(), renderer);
+            self.screen(i, Theme::default(), renderer);
         }
-        self.gallery.text_mut().begin_frame();
+        let scale = self.scale;
+        let host = self.apphost.window_mut().text_host_mut();
+        host.scale = scale;
+        host.begin_frame(std::time::Duration::ZERO, false);
         for p in &self.paragraphs {
-            self.gallery
-                .text_mut()
-                .push(&mut scene, p, Point::new(0.0, 0.0), Rgba::gray(0.0));
+            push_paragraph(
+                &mut scene,
+                &mut host.atlas,
+                &mut host.raster,
+                p,
+                Point::new(0.0, 0.0),
+                scale,
+                Rgba::gray(0.0),
+            );
         }
+        self.symbol_text.set_scale(scale);
+        self.symbol_text.begin_frame();
     }
 
     fn document_height(&self) -> f32 {
         match self.cfg.content {
             ContentKind::Editor | ContentKind::ScrollArea => {
-                let (limit, view) = self.gallery.editor_scroll_metrics();
+                let (limit, view) = self.editor_scroll_metrics();
                 limit + view
             }
             ContentKind::Symbols => self.view_h,
-            ContentKind::Icons | ContentKind::Motion => self.gallery.page_document_height(),
+            ContentKind::Icons | ContentKind::Motion => self.page_document_height(),
             ContentKind::Scene3d => self.view_h,
             _ => self.plan.height,
         }
@@ -770,9 +860,9 @@ impl Perf {
             self.cfg.content,
             ContentKind::Editor | ContentKind::ScrollArea
         ) {
-            self.gallery.editor_scroll_metrics().0 as f64
+            self.editor_scroll_metrics().0 as f64
         } else if self.cfg.content == ContentKind::Icons {
-            self.gallery.page_scroll_range() as f64
+            self.page_scroll_range() as f64
         } else {
             (self.plan.height - self.view_h).max(0.0) as f64
         };
@@ -782,13 +872,12 @@ impl Perf {
     /// 编这一帧的可见内容。
     fn build(&mut self, ctx: &mut FrameCtx<'_>, scroll: f32) {
         if self.cfg.content == ContentKind::Scene3d {
-            self.gallery.prepare(ctx.renderer, self.scale);
-            self.gallery.build_scene(ctx.scene);
+            *ctx.scene = self.build_apphost_scene(ctx.renderer);
             return;
         }
         if let Some(symbols) = &mut self.symbols {
             symbols.build(
-                &mut self.gallery,
+                &mut self.symbol_text,
                 ctx.renderer,
                 ctx.scene,
                 ctx.theme,
@@ -804,12 +893,11 @@ impl Perf {
                 | ContentKind::Motion
         ) {
             if self.cfg.content == ContentKind::Editor {
-                self.gallery.scroll_editor_to(scroll);
+                self.scroll_editor_to(scroll);
             } else if self.cfg.content == ContentKind::Icons {
-                self.gallery.scroll_page_to(scroll);
-                self.gallery.prepare(ctx.renderer, self.scale);
+                self.scroll_page_to(scroll);
             }
-            self.gallery.build_scene(ctx.scene);
+            *ctx.scene = self.build_apphost_scene(ctx.renderer);
             return;
         }
         let view_h = self.view_h;
@@ -829,6 +917,8 @@ impl Perf {
                     translate_into(ctx.scene, &self.tmp, y - scroll, view_h);
                 }
                 Kind::Text(range) => {
+                    let scale = self.scale;
+                    let host = self.apphost.window_mut().text_host_mut();
                     for k in range {
                         let pl = self.plan.placed[k];
                         let para = &self.paragraphs[pl.para];
@@ -836,10 +926,13 @@ impl Perf {
                         if top + para.height as f32 + 8.0 < 0.0 || top > view_h {
                             continue;
                         }
-                        self.gallery.text_mut().push(
+                        push_paragraph(
                             ctx.scene,
+                            &mut host.atlas,
+                            &mut host.raster,
                             para,
                             Point::new(TEXT_X, top),
+                            scale,
                             color,
                         );
                     }
@@ -848,14 +941,13 @@ impl Perf {
         }
     }
 
-    /// 编第 `n` 个整屏：按页轮流，写进 `self.tmp`。依赖 Gallery 的 `apply`、`prepare` 与 `build_scene`
-    /// （`build_scene` 自己会 `begin_frame`，一帧里可见的整屏最多两个，atlas 不淘汰所以无碍）。
+    /// 编第 `n` 个整屏：按 AppHost 路由轮流，写进 `self.tmp`。
     fn screen(&mut self, n: usize, theme: Theme, renderer: &mut Renderer) {
-        self.gallery.set_system_theme(theme);
-        self.gallery
-            .apply(Command::Page(Page::ALL[n % Page::ALL.len()]));
-        self.gallery.prepare(renderer, self.scale);
-        self.gallery.build_scene(&mut self.tmp);
+        let entries = workbench::entries();
+        let slug = entries[n % entries.len()].slug();
+        self.apphost.set_theme(theme);
+        let _ = self.apphost.switch_route(slug);
+        self.tmp = self.build_apphost_scene(renderer);
     }
 
     /// 处理一个显示链接回调：画一帧，记录样本，推进阶段。
@@ -871,8 +963,11 @@ impl Perf {
         }
         let t0 = Instant::now();
         let first = *self.first_target.get_or_insert(f.target_timestamp);
-        let elapsed = f.target_timestamp - first;
+        let elapsed = (f.target_timestamp - first).max(0.0);
         let scroll = self.scroll_at(elapsed);
+        self.apphost
+            .window_mut()
+            .set_motion_elapsed(std::time::Duration::from_secs_f64(elapsed));
         if let Some(symbols) = &mut self.symbols {
             let dt = self.animation_target.map_or(f.refresh_interval, |last| {
                 (f.target_timestamp - last).max(0.0)
@@ -881,94 +976,100 @@ impl Perf {
             symbols.tick(elapsed, dt);
         }
         if self.cfg.content == ContentKind::Scene3d {
-            let dt = self.animation_target.map_or(f.refresh_interval, |last| {
-                (f.target_timestamp - last).max(0.)
-            });
             self.animation_target = Some(f.target_timestamp);
-            self.gallery.animate(dt as f32);
         }
         if self.cfg.content == ContentKind::Motion {
-            let dt = self
-                .animation_target
-                .map_or(f.refresh_interval, |previous| {
-                    (f.target_timestamp - previous).max(0.0)
-                });
             self.animation_target = Some(f.target_timestamp);
-            self.gallery.advance_motion(dt as f32);
             let step = (elapsed / 0.3).floor() as u64;
             if self.motion_step != Some(step) {
-                self.gallery
-                    .motion_retarget(if step.is_multiple_of(2) { 0.85 } else { 0.15 });
+                let target = if step.is_multiple_of(2) { 0.85 } else { 0.15 };
+                self.apphost.state().borrow_mut().with_current_page(|page| {
+                    if let Some(motion) = page.motion_mut() {
+                        motion.retarget(target);
+                    }
+                });
                 self.motion_step = Some(step);
             }
         }
 
         if self.cfg.content == ContentKind::ScrollArea {
-            use tekes_ui_platform_macos::{
-                Modifiers, Point as Pt, ScrollEvent, ScrollPhase as P, Vec2,
-            };
             let dt = self
                 .animation_target
                 .map_or(f.refresh_interval, |t| (f.target_timestamp - t).max(0.0));
             self.animation_target = Some(f.target_timestamp);
-            self.gallery.animate(dt as f32);
             let cycle = (elapsed / 2.0).floor() as u64;
             let t = elapsed % 2.0;
             let direction = if cycle.is_multiple_of(2) { 1.0 } else { -1.0 };
-            let event = |delta, phase, momentum_phase| {
-                tekes_ui_platform_macos::Event::Scroll(ScrollEvent {
-                    timestamp: f.target_timestamp,
-                    delta: Vec2 { x: 0.0, y: delta },
-                    precise: true,
-                    phase,
-                    momentum_phase,
-                    inverted: false,
-                    position: Pt { x: 600.0, y: 400.0 },
-                    modifiers: Modifiers::NONE,
-                })
+            let step_scroll = |apphost: &mut HeadlessGallery,
+                               delta: f64,
+                               begin: bool,
+                               end: bool,
+                               momentum: bool| {
+                apphost.state().borrow_mut().with_current_page(|page| {
+                    if let Some(doc) = page.documents_mut() {
+                        doc.scroll_event(delta as f32, begin, end, momentum, f.target_timestamp);
+                    }
+                });
             };
             if self.scroll_cycle != Some(cycle) {
                 self.scroll_cycle = Some(cycle);
                 self.scroll_stage = 0;
-                let limit = self.gallery.editor_scroll_metrics().0;
-                self.gallery.scroll_editor_to(if direction > 0.0 {
+                let limit = self.editor_scroll_metrics().0;
+                self.scroll_editor_to(if direction > 0.0 {
                     (limit - 200.0).max(0.0)
                 } else {
                     200.0
                 });
-                self.gallery.handle_input(&event(0.0, P::Began, P::None));
+                step_scroll(&mut self.apphost, 0.0, true, false, false);
             }
             if t < 0.35 {
-                self.gallery.handle_input(&event(
-                    -direction * self.cfg.speed * dt,
-                    P::Changed,
-                    P::None,
-                ));
+                step_scroll(
+                    &mut self.apphost,
+                    direction * self.cfg.speed * dt,
+                    false,
+                    false,
+                    false,
+                );
             } else if t < 1.0 {
                 if self.scroll_stage == 0 {
-                    self.gallery.handle_input(&event(0.0, P::Ended, P::None));
+                    step_scroll(&mut self.apphost, 0.0, false, true, false);
                     self.scroll_stage = 1;
                 }
-                self.gallery.handle_input(&event(
-                    -direction * self.cfg.speed * (-8.0 * (t - 0.35)).exp() * dt,
-                    P::None,
-                    P::Changed,
-                ));
+                step_scroll(
+                    &mut self.apphost,
+                    direction * self.cfg.speed * (-8.0 * (t - 0.35)).exp() * dt,
+                    false,
+                    false,
+                    true,
+                );
             } else if self.scroll_stage == 1 {
-                self.gallery.handle_input(&event(0.0, P::None, P::Ended));
+                step_scroll(&mut self.apphost, 0.0, false, true, true);
                 self.scroll_stage = 2;
             }
         }
-        self.gallery.text_mut().set_scale(self.scale);
-        self.gallery.text_mut().begin_frame();
+        if self.symbols.is_some() {
+            self.symbol_text.set_scale(self.scale);
+            self.symbol_text.begin_frame();
+        } else {
+            let host = self.apphost.window_mut().text_host_mut();
+            host.scale = self.scale;
+            host.begin_frame(std::time::Duration::from_secs_f64(elapsed), false);
+        }
         ctx.scene.clear();
         self.build(ctx, scroll);
         let t_built = Instant::now();
         let clear = ColorRole::DocumentCanvas.resolve(ctx.theme);
-        if let Err(e) = ctx
-            .renderer
-            .render(ctx.scene, self.gallery.atlas_mut(), clear)
-        {
+        let render_res = if self.symbols.is_some() {
+            ctx.renderer
+                .render(ctx.scene, self.symbol_text.atlas_mut(), clear)
+        } else {
+            ctx.renderer.render(
+                ctx.scene,
+                self.apphost.window_mut().glyph_atlas_mut(),
+                clear,
+            )
+        };
+        if let Err(e) = render_res {
             eprintln!("渲染失败：{e}");
         }
         let t_end = Instant::now();
@@ -983,7 +1084,7 @@ impl Perf {
         if self.phase == Phase::WarmUp {
             self.phase = Phase::Measure;
             if self.cfg.content == ContentKind::Scene3d {
-                self.scene3d_start = self.gallery.scene3d_diagnostics();
+                self.scene3d_start = self.scene3d_diagnostics();
             }
             self.measure_start_target = Some(f.target_timestamp);
             self.measure_start_cpu = process_cpu_seconds();
@@ -1002,7 +1103,7 @@ impl Perf {
             self.cpu_rate_last = Some((now, current));
         }
         if self.cfg.content == ContentKind::Scene3d {
-            let (bytes, meshes) = self.gallery.scene3d_frame_work();
+            let (bytes, meshes) = self.scene3d_frame_work();
             self.scene3d_pose_bytes += bytes;
             self.scene3d_deformed_meshes += meshes as u64;
         }
@@ -1029,7 +1130,7 @@ impl Perf {
         }
         self.dispatch_delays.push(f.queue_delay() * 1000.0);
         if self.reference_requested
-            && let Some([logical, visual]) = self.gallery.scroll_reference_state()
+            && let Some([logical, visual]) = self.scroll_reference_state()
         {
             self.reference_scroll
                 .push([f.target_timestamp, f64::from(logical), f64::from(visual)]);
@@ -1126,7 +1227,11 @@ impl Perf {
         let completed = measurement_complete(self.phase, idle.as_ref());
         window.set_animating(false);
         renderer.drain_frame_timings(&mut self.timings, true);
-        let atlas_stats = self.gallery.atlas_mut().stats();
+        let atlas_stats = if self.symbols.is_some() {
+            self.symbol_text.atlas_mut().stats()
+        } else {
+            self.apphost.window_mut().glyph_atlas_mut().stats()
+        };
         let report = self.report(completed, idle.clone(), window, renderer, atlas_stats);
         match serde_json::to_string_pretty(&report)
             .map_err(|e| e.to_string())
@@ -1252,7 +1357,7 @@ impl Perf {
             })
             .collect();
         let scene3d_workload = (self.cfg.content==ContentKind::Scene3d).then(||json!({
-                "start":self.scene3d_start,"end":self.gallery.scene3d_diagnostics(),
+                "start":self.scene3d_start,"end":self.scene3d_diagnostics(),
                 "measurement_pose_upload_bytes":self.scene3d_pose_bytes,
                 "measurement_deformed_meshes":self.scene3d_deformed_meshes,
                 "pixel_readback_per_frame":false,
@@ -1284,8 +1389,8 @@ impl Perf {
                 "warmup_s": WARMUP_S,
                 "speed_pt_s": self.cfg.speed,
                 "content": self.cfg.content.name(),
-                "gallery_route": self.gallery.page().slug(),
-                "scroll_area_workload": (self.cfg.content == ContentKind::ScrollArea).then_some("2s alternating top/bottom cycles: 0.35s finger, 0.65s OS-style momentum, 1s return/settle; routed through actual Gallery input"),
+                "gallery_route": self.apphost.state().borrow().current_route(),
+                "scroll_area_workload": (self.cfg.content == ContentKind::ScrollArea).then_some("2s alternating top/bottom cycles: 0.35s finger, 0.65s OS-style momentum, 1s return/settle; routed through actual AppHost ContentHost input"),
                 "view_pt": [window.size().width, window.size().height],
                 "drawable_px": [window.drawable_size().0, window.drawable_size().1],
                 "scale": window.scale(),
@@ -1293,7 +1398,7 @@ impl Perf {
                 "max_drawable_count": match std::env::var("TEKES_PERF_FRAME_LATENCY").as_deref() { Ok("1") => 2, _ => 3 },
                 "max_drawable_count_scope": "wgpu configuration before optional CAMetalDisplayLink; not a measured Metal display-link pool size",
                 "document_height_pt": self.document_height(),
-                "scroll_range_pt": if matches!(self.cfg.content,ContentKind::Editor|ContentKind::ScrollArea) {self.gallery.editor_scroll_metrics().0}else if self.cfg.content==ContentKind::Icons {self.gallery.page_scroll_range()}else if matches!(self.cfg.content,ContentKind::Motion|ContentKind::Symbols|ContentKind::Scene3d) {0.0}else{(self.plan.height-self.view_h).max(0.0)},
+                "scroll_range_pt": if matches!(self.cfg.content,ContentKind::Editor|ContentKind::ScrollArea) {self.editor_scroll_metrics().0}else if self.cfg.content==ContentKind::Icons {self.page_scroll_range()}else if matches!(self.cfg.content,ContentKind::Motion|ContentKind::Symbols|ContentKind::Scene3d) {0.0}else{(self.plan.height-self.view_h).max(0.0)},
                 "segments": if matches!(self.cfg.content,ContentKind::Editor|ContentKind::ScrollArea|ContentKind::Icons|ContentKind::Motion|ContentKind::Symbols|ContentKind::Scene3d) {Value::Null}else{json!(self.plan.segments.len())},
             },
             "gpu_timing": {
@@ -1381,10 +1486,7 @@ impl Perf {
         }
         report["scene3d_workload"] = scene3d_workload.unwrap_or(Value::Null);
         if self.reference_requested {
-            report["reference_fixture"] = self
-                .gallery
-                .scroll_reference_fixture()
-                .unwrap_or(Value::Null);
+            report["reference_fixture"] = self.scroll_reference_fixture().unwrap_or(Value::Null);
             report["reference_scroll"] = json!({
                 "columns": ["target_s", "logical_y", "visual_y"], "samples": self.reference_scroll,
                 "clock": "same target_timestamp as frame samples; callbacks are not actual presentation",
@@ -1760,41 +1862,25 @@ mod tests {
 
     #[test]
     fn perf_scroll_area_tracks_the_post_placement_window_viewport() {
+        let Ok(mut renderer) = Renderer::new_headless() else {
+            eprintln!("UNVERIFIED: no headless Metal adapter; skipping ScrollArea viewport test");
+            return;
+        };
         let config = PerfConfig::parse("scroll:1", None, Some("scroll-area"), None).unwrap();
         let mut perf = Perf::new(config);
-        perf.gallery.apply(Command::Page(Page::ScrollArea));
+        let mut viewports = Vec::new();
         for (width, height) in [(1440.0, 960.0), (1440.0, 827.0), (720.0, 480.0)] {
             perf.resize(width, height);
-            perf.gallery.build_scene(&mut Scene::new());
-            let regular = tekes_ui_tokens::Spacing::Regular.value();
-            let mut text = crate::gallery::text::TextEngine::new();
-            let footer = ["Append paragraph", "Return to latest"]
-                .into_iter()
-                .map(|label| {
-                    tekes_ui_controls::ButtonModel::measure(
-                        &mut text,
-                        label,
-                        (width - crate::gallery::layout::PAGE_CONTENT.min_x()) * 0.5
-                            - regular * 0.5,
-                        tekes_ui_controls::ButtonSize::Sm,
-                        tekes_ui_tokens::proposal::TextRole::UiBody,
-                    )
-                    .height
-                })
-                .fold(0.0_f32, f32::max);
-            let expected = height
-                - footer
-                - regular
-                - crate::gallery::layout::PAGE_CONTENT.min_y()
-                - tekes_ui_tokens::Spacing::Section.value()
-                - tekes_ui_tokens::proposal::TextRole::UiHeading
-                    .style()
-                    .line_height
-                - regular
-                - 2.0 * tekes_ui_tokens::proposal::SCROLL_CONTENT_PADDING;
-            assert!((perf.gallery.editor_scroll_metrics().1 - expected).abs() < 0.01);
+            let scene = perf.build_apphost_scene(&mut renderer);
+            assert!(!scene.primitives().is_empty());
+            let (limit, viewport_h) = perf.editor_scroll_metrics();
+            assert!(limit > 0.0);
+            assert!(viewport_h > 0.0 && viewport_h < height);
+            assert_eq!(perf.view_w, width);
             assert_eq!(perf.view_h, height);
+            viewports.push((height, viewport_h));
         }
+        assert!(viewports[0].1 > viewports[1].1 && viewports[1].1 > viewports[2].1);
     }
 
     #[test]

@@ -83,6 +83,127 @@ pub(crate) fn action(host: &mut ContentHost, id: ComponentId) -> bool {
     true
 }
 
+#[cfg(feature = "selftest")]
+pub(crate) fn surface_scroll_metrics(host: &ContentHost) -> Option<(f32, f32)> {
+    let page = host.get(SPECIMEN)?.component::<TextPage>()?;
+    let last = page.count.checked_sub(1)?;
+    let surface = &page
+        .children
+        .get(last)?
+        .component::<TextFieldContent>()?
+        .surface;
+    Some((surface.scroll().limit().y, surface.inner().size.height))
+}
+
+#[cfg(feature = "selftest")]
+pub(crate) fn scroll_surface_to(host: &mut ContentHost, offset: f32) -> bool {
+    let Some(page) = host
+        .get_mut(SPECIMEN)
+        .and_then(|node| node.component_mut::<TextPage>())
+    else {
+        return false;
+    };
+    let Some(last) = page.count.checked_sub(1) else {
+        return false;
+    };
+    let field = page.field_mut(last);
+    if let Some(reading) = &mut field.reading {
+        reading.stop_following(&mut field.surface);
+    }
+    let current = field.surface.scroll().offset.y;
+    field.surface.scroll_mut().scroll_by(0., offset - current);
+    true
+}
+
+#[cfg(feature = "selftest")]
+pub(crate) fn scroll_surface_event(
+    host: &mut ContentHost,
+    delta_y: f32,
+    begin: bool,
+    end: bool,
+    momentum: bool,
+    time: f64,
+) {
+    let Some(count) = host
+        .get(SPECIMEN)
+        .and_then(|node| node.component::<TextPage>())
+        .map(|page| page.count)
+    else {
+        return;
+    };
+    let Some(last) = count.checked_sub(1) else {
+        return;
+    };
+    let surface_id = ComponentId(FIRST_SURFACE.0 + last as u64);
+    let position = host
+        .get(surface_id)
+        .or_else(|| host.get(SPECIMEN))
+        .map(|node| node.frame().center())
+        .unwrap_or_else(|| tekes_ui_scene::Point::new(200., 200.));
+    host.event(&ContentEvent::Scroll {
+        position,
+        delta: tekes_ui_scene::Point::new(0., delta_y),
+        precise: true,
+        begin,
+        end,
+        momentum,
+        time,
+    });
+}
+
+#[cfg(feature = "selftest")]
+pub(crate) fn scroll_reference_state(host: &ContentHost) -> Option<[f32; 2]> {
+    let page = host.get(SPECIMEN)?.component::<TextPage>()?;
+    let last = page.count.checked_sub(1)?;
+    let surface = &page
+        .children
+        .get(last)?
+        .component::<TextFieldContent>()?
+        .surface;
+    Some([
+        surface.scroll().offset.y,
+        surface.scroll().visual_offset().y,
+    ])
+}
+
+#[cfg(feature = "selftest")]
+pub(crate) fn scroll_reference_fixture(host: &ContentHost) -> Option<serde_json::Value> {
+    let page = host.get(SPECIMEN)?.component::<TextPage>()?;
+    let last = page.count.checked_sub(1)?;
+    let s = &page
+        .children
+        .get(last)?
+        .component::<TextFieldContent>()?
+        .surface;
+    let paragraph = s.paragraph()?;
+    if s.shaped() != s.text() {
+        return None;
+    }
+    let rect = |r: Rect| [r.origin.x, r.origin.y, r.size.width, r.size.height];
+    Some(serde_json::json!({
+        "schema": "tekesui-scroll-reference-fixture/1",
+        "text": s.shaped(),
+        "normalization": "gallery-reading-en.txt.trim_end()",
+        "outer_rect_pt": rect(s.outer()),
+        "inner_rect_pt": rect(s.inner()),
+        "wrap_width_pt": s.width(),
+        "role": s.role().id(),
+        "type_scale": s.type_scale(),
+        "read_only": s.input().is_read_only(),
+        "multiline": s.input().is_multiline(),
+        "paragraph_height_pt": paragraph.height,
+        "scroll_limit_pt": s.scroll().limit().y,
+        "fonts": paragraph.fonts.iter().map(|f| serde_json::json!({
+            "post_script_name": f.post_script_name, "size_pt": f.size,
+            "is_color": f.is_color,
+        })).collect::<Vec<_>>(),
+        "lines": paragraph.lines.iter().map(|l| serde_json::json!({
+            "utf16": [l.utf16.start, l.utf16.end],
+            "top_pt": l.top, "height_pt": l.height, "baseline_pt": l.baseline_y,
+        })).collect::<Vec<_>>(),
+    }))
+}
+
 #[derive(Debug)]
 struct TextPage {
     children: Vec<Content>,
@@ -510,6 +631,19 @@ impl CalibrationPage {
     }
     pub(crate) fn content(&self) -> Content {
         Content::new(CALIBRATION, CalibrationContent(self.0.clone()))
+    }
+    pub(crate) fn clear_reference_dir(&mut self) {
+        let mut state = self.0.borrow_mut();
+        state.original = StaticText::new(None);
+        state.renderer = None;
+        state.visible.clear();
+    }
+    pub(crate) fn set_locale(&mut self, locale: Locale) {
+        let mut state = self.0.borrow_mut();
+        if state.locale != locale {
+            state.locale = locale;
+            state.visible.clear();
+        }
     }
     pub(crate) fn prepare_resources(
         &mut self,
