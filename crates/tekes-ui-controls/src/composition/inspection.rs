@@ -17,7 +17,7 @@ impl InspectionProperty {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct InspectionGeometry {
     pub frame: Rect,
     pub rectangular_clip: Rect,
@@ -26,7 +26,7 @@ pub struct InspectionGeometry {
     pub has_curve_geometry: bool,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct InspectionPaint {
     pub theme: ContentTheme,
     pub tokens: tekes_ui_tokens::audit::TokenObservation,
@@ -35,7 +35,7 @@ pub struct InspectionPaint {
     pub includes_owned_children: bool,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct InspectionSnapshot {
     pub id: ComponentId,
     pub mount: u64,

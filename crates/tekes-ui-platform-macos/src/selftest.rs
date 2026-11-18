@@ -1593,7 +1593,7 @@ pub fn titlebar_contract() -> Vec<(bool, f64, f64)> {
     use crate::shared::{Objects, Shared};
     use crate::view::TekesView;
     use crate::{Event, Window, WindowHandler};
-    use objc2::MainThreadOnly;
+    use objc2::{DefinedClass, MainThreadOnly};
     use objc2_app_kit::{
         NSApplicationActivationPolicy, NSBackingStoreType, NSToolbar, NSWindowStyleMask,
         NSWindowTitleVisibility, NSWindowToolbarStyle,
@@ -1931,6 +1931,73 @@ pub fn titlebar_contract() -> Vec<(bool, f64, f64)> {
             &*ibeam,
             &*objc2_app_kit::NSCursor::IBeamCursor()
         ));
+        view.set_cursor_regions(Vec::new());
+        assert_eq!(
+            view.trackingAreas()
+                .iter()
+                .filter(|area| area
+                    .options()
+                    .contains(objc2_app_kit::NSTrackingAreaOptions::CursorUpdate))
+                .count(),
+            1
+        );
+        // Active scroll / animation defers NSTrackingArea rebuilds while keeping
+        // cursor_for_point accurate, then flushes on scroll/animation settle.
+        view.ivars().scrolling_active.set(true);
+        view.set_cursor_regions(vec![crate::CursorRegion {
+            origin: crate::Point { x: 180., y: 100. },
+            size: crate::Size {
+                width: 100.,
+                height: 100.,
+            },
+            icon: crate::CursorIcon::IBeam,
+        }]);
+        assert_eq!(
+            view.trackingAreas()
+                .iter()
+                .filter(|area| area
+                    .options()
+                    .contains(objc2_app_kit::NSTrackingAreaOptions::CursorUpdate))
+                .count(),
+            1,
+            "active scroll must defer tracking-area rebuild"
+        );
+        assert_eq!(
+            view.cursor_for_point(crate::Point { x: 205., y: 150. }).0,
+            Some(crate::CursorIcon::IBeam)
+        );
+        view.flush_cursor_tracking_if_needed();
+        assert_eq!(
+            view.trackingAreas()
+                .iter()
+                .filter(|area| area
+                    .options()
+                    .contains(objc2_app_kit::NSTrackingAreaOptions::CursorUpdate))
+                .count(),
+            2,
+            "settling scroll must flush deferred tracking-area rebuild"
+        );
+        shared.animating.set(true);
+        view.set_cursor_regions(vec![crate::CursorRegion {
+            origin: crate::Point { x: 200., y: 120. },
+            size: crate::Size {
+                width: 80.,
+                height: 80.,
+            },
+            icon: crate::CursorIcon::IBeam,
+        }]);
+        assert_eq!(
+            view.trackingAreas()
+                .iter()
+                .filter(|area| area
+                    .options()
+                    .contains(objc2_app_kit::NSTrackingAreaOptions::CursorUpdate))
+                .count(),
+            2,
+            "active animation must defer tracking-area rebuild"
+        );
+        shared.animating.set(false);
+        view.flush_cursor_tracking_if_needed();
         view.set_cursor_regions(Vec::new());
         assert_eq!(
             view.trackingAreas()

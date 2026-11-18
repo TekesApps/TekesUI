@@ -565,6 +565,76 @@ fn apphost_workbench_inspector_replaces_retired_rows_and_keeps_unchanged_mount()
         assert_eq!(host.semantic_mount(DOCUMENT_SCROLL), scroll_mount);
     });
 }
+
+#[test]
+fn apphost_workbench_inspector_scroll_preserves_mounts_and_skips_unchanged_snapshot() {
+    let state = state("component-text");
+    state.borrow_mut().select(Some("original"));
+    let mut inspector = panel_source(state.clone(), true).unwrap();
+    let mut text = super::super::text::TextEngine::new();
+    // Populate specimen geometry/paint snapshot once so the Inspector shows full
+    // Properties / Observed tokens / Emitted primitives sections.
+    focus_container(state.clone()).with_host(&mut |host| {
+        render_text_host(host, &mut text);
+    });
+    render_panel(&mut inspector, &mut text);
+    focus_container(state.clone()).with_host(&mut |host| {
+        render_text_host(host, &mut text);
+    });
+    render_panel(&mut inspector, &mut text);
+
+    let (reader_mount, initial_mounts) = {
+        let mut out = None;
+        inspector.with_host(&mut |host| {
+            let mounts: Vec<_> = host
+                .semantics()
+                .into_iter()
+                .map(|node| (node.id, host.semantic_mount(node.id)))
+                .collect();
+            out = Some((host.semantic_mount(DOCUMENT_READER), mounts));
+        });
+        out.unwrap()
+    };
+    assert!(reader_mount.is_some());
+
+    let mut scroll_y = 0.0_f32;
+    for step in 1..=6 {
+        inspector.with_host(&mut |host| {
+            let pos = host.get(DOCUMENT_SCROLL).unwrap().frame().center();
+            host.event(&ContentEvent::Scroll {
+                position: pos,
+                delta: tekes_ui_scene::Point::new(0., 120.),
+                precise: true,
+                begin: step == 1,
+                end: step == 6,
+                momentum: false,
+                time: step as f64 * 0.016,
+            });
+        });
+        render_panel(&mut inspector, &mut text);
+        inspector.with_host(&mut |host| {
+            scroll_y = host
+                .get(DOCUMENT_SCROLL)
+                .unwrap()
+                .component::<ScrollContent>()
+                .unwrap()
+                .scroll
+                .offset
+                .y;
+            assert_eq!(host.semantic_mount(DOCUMENT_READER), reader_mount);
+            let mounts: Vec<_> = host
+                .semantics()
+                .into_iter()
+                .map(|node| (node.id, host.semantic_mount(node.id)))
+                .collect();
+            assert_eq!(mounts, initial_mounts);
+        });
+    }
+    assert!(
+        scroll_y > 100.0,
+        "Inspector scroll offset must advance across scroll frames (got {scroll_y})"
+    );
+}
 struct InspectorClipboard(RefCell<String>);
 impl tekes_ui_module_runtime::ContentClipboard for InspectorClipboard {
     fn clipboard_text(&self) -> Option<String> {
@@ -1193,6 +1263,7 @@ fn apphost_workbench_link_reader_focus_waits_for_host_layout_then_accepts_keyboa
         inspector: false,
         inspector_groups: Vec::new(),
         inspector_target: None,
+        inspector_snapshot: None,
         document_focus: document_focus.clone(),
     };
     let mut text = super::super::text::TextEngine::new();

@@ -543,12 +543,12 @@ impl ScrollContent {
         clip: Rect,
         gutter: f32,
         width: f32,
+        heights: &[f32],
     ) -> Rect {
         let origin = self.scroll.geometry(frame, Some(clip)).content_origin();
         let child_clip = self.content_clip(frame, clip);
         let mut y = origin.y + gutter;
-        for c in &mut self.children {
-            let h = c.measure(text, Size::new(width, 1e8)).size.height;
+        for (c, &h) in self.children.iter_mut().zip(heights) {
             c.arrange(text, Rect::new(origin.x + gutter, y, width, h), child_clip);
             y += h;
         }
@@ -670,20 +670,25 @@ impl Component for ScrollContent {
                 .fold(width, f32::max);
         }
         let available = Size::new(width, 1e8);
-        let mut height = 2.0 * gutter;
-        for c in &mut self.children {
-            height += c.measure(text, available).size.height;
-        }
+        let mut child_heights: Vec<f32> = self
+            .children
+            .iter_mut()
+            .map(|c| c.measure(text, available).size.height)
+            .collect();
+        let mut height = 2.0 * gutter + child_heights.iter().sum::<f32>();
         if self.scroll.scrollbar_requested(true)
             && self.scroll.scroll_policy().1 != crate::ScrollPolicy::Disabled
             && height > frame.size.height
         {
             let extra = self.overflow_gutter(bleed, gutter);
             width = (width - extra).max(0.);
-            height = 2. * gutter;
-            for child in &mut self.children {
-                height += child.measure(text, Size::new(width, 1e8)).size.height;
-            }
+            let available = Size::new(width, 1e8);
+            child_heights = self
+                .children
+                .iter_mut()
+                .map(|child| child.measure(text, available).size.height)
+                .collect();
+            height = 2. * gutter + child_heights.iter().sum::<f32>();
         }
         let document = Size::new(
             if self.horizontal {
@@ -724,12 +729,12 @@ impl Component for ScrollContent {
         if let Some(reading) = &mut self.reading {
             reading.prepare(&mut self.scroll);
         }
-        let visible = self.arrange_content(text, frame, clip, gutter, width);
+        let visible = self.arrange_content(text, frame, clip, gutter, width, &child_heights);
         let restored = self.reading.as_mut().is_some_and(|reading| {
             reading.restore(&mut self.scroll, &self.children, visible, reading_anchor)
         });
         if restored {
-            self.arrange_content(text, frame, clip, gutter, width);
+            self.arrange_content(text, frame, clip, gutter, width, &child_heights);
         }
         if let Some(reading) = &mut self.reading {
             reading.record(&self.scroll, &self.children, visible);

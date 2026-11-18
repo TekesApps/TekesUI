@@ -62,12 +62,14 @@ fn text_layout(layout: ContentTextLayout) -> AccessibilityTextLayout {
         lines: layout.lines,
     }
 }
-fn enrich(
+fn enrich_with_layout(
     host: &ContentHost,
     id: ComponentId,
     part: Option<usize>,
     semantics: &ContentSemantics,
     node: &mut AccessibilityNode,
+    layout: Option<ContentTextLayout>,
+    text_layouts_out: Option<&mut HashMap<AccessibilityKey, AccessibilityTextLayout>>,
 ) {
     if semantics.role == ContentRole::ProgressIndicator {
         let range = host
@@ -88,15 +90,17 @@ fn enrich(
     if part.is_none() {
         node.can_show_menu = host.can_show_context_menu(id);
         add_slider_range(host, id, semantics, node);
-        // Preserve the existing value/selection contract before shaping. Complete
-        // geometry is still published only from the original shaped layout below.
-        if matches!(
-            semantics.role,
-            ContentRole::TextInput
-                | ContentRole::ComboBox
-                | ContentRole::SearchInput
-                | ContentRole::Image
-        ) && let Some(input) = host.semantic_text_input_snapshot(id)
+        // Preserve the existing value/selection contract before shaping. When a shaped
+        // layout already exists, `layout.input` below is identical unless disabled.
+        if layout.is_none()
+            && matches!(
+                semantics.role,
+                ContentRole::TextInput
+                    | ContentRole::ComboBox
+                    | ContentRole::SearchInput
+                    | ContentRole::Image
+            )
+            && let Some(input) = host.semantic_text_input_snapshot(id)
         {
             if !matches!(
                 semantics.role,
@@ -112,7 +116,7 @@ fn enrich(
             node.read_only = input.read_only;
         }
     }
-    if let Some(layout) = host.semantic_text_layout_snapshot(id, part) {
+    if let Some(layout) = layout {
         if !matches!(
             node.role,
             AccessibilityRole::Image
@@ -124,8 +128,14 @@ fn enrich(
             node.role = AccessibilityRole::TextArea;
         }
         node.value = Some(layout.input.text.clone());
-        node.text_selection = Some(layout.input.selection);
+        node.text_selection = Some(layout.input.selection.clone());
         node.read_only = layout.input.read_only;
+        if let Some(out) = text_layouts_out {
+            let ax_layout = text_layout(layout);
+            if ax_layout.is_valid() {
+                out.insert(node.key, ax_layout);
+            }
+        }
     }
 }
 pub fn content_nodes(host: &ContentHost) -> Vec<AccessibilityNode> {
@@ -134,40 +144,86 @@ pub fn content_nodes(host: &ContentHost) -> Vec<AccessibilityNode> {
     }
     project_content_nodes(host).unwrap_or_default()
 }
-fn project_content_nodes(host: &ContentHost) -> Option<Vec<AccessibilityNode>> {
-    if !host.is_window_active() {
-        return Some(Vec::new());
+struct ProjectedHostAccessibility {
+    nodes: Vec<AccessibilityNode>,
+    text_layouts: HashMap<AccessibilityKey, AccessibilityTextLayout>,
+    id_by_mount: HashMap<u64, ComponentId>,
+}
+fn resolve_mount(
+    host: &ContentHost,
+    id: ComponentId,
+    mount_by_id: &mut HashMap<ComponentId, u64>,
+    id_by_mount: &mut HashMap<u64, ComponentId>,
+) -> Option<u64> {
+    if let Some(&mount) = mount_by_id.get(&id) {
+        return Some(mount);
     }
-    let mut nodes = Vec::new();
-    for n in host.semantics() {
+    let mount = host.semantic_mount(id)?;
+    mount_by_id.insert(id, mount);
+    id_by_mount.insert(mount, id);
+    Some(mount)
+}
+fn project_host_accessibility(
+    host: &ContentHost,
+    include_text_layouts: bool,
+) -> Option<ProjectedHostAccessibility> {
+    if !host.is_window_active() {
+        return Some(ProjectedHostAccessibility {
+            nodes: Vec::new(),
+            text_layouts: HashMap::new(),
+            id_by_mount: HashMap::new(),
+        });
+    }
+    let semantics = host.semantics();
+    let mut mount_by_id = HashMap::with_capacity(semantics.len());
+    let mut id_by_mount = HashMap::with_capacity(semantics.len());
+    for n in &semantics {
+        if let Some(mount) = host.semantic_mount(n.id) {
+            mount_by_id.insert(n.id, mount);
+            id_by_mount.insert(mount, n.id);
+        }
+    }
+    let mut nodes = Vec::with_capacity(semantics.len());
+    let mut text_layouts = HashMap::new();
+    for n in semantics {
         if n.semantics.role == ContentRole::Image && n.semantics.name.is_empty() {
             continue;
         }
-        let Some(key) = content_key(host, n.id, None) else {
+        let Some(component) = mount_by_id.get(&n.id).copied() else {
             continue;
         };
+        let key = AccessibilityKey {
+            component,
+            part: None,
+        };
+        let layout = host.semantic_text_layout_snapshot(n.id, None);
         if n.semantics.role == ContentRole::Select
-            && (host.text_surface(n.id).is_some()
-                || host.semantic_text_input_snapshot(n.id).is_some()
-                || host.semantic_text_layout_snapshot(n.id, None).is_some())
+            && (layout.is_some()
+                || host.text_surface(n.id).is_some()
+                || host.semantic_text_input_snapshot(n.id).is_some())
         {
             return None;
         }
         if matches!(
             n.semantics.role,
             ContentRole::ComboBox | ContentRole::SearchInput
-        ) && (host
-            .text_surface(n.id)
-            .is_some_and(|surface| surface.input().is_multiline())
+        ) && (layout.as_ref().is_some_and(|l| l.multiline)
             || host
-                .semantic_text_layout_snapshot(n.id, None)
-                .is_some_and(|layout| layout.multiline))
+                .text_surface(n.id)
+                .is_some_and(|surface| surface.input().is_multiline()))
         {
             return None;
         }
+        let parent = n
+            .parent
+            .and_then(|p| resolve_mount(host, p, &mut mount_by_id, &mut id_by_mount))
+            .map(|component| AccessibilityKey {
+                component,
+                part: None,
+            });
         let mut owner = project(
             key,
-            n.parent.and_then(|p| content_key(host, p, None)),
+            parent,
             n.frame,
             n.focused && !n.parts.iter().any(|p| p.focused),
             &n.semantics,
@@ -177,34 +233,40 @@ fn project_content_nodes(host: &ContentHost) -> Option<Vec<AccessibilityNode>> {
             owner.role =
                 AccessibilityRole::Splitter(AccessibilityRange::new(*range.start(), *range.end())?);
         }
-        enrich(host, n.id, None, &n.semantics, &mut owner);
+        enrich_with_layout(
+            host,
+            n.id,
+            None,
+            &n.semantics,
+            &mut owner,
+            layout,
+            include_text_layouts.then_some(&mut text_layouts),
+        );
         nodes.push(owner);
         for part in n.parts {
             if part.semantics.role == ContentRole::Image && part.semantics.name.is_empty() {
                 continue;
             }
-            if part.semantics.role == ContentRole::Select
-                && host
-                    .semantic_text_layout_snapshot(n.id, Some(part.index))
-                    .is_some()
-            {
+            let part_layout = host.semantic_text_layout_snapshot(n.id, Some(part.index));
+            if part.semantics.role == ContentRole::Select && part_layout.is_some() {
                 return None;
             }
             if matches!(
                 part.semantics.role,
                 ContentRole::ComboBox | ContentRole::SearchInput
-            ) && host
-                .semantic_text_layout_snapshot(n.id, Some(part.index))
-                .is_some_and(|layout| layout.multiline)
+            ) && part_layout.as_ref().is_some_and(|l| l.multiline)
             {
                 return None;
             }
-            let key = AccessibilityKey {
+            let part_key = AccessibilityKey {
                 part: Some(part.index),
                 ..key
             };
-            let parent = content_key(host, n.id, host.semantic_part_parent(n.id, part.index));
-            let mut node = project(key, parent, part.frame, part.focused, &part.semantics);
+            let parent = Some(AccessibilityKey {
+                component,
+                part: host.semantic_part_parent(n.id, part.index),
+            });
+            let mut node = project(part_key, parent, part.frame, part.focused, &part.semantics);
             if matches!(
                 part.semantics.role,
                 ContentRole::Slider | ContentRole::Splitter
@@ -219,35 +281,35 @@ fn project_content_nodes(host: &ContentHost) -> Option<Vec<AccessibilityNode>> {
                     AccessibilityRole::Slider(range)
                 };
             }
-            enrich(host, n.id, Some(part.index), &part.semantics, &mut node);
+            enrich_with_layout(
+                host,
+                n.id,
+                Some(part.index),
+                &part.semantics,
+                &mut node,
+                part_layout,
+                include_text_layouts.then_some(&mut text_layouts),
+            );
             nodes.push(node);
         }
     }
-    Some(nodes)
+    Some(ProjectedHostAccessibility {
+        nodes,
+        text_layouts,
+        id_by_mount,
+    })
+}
+fn project_content_nodes(host: &ContentHost) -> Option<Vec<AccessibilityNode>> {
+    project_host_accessibility(host, false).map(|projected| projected.nodes)
 }
 /// Complete original shaped lines for every active text owner, including
 /// unfocused/readonly child editors. Invalid or absent geometry is not guessed.
 pub fn content_text_layouts(
     host: &ContentHost,
 ) -> HashMap<AccessibilityKey, AccessibilityTextLayout> {
-    let mut result = HashMap::new();
-    for node in project_content_nodes(host).unwrap_or_default() {
-        let Some(id) = host
-            .semantics()
-            .iter()
-            .find(|n| host.semantic_mount(n.id) == Some(node.key.component))
-            .map(|n| n.id)
-        else {
-            continue;
-        };
-        if let Some(layout) = host.semantic_text_layout_snapshot(id, node.key.part) {
-            let layout = text_layout(layout);
-            if layout.is_valid() {
-                result.insert(node.key, layout);
-            }
-        }
-    }
-    result
+    project_host_accessibility(host, true)
+        .map(|projected| projected.text_layouts)
+        .unwrap_or_default()
 }
 fn add_slider_range(
     host: &ContentHost,
@@ -490,16 +552,15 @@ impl ContentAccessibilitySnapshot {
             return None;
         }
         let geometry = host.geometry_snapshot()?;
-        let mut nodes = project_content_nodes(host)?;
-        let text_layouts = content_text_layouts(host);
-        let semantics = host.semantics();
-        let mut identities = HashMap::new();
+        let ProjectedHostAccessibility {
+            mut nodes,
+            text_layouts,
+            id_by_mount,
+        } = project_host_accessibility(host, true)?;
+        let mut identities = HashMap::with_capacity(nodes.len());
         let mut structural_only = std::collections::HashSet::new();
         for node in &mut nodes {
-            let id = semantics
-                .iter()
-                .find(|n| host.semantic_mount(n.id) == Some(node.key.component))?
-                .id;
+            let id = *id_by_mount.get(&node.key.component)?;
             if geometry.identity(id, node.key.part) != Some(node.key.component) {
                 return None;
             }
@@ -550,11 +611,16 @@ impl ContentAccessibilitySnapshot {
             identities,
             structural_only,
         };
-        if snapshot.is_valid() {
-            Some(snapshot)
-        } else {
-            None
-        }
+        let valid_layouts = snapshot.geometry.is_current()
+            && tekes_ui_platform_macos::validate_accessibility_nodes_with_geometry(
+                &snapshot.nodes,
+                &snapshot.identities.keys().copied().collect(),
+            )
+            && snapshot
+                .text_layouts
+                .keys()
+                .all(|key| snapshot.identities.contains_key(key));
+        if valid_layouts { Some(snapshot) } else { None }
     }
     /// Remap only explicit original keys into a window adapter's native namespace.
     /// Geometry and its original lease are retained unchanged; missing parents fail validation.
@@ -713,7 +779,15 @@ mod image_role_local_port_tests {
             ImageWithTextSurface(TextSurface::new("not image alt", true, false)),
         ))
         .unwrap();
-        enrich(&host, ComponentId(120), None, &semantics, &mut image);
+        enrich_with_layout(
+            &host,
+            ComponentId(120),
+            None,
+            &semantics,
+            &mut image,
+            host.semantic_text_layout_snapshot(ComponentId(120), None),
+            None,
+        );
         assert_eq!(
             image.role,
             AccessibilityRole::Image,

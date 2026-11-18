@@ -200,3 +200,114 @@ fn soft_wrap_and_offscreen_lines_keep_the_original_shaper_ranges() {
         original.lines.last().cloned()
     );
 }
+
+#[test]
+fn scrolled_inspector_key_value_table_projects_consistently_without_quadratic_work() {
+    use tekes_ui_controls::extended::{Axis, Stack};
+    let essay = "Morning light crossed the curtain and left a slowly moving edge on the floor. \
+         The staircase, the small table, and every shelf held notes tucked between pages.\n"
+        .repeat(36);
+    assert!(essay.len() > 4500);
+    let mut table_rows = Vec::new();
+    for i in 0..35 {
+        let value = match i {
+            4 => format!("ContentSemantics {{ role: TextInput, text: {:?} }}", essay),
+            12 => essay.clone(),
+            _ => format!("Inspector row value #{i} with enough detail to wrap naturally"),
+        };
+        table_rows.push((
+            Content::new(
+                ComponentId(10_010 + i * 2),
+                TextContent::new(format!("Field {i}")),
+            ),
+            Content::new(
+                ComponentId(10_011 + i * 2),
+                TextFieldContent::read_only_content(
+                    format!("Field {i}"),
+                    &value,
+                    proposal::TextRole::UiBody,
+                ),
+            ),
+        ));
+    }
+    let mut h = ContentHost::new(Content::new(
+        ComponentId(1),
+        ScrollContent::new(
+            tekes_ui_controls::ScrollArea::default(),
+            Content::new(
+                ComponentId(2),
+                StackContent {
+                    model: Stack {
+                        axis: Axis::Vertical,
+                        gap: 8.,
+                    },
+                    flexible_child: None,
+                    children: vec![Content::new(
+                        ComponentId(3),
+                        KeyValueTableContent::new(table_rows),
+                    )],
+                },
+            ),
+        )
+        .scrollbar(true),
+    ))
+    .unwrap();
+    let frame = Rect::new(0., 0., 360., 640.);
+    h.render(
+        &mut Scene::new(),
+        &mut Text,
+        frame,
+        frame,
+        Theme::LIGHT.into(),
+    )
+    .unwrap();
+    let baseline = ContentAccessibilitySnapshot::from_host(&h).expect("initial AX snapshot");
+    let baseline_keys: Vec<_> = baseline.nodes().iter().map(|n| n.key).collect();
+    let baseline_layouts = baseline.text_layouts().clone();
+    assert_eq!(baseline_layouts.len(), 35);
+
+    let start = std::time::Instant::now();
+    for step in 1..=10 {
+        h.event(&ContentEvent::Scroll {
+            position: frame.center(),
+            delta: tekes_ui_scene::Point::new(0., 120.),
+            precise: true,
+            begin: step == 1,
+            end: step == 10,
+            momentum: false,
+            time: step as f64 * 0.016,
+        });
+        h.render(
+            &mut Scene::new(),
+            &mut Text,
+            frame,
+            frame,
+            Theme::LIGHT.into(),
+        )
+        .unwrap();
+        let snap = ContentAccessibilitySnapshot::from_host(&h).expect("scrolled AX snapshot");
+        let keys: Vec<_> = snap.nodes().iter().map(|n| n.key).collect();
+        assert_eq!(keys, baseline_keys);
+        assert_eq!(snap.text_layouts().len(), baseline_layouts.len());
+        for (k, layout) in &baseline_layouts {
+            assert_eq!(snap.text_layouts()[k].lines, layout.lines);
+        }
+    }
+    let elapsed = start.elapsed();
+    assert!(
+        elapsed < std::time::Duration::from_millis(1500),
+        "10 scrolled Inspector AX snapshots took {elapsed:?}"
+    );
+    let essay_surface = h.text_surface(ComponentId(10_011 + 12 * 2)).unwrap();
+    let visible_input =
+        tekes_ui_controls::composition::ContentTextInput::from_surface(essay_surface);
+    let full_layout = h
+        .semantic_text_layout_snapshot(ComponentId(10_011 + 12 * 2), None)
+        .unwrap();
+    assert!(
+        visible_input.carets.len() < full_layout.carets.len(),
+        "clipped ContentTextInput must only project carets for visible lines ({} vs {})",
+        visible_input.carets.len(),
+        full_layout.carets.len()
+    );
+}
