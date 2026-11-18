@@ -115,7 +115,7 @@ pub(crate) fn scroll_surface_to(host: &mut ContentHost, offset: f32) -> bool {
     true
 }
 
-#[cfg(feature = "selftest")]
+#[cfg(any(test, feature = "selftest"))]
 pub(crate) fn scroll_surface_event(
     host: &mut ContentHost,
     delta_y: f32,
@@ -489,6 +489,78 @@ mod tests {
                 .input
                 .binding,
             binding
+        );
+    }
+
+    #[test]
+    fn text_page_overscroll_rebounds_to_zero_without_top_gap_or_stuck_momentum() {
+        use std::time::Duration;
+        let mut host = ContentHost::new(content("text", Locale::En).unwrap()).unwrap();
+        let mut text = TextEngine::new();
+        text.set_motion_enabled(true);
+        text.set_motion_context(Duration::ZERO, false);
+        text.begin_frame();
+        render(&mut host, &mut text, 640.);
+
+        text.set_motion_context(Duration::from_secs(10), false);
+        text.begin_frame();
+        render(&mut host, &mut text, 640.);
+        assert!(!text.motion_frame_requested());
+
+        // Scroll into the document, then flick back up so momentum crosses offset 0 at 1:1 elasticity.
+        scroll_surface_event(&mut host, 0., true, false, false, 10.0);
+        scroll_surface_event(&mut host, 240., false, false, false, 10.01);
+        scroll_surface_event(&mut host, 0., false, true, false, 10.02);
+        scroll_surface_event(&mut host, 0., true, false, false, 10.10);
+        scroll_surface_event(&mut host, -180., false, false, false, 10.11);
+        scroll_surface_event(&mut host, 0., false, true, false, 10.12);
+        scroll_surface_event(&mut host, -120., false, false, true, 10.13);
+        scroll_surface_event(&mut host, 0., false, true, true, 10.14);
+
+        assert!(
+            host.text_surface(FIRST_SURFACE)
+                .unwrap()
+                .scroll()
+                .overscroll
+                .y
+                <= -50.0
+        );
+
+        let mut now = Duration::from_secs_f64(10.14);
+        let step = Duration::from_secs_f64(1.0 / 120.0);
+        let mut frames = 0;
+        while frames < 240 {
+            frames += 1;
+            now += step;
+            text.set_motion_context(now, false);
+            text.begin_frame();
+            render(&mut host, &mut text, 640.);
+            if !text.motion_frame_requested() {
+                break;
+            }
+        }
+        assert!(frames < 240, "Text page scroll rebound did not settle");
+
+        let settled = host.text_surface(FIRST_SURFACE).unwrap();
+        assert_eq!(settled.scroll().overscroll.y, 0.0);
+        assert_eq!(settled.scroll().visual_offset().y, 0.0);
+        assert_eq!(settled.scroll().offset.y, 0.0);
+
+        let next_t = now.as_secs_f64() + 0.05;
+        scroll_surface_event(&mut host, 0., true, false, false, next_t);
+        scroll_surface_event(&mut host, 40., false, false, false, next_t + 0.01);
+        let after_finger = host.text_surface(FIRST_SURFACE).unwrap().scroll().offset.y;
+        assert!(
+            after_finger >= 39.9,
+            "finger scroll stuck at {after_finger}"
+        );
+        scroll_surface_event(&mut host, 0., false, true, false, next_t + 0.02);
+        scroll_surface_event(&mut host, 60., false, false, true, next_t + 0.03);
+        scroll_surface_event(&mut host, 0., false, true, true, next_t + 0.04);
+        let after_momentum = host.text_surface(FIRST_SURFACE).unwrap().scroll().offset.y;
+        assert!(
+            after_momentum >= 99.0,
+            "momentum dropped after rebound: {after_momentum}"
         );
     }
 }

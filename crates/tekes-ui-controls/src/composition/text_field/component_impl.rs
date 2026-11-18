@@ -248,6 +248,18 @@ impl Component for TextFieldContent {
         }
     }
 
+    fn window_active_changed(&mut self, active: bool) {
+        if !active {
+            self.last_frame = None;
+        }
+    }
+
+    fn presentation_runnable_changed(&mut self, runnable: bool) {
+        if !runnable {
+            self.last_frame = None;
+        }
+    }
+
     fn semantics(&self) -> ContentSemantics {
         self.editor_semantics()
     }
