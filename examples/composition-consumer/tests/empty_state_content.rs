@@ -412,7 +412,7 @@ fn mixed(external: bool) {
     let root = s.host.semantic_mount(MESSAGE);
     let keys = s.item_keys();
     let items: Vec<_> = keys.iter().map(|id| s.host.semantic_mount(*id)).collect();
-    let input = format!("{:?}", s.host.focused_text().unwrap().input);
+    let input = format!("{:?}", s.host.focused_text().unwrap().input());
     s.host.drain_actions();
     for theme in Theme::ALL {
         for surface in surface_names() {
@@ -458,7 +458,10 @@ fn mixed(external: bool) {
                             .collect::<Vec<_>>(),
                         items
                     );
-                    assert_eq!(format!("{:?}", s.host.focused_text().unwrap().input), input);
+                    assert_eq!(
+                        format!("{:?}", s.host.focused_text().unwrap().input()),
+                        input
+                    );
                     s.host.event(&ContentEvent::Key {
                         key: ControlKey::Enter,
                         down: true,

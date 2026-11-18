@@ -2,7 +2,9 @@
 #[path = "support/coretext.rs"]
 mod coretext;
 use tekes_ui_controls::{
-    ControlKey, ControlState, SelectionEvent, SwitchLayout, SwitchView, extended::Switch,
+    ControlKey, ControlState,
+    extended::Switch,
+    layout_view::{SelectionEvent, SwitchLayout, SwitchView},
 };
 use tekes_ui_scene::{Point, Primitive, Quad, Rect, Scene};
 use tekes_ui_tokens::{Palette, Rgba, Theme};

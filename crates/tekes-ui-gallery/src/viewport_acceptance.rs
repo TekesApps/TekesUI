@@ -68,10 +68,10 @@ impl Host {
                 .map(|s| {
                     let caret = s.caret();
                     tekes_ui_platform_macos::TextInputState {
-                        text: s.input.text.clone(),
-                        selection: s.input.selection(),
-                        marked: s.input.marked.clone(),
-                        caret_index: s.input.caret,
+                        text: s.text().to_owned(),
+                        selection: s.input().selection(),
+                        marked: s.marked(),
+                        caret_index: s.input().caret(),
                         caret_origin: tekes_ui_platform_macos::Point {
                             x: caret.min_x() as f64,
                             y: caret.min_y() as f64,
@@ -80,7 +80,7 @@ impl Host {
                             width: caret.size.width as f64,
                             height: caret.size.height as f64,
                         },
-                        read_only: s.input.read_only,
+                        read_only: s.input().is_read_only(),
                         ..Default::default()
                     }
                 }),
@@ -90,7 +90,7 @@ impl Host {
         let rect = |r: Rect| serde_json::json!({"x":r.min_x(),"y":r.min_y(),"width":r.size.width,"height":r.size.height});
         let fields:Vec<_>=[TRANSCRIPT,COMPOSER].into_iter().map(|id| {
             let field=self.fixture.field(id); let s=&field.surface;
-            serde_json::json!({"id":id.0,"text":s.input.text,"selection":s.input.selection(),"marked":s.input.marked,"viewport":format!("{:?}",field.viewport),"outer":rect(s.outer),"inner":rect(s.inner),"caret":rect(s.caret()),"scroll":{"x":s.scroll.offset.x,"y":s.scroll.offset.y,"limit_x":s.scroll.limit().x,"limit_y":s.scroll.limit().y},"following":field.reading.as_ref().map(|r|r.is_following_latest())})
+            serde_json::json!({"id":id.0,"text":s.text(),"selection":s.input().selection(),"marked":s.marked(),"viewport":format!("{:?}",field.viewport),"outer":rect(s.outer()),"inner":rect(s.inner()),"caret":rect(s.caret()),"scroll":{"x":s.scroll().offset.x,"y":s.scroll().offset.y,"limit_x":s.scroll().limit().x,"limit_y":s.scroll().limit().y},"following":field.reading.as_ref().map(|r|r.is_following_latest())})
         }).collect();
         let semantics:Vec<_>=self.fixture.host.semantics().into_iter().map(|n|serde_json::json!({"id":n.id.0,"name":n.semantics.name,"frame":rect(n.frame),"visible":n.visible.map(rect),"focused":n.focused})).collect();
         std::fs::create_dir_all(&self.out).unwrap();
@@ -152,7 +152,7 @@ impl Host {
             Event::TextCommand(c) => {
                 if c == tekes_ui_platform_macos::TextEditCommand::Copy {
                     if let Some(surface) = self.fixture.host.focused_text() {
-                        w.set_clipboard_text(&surface.input.selected_text());
+                        w.set_clipboard_text(&surface.input().selected_text());
                     }
                     return;
                 }
@@ -205,7 +205,7 @@ impl Host {
             .event_with_text(&e, &mut self.text)
             .expect("existing Gallery text backend");
         if self.reports.len() < 512 {
-            self.reports.push(serde_json::json!({"event":format!("{e:?}"),"response":format!("{response:?}"),"value":self.fixture.field(COMPOSER).surface.input.text}));
+            self.reports.push(serde_json::json!({"event":format!("{e:?}"),"response":format!("{response:?}"),"value":self.fixture.field(COMPOSER).surface.text()}));
         }
         self.publish(w);
         self.save(w);

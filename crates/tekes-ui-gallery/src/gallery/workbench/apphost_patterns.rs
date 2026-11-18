@@ -259,7 +259,7 @@ impl AppHostPatterns {
                 .unwrap()
                 .component::<TextFieldContent>()
                 .unwrap();
-            let disabled_changed = field.surface.input.disabled != self.state.disabled;
+            let disabled_changed = field.surface.input().is_disabled() != self.state.disabled;
             let error = self.state.error || self.state.phase == Phase::Invalid;
             let message = error.then(|| {
                 if renderer == "filter" {
@@ -280,7 +280,7 @@ impl AppHostPatterns {
                     .component_mut::<TextFieldContent>()
                     .unwrap();
                 field.field.error = message;
-                field.surface.error = error;
+                field.surface.set_error(error);
             }
         }
         let mut status = if renderer == "filter" {
@@ -523,17 +523,11 @@ impl Component for FormMetadata {
     fn rectangular_input_geometry(&self) -> bool {
         true
     }
-    fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
-        TableTransactionCompatibility::StableHooks
+    fn has_stable_hooks(&self) -> bool {
+        true
     }
-    fn prepared_effects_work(&self, n: usize) -> Result<usize, PreparedEffectsError> {
-        PreparedEffects::local_work(n)
-    }
-    fn prepare_effects(
-        &self,
-        hooks: &[PreparedHook],
-    ) -> Result<PreparedEffects, PreparedEffectsError> {
-        Ok(PreparedEffects::local(self, hooks))
+    fn supports_prepared_lifecycle(&self) -> bool {
+        true
     }
     fn children(&self) -> &[Content] {
         &self.children
@@ -612,17 +606,11 @@ impl Component for MasterPane {
     fn rectangular_input_geometry(&self) -> bool {
         true
     }
-    fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
-        TableTransactionCompatibility::StableHooks
+    fn has_stable_hooks(&self) -> bool {
+        true
     }
-    fn prepared_effects_work(&self, n: usize) -> Result<usize, PreparedEffectsError> {
-        PreparedEffects::local_work(n)
-    }
-    fn prepare_effects(
-        &self,
-        hooks: &[PreparedHook],
-    ) -> Result<PreparedEffects, PreparedEffectsError> {
-        Ok(PreparedEffects::local(self, hooks))
+    fn supports_prepared_lifecycle(&self) -> bool {
+        true
     }
     fn children(&self) -> &[Content] {
         &self.children
@@ -883,11 +871,16 @@ mod tests {
             page.host()
                 .text_surface(DETAIL)
                 .unwrap()
-                .input
-                .text
+                .text()
                 .starts_with("Document 2 — reading notes")
         );
-        assert!(page.host().text_surface(DETAIL).unwrap().input.read_only);
+        assert!(
+            page.host()
+                .text_surface(DETAIL)
+                .unwrap()
+                .input()
+                .is_read_only()
+        );
         press(&mut page, &mut text, 1);
         press(&mut page, &mut text, 2);
         assert_eq!(page.state.selected, 1);
@@ -895,8 +888,7 @@ mod tests {
             page.host()
                 .text_surface(DETAIL)
                 .unwrap()
-                .input
-                .text
+                .text()
                 .starts_with("Document 2 — reading notes")
         );
     }

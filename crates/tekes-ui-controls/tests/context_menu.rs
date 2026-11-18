@@ -47,7 +47,7 @@ impl Component for Draft {
         true
     }
     fn composing(&self) -> bool {
-        self.input.marked.is_some()
+        self.input.marked().is_some()
     }
     fn semantics(&self) -> ContentSemantics {
         ContentSemantics::new(ContentRole::TextInput, "Draft A")
@@ -179,7 +179,7 @@ fn context_menu_keeps_focus_draft_and_original_a_b_delayed_values() {
             .component::<Draft>()
             .unwrap()
             .input
-            .text,
+            .text(),
         "A draft"
     );
     assert!(host.drain_actions().is_empty());
@@ -190,8 +190,8 @@ fn context_menu_marked_text_and_capture_policy_is_explicit() {
     let draft = host.get_mut(A).unwrap().component_mut::<Draft>().unwrap();
     draft.input.preedit("中文", 0..1, None);
     let before = (
-        draft.input.text.clone(),
-        draft.input.marked.clone(),
+        draft.input.text().to_owned(),
+        draft.input.marked(),
         draft.input.selection(),
     );
     assert_eq!(
@@ -210,8 +210,8 @@ fn context_menu_marked_text_and_capture_policy_is_explicit() {
     );
     assert_eq!(host.focused(), Some(A));
     let after = &host.get(A).unwrap().component::<Draft>().unwrap().input;
-    assert_eq!(after.text, before.0);
-    assert_eq!(after.marked, before.1);
+    assert_eq!(after.text(), before.0);
+    assert_eq!(after.marked(), before.1);
     assert_eq!(after.selection(), before.2);
 }
 #[test]

@@ -1,6 +1,6 @@
 //! Original Menu composition; input and painting stay in MenuRuntime.
 use super::*;
-use crate::{MenuEvent, MenuView, MenuWheelInput};
+use crate::feedback_view::{MenuEvent, MenuView, MenuWheelInput};
 
 /// Controlled declarations for the original Menu runtime. Values identify an
 /// entry among its siblings; the delivered path includes all submenu values.
@@ -109,7 +109,7 @@ fn part_identity() -> usize {
 struct MenuPanel {
     path: Vec<usize>,
     view: MenuView,
-    layout: Option<crate::MenuLayout>,
+    layout: Option<crate::feedback_view::MenuLayout>,
     parts: Vec<usize>,
     group: usize,
     parent: usize,
@@ -123,7 +123,7 @@ pub struct MenuContent {
     pub menu: MenuView,
     pub labels: Vec<String>,
     pub selected: Option<usize>,
-    pub popup: Option<crate::MenuLayout>,
+    pub popup: Option<crate::feedback_view::MenuLayout>,
 }
 #[derive(Debug)]
 pub(crate) struct MenuContentState {
@@ -584,7 +584,10 @@ impl MenuContent {
             },
         })
     }
-    fn prepare_trigger_pointer(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
+    pub(super) fn prepare_trigger_pointer(
+        &self,
+        request: ComponentActionRequest<'_>,
+    ) -> ActionPreparation {
         let owned = action_preparation::OwnedActionRequest::read(request);
         let known_pointer_down = matches!(
             &owned,
@@ -1067,7 +1070,7 @@ impl MenuContent {
         let level = self.active_level();
         let mut parts = Vec::new();
         let mut append = |entries: &[MenuEntry],
-                          layout: &crate::MenuLayout,
+                          layout: &crate::feedback_view::MenuLayout,
                           ids: &[usize],
                           group: usize,
                           active: bool,
@@ -1352,7 +1355,7 @@ fn deliver_menu_input(view: &mut MenuView, event: &ContentEvent) -> (MenuEvent, 
                     momentum: *momentum,
                     time: *time
                 }),
-                crate::MenuWheelEvent::Consumed { .. }
+                crate::feedback_view::MenuWheelEvent::Consumed { .. }
             );
             MenuEvent::None
         }
@@ -1365,13 +1368,6 @@ fn deliver_menu_input(view: &mut MenuView, event: &ContentEvent) -> (MenuEvent, 
 impl Component for MenuContent {
     fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
         CurveSubtreeCapability::Recursive
-    }
-
-    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
-        ActionTransactionCompatibility::StableHooks
-    }
-    fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
-        self.prepare_trigger_pointer(request)
     }
     fn fixed_slots(&self) -> bool {
         true

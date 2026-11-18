@@ -46,13 +46,13 @@ pub(crate) struct PreparedTextInsert {
 /// Ordinary edits preserve graphemes; explicit decomposing deletion removes one scalar.
 #[derive(Debug)]
 pub struct TextInput {
-    pub text: String,
-    pub anchor: usize,
-    pub caret: usize,
-    pub marked: Option<Range<usize>>,
-    pub multiline: bool,
-    pub read_only: bool,
-    pub disabled: bool,
+    pub(crate) text: String,
+    pub(crate) anchor: usize,
+    pub(crate) caret: usize,
+    pub(crate) marked: Option<Range<usize>>,
+    pub(crate) multiline: bool,
+    pub(crate) read_only: bool,
+    pub(crate) disabled: bool,
     undo: Vec<Snapshot>,
     redo: Vec<Snapshot>,
     composition: Option<Snapshot>,
@@ -113,6 +113,96 @@ impl TextInput {
     }
     pub fn selection(&self) -> Range<usize> {
         self.anchor.min(self.caret)..self.anchor.max(self.caret)
+    }
+    pub fn text(&self) -> &str {
+        &self.text
+    }
+    pub fn anchor(&self) -> usize {
+        self.anchor
+    }
+    pub fn caret(&self) -> usize {
+        self.caret
+    }
+    pub fn marked(&self) -> Option<Range<usize>> {
+        self.marked.clone()
+    }
+    pub fn is_multiline(&self) -> bool {
+        self.multiline
+    }
+    pub fn set_multiline(&mut self, multiline: bool) {
+        if self.multiline == multiline {
+            return;
+        }
+        self.multiline = multiline;
+        if !multiline {
+            let normalized = self.normalize_value(&self.text);
+            if normalized != self.text {
+                self.advance_edit_epoch();
+                self.text = normalized;
+                let len = self.len();
+                self.anchor = self.boundary(self.anchor.min(len));
+                self.caret = self.boundary(self.caret.min(len));
+                self.marked = None;
+                self.composition = None;
+            }
+        }
+    }
+    pub fn is_read_only(&self) -> bool {
+        self.read_only
+    }
+    pub fn set_read_only(&mut self, read_only: bool) {
+        self.read_only = read_only;
+    }
+    pub fn is_disabled(&self) -> bool {
+        self.disabled
+    }
+    pub fn set_disabled(&mut self, disabled: bool) {
+        self.disabled = disabled;
+    }
+    pub fn set_text(&mut self, value: &str) {
+        self.advance_edit_epoch();
+        self.text = self.normalize_value(value);
+        self.anchor = 0;
+        self.caret = 0;
+        self.marked = None;
+        self.composition = None;
+    }
+    pub fn append_text(&mut self, suffix: &str) {
+        let normalized = self.normalize_value(suffix);
+        if normalized.is_empty() {
+            return;
+        }
+        self.advance_edit_epoch();
+        self.text.push_str(&normalized);
+        let len = self.len();
+        self.anchor = self.boundary(self.anchor.min(len));
+        self.caret = self.boundary(self.caret.min(len));
+    }
+    pub fn set_selection(&mut self, anchor: usize, caret: usize) {
+        self.advance_edit_epoch();
+        let len = self.len();
+        self.anchor = self.boundary(anchor.min(len));
+        self.caret = self.boundary(caret.min(len));
+    }
+    pub fn set_marked_range(&mut self, range: Option<Range<usize>>) -> bool {
+        let Some(range) = range else {
+            if self.marked.is_some() || self.composition.is_some() {
+                self.advance_edit_epoch();
+            }
+            self.marked = None;
+            self.composition = None;
+            return true;
+        };
+        if range.start > range.end
+            || range.end > self.len()
+            || self.scalar_floor(range.start) != range.start
+            || self.scalar_floor(range.end) != range.end
+        {
+            return false;
+        }
+        self.advance_edit_epoch();
+        self.marked = Some(range);
+        true
     }
     fn advance_edit_epoch(&mut self) {
         self.edit_epoch = self

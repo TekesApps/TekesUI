@@ -57,9 +57,20 @@ impl Component for Card {
             text.backing_scale(),
         );
         self.children[0].arrange(text, l.content, clip);
-        self.arranged = [frame, clip].into_iter().all(|rect|
-            [rect.min_x(), rect.min_y(), rect.max_x(), rect.max_y(), rect.size.width, rect.size.height].into_iter().all(f32::is_finite)
-                && rect.size.width >= 0. && rect.size.height >= 0.);
+        self.arranged = [frame, clip].into_iter().all(|rect| {
+            [
+                rect.min_x(),
+                rect.min_y(),
+                rect.max_x(),
+                rect.max_y(),
+                rect.size.width,
+                rect.size.height,
+            ]
+            .into_iter()
+            .all(f32::is_finite)
+                && rect.size.width >= 0.
+                && rect.size.height >= 0.
+        });
     }
     fn paint(
         &mut self,
@@ -102,7 +113,7 @@ impl Scenario {
             &value.payload,
             proposal::TextRole::UiBody,
         );
-        let baseline = body.surface.input.external_baseline();
+        let baseline = body.surface.input().external_baseline();
         assert!(matches!(
             body.surface.apply_external_value(
                 &baseline,
@@ -189,7 +200,7 @@ pub fn process_actions(host: &mut ContentHost, value: &mut DraftRevision) -> boo
                 .unwrap()
                 .component_mut::<TextFieldContent>()
                 .unwrap();
-            let baseline = field.surface.input.external_baseline();
+            let baseline = field.surface.input().external_baseline();
             if matches!(
                 field.surface.apply_external_value(
                     &baseline,

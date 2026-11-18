@@ -84,8 +84,8 @@ fn real_reader_stream_pauses_inactive_and_keeps_history_draft_and_focus_through_
     source.process_actions(&mut host, Duration::ZERO);
     paint(&mut host, 720., 1.);
     let surface = host.text_surface(TRANSCRIPT).unwrap();
-    assert_eq!(surface.scroll.offset.y, surface.scroll.limit().y);
-    let point = surface.inner.center();
+    assert_eq!(surface.scroll().offset.y, surface.scroll().limit().y);
+    let point = surface.inner().center();
     assert!(
         host.event(&ContentEvent::Scroll {
             position: point,
@@ -102,14 +102,14 @@ fn real_reader_stream_pauses_inactive_and_keeps_history_draft_and_focus_through_
     let anchor = host
         .text_surface(TRANSCRIPT)
         .unwrap()
-        .reflow_anchor
+        .reflow_anchor()
         .unwrap();
     let y = host
         .text_surface(TRANSCRIPT)
         .unwrap()
         .caret_doc(anchor.utf16)
         .min_y()
-        - host.text_surface(TRANSCRIPT).unwrap().scroll.offset.y;
+        - host.text_surface(TRANSCRIPT).unwrap().scroll().offset.y;
     activate(&mut host, STREAM);
     source.process_actions(&mut host, Duration::ZERO);
     assert!(host.focus(Some(COMPOSER), true));
@@ -117,8 +117,8 @@ fn real_reader_stream_pauses_inactive_and_keeps_history_draft_and_focus_through_
         text: "newer retained 😀".into(),
         replacement: None,
     });
-    let draft = host.text_surface(COMPOSER).unwrap().input.text.clone();
-    let selection = host.text_surface(COMPOSER).unwrap().input.selection();
+    let draft = host.text_surface(COMPOSER).unwrap().text().to_owned();
+    let selection = host.text_surface(COMPOSER).unwrap().input().selection();
     assert!(!source.tick(&mut host, Duration::from_secs(2), false));
     assert_eq!(source.appended, 0);
     assert!(source.tick(&mut host, Duration::from_secs(3), true));
@@ -128,16 +128,16 @@ fn real_reader_stream_pauses_inactive_and_keeps_history_draft_and_focus_through_
         let (width, scale) = if i % 2 == 0 { (480., 1.5) } else { (720., 1.) };
         paint(&mut host, width, scale);
         let surface = host.text_surface(TRANSCRIPT).unwrap();
-        let after = surface.caret_doc(anchor.utf16).min_y() - surface.scroll.offset.y;
+        let after = surface.caret_doc(anchor.utf16).min_y() - surface.scroll().offset.y;
         assert!(
             (after - y).abs() < 1.,
             "native consumer reflow anchor drift: {after} vs {y}"
         );
         assert_eq!(source.appended, i + 1);
         assert_eq!(host.focused(), Some(COMPOSER));
-        assert_eq!(host.text_surface(COMPOSER).unwrap().input.text, draft);
+        assert_eq!(host.text_surface(COMPOSER).unwrap().text(), draft);
         assert_eq!(
-            host.text_surface(COMPOSER).unwrap().input.selection(),
+            host.text_surface(COMPOSER).unwrap().input().selection(),
             selection
         );
     }
@@ -160,7 +160,7 @@ fn real_reader_stream_pauses_inactive_and_keeps_history_draft_and_focus_through_
     paint(&mut host, 480., 1.5);
     assert_eq!(host.focused(), Some(COMPOSER));
     let surface = host.text_surface(TRANSCRIPT).unwrap();
-    assert_eq!(surface.scroll.offset.y, surface.scroll.limit().y);
+    assert_eq!(surface.scroll().offset.y, surface.scroll().limit().y);
 }
 #[test]
 fn typed_actions_keep_multiple_arrivals_once_and_keyboard_latest_uses_actual_button() {
@@ -197,7 +197,7 @@ fn typed_actions_keep_multiple_arrivals_once_and_keyboard_latest_uses_actual_but
         .component::<TextFieldContent>()
         .unwrap();
     assert!(f.reading.as_ref().unwrap().is_following_latest());
-    assert_eq!(f.surface.scroll.offset.y, f.surface.scroll.limit().y);
+    assert_eq!(f.surface.scroll().offset.y, f.surface.scroll().limit().y);
     activate(&mut host, ZOOM);
     activate(&mut host, WIDTH);
     source.process_actions(&mut host, Duration::ZERO);

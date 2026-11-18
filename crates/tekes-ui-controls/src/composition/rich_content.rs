@@ -472,24 +472,23 @@ impl RichContent {
     }
 }
 
+impl RichContent {
+    pub(super) fn owner_field(&self) -> &TextFieldContent {
+        &self.field
+    }
+    pub(super) fn owner_field_mut(&mut self) -> &mut TextFieldContent {
+        &mut self.field
+    }
+}
 impl Component for RichContent {
     fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
         self.field.curve_subtree_capability()
     }
-    fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
-        self.field.table_transaction_compatibility()
+    fn has_stable_hooks(&self) -> bool {
+        self.field.has_stable_hooks()
     }
-    fn prepared_effects_work(&self, n: usize) -> Result<usize, PreparedEffectsError> {
-        self.field.prepared_effects_work(n)
-    }
-    fn prepare_effects(
-        &self,
-        hooks: &[PreparedHook],
-    ) -> Result<PreparedEffects, PreparedEffectsError> {
-        self.field.prepare_effects(hooks)
-    }
-    fn lifecycle_prepared(&mut self, event: Lifecycle, context: &mut PreparedLifecycleContext) {
-        self.field.lifecycle_prepared(event, context);
+    fn supports_prepared_lifecycle(&self) -> bool {
+        self.field.supports_prepared_lifecycle()
     }
     fn requires_text_services(&self) -> bool {
         true

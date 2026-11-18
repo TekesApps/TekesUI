@@ -85,22 +85,8 @@ fn exact_frame_hit_ax_and_decoration_are_one_nonoverlapping_action() {
         assert!(!nodes.iter().any(|n| n.id == ComponentId(id.0 + 100)));
     }
     let edge = Point::new(21., 40.);
-    assert!(
-        !act(&h, RELEASE)
-
-            .button
-            .layout()
-            .unwrap()
-            .hit_test(edge)
-    );
-    assert!(
-        act(&h, PRESS)
-
-            .button
-            .layout()
-            .unwrap()
-            .hit_test(edge)
-    );
+    assert!(!act(&h, RELEASE).button.layout().unwrap().hit_test(edge));
+    assert!(act(&h, PRESS).button.layout().unwrap().hit_test(edge));
     let a = event(&mut h, ContentEvent::PointerDown(edge));
     assert_eq!(a.len(), 1);
     assert_eq!(a[0].target, PRESS);
@@ -187,7 +173,6 @@ fn disabled_loading_unmount_and_pending_mount_identity_are_fenced() {
         .unwrap()
         .component_mut::<Button>()
         .unwrap()
-
         .button
         .state
         .loading = true;

@@ -1,5 +1,5 @@
 //! Independent workspace: original SliderView, real events, primitive/token receipts.
-use tekes_ui_controls::{ControlKey, SliderView, extended::Slider};
+use tekes_ui_controls::{ControlKey, extended::Slider, layout_view::SliderView};
 use tekes_ui_scene::{Point, Primitive, Rect, Scene};
 use tekes_ui_tokens::{Palette, Theme};
 #[test]

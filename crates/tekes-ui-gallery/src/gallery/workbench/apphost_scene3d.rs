@@ -80,7 +80,6 @@ impl State {
         }
         self.focus_space = RequiredFocusSpace::Sufficient {
             witness: boundary.inset(metrics.antialias_guard),
-            evidence: RequiredFocusEvidence::new(),
         };
     }
     fn stop(&mut self) {
@@ -197,7 +196,7 @@ impl Component for PreviewContent {
             && witness.intersection(&state.clip) == Some(witness)
         {
             let metrics = tekes_ui_controls::extended::FocusRingMetrics::new(state.backing_scale);
-            tekes_ui_controls::paint::focus_ring(
+            tekes_ui_controls::extended::FocusRingMetrics::paint(
                 scene,
                 witness.inset(metrics.reserved_band()),
                 theme.palette,

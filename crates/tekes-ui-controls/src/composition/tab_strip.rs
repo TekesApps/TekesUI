@@ -1,6 +1,7 @@
 //! Header-only Tabs adapter. The host owns destination content and commits intents.
 use super::*;
-use crate::{ButtonSize, TabsView};
+use crate::ButtonSize;
+use crate::layout_view::TabsView;
 
 /// Maximum natural title width; close chrome and control insets are additional.
 pub const TAB_TITLE_MAX_WIDTH: f32 = 160.;

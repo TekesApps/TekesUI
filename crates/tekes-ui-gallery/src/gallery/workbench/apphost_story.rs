@@ -401,7 +401,7 @@ mod tests {
                         .disabled
                 );
                 if renderer == "combo-box" {
-                    assert_eq!(story.host().text_surface(id).unwrap().input.text, "Compact");
+                    assert_eq!(story.host().text_surface(id).unwrap().text(), "Compact");
                     assert_eq!(
                         story
                             .host()
@@ -424,8 +424,7 @@ mod tests {
                         .host()
                         .text_surface(ComponentId(91402))
                         .unwrap()
-                        .input
-                        .text,
+                        .text(),
                     "Compact"
                 );
                 assert_eq!(
@@ -433,8 +432,7 @@ mod tests {
                         .host()
                         .text_surface(ComponentId(91412))
                         .unwrap()
-                        .input
-                        .text,
+                        .text(),
                     "Compact"
                 );
             }
@@ -622,8 +620,7 @@ mod tests {
                 .host()
                 .text_surface(ComponentId(27601))
                 .unwrap()
-                .input
-                .marked
+                .marked()
                 .is_none()
         );
         assert_eq!(story.state.input.combo().model().filtered(), vec![1, 2]);

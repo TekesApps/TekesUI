@@ -123,13 +123,10 @@ fn ordinary_callbacks_edit_multiline_but_never_invent_submission() {
         field_mut(&mut h).submit_policy = TextSubmitPolicy::Enter;
         assert!(!command(&mut h, tekes_ui_controls::TextEditCommand::InsertNewline).activated);
         assert!(!command(&mut h, tekes_ui_controls::TextEditCommand::InsertLineBreak).activated);
-        assert_eq!(
-            field(&h).surface.input.text,
-            if multi { "\n\n" } else { "" }
-        );
+        assert_eq!(field(&h).surface.text(), if multi { "\n\n" } else { "" });
         if multi {
-            assert!(field_mut(&mut h).surface.input.undo());
-            assert_eq!(field(&h).surface.input.text, "\n");
+            assert!(field_mut(&mut h).surface.input_mut().undo());
+            assert_eq!(field(&h).surface.text(), "\n");
         }
     }
 }
@@ -141,16 +138,16 @@ fn one_chain_has_one_newline_even_with_duplicate_selector_and_raw_key() {
     command(&mut h, tekes_ui_controls::TextEditCommand::InsertNewline);
     command(&mut h, tekes_ui_controls::TextEditCommand::InsertLineBreak);
     h.event(&ContentEvent::KeyInput(k));
-    assert_eq!(field(&h).surface.input.text, "");
+    assert_eq!(field(&h).surface.text(), "");
     let r = end(&mut h, 1);
-    assert_eq!(field(&h).surface.input.text, "\n");
+    assert_eq!(field(&h).surface.text(), "\n");
     assert!(!r.activated);
     assert_eq!(
         r.text_key.unwrap().disposition,
         TextKeyDisposition::EditHandled
     );
     assert!(!end(&mut h, 1).activated);
-    assert_eq!(field(&h).surface.input.text, "\n");
+    assert_eq!(field(&h).surface.text(), "\n");
 }
 #[test]
 fn configured_submit_is_an_intent_only_and_repeat_or_replay_cannot_send_twice() {
@@ -177,7 +174,7 @@ fn configured_submit_is_an_intent_only_and_repeat_or_replay_cannot_send_twice() 
             );
             assert!(!end(&mut h, id).activated);
         }
-        assert_eq!(field(&h).surface.input.text, "");
+        assert_eq!(field(&h).surface.text(), "");
     }
 }
 #[test]
@@ -220,7 +217,7 @@ fn commit_unmark_and_control_selectors_never_escape_a_starting_composition() {
                 r.text_key.unwrap().disposition,
                 TextKeyDisposition::InputConsumed
             );
-            assert!(!field(&h).surface.input.text.contains('\n'));
+            assert!(!field(&h).surface.text().contains('\n'));
         }
     }
 }
@@ -241,7 +238,7 @@ fn tab_insertion_precedes_existing_focus_fallback_and_backtab_policy_is_explicit
         end(&mut h, id);
         assert_eq!(h.focused(), Some(EDIT));
     }
-    assert_eq!(field(&h).surface.input.text, "\t");
+    assert_eq!(field(&h).surface.text(), "\t");
     field_mut(&mut h).tab_policy = TextTabPolicy::Navigate;
     start(&mut h, 3, key(ControlKey::Tab { reverse: false }), false);
     command(&mut h, tekes_ui_controls::TextEditCommand::InsertTab);
@@ -273,8 +270,8 @@ fn focus_change_cancels_the_original_chain_and_never_edits_the_new_owner() {
         TextKeyDisposition::Cancelled
     );
     assert!(!r.activated);
-    assert_eq!(field(&h).surface.input.text, "");
-    assert_eq!(h.focused_text().unwrap().input.text, "");
+    assert_eq!(field(&h).surface.text(), "");
+    assert_eq!(h.focused_text().unwrap().text(), "");
 }
 #[test]
 fn opaque_input_consumption_and_actual_edit_acknowledgement_block_submission() {
@@ -310,7 +307,7 @@ fn modifiers_key_up_shift_return_and_unknown_commands_keep_their_meaning() {
     command(&mut h, tekes_ui_controls::TextEditCommand::InsertLineBreak);
     let r = end(&mut h, 1);
     assert!(!r.activated);
-    assert_eq!(field(&h).surface.input.text, "\n");
+    assert_eq!(field(&h).surface.text(), "\n");
     let mut up = key(ControlKey::Enter);
     up.down = false;
     assert!(!h.event(&ContentEvent::KeyInput(up)).activated);
@@ -326,11 +323,11 @@ fn modifiers_key_up_shift_return_and_unknown_commands_keep_their_meaning() {
         r.text_key.unwrap().disposition,
         TextKeyDisposition::Unhandled
     );
-    field_mut(&mut h).surface.input.insert("ab😀", None);
+    field_mut(&mut h).surface.input_mut().insert("ab😀", None);
     let mut left = key(ControlKey::Left);
     left.modifiers.shift = true;
     h.event(&ContentEvent::KeyInput(left));
-    assert_eq!(field(&h).surface.input.selected_text(), "😀");
+    assert_eq!(field(&h).surface.input().selected_text(), "😀");
 }
 
 #[test]
@@ -351,7 +348,7 @@ fn returning_focus_to_the_same_id_does_not_resurrect_a_late_native_key() {
         r.text_key.unwrap().disposition,
         TextKeyDisposition::Cancelled
     );
-    assert_eq!(field(&h).surface.input.text, "");
+    assert_eq!(field(&h).surface.text(), "");
 }
 #[test]
 fn nested_spans_keep_their_own_edit_acknowledgement_and_reject_out_of_order_end_or_replay() {
@@ -378,7 +375,7 @@ fn nested_spans_keep_their_own_edit_acknowledgement_and_reject_out_of_order_end_
     );
     start(&mut h, 1, key(ControlKey::Enter), false);
     assert!(end(&mut h, 1).text_key.is_none());
-    assert_eq!(field(&h).surface.input.text, "a");
+    assert_eq!(field(&h).surface.text(), "a");
 }
 
 #[test]
@@ -386,14 +383,14 @@ fn multiline_field_slot_contains_at_least_one_unclipped_semantic_text_line() {
     let h = host(true);
     let s = &field(&h).surface;
     assert!(
-        s.inner.size.height
-            >= s.role
+        s.inner().size.height
+            >= s.role()
                 .style()
                 .line_height
-                .max(s.paragraph.as_ref().unwrap().lines[0].height as f32),
+                .max(s.paragraph().unwrap().lines[0].height as f32),
         "multiline inner={} semantic line={}",
-        s.inner.size.height,
-        s.role.style().line_height
+        s.inner().size.height,
+        s.role().style().line_height
     );
 }
 
@@ -416,16 +413,16 @@ fn text_edit_reveals_the_new_caret_after_the_actual_paragraph_is_reshaped() {
     let s = &field(&h).surface;
     let caret = s.caret();
     assert!(
-        caret.min_y() >= s.inner.min_y() - 0.01 && caret.max_y() <= s.inner.max_y() + 0.01,
+        caret.min_y() >= s.inner().min_y() - 0.01 && caret.max_y() <= s.inner().max_y() + 0.01,
         "new caret {caret:?} must fit {:?}",
-        s.inner
+        s.inner()
     );
 }
 
 #[test]
 fn a_user_scroll_supersedes_caret_reveal_requested_before_reshaping() {
     let mut h = host(true);
-    let position = field(&h).surface.inner.center();
+    let position = field(&h).surface.inner().center();
     h.event(&ContentEvent::Commit {
         text: "one\ntwo\nthree\nfour".into(),
         replacement: None,
@@ -451,7 +448,7 @@ fn a_user_scroll_supersedes_caret_reveal_requested_before_reshaping() {
         Theme::LIGHT.into(),
     )
     .unwrap();
-    assert_eq!(field(&h).surface.scroll.offset.y, 0.);
+    assert_eq!(field(&h).surface.scroll().offset.y, 0.);
 }
 #[test]
 fn multiline_field_measure_arrange_and_paint_share_the_same_public_slot_geometry() {
@@ -467,8 +464,8 @@ fn multiline_field_measure_arrange_and_paint_share_the_same_public_slot_geometry
     )
     .unwrap();
     let f = field(&h);
-    assert_eq!(f.view.layout().slot, f.surface.outer);
-    assert!(f.view.layout().message.min_y() >= f.surface.outer.max_y());
+    assert_eq!(f.view.layout().slot, f.surface.outer());
+    assert!(f.view.layout().message.min_y() >= f.surface.outer().max_y());
 }
 
 #[test]
@@ -476,11 +473,11 @@ fn the_original_text_surface_reveal_contract_survives_stale_shape_in_both_scroll
     for multiline in [false, true] {
         let mut surface = TextSurface::new("", multiline, false);
         let frame = Rect::new(0., 0., 80., surface.minimum_outer_height(1.));
-        let role = surface.role;
+        let role = surface.role();
         let shape =
             |s: &str, w| tekes_ui_controls::TextSurfaceHost::shape_surface(&mut Text, s, role, w);
         surface.layout_with(frame, Some(frame), 1., 1., shape);
-        surface.input.insert(
+        surface.input_mut().insert(
             if multiline {
                 "one\ntwo\nthree\nfour"
             } else {
@@ -492,16 +489,16 @@ fn the_original_text_surface_reveal_contract_survives_stale_shape_in_both_scroll
         surface.layout_with(frame, Some(frame), 1., 1., shape);
         let caret = surface.caret();
         assert!(
-            caret.min_x() >= surface.inner.min_x() - 0.01
-                && caret.max_x() <= surface.inner.max_x() + 0.01,
+            caret.min_x() >= surface.inner().min_x() - 0.01
+                && caret.max_x() <= surface.inner().max_x() + 0.01,
             "{caret:?} {:?}",
-            surface.inner
+            surface.inner()
         );
         assert!(
-            caret.min_y() >= surface.inner.min_y() - 0.01
-                && caret.max_y() <= surface.inner.max_y() + 0.01,
+            caret.min_y() >= surface.inner().min_y() - 0.01
+                && caret.max_y() <= surface.inner().max_y() + 0.01,
             "{caret:?} {:?}",
-            surface.inner
+            surface.inner()
         );
     }
 }
@@ -557,7 +554,7 @@ fn actual_public_editor_policies_keep_shared_surfaces_and_record_bounded_token_r
                     } else {
                         ""
                     };
-                    assert_eq!(field(&h).surface.input.text, expected);
+                    assert_eq!(field(&h).surface.text(), expected);
                     let (scene, lookups) = tekes_ui_tokens::audit::capture(|| {
                         let mut scene = Scene::new();
                         h.render(
@@ -571,13 +568,13 @@ fn actual_public_editor_policies_keep_shared_surfaces_and_record_bounded_token_r
                         scene
                     });
                     let f = field(&h);
-                    assert!(scene.primitives().iter().any(|p|matches!(p,tekes_ui_scene::Primitive::Quad(q) if q.rect==f.surface.outer)));
+                    assert!(scene.primitives().iter().any(|p|matches!(p,tekes_ui_scene::Primitive::Quad(q) if q.rect==f.surface.outer())));
                     assert!(
                         lookups
                             .iter()
                             .any(|(family, id)| family == "color" && id == "transcript-input")
                     );
-                    assert!(f.surface.caret().max_y() <= f.surface.inner.max_y() + 0.01);
+                    assert!(f.surface.caret().max_y() <= f.surface.inner().max_y() + 0.01);
                     cases.push(serde_json::json!({"component":"tui.text-field","mode":if multiline {"multiline"}else{"single-line"},"policy":policy,"theme":format!("{theme:?}"),"brand":brand,"state_asserted":true,"lookups":lookups}));
                 }
             }

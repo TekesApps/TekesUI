@@ -206,12 +206,8 @@ impl Component for PopoverContent {
     fn host_reveal_local_clip(&self) -> Option<Rect> {
         Some(self.view.layout().frame)
     }
-
-    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
-        ActionTransactionCompatibility::StableHooks
-    }
-    fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
-        action_preparation::ignored_pointer(request)
+    fn ignores_pointer_actions(&self) -> bool {
+        true
     }
 
     fn default_surface(&self) -> Option<&'static str> {

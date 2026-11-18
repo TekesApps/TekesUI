@@ -147,7 +147,7 @@ struct Exposure {
     column: u64,
 }
 #[derive(Debug)]
-struct RowWrapper {
+pub(super) struct RowWrapper {
     identity: Arc<()>,
     slots: Vec<Option<ComponentId>>,
     children: Vec<Content>,
@@ -155,10 +155,6 @@ struct RowWrapper {
     ink: Option<(Rgba, Rgba)>,
 }
 impl Component for RowWrapper {
-    fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
-        TableTransactionCompatibility::StableHooks
-    }
-
     fn fixed_slots(&self) -> bool {
         true
     }
@@ -233,7 +229,9 @@ fn passive_impl(c: &Content, validate: bool) -> Result<(usize, usize), TableCont
         units = add(units, u)?;
         bytes = add(bytes, b)?;
     }
-    if p.table_transaction_compatibility() != TableTransactionCompatibility::StableHooks {
+    if precheck_dispatch::table_transaction_compatibility(p)
+        != TableTransactionCompatibility::StableHooks
+    {
         return Err(TableContentError::UnknownTransactionHooks { child: c.id() });
     }
     Ok((units, bytes))
@@ -1286,22 +1284,11 @@ impl ButtonTextRenderer for MeasureText<'_> {
     ) {
     }
 }
-impl Component for DataTableContent {
-    fn host_reveal_passthrough(&self) -> bool {
-        self.publishable() && self.view.layout_keyed(&self.model).is_some()
-    }
-    fn host_reveal_local_clip(&self) -> Option<Rect> {
-        if !self.publishable() {
-            return None;
-        }
-        self.view
-            .layout_keyed(&self.model)
-            .map(|layout| layout.frame)
-    }
-    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
-        ActionTransactionCompatibility::StableHooks
-    }
-    fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
+impl DataTableContent {
+    pub(super) fn prepare_table_action(
+        &self,
+        request: ComponentActionRequest<'_>,
+    ) -> ActionPreparation {
         action_preparation::prepare_original(
             self,
             request,
@@ -1319,6 +1306,20 @@ impl Component for DataTableContent {
             },
         )
     }
+}
+impl Component for DataTableContent {
+    fn host_reveal_passthrough(&self) -> bool {
+        self.publishable() && self.view.layout_keyed(&self.model).is_some()
+    }
+    fn host_reveal_local_clip(&self) -> Option<Rect> {
+        if !self.publishable() {
+            return None;
+        }
+        self.view
+            .layout_keyed(&self.model)
+            .map(|layout| layout.frame)
+    }
+
     fn validate(&self) -> Result<(), CompositionError> {
         self.validate_all()
             .map_err(|_| CompositionError::InvalidSlotCount)
@@ -1739,7 +1740,7 @@ impl ContentHost {
                     // This stateless built-in organization wrapper exposes its
                     // original child vector; unknown custom components still
                     // need to opt in explicitly.
-                    if c.component.table_transaction_compatibility()
+                    if precheck_dispatch::table_transaction_compatibility(&*c.component)
                         != TableTransactionCompatibility::StableHooks
                         && c.component::<ListContent>().is_none()
                     {

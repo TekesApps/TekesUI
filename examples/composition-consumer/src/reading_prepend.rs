@@ -56,8 +56,7 @@ impl ReadingFixture {
                             children: vec![
                                 Content::new(EARLIER, Button::new("加载更早")),
                                 Content::new(APPEND, Button::new("追加一段")),
-                                Content::new(LATEST, Button::new("回到最新"))
-                                    .preserving_focus(),
+                                Content::new(LATEST, Button::new("回到最新")).preserving_focus(),
                             ],
                         },
                     ),
@@ -82,9 +81,9 @@ impl ReadingFixture {
         let prefix: String = (0..12)
             .map(|i| format!("历史页 {}/{i}｜中文 😀 e\u{301}\n", self.pages + 1))
             .collect();
-        let len = self.surface.input.len();
+        let len = self.surface.input().len();
         let delta = prefix.encode_utf16().count();
-        let next = format!("{prefix}{}", self.surface.input.text);
+        let next = format!("{prefix}{}", self.surface.text());
         let version = self.reading.document_version().unwrap().clone();
         let update = self.reading.update_document(
             &mut self.surface,
@@ -100,10 +99,10 @@ impl ReadingFixture {
         Ok(update)
     }
     pub fn append(&mut self) -> Result<ReadingUpdate, ReadingUpdateError> {
-        let len = self.surface.input.len();
+        let len = self.surface.input().len();
         let next = format!(
             "{}追加内容｜new arrival does not change reading intent.\n",
-            self.surface.input.text
+            self.surface.text()
         );
         let version = self.reading.document_version().unwrap().clone();
         self.reading.update_document(
@@ -161,7 +160,7 @@ impl ReadingFixture {
             frame.size.width,
             (frame.size.height - control_size.height - gap).max(1.),
         );
-        let role = self.surface.role;
+        let role = self.surface.role();
         let scale = text.backing_scale();
         if let Some(host) = text.text_surface_host() {
             let type_scale = host.type_scale();
@@ -174,7 +173,7 @@ impl ReadingFixture {
                 |s, w| host.shape_surface(s, role, w),
             );
             if self.start_mid {
-                self.surface.scroll.scroll_by(0., 713.25);
+                self.surface.scroll_mut().scroll_by(0., 713.25);
                 self.start_mid = false;
                 self.reading.layout_with(
                     &mut self.surface,

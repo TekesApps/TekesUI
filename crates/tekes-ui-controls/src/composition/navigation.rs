@@ -2,7 +2,7 @@
 use super::*;
 mod breadcrumb;
 mod command;
-use crate::TabsView;
+use crate::layout_view::TabsView;
 pub use breadcrumb::BreadcrumbContent;
 pub use command::CommandPaletteContent;
 

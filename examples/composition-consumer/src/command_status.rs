@@ -31,20 +31,20 @@ impl Commands {
         self.model.combo.open
     }
     fn sync_query(&mut self) {
-        if self.model.combo.query != self.editor.surface.input.text {
+        if self.model.combo.query != self.editor.surface.text() {
             self.model
                 .combo
-                .set_query(self.editor.surface.input.text.clone());
+                .set_query(self.editor.surface.text().to_owned());
         }
     }
     fn opened(&mut self) {
         if !self.view.open_from(&mut self.model, self.owner.0 as usize) {
             return;
         }
-        let n = self.editor.surface.input.len();
+        let n = self.editor.surface.input().len();
         self.editor
             .surface
-            .input
+            .input_mut()
             .insert(&self.model.combo.query, Some(0..n));
         self.view.blur_trigger();
         self.editor.set_focus(self.focused, self.keyboard);
@@ -52,10 +52,10 @@ impl Commands {
     fn closed(&mut self, selected: Option<usize>) {
         if let Some(i) = selected {
             self.last_executed = self.model.combo.items.get(i).cloned();
-            let n = self.editor.surface.input.len();
+            let n = self.editor.surface.input().len();
             self.editor
                 .surface
-                .input
+                .input_mut()
                 .insert(&self.model.combo.query, Some(0..n));
         }
         self.editor.set_focus(false, false);
@@ -87,17 +87,11 @@ impl Component for Commands {
     fn rectangular_input_geometry(&self) -> bool {
         true
     }
-    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
-        ActionTransactionCompatibility::StableHooks
+    fn has_stable_hooks(&self) -> bool {
+        true
     }
-    fn prepared_effects_work(&self, calls: usize) -> Result<usize, PreparedEffectsError> {
-        PreparedEffects::local_work(calls)
-    }
-    fn prepare_effects(
-        &self,
-        hooks: &[PreparedHook],
-    ) -> Result<PreparedEffects, PreparedEffectsError> {
-        Ok(PreparedEffects::local(self, hooks))
+    fn supports_prepared_lifecycle(&self) -> bool {
+        true
     }
 
     fn prepare_text_input(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
@@ -248,7 +242,7 @@ impl Component for Commands {
             s,
             &mut t,
             &mut self.model,
-            self.editor.surface.outer,
+            self.editor.surface.outer(),
             c,
             Some(c),
             theme.palette,
@@ -521,7 +515,11 @@ pub fn fixture_content(
     };
     if let Some(query) = initial_query {
         commands.opened();
-        commands.editor.surface.input.insert(query, Some(0..0));
+        commands
+            .editor
+            .surface
+            .input_mut()
+            .insert(query, Some(0..0));
         commands.sync_query();
     }
     Content::new(
@@ -581,7 +579,7 @@ impl Scenario {
         self.commands().open()
     }
     pub fn query(&self) -> &str {
-        &self.commands().editor.surface.input.text
+        self.commands().editor.surface.text()
     }
     pub fn last_executed(&self) -> Option<&str> {
         self.commands().last_executed.as_deref()
@@ -593,7 +591,8 @@ impl Scenario {
         self.commands().view.trigger_layout().map(|l| l.frame)
     }
     pub fn query_frame(&self) -> Option<Rect> {
-        self.open().then_some(self.commands().editor.surface.outer)
+        self.open()
+            .then_some(self.commands().editor.surface.outer())
     }
     pub fn set_items(&mut self, items: Vec<String>) -> bool {
         let c = self.commands_mut();

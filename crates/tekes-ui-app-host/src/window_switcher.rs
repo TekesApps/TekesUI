@@ -251,7 +251,7 @@ impl Host {
                     )
                     .map_err(|e| anyhow::anyhow!("creation trigger: {e:?}"))?;
                 menu.set_popup_viewport(Some(whole));
-                menu.trigger.variant = tekes_ui_controls::paint::ButtonVariant::Toolbar;
+                menu.trigger.variant = tekes_ui_controls::ButtonVariant::Toolbar;
                 menu.trigger.set_selection_fill_only(true);
                 menu.trigger.set_toolbar_icon_slot(true);
                 menu.set_entries(creation.clone())

@@ -165,8 +165,8 @@ fn repeated_choice_confirmation_reaches_an_independent_consumer_and_empty_stays_
         None
     );
     assert!(command.combo.open);
-    assert_eq!(surface.input.text, "no commands");
-    assert_eq!(command.combo.query, surface.input.text);
+    assert_eq!(surface.text(), "no commands");
+    assert_eq!(command.combo.query, surface.text());
     assert_eq!(
         command.combo.selected,
         Some(1),
@@ -562,9 +562,9 @@ fn independent_heterogeneous_list_preserves_mixed_children_and_isolates_row_acti
         .unwrap()
         .component_mut::<TextFieldContent>()
         .unwrap();
-    field.surface.input.select(1, false);
-    field.surface.input.preedit("你", 1..1, None);
-    assert!(field.surface.input.marked.is_some());
+    field.surface.input_mut().select(1, false);
+    field.surface.input_mut().preedit("你", 1..1, None);
+    assert!(field.surface.marked().is_some());
     fixture
         .host
         .reorder(
@@ -586,8 +586,8 @@ fn independent_heterogeneous_list_preserves_mixed_children_and_isolates_row_acti
         .unwrap()
         .component::<TextFieldContent>()
         .unwrap();
-    assert!(field.surface.input.marked.is_some());
-    assert!(field.surface.input.text.contains('你'));
+    assert!(field.surface.marked().is_some());
+    assert!(field.surface.text().contains('你'));
     assert!(fixture.host.get(ids::LIST_FIELD).unwrap().frame().max_y() <= list.max_y() + 0.1);
     assert_ne!(
         fixture
@@ -762,7 +762,7 @@ fn consumer_defined_popover_owns_one_real_tree_with_layout_edit_focus_and_exit()
                     replacement: None,
                     clauses: Vec::new(),
                 });
-                assert!(fixture.host.focused_text().unwrap().input.marked.is_some());
+                assert!(fixture.host.focused_text().unwrap().marked().is_some());
                 fixture.escape();
                 assert!(fixture.is_open(), "composing editor owns first Escape");
                 fixture.escape();
@@ -813,8 +813,8 @@ fn consumer_defined_popover_owns_one_real_tree_with_layout_edit_focus_and_exit()
                         .component::<TextFieldContent>()
                         .unwrap()
                         .surface
-                        .input
-                        .text
+                        .input()
+                        .text()
                         .starts_with("Edited owned draft")
                 );
                 fixture.host.focus(Some(p::OTHER), true);
@@ -990,8 +990,8 @@ fn heterogeneous_menu_reconciles_trigger_availability_and_retained_unmount() {
                             .component::<TextFieldContent>()
                             .unwrap()
                             .surface
-                            .input
-                            .text,
+                            .input()
+                            .text(),
                         "Retained draft · 草稿 A😀B"
                     );
                     assert_eq!(
@@ -1028,7 +1028,7 @@ fn rich_dialog_uses_modal_focus_escape_restore_and_owned_form_state() {
         "the original Dialog and screen qualify the real Scroll body path and modal clip"
     );
     let field = host.focused_text().unwrap();
-    assert!(!field.input.text.is_empty());
+    assert!(!field.text().is_empty());
     let dialog = host
         .get(ids::DIALOG)
         .unwrap()
@@ -1048,9 +1048,9 @@ fn rich_dialog_uses_modal_focus_escape_restore_and_owned_form_state() {
         .unwrap()
         .component_mut::<TextFieldContent>()
         .unwrap();
-    field.surface.input.select_all();
-    field.surface.input.preedit("新工作区", 4..4, None);
-    let preserved = field.surface.input.text.clone();
+    field.surface.input_mut().select_all();
+    field.surface.input_mut().preedit("新工作区", 4..4, None);
+    let preserved = field.surface.text().to_owned();
     host.close_dialog();
     render(&mut host, &mut text);
     host.show_dialog(ids::DIALOG).unwrap();
@@ -1061,8 +1061,8 @@ fn rich_dialog_uses_modal_focus_escape_restore_and_owned_form_state() {
             .component::<TextFieldContent>()
             .unwrap()
             .surface
-            .input
-            .text,
+            .input()
+            .text(),
         preserved
     );
     assert!(host.focused_text().is_some());
@@ -1079,11 +1079,11 @@ fn rich_dialog_validation_uses_field_error_and_preserves_marked_selection() {
         .unwrap()
         .component_mut::<TextFieldContent>()
         .unwrap();
-    field.surface.input.select_all();
-    field.surface.input.insert("", None);
-    field.surface.input.preedit("", 0..0, None);
-    let marked = field.surface.input.marked.clone();
-    let selection = field.surface.input.selection();
+    field.surface.input_mut().select_all();
+    field.surface.input_mut().insert("", None);
+    field.surface.input_mut().preedit("", 0..0, None);
+    let marked = field.surface.marked();
+    let selection = field.surface.input().selection();
     assert!(!scenarios::validate_dialog(&mut host));
     assert!(host.semantics().iter().any(|s| s.id == ids::DIALOG));
     let field = host
@@ -1095,8 +1095,8 @@ fn rich_dialog_validation_uses_field_error_and_preserves_marked_selection() {
         field.field.error.as_deref(),
         Some("Enter a workspace name.")
     );
-    assert_eq!(field.surface.input.marked, marked);
-    assert_eq!(field.surface.input.selection(), selection);
+    assert_eq!(field.surface.marked(), marked);
+    assert_eq!(field.surface.input().selection(), selection);
     assert_eq!(host.focused(), Some(ids::DIALOG_FIELD));
     render(&mut host, &mut text);
     host.event(&ContentEvent::Commit {
@@ -1119,9 +1119,9 @@ fn rich_dialog_validation_uses_field_error_and_preserves_marked_selection() {
         .component::<TextFieldContent>()
         .unwrap()
         .surface
-        .input
-        .text
-        .clone();
+        .input()
+        .text()
+        .to_owned();
     assert!(host.close_dialog());
     host.show_dialog(ids::DIALOG).unwrap();
     render(&mut host, &mut text);
@@ -1130,7 +1130,7 @@ fn rich_dialog_validation_uses_field_error_and_preserves_marked_selection() {
         .unwrap()
         .component::<TextFieldContent>()
         .unwrap();
-    assert_eq!(field.surface.input.text, value);
+    assert_eq!(field.surface.text(), value);
     assert_eq!(field.field.error, None);
 }
 
@@ -1267,7 +1267,7 @@ fn marked_cjk_preedit_escape_cancels_composition_before_modal_dismissal() {
         clauses: std::iter::once(0..3).collect(),
         replacement: None,
     });
-    assert!(host.focused_text().unwrap().input.marked.is_some());
+    assert!(host.focused_text().unwrap().marked().is_some());
 
     key(&mut host, ControlKey::Escape, true);
     assert!(
@@ -1278,7 +1278,7 @@ fn marked_cjk_preedit_escape_cancels_composition_before_modal_dismissal() {
             .is_open()
     );
     assert_eq!(host.focused(), Some(ids::DIALOG_FIELD));
-    assert!(host.focused_text().unwrap().input.marked.is_none());
+    assert!(host.focused_text().unwrap().marked().is_none());
     assert!(host.semantics().iter().any(|node| node.id == ids::DIALOG));
 
     key(&mut host, ControlKey::Escape, true);
@@ -1316,8 +1316,8 @@ fn public_accessibility_actions_use_live_component_and_menu_part_state() {
             .component::<TextFieldContent>()
             .unwrap()
             .surface
-            .input
-            .text,
+            .input()
+            .text(),
         "AX workspace"
     );
 
@@ -1419,9 +1419,9 @@ fn accessibility_actions_respect_modal_scope_and_reject_closed_dialog_targets() 
         .component::<TextFieldContent>()
         .unwrap()
         .surface
-        .input
-        .text
-        .clone();
+        .input()
+        .text()
+        .to_owned();
 
     assert!(host.close_dialog());
     assert_eq!(host.focused(), Some(ids::DIALOG_INVOKER));
@@ -1440,8 +1440,8 @@ fn accessibility_actions_respect_modal_scope_and_reject_closed_dialog_targets() 
             .component::<TextFieldContent>()
             .unwrap()
             .surface
-            .input
-            .text,
+            .input()
+            .text(),
         value,
         "a closed dialog target cannot receive stale actions"
     );
@@ -1463,7 +1463,7 @@ fn accessibility_text_selection_reuses_editor_graphemes_undo_and_composition_pri
         .consumed
     );
     assert!(act(&mut host, AccessibilityAction::SetSelection(2..4)).consumed);
-    let input = &host.text_surface(ids::DIALOG_FIELD).unwrap().input;
+    let input = host.text_surface(ids::DIALOG_FIELD).unwrap().input();
     assert_eq!(input.selection(), 1..5);
     assert_eq!(input.selected_text(), "😀e\u{301}");
     assert_eq!(host.focused(), Some(ids::DIALOG_FIELD));
@@ -1474,20 +1474,20 @@ fn accessibility_text_selection_reuses_editor_graphemes_undo_and_composition_pri
         )
         .consumed
     );
-    assert_eq!(host.focused_text().unwrap().input.text, "A你中");
+    assert_eq!(host.focused_text().unwrap().text(), "A你中");
     host.event(&ContentEvent::TextCommand(
         tekes_ui_controls::TextEditCommand::Undo,
     ));
-    assert_eq!(host.focused_text().unwrap().input.text, "A😀e\u{301}中");
-    assert_eq!(host.focused_text().unwrap().input.selection(), 1..5);
+    assert_eq!(host.focused_text().unwrap().text(), "A😀e\u{301}中");
+    assert_eq!(host.focused_text().unwrap().input().selection(), 1..5);
     assert!(!act(&mut host, AccessibilityAction::SetSelection(0..999)).consumed);
     host.get_mut(ids::DIALOG_FIELD)
         .unwrap()
         .component_mut::<TextFieldContent>()
         .unwrap()
         .surface
-        .input
-        .read_only = true;
+        .input_mut()
+        .set_read_only(true);
     assert!(act(&mut host, AccessibilityAction::SetSelection(5..6)).consumed);
     assert!(
         !act(
@@ -1501,15 +1501,15 @@ fn accessibility_text_selection_reuses_editor_graphemes_undo_and_composition_pri
         .component_mut::<TextFieldContent>()
         .unwrap()
         .surface
-        .input
-        .read_only = false;
+        .input_mut()
+        .set_read_only(false);
     host.event(&ContentEvent::Preedit {
         text: "pin".into(),
         selection: 3..3,
         clauses: Vec::new(),
         replacement: None,
     });
-    let before = host.focused_text().unwrap().input.text.clone();
+    let before = host.focused_text().unwrap().text().to_owned();
     for action in [
         AccessibilityAction::SetSelection(0..0),
         AccessibilityAction::SetValue("x".into()),
@@ -1517,14 +1517,14 @@ fn accessibility_text_selection_reuses_editor_graphemes_undo_and_composition_pri
     ] {
         assert!(!act(&mut host, action).consumed);
     }
-    assert_eq!(host.focused_text().unwrap().input.text, before);
-    assert!(host.focused_text().unwrap().input.marked.is_some());
+    assert_eq!(host.focused_text().unwrap().text(), before);
+    assert!(host.focused_text().unwrap().marked().is_some());
     host.event(&ContentEvent::TextCommand(
         tekes_ui_controls::TextEditCommand::Undo,
     ));
-    assert_eq!(host.focused_text().unwrap().input.text, "A😀e\u{301}中");
-    assert_eq!(host.focused_text().unwrap().input.selection(), 5..6);
-    assert!(host.focused_text().unwrap().input.marked.is_none());
+    assert_eq!(host.focused_text().unwrap().text(), "A😀e\u{301}中");
+    assert_eq!(host.focused_text().unwrap().input().selection(), 5..6);
+    assert!(host.focused_text().unwrap().marked().is_none());
     host.close_dialog();
     assert!(host.text_surface(ids::DIALOG_FIELD).is_none());
     assert!(!act(&mut host, AccessibilityAction::SetSelection(0..0)).consumed);
@@ -1548,25 +1548,25 @@ fn input_blur_finalizes_the_draft_and_dialog_reopen_has_no_stale_composition() {
         clauses: std::iter::once(0..3).collect(),
         replacement: None,
     });
-    let visible = host.focused_text().unwrap().input.text.clone();
+    let visible = host.focused_text().unwrap().text().to_owned();
     host.close_dialog();
     assert!(host.focused_text().is_none());
-    let input = &host
+    let input = host
         .get(ids::DIALOG_FIELD)
         .unwrap()
         .component::<TextFieldContent>()
         .unwrap()
         .surface
-        .input;
-    assert_eq!(input.text, visible);
-    assert!(input.marked.is_none());
+        .input();
+    assert_eq!(input.text(), visible);
+    assert!(input.marked().is_none());
     host.show_dialog(ids::DIALOG).unwrap();
     render(&mut host, &mut text);
-    assert!(host.focused_text().unwrap().input.marked.is_none());
+    assert!(host.focused_text().unwrap().marked().is_none());
     host.event(&ContentEvent::TextCommand(
         tekes_ui_controls::TextEditCommand::Undo,
     ));
-    assert_eq!(host.focused_text().unwrap().input.text, "draft");
+    assert_eq!(host.focused_text().unwrap().text(), "draft");
 }
 
 #[test]
@@ -1597,9 +1597,9 @@ fn native_empty_preedit_restores_draft_and_releases_modal_tab_scope() {
         clauses: Vec::new(),
         replacement: None,
     });
-    assert_eq!(host.focused_text().unwrap().input.text, "A😀B");
-    assert_eq!(host.focused_text().unwrap().input.selection(), 1..3);
-    assert!(host.focused_text().unwrap().input.marked.is_none());
+    assert_eq!(host.focused_text().unwrap().text(), "A😀B");
+    assert_eq!(host.focused_text().unwrap().input().selection(), 1..3);
+    assert!(host.focused_text().unwrap().marked().is_none());
     key(&mut host, ControlKey::Tab { reverse: false }, true);
     assert_ne!(host.focused(), Some(ids::DIALOG_FIELD));
     assert!(
@@ -1720,7 +1720,7 @@ fn input_family_reuses_composed_text_services_for_multiline_read_only_and_ime() 
             )
             .consumed
         );
-        assert_eq!(host.focused_text().unwrap().input.selection(), 1..5);
+        assert_eq!(host.focused_text().unwrap().input().selection(), 1..5);
         assert!(
             host.event(&ContentEvent::Preedit {
                 text: "输入".into(),
@@ -1731,8 +1731,8 @@ fn input_family_reuses_composed_text_services_for_multiline_read_only_and_ime() 
             .consumed
         );
         render(&mut host, &mut text);
-        assert_eq!(host.focused_text().unwrap().input.marked, Some(1..3));
-        assert_eq!(host.focused_text().unwrap().clauses, [0..1, 1..2]);
+        assert_eq!(host.focused_text().unwrap().marked(), Some(1..3));
+        assert_eq!(host.focused_text().unwrap().clauses(), [0..1, 1..2]);
         assert!(
             host.event(&ContentEvent::Preedit {
                 text: String::new(),
@@ -1742,14 +1742,14 @@ fn input_family_reuses_composed_text_services_for_multiline_read_only_and_ime() 
             })
             .consumed
         );
-        assert_eq!(host.focused_text().unwrap().input.text, "A😀e\u{301}中");
+        assert_eq!(host.focused_text().unwrap().text(), "A😀e\u{301}中");
         host.get_mut(ids::DIALOG_FIELD)
             .unwrap()
             .component_mut::<TextFieldContent>()
             .unwrap()
             .surface
-            .input
-            .read_only = true;
+            .input_mut()
+            .set_read_only(true);
         assert!(
             host.accessibility_action(
                 ids::DIALOG_FIELD,
@@ -1769,24 +1769,24 @@ fn input_family_reuses_composed_text_services_for_multiline_read_only_and_ime() 
             replacement: None,
         });
         render(&mut host, &mut text);
-        let input = &host.focused_text().unwrap().input;
-        assert_eq!(input.text, "A😀e\u{301}中");
+        let input = host.focused_text().unwrap().input();
+        assert_eq!(input.text(), "A😀e\u{301}中");
         assert_eq!(input.selection(), 5..6);
-        assert!(input.marked.is_none());
+        assert!(input.marked().is_none());
         host.get_mut(ids::DIALOG_FIELD)
             .unwrap()
             .component_mut::<TextFieldContent>()
             .unwrap()
             .surface
-            .input
-            .disabled = true;
+            .input_mut()
+            .set_disabled(true);
         host.event(&ContentEvent::Commit {
             text: "y".into(),
             replacement: None,
         });
         render(&mut host, &mut text);
         assert_eq!(
-            host.text_surface(ids::DIALOG_FIELD).unwrap().input.text,
+            host.text_surface(ids::DIALOG_FIELD).unwrap().text(),
             "A😀e\u{301}中"
         );
     }
@@ -1809,13 +1809,17 @@ fn input_pointer_contract_reuses_live_field_capture_in_a_modal_consumer() {
             );
             host.show_dialog(ids::DIALOG).unwrap();
             render(&mut host, &mut text);
-            let point = host.text_surface(ids::DIALOG_FIELD).unwrap().inner.center();
+            let point = host
+                .text_surface(ids::DIALOG_FIELD)
+                .unwrap()
+                .inner()
+                .center();
             let before = host
                 .text_surface(ids::DIALOG_FIELD)
                 .unwrap()
-                .input
-                .text
-                .clone();
+                .input()
+                .text()
+                .to_owned();
             host.event(&ContentEvent::PointerMove(point));
             let state = host
                 .text_surface(ids::DIALOG_FIELD)
@@ -1834,12 +1838,12 @@ fn input_pointer_contract_reuses_live_field_capture_in_a_modal_consumer() {
             let surface = host.text_surface(ids::DIALOG_FIELD).unwrap();
             let state = surface.pointer_state(Some(outside));
             assert!(!state.hovered && state.pressed);
-            let selection = surface.input.selection();
+            let selection = surface.input().selection();
             host.event(&ContentEvent::PointerUp(outside));
             let surface = host.text_surface(ids::DIALOG_FIELD).unwrap();
             assert!(!surface.pointer_state(Some(point)).pressed);
-            assert_eq!(surface.input.selection(), selection);
-            assert_eq!(surface.input.text, before);
+            assert_eq!(surface.input().selection(), selection);
+            assert_eq!(surface.text(), before);
             assert_eq!(host.focused(), Some(ids::DIALOG_FIELD));
             host.event(&ContentEvent::PointerDown(point));
             host.event(&ContentEvent::Cancel);
@@ -1887,15 +1891,11 @@ fn composed_reading_policy_keeps_history_and_keyboard_latest_does_not_steal_focu
         .as_mut()
         .unwrap()
         .follow_latest(&mut field.surface);
-    field
-        .surface
-        .input
-        .text
-        .push_str("\nFirst streamed update.");
+    field.surface.append_text("\nFirst streamed update.");
     render(&mut host, &mut text);
     let surface = host.text_surface(ids::DIALOG_FIELD).unwrap();
-    assert_eq!(surface.scroll.offset.y, surface.scroll.limit().y);
-    let point = surface.inner.center();
+    assert_eq!(surface.scroll().offset.y, surface.scroll().limit().y);
+    let point = surface.inner().center();
     let scroll = host.event(&ContentEvent::Scroll {
         position: point,
         delta: Point::new(0., -80.),
@@ -1912,19 +1912,17 @@ fn composed_reading_policy_keeps_history_and_keyboard_latest_does_not_steal_focu
         .component_mut::<TextFieldContent>()
         .unwrap();
     assert!(!field.reading.as_ref().unwrap().is_following_latest());
-    let offset = field.surface.scroll.offset.y;
-    assert!(offset > 0. && offset < field.surface.scroll.limit().y);
+    let offset = field.surface.scroll().offset.y;
+    assert!(offset > 0. && offset < field.surface.scroll().limit().y);
     field
         .surface
-        .input
-        .text
-        .push_str("\nSecond streamed update while reading.");
+        .append_text("\nSecond streamed update while reading.");
     render(&mut host, &mut text);
     assert!(
         (host
             .text_surface(ids::DIALOG_FIELD)
             .unwrap()
-            .scroll
+            .scroll()
             .offset
             .y
             - offset)
@@ -1949,7 +1947,7 @@ fn composed_reading_policy_keeps_history_and_keyboard_latest_does_not_steal_focu
     render(&mut host, &mut text);
     assert_eq!(host.focused(), Some(ids::DIALOG_SAVE));
     let surface = host.text_surface(ids::DIALOG_FIELD).unwrap();
-    assert_eq!(surface.scroll.offset.y, surface.scroll.limit().y);
+    assert_eq!(surface.scroll().offset.y, surface.scroll().limit().y);
     assert!(host.focus(Some(ids::DIALOG_FIELD), true));
     let field = host
         .get_mut(ids::DIALOG_FIELD)
@@ -1999,7 +1997,11 @@ fn ordinary_text_field_wheel_does_not_reveal_old_caret_or_enable_following() {
         tekes_ui_controls::TextSurface::new(&"Long document line.\n".repeat(100), true, true);
     host.show_dialog(ids::DIALOG).unwrap();
     render(&mut host, &mut text);
-    let point = host.text_surface(ids::DIALOG_FIELD).unwrap().inner.center();
+    let point = host
+        .text_surface(ids::DIALOG_FIELD)
+        .unwrap()
+        .inner()
+        .center();
     assert!(
         host.event(&ContentEvent::Scroll {
             position: point,
@@ -2017,9 +2019,9 @@ fn ordinary_text_field_wheel_does_not_reveal_old_caret_or_enable_following() {
         .unwrap()
         .component::<TextFieldContent>()
         .unwrap();
-    assert!(field.surface.scroll.offset.y > 0.);
+    assert!(field.surface.scroll().offset.y > 0.);
     assert!(field.reading.is_none());
-    assert_eq!(field.surface.input.caret, 0);
+    assert_eq!(field.surface.input().caret(), 0);
 }
 
 #[test]
@@ -2031,7 +2033,7 @@ fn real_editor_keeps_unsaved_input_and_retries_the_frozen_public_draft() {
     render(&mut host, &mut text);
     let mut journal = DraftJournal::new(
         "consumer/account-A/settings",
-        host.focused_text().unwrap().input.text.clone(),
+        host.focused_text().unwrap().text().to_owned(),
     )
     .unwrap();
     let mut saved = None;
@@ -2048,13 +2050,13 @@ fn real_editor_keeps_unsaved_input_and_retries_the_frozen_public_draft() {
         text: "new typing".into(),
         replacement: None,
     });
-    let edit = host.focused_text().unwrap().input.text.clone();
+    let edit = host.focused_text().unwrap().text().to_owned();
     assert!(
         journal
             .edit(&edit, |_| Err(std::io::Error::other("storage unavailable")))
             .is_err()
     );
-    assert_eq!(host.focused_text().unwrap().input.text, "new typing");
+    assert_eq!(host.focused_text().unwrap().text(), "new typing");
     assert_eq!(journal.current().payload, first.draft.payload);
     journal
         .edit(&edit, |next| {
@@ -2096,7 +2098,7 @@ fn real_editor_keeps_unsaved_input_and_retries_the_frozen_public_draft() {
             )
             .unwrap()
     );
-    assert_eq!(host.focused_text().unwrap().input.text, "new typing");
+    assert_eq!(host.focused_text().unwrap().text(), "new typing");
     render(&mut host, &mut text);
 }
 
@@ -2115,8 +2117,8 @@ fn rejected_root_removal_keeps_rich_dialog_real_input_preedit_and_focus() {
         replacement: Some(0..0),
         clauses: std::iter::once(0..2).collect(),
     });
-    let input = &host.focused_text().unwrap().input;
-    let before = (input.text.clone(), input.selection(), input.marked.clone());
+    let input = host.focused_text().unwrap().input();
+    let before = (input.text().to_owned(), input.selection(), input.marked());
     let semantics = host.semantics();
     let legacy_draw: fn(
         &tekes_ui_controls::TextSurface,
@@ -2146,10 +2148,10 @@ fn rejected_root_removal_keeps_rich_dialog_real_input_preedit_and_focus() {
             .is_open()
     );
     assert_eq!(host.focused(), Some(ids::DIALOG_FIELD));
-    let after = &host.focused_text().unwrap().input;
-    assert_eq!(after.text, before.0);
+    let after = host.focused_text().unwrap().input();
+    assert_eq!(after.text(), before.0);
     assert_eq!(after.selection(), before.1);
-    assert_eq!(after.marked, before.2);
+    assert_eq!(after.marked(), before.2);
     assert_eq!(host.semantics(), semantics);
     // A valid removal still dismisses and restores the stable invoker once.
     assert!(host.remove(ids::DIALOG).is_ok());
@@ -2486,9 +2488,9 @@ fn retained_content_status_changes_cancel_hidden_ime_input_without_losing_the_dr
             .component::<TextFieldContent>()
             .unwrap()
             .surface
-            .input
-            .text
-            .clone();
+            .input()
+            .text()
+            .to_owned();
         assert!(
             scenario
                 .host
@@ -2507,9 +2509,9 @@ fn retained_content_status_changes_cancel_hidden_ime_input_without_losing_the_dr
             .component::<TextFieldContent>()
             .unwrap()
             .surface
-            .input
-            .text
-            .clone();
+            .input()
+            .text()
+            .to_owned();
         scenario.set_status(Status::Loading);
         assert!(
             !scenario
@@ -2531,9 +2533,9 @@ fn retained_content_status_changes_cancel_hidden_ime_input_without_losing_the_dr
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap();
-        assert_eq!(field.surface.input.text, visible_draft);
-        assert_eq!(field.surface.input.selection(), 2..5);
-        assert!(field.surface.input.marked.is_none());
+        assert_eq!(field.surface.text(), visible_draft);
+        assert_eq!(field.surface.input().selection(), 2..5);
+        assert!(field.surface.marked().is_none());
         assert!(scenario.host.focus(Some(c::EDITOR), true));
         if kind == Kind::Tabs {
             scenario.select(1);
@@ -2573,8 +2575,8 @@ fn retained_content_status_changes_cancel_hidden_ime_input_without_losing_the_dr
                 .component::<TextFieldContent>()
                 .unwrap()
                 .surface
-                .input
-                .text,
+                .input()
+                .text(),
             visible_draft
         );
         assert!(scenario.host.focus(Some(c::EDITOR), true));
@@ -2594,8 +2596,8 @@ fn retained_content_status_changes_cancel_hidden_ime_input_without_losing_the_dr
                 .component::<TextFieldContent>()
                 .unwrap()
                 .surface
-                .input
-                .text,
+                .input()
+                .text(),
             before
         );
     }
@@ -2750,7 +2752,7 @@ fn public_choice_views_reject_old_pointer_mapping_with_real_text_services() {
 
 #[test]
 fn public_menu_measurement_reserves_real_text_rows_without_a_paint_probe() {
-    use tekes_ui_controls::{Menu, MenuView};
+    use tekes_ui_controls::{Menu, feedback_view::MenuView};
     let mut text = HostText::default();
     let labels = [
         "Open a recent project 项目計画",
@@ -2826,8 +2828,8 @@ fn required_metadata_reaches_real_form_slots_and_preserves_editor_state() {
                 assert!(mark.max_x() <= frame.max_x() + 0.01);
                 assert!(layout.slot.min_y() >= layout.label.max_y());
                 assert!(layout.message.min_y() >= layout.slot.max_y());
-                assert_eq!(field.surface.outer, layout.slot);
-                assert_eq!(field.surface.input.text, value);
+                assert_eq!(field.surface.outer(), layout.slot);
+                assert_eq!(field.surface.text(), value);
                 assert_eq!(layout.has_error, id == ERROR);
                 let semantics = field.semantics();
                 assert_eq!(semantics.disabled, id == DISABLED);
@@ -2843,7 +2845,11 @@ fn required_metadata_reaches_real_form_slots_and_preserves_editor_state() {
 
 #[test]
 fn real_selection_views_observe_disabled_between_frames_before_parent_keys() {
-    use tekes_ui_controls::{CheckState, Checkbox, SelectionEvent, SwitchView, extended::Switch};
+    use tekes_ui_controls::{
+        CheckState, Checkbox,
+        extended::Switch,
+        layout_view::{SelectionEvent, SwitchView},
+    };
     for theme in Theme::ALL {
         for brand in 0..3 {
             for pointer in [false, true] {
@@ -3104,8 +3110,8 @@ fn rich_dialog_restores_only_the_original_mounted_invoker() {
                     .component::<TextFieldContent>()
                     .unwrap()
                     .surface
-                    .input
-                    .text,
+                    .input()
+                    .text(),
                 "Workspace"
             );
         }
@@ -3319,8 +3325,8 @@ fn mixed_content_reflow_keeps_native_input_and_independent_composition() {
         replacement: None,
     });
     let before = {
-        let input = &fixture.host.focused_text().unwrap().input;
-        (input.text.clone(), input.marked.clone(), input.selection())
+        let input = fixture.host.focused_text().unwrap().input();
+        (input.text().to_owned(), input.marked(), input.selection())
     };
     let scroll_frame = fixture.host.get(s::SCROLLER).unwrap().frame();
     let position = scroll_frame.center();
@@ -3386,9 +3392,9 @@ fn mixed_content_reflow_keeps_native_input_and_independent_composition() {
         .scroll;
     assert_eq!(scroll.offset.y, offset + 12.);
     assert_eq!(fixture.host.focused(), Some(s::COMPOSER));
-    let after = &fixture.host.focused_text().unwrap().input;
-    assert_eq!(after.text, before.0);
-    assert_eq!(after.marked, before.1);
+    let after = fixture.host.focused_text().unwrap().input();
+    assert_eq!(after.text(), before.0);
+    assert_eq!(after.marked(), before.1);
     assert_eq!(after.selection(), before.2);
     fixture.host.cancel();
     assert!(
@@ -3466,8 +3472,8 @@ fn structured_content_prepend_and_reflow_keep_real_composer_and_stable_item() {
         clauses: std::iter::once(0..2).collect(),
         replacement: None,
     });
-    let input = &fixture.host.focused_text().unwrap().input;
-    let before = (input.text.clone(), input.marked.clone(), input.selection());
+    let input = fixture.host.focused_text().unwrap().input();
+    let before = (input.text().to_owned(), input.marked(), input.selection());
     let target = ComponentId(9730);
     let delta = fixture.host.get(target).unwrap().frame().min_y()
         - fixture.host.get(s::SCROLLER).unwrap().frame().min_y()
@@ -3544,9 +3550,9 @@ fn structured_content_prepend_and_reflow_keep_real_composer_and_stable_item() {
     assert_eq!(scroll.reading_document_version(), Some(&version));
     assert!(!scroll.is_following_latest());
     assert_eq!(fixture.host.focused(), Some(s::COMPOSER));
-    let input = &fixture.host.focused_text().unwrap().input;
+    let input = fixture.host.focused_text().unwrap().input();
     assert_eq!(
-        (input.text.clone(), input.marked.clone(), input.selection()),
+        (input.text().to_owned(), input.marked(), input.selection()),
         before
     );
     let keys = fixture.item_keys();
@@ -3572,8 +3578,8 @@ fn return_latest_pointer_and_ax_preserve_editor_ime_but_explicit_keyboard_focus_
             clauses: std::iter::once(0..2).collect(),
             replacement: None,
         });
-        let input = &fixture.host.focused_text().unwrap().input;
-        let before = (input.text.clone(), input.marked.clone(), input.selection());
+        let input = fixture.host.focused_text().unwrap().input();
+        let before = (input.text().to_owned(), input.marked(), input.selection());
         if ax {
             assert!(
                 fixture
@@ -3591,9 +3597,9 @@ fn return_latest_pointer_and_ax_preserve_editor_ime_but_explicit_keyboard_focus_
             Some(s::COMPOSER),
             "auxiliary action must not blur the IME owner"
         );
-        let input = &fixture.host.focused_text().unwrap().input;
+        let input = fixture.host.focused_text().unwrap().input();
         assert_eq!(
-            (input.text.clone(), input.marked.clone(), input.selection()),
+            (input.text().to_owned(), input.marked(), input.selection()),
             before
         );
         assert!(
@@ -3619,13 +3625,13 @@ fn return_latest_pointer_and_ax_preserve_editor_ime_but_explicit_keyboard_focus_
             "active IME preedit rejects cross-owner accessibility focus"
         );
         assert_eq!(fixture.host.focused(), Some(s::COMPOSER));
-        let input = &fixture.host.focused_text().unwrap().input;
+        let input = fixture.host.focused_text().unwrap().input();
         assert_eq!(
-            (input.text.clone(), input.marked.clone(), input.selection()),
+            (input.text().to_owned(), input.marked(), input.selection()),
             before
         );
         assert!(fixture.event(&ContentEvent::Unmark).consumed);
-        assert!(fixture.host.focused_text().unwrap().input.marked.is_none());
+        assert!(fixture.host.focused_text().unwrap().marked().is_none());
         fixture.accessibility_action(s::LATEST, AccessibilityAction::Focus);
         assert_eq!(fixture.host.focused(), Some(s::LATEST));
     }
@@ -3668,8 +3674,8 @@ fn structured_reorder_preserves_a_real_inline_editor_and_its_active_composition(
         other => panic!("{other:?}"),
     };
     let y = fixture.host.get(anchored).unwrap().frame().min_y();
-    let input = &fixture.host.focused_text().unwrap().input;
-    let before = (input.text.clone(), input.marked.clone(), input.selection());
+    let input = fixture.host.focused_text().unwrap().input();
+    let before = (input.text().to_owned(), input.marked(), input.selection());
     let version = fixture.insert_versioned(&version, true).unwrap();
     let mut order = fixture.item_keys();
     order.retain(|id| *id != s::PANEL);
@@ -3689,9 +3695,9 @@ fn structured_reorder_preserves_a_real_inline_editor_and_its_active_composition(
         .render(&mut Scene::new(), &mut text, f, f, Theme::LIGHT.into())
         .unwrap();
     assert_eq!(fixture.host.focused(), Some(s::INLINE_EDITOR));
-    let input = &fixture.host.focused_text().unwrap().input;
+    let input = fixture.host.focused_text().unwrap().input();
     assert_eq!(
-        (input.text.clone(), input.marked.clone(), input.selection()),
+        (input.text().to_owned(), input.marked(), input.selection()),
         before
     );
     assert!((fixture.host.get(anchored).unwrap().frame().min_y() - y).abs() <= 1.);
@@ -3710,16 +3716,16 @@ fn existing_single_surface_latest_actions_share_the_focus_preservation_contract(
             clauses: std::iter::once(0..2).collect(),
             replacement: None,
         });
-        let input = &host.focused_text().unwrap().input;
-        let before = (input.text.clone(), input.marked.clone(), input.selection());
+        let input = host.focused_text().unwrap().input();
+        let before = (input.text().to_owned(), input.marked(), input.selection());
         assert!(
             host.accessibility_action(latest, None, AccessibilityAction::Press)
                 .activated
         );
         assert_eq!(host.focused(), Some(editor));
-        let input = &host.focused_text().unwrap().input;
+        let input = host.focused_text().unwrap().input();
         assert_eq!(
-            (input.text.clone(), input.marked.clone(), input.selection()),
+            (input.text().to_owned(), input.marked(), input.selection()),
             before
         );
         assert!(host.focus_targets().iter().any(|(id, _)| *id == latest));
@@ -3776,8 +3782,8 @@ fn real_mixed_documents_restore_a_b_a_intent_and_reject_old_callbacks_without_bl
         ref other => panic!("{other:?}"),
     };
     let y = fixture.host.get(item).unwrap().frame().min_y();
-    let input = &fixture.host.focused_text().unwrap().input;
-    let before = (input.text.clone(), input.marked.clone(), input.selection());
+    let input = fixture.host.focused_text().unwrap().input();
+    let before = (input.text().to_owned(), input.marked(), input.selection());
     let mut b_content = vec![Content::new(
         ComponentId(12000),
         StackContent {
@@ -3900,9 +3906,9 @@ fn real_mixed_documents_restore_a_b_a_intent_and_reject_old_callbacks_without_bl
     assert!(scroll.is_following_latest());
     assert_eq!(scroll.scroll.offset.y, scroll.scroll.limit().y);
     assert_eq!(fixture.host.focused(), Some(s::COMPOSER));
-    let input = &fixture.host.focused_text().unwrap().input;
+    let input = fixture.host.focused_text().unwrap().input();
     assert_eq!(
-        (input.text.clone(), input.marked.clone(), input.selection()),
+        (input.text().to_owned(), input.marked(), input.selection()),
         before
     );
 }

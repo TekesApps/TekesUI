@@ -87,8 +87,8 @@ fn main() {
                     .component::<TextFieldContent>()
                     .unwrap()
                     .surface
-                    .input
-                    .text
+                    .input()
+                    .text()
                     .encode_utf16()
                     .count();
                 let phase = Action::MenuCommand;
@@ -209,9 +209,9 @@ fn main() {
                     "popover_presented": self.scenario.is_presented(),
                     "focused": self.scenario.host.focused().map(|id| id.0),
                     "editor_mount": self.scenario.host.semantic_mount(tekes_ui_composition_consumer::popover_content::EDITOR),
-                    "text": editor.map(|field| field.surface.input.text.as_str()),
-                    "selection": editor.map(|field| field.surface.input.selection()),
-                    "marked": editor.and_then(|field| field.surface.input.marked.clone()),
+                    "text": editor.map(|field| field.surface.text()),
+                    "selection": editor.map(|field| field.surface.input().selection()),
+                    "marked": editor.and_then(|field| field.surface.marked()),
                     "semantic_nodes": ax::content_nodes(&self.scenario.host).len(),
                 });
                 std::fs::write(

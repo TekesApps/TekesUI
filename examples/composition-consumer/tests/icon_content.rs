@@ -271,14 +271,14 @@ fn failed_icon_and_background_glyph_update_preserve_original_composer_marked() {
     let capture = host.capture_focus();
     let binding = host.focused_text_binding();
     let before = {
-        let s = &host
+        let s = host
             .get(ComponentId(2))
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap()
             .surface
-            .input;
-        (s.text.clone(), s.selection(), s.marked.clone())
+            .input();
+        (s.text().to_owned(), s.selection(), s.marked())
     };
     icons.fail = true;
     assert!(
@@ -306,14 +306,14 @@ fn failed_icon_and_background_glyph_update_preserve_original_composer_marked() {
         Theme::DARK.into(),
     )
     .unwrap();
-    let s = &host
+    let s = host
         .get(ComponentId(2))
         .unwrap()
         .component::<TextFieldContent>()
         .unwrap()
         .surface
-        .input;
-    assert_eq!((s.text.clone(), s.selection(), s.marked.clone()), before);
+        .input();
+    assert_eq!((s.text().to_owned(), s.selection(), s.marked()), before);
     assert_eq!(host.capture_focus(), capture);
     assert_eq!(host.focused_text_binding(), binding);
     assert!(host.drain_actions().is_empty());
@@ -352,14 +352,14 @@ fn independent_scene_run_stop_and_glyph_button_states_keep_original_composer_own
     let binding = h.focused_text_binding();
     let mount = h.semantic_mount(BACK);
     let before = {
-        let i = &h
+        let i = h
             .get(COMPOSER)
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap()
             .surface
-            .input;
-        (i.text.clone(), i.selection(), i.marked.clone())
+            .input();
+        (i.text().to_owned(), i.selection(), i.marked())
     };
     for running in [true, false, true] {
         assert!(
@@ -387,14 +387,14 @@ fn independent_scene_run_stop_and_glyph_button_states_keep_original_composer_own
             Theme::DARK.into(),
         )
         .unwrap();
-        let i = &h
+        let i = h
             .get(COMPOSER)
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap()
             .surface
-            .input;
-        assert_eq!((i.text.clone(), i.selection(), i.marked.clone()), before);
+            .input();
+        assert_eq!((i.text().to_owned(), i.selection(), i.marked()), before);
         assert_eq!(binding, h.focused_text_binding());
         assert_eq!(mount, h.semantic_mount(BACK));
     }
@@ -433,14 +433,14 @@ fn independent_scene_run_stop_and_glyph_button_states_keep_original_composer_own
     );
     assert_eq!(process_actions(&mut h).len(), 1);
     assert!(process_actions(&mut h).is_empty());
-    let i = &h
+    let i = h
         .get(COMPOSER)
         .unwrap()
         .component::<TextFieldContent>()
         .unwrap()
         .surface
-        .input;
-    assert_eq!((i.text.clone(), i.selection(), i.marked.clone()), before);
+        .input();
+    assert_eq!((i.text().to_owned(), i.selection(), i.marked()), before);
     assert_eq!(binding, h.focused_text_binding());
     assert_eq!(mount, h.semantic_mount(BACK));
 }
@@ -522,14 +522,14 @@ fn business_status_declarations_and_passive_semantic_updates_keep_original_marke
     let binding = h.focused_text_binding();
     let mount = h.semantic_mount(ICON);
     let before = {
-        let i = &h
+        let i = h
             .get(COMPOSER)
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap()
             .surface
-            .input;
-        (i.text.clone(), i.selection(), i.marked.clone())
+            .input();
+        (i.text().to_owned(), i.selection(), i.marked())
     };
     for (id, name) in [
         (TONE, "Info"),
@@ -566,13 +566,13 @@ fn business_status_declarations_and_passive_semantic_updates_keep_original_marke
         .unwrap();
         assert_eq!(mount, h.semantic_mount(ICON));
         assert_eq!(binding, h.focused_text_binding());
-        let i = &h
+        let i = h
             .get(COMPOSER)
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap()
             .surface
-            .input;
-        assert_eq!((i.text.clone(), i.selection(), i.marked.clone()), before);
+            .input();
+        assert_eq!((i.text().to_owned(), i.selection(), i.marked()), before);
     }
 }

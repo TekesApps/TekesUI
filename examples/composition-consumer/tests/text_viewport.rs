@@ -71,8 +71,8 @@ fn render(f: &mut ViewportFixture, width: f32, height: f32) {
 fn stock_stack_and_fields_fill_remaining_space_and_grow_then_scroll() {
     let mut f = ViewportFixture::new();
     render(&mut f, 400., 600.);
-    let small = f.field(COMPOSER).surface.outer;
-    let transcript = f.field(TRANSCRIPT).surface.outer;
+    let small = f.field(COMPOSER).surface.outer();
+    let transcript = f.field(TRANSCRIPT).surface.outer();
     assert_eq!(small.size.height, 56.);
     assert!(transcript.size.height > 350.);
     f.event(&ContentEvent::Commit {
@@ -84,7 +84,7 @@ line"
         replacement: None,
     });
     render(&mut f, 400., 600.);
-    assert!(f.field(COMPOSER).surface.outer.size.height > small.size.height);
+    assert!(f.field(COMPOSER).surface.outer().size.height > small.size.height);
     let long = "行 English 中文 😀\n".repeat(100);
     f.event(&ContentEvent::Commit {
         text: long,
@@ -92,11 +92,11 @@ line"
     });
     render(&mut f, 400., 600.);
     let input = &f.field(COMPOSER).surface;
-    assert_eq!(input.outer.size.height, 160.);
-    assert!(input.scroll.limit().y > 0.);
+    assert_eq!(input.outer().size.height, 160.);
+    assert!(input.scroll().limit().y > 0.);
     let nodes = f.host.semantics();
     let send = nodes.iter().find(|n| n.id == SEND).unwrap();
-    assert!(send.frame.min_y() >= input.outer.max_y());
+    assert!(send.frame.min_y() >= input.outer().max_y());
     assert!(send.frame.max_y() <= 690.);
     assert_eq!(f.host.focused(), Some(COMPOSER));
 }
@@ -114,9 +114,9 @@ fn measuring_and_resizing_preserves_ime_selection_history_and_reading_state() {
         replacement: None,
         clauses: vec![],
     });
-    let before = format!("{:?}", f.field(COMPOSER).surface.input);
+    let before = format!("{:?}", f.field(COMPOSER).surface.input());
     render(&mut f, 220., 450.);
-    assert_eq!(format!("{:?}", f.field(COMPOSER).surface.input), before);
+    assert_eq!(format!("{:?}", f.field(COMPOSER).surface.input()), before);
     assert_eq!(f.host.focused(), Some(COMPOSER));
     assert_eq!(
         f.field(TRANSCRIPT)
@@ -134,7 +134,7 @@ fn measuring_and_resizing_preserves_ime_selection_history_and_reading_state() {
     f.event(&ContentEvent::TextCommand(
         tekes_ui_controls::TextEditCommand::Undo,
     ));
-    assert_eq!(f.field(COMPOSER).surface.input.text, "");
+    assert_eq!(f.field(COMPOSER).surface.text(), "");
 }
 #[test]
 fn wrap_fixed_height_and_existing_scroll_policy_share_arranged_geometry() {
@@ -142,31 +142,31 @@ fn wrap_fixed_height_and_existing_scroll_policy_share_arranged_geometry() {
     let field = f.field_mut(COMPOSER);
     field.viewport = TextViewport::Fixed(90.);
     field.field.help = "帮助内容".into();
-    field.surface.input = TextInput::new(&"English中文😀".repeat(50), true);
-    field.surface.wrap = false;
+    *field.surface.input_mut() = TextInput::new(&"English中文😀".repeat(50), true);
+    field.surface.set_wrap(false);
     field
         .surface
-        .scroll
+        .scroll_mut()
         .set_scroll_policy(ScrollPolicy::Auto, ScrollPolicy::Auto);
     render(&mut f, 240., 600.);
     let input = &f.field(COMPOSER).surface;
-    assert_eq!(input.outer.size.height, 90.);
-    assert!(input.scroll.limit().x > 0.);
-    assert_eq!(input.width, None);
+    assert_eq!(input.outer().size.height, 90.);
+    assert!(input.scroll().limit().x > 0.);
+    assert_eq!(input.width(), None);
     let semantic = f
         .host
         .semantics()
         .into_iter()
         .find(|n| n.id == COMPOSER)
         .unwrap();
-    assert_eq!(semantic.frame, input.outer);
-    assert!(input.outer.min_x() >= 70. && input.outer.min_y() > 90.);
+    assert_eq!(semantic.frame, input.outer());
+    assert!(input.outer().min_x() >= 70. && input.outer().min_y() > 90.);
     let layout = f.field(COMPOSER).view.layout();
-    assert!(layout.message.min_y() >= input.outer.max_y());
-    f.field_mut(COMPOSER).surface.wrap = true;
+    assert!(layout.message.min_y() >= input.outer().max_y());
+    f.field_mut(COMPOSER).surface.set_wrap(true);
     render(&mut f, 240., 600.);
-    assert!(f.field(COMPOSER).surface.width.is_some());
-    assert!(f.field(COMPOSER).surface.scroll.limit().y > 0.);
+    assert!(f.field(COMPOSER).surface.width().is_some());
+    assert!(f.field(COMPOSER).surface.scroll().limit().y > 0.);
 }
 
 #[test]
@@ -174,25 +174,25 @@ fn intrinsic_measurement_does_not_mutate_arranged_surface_or_default_form_size()
     let mut f = ViewportFixture::new();
     render(&mut f, 400., 600.);
     let surface = &f.field(COMPOSER).surface;
-    let editing = format!("{:?}", surface.input);
+    let editing = format!("{:?}", surface.input());
     let geometry = (
-        surface.outer,
-        surface.inner,
-        surface.width,
-        surface.shaped.clone(),
+        surface.outer(),
+        surface.inner(),
+        surface.width(),
+        surface.shaped().to_owned(),
         surface.caret(),
         surface.origin(),
         surface.visible_frame(),
         surface.ancestor_clip(),
     );
     let scroll = (
-        surface.scroll.offset,
-        surface.scroll.overscroll,
-        surface.scroll.viewport_size(),
-        surface.scroll.document_size(),
-        surface.scroll.scroll_policy(),
+        surface.scroll().offset,
+        surface.scroll().overscroll,
+        surface.scroll().viewport_size(),
+        surface.scroll().document_size(),
+        surface.scroll().scroll_policy(),
     );
-    let paragraph = surface.paragraph.clone().unwrap();
+    let paragraph = surface.paragraph().cloned().unwrap();
     let focused = f.host.focused();
     let measured = f
         .field_mut(COMPOSER)
@@ -201,13 +201,13 @@ fn intrinsic_measurement_does_not_mutate_arranged_surface_or_default_form_size()
     // Intrinsic shaping may populate the private measurement cache. It must
     // not publish that paragraph as arranged editing/IME/scroll geometry.
     let surface = &f.field(COMPOSER).surface;
-    assert_eq!(format!("{:?}", surface.input), editing);
+    assert_eq!(format!("{:?}", surface.input()), editing);
     assert_eq!(
         (
-            surface.outer,
-            surface.inner,
-            surface.width,
-            surface.shaped.clone(),
+            surface.outer(),
+            surface.inner(),
+            surface.width(),
+            surface.shaped().to_owned(),
             surface.caret(),
             surface.origin(),
             surface.visible_frame(),
@@ -217,16 +217,16 @@ fn intrinsic_measurement_does_not_mutate_arranged_surface_or_default_form_size()
     );
     assert_eq!(
         (
-            surface.scroll.offset,
-            surface.scroll.overscroll,
-            surface.scroll.viewport_size(),
-            surface.scroll.document_size(),
-            surface.scroll.scroll_policy()
+            surface.scroll().offset,
+            surface.scroll().overscroll,
+            surface.scroll().viewport_size(),
+            surface.scroll().document_size(),
+            surface.scroll().scroll_policy()
         ),
         scroll
     );
     assert!(std::rc::Rc::ptr_eq(
-        surface.paragraph.as_ref().unwrap(),
+        surface.paragraph().unwrap(),
         &paragraph
     ));
     assert_eq!(f.host.focused(), focused);
@@ -255,8 +255,11 @@ fn readonly_fill_uses_original_selection_and_rejects_user_edits() {
     f.event(&ContentEvent::TextCommand(
         tekes_ui_controls::TextEditCommand::SelectAll,
     ));
-    let original = f.field(TRANSCRIPT).surface.input.text.clone();
-    assert_eq!(f.field(TRANSCRIPT).surface.input.selected_text(), original);
+    let original = f.field(TRANSCRIPT).surface.text().to_owned();
+    assert_eq!(
+        f.field(TRANSCRIPT).surface.input().selected_text(),
+        original
+    );
     assert!(
         !f.event(&ContentEvent::Commit {
             text: "bad".into(),
@@ -267,8 +270,11 @@ fn readonly_fill_uses_original_selection_and_rejects_user_edits() {
     f.event(&ContentEvent::TextCommand(
         tekes_ui_controls::TextEditCommand::DeleteBackward,
     ));
-    assert_eq!(f.field(TRANSCRIPT).surface.input.text, original);
-    assert_eq!(f.field(TRANSCRIPT).surface.input.selected_text(), original);
+    assert_eq!(f.field(TRANSCRIPT).surface.text(), original);
+    assert_eq!(
+        f.field(TRANSCRIPT).surface.input().selected_text(),
+        original
+    );
 }
 #[test]
 fn nonzero_origin_clip_and_backing_scales_share_caret_hit_and_semantic_frame() {
@@ -357,10 +363,10 @@ fn nonzero_origin_clip_and_backing_scales_share_caret_hit_and_semantic_frame() {
                 .into_iter()
                 .find(|n| n.id == COMPOSER)
                 .unwrap();
-            assert_eq!(node.frame, surface.outer);
+            assert_eq!(node.frame, surface.outer());
             assert_eq!(node.visible, surface.visible_frame());
             let caret = surface.caret();
-            assert!(surface.inner.contains(caret.origin));
+            assert!(surface.inner().contains(caret.origin));
             assert_eq!(surface.hit(caret.origin), Some(0));
             assert!(
                 surface
@@ -390,14 +396,14 @@ fn actual_viewport_modes_reuse_current_input_tokens_across_themes_and_brands() {
                     let mut f = ViewportFixture::new();
                     let input = f.field_mut(COMPOSER);
                     input.viewport = viewport;
-                    input.surface.wrap = wrap;
+                    input.surface.set_wrap(wrap);
                     input
                         .surface
-                        .input
+                        .input_mut()
                         .insert(&"中文 English 😀 e\u{301}\n".repeat(30), None);
                     input
                         .surface
-                        .scroll
+                        .scroll_mut()
                         .set_scroll_policy(ScrollPolicy::Auto, ScrollPolicy::Auto);
                     let frame = Rect::new(25., 35., 350., 700.);
                     let (scene, lookups) = tekes_ui_tokens::audit::capture(|| {
@@ -415,17 +421,17 @@ fn actual_viewport_modes_reuse_current_input_tokens_across_themes_and_brands() {
                     });
                     let input = &f.field(COMPOSER).surface;
                     assert!(scene.primitives().iter().any(
-                        |p| matches!(p,tekes_ui_scene::Primitive::Quad(q) if q.rect==input.outer)
+                        |p| matches!(p,tekes_ui_scene::Primitive::Quad(q) if q.rect==input.outer())
                     ));
                     assert!(
                         lookups
                             .iter()
                             .any(|(family, id)| family == "color" && id == "transcript-input")
                     );
-                    assert_eq!(input.width.is_some(), wrap);
+                    assert_eq!(input.width().is_some(), wrap);
                     if matches!(viewport, TextViewport::Grow { .. }) {
-                        assert_eq!(input.outer.size.height, 160.);
-                        assert!(input.scroll.limit().y > 0.);
+                        assert_eq!(input.outer().size.height, 160.);
+                        assert!(input.scroll().limit().y > 0.);
                     }
                     cases.push(serde_json::json!({"component":"tui.text-field","scope":"actual stock multiline Field/Stack consumer; transcript also rendered","viewport":format!("{viewport:?}"),"wrap":wrap,"theme":format!("{theme:?}"),"brand":brand,"state_asserted":true,"lookups":lookups}));
                 }
@@ -448,14 +454,14 @@ fn public_ax_layout_uses_real_wrapped_lines_for_unfocused_readonly_and_composer(
     // their own shaped geometry. A focused-only IME snapshot cannot substitute.
     for id in [TRANSCRIPT, COMPOSER] {
         let surface = &f.field(id).surface;
-        let p = surface.paragraph.as_ref().unwrap();
+        let p = surface.paragraph().unwrap();
         let origin = surface.origin();
         let layout = AccessibilityTextLayout {
             state: TextInputState {
-                text: surface.input.text.clone(),
-                caret_index: surface.input.caret,
-                selection: surface.input.selection(),
-                read_only: surface.input.read_only,
+                text: surface.text().to_owned(),
+                caret_index: surface.input().caret(),
+                selection: surface.input().selection(),
+                read_only: surface.input().is_read_only(),
                 carets: p
                     .lines
                     .iter()
@@ -482,17 +488,17 @@ fn public_ax_layout_uses_real_wrapped_lines_for_unfocused_readonly_and_composer(
         assert!(layout.is_valid());
         let viewport = tekes_ui_platform_macos::Rect {
             origin: Point {
-                x: f64::from(surface.inner.min_x()),
-                y: f64::from(surface.inner.min_y()),
+                x: f64::from(surface.inner().min_x()),
+                y: f64::from(surface.inner().min_y()),
             },
             size: Size {
-                width: f64::from(surface.inner.size.width),
-                height: f64::from(surface.inner.size.height),
+                width: f64::from(surface.inner().size.width),
+                height: f64::from(surface.inner().size.height),
             },
         };
         assert!(layout.visible_range(viewport).is_some());
-        if let Some(byte) = surface.input.text.find('😀') {
-            let start = surface.input.text[..byte].encode_utf16().count();
+        if let Some(byte) = surface.text().find('😀') {
+            let start = surface.text()[..byte].encode_utf16().count();
             assert_eq!(layout.range_for_index(start + 1), Some(start..start + 2));
         }
         for line in &p.lines {

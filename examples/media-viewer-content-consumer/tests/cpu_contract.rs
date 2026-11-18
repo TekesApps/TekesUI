@@ -1,11 +1,7 @@
 #![cfg(target_os = "macos")]
 //! CPU-only public contract of real Loading/Missing ImageContent. This does not
 //! stand in for Ready/lease/GPU acceptance and creates no Renderer.
-use tekes_ui_controls::{
-    ControlKey,
-    composition::*,
-    extended::{Axis, Stack},
-};
+use tekes_ui_controls::{ControlKey, composition::*, extended::{Axis, Stack}};
 use tekes_ui_scene::{Point, Primitive, Rect, Scene, Size};
 use tekes_ui_tokens::Theme;
 #[path = "support/coretext.rs"]

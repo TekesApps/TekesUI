@@ -2,7 +2,7 @@
 #[path = "support/coretext.rs"]
 mod coretext;
 
-use tekes_ui_controls::{DialogEvent, DialogView};
+use tekes_ui_controls::feedback_view::{DialogEvent, DialogView};
 use tekes_ui_scene::{Primitive, Rect, Scene};
 use tekes_ui_tokens::{Palette, Theme, proposal};
 

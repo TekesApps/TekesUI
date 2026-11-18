@@ -1,9 +1,10 @@
 //! Fixed-label projection of the original Select and SelectView owners.
 use super::*;
+use crate::feedback_view::{MenuEvent, MenuWheelInput};
 use crate::layout_view::{
     SelectLayout, SelectPreparedAction, SelectPreparedInput, SelectPreparedState, SelectView,
 };
-use crate::{ButtonModel, ButtonSize, MenuEvent, MenuWheelInput, Select};
+use crate::{ButtonModel, ButtonSize, Select};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SelectUpdateError {
@@ -390,7 +391,10 @@ impl SelectContent {
             }),
         ))
     }
-    fn prepare_original_select(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
+    pub(super) fn prepare_original_select(
+        &self,
+        request: ComponentActionRequest<'_>,
+    ) -> ActionPreparation {
         match self.prepared_effect(request) {
             Some((response, focus, effect)) => {
                 ActionPreparation::Ready(PreparedComponentAction::new(response, focus, effect))
@@ -434,12 +438,6 @@ impl SelectContent {
 impl Component for SelectContent {
     fn rectangular_input_geometry(&self) -> bool {
         true
-    }
-    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
-        ActionTransactionCompatibility::StableHooks
-    }
-    fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
-        self.prepare_original_select(request)
     }
 
     fn validate(&self) -> Result<(), CompositionError> {
@@ -660,7 +658,7 @@ impl Component for SelectContent {
                         },
                         &self.model
                     ),
-                    crate::MenuWheelEvent::Consumed { .. }
+                    crate::feedback_view::MenuWheelEvent::Consumed { .. }
                 );
                 return ContentResponse {
                     consumed: handled,

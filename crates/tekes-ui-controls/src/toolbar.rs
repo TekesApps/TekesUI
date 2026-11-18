@@ -1,7 +1,8 @@
 //! Module-declared single-row toolbar. Measurement, overflow and menu input
 //! belong to this control; window hosts only provide its allocated frame.
 use crate::composite::MenuRowStyle;
-use crate::{ButtonTextAlign, ButtonTextRenderer, ControlKey, MenuEvent, MenuView};
+use crate::feedback_view::{MenuEvent, MenuView};
+use crate::{ButtonTextAlign, ButtonTextRenderer, ControlKey};
 use tekes_ui_scene::{ImageId, Point, Rect, Scene, Size};
 use tekes_ui_tokens::{Palette, proposal};
 
@@ -65,7 +66,7 @@ pub struct ToolbarControl {
     actions: Vec<ToolbarAction>,
     semantic_ids: std::collections::HashMap<u64, usize>,
     next_semantic_id: usize,
-    popup: Option<crate::MenuLayout>,
+    popup: Option<crate::feedback_view::MenuLayout>,
     text_role: proposal::TextRole,
     icons: std::collections::HashMap<u64, ImageId>,
     template_icons: std::collections::HashMap<u64, &'static str>,
@@ -1234,7 +1235,7 @@ impl crate::composition::Component for ToolbarControl {
                 momentum,
                 time,
             } => {
-                match self.menu.wheel_event(crate::MenuWheelInput {
+                match self.menu.wheel_event(crate::feedback_view::MenuWheelInput {
                     point: *position,
                     delta: *delta,
                     precise: *precise,
@@ -1243,10 +1244,10 @@ impl crate::composition::Component for ToolbarControl {
                     momentum: *momentum,
                     time: *time,
                 }) {
-                    crate::MenuWheelEvent::Consumed { scrolled } => {
+                    crate::feedback_view::MenuWheelEvent::Consumed { scrolled } => {
                         ContentResponse::consumed(scrolled)
                     }
-                    crate::MenuWheelEvent::Ignored => ContentResponse::default(),
+                    crate::feedback_view::MenuWheelEvent::Ignored => ContentResponse::default(),
                 }
             }
             ContentEvent::Pointer(pointer) => self.pointer_event(pointer),

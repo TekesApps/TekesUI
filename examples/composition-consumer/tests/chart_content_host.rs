@@ -2,9 +2,11 @@
 #[path = "support/coretext.rs"]
 mod coretext;
 use tekes_ui_controls::{
-    BarChart, ChartContent, ChartDatum,
-    ControlKey, RequiredFocusResult, ScrollArea,
-    composition::{ComponentId, Content, ContentEvent, ContentHost, ScrollContent},
+    BarChart, ChartDatum, ControlKey, ScrollArea,
+    composition::{
+        ChartContent, ComponentId, Content, ContentEvent, ContentHost, RequiredFocusResult,
+        ScrollContent,
+    },
 };
 use tekes_ui_scene::{Point, Rect, Scene};
 use tekes_ui_tokens::Theme;
@@ -15,8 +17,14 @@ fn data(value: f64, label: &str) -> Vec<ChartDatum> {
     (0..64).map(|_| ChartDatum::new(label, value)).collect()
 }
 fn render(host: &mut ContentHost, text: &mut coretext::Text, frame: Rect, clip: Rect) {
-    host.render(&mut Scene::new(), text, frame, clip, tekes_ui_tokens::Palette::from(Theme::LIGHT))
-        .unwrap();
+    host.render(
+        &mut Scene::new(),
+        text,
+        frame,
+        clip,
+        tekes_ui_tokens::Palette::from(Theme::LIGHT),
+    )
+    .unwrap();
 }
 fn make_host(chart: ChartContent) -> ContentHost {
     ContentHost::new(Content::new(CHART, chart)).unwrap()

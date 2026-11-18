@@ -3,7 +3,7 @@
 mod coretext;
 use coretext::Text;
 use tekes_ui_composition_consumer::toolbar_mount::*;
-use tekes_ui_controls::{composition::ContentEvent, paint};
+use tekes_ui_controls::composition::ContentEvent;
 use tekes_ui_scene::{Rect, Scene};
 use tekes_ui_tokens::Theme;
 #[test]
@@ -28,7 +28,12 @@ fn original_multi_group_progress_and_help_render_on_actual_metal_at_narrow_width
                 let mut text = Text::new(scale);
                 text.services = true;
                 let mut scene = Scene::new();
-                paint::surface(&mut scene, Rect::new(0., 0., width, 360.), theme, false);
+                tekes_ui_controls::feedback_view::SurfaceView::paint(
+                    &mut scene,
+                    Rect::new(0., 0., width, 360.),
+                    theme,
+                    false,
+                );
                 host.render(&mut scene, &mut text, theme.into()).unwrap();
                 let target = host
                     .semantics()
@@ -54,7 +59,9 @@ fn original_multi_group_progress_and_help_render_on_actual_metal_at_narrow_width
                         &mut text.atlas,
                         size,
                         2.,
-                        paint::color(theme, "surface-1"),
+                        tekes_ui_tokens::Palette::from(theme)
+                            .color("surface-1")
+                            .unwrap_or(tekes_ui_tokens::Rgba::new(0., 0., 0., 0.)),
                     )
                     .unwrap();
                 assert!(rgba.chunks_exact(4).any(|p| p != &rgba[0..4]));

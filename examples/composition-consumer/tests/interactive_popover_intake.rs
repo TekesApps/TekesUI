@@ -609,10 +609,7 @@ fn nested_scope_retires_to_outer_original_focus_and_disabled_subtree_is_not_publ
                     Scope {
                         open: false,
                         disabled: false,
-                        children: vec![Content::new(
-                            ComponentId(4),
-                            Button::new("Inner Save"),
-                        )],
+                        children: vec![Content::new(ComponentId(4), Button::new("Inner Save"))],
                     },
                 ),
             ],
@@ -674,10 +671,7 @@ fn explicit_focus_after_close_is_not_overridden_by_delayed_return_intent() {
     let mut host = fixture(false);
     host.insert(
         ComponentId(51000),
-        Content::new(
-            ComponentId(51004),
-            Button::new("Navigation destination"),
-        ),
+        Content::new(ComponentId(51004), Button::new("Navigation destination")),
     )
     .unwrap();
     render(&mut host);

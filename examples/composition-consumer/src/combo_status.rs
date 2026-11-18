@@ -22,16 +22,16 @@ struct Query {
 }
 impl Query {
     fn sync_query(&mut self) {
-        if self.model.query != self.editor.surface.input.text {
-            self.model.set_query(self.editor.surface.input.text.clone());
+        if self.model.query != self.editor.surface.text() {
+            self.model.set_query(self.editor.surface.text().to_owned());
         }
     }
     fn selection(&mut self, index: usize) {
         self.selected_value = self.model.items.get(index).cloned();
         let value = self.model.query.clone();
-        let len = self.editor.surface.input.len();
-        self.editor.surface.input.insert(&value, Some(0..len));
-        self.editor.surface.clauses.clear();
+        let len = self.editor.surface.input().len();
+        self.editor.surface.input_mut().insert(&value, Some(0..len));
+        self.editor.surface.clear_clauses();
     }
     fn menu_key(&mut self, key: ControlKey, down: bool) -> ContentResponse {
         let before = (
@@ -138,7 +138,7 @@ impl Component for Query {
             s,
             &mut text,
             &mut self.model,
-            self.editor.surface.outer,
+            self.editor.surface.outer(),
             c,
             Some(c),
             theme.palette,
@@ -346,7 +346,7 @@ pub fn fixture_content(
     };
     query.editor.field.error = validation;
     if let Some(value) = initial_query {
-        query.editor.surface.input.insert(value, None);
+        query.editor.surface.input_mut().insert(value, None);
         query.sync_query();
         query.menu_key(ControlKey::Enter, true);
     }
@@ -394,16 +394,14 @@ impl Scenario {
         self.status.get()
     }
     pub fn query(&self) -> &str {
-        &self
-            .host
+        self.host
             .get(QUERY)
             .unwrap()
             .component::<Query>()
             .unwrap()
             .editor
             .surface
-            .input
-            .text
+            .text()
     }
     pub fn selected(&self) -> Option<&str> {
         let q = self.host.get(QUERY).unwrap().component::<Query>().unwrap();

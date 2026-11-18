@@ -248,7 +248,7 @@ fn real_host_editor_surface_button_parts_and_pointer_ax_gaps_share_geometry() {
     let mut h = fixture();
     let gap = tekes_ui_tokens::Spacing::Tight.value();
     let parts = field(&h).semantic_parts();
-    let editor = field(&h).text_surface().unwrap().outer;
+    let editor = field(&h).text_surface().unwrap().outer();
     assert_eq!(parts[0].frame.max_x() + gap, editor.min_x());
     assert_eq!(editor.max_x() + gap, parts[1].frame.min_x());
 
@@ -337,7 +337,10 @@ fn text_undo_redo_selection_and_alignment_keep_original_surface() {
     ));
     assert_eq!(field(&h).edit_state().text, "125");
     h.accessibility_action(PERCENT, None, AccessibilityAction::SetSelection(0..2));
-    assert_eq!(h.text_surface(PERCENT).unwrap().input.selected_text(), "12");
+    assert_eq!(
+        h.text_surface(PERCENT).unwrap().input().selected_text(),
+        "12"
+    );
     h.accessibility_action(
         PERCENT,
         None,
@@ -353,7 +356,7 @@ fn text_undo_redo_selection_and_alignment_keep_original_surface() {
         assert!(caret.origin.x.is_finite());
         assert_eq!(
             field(&h).semantic_frame(h.get(PERCENT).unwrap().frame()),
-            surface.outer
+            surface.outer()
         );
         assert!(
             field(&h)
@@ -457,7 +460,7 @@ fn inline_field_and_buttons_share_vertical_center_in_both_presentations() {
             field_mut(&mut h).set_alignment(align);
             render(&mut h, 120.);
             let surface = h.text_surface(PERCENT).unwrap();
-            let center = surface.outer.center().y;
+            let center = surface.outer().center().y;
             assert!(
                 field(&h)
                     .semantic_parts()
@@ -465,7 +468,7 @@ fn inline_field_and_buttons_share_vertical_center_in_both_presentations() {
                     .all(|p| (p.frame.center().y - center).abs() < 0.01)
             );
             let caret = surface.caret();
-            assert_eq!(surface.hit(caret.center()), Some(surface.input.caret));
+            assert_eq!(surface.hit(caret.center()), Some(surface.input().caret()));
         }
     }
 }
@@ -477,22 +480,22 @@ fn scale_relayout_keeps_text_hits_actions_and_ax_frames_in_one_coordinate_space(
         for width in [48., 120., 400.] {
             render_scaled(&mut h, width, scale);
             let surface = h.text_surface(PERCENT).unwrap();
-            assert_eq!(surface.type_scale, scale);
+            assert_eq!(surface.type_scale(), scale);
             let caret = surface.caret();
-            if surface.inner.contains(caret.center()) {
+            if surface.inner().contains(caret.center()) {
                 assert_eq!(
                     surface.hit(caret.center()),
-                    Some(surface.input.caret),
+                    Some(surface.input().caret()),
                     "scale={scale}, width={width}"
                 );
             }
-            assert!(surface.outer.size.width >= 0. && surface.inner.size.width >= 0.);
+            assert!(surface.outer().size.width >= 0. && surface.inner().size.width >= 0.);
             assert!(caret.min_x().is_finite() && caret.min_y().is_finite());
             let parts = field(&h).semantic_parts();
             assert!(
                 parts
                     .iter()
-                    .all(|p| (p.frame.center().y - surface.outer.center().y).abs() < 0.01)
+                    .all(|p| (p.frame.center().y - surface.outer().center().y).abs() < 0.01)
             );
             let p = parts[1].frame.center();
             h.event(&ContentEvent::PointerDown(p));
@@ -574,7 +577,7 @@ fn hints_on_numeric_buttons_use_their_own_geometry_outside_the_text_frame() {
     let mut t = Text(1., 0);
     for part in [0, 1] {
         let p = field(&h).semantic_parts()[part].frame.center();
-        assert!(!h.text_surface(PERCENT).unwrap().outer.contains(p));
+        assert!(!h.text_surface(PERCENT).unwrap().outer().contains(p));
         h.event(&ContentEvent::PointerMove(p));
         h.render(&mut Scene::new(), &mut t, f, f, Theme::LIGHT.into())
             .unwrap();
@@ -594,11 +597,11 @@ fn hints_on_numeric_buttons_use_their_own_geometry_outside_the_text_frame() {
 fn digit_capacity_fixes_only_input_width_without_limiting_edits() {
     let mut h = fixture();
     assert_eq!(field(&h).input_digits(), Some(3));
-    let width = h.text_surface(PERCENT).unwrap().outer.size.width;
+    let width = h.text_surface(PERCENT).unwrap().outer().size.width;
     for draft in ["50", "125%", "300", "1234567890%", "invalid"] {
         replace(&mut h, draft);
         render(&mut h, 400.);
-        assert_eq!(h.text_surface(PERCENT).unwrap().outer.size.width, width);
+        assert_eq!(h.text_surface(PERCENT).unwrap().outer().size.width, width);
         assert_eq!(field(&h).edit_state().text, draft);
     }
     assert!(!field_mut(&mut h).set_input_digits(0));
@@ -606,12 +609,12 @@ fn digit_capacity_fixes_only_input_width_without_limiting_edits() {
     assert_eq!(field(&h).input_digits(), Some(3));
     field_mut(&mut h).set_input_digits(5);
     render(&mut h, 400.);
-    assert!(h.text_surface(PERCENT).unwrap().outer.size.width > width);
-    let five = h.text_surface(PERCENT).unwrap().outer.size.width;
+    assert!(h.text_surface(PERCENT).unwrap().outer().size.width > width);
+    let five = h.text_surface(PERCENT).unwrap().outer().size.width;
     field_mut(&mut h).clear_input_digits();
     replace(&mut h, "50%");
     render(&mut h, 400.);
-    assert!(h.text_surface(PERCENT).unwrap().outer.size.width < five);
+    assert!(h.text_surface(PERCENT).unwrap().outer().size.width < five);
 }
 
 #[test]
@@ -654,16 +657,16 @@ fn default_auto_width_tracks_content_and_never_fills_extra_parent_space() {
     assert_eq!(field(&h).input_digits(), None);
     replace(&mut h, "50%");
     render(&mut h, 400.);
-    let short = h.text_surface(PERCENT).unwrap().outer.size.width;
+    let short = h.text_surface(PERCENT).unwrap().outer().size.width;
     render(&mut h, 800.);
-    assert_eq!(h.text_surface(PERCENT).unwrap().outer.size.width, short);
+    assert_eq!(h.text_surface(PERCENT).unwrap().outer().size.width, short);
     replace(&mut h, "125%");
     render(&mut h, 800.);
-    let longer = h.text_surface(PERCENT).unwrap().outer.size.width;
+    let longer = h.text_surface(PERCENT).unwrap().outer().size.width;
     assert!(longer > short && longer < 200.);
     replace(&mut h, "");
     render(&mut h, 800.);
-    let empty = h.text_surface(PERCENT).unwrap().outer.size.width;
+    let empty = h.text_surface(PERCENT).unwrap().outer().size.width;
     assert!(empty > 0. && empty <= short);
     assert_eq!(field(&h).edit_state().text, "");
 }

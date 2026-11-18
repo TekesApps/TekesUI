@@ -1,0 +1,1079 @@
+use super::tests_1::{
+    FixedText, RecordingText, ScaledText, TallText, WrappingText, assert_background_clip, palette,
+    role,
+};
+use super::*;
+use crate::extended::{Banner, EmptyState, NoticeTone, Popover, Toast, Tooltip};
+use tekes_ui_scene::Primitive;
+use tekes_ui_scene::{Quad, Size};
+
+#[test]
+fn toast_uses_legacy_top_aligned_message_slot() {
+    let mut view = ToastView::default();
+    let model = Toast::new("Changes saved", NoticeTone::Success, 5000);
+    let frame = Rect::new(40., 30., 520., 62.);
+    let mut scene = Scene::new();
+    let mut text = RecordingText::default();
+    let layout = view.render(
+        &mut scene,
+        &mut text,
+        &model,
+        frame,
+        None,
+        palette(),
+        role(),
+    );
+    assert_eq!(layout.content, Rect::new(76., 42., 340., 34.));
+    let message = text
+        .0
+        .iter()
+        .find(|(drawn, _, _, _)| drawn == &model.message)
+        .unwrap();
+    assert_eq!(
+        message.2,
+        Rect::new(76., 42., 340., role().style().line_height)
+    );
+    assert_eq!(
+        view.dismiss_layout.unwrap().frame,
+        Rect::new(frame.min_x() + 380., frame.min_y() + 10., 90., 34.)
+    );
+    assert!(text.0.iter().any(|(drawn, _, _, align)| {
+        drawn == "Dismiss" && *align == ButtonTextAlign::default()
+    }));
+    assert!(scene.primitives().iter().any(|primitive| {
+        matches!(primitive, Primitive::Quad(q) if q.rect == Rect::new(frame.min_x() + 14., frame.min_y() + 12. + (role().style().line_height - 10.) * 0.5, 10., 10.))
+    }));
+}
+
+#[test]
+fn toast_measure_matches_wrapped_message_and_dismiss_slot() {
+    let mut view = ToastView::default();
+    let model = Toast::new(
+        "A long toast message that wraps in a narrow viewport.",
+        NoticeTone::Info,
+        5000,
+    );
+    let mut text = TallText;
+    let measured = ToastView::measure(&mut text, &model.message, 196.0, role());
+    assert!(measured.height > 62.0);
+    let frame = Rect::new(20.0, 30.0, measured.width, measured.height);
+    let mut scene = Scene::new();
+    let layout = view.render(
+        &mut scene,
+        &mut text,
+        &model,
+        frame,
+        None,
+        palette(),
+        role(),
+    );
+    let dismiss = view.dismiss_layout.unwrap();
+    assert_eq!(layout.frame.size, measured);
+    assert_eq!(layout.content.size.height, 48.0);
+    assert!(dismiss.frame.max_y() <= frame.max_y());
+    assert!(dismiss.frame.size.height >= 34.0);
+    assert!(layout.content.max_y() <= frame.max_y());
+    if frame.size.width < 280.0 {
+        assert!(layout.content.max_y() + 8.0 <= dismiss.frame.min_y());
+    } else {
+        assert!(layout.content.max_x() + 4.0 <= dismiss.frame.min_x());
+    }
+}
+
+#[test]
+fn narrow_toast_places_dismiss_after_wrapped_message() {
+    let mut view = ToastView::default();
+    let model = Toast::new(
+        "A long toast message wrapping in a narrow window",
+        NoticeTone::Info,
+        5000,
+    );
+    let mut text = WrappingText::default();
+    let measured = ToastView::measure(&mut text, &model.message, 220.0, role());
+    assert!(measured.height > 62.0);
+    let frame = Rect::new(12.0, 16.0, measured.width, measured.height);
+    let mut scene = Scene::new();
+    let layout = view.render(
+        &mut scene,
+        &mut text,
+        &model,
+        frame,
+        None,
+        palette(),
+        role(),
+    );
+    let dismiss = view.dismiss_layout.unwrap().frame;
+    assert_eq!(layout.frame.size, measured);
+    assert!(layout.content.max_x() <= frame.max_x());
+    assert!(layout.content.max_y() + 8.0 <= dismiss.min_y());
+    assert!(dismiss.max_x() <= frame.max_x());
+    assert!(dismiss.max_y() <= frame.max_y());
+}
+
+#[test]
+fn empty_state_text_uses_top_aligned_legacy_slots() {
+    let mut view = EmptyStateView::default();
+    let model = EmptyState {
+        title: "No documents yet".into(),
+        detail: "Create a document to begin your workspace.".into(),
+        action: Some("Create document".into()),
+    };
+    let frame = Rect::new(36., 28., 488., 164.);
+    let mut scene = Scene::new();
+    let mut text = RecordingText::default();
+    view.render(
+        &mut scene,
+        &mut text,
+        &model,
+        frame,
+        None,
+        palette(),
+        role(),
+    );
+    let title = text
+        .0
+        .iter()
+        .find(|(drawn, _, _, _)| drawn == &model.title)
+        .unwrap();
+    let detail = text
+        .0
+        .iter()
+        .find(|(drawn, _, _, _)| drawn == &model.detail)
+        .unwrap();
+    assert_eq!(title.2.min_y(), frame.min_y() + 6.);
+    assert_eq!(
+        title.2.size.height,
+        proposal::TextRole::UiHeading.style().line_height
+    );
+    assert_eq!(detail.2.min_y(), frame.min_y() + 44.);
+    assert_eq!(detail.2.size.height, role().style().line_height);
+}
+
+#[test]
+fn empty_state_action_stays_inside_tight_frame() {
+    let mut view = EmptyStateView::default();
+    let model = EmptyState {
+        title: "No documents yet".into(),
+        detail: "Create a document to begin your workspace.".into(),
+        action: Some("Create document".into()),
+    };
+    let frame = Rect::new(36., 28., 488., 132.);
+    let mut scene = Scene::new();
+    let mut text = FixedText;
+    view.render(
+        &mut scene,
+        &mut text,
+        &model,
+        frame,
+        None,
+        palette(),
+        role(),
+    );
+    let action = view.action_layout.unwrap();
+    assert_eq!(action.frame.max_y(), frame.max_y());
+    assert_eq!(action.visible.unwrap().max_y(), frame.max_y());
+}
+
+#[test]
+fn empty_state_wrap_measure_matches_draw_and_action_stays_after_text() {
+    let mut view = EmptyStateView::default();
+    let model = EmptyState {
+        title: "A".repeat(110),
+        detail: "Details".into(),
+        action: Some("Create document".into()),
+    };
+    let frame = Rect::new(20., 16., 500., 132.);
+    let title_width = (frame.size.width - 8.).min(420.);
+    let mut scene = Scene::new();
+    let mut text = WrappingText::default();
+    view.render(
+        &mut scene,
+        &mut text,
+        &model,
+        frame,
+        None,
+        palette(),
+        role(),
+    );
+    let title_measurements: Vec<_> = text
+        .measures
+        .iter()
+        .filter(|(measured, text_role, _)| {
+            measured == &model.title && *text_role == proposal::TextRole::UiHeading
+        })
+        .collect();
+    assert!(!title_measurements.is_empty());
+    assert!(
+        title_measurements
+            .iter()
+            .all(|(_, _, width)| *width == title_width)
+    );
+    let title_draw = text
+        .draws
+        .iter()
+        .find(|(drawn, _, _, _)| drawn == &model.title)
+        .unwrap();
+    assert_eq!(title_draw.2.size.width, title_width);
+    assert_eq!(
+        title_draw.2.size.height,
+        3. * proposal::TextRole::UiHeading.style().line_height
+    );
+    let detail_draw = text
+        .draws
+        .iter()
+        .find(|(drawn, _, _, _)| drawn == &model.detail)
+        .unwrap();
+    let action = view.action_layout.unwrap();
+    assert!(action.frame.min_y() >= detail_draw.2.min_y() + 54.);
+    let detail_slot = Rect::new(
+        detail_draw.2.min_x(),
+        detail_draw.2.min_y(),
+        frame.size.width - 8.,
+        54.,
+    );
+    assert!(intersect(action.frame, detail_slot).is_none());
+}
+
+#[test]
+fn empty_state_follows_parent_detail_width_unless_max_detail_width_configured() {
+    let model = EmptyState {
+        title: "Empty".into(),
+        detail: "A long explanation that can use all available horizontal space".into(),
+        action: None,
+    };
+    let frame = Rect::new(0., 0., 800., 180.);
+    let mut scene = Scene::new();
+    let mut text = WrappingText::default();
+
+    let mut unconstrained = EmptyStateView::default();
+    unconstrained.render(
+        &mut scene,
+        &mut text,
+        &model,
+        frame,
+        None,
+        palette(),
+        role(),
+    );
+    let wide_draw = text
+        .draws
+        .iter()
+        .rfind(|(drawn, _, _, _)| drawn == &model.detail)
+        .unwrap()
+        .2;
+    assert_eq!(wide_draw.size.width, 792.);
+
+    text.draws.clear();
+    let mut capped = EmptyStateView::default().with_max_detail_width(Some(460.));
+    capped.render(
+        &mut scene,
+        &mut text,
+        &model,
+        frame,
+        None,
+        palette(),
+        role(),
+    );
+    let capped_draw = text
+        .draws
+        .iter()
+        .rfind(|(drawn, _, _, _)| drawn == &model.detail)
+        .unwrap()
+        .2;
+    assert_eq!(capped_draw.size.width, 460.);
+}
+
+#[test]
+fn tooltip_render_consumes_theme_surface_and_text_roles() {
+    struct InkText(Vec<tekes_ui_tokens::Rgba>);
+    impl ButtonTextRenderer for InkText {
+        fn measure(&mut self, text: &str, role: proposal::TextRole, max_width: f32) -> Size {
+            Size::new(
+                (text.chars().count() as f32 * 8.).min(max_width.max(0.)),
+                role.style().line_height,
+            )
+        }
+        fn draw(
+            &mut self,
+            _: &mut Scene,
+            _: &str,
+            _: proposal::TextRole,
+            _: Rect,
+            _: ButtonTextAlign,
+            ink: tekes_ui_tokens::Rgba,
+        ) {
+            self.0.push(ink);
+        }
+    }
+
+    let viewport = Rect::new(0., 0., 320., 200.);
+    let anchor = Rect::new(24., 24., 120., 36.);
+    let model = Tooltip {
+        visible: true,
+        text: "Helpful detail".into(),
+    };
+    let mut view = TooltipView::default();
+    for theme in tekes_ui_tokens::Theme::ALL {
+        let palette = Palette::from(theme);
+        let mut scene = Scene::new();
+        let mut text = InkText(Vec::new());
+        let layout = view.render(
+            &mut scene,
+            &mut text,
+            &model,
+            anchor,
+            Size::new(180., 48.),
+            viewport,
+            None,
+            palette,
+            proposal::TextRole::UiBody,
+        );
+        assert_eq!(layout.visible, Some(layout.frame), "{theme:?}");
+        let background = scene
+            .primitives()
+            .iter()
+            .find_map(|primitive| match primitive {
+                Primitive::Quad(quad) if quad.rect == layout.frame => Some(quad),
+                _ => None,
+            })
+            .expect("public Tooltip consumer paints its background");
+        assert_eq!(
+            background.fill,
+            palette
+                .color("surface-3")
+                .expect("generated Tooltip surface role"),
+            "{theme:?}"
+        );
+        let radius =
+            proposal::metric("radius", "radius-floating").expect("generated Tooltip radius");
+        assert_eq!(background.corner_radii.top_left, radius, "{theme:?}");
+        assert_eq!(
+            text.0,
+            vec![palette.color("primary-text").expect("semantic text role")],
+            "{theme:?}"
+        );
+    }
+}
+#[test]
+fn tooltip_owns_hover_focus_escape_and_leave_state() {
+    let anchor = Rect::new(20., 20., 120., 36.);
+    let viewport = Rect::new(0., 0., 240., 160.);
+    let mut view = TooltipView::default();
+    let mut text = FixedText;
+    let mut scene = Scene::new();
+    let model = Tooltip {
+        visible: false,
+        text: "Helpful detail".into(),
+    };
+    assert!(
+        view.render(
+            &mut scene,
+            &mut text,
+            &model,
+            anchor,
+            Size::new(150., 48.),
+            viewport,
+            None,
+            palette(),
+            role(),
+        )
+        .visible
+        .is_none()
+    );
+    view.pointer_move(anchor.center());
+    assert!(
+        view.render(
+            &mut scene,
+            &mut text,
+            &model,
+            anchor,
+            Size::new(150., 48.),
+            viewport,
+            None,
+            palette(),
+            role(),
+        )
+        .visible
+        .is_some()
+    );
+    assert_eq!(view.key(ControlKey::Escape), TooltipEvent::Dismissed);
+    assert!(
+        view.render(
+            &mut scene,
+            &mut text,
+            &model,
+            anchor,
+            Size::new(150., 48.),
+            viewport,
+            None,
+            palette(),
+            role(),
+        )
+        .visible
+        .is_none()
+    );
+    view.pointer_move(Point::new(230., 150.));
+    view.render(
+        &mut scene,
+        &mut text,
+        &model,
+        anchor,
+        Size::new(150., 48.),
+        viewport,
+        None,
+        palette(),
+        role(),
+    );
+    view.pointer_move(anchor.center());
+    assert!(
+        view.render(
+            &mut scene,
+            &mut text,
+            &model,
+            anchor,
+            Size::new(150., 48.),
+            viewport,
+            None,
+            palette(),
+            role(),
+        )
+        .visible
+        .is_some()
+    );
+    view.set_focus(true, true);
+    assert_eq!(view.key(ControlKey::Escape), TooltipEvent::Dismissed);
+    view.pointer_move(Point::new(230., 150.));
+    view.set_focus(false, false);
+    assert!(
+        view.render(
+            &mut scene,
+            &mut text,
+            &model,
+            anchor,
+            Size::new(150., 48.),
+            viewport,
+            None,
+            palette(),
+            role(),
+        )
+        .visible
+        .is_none()
+    );
+}
+
+#[test]
+fn popover_content_slot_uses_component_bounds_and_deactivation_restores_focus() {
+    let viewport = Rect::new(0., 0., 240., 160.);
+    let anchor = Rect::new(210., 135., 20., 20.);
+    let mut model = Popover::default();
+    model.show(12);
+    let mut view = PopoverView::default();
+    let mut text = FixedText;
+    let mut scene = Scene::new();
+    let mut slot = None;
+    let layout = view.render_with_content(
+        &mut scene,
+        &mut text,
+        &model,
+        anchor,
+        Size::new(180., 96.),
+        viewport,
+        Some(Rect::new(0., 0., 230., 150.)),
+        palette(),
+        role(),
+        |scene, content| {
+            slot = Some(content);
+            scene.push_quad(Quad::new(content, palette().color("surface-2").unwrap()));
+        },
+    );
+    let content = slot.expect("open popover calls its content slot");
+    assert_eq!(content, layout.content);
+    assert!(
+        layout
+            .visible
+            .is_some_and(|visible| visible.contains(content.center()))
+    );
+    assert!(layout.frame.max_x() <= 230.);
+    assert!(layout.frame.max_y() <= 150.);
+    let dismiss = view.dismiss_layout.unwrap().frame.center();
+    assert!(view.pointer_down(&mut model, dismiss));
+    assert_eq!(
+        view.pointer_up(&mut model, dismiss),
+        OverlayEvent::Dismissed {
+            restore_focus: Some(12)
+        }
+    );
+    view.show(&mut model, 13);
+    assert!(model.open);
+    assert_eq!(
+        view.set_window_active(false, &mut model),
+        OverlayEvent::Dismissed {
+            restore_focus: Some(13)
+        }
+    );
+    assert!(!model.open);
+}
+
+#[test]
+fn popover_surface_uses_floating_role_and_text_backend_scale() {
+    let mut model = Popover::default();
+    let mut view = PopoverView::default();
+    view.show(&mut model, 7);
+    for theme in tekes_ui_tokens::Theme::ALL {
+        for scale in [1.0, 2.0] {
+            let palette = Palette::from(theme);
+            let mut text = ScaledText(scale);
+            let mut scene = Scene::new();
+            let layout = view.render_with_content(
+                &mut scene,
+                &mut text,
+                &model,
+                Rect::new(30.0, 24.0, 80.0, 30.0),
+                Size::new(180.0, 96.0),
+                Rect::new(0.0, 0.0, 320.0, 240.0),
+                None,
+                palette,
+                role(),
+                |_, _| {},
+            );
+            let popover_quad = scene
+                .primitives()
+                .iter()
+                .find_map(|primitive| match primitive {
+                    Primitive::Quad(q) if q.rect == layout.frame => Some(q),
+                    _ => None,
+                })
+                .expect("popover surface quad");
+            assert_eq!(popover_quad.fill, palette.color("surface-popover").unwrap());
+            assert_eq!(
+                popover_quad.corner_radii,
+                tekes_ui_scene::CornerRadii::uniform(
+                    proposal::metric("radius", "radius-floating").unwrap(),
+                )
+            );
+            assert_eq!(
+                popover_quad.border_width,
+                paint::decorative_border(palette, scale).0
+            );
+        }
+    }
+}
+
+#[test]
+fn popover_background_uses_effective_parent_viewport_before_content_clip() {
+    let anchor = Rect::new(90., 70., 30., 24.);
+    let viewport = Rect::new(0., 0., 320., 240.);
+    for (clip, parent) in [
+        (Rect::new(-20., -20., 360., 280.), viewport),
+        (
+            Rect::new(20., 10., 240., 200.),
+            Rect::new(20., 10., 240., 200.),
+        ),
+    ] {
+        let mut model = Popover::default();
+        model.show(1);
+        let mut view = PopoverView::default();
+        let mut text = FixedText;
+        let mut scene = Scene::new();
+        let layout = view.render_with_content(
+            &mut scene,
+            &mut text,
+            &model,
+            anchor,
+            Size::new(160., 100.),
+            viewport,
+            Some(clip),
+            palette(),
+            role(),
+            |_, _| {},
+        );
+        let visible = layout.visible.expect("popover visible inside parent");
+        assert_background_clip(&scene, layout.frame, parent, visible, true);
+    }
+}
+
+#[test]
+fn toast_and_banner_backgrounds_use_parent_clip_before_content_clip() {
+    let frame = Rect::new(40., 30., 220., 74.);
+    for ancestor in [
+        Rect::new(0., 0., 400., 300.),
+        Rect::new(80., 40., 140., 60.),
+    ] {
+        let expected_visible = frame.intersection(&ancestor).unwrap();
+        let toast = Toast::new("Saved", NoticeTone::Success, 1_000);
+        let mut toast_view = ToastView::default();
+        let mut toast_text = FixedText;
+        let mut toast_scene = Scene::new();
+        let toast_layout = toast_view.render(
+            &mut toast_scene,
+            &mut toast_text,
+            &toast,
+            frame,
+            Some(ancestor),
+            palette(),
+            role(),
+        );
+        assert_eq!(toast_layout.visible, Some(expected_visible));
+        assert_background_clip(&toast_scene, frame, ancestor, expected_visible, true);
+
+        let banner = Banner {
+            message: "Offline".into(),
+            tone: NoticeTone::Warning,
+            dismissible: true,
+            visible: true,
+        };
+        let mut banner_view = BannerView::default();
+        let mut banner_text = FixedText;
+        let mut banner_scene = Scene::new();
+        let banner_layout = banner_view.render(
+            &mut banner_scene,
+            &mut banner_text,
+            &banner,
+            frame,
+            Some(ancestor),
+            palette(),
+            role(),
+        );
+        assert_eq!(banner_layout.visible, Some(expected_visible));
+        assert_background_clip(&banner_scene, frame, ancestor, expected_visible, true);
+    }
+}
+
+#[test]
+fn popover_measure_matches_rendered_content_slot() {
+    let mut model = Popover::default();
+    model.show(4);
+    let mut view = PopoverView::default();
+    let mut text = FixedText;
+    let mut scene = Scene::new();
+    let requested = Size::new(160., 100.);
+    let size = PopoverView::measure(&mut text, requested, role());
+    let layout = view.render_with_content(
+        &mut scene,
+        &mut text,
+        &model,
+        Rect::new(100., 100., 20., 20.),
+        size,
+        Rect::new(0., 0., 600., 600.),
+        None,
+        palette(),
+        role(),
+        |_, _| {},
+    );
+    assert_eq!(layout.content.size, requested);
+}
+
+#[test]
+fn popover_fully_clipped_geometry_never_receives_input() {
+    let mut model = Popover::default();
+    model.show(3);
+    let mut view = PopoverView::default();
+    let mut text = FixedText;
+    let mut scene = Scene::new();
+    let layout = view.render(
+        &mut scene,
+        &mut text,
+        &model,
+        Rect::new(10., 10., 20., 20.),
+        Size::new(120., 80.),
+        Rect::new(0., 0., 240., 160.),
+        Some(Rect::new(300., 300., 20., 20.)),
+        palette(),
+        role(),
+    );
+    assert_eq!(layout.visible, None);
+    assert!(
+        view.logical_focus_target().is_some(),
+        "valid disjoint clip preserves the mounted dismiss frame"
+    );
+    assert!(!layout.hit_test(Point::new(10., 10.)));
+    assert!(!view.pointer_down(&mut model, Point::new(10., 10.)));
+    assert_eq!(
+        view.pointer_up(&mut model, Point::new(10., 10.)),
+        OverlayEvent::None
+    );
+    assert!(model.open);
+    view.focus_dismiss(true, true);
+    let mut visible_scene = Scene::new();
+    view.render(
+        &mut visible_scene,
+        &mut text,
+        &model,
+        Rect::new(10., 10., 20., 20.),
+        Size::new(120., 80.),
+        Rect::new(0., 0., 240., 160.),
+        Some(Rect::new(0., 0., 240., 160.)),
+        palette(),
+        role(),
+    );
+    assert!(
+        view.dismiss.state.focus_visible,
+        "focus ring survives scroll reveal render"
+    );
+    assert_eq!(
+        view.key(&mut model, ControlKey::Enter),
+        OverlayEvent::Dismissed {
+            restore_focus: Some(3)
+        }
+    );
+}
+
+#[test]
+fn offscreen_feedback_actions_keep_logical_focus_until_scroll_reveals_them() {
+    let frame = Rect::new(180., 24., 320., 110.);
+    let offscreen = Rect::new(0., 0., 140., 180.);
+    let visible = Rect::new(0., 0., 600., 240.);
+    let mut text = FixedText;
+    let mut scene = Scene::new();
+
+    let mut toast = Toast::new("Saved", NoticeTone::Success, 5000);
+    let mut toast_view = ToastView::default();
+    let size = ToastView::measure(&mut text, &toast.message, frame.size.width, role());
+    let frame = Rect::new(frame.min_x(), frame.min_y(), frame.size.width, size.height);
+    toast_view.render(
+        &mut scene,
+        &mut text,
+        &toast,
+        frame,
+        Some(offscreen),
+        palette(),
+        role(),
+    );
+    assert!(
+        toast_view.focus_target().is_none(),
+        "pointer target stays clipped"
+    );
+    let toast_target = toast_view
+        .logical_focus_target()
+        .expect("mounted offscreen action");
+    assert!(toast_target.min_x() >= frame.min_x());
+    toast_view.focus_dismiss(true, true);
+    assert!(toast_view.dismiss.state.focus_visible);
+    toast_view.render(
+        &mut scene,
+        &mut text,
+        &toast,
+        frame,
+        Some(visible),
+        palette(),
+        role(),
+    );
+    assert!(toast_view.focus_target().is_some());
+    assert!(
+        toast_view.dismiss.state.focus_visible,
+        "focus ring survives reveal render"
+    );
+    assert!(!toast_view.key(&mut toast, ControlKey::Space, true));
+    assert!(toast_view.key(&mut toast, ControlKey::Space, false));
+    assert!(
+        !toast.visible,
+        "focused dismiss action activates with Space"
+    );
+
+    let mut banner = Banner {
+        message: "Offline".into(),
+        tone: NoticeTone::Warning,
+        dismissible: true,
+        visible: true,
+    };
+    let mut banner_view = BannerView::default();
+    let size = BannerView::measure(&mut text, &banner.message, frame.size.width, true, role());
+    let banner_frame = Rect::new(frame.min_x(), frame.min_y(), frame.size.width, size.height);
+    banner_view.render(
+        &mut scene,
+        &mut text,
+        &banner,
+        banner_frame,
+        Some(offscreen),
+        palette(),
+        role(),
+    );
+    let banner_target = banner_view
+        .logical_focus_target()
+        .expect("mounted banner dismiss action");
+    assert!(banner_view.focus_target().is_none());
+    banner_view.focus_dismiss(true, true);
+    banner_view.render(
+        &mut scene,
+        &mut text,
+        &banner,
+        banner_frame,
+        Some(visible),
+        palette(),
+        role(),
+    );
+    assert!(banner_view.dismiss_button.state.focus_visible);
+    assert!(!banner_view.key(&mut banner, ControlKey::Space, true));
+    assert!(banner_view.key(&mut banner, ControlKey::Space, false));
+    assert!(!banner.visible);
+    assert!(banner_target.size.width > 0.);
+
+    let mut empty_view = EmptyStateView::default();
+    let empty = EmptyState {
+        title: "No items".into(),
+        detail: "Try again".into(),
+        action: Some("Create".into()),
+    };
+    let empty_frame = Rect::new(frame.min_x(), frame.min_y(), frame.size.width, 260.);
+    empty_view.render(
+        &mut scene,
+        &mut text,
+        &empty,
+        empty_frame,
+        Some(offscreen),
+        palette(),
+        role(),
+    );
+    assert!(empty_view.focus_target().is_none());
+    assert!(empty_view.logical_focus_target().is_some());
+    empty_view.focus_action(true, true);
+    assert!(
+        empty_view.action.state.focus_visible,
+        "offscreen focus must be accepted from mounted logical action"
+    );
+    empty_view.render(
+        &mut scene,
+        &mut text,
+        &empty,
+        empty_frame,
+        Some(visible),
+        palette(),
+        role(),
+    );
+    assert!(empty_view.action.state.focus_visible);
+    assert!(!empty_view.key(ControlKey::Space, true));
+    assert!(empty_view.key(ControlKey::Space, false));
+
+    let no_action = EmptyState {
+        action: None,
+        ..empty.clone()
+    };
+    empty_view.render(
+        &mut scene,
+        &mut text,
+        &no_action,
+        empty_frame,
+        Some(visible),
+        palette(),
+        role(),
+    );
+    assert!(
+        empty_view.logical_focus_target().is_none(),
+        "no action is not mounted"
+    );
+
+    let invalid_clips = [
+        Rect::new(0., 0., 0., 100.),
+        Rect::new(f32::NAN, 0., 100., 100.),
+    ];
+    for clip in invalid_clips {
+        let visible_toast = Toast::new("Still visible", NoticeTone::Info, 5000);
+        let mut toast_view = ToastView::default();
+        toast_view.render(
+            &mut scene,
+            &mut text,
+            &visible_toast,
+            empty_frame,
+            Some(clip),
+            palette(),
+            role(),
+        );
+        assert!(
+            toast_view.logical_focus_target().is_none(),
+            "invalid clip {clip:?}"
+        );
+        let mut banner_view = BannerView::default();
+        let visible_banner = Banner {
+            message: "Still visible".into(),
+            tone: NoticeTone::Info,
+            dismissible: true,
+            visible: true,
+        };
+        banner_view.render(
+            &mut scene,
+            &mut text,
+            &visible_banner,
+            banner_frame,
+            Some(clip),
+            palette(),
+            role(),
+        );
+        assert!(
+            banner_view.logical_focus_target().is_none(),
+            "invalid clip {clip:?}"
+        );
+    }
+    for invalid_frame in [
+        Rect::new(0., 0., 0., 100.),
+        Rect::new(f32::NAN, 0., 100., 100.),
+    ] {
+        let visible_toast = Toast::new("Still visible", NoticeTone::Info, 5000);
+        let mut toast_view = ToastView::default();
+        toast_view.render(
+            &mut scene,
+            &mut text,
+            &visible_toast,
+            invalid_frame,
+            Some(visible),
+            palette(),
+            role(),
+        );
+        assert!(
+            toast_view.logical_focus_target().is_none(),
+            "invalid toast frame {invalid_frame:?}"
+        );
+        let mut banner_view = BannerView::default();
+        let visible_banner = Banner {
+            message: "Still visible".into(),
+            tone: NoticeTone::Info,
+            dismissible: true,
+            visible: true,
+        };
+        banner_view.render(
+            &mut scene,
+            &mut text,
+            &visible_banner,
+            invalid_frame,
+            Some(visible),
+            palette(),
+            role(),
+        );
+        assert!(
+            banner_view.logical_focus_target().is_none(),
+            "invalid banner frame {invalid_frame:?}"
+        );
+        let mut empty_view = EmptyStateView::default();
+        empty_view.render(
+            &mut scene,
+            &mut text,
+            &empty,
+            invalid_frame,
+            Some(visible),
+            palette(),
+            role(),
+        );
+        assert!(
+            empty_view.logical_focus_target().is_none(),
+            "invalid empty-state frame {invalid_frame:?}"
+        );
+    }
+    let mut hidden_toast = Toast::new("Hidden", NoticeTone::Info, 5000);
+    hidden_toast.visible = false;
+    let mut hidden_view = ToastView::default();
+    hidden_view.render(
+        &mut scene,
+        &mut text,
+        &hidden_toast,
+        frame,
+        None,
+        palette(),
+        role(),
+    );
+    assert!(
+        hidden_view.logical_focus_target().is_none(),
+        "hidden toast is unmounted"
+    );
+    let mut disabled_empty = EmptyStateView::default();
+    disabled_empty.set_disabled(true);
+    disabled_empty.render(
+        &mut scene,
+        &mut text,
+        &empty,
+        frame,
+        Some(visible),
+        palette(),
+        role(),
+    );
+    assert!(
+        disabled_empty.logical_focus_target().is_none(),
+        "disabled action is ineligible"
+    );
+}
+
+#[test]
+fn empty_state_action_requires_a_real_visible_pointer_press() {
+    let mut view = EmptyStateView::default();
+    let model = EmptyState {
+        title: "No documents".into(),
+        detail: "Create a document to get started.".into(),
+        action: Some("Create document".into()),
+    };
+    let mut scene = Scene::new();
+    let mut text = FixedText;
+    let outer = Rect::new(10., 20., 520., 164.);
+    let mut surface = SurfaceView::default();
+    let content = surface
+        .render(&mut scene, outer, None, palette(), true)
+        .content;
+    view.render(
+        &mut scene,
+        &mut text,
+        &model,
+        content,
+        None,
+        palette(),
+        role(),
+    );
+    let title = view.layout.content;
+    assert_eq!(title.min_x(), outer.min_x() + 20.);
+    assert_eq!(title.min_y(), outer.min_y() + 22.);
+    let point = view.action_layout.unwrap().frame.center();
+    assert_eq!(
+        view.action_layout.unwrap().frame.min_x(),
+        outer.min_x() + 20.
+    );
+    assert_eq!(
+        view.action_layout.unwrap().frame.min_y(),
+        outer.min_y() + 114.
+    );
+    let primary_fill = palette().color("action-primary-ground").unwrap();
+    assert!(scene.primitives().iter().any(|primitive| {
+        matches!(primitive, Primitive::Quad(q) if q.rect == view.action_layout.unwrap().frame && q.fill == primary_fill)
+    }));
+    view.pointer_move(point);
+    assert!(view.action.state.hovered);
+    assert_eq!(view.focus_target(), view.action_layout.unwrap().visible);
+    assert!(!view.pointer_up(point));
+    assert!(view.pointer_down(point));
+    assert!(view.action.state.pressed);
+    let outside = Point::new(350., 220.);
+    view.pointer_move(outside);
+    assert!(!view.action.state.pressed);
+    assert!(!view.pointer_up(outside));
+    assert!(!view.action.state.pressed);
+    view.pointer_move(point);
+    assert!(view.action.state.hovered);
+    assert!(view.pointer_down(point));
+    assert!(view.pointer_up(point));
+
+    view.render(
+        &mut scene,
+        &mut text,
+        &model,
+        Rect::new(0., 0., 260., 180.),
+        Some(Rect::new(400., 400., 20., 20.)),
+        palette(),
+        role(),
+    );
+    assert!(view.action_layout.is_none());
+    assert!(!view.pointer_down(point));
+    assert!(!view.pointer_up(point));
+
+    view.render(
+        &mut scene,
+        &mut text,
+        &model,
+        Rect::new(0., 0., 260., 180.),
+        None,
+        palette(),
+        role(),
+    );
+    let point = view.action_layout.unwrap().frame.center();
+    view.pointer_move(point);
+    assert!(view.action.state.hovered);
+    view.set_disabled(true);
+    view.pointer_move(point);
+    assert!(!view.action.state.hovered);
+    assert!(!view.pointer_down(point));
+    assert!(!view.pointer_up(point));
+}

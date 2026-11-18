@@ -105,26 +105,17 @@ impl PanelContent {
     }
 }
 impl Component for PanelContent {
-    fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
-        TableTransactionCompatibility::StableHooks
+    fn has_stable_hooks(&self) -> bool {
+        true
     }
-    fn prepared_effects_work(&self, calls: usize) -> Result<usize, PreparedEffectsError> {
-        PreparedEffects::local_work(calls)
+    fn supports_prepared_lifecycle(&self) -> bool {
+        true
     }
-    fn prepare_effects(
-        &self,
-        hooks: &[PreparedHook],
-    ) -> Result<PreparedEffects, PreparedEffectsError> {
-        Ok(PreparedEffects::local(self, hooks))
+    fn ignores_pointer_actions(&self) -> bool {
+        true
     }
     fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
         CurveSubtreeCapability::Recursive
-    }
-    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
-        ActionTransactionCompatibility::StableHooks
-    }
-    fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
-        action_preparation::ignored_pointer(request)
     }
     fn fixed_slots(&self) -> bool {
         true

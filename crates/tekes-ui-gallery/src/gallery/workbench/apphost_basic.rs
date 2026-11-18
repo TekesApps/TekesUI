@@ -4,7 +4,7 @@ use tekes_ui_controls::composition::*;
 use tekes_ui_controls::extended::{Axis, Stack};
 use tekes_ui_controls::layout::MeasuredChild;
 use tekes_ui_controls::{ButtonModel, ButtonTextRenderer, CheckState, Checkbox, ControlState};
-use tekes_ui_controls::{ButtonSize, ButtonTextAlign, paint::ButtonVariant};
+use tekes_ui_controls::{ButtonSize, ButtonTextAlign, ButtonVariant};
 use tekes_ui_scene::{Rect, Scene, Size};
 use tekes_ui_tokens::proposal::TextRole;
 
@@ -373,17 +373,11 @@ impl Component for SectionBar {
     fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
         CurveSubtreeCapability::Recursive
     }
-    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
-        ActionTransactionCompatibility::StableHooks
+    fn has_stable_hooks(&self) -> bool {
+        true
     }
-    fn prepared_effects_work(&self, calls: usize) -> Result<usize, PreparedEffectsError> {
-        PreparedEffects::local_work(calls)
-    }
-    fn prepare_effects(
-        &self,
-        hooks: &[PreparedHook],
-    ) -> Result<PreparedEffects, PreparedEffectsError> {
-        Ok(PreparedEffects::local(self, hooks))
+    fn supports_prepared_lifecycle(&self) -> bool {
+        true
     }
     fn children(&self) -> &[Content] {
         &self.children
@@ -1188,7 +1182,7 @@ mod tests {
                     65.
                 );
                 assert_eq!(
-                    story.host.text_surface(EDITOR).unwrap().input.text,
+                    story.host.text_surface(EDITOR).unwrap().text(),
                     "Keep this draft"
                 );
             } else {
@@ -1281,8 +1275,7 @@ mod tests {
                 .host
                 .text_surface(super::super::apphost_command::QUERY)
                 .unwrap()
-                .input
-                .text,
+                .text(),
             "Open"
         );
         story.host.event(&ContentEvent::Key {
@@ -1297,7 +1290,7 @@ mod tests {
             .component::<TextFieldContent>()
             .unwrap()
             .surface
-            .input
+            .input()
             .external_baseline();
         press_navigation_story(&mut story, &mut text, ComponentId(COMMAND + 1), None);
         press_navigation_story(&mut story, &mut text, ComponentId(COMMAND + 2), None);
@@ -1307,8 +1300,8 @@ mod tests {
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap();
-        assert_eq!(editor.surface.input.text, "Open");
-        assert_eq!(editor.surface.input.external_baseline(), baseline);
+        assert_eq!(editor.surface.text(), "Open");
+        assert_eq!(editor.surface.input().external_baseline(), baseline);
         // Original CommandPalette::open starts a new lookup with an empty query.
         press_navigation_story(&mut story, &mut text, SPECIMEN, None);
         assert_eq!(
@@ -1316,8 +1309,7 @@ mod tests {
                 .host
                 .text_surface(super::super::apphost_command::QUERY)
                 .unwrap()
-                .input
-                .text,
+                .text(),
             ""
         );
     }

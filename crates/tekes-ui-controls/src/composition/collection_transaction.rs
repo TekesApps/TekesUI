@@ -37,7 +37,7 @@ pub(super) fn transaction_access_path(
     for (index, child) in c.component.children().iter().enumerate() {
         path.push(index);
         if transaction_access_path(child, target, path)? {
-            if c.component.table_transaction_compatibility()
+            if precheck_dispatch::table_transaction_compatibility(&*c.component)
                 != TableTransactionCompatibility::StableHooks
                 && c.component::<ListContent>().is_none()
             {

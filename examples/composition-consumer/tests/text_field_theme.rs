@@ -119,7 +119,7 @@ fn render_surface(
     theme: Theme,
     focused: bool,
 ) -> Scene {
-    let role = surface.role;
+    let role = surface.role();
     let scale = text.scale;
     let backing = text.backing;
     surface.layout_with(
@@ -137,76 +137,76 @@ fn render_surface(
 fn text_field_primary_single_line_surface_retains_theme_and_declared_state_ink() {
     let mut field = TextSurface::new("Project draft", false, false);
     let mut text = coretext::Text::new(1.);
-    assert_eq!(field.role, proposal::TextRole::UiBody);
-    assert!(!field.input.multiline);
-    let selection = field.input.selection();
+    assert_eq!(field.role(), proposal::TextRole::UiBody);
+    assert!(!field.input().is_multiline());
+    let selection = field.input().selection();
     let mut initial = None;
     for theme in Theme::ALL {
         let scene = render_surface(&mut field, &mut text, theme, false);
         let palette: Palette = theme.into();
-        assert_eq!(field.input.text, "Project draft");
-        assert_eq!(field.input.selection(), selection);
+        assert_eq!(field.text(), "Project draft");
+        assert_eq!(field.input().selection(), selection);
         if let Some(before) = initial {
-            assert_eq!((field.outer, field.inner), before);
+            assert_eq!((field.outer(), field.inner()), before);
         } else {
-            initial = Some((field.outer, field.inner));
+            initial = Some((field.outer(), field.inner()));
         }
         assert_input(
             &scene,
-            field.outer,
-            field.inner,
+            field.outer(),
+            field.inner(),
             palette,
             (false, false, false, false),
             "primary-text",
             text.backing,
         );
-        assert!(!has_field_focus_boundary(&scene, field.outer));
+        assert!(!has_field_focus_boundary(&scene, field.outer()));
     }
     let theme = Theme::DARK_INCREASED;
     let palette: Palette = theme.into();
     let scene = render_surface(&mut field, &mut text, theme, true);
-    assert!(has_field_focus_boundary(&scene, field.outer));
-    field.error = true;
+    assert!(has_field_focus_boundary(&scene, field.outer()));
+    field.set_error(true);
     let scene = render_surface(&mut field, &mut text, theme, true);
     assert_input(
         &scene,
-        field.outer,
-        field.inner,
+        field.outer(),
+        field.inner(),
         palette,
         (false, false, true, true),
         "primary-text",
         text.backing,
     );
-    assert!(has_field_focus_boundary(&scene, field.outer));
-    field.error = false;
-    field.input.read_only = true;
+    assert!(has_field_focus_boundary(&scene, field.outer()));
+    field.set_error(false);
+    field.input_mut().set_read_only(true);
     let scene = render_surface(&mut field, &mut text, theme, true);
     assert_input(
         &scene,
-        field.outer,
-        field.inner,
+        field.outer(),
+        field.inner(),
         palette,
         (true, false, false, true),
         "primary-text",
         text.backing,
     );
-    assert!(!field.input.insert("blocked", None));
-    assert_eq!(field.input.text, "Project draft");
-    field.input.read_only = false;
-    field.input.disabled = true;
+    assert!(!field.input_mut().insert("blocked", None));
+    assert_eq!(field.text(), "Project draft");
+    field.input_mut().set_read_only(false);
+    field.input_mut().set_disabled(true);
     let scene = render_surface(&mut field, &mut text, theme, true);
     assert_input(
         &scene,
-        field.outer,
-        field.inner,
+        field.outer(),
+        field.inner(),
         palette,
         (false, true, false, false),
         "disabled-text",
         text.backing,
     );
-    assert!(!has_field_focus_boundary(&scene, field.outer));
-    assert!(!field.input.insert("blocked", None));
-    assert_eq!(field.input.text, "Project draft");
+    assert!(!has_field_focus_boundary(&scene, field.outer()));
+    assert!(!field.input_mut().insert("blocked", None));
+    assert_eq!(field.text(), "Project draft");
 }
 fn render_host(host: &mut ContentHost, text: &mut coretext::Text, theme: Theme) -> Scene {
     let mut scene = Scene::new();
@@ -241,17 +241,17 @@ fn text_field_content_retained_themes_use_real_opted_in_host_and_original_input_
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap();
-        let frame = field.surface.outer;
+        let frame = field.surface.outer();
         if let Some(before) = initial {
             assert_eq!(frame, before);
         } else {
             initial = Some(frame);
         }
-        assert_eq!(field.surface.role, proposal::TextRole::UiBody);
+        assert_eq!(field.surface.role(), proposal::TextRole::UiBody);
         assert_input(
             &scene,
             frame,
-            host.text_surface(ComponentId(1)).unwrap().inner,
+            host.text_surface(ComponentId(1)).unwrap().inner(),
             theme.into(),
             (false, false, false, false),
             "primary-text",
@@ -286,13 +286,13 @@ fn text_field_content_retained_themes_use_real_opted_in_host_and_original_input_
         .component_mut::<TextFieldContent>()
         .unwrap()
         .surface
-        .input
-        .read_only = true;
+        .input_mut()
+        .set_read_only(true);
     let scene = render_host(&mut host, &mut text, theme);
     assert_input(
         &scene,
         frame,
-        host.text_surface(ComponentId(1)).unwrap().inner,
+        host.text_surface(ComponentId(1)).unwrap().inner(),
         palette,
         (true, false, false, true),
         "primary-text",
@@ -320,7 +320,7 @@ fn text_field_content_retained_themes_use_real_opted_in_host_and_original_input_
         .unwrap()
         .component_mut::<TextFieldContent>()
         .unwrap();
-    field.surface.input.read_only = false;
+    field.surface.input_mut().set_read_only(false);
     field.field.error = Some("Name requires review".into());
     let scene = render_host(&mut host, &mut text, theme);
     let field = host
@@ -330,8 +330,8 @@ fn text_field_content_retained_themes_use_real_opted_in_host_and_original_input_
         .unwrap();
     assert_input(
         &scene,
-        field.surface.outer,
-        field.surface.inner,
+        field.surface.outer(),
+        field.surface.inner(),
         palette,
         (false, false, true, true),
         "primary-text",
@@ -363,13 +363,13 @@ fn text_field_content_retained_themes_use_real_opted_in_host_and_original_input_
         .component_mut::<TextFieldContent>()
         .unwrap();
     field.field.error = None;
-    field.surface.input.disabled = true;
+    field.surface.input_mut().set_disabled(true);
     let scene = render_host(&mut host, &mut text, theme);
     let frame = host.semantics()[0].frame;
     assert_input(
         &scene,
         frame,
-        host.text_surface(ComponentId(1)).unwrap().inner,
+        host.text_surface(ComponentId(1)).unwrap().inner(),
         palette,
         (false, true, false, false),
         "disabled-text",
@@ -394,8 +394,8 @@ fn text_field_content_retained_themes_use_real_opted_in_host_and_original_input_
         .component_mut::<TextFieldContent>()
         .unwrap()
         .surface
-        .input
-        .disabled = false;
+        .input_mut()
+        .set_disabled(false);
     host.focus(Some(ComponentId(1)), true);
     assert!(
         host.event(&ContentEvent::Commit {

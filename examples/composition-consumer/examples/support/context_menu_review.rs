@@ -315,17 +315,17 @@ impl Review {
         if sidebar.primary_selection != "session-a" {
             errors.push("primary selection changed".to_string());
         }
-        let draft = &sidebar
+        let draft = sidebar
             .host
             .get(DRAFT)
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap()
             .surface
-            .input;
-        if draft.text != "Draft belongs to A"
+            .input();
+        if draft.text() != "Draft belongs to A"
             || draft.selection() != (0..8)
-            || draft.marked.is_some()
+            || draft.marked().is_some()
         {
             errors.push("original draft text/selection/marked changed".into());
         }

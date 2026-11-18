@@ -74,17 +74,17 @@ fn ordinary_surface_buttons_footnote_and_plain_document_share_existing_public_co
     let mut s = Scenario::new().unwrap();
     render(&mut s, 480.);
     let body = s.host.text_surface(BODY).unwrap();
-    assert_eq!(body.inner, body.outer);
+    assert_eq!(body.inner(), body.outer());
     assert_eq!(
-        body.outer.min_y(),
+        body.outer().min_y(),
         s.host.get(BODY_STACK).unwrap().frame().min_y()
     );
     assert_eq!(
-        body.scroll.scroll_policy(),
+        body.scroll().scroll_policy(),
         (ScrollPolicy::Disabled, ScrollPolicy::Disabled)
     );
     assert_eq!(
-        s.host.text_surface(FORM).unwrap().presentation,
+        s.host.text_surface(FORM).unwrap().presentation(),
         TextSurfacePresentation::Field
     );
     assert!(s.host.semantics().iter().any(|n| n.id == FOOTNOTE));
@@ -94,7 +94,7 @@ fn ordinary_surface_buttons_footnote_and_plain_document_share_existing_public_co
             .consumed
     );
     assert_eq!(
-        s.host.text_surface(BODY).unwrap().input.selected_text(),
+        s.host.text_surface(BODY).unwrap().input().selected_text(),
         "中文😀"
     );
     assert!(
@@ -108,24 +108,24 @@ fn ordinary_surface_buttons_footnote_and_plain_document_share_existing_public_co
     assert_eq!(s.host.focused(), focused);
     assert_eq!(s.value.version, 2);
     assert_eq!(
-        s.host.text_surface(BODY).unwrap().input.selected_text(),
+        s.host.text_surface(BODY).unwrap().input().selected_text(),
         "中文😀"
     );
     assert!(!s.process_actions());
     render(&mut s, 480.);
-    assert_eq!(s.host.text_surface(BODY).unwrap().input.selection(), 8..12);
     assert_eq!(
-        s.host.text_surface(BODY).unwrap().input.text,
-        s.value.payload
+        s.host.text_surface(BODY).unwrap().input().selection(),
+        8..12
     );
+    assert_eq!(s.host.text_surface(BODY).unwrap().text(), s.value.payload);
 }
 #[test]
 fn parent_scroll_does_not_change_body_wrap_and_narrow_resize_remeasures_whole_surface() {
     let mut s = Scenario::new().unwrap();
     render(&mut s, 480.);
     let body = s.host.text_surface(BODY).unwrap();
-    let paragraph = body.paragraph.clone().unwrap();
-    let height = body.outer.size.height;
+    let paragraph = body.paragraph().cloned().unwrap();
+    let height = body.outer().size.height;
     let p = body.visible_frame().unwrap();
     assert!(
         s.host
@@ -153,20 +153,15 @@ fn parent_scroll_does_not_change_body_wrap_and_narrow_resize_remeasures_whole_su
             > 0.
     );
     assert_eq!(
-        s.host.text_surface(BODY).unwrap().scroll.offset,
+        s.host.text_surface(BODY).unwrap().scroll().offset,
         Point::new(0., 0.)
     );
     assert!(Rc::ptr_eq(
         &paragraph,
-        s.host
-            .text_surface(BODY)
-            .unwrap()
-            .paragraph
-            .as_ref()
-            .unwrap()
+        s.host.text_surface(BODY).unwrap().paragraph().unwrap()
     ));
     render(&mut s, 220.);
-    assert!(s.host.text_surface(BODY).unwrap().outer.size.height > height);
+    assert!(s.host.text_surface(BODY).unwrap().outer().size.height > height);
     let footer = s.host.get(FOOTNOTE).unwrap().frame();
     let card = s.host.get(PANEL).unwrap().frame();
     assert!(footer.max_y() <= card.max_y());
@@ -186,13 +181,13 @@ fn plain_content_token_dependencies_exclude_form_chrome_and_metadata() {
                         "中文😀 e\u{301} text",
                         tekes_ui_tokens::proposal::TextRole::UiBody,
                     );
-                    body.surface.input.disabled = state == "disabled";
+                    body.surface.input_mut().set_disabled(state == "disabled");
                     let h = body.measure(&mut Text, Size::new(300., 1000.)).size.height;
                     let f = Rect::new(0., 0., 300., h);
                     body.arrange(&mut Text, f, f);
                     body.set_focus(state == "focus" || state == "selection", true);
                     if state == "selection" {
-                        body.surface.input.select_range(0..4);
+                        body.surface.input_mut().select_range(0..4);
                     }
                     body.paint(
                         &mut Scene::new(),
@@ -273,7 +268,7 @@ fn focusing_and_navigating_document_reveals_caret_through_parent_not_entire_bloc
     let viewport = s.host.get(SCROLLER).unwrap().frame();
     assert!(surface.caret().min_y() >= viewport.min_y());
     assert!(surface.caret().max_y() <= viewport.max_y());
-    assert_eq!(surface.scroll.offset, Point::new(0., 0.));
+    assert_eq!(surface.scroll().offset, Point::new(0., 0.));
     assert!(
         s.host
             .event_with_text(
@@ -288,7 +283,7 @@ fn focusing_and_navigating_document_reveals_caret_through_parent_not_entire_bloc
     render(&mut s, 480.);
     let surface = s.host.text_surface(BODY).unwrap();
     assert!(surface.caret().min_y() >= viewport.min_y());
-    assert_eq!(surface.input.caret, 0);
+    assert_eq!(surface.input().caret(), 0);
     let visible = surface.visible_frame().unwrap();
     let before = s
         .host
@@ -325,5 +320,5 @@ fn focusing_and_navigating_document_reveals_caret_through_parent_not_entire_bloc
             > before,
         "manual document scroll must not reveal the old caret again"
     );
-    assert_eq!(s.host.text_surface(BODY).unwrap().input.caret, 0);
+    assert_eq!(s.host.text_surface(BODY).unwrap().input().caret(), 0);
 }

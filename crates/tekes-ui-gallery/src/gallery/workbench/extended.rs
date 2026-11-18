@@ -13,12 +13,12 @@ use collections_adapter::CollectionsViews;
 use feedback_adapter::FeedbackViews;
 use tekes_ui_controls::{
     BarChart, ButtonModel, ButtonSize, ButtonTextRenderer, ChartDatum, ControlKey, ControlState,
-    RadioGroupView, SelectionEvent, SliderView, SwitchView, extended as controls,
+    extended as controls,
     layout_view::{
-        BreadcrumbView, CommandPaletteView, DisclosureView, GridView, LinkView,
-        SegmentedControlView, SeparatorView, SplitViewView, StackView,
+        BreadcrumbView, CommandPaletteView, DisclosureView, GridView, LinkView, RadioGroupView,
+        SegmentedControlView, SelectionEvent, SeparatorView, SliderView, SplitViewView, StackView,
+        SwitchView,
     },
-    paint,
 };
 use tekes_ui_scene::{Point, Rect, Scene};
 use tekes_ui_tokens::{ColorRole, Palette, proposal};
@@ -1524,7 +1524,7 @@ impl ExtendedStory {
                         Rect::new(row.min_x(), row.min_y() + 20., row.size.width, 36.),
                         3,
                     ) {
-                        paint::surface_at_scale(
+                        tekes_ui_controls::feedback_view::SurfaceView::paint_at_scale(
                             scene,
                             cell,
                             palette,
@@ -1550,7 +1550,7 @@ impl ExtendedStory {
                         cols * 2,
                         26.,
                     ) {
-                        paint::surface_at_scale(
+                        tekes_ui_controls::feedback_view::SurfaceView::paint_at_scale(
                             scene,
                             cell,
                             palette,
@@ -1613,7 +1613,7 @@ impl ExtendedStory {
                     self.split.set_ratio(ratio);
                     let (leading, divider, trailing) =
                         self.split.layout(bounds, controls::Axis::Horizontal);
-                    paint::surface_at_scale(
+                    tekes_ui_controls::feedback_view::SurfaceView::paint_at_scale(
                         scene,
                         leading,
                         palette,
@@ -1621,7 +1621,7 @@ impl ExtendedStory {
                         ctx.text.backing_scale(),
                     );
                     controls::separator(scene, divider, palette, controls::Axis::Vertical);
-                    paint::surface_at_scale(
+                    tekes_ui_controls::feedback_view::SurfaceView::paint_at_scale(
                         scene,
                         trailing,
                         palette,
@@ -2040,7 +2040,7 @@ impl ExtendedStory {
                         let r = item.frame();
                         if let Some(visible) = item.visible_frame() {
                             scene.push_clip(visible);
-                            paint::surface_at_scale(
+                            tekes_ui_controls::feedback_view::SurfaceView::paint_at_scale(
                                 scene,
                                 r.inset(0.5),
                                 palette,
@@ -2083,7 +2083,7 @@ impl ExtendedStory {
                         let r = item.frame();
                         if let Some(visible) = item.visible_frame() {
                             scene.push_clip(visible);
-                            paint::surface_at_scale(
+                            tekes_ui_controls::feedback_view::SurfaceView::paint_at_scale(
                                 scene,
                                 r.inset(0.5),
                                 palette,
@@ -2179,7 +2179,7 @@ impl ExtendedStory {
                     );
                     if let Some(body_clip) = body_layout.visible_clip {
                         scene.push_clip(body_clip);
-                        paint::surface_at_scale(
+                        tekes_ui_controls::feedback_view::SurfaceView::paint_at_scale(
                             scene,
                             body_layout.body_rect,
                             palette,
@@ -2234,14 +2234,14 @@ impl ExtendedStory {
                     }
                     let leading = split_layout.leading.frame();
                     let trailing = split_layout.trailing.frame();
-                    paint::surface_at_scale(
+                    tekes_ui_controls::feedback_view::SurfaceView::paint_at_scale(
                         scene,
                         leading,
                         palette,
                         true,
                         ctx.text.backing_scale(),
                     );
-                    paint::surface_at_scale(
+                    tekes_ui_controls::feedback_view::SurfaceView::paint_at_scale(
                         scene,
                         trailing,
                         palette,

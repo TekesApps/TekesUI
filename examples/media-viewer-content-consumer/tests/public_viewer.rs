@@ -393,7 +393,7 @@ fn original_button_key_has_one_command_and_focus_stays_in_original_host() {
 #[test]
 #[ignore = "requires an allocated real Renderer/GPU window"]
 fn close_reopen_rejects_old_request_and_restores_fit_without_consumer_state() {
-    use tekes_ui_controls::extended::{Axis, Stack};
+    use tekes_ui_controls::{extended::{Axis, Stack}};
     let mut gpu = Renderer::new_headless().expect("real GPU required");
     let image = ImageContent::ready(
         gpu.register_bitmap_image(&[255, 0, 0, 255], 1, 1).unwrap(),

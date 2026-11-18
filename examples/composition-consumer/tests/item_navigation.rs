@@ -128,11 +128,14 @@ fn mark_composer(f: &mut Fixture) -> tekes_ui_controls::TextEditBaseline {
         clauses: std::iter::once(0..2).collect(),
         replacement: None,
     });
-    f.host.focused_text().unwrap().input.external_baseline()
+    f.host.focused_text().unwrap().input().external_baseline()
 }
 fn composer_unchanged(f: &Fixture, b: &tekes_ui_controls::TextEditBaseline) {
     assert_eq!(f.host.focused(), Some(COMPOSER));
-    assert_eq!(&f.host.focused_text().unwrap().input.external_baseline(), b);
+    assert_eq!(
+        &f.host.focused_text().unwrap().input().external_baseline(),
+        b
+    );
 }
 #[test]
 fn declared_nested_item_reveal_preserves_original_composer_and_only_moves_target_ancestors() {
@@ -599,28 +602,28 @@ fn a_real_editor_retains_undo_history_and_selection_after_item_navigation() {
     ] {
         let (mut f, mut t) = setup();
         f.host.focus(Some(COMPOSER), true);
-        let old = f.host.focused_text().unwrap().input.text.clone();
+        let old = f.host.focused_text().unwrap().text().to_owned();
         f.host.event(&ContentEvent::Commit {
             text: "Retained edit".into(),
             replacement: None,
         });
-        let input = &mut f
+        let input = f
             .host
             .get_mut(COMPOSER)
             .unwrap()
             .component_mut::<TextFieldContent>()
             .unwrap()
             .surface
-            .input;
+            .input_mut();
         input.select(usize::from(reverse), false);
         input.select(usize::from(!reverse), true);
-        let baseline = f.host.focused_text().unwrap().input.external_baseline();
+        let baseline = f.host.focused_text().unwrap().input().external_baseline();
         f.navigate(TARGET, navigation, &mut t).unwrap();
         composer_unchanged(&f, &baseline);
         f.host.event(&ContentEvent::TextCommand(
             tekes_ui_controls::TextEditCommand::Undo,
         ));
-        assert_eq!(f.host.focused_text().unwrap().input.text, old);
+        assert_eq!(f.host.focused_text().unwrap().text(), old);
     }
 }
 #[test]

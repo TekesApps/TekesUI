@@ -3049,7 +3049,7 @@ impl Component for ProcessContainer {
         } else {
             (theme.palette, theme.surface())
         };
-        tekes_ui_controls::paint::panel_on_surface_at_scale(
+        tekes_ui_controls::feedback_view::SurfaceView::paint_panel_on_surface_at_scale(
             scene, frame, palette, surface, self.scale,
         )
         .expect("validated original process frame Surface");

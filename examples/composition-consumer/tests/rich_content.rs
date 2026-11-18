@@ -25,10 +25,10 @@ fn second_consumer_is_one_continuous_selectable_owner_with_original_shaped_nativ
     let scene = paint(&mut host, 560., 1., Theme::LIGHT);
     let content = f::rich(&host, f::MARKDOWN);
     let surface = host.text_surface(f::MARKDOWN).unwrap();
-    assert!(surface.input.read_only);
-    assert_eq!(surface.input.text, content.document().text());
+    assert!(surface.input().is_read_only());
+    assert_eq!(surface.text(), content.document().text());
     assert_eq!(content.document().blocks().len(), 5);
-    let paragraph = surface.paragraph.as_ref().unwrap();
+    let paragraph = surface.paragraph().unwrap();
     let origin = surface.origin();
     let query = host
         .semantic_text_layout_snapshot(f::MARKDOWN, None)
@@ -139,7 +139,7 @@ fn cross_block_unicode_selection_copy_commands_and_readonly_guards_use_original_
     assert_eq!(
         host.text_surface(f::MARKDOWN)
             .unwrap()
-            .input
+            .input()
             .selected_text(),
         text
     );
@@ -152,14 +152,14 @@ fn cross_block_unicode_selection_copy_commands_and_readonly_guards_use_original_
     assert_eq!(
         host.text_surface(f::MARKDOWN)
             .unwrap()
-            .input
+            .input()
             .selected_text(),
         text
     );
     let before = host
         .text_surface(f::MARKDOWN)
         .unwrap()
-        .input
+        .input()
         .external_baseline();
     for event in [
         ContentEvent::Commit {
@@ -178,7 +178,7 @@ fn cross_block_unicode_selection_copy_commands_and_readonly_guards_use_original_
         assert_eq!(
             host.text_surface(f::MARKDOWN)
                 .unwrap()
-                .input
+                .input()
                 .external_baseline(),
             before
         );
@@ -208,7 +208,7 @@ fn direct_cross_block_drag_uses_original_capture_and_shaped_caret_mapping() {
     let mut host = f::build().unwrap();
     paint(&mut host, 560., 1., Theme::LIGHT);
     let surface = host.text_surface(f::MARKDOWN).unwrap();
-    let p = surface.paragraph.as_ref().unwrap();
+    let p = surface.paragraph().unwrap();
     let origin = surface.origin();
     let first = &p.lines[0];
     let last = &p.lines[p.lines.len() - 1];
@@ -223,7 +223,7 @@ fn direct_cross_block_drag_uses_original_capture_and_shaped_caret_mapping() {
     assert!(host.event(&ContentEvent::PointerDown(from)).capture_pointer);
     host.event(&ContentEvent::PointerMove(to));
     host.event(&ContentEvent::PointerUp(to));
-    let selection = host.text_surface(f::MARKDOWN).unwrap().input.selection();
+    let selection = host.text_surface(f::MARKDOWN).unwrap().input().selection();
     assert!(
         selection.end
             > f::rich(&host, f::MARKDOWN).document().blocks()[1]
@@ -257,12 +257,11 @@ fn versioned_streaming_and_shape_only_updates_preserve_selection_and_reject_stal
     let mut host = ContentHost::new(Content::new(f::MARKDOWN, content)).unwrap();
     paint(&mut host, 250., 1., Theme::LIGHT);
     host.accessibility_action(f::MARKDOWN, None, AccessibilityAction::SetSelection(5..10));
-    let before = host.text_surface(f::MARKDOWN).unwrap().input.selection();
+    let before = host.text_surface(f::MARKDOWN).unwrap().input().selection();
     let old_height = host
         .text_surface(f::MARKDOWN)
         .unwrap()
-        .paragraph
-        .as_ref()
+        .paragraph()
         .unwrap()
         .height;
     f::rich_mut(&mut host, f::MARKDOWN)
@@ -279,14 +278,13 @@ fn versioned_streaming_and_shape_only_updates_preserve_selection_and_reject_stal
     );
     paint(&mut host, 250., 1., Theme::LIGHT);
     assert_eq!(
-        host.text_surface(f::MARKDOWN).unwrap().input.selection(),
+        host.text_surface(f::MARKDOWN).unwrap().input().selection(),
         before
     );
     assert!(
         host.text_surface(f::MARKDOWN)
             .unwrap()
-            .paragraph
-            .as_ref()
+            .paragraph()
             .unwrap()
             .height
             < old_height
@@ -316,7 +314,7 @@ fn versioned_streaming_and_shape_only_updates_preserve_selection_and_reject_stal
         .unwrap();
     paint(&mut host, 250., 1., Theme::LIGHT);
     assert_eq!(
-        host.text_surface(f::MARKDOWN).unwrap().input.selection(),
+        host.text_surface(f::MARKDOWN).unwrap().input().selection(),
         before
     );
 }
@@ -334,14 +332,13 @@ fn theme_width_scale_and_background_updates_keep_original_composer_marked_baseli
     let before = host
         .text_surface(f::COMPOSER)
         .unwrap()
-        .input
+        .input()
         .external_baseline();
     let mount = host.semantic_mount(f::COMPOSER);
     let original_height = host
         .text_surface(f::MARKDOWN)
         .unwrap()
-        .paragraph
-        .as_ref()
+        .paragraph()
         .unwrap()
         .height;
     f::append(&mut host);
@@ -353,7 +350,7 @@ fn theme_width_scale_and_background_updates_keep_original_composer_marked_baseli
             assert_eq!(
                 host.text_surface(f::COMPOSER)
                     .unwrap()
-                    .input
+                    .input()
                     .external_baseline(),
                 before
             );
@@ -363,8 +360,7 @@ fn theme_width_scale_and_background_updates_keep_original_composer_marked_baseli
     assert!(
         host.text_surface(f::MARKDOWN)
             .unwrap()
-            .paragraph
-            .as_ref()
+            .paragraph()
             .unwrap()
             .height
             > original_height
@@ -562,7 +558,7 @@ fn code_and_multi_hunk_diff_copy_text_excludes_decorations_and_reflows_from_same
     for theme in Theme::ALL {
         paint(&mut host, 160., 1.5, theme);
     }
-    let length = host.text_surface(f::MARKDOWN).unwrap().input.len();
+    let length = host.text_surface(f::MARKDOWN).unwrap().input().len();
     host.accessibility_action(
         f::MARKDOWN,
         None,
@@ -572,7 +568,7 @@ fn code_and_multi_hunk_diff_copy_text_excludes_decorations_and_reflows_from_same
         !host
             .text_surface(f::MARKDOWN)
             .unwrap()
-            .input
+            .input()
             .selected_text()
             .starts_with("+ ")
     );
@@ -583,8 +579,7 @@ fn code_and_multi_hunk_diff_copy_text_excludes_decorations_and_reflows_from_same
     assert!(
         host.text_surface(f::MARKDOWN)
             .unwrap()
-            .paragraph
-            .as_ref()
+            .paragraph()
             .unwrap()
             .lines
             .iter()
@@ -670,8 +665,8 @@ fn code_ink_uses_theme_tokens_without_changing_shaped_geometry_or_copy() {
         let scene = paint(&mut colored, 300., 1., theme);
         let plain_scene = paint(&mut plain, 300., 1., theme);
         assert_eq!(
-            colored.text_surface(id).unwrap().paragraph,
-            plain.text_surface(id).unwrap().paragraph
+            colored.text_surface(id).unwrap().paragraph(),
+            plain.text_surface(id).unwrap().paragraph()
         );
         for token in [
             "c-code-keyword",
@@ -700,13 +695,13 @@ fn code_ink_uses_theme_tokens_without_changing_shaped_geometry_or_copy() {
         let length = colored
             .text_surface(id)
             .unwrap()
-            .input
-            .text
+            .input()
+            .text()
             .encode_utf16()
             .count();
         colored.accessibility_action(id, None, AccessibilityAction::SetSelection(0..length));
         assert_eq!(
-            colored.text_surface(id).unwrap().input.selected_text(),
+            colored.text_surface(id).unwrap().input().selected_text(),
             source
         );
     }
@@ -738,7 +733,7 @@ fn fenced_code_surface_contains_original_text_and_stays_below_selection() {
             let geometry = rich.block_geometry();
             let code = &geometry[1];
             let surface = host.text_surface(id).unwrap();
-            let paragraph = surface.paragraph.as_ref().unwrap();
+            let paragraph = surface.paragraph().unwrap();
             let origin = surface.origin();
             let lines: Vec<_> = paragraph
                 .lines
@@ -771,10 +766,10 @@ fn fenced_code_surface_contains_original_text_and_stays_below_selection() {
                 "code background must not cover selection"
             );
             assert_eq!(
-                surface.input.selected_text(),
+                surface.input().selected_text(),
                 "let greeting = \"你好🦀\";\nlet count = 42;"
             );
-            assert_eq!(surface.input.text, expected_copy);
+            assert_eq!(surface.text(), expected_copy);
             assert_eq!(rich.document().source(), source);
             let query = host.semantic_text_layout_snapshot(id, None).unwrap();
             for line in &paragraph.lines {

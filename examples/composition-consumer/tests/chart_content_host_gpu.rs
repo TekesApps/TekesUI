@@ -4,10 +4,10 @@
 mod coretext;
 
 use tekes_ui_controls::{
-    BarChart, ChartContent, ChartDatum, ControlKey, RequiredFocusResult, ScrollArea,
+    BarChart, ChartDatum, ControlKey, ScrollArea,
     composition::{
-        ComponentId, Content, ContentEvent, ContentHost, HostRevealBudget, ListContent,
-        ScrollContent, TextContent,
+        ChartContent, ComponentId, Content, ContentEvent, ContentHost, HostRevealBudget,
+        ListContent, RequiredFocusResult, ScrollContent, TextContent,
     },
 };
 use tekes_ui_scene::{Point, Primitive, Rect, Scene};
@@ -324,7 +324,10 @@ fn scene_glyph_clip_evidence(
     })
 }
 
-#[expect(clippy::too_many_arguments, reason = "Frozen GPU receipt axes remain explicit; this is a test capture helper, not a public API.")]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "Frozen GPU receipt axes remain explicit; this is a test capture helper, not a public API."
+)]
 fn record_frame(
     out: &std::path::Path,
     gpu: &mut tekes_ui_render::Renderer,
@@ -516,7 +519,10 @@ fn visible_witness(host: &ContentHost, id: ComponentId) -> Rect {
         other => panic!("expected visible required owner witness, got {other:?}"),
     }
 }
-#[expect(clippy::too_many_arguments, reason = "Frozen GPU receipt axes remain explicit; this is a test capture helper, not a public API.")]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "Frozen GPU receipt axes remain explicit; this is a test capture helper, not a public API."
+)]
 fn render(
     host: &mut ContentHost,
     text: &mut RecordedText,
@@ -945,12 +951,15 @@ fn preregistered_four_original_owner_cases() {
     assert_eq!(spec["parent_clip"], serde_json::json!([80, 80, 320, 120]));
     let lines = spec["following24lines"].as_str().unwrap();
     let text_content = Content::new(ComponentId(104_903), TextContent::new(lines));
-    let children = ListContent::new("original chart and following TextContent", vec![
-        Content::new(CHART, chart(-1., "", 240.))
-            .with_surface("canvas")
-            .unwrap(),
-        text_content,
-    ]);
+    let children = ListContent::new(
+        "original chart and following TextContent",
+        vec![
+            Content::new(CHART, chart(-1., "", 240.))
+                .with_surface("canvas")
+                .unwrap(),
+            text_content,
+        ],
+    );
     let children = Content::new(ComponentId(104_902), children);
     let scroll = ScrollContent::new(ScrollArea::default(), children);
     let frame = Rect::new(16., 16., 480., 240.);
@@ -1460,10 +1469,13 @@ fn shared_data_plot_packet_gpu_lane() {
                     draws: vec![],
                 };
                 content_text.inner.backing = backing;
-                let content_component = ChartContent::try_new("Series", vec![
-                    ChartDatum::new("ordinary category", 1.),
-                    ChartDatum::new("ordinary category", 0.),
-                ])
+                let content_component = ChartContent::try_new(
+                    "Series",
+                    vec![
+                        ChartDatum::new("ordinary category", 1.),
+                        ChartDatum::new("ordinary category", 0.),
+                    ],
+                )
                 .unwrap()
                 .preferred_height(200.);
                 let content = Content::new(CHART, content_component)

@@ -33,7 +33,7 @@ impl SearchFixture {
             tekes_ui_tokens::proposal::TextRole::UiBody,
         );
         history.viewport = TextViewport::Fixed(96.);
-        history.surface.scroll.set_scroll_policy(
+        history.surface.scroll_mut().set_scroll_policy(
             tekes_ui_controls::ScrollPolicy::Disabled,
             tekes_ui_controls::ScrollPolicy::Auto,
         );

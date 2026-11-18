@@ -123,7 +123,7 @@ fn public_editor_confirm_duplicate_index_payload_and_once_survive_close() {
     assert_eq!(model(&h).model().active, Some(2));
     assert!(key(&mut h, ControlKey::Enter).activated);
     assert_eq!(model(&h).model().selected, Some(2));
-    assert_eq!(h.focused_text().unwrap().input.text, "Compact");
+    assert_eq!(h.focused_text().unwrap().text(), "Compact");
     assert!(!model(&h).model().open);
     let records = h.drain_action_records();
     assert_eq!(records.len(), 1);
@@ -162,8 +162,8 @@ fn public_marked_updates_retain_the_same_editor_selection_and_undo() {
         replacement: Some(0..3),
         clauses: vec![0..2, 2..4],
     });
-    let baseline = h.focused_text().unwrap().input.external_baseline();
-    let clauses = h.focused_text().unwrap().clauses.clone();
+    let baseline = h.focused_text().unwrap().input().external_baseline();
+    let clauses = h.focused_text().unwrap().clauses().to_vec();
     assert!(
         model_mut(&mut h)
             .set_items(vec!["".into(), "候補😀".into(), "候補😀".into()])
@@ -171,15 +171,15 @@ fn public_marked_updates_retain_the_same_editor_selection_and_undo() {
     );
     render(&mut h, 220., Theme::DARK.into());
     assert_eq!(
-        h.focused_text().unwrap().input.external_baseline(),
+        h.focused_text().unwrap().input().external_baseline(),
         baseline
     );
-    assert_eq!(h.focused_text().unwrap().clauses, clauses);
+    assert_eq!(h.focused_text().unwrap().clauses(), clauses);
     assert_eq!(h.focused(), Some(COMBO));
     assert!(!key(&mut h, ControlKey::Enter).activated);
     assert!(!key(&mut h, ControlKey::Tab { reverse: false }).consumed);
     assert_eq!(
-        h.focused_text().unwrap().input.external_baseline(),
+        h.focused_text().unwrap().input().external_baseline(),
         baseline
     );
     assert_eq!(
@@ -187,8 +187,8 @@ fn public_marked_updates_retain_the_same_editor_selection_and_undo() {
         Err(ComboBoxUpdateError::Composing)
     );
     assert!(key(&mut h, ControlKey::Escape).consumed);
-    assert_eq!(h.focused_text().unwrap().input.text, "Com");
-    assert!(h.focused_text().unwrap().input.marked.is_none());
+    assert_eq!(h.focused_text().unwrap().text(), "Com");
+    assert!(h.focused_text().unwrap().marked().is_none());
     assert!(model(&h).model().open);
     assert!(key(&mut h, ControlKey::Escape).consumed);
     assert!(!model(&h).model().open);
@@ -199,14 +199,14 @@ fn public_marked_updates_retain_the_same_editor_selection_and_undo() {
         ))
         .consumed
     );
-    assert_eq!(h.focused_text().unwrap().input.text, "");
+    assert_eq!(h.focused_text().unwrap().text(), "");
     assert!(
         h.event(&ContentEvent::TextCommand(
             tekes_ui_controls::TextEditCommand::Redo
         ))
         .consumed
     );
-    assert_eq!(h.focused_text().unwrap().input.text, "Com");
+    assert_eq!(h.focused_text().unwrap().text(), "Com");
 }
 #[test]
 fn public_program_replace_revokes_queued_selection_without_rewriting_raw_index() {
@@ -217,7 +217,7 @@ fn public_program_replace_revokes_queued_selection_without_rewriting_raw_index()
     assert_eq!(model(&h).model().selected, Some(1));
     assert!(model(&h).model().items.is_empty());
     assert!(h.drain_action_records().is_empty());
-    assert_eq!(h.focused_text().unwrap().input.text, "Compact");
+    assert_eq!(h.focused_text().unwrap().text(), "Compact");
     assert!(model_mut(&mut h).set_items(items()).unwrap());
     model_mut(&mut h).set_query("Com").unwrap();
     assert!(key(&mut h, ControlKey::Enter).activated);
@@ -370,14 +370,17 @@ fn passive_background_program_updates_do_not_acquire_scope_or_end_neighbor_marke
         replacement: Some(0..5),
         clauses: std::iter::once(0..2).collect(),
     });
-    let before = h.focused_text().unwrap().input.external_baseline();
+    let before = h.focused_text().unwrap().input().external_baseline();
     model_mut(&mut h)
         .set_items(vec!["".into(), "Com".into(), "Com".into()])
         .unwrap();
     model_mut(&mut h).set_query("Com").unwrap();
     render(&mut h, 260., Theme::DARK.into());
     assert_eq!(h.focused(), Some(COMPOSER));
-    assert_eq!(h.focused_text().unwrap().input.external_baseline(), before);
+    assert_eq!(
+        h.focused_text().unwrap().input().external_baseline(),
+        before
+    );
     assert!(
         model(&h).model().open,
         "original set_query policy remains logical open"
@@ -405,7 +408,7 @@ fn original_menu_pointer_confirmation_and_replaced_capture_release_are_once() {
     assert_eq!(h.pointer_capture().map(|v| v.0), Some(COMBO));
     assert!(h.event(&ContentEvent::PointerUp(row)).activated);
     assert_eq!(model(&h).model().selected, Some(2));
-    assert_eq!(h.focused_text().unwrap().input.text, "Compact");
+    assert_eq!(h.focused_text().unwrap().text(), "Compact");
     assert_eq!(h.drain_action_records().len(), 1);
     assert!(h.drain_actions().is_empty());
     model_mut(&mut h).set_query("Com").unwrap();
@@ -471,20 +474,23 @@ fn accepted_host_sources_reject_ax_before_effect_and_allow_original_pointer_tran
         replacement: Some(0..5),
         clauses: std::iter::once(0..2).collect(),
     });
-    let before = h.focused_text().unwrap().input.external_baseline();
+    let before = h.focused_text().unwrap().input().external_baseline();
     assert!(
         !h.accessibility_action(COMBO, None, AccessibilityAction::SetExpanded(true))
             .consumed
     );
     assert_eq!(h.focused(), Some(OTHER));
-    assert_eq!(h.focused_text().unwrap().input.external_baseline(), before);
+    assert_eq!(
+        h.focused_text().unwrap().input().external_baseline(),
+        before
+    );
     assert!(!model(&h).model().open);
     assert!(h.drain_actions().is_empty());
-    let p = model(&h).text_surface().inner.center();
+    let p = model(&h).text_surface().inner().center();
     assert!(h.event(&ContentEvent::PointerDown(p)).consumed);
     assert_eq!(h.focused(), Some(COMBO));
     assert!(model(&h).model().open);
-    assert!(h.text_surface(OTHER).unwrap().input.marked.is_none());
+    assert!(h.text_surface(OTHER).unwrap().marked().is_none());
     h.event(&ContentEvent::PointerUp(p));
     h.event(&ContentEvent::Commit {
         text: "Com".into(),
@@ -533,10 +539,10 @@ fn editor_drag_retains_original_capture_and_popup_wheel_does_not_scroll_reader()
     h.focus(Some(COMBO), true);
     model_mut(&mut h).set_query("").unwrap();
     render(&mut h, 400., Theme::LIGHT.into());
-    let point = model(&h).text_surface().inner.center();
+    let point = model(&h).text_surface().inner().center();
     h.event(&ContentEvent::PointerDown(point));
     assert_eq!(h.pointer_capture().map(|p| p.0), Some(COMBO));
-    let editor = model(&h).text_surface().outer;
+    let editor = model(&h).text_surface().outer();
     h.event(&ContentEvent::PointerMove(Point::new(
         editor.max_x() - 2.,
         editor.max_y() + 10.,
@@ -582,7 +588,7 @@ fn empty_label_and_repeated_same_value_confirmations_are_distinct_once_events() 
     model_mut(&mut h).set_query("").unwrap();
     assert!(key(&mut h, ControlKey::Enter).activated);
     assert_eq!(model(&h).model().selected, Some(0));
-    assert_eq!(h.focused_text().unwrap().input.text, "");
+    assert_eq!(h.focused_text().unwrap().text(), "");
     assert!(
         !h.event(&ContentEvent::Key {
             key: ControlKey::Enter,

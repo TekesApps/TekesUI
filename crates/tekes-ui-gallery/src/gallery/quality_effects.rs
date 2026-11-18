@@ -2,7 +2,7 @@
 use super::text::TextEngine;
 use tekes_ui_controls::extended::Popover;
 use tekes_ui_controls::feedback_view::PopoverView;
-use tekes_ui_controls::{DialogView, MenuView};
+use tekes_ui_controls::feedback_view::{DialogView, MenuView};
 use tekes_ui_render::Renderer;
 use tekes_ui_scene::{Primitive, Rect, Scene, Size};
 use tekes_ui_tokens::{Palette, Theme, proposal};
@@ -168,7 +168,7 @@ fn real_control_motion_changes_gpu_pixels_without_moving_hit_geometry() {
     use std::time::Duration;
     use tekes_ui_controls::extended::{Disclosure, Switch};
     use tekes_ui_controls::layout_view::DisclosureView;
-    use tekes_ui_controls::{ButtonModel, ButtonSize, ButtonTextAlign, SwitchView, paint};
+    use tekes_ui_controls::{ButtonModel, ButtonSize, ButtonTextAlign, layout_view::SwitchView};
     let mut renderer = Renderer::new_headless().expect("actual GPU required for component motion");
     let mut text = TextEngine::new();
     text.set_scale(2.);
@@ -191,7 +191,7 @@ fn real_control_motion_changes_gpu_pixels_without_moving_hit_geometry() {
             assert!(switch.pointer_down(switch.layout().frame().center(), &toggle));
             assert_eq!(
                 switch.pointer_up(switch.layout().frame().center(), &mut toggle),
-                tekes_ui_controls::SelectionEvent::Changed
+                tekes_ui_controls::layout_view::SelectionEvent::Changed
             );
             assert!(toggle.checked);
             assert!(disclosure_view.pointer_down(header.center()));
@@ -208,7 +208,7 @@ fn real_control_motion_changes_gpu_pixels_without_moving_hit_geometry() {
             button_frame,
             None,
             palette,
-            paint::ButtonVariant::Quiet,
+            tekes_ui_controls::ButtonVariant::Quiet,
             ButtonSize::Body,
             proposal::TextRole::UiBody,
             ButtonTextAlign::default(),
@@ -240,7 +240,13 @@ fn real_control_motion_changes_gpu_pixels_without_moving_hit_geometry() {
         }
         if let Some(clip) = reveal.visible_clip {
             scene.push_clip(clip);
-            paint::surface_at_scale(&mut scene, reveal.body_rect, palette, true, text.scale());
+            tekes_ui_controls::feedback_view::SurfaceView::paint_at_scale(
+                &mut scene,
+                reveal.body_rect,
+                palette,
+                true,
+                text.scale(),
+            );
             scene.pop_clip();
         }
         let pixels = renderer
@@ -349,11 +355,11 @@ fn production_overlay_enter_exit_rebuilds_live_glyphs_and_removes_closed_hits() 
                     assert!(popover.focus_target().is_none());
                     assert_eq!(
                         menu.pointer_down_at(Point::new(200.0, 180.0)),
-                        tekes_ui_controls::MenuEvent::None
+                        tekes_ui_controls::feedback_view::MenuEvent::None
                     );
                     assert_eq!(
                         dialog.pointer_down_at(Point::new(200.0, 180.0)),
-                        tekes_ui_controls::DialogEvent::None
+                        tekes_ui_controls::feedback_view::DialogEvent::None
                     );
                     assert!(!popover.pointer_down(&mut model, Point::new(200.0, 180.0)));
                 }
@@ -537,7 +543,8 @@ pub(crate) fn record_panel_host_scale(
     gpu: Option<&mut Renderer>,
 ) -> usize {
     let scale = text.scale();
-    let expected = tekes_ui_controls::paint::decorative_border(palette, scale).0;
+    let expected =
+        tekes_ui_controls::feedback_view::SurfaceView::decorative_border(palette, scale).0;
     let is_panel = |q: &tekes_ui_scene::Quad| {
         q.fill == palette.color("surface-panel").unwrap()
             && q.border_color == palette.color("separator").unwrap()

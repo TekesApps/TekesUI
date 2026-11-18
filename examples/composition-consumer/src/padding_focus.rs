@@ -75,7 +75,9 @@ pub const READ_ONLY_TEXT: &str = "A😀B 中文 e\u{301} selectable";
 
 pub fn build() -> Result<ContentHost, CompositionError> {
     let mut field = TextFieldContent::new("Message", "Draft A😀B");
-    field.surface.presentation = tekes_ui_controls::TextSurfacePresentation::Content;
+    field
+        .surface
+        .set_presentation(tekes_ui_controls::TextSurfacePresentation::Content);
     build_with_text(field, false)
 }
 

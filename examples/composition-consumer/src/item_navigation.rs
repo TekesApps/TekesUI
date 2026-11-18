@@ -38,11 +38,14 @@ impl Panel {
 }
 impl Component for Panel {
     fn host_reveal_passthrough(&self) -> bool {
-        self.children.len() == 1 && self.arranged.is_some_and(|(clipped, shift, _)|
-            clipped == self.clipped && shift == self.content_shift && shift.is_finite())
+        self.children.len() == 1
+            && self.arranged.is_some_and(|(clipped, shift, _)| {
+                clipped == self.clipped && shift == self.content_shift && shift.is_finite()
+            })
     }
     fn host_reveal_local_clip(&self) -> Option<Rect> {
-        self.arranged.map(|(clipped, _, frame)| if clipped { Rect::default() } else { frame })
+        self.arranged
+            .map(|(clipped, _, frame)| if clipped { Rect::default() } else { frame })
     }
     fn children(&self) -> &[Content] {
         &self.children
@@ -168,10 +171,7 @@ impl Fixture {
                 format!("After {index:02} · retained stable reading item"),
             ));
         }
-        rows.push(Content::new(
-            LAST,
-            Button::new("Last item · 最后一项"),
-        ));
+        rows.push(Content::new(LAST, Button::new("Last item · 最后一项")));
         let items = rows
             .iter()
             .map(|row| if row.id() == PANEL { TARGET } else { row.id() })
@@ -209,9 +209,7 @@ impl Fixture {
                             (LATEST, "Latest"),
                         ]
                         .into_iter()
-                        .map(|(id, label)| {
-                            Content::new(id, Button::new(label)).preserving_focus()
-                        })
+                        .map(|(id, label)| Content::new(id, Button::new(label)).preserving_focus())
                         .collect(),
                     },
                 ),
@@ -252,19 +250,25 @@ impl Fixture {
         // A document without a completed layout must still be rejected by Host;
         // a failed render has no allocation to reuse and is not auto-recovered.
         let allocation = self.host.last_layout_allocation();
-        let document_laid_out = self.host.get(OWNER)
+        let document_laid_out = self
+            .host
+            .get(OWNER)
             .and_then(|owner| owner.component::<ScrollContent>())
             .is_some_and(|scroll| scroll.reading_result().is_some());
-        if document_laid_out && self.host.needs_render()
+        if document_laid_out
+            && self.host.needs_render()
             && let Some((frame, clip)) = allocation
         {
-            self.host.render(&mut Scene::new(), text, frame, clip, Theme::LIGHT.into())
+            self.host
+                .render(&mut Scene::new(), text, frame, clip, Theme::LIGHT.into())
                 .map_err(ContentRevealError::Layout)?;
         }
-        let result = self.host
-            .reveal_scroll_reading_item(OWNER, &self.version, item, options, text)?;
+        let result =
+            self.host
+                .reveal_scroll_reading_item(OWNER, &self.version, item, options, text)?;
         if let Some((frame, clip)) = allocation {
-            self.host.render(&mut Scene::new(), text, frame, clip, Theme::LIGHT.into())
+            self.host
+                .render(&mut Scene::new(), text, frame, clip, Theme::LIGHT.into())
                 .map_err(ContentRevealError::Layout)?;
         }
         Ok(result)

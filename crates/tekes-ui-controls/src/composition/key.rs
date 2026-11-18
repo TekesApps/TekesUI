@@ -16,20 +16,6 @@ pub struct ContentKeyEvent {
     pub characters: String,
     pub characters_ignoring_modifiers: String,
 }
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub enum TextTabPolicy {
-    #[default]
-    Navigate,
-    /// Multiline editors insert a tab; Backtab is consumed without outdenting.
-    Insert,
-}
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub enum TextSubmitPolicy {
-    #[default]
-    None,
-    Enter,
-    CommandEnter,
-}
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TextKeyDisposition {
     /// The original delegated key has not finished; no fallback may run yet.

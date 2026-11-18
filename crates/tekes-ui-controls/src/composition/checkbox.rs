@@ -108,20 +108,11 @@ impl CheckboxContent {
         }
     }
 }
-impl Component for CheckboxContent {
-    #[cfg(feature = "inspection")]
-    fn inspection_properties(&self) -> Option<Vec<InspectionProperty>> {
-        Some(vec![
-            InspectionProperty::new("component", "CheckboxContent"),
-            InspectionProperty::new("label", &self.label),
-            InspectionProperty::new("checked", format!("{:?}", self.model.checked)),
-            InspectionProperty::new("state", format!("{:?}", self.model.button.state)),
-        ])
-    }
-    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
-        ActionTransactionCompatibility::StableHooks
-    }
-    fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
+impl CheckboxContent {
+    pub(super) fn prepare_checkbox_action(
+        &self,
+        request: ComponentActionRequest<'_>,
+    ) -> ActionPreparation {
         action_preparation::prepare_original(
             self,
             request,
@@ -138,6 +129,17 @@ impl Component for CheckboxContent {
                 )
             },
         )
+    }
+}
+impl Component for CheckboxContent {
+    #[cfg(feature = "inspection")]
+    fn inspection_properties(&self) -> Option<Vec<InspectionProperty>> {
+        Some(vec![
+            InspectionProperty::new("component", "CheckboxContent"),
+            InspectionProperty::new("label", &self.label),
+            InspectionProperty::new("checked", format!("{:?}", self.model.checked)),
+            InspectionProperty::new("state", format!("{:?}", self.model.button.state)),
+        ])
     }
     fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
         MeasuredChild::new(Checkbox::measure(

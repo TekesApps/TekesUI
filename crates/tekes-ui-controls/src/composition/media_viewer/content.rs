@@ -60,6 +60,7 @@ pub struct MediaViewerContent {
     focus_context: Option<CurveGeometryContext>,
     focus_geometry_pending: bool,
     focus_space: RequiredFocusSpace,
+    focus_evidence: Option<RequiredFocusEvidence>,
     changes: Vec<MediaViewerTransform>,
 }
 impl MediaViewerContent {
@@ -134,6 +135,7 @@ impl MediaViewerContent {
             focus_context: None,
             focus_geometry_pending: false,
             focus_space: RequiredFocusSpace::Unmeasured,
+            focus_evidence: None,
             changes: Vec::new(),
         })
     }
@@ -141,6 +143,7 @@ impl MediaViewerContent {
     /// region. Its conservative flat-center fit is both painted and certified;
     /// it never substitutes a tiny internal point for the viewport.
     fn refresh_focus_space(&mut self) {
+        self.focus_evidence = None;
         if self.focus_geometry_pending
             || self.focus_layout.is_none()
             || !self.backing_scale.is_finite()
@@ -210,10 +213,8 @@ impl MediaViewerContent {
                 }
             }
         }
-        self.focus_space = RequiredFocusSpace::Sufficient {
-            witness: boundary,
-            evidence: RequiredFocusEvidence::new(),
-        };
+        self.focus_space = RequiredFocusSpace::Sufficient { witness: boundary };
+        self.focus_evidence = Some(RequiredFocusEvidence::new());
     }
     fn image(&self) -> Option<&ImageContent> {
         self.children
@@ -374,12 +375,13 @@ impl MediaViewerContent {
         }
         Ok(accepted)
     }
-}
-impl Component for MediaViewerContent {
-    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
-        ActionTransactionCompatibility::StableHooks
+    pub(crate) fn focus_evidence(&self) -> Option<RequiredFocusEvidence> {
+        self.focus_evidence.clone()
     }
-    fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
+    pub(crate) fn prepare_viewer_action(
+        &self,
+        request: ComponentActionRequest<'_>,
+    ) -> ActionPreparation {
         action_preparation::prepare_original(
             self,
             request,
@@ -397,6 +399,8 @@ impl Component for MediaViewerContent {
             },
         )
     }
+}
+impl Component for MediaViewerContent {
     fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
         CurveSubtreeCapability::Recursive
     }
@@ -442,6 +446,7 @@ impl Component for MediaViewerContent {
         // Intermediate/cleared geometry cannot retain the prior witness token.
         self.focus_geometry_pending = true;
         self.focus_space = RequiredFocusSpace::Unmeasured;
+        self.focus_evidence = None;
     }
     fn set_curve_geometry_context(&mut self, context: Option<CurveGeometryContext>) {
         if self.focus_context.is_some() && context.is_none() {
@@ -488,6 +493,7 @@ impl Component for MediaViewerContent {
             // A paint using a different renderer scale needs a new arrange;
             // do not publish or paint the old coverage evidence at that scale.
             self.focus_space = RequiredFocusSpace::Unmeasured;
+            self.focus_evidence = None;
             self.focus_geometry_pending = true;
         }
         // Paint the retained original ImageContent once, then its viewport
@@ -549,6 +555,7 @@ impl Component for MediaViewerContent {
             self.focus_context = None;
             self.focus_geometry_pending = false;
             self.focus_space = RequiredFocusSpace::Unmeasured;
+            self.focus_evidence = None;
             self.geometry.fit();
             self.changes.clear();
         }
@@ -1135,7 +1142,7 @@ mod tests {
         let mut host = observed_focus_host();
         let frame = Rect::new(0.0, 0.0, 480.0, 720.0);
         focus_scene(&mut host, frame);
-        let RequiredFocusSpace::Sufficient { witness, evidence } = focus_space(&host) else {
+        let RequiredFocusSpace::Sufficient { witness } = focus_space(&host) else {
             panic!("visible viewport must have a real focus boundary");
         };
         assert_eq!(
@@ -1147,7 +1154,7 @@ mod tests {
         assert_eq!(witness, Rect::new(11.0, 189.0, 458.0, 520.0));
         assert_eq!(
             focus_space(&host),
-            RequiredFocusSpace::Sufficient { witness, evidence }
+            RequiredFocusSpace::Sufficient { witness }
         );
         let tab = ContentEvent::Key {
             key: ControlKey::Tab { reverse: false },
@@ -1182,6 +1189,12 @@ mod tests {
         let frame = Rect::new(0.0, 0.0, 480.0, 720.0);
         focus_scene(&mut host, frame);
         let original = focus_space(&host);
+        let original_evidence = host
+            .get(FOCUS_VIEW)
+            .unwrap()
+            .component::<MediaViewerContent>()
+            .unwrap()
+            .focus_evidence();
         let viewer = host
             .get_mut(FOCUS_VIEW)
             .unwrap()
@@ -1193,8 +1206,10 @@ mod tests {
             viewer.required_focus_space(),
             RequiredFocusSpace::Insufficient
         );
+        assert_eq!(viewer.focus_evidence(), None);
         viewer.set_disabled(false);
-        assert_ne!(viewer.required_focus_space(), original);
+        assert_eq!(viewer.required_focus_space(), original);
+        assert_ne!(viewer.focus_evidence(), original_evidence);
         let restored = viewer.required_focus_space();
         focus_scene_with_scale(&mut host, frame, 2.0);
         let scaled = focus_space(&host);
@@ -1256,6 +1271,7 @@ mod tests {
             .component_mut::<MediaViewerContent>()
             .unwrap();
         let old = viewer.required_focus_space();
+        let old_evidence = viewer.focus_evidence.clone();
         let context = viewer.focus_context.clone().unwrap();
         viewer.set_clip_region(None);
         assert_eq!(
@@ -1263,7 +1279,8 @@ mod tests {
             RequiredFocusSpace::Unmeasured
         );
         viewer.set_curve_geometry_context(Some(context));
-        assert_ne!(viewer.required_focus_space(), old);
+        assert_eq!(viewer.required_focus_space(), old);
+        assert_ne!(viewer.focus_evidence, old_evidence);
         viewer.set_curve_geometry_context(None);
         assert_eq!(
             viewer.required_focus_space(),
@@ -2086,15 +2103,18 @@ mod tests {
         let before = format!("{viewer:?}");
         let down = ContentEvent::PointerDown(Point::new(40., 40.));
         assert!(matches!(
-            viewer.prepare_action(ComponentActionRequest::PointerDown(&down)),
+            precheck_dispatch::prepare_action(&viewer, ComponentActionRequest::PointerDown(&down)),
             ActionPreparation::Ready(_)
         ));
         assert_eq!(format!("{viewer:?}"), before, "preparation is read-only");
         assert!(matches!(
-            viewer.prepare_action(ComponentActionRequest::Accessibility {
-                part: None,
-                action: &AccessibilityAction::Press,
-            }),
+            precheck_dispatch::prepare_action(
+                &viewer,
+                ComponentActionRequest::Accessibility {
+                    part: None,
+                    action: &AccessibilityAction::Press,
+                }
+            ),
             ActionPreparation::Unsupported
         ));
         let secondary = ContentEvent::Pointer(PointerEvent {
@@ -2105,7 +2125,10 @@ mod tests {
             modifiers: PointerModifiers::default(),
         });
         assert!(matches!(
-            viewer.prepare_action(ComponentActionRequest::PointerDown(&secondary)),
+            precheck_dispatch::prepare_action(
+                &viewer,
+                ComponentActionRequest::PointerDown(&secondary)
+            ),
             ActionPreparation::Unsupported
         ));
         assert_eq!(format!("{viewer:?}"), before);

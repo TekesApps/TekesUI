@@ -1,8 +1,5 @@
 //! Thin host conversion only; editor policy and acknowledgement live in ContentHost.
-use tekes_ui_controls::{
-    ControlKey,
-    composition::{ContentEvent, ContentKeyEvent, InputModifiers},
-};
+use tekes_ui_controls::{ControlKey, composition::{ContentEvent, ContentKeyEvent, InputModifiers}};
 use tekes_ui_platform_macos::{KeyEvent, KeyEventKind, TextKeyDisposition, TextKeyEvent};
 pub fn key(k: KeyEvent) -> ContentKeyEvent {
     ContentKeyEvent {

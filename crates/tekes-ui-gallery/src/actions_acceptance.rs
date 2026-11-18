@@ -79,10 +79,10 @@ impl Host {
                 .map(|s| {
                     let caret = s.caret();
                     tekes_ui_platform_macos::TextInputState {
-                        text: s.input.text.clone(),
-                        selection: s.input.selection(),
-                        marked: s.input.marked.clone(),
-                        caret_index: s.input.caret,
+                        text: s.text().to_owned(),
+                        selection: s.input().selection(),
+                        marked: s.marked(),
+                        caret_index: s.input().caret(),
                         caret_origin: tekes_ui_platform_macos::Point {
                             x: caret.min_x() as f64,
                             y: caret.min_y() as f64,
@@ -91,7 +91,7 @@ impl Host {
                             width: caret.size.width as f64,
                             height: caret.size.height as f64,
                         },
-                        read_only: s.input.read_only,
+                        read_only: s.input().is_read_only(),
                         ..Default::default()
                     }
                 }),
@@ -168,11 +168,11 @@ impl Host {
                 native.role = A::Slider(range);
             }
             if let Some(surface) = self.fixture.host.text_surface(node.id) {
-                if surface.input.multiline {
+                if surface.input().is_multiline() {
                     native.role = A::TextArea;
                 }
-                native.text_selection = Some(surface.input.selection());
-                native.read_only = surface.input.read_only;
+                native.text_selection = Some(surface.input().selection());
+                native.read_only = surface.input().is_read_only();
             }
             nodes.push(native);
             for part in node.parts {
@@ -249,7 +249,7 @@ impl Host {
             Event::TextCommand(c) => {
                 if c == tekes_ui_platform_macos::TextEditCommand::Copy {
                     if let Some(surface) = self.fixture.host.focused_text() {
-                        w.set_clipboard_text(&surface.input.selected_text());
+                        w.set_clipboard_text(&surface.input().selected_text());
                     }
                     return;
                 }

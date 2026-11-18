@@ -81,9 +81,9 @@ struct InputState {
 fn state(f: &SearchFixture) -> InputState {
     let input = f.search().input();
     InputState {
-        text: input.text.clone(),
+        text: input.text().to_owned(),
         selection: input.selection(),
-        marked: input.marked.clone(),
+        marked: input.marked(),
         focused: f.host.focused(),
         binding: f
             .host
@@ -153,7 +153,7 @@ fn clear_focus_policy_does_not_leak_to_the_next_editor_click() {
     f.host.event(&ContentEvent::PointerUp(point));
     assert_eq!(f.host.focused(), Some(OTHER));
     render(&mut f);
-    let editor = f.host.text_surface(SEARCH).unwrap().inner.center();
+    let editor = f.host.text_surface(SEARCH).unwrap().inner().center();
     f.host.event(&ContentEvent::PointerDown(editor));
     assert_eq!(
         f.host.focused(),
@@ -516,8 +516,8 @@ fn selection_backspace_and_reading_sibling_keep_original_state() {
             .unwrap()
             .component_mut::<TextFieldContent>()
             .unwrap();
-        history.surface.input.select_range(3..8);
-        history.surface.scroll.scroll_by(0., 120.);
+        history.surface.input_mut().select_range(3..8);
+        history.surface.scroll_mut().scroll_by(0., 120.);
         history
             .reading
             .as_mut()
@@ -532,7 +532,7 @@ fn selection_backspace_and_reading_sibling_keep_original_state() {
             .component::<TextFieldContent>()
             .unwrap()
             .surface
-            .scroll
+            .scroll()
             .offset
             .y
             > 0.
@@ -545,7 +545,7 @@ fn selection_backspace_and_reading_sibling_keep_original_state() {
         .component::<TextFieldContent>()
         .unwrap()
         .surface
-        .scroll
+        .scroll()
         .offset;
     let command = f
         .host
@@ -563,7 +563,7 @@ fn selection_backspace_and_reading_sibling_keep_original_state() {
             .component::<TextFieldContent>()
             .unwrap()
             .surface
-            .scroll
+            .scroll()
             .offset,
         scroll
     );
@@ -698,7 +698,7 @@ fn current_search_semantics_and_text_queries_are_the_same_original_owner() {
     let input = f.host.semantic_text_input_snapshot(SEARCH).unwrap();
     let layout = f.host.semantic_text_layout_snapshot(SEARCH, None).unwrap();
     assert_eq!(input.binding, layout.input.binding);
-    assert_eq!(input.text, f.search().input().text);
+    assert_eq!(input.text, f.search().input().text());
     assert_eq!(layout.input.selection, f.search().input().selection());
     assert!(
         node.parts
@@ -992,14 +992,14 @@ fn strict_scroll_search_admits_original_editor_actions_and_clear_once() {
         host.accessibility_action(OTHER, None, AccessibilityAction::SetSelection(1..3))
             .consumed
     );
-    let composer_selection = host.text_surface(OTHER).unwrap().input.selection();
+    let composer_selection = host.text_surface(OTHER).unwrap().input().selection();
     let before_reveal = strict_scroll_offset(&host);
     let selected = host.accessibility_action(SEARCH, None, AccessibilityAction::SetSelection(1..4));
     assert!(selected.consumed && selected.changed);
     assert_eq!(host.focused(), Some(SEARCH));
     assert_ne!(strict_scroll_offset(&host), before_reveal);
     assert_eq!(
-        host.text_surface(OTHER).unwrap().input.selection(),
+        host.text_surface(OTHER).unwrap().input().selection(),
         composer_selection
     );
     assert!(host.drain_action_records().is_empty());
@@ -1112,7 +1112,7 @@ fn strict_scroll_clear_sources_respect_another_composers_mark_and_then_clear_onc
             })
             .consumed
         );
-        let composer_selection = host.text_surface(OTHER).unwrap().input.selection();
+        let composer_selection = host.text_surface(OTHER).unwrap().input().selection();
         match clear_source {
             ContentActionSource::Accessibility => {
                 assert!(
@@ -1132,7 +1132,7 @@ fn strict_scroll_clear_sources_respect_another_composers_mark_and_then_clear_onc
         }
         assert_eq!(host.focused(), Some(OTHER));
         assert_eq!(
-            host.text_surface(OTHER).unwrap().input.selection(),
+            host.text_surface(OTHER).unwrap().input().selection(),
             composer_selection
         );
         assert_eq!(
@@ -1170,7 +1170,7 @@ fn strict_scroll_editor_drag_captured_by_search_cannot_clear_when_crossing_butto
         .offset
         .y = 10_000.;
     render_strict(&mut host);
-    let editor = host.text_surface(SEARCH).unwrap().inner;
+    let editor = host.text_surface(SEARCH).unwrap().inner();
     let down = Point::new(editor.min_x() + 3., editor.center().y);
     let clear = host
         .semantics()
@@ -1223,7 +1223,7 @@ fn empty_query_fills_search_allocation_and_clear_restores_editor_hit_region() {
     let mut f = SearchFixture::new("");
     render(&mut f);
     let outer = f.host.get(SEARCH).unwrap().frame();
-    let editor = f.host.text_surface(SEARCH).unwrap().outer;
+    let editor = f.host.text_surface(SEARCH).unwrap().outer();
     assert_eq!(
         editor, outer,
         "empty Search must not reserve an invisible Clear slot"
@@ -1244,12 +1244,13 @@ fn empty_query_fills_search_allocation_and_clear_restores_editor_hit_region() {
     let clear = clear_point(&f);
     let surface = f.host.text_surface(SEARCH).unwrap();
     assert_eq!(
-        surface.outer, outer,
+        surface.outer(),
+        outer,
         "Clear stays inside the original input chrome"
     );
-    assert!(surface.outer.contains(clear));
+    assert!(surface.outer().contains(clear));
     assert!(
-        !surface.inner.contains(clear),
+        !surface.inner().contains(clear),
         "text reserves the internal Clear slot"
     );
     assert!(
@@ -1267,8 +1268,8 @@ fn empty_query_fills_search_allocation_and_clear_restores_editor_hit_region() {
         1
     );
     render(&mut f);
-    assert_eq!(f.host.text_surface(SEARCH).unwrap().outer, outer);
-    assert!(f.host.text_surface(SEARCH).unwrap().inner.contains(clear));
+    assert_eq!(f.host.text_surface(SEARCH).unwrap().outer(), outer);
+    assert!(f.host.text_surface(SEARCH).unwrap().inner().contains(clear));
     // The former Clear area is now part of the real editor, not an invisible
     // button hit target. Clicking it retains the Search focus and emits no Clear.
     let before = f.delivered.len();

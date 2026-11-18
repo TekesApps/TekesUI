@@ -125,7 +125,7 @@ fn command_results_use_the_production_query_and_menu_without_button_selected_pai
                 surface.layout_with(input, None, 1., 1., |s, w| {
                     text.shape_surface(s, proposal::TextRole::UiBody, w)
                 });
-                let draft = surface.input.text.clone();
+                let draft = surface.text().to_owned();
                 text.labels.clear();
                 let ((scene, popup), reads) = observe(|| {
                     let mut scene = Scene::new();
@@ -159,7 +159,7 @@ fn command_results_use_the_production_query_and_menu_without_button_selected_pai
                 if let Some(p) = popup {
                     assert_eq!(p.items.len(), 3);
                 }
-                assert_eq!(surface.input.text, draft);
+                assert_eq!(surface.text(), draft);
                 let trigger_quad = scene
                     .primitives()
                     .iter()

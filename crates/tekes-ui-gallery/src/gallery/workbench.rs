@@ -58,14 +58,14 @@ use std::{
 };
 use tekes_ui_controls::{
     ButtonModel, ButtonSize, ButtonTextAlign, ButtonTextRenderer, CheckState, Checkbox, ControlKey,
-    ControlState, DialogEvent, DialogView, Field, MenuEvent, MenuLayout, MenuView, MenuWheelEvent,
-    MenuWheelInput, NumberField, TabsLayout, TabsView,
+    ControlState, Field, NumberField,
     extended::{Axis, ControlFrame},
     feedback_view::{
-        FieldPresentation, FieldView, NumberFieldView, SkeletonView, SurfaceView, ToolbarView,
+        DialogEvent, DialogView, FieldPresentation, FieldView, MenuEvent, MenuLayout, MenuView,
+        MenuWheelEvent, MenuWheelInput, NumberFieldView, SkeletonView, SurfaceView, ToolbarView,
     },
     layout::{AlignmentOverride, MeasuredChild, layout_measured_children},
-    paint,
+    layout_view::{TabsLayout, TabsView},
 };
 use tekes_ui_platform_macos::{Event, KeyEventKind, MouseButton, MouseEventKind};
 use tekes_ui_scene::{Point, Quad, Rect, Scene};
@@ -241,7 +241,7 @@ pub struct StoryState {
     button_clip: Option<Rect>,
     tabs_layout: Option<TabsLayout>,
     menu_layout: Option<MenuLayout>,
-    dialog_layout: Option<tekes_ui_controls::DialogLayout>,
+    dialog_layout: Option<tekes_ui_controls::feedback_view::DialogLayout>,
     buttons: HashMap<usize, ButtonModel>,
     button_labels: HashMap<usize, String>,
     log: VecDeque<String>,
@@ -1663,9 +1663,9 @@ fn action(
         crate::gallery::brands::brand_palette(ctx.theme, state.brand)
             .expect("registered Gallery brand"),
         if id == 20 {
-            paint::ButtonVariant::Primary
+            tekes_ui_controls::ButtonVariant::Primary
         } else {
-            paint::ButtonVariant::Quiet
+            tekes_ui_controls::ButtonVariant::Quiet
         },
         ButtonSize::Body,
         proposal::TextRole::UiBody,
@@ -1758,7 +1758,7 @@ fn quiet_action(
         state.button_clip,
         crate::gallery::brands::brand_palette(ctx.theme, state.brand)
             .expect("registered Gallery brand"),
-        paint::ButtonVariant::Quiet,
+        tekes_ui_controls::ButtonVariant::Quiet,
         ButtonSize::Body,
         proposal::TextRole::UiBody,
         ButtonTextAlign::default(),
@@ -3000,7 +3000,7 @@ impl Workbench {
                     r,
                     Some(c),
                     palette,
-                    paint::ButtonVariant::Quiet,
+                    tekes_ui_controls::ButtonVariant::Quiet,
                     ButtonSize::Body,
                     proposal::TextRole::UiBody,
                     ButtonTextAlign::default(),
@@ -3175,7 +3175,7 @@ impl Workbench {
                     Some(c),
                     crate::gallery::brands::brand_palette(ctx.theme, s.brand)
                         .expect("registered Gallery brand"),
-                    paint::ButtonVariant::Primary,
+                    tekes_ui_controls::ButtonVariant::Primary,
                     [ButtonSize::Sm, ButtonSize::Md, ButtonSize::Lg][n],
                     proposal::TextRole::UiBody,
                     ButtonTextAlign::default(),
@@ -3198,7 +3198,7 @@ impl Workbench {
                     quiet,
                     Some(c),
                     ctx.theme,
-                    paint::ButtonVariant::Quiet,
+                    tekes_ui_controls::ButtonVariant::Quiet,
                     [ButtonSize::Sm, ButtonSize::Md, ButtonSize::Lg][n],
                     proposal::TextRole::UiBody,
                     ButtonTextAlign::default(),
@@ -4084,7 +4084,12 @@ impl Workbench {
                     scene.push_quad(
                         Quad::new(cell, palette.color(role).unwrap())
                             .with_corner_radius(6.)
-                            .with_border(1., paint::color(ctx.theme, "border")),
+                            .with_border(
+                                1.,
+                                tekes_ui_tokens::Palette::from(ctx.theme)
+                                    .color("border")
+                                    .unwrap_or(tekes_ui_tokens::Rgba::new(0., 0., 0., 0.)),
+                            ),
                     );
                     line(ctx, scene, cell.offset(0., 52.), role);
                 }
@@ -4166,10 +4171,21 @@ impl Workbench {
                         100.,
                         60.,
                     );
+                    let palette = tekes_ui_tokens::Palette::from(ctx.theme);
                     scene.push_quad(
-                        Quad::new(q, paint::color(ctx.theme, "surface-2"))
-                            .with_corner_radius(radius.value())
-                            .with_border(1., paint::color(ctx.theme, "border")),
+                        Quad::new(
+                            q,
+                            palette
+                                .color("surface-2")
+                                .unwrap_or(tekes_ui_tokens::Rgba::new(0., 0., 0., 0.)),
+                        )
+                        .with_corner_radius(radius.value())
+                        .with_border(
+                            1.,
+                            palette
+                                .color("border")
+                                .unwrap_or(tekes_ui_tokens::Rgba::new(0., 0., 0., 0.)),
+                        ),
                     );
                     line(
                         ctx,
@@ -4279,7 +4295,9 @@ impl Workbench {
                     );
                     scene.push_quad(Quad::new(
                         Rect::new(r.min_x() + 240., r.min_y() + n as f32 * 38., v, 24.),
-                        paint::color(ctx.theme, "row-selection"),
+                        tekes_ui_tokens::Palette::from(ctx.theme)
+                            .color("row-selection")
+                            .unwrap_or(tekes_ui_tokens::Rgba::new(0., 0., 0., 0.)),
                     ));
                 }
             }
@@ -10130,7 +10148,7 @@ mod interaction_tests {
         use super::super::Gallery;
         use super::super::commands::Command;
         use super::super::theme::{AppearanceChoice, ContrastChoice};
-        use tekes_ui_controls::SliderLayout;
+        use tekes_ui_controls::layout_view::SliderLayout;
         use tekes_ui_scene::Primitive;
         use tekes_ui_tokens::{Palette, Rgba, Theme};
         fn assert_slider(
@@ -10852,7 +10870,7 @@ mod interaction_tests {
                                 state.brand,
                             )
                             .unwrap(),
-                            paint::ButtonVariant::Quiet,
+                            tekes_ui_controls::ButtonVariant::Quiet,
                             ButtonSize::Body,
                             proposal::TextRole::UiBody,
                             ButtonTextAlign::Leading,
@@ -11039,8 +11057,10 @@ mod interaction_tests {
                 let frame = state.input.frame_at(0).unwrap();
                 let search_host = &state.input.search_host().unwrap().host;
                 let allocation = search_host.get(search_host::SEARCH).unwrap().frame();
-                let search_text_frame =
-                    search_host.text_surface(search_host::SEARCH).unwrap().inner;
+                let search_text_frame = search_host
+                    .text_surface(search_host::SEARCH)
+                    .unwrap()
+                    .inner();
                 if let Some(original) = original_allocation {
                     assert_eq!(
                         allocation, original,
@@ -11081,7 +11101,7 @@ mod interaction_tests {
                         .semantic_parts()[0]
                         .frame;
                     assert_eq!(frame.intersection(&clear), Some(clear));
-                    assert!(surface.inner.max_x() <= clear.min_x());
+                    assert!(surface.inner().max_x() <= clear.min_x());
                 }
                 if let Some(original) = original_frame {
                     assert_eq!(frame, original);
@@ -11137,7 +11157,7 @@ mod interaction_tests {
             .host
             .text_surface(search_host::SEARCH)
             .unwrap()
-            .inner;
+            .inner();
         assert_search(
             &scene,
             frame,
@@ -11279,7 +11299,7 @@ mod interaction_tests {
                 .host
                 .text_surface(tekes_ui_controls::composition::ComponentId(27501))
                 .unwrap()
-                .inner
+                .inner()
         }
         fn contrast(a: Rgba, b: Rgba) -> f32 {
             let l = |c: Rgba| {
@@ -13464,7 +13484,10 @@ mod interaction_tests {
         gallery.build_scene(&mut Scene::new());
         let (frame, artwork) = {
             let view = &gallery.workbench.state(i).extended.icon_button_view;
-            assert_eq!(view.button().variant, paint::ButtonVariant::Quiet);
+            assert_eq!(
+                view.button().variant,
+                tekes_ui_controls::ButtonVariant::Quiet
+            );
             (view.layout().frame, view.icon_frame())
         };
         let point = frame.center();
@@ -16305,11 +16328,17 @@ mod interaction_tests {
                 .expect("panel surface quad");
             assert_eq!(
                 panel_quad.border_width,
-                paint::decorative_border(tekes_ui_tokens::Theme::LIGHT, scale).0
+                tekes_ui_controls::feedback_view::SurfaceView::decorative_border(
+                    tekes_ui_tokens::Theme::LIGHT,
+                    scale,
+                )
+                .0
             );
             assert_eq!(
                 panel_quad.fill,
-                paint::color(tekes_ui_tokens::Theme::LIGHT, "surface-panel")
+                tekes_ui_tokens::Palette::from(tekes_ui_tokens::Theme::LIGHT)
+                    .color("surface-panel")
+                    .unwrap_or(tekes_ui_tokens::Rgba::new(0., 0., 0., 0.))
             );
             assert_eq!(
                 workbench.state(panel).visible_for_id(20).unwrap().min_x(),

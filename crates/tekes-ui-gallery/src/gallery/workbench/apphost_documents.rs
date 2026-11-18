@@ -192,13 +192,13 @@ mod tests {
             let live = page.host.get(apphost_text_pages::SPECIMEN).unwrap().frame();
             assert!(live.size.height > 0. && live.max_y() <= frame.max_y() + 0.01);
             let id = apphost_text_pages::FIRST_SURFACE;
-            let before = page.host.text_surface(id).unwrap().input.text.clone();
+            let before = page.host.text_surface(id).unwrap().text().to_owned();
             assert!(page.host.focus(Some(id), true));
             page.host.event(&ContentEvent::Commit {
                 text: "chapter draft".into(),
                 replacement: None,
             });
-            let draft = page.host.text_surface(id).unwrap().input.text.clone();
+            let draft = page.host.text_surface(id).unwrap().text().to_owned();
             if renderer == "internal-text" {
                 assert_ne!(draft, before);
             } else {
@@ -228,7 +228,7 @@ mod tests {
             );
             page.after_host_visit();
             render(&mut page, &mut text, frame);
-            assert_eq!(page.host.text_surface(id).unwrap().input.text, draft);
+            assert_eq!(page.host.text_surface(id).unwrap().text(), draft);
             assert!(
                 page.host
                     .get(apphost_text_pages::SPECIMEN)

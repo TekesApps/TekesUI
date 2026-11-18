@@ -44,7 +44,7 @@ fn semantic_range_updates_require_a_current_visible_active_mount() {
 #[test]
 fn retained_semantic_updates_share_steps_bounds_and_cancel_only_valid_gestures() {
     let mut model = Slider::new(50., 0., 100., 5.).unwrap();
-    let mut view = tekes_ui_controls::SliderView::new();
+    let mut view = tekes_ui_controls::layout_view::SliderView::new();
     let frame = Rect::new(10., 10., 240., 36.);
     let layout = view.render(
         &mut Scene::new(),

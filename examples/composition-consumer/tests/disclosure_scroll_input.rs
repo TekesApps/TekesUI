@@ -301,12 +301,12 @@ fn preserving_scroll_header_keeps_marked_editor_and_sibling_while_confirmation_r
     let before = h.text_input_snapshot();
     assert!(before.as_ref().unwrap().marked.is_some());
     let outside = {
-        let input = &h.text_surface(OUTSIDE).unwrap().input;
+        let input = h.text_surface(OUTSIDE).unwrap().input();
         (
-            input.text.clone(),
-            input.anchor,
-            input.caret,
-            input.marked.clone(),
+            input.text().to_owned(),
+            input.anchor(),
+            input.caret(),
+            input.marked(),
         )
     };
     let response = h.accessibility_action(TRIGGER, None, AccessibilityAction::Press);
@@ -316,13 +316,13 @@ fn preserving_scroll_header_keeps_marked_editor_and_sibling_while_confirmation_r
     assert!(control(&h).expanded());
     assert_eq!(h.focused(), Some(EDITOR));
     assert_eq!(h.text_input_snapshot(), before);
-    let input = &h.text_surface(OUTSIDE).unwrap().input;
+    let input = h.text_surface(OUTSIDE).unwrap().input();
     assert_eq!(
         (
-            input.text.clone(),
-            input.anchor,
-            input.caret,
-            input.marked.clone()
+            input.text().to_owned(),
+            input.anchor(),
+            input.caret(),
+            input.marked()
         ),
         outside
     );

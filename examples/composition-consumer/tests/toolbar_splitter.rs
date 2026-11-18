@@ -72,7 +72,10 @@ fn content_line_and_short_rounded_toolbar_mark_share_x_across_themes_and_scales(
                     assert!((mark.rect.center().x - content.rect.center().x).abs() < 0.001);
                     assert!(mark.corner_radii.top_left > 0.);
                     assert_eq!(mark.fill, content.fill);
-                    let (width, color) = tekes_ui_controls::paint::decorative_border(theme, scale);
+                    let (width, color) =
+                        tekes_ui_controls::feedback_view::SurfaceView::decorative_border(
+                            theme, scale,
+                        );
                     assert_eq!(mark.rect.size.width, width);
                     assert_eq!(mark.fill, color);
                 }

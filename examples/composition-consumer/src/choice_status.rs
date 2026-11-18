@@ -3,9 +3,10 @@
 use crate::content_status::{Feedback, Status};
 use std::{cell::Cell, rc::Rc};
 use tekes_ui_controls::{
-    ButtonModel, ButtonSize, ButtonTextRenderer, ControlKey, MenuEvent, Select,
+    ButtonModel, ButtonSize, ButtonTextRenderer, ControlKey, Select,
     composition::*,
     extended::{Axis, Stack},
+    feedback_view::MenuEvent,
     layout::MeasuredChild,
     layout_view::SelectView,
 };

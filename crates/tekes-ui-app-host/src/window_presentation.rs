@@ -534,7 +534,7 @@ impl Host {
                 local.with_host(&mut |host| {
                     marked = host
                         .focused_text()
-                        .is_some_and(|surface| surface.input.marked.is_some())
+                        .is_some_and(|surface| surface.marked().is_some())
                 });
             }
             marked
@@ -3644,8 +3644,8 @@ mod input_regressions {
             .with_host(&mut |content| {
                 assert_eq!(content.focused(), Some(ComponentId(1)));
                 let text = content.focused_text().unwrap();
-                assert_eq!(text.input.marked, Some(0..2));
-                assert_eq!(text.input.text, "かな");
+                assert_eq!(text.marked(), Some(0..2));
+                assert_eq!(text.text(), "かな");
                 content.event(&ContentEvent::Unmark);
             });
         host.layout

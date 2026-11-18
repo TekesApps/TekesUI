@@ -1,7 +1,8 @@
 use super::super::{PageCtx, text_demo::TextDemo};
 use std::collections::{HashMap, HashSet};
 use tekes_ui_controls::{
-    ButtonModel, ButtonSize, ButtonTextAlign, ControlKey, DialogEvent, DialogView, paint,
+    ButtonModel, ButtonSize, ButtonTextAlign, ControlKey,
+    feedback_view::{DialogEvent, DialogView},
 };
 use tekes_ui_platform_macos::{Event, KeyEventKind, MouseButton, MouseEventKind};
 use tekes_ui_scene::{Point, Quad, Rect, Scene};
@@ -34,7 +35,7 @@ pub(super) struct BrandPreview {
     focus: Option<usize>,
     focus_visible: bool,
     dialog: DialogView,
-    dialog_layout: Option<tekes_ui_controls::DialogLayout>,
+    dialog_layout: Option<tekes_ui_controls::feedback_view::DialogLayout>,
     demo_activations: usize,
     window_active: bool,
 }
@@ -253,7 +254,7 @@ impl BrandPreview {
                 self.direction.as_deref() == Some(direction.id),
                 current,
                 clip,
-                paint::ButtonVariant::Quiet,
+                tekes_ui_controls::ButtonVariant::Quiet,
                 density,
             );
         }
@@ -457,7 +458,7 @@ impl BrandPreview {
             false,
             preview,
             clip,
-            paint::ButtonVariant::Primary,
+            tekes_ui_controls::ButtonVariant::Primary,
             density,
         );
         demo_y += action_h + 12.;
@@ -504,7 +505,7 @@ impl BrandPreview {
             false,
             preview,
             clip,
-            paint::ButtonVariant::Quiet,
+            tekes_ui_controls::ButtonVariant::Quiet,
             density,
         );
         demo_y += overlay_h + 8.;
@@ -543,7 +544,7 @@ impl BrandPreview {
                 false,
                 preview,
                 clip,
-                paint::ButtonVariant::Primary,
+                tekes_ui_controls::ButtonVariant::Primary,
                 density,
             );
             self.button(
@@ -555,7 +556,7 @@ impl BrandPreview {
                 false,
                 current,
                 clip,
-                paint::ButtonVariant::Quiet,
+                tekes_ui_controls::ButtonVariant::Quiet,
                 density,
             );
         } else {
@@ -673,7 +674,11 @@ impl BrandPreview {
                 .unwrap_or(ColorRole::PrimaryText.resolve(ctx.theme));
             let bg = palette.color(background).unwrap_or(Rgba::gray(0.0));
             let sample = Rect::new(card.min_x() + 14., y, swatch_w, 30.);
-            let (border_width, border_ink) = paint::decorative_border(palette, ctx.text.scale());
+            let (border_width, border_ink) =
+                tekes_ui_controls::feedback_view::SurfaceView::decorative_border(
+                    palette,
+                    ctx.text.scale(),
+                );
             scene.push_quad(
                 Quad::new(sample, bg)
                     .with_corner_radius(proposal::metric("radius", "radius-control").unwrap())
@@ -707,7 +712,11 @@ impl BrandPreview {
             let seed_color = parse_hex(seed)
                 .unwrap_or_else(|| palette.color("surface-2").unwrap_or(Rgba::gray(0.0)));
             let box_rect = Rect::new(card.min_x() + 14., y, swatch_w, 30.);
-            let (border_width, border_ink) = paint::decorative_border(palette, ctx.text.scale());
+            let (border_width, border_ink) =
+                tekes_ui_controls::feedback_view::SurfaceView::decorative_border(
+                    palette,
+                    ctx.text.scale(),
+                );
             scene.push_quad(
                 Quad::new(box_rect, seed_color)
                     .with_corner_radius(proposal::metric("radius", "radius-control").unwrap())
@@ -738,7 +747,7 @@ impl BrandPreview {
         selected: bool,
         palette: Palette,
         clip: Option<Rect>,
-        variant: paint::ButtonVariant,
+        variant: tekes_ui_controls::ButtonVariant,
         density: usize,
     ) {
         let mut rect = rect;
@@ -770,11 +779,11 @@ impl BrandPreview {
     }
 
     fn card(&self, ctx: &PageCtx<'_>, scene: &mut Scene, rect: Rect, palette: Palette) {
-        paint::surface_kind_at_scale(
+        tekes_ui_controls::feedback_view::SurfaceView::paint_kind_at_scale(
             scene,
             rect,
             palette,
-            paint::SurfaceKind::Panel,
+            tekes_ui_controls::SurfaceKind::Panel,
             ctx.text.scale(),
         );
     }
@@ -1017,7 +1026,7 @@ impl BrandPreview {
     }
 
     #[cfg(test)]
-    pub(super) fn dialog_layout(&self) -> Option<&tekes_ui_controls::DialogLayout> {
+    pub(super) fn dialog_layout(&self) -> Option<&tekes_ui_controls::feedback_view::DialogLayout> {
         self.dialog_layout.as_ref()
     }
 

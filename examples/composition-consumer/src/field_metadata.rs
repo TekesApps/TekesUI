@@ -23,7 +23,7 @@ pub fn build() -> Result<ContentHost, CompositionError> {
     let mut disabled = TextFieldContent::new("Disabled required workspace name", "Preserved");
     disabled.field.required = true;
     disabled.field.help = "Unavailable while the workspace is locked.".into();
-    disabled.surface.input.disabled = true;
+    disabled.surface.input_mut().set_disabled(true);
     ContentHost::new(Content::new(
         ROOT,
         StackContent {

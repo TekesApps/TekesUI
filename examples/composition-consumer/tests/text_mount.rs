@@ -109,12 +109,12 @@ fn reordered_real_editor_keeps_focus_selection_and_live_preedit_in_each_alias() 
                 replacement: None,
             });
             let surface = host.text_surface(id).unwrap();
-            assert_eq!(surface.input.marked, Some(1..3));
+            assert_eq!(surface.marked(), Some(1..3));
             let before = (
-                surface.input.text.clone(),
-                surface.input.selection(),
-                surface.input.marked.clone(),
-                surface.clauses.clone(),
+                surface.text().to_owned(),
+                surface.input().selection(),
+                surface.marked(),
+                surface.clauses().to_vec(),
             );
             let identity = host
                 .get(id)
@@ -127,10 +127,10 @@ fn reordered_real_editor_keeps_focus_selection_and_live_preedit_in_each_alias() 
             let after = host.text_surface(id).unwrap();
             assert_eq!(
                 (
-                    after.input.text.clone(),
-                    after.input.selection(),
-                    after.input.marked.clone(),
-                    after.clauses.clone()
+                    after.text().to_owned(),
+                    after.input().selection(),
+                    after.marked(),
+                    after.clauses().to_vec()
                 ),
                 before
             );
@@ -145,7 +145,7 @@ fn reordered_real_editor_keeps_focus_selection_and_live_preedit_in_each_alias() 
                 text: "你".into(),
                 replacement: None,
             });
-            assert!(host.text_surface(id).unwrap().input.text.contains("你"));
+            assert!(host.text_surface(id).unwrap().text().contains("你"));
         }
     }
 }
@@ -155,7 +155,7 @@ fn unmounted_composing_editor_finalizes_visible_draft_and_retains_undo_on_owned_
         let mut host = build();
         render(&mut host, Theme::LIGHT);
         assert!(host.focus(Some(id), true));
-        let original = host.text_surface(id).unwrap().input.text.clone();
+        let original = host.text_surface(id).unwrap().text().to_owned();
         host.accessibility_action(id, None, AccessibilityAction::SetSelection(1..3));
         host.event(&ContentEvent::Preedit {
             text: "ni".into(),
@@ -163,7 +163,7 @@ fn unmounted_composing_editor_finalizes_visible_draft_and_retains_undo_on_owned_
             clauses: std::iter::once(0..2).collect(),
             replacement: None,
         });
-        let visible = host.text_surface(id).unwrap().input.text.clone();
+        let visible = host.text_surface(id).unwrap().text().to_owned();
         let identity = host
             .get(id)
             .unwrap()
@@ -173,9 +173,9 @@ fn unmounted_composing_editor_finalizes_visible_draft_and_retains_undo_on_owned_
         assert_eq!(host.focused(), None);
         let field = detached.component::<TextFieldContent>().unwrap();
         assert_eq!(field as *const TextFieldContent, identity);
-        assert_eq!(field.surface.input.text, visible);
-        assert!(field.surface.input.marked.is_none());
-        assert!(field.surface.clauses.is_empty());
+        assert_eq!(field.surface.text(), visible);
+        assert!(field.surface.marked().is_none());
+        assert!(field.surface.clauses().is_empty());
         assert!(
             !host
                 .accessibility_action(id, None, AccessibilityAction::SetValue("late".into()))
@@ -199,12 +199,12 @@ fn unmounted_composing_editor_finalizes_visible_draft_and_retains_undo_on_owned_
                 .unwrap() as *const TextFieldContent,
             identity
         );
-        assert_eq!(host.text_surface(id).unwrap().input.text, visible);
+        assert_eq!(host.text_surface(id).unwrap().text(), visible);
         assert!(host.focus(Some(id), true));
         host.event(&ContentEvent::TextCommand(
             tekes_ui_controls::TextEditCommand::Undo,
         ));
-        assert_eq!(host.text_surface(id).unwrap().input.text, original);
+        assert_eq!(host.text_surface(id).unwrap().text(), original);
     }
 }
 #[test]
@@ -218,28 +218,28 @@ fn removing_captured_editable_or_readonly_real_editor_cancels_gesture_without_lo
                 .component_mut::<TextFieldContent>()
                 .unwrap()
                 .surface
-                .input
-                .read_only = readonly;
+                .input_mut()
+                .set_read_only(readonly);
             render(&mut host, Theme::LIGHT);
             let s = host.text_surface(id).unwrap();
-            let value = s.input.text.clone();
-            let p = Point::new(s.inner.min_x() + 8., s.inner.min_y() + 8.);
+            let value = s.text().to_owned();
+            let p = Point::new(s.inner().min_x() + 8., s.inner().min_y() + 8.);
             host.event(&ContentEvent::PointerDown(p));
             assert!(host.text_surface(id).unwrap().pointer_state(None).pressed);
-            let selection = host.text_surface(id).unwrap().input.selection();
+            let selection = host.text_surface(id).unwrap().input().selection();
             let detached = host.remove(id).unwrap();
             let field = detached.component::<TextFieldContent>().unwrap();
             assert!(!field.surface.pointer_state(None).pressed);
-            assert_eq!(field.surface.input.text, value);
-            assert_eq!(field.surface.input.selection(), selection);
+            assert_eq!(field.surface.text(), value);
+            assert_eq!(field.surface.input().selection(), selection);
             assert_eq!(host.focused(), None);
             assert!(!host.event(&ContentEvent::PointerUp(p)).activated);
             host.insert(ROOT, detached).unwrap();
             render(&mut host, Theme::LIGHT);
             let s = host.text_surface(id).unwrap();
-            assert_eq!(s.input.text, value);
-            assert_eq!(s.input.selection(), selection);
-            assert_eq!(s.input.read_only, readonly);
+            assert_eq!(s.text(), value);
+            assert_eq!(s.input().selection(), selection);
+            assert_eq!(s.input().is_read_only(), readonly);
             assert!(!s.pointer_state(None).pressed);
         }
     }

@@ -138,8 +138,8 @@ fn stack(children: Vec<Content>) -> StackContent {
 #[derive(Debug)]
 struct UnsupportedPreparedEffects;
 impl Component for UnsupportedPreparedEffects {
-    fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
-        TableTransactionCompatibility::StableHooks
+    fn has_stable_hooks(&self) -> bool {
+        true
     }
     fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
         CurveSubtreeCapability::Recursive
@@ -194,10 +194,7 @@ fn split_view_rejects_unsupported_nested_panel_descendant_and_returns_full_input
 
     let rejected =
         SplitViewContent::try_new(input).expect_err("unknown descendant is not authorized");
-    assert_eq!(
-        rejected.error,
-        SplitViewError::Effects(PreparedEffectsError::Unavailable)
-    );
+    assert_eq!(rejected.error, SplitViewError::UnsupportedEffects);
     assert_eq!(rejected.input.slots.leading, expected_slots.leading);
     assert_eq!(rejected.input.slots.trailing, expected_slots.trailing);
     assert_eq!(rejected.input.slots.divider, expected_slots.divider);
@@ -348,8 +345,10 @@ fn unknown_child_refused_before_lifecycle_or_layout_and_insert_preserves_origina
 #[test]
 fn real_original_editor_marked_selection_survives_full_clip() {
     let mut composer = TextFieldContent::new("Composer", "kept 😀 draft");
-    composer.surface.input.multiline = true;
-    composer.surface.presentation = tekes_ui_controls::TextSurfacePresentation::Content;
+    composer.surface.set_multiline(true);
+    composer
+        .surface
+        .set_presentation(tekes_ui_controls::TextSurfacePresentation::Content);
     composer.viewport = TextViewport::Fill;
     composer.show_metadata = false;
 
@@ -669,8 +668,10 @@ fn one_original_tree_keeps_composer_and_reading_owners_through_streaming_and_rev
     let last = ComponentId(8279);
     let incoming = ComponentId(8280);
     let mut composer = TextFieldContent::new("Composer", "one retained 😀 draft");
-    composer.surface.input.multiline = true;
-    composer.surface.presentation = TextSurfacePresentation::Content;
+    composer.surface.set_multiline(true);
+    composer
+        .surface
+        .set_presentation(TextSurfacePresentation::Content);
     composer.show_metadata = false;
     // Synthetic consumer allocations, not product defaults or design token replacements.
     composer.viewport = TextViewport::Fixed(40.);
@@ -915,10 +916,7 @@ fn visible_required_witness_survives_clamped_scroll_margins_without_curve() {
     let witness = Rect::new(target.min_x() + 20., target.min_y() + 50., 10., 30.);
     assert_eq!(target.intersection(&witness), Some(witness));
     assert!(frame.intersection(&witness).is_some());
-    *space.borrow_mut() = RequiredFocusSpace::Sufficient {
-        witness,
-        evidence: RequiredFocusEvidence::new(),
-    };
+    *space.borrow_mut() = RequiredFocusSpace::Sufficient { witness };
     let plan = host
         .plan_host_reveal(
             target_id,
@@ -975,10 +973,7 @@ fn impossible_curved_scroll_witness_leaves_focus_and_offset_unchanged() {
     assert_eq!(target.intersection(&witness), Some(witness));
     assert_eq!(shape.contains([f64::from(witness.min_x()), 0.]), Ok(false));
     assert_eq!(shape.contains([f64::from(witness.max_x()), 0.]), Ok(false));
-    *space.borrow_mut() = RequiredFocusSpace::Sufficient {
-        witness,
-        evidence: RequiredFocusEvidence::new(),
-    };
+    *space.borrow_mut() = RequiredFocusSpace::Sufficient { witness };
     let before = host
         .get(scroll_id)
         .unwrap()
@@ -1012,10 +1007,7 @@ fn target_focus_evidence_remains_independent_from_certified_panel_boundary() {
     render(&mut host, &mut text, Rect::new(0., 0., 120., 100.));
     let target = host.get(CHILD).unwrap().frame();
     let witness = Rect::new(target.min_x() + 40., target.min_y() + 25., 12., 10.);
-    *space.borrow_mut() = RequiredFocusSpace::Sufficient {
-        witness,
-        evidence: RequiredFocusEvidence::new(),
-    };
+    *space.borrow_mut() = RequiredFocusSpace::Sufficient { witness };
     let plan = host.plan_host_reveal(
         CHILD,
         ScrollRevealOptions::default(),
@@ -1072,10 +1064,7 @@ fn rounded_panel_corner_rejects_required_witness_inside_bbox_but_outside_curve()
         outer.intersection(&witness).is_some(),
         "witness is in the rectangular bbox"
     );
-    *space.borrow_mut() = RequiredFocusSpace::Sufficient {
-        witness,
-        evidence: RequiredFocusEvidence::new(),
-    };
+    *space.borrow_mut() = RequiredFocusSpace::Sufficient { witness };
     assert_eq!(
         host.plan_host_reveal(
             CHILD,
@@ -1089,17 +1078,14 @@ fn rounded_panel_corner_rejects_required_witness_inside_bbox_but_outside_curve()
 }
 
 #[test]
-fn changed_target_focus_evidence_rejects_plan_before_focus_or_scroll_mutation() {
+fn changed_target_focus_witness_rejects_plan_before_focus_or_scroll_mutation() {
     use tekes_ui_controls::ScrollRevealOptions;
     let (mut host, space, focused) = focus_space_host(RequiredFocusSpace::Unmeasured);
     let mut text = Text::new(true);
     render(&mut host, &mut text, Rect::new(0., 0., 120., 100.));
     let target = host.get(CHILD).unwrap().frame();
     let witness = Rect::new(target.min_x() + 40., target.min_y() + 25., 12., 10.);
-    *space.borrow_mut() = RequiredFocusSpace::Sufficient {
-        witness,
-        evidence: RequiredFocusEvidence::new(),
-    };
+    *space.borrow_mut() = RequiredFocusSpace::Sufficient { witness };
     let plan = host
         .plan_host_reveal(
             CHILD,
@@ -1109,8 +1095,7 @@ fn changed_target_focus_evidence_rejects_plan_before_focus_or_scroll_mutation() 
         )
         .unwrap();
     *space.borrow_mut() = RequiredFocusSpace::Sufficient {
-        witness,
-        evidence: RequiredFocusEvidence::new(),
+        witness: witness.offset(1., 0.),
     };
     assert_eq!(
         host.commit_host_reveal(plan),
@@ -1464,7 +1449,11 @@ fn form_focus_complete_ring_uses_actual_scale_once_with_and_without_scroll() {
             for route in 0..4 {
                 let (mut host, mut text) = form_focus_host(scale, scrolling, false);
                 let field = host.get(FIELD).unwrap();
-                let outer = field.component::<TextFieldContent>().unwrap().surface.outer;
+                let outer = field
+                    .component::<TextFieldContent>()
+                    .unwrap()
+                    .surface
+                    .outer();
                 let allocation = field.frame();
                 let bounds =
                     tekes_ui_controls::extended::ControlFrame::new(outer, None).focus_bounds(scale);
@@ -1519,8 +1508,8 @@ fn form_focus_complete_ring_uses_actual_scale_once_with_and_without_scroll() {
                     .unwrap()
                     .component::<TextFieldContent>()
                     .unwrap();
-                assert_eq!(field.surface.input.text, "retained draft");
-                assert!(field.surface.input.marked.is_none());
+                assert_eq!(field.surface.text(), "retained draft");
+                assert!(field.surface.marked().is_none());
             }
         }
     }
@@ -1539,7 +1528,7 @@ fn form_focus_refuses_slot_clip_and_ring_only_clip_across_routes() {
                         .component::<TextFieldContent>()
                         .unwrap()
                         .surface
-                        .outer;
+                        .outer();
                     let clip = if ring_only {
                         // The complete input viewport and painted ring fit,
                         // but the required backing-pixel guard does not.
@@ -1561,7 +1550,7 @@ fn form_focus_refuses_slot_clip_and_ring_only_clip_across_routes() {
                         .component::<TextFieldContent>()
                         .unwrap()
                         .surface
-                        .input
+                        .input()
                         .selection();
                     let offset = scrolling.then(|| {
                         host.get(CHILD)
@@ -1587,9 +1576,9 @@ fn form_focus_refuses_slot_clip_and_ring_only_clip_across_routes() {
                         .unwrap()
                         .component::<TextFieldContent>()
                         .unwrap();
-                    assert_eq!(field.surface.input.text, "retained draft");
-                    assert_eq!(field.surface.input.selection(), before);
-                    assert!(field.surface.input.marked.is_none());
+                    assert_eq!(field.surface.text(), "retained draft");
+                    assert_eq!(field.surface.input().selection(), before);
+                    assert!(field.surface.marked().is_none());
                     if let Some(offset) = offset {
                         assert_eq!(
                             host.get(CHILD)
@@ -1617,7 +1606,7 @@ fn original_full_width_zero_padding_form_remains_infeasible_for_complete_ring() 
             .component::<TextFieldContent>()
             .unwrap()
             .surface
-            .outer;
+            .outer();
         let shape = host
             .get(ROOT)
             .unwrap()
@@ -1653,7 +1642,11 @@ fn empty_fill_field_does_not_gain_focus_space_from_ring_expansion() {
         render(&mut host, &mut text, Rect::new(0., 0., 100., 100.));
         let field = host.get(FIELD).unwrap();
         assert!(!field.frame().is_empty());
-        let outer = field.component::<TextFieldContent>().unwrap().surface.outer;
+        let outer = field
+            .component::<TextFieldContent>()
+            .unwrap()
+            .surface
+            .outer();
         assert!(outer.is_empty());
         let response = request_form_focus(
             &mut host,

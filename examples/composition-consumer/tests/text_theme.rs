@@ -19,7 +19,7 @@ fn assert_readonly_scene(scene: &Scene, surface: &TextSurface, palette: Palette,
         .enumerate()
         .rev()
         .find_map(|(i, p)| match p {
-            Primitive::Quad(q) if q.rect == surface.outer => Some((i, *q)),
+            Primitive::Quad(q) if q.rect == surface.outer() => Some((i, *q)),
             _ => None,
         })
         .expect("actual readonly TextSurface own Field ground");
@@ -40,10 +40,10 @@ fn assert_readonly_scene(scene: &Scene, surface: &TextSurface, palette: Palette,
         .filter_map(|p| match p {
             Primitive::Quad(q)
                 if q.fill.a > 0.
-                    && q.rect.min_x() >= surface.inner.min_x()
-                    && q.rect.max_x() <= surface.inner.max_x()
-                    && q.rect.min_y() >= surface.inner.min_y()
-                    && q.rect.max_y() <= surface.inner.max_y() =>
+                    && q.rect.min_x() >= surface.inner().min_x()
+                    && q.rect.max_x() <= surface.inner().max_x()
+                    && q.rect.min_y() >= surface.inner().min_y()
+                    && q.rect.max_y() <= surface.inner().max_y() =>
             {
                 Some(*q)
             }
@@ -52,7 +52,7 @@ fn assert_readonly_scene(scene: &Scene, surface: &TextSurface, palette: Palette,
         .collect();
     assert_eq!(
         selections.len(),
-        surface.selection_rects(surface.input.selection()).len()
+        surface.selection_rects(surface.input().selection()).len()
     );
     assert!(!selections.is_empty());
     for q in &selections {
@@ -74,7 +74,7 @@ fn assert_readonly_scene(scene: &Scene, surface: &TextSurface, palette: Palette,
                 if run.glyphs.iter().any(|g| {
                     let a = g.glyph;
                     surface
-                        .inner
+                        .inner()
                         .intersection(&Rect::new(
                             g.origin.x + a.left as f32 / backing,
                             g.origin.y + a.top as f32 / backing,
@@ -117,7 +117,7 @@ fn assert_readonly_scene(scene: &Scene, surface: &TextSurface, palette: Palette,
 }
 
 fn render(surface: &mut TextSurface, text: &mut coretext::Text, theme: Theme, width: f32) -> Scene {
-    let role = surface.role;
+    let role = surface.role();
     let backing = text.backing;
     let scale = text.scale;
     surface.layout_with(
@@ -138,47 +138,47 @@ fn text_surface_retained_themes_preserve_readonly_source_selection_copy_and_real
         .collect::<String>();
     let mut surface = TextSurface::new(&source, true, true);
     let mut text = coretext::Text::new(1.);
-    assert_eq!(surface.presentation, TextSurfacePresentation::Field);
-    assert_eq!(surface.role, proposal::TextRole::ComposerBody);
+    assert_eq!(surface.presentation(), TextSurfacePresentation::Field);
+    assert_eq!(surface.role(), proposal::TextRole::ComposerBody);
     render(&mut surface, &mut text, Theme::LIGHT, 420.);
-    assert!(surface.input.select_range(0..4));
+    assert!(surface.input_mut().select_range(0..4));
     let mut initial = None;
     for theme in Theme::ALL {
         let scene = render(&mut surface, &mut text, theme, 420.);
         let palette: Palette = theme.into();
-        assert_eq!(surface.input.text, source);
-        assert!(surface.input.read_only);
-        assert_eq!(surface.input.selection(), 0..4);
-        assert_eq!(surface.input.selected_text(), "Read");
+        assert_eq!(surface.text(), source);
+        assert!(surface.input().is_read_only());
+        assert_eq!(surface.input().selection(), 0..4);
+        assert_eq!(surface.input().selected_text(), "Read");
         if let Some(before) = initial {
-            assert_eq!((surface.outer, surface.inner), before);
+            assert_eq!((surface.outer(), surface.inner()), before);
         } else {
-            initial = Some((surface.outer, surface.inner));
+            initial = Some((surface.outer(), surface.inner()));
         }
         assert_readonly_scene(&scene, &surface, palette, text.backing);
-        assert!(scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q)if q.rect == surface.outer && q.border_width == proposal::metric("stroke", "c-focus-width").unwrap()
+        assert!(scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q)if q.rect == surface.outer() && q.border_width == proposal::metric("stroke", "c-focus-width").unwrap()
             && q.border_color==palette.color("border-focused").unwrap())));
     }
-    let before = surface.paragraph.as_ref().unwrap().height;
+    let before = surface.paragraph().unwrap().height;
     text.scale = 1.5;
     let scene = render(&mut surface, &mut text, Theme::DARK_INCREASED, 260.);
-    assert!(surface.paragraph.as_ref().unwrap().height > before);
-    assert_eq!(surface.role, proposal::TextRole::ComposerBody);
-    assert_eq!(surface.type_scale, 1.5);
-    assert_eq!(surface.input.selection(), 0..4);
-    assert_eq!(surface.input.selected_text(), "Read");
+    assert!(surface.paragraph().unwrap().height > before);
+    assert_eq!(surface.role(), proposal::TextRole::ComposerBody);
+    assert_eq!(surface.type_scale(), 1.5);
+    assert_eq!(surface.input().selection(), 0..4);
+    assert_eq!(surface.input().selected_text(), "Read");
     assert_readonly_scene(&scene, &surface, Theme::DARK_INCREASED.into(), text.backing);
-    assert!(!surface.input.insert("forbidden", None));
+    assert!(!surface.input_mut().insert("forbidden", None));
     assert_eq!(
         surface.command(tekes_ui_controls::TextEditCommand::DeleteBackward),
         Some(false)
     );
-    assert_eq!(surface.input.text, source);
-    assert!(surface.scroll.scroll_by(0., 100.));
-    assert!(surface.scroll.offset.y > 0.);
+    assert_eq!(surface.text(), source);
+    assert!(surface.scroll_mut().scroll_by(0., 100.));
+    assert!(surface.scroll().offset.y > 0.);
     surface.cancel_interaction();
-    assert_eq!(surface.input.selected_text(), "Read");
-    assert_eq!(surface.input.text, source);
+    assert_eq!(surface.input().selected_text(), "Read");
+    assert_eq!(surface.text(), source);
 }
 #[test]
 fn text_content_retained_themes_keep_semantic_text_role_and_actual_canvas_ink() {

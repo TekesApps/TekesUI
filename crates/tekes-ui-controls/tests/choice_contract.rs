@@ -1,7 +1,8 @@
 //! Current model state wins over a menu geometry retained by an earlier frame.
 use tekes_ui_controls::{
-    ButtonTextAlign, ButtonTextRenderer, ControlKey, MenuEvent,
+    ButtonTextAlign, ButtonTextRenderer, ControlKey,
     extended::{ComboBox, CommandPalette},
+    feedback_view::MenuEvent,
     layout_view::{ComboBoxView, CommandPaletteView},
 };
 use tekes_ui_scene::{Point, Rect, Scene, Size};

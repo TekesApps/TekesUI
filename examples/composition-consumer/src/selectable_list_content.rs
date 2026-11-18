@@ -36,8 +36,8 @@ pub struct ConsumerDecoration {
     pub body: StackContent,
 }
 impl Component for ConsumerDecoration {
-    fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
-        TableTransactionCompatibility::StableHooks
+    fn has_stable_hooks(&self) -> bool {
+        true
     }
     fn children(&self) -> &[Content] {
         &self.body.children

@@ -1,5 +1,9 @@
 #![cfg(target_os = "macos")]
-use tekes_ui_controls::{ControlKey, ControlState, SliderLayout, SliderView, extended::Slider};
+use tekes_ui_controls::{
+    ControlKey, ControlState,
+    extended::Slider,
+    layout_view::{SliderLayout, SliderView},
+};
 use tekes_ui_scene::{Point, Primitive, Rect, Scene};
 use tekes_ui_tokens::{Palette, Rgba, Theme};
 fn assert_slider(scene: &Scene, layout: SliderLayout, palette: Palette, state: ControlState) {

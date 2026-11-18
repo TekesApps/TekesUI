@@ -103,11 +103,10 @@ impl StoryTextHost {
         }
     }
     fn original_input(&self) -> &tekes_ui_controls::TextInput {
-        &self
-            .host
+        self.host
             .text_surface(self.id)
             .expect("retained original text owner")
-            .input
+            .input()
     }
     fn field(&self) -> &SearchFieldContent {
         self.host
@@ -124,7 +123,7 @@ impl StoryTextHost {
             .unwrap()
     }
     pub(super) fn query(&self) -> &str {
-        &self.original_input().text
+        self.original_input().text()
     }
     pub(super) fn focus_field(&mut self) {
         self.host.focus(Some(self.id), true);
@@ -143,7 +142,7 @@ impl StoryTextHost {
         self.host
             .text_surface(self.id)
             .filter(|_| index == 0)
-            .map(|surface| surface.outer)
+            .map(|surface| surface.outer())
     }
     pub(super) fn visible_frame(&self) -> Option<Rect> {
         self.frame?
@@ -170,11 +169,14 @@ impl StoryTextHost {
         if self.is_combo() {
             self.combo_mut().set_disabled(disabled);
         } else if self.is_search() {
-            if self.field().input().disabled != disabled {
+            if self.field().input().is_disabled() != disabled {
                 self.field_mut().set_availability(false, disabled);
             }
         } else {
-            self.text_field_mut().surface.input.disabled = disabled;
+            self.text_field_mut()
+                .surface
+                .input_mut()
+                .set_disabled(disabled);
             if disabled {
                 self.blur();
             }
@@ -189,7 +191,7 @@ impl StoryTextHost {
         } else {
             let field = self.text_field_mut();
             field.field.error = message;
-            field.surface.error = error;
+            field.surface.set_error(error);
         }
     }
     pub(super) fn set_value(&mut self, value: &str) {
@@ -251,7 +253,7 @@ impl StoryTextHost {
         } else {
             self.text_field_mut()
                 .surface
-                .scroll
+                .scroll_mut()
                 .set_reduced_motion(reduced)
         }
     }
@@ -263,14 +265,14 @@ impl StoryTextHost {
                     .host
                     .text_surface(self.id)
                     .unwrap()
-                    .scroll
+                    .scroll()
                     .needs_animation())
     }
     pub(super) fn animate(&mut self, dt: f32) -> bool {
         if self.is_search() || self.is_combo() {
             self.needs_animation()
         } else {
-            self.text_field_mut().surface.scroll.tick(dt)
+            self.text_field_mut().surface.scroll_mut().tick(dt)
         }
     }
     pub(super) fn refresh(&mut self, text: &mut TextEngine) {
@@ -298,7 +300,7 @@ impl StoryTextHost {
         if !self.is_search() {
             let previous = text.replace_fixture_surface_cache(self.fixture);
             let surface = &self.text_field_mut().surface;
-            let role = surface.role;
+            let role = surface.role();
             let height = surface.measured_outer_height(
                 650.,
                 text.scale(),
@@ -355,12 +357,12 @@ impl StoryTextHost {
         // Retain the existing empty/unfocused Gallery fixture copy, outside the editor value.
         if !self.is_search() && !self.is_combo() && self.query().is_empty() && !self.focused() {
             let surface = self.host.text_surface(self.id).unwrap();
-            if let Some(visible) = surface.inner.intersection(&clip) {
+            if let Some(visible) = surface.inner().intersection(&clip) {
                 scene.push_clip(visible);
                 ctx.text.proposal_label_in(
                     scene,
                     ctx.theme,
-                    surface.inner,
+                    surface.inner(),
                     "按名称搜索…",
                     tekes_ui_tokens::proposal::TextRole::UiBody,
                     tekes_ui_tokens::proposal::render_color("secondary-text", ctx.theme)
@@ -526,14 +528,18 @@ impl StoryTextHost {
     #[cfg(test)]
     pub(super) fn scroll_metrics(&self) -> (f32, f32) {
         let surface = self.host.text_surface(self.id).unwrap();
-        (surface.scroll.limit().y, surface.inner.size.height)
+        (surface.scroll().limit().y, surface.inner().size.height)
     }
     #[cfg(test)]
     pub(super) fn scroll_to(&mut self, offset: f32) {
-        let surface = &mut self.text_field_mut().surface;
-        surface
-            .scroll
-            .scroll_by(0., offset - surface.scroll.offset.y);
+        let offset_y = {
+            let surface = &self.text_field_mut().surface;
+            surface.scroll().offset.y
+        };
+        self.text_field_mut()
+            .surface
+            .scroll_mut()
+            .scroll_by(0., offset - offset_y);
     }
     pub(super) fn drain_logs(&mut self) -> Vec<String> {
         let mut logs = Vec::new();

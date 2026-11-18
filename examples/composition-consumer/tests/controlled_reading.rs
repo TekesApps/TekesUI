@@ -46,7 +46,7 @@ fn snapshot(s: &Scenario) -> String {
 fn setup() -> (Scenario, tekes_ui_controls::ReadingDocumentVersion) {
     let mut s = Scenario::reading_document().unwrap();
     let surface = editor_mut(&mut s);
-    let b = surface.input.external_baseline();
+    let b = surface.input().external_baseline();
     surface.apply_external_value(&b, &draft(1, "local😀"), S::Reset, U::Reset);
     let v = s.attach_reading("transcript-A", 1).unwrap();
     s.host.focus(Some(COMPOSER), true);
@@ -56,15 +56,15 @@ fn setup() -> (Scenario, tekes_ui_controls::ReadingDocumentVersion) {
 fn invalid_editor_preflight_never_advances_reading_or_mutates_transcript() {
     for failure in ["stale", "composition", "revision", "foreign"] {
         let (mut s, v) = setup();
-        let mut baseline = editor(&s).input.external_baseline();
+        let mut baseline = editor(&s).input().external_baseline();
         let mut next = draft(2, "remote");
         let conflict = match failure {
             "stale" => {
-                editor_mut(&mut s).input.insert("!", None);
+                editor_mut(&mut s).input_mut().insert("!", None);
                 C::StaleBaseline
             }
             "composition" => {
-                editor_mut(&mut s).input.preedit("ni", 2..2, None);
+                editor_mut(&mut s).input_mut().preedit("ni", 2..2, None);
                 C::Composition
             }
             "revision" => {
@@ -72,7 +72,9 @@ fn invalid_editor_preflight_never_advances_reading_or_mutates_transcript() {
                 C::Revision
             }
             _ => {
-                baseline = TextSurface::new("", true, false).input.external_baseline();
+                baseline = TextSurface::new("", true, false)
+                    .input()
+                    .external_baseline();
                 C::ForeignEditor
             }
         };
@@ -97,7 +99,7 @@ fn invalid_editor_preflight_never_advances_reading_or_mutates_transcript() {
 fn reading_rejection_or_structural_failure_precedes_any_editor_apply() {
     let (mut s, old) = setup();
     let current = s.insert_versioned(&old, false).unwrap();
-    let b = editor(&s).input.external_baseline();
+    let b = editor(&s).input().external_baseline();
     let before = snapshot(&s);
     assert!(matches!(
         publish(&mut s, &old, &b, &draft(2, "remote"), ComponentId(18000)),
@@ -113,8 +115,8 @@ fn reading_rejection_or_structural_failure_precedes_any_editor_apply() {
 #[test]
 fn complete_public_consumer_retains_original_editor_focus_selection_and_undo() {
     let (mut s, v) = setup();
-    editor_mut(&mut s).input.select_range(5..7);
-    let baseline = editor(&s).input.external_baseline();
+    editor_mut(&mut s).input_mut().select_range(5..7);
+    let baseline = editor(&s).input().external_baseline();
     let v2 = publish(
         &mut s,
         &v,
@@ -124,28 +126,28 @@ fn complete_public_consumer_retains_original_editor_focus_selection_and_undo() {
     )
     .unwrap();
     assert_eq!(v2.revision(), 2);
-    assert_eq!(editor(&s).input.text, "新local😀");
-    assert_eq!(editor(&s).input.selection(), 6..8);
+    assert_eq!(editor(&s).text(), "新local😀");
+    assert_eq!(editor(&s).input().selection(), 6..8);
     assert_eq!(s.host.focused(), Some(COMPOSER));
     assert!(s.item_keys().contains(&ComponentId(18000)));
-    assert!(editor_mut(&mut s).input.undo());
-    assert_eq!(editor(&s).input.text, "local😀");
-    assert!(editor_mut(&mut s).input.redo());
-    assert_eq!(editor(&s).input.text, "新local😀");
-    let before = editor(&s).input.external_baseline();
+    assert!(editor_mut(&mut s).input_mut().undo());
+    assert_eq!(editor(&s).text(), "local😀");
+    assert!(editor_mut(&mut s).input_mut().redo());
+    assert_eq!(editor(&s).text(), "新local😀");
+    let before = editor(&s).input().external_baseline();
     assert_ne!(
         editor(&s).check_external_value(&baseline, &draft(3, "next"), S::Reset, U::Reset),
         tekes_ui_controls::ExternalValueResult::Conflict(C::ForeignEditor)
     );
-    assert_eq!(editor(&s).input.external_baseline(), before);
+    assert_eq!(editor(&s).input().external_baseline(), before);
 }
 
 #[test]
 fn duplicate_ack_can_append_transcript_without_disturbing_local_preedit() {
     let (mut s, version) = setup();
-    let baseline = editor(&s).input.external_baseline();
-    editor_mut(&mut s).input.preedit("ni", 2..2, None);
-    editor_mut(&mut s).clauses = std::iter::once(0..2).collect();
+    let baseline = editor(&s).input().external_baseline();
+    editor_mut(&mut s).input_mut().preedit("ni", 2..2, None);
+    editor_mut(&mut s).set_clauses(std::iter::once(0..2).collect());
     let before = format!("{:?}", editor(&s));
     let updated = publish(
         &mut s,

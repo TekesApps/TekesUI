@@ -6,7 +6,6 @@ use tekes_ui_controls::{
     composition::*,
     extended::{Axis, Pane, SplitView, Stack},
     layout::MeasuredChild,
-    paint,
 };
 use tekes_ui_scene::{Rect, Scene, Size};
 use tekes_ui_tokens::proposal::TextRole;
@@ -15,19 +14,11 @@ pub(super) const VARIANTS: [f32; 3] = [0.3, 0.5, 0.7];
 #[derive(Debug)]
 struct PaneBody(&'static str);
 impl Component for PaneBody {
-    fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
-        TableTransactionCompatibility::StableHooks
+    fn has_stable_hooks(&self) -> bool {
+        true
     }
-    // Immutable leaf: children access and lifecycle/presentation hooks have no
-    // external effects, allocations, or callbacks to prepare.
-    fn prepared_effects_work(&self, calls: usize) -> Result<usize, PreparedEffectsError> {
-        PreparedEffects::local_work(calls)
-    }
-    fn prepare_effects(
-        &self,
-        hooks: &[PreparedHook],
-    ) -> Result<PreparedEffects, PreparedEffectsError> {
-        Ok(PreparedEffects::local(self, hooks))
+    fn supports_prepared_lifecycle(&self) -> bool {
+        true
     }
     fn measure(&mut self, _: &mut dyn ButtonTextRenderer, a: Size) -> MeasuredChild {
         MeasuredChild::new(a)
@@ -41,7 +32,13 @@ impl Component for PaneBody {
         theme: ContentTheme,
     ) {
         s.push_clip(c);
-        paint::surface_at_scale(s, f, theme.palette, true, t.backing_scale());
+        tekes_ui_controls::feedback_view::SurfaceView::paint_at_scale(
+            s,
+            f,
+            theme.palette,
+            true,
+            t.backing_scale(),
+        );
         t.draw(
             s,
             self.0,
@@ -72,14 +69,11 @@ impl Component for Choices {
     fn host_reveal_passthrough(&self) -> bool {
         self.arranged
     }
-    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
-        ActionTransactionCompatibility::StableHooks
+    fn has_stable_hooks(&self) -> bool {
+        true
     }
-    fn prepared_effects_work(&self, n: usize) -> Result<usize, PreparedEffectsError> {
-        PreparedEffects::local_work(n)
-    }
-    fn prepare_effects(&self, h: &[PreparedHook]) -> Result<PreparedEffects, PreparedEffectsError> {
-        Ok(PreparedEffects::local(self, h))
+    fn supports_prepared_lifecycle(&self) -> bool {
+        true
     }
     fn measure(&mut self, t: &mut dyn ButtonTextRenderer, a: Size) -> MeasuredChild {
         self.arranged = false;
@@ -101,8 +95,11 @@ struct Viewport {
     arranged: bool,
 }
 impl Component for Viewport {
-    fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
-        TableTransactionCompatibility::StableHooks
+    fn has_stable_hooks(&self) -> bool {
+        true
+    }
+    fn supports_prepared_lifecycle(&self) -> bool {
+        true
     }
     fn children(&self) -> &[Content] {
         &self.children
@@ -115,15 +112,6 @@ impl Component for Viewport {
     }
     fn host_reveal_passthrough(&self) -> bool {
         self.arranged
-    }
-    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
-        ActionTransactionCompatibility::StableHooks
-    }
-    fn prepared_effects_work(&self, n: usize) -> Result<usize, PreparedEffectsError> {
-        PreparedEffects::local_work(n)
-    }
-    fn prepare_effects(&self, h: &[PreparedHook]) -> Result<PreparedEffects, PreparedEffectsError> {
-        Ok(PreparedEffects::local(self, h))
     }
     fn lifecycle(&mut self, _: Lifecycle) {
         self.arranged = false;
@@ -196,7 +184,7 @@ pub(super) fn playground(state: &StoryState) -> Vec<Content> {
         trailing: Content::new(ComponentId(123012), PaneBody("Detail pane")),
         // Two immutable leaves plus the three owned slots. The public budget
         // measures preparation work, not the number of nodes.
-        budget: 5 * 5 * 512 + 2 * PreparedEffects::local_work(16).unwrap(),
+        budget: 5 * 5 * 512 + 2 * (16 * 256 + 512),
     })
     .expect("original finite split panes");
     let constrained = Rc::new(Cell::new(false));
@@ -308,9 +296,21 @@ impl Component for Variant {
     ) {
         let (leading, divider, trailing) = self.0.layout(f, Axis::Horizontal);
         s.push_clip(c);
-        paint::surface_at_scale(s, leading, theme.palette, true, t.backing_scale());
+        tekes_ui_controls::feedback_view::SurfaceView::paint_at_scale(
+            s,
+            leading,
+            theme.palette,
+            true,
+            t.backing_scale(),
+        );
         tekes_ui_controls::extended::separator(s, divider, theme.palette, Axis::Vertical);
-        paint::surface_at_scale(s, trailing, theme.palette, true, t.backing_scale());
+        tekes_ui_controls::feedback_view::SurfaceView::paint_at_scale(
+            s,
+            trailing,
+            theme.palette,
+            true,
+            t.backing_scale(),
+        );
         s.pop_clip();
     }
 }

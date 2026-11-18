@@ -250,7 +250,7 @@ fn hover_and_help_updates_keep_composer_preedit_selection_key_epoch_and_scroll()
         clauses: vec![],
         replacement: None,
     });
-    let before = h.focused_text().unwrap().input.external_baseline();
+    let before = h.focused_text().unwrap().input().external_baseline();
     let focus = h.capture_focus();
     let offset = h
         .get(SCROLL)
@@ -267,7 +267,10 @@ fn hover_and_help_updates_keep_composer_preedit_selection_key_epoch_and_scroll()
     t.now += 500;
     draw(&mut h, &mut t);
     assert_eq!(h.capture_focus(), focus);
-    assert_eq!(h.focused_text().unwrap().input.external_baseline(), before);
+    assert_eq!(
+        h.focused_text().unwrap().input().external_baseline(),
+        before
+    );
     assert_eq!(
         h.get(SCROLL)
             .unwrap()
@@ -445,7 +448,7 @@ fn real_overlay_and_editor_capture_take_priority_over_help() {
     h.remove(menu).unwrap();
     draw(&mut h, &mut t);
     assert!(h.help_tooltip().is_none());
-    let p = h.text_surface(COMPOSER).unwrap().outer.center();
+    let p = h.text_surface(COMPOSER).unwrap().outer().center();
     assert!(h.event(&ContentEvent::PointerDown(p)).capture_pointer);
     let row = row(&h);
     h.event(&ContentEvent::PointerMove(row));

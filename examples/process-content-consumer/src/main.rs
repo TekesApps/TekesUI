@@ -22,7 +22,10 @@ mod consumer {
     use std::time::{Duration, Instant};
     use tekes_ui_app_protocol::{InputKind, Request, VERSION};
     use tekes_ui_controls::{
-        ButtonTextAlign, ButtonTextRenderer, TextSurfaceHost, TextSurfaceTextRenderer,
+        ButtonTextAlign,
+        ButtonTextRenderer,
+        TextSurfaceHost,
+        TextSurfaceTextRenderer,
         composition::*,
     };
     use tekes_ui_module_runtime::component::content as wire;
@@ -221,23 +224,23 @@ mod consumer {
                         "aux_activations":aux.component::<Button>().unwrap().activations,
                         "aux_pressed":aux.component::<Button>().unwrap().button.state.pressed,
                         "view_revision":self.revision,"overlay_activations":self.host.get(ComponentId(6)).unwrap().component::<Button>().unwrap().activations,
-                        "toolbar_calls":self.toolbar_calls,"submits":self.submits,"focused":self.host.focused().map(|id|id.0),"composing":self.host.is_composing(),"edit_text":self.host.get(EDIT).unwrap().component::<TextFieldContent>().unwrap().surface.input.text}),
+                        "toolbar_calls":self.toolbar_calls,"submits":self.submits,"focused":self.host.focused().map(|id|id.0),"composing":self.host.is_composing(),"edit_text":self.host.get(EDIT).unwrap().component::<TextFieldContent>().unwrap().surface.text()}),
                     )
                 }
                 RequestBody::Message { topic, .. } if topic == "bind_same_value" => {
-                    let input = &mut self
+                    let input = self
                         .host
                         .get_mut(EDIT)
                         .unwrap()
                         .component_mut::<TextFieldContent>()
                         .unwrap()
                         .surface
-                        .input;
+                        .input_mut();
                     let baseline = input.external_baseline();
                     let value = tekes_ui_controls::DraftRevision {
                         identity: "wire-document".into(),
                         version: 1,
-                        payload: input.text.clone(),
+                        payload: input.text().to_owned(),
                     };
                     ensure!(matches!(
                         input.apply_external_value(

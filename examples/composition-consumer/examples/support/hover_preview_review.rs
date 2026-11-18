@@ -24,21 +24,21 @@ impl Component for Space {
     }
 }
 pub fn snapshot(f: &Transcript, active: bool) -> serde_json::Value {
-    let input = &f
+    let input = f
         .host
         .get(COMPOSER)
         .unwrap()
         .component::<TextFieldContent>()
         .unwrap()
         .surface
-        .input;
+        .input();
     let preview = f
         .host
         .get(PREVIEW)
         .unwrap()
         .component::<HoverPreviewContent>()
         .unwrap();
-    serde_json::json!({"active":active,"focus":f.host.focused().map(|id|id.0),"text":input.text,"selection":input.selection(),"marked":input.marked,"preview_open":preview.is_open(),"preview_version":format!("{:?}",preview.version()),"preview_frame":format!("{:?}",preview.layout().frame),"nodes":f.host.semantics().iter().map(|node|serde_json::json!({"id":node.id.0,"mount":f.host.semantic_mount(node.id),"name":node.semantics.name,"role":format!("{:?}",node.semantics.role),"frame":format!("{:?}",node.frame),"parts":node.parts.iter().map(|part|part.semantics.name.clone()).collect::<Vec<_>>()})).collect::<Vec<_>>()})
+    serde_json::json!({"active":active,"focus":f.host.focused().map(|id|id.0),"text":input.text(),"selection":input.selection(),"marked":input.marked(),"preview_open":preview.is_open(),"preview_version":format!("{:?}",preview.version()),"preview_frame":format!("{:?}",preview.layout().frame),"nodes":f.host.semantics().iter().map(|node|serde_json::json!({"id":node.id.0,"mount":f.host.semantic_mount(node.id),"name":node.semantics.name,"role":format!("{:?}",node.semantics.role),"frame":format!("{:?}",node.frame),"parts":node.parts.iter().map(|part|part.semantics.name.clone()).collect::<Vec<_>>()})).collect::<Vec<_>>()})
 }
 pub struct Review {
     pending: Option<u32>,

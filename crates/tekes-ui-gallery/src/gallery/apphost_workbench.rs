@@ -1609,9 +1609,8 @@ impl ContainerContent for NavContent {
             .unwrap()
             .component::<SearchFieldContent>()
             .unwrap()
-            .input()
-            .text
-            .clone();
+            .query()
+            .to_owned();
         if query != self.query {
             // Only directory groups are replaced. The Search mount, IME state,
             // selection and focus remain owned by the same original Host.
@@ -2181,7 +2180,7 @@ impl PanelContent {
                                     .map(|(cells, (_, value))| (cells[1].id(), value.clone()))
                                     .collect();
                                 for (id, value) in values {
-                                    if self.host.text_surface(id).unwrap().input.text == value {
+                                    if self.host.text_surface(id).unwrap().text() == value {
                                         continue;
                                     }
                                     let field = self
@@ -2190,12 +2189,12 @@ impl PanelContent {
                                         .unwrap()
                                         .component_mut::<TextFieldContent>()
                                         .unwrap();
-                                    let baseline = field.surface.input.external_baseline();
+                                    let baseline = field.surface.input().external_baseline();
                                     let revision = tekes_ui_controls::DraftRevision {
                                         identity: "gallery-inspector-value".into(),
                                         version: field
                                             .surface
-                                            .input
+                                            .input()
                                             .external_value()
                                             .map_or(1, |v| v.version + 1),
                                         payload: value,
@@ -2593,8 +2592,7 @@ mod tests {
             assert!(
                 host.text_surface(ComponentId(100))
                     .unwrap()
-                    .input
-                    .text
+                    .text()
                     .contains("edited")
             );
         });
@@ -2616,8 +2614,7 @@ mod tests {
             assert!(
                 host.text_surface(ComponentId(100))
                     .unwrap()
-                    .input
-                    .text
+                    .text()
                     .contains("edited")
             )
         });
@@ -2924,9 +2921,8 @@ mod tests {
                                 .component::<TextFieldContent>()
                                 .unwrap()
                                 .surface
-                                .input
-                                .text
-                                .clone(),
+                                .text()
+                                .to_owned(),
                         )
                     })
                 })
@@ -3078,7 +3074,7 @@ mod tests {
             value_mount = host.semantic_mount(value);
             host.accessibility_action(value, None, AccessibilityAction::SetSelection(0..4));
             assert_eq!(
-                host.text_surface(value).unwrap().input.selected_text(),
+                host.text_surface(value).unwrap().input().selected_text(),
                 "name"
             );
             host.accessibility_action(
@@ -3087,8 +3083,8 @@ mod tests {
                 AccessibilityAction::ReplaceSelectedText("changed".into()),
             );
             host.accessibility_action(value, None, AccessibilityAction::SetValue("changed".into()));
-            assert_eq!(host.text_surface(value).unwrap().input.text, "name");
-            assert!(host.text_surface(value).unwrap().input.read_only);
+            assert_eq!(host.text_surface(value).unwrap().text(), "name");
+            assert!(host.text_surface(value).unwrap().input().is_read_only());
         });
         // The next ordinary Focus paint restores geometry. Publishing that
         // Layout group must not retire the clicked Identity text owner.
@@ -3119,7 +3115,7 @@ mod tests {
             assert_eq!(
                 host.text_surface(inspector_value_id(host, "Specimen"))
                     .unwrap()
-                    .input
+                    .input()
                     .selected_text(),
                 "name"
             );
@@ -3127,11 +3123,11 @@ mod tests {
         state.borrow_mut().select(Some("owner"));
         render_panel(&mut inspector, &mut text);
         inspector.with_host(&mut |host| {
-            let input = &host
+            let input = host
                 .text_surface(inspector_value_id(host, "Specimen"))
                 .unwrap()
-                .input;
-            assert_eq!(input.text, "owner");
+                .input();
+            assert_eq!(input.text(), "owner");
             assert!(input.selected_text().is_empty());
         });
     }
@@ -3197,16 +3193,13 @@ mod tests {
                 .is_none()
         );
         inspector.with_host(&mut |host| {
-            assert_eq!(
-                host.text_surface(frame_id).unwrap().input.text,
-                current_frame
-            );
+            assert_eq!(host.text_surface(frame_id).unwrap().text(), current_frame);
             host.event_with_text(&ContentEvent::PointerDown(frame_point), &mut text)
                 .unwrap();
             host.event_with_text(&ContentEvent::PointerUp(frame_point), &mut text)
                 .unwrap();
             assert_eq!(host.focused(), Some(frame_id));
-            let len = host.text_surface(frame_id).unwrap().input.len();
+            let len = host.text_surface(frame_id).unwrap().input().len();
             host.accessibility_action(frame_id, None, AccessibilityAction::SetSelection(0..len));
         });
         focus_container(state.clone()).with_host(&mut |host| render_text_host(host, &mut text));
@@ -3215,7 +3208,7 @@ mod tests {
             assert_eq!(host.semantic_mount(frame_id), frame_mount);
             assert_eq!(host.focused(), Some(frame_id));
             assert_eq!(
-                host.text_surface(frame_id).unwrap().input.selected_text(),
+                host.text_surface(frame_id).unwrap().input().selected_text(),
                 current_frame
             );
         });
@@ -3226,14 +3219,11 @@ mod tests {
         inspector.with_host(&mut |host| {
             assert_eq!(host.semantic_mount(frame_id), frame_mount);
             assert_eq!(host.focused(), Some(frame_id));
-            assert_eq!(
-                host.text_surface(frame_id).unwrap().input.text,
-                "Unavailable"
-            );
+            assert_eq!(host.text_surface(frame_id).unwrap().text(), "Unavailable");
             assert!(
                 host.text_surface(frame_id)
                     .unwrap()
-                    .input
+                    .input()
                     .selected_text()
                     .is_empty()
             );
@@ -3244,8 +3234,8 @@ mod tests {
         inspector.with_host(&mut |host| {
             assert_eq!(host.semantic_mount(frame_id), frame_mount);
             assert_eq!(host.focused(), Some(frame_id));
-            let input = &host.text_surface(frame_id).unwrap().input;
-            assert_eq!(input.text, current_frame);
+            let input = host.text_surface(frame_id).unwrap().input();
+            assert_eq!(input.text(), current_frame);
             assert!(input.selected_text().is_empty());
             let len = input.len();
             host.accessibility_action(frame_id, None, AccessibilityAction::SetSelection(0..len));
@@ -3290,7 +3280,12 @@ mod tests {
         let mut version = 0;
         documents.with_host(&mut |host| {
             render_text_host(host, &mut text);
-            assert!(host.text_surface(DOCUMENT_READER).unwrap().input.read_only);
+            assert!(
+                host.text_surface(DOCUMENT_READER)
+                    .unwrap()
+                    .input()
+                    .is_read_only()
+            );
             host.accessibility_action(
                 DOCUMENT_READER,
                 None,
@@ -3311,7 +3306,7 @@ mod tests {
                 assert_eq!(
                     host.text_surface(DOCUMENT_READER)
                         .unwrap()
-                        .input
+                        .input()
                         .selection(),
                     0..8
                 );
@@ -3375,7 +3370,7 @@ mod tests {
             copied = host
                 .text_surface(DOCUMENT_READER)
                 .unwrap()
-                .input
+                .input()
                 .selected_text();
             assert!(copied.contains("TextFieldContent::new"));
             assert!(!copied.contains("```"));
@@ -3387,7 +3382,7 @@ mod tests {
             assert_eq!(
                 host.text_surface(DOCUMENT_READER)
                     .unwrap()
-                    .input
+                    .input()
                     .selected_text(),
                 copied
             );
@@ -3400,7 +3395,7 @@ mod tests {
             assert_eq!(
                 host.text_surface(DOCUMENT_READER)
                     .unwrap()
-                    .input
+                    .input()
                     .selected_text(),
                 copied
             );
@@ -3427,7 +3422,7 @@ mod tests {
             assert!(
                 host.text_surface(DOCUMENT_READER)
                     .unwrap()
-                    .input
+                    .input()
                     .selected_text()
                     .is_empty()
             );
@@ -3696,8 +3691,8 @@ mod tests {
             host.event(&ContentEvent::TextCommand(
                 tekes_ui_controls::TextEditCommand::MoveToEndOfDocumentAndModifySelection,
             ));
-            let input = &host.text_surface(DOCUMENT_READER).unwrap().input;
-            assert_eq!(input.selected_text(), input.text);
+            let input = host.text_surface(DOCUMENT_READER).unwrap().input();
+            assert_eq!(input.selected_text(), input.text());
             assert!(!input.selected_text().is_empty());
             // A user choosing another focus owner before the transfer completes
             // must not have that choice overwritten by the pending reader.
@@ -4499,8 +4494,7 @@ mod tests {
             assert!(
                 host.text_surface(ComponentId(27502))
                     .unwrap()
-                    .input
-                    .text
+                    .text()
                     .contains("retained area edit")
             );
         });

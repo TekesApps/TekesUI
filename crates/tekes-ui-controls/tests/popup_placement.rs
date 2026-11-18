@@ -1,6 +1,7 @@
 //! Anchored popup bounds must follow the caller's measured control geometry.
 use tekes_ui_controls::{
-    ButtonTextAlign, ButtonTextRenderer, ControlKey, Menu, MenuEvent, MenuView,
+    ButtonTextAlign, ButtonTextRenderer, ControlKey, Menu,
+    feedback_view::{MenuEvent, MenuView},
 };
 use tekes_ui_scene::{Rect, Scene, Size};
 use tekes_ui_tokens::{Rgba, Theme, proposal};
@@ -24,7 +25,7 @@ fn layout(
     anchor: Rect,
     viewport: Rect,
     count: usize,
-) -> (MenuView, Menu, tekes_ui_controls::MenuLayout) {
+) -> (MenuView, Menu, tekes_ui_controls::feedback_view::MenuLayout) {
     let mut v = MenuView::new_external();
     let mut m = Menu::new(count);
     m.open = true;

@@ -5,10 +5,9 @@
 mod coretext;
 use std::time::Duration;
 use tekes_ui_controls::{
-    ButtonFramePolicy,
+    ButtonFramePolicy, ButtonVariant,
     composition::*,
     extended::{Axis, Stack},
-    paint::ButtonVariant,
 };
 use tekes_ui_scene::{Primitive, Quad, Rect, Scene};
 use tekes_ui_tokens::{Theme, proposal};

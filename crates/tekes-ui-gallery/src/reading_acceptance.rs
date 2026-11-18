@@ -42,7 +42,8 @@ pub(crate) fn try_run() -> bool {
                         .unwrap()
                         .component_mut::<TextFieldContent>()
                         .unwrap();
-                    field.surface = TextSurface::new(&field.surface.input.text, true, false);
+                    let current_text = field.surface.text().to_owned();
+                    field.surface = TextSurface::new(&current_text, true, false);
                     field.tab_policy = TextTabPolicy::Insert;
                     field.submit_policy = TextSubmitPolicy::CommandEnter;
                 }
@@ -99,7 +100,7 @@ impl Host {
         );
         if let Some((index, before)) = self.expected.take() {
             let after = self.fixture.surface.caret_doc(index).min_y()
-                - self.fixture.surface.scroll.offset.y;
+                - self.fixture.surface.scroll().offset.y;
             self.reports.push(serde_json::json!({"pages":self.fixture.pages,"utf16":index,"before_y":before,"after_y":after,"error_pt":(before-after).abs()}));
         }
         if let Some(renderer) = &mut self.renderer {
@@ -129,10 +130,10 @@ impl Host {
                     let caret = s.caret();
                     let origin = s.origin();
                     tekes_ui_platform_macos::TextInputState {
-                        text: s.input.text.clone(),
-                        selection: s.input.selection(),
-                        marked: s.input.marked.clone(),
-                        caret_index: s.input.caret,
+                        text: s.text().to_owned(),
+                        selection: s.input().selection(),
+                        marked: s.marked(),
+                        caret_index: s.input().caret(),
                         caret_origin: tekes_ui_platform_macos::Point {
                             x: caret.min_x() as f64,
                             y: caret.min_y() as f64,
@@ -141,16 +142,15 @@ impl Host {
                             width: caret.size.width as f64,
                             height: caret.size.height as f64,
                         },
-                        read_only: s.input.read_only,
+                        read_only: s.input().is_read_only(),
                         carets: s
-                            .paragraph
-                            .as_ref()
+                            .paragraph()
                             .map(|p| {
                                 p.lines
                                     .iter()
                                     .filter(|l| {
-                                        origin.y + (l.top + l.height) as f32 >= s.inner.min_y()
-                                            && origin.y + l.top as f32 <= s.inner.max_y()
+                                        origin.y + (l.top + l.height) as f32 >= s.inner().min_y()
+                                            && origin.y + l.top as f32 <= s.inner().max_y()
                                     })
                                     .flat_map(|l| {
                                         l.carets.iter().map(move |(i, x)| {
@@ -226,19 +226,19 @@ impl Host {
             .fixture
             .controls
             .text_surface(tekes_ui_composition_consumer::reading_prepend::EDITOR)
-            .map(|s| s.input.selection());
+            .map(|s| s.input().selection());
         let changed = self.fixture.controls.event(&event).changed;
         if let C::Pointer(p) = &event
             && self.pointer_reports.len() < 512
         {
-            self.pointer_reports.push(serde_json::json!({"phase":format!("{:?}",p.phase),"button":format!("{:?}",p.button),"click_count":p.click_count,"shift":p.modifiers.shift,"position":[p.position.x,p.position.y],"before_selection":before,"after_selection":self.fixture.controls.text_surface(tekes_ui_composition_consumer::reading_prepend::EDITOR).map(|s|s.input.selection()),"focus":self.fixture.controls.focused().map(|id|id.0)}));
+            self.pointer_reports.push(serde_json::json!({"phase":format!("{:?}",p.phase),"button":format!("{:?}",p.button),"click_count":p.click_count,"shift":p.modifiers.shift,"position":[p.position.x,p.position.y],"before_selection":before,"after_selection":self.fixture.controls.text_surface(tekes_ui_composition_consumer::reading_prepend::EDITOR).map(|s|s.input().selection()),"focus":self.fixture.controls.focused().map(|id|id.0)}));
             self.save();
         }
         changed
     }
     fn save(&self) {
         std::fs::create_dir_all(&self.out).unwrap();
-        std::fs::write(self.out.join("reading-events.json"),serde_json::to_vec_pretty(&serde_json::json!({"pages":self.fixture.pages,"reports":self.reports,"pointer_reports":self.pointer_reports,"text_key_reports":self.text_key_reports,"editor_selection":self.fixture.controls.text_surface(tekes_ui_composition_consumer::reading_prepend::EDITOR).map(|s|s.input.selection()),"following":self.fixture.reading.is_following_latest(),"version":self.fixture.reading.document_version().map(|v|v.revision()),"draft":self.fixture.controls.text_surface(tekes_ui_composition_consumer::reading_prepend::EDITOR).map(|s|&s.input.text),"focus":self.fixture.controls.focused().map(|v|v.0),"scope":"native Gallery paging and real layout; not physical IME/VoiceOver/performance acceptance"})).unwrap()).unwrap();
+        std::fs::write(self.out.join("reading-events.json"),serde_json::to_vec_pretty(&serde_json::json!({"pages":self.fixture.pages,"reports":self.reports,"pointer_reports":self.pointer_reports,"text_key_reports":self.text_key_reports,"editor_selection":self.fixture.controls.text_surface(tekes_ui_composition_consumer::reading_prepend::EDITOR).map(|s|s.input().selection()),"following":self.fixture.reading.is_following_latest(),"version":self.fixture.reading.document_version().map(|v|v.revision()),"draft":self.fixture.controls.text_surface(tekes_ui_composition_consumer::reading_prepend::EDITOR).map(|s|s.text()),"focus":self.fixture.controls.focused().map(|v|v.0),"scope":"native Gallery paging and real layout; not physical IME/VoiceOver/performance acceptance"})).unwrap()).unwrap();
     }
 }
 impl WindowHandler for Host {
@@ -258,7 +258,7 @@ impl WindowHandler for Host {
                         "event":format!("{report:?}"),
                         "outcome":format!("{:?}",response.text_key),
                         "submit_intent":response.activated,
-                        "draft":self.fixture.controls.text_surface(tekes_ui_composition_consumer::reading_prepend::EDITOR).map(|s|&s.input.text),
+                        "draft":self.fixture.controls.text_surface(tekes_ui_composition_consumer::reading_prepend::EDITOR).map(|s|s.text()),
                         "focus":self.fixture.controls.focused().map(|id|id.0),
                     }));
                 }
@@ -288,17 +288,17 @@ impl WindowHandler for Host {
                 }
             }
             Event::Wake => {
-                let before = self.fixture.surface.reflow_anchor.map(|a| {
+                let before = self.fixture.surface.reflow_anchor().map(|a| {
                     (
                         a.utf16,
                         self.fixture.surface.caret_doc(a.utf16).min_y()
-                            - self.fixture.surface.scroll.offset.y,
+                            - self.fixture.surface.scroll().offset.y,
                     )
                 });
-                let len = self.fixture.surface.input.len();
+                let len = self.fixture.surface.input().len();
                 self.fixture.prepend().unwrap();
                 self.expected =
-                    before.map(|(i, y)| (i + self.fixture.surface.input.len() - len, y));
+                    before.map(|(i, y)| (i + self.fixture.surface.input().len() - len, y));
                 window.request_redraw();
             }
             Event::Resized {
@@ -344,20 +344,20 @@ impl WindowHandler for Host {
                 window.request_redraw();
             }
             event => {
-                let before = self.fixture.surface.reflow_anchor.map(|a| {
+                let before = self.fixture.surface.reflow_anchor().map(|a| {
                     (
                         a.utf16,
                         self.fixture.surface.caret_doc(a.utf16).min_y()
-                            - self.fixture.surface.scroll.offset.y,
+                            - self.fixture.surface.scroll().offset.y,
                     )
                 });
-                let len = self.fixture.surface.input.len();
+                let len = self.fixture.surface.input().len();
                 let pages = self.fixture.pages;
                 let changed = self.input(event);
                 let action = self.fixture.process_actions().unwrap();
                 if self.fixture.pages != pages {
                     self.expected =
-                        before.map(|(i, y)| (i + self.fixture.surface.input.len() - len, y));
+                        before.map(|(i, y)| (i + self.fixture.surface.input().len() - len, y));
                 }
                 self.publish(window);
                 if changed || action {
@@ -391,9 +391,9 @@ mod tests {
                     let mut anchor: Option<(usize, f32)> = None;
                     for stage in 0..3 {
                         if stage > 0 {
-                            let len = fixture.surface.input.len();
+                            let len = fixture.surface.input().len();
                             fixture.prepend().unwrap();
-                            let delta = fixture.surface.input.len() - len;
+                            let delta = fixture.surface.input().len() - len;
                             if let Some((i, y)) = anchor {
                                 anchor = Some((i + delta, y));
                             }
@@ -407,9 +407,9 @@ mod tests {
                             frame,
                             theme.into(),
                         );
-                        let a = fixture.surface.reflow_anchor.unwrap();
+                        let a = fixture.surface.reflow_anchor().unwrap();
                         let y = fixture.surface.caret_doc(a.utf16).min_y()
-                            - fixture.surface.scroll.offset.y;
+                            - fixture.surface.scroll().offset.y;
                         if let Some((i, old_y)) = anchor {
                             assert_eq!(a.utf16, i);
                             assert!((y - old_y).abs() <= 1.);
@@ -510,7 +510,7 @@ mod tests {
                                 .controls
                                 .text_surface(EDITOR)
                                 .unwrap()
-                                .input
+                                .input()
                                 .selection()
                                 .is_empty()
                         );

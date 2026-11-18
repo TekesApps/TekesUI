@@ -1642,8 +1642,13 @@ mod wheel_dispatch_tests {
             )
             .unwrap();
             host.focus(Some(ComponentId(275)), true);
-            let offset =
-                |host: &ContentHost| host.text_surface(ComponentId(275)).unwrap().scroll.offset.y;
+            let offset = |host: &ContentHost| {
+                host.text_surface(ComponentId(275))
+                    .unwrap()
+                    .scroll()
+                    .offset
+                    .y
+            };
             let mut event = native::ScrollEvent {
                 timestamp: 1.,
                 delta: native::Vec2 { x: 0., y: 0. },

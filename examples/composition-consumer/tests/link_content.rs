@@ -123,13 +123,13 @@ fn real_declared_auxiliary_link_preserves_composer_marked_text_and_focus() {
         replacement: None,
         clauses: vec![],
     });
-    assert!(h.focused_text().unwrap().input.marked.is_some());
+    assert!(h.focused_text().unwrap().marked().is_some());
     let p = h.get(LINK).unwrap().frame().center();
     h.event(&ContentEvent::PointerDown(p));
     h.event(&ContentEvent::PointerUp(p));
     assert_eq!(process_actions(&mut h).len(), 1);
     assert_eq!(h.focused(), Some(COMPOSER));
-    assert!(h.focused_text().unwrap().input.marked.is_some());
+    assert!(h.focused_text().unwrap().marked().is_some());
     assert!(
         !h.get(LINK)
             .unwrap()
@@ -143,7 +143,7 @@ fn real_declared_auxiliary_link_preserves_composer_marked_text_and_focus() {
     h.accessibility_action(LINK, None, AccessibilityAction::Press);
     assert_eq!(process_actions(&mut h).len(), 1);
     assert_eq!(h.focused(), Some(COMPOSER));
-    assert!(h.focused_text().unwrap().input.marked.is_some());
+    assert!(h.focused_text().unwrap().marked().is_some());
     assert!(
         !h.get(LINK)
             .unwrap()

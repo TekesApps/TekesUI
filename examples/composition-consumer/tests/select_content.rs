@@ -185,10 +185,8 @@ struct Overlap {
     children: Vec<Content>,
 }
 impl Component for Overlap {
-    // This actual fixture only arranges its original children; it has no
-    // mutable focus hooks or reentry and declares the accepted98 contract.
-    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
-        ActionTransactionCompatibility::StableHooks
+    fn has_stable_hooks(&self) -> bool {
+        true
     }
 
     fn children(&self) -> &[Content] {

@@ -215,7 +215,7 @@ fn parent_edits_preserve_original_arm_and_new_path_items_inherit_without_special
 
 #[test]
 fn tabs_use_parent_packets_without_replacing_selection_or_capture() {
-    use tekes_ui_controls::TabsView;
+    use tekes_ui_controls::layout_view::TabsView;
     for theme in Theme::ALL {
         for brand in [0, 1, 2] {
             for surface in surface_names() {

@@ -622,8 +622,7 @@ mod tests {
                         .component::<TextFieldContent>()
                         .unwrap()
                         .surface
-                        .input
-                        .text,
+                        .text(),
                     "Retained edit"
                 );
             });

@@ -266,8 +266,8 @@ impl Review {
             }
             36_008 => {
                 assert_eq!(tree.focused(), Some(f::MESSAGE));
-                let input = &tree.focused_text().unwrap().input;
-                assert!(input.marked.is_some());
+                let input = tree.focused_text().unwrap().input();
+                assert!(input.marked().is_some());
                 self.marked = Some(input.external_baseline());
                 // Original public MenuView opening preserves the editor owner;
                 // the following part actions use real published native AX selectors.
@@ -301,7 +301,7 @@ impl Review {
                 );
                 assert_eq!(tree.focused(), Some(f::MESSAGE));
                 assert_eq!(
-                    tree.focused_text().unwrap().input.external_baseline(),
+                    tree.focused_text().unwrap().input().external_baseline(),
                     *self.marked.as_ref().unwrap()
                 );
                 vec![

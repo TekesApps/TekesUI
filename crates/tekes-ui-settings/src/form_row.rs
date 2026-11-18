@@ -162,8 +162,10 @@ impl Component for SettingsRow {
             .with_corner_radii(corners),
         );
         if !self.group_edges.0 {
-            let (width, ink) =
-                tekes_ui_controls::paint::decorative_border(theme.palette, text.backing_scale());
+            let (width, ink) = tekes_ui_controls::feedback_view::SurfaceView::decorative_border(
+                theme.palette,
+                text.backing_scale(),
+            );
             let inset = Self::padding().width.min(frame.size.width * 0.5);
             scene.push_quad(Quad::new(
                 Rect::new(
@@ -209,7 +211,7 @@ impl Component for SettingsRow {
         // name with the real input viewport, rather than its empty label slot.
         let value_center = self.children[1]
             .component::<tekes_ui_controls::composition::TextFieldContent>()
-            .map(|field| field.surface.outer.center().y)
+            .map(|field| field.surface.outer().center().y)
             .or_else(|| {
                 self.children[1]
                     .component::<tekes_ui_controls::composition::RadioGroupContent>()

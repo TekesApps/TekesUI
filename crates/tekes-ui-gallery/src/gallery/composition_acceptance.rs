@@ -56,7 +56,7 @@ fn required_field_metadata_and_real_consumer_keep_markers_at_narrow_widths() {
                                     .unwrap();
                                 let layout = field.view.layout();
                                 markers.push(layout.required_mark.unwrap());
-                                assert_eq!(layout.slot, field.surface.outer);
+                                assert_eq!(layout.slot, field.surface.outer());
                                 assert!(layout.message.min_y() >= layout.slot.max_y());
                             }
                         } else {
@@ -399,16 +399,20 @@ fn independent_plain_content_has_no_form_pixels_and_keeps_real_selection_in_four
                             .render(&mut scene, &mut text, frame, clip, palette)
                             .unwrap();
                         let body = consumer.host.text_surface(BODY).unwrap();
-                        assert_eq!(body.inner, body.outer, "no form padding or metadata gap");
-                        assert_eq!(body.scroll.offset, Point::new(0., 0.));
+                        assert_eq!(
+                            body.inner(),
+                            body.outer(),
+                            "no form padding or metadata gap"
+                        );
+                        assert_eq!(body.scroll().offset, Point::new(0., 0.));
                         if phase == "focused" {
-                            initial_width = body.width;
-                            initial_height = body.outer.size.height;
+                            initial_width = body.width();
+                            initial_height = body.outer().size.height;
                         } else {
-                            assert_eq!(body.width, initial_width);
-                            assert_eq!(body.outer.size.height, initial_height);
-                            assert_eq!(body.input.selected_text(), "中文😀");
-                            assert_eq!(body.input.selection(), 8..12);
+                            assert_eq!(body.width(), initial_width);
+                            assert_eq!(body.outer().size.height, initial_height);
+                            assert_eq!(body.input().selected_text(), "中文😀");
+                            assert_eq!(body.input().selection(), 8..12);
                         }
                         if phase == "selected" {
                             selection_rects = body.selection_rects(8..12);
@@ -628,9 +632,8 @@ fn independent_list_and_rich_dialog_use_production_views_and_real_gpu() {
                                         .component_mut::<TextFieldContent>()
                                         .unwrap()
                                         .surface
-                                        .input
-                                        .text
-                                        .clear();
+                                        .input_mut()
+                                        .set_text("");
                                     assert!(!scenarios::validate_dialog(&mut host));
                                 }
                             }
@@ -644,8 +647,8 @@ fn independent_list_and_rich_dialog_use_production_views_and_real_gpu() {
                                     .unwrap()
                                     .component::<TextFieldContent>()
                                     .unwrap();
-                                assert!(field.surface.paragraph.is_some());
-                                assert_eq!(field.surface.shaped, "Tekes");
+                                assert!(field.surface.paragraph().is_some());
+                                assert_eq!(field.surface.shaped(), "Tekes");
                                 let field_height =
                                     host.get(ids::LIST_FIELD).unwrap().frame().size.height;
                                 assert!(
@@ -674,7 +677,7 @@ fn independent_list_and_rich_dialog_use_production_views_and_real_gpu() {
                                     .unwrap()
                                     .component::<TextFieldContent>()
                                     .unwrap();
-                                assert!(surface.surface.paragraph.is_some());
+                                assert!(surface.surface.paragraph().is_some());
                                 assert_eq!(surface.field.error.is_some(), state == "active");
                                 assert!(
                                     !host

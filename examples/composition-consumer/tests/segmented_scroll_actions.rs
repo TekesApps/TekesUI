@@ -192,22 +192,21 @@ fn marked_composer_rejects_scroll_strict_ax_tab_but_original_pointer_commits() {
         .component::<TextFieldContent>()
         .unwrap()
         .surface
-        .input
-        .text
-        .clone();
+        .text()
+        .to_owned();
     let point = owner(&h).semantic_parts()[1].frame.center();
     assert!(h.event(&ContentEvent::PointerDown(point)).capture_pointer);
     assert_eq!(h.focused(), Some(ID));
     assert!(!h.is_composing());
-    let final_input = &h
+    let final_input = h
         .get(EDITOR)
         .unwrap()
         .component::<TextFieldContent>()
         .unwrap()
         .surface
-        .input;
-    assert!(final_input.marked.is_none());
-    assert_eq!(final_input.text, input);
+        .input();
+    assert!(final_input.marked().is_none());
+    assert_eq!(final_input.text(), input);
     assert_eq!(owner(&h).model().selected, 0);
     assert_eq!(owner(&h).view().focused(), Some(1));
     assert!(records(&mut h).is_empty());

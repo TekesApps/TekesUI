@@ -1,6 +1,6 @@
 //! Thin host adapter: preserves native pointer metadata at the public composition boundary.
-use tekes_ui_controls::composition::{
-    ContentEvent, PointerButton, PointerEvent, PointerModifiers, PointerPhase,
+use tekes_ui_controls::{
+    composition::{ContentEvent, PointerButton, PointerEvent, PointerModifiers, PointerPhase},
 };
 use tekes_ui_platform_macos::{MouseButton, MouseEvent, MouseEventKind};
 pub fn translate(m: MouseEvent) -> ContentEvent {

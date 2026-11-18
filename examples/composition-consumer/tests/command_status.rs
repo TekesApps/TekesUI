@@ -119,13 +119,13 @@ fn retained_command_refresh_keeps_query_ime_selection_and_restores_real_trigger(
     assert_eq!(s.active(), Some(1));
     s.host
         .accessibility_action(COMMAND, None, AccessibilityAction::SetSelection(1..3));
-    let range = s.host.focused_text().unwrap().input.selection();
+    let range = s.host.focused_text().unwrap().input().selection();
     for status in [Status::Loading, Status::Error, Status::Ready] {
         s.set_status(status);
         draw(&mut s, &mut t, p);
         assert_eq!(s.query(), "Open");
         assert_eq!(s.active(), Some(1));
-        assert_eq!(s.host.focused_text().unwrap().input.selection(), range);
+        assert_eq!(s.host.focused_text().unwrap().input().selection(), range);
         assert_eq!(s.host.focused(), Some(COMMAND));
         assert_eq!(s.last_executed(), None);
     }
@@ -136,16 +136,19 @@ fn retained_command_refresh_keeps_query_ime_selection_and_restores_real_trigger(
         clauses: std::iter::once(0..2).collect(),
     });
     let snapshot = {
-        let i = &s.host.focused_text().unwrap().input;
-        (i.text.clone(), i.marked.clone(), i.selection())
+        let i = s.host.focused_text().unwrap().input();
+        (i.text().to_owned(), i.marked(), i.selection())
     };
     s.set_status(Status::Loading);
     draw(&mut s, &mut t, p);
     s.set_status(Status::Error);
     draw(&mut s, &mut t, p);
-    assert_eq!(s.host.focused_text().unwrap().input.text, snapshot.0);
-    assert_eq!(s.host.focused_text().unwrap().input.marked, snapshot.1);
-    assert_eq!(s.host.focused_text().unwrap().input.selection(), snapshot.2);
+    assert_eq!(s.host.focused_text().unwrap().text(), snapshot.0);
+    assert_eq!(s.host.focused_text().unwrap().marked(), snapshot.1);
+    assert_eq!(
+        s.host.focused_text().unwrap().input().selection(),
+        snapshot.2
+    );
     assert!(!s.set_items(vec!["new response".into()]));
     assert!(!key(&mut s, ControlKey::Enter).consumed);
     assert!(!key(&mut s, ControlKey::Down).consumed);

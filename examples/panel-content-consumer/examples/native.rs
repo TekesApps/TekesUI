@@ -15,9 +15,8 @@ fn main() {
 #[cfg(target_os = "macos")]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     use std::{cell::Cell, rc::Rc};
-    use tekes_ui_controls::composition::{
-        Content, ContentEvent, ContentHost, ContentResponse, PanelContent, PointerPhase,
-        ScrollContent, TextFieldContent,
+    use tekes_ui_controls::{
+        composition::{Content, ContentEvent, ContentHost, ContentResponse, PanelContent, PointerPhase, ScrollContent, TextFieldContent},
     };
     use tekes_ui_macos_bridge::{
         WindowContentAccessibilityExt,
@@ -52,8 +51,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         fn text_state(surface: &tekes_ui_controls::TextSurface) -> p::TextInputState {
             let caret = surface.caret();
             let carets = surface
-                .paragraph
-                .as_ref()
+                .paragraph()
                 .map_or_else(Vec::new, |paragraph| {
                     paragraph
                         .lines
@@ -76,11 +74,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .collect()
                 });
             p::TextInputState {
-                text: surface.input.text.clone(),
-                caret_index: surface.input.caret,
-                selection: surface.input.selection(),
-                marked: surface.input.marked.clone(),
-                read_only: surface.input.read_only,
+                text: surface.text().to_owned(),
+                caret_index: surface.input().caret(),
+                selection: surface.input().selection(),
+                marked: surface.marked(),
+                read_only: surface.input().is_read_only(),
                 caret_origin: p::Point {
                     x: caret.min_x() as f64,
                     y: caret.min_y() as f64,
@@ -128,7 +126,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "selection_utf16": input.as_ref().map(|s| format!("{}..{}", s.selection.start, s.selection.end)),
                 "marked_utf16": input.as_ref().and_then(|s| s.marked.as_ref()).map(|r| format!("{}..{}", r.start, r.end)),
                 "is_composing": self.tree.is_composing(),
-                "editor_internal_scroll_offset": editor.map(|field| format!("{:?}", field.surface.scroll.offset)),
+                "editor_internal_scroll_offset": editor.map(|field| format!("{:?}", field.surface.scroll().offset)),
                 "scroll_mount": self.tree.semantic_mount(panel_fixture::SCROLL),
                 "scroll_offset": scroll.map(|owner| format!("{:?}", owner.scroll.offset)),
                 "scroll_limit": scroll.map(|owner| format!("{:?}", owner.scroll.limit())),
@@ -225,7 +223,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .tree
                         .get(panel_fixture::EDITOR)
                         .and_then(|node| node.component::<TextFieldContent>())
-                        .map(|field| field.surface.scroll.offset.y)
+                        .map(|field| field.surface.scroll().offset.y)
                         .unwrap_or_default();
                     assert!(
                         offset.abs() > 0.01,

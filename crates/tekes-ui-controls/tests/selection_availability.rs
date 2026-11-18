@@ -1,8 +1,9 @@
 //! Public event-boundary availability regression; no paint required to observe disable.
 use tekes_ui_controls::{ButtonTextAlign, ButtonTextRenderer};
 use tekes_ui_controls::{
-    ControlKey, RadioGroupView, SelectionEvent, SliderView, SwitchView,
+    ControlKey,
     extended::{RadioGroup, Slider, Switch},
+    layout_view::{RadioGroupView, SelectionEvent, SliderView, SwitchView},
 };
 use tekes_ui_scene::{Point, Rect, Scene, Size};
 use tekes_ui_tokens::{Palette, Rgba, Theme, proposal};

@@ -483,23 +483,14 @@ impl Component for Viewport {
     fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
         CurveSubtreeCapability::Recursive
     }
-    fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
-        TableTransactionCompatibility::StableHooks
+    fn has_stable_hooks(&self) -> bool {
+        true
     }
-    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
-        ActionTransactionCompatibility::StableHooks
+    fn supports_prepared_lifecycle(&self) -> bool {
+        true
     }
-    fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
-        self.stack.prepare_action(request)
-    }
-    fn prepared_effects_work(&self, n: usize) -> Result<usize, PreparedEffectsError> {
-        PreparedEffects::local_work(n)
-    }
-    fn prepare_effects(
-        &self,
-        hooks: &[PreparedHook],
-    ) -> Result<PreparedEffects, PreparedEffectsError> {
-        Ok(PreparedEffects::local(self, hooks))
+    fn ignores_pointer_actions(&self) -> bool {
+        true
     }
     fn children(&self) -> &[Content] {
         &self.stack.children

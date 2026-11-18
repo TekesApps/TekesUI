@@ -177,7 +177,7 @@ fn popover_shell_and_owned_subtree_have_separate_actual_token_observations() {
                                 replacement: None,
                                 clauses: vec![],
                             });
-                            assert!(fixture.host.focused_text().unwrap().input.marked.is_some());
+                            assert!(fixture.host.focused_text().unwrap().marked().is_some());
                         }
                         "exit" => {
                             fixture.escape();

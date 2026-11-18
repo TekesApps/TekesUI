@@ -106,31 +106,38 @@ fn public_search_original_editor_pixels_and_surface_clip() {
                             .unwrap();
                     }
                     let original = host.text_surface(ComponentId(1)).unwrap();
-                    let editor = original.outer;
-                    let mut reference = TextFieldContent::new("Search", &original.input.text);
+                    let editor = original.outer();
+                    let mut reference = TextFieldContent::new("Search", original.text());
                     reference.show_metadata = false;
-                    if original.error {
+                    if original.error() {
                         reference.field.error = Some("Invalid query".into());
                     }
                     reference.surface =
-                        TextSurface::new(&original.input.text, false, original.input.read_only);
-                    reference.surface.input.disabled = original.input.disabled;
+                        TextSurface::new(original.text(), false, original.input().is_read_only());
+                    reference
+                        .surface
+                        .input_mut()
+                        .set_disabled(original.input().is_disabled());
                     // Original transactions retain the exact direction/marked ranges.
-                    if let Some(mark) = &original.input.marked {
-                        let units: Vec<_> = original.input.text.encode_utf16().collect();
+                    if let Some(mark) = &original.marked() {
+                        let units: Vec<_> = original.text().encode_utf16().collect();
                         let preedit = String::from_utf16(&units[mark.clone()]).unwrap();
-                        reference.surface.input.preedit(
+                        reference.surface.input_mut().preedit(
                             &preedit,
-                            original.input.selection().start.saturating_sub(mark.start)
-                                ..original.input.selection().end.saturating_sub(mark.start),
+                            original
+                                .input()
+                                .selection()
+                                .start
+                                .saturating_sub(mark.start)
+                                ..original.input().selection().end.saturating_sub(mark.start),
                             Some(mark.clone()),
                         );
-                        reference.surface.clauses = original.clauses.clone();
+                        reference.surface.set_clauses(original.clauses().to_vec());
                     } else {
                         reference
                             .surface
-                            .input
-                            .select_range(original.input.selection());
+                            .input_mut()
+                            .select_range(original.input().selection());
                     }
                     if matches!(state, "selection" | "marked") {
                         reference.surface.reveal();
@@ -178,8 +185,8 @@ fn public_search_original_editor_pixels_and_surface_clip() {
                     }
                     let reference_surface = ref_host.text_surface(ComponentId(1)).unwrap();
                     std::fs::write(output.join(format!("{prefix}-input.json")),serde_json::to_vec_pretty(&serde_json::json!({
-                        "search":format!("outer={:?} inner={:?} origin={:?} scroll={:?} selection={:?} rects={:?}",original.outer,original.inner,original.origin(),original.scroll.offset,original.input.selection(),original.selection_rects(original.input.selection())),
-                        "reference":format!("outer={:?} inner={:?} origin={:?} scroll={:?} selection={:?} rects={:?}",reference_surface.outer,reference_surface.inner,reference_surface.origin(),reference_surface.scroll.offset,reference_surface.input.selection(),reference_surface.selection_rects(reference_surface.input.selection()))
+                        "search":format!("outer={:?} inner={:?} origin={:?} scroll={:?} selection={:?} rects={:?}",original.outer(),original.inner(),original.origin(),original.scroll().offset,original.input().selection(),original.selection_rects(original.input().selection())),
+                        "reference":format!("outer={:?} inner={:?} origin={:?} scroll={:?} selection={:?} rects={:?}",reference_surface.outer(),reference_surface.inner(),reference_surface.origin(),reference_surface.scroll().offset,reference_surface.input().selection(),reference_surface.selection_rects(reference_surface.input().selection()))
                     })).unwrap()).unwrap();
                     // Include the original field chrome and complete focus-ring outsets.
                     // Existing regular spacing separates the independent clear Button.
@@ -213,12 +220,12 @@ fn public_search_original_editor_pixels_and_surface_clip() {
                     let mut clear_compared = 0usize;
                     // Positive full-clip cases compare the actual auxiliary Button
                     // against the original public Button, without Host focus transfer.
-                    if !partial && !original.input.text.is_empty() {
+                    if !partial && !original.text().is_empty() {
                         let clear_frame = host.semantics()[0].parts[0].frame;
                         let mut clear = Button::new("×").with_accessible_name("Clear");
-                        clear.button.state.disabled = original.input.read_only
-                            || original.input.disabled
-                            || original.input.marked.is_some();
+                        clear.button.state.disabled = original.input().is_read_only()
+                            || original.input().is_disabled()
+                            || original.marked().is_some();
                         let mut button_text = coretext::Text::new(zoom);
                         button_text.services = true;
                         button_text.backing = backing;

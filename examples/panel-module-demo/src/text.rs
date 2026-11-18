@@ -1,7 +1,10 @@
 //! Platform font adapter only. Components own text geometry and presentation.
 use std::rc::Rc;
 use tekes_ui_controls::{
-    ButtonTextAlign, ButtonTextRenderer, TextSurfaceHost, TextSurfaceTextRenderer,
+    ButtonTextAlign,
+    ButtonTextRenderer,
+    TextSurfaceHost,
+    TextSurfaceTextRenderer,
 };
 use tekes_ui_scene::{GlyphAtlas, Point, Rect, Scene, Size};
 use tekes_ui_text::{

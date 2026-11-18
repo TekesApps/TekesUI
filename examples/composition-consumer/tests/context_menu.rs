@@ -81,7 +81,7 @@ fn context_menu_second_consumer_original_b_action_preserves_a_draft_selection_an
         .component::<TextFieldContent>()
         .unwrap()
         .surface
-        .input
+        .input()
         .selection();
     let frame = sidebar.host.get(B).unwrap().frame();
     let response = sidebar.host.event(&ContentEvent::Pointer(PointerEvent {
@@ -109,15 +109,15 @@ fn context_menu_second_consumer_original_b_action_preserves_a_draft_selection_an
     assert_eq!(sidebar.selections[0].value_path().unwrap(), ["pin"]);
 
     assert_eq!(sidebar.host.focused(), Some(DRAFT));
-    let input = &sidebar
+    let input = sidebar
         .host
         .get(DRAFT)
         .unwrap()
         .component::<TextFieldContent>()
         .unwrap()
         .surface
-        .input;
-    assert_eq!(input.text, "Draft belongs to A");
+        .input();
+    assert_eq!(input.text(), "Draft belongs to A");
     assert_eq!(input.selection(), selection);
 }
 #[test]
@@ -138,8 +138,8 @@ fn context_menu_second_consumer_marked_policy_and_immutable_a_b_actions() {
         .component::<TextFieldContent>()
         .unwrap()
         .surface
-        .input
-        .marked
+        .input()
+        .marked()
         .clone();
     assert_eq!(
         sidebar
@@ -155,8 +155,8 @@ fn context_menu_second_consumer_marked_policy_and_immutable_a_b_actions() {
             .component::<TextFieldContent>()
             .unwrap()
             .surface
-            .input
-            .marked,
+            .input()
+            .marked(),
         before
     );
     sidebar.host.event(&ContentEvent::Commit {

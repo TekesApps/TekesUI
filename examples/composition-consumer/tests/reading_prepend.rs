@@ -71,29 +71,29 @@ fn independent_composed_editor_focus_draft_and_undo_survive_history_prepend() {
         text: "编辑".into(),
         replacement: None,
     });
-    let before = f.controls.text_surface(EDITOR).unwrap().input.text.clone();
-    let anchor = f.surface.reflow_anchor.unwrap();
-    let y = f.surface.caret_doc(anchor.utf16).min_y() - f.surface.scroll.offset.y;
-    let old_len = f.surface.input.len();
+    let before = f.controls.text_surface(EDITOR).unwrap().text().to_owned();
+    let anchor = f.surface.reflow_anchor().unwrap();
+    let y = f.surface.caret_doc(anchor.utf16).min_y() - f.surface.scroll().offset.y;
+    let old_len = f.surface.input().len();
     let selection = anchor.utf16..anchor.utf16 + 2;
-    f.surface.input.select_range(selection);
-    let selected = f.surface.input.selected_text();
+    f.surface.input_mut().select_range(selection);
+    let selected = f.surface.input().selected_text();
     let r = f.prepend().unwrap();
     paint(&mut f);
     assert_eq!(f.controls.focused(), Some(EDITOR));
-    assert_eq!(f.controls.text_surface(EDITOR).unwrap().input.text, before);
-    assert_eq!(f.surface.input.selected_text(), selected);
+    assert_eq!(f.controls.text_surface(EDITOR).unwrap().text(), before);
+    assert_eq!(f.surface.input().selected_text(), selected);
     assert_eq!(
         r.selection,
         tekes_ui_controls::ReadingSelectionUpdate::Preserved
     );
-    let delta = f.surface.input.len() - old_len;
-    let after = f.surface.caret_doc(anchor.utf16 + delta).min_y() - f.surface.scroll.offset.y;
+    let delta = f.surface.input().len() - old_len;
+    let after = f.surface.caret_doc(anchor.utf16 + delta).min_y() - f.surface.scroll().offset.y;
     assert!((after - y).abs() <= 1.);
     f.controls.event(&ContentEvent::TextCommand(
         tekes_ui_controls::TextEditCommand::Undo,
     ));
-    assert_ne!(f.controls.text_surface(EDITOR).unwrap().input.text, before);
+    assert_ne!(f.controls.text_surface(EDITOR).unwrap().text(), before);
 }
 #[test]
 fn original_button_activation_drives_public_prepend_once() {
@@ -164,7 +164,7 @@ fn readonly_textfield_adapter_reuses_versioned_anchor_without_taking_sibling_foc
         .component_mut::<TextFieldContent>()
         .unwrap()
         .surface
-        .scroll
+        .scroll_mut()
         .scroll_by(0., 713.25);
     render(&mut host);
     host.focus(Some(ComponentId(3)), true);
@@ -173,8 +173,8 @@ fn readonly_textfield_adapter_reuses_versioned_anchor_without_taking_sibling_foc
         .unwrap()
         .component_mut::<TextFieldContent>()
         .unwrap();
-    let a = field.surface.reflow_anchor.unwrap();
-    let before = field.surface.caret_doc(a.utf16).min_y() - field.surface.scroll.offset.y;
+    let a = field.surface.reflow_anchor().unwrap();
+    let before = field.surface.caret_doc(a.utf16).min_y() - field.surface.scroll().offset.y;
     let prefix = "Earlier 中文😀\n".repeat(12);
     let delta = prefix.encode_utf16().count();
     let len = old.encode_utf16().count();
@@ -196,11 +196,8 @@ fn readonly_textfield_adapter_reuses_versioned_anchor_without_taking_sibling_foc
     render(&mut host);
     let field = host.text_surface(ComponentId(2)).unwrap();
     assert!(
-        (field.caret_doc(a.utf16 + delta).min_y() - field.scroll.offset.y - before).abs() <= 1.
+        (field.caret_doc(a.utf16 + delta).min_y() - field.scroll().offset.y - before).abs() <= 1.
     );
     assert_eq!(host.focused(), Some(ComponentId(3)));
-    assert_eq!(
-        host.text_surface(ComponentId(3)).unwrap().input.text,
-        "keep me"
-    );
+    assert_eq!(host.text_surface(ComponentId(3)).unwrap().text(), "keep me");
 }

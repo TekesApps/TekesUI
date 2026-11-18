@@ -15,7 +15,7 @@ fn main() {
     use coretext::Text;
     use std::time::Instant;
     use tekes_ui_composition_consumer::toolbar_mount::*;
-    use tekes_ui_controls::{ButtonTextRenderer, composition::*, paint};
+    use tekes_ui_controls::{ButtonTextRenderer, composition::*};
     use tekes_ui_platform_macos::{
         self as p, App, AppConfig, Event, MenuBar, Size, Window, WindowConfig, WindowHandler,
     };
@@ -161,7 +161,7 @@ fn main() {
                 .unwrap();
             self.toolbar.set_window_active(w.is_active());
             let mut scene = Scene::new();
-            paint::surface(
+            tekes_ui_controls::feedback_view::SurfaceView::paint(
                 &mut scene,
                 Rect::new(0., 0., width, height),
                 Theme::LIGHT,
@@ -174,7 +174,9 @@ fn main() {
                 tekes_ui_tokens::proposal::TextRole::UiBody,
                 Rect::new(20., 120., width - 40., 80.),
                 tekes_ui_controls::ButtonTextAlign::Leading,
-                paint::color(Theme::LIGHT, "primary-text"),
+                tekes_ui_tokens::Palette::from(Theme::LIGHT)
+                    .color("primary-text")
+                    .unwrap_or(tekes_ui_tokens::Rgba::new(0., 0., 0., 0.)),
             );
             self.toolbar
                 .render(&mut scene, &mut self.text, Theme::LIGHT.into())
@@ -183,7 +185,9 @@ fn main() {
                 gpu.render(
                     &scene,
                     &mut self.text.atlas,
-                    paint::color(Theme::LIGHT, "surface-1"),
+                    tekes_ui_tokens::Palette::from(Theme::LIGHT)
+                        .color("surface-1")
+                        .unwrap_or(tekes_ui_tokens::Rgba::new(0., 0., 0., 0.)),
                 )
                 .unwrap();
             }

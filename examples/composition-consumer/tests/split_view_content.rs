@@ -221,17 +221,11 @@ fn genuine_editor_composer_button_scroll_and_owned_replacement() {
 #[derive(Debug)]
 struct WrappedField(TextFieldContent);
 impl Component for WrappedField {
-    fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
-        TableTransactionCompatibility::StableHooks
+    fn delegated_owner(&self) -> Option<&dyn Component> {
+        Some(&self.0)
     }
-    fn prepared_effects_work(&self, n: usize) -> Result<usize, PreparedEffectsError> {
-        self.0.prepared_effects_work(n)
-    }
-    fn prepare_effects(&self, h: &[PreparedHook]) -> Result<PreparedEffects, PreparedEffectsError> {
-        self.0.prepare_effects(h)
-    }
-    fn lifecycle_prepared(&mut self, e: Lifecycle, c: &mut PreparedLifecycleContext) {
-        self.0.lifecycle_prepared(e, c);
+    fn delegated_owner_mut(&mut self) -> Option<&mut dyn Component> {
+        Some(&mut self.0)
     }
     fn lifecycle(&mut self, e: Lifecycle) {
         self.0.lifecycle(e);
@@ -299,17 +293,11 @@ impl Component for WrappedField {
 #[derive(Debug)]
 struct WrappedScroll(ScrollContent);
 impl Component for WrappedScroll {
-    fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
-        TableTransactionCompatibility::StableHooks
+    fn delegated_owner(&self) -> Option<&dyn Component> {
+        Some(&self.0)
     }
-    fn prepared_effects_work(&self, n: usize) -> Result<usize, PreparedEffectsError> {
-        self.0.prepared_effects_work(n)
-    }
-    fn prepare_effects(&self, h: &[PreparedHook]) -> Result<PreparedEffects, PreparedEffectsError> {
-        self.0.prepare_effects(h)
-    }
-    fn lifecycle_prepared(&mut self, e: Lifecycle, c: &mut PreparedLifecycleContext) {
-        self.0.lifecycle_prepared(e, c);
+    fn delegated_owner_mut(&mut self) -> Option<&mut dyn Component> {
+        Some(&mut self.0)
     }
     fn lifecycle(&mut self, e: Lifecycle) {
         self.0.lifecycle(e);
@@ -574,8 +562,8 @@ fn preceding_unknown_getter_untouched_on_actual_success_and_refusal() {
 #[derive(Debug)]
 struct CrossOwner(std::rc::Rc<std::cell::Cell<bool>>);
 impl Component for CrossOwner {
-    fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
-        TableTransactionCompatibility::StableHooks
+    fn has_stable_hooks(&self) -> bool {
+        true
     }
     fn measure(
         &mut self,
@@ -608,10 +596,7 @@ fn stable_cross_owner_effect_without_preparation_is_refused_before_callback() {
         Content::new(id(30), CrossOwner(flag.clone())),
     );
     let rejected = host.replace_split_view_pane(input).unwrap_err();
-    assert_eq!(
-        rejected.error,
-        SplitViewError::Effects(PreparedEffectsError::Unavailable)
-    );
+    assert_eq!(rejected.error, SplitViewError::UnsupportedEffects);
     assert!(flag.get());
     assert_eq!(host.split_view_expected(id(1)), expected);
     drop(rejected.input);
@@ -665,10 +650,7 @@ fn actual_modal_close_full_cancel_unmount_positive_and_unknown_early_refusal() {
         Content::new(id(30), Button::new("next")),
     );
     let rejected = host.replace_split_view_pane(input).unwrap_err();
-    assert_eq!(
-        rejected.error,
-        SplitViewError::Effects(PreparedEffectsError::Unavailable)
-    );
+    assert_eq!(rejected.error, SplitViewError::UnsupportedEffects);
     assert_eq!(probe.get(), 0);
     assert_eq!(host.focused(), focused);
     assert_eq!(host.split_view_expected(id(1)), before);
@@ -1006,21 +988,14 @@ fn original_view_and_adapter_share_primary_secondary_doubleclick_and_keyboard_re
 #[derive(Debug)]
 struct ActivityLimited(std::rc::Rc<std::cell::Cell<usize>>);
 impl Component for ActivityLimited {
-    fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
-        TableTransactionCompatibility::StableHooks
+    fn has_stable_hooks(&self) -> bool {
+        true
     }
-    fn prepared_effects_work(&self, n: usize) -> Result<usize, PreparedEffectsError> {
-        PreparedEffects::local_work(n)
+    fn supports_prepared_lifecycle(&self) -> bool {
+        true
     }
-    fn prepare_effects(&self, h: &[PreparedHook]) -> Result<PreparedEffects, PreparedEffectsError> {
-        let calls = h
-            .iter()
-            .filter(|h| matches!(h.kind, PreparedHookKind::WindowActive(_)))
-            .count();
-        if self.0.get() + calls > 1 {
-            return Err(PreparedEffectsError::CounterCapacity);
-        }
-        Ok(PreparedEffects::local(self, h))
+    fn can_accept_window_active_transitions(&self, count: usize) -> bool {
+        self.0.get().saturating_add(count) <= 1
     }
     fn window_active_changed(&mut self, _: bool) {
         self.0.set(self.0.get() + 1);
@@ -1117,8 +1092,8 @@ fn checked_render_refuses_a_broken_split_without_blurring_original_marked_owner(
         .unwrap()
         .component::<TextFieldContent>()
         .unwrap();
-    let marked = field.surface.input.marked.clone();
-    let text = field.surface.input.text.clone();
+    let marked = field.surface.marked();
+    let text = field.surface.text().to_owned();
     let epoch = host.focus_epoch();
     let focused = host.focused();
     let frame = Rect::new(0., 0., 600., 300.);
@@ -1139,8 +1114,8 @@ fn checked_render_refuses_a_broken_split_without_blurring_original_marked_owner(
         .unwrap()
         .component::<TextFieldContent>()
         .unwrap();
-    assert_eq!(field.surface.input.marked, marked);
-    assert_eq!(field.surface.input.text, text);
+    assert_eq!(field.surface.marked(), marked);
+    assert_eq!(field.surface.text(), text);
 }
 #[test]
 fn doubleclick_terminates_the_original_host_capture_even_without_an_intervening_up() {
@@ -1192,15 +1167,11 @@ struct RecordedButton {
     log: std::rc::Rc<std::cell::RefCell<Vec<String>>>,
 }
 impl Component for RecordedButton {
-    fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
-        TableTransactionCompatibility::StableHooks
+    fn has_stable_hooks(&self) -> bool {
+        true
     }
-    fn prepared_effects_work(&self, n: usize) -> Result<usize, PreparedEffectsError> {
-        self.button.prepared_effects_work(n)
-    }
-    fn prepare_effects(&self, h: &[PreparedHook]) -> Result<PreparedEffects, PreparedEffectsError> {
-        self.button.prepare_effects(h)?;
-        Ok(PreparedEffects::local(self, h))
+    fn supports_prepared_lifecycle(&self) -> bool {
+        true
     }
     fn measure(
         &mut self,

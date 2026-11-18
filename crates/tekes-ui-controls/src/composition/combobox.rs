@@ -73,7 +73,7 @@ impl ComboBoxContent {
     pub fn text_surface(&self) -> &TextSurface {
         &self.editor.surface
     }
-    pub fn popup_layout(&self) -> Option<&crate::MenuLayout> {
+    pub fn popup_layout(&self) -> Option<&crate::feedback_view::MenuLayout> {
         self.view.options.layout()
     }
     fn available(&self) -> bool {
@@ -345,32 +345,29 @@ impl ComboBoxContent {
         r
     }
 }
+impl ComboBoxContent {
+    pub(super) fn combo_effects_work(&self, calls: usize) -> Result<usize, PreparedEffectsError> {
+        precheck_dispatch::prepared_effects_work(&self.editor, calls)
+    }
+    pub(super) fn prepare_combo_effects(
+        &self,
+        hooks: &[PreparedHook],
+    ) -> Result<PreparedEffects, PreparedEffectsError> {
+        precheck_dispatch::prepare_effects(&self.editor, hooks)?;
+        Ok(PreparedEffects::local(self, hooks))
+    }
+}
 impl Component for ComboBoxContent {
     // Original single editor under ordinary rectangular hosts. Popup geometry
     // does not claim the newer curved Panel subtree contract.
     fn rectangular_input_geometry(&self) -> bool {
         true
     }
-    fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
-        TableTransactionCompatibility::StableHooks
+    fn has_stable_hooks(&self) -> bool {
+        true
     }
-    fn prepared_effects_work(&self, calls: usize) -> Result<usize, PreparedEffectsError> {
-        self.editor.prepared_effects_work(calls)
-    }
-    fn prepare_effects(
-        &self,
-        hooks: &[PreparedHook],
-    ) -> Result<PreparedEffects, PreparedEffectsError> {
-        // Validate the retained editor's unmark/counter contract first. The
-        // wrapper owns these hooks; its remaining revocations allocate nothing.
-        self.editor.prepare_effects(hooks)?;
-        Ok(PreparedEffects::local(self, hooks))
-    }
-    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
-        ActionTransactionCompatibility::StableHooks
-    }
-    fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
-        self.prepare_combo_action(request)
+    fn supports_prepared_lifecycle(&self) -> bool {
+        true
     }
     fn validate(&self) -> Result<(), CompositionError> {
         if self.editor.field.label.trim().is_empty() {
@@ -635,20 +632,25 @@ impl Component for ComboBoxContent {
                 if self.editor.composing() {
                     return ContentResponse::consumed(false);
                 }
-                let result = self.view.options.wheel_event(crate::MenuWheelInput {
-                    point: *position,
-                    delta: *delta,
-                    precise: *precise,
-                    begin: *begin,
-                    end: *end,
-                    momentum: *momentum,
-                    time: *time,
-                });
+                let result = self
+                    .view
+                    .options
+                    .wheel_event(crate::feedback_view::MenuWheelInput {
+                        point: *position,
+                        delta: *delta,
+                        precise: *precise,
+                        begin: *begin,
+                        end: *end,
+                        momentum: *momentum,
+                        time: *time,
+                    });
                 match result {
-                    crate::MenuWheelEvent::Consumed { scrolled } => {
+                    crate::feedback_view::MenuWheelEvent::Consumed { scrolled } => {
                         ContentResponse::consumed(scrolled)
                     }
-                    crate::MenuWheelEvent::Ignored => ContentResponse::consumed(false),
+                    crate::feedback_view::MenuWheelEvent::Ignored => {
+                        ContentResponse::consumed(false)
+                    }
                 }
             }
             ContentEvent::Key {
@@ -760,7 +762,7 @@ impl Component for ComboBoxContent {
 #[derive(Debug)]
 enum ComboOperation {
     Editor {
-        decision: Box<adapters::PreparedFieldAction>,
+        decision: Box<text_field::PreparedFieldAction>,
         request: action_preparation::OwnedActionRequest,
         plan: Option<CandidatePlan>,
     },
@@ -866,7 +868,10 @@ impl PreparedActionEffect for ComboEffect {
     }
 }
 impl ComboBoxContent {
-    fn prepare_combo_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
+    pub(super) fn prepare_combo_action(
+        &self,
+        request: ComponentActionRequest<'_>,
+    ) -> ActionPreparation {
         let Some((response, focus, effect)) = self.decide_combo_action(request) else {
             return ActionPreparation::Unsupported;
         };

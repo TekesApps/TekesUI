@@ -32,13 +32,13 @@ fn original_nested_detail_survives_append_on_actual_gpu_across_themes_and_scale(
                     };
                     paint(&mut host, &mut text);
                     host.focus(Some(COMPOSER), true);
-                    let input = &mut host
+                    let input = host
                         .get_mut(COMPOSER)
                         .unwrap()
                         .component_mut::<TextFieldContent>()
                         .unwrap()
                         .surface
-                        .input;
+                        .input_mut();
                     input.preedit("ni", 0..2, None);
                     let baseline = input.external_baseline();
                     let point = host
@@ -47,7 +47,7 @@ fn original_nested_detail_survives_append_on_actual_gpu_across_themes_and_scale(
                         .component::<TextFieldContent>()
                         .unwrap()
                         .surface
-                        .inner
+                        .inner()
                         .center();
                     for (delta, time) in [(160., 1.), (-60., 2.)] {
                         host.event(&ContentEvent::Scroll {
@@ -132,11 +132,11 @@ fn original_nested_detail_survives_append_on_actual_gpu_across_themes_and_scale(
                     assert_eq!(
                         host.text_surface(COMPOSER)
                             .unwrap()
-                            .input
+                            .input()
                             .external_baseline(),
                         baseline
                     );
-                    assert!(host.text_surface(COMPOSER).unwrap().input.marked.is_some());
+                    assert!(host.text_surface(COMPOSER).unwrap().marked().is_some());
                     // A glyph-bearing crop inside the original detail stays pixel exact;
                     // the appended lower document may legitimately paint elsewhere.
                     let stride = (width * backing) as usize * 4;
@@ -195,7 +195,7 @@ fn original_scrollbar_position_survives_release_and_append_in_real_gpu_frames() 
             host.focus(Some(INNER), true);
             let surface = host.text_surface(INNER).unwrap();
             let point = surface
-                .scroll
+                .scroll()
                 .thumb(true, surface.track(true), 24.)
                 .center();
             host.event(&ContentEvent::PointerDown(point));
@@ -203,10 +203,10 @@ fn original_scrollbar_position_survives_release_and_append_in_real_gpu_frames() 
                 point.x,
                 point.y + 20.,
             )));
-            let offset = host.text_surface(INNER).unwrap().scroll.offset;
+            let offset = host.text_surface(INNER).unwrap().scroll().offset;
             assert!(offset.y > 50.);
             host.event(&ContentEvent::PointerUp(point));
-            assert_eq!(host.text_surface(INNER).unwrap().scroll.offset, offset);
+            assert_eq!(host.text_surface(INNER).unwrap().scroll().offset, offset);
             assert!(
                 !host
                     .get(PARENT)
@@ -253,7 +253,7 @@ fn original_scrollbar_position_survives_release_and_append_in_real_gpu_frames() 
                 }
                 images.push(rgba);
             }
-            assert_eq!(host.text_surface(INNER).unwrap().scroll.offset, offset);
+            assert_eq!(host.text_surface(INNER).unwrap().scroll().offset, offset);
             assert_eq!(
                 host.get(PARENT)
                     .unwrap()

@@ -1322,7 +1322,7 @@ impl Host {
                     local.with_host(&mut |host| {
                         marked = host
                             .focused_text()
-                            .is_some_and(|surface| surface.input.marked.is_some())
+                            .is_some_and(|surface| surface.marked().is_some())
                     });
                 }
                 marked
@@ -1347,8 +1347,8 @@ impl Host {
             && let Some(settings) = &mut self.settings_mgr.settings
         {
             let mut settings = settings.borrow_mut();
-            settings.sidebar.host.cancel();
-            settings.sidebar.host.focus(None, false);
+            settings.sidebar.cancel_host();
+            settings.sidebar.focus(None, false);
         }
 
         if side == 0 {
@@ -3781,16 +3781,17 @@ mod settings_close_input_tests {
             let id = ComponentId(100 + index as u64);
             let refusal = surface
                 .form
-                .host
-                .plan_host_reveal(id, Default::default(), &[], Default::default())
+                .with_host_mut(|host| {
+                    host.plan_host_reveal(id, Default::default(), &[], Default::default())
+                })
                 .err();
             eprintln!(
                 "SETTINGS_FIXTURE selected={} field={} kind={:?} component={} focus_targets={:?} reveal_refusal={:?}",
                 surface.selected,
                 field.id,
                 field.kind,
-                surface.form.host.get(id).is_some(),
-                surface.form.host.focus_targets(),
+                surface.form.host().get(id).is_some(),
+                surface.form.host().focus_targets(),
                 refusal
             );
         }
@@ -3807,14 +3808,15 @@ mod settings_close_input_tests {
             let state = host.settings_mgr.settings.as_ref().unwrap();
             {
                 let mut s = state.borrow_mut();
-                let form = &mut s.form.host;
-                assert!(form.focus(Some(ComponentId(101)), true));
-                form.event(&ContentEvent::TextCommand(
-                    tekes_ui_controls::TextEditCommand::SelectAll,
-                ));
-                form.event(&ContentEvent::Commit {
-                    text: text.into(),
-                    replacement: None,
+                s.form.with_host_mut(|form| {
+                    assert!(form.focus(Some(ComponentId(101)), true));
+                    form.event(&ContentEvent::TextCommand(
+                        tekes_ui_controls::TextEditCommand::SelectAll,
+                    ));
+                    form.event(&ContentEvent::Commit {
+                        text: text.into(),
+                        replacement: None,
+                    });
                 });
                 assert!(s.form.has_number_draft());
                 assert!(
@@ -3832,7 +3834,7 @@ mod settings_close_input_tests {
                     assert!(s.form.has_number_draft());
                     assert_eq!(
                         s.form
-                            .host
+                            .host()
                             .get(ComponentId(101))
                             .unwrap()
                             .component::<NumberFieldContent>()
@@ -3861,25 +3863,27 @@ mod settings_close_input_tests {
         let state = host.settings_mgr.settings.as_ref().unwrap();
         {
             let mut s = state.borrow_mut();
-            assert!(s.form.host.focus(Some(ComponentId(100)), true));
-            s.form.host.event(&ContentEvent::Preedit {
-                text: "中文".into(),
-                selection: 0..2,
-                clauses: std::iter::once(0..2).collect(),
-                replacement: None,
+            assert!(s.form.focus(Some(ComponentId(100)), true));
+            s.form.with_host_mut(|host| {
+                host.event(&ContentEvent::Preedit {
+                    text: "中文".into(),
+                    selection: 0..2,
+                    clauses: std::iter::once(0..2).collect(),
+                    replacement: None,
+                });
             });
-            assert!(s.form.host.is_composing());
+            assert!(s.form.host().is_composing());
             assert!(!s.draft.dirty());
         }
         assert!(!host.allows_app_quit());
         {
             let mut s = state.borrow_mut();
-            let before = s.form.host.focused_text().unwrap().input.text.clone();
-            let marked = s.form.host.focused_text().unwrap().input.marked.clone();
+            let before = s.form.host().focused_text().unwrap().text().to_owned();
+            let marked = s.form.host().focused_text().unwrap().marked();
             assert!(!s.close_requested());
             assert!(s.open);
-            assert_eq!(s.form.host.focused_text().unwrap().input.text, before);
-            assert_eq!(s.form.host.focused_text().unwrap().input.marked, marked);
+            assert_eq!(s.form.host().focused_text().unwrap().text(), before);
+            assert_eq!(s.form.host().focused_text().unwrap().marked(), marked);
             assert!(!s.draft.dirty());
         }
         assert!(!host.allows_app_quit());
@@ -3903,17 +3907,18 @@ mod settings_close_input_tests {
             assert!(
                 state
                     .form
-                    .host
-                    .plan_host_reveal(
-                        ComponentId(100),
-                        Default::default(),
-                        &[],
-                        Default::default()
-                    )
+                    .with_host_mut(|host| {
+                        host.plan_host_reveal(
+                            ComponentId(100),
+                            Default::default(),
+                            &[],
+                            Default::default(),
+                        )
+                    })
                     .is_ok()
             );
-            assert!(state.form.host.focus(Some(ComponentId(100)), true));
-            assert_eq!(state.form.host.focused(), Some(ComponentId(100)));
+            assert!(state.form.focus(Some(ComponentId(100)), true));
+            assert_eq!(state.form.host().focused(), Some(ComponentId(100)));
         }
         drop(host);
         std::fs::remove_dir_all(path.parent().unwrap()).unwrap();

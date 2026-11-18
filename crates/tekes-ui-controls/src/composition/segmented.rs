@@ -325,14 +325,11 @@ impl SegmentedControlContent {
         }
     }
 }
-impl Component for SegmentedControlContent {
-    // Hooks are owner-local: no child callback, tree mutation, queue insertion or
-    // fallible work. set_focus only chooses original focus/cancels original arms;
-    // a prepared decision establishes the original final state after those hooks.
-    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
-        ActionTransactionCompatibility::StableHooks
-    }
-    fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
+impl SegmentedControlContent {
+    pub(super) fn prepare_segmented_action(
+        &self,
+        request: ComponentActionRequest<'_>,
+    ) -> ActionPreparation {
         action_preparation::prepare_original(
             self,
             request,
@@ -350,6 +347,8 @@ impl Component for SegmentedControlContent {
             },
         )
     }
+}
+impl Component for SegmentedControlContent {
     fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
         let labels = self.labels.iter().map(String::as_str).collect::<Vec<_>>();
         MeasuredChild::new(SegmentedControlView::measure(

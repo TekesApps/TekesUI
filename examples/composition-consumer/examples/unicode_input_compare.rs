@@ -44,14 +44,14 @@ fn main() {
     impl Host {
         fn record(&mut self, kind: &str, detail: Value, window: &Window) {
             self.seq += 1;
-            let input = &self.tree.text_surface(FIELD).unwrap().input;
+            let input = self.tree.text_surface(FIELD).unwrap().input();
             eprintln!(
                 "UNICODE41 {}",
                 json!({"control":"sdk", "seq":self.seq, "kind":kind,
                 "pid":std::process::id(), "declared_source":self.source, "case":self.case,
                 "handler_elapsed_seconds":self.clock.elapsed().as_secs_f64(),
-                "detail":detail, "value":input.text,"selection":[input.selection().start,input.selection().end],
-                "marked":input.marked.as_ref().map(|r|[r.start,r.end]),"active":window.is_active(),
+                "detail":detail, "value":input.text(),"selection":[input.selection().start,input.selection().end],
+                "marked":input.marked().as_ref().map(|r|[r.start,r.end]),"active":window.is_active(),
                 "focused":self.tree.focused()==Some(FIELD),"actions":self.actions,
                 "physical_ime":"not_run"})
             );
@@ -74,7 +74,10 @@ fn main() {
             let Some(surface) = self.tree.focused_text() else {
                 return;
             };
-            if surface.input.disabled || surface.input.read_only || surface.input.marked.is_some() {
+            if surface.input().is_disabled()
+                || surface.input().is_read_only()
+                || surface.marked().is_some()
+            {
                 return;
             }
             if let Some(text) = window.clipboard_text() {
@@ -145,11 +148,11 @@ fn main() {
                 return;
             }
             self.finished = true;
-            let input = &self.tree.text_surface(FIELD).unwrap().input;
+            let input = self.tree.text_surface(FIELD).unwrap().input();
             self.record(
                 "result",
-                json!({"expected":self.expected,"matches":input.text==self.expected,
-                "no_marked":input.marked.is_none(),"no_submit":self.actions==0,"ready":self.ready}),
+                json!({"expected":self.expected,"matches":input.text()==self.expected,
+                "no_marked":input.marked().is_none(),"no_submit":self.actions==0,"ready":self.ready}),
                 window,
             );
         }

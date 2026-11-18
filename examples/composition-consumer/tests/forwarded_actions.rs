@@ -130,7 +130,6 @@ fn half_open_rows_and_original_geometry_are_unchanged() {
     let p = Point::new(f.center().x, f.max_y());
     assert!(
         !action(&h, WRAPPED_RELEASE)
-
             .button
             .layout()
             .unwrap()
@@ -138,7 +137,6 @@ fn half_open_rows_and_original_geometry_are_unchanged() {
     );
     assert!(
         action(&h, WRAPPED_PRESS)
-
             .button
             .layout()
             .unwrap()

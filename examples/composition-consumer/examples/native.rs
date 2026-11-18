@@ -271,10 +271,10 @@ fn main() {
             let r = s.caret();
             let origin = s.origin();
             tekes_ui_platform_macos::TextInputState {
-                caret_index: s.input.caret,
-                text: s.input.text.clone(),
-                selection: s.input.selection(),
-                marked: s.input.marked.clone(),
+                caret_index: s.input().caret(),
+                text: s.text().to_owned(),
+                selection: s.input().selection(),
+                marked: s.marked(),
                 caret_origin: tekes_ui_platform_macos::Point {
                     x: r.min_x() as f64,
                     y: r.min_y() as f64,
@@ -283,17 +283,17 @@ fn main() {
                     width: r.size.width as f64,
                     height: r.size.height as f64,
                 },
-                read_only: s.input.read_only,
+                read_only: s.input().is_read_only(),
                 carets: s
-                    .paragraph
-                    .as_ref()
+                    .paragraph()
                     .map(|p| {
                         p.lines
                             .iter()
                             .filter(|line| {
                                 !visible_only
-                                    || origin.y + (line.top + line.height) as f32 >= s.inner.min_y()
-                                        && origin.y + line.top as f32 <= s.inner.max_y()
+                                    || origin.y + (line.top + line.height) as f32
+                                        >= s.inner().min_y()
+                                        && origin.y + line.top as f32 <= s.inner().max_y()
                             })
                             .flat_map(|line| {
                                 line.carets.iter().map(move |(index, x)| {
@@ -397,11 +397,11 @@ fn main() {
                     native.role = A::Slider(range);
                 }
                 if let Some(surface) = self.tree.text_surface(node.id) {
-                    if surface.input.multiline {
+                    if surface.input().is_multiline() {
                         native.role = A::TextArea;
                     }
-                    native.text_selection = Some(surface.input.selection());
-                    native.read_only = surface.input.read_only;
+                    native.text_selection = Some(surface.input().selection());
+                    native.read_only = surface.input().is_read_only();
                 }
                 nodes.push(native);
                 for part in node.parts {
@@ -519,7 +519,7 @@ fn main() {
                         "scroll_events": self.nested_scroll_events,
                         "following": parent_content.is_following_latest(),
                         "parent_offset": parent_content.scroll.offset.y,
-                        "inner_offset": inner_content.surface.scroll.offset.y,
+                        "inner_offset": inner_content.surface.scroll().offset.y,
                         "inner_following": inner_content.reading.as_ref().map(|r| r.is_following_latest()),
                         "inner_visible": detail.visible().is_some(),
                         "inner_frame": rect(detail.frame()),
@@ -533,10 +533,10 @@ fn main() {
                         "version": state.version.revision(),
                         "focus": self.tree.focused().map(|id| id.0),
                         "composer_mount": composer_content.mount_identity(),
-                        "composer": composer.input.text,
-                        "marked": composer.input.marked,
-                        "selection": composer.input.selection(),
-                        "baseline": format!("{:?}", composer.input.external_baseline()),
+                        "composer": composer.text(),
+                        "marked": composer.marked(),
+                        "selection": composer.input().selection(),
+                        "baseline": format!("{:?}", composer.input().external_baseline()),
                     });
                     if rendered
                         && let Some(directory) = std::env::var_os("TEKESUI_COMPONENT_EVIDENCE")
@@ -575,8 +575,8 @@ fn main() {
                             .component::<tekes_ui_controls::composition::TextFieldContent>()
                             .unwrap()
                             .surface
-                            .input
-                            .text
+                            .input()
+                            .text()
                     );
                 }
                 if matches!(
@@ -669,11 +669,11 @@ fn main() {
                 snapshot["text_input"] = valid.then(|| self.tree.focused_text()).flatten().map_or(
                     serde_json::Value::Null,
                     |surface| {
-                        let selection = surface.input.selection();
+                        let selection = surface.input().selection();
                         serde_json::json!({
-                            "text": surface.input.text,
+                            "text": surface.text(),
                             "selection": [selection.start, selection.end],
-                            "marked": surface.input.marked.as_ref().map(|range| [range.start, range.end]),
+                            "marked": surface.marked().as_ref().map(|range| [range.start, range.end]),
                         })
                     },
                 );
@@ -689,9 +689,9 @@ fn main() {
                     snapshot["plain_document"] = serde_json::json!({
                         "version": value.version,
                         "parent_offset": parent.scroll.offset.y,
-                        "nested_offset": surface.scroll.offset.y,
-                        "wrap_width": surface.width,
-                        "body_height": surface.outer.size.height,
+                        "nested_offset": surface.scroll().offset.y,
+                        "wrap_width": surface.width(),
+                        "body_height": surface.outer().size.height,
                     });
                     if std::env::var("TEKES_SELFTEST").as_deref() == Ok("text") {
                         // The existing platform test pasteboard is private to
@@ -708,7 +708,7 @@ fn main() {
                         "error": self.item_error,
                         "result": self.tree.scroll_reading_reveal_result().map(|r| serde_json::json!({"owner":r.owner.0,"item":r.item.0,"version":format!("{:?}",r.version),"status":format!("{:?}",r.status),"changed":r.changed,"clamped":r.clamped})),
                         "focus":self.tree.focused().map(|id|id.0),"reduced_motion":self.text.reduced_motion,"type_scale":self.text.type_scale,
-                        "composer_baseline":format!("{:?}",self.tree.get(COMPOSER).unwrap().component::<tekes_ui_controls::composition::TextFieldContent>().unwrap().surface.input.external_baseline()),
+                        "composer_baseline":format!("{:?}",self.tree.get(COMPOSER).unwrap().component::<tekes_ui_controls::composition::TextFieldContent>().unwrap().surface.input().external_baseline()),
                         "scrolls":([OWNER,INNER,OTHER].into_iter().map(|id| {let scroll=&self.tree.get(id).unwrap().component::<tekes_ui_controls::composition::ScrollContent>().unwrap().scroll;serde_json::json!({"id":id.0,"x":scroll.offset.x,"y":scroll.offset.y,"limit_y":scroll.limit().y})}).collect::<Vec<_>>())
                     });
                 }
@@ -725,16 +725,16 @@ fn main() {
                         "collapsed": self.layout_collapsed, "services_enabled": self.text.services_enabled,
                         "error": self.layout_error, "focus": self.tree.focused().map(|id| id.0),
                         "pane_active": self.tree.get(PANE).unwrap().component::<Pane>().unwrap().layout_active(),
-                        "original_baseline_retained": self.layout_baseline.as_ref() == Some(&field.surface.input.external_baseline()),
-                        "original_value": field.surface.input.text,
-                        "paragraph_present": field.surface.paragraph.is_some(),
+                        "original_baseline_retained": self.layout_baseline.as_ref() == Some(&field.surface.input().external_baseline()),
+                        "original_value": field.surface.text(),
+                        "paragraph_present": field.surface.paragraph().is_some(),
                         "type_scale": self.text.type_scale,
                     });
                 }
                 if matches!(self.mode.as_str(), "semantic-label" | "semantic-ellipsis") {
                     use tekes_ui_composition_consumer::semantic_label as f;
                     use tekes_ui_controls::composition::Button;
-                    let input = &self.tree.text_surface(f::COMPOSER).unwrap().input;
+                    let input = self.tree.text_surface(f::COMPOSER).unwrap().input();
                     snapshot["semantic_label_review"] = serde_json::json!({
                         "source": self.tree.get(f::LABEL).unwrap().semantic_label().unwrap().text(),
                         "layouts": self.text.semantic_layouts.iter().map(|(label, layout)| serde_json::json!({
@@ -747,8 +747,8 @@ fn main() {
                         })).collect::<Vec<_>>(),
                         "revision": self.tree.get(f::LABEL).unwrap().semantic_label().unwrap().version().revision,
                         "focus": self.tree.focused().map(|id| id.0),
-                        "composer_text": input.text, "composer_selection": input.selection(),
-                        "composer_marked": input.marked, "type_scale": self.text.type_scale,
+                        "composer_text": input.text(), "composer_selection": input.selection(),
+                        "composer_marked": input.marked(), "type_scale": self.text.type_scale,
                         "button_actions": ([f::ACTION, f::CUSTOM].map(|id| self.tree.get(id).unwrap().component::<Button>().unwrap().activations)),
                         "names": self.tree.semantics().iter().map(|n| (n.id.0, n.semantics.name.clone())).collect::<Vec<_>>(),
                     });
@@ -776,9 +776,9 @@ fn main() {
                     snapshot["reading"] = serde_json::json!({
                         "appended": reading.appended, "pending": reading.pending,
                         "following": field.reading.as_ref().unwrap().is_following_latest(),
-                        "offset": surface.scroll.offset.y, "limit": surface.scroll.limit().y,
-                        "anchor": surface.reflow_anchor.map(|a| serde_json::json!({"utf16":a.utf16,"within_line":a.within_line})),
-                        "composer": self.tree.text_surface(COMPOSER).unwrap().input.text,
+                        "offset": surface.scroll().offset.y, "limit": surface.scroll().limit().y,
+                        "anchor": surface.reflow_anchor().map(|a| serde_json::json!({"utf16":a.utf16,"within_line":a.within_line})),
+                        "composer": self.tree.text_surface(COMPOSER).unwrap().text(),
                         "focus": self.tree.focused().map(|id| id.0),
                         "type_scale": self.text.type_scale, "width": w.size().width,
                     });
@@ -817,7 +817,7 @@ fn main() {
                     .filter(|_| valid)
                     .filter_map(|n| {
                         let surface = self.tree.text_surface(n.id)?;
-                        let paragraph = surface.paragraph.as_ref()?;
+                        let paragraph = surface.paragraph()?;
                         Some((
                             key(n.id, None),
                             tekes_ui_platform_macos::AccessibilityTextLayout {
@@ -1192,10 +1192,10 @@ fn main() {
                 return;
             }
             if let Some(surface) = self.tree.focused_text()
-                && !surface.input.disabled
-                && surface.input.marked.is_none()
+                && !surface.input().is_disabled()
+                && surface.marked().is_none()
             {
-                let selected = surface.input.selected_text();
+                let selected = surface.input().selected_text();
                 if !selected.is_empty() {
                     w.set_clipboard_text(&selected);
                 }
@@ -1214,17 +1214,17 @@ fn main() {
             let Some(surface) = self.tree.focused_text() else {
                 return;
             };
-            if surface.input.disabled || surface.input.marked.is_some() {
+            if surface.input().is_disabled() || surface.marked().is_some() {
                 return;
             }
             if command == tekes_ui_platform_macos::TextEditCommand::Copy {
                 self.copy_selection(w);
                 return;
             }
-            if surface.input.read_only {
+            if surface.input().is_read_only() {
                 return;
             }
-            let replacement = surface.input.selection();
+            let replacement = surface.input().selection();
             match command {
                 tekes_ui_platform_macos::TextEditCommand::Cut if !replacement.is_empty() => {
                     self.copy_selection(w);
@@ -1326,7 +1326,7 @@ fn main() {
                         .unwrap();
                     (
                         parent.scroll.offset.y,
-                        inner.surface.scroll.offset.y,
+                        inner.surface.scroll().offset.y,
                         parent.is_following_latest(),
                         inner
                             .reading
@@ -1370,7 +1370,7 @@ fn main() {
                     parent_before,
                     parent.scroll.offset.y,
                     inner_before,
-                    inner.surface.scroll.offset.y,
+                    inner.surface.scroll().offset.y,
                     following_before,
                     parent.is_following_latest(),
                     inner_following_before,
@@ -1385,11 +1385,9 @@ fn main() {
                 self.mode,
                 ev,
                 self.tree.focused(),
-                self.tree.focused_text().map(|s| (
-                    &s.input.text,
-                    s.input.selection(),
-                    s.input.marked.clone()
-                ))
+                self.tree
+                    .focused_text()
+                    .map(|s| (s.text(), s.input().selection(), s.marked()))
             );
             self.update_dialog_actions();
             let semantics = self.tree.semantics();
@@ -2581,7 +2579,7 @@ fn main() {
             .component::<tekes_ui_controls::composition::TextFieldContent>()
             .unwrap()
             .surface
-            .input
+            .input()
             .external_baseline()
     });
     let menu_review = mode == "menu-tree"
