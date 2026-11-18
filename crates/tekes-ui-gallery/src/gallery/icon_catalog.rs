@@ -9,6 +9,7 @@ use tekes_ui_controls::{
     composition::{IconImage, IconRenderError},
     layout_view::IconRenderer,
 };
+#[cfg(test)]
 use tekes_ui_render::Renderer;
 use tekes_ui_scene::ImageId;
 use tekes_ui_tokens::{ColorRole, Theme};
@@ -44,6 +45,7 @@ pub struct IconCatalog {
     pub entries: Vec<Entry>,
     pub notices: Vec<String>,
     pub source: Option<PathBuf>,
+    #[cfg(test)]
     prepared: Option<(Theme, u32)>,
     host_prepared: Option<(u64, Theme, u32)>,
     host_images: std::collections::HashMap<(usize, bool, usize), IconImage>,
@@ -388,6 +390,7 @@ impl IconCatalog {
     }
 
     /// Original Gallery registration path, retaining its finite catalogue cache.
+    #[cfg(test)]
     pub fn prepare(
         &mut self,
         renderer: &mut Renderer,

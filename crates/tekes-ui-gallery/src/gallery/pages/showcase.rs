@@ -5,6 +5,7 @@
 //! fixture, not a new global token scale. There is no animation, input field model,
 //! external icon font, clock, or component-local RGB palette here.
 
+#[cfg(test)]
 use super::PageCtx;
 use crate::gallery::{
     catalog::{self, Component, ShowcaseState},
@@ -149,7 +150,7 @@ pub fn hit_state(category: &str, content: Rect, p: Point) -> Option<(&'static st
 }
 
 /// Scripted native selftest uses the exact same chip geometry as rendering/hit tests.
-#[cfg(any(test, feature = "selftest"))]
+#[cfg(test)]
 pub fn state_center(
     category: &str,
     content: Rect,
@@ -670,16 +671,6 @@ fn line_slot(r: Rect, line: usize) -> Rect {
         r.size.width - 2. * INSET,
         TITLE_H,
     )
-}
-
-pub fn build(
-    category: &str,
-    ctx: &mut PageCtx<'_>,
-    content: Rect,
-    scene: &mut Scene,
-    state: &ShowcaseState,
-) {
-    build_with_text(category, ctx.theme, ctx.text, content, scene, state);
 }
 
 pub(crate) fn build_with_text(

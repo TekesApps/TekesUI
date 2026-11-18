@@ -63,8 +63,8 @@
           "experience": "unverified",
           "note": "GridView geometry-only public scope: zero dynamic token lookups explicitly asserted. Real four-theme child Button/CoreText/GPU consumers run outside that capture; child dependencies not attributed to Grid. Native/whole experience separate.",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
-            "anchor": "fn grid_playground_zero_area_drops_child_geometry_and_restores_it()",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_layout.rs",
+            "anchor": "LayoutModel::Grid(model),",
             "story": "playground",
             "note": "Actual Gallery collapse/restore uses the real GridView, preserving pure model measurement and positive natural overflow."
           }
@@ -120,8 +120,8 @@
           "experience": "unverified",
           "note": "Actual scale-aware SeparatorView across4themes/3brands,axes and fractional phases; current Gallery draw and variants integration tested. Native/physical clarity and whole Gold7 remain unverified.",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs",
-            "anchor": "fn separator_story_and_variants_forward_actual_renderer_backing_scale()",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_layout.rs",
+            "anchor": "LayoutModel::Separator(Axis::Horizontal),",
             "story": "playground",
             "note": "Production draw/variants forward real TextEngine backing scale. Test proves adapter wiring, not native/whole-page acceptance."
           }
@@ -862,8 +862,8 @@
           "runtime": "public-api-verified",
           "experience": "unverified",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
-            "anchor": "\"loading\" => e.renderer() == \"button\"",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_basic.rs",
+            "anchor": "\"loading\",\n            ControlState {",
             "story": "states",
             "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
           },
@@ -1169,8 +1169,8 @@
           "runtime": "public-api-verified",
           "experience": "unverified",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
-            "anchor": "input.prepare_input_pointer_fixture(ctx.text, r, Some(c), name);",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_input_sections.rs",
+            "anchor": "TextFixture::new(renderer == \"area\", name, state),",
             "story": "states",
             "note": "Shared TextSurface pointer_state derives visible hit and existing selection/scroll capture; hover/pressed preserve input skin. Real pointer-down fixture, API and GPU evidence are separate from physical/native acceptance."
           }
@@ -1181,8 +1181,8 @@
           "runtime": "public-api-verified",
           "experience": "unverified",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
-            "anchor": "input.prepare_input_pointer_fixture(ctx.text, r, Some(c), name);",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_input_sections.rs",
+            "anchor": "TextFixture::new(renderer == \"area\", name, state),",
             "story": "states",
             "note": "Shared TextSurface pointer_state derives visible hit and existing selection/scroll capture; hover/pressed preserve input skin. Real pointer-down fixture, API and GPU evidence are separate from physical/native acceptance."
           }
@@ -1217,8 +1217,8 @@
           "runtime": "public-api-verified",
           "experience": "unverified",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
-            "anchor": "[\"field\", \"area\", \"search\", \"field-meta\"].contains(&e.renderer())",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_input_sections.rs",
+            "anchor": "field.field.error = state.error.then(|| \"A name is required.\".into());",
             "story": "states",
             "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
           }
@@ -1229,8 +1229,8 @@
           "runtime": "public-api-verified",
           "experience": "unverified",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
-            "anchor": "input.prepare_input_state_fixture(name);",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_input_sections.rs",
+            "anchor": "states.extend([\"read-only\", \"composing\", \"selection\"].map(|name| {",
             "story": "states",
             "note": "Shared TextSurface specimen uses production UTF-16 selection/preedit and read-only behavior. Four-theme GPU capture is separate from physical IME/native acceptance."
           }
@@ -1241,8 +1241,8 @@
           "runtime": "public-api-verified",
           "experience": "unverified",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
-            "anchor": "input.prepare_input_state_fixture(name);",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_input_sections.rs",
+            "anchor": "states.extend([\"read-only\", \"composing\", \"selection\"].map(|name| {",
             "story": "states",
             "note": "Shared TextSurface specimen uses production UTF-16 selection/preedit and read-only behavior. Four-theme GPU capture is separate from physical IME/native acceptance."
           }
@@ -1253,8 +1253,8 @@
           "runtime": "public-api-verified",
           "experience": "unverified",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
-            "anchor": "input.prepare_input_state_fixture(name);",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_input_sections.rs",
+            "anchor": "states.extend([\"read-only\", \"composing\", \"selection\"].map(|name| {",
             "story": "states",
             "note": "Shared TextSurface specimen uses production UTF-16 selection/preedit and read-only behavior. Four-theme GPU capture is separate from physical IME/native acceptance."
           }
@@ -1322,8 +1322,8 @@
           "runtime": "public-api-verified",
           "experience": "unverified",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
-            "anchor": "input.prepare_input_pointer_fixture(ctx.text, r, Some(c), name);",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_input_sections.rs",
+            "anchor": "TextFixture::new(renderer == \"area\", name, state),",
             "story": "states",
             "note": "Shared TextSurface pointer_state derives visible hit and existing selection/scroll capture; hover/pressed preserve input skin. Real pointer-down fixture, API and GPU evidence are separate from physical/native acceptance."
           }
@@ -1334,8 +1334,8 @@
           "runtime": "public-api-verified",
           "experience": "unverified",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
-            "anchor": "input.prepare_input_pointer_fixture(ctx.text, r, Some(c), name);",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_input_sections.rs",
+            "anchor": "TextFixture::new(renderer == \"area\", name, state),",
             "story": "states",
             "note": "Shared TextSurface pointer_state derives visible hit and existing selection/scroll capture; hover/pressed preserve input skin. Real pointer-down fixture, API and GPU evidence are separate from physical/native acceptance."
           }
@@ -1370,8 +1370,8 @@
           "runtime": "public-api-verified",
           "experience": "unverified",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
-            "anchor": "[\"field\", \"area\", \"search\", \"field-meta\"].contains(&e.renderer())",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_input_sections.rs",
+            "anchor": "field.field.error = state.error.then(|| \"A name is required.\".into());",
             "story": "states",
             "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
           }
@@ -1382,8 +1382,8 @@
           "runtime": "public-api-verified",
           "experience": "unverified",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
-            "anchor": "input.prepare_input_state_fixture(name);",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_input_sections.rs",
+            "anchor": "states.extend([\"read-only\", \"composing\", \"selection\"].map(|name| {",
             "story": "states",
             "note": "Shared TextSurface specimen uses production UTF-16 selection/preedit and read-only behavior. Four-theme GPU capture is separate from physical IME/native acceptance."
           }
@@ -1394,8 +1394,8 @@
           "runtime": "public-api-verified",
           "experience": "unverified",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
-            "anchor": "input.prepare_input_state_fixture(name);",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_input_sections.rs",
+            "anchor": "states.extend([\"read-only\", \"composing\", \"selection\"].map(|name| {",
             "story": "states",
             "note": "Shared TextSurface specimen uses production UTF-16 selection/preedit and read-only behavior. Four-theme GPU capture is separate from physical IME/native acceptance."
           }
@@ -1406,8 +1406,8 @@
           "runtime": "public-api-verified",
           "experience": "unverified",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
-            "anchor": "input.prepare_input_state_fixture(name);",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_input_sections.rs",
+            "anchor": "states.extend([\"read-only\", \"composing\", \"selection\"].map(|name| {",
             "story": "states",
             "note": "Shared TextSurface specimen uses production UTF-16 selection/preedit and read-only behavior. Four-theme GPU capture is separate from physical IME/native acceptance."
           }
@@ -1477,8 +1477,8 @@
           "runtime": "public-api-verified",
           "experience": "unverified",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
-            "anchor": "input.prepare_input_pointer_fixture(ctx.text, r, Some(c), name);",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_input_sections.rs",
+            "anchor": "TextFixture::new(renderer == \"area\", name, state),",
             "story": "states",
             "note": "Shared TextSurface pointer_state derives visible hit and existing selection/scroll capture; hover/pressed preserve input skin. Real pointer-down fixture, API and GPU evidence are separate from physical/native acceptance."
           }
@@ -1489,8 +1489,8 @@
           "runtime": "public-api-verified",
           "experience": "unverified",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
-            "anchor": "input.prepare_input_pointer_fixture(ctx.text, r, Some(c), name);",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_input_sections.rs",
+            "anchor": "TextFixture::new(renderer == \"area\", name, state),",
             "story": "states",
             "note": "Shared TextSurface pointer_state derives visible hit and existing selection/scroll capture; hover/pressed preserve input skin. Real pointer-down fixture, API and GPU evidence are separate from physical/native acceptance."
           }
@@ -1525,8 +1525,8 @@
           "runtime": "public-api-verified",
           "experience": "unverified",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
-            "anchor": "[\"field\", \"area\", \"search\", \"field-meta\"].contains(&e.renderer())",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_input_sections.rs",
+            "anchor": "field.field.error = state.error.then(|| \"A name is required.\".into());",
             "story": "states",
             "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
           }
@@ -1537,8 +1537,8 @@
           "runtime": "public-api-verified",
           "experience": "unverified",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
-            "anchor": "input.prepare_input_state_fixture(name);",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_input_sections.rs",
+            "anchor": "states.extend([\"read-only\", \"composing\", \"selection\"].map(|name| {",
             "story": "states",
             "note": "Shared TextSurface specimen uses production UTF-16 selection/preedit and read-only behavior. Four-theme GPU capture is separate from physical IME/native acceptance."
           }
@@ -1549,8 +1549,8 @@
           "runtime": "public-api-verified",
           "experience": "unverified",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
-            "anchor": "input.prepare_input_state_fixture(name);",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_input_sections.rs",
+            "anchor": "states.extend([\"read-only\", \"composing\", \"selection\"].map(|name| {",
             "story": "states",
             "note": "Shared TextSurface specimen uses production UTF-16 selection/preedit and read-only behavior. Four-theme GPU capture is separate from physical IME/native acceptance."
           }
@@ -1561,8 +1561,8 @@
           "runtime": "public-api-verified",
           "experience": "unverified",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
-            "anchor": "input.prepare_input_state_fixture(name);",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_input_sections.rs",
+            "anchor": "states.extend([\"read-only\", \"composing\", \"selection\"].map(|name| {",
             "story": "states",
             "note": "Shared TextSurface specimen uses production UTF-16 selection/preedit and read-only behavior. Four-theme GPU capture is separate from physical IME/native acceptance."
           }
@@ -1622,8 +1622,8 @@
           "experience": "unverified",
           "note": "Exact production Select state or caller TextSurface/ComboBox state across four themes/three brands; selected value/open/empty candidate semantics asserted; full experience and status compositions remain separate.",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
-            "anchor": "fn combo_box(",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_input_sections.rs",
+            "anchor": "COMBO_CASES.as_slice()",
             "story": "states",
             "note": "Original production View and measured rows. Select7 states use real event methods; ComboBox8 states reuse TextSurface pointer fixture and original filtered View. No Button skin for editable query; Select empty and caller loading/error remain unverified."
           }
@@ -1635,8 +1635,8 @@
           "experience": "unverified",
           "note": "Exact production Select state or caller TextSurface/ComboBox state across four themes/three brands; selected value/open/empty candidate semantics asserted; full experience and status compositions remain separate.",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
-            "anchor": "fn combo_box(",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_input_sections.rs",
+            "anchor": "COMBO_CASES.as_slice()",
             "story": "states",
             "note": "Original production View and measured rows. Select7 states use real event methods; ComboBox8 states reuse TextSurface pointer fixture and original filtered View. No Button skin for editable query; Select empty and caller loading/error remain unverified."
           }
@@ -1648,8 +1648,8 @@
           "experience": "unverified",
           "note": "Exact production Select state or caller TextSurface/ComboBox state across four themes/three brands; selected value/open/empty candidate semantics asserted; full experience and status compositions remain separate.",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
-            "anchor": "fn combo_box(",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_input_sections.rs",
+            "anchor": "COMBO_CASES.as_slice()",
             "story": "states",
             "note": "Original production View and measured rows. Select7 states use real event methods; ComboBox8 states reuse TextSurface pointer fixture and original filtered View. No Button skin for editable query; Select empty and caller loading/error remain unverified."
           }
@@ -1661,8 +1661,8 @@
           "experience": "unverified",
           "note": "Exact production Select state or caller TextSurface/ComboBox state across four themes/three brands; selected value/open/empty candidate semantics asserted; full experience and status compositions remain separate.",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
-            "anchor": "fn combo_box(",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_input_sections.rs",
+            "anchor": "COMBO_CASES.as_slice()",
             "story": "states",
             "note": "Original production View and measured rows. Select7 states use real event methods; ComboBox8 states reuse TextSurface pointer fixture and original filtered View. No Button skin for editable query; Select empty and caller loading/error remain unverified."
           }
@@ -1674,8 +1674,8 @@
           "experience": "unverified",
           "note": "Exact production Select state or caller TextSurface/ComboBox state across four themes/three brands; selected value/open/empty candidate semantics asserted; full experience and status compositions remain separate.",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
-            "anchor": "fn combo_box(",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_input_sections.rs",
+            "anchor": "COMBO_CASES.as_slice()",
             "story": "states",
             "note": "Original production View and measured rows. Select7 states use real event methods; ComboBox8 states reuse TextSurface pointer fixture and original filtered View. No Button skin for editable query; Select empty and caller loading/error remain unverified."
           }
@@ -1687,8 +1687,8 @@
           "experience": "unverified",
           "note": "Exact production Select state or caller TextSurface/ComboBox state across four themes/three brands; selected value/open/empty candidate semantics asserted; full experience and status compositions remain separate.",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
-            "anchor": "fn combo_box(",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_input_sections.rs",
+            "anchor": "COMBO_CASES.as_slice()",
             "story": "states",
             "note": "Original production View and measured rows. Select7 states use real event methods; ComboBox8 states reuse TextSurface pointer fixture and original filtered View. No Button skin for editable query; Select empty and caller loading/error remain unverified."
           }
@@ -1714,8 +1714,8 @@
           "experience": "unverified",
           "note": "Exact production Select state or caller TextSurface/ComboBox state across four themes/three brands; selected value/open/empty candidate semantics asserted; full experience and status compositions remain separate.",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
-            "anchor": "fn combo_box(",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_input_sections.rs",
+            "anchor": "COMBO_CASES.as_slice()",
             "story": "states",
             "note": "Original production View and measured rows. Select7 states use real event methods; ComboBox8 states reuse TextSurface pointer fixture and original filtered View. No Button skin for editable query; Select empty and caller loading/error remain unverified."
           }
@@ -1727,8 +1727,8 @@
           "experience": "unverified",
           "note": "Exact production Select state or caller TextSurface/ComboBox state across four themes/three brands; selected value/open/empty candidate semantics asserted; full experience and status compositions remain separate.",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
-            "anchor": "fn combo_box(",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_input_sections.rs",
+            "anchor": "COMBO_CASES.as_slice()",
             "story": "states",
             "note": "Original production View and measured rows. Select7 states use real event methods; ComboBox8 states reuse TextSurface pointer fixture and original filtered View. No Button skin for editable query; Select empty and caller loading/error remain unverified."
           }
@@ -2448,8 +2448,8 @@
           "runtime": "public-api-verified",
           "experience": "unverified",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench.rs",
-            "anchor": "[\"field\", \"area\", \"search\", \"field-meta\"].contains(&e.renderer())",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_field_meta.rs",
+            "anchor": "field.error = control.error.then(|| \"A name is required.\".into());",
             "story": "states",
             "note": "Field metadata public API probe asserts actual label/required/message ink, error-over-help precedence and wrapping geometry across four themes, three brands and two label roles. Exact rest/error states only; disabled interaction is delegated to the input child; native experience remains separate."
           }
@@ -2507,8 +2507,8 @@
           "experience": "unverified",
           "note": "Exact production Select state or caller TextSurface/ComboBox state across four themes/three brands; selected value/open/empty candidate semantics asserted; full experience and status compositions remain separate.",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
-            "anchor": "fn select(",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_input_sections.rs",
+            "anchor": "SELECT_CASES.as_slice()",
             "story": "states",
             "note": "Original production View and measured rows. Select7 states use real event methods; ComboBox8 states reuse TextSurface pointer fixture and original filtered View. No Button skin for editable query; Select empty and caller loading/error remain unverified."
           }
@@ -2520,8 +2520,8 @@
           "experience": "unverified",
           "note": "Exact production Select state or caller TextSurface/ComboBox state across four themes/three brands; selected value/open/empty candidate semantics asserted; full experience and status compositions remain separate.",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
-            "anchor": "fn select(",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_input_sections.rs",
+            "anchor": "SELECT_CASES.as_slice()",
             "story": "states",
             "note": "Original production View and measured rows. Select7 states use real event methods; ComboBox8 states reuse TextSurface pointer fixture and original filtered View. No Button skin for editable query; Select empty and caller loading/error remain unverified."
           }
@@ -2533,8 +2533,8 @@
           "experience": "unverified",
           "note": "Exact production Select state or caller TextSurface/ComboBox state across four themes/three brands; selected value/open/empty candidate semantics asserted; full experience and status compositions remain separate.",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
-            "anchor": "fn select(",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_input_sections.rs",
+            "anchor": "SELECT_CASES.as_slice()",
             "story": "states",
             "note": "Original production View and measured rows. Select7 states use real event methods; ComboBox8 states reuse TextSurface pointer fixture and original filtered View. No Button skin for editable query; Select empty and caller loading/error remain unverified."
           }
@@ -2546,8 +2546,8 @@
           "experience": "unverified",
           "note": "Exact production Select state or caller TextSurface/ComboBox state across four themes/three brands; selected value/open/empty candidate semantics asserted; full experience and status compositions remain separate.",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
-            "anchor": "fn select(",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_input_sections.rs",
+            "anchor": "SELECT_CASES.as_slice()",
             "story": "states",
             "note": "Original production View and measured rows. Select7 states use real event methods; ComboBox8 states reuse TextSurface pointer fixture and original filtered View. No Button skin for editable query; Select empty and caller loading/error remain unverified."
           }
@@ -2559,8 +2559,8 @@
           "experience": "unverified",
           "note": "Exact production Select state or caller TextSurface/ComboBox state across four themes/three brands; selected value/open/empty candidate semantics asserted; full experience and status compositions remain separate.",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
-            "anchor": "fn select(",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_input_sections.rs",
+            "anchor": "SELECT_CASES.as_slice()",
             "story": "states",
             "note": "Original production View and measured rows. Select7 states use real event methods; ComboBox8 states reuse TextSurface pointer fixture and original filtered View. No Button skin for editable query; Select empty and caller loading/error remain unverified."
           }
@@ -2572,8 +2572,8 @@
           "experience": "unverified",
           "note": "Exact production Select state or caller TextSurface/ComboBox state across four themes/three brands; selected value/open/empty candidate semantics asserted; full experience and status compositions remain separate.",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
-            "anchor": "fn select(",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_input_sections.rs",
+            "anchor": "SELECT_CASES.as_slice()",
             "story": "states",
             "note": "Original production View and measured rows. Select7 states use real event methods; ComboBox8 states reuse TextSurface pointer fixture and original filtered View. No Button skin for editable query; Select empty and caller loading/error remain unverified."
           }
@@ -2599,8 +2599,8 @@
           "experience": "unverified",
           "note": "Exact production Select state or caller TextSurface/ComboBox state across four themes/three brands; selected value/open/empty candidate semantics asserted; full experience and status compositions remain separate.",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
-            "anchor": "fn select(",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_input_sections.rs",
+            "anchor": "SELECT_CASES.as_slice()",
             "story": "states",
             "note": "Original production View and measured rows. Select7 states use real event methods; ComboBox8 states reuse TextSurface pointer fixture and original filtered View. No Button skin for editable query; Select empty and caller loading/error remain unverified."
           }
@@ -2612,8 +2612,8 @@
           "experience": "unverified",
           "note": "Original SelectView: empty options cancel popup/press without inventing a value; validation error projects existing shared boundary and permits repair. Four themes/three brands; async content failure/loading and full experience remain separate.",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
-            "anchor": "fn select(",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_input_sections.rs",
+            "anchor": "SELECT_CASES.as_slice()",
             "story": "states",
             "note": "Measured original View specimens; empty set has caller caption and no popup; validation uses original SelectView.set_error. No new tokens/status protocol or placeholder fake option."
           }
@@ -2921,7 +2921,7 @@
           "note": "Exact header state and actual paint asserted via public APIs, four themes/three brands. Content-status and native/AX acceptance separate.",
           "evidence": {
             "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
-            "anchor": "fn breadcrumb(",
+            "anchor": "fn breadcrumb_cases() -> [BreadcrumbCase; 6] {",
             "story": "states",
             "note": "Reviewed actual production view/event setup: Breadcrumb focus after first layout and whole-group disabled; Tabs hover/selected/focus/pressed/disabled; Disclosure expansion/disabled/header states. Content statuses remain unverified."
           }
@@ -2934,7 +2934,7 @@
           "note": "Exact header state and actual paint asserted via public APIs, four themes/three brands. Content-status and native/AX acceptance separate.",
           "evidence": {
             "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
-            "anchor": "fn breadcrumb(",
+            "anchor": "fn breadcrumb_cases() -> [BreadcrumbCase; 6] {",
             "story": "states",
             "note": "Reviewed actual production view/event setup: Breadcrumb focus after first layout and whole-group disabled; Tabs hover/selected/focus/pressed/disabled; Disclosure expansion/disabled/header states. Content statuses remain unverified."
           }
@@ -2947,7 +2947,7 @@
           "note": "Exact header state and actual paint asserted via public APIs, four themes/three brands. Content-status and native/AX acceptance separate.",
           "evidence": {
             "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
-            "anchor": "fn breadcrumb(",
+            "anchor": "fn breadcrumb_cases() -> [BreadcrumbCase; 6] {",
             "story": "states",
             "note": "Reviewed actual production view/event setup: Breadcrumb focus after first layout and whole-group disabled; Tabs hover/selected/focus/pressed/disabled; Disclosure expansion/disabled/header states. Content statuses remain unverified."
           }
@@ -2960,7 +2960,7 @@
           "note": "Exact header state and actual paint asserted via public APIs, four themes/three brands. Content-status and native/AX acceptance separate.",
           "evidence": {
             "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
-            "anchor": "fn breadcrumb(",
+            "anchor": "fn breadcrumb_cases() -> [BreadcrumbCase; 6] {",
             "story": "states",
             "note": "Reviewed actual production view/event setup: Breadcrumb focus after first layout and whole-group disabled; Tabs hover/selected/focus/pressed/disabled; Disclosure expansion/disabled/header states. Content statuses remain unverified."
           }
@@ -2973,7 +2973,7 @@
           "note": "Exact header state and actual paint asserted via public APIs, four themes/three brands. Content-status and native/AX acceptance separate.",
           "evidence": {
             "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
-            "anchor": "fn breadcrumb(",
+            "anchor": "fn breadcrumb_cases() -> [BreadcrumbCase; 6] {",
             "story": "states",
             "note": "Reviewed actual production view/event setup: Breadcrumb focus after first layout and whole-group disabled; Tabs hover/selected/focus/pressed/disabled; Disclosure expansion/disabled/header states. Content statuses remain unverified."
           }
@@ -3031,8 +3031,8 @@
           "experience": "unverified",
           "note": "Trigger action only: production state and paint asserted across four themes/three brands. Query/candidate/content states and native AX remain separate.",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
-            "anchor": "fn command_palette(",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_command.rs",
+            "anchor": "pub(super) const CASES: [(&str, &str, bool, bool); 9] = [",
             "story": "states",
             "note": "Closed default/hover/pressed/keyboard focus and disabled specimens invoke the original CommandPaletteView event methods. Open rows focus the query only; whole palette state coverage is not inferred."
           }
@@ -3044,8 +3044,8 @@
           "experience": "unverified",
           "note": "Trigger action only: production state and paint asserted across four themes/three brands. Query/candidate/content states and native AX remain separate.",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
-            "anchor": "fn command_palette(",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_command.rs",
+            "anchor": "pub(super) const CASES: [(&str, &str, bool, bool); 9] = [",
             "story": "states",
             "note": "Closed default/hover/pressed/keyboard focus and disabled specimens invoke the original CommandPaletteView event methods. Open rows focus the query only; whole palette state coverage is not inferred."
           }
@@ -3057,8 +3057,8 @@
           "experience": "unverified",
           "note": "Trigger action only: production state and paint asserted across four themes/three brands. Query/candidate/content states and native AX remain separate.",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
-            "anchor": "fn command_palette(",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_command.rs",
+            "anchor": "pub(super) const CASES: [(&str, &str, bool, bool); 9] = [",
             "story": "states",
             "note": "Closed default/hover/pressed/keyboard focus and disabled specimens invoke the original CommandPaletteView event methods. Open rows focus the query only; whole palette state coverage is not inferred."
           }
@@ -3070,8 +3070,8 @@
           "experience": "unverified",
           "note": "Trigger action only: production state and paint asserted across four themes/three brands. Query/candidate/content states and native AX remain separate.",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
-            "anchor": "fn command_palette(",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_command.rs",
+            "anchor": "pub(super) const CASES: [(&str, &str, bool, bool); 9] = [",
             "story": "states",
             "note": "Closed default/hover/pressed/keyboard focus and disabled specimens invoke the original CommandPaletteView event methods. Open rows focus the query only; whole palette state coverage is not inferred."
           }
@@ -3083,8 +3083,8 @@
           "experience": "unverified",
           "note": "Trigger action only: production state and paint asserted across four themes/three brands. Query/candidate/content states and native AX remain separate.",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
-            "anchor": "fn command_palette(",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_command.rs",
+            "anchor": "pub(super) const CASES: [(&str, &str, bool, bool); 9] = [",
             "story": "states",
             "note": "Closed default/hover/pressed/keyboard focus and disabled specimens invoke the original CommandPaletteView event methods. Open rows focus the query only; whole palette state coverage is not inferred."
           }
@@ -3096,8 +3096,8 @@
           "experience": "unverified",
           "note": "Original CommandPaletteView and caller TextSurface: actual open, empty query with no ghost popup or activation, repeated execution preserves command value but emits each activation; four themes/three brands. Loading/error remain separate.",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
-            "anchor": "fn command_palette(",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_command.rs",
+            "anchor": "pub(super) const CASES: [(&str, &str, bool, bool); 9] = [",
             "story": "states",
             "note": "Measured original View specimens include selected command after real Down/Enter and caller-owned last-command caption; query/candidate and trigger states remain distinct."
           }
@@ -3123,8 +3123,8 @@
           "experience": "unverified",
           "note": "Original CommandPaletteView and caller TextSurface: actual open, empty query with no ghost popup or activation, repeated execution preserves command value but emits each activation; four themes/three brands. Loading/error remain separate.",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
-            "anchor": "fn command_palette(",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_command.rs",
+            "anchor": "pub(super) const CASES: [(&str, &str, bool, bool); 9] = [",
             "story": "states",
             "note": "Measured original View specimens include selected command after real Down/Enter and caller-owned last-command caption; query/candidate and trigger states remain distinct."
           }
@@ -3136,8 +3136,8 @@
           "experience": "unverified",
           "note": "Original CommandPaletteView and caller TextSurface: actual open, empty query with no ghost popup or activation, repeated execution preserves command value but emits each activation; four themes/three brands. Loading/error remain separate.",
           "evidence": {
-            "source": "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs",
-            "anchor": "fn command_palette(",
+            "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_command.rs",
+            "anchor": "pub(super) const CASES: [(&str, &str, bool, bool); 9] = [",
             "story": "states",
             "note": "Measured original View specimens include selected command after real Down/Enter and caller-owned last-command caption; query/candidate and trigger states remain distinct."
           }

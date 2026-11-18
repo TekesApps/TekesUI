@@ -13,7 +13,6 @@ use tekes_ui_motion::{
     MotionSpec, Spring, TimingCurve,
 };
 
-pub const SLUG: &str = "motion-foundation";
 #[cfg(test)]
 pub const TOKENS: &[&str] = &[
     "motion.duration",

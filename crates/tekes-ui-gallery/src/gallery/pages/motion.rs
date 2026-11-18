@@ -1,5 +1,6 @@
 //! Motion page: same JSON colors/type/spacing, Scene and TextEngine as Gallery.
 //! No host, window, renderer, timers or extra UI toolkit is created here.
+#[cfg(test)]
 use super::PageCtx;
 use crate::gallery::motion_preview::{MotionPlacement, MotionPreview, Parameter, PresetCatalog};
 use tekes_ui_controls::{ButtonSize, ButtonTextAlign, ButtonVariant};
@@ -295,7 +296,7 @@ pub struct Layout {
     reading_inside_stage: bool,
 }
 impl Layout {
-    #[cfg(any(test, feature = "selftest"))]
+    #[cfg(test)]
     pub fn new(content: Rect) -> Self {
         let mut text = crate::gallery::text::TextEngine::new();
         Self::for_state(content, &MotionPreview::default(), &mut text)
@@ -1057,14 +1058,6 @@ pub fn extent(content: Rect) -> Size {
         .size
 }
 
-pub(crate) fn extent_for_state(
-    content: Rect,
-    state: &MotionPreview,
-    text: &mut dyn MotionText,
-) -> Size {
-    Layout::for_state(content, state, text).content.size
-}
-
 /// Pass the same live-content rectangle used by `build` and raw window event
 /// positions together. The host applies viewport bounds routing first; a
 /// captured slider must continue receiving drag/up outside those bounds.
@@ -1560,6 +1553,7 @@ fn measured_footer_height(
     height + gap * items.len().saturating_sub(1) as f32
 }
 
+#[cfg(test)]
 pub fn build(
     ctx: &mut PageCtx<'_>,
     content: Rect,

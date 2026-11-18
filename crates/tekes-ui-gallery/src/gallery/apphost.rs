@@ -1,6 +1,5 @@
 //! Local-only AppHost workbench: real original controls and a small shared
 //! document model. Presentation moves never rebuild the owning ContentHosts.
-use super::{Page, workbench};
 use std::{
     cell::RefCell,
     collections::VecDeque,
@@ -26,7 +25,7 @@ use tekes_ui_controls::{
         Stack,
     },
 };
-use tekes_ui_platform_macos::{Size as WindowSize, Window, WindowConfig, WindowHandle};
+use tekes_ui_platform_macos::{Size as WindowSize, WindowConfig};
 use tekes_ui_tokens::{Spacing, Theme, proposal::TextRole};
 const DOCUMENT_TITLES: [&str; 4] = [
     "A quieter workspace",
@@ -42,9 +41,6 @@ const STATUS: ComponentId = ComponentId(104);
 const PRIORITY: ComponentId = ComponentId(105);
 const STATUSES: [&str; 3] = ["Draft", "Review", "Published"];
 
-pub fn is_page(page: Page) -> bool {
-    matches!(page, Page::Workbench(index) if workbench::entries()[index].slug() == "apphost")
-}
 #[derive(Clone)]
 struct Document {
     key: ListItemKey,
@@ -261,7 +257,7 @@ fn data_root() -> anyhow::Result<std::path::PathBuf> {
 pub fn settings_owner() -> anyhow::Result<SettingsOwner> {
     settings_owner_in(data_root()?)
 }
-fn settings_owner_in(root: std::path::PathBuf) -> anyhow::Result<SettingsOwner> {
+pub(super) fn settings_owner_in(root: std::path::PathBuf) -> anyhow::Result<SettingsOwner> {
     SettingsOwner::new(
         SettingsWindow::from_toml(
             include_str!("apphost.settings.toml"),
@@ -876,16 +872,6 @@ pub(super) fn open_request(
         },
         session_dir,
     ))
-}
-
-pub(crate) fn open(
-    parent: &Window,
-    theme: Theme,
-    settings: SettingsOwner,
-) -> anyhow::Result<(WindowHandle, SessionTempDir)> {
-    let (request, session_dir) = open_request(theme, settings)?;
-    let handle = request.app.open(parent, request.config)?;
-    Ok((handle, session_dir))
 }
 
 #[cfg(test)]

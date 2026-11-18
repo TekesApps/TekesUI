@@ -1,18 +1,26 @@
 //! Live Text and TextEditor surfaces share shaping, selection, scrolling and IME data.
-use super::{PageCtx, text::TextEngine};
-use tekes_ui_controls::{
-    ButtonModel, ButtonSize, ButtonTextAlign, ButtonTextRenderer, ControlKey, ReadingController,
-    TextInput,
-};
-use tekes_ui_platform_macos::{
-    Event, KeyEventKind, MouseButton, MouseEventKind, ScrollPhase, TextInputState,
-};
-use tekes_ui_scene::{Point, Rect, Scene};
-use tekes_ui_tokens::{Spacing, Stroke, Theme, proposal};
+#[cfg(test)]
+use super::PageCtx;
+#[cfg(test)]
+use super::text::TextEngine;
+#[cfg(test)]
+use tekes_ui_controls::{ButtonModel, ButtonSize, ButtonTextAlign, ButtonTextRenderer, ControlKey};
+use tekes_ui_controls::{ReadingController, TextInput};
+use tekes_ui_platform_macos::TextInputState;
+#[cfg(test)]
+use tekes_ui_platform_macos::{Event, KeyEventKind, MouseButton, MouseEventKind, ScrollPhase};
+use tekes_ui_scene::Rect;
+#[cfg(test)]
+use tekes_ui_scene::{Point, Scene};
+#[cfg(test)]
+use tekes_ui_tokens::Theme;
+use tekes_ui_tokens::{Spacing, Stroke, proposal};
 
+#[cfg(test)]
 fn ink(id: &str, theme: Theme) -> tekes_ui_tokens::Rgba {
     proposal::render_color(id, theme).expect("JSON text role")
 }
+#[cfg(test)]
 fn metric(group: &str, id: &str) -> f32 {
     proposal::metric(group, id).expect("JSON metric")
 }
@@ -72,12 +80,18 @@ pub(crate) fn section_layout(
 #[derive(Debug)]
 struct Surface {
     view: tekes_ui_controls::TextSurface,
+    #[cfg(test)]
     prepared: Option<tekes_ui_text::coretext::PreparedText>,
+    #[cfg(test)]
     prepared_role: Option<proposal::TextRole>,
+    #[cfg(test)]
     fixture: bool,
     reading: Option<ReadingController>,
+    #[cfg(test)]
     appended: usize,
+    #[cfg(test)]
     stream_remaining: u8,
+    #[cfg(test)]
     stream_elapsed: f32,
 }
 
@@ -96,12 +110,18 @@ impl Surface {
     fn new(text: &str, multiline: bool, read_only: bool) -> Self {
         Self {
             view: tekes_ui_controls::TextSurface::new(text, multiline, read_only),
+            #[cfg(test)]
             prepared: None,
+            #[cfg(test)]
             prepared_role: None,
+            #[cfg(test)]
             fixture: false,
             reading: None,
+            #[cfg(test)]
             appended: 0,
+            #[cfg(test)]
             stream_remaining: 0,
+            #[cfg(test)]
             stream_elapsed: 0.,
         }
     }
@@ -110,6 +130,7 @@ impl Surface {
     fn layout(&mut self, text: &mut TextEngine, rect: Rect) {
         self.layout_clipped(text, rect, None);
     }
+    #[cfg(test)]
     fn layout_clipped(&mut self, text: &mut TextEngine, rect: Rect, ancestor_clip: Option<Rect>) {
         let role = self.view.role();
         let fixture = self.fixture;
@@ -149,6 +170,7 @@ impl Surface {
         *prepared_role = Some(role);
     }
 
+    #[cfg(test)]
     fn layout_preserving_caret_clipped(
         &mut self,
         text: &mut TextEngine,
@@ -172,6 +194,7 @@ impl Surface {
         }
     }
 
+    #[cfg(test)]
     fn draw(
         &self,
         text: &mut TextEngine,
@@ -188,15 +211,23 @@ pub struct TextDemo {
     surfaces: Vec<Surface>,
     focus: Option<usize>,
     window_active: bool,
+    #[cfg(test)]
     drag: Option<usize>,
+    #[cfg(test)]
     scroll_target: Option<usize>,
+    #[cfg(test)]
     caret_on: bool,
+    #[cfg(test)]
     reveal_pending: bool,
+    #[cfg(test)]
     reading_buttons: [ButtonModel; 2],
+    #[cfg(test)]
     reading_button_focus: Option<usize>,
+    #[cfg(test)]
     motion_now: std::time::Duration,
 }
 
+#[cfg(test)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum FocusStop {
     Surface(usize),
@@ -213,16 +244,24 @@ impl Default for TextDemo {
             ],
             focus: None,
             window_active: true,
+            #[cfg(test)]
             drag: None,
+            #[cfg(test)]
             scroll_target: None,
+            #[cfg(test)]
             caret_on: true,
+            #[cfg(test)]
             reveal_pending: false,
+            #[cfg(test)]
             reading_buttons: std::array::from_fn(|_| ButtonModel::default()),
+            #[cfg(test)]
             reading_button_focus: None,
+            #[cfg(test)]
             motion_now: std::time::Duration::ZERO,
         }
     }
 }
+#[cfg(test)]
 impl TextDemo {
     fn focus_stops(&self) -> Vec<FocusStop> {
         let mut stops: Vec<_> = self
@@ -323,6 +362,7 @@ impl TextDemo {
         }
     }
 
+    #[cfg(test)]
     fn advance_focus(&mut self, reverse: bool) -> Option<Rect> {
         let stops = self.focus_stops();
         let current = stops
@@ -336,13 +376,12 @@ impl TextDemo {
         self.set_focus_stop(stops[next])
     }
 
-    /// Return the un-clipped outer frame for a component-owned surface.
-    /// Hosts use this for focus reveal; visible fragments are not a substitute
-    /// for the control's full geometry.
+    #[cfg(test)]
     pub fn frame_at(&self, index: usize) -> Option<Rect> {
         self.surfaces.get(index).map(|surface| surface.outer())
     }
-
+}
+impl TextDemo {
     pub fn set_locale(&mut self, locale: super::locale::Locale) {
         let zh = include_str!("../../../../fixtures/text/gallery-reading.txt").trim_end();
         let en = include_str!("../../../../fixtures/text/gallery-reading-en.txt").trim_end();
@@ -378,6 +417,8 @@ impl TextDemo {
             }
         }
     }
+}
+impl TextDemo {
     pub fn text_only() -> Self {
         let mut demo = Self::default();
         demo.surfaces.truncate(1);
@@ -425,6 +466,7 @@ impl TextDemo {
             })
             .collect()
     }
+    #[cfg(test)]
     fn sections(
         &self,
         content: Rect,
@@ -442,9 +484,11 @@ impl TextDemo {
             heading_heights,
         )
     }
+    #[cfg(test)]
     pub fn build(&mut self, ctx: &mut PageCtx<'_>, content: Rect, scene: &mut Scene) {
         self.build_clipped(ctx, content, None, scene);
     }
+    #[cfg(test)]
     pub fn build_clipped(
         &mut self,
         ctx: &mut PageCtx<'_>,
@@ -577,6 +621,7 @@ impl TextDemo {
             scene.pop_clip();
         }
     }
+    #[cfg(test)]
     fn begin_reading_stream(&mut self) {
         self.append_reading_paragraph();
         let surface = &mut self.surfaces[0];
@@ -586,6 +631,7 @@ impl TextDemo {
         }
     }
 
+    #[cfg(test)]
     fn append_reading_paragraph(&mut self) {
         let surface = &mut self.surfaces[0];
         if surface.reading.is_none() {
@@ -596,6 +642,7 @@ impl TextDemo {
         surface.append_text(&format!("\n\nUpdate {}. This paragraph is appended on request. While reading earlier lines, your place stays anchored; choose Return to latest to follow new text.", appended));
     }
 
+    #[cfg(test)]
     fn return_to_latest(&mut self) {
         let surface = &mut self.surfaces[0];
         if let Some(reading) = &mut surface.reading {
@@ -603,6 +650,7 @@ impl TextDemo {
         }
     }
 
+    #[cfg(test)]
     fn stop_following(&mut self) {
         let surface = &mut self.surfaces[0];
         if let Some(reading) = &mut surface.reading {
@@ -610,54 +658,12 @@ impl TextDemo {
         }
     }
 
-    #[cfg(feature = "selftest")]
-    pub(super) fn scroll_reference_state(&self) -> Option<[f32; 2]> {
-        let surface = self.surfaces.last()?;
-        Some([
-            surface.scroll().offset.y,
-            surface.scroll().visual_offset().y,
-        ])
-    }
-
-    /// Benchmark-only snapshot of the actual retained layout; never reshapes text.
-    #[cfg(feature = "selftest")]
-    pub(super) fn scroll_reference_fixture(&self) -> Option<serde_json::Value> {
-        let s = self.surfaces.last()?;
-        let paragraph = s.paragraph()?;
-        if s.shaped() != s.text() {
-            return None;
-        }
-        let rect = |r: Rect| [r.origin.x, r.origin.y, r.size.width, r.size.height];
-        Some(serde_json::json!({
-            "schema": "tekesui-scroll-reference-fixture/1",
-            "text": s.shaped(),
-            "normalization": "gallery-reading-en.txt.trim_end()",
-            "outer_rect_pt": rect(s.outer()),
-            "inner_rect_pt": rect(s.inner()),
-            "wrap_width_pt": s.width(),
-            "role": s.role().id(),
-            "type_scale": s.type_scale(),
-            "read_only": s.input().is_read_only(),
-            "multiline": s.input().is_multiline(),
-            "paragraph_height_pt": paragraph.height,
-            "scroll_limit_pt": s.scroll().limit().y,
-            "fonts": paragraph.fonts.iter().map(|f| serde_json::json!({
-                "post_script_name": f.post_script_name, "size_pt": f.size,
-                "is_color": f.is_color,
-            })).collect::<Vec<_>>(),
-            "lines": paragraph.lines.iter().map(|l| serde_json::json!({
-                "utf16": [l.utf16.start, l.utf16.end],
-                "top_pt": l.top, "height_pt": l.height, "baseline_pt": l.baseline_y,
-            })).collect::<Vec<_>>(),
-        }))
-    }
-
-    #[cfg(any(test, feature = "selftest"))]
+    #[cfg(test)]
     pub fn scroll_metrics(&self) -> (f32, f32) {
         let s = self.surfaces.last().unwrap();
         (s.scroll().limit().y, s.inner().size.height)
     }
-    #[cfg(any(test, feature = "selftest"))]
+    #[cfg(test)]
     pub fn scroll_to(&mut self, offset: f32) {
         self.stop_following();
         let s = self.surfaces.last_mut().unwrap();
@@ -670,12 +676,19 @@ impl TextDemo {
             surfaces: vec![Surface::new("", false, false)],
             focus: None,
             window_active: true,
+            #[cfg(test)]
             drag: None,
+            #[cfg(test)]
             scroll_target: None,
+            #[cfg(test)]
             caret_on: true,
+            #[cfg(test)]
             reveal_pending: false,
+            #[cfg(test)]
             reading_buttons: std::array::from_fn(|_| ButtonModel::default()),
+            #[cfg(test)]
             reading_button_focus: None,
+            #[cfg(test)]
             motion_now: std::time::Duration::ZERO,
         }
     }
@@ -684,11 +697,6 @@ impl TextDemo {
         let mut field = Self::search();
         field.surfaces[0] = Surface::new(value, multiline, read_only);
         field
-    }
-    pub fn use_fixture_cache(&mut self) {
-        for surface in &mut self.surfaces {
-            surface.fixture = true;
-        }
     }
     pub fn set_disabled(&mut self, disabled: bool) {
         for s in &mut self.surfaces {
@@ -705,6 +713,7 @@ impl TextDemo {
     }
     /// State specimens use the production editor transactions, including UTF-16
     /// selection and preedit cancellation/commit behavior.
+    #[cfg(test)]
     pub(super) fn prepare_input_state_fixture(&mut self, state: &str) {
         let surface = &mut self.surfaces[0];
         match state {
@@ -721,6 +730,7 @@ impl TextDemo {
     }
     /// State pages use the same visible frame and retained selection capture
     /// as live fields; no synthetic Button state is passed into input paint.
+    #[cfg(test)]
     pub(super) fn prepare_input_pointer_fixture(
         &mut self,
         text: &mut TextEngine,
@@ -750,6 +760,7 @@ impl TextDemo {
             self.focus_field();
         }
     }
+    #[cfg(test)]
     pub fn focus_field(&mut self) {
         if self.surfaces[0].input().is_disabled() {
             return;
@@ -761,6 +772,7 @@ impl TextDemo {
         let multiline = self.surfaces[0].input().is_multiline();
         *self.surfaces[0].input_mut() = tekes_ui_controls::TextInput::new(value, multiline);
     }
+    #[cfg(test)]
     pub fn search_fixture() -> Self {
         let mut field = Self::search();
         field.surfaces[0].fixture = true;
@@ -769,9 +781,12 @@ impl TextDemo {
     pub fn query(&self) -> &str {
         self.surfaces[0].text()
     }
+    #[cfg(test)]
+    #[cfg(test)]
     pub fn build_search(&mut self, ctx: &mut PageCtx<'_>, rect: Rect, scene: &mut Scene) {
         self.build_search_clipped(ctx, rect, None, scene);
     }
+    #[cfg(test)]
     pub fn build_search_clipped(
         &mut self,
         ctx: &mut PageCtx<'_>,
@@ -811,30 +826,23 @@ impl TextDemo {
             scene.pop_clip();
         }
     }
+    #[cfg(test)]
     pub fn contains_visible(&self, point: Point) -> bool {
         self.surfaces
             .iter()
             .any(|surface| surface.contains_visible(point))
     }
+    #[cfg(test)]
     pub fn visible_frame(&self) -> Option<Rect> {
         (self.surfaces.len() == 1)
             .then(|| self.surfaces[0].visible_frame())
             .flatten()
     }
-    #[cfg(any(test, feature = "selftest"))]
+    #[cfg(test)]
     pub(crate) fn visible_frame_at(&self, index: usize) -> Option<Rect> {
         self.surfaces.get(index)?.visible_frame()
     }
-    pub(crate) fn text_cursor_frames(&self) -> Vec<Rect> {
-        if !self.window_active {
-            return Vec::new();
-        }
-        self.surfaces
-            .iter()
-            .filter(|surface| !surface.input().is_disabled())
-            .filter_map(|surface| surface.visible_frame())
-            .collect()
-    }
+    #[cfg(test)]
     pub fn measure_search_height(&mut self, text: &mut TextEngine) -> f32 {
         let Some(surface) = self.surfaces.first_mut() else {
             return 0.0;
@@ -876,6 +884,7 @@ impl TextDemo {
         (paragraph_height + 2.0 * proposal::SCROLL_SINGLE_LINE_PADDING_Y)
             .max(metric("size", "size-button-md"))
     }
+    #[cfg(test)]
     pub(super) fn accessibility_nodes(
         &self,
         owner: u64,
@@ -887,15 +896,36 @@ impl TextDemo {
             .enumerate()
             .filter_map(|(index, s)| {
                 let frame = s.visible_frame()?;
-                let mut n = super::accessibility::node(
-                    K {
+                let mut n = tekes_ui_platform_macos::AccessibilityNode {
+                    key: K {
                         component: owner,
                         part: Some(index),
                     },
-                    R::TextField,
-                    label,
-                    frame,
-                );
+                    parent: None,
+                    role: R::TextField,
+                    frame: tekes_ui_platform_macos::Rect {
+                        origin: tekes_ui_platform_macos::Point {
+                            x: f64::from(frame.origin.x),
+                            y: f64::from(frame.origin.y),
+                        },
+                        size: tekes_ui_platform_macos::Size {
+                            width: f64::from(frame.size.width),
+                            height: f64::from(frame.size.height),
+                        },
+                    },
+                    label: label.to_owned(),
+                    value: None,
+                    description: None,
+                    enabled: true,
+                    focused: false,
+                    selected: false,
+                    expanded: None,
+                    invalid: false,
+                    required: false,
+                    text_selection: None,
+                    read_only: false,
+                    can_show_menu: false,
+                };
                 if s.input().is_multiline() {
                     n.role = R::TextArea;
                 }
@@ -909,6 +939,7 @@ impl TextDemo {
             })
             .collect()
     }
+    #[cfg(test)]
     pub(super) fn accessibility_action(
         &mut self,
         index: usize,
@@ -1002,57 +1033,57 @@ impl TextDemo {
                 .unwrap_or_default(),
         })
     }
-    pub fn set_window_active_with_time(&mut self, active: bool, now: std::time::Duration) {
-        self.motion_now = now;
-        self.set_window_active(active);
-    }
     pub fn set_window_active(&mut self, active: bool) {
         self.window_active = active;
-        for button in &mut self.reading_buttons {
-            button.set_window_active(active, self.motion_now);
-        }
-        self.caret_on = true;
-        if !active {
+        #[cfg(test)]
+        {
             for button in &mut self.reading_buttons {
-                button.blur();
+                button.set_window_active(active, self.motion_now);
             }
-            self.reading_button_focus = None;
+            self.caret_on = true;
+        }
+        if !active {
+            #[cfg(test)]
+            {
+                for button in &mut self.reading_buttons {
+                    button.blur();
+                }
+                self.reading_button_focus = None;
+                self.drag = None;
+                self.scroll_target = None;
+            }
             for surface in &mut self.surfaces {
                 surface.input_mut().unmark();
                 surface.cancel_interaction();
             }
-            self.drag = None;
-            self.scroll_target = None;
         }
     }
     pub fn blur(&mut self) {
-        self.reading_button_focus = None;
-        for button in &mut self.reading_buttons {
-            button.cancel();
-            button.state.focused = false;
-            button.state.focus_visible = false;
+        #[cfg(test)]
+        {
+            self.reading_button_focus = None;
+            for button in &mut self.reading_buttons {
+                button.cancel();
+                button.state.focused = false;
+                button.state.focus_visible = false;
+            }
+            self.drag = None;
+            self.scroll_target = None;
         }
         for s in &mut self.surfaces {
             s.input_mut().unmark();
             s.cancel_interaction();
         }
         self.focus = None;
-        self.drag = None;
-        self.scroll_target = None;
     }
+}
+#[cfg(test)]
+impl TextDemo {
     pub fn end_scroll_gesture(&mut self) {
         for s in &mut self.surfaces {
             s.scroll_mut().end_gesture();
         }
         self.scroll_target = None;
-    }
-    pub fn set_reduced_motion_with_time(
-        &mut self,
-        reduced: bool,
-        now: std::time::Duration,
-    ) -> bool {
-        self.motion_now = now;
-        self.set_reduced_motion(reduced)
     }
     pub fn set_reduced_motion(&mut self, reduced: bool) -> bool {
         let mut dirty = false;
@@ -1108,9 +1139,6 @@ impl TextDemo {
         let changed = self.surfaces[i].input_mut().insert(text, None);
         self.caret_on = true;
         changed
-    }
-    pub fn cut(&mut self) -> bool {
-        self.paste("")
     }
     fn handle_reading_actions(&mut self, event: &Event, point: Option<Point>) -> Option<bool> {
         self.surfaces[0].reading.as_ref()?;
@@ -1493,138 +1521,6 @@ impl TextDemo {
 
 #[cfg(test)]
 mod tests {
-    #[test]
-    fn scroll_area_gallery_retained_themes_preserve_reading_offset_and_actual_thumb() {
-        use crate::gallery::{
-            Gallery,
-            commands::Command,
-            theme::{AppearanceChoice, ContrastChoice},
-        };
-        use tekes_ui_scene::Primitive;
-        use tekes_ui_tokens::Palette;
-        let contrast = |a: tekes_ui_tokens::Rgba, b: tekes_ui_tokens::Rgba| {
-            let luminance = |c: tekes_ui_tokens::Rgba| {
-                let v = c.to_linear();
-                0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2]
-            };
-            let (a, b) = (luminance(a), luminance(b));
-            (a.max(b) + 0.05) / (a.min(b) + 0.05)
-        };
-        let mut gallery = Gallery::new();
-        assert!(gallery.open_route("component-scroll-area/playground"));
-        assert!(matches!(
-            gallery.content_page(),
-            crate::gallery::Page::ScrollArea
-        ));
-        gallery.set_view_size(1440., 900.);
-        gallery.set_reduced_motion(true);
-        gallery.build_scene(&mut Scene::new());
-        let limit = gallery.scroll_demo.surfaces[0].scroll().limit().y;
-        assert!(limit > 0.);
-        gallery.scroll_demo.scroll_to(713.25_f32.min(limit * 0.5));
-        gallery.build_scene(&mut Scene::new());
-        let offset = gallery.scroll_demo.surfaces[0].scroll().offset;
-        assert!(offset.y > 0. && offset.y < limit);
-        let mut original = None;
-        let mut observed = Vec::new();
-        for theme in Theme::ALL {
-            gallery.apply(Command::Appearance(if theme.is_dark() {
-                AppearanceChoice::Dark
-            } else {
-                AppearanceChoice::Light
-            }));
-            gallery.apply(Command::Contrast(if theme.is_increased() {
-                ContrastChoice::On
-            } else {
-                ContrastChoice::Off
-            }));
-            assert_eq!(gallery.theme(), theme);
-            let mut scene = Scene::new();
-            gallery.build_scene(&mut scene);
-            let surface = &gallery.scroll_demo.surfaces[0];
-            assert!(surface.input().is_read_only() && !surface.input().is_disabled());
-            assert_eq!(surface.scroll().offset, offset);
-            assert!(surface.scroll().scrollbar_visible(true));
-            let visible = surface.visible_frame().unwrap();
-            let thumb = surface
-                .scroll()
-                .thumb(
-                    true,
-                    surface.track(true),
-                    proposal::metric("size", "size-row-height").unwrap(),
-                )
-                .intersection(&visible)
-                .unwrap();
-            let geometry = (surface.outer(), visible, thumb, surface.scroll().limit());
-            if let Some(original) = original {
-                assert_eq!(geometry, original);
-            } else {
-                original = Some(geometry);
-            }
-            let palette = Palette::from(theme);
-            let (background_index, background) = scene
-                .primitives()
-                .iter()
-                .enumerate()
-                .find_map(|(index, p)| match p {
-                    Primitive::Quad(q) if q.rect == surface.outer() => Some((index, q)),
-                    _ => None,
-                })
-                .expect("actual read-only TextSurface parent background");
-            let (thumb_index, painted_thumb) = scene
-                .primitives()
-                .iter()
-                .enumerate()
-                .find_map(|(index, p)| match p {
-                    Primitive::Quad(q) if q.rect == thumb => Some((index, q)),
-                    _ => None,
-                })
-                .expect("actual visible ScrollArea fixture thumb");
-            assert_eq!(background.fill, palette.color("surface-1").unwrap());
-            let role = if theme.is_increased() {
-                "border"
-            } else {
-                "scrollbar-thumb"
-            };
-            assert_eq!(painted_thumb.fill, palette.color(role).unwrap());
-            // Ordinary scrollbar appearance follows the 2026-11-14 quiet-ink decision.
-            if theme.is_increased() {
-                assert!(
-                    contrast(painted_thumb.fill, background.fill) >= 3.,
-                    "{theme:?}: actual thumb/parent contrast"
-                );
-            }
-            assert!(background_index < thumb_index);
-            // Bind only the original TextSurface paint interval, not page-wide headings/buttons.
-            let own_content = &scene.primitives()[background_index + 1..thumb_index];
-            assert!(
-                own_content
-                    .iter()
-                    .any(|p| matches!(p, Primitive::PushClip(r) if *r == visible))
-            );
-            let inks: Vec<_> = own_content
-                .iter()
-                .filter_map(|p| match p {
-                    Primitive::Glyphs(run) if !run.glyphs.is_empty() => Some(run.color),
-                    _ => None,
-                })
-                .collect();
-            assert!(!inks.is_empty(), "actual visible scrolled document glyphs");
-            for ink in inks {
-                assert_eq!(ink, palette.color("primary-text").unwrap());
-                assert!(
-                    contrast(ink, background.fill) >= if theme.is_increased() { 7. } else { 4.5 },
-                    "{theme:?}: actual reading text/parent contrast"
-                );
-            }
-            observed.push(painted_thumb.fill);
-        }
-        assert!(
-            observed.windows(2).any(|w| w[0] != w[1]),
-            "same real reading fixture switches thumb Theme without resetting offset"
-        );
-    }
-
     #[test]
     fn scheduled_reading_updates_follow_explicit_intent_and_native_return_action() {
         let mut demo = TextDemo::scroll_only();
@@ -2330,256 +2226,6 @@ mod tests {
                 assert!((surface.scroll().offset.y - initial_offset).abs() < 0.001);
             }
         }
-    }
-
-    #[test]
-    fn text_gallery_retained_themes_keep_readonly_selection_copy_and_real_ink() {
-        use crate::gallery::Gallery;
-        use crate::gallery::commands::Command;
-        use crate::gallery::theme::{AppearanceChoice, ContrastChoice};
-        use tekes_ui_controls::TextSurface;
-        use tekes_ui_scene::Primitive;
-        use tekes_ui_tokens::{Palette, Rgba};
-        fn contrast(a: Rgba, b: Rgba) -> f32 {
-            let l = |c: Rgba| {
-                let c = c.to_linear();
-                0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
-            };
-            let (a, b) = (l(a), l(b));
-            (a.max(b) + 0.05) / (a.min(b) + 0.05)
-        }
-        fn assert_readonly_scene(
-            scene: &Scene,
-            surface: &TextSurface,
-            palette: Palette,
-            backing: f32,
-        ) {
-            let (index, ground) = scene
-                .primitives()
-                .iter()
-                .enumerate()
-                .rev()
-                .find_map(|(i, p)| match p {
-                    Primitive::Quad(q) if q.rect == surface.outer() => Some((i, *q)),
-                    _ => None,
-                })
-                .expect("actual readonly TextSurface own Field ground");
-            assert_eq!(ground.fill, palette.color("surface-1").unwrap());
-            assert_eq!(ground.fill.a, 1.);
-            assert_eq!(
-                ground.corner_radii,
-                tekes_ui_scene::CornerRadii::uniform(
-                    proposal::metric("radius", "radius-input").unwrap()
-                )
-            );
-            let first_glyph = index
-                + 1
-                + scene.primitives()[index + 1..]
-                    .iter()
-                    .position(|p| matches!(p,Primitive::Glyphs(run)if !run.glyphs.is_empty()))
-                    .expect("real body glyphs after own ground");
-            let selections: Vec<_> = scene.primitives()[index + 1..first_glyph]
-                .iter()
-                .filter_map(|p| match p {
-                    Primitive::Quad(q)
-                        if q.fill.a > 0.
-                            && q.rect.min_x() >= surface.inner().min_x()
-                            && q.rect.max_x() <= surface.inner().max_x()
-                            && q.rect.min_y() >= surface.inner().min_y()
-                            && q.rect.max_y() <= surface.inner().max_y() =>
-                    {
-                        Some(*q)
-                    }
-                    _ => None,
-                })
-                .collect();
-            assert_eq!(
-                selections.len(),
-                surface.selection_rects(surface.input().selection()).len()
-            );
-            assert!(!selections.is_empty());
-            for q in &selections {
-                assert_eq!(q.fill, palette.color("text-selection").unwrap());
-            }
-            // Existing non-Srgb target + premultiplied blend operates on encoded sRGB components.
-            let overlay = selections[0].fill;
-            let base = ground.fill;
-            let selected_ground = Rgba::new(
-                overlay.r * overlay.a + base.r * (1. - overlay.a),
-                overlay.g * overlay.a + base.g * (1. - overlay.a),
-                overlay.b * overlay.a + base.b * (1. - overlay.a),
-                1.,
-            );
-            let inks: Vec<_> = scene.primitives()[index + 1..]
-                .iter()
-                .filter_map(|p| match p {
-                    Primitive::Glyphs(run)
-                        if run.glyphs.iter().any(|g| {
-                            let a = g.glyph;
-                            surface
-                                .inner()
-                                .intersection(&Rect::new(
-                                    g.origin.x + a.left as f32 / backing,
-                                    g.origin.y + a.top as f32 / backing,
-                                    a.width as f32 / backing,
-                                    a.height as f32 / backing,
-                                ))
-                                .is_some()
-                        }) =>
-                    {
-                        Some(run.color)
-                    }
-                    _ => None,
-                })
-                .collect();
-            assert!(!inks.is_empty());
-            let primary = palette.color("primary-text").unwrap();
-            let selected = palette.color("selected-text").unwrap();
-            assert!(inks.contains(&primary));
-            assert!(inks.contains(&selected));
-            for ink in inks {
-                assert!(
-                    ink == primary || ink == selected,
-                    "unexpected actual TextSurface glyph ink"
-                );
-                let adjacent = if ink == selected {
-                    selected_ground
-                } else {
-                    ground.fill
-                };
-                assert!(
-                    contrast(ink, adjacent)
-                        >= if palette.theme.is_increased() {
-                            7.
-                        } else {
-                            4.5
-                        },
-                    "actual text/own ground or composited selection contrast"
-                );
-            }
-        }
-
-        fn mouse(point: Point, down: bool) -> Event {
-            Event::Mouse(tekes_ui_platform_macos::MouseEvent {
-                position: tekes_ui_platform_macos::Point {
-                    x: point.x as f64,
-                    y: point.y as f64,
-                },
-                modifiers: Default::default(),
-                kind: if down {
-                    MouseEventKind::Down {
-                        button: MouseButton::Left,
-                        click_count: 1,
-                    }
-                } else {
-                    MouseEventKind::Up {
-                        button: MouseButton::Left,
-                        click_count: 1,
-                    }
-                },
-            })
-        }
-        let mut gallery = Gallery::new();
-        gallery.apply(Command::Appearance(AppearanceChoice::System));
-        gallery.apply(Command::Contrast(ContrastChoice::System));
-        gallery.set_reduced_motion(true);
-        gallery.set_view_size(1440., 1000.);
-        assert!(gallery.open_route("component-text/playground"));
-        gallery.build_scene(&mut Scene::new());
-        assert_eq!(
-            gallery.content_page(),
-            crate::gallery::Page::Text,
-            "registered root must reach the original live Text leaf"
-        );
-        let source = gallery.text_view.surfaces[0].text().to_owned();
-        let inner = gallery.text_view.surfaces[0].inner();
-        let point = Point::new(inner.min_x() + 4., inner.min_y() + 4.);
-        gallery.handle_input(&mouse(point, true));
-        gallery.handle_input(&mouse(point, false));
-        gallery.handle_input(&Event::TextCommand(
-            tekes_ui_platform_macos::TextEditCommand::MoveToBeginningOfDocument,
-        ));
-        for _ in 0..4 {
-            gallery.handle_input(&Event::TextCommand(
-                tekes_ui_platform_macos::TextEditCommand::MoveRightAndModifySelection,
-            ));
-        }
-        gallery.build_scene(&mut Scene::new());
-        assert_eq!(gallery.text_view.focus, Some(0));
-        let copy = source.chars().take(4).collect::<String>();
-        assert_eq!(gallery.text_view.clipboard_selection(), Some(copy.clone()));
-        let mut initial = None;
-        for theme in Theme::ALL {
-            gallery.set_system_theme(theme);
-            let mut scene = Scene::new();
-            gallery.build_scene(&mut scene);
-            assert_eq!(gallery.theme(), theme);
-            let surface = &gallery.text_view.surfaces[0].view;
-            assert!(surface.input().is_read_only());
-            assert_eq!(
-                surface.presentation(),
-                tekes_ui_controls::TextSurfacePresentation::Field,
-                "readonly capability does not imply undecorated Content presentation"
-            );
-            assert_eq!(surface.text(), source);
-            assert_eq!(surface.input().selection(), 0..4);
-            assert_eq!(surface.input().selected_text(), copy);
-            assert_eq!(surface.role(), proposal::TextRole::ComposerBody);
-            if let Some(before) = initial {
-                assert_eq!((surface.outer(), surface.inner()), before);
-            } else {
-                initial = Some((surface.outer(), surface.inner()));
-            }
-            assert_readonly_scene(&scene, surface, theme.into(), gallery.text.scale());
-            assert!(scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q)if q.rect == surface.outer() && q.border_width == proposal::metric("stroke", "c-focus-width").unwrap()
-                && q.border_color==Palette::from(theme).color("border-focused").unwrap())));
-            assert_eq!(gallery.text_view.clipboard_selection(), Some(copy.clone()));
-            let native = gallery
-                .text_view
-                .state()
-                .expect("original native text state");
-            assert!(native.read_only);
-            assert_eq!(native.selection, 0..4);
-            assert_eq!(native.text, source);
-        }
-        gallery.handle_input(&Event::TextCommit {
-            text: "forbidden".into(),
-            replacement: None,
-        });
-        gallery.handle_input(&Event::TextCommand(
-            tekes_ui_platform_macos::TextEditCommand::DeleteBackward,
-        ));
-        assert_eq!(gallery.text_view.surfaces[0].text(), source);
-        let height = gallery.text_view.surfaces[0]
-            .paragraph()
-            .as_ref()
-            .unwrap()
-            .height;
-        gallery.set_view_size(720., 1000.);
-        let mut scene = Scene::new();
-        gallery.build_scene(&mut scene);
-        assert!(
-            gallery.text_view.surfaces[0]
-                .paragraph()
-                .as_ref()
-                .unwrap()
-                .height
-                > height,
-            "original text reflows at narrower actual Gallery width"
-        );
-        assert_eq!(gallery.text_view.surfaces[0].input().selection(), 0..4);
-        assert_eq!(gallery.text_view.clipboard_selection(), Some(copy.clone()));
-        assert_readonly_scene(
-            &scene,
-            &gallery.text_view.surfaces[0].view,
-            Theme::DARK_INCREASED.into(),
-            gallery.text.scale(),
-        );
-        gallery.text_view.scroll_to(120.);
-        gallery.build_scene(&mut Scene::new());
-        assert!(gallery.text_view.surfaces[0].scroll().offset.y > 0.);
-        assert_eq!(gallery.text_view.surfaces[0].text(), source);
-        assert_eq!(gallery.text_view.clipboard_selection(), Some(copy));
     }
 
     #[test]
@@ -3702,24 +3348,6 @@ mod pixel_review {
             }
         }
     }
-}
-
-pub fn build_editors_fixture(ctx: &mut PageCtx<'_>, content: Rect, scene: &mut Scene) {
-    let mut demo = TextDemo::editors_only();
-    for s in &mut demo.surfaces {
-        s.fixture = true;
-    }
-    demo.build(ctx, content, scene);
-}
-pub fn build_text_fixture(ctx: &mut PageCtx<'_>, content: Rect, scene: &mut Scene) {
-    let mut demo = TextDemo::text_only();
-    demo.surfaces[0].fixture = true;
-    demo.build(ctx, content, scene);
-}
-pub fn build_scroll_fixture(ctx: &mut PageCtx<'_>, content: Rect, scene: &mut Scene) {
-    let mut demo = TextDemo::scroll_only();
-    demo.surfaces[0].fixture = true;
-    demo.build(ctx, content, scene);
 }
 
 #[cfg(test)]

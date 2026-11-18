@@ -159,6 +159,95 @@ impl AppHostDocuments {
             }
         }
     }
+    pub(crate) fn clear_calibration_reference_dir(&mut self) {
+        if let Some(calibration) = &mut self.calibration {
+            calibration.clear_reference_dir();
+        }
+    }
+    pub(crate) fn set_locale(&mut self, locale: Locale) {
+        if self.locale == locale {
+            return;
+        }
+        self.locale = locale;
+        if let Some(calibration) = &mut self.calibration {
+            calibration.set_locale(locale);
+            return;
+        }
+        let (live, calibration) = Self::live(self.entry.renderer(), locale);
+        self.calibration = calibration;
+        if self.section == 1 {
+            self.host.focus(None, false);
+            self.host.remove(self.live_id).expect("live document");
+            self.host.insert(ROOT, live).expect("locale document");
+        } else {
+            self.retained = Some(live);
+        }
+    }
+    #[cfg(feature = "selftest")]
+    pub(crate) fn editor_scroll_metrics(&self) -> (f32, f32) {
+        if let Some(metrics) = apphost_text_pages::surface_scroll_metrics(&self.host) {
+            return metrics;
+        }
+        let fallback_id = if self.section == 1 {
+            self.live_id
+        } else {
+            COPY
+        };
+        self.host
+            .get(fallback_id)
+            .and_then(|node| node.component::<ScrollContent>())
+            .map_or((0., 0.), |scroll| {
+                (
+                    scroll.scroll.limit().y,
+                    scroll.scroll.viewport_size().height,
+                )
+            })
+    }
+    #[cfg(feature = "selftest")]
+    pub(crate) fn scroll_editor_to(&mut self, offset: f32) {
+        if apphost_text_pages::scroll_surface_to(&mut self.host, offset) {
+            return;
+        }
+        let fallback_id = if self.section == 1 {
+            self.live_id
+        } else {
+            COPY
+        };
+        if let Some(scroll) = self
+            .host
+            .get_mut(fallback_id)
+            .and_then(|node| node.component_mut::<ScrollContent>())
+        {
+            let current = scroll.scroll.offset.y;
+            scroll.scroll.scroll_by(0., offset - current);
+        }
+    }
+    #[cfg(feature = "selftest")]
+    pub(crate) fn scroll_event(
+        &mut self,
+        delta_y: f32,
+        begin: bool,
+        end: bool,
+        momentum: bool,
+        time: f64,
+    ) {
+        apphost_text_pages::scroll_surface_event(
+            &mut self.host,
+            delta_y,
+            begin,
+            end,
+            momentum,
+            time,
+        );
+    }
+    #[cfg(feature = "selftest")]
+    pub(crate) fn scroll_reference_state(&self) -> Option<[f32; 2]> {
+        apphost_text_pages::scroll_reference_state(&self.host)
+    }
+    #[cfg(feature = "selftest")]
+    pub(crate) fn scroll_reference_fixture(&self) -> Option<serde_json::Value> {
+        apphost_text_pages::scroll_reference_fixture(&self.host)
+    }
 }
 #[cfg(test)]
 mod tests {

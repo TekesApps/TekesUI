@@ -806,6 +806,117 @@ impl AppHostMotion {
     pub(crate) fn finish_resources(&mut self, _: &mut ContainerRenderContext<'_>) -> Result<()> {
         Ok(())
     }
+    pub(crate) fn select_catalog(
+        &mut self,
+        catalog: crate::gallery::motion_preview::PresetCatalog,
+    ) -> bool {
+        let changed = self.state.borrow_mut().preview.select_catalog(catalog);
+        if changed {
+            let _ = self.host.get_mut(SPECIMEN);
+        }
+        changed
+    }
+    pub(crate) fn set_locale(&mut self, locale: crate::gallery::locale::Locale) {
+        let mut s = self.state.borrow_mut();
+        if s.preview.locale != locale {
+            s.preview.locale = locale;
+            s.cache.paragraphs.clear();
+            let _ = self.host.get_mut(SPECIMEN);
+        }
+    }
+    #[cfg(feature = "selftest")]
+    pub(crate) fn retarget(&mut self, target: f64) {
+        self.state.borrow_mut().preview.retarget(target);
+        let _ = self.host.get_mut(SPECIMEN);
+    }
+    #[cfg(test)]
+    pub(crate) fn set_ticking_target(
+        &mut self,
+        target: u64,
+    ) -> std::result::Result<bool, tekes_ui_controls::TickingNumberError> {
+        let changed = self.state.borrow_mut().preview.ticking.set_target(target)?;
+        if changed {
+            let _ = self.host.get_mut(SPECIMEN);
+        }
+        Ok(changed)
+    }
+    #[cfg(test)]
+    pub(crate) fn ticking_value(&self) -> u64 {
+        self.state.borrow().preview.ticking.value()
+    }
+    #[cfg(test)]
+    pub(crate) fn ticking_needs_animation(&self) -> bool {
+        self.state.borrow().preview.ticking.needs_animation()
+    }
+    #[cfg(test)]
+    pub(crate) fn measure_ticking_width(&self, text: &mut dyn ButtonTextRenderer) -> f32 {
+        self.state
+            .borrow()
+            .preview
+            .ticking
+            .measure(text, tekes_ui_tokens::proposal::TextRole::UiHeading)
+            .width
+    }
+    pub(crate) fn scroll_metrics(&self) -> (f32, f32) {
+        self.host
+            .get(ROOT)
+            .and_then(|node| node.component::<ScrollContent>())
+            .map_or((0., 0.), |scroll| {
+                (
+                    scroll.scroll.limit().y,
+                    scroll.scroll.viewport_size().height,
+                )
+            })
+    }
+    pub(crate) fn motion_case_diagnostics(&self) -> serde_json::Value {
+        let rect_json = |rect: Rect| {
+            serde_json::json!({
+                "x": rect.min_x(),
+                "y": rect.min_y(),
+                "width": rect.size.width,
+                "height": rect.size.height,
+            })
+        };
+        let s = self.state.borrow();
+        let actions = s
+            .layout
+            .map(|layout| layout.state_actions(&s.preview))
+            .unwrap_or_default();
+        let buttons: Vec<_> = actions
+            .iter()
+            .filter_map(|(action, _)| {
+                let id = Layout::action_id(*action);
+                let button = s.preview.button_models.get(&id)?;
+                let layout = button.layout()?;
+                let visible = layout.visible.filter(|rect| !rect.is_empty());
+                Some(serde_json::json!({
+                    "id": format!("{id:016x}"),
+                    "action": format!("{action:?}"),
+                    "frame": rect_json(layout.frame),
+                    "content": rect_json(layout.content),
+                    "visible": visible.map(rect_json),
+                    "label_size": {
+                        "width": layout.label_size.width,
+                        "height": layout.label_size.height,
+                    },
+                }))
+            })
+            .collect();
+        let (limit, view_h) = self.scroll_metrics();
+        let document_extent =
+            (limit + view_h).max(s.layout.map_or(0., |layout| layout.content.size.height));
+        let visible_button_count = buttons
+            .iter()
+            .filter(|button| !button["visible"].is_null())
+            .count();
+        serde_json::json!({
+            "document_extent": document_extent,
+            "scroll_range": limit,
+            "rendered_button_count": buttons.len(),
+            "visible_button_count": visible_button_count,
+            "buttons": buttons,
+        })
+    }
 }
 
 #[cfg(test)]

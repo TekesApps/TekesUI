@@ -32,6 +32,7 @@ use tekes_ui_scene::{ImageQuad, Point, Quad, Rect, Scene, Size};
 use tekes_ui_tokens::{ColorRole, Contrast, CornerRadius, Stroke, TextRole, Theme, proposal};
 
 use crate::gallery::containers::{META_STYLE, NOTE_STYLE, PANE_TITLES, ReferenceSlot};
+#[cfg(test)]
 use crate::gallery::pages::PageCtx;
 use crate::gallery::static_text::{
     Computed, FIXTURES, REFERENCE_ENV, ReferenceStatus, StaticText, VIEW_H, is_dark, load_colors,
@@ -482,11 +483,13 @@ fn image_rect(pane: Rect, px: (u32, u32), scale: u32) -> Rect {
     )
 }
 
+#[cfg(test)]
 pub fn build(ctx: &mut PageCtx<'_>, content: Rect, scene: &mut Scene) {
     build_clipped(ctx, content, content, scene);
 }
 
 /// Build within translated document coordinates while retaining the host's fixed viewport clip.
+#[cfg(test)]
 pub fn build_clipped(ctx: &mut PageCtx<'_>, content: Rect, viewport_clip: Rect, scene: &mut Scene) {
     build_content(
         ctx.theme,

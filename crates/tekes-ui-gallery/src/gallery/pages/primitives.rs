@@ -13,12 +13,16 @@
 use tekes_ui_scene::{Point, Quad, Rect, Scene, Size};
 use tekes_ui_tokens::{Alpha, ColorRole, CornerRadius, Rgba, Spacing, Stroke, Theme, proposal};
 
+use crate::gallery::containers::ComponentState;
+#[cfg(test)]
 use crate::gallery::containers::{
-    ComponentState, PANE_TITLES, ReferenceSlot, SECTION_HEADER_H, StateMatrix, draw_section_header,
+    PANE_TITLES, ReferenceSlot, SECTION_HEADER_H, StateMatrix, draw_section_header,
 };
+#[cfg(test)]
 use crate::gallery::pages::PageCtx;
 
 /// 圆角一排：直角加七档 token（badge、row、panel、floating、input、column、control）。
+#[cfg(test)]
 pub const RADII: [(&str, f32); 8] = [
     ("square", 0.0),
     ("badge", CornerRadius::Badge.value()),
@@ -32,6 +36,7 @@ pub const RADII: [(&str, f32); 8] = [
 
 const ITEM: Size = Size::new(96.0, 56.0);
 const GAP: f32 = Spacing::Relaxed.value();
+#[cfg(test)]
 const SECTION_GAP: f32 = Spacing::Section.value();
 
 /// 类按钮样本的尺寸（`PillHeight` 高）。
@@ -135,6 +140,7 @@ pub fn alpha_samples(scene: &mut Scene, theme: Theme, origin: Point) {
         );
     }
 }
+#[cfg(test)]
 pub fn state_samples(
     scene: &mut Scene,
     theme: Theme,
@@ -154,6 +160,7 @@ pub fn state_samples(
 }
 
 /// Live raster diagnostics only: no unavailable reference image or heatmap panes.
+#[cfg(test)]
 pub fn build_calibration(ctx: &mut PageCtx<'_>, content: Rect, scene: &mut Scene) {
     let theme = ctx.theme;
     build_calibration_with_labels(
@@ -200,6 +207,7 @@ pub(crate) fn build_calibration_with_labels(
     alpha_samples(scene, theme, Point::new(x, y + 384.));
 }
 
+#[cfg(test)]
 pub fn build(ctx: &mut PageCtx<'_>, content: Rect, scene: &mut Scene) {
     let theme = ctx.theme;
     let text = &mut *ctx.text;

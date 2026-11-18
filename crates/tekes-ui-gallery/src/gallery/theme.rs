@@ -1,8 +1,11 @@
 //! 主题选择：外观与对比度各有“跟随系统 / 固定”的选项，合成出当前生效的 [`Theme`]。
 
-use tekes_ui_tokens::{Appearance, Contrast, Theme};
+use tekes_ui_tokens::Theme;
+#[cfg(any(test, feature = "selftest"))]
+use tekes_ui_tokens::{Appearance, Contrast};
 
 /// 外观选项。
+#[cfg(any(test, feature = "selftest"))]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum AppearanceChoice {
     System,
@@ -11,6 +14,7 @@ pub enum AppearanceChoice {
 }
 
 /// Increase Contrast 选项：跟随系统 / 强制开 / 强制关。
+#[cfg(any(test, feature = "selftest"))]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ContrastChoice {
     System,
@@ -18,23 +22,8 @@ pub enum ContrastChoice {
     Off,
 }
 
-impl AppearanceChoice {
-    pub const ALL: [AppearanceChoice; 3] = [
-        AppearanceChoice::System,
-        AppearanceChoice::Light,
-        AppearanceChoice::Dark,
-    ];
-}
-
-impl ContrastChoice {
-    pub const ALL: [ContrastChoice; 3] = [
-        ContrastChoice::System,
-        ContrastChoice::On,
-        ContrastChoice::Off,
-    ];
-}
-
 /// 用户的选择加上最近一次从系统读到的主题。
+#[cfg(any(test, feature = "selftest"))]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ThemeState {
     pub appearance: AppearanceChoice,
@@ -43,6 +32,7 @@ pub struct ThemeState {
     pub system: Theme,
 }
 
+#[cfg(any(test, feature = "selftest"))]
 impl Default for ThemeState {
     fn default() -> Self {
         ThemeState {
@@ -53,6 +43,7 @@ impl Default for ThemeState {
     }
 }
 
+#[cfg(any(test, feature = "selftest"))]
 impl ThemeState {
     /// 当前生效的主题。
     pub fn effective(&self) -> Theme {
@@ -74,6 +65,7 @@ impl ThemeState {
 }
 
 /// 窗口标题里的主题名。
+#[cfg(test)]
 pub fn theme_label(theme: Theme) -> &'static str {
     match (theme.is_dark(), theme.is_increased()) {
         (false, false) => "Light",

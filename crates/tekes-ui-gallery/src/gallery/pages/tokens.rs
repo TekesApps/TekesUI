@@ -9,30 +9,47 @@
 //! 3. 圆角一排：`CornerRadius` 按枚举声明顺序，下面是“名字 值”；
 //! 4. 描边一排：`Stroke` 三档，既有描边框也有同宽度的横线，框下面是“名字 值”。
 
+#[cfg(test)]
 use tekes_ui_scene::{Quad, Rect, Scene, Size};
-use tekes_ui_tokens::{ColorRole, CornerRadius, Rgba, Spacing, Stroke};
+use tekes_ui_tokens::ColorRole;
+#[cfg(test)]
+use tekes_ui_tokens::{CornerRadius, Rgba, Spacing, Stroke};
 
+#[cfg(test)]
 use crate::gallery::containers::{META_STYLE, SECTION_HEADER_H, draw_section_header};
+#[cfg(test)]
 use crate::gallery::pages::PageCtx;
 
 /// 色块网格列数。
+#[cfg(test)]
 pub const SWATCH_COLUMNS: usize = 9;
+#[cfg(test)]
 const SWATCH: Size = Size::new(88.0, 56.0);
+#[cfg(test)]
 const GAP: f32 = Spacing::Relaxed.value();
 /// 页内各节之间的间隔（页面内容放得下四节加两行色块名，所以比 `Spacing::Section` 小）。
+#[cfg(test)]
 const SECTION_GAP: f32 = 20.0;
 /// 色块下面的标签槽：距方砖 4pt，两行（RowMeta 一行 13pt）共 26pt。
+#[cfg(test)]
 const LABEL_OFFSET: f32 = 60.0;
+#[cfg(test)]
 pub const LABEL_H: f32 = 26.0;
+#[cfg(test)]
 const SWATCH_ROW_PITCH: f32 = LABEL_OFFSET + LABEL_H + 8.0;
 /// 圆角、描边那两排的名字槽：距方砖 4pt，一行 13pt。
+#[cfg(test)]
 const NAME_OFFSET: f32 = 60.0;
+#[cfg(test)]
 const NAME_H: f32 = 13.0;
 /// 间距条每 pt 画多长。
+#[cfg(test)]
 pub const SPACING_BAR_SCALE: f32 = 8.0;
+#[cfg(test)]
 const SPACING_BAR_H: f32 = 12.0;
 
 /// 圆角排的顺序：枚举声明顺序。
+#[cfg(test)]
 pub const RADIUS_ORDER: [CornerRadius; 9] = [
     CornerRadius::Square,
     CornerRadius::AgentMarker,
@@ -46,6 +63,7 @@ pub const RADIUS_ORDER: [CornerRadius; 9] = [
 ];
 
 /// 间距条的顺序：枚举声明顺序，从小到大。
+#[cfg(test)]
 pub const SPACING_ORDER: [Spacing; 8] = [
     Spacing::None,
     Spacing::Micro,
@@ -71,15 +89,18 @@ pub fn role_label(role: ColorRole) -> String {
 }
 
 /// “名字 值”，值是整数时不带小数点。
+#[cfg(test)]
 pub fn name_value(name: &str, value: f32) -> String {
     format!("{name} {value}")
 }
 
+#[cfg(test)]
 const fn clear() -> Rgba {
     Rgba::new(0.0, 0.0, 0.0, 0.0)
 }
 
 /// 第 `i` 个色块方砖的位置（`i` 是 `ColorRole::ALL` 里的下标）。
+#[cfg(test)]
 pub fn swatch_rect(origin_x: f32, origin_y: f32, i: usize) -> Rect {
     let (row, col) = (i / SWATCH_COLUMNS, i % SWATCH_COLUMNS);
     Rect::new(
@@ -90,6 +111,7 @@ pub fn swatch_rect(origin_x: f32, origin_y: f32, i: usize) -> Rect {
     )
 }
 
+#[cfg(test)]
 pub fn build(ctx: &mut PageCtx<'_>, content: Rect, scene: &mut Scene) {
     let theme = ctx.theme;
     let text = &mut *ctx.text;

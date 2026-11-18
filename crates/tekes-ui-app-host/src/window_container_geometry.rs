@@ -140,11 +140,20 @@ impl Host {
         bounds: Rect,
         window_boundary: f32,
     ) -> Result<ContainerGeometry> {
+        self.container_geometry_with_icons(index, bounds, window_boundary, self.renderer.is_some())
+    }
+    pub(super) fn container_geometry_with_icons(
+        &mut self,
+        index: usize,
+        bounds: Rect,
+        window_boundary: f32,
+        include_icons: bool,
+    ) -> Result<ContainerGeometry> {
         use crate::window_toolbar::Contents;
         use crate::{ContainerToolbarHost as Host, ContainerToolbarPosition as Position};
         use tekes_ui_controls::composition::Content;
         let declarations = if self.layout.presentation.is_some() {
-            self.presentation_toolbar_declarations()
+            self.presentation_toolbar_declarations_with_icons(include_icons)
         } else {
             Vec::new()
         };

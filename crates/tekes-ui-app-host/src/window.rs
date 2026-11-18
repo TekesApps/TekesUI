@@ -349,10 +349,10 @@ impl HostDiagnostics {
 }
 
 pub struct Host {
-    theme: Theme,
+    pub(crate) theme: Theme,
     palette_source: Option<std::rc::Rc<std::cell::Cell<Palette>>>,
-    renderer: Option<Renderer>,
-    text: Text,
+    pub(crate) renderer: Option<Renderer>,
+    pub(crate) text: Text,
     completion: Option<SyncSender<SyncSender<()>>>,
     layout: window_layout::WindowLayoutState,
     panel_mgr: window_panels::PanelManagerState,
@@ -501,7 +501,7 @@ impl Host {
     }
     /// Mount original container records once, before any service binds their
     /// Toolbar identities. GPU/window initialization must not recreate them.
-    fn mount_initial_containers(&mut self) {
+    pub(crate) fn mount_initial_containers(&mut self) {
         if !self.panel_mgr.panels.is_empty() {
             return;
         }
@@ -763,34 +763,7 @@ impl Host {
         // Keep component defaults intact; the consumer chooses no frame/shadow.
         let palette = self.palette();
         scene.push_quad(Quad::new(whole, palette.color("surface-1").unwrap()));
-        let mut frames = if self.panel_mgr.panels.len() == 1 {
-            vec![whole]
-        } else if self.panel_mgr.panels.len() == 2 {
-            let layout = self
-                .layout
-                .outer_view
-                .arrange(&mut self.layout.outer, whole, None);
-            vec![layout.leading.frame(), layout.trailing.frame()]
-        } else {
-            let a = self
-                .layout
-                .outer_view
-                .arrange(&mut self.layout.outer, whole, None);
-            let b = self
-                .layout
-                .inner_view
-                .arrange(&mut self.layout.inner, whole, None);
-            vec![
-                a.leading.frame(),
-                Rect::new(
-                    a.trailing.frame().min_x(),
-                    0.,
-                    (b.leading.frame().max_x() - a.trailing.frame().min_x()).max(0.),
-                    whole.size.height,
-                ),
-                b.trailing.frame(),
-            ]
-        };
+        let mut frames = self.arrange_column_frames(whole);
         if self.panel_mgr.panels.len() >= 2 {
             frames = presented_frames(&frames, whole, progress, w.scale() as f32);
         }
@@ -878,61 +851,17 @@ impl Host {
                 self.retire_hidden_content(index, *bounds);
                 continue;
             }
-            let p = &mut self.panel_mgr.panels[index];
-            let content = p.content_frame();
-            if self.layout.presentation.is_some() {
-                scene.push_clip(p.clip);
-            }
-            scene.push_quad(Quad::new(
-                p.geometry.content,
-                palette.color("surface-panel").unwrap(),
-            ));
-            if self.layout.presentation.is_some() {
-                scene.pop_clip();
-            }
-            if let Some(local) = &mut p.local {
-                let clip = if self.layout.presentation.is_some() {
-                    content.intersection(&p.clip).unwrap_or_default()
-                } else {
-                    content
-                };
-                local.set_active(w.is_active());
-                let context = crate::ContainerRenderContext {
-                    renderer: self.renderer.as_mut().unwrap(),
-                    frame: content,
-                    clip,
-                    scale: self.text.scale,
-                    motion: tekes_ui_controls::ButtonTextRenderer::motion_context(&self.text),
-                    palette,
-                };
-                render_local_content(
-                    local,
-                    &mut p.content_icons,
-                    &mut self.text,
-                    &mut scene,
-                    context,
-                )?;
-                p.frame_seq = p.seq;
-                p.frame_viewport = p.viewport;
-                p.frame_size = p.content_size();
-            }
-            if let Some(id) = p.image {
-                scene.push_clip(if self.layout.presentation.is_some() {
-                    content.intersection(&p.clip).unwrap_or_default()
-                } else {
-                    content
-                });
-                scene.push_image(ImageQuad {
-                    rect: tekes_ui_module_runtime::panel_image_rect(
-                        content.origin,
-                        p.frame_pixels,
-                        scale,
-                    ),
-                    image: id,
-                    opacity: 1.,
-                });
-                scene.pop_clip();
-            }
+            let mut renderer = self.renderer.take().unwrap();
+            let painted = self.paint_panel_body(
+                index,
+                w.is_active(),
+                scale,
+                palette,
+                &mut scene,
+                &mut renderer,
+            );
+            self.renderer = Some(renderer);
+            painted?;
         }
         let body_scene_ready = diagnostic.map(|_| std::time::Instant::now());
         if self.layout.presentation.is_some() {
@@ -957,60 +886,16 @@ impl Host {
             },
             title,
         )?;
-        let toolbar_order: Vec<_> = if let Some(state) = &self.layout.presentation {
-            let focus = self
-                .panel_mgr
-                .panels
-                .iter()
-                .position(|panel| panel.module_id == state.focus_id())
-                .unwrap();
-            (0..self.panel_mgr.panels.len())
-                .filter(|index| *index != focus)
-                .chain(std::iter::once(focus))
-                .collect()
-        } else {
-            (0..self.panel_mgr.panels.len()).collect()
-        };
-        for &index in &toolbar_order {
-            let panel = &mut self.panel_mgr.panels[index];
-            with_content_icons(
-                self.renderer.as_mut().unwrap(),
-                &mut panel.mounted_toolbar.icons,
-                &mut self.text,
-                |text| {
-                    panel
-                        .mounted_toolbar
-                        .host
-                        .render_layers(&mut toolbar_scene, &mut toolbar_overlays, text, palette)
-                        .map_err(|e| anyhow::anyhow!("container toolbar paint: {e:?}"))
-                },
-            )?;
-        }
-        self.reconcile_toolbar_focus(w.is_active());
-        if self
-            .panel_mgr
-            .panels
-            .iter()
-            .any(|panel| panel.mounted_toolbar.host.needs_render())
-        {
-            toolbar_scene = Scene::new();
-            toolbar_overlays = Scene::new();
-            for &index in &toolbar_order {
-                let panel = &mut self.panel_mgr.panels[index];
-                with_content_icons(
-                    self.renderer.as_mut().unwrap(),
-                    &mut panel.mounted_toolbar.icons,
-                    &mut self.text,
-                    |text| {
-                        panel
-                            .mounted_toolbar
-                            .host
-                            .render_layers(&mut toolbar_scene, &mut toolbar_overlays, text, palette)
-                            .map_err(|e| anyhow::anyhow!("container toolbar focus paint: {e:?}"))
-                    },
-                )?;
-            }
-        }
+        let mut renderer = self.renderer.take().unwrap();
+        let rendered = self.render_toolbar_hosts(
+            w.is_active(),
+            palette,
+            &mut renderer,
+            &mut toolbar_scene,
+            &mut toolbar_overlays,
+        );
+        self.renderer = Some(renderer);
+        rendered?;
         let toolbar_scene_ready = diagnostic.map(|_| std::time::Instant::now());
         let mut toolbar_controls = Vec::new();
         for panel in &self.panel_mgr.panels {
@@ -2242,7 +2127,7 @@ impl WindowHandler for Host {
     }
 }
 impl Host {
-    fn configure_settings(
+    pub(crate) fn configure_settings(
         &mut self,
         settings: Option<crate::settings::SettingsConfiguration>,
     ) -> Result<()> {
@@ -2261,7 +2146,7 @@ impl Host {
         self.settings_mgr.settings_owner = owner;
         Ok(())
     }
-    fn menu_bar(&self) -> MenuBar {
+    pub(crate) fn menu_bar(&self) -> MenuBar {
         let mut menus = MenuBar::default();
         if self.settings_mgr.settings_options.is_some() || self.settings_mgr.is_settings_window {
             menus.menus.push(
@@ -2293,6 +2178,320 @@ impl Host {
         self.configure_settings(settings)?;
         self.menu_bar().validate()?;
         Ok(parent.open_window(config, self))
+    }
+
+    fn arrange_column_frames(&mut self, whole: Rect) -> Vec<Rect> {
+        if self.panel_mgr.panels.len() == 1 {
+            vec![whole]
+        } else if self.panel_mgr.panels.len() == 2 {
+            let layout = self
+                .layout
+                .outer_view
+                .arrange(&mut self.layout.outer, whole, None);
+            vec![layout.leading.frame(), layout.trailing.frame()]
+        } else {
+            let a = self
+                .layout
+                .outer_view
+                .arrange(&mut self.layout.outer, whole, None);
+            let b = self
+                .layout
+                .inner_view
+                .arrange(&mut self.layout.inner, whole, None);
+            vec![
+                a.leading.frame(),
+                Rect::new(
+                    a.trailing.frame().min_x(),
+                    0.,
+                    (b.leading.frame().max_x() - a.trailing.frame().min_x()).max(0.),
+                    whole.size.height,
+                ),
+                b.trailing.frame(),
+            ]
+        }
+    }
+
+    fn paint_panel_body(
+        &mut self,
+        index: usize,
+        active: bool,
+        scale: f32,
+        palette: Palette,
+        scene: &mut Scene,
+        renderer: &mut Renderer,
+    ) -> Result<()> {
+        let p = &mut self.panel_mgr.panels[index];
+        let content = p.content_frame();
+        if self.layout.presentation.is_some() {
+            scene.push_clip(p.clip);
+        }
+        scene.push_quad(Quad::new(
+            p.geometry.content,
+            palette.color("surface-panel").unwrap(),
+        ));
+        if self.layout.presentation.is_some() {
+            scene.pop_clip();
+        }
+        if let Some(local) = &mut p.local {
+            let clip = if self.layout.presentation.is_some() {
+                content.intersection(&p.clip).unwrap_or_default()
+            } else {
+                content
+            };
+            local.set_active(active);
+            let context = crate::ContainerRenderContext {
+                renderer,
+                frame: content,
+                clip,
+                scale: self.text.scale,
+                motion: tekes_ui_controls::ButtonTextRenderer::motion_context(&self.text),
+                palette,
+            };
+            render_local_content(local, &mut p.content_icons, &mut self.text, scene, context)?;
+            p.frame_seq = p.seq;
+            p.frame_viewport = p.viewport;
+            p.frame_size = p.content_size();
+        }
+        if let Some(id) = p.image {
+            scene.push_clip(if self.layout.presentation.is_some() {
+                content.intersection(&p.clip).unwrap_or_default()
+            } else {
+                content
+            });
+            scene.push_image(ImageQuad {
+                rect: tekes_ui_module_runtime::panel_image_rect(
+                    content.origin,
+                    p.frame_pixels,
+                    scale,
+                ),
+                image: id,
+                opacity: 1.,
+            });
+            scene.pop_clip();
+        }
+        Ok(())
+    }
+
+    fn render_toolbar_hosts(
+        &mut self,
+        active: bool,
+        palette: Palette,
+        renderer: &mut Renderer,
+        toolbar_scene: &mut Scene,
+        toolbar_overlays: &mut Scene,
+    ) -> Result<()> {
+        let toolbar_order: Vec<_> = if let Some(state) = &self.layout.presentation {
+            let focus = self
+                .panel_mgr
+                .panels
+                .iter()
+                .position(|panel| panel.module_id == state.focus_id())
+                .unwrap();
+            (0..self.panel_mgr.panels.len())
+                .filter(|index| *index != focus)
+                .chain(std::iter::once(focus))
+                .collect()
+        } else {
+            (0..self.panel_mgr.panels.len()).collect()
+        };
+        for pass in 0..2 {
+            if pass == 1
+                && !self
+                    .panel_mgr
+                    .panels
+                    .iter()
+                    .any(|panel| panel.mounted_toolbar.host.needs_render())
+            {
+                break;
+            }
+            if pass == 1 {
+                *toolbar_scene = Scene::new();
+                *toolbar_overlays = Scene::new();
+            }
+            for &index in &toolbar_order {
+                let panel = &mut self.panel_mgr.panels[index];
+                with_content_icons(
+                    renderer,
+                    &mut panel.mounted_toolbar.icons,
+                    &mut self.text,
+                    |text| {
+                        panel
+                            .mounted_toolbar
+                            .host
+                            .render_layers(toolbar_scene, toolbar_overlays, text, palette)
+                            .map_err(|e| anyhow::anyhow!("container toolbar paint: {e:?}"))
+                    },
+                )?;
+            }
+            if pass == 0 {
+                self.reconcile_toolbar_focus(active);
+            }
+        }
+        Ok(())
+    }
+
+    pub(crate) fn set_reduced_motion(&mut self, reduced: bool) {
+        self.layout.reduced_motion = reduced;
+    }
+
+    pub(crate) fn set_headless_motion_elapsed(&mut self, elapsed: std::time::Duration) {
+        self.layout.headless_motion_elapsed = Some(elapsed);
+    }
+
+    pub(crate) fn build_headless_scene(
+        &mut self,
+        renderer: &mut Renderer,
+        whole: Rect,
+        scale: f32,
+        active: bool,
+    ) -> Result<(Scene, tekes_ui_tokens::Rgba)> {
+        self.mount_initial_containers();
+        ensure!(
+            self.panel_mgr.panels.iter().all(|p| p.local.is_some()),
+            "headless rendering requires local containers only"
+        );
+        if let Some(view_command) = self
+            .nav_mgr
+            .navigation_options
+            .as_ref()
+            .and_then(|options| options.view_command)
+        {
+            while let Some(entry) = take_local_navigation_request(&mut self.panel_mgr.panels, true)
+            {
+                let command = view_command(&entry)?;
+                let targets: Vec<usize> = if let Some(state) = &self.layout.presentation {
+                    state
+                        .navigation_targets()
+                        .iter()
+                        .filter_map(|id| {
+                            self.panel_mgr
+                                .module_ids
+                                .iter()
+                                .position(|candidate| candidate == id)
+                        })
+                        .collect()
+                } else {
+                    vec![self.layout.order[usize::from(self.panel_mgr.panels.len() >= 2)]]
+                };
+                for index in targets {
+                    self.panel_mgr.panels[index].enqueue(
+                        InputKind::Command,
+                        0.,
+                        0.,
+                        Some(command),
+                    )?;
+                }
+            }
+        }
+        let now = self
+            .layout
+            .headless_motion_elapsed
+            .unwrap_or_else(|| self.layout.motion_epoch.elapsed());
+        self.text.begin_frame(now, self.layout.reduced_motion);
+        self.text.scale = scale;
+        self.layout.outer.min_pane = MIN_COLUMN;
+        self.layout.inner.min_pane = MIN_COLUMN;
+        let row_height = tekes_ui_controls::ToolbarControl::window().row_height(&mut self.text);
+        let (_, toolbar_y, toolbar_paint_height) =
+            window_toolbar_geometry(0., row_height, None, scale);
+        let content_boundary = toolbar_y + toolbar_paint_height;
+        self.layout.container_window_boundary = Some(content_boundary);
+
+        let palette = self.palette();
+        let clear = palette.color("surface-1").unwrap();
+        let mut scene = Scene::new();
+        scene.push_quad(Quad::new(whole, clear));
+        let frames = if self.layout.presentation.is_some() {
+            self.presentation_frames_with_safe_area(
+                whole,
+                content_boundary,
+                window_toolbar_mount::ToolbarBand {
+                    y: toolbar_y,
+                    height: toolbar_paint_height,
+                    native_leading: 0.,
+                },
+                0.,
+                0.,
+            )?
+        } else {
+            self.arrange_column_frames(whole)
+        };
+        for (slot, bounds) in frames.iter().enumerate() {
+            if bounds.size.width > 0. {
+                let index = self.layout.order[slot];
+                let geometry =
+                    self.container_geometry_with_icons(index, *bounds, content_boundary, true)?;
+                self.panel_geometry_layout(index, *bounds, scale, geometry)?;
+            }
+        }
+        for (slot, bounds) in frames.iter().enumerate() {
+            let index = self.layout.order[slot];
+            if bounds.size.width <= 0. {
+                self.retire_hidden_content(index, *bounds);
+                continue;
+            }
+            self.paint_panel_body(index, active, scale, palette, &mut scene, renderer)?;
+        }
+        if self.layout.presentation.is_some() {
+            scene.push_quad(Quad::new(
+                Rect::new(
+                    whole.min_x(),
+                    toolbar_y,
+                    whole.size.width,
+                    toolbar_paint_height,
+                ),
+                palette.color("surface-0").unwrap(),
+            ));
+            self.sync_container_toolbars_with_renderer(
+                active,
+                whole,
+                window_toolbar_mount::ToolbarBand {
+                    y: toolbar_y,
+                    height: toolbar_paint_height,
+                    native_leading: 0.,
+                },
+                0.,
+                Some(renderer),
+            )?;
+        }
+        let mut toolbar_scene = Scene::new();
+        let mut toolbar_overlays = Scene::new();
+        let mut presentation_scene = Scene::new();
+        self.render_toolbar_hosts(
+            active,
+            palette,
+            renderer,
+            &mut toolbar_scene,
+            &mut toolbar_overlays,
+        )?;
+        if self.layout.presentation.is_some() {
+            self.paint_presentation_with_renderer(
+                &mut presentation_scene,
+                whole,
+                palette,
+                Some(renderer),
+            )?;
+        }
+        self.append_toolbar_layers(
+            &mut scene,
+            &toolbar_scene,
+            &presentation_scene,
+            &toolbar_overlays,
+        );
+        self.layout.presentation_scroll_pending = false;
+        Ok((scene, clear))
+    }
+
+    pub(crate) fn render_headless_rgba8(
+        &mut self,
+        renderer: &mut Renderer,
+        size_pt: (u32, u32),
+        scale: u32,
+    ) -> Result<Vec<u8>> {
+        let whole = Rect::new(0., 0., size_pt.0 as f32, size_pt.1 as f32);
+        let (scene, clear) = self.build_headless_scene(renderer, whole, scale as f32, true)?;
+        let size_px = (size_pt.0 * scale, size_pt.1 * scale);
+        Ok(renderer.render_to_rgba8(&scene, &mut self.text.atlas, size_px, scale as f32, clear)?)
     }
 }
 

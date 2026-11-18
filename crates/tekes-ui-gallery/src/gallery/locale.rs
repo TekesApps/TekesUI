@@ -40,6 +40,7 @@ pub fn has_cjk(value: &str) -> bool {
         .any(|c| ('\u{3400}'..='\u{9fff}').contains(&c))
 }
 impl Locale {
+    #[cfg(test)]
     pub const ALL: [Self; 2] = [Self::En, Self::ZhCn];
     pub fn from_code(code: &str) -> Option<Self> {
         match code {
