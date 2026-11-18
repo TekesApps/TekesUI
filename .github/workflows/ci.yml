@@ -123,7 +123,7 @@ jobs:
           cargo clippy -p tekes-ui-platform-macos --features selftest --all-targets --locked -- -D warnings
           cargo clippy -p tekes-ui-macos-bridge --features selftest --all-targets --locked -- -D warnings
           cargo clippy -p tekes-ui-app-host --features window-acceptance --all-targets --locked -- -D warnings
-          cargo clippy -p tekes-ui-gallery --features selftest,composition-review --all-targets --locked -- -D warnings
+          cargo clippy -p tekes-ui-gallery --features selftest --all-targets --locked -- -D warnings
           cargo test --locked -p tekes-ui-platform-macos --features selftest --lib
           cargo test --locked -p tekes-ui-platform-macos --features selftest --test link_native
           cargo test --locked -p tekes-ui-macos-bridge --features selftest --test ax_modal_projection --test combobox_accessibility --test content_accessibility --test panel_projection --test link_native_publication

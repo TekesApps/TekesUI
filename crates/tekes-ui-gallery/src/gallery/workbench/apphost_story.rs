@@ -258,8 +258,11 @@ impl AppHostStory {
             }
         }
     }
-    fn select_section(&mut self, section: usize) {
+    pub(crate) fn select_section(&mut self, section: usize) {
         let live = matches!(section, 1 | 4);
+        if self.state.section == section && live == self.retained.is_none() {
+            return;
+        }
         if self.retained.is_none() {
             // Blur while the original owner is still mounted. The original
             // TextInput decides how to finalize composition before unmount.
@@ -381,67 +384,6 @@ mod tests {
         );
         story.after_host_visit();
         render(story, text);
-    }
-    #[test]
-    fn apphost_input_status_consumers_keep_independent_drafts_in_one_host() {
-        let mut text = TextEngine::new();
-        for renderer in ["combo-box", "select"] {
-            let mut story = story(renderer);
-            press(&mut story, &mut text, 3);
-            let count = if renderer == "combo-box" { 3 } else { 2 };
-            for i in 0..count {
-                let id = ComponentId(91402 + i * 10);
-                assert!(story.host().get(id).is_some());
-                assert!(
-                    !story
-                        .host()
-                        .inspection_snapshot(id)
-                        .unwrap()
-                        .semantics
-                        .disabled
-                );
-                if renderer == "combo-box" {
-                    assert_eq!(story.host().text_surface(id).unwrap().text(), "Compact");
-                    assert_eq!(
-                        story
-                            .host()
-                            .inspection_snapshot(id)
-                            .unwrap()
-                            .semantics
-                            .invalid,
-                        i == 2
-                    );
-                }
-            }
-            if renderer == "combo-box" {
-                assert!(story.host_mut().focus(Some(ComponentId(91402)), true));
-                story.host_mut().event(&ContentEvent::Commit {
-                    text: "edited".into(),
-                    replacement: None,
-                });
-                assert_ne!(
-                    story
-                        .host()
-                        .text_surface(ComponentId(91402))
-                        .unwrap()
-                        .text(),
-                    "Compact"
-                );
-                assert_eq!(
-                    story
-                        .host()
-                        .text_surface(ComponentId(91412))
-                        .unwrap()
-                        .text(),
-                    "Compact"
-                );
-            }
-            press(&mut story, &mut text, 2);
-            assert!(story.host().get(ComponentId(91402)).is_none());
-            if renderer == "combo-box" {
-                assert_eq!(story.state.input.query(), "");
-            }
-        }
     }
     #[test]
     fn apphost_input_chapters_retain_original_editor_and_reset_offstage() {

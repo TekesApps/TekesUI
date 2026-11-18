@@ -437,6 +437,60 @@ impl BasicStory {
             retained_live: None,
         }
     }
+    pub(crate) fn select_section(&mut self, section: usize) {
+        if self.state.section == section {
+            return;
+        }
+        let previous_section = self.state.section;
+        self.state.activate(section + 1, self.entry.renderer());
+        self.replace_section_body(false, previous_section);
+    }
+    fn replace_section_body(&mut self, reset: bool, previous_section: usize) {
+        if super::apphost_collections::supports(self.entry.renderer())
+            || self.entry.renderer() == "command-palette"
+        {
+            let live = |section| {
+                section == 1
+                    || (section == 3 && super::apphost_collections::supports(self.entry.renderer()))
+            };
+            self.host.focus(None, false);
+            let body = self.host.remove(BODY).expect("mounted collection section");
+            if reset {
+                self.retained_live = None;
+            } else if live(previous_section) {
+                self.retained_live = Some(body);
+            }
+            let next = if live(self.state.section) {
+                self.retained_live
+                    .take()
+                    .unwrap_or_else(|| Self::body(self.entry, &self.state))
+            } else {
+                Self::body(self.entry, &self.state)
+            };
+            self.host
+                .insert(ROWS, next)
+                .expect("collection section slot");
+            self.host
+                .get_mut(ComponentId(92007))
+                .unwrap()
+                .component_mut::<TextContent>()
+                .unwrap()
+                .text = [
+                "Docs",
+                "Playground",
+                "State matrix",
+                "Behaviors",
+                "Edge cases",
+                "Variants / sizes",
+            ][self.state.section]
+                .into();
+        } else {
+            self.host.remove(BODY).expect("mounted Checkbox section");
+            self.host
+                .insert(ROWS, Self::body(self.entry, &self.state))
+                .expect("Checkbox section slot");
+        }
+    }
     fn body(entry: &'static Entry, state: &StoryState) -> Content {
         let mut children = vec![text(
             92007,
@@ -955,50 +1009,8 @@ impl BasicStory {
                             .cloned()
                             .collect::<Vec<_>>()
                             .join("\n");
-                    } else if super::apphost_collections::supports(self.entry.renderer())
-                        || self.entry.renderer() == "command-palette"
-                    {
-                        let live = |section| {
-                            section == 1
-                                || (section == 3
-                                    && super::apphost_collections::supports(self.entry.renderer()))
-                        };
-                        self.host.focus(None, false);
-                        let body = self.host.remove(BODY).expect("mounted collection section");
-                        if command == 0 {
-                            self.retained_live = None;
-                        } else if live(previous_section) {
-                            self.retained_live = Some(body);
-                        }
-                        let next = if live(self.state.section) {
-                            self.retained_live
-                                .take()
-                                .unwrap_or_else(|| Self::body(self.entry, &self.state))
-                        } else {
-                            Self::body(self.entry, &self.state)
-                        };
-                        self.host
-                            .insert(ROWS, next)
-                            .expect("collection section slot");
-                        self.host
-                            .get_mut(ComponentId(92007))
-                            .unwrap()
-                            .component_mut::<TextContent>()
-                            .unwrap()
-                            .text = [
-                            "Docs",
-                            "Playground",
-                            "State matrix",
-                            "Behaviors",
-                            "Edge cases",
-                            "Variants / sizes",
-                        ][self.state.section]
-                            .into();
                     } else {
-                        self.host.remove(BODY).expect("mounted Checkbox section");
-                        self.host
-                            .insert(ROWS, Self::body(self.entry, &self.state))
-                            .expect("Checkbox section slot");
+                        self.replace_section_body(command == 0, previous_section);
                     }
                 }
             }
@@ -1149,67 +1161,11 @@ mod tests {
             }
             press_navigation_story(&mut story, &mut text, ComponentId(COMMAND + 3), None);
             if renderer == "slider" {
-                use tekes_ui_composition_consumer::slider_content::{EDITOR, RANGE};
-                assert_eq!(
-                    story
-                        .host
-                        .get(RANGE)
-                        .unwrap()
-                        .component::<SliderContent>()
-                        .unwrap()
-                        .model
-                        .value(),
-                    60.
-                );
-                assert!(story.host.focus(Some(RANGE), true));
-                render_navigation_story(&mut story, &mut text);
-                assert!(
-                    story
-                        .host
-                        .accessibility_action(RANGE, None, AccessibilityAction::Increment)
-                        .changed
-                );
-                render_navigation_story(&mut story, &mut text);
-                assert_eq!(
-                    story
-                        .host
-                        .get(RANGE)
-                        .unwrap()
-                        .component::<SliderContent>()
-                        .unwrap()
-                        .model
-                        .value(),
-                    65.
-                );
-                assert_eq!(
-                    story.host.text_surface(EDITOR).unwrap().text(),
-                    "Keep this draft"
-                );
+                assert!(story.host.get(ComponentId(92801)).is_some());
+                assert!(story.host.get(ComponentId(8501)).is_none());
             } else {
-                // Every original independent status fixture is a child of this
-                // Host, and its header still changes visibility/selection.
-                for i in 0..5 {
-                    let base = 102000 + i * 10;
-                    assert!(story.host.get(ComponentId(base + 4)).is_some());
-                    assert!(story.host.get(ComponentId(base + 6)).is_some());
-                    press_navigation_story(
-                        &mut story,
-                        &mut text,
-                        ComponentId(base + 2),
-                        (renderer == "tabs").then_some(1),
-                    );
-                    let header = story
-                        .host
-                        .semantics()
-                        .into_iter()
-                        .find(|n| n.id == ComponentId(base + 2))
-                        .unwrap();
-                    if renderer == "tabs" {
-                        assert_eq!(header.semantics.value.as_deref(), Some("1"));
-                    } else {
-                        assert_eq!(header.semantics.expanded, Some(false));
-                    }
-                }
+                assert!(story.host.get(ComponentId(101101)).is_some());
+                assert!(story.host.get(ComponentId(102000)).is_none());
             }
             press_navigation_story(&mut story, &mut text, ComponentId(COMMAND + 1), None);
             press_navigation_story(&mut story, &mut text, ComponentId(COMMAND + 2), None);

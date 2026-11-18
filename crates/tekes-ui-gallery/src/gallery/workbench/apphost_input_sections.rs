@@ -105,68 +105,6 @@ fn matrix(renderer: &str) -> Vec<Content> {
             ));
         }
     }
-    #[cfg(any(test, feature = "composition-review"))]
-    if matches!(renderer, "combo-box" | "select") {
-        use std::{cell::Cell, rc::Rc};
-        use tekes_ui_composition_consumer::content_status::Status;
-        let cases: &[(Status, bool, &str)] = if renderer == "combo-box" {
-            &[
-                (
-                    Status::Loading,
-                    false,
-                    "Loading options · retained query consumer",
-                ),
-                (
-                    Status::Error,
-                    false,
-                    "Refresh failed · input stays editable",
-                ),
-                (
-                    Status::Ready,
-                    true,
-                    "Validation error · separate from refresh failure",
-                ),
-            ]
-        } else {
-            &[
-                (
-                    Status::Loading,
-                    false,
-                    "Loading options · independent consumer",
-                ),
-                (
-                    Status::Error,
-                    false,
-                    "Refresh failed · cached options remain usable",
-                ),
-            ]
-        };
-        for (i, (status, validation, label)) in cases.iter().enumerate() {
-            let base = 91400 + i as u64 * 10;
-            children.push(text(base, *label));
-            let ids = [
-                ComponentId(base + 1),
-                ComponentId(base + 2),
-                ComponentId(base + 3),
-            ];
-            let labels = ["Automatic", "Compact", "Comfortable"]
-                .into_iter()
-                .map(str::to_owned)
-                .collect();
-            let status = Rc::new(Cell::new(*status));
-            children.push(if renderer == "combo-box" {
-                tekes_ui_composition_consumer::combo_status::fixture_content(
-                    ids,
-                    labels,
-                    status,
-                    validation.then(|| "Choose a permitted layout.".into()),
-                    Some("Com"),
-                )
-            } else {
-                tekes_ui_composition_consumer::choice_status::fixture_content(ids, labels, status)
-            });
-        }
-    }
     children
 }
 #[derive(Debug)]

@@ -1,14 +1,27 @@
-//! Real-backend validation of a separate consumer crate. No production Gallery
-//! routes migrate until the three minimal consumer scenarios have been proven.
-use super::text::TextEngine;
+#![cfg(target_os = "macos")]
+//! Real-backend validation of the independent composition consumer crate.
+
+use std::time::Duration;
 use tekes_ui_composition_consumer::{IconImages, compound_button};
 use tekes_ui_controls::{
     ControlKey,
     composition::{Button, ComponentId, ContentEvent},
+    layout_view::IconRenderer,
 };
+use tekes_ui_macos_bridge::coretext_host::CoreTextHost;
 use tekes_ui_render::Renderer;
-use tekes_ui_scene::{Rect, Scene, Size};
+use tekes_ui_scene::{ImageQuad, Rect, Scene, Size};
 use tekes_ui_tokens::{Palette, Theme};
+
+fn save_png(path: std::path::PathBuf, width: u32, height: u32, rgba: Vec<u8>) {
+    resvg::tiny_skia::Pixmap::from_vec(
+        rgba,
+        resvg::tiny_skia::IntSize::from_wh(width, height).unwrap(),
+    )
+    .unwrap()
+    .save_png(path)
+    .unwrap();
+}
 
 #[test]
 fn required_field_metadata_and_real_consumer_keep_markers_at_narrow_widths() {
@@ -31,11 +44,12 @@ fn required_field_metadata_and_real_consumer_keep_markers_at_narrow_widths() {
         for scale in [1_u32, 2] {
             for width in [140_u32, 344] {
                 for type_scale in [1., 1.5] {
-                    let mut text = TextEngine::new();
-                    text.set_scale(scale as f32);
-                    text.set_type_scale(type_scale);
+                    let mut text = CoreTextHost::new()
+                        .with_backing_scale(scale as f32)
+                        .with_type_scale(type_scale);
                     for presentation in ["body", "heading", "consumer"] {
-                        text.begin_frame();
+                        text.atlas.begin_frame();
+                        text.begin_frame(Duration::ZERO, true);
                         let mut scene = Scene::new();
                         let height = if presentation == "consumer" {
                             1800
@@ -91,7 +105,9 @@ fn required_field_metadata_and_real_consumer_keep_markers_at_narrow_widths() {
                                 lost_markers += 1;
                             }
                         }
-                        assert!(scene.primitives().iter().any(|p| matches!(p, tekes_ui_scene::Primitive::Glyphs(r) if !r.glyphs.is_empty())));
+                        assert!(scene.primitives().iter().any(|p| {
+                            matches!(p, tekes_ui_scene::Primitive::Glyphs(r) if !r.glyphs.is_empty())
+                        }));
                         if presentation != "consumer" {
                             let runs = scene
                                 .primitives()
@@ -118,7 +134,7 @@ fn required_field_metadata_and_real_consumer_keep_markers_at_narrow_widths() {
                         let rgba = renderer
                             .render_to_rgba8(
                                 &scene,
-                                text.atlas_mut(),
+                                &mut text.atlas,
                                 size,
                                 scale as f32,
                                 palette.color("document-canvas").unwrap(),
@@ -128,20 +144,17 @@ fn required_field_metadata_and_real_consumer_keep_markers_at_narrow_widths() {
                             "field-{theme_index}-{width}@{scale}x-type-{type_scale}-{presentation}.png"
                         );
                         if let Some(path) = &output {
-                            let mut encoder = png::Encoder::new(
-                                std::fs::File::create(path.join(&file)).unwrap(),
-                                size.0,
-                                size.1,
-                            );
-                            encoder.set_color(png::ColorType::Rgba);
-                            encoder.set_depth(png::BitDepth::Eight);
-                            encoder
-                                .write_header()
-                                .unwrap()
-                                .write_image_data(&rgba)
-                                .unwrap();
+                            save_png(path.join(&file), size.0, size.1, rgba);
                         }
-                        cases.push(serde_json::json!({"file":file,"theme":theme_index,"scale":scale,"width":width,"type_scale":type_scale,"presentation":presentation,"marker_widths":markers.iter().map(|m|m.size.width).collect::<Vec<_>>()}));
+                        cases.push(serde_json::json!({
+                            "file": file,
+                            "theme": theme_index,
+                            "scale": scale,
+                            "width": width,
+                            "type_scale": type_scale,
+                            "presentation": presentation,
+                            "marker_widths": markers.iter().map(|m| m.size.width).collect::<Vec<_>>()
+                        }));
                     }
                 }
             }
@@ -155,7 +168,6 @@ fn required_field_metadata_and_real_consumer_keep_markers_at_narrow_widths() {
         )
         .unwrap();
     }
-    // Preserve complete real pre-fix image evidence before reporting the failure.
     assert_eq!(
         lost_markers, 0,
         "required indicators lost in actual shaped layouts"
@@ -165,7 +177,7 @@ fn required_field_metadata_and_real_consumer_keep_markers_at_narrow_widths() {
 #[test]
 fn number_field_existing_states_use_actual_glyphs_and_shared_button_presentation() {
     use tekes_ui_controls::{
-        ButtonModel, ButtonSize, NumberField,
+        ButtonModel, ButtonSize, ButtonTextRenderer, NumberField,
         feedback_view::{NumberFieldEvent, NumberFieldView},
     };
     use tekes_ui_scene::Primitive;
@@ -182,10 +194,11 @@ fn number_field_existing_states_use_actual_glyphs_and_shared_button_presentation
                 for type_scale in [1., 1.5] {
                     for state in ["rest", "hover", "pressed", "focus", "disabled"] {
                         let palette = Palette::from(theme);
-                        let mut text = TextEngine::new();
-                        text.set_scale(scale as f32);
-                        text.set_type_scale(type_scale);
-                        text.begin_frame();
+                        let mut text = CoreTextHost::new()
+                            .with_backing_scale(scale as f32)
+                            .with_type_scale(type_scale);
+                        text.atlas.begin_frame();
+                        text.begin_frame(Duration::ZERO, true);
                         let model = NumberField::new(2., 0., 4., 1.).unwrap();
                         let mut view = NumberFieldView::default();
                         let button = ButtonModel::measure(
@@ -195,12 +208,8 @@ fn number_field_existing_states_use_actual_glyphs_and_shared_button_presentation
                             ButtonSize::Body,
                             TextRole::UiBody,
                         );
-                        let number = tekes_ui_controls::ButtonTextRenderer::measure(
-                            &mut text,
-                            "2",
-                            TextRole::UiHeading,
-                            80.,
-                        );
+                        let number =
+                            ButtonTextRenderer::measure(&mut text, "2", TextRole::UiHeading, 80.);
                         let frame =
                             Rect::new(8., 8., width as f32, button.height.max(number.height));
                         let clip = Rect::new(0., 0., width as f32 + 16., 96.);
@@ -222,7 +231,8 @@ fn number_field_existing_states_use_actual_glyphs_and_shared_button_presentation
                             _ => {}
                         }
                         let mut scene = Scene::new();
-                        text.begin_frame();
+                        text.atlas.begin_frame();
+                        text.begin_frame(Duration::ZERO, true);
                         let layout = view.render(
                             &mut scene,
                             &mut text,
@@ -241,7 +251,7 @@ fn number_field_existing_states_use_actual_glyphs_and_shared_button_presentation
                         let rgba = renderer
                             .render_to_rgba8(
                                 &scene,
-                                text.atlas_mut(),
+                                &mut text.atlas,
                                 ((width + 16) * scale, 96 * scale),
                                 scale as f32,
                                 palette.color("document-canvas").unwrap(),
@@ -259,23 +269,24 @@ fn number_field_existing_states_use_actual_glyphs_and_shared_button_presentation
                             "number-{theme_index}-{width}@{scale}x-type-{type_scale}-{state}.png"
                         );
                         if let Some(p) = &output {
-                            let mut enc = png::Encoder::new(
-                                std::fs::File::create(p.join(&file)).unwrap(),
-                                (width + 16) * scale,
-                                96 * scale,
-                            );
-                            enc.set_color(png::ColorType::Rgba);
-                            enc.set_depth(png::BitDepth::Eight);
-                            enc.write_header().unwrap().write_image_data(&rgba).unwrap();
+                            save_png(p.join(&file), (width + 16) * scale, 96 * scale, rgba);
                         }
-                        cases.push(serde_json::json!({"file":file,"theme":theme_index,"scale":scale,"width":width,"type_scale":type_scale,"state":state,"value":model.value()}));
+                        cases.push(serde_json::json!({
+                            "file": file,
+                            "theme": theme_index,
+                            "scale": scale,
+                            "width": width,
+                            "type_scale": type_scale,
+                            "state": state,
+                            "value": model.value()
+                        }));
                     }
                 }
             }
         }
     }
     assert_eq!(cases.len(), 160);
-    if let Some(p) = output {
+    if let Some(p) = &output {
         std::fs::write(
             p.join("manifest.json"),
             serde_json::to_vec_pretty(&cases).unwrap(),
@@ -303,13 +314,10 @@ fn independent_plain_content_has_no_form_pixels_and_keeps_real_selection_in_four
         let palette = Palette::from(theme);
         let clear = palette.color("document-canvas").unwrap();
         for scale in [1_u32, 2] {
-            let mut text = TextEngine::new();
-            text.set_scale(scale as f32);
-            // Empty content must leave every pixel to its parent, including the
-            // semantic name. Ordinary Field must still paint its label/chrome.
+            let mut text = CoreTextHost::new().with_backing_scale(scale as f32);
             let size = (320 * scale, 160 * scale);
             let blank = renderer
-                .render_to_rgba8(&Scene::new(), text.atlas_mut(), size, scale as f32, clear)
+                .render_to_rgba8(&Scene::new(), &mut text.atlas, size, scale as f32, clear)
                 .unwrap();
             for plain in [true, false] {
                 let field = if plain {
@@ -319,7 +327,8 @@ fn independent_plain_content_has_no_form_pixels_and_keeps_real_selection_in_four
                 };
                 let mut host = ContentHost::new(Content::new(ComponentId(1), field)).unwrap();
                 let mut scene = Scene::new();
-                text.begin_frame();
+                text.atlas.begin_frame();
+                text.begin_frame(Duration::ZERO, true);
                 host.render(
                     &mut scene,
                     &mut text,
@@ -329,7 +338,7 @@ fn independent_plain_content_has_no_form_pixels_and_keeps_real_selection_in_four
                 )
                 .unwrap();
                 let pixels = renderer
-                    .render_to_rgba8(&scene, text.atlas_mut(), size, scale as f32, clear)
+                    .render_to_rgba8(&scene, &mut text.atlas, size, scale as f32, clear)
                     .unwrap();
                 if plain {
                     assert_eq!(pixels, blank, "content must not paint a form or label");
@@ -339,11 +348,12 @@ fn independent_plain_content_has_no_form_pixels_and_keeps_real_selection_in_four
             }
             for width in [360_u32, 720] {
                 for type_scale in [1., 1.5] {
-                    text.set_type_scale(type_scale);
+                    text.type_scale = type_scale;
                     let mut consumer = Scenario::new().unwrap();
                     let frame = Rect::new(8., 8., width as f32 - 16., 464.);
                     let clip = Rect::new(0., 0., width as f32, 480.);
-                    text.begin_frame();
+                    text.atlas.begin_frame();
+                    text.begin_frame(Duration::ZERO, true);
                     consumer
                         .host
                         .render(&mut Scene::new(), &mut text, frame, clip, palette)
@@ -392,7 +402,8 @@ fn independent_plain_content_has_no_form_pixels_and_keeps_real_selection_in_four
                                 time: 1.,
                             });
                         }
-                        text.begin_frame();
+                        text.atlas.begin_frame();
+                        text.begin_frame(Duration::ZERO, true);
                         let mut scene = Scene::new();
                         consumer
                             .host
@@ -420,7 +431,7 @@ fn independent_plain_content_has_no_form_pixels_and_keeps_real_selection_in_four
                         let pixels = renderer
                             .render_to_rgba8(
                                 &scene,
-                                text.atlas_mut(),
+                                &mut text.atlas,
                                 (width * scale, 480 * scale),
                                 scale as f32,
                                 clear,
@@ -429,8 +440,6 @@ fn independent_plain_content_has_no_form_pixels_and_keeps_real_selection_in_four
                         if phase == "focused" {
                             unselected = pixels.clone();
                         } else if phase == "selected" {
-                            // Compare within the shaped UTF-16 selection, not a
-                            // generic whole-image change caused by focus ink.
                             assert!(
                                 selection_rects.iter().any(|r| {
                                     let x0 = (r.min_x().max(0.) * scale as f32).ceil() as u32;
@@ -464,19 +473,18 @@ fn independent_plain_content_has_no_form_pixels_and_keeps_real_selection_in_four
                             "plain-{theme_index}-{width}@{scale}x-type-{type_scale}-{phase}.png"
                         );
                         if let Some(p) = &output {
-                            let mut enc = png::Encoder::new(
-                                std::fs::File::create(p.join(&file)).unwrap(),
-                                width * scale,
-                                480 * scale,
-                            );
-                            enc.set_color(png::ColorType::Rgba);
-                            enc.set_depth(png::BitDepth::Eight);
-                            enc.write_header()
-                                .unwrap()
-                                .write_image_data(&pixels)
-                                .unwrap();
+                            save_png(p.join(&file), width * scale, 480 * scale, pixels);
                         }
-                        cases.push(serde_json::json!({"file":file,"theme":theme_index,"width":width,"scale":scale,"type_scale":type_scale,"phase":phase,"parent_offset":offset,"nested_offset":0}));
+                        cases.push(serde_json::json!({
+                            "file": file,
+                            "theme": theme_index,
+                            "width": width,
+                            "scale": scale,
+                            "type_scale": type_scale,
+                            "phase": phase,
+                            "parent_offset": offset,
+                            "nested_offset": 0
+                        }));
                     }
                 }
             }
@@ -497,7 +505,7 @@ fn independent_consumer_compound_button_uses_real_icon_text_and_gpu_in_four_them
     let mut renderer = Renderer::new_headless().expect("real GPU required");
     let output = std::env::var_os("TEKESUI_COMPOSITION_OUT").map(std::path::PathBuf::from);
     if let Some(p) = &output {
-        std::fs::create_dir_all(p).unwrap()
+        std::fs::create_dir_all(p).unwrap();
     }
     for (theme_index, theme) in Theme::ALL.into_iter().enumerate() {
         let palette = Palette::from(theme);
@@ -522,10 +530,11 @@ fn independent_consumer_compound_button_uses_real_icon_text_and_gpu_in_four_them
         for width in [360_u32, 800] {
             for scale in [1_u32, 2] {
                 for type_scale in [1., 1.5] {
-                    let mut text = TextEngine::new();
-                    text.set_scale(scale as f32);
-                    text.set_type_scale(type_scale);
-                    text.begin_frame();
+                    let mut text = CoreTextHost::new()
+                        .with_backing_scale(scale as f32)
+                        .with_type_scale(type_scale);
+                    text.atlas.begin_frame();
+                    text.begin_frame(Duration::ZERO, true);
                     let mut host = compound_button(IconImages(vec![(ink, image)])).unwrap();
                     let extent = host
                         .get_mut(ComponentId(1))
@@ -560,27 +569,28 @@ fn independent_consumer_compound_button_uses_real_icon_text_and_gpu_in_four_them
                         1
                     );
                     scene.clear();
-                    text.begin_frame();
+                    text.atlas.begin_frame();
+                    text.begin_frame(Duration::ZERO, true);
                     host.render(&mut scene, &mut text, frame, clip, palette)
                         .unwrap();
                     let rgba = renderer
                         .render_to_rgba8(
                             &scene,
-                            text.atlas_mut(),
+                            &mut text.atlas,
                             (width * scale, 240 * scale),
                             scale as f32,
                             palette.color("surface-1").unwrap(),
                         )
                         .unwrap();
                     if let Some(p) = &output {
-                        let f = std::fs::File::create(p.join(format!(
-                            "button-theme-{theme_index}-{width}@{scale}x-type-{type_scale}.png"
-                        )))
-                        .unwrap();
-                        let mut enc = png::Encoder::new(f, width * scale, 240 * scale);
-                        enc.set_color(png::ColorType::Rgba);
-                        enc.set_depth(png::BitDepth::Eight);
-                        enc.write_header().unwrap().write_image_data(&rgba).unwrap();
+                        save_png(
+                            p.join(format!(
+                                "button-theme-{theme_index}-{width}@{scale}x-type-{type_scale}.png"
+                            )),
+                            width * scale,
+                            240 * scale,
+                            rgba,
+                        );
                     }
                 }
             }
@@ -610,9 +620,9 @@ fn independent_list_and_rich_dialog_use_production_views_and_real_gpu() {
                         } else {
                             scenarios::rich_dialog().unwrap()
                         };
-                        let mut text = TextEngine::new();
-                        text.set_scale(scale as f32);
-                        text.set_type_scale(type_scale);
+                        let mut text = CoreTextHost::new()
+                            .with_backing_scale(scale as f32)
+                            .with_type_scale(type_scale);
                         let frame = Rect::new(16., 16., width as f32 - 32., 608.);
                         let clip = Rect::new(0., 0., width as f32, 640.);
                         if kind == "dialog" {
@@ -638,7 +648,8 @@ fn independent_list_and_rich_dialog_use_production_views_and_real_gpu() {
                                 }
                             }
                             let mut scene = Scene::new();
-                            text.begin_frame();
+                            text.atlas.begin_frame();
+                            text.begin_frame(Duration::ZERO, true);
                             host.render(&mut scene, &mut text, frame, clip, palette)
                                 .unwrap();
                             if kind == "list" {
@@ -693,26 +704,21 @@ fn independent_list_and_rich_dialog_use_production_views_and_real_gpu() {
                             let rgba = renderer
                                 .render_to_rgba8(
                                     &scene,
-                                    text.atlas_mut(),
+                                    &mut text.atlas,
                                     (width * scale, 640 * scale),
                                     scale as f32,
                                     palette.color("surface-1").unwrap(),
                                 )
                                 .unwrap();
                             if let Some(p) = &output {
-                                let path=p.join(format!("{kind}-{state}-theme-{theme_index}-{width}@{scale}x-type-{type_scale}.png"));
-                                let mut encoder = png::Encoder::new(
-                                    std::fs::File::create(path).unwrap(),
+                                save_png(
+                                    p.join(format!(
+                                        "{kind}-{state}-theme-{theme_index}-{width}@{scale}x-type-{type_scale}.png"
+                                    )),
                                     width * scale,
                                     640 * scale,
+                                    rgba,
                                 );
-                                encoder.set_color(png::ColorType::Rgba);
-                                encoder.set_depth(png::BitDepth::Eight);
-                                encoder
-                                    .write_header()
-                                    .unwrap()
-                                    .write_image_data(&rgba)
-                                    .unwrap();
                             }
                             count += 1;
                         }
@@ -726,7 +732,6 @@ fn independent_list_and_rich_dialog_use_production_views_and_real_gpu() {
 
 #[test]
 fn independent_rich_dialog_presence_rebuilds_gpu_frames_and_reduces_motion() {
-    use std::time::Duration;
     use tekes_ui_composition_consumer::scenarios::{self, ids};
     use tekes_ui_controls::composition::DialogContent;
     let mut renderer = Renderer::new_headless().expect("real GPU required");
@@ -738,13 +743,13 @@ fn independent_rich_dialog_presence_rebuilds_gpu_frames_and_reduces_motion() {
         for scale in [1u32, 2] {
             let palette = Palette::from(theme);
             let mut host = scenarios::rich_dialog().unwrap();
-            let mut text = TextEngine::new();
-            text.set_scale(scale as f32);
-            text.set_motion_enabled(true);
+            let mut text = CoreTextHost::new()
+                .with_backing_scale(scale as f32)
+                .with_text_services(true);
             let frame = Rect::new(16., 16., 688., 608.);
             let clip = Rect::new(0., 0., 720., 640.);
-            // Establish real invoker geometry and focus before opening the dialog.
-            text.begin_frame();
+            text.atlas.begin_frame();
+            text.begin_frame(Duration::ZERO, true);
             host.render(&mut Scene::new(), &mut text, frame, clip, palette)
                 .unwrap();
             host.focus(Some(ids::DIALOG_INVOKER), true);
@@ -767,11 +772,9 @@ fn independent_rich_dialog_presence_rebuilds_gpu_frames_and_reduces_motion() {
                 if name == "reverse-start" {
                     host.show_dialog(ids::DIALOG).unwrap();
                 }
-                text.set_motion_context(Duration::from_millis(ms), reduced);
-                // Deliberately invalidate old glyph handles: the exit subtree must
-                // shape/push its glyphs again in this frame, as existing overlays do.
-                text.atlas_mut().clear();
-                text.begin_frame();
+                text.atlas.clear();
+                text.atlas.begin_frame();
+                text.begin_frame(Duration::from_millis(ms), reduced);
                 let mut scene = Scene::new();
                 host.render(&mut scene, &mut text, frame, clip, palette)
                     .unwrap();
@@ -791,7 +794,7 @@ fn independent_rich_dialog_presence_rebuilds_gpu_frames_and_reduces_motion() {
                 }
                 if name == "exit-mid" {
                     assert!(dialog.is_presented());
-                    assert!(text.motion_frame_requested());
+                    assert!(text.animation_requested);
                     assert!(
                         scene
                             .primitives()
@@ -802,22 +805,19 @@ fn independent_rich_dialog_presence_rebuilds_gpu_frames_and_reduces_motion() {
                 let rgba = renderer
                     .render_to_rgba8(
                         &scene,
-                        text.atlas_mut(),
+                        &mut text.atlas,
                         (720 * scale, 640 * scale),
                         scale as f32,
                         palette.color("surface-1").unwrap(),
                     )
                     .unwrap();
                 if let Some(p) = &output {
-                    let path = p.join(format!("dialog-{name}-theme-{theme_index}@{scale}x.png"));
-                    let mut e = png::Encoder::new(
-                        std::fs::File::create(path).unwrap(),
+                    save_png(
+                        p.join(format!("dialog-{name}-theme-{theme_index}@{scale}x.png")),
                         720 * scale,
                         640 * scale,
+                        rgba,
                     );
-                    e.set_color(png::ColorType::Rgba);
-                    e.set_depth(png::BitDepth::Eight);
-                    e.write_header().unwrap().write_image_data(&rgba).unwrap();
                 }
             }
         }
@@ -826,7 +826,6 @@ fn independent_rich_dialog_presence_rebuilds_gpu_frames_and_reduces_motion() {
 
 #[test]
 fn rejected_tree_removal_keeps_rich_dialog_pixels_and_input() {
-    use std::time::Duration;
     use tekes_ui_composition_consumer::scenarios::{self, ids};
     use tekes_ui_controls::composition::{CompositionError, DialogContent};
     let mut renderer = Renderer::new_headless().expect("real GPU required");
@@ -840,10 +839,9 @@ fn rejected_tree_removal_keeps_rich_dialog_pixels_and_input() {
             for width in [640_u32, 960] {
                 let palette = Palette::from(theme);
                 let mut host = scenarios::rich_dialog().unwrap();
-                let mut text = TextEngine::new();
-                text.set_scale(scale as f32);
-                text.set_motion_enabled(true);
-                text.set_motion_context(Duration::ZERO, true);
+                let mut text = CoreTextHost::new()
+                    .with_backing_scale(scale as f32)
+                    .with_text_services(true);
                 let frame = Rect::new(0., 0., width as f32, 520.);
                 host.show_dialog(ids::DIALOG).unwrap();
                 let mut baseline = None;
@@ -854,7 +852,8 @@ fn rejected_tree_removal_keeps_rich_dialog_pixels_and_input() {
                             Err(CompositionError::MissingId(_))
                         ));
                     }
-                    text.begin_frame();
+                    text.atlas.begin_frame();
+                    text.begin_frame(Duration::ZERO, true);
                     let mut scene = Scene::new();
                     host.render(&mut scene, &mut text, frame, frame, palette)
                         .unwrap();
@@ -869,7 +868,7 @@ fn rejected_tree_removal_keeps_rich_dialog_pixels_and_input() {
                     let pixels = renderer
                         .render_to_rgba8(
                             &scene,
-                            text.atlas_mut(),
+                            &mut text.atlas,
                             (width * scale, 520 * scale),
                             scale as f32,
                             palette.color("surface-0").unwrap(),
@@ -884,19 +883,13 @@ fn rejected_tree_removal_keeps_rich_dialog_pixels_and_input() {
                         baseline = Some(pixels.clone());
                     }
                     if let Some(output) = &output {
-                        let file = std::fs::File::create(
+                        save_png(
                             output
                                 .join(format!("dialog-{theme_index}-{width}-{stage}@{scale}x.png")),
-                        )
-                        .unwrap();
-                        let mut encoder = png::Encoder::new(file, width * scale, 520 * scale);
-                        encoder.set_color(png::ColorType::Rgba);
-                        encoder.set_depth(png::BitDepth::Eight);
-                        encoder
-                            .write_header()
-                            .unwrap()
-                            .write_image_data(&pixels)
-                            .unwrap();
+                            width * scale,
+                            520 * scale,
+                            pixels,
+                        );
                     }
                     count += 1;
                 }
@@ -908,8 +901,63 @@ fn rejected_tree_removal_keeps_rich_dialog_pixels_and_input() {
 
 #[test]
 fn independent_navigation_content_statuses_render_real_text_and_gpu() {
-    use super::{PageCtx, static_text::StaticText, workbench::content_status};
-    use tekes_ui_composition_consumer::content_status::{EDITOR, FEEDBACK, HEADER, Kind};
+    use tekes_ui_composition_consumer::content_status::{
+        EDITOR, FEEDBACK, HEADER, Kind, Scenario, Status,
+    };
+
+    struct ChevronIcons<'a>(&'a mut Renderer, u32, Vec<tekes_ui_scene::ImageId>);
+    impl IconRenderer for ChevronIcons<'_> {
+        fn draw_icon(
+            &mut self,
+            scene: &mut Scene,
+            name: &str,
+            frame: Rect,
+            tint: tekes_ui_tokens::Rgba,
+        ) {
+            let color = format!(
+                "#{:02x}{:02x}{:02x}",
+                (tint.r * 255.).round() as u8,
+                (tint.g * 255.).round() as u8,
+                (tint.b * 255.).round() as u8
+            );
+            let path = if name == "chevron-down" {
+                "M6 9l6 6 6-6"
+            } else {
+                "M9 6l6 6-6 6"
+            };
+            let svg = format!(
+                r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{path}"/></svg>"#
+            );
+            let tree = resvg::usvg::Tree::from_str(&svg, &resvg::usvg::Options::default()).unwrap();
+            let px = 24 * self.1;
+            let mut pixmap = resvg::tiny_skia::Pixmap::new(px, px).unwrap();
+            resvg::render(
+                &tree,
+                resvg::tiny_skia::Transform::from_scale(self.1 as f32, self.1 as f32),
+                &mut pixmap.as_mut(),
+            );
+            let image = self.0.register_image(pixmap.data(), px, px).unwrap();
+            self.2.push(image);
+            scene.push_image(ImageQuad {
+                rect: frame,
+                image,
+                opacity: 1.0,
+            });
+        }
+    }
+
+    const CASES: [(Status, bool, &str); 5] = [
+        (
+            Status::Loading,
+            false,
+            "Loading content · independent consumer",
+        ),
+        (Status::Error, false, "Content error · independent consumer"),
+        (Status::Empty, false, "Empty content · independent consumer"),
+        (Status::Loading, true, "Loading content · header focus"),
+        (Status::Error, true, "Content error · header focus"),
+    ];
+
     let mut renderer = Renderer::new_headless().expect("real GPU required");
     let output = std::env::var_os("TEKESUI_CONTENT_STATUS_OUT").map(std::path::PathBuf::from);
     if let Some(path) = &output {
@@ -917,43 +965,40 @@ fn independent_navigation_content_statuses_render_real_text_and_gpu() {
     }
     let mut cases = Vec::new();
     for kind in [Kind::Tabs, Kind::Disclosure] {
-        for (status, focus, title) in content_status::CASES {
+        for (status, focus, title) in CASES {
             for (theme_index, theme) in Theme::ALL.into_iter().enumerate() {
-                for brand in 0..3 {
+                for (brand, def_id) in ["default", "blue", "clay"].into_iter().enumerate() {
+                    let palette = Palette::for_theme_definition(theme, def_id).unwrap();
                     for (width, type_scale) in [(360u32, 1.5f32), (800, 1.)] {
                         for scale in [1u32, 2] {
-                            let palette =
-                                crate::gallery::brands::brand_palette(theme, brand).unwrap();
-                            let mut text = TextEngine::new();
-                            text.set_scale(scale as f32);
-                            text.set_type_scale(type_scale);
-                            text.set_motion_enabled(true);
-                            text.set_motion_context(std::time::Duration::ZERO, true);
-                            text.begin_frame();
-                            let mut static_text = StaticText::new(None);
-                            let mut ctx = PageCtx {
-                                theme,
-                                text: &mut text,
-                                static_text: &mut static_text,
-                            };
+                            let mut text = CoreTextHost::new()
+                                .with_backing_scale(scale as f32)
+                                .with_type_scale(type_scale)
+                                .with_text_services(true);
+                            text.atlas.begin_frame();
+                            text.begin_frame(Duration::ZERO, true);
                             let frame = Rect::new(24., 24., width as f32 - 48., 360.);
                             let clip = Rect::new(0., 0., width as f32, 420.);
-                            let mut probe = Scene::new();
-                            let mut scenario = content_status::draw_case(
-                                &mut ctx, &mut probe, kind, status, focus, frame, clip, palette,
-                            )
-                            .unwrap();
+                            let mut scenario = Scenario::new(kind).unwrap();
+                            if kind == Kind::Disclosure {
+                                scenario.set_open(true);
+                            }
+                            scenario.set_status(status);
+                            scenario
+                                .host
+                                .render(&mut Scene::new(), &mut text, frame, clip, palette)
+                                .unwrap();
+                            if focus {
+                                scenario.host.focus(Some(HEADER), true);
+                            }
                             let mut scene = Scene::new();
                             scenario
                                 .host
-                                .render(&mut scene, ctx.text, frame, clip, palette)
+                                .render(&mut scene, &mut text, frame, clip, palette)
                                 .unwrap();
-                            scenario.draw_disclosure_icon(
-                                &mut scene,
-                                &mut super::pages::icons::GalleryIconRenderer::native(&mut ctx),
-                                clip,
-                                palette,
-                            );
+                            let mut icons = ChevronIcons(&mut renderer, scale, Vec::new());
+                            scenario.draw_disclosure_icon(&mut scene, &mut icons, clip, palette);
+                            let registered_icons = icons.2;
                             let semantics = scenario.host.semantics();
                             assert!(semantics.iter().any(|n| n.id == FEEDBACK));
                             assert!(!semantics.iter().any(|n| n.id == EDITOR));
@@ -968,23 +1013,33 @@ fn independent_navigation_content_statuses_render_real_text_and_gpu() {
                             let rgba = renderer
                                 .render_to_rgba8(
                                     &scene,
-                                    text.atlas_mut(),
+                                    &mut text.atlas,
                                     (width * scale, 420 * scale),
                                     scale as f32,
                                     palette.color("surface-1").unwrap(),
                                 )
                                 .unwrap();
+                            for image in registered_icons {
+                                renderer.unregister_image(image);
+                            }
                             let name = format!(
                                 "{kind:?}-{status:?}-focus-{focus}-theme-{theme_index}-brand-{brand}-{width}@{scale}x-type-{type_scale}.png"
                             );
                             if let Some(path) = &output {
-                                let file = std::fs::File::create(path.join(&name)).unwrap();
-                                let mut enc = png::Encoder::new(file, width * scale, 420 * scale);
-                                enc.set_color(png::ColorType::Rgba);
-                                enc.set_depth(png::BitDepth::Eight);
-                                enc.write_header().unwrap().write_image_data(&rgba).unwrap();
+                                save_png(path.join(&name), width * scale, 420 * scale, rgba);
                             }
-                            cases.push(serde_json::json!({"file":name,"kind":format!("{kind:?}"),"status":format!("{status:?}"),"header_focus":focus,"theme":theme_index,"brand":brand,"width":width,"scale":scale,"type_scale":type_scale,"title":title}));
+                            cases.push(serde_json::json!({
+                                "file": name,
+                                "kind": format!("{kind:?}"),
+                                "status": format!("{status:?}"),
+                                "header_focus": focus,
+                                "theme": theme_index,
+                                "brand": brand,
+                                "width": width,
+                                "scale": scale,
+                                "type_scale": type_scale,
+                                "title": title
+                            }));
                         }
                     }
                 }

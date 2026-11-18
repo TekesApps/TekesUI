@@ -169,66 +169,6 @@ fn combo_box(
         }
         *y = row.max_y() + 19.;
     }
-    #[cfg(any(test, feature = "composition-review"))]
-    for (status, validation, title) in [
-        (
-            tekes_ui_composition_consumer::content_status::Status::Loading,
-            false,
-            "Loading options · retained query consumer",
-        ),
-        (
-            tekes_ui_composition_consumer::content_status::Status::Error,
-            false,
-            "Refresh failed · input stays editable",
-        ),
-        (
-            tekes_ui_composition_consumer::content_status::Status::Ready,
-            true,
-            "Validation error · separate from refresh failure",
-        ),
-    ] {
-        let heading = row_heading(ctx, scene, bounds.min_x(), *y, width, title);
-        let top = *y + heading + 7.;
-        let mut scenario = tekes_ui_composition_consumer::combo_status::Scenario::new(
-            ["Automatic", "Compact", "Comfortable"]
-                .into_iter()
-                .map(str::to_owned)
-                .collect(),
-        )
-        .unwrap();
-        scenario.set_status(status);
-        if validation {
-            scenario.set_validation_error(Some("Choose a permitted layout.".into()));
-        }
-        let size = scenario.measure(ctx.text, width.min(440.));
-        let frame = Rect::new(bounds.min_x(), top, size.width, size.height);
-        scenario
-            .render(&mut Scene::new(), ctx.text, frame, clip, palette)
-            .unwrap();
-        scenario.host.focus(
-            Some(tekes_ui_composition_consumer::combo_status::QUERY),
-            true,
-        );
-        scenario
-            .host
-            .event(&tekes_ui_controls::composition::ContentEvent::Commit {
-                text: "Com".into(),
-                replacement: None,
-            });
-        scenario
-            .render(&mut Scene::new(), ctx.text, frame, clip, palette)
-            .unwrap();
-        scenario
-            .host
-            .event(&tekes_ui_controls::composition::ContentEvent::Key {
-                key: ControlKey::Enter,
-                down: true,
-            });
-        scenario
-            .render(scene, ctx.text, frame, clip, palette)
-            .unwrap();
-        *y = frame.max_y() + 19.;
-    }
 }
 
 fn select(
@@ -338,40 +278,6 @@ fn select(
             );
         }
         *y = row.max_y() + 19.;
-    }
-    // The caller owns refresh status; the original Select stays mounted in a
-    // public ContentHost and its menu uses the existing overlay pass.
-    #[cfg(any(test, feature = "composition-review"))]
-    for (status, title) in [
-        (
-            tekes_ui_composition_consumer::content_status::Status::Loading,
-            "Loading options · independent consumer",
-        ),
-        (
-            tekes_ui_composition_consumer::content_status::Status::Error,
-            "Refresh failed · cached options remain usable",
-        ),
-    ] {
-        let heading = row_heading(ctx, scene, bounds.min_x(), *y, width, title);
-        let top = *y + heading + 7.;
-        let mut scenario = tekes_ui_composition_consumer::choice_status::Scenario::new(
-            all_labels.iter().map(|s| (*s).to_owned()).collect(),
-        )
-        .expect("independent public Select consumer");
-        scenario.set_status(status);
-        let size = scenario.measure(ctx.text, width.min(440.));
-        let frame = Rect::new(bounds.min_x(), top, size.width, size.height);
-        scenario
-            .render(&mut Scene::new(), ctx.text, frame, clip, palette)
-            .unwrap();
-        scenario.host.focus(
-            Some(tekes_ui_composition_consumer::choice_status::CHOICE),
-            true,
-        );
-        scenario
-            .render(scene, ctx.text, frame, clip, palette)
-            .unwrap();
-        *y = frame.max_y() + 19.;
     }
 }
 
@@ -742,76 +648,6 @@ fn command_palette(
             );
         }
         *y = row.max_y() + 19.;
-    }
-    #[cfg(any(test, feature = "composition-review"))]
-    for (status, cached, title) in [
-        (
-            tekes_ui_composition_consumer::content_status::Status::Loading,
-            true,
-            "Loading commands · retained query consumer",
-        ),
-        (
-            tekes_ui_composition_consumer::content_status::Status::Error,
-            true,
-            "Refresh failed · query and commands retained",
-        ),
-        (
-            tekes_ui_composition_consumer::content_status::Status::Loading,
-            false,
-            "Initial command lookup · no cached results",
-        ),
-    ] {
-        use tekes_ui_composition_consumer::command_status::{COMMAND, Scenario};
-        use tekes_ui_controls::composition::ContentEvent;
-        let heading = row_heading(ctx, scene, bounds.min_x(), *y, width, title);
-        let mut sample = Scenario::new(if cached {
-            vec![
-                "Open file".into(),
-                "Open settings".into(),
-                "Close window".into(),
-            ]
-        } else {
-            Vec::new()
-        })
-        .expect("public command caller");
-        let probe = Rect::new(bounds.min_x(), *y + heading + 7., width.min(420.), 400.);
-        sample
-            .render(&mut Scene::new(), ctx.text, probe, clip, palette)
-            .unwrap();
-        sample.host.focus(Some(COMMAND), true);
-        sample.host.event(&ContentEvent::Key {
-            key: ControlKey::Enter,
-            down: true,
-        });
-        sample.host.event(&ContentEvent::Commit {
-            text: "Open".into(),
-            replacement: None,
-        });
-        sample.set_status(status);
-        let measured = sample.measure(ctx.text, probe.size.width);
-        let frame = Rect::new(
-            probe.min_x(),
-            probe.min_y(),
-            probe.size.width,
-            measured.height,
-        );
-        sample
-            .render(scene, ctx.text, frame, clip, palette)
-            .unwrap();
-        let menu_height = if cached {
-            tekes_ui_controls::feedback_view::MenuView::measure(
-                ctx.text,
-                &["Open file", "Open settings"],
-                frame.size.width,
-                BODY,
-                false,
-            )
-            .height
-                + tekes_ui_tokens::Spacing::Tight.value()
-        } else {
-            0.
-        };
-        *y = frame.max_y() + menu_height + 19.;
     }
 }
 

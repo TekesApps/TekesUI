@@ -227,7 +227,7 @@ pub(super) fn matrix(renderer: &str) -> Vec<Content> {
     } else {
         extended::matrix_states("disclosure")
     };
-    let rows: Vec<Content> = cases
+    cases
         .into_iter()
         .enumerate()
         .flat_map(|(i, (title, state))| {
@@ -244,30 +244,5 @@ pub(super) fn matrix(renderer: &str) -> Vec<Content> {
                 ),
             ]
         })
-        .collect();
-    #[cfg(any(test, feature = "composition-review"))]
-    let rows = {
-        let mut rows = rows;
-        use std::{cell::Cell, rc::Rc};
-        use tekes_ui_composition_consumer::content_status::{Kind, fixture_content};
-        for (i, (status, focus, title)) in super::content_status::CASES.into_iter().enumerate() {
-            let base = 102000 + i as u64 * 10;
-            rows.push(Content::new(ComponentId(base), TextContent::new(title)));
-            rows.push(fixture_content(
-                if renderer == "tabs" {
-                    Kind::Tabs
-                } else {
-                    Kind::Disclosure
-                },
-                std::array::from_fn(|n| ComponentId(base + 1 + n as u64)),
-                Rc::new(Cell::new(status)),
-                Rc::new(Cell::new(true)),
-                Rc::new(Cell::new(0)),
-                renderer == "disclosure",
-                focus,
-            ));
-        }
-        rows
-    };
-    rows
+        .collect()
 }

@@ -25,8 +25,6 @@ fn gallery_diag_enabled() -> bool {
 
 #[derive(Debug)]
 pub struct Host {
-    #[cfg(feature = "composition-review")]
-    wake_acceptance: Option<crate::wake_acceptance::WakeAcceptance>,
     gallery: Gallery,
     apphost_settings: Option<tekes_ui_app_host::SettingsOwner>,
     apphost_sessions: Vec<crate::gallery::apphost::SessionTempDir>,
@@ -50,8 +48,6 @@ pub struct Host {
 impl Host {
     pub fn new(gallery: Gallery) -> Host {
         Host {
-            #[cfg(feature = "composition-review")]
-            wake_acceptance: crate::wake_acceptance::WakeAcceptance::from_env(),
             gallery,
             apphost_settings: None,
             apphost_sessions: Vec::new(),
@@ -188,10 +184,6 @@ impl Host {
 
 impl WindowHandler for Host {
     fn handle(&mut self, event: Event, window: &mut Window) {
-        #[cfg(feature = "composition-review")]
-        if let Some(audit) = &mut self.wake_acceptance {
-            audit.observe(&event, window);
-        }
         if self.log_all
             && !matches!(
                 event,
@@ -490,7 +482,7 @@ impl WindowHandler for Host {
                 }
             }
         }
-        #[cfg(feature = "composition-review")]
+        #[cfg(feature = "selftest")]
         crate::gallery::workbench::settings_native207::observe(&self.gallery, &event);
     }
 }

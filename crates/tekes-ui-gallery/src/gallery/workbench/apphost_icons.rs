@@ -260,6 +260,18 @@ impl AppHostIcons {
         };
         Content::new(BODY, TextContent::new(copy))
     }
+    pub(crate) fn select_section(&mut self, section: usize) {
+        if self.section == section {
+            return;
+        }
+        let old = self.host.remove(BODY).expect("original Icons body");
+        if self.section == 1 {
+            self.retained = Some(old);
+        }
+        self.section = section;
+        let body = self.section_body();
+        self.host.insert(ROWS, body).expect("unique Icons body");
+    }
     pub(crate) fn after_host_visit(&mut self) {
         if let Some(search) = self
             .host
@@ -283,21 +295,19 @@ impl AppHostIcons {
                 Some(4) => (3, false),
                 _ => continue,
             };
-            if section == self.section && !reset {
-                continue;
-            }
-            let old = self.host.remove(BODY).expect("original Icons body");
             if reset {
+                self.host.remove(BODY).expect("original Icons body");
                 self.retained = None;
-                let mut state = self.state.borrow_mut();
-                state.query.clear();
-                state.error = None;
-            } else if self.section == 1 {
-                self.retained = Some(old);
+                {
+                    let mut state = self.state.borrow_mut();
+                    state.query.clear();
+                    state.error = None;
+                }
+                let body = self.section_body();
+                self.host.insert(ROWS, body).expect("unique Icons body");
+            } else {
+                self.select_section(section);
             }
-            self.section = section;
-            let body = self.section_body();
-            self.host.insert(ROWS, body).expect("unique Icons body");
         }
     }
 

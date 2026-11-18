@@ -18,28 +18,18 @@
 //!
 //! 截图写到 `TEKES_SELFTEST_OUT` 指定的目录。
 
-#[cfg(all(target_os = "macos", feature = "composition-review"))]
-mod actions_acceptance;
-#[cfg(all(target_os = "macos", feature = "composition-review"))]
-mod controlled_acceptance;
 #[cfg(target_os = "macos")]
 mod gallery;
 #[cfg(target_os = "macos")]
 mod host;
 #[cfg(all(target_os = "macos", feature = "selftest"))]
 mod perf;
-#[cfg(all(target_os = "macos", feature = "composition-review"))]
-mod reading_acceptance;
 #[cfg(target_os = "macos")]
 mod reading_key;
 #[cfg(target_os = "macos")]
 mod reading_pointer;
-#[cfg(all(target_os = "macos", feature = "composition-review"))]
+#[cfg(all(target_os = "macos", feature = "selftest"))]
 mod settings_native207;
-#[cfg(all(target_os = "macos", feature = "composition-review"))]
-mod viewport_acceptance;
-#[cfg(all(target_os = "macos", feature = "composition-review"))]
-mod wake_acceptance;
 
 #[cfg(not(target_os = "macos"))]
 fn main() {
@@ -59,23 +49,6 @@ fn main() {
     #[cfg(feature = "selftest")]
     use tekes_ui_platform_macos::selftest;
     use tekes_ui_platform_macos::{App, AppConfig, Size, WindowConfig, WindowPlacement};
-
-    #[cfg(feature = "composition-review")]
-    if actions_acceptance::try_run() {
-        return;
-    }
-    #[cfg(feature = "composition-review")]
-    if viewport_acceptance::try_run() {
-        return;
-    }
-    #[cfg(feature = "composition-review")]
-    if controlled_acceptance::try_run() {
-        return;
-    }
-    #[cfg(feature = "composition-review")]
-    if reading_acceptance::try_run() {
-        return;
-    }
 
     let startup_args = std::env::args().collect::<Vec<_>>();
     // Preserve explicit legacy diagnostic harnesses and their original program path.
@@ -173,7 +146,6 @@ fn main() {
     #[cfg(feature = "selftest")]
     match mode.as_deref() {
         None => {}
-        #[cfg(feature = "composition-review")]
         Some("settings-native207") => selftest::run_script(settings_native207::script()),
         Some("workbench") => selftest::run_script(selftest_workbench_script()),
         Some("workbench-extended") => selftest::run_script(selftest_workbench_extended_script()),
