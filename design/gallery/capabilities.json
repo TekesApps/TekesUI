@@ -75817,7 +75817,7 @@
                 "expected": "2ac2b8dd44b7d887a66a9259171500a9d3ebb7972a675f6b1312bbf7a5df2558"
               },
               "crates/tekes-ui-macos-bridge/src/content_accessibility.rs": {
-                "actual": "1c126ede9b4d6aac293788489383f5c032bbec511da0d81ea4f51a7010251ffe",
+                "actual": "1457db6b06cfd32ec1559413df87210c7a9fc1e8d88b3639baec63b64e072c2e",
                 "expected": "c1f6c6d8a04918e69eed664f8da03e4b37ebc0c158f797b4cfd8e015e2a4347d"
               },
               "crates/tekes-ui-platform-macos/src/lib.rs": {
@@ -79553,7 +79553,7 @@
     "crates/tekes-ui-macos-bridge/examples/ax205_staged_acceptance.rs": "88b8edaf971488b9b791df9b41c7f855d2d87e0cee80227de6d599ab06a31de6",
     "crates/tekes-ui-macos-bridge/examples/ax_modal_lifecycle.rs": "1fc6254d354c3684bf442233ea780c4cfa3370022380dadc26665689deb6a8af",
     "crates/tekes-ui-macos-bridge/examples/scroll_oracle.rs": "4c3e1a1b4d722e9110c35558cd2ace6825d885ee93748e4a5f3b2a6e5e3cbf1e",
-    "crates/tekes-ui-macos-bridge/src/content_accessibility.rs": "1c126ede9b4d6aac293788489383f5c032bbec511da0d81ea4f51a7010251ffe",
+    "crates/tekes-ui-macos-bridge/src/content_accessibility.rs": "1457db6b06cfd32ec1559413df87210c7a9fc1e8d88b3639baec63b64e072c2e",
     "crates/tekes-ui-macos-bridge/src/content_accessibility/publication.rs": "f74be0637c0d96d97071e133e1627973eacdedcb905830d0916f0c4ed429d083",
     "crates/tekes-ui-macos-bridge/src/content_input.rs": "c40c9d0b61823b87d163b8d91b39886d3f991e360dfad62975e70016f6ee546e",
     "crates/tekes-ui-macos-bridge/src/coretext_host.rs": "0f97b0413e050a8c253d88ec68b95a61b78f2ecb3656695d8945f071ba51c4f9",
