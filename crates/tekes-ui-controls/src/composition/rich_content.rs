@@ -685,6 +685,15 @@ impl Component for RichContent {
     fn set_focus(&mut self, f: bool, k: bool) {
         self.field.set_focus(f, k)
     }
+    fn window_active_changed(&mut self, active: bool) {
+        self.field.window_active_changed(active);
+    }
+    fn presentation_runnable_changed(&mut self, runnable: bool) {
+        self.field.presentation_runnable_changed(runnable);
+    }
+    fn lifecycle(&mut self, event: Lifecycle) {
+        self.field.lifecycle(event);
+    }
     fn semantics(&self) -> ContentSemantics {
         self.field.semantics()
     }
@@ -812,6 +821,15 @@ impl ButtonTextRenderer for RichRenderer<'_> {
     }
     fn backing_scale(&self) -> f32 {
         self.host.backing_scale()
+    }
+    fn motion_context(&self) -> Option<crate::ControlMotionContext> {
+        self.host.motion_context()
+    }
+    fn animation_frames_allowed(&self) -> bool {
+        self.host.animation_frames_allowed()
+    }
+    fn request_animation_frame(&mut self) {
+        self.host.request_animation_frame()
     }
     fn text_surface_host(&mut self) -> Option<&mut dyn TextSurfaceHost> {
         if self.host.text_surface_host().is_some() {

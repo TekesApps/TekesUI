@@ -205,6 +205,14 @@ impl Component for SearchFieldContent {
         self.editor.lifecycle(event)
     }
 
+    fn window_active_changed(&mut self, active: bool) {
+        self.editor.window_active_changed(active);
+    }
+
+    fn presentation_runnable_changed(&mut self, runnable: bool) {
+        self.editor.presentation_runnable_changed(runnable);
+    }
+
     fn semantics(&self) -> ContentSemantics {
         let mut semantics = self.editor.semantics();
         // Intentionally requires #101. Never substitute ordinary TextInput.

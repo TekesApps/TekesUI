@@ -119,6 +119,7 @@ pub struct TextFieldContent {
     inline_width_em: Option<f32>,
     pub(super) focused: bool,
     backing_scale: f32,
+    pub(super) last_frame: Option<std::time::Duration>,
 }
 
 impl TextFieldContent {
@@ -166,6 +167,7 @@ impl TextFieldContent {
             inline_width_em: None,
             focused: false,
             backing_scale: 1.,
+            last_frame: None,
         };
         content.surface.scroll.set_scrollbar_visibility(false, true);
         content
@@ -391,7 +393,27 @@ impl TextFieldContent {
         self.clear_baseline = None;
         self.editor_captured = false;
         self.preserve_focus = false;
+        self.last_frame = None;
         before != self.clear.button.state
+    }
+
+    pub(super) fn advance_scroll_animation(&mut self, t: &mut dyn ButtonTextRenderer) {
+        if let Some(m) = t.motion_context() {
+            self.surface.scroll.set_reduced_motion(m.reduced_motion);
+            if self.surface.scroll.needs_animation()
+                && let Some(previous) = self.last_frame
+            {
+                self.surface
+                    .scroll
+                    .tick(m.now.saturating_sub(previous).as_secs_f32());
+            }
+            self.last_frame = self.surface.scroll.needs_animation().then_some(m.now);
+            if self.surface.scroll.needs_animation() {
+                t.request_animation_frame();
+            }
+        } else {
+            self.last_frame = None;
+        }
     }
 
     pub(super) fn decide_prepared_action(
@@ -733,6 +755,7 @@ impl TextFieldContent {
     }
 
     pub(super) fn editor_arrange(&mut self, t: &mut dyn ButtonTextRenderer, f: Rect, c: Rect) {
+        self.advance_scroll_animation(t);
         let l = self.field_layout(t, f, c);
         self.surface.error = self.field.error.is_some();
         self.layout_surface(t, l.slot, c);

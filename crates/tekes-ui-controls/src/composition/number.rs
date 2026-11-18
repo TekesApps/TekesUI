@@ -459,6 +459,7 @@ impl Component for NumberFieldContent {
     fn lifecycle(&mut self, event: Lifecycle) {
         if event == Lifecycle::Unmounted {
             self.editor.set_focus(false, false);
+            self.editor.last_frame = None;
             self.focused = false;
             self.captured = None;
             self.editor_captured = false;
@@ -466,6 +467,12 @@ impl Component for NumberFieldContent {
                 b.button.cancel();
             }
         }
+    }
+    fn window_active_changed(&mut self, active: bool) {
+        self.editor.window_active_changed(active);
+    }
+    fn presentation_runnable_changed(&mut self, runnable: bool) {
+        self.editor.presentation_runnable_changed(runnable);
     }
     fn value_range(&self) -> Option<std::ops::RangeInclusive<f64>> {
         Some(self.min..=self.max)
